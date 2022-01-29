@@ -28,19 +28,25 @@ def all_loggers() -> Iterator[logging.Logger]:
         yield logging.getLogger(logger_name)
 
 
-def create_temp_log_file():
+def create_temp_log_file(prefix: Optional[str] = None,
+                         add_time: bool = True) -> str:
     """Create a unique tempfile for saving logs.
 
     Example format: /tmp/pw_console_2021-05-04_151807_8hem6iyq
     """
+    if not prefix:
+        prefix = str(__package__)
 
     # Grab the current system timestamp as a string.
     isotime = datetime.now().isoformat(sep='_', timespec='seconds')
     # Timestamp string should not have colons in it.
     isotime = isotime.replace(':', '')
 
+    if add_time:
+        prefix += f'_{isotime}'
+
     log_file_name = None
-    with tempfile.NamedTemporaryFile(prefix=f'{__package__}_{isotime}_',
+    with tempfile.NamedTemporaryFile(prefix=f'{prefix}_',
                                      delete=False) as log_file:
         log_file_name = log_file.name
 

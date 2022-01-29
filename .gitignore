@@ -10,11 +10,16 @@ docs/_build
 .project
 .cproject
 .vscode
+# Clangd directories
 .clangd/
+/.cache/clangd/
+# Vim
 *.swp
 *.swo
+# Emacs
 *flycheck_*
 *_flymake.*
+.#*
 
 # Python
 *.pyc

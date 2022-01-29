@@ -139,7 +139,10 @@ def install(level: Union[str, int] = logging.INFO,
     _setup_handler(_STDERR_HANDLER, formatter, level, logger)
 
     if log_file:
-        _setup_handler(logging.FileHandler(log_file), formatter, level, logger)
+        # Set utf-8 encoding for the log file. Encoding errors may come up on
+        # Windows if the default system encoding is set to cp1250.
+        _setup_handler(logging.FileHandler(log_file, encoding='utf-8'),
+                       formatter, level, logger)
         # Since we're using a file, filter logs out of the stderr handler.
         _STDERR_HANDLER.setLevel(logging.CRITICAL + 1)
 

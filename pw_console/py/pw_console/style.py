@@ -41,6 +41,7 @@ class HighContrastDarkColors:
     inactive_fg = '#bfc0c4'
 
     line_highlight_bg = '#2f2f2f'
+    selected_line_bg = '#4e4e4e'
     dialog_bg = '#3c3c3c'
 
     red_accent = '#ffc0bf'
@@ -72,6 +73,7 @@ class DarkColors:
     inactive_fg = '#bfbfbf'
 
     line_highlight_bg = '#525252'
+    selected_line_bg = '#626262'
     dialog_bg = '#3c3c3c'
 
     red_accent = '#ff6c6b'
@@ -103,6 +105,7 @@ class NordColors:
     inactive_fg = '#d8dee9'
 
     line_highlight_bg = '#191c25'
+    selected_line_bg = '#4c566a'
     dialog_bg = '#2c333f'
 
     red_accent = '#bf616a'
@@ -129,6 +132,7 @@ class NordLightColors:
     inactive_bg = '#c2d0e7'
     inactive_fg = '#60728c'
     line_highlight_bg = '#f0f4fc'
+    selected_line_bg = '#f0f4fc'
     dialog_bg = '#d8dee9'
 
     red_accent = '#99324b'
@@ -155,6 +159,7 @@ class MoonlightColors:
     inactive_bg = '#222436'
     inactive_fg = '#a9b8e8'
     line_highlight_bg = '#383e5c'
+    selected_line_bg = '#444a73'
     dialog_bg = '#1e2030'
 
     red_accent = '#d95468'
@@ -167,12 +172,45 @@ class MoonlightColors:
     magenta_accent = '#e27e8d'
 
 
+@dataclass
+class AnsiTerm:
+    # pylint: disable=too-many-instance-attributes
+    default_bg = 'default'
+    default_fg = 'default'
+
+    dim_bg = 'default'
+    dim_fg = 'default'
+
+    button_active_bg = 'default underline'
+    button_inactive_bg = 'default'
+
+    active_bg = 'default'
+    active_fg = 'default'
+
+    inactive_bg = 'default'
+    inactive_fg = 'default'
+
+    line_highlight_bg = 'default underline'
+    selected_line_bg = 'default reverse'
+    dialog_bg = 'default'
+
+    red_accent = 'ansired'
+    orange_accent = 'orange'
+    yellow_accent = 'ansiyellow'
+    green_accent = 'ansigreen'
+    cyan_accent = 'ansicyan'
+    blue_accent = 'ansiblue'
+    purple_accent = 'ansipurple'
+    magenta_accent = 'ansimagenta'
+
+
 _THEME_NAME_MAPPING = {
     'moonlight': MoonlightColors(),
     'nord': NordColors(),
     'nord-light': NordLightColors(),
     'dark': DarkColors(),
     'high-contrast-dark': HighContrastDarkColors(),
+    'ansi': AnsiTerm(),
 } # yapf: disable
 
 
@@ -266,7 +304,7 @@ def generate_styles(theme_name='dark'):
 
         # Highlighted line styles
         'selected-log-line': 'bg:{}'.format(theme.line_highlight_bg),
-        'marked-log-line': 'bg:{}'.format(theme.button_active_bg),
+        'marked-log-line': 'bg:{}'.format(theme.selected_line_bg),
         'cursor-line': 'bg:{} nounderline'.format(theme.line_highlight_bg),
 
         # Messages like 'Window too small'

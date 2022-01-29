@@ -82,7 +82,7 @@ class WindowPane(ABC):
             self.application = get_pw_console_app()
 
         self._pane_title = pane_title
-        self._pane_subtitle = None
+        self._pane_subtitle: str = ''
 
         # Default width and height to 10 lines each. They will be resized by the
         # WindowManager later.

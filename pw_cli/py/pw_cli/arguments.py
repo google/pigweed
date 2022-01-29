@@ -36,7 +36,7 @@ def parse_args() -> argparse.Namespace:
 
 def print_banner() -> None:
     """Prints the PIGWEED (or project specific) banner to stderr."""
-    print(banner(), file=sys.stderr)
+    print(banner() + '\n', file=sys.stderr)
 
 
 def format_help(registry: plugins.Registry) -> str:

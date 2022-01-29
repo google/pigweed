@@ -217,11 +217,11 @@ class LogView:
                 self._set_match_position(i)
                 return
 
-    def _set_search_regex(self,
-                          text,
-                          invert,
-                          field,
-                          matcher: Optional[SearchMatcher] = None) -> bool:
+    def set_search_regex(self,
+                         text,
+                         invert,
+                         field,
+                         matcher: Optional[SearchMatcher] = None) -> bool:
         search_matcher = matcher if matcher else self.search_matcher
         _LOG.debug(search_matcher)
 
@@ -260,7 +260,7 @@ class LogView:
                 and search_matcher.upper() in valid_matchers):
             selected_matcher = SearchMatcher(search_matcher.upper())
 
-        if not self._set_search_regex(text, invert, field, selected_matcher):
+        if not self.set_search_regex(text, invert, field, selected_matcher):
             return False
 
         # Clear matched lines

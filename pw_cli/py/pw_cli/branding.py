@@ -13,6 +13,7 @@
 # the License.
 """Facilities for accessing the current Pigweed branding"""
 
+import operator
 from typing import Optional
 from pathlib import Path
 
@@ -31,7 +32,7 @@ _PIGWEED_BANNER = '''
 '''
 
 
-def banner():
+def banner() -> str:
     global _memoized_banner  # pylint: disable=global-statement
     if _memoized_banner is not None:
         return _memoized_banner
@@ -46,10 +47,8 @@ def banner():
     # Color the banner if requested.
     banner_color = parsed_env.PW_BRANDING_BANNER_COLOR
     if banner_color != '':
-        _memoized_banner = getattr(
-            pw_cli.color.colors(),
-            banner_color,
-            str,
-        )(_memoized_banner)
+        set_color = operator.attrgetter(banner_color)(pw_cli.color.colors())
+        _memoized_banner = '\n'.join(
+            set_color(line) for line in _memoized_banner.splitlines())
 
     return _memoized_banner

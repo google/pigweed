@@ -39,7 +39,7 @@ class LineInfoBar(ConditionalContainer):
     """One line bar for showing current and total log lines."""
     def get_tokens(self):
         """Return formatted text tokens for display."""
-        tokens = ' Log {} / {} '.format(
+        tokens = ' {} / {} '.format(
             self.log_pane.log_view.get_current_line() + 1,
             self.log_pane.log_view.get_total_count(),
         )

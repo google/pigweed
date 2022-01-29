@@ -197,7 +197,7 @@ class LogContentControl(UIControl):
             """Reset / erase active filters."""
             self.log_view.clear_filters()
 
-        self.key_bindings = key_bindings
+        self.key_bindings: KeyBindingsBase = key_bindings
 
     def is_focusable(self) -> bool:
         return True
