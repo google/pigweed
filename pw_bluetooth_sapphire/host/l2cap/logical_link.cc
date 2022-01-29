@@ -239,7 +239,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
   iter->second->HandleRxPdu(std::move(*result.pdu));
 }
 
-void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
                                   async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(security_callback_);
@@ -250,13 +250,13 @@ void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
     return;
   }
 
-  auto status_cb = [dispatcher, f = std::move(callback)](sm::Status status) mutable {
+  auto status_cb = [dispatcher, f = std::move(callback)](sm::Result<> status) mutable {
     async::PostTask(dispatcher, [f = std::move(f), status] { f(status); });
   };
 
   // Report success If the link already has the expected security level.
   if (level <= security().level()) {
-    status_cb(sm::Status());
+    status_cb(fitx::ok());
     return;
   }
 

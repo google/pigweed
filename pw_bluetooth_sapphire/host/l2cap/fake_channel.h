@@ -72,7 +72,7 @@ class FakeChannel : public Channel {
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
-  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+  void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
                        async_dispatcher_t* dispatcher) override;
   void RequestAclPriority(hci::AclPriority priority,
                           fit::callback<void(fitx::result<fitx::failed>)> cb) override;

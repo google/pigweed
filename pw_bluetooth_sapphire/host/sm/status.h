@@ -8,6 +8,7 @@
 #include <lib/fit/function.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
 namespace bt {
@@ -15,6 +16,8 @@ namespace bt {
 template <>
 struct ProtocolErrorTraits<sm::ErrorCode> {
   static std::string ToString(sm::ErrorCode ecode);
+
+  static constexpr bool is_success(sm::ErrorCode ecode) { return ecode == sm::ErrorCode::kNoError; }
 };
 
 namespace sm {

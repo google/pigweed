@@ -75,7 +75,7 @@ class AdapterImpl final : public Adapter {
     }
 
     void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
-              sm::StatusCallback cb) override {
+              sm::ResultFunction<> cb) override {
       adapter_->le_connection_manager_->Pair(peer_id, pairing_level, bondable_mode, std::move(cb));
       adapter_->metrics_.le.pair_requests.Add();
     }

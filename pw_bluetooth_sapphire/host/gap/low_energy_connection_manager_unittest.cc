@@ -1583,8 +1583,8 @@ TEST_F(LowEnergyConnectionManagerTest, PairUnconnectedPeer) {
   EXPECT_TRUE(peer->temporary());
   ASSERT_EQ(peer_cache()->count(), 1u);
   uint count_cb_called = 0;
-  auto cb = [&count_cb_called](sm::Status status) {
-    ASSERT_EQ(status.error(), bt::HostError::kNotFound);
+  auto cb = [&count_cb_called](sm::Result<> status) {
+    EXPECT_EQ(ToResult(bt::HostError::kNotFound), status);
     count_cb_called++;
   };
   conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::Bondable,
@@ -1619,14 +1619,14 @@ TEST_F(LowEnergyConnectionManagerTest, PairWithBondableModes) {
 
   EXPECT_FALSE(mock_sm->last_requested_upgrade().has_value());
   conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::Bondable,
-                   [](sm::Status cb_status) {});
+                   [](sm::Result<> cb_status) {});
   RunLoopUntilIdle();
 
   EXPECT_EQ(BondableMode::Bondable, mock_sm->bondable_mode());
   EXPECT_EQ(sm::SecurityLevel::kEncrypted, mock_sm->last_requested_upgrade());
 
   conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kAuthenticated,
-                   sm::BondableMode::NonBondable, [](sm::Status cb_status) {});
+                   sm::BondableMode::NonBondable, [](sm::Result<> cb_status) {});
   RunLoopUntilIdle();
 
   EXPECT_EQ(BondableMode::NonBondable, mock_sm->bondable_mode());
@@ -2513,7 +2513,7 @@ TEST_F(LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuffici
                       MakeConnectionResultCallback(secure_authenticated_conn_handle),
                       kConnectionOptions);
   RunLoopUntilIdle();
-  std::function<void(sm::Status)> pair_cb = [](sm::Status s) { ASSERT_EQ(sm::Status(), s); };
+  std::function<void(sm::Result<>)> pair_cb = [](sm::Result<> s) { EXPECT_TRUE(s.is_ok()); };
   EXPECT_EQ(3u, connected_peers().size());
   ASSERT_TRUE(unencrypted_conn_handle);
   ASSERT_TRUE(encrypted_conn_handle);

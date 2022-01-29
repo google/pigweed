@@ -45,7 +45,7 @@ using LEFixedChannelsCallback =
 // Callback used to request a security upgrade for an active logical link.
 // Invokes its |callback| argument with the result of the operation.
 using SecurityUpgradeCallback = fit::function<void(
-    hci_spec::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::StatusCallback callback)>;
+    hci_spec::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::ResultFunction<> callback)>;
 
 // Channel configuration parameters specified by higher layers.
 struct ChannelParameters {

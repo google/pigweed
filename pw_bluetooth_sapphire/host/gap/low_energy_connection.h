@@ -67,13 +67,13 @@ class LowEnergyConnection final : public sm::Delegate {
   void DropRef(LowEnergyConnectionHandle* ref);
 
   // Used to respond to protocol/service requests for increased security.
-  void OnSecurityRequest(sm::SecurityLevel level, sm::StatusCallback cb);
+  void OnSecurityRequest(sm::SecurityLevel level, sm::ResultFunction<> cb);
 
   // Handles a pairing request (i.e. security upgrade) received from "higher levels", likely
   // initiated from GAP. This will only be used by pairing requests that are initiated
   // in the context of testing. May only be called on an already-established connection.
   void UpgradeSecurity(sm::SecurityLevel level, sm::BondableMode bondable_mode,
-                       sm::StatusCallback cb);
+                       sm::ResultFunction<> cb);
 
   // Cancels any on-going pairing procedures and sets up SMP to use the provided
   // new I/O capabilities for future pairing procedures.
@@ -242,7 +242,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // sm::Delegate overrides:
   void OnNewPairingData(const sm::PairingData& pairing_data) override;
-  void OnPairingComplete(sm::Status status) override;
+  void OnPairingComplete(sm::Result<> status) override;
   void OnAuthenticationFailure(hci::Result<> status) override;
   void OnNewSecurityProperties(const sm::SecurityProperties& sec) override;
   std::optional<sm::IdentityInfo> OnIdentityInformationRequest() override;

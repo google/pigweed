@@ -143,10 +143,10 @@ void LowEnergyConnection::InitializeFixedChannels() {
 }
 
 // Used to respond to protocol/service requests for increased security.
-void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level, sm::StatusCallback cb) {
+void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level, sm::ResultFunction<> cb) {
   ZX_ASSERT(sm_);
   sm_->UpgradeSecurity(level, [cb = std::move(cb), peer_id = peer_id(), handle = handle()](
-                                  sm::Status status, const auto& sp) {
+                                  sm::Result<> status, const auto& sp) {
     bt_log(INFO, "gap-le", "pairing status: %s, properties: %s (peer: %s, handle: %#.4x)",
            bt_str(status), bt_str(sp), bt_str(peer_id), handle);
     cb(status);
@@ -157,7 +157,7 @@ void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level, sm::StatusC
 // initiated from GAP. This will only be used by pairing requests that are initiated
 // in the context of testing. May only be called on an already-established connection.
 void LowEnergyConnection::UpgradeSecurity(sm::SecurityLevel level, sm::BondableMode bondable_mode,
-                                          sm::StatusCallback cb) {
+                                          sm::ResultFunction<> cb) {
   ZX_ASSERT(sm_);
   sm_->set_bondable_mode(bondable_mode);
   OnSecurityRequest(level, std::move(cb));
@@ -572,7 +572,7 @@ void LowEnergyConnection::OnNewPairingData(const sm::PairingData& pairing_data) 
   }
 }
 
-void LowEnergyConnection::OnPairingComplete(sm::Status status) {
+void LowEnergyConnection::OnPairingComplete(sm::Result<> status) {
   bt_log(INFO, "gap-le", "pairing complete (status: %s, peer: %s)", bt_str(status),
          bt_str(peer_id()));
 

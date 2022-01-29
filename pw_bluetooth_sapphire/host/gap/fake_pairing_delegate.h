@@ -25,7 +25,7 @@ class FakePairingDelegate final : public PairingDelegate {
 
   // If set, these will receive calls to their respective calls. If not set,
   // the corresponding PairingDelegate call will result in a test failure.
-  using CompletePairingCallback = fit::function<void(PeerId, sm::Status)>;
+  using CompletePairingCallback = fit::function<void(PeerId, sm::Result<>)>;
   void SetCompletePairingCallback(CompletePairingCallback cb) {
     complete_pairing_cb_ = std::move(cb);
   }
@@ -39,7 +39,7 @@ class FakePairingDelegate final : public PairingDelegate {
 
   // PairingDelegate overrides.
   sm::IOCapability io_capability() const override { return io_capability_; }
-  void CompletePairing(PeerId peer_id, sm::Status status) override;
+  void CompletePairing(PeerId peer_id, sm::Result<> status) override;
   void ConfirmPairing(PeerId peer_id, ConfirmCallback confirm) override;
   void DisplayPasskey(PeerId peer_id, uint32_t passkey, DisplayMethod method,
                       ConfirmCallback confirm) override;

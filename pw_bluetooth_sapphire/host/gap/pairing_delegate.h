@@ -33,7 +33,7 @@ class PairingDelegate {
 
   // Terminate any ongoing pairing challenge for the peer device with the given
   // |identifier|.
-  virtual void CompletePairing(PeerId peer_id, sm::Status status) = 0;
+  virtual void CompletePairing(PeerId peer_id, sm::Result<> status) = 0;
 
   // Ask the user to confirm the pairing request from the device with the given
   // |id| and confirm or reject by calling |confirm|.

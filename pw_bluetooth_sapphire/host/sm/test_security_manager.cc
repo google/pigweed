@@ -32,7 +32,7 @@ bool TestSecurityManager::AssignLongTermKey(const LTK& ltk) {
 void TestSecurityManager::UpgradeSecurity(SecurityLevel level, PairingCallback callback) {
   last_requested_upgrade_ = level;
   set_security(SecurityProperties(level, kMaxEncryptionKeySize, true));
-  callback(Status(), security());
+  callback(fitx::ok(), security());
 }
 
 void TestSecurityManager::Reset(IOCapability io_capability) {}

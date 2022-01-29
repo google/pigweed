@@ -228,8 +228,7 @@ TEST_F(Phase3Test, EncryptionInformationReceivedTwice) {
                                                                    ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(ReceiveAndExpect(kEncryptionInformationCmd, kExpectedFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), listener()->last_error());
 }
 
 // The peer sends EDIV and Rand before LTK.
@@ -249,8 +248,7 @@ TEST_F(Phase3Test, CentralIdentificationReceivedInWrongOrder) {
                                                                    ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(ReceiveAndExpect(central_id_packet, kExpectedFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), listener()->last_error());
 }
 
 // The peer sends the sample Rand from the specification doc
@@ -272,8 +270,7 @@ TEST_F(Phase3Test, ReceiveExampleLtkAborts) {
   ASSERT_TRUE(ReceiveAndExpect(kEncryptionInformationCmd, kExpectedFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), listener()->last_error());
 }
 
 // The peer sends the sample LTK from the specification doc
@@ -301,8 +298,7 @@ TEST_F(Phase3Test, ReceiveExampleRandAborts) {
   ASSERT_TRUE(ReceiveAndExpect(kCentralIdentificationCmd, kExpectedFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), listener()->last_error());
 }
 
 // The peer sends us an LTK that is longer than the negotiated maximum key size
@@ -319,8 +315,7 @@ TEST_F(Phase3Test, ReceiveTooLongLTK) {
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kInvalidParameters};
   ASSERT_TRUE(ReceiveAndExpect(kEncryptionInformationCmd, kExpectedFailure));
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInvalidParameters), listener()->last_error());
 }
 
 TEST_F(Phase3Test, CentralIdentificationReceivedTwice) {
@@ -473,8 +468,7 @@ TEST_F(Phase3Test, AbortsIfLocalIdKeyIsRemoved) {
   ASSERT_TRUE(Expect(kExpectedFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), listener()->last_error());
 }
 
 TEST_F(Phase3Test, IRKReceivedTwice) {
@@ -788,9 +782,8 @@ TEST_F(Phase3Test, ReceivePairingFailed) {
   fake_chan()->Receive(StaticByteBuffer{kPairingFailed, ErrorCode::kPairingNotSupported});
   RunLoopUntilIdle();
 
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  ASSERT_EQ(ErrorCode::kPairingNotSupported, listener()->last_error().protocol_error());
   ASSERT_EQ(1, listener()->pairing_error_count());
+  EXPECT_EQ(ToResult(ErrorCode::kPairingNotSupported), listener()->last_error());
 }
 
 TEST_F(Phase3Test, MalformedCommand) {
@@ -804,8 +797,7 @@ TEST_F(Phase3Test, MalformedCommand) {
   ReceiveAndExpect(StaticByteBuffer{kEncryptionInformation, 0x01}, kExpectedFailure);
 
   ASSERT_EQ(1, listener()->pairing_error_count());
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  ASSERT_EQ(ErrorCode::kInvalidParameters, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInvalidParameters), listener()->last_error());
 }
 
 TEST_F(Phase3Test, UnexpectedOpCode) {
@@ -815,8 +807,7 @@ TEST_F(Phase3Test, UnexpectedOpCode) {
                                                                    ErrorCode::kUnspecifiedReason};
   ReceiveAndExpect(StaticByteBuffer{kSecurityRequest, AuthReq::kBondingFlag}, kExpectedFailure);
   ASSERT_EQ(1, listener()->pairing_error_count());
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  ASSERT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), listener()->last_error());
 }
 
 }  // namespace

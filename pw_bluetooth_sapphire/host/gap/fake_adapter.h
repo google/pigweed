@@ -69,7 +69,7 @@ class FakeAdapter final : public Adapter {
     bool Disconnect(PeerId peer_id) override;
 
     void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
-              sm::StatusCallback cb) override {}
+              sm::ResultFunction<> cb) override {}
 
     void SetSecurityMode(LeSecurityMode mode) override {}
 

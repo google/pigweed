@@ -174,7 +174,7 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
   return tx_engine_->QueueSdu(std::move(sdu));
 }
 
-void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
                                   async_dispatcher_t* dispatcher) {
   ZX_ASSERT(callback);
   ZX_ASSERT(dispatcher);

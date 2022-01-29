@@ -288,8 +288,7 @@ TEST_F(Phase2SecureConnectionsTest, ReceivePairingFailed) {
       StaticByteBuffer<PacketSize<ErrorCode>()>{kPairingFailed, ErrorCode::kPairingNotSupported});
   RunLoopUntilIdle();
 
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kPairingNotSupported, listener()->last_error().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kPairingNotSupported), listener()->last_error());
 }
 
 TEST_F(Phase2SecureConnectionsTest, ReceiveMalformedPacket) {

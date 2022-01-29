@@ -99,7 +99,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   }
 
   // Called by |pairing_| when the pairing procedure ends.
-  void OnPairingComplete(Status status) override {
+  void OnPairingComplete(Result<> status) override {
     pairing_complete_count_++;
     pairing_complete_status_ = status;
   }
@@ -333,11 +333,11 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
   int security_callback_count() const { return security_callback_count_; }
   ErrorCode received_error_code() const { return received_error_code_; }
-  const Status& security_status() const { return security_status_; }
+  const Result<>& security_status() const { return security_status_; }
   const SecurityProperties& sec_props() const { return sec_props_; }
 
   int pairing_complete_count() const { return pairing_complete_count_; }
-  const Status& pairing_complete_status() const { return pairing_complete_status_; }
+  const Result<>& pairing_complete_status() const { return pairing_complete_status_; }
 
   int pairing_data_callback_count() const { return pairing_data_callback_count_; }
 
@@ -413,7 +413,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   // Number of times the security callback given to UpgradeSecurity has been
   // called and the most recent parameters that it was called with.
   int security_callback_count_ = 0;
-  Status security_status_;
+  Result<> security_status_ = fitx::ok();
   SecurityProperties sec_props_;
 
   // Number of times the pairing data callback has been called and the most
@@ -428,7 +428,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
   // State tracking the OnPairingComplete event.
   int pairing_complete_count_ = 0;
-  Status pairing_complete_status_;
+  Result<> pairing_complete_status_ = fitx::ok();
 
   // State tracking the OnAuthenticationFailure event.
   int auth_failure_callback_count_ = 0;
@@ -859,7 +859,7 @@ TEST_F(InitiatorPairingTest, UpgradeSecurityCurrentLevel) {
 
   // Pairing should succeed.
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(SecurityLevel::kNoSecurity, sec_props().level());
   EXPECT_EQ(0u, sec_props().enc_key_size());
   EXPECT_FALSE(sec_props().secure_connections());
@@ -879,7 +879,7 @@ TEST_F(InitiatorPairingTest, PairingFailedInPhase1) {
 
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_request_count());
-  EXPECT_EQ(ErrorCode::kPairingNotSupported, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kPairingNotSupported), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -899,7 +899,7 @@ TEST_F(InitiatorPairingTest, PairingAbortedInPhase1) {
 
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_request_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -921,7 +921,7 @@ TEST_F(InitiatorPairingTest, SecurityManagerResetDuringPairing) {
 
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_request_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -961,7 +961,7 @@ TEST_F(InitiatorPairingTest, ReceiveConfirmValueInPhase1) {
   EXPECT_EQ(0, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -978,7 +978,7 @@ TEST_F(InitiatorPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnly
 
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kAuthenticationRequirements), security_status());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -1012,7 +1012,7 @@ TEST_F(InitiatorPairingTest, AllowSecureAuthenticatedPairingInSecureConnectionsO
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(SecurityLevel::kSecureAuthenticated, sec_props().level());
@@ -1036,7 +1036,7 @@ TEST_F(InitiatorPairingTest, ReceiveConfirmValueWhileWaitingForUserInput) {
   EXPECT_EQ(0, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1072,7 +1072,7 @@ TEST_F(InitiatorPairingTest, PairingAbortedWhileWaitingForUserInput) {
   ReceivePairingFailed(ErrorCode::kPairingNotSupported);
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kPairingNotSupported, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kPairingNotSupported), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1105,7 +1105,7 @@ TEST_F(InitiatorPairingTest, PairingRestartedWhileWaitingForTK) {
   ReceivePairingFailed(ErrorCode::kPairingNotSupported);
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kPairingNotSupported, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kPairingNotSupported), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1161,7 +1161,7 @@ TEST_F(InitiatorPairingTest, ReceiveRandomValueInPhase1) {
   EXPECT_EQ(0, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1185,7 +1185,7 @@ TEST_F(InitiatorPairingTest, ReceiveRandomValueWhileWaitingForTK) {
   EXPECT_EQ(0, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1220,7 +1220,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase2SconfirmValueReceivedTwice) {
   EXPECT_EQ(1, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1247,7 +1247,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase2ReceiveRandomValueInWrongOrder) {
   EXPECT_EQ(0, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1293,7 +1293,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase2SconfirmValueInvalid) {
   EXPECT_EQ(1, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kConfirmValueFailed, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kConfirmValueFailed), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1347,7 +1347,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase2RandomValueReceivedTwice) {
   EXPECT_EQ(1, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
@@ -1423,7 +1423,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase2TKDelegateRejectsPasskeyInput) {
   EXPECT_EQ(0, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kPasskeyEntryFailed, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kPasskeyEntryFailed), security_status());
 }
 
 // TK delegate rejects pairing.
@@ -1450,7 +1450,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase2TKDelegateRejectsPairing) {
   EXPECT_EQ(0, pairing_random_count());
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 }
 
 TEST_F(InitiatorPairingTest, IgnoresExpiredConfirmRequestCallback) {
@@ -1654,7 +1654,7 @@ TEST_F(InitiatorPairingTest, PairingFailedInPhase2) {
   EXPECT_EQ(1, pairing_random_count());
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kConfirmValueFailed, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kConfirmValueFailed), security_status());
 }
 
 // Encryption with STK fails.
@@ -1678,7 +1678,7 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, auth_failure_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
   EXPECT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
 
@@ -1707,7 +1707,7 @@ TEST_F(InitiatorPairingTest, EncryptionDisabledInPhase2) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(0, auth_failure_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
 
   // No security property update should have been sent since the security
@@ -1765,7 +1765,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase3CompleteWithoutKeyExchange) {
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, id_info_count());
   EXPECT_EQ(0, id_addr_info_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(SecurityLevel::kEncrypted, sec_props().level());
@@ -1810,7 +1810,7 @@ TEST_F(InitiatorPairingTest, ScPhase3CompleteWithoutKeyExchange) {
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, id_info_count());
   EXPECT_EQ(0, id_addr_info_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(kExpectedSecurity, sec_props());
@@ -1860,7 +1860,7 @@ TEST_F(InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, id_info_count());
   EXPECT_EQ(0, id_addr_info_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(kExpectedSecurity, sec_props());
@@ -1902,7 +1902,7 @@ TEST_F(InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, id_info_count());
   EXPECT_EQ(0, id_addr_info_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(kExpectedSecurity, sec_props());
@@ -1937,7 +1937,7 @@ TEST_F(InitiatorPairingTest, Phase3EncryptionInformationReceivedTwice) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -1961,7 +1961,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedInWrongOrder) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -1987,7 +1987,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveSampleLTK) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -2014,7 +2014,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveExampleRand) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -2040,7 +2040,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveLongLTK) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kInvalidParameters, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInvalidParameters), security_status());
   EXPECT_EQ(ErrorCode::kInvalidParameters, received_error_code());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -2071,7 +2071,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedTwice) {
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(1, pairing_data_callback_count());
-  EXPECT_TRUE(security_status().is_success());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
   ASSERT_TRUE(pairing_data().peer_ltk.has_value());
   EXPECT_EQ(kEdiv, pairing_data().peer_ltk->key().ediv());
@@ -2096,7 +2096,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithReceivingEncKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
@@ -2148,7 +2148,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithSendingEncKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // Only the STK should be assigned to the link, as the distributed LTK was initiator-generated.
@@ -2187,7 +2187,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithShortEncKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
@@ -2250,7 +2250,7 @@ TEST_F(InitiatorPairingTest, Phase3WithLocalIdKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
 
@@ -2289,8 +2289,7 @@ TEST_F(InitiatorPairingTest, Phase3IsAbortedIfLocalIdKeyIsRemoved) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_FALSE(security_status());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
 }
 
 TEST_F(InitiatorPairingTest, Phase3IRKReceivedTwice) {
@@ -2317,7 +2316,7 @@ TEST_F(InitiatorPairingTest, Phase3IRKReceivedTwice) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -2341,7 +2340,7 @@ TEST_F(InitiatorPairingTest, Phase3IdentityAddressReceivedInWrongOrder) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -2367,7 +2366,7 @@ TEST_F(InitiatorPairingTest, Phase3IdentityAddressReceivedTwice) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -2393,7 +2392,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithIdKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // The link remains encrypted with the STK.
@@ -2444,7 +2443,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithAllKeys) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
@@ -2487,7 +2486,7 @@ TEST_F(InitiatorPairingTest, GenerateCrossTransportLinkKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // The PairingData should contain the CTKGenerated BR/EDR link key.
@@ -2548,7 +2547,7 @@ TEST_F(InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
   ASSERT_EQ(1, pairing_complete_count());
-  ASSERT_TRUE(security_status());
+  ASSERT_TRUE(security_status().is_ok());
   ASSERT_TRUE(peer_ltk());
   ASSERT_EQ(SecurityLevel::kEncrypted, sec_props().level());
   ASSERT_EQ(1, fake_link()->start_encryption_count());  // Once for the STK
@@ -2615,9 +2614,9 @@ TEST_F(InitiatorPairingTest, PairingTimeoutWorks) {
   RunLoopFor(kPairingTimeout);
   EXPECT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, security_callback_count());
-  EXPECT_EQ(HostError::kTimedOut, security_status().error());
+  EXPECT_EQ(ToResult(HostError::kTimedOut), security_status());
   ASSERT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(HostError::kTimedOut, pairing_complete_status().error());
+  EXPECT_EQ(ToResult(HostError::kTimedOut), pairing_complete_status());
 }
 
 TEST_F(InitiatorPairingTest, NoTimeoutAfterSuccessfulPairing) {
@@ -2626,14 +2625,14 @@ TEST_F(InitiatorPairingTest, NoTimeoutAfterSuccessfulPairing) {
                       KeyDistGenField{0}, KeyDistGenField{0});
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_EQ(1, security_callback_count());
-  ASSERT_TRUE(security_status().is_success());
-  ASSERT_TRUE(pairing_complete_status().is_success());
+  ASSERT_TRUE(security_status().is_ok());
+  ASSERT_TRUE(pairing_complete_status().is_ok());
   // Verify that no timeout occurs after a successful pairing followed by a long interval.
   RunLoopFor(kPairingTimeout * 2);
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_EQ(1, security_callback_count());
-  ASSERT_NE(HostError::kTimedOut, pairing_complete_status().error());
-  ASSERT_NE(HostError::kTimedOut, security_status().error());
+  EXPECT_NE(ToResult(HostError::kTimedOut), pairing_complete_status());
+  EXPECT_NE(ToResult(HostError::kTimedOut), security_status());
 }
 
 TEST_F(InitiatorPairingTest, AbortStopsPairingTimer) {
@@ -2648,8 +2647,8 @@ TEST_F(InitiatorPairingTest, AbortStopsPairingTimer) {
   RunLoopFor(kPairingTimeout * 2);
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_EQ(1, security_callback_count());
-  ASSERT_NE(HostError::kTimedOut, pairing_complete_status().error());
-  ASSERT_NE(HostError::kTimedOut, security_status().error());
+  EXPECT_NE(ToResult(HostError::kTimedOut), pairing_complete_status());
+  EXPECT_NE(ToResult(HostError::kTimedOut), security_status());
 }
 
 TEST_F(InitiatorPairingTest, ResetStopsPairingTimer) {
@@ -2664,8 +2663,8 @@ TEST_F(InitiatorPairingTest, ResetStopsPairingTimer) {
   RunLoopFor(kPairingTimeout * 2);
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_EQ(1, security_callback_count());
-  ASSERT_NE(HostError::kTimedOut, pairing_complete_status().error());
-  ASSERT_NE(HostError::kTimedOut, security_status().error());
+  EXPECT_NE(ToResult(HostError::kTimedOut), pairing_complete_status());
+  EXPECT_NE(ToResult(HostError::kTimedOut), security_status());
 }
 
 TEST_F(InitiatorPairingTest, SendingMessageRestartsTimer) {
@@ -2689,8 +2688,8 @@ TEST_F(InitiatorPairingTest, SendingMessageRestartsTimer) {
   RunLoopFor(kPairingTimeout);
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_EQ(1, security_callback_count());
-  ASSERT_EQ(HostError::kTimedOut, pairing_complete_status().error());
-  ASSERT_EQ(HostError::kTimedOut, security_status().error());
+  EXPECT_EQ(ToResult(HostError::kTimedOut), pairing_complete_status());
+  EXPECT_EQ(ToResult(HostError::kTimedOut), security_status());
 }
 
 TEST_F(InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDisconnect) {
@@ -2741,7 +2740,7 @@ TEST_F(ResponderPairingTest, SecurityRequestCausesPairing) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
@@ -2779,7 +2778,7 @@ TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
 
   // Security should be upgraded.
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(kProps.level(), sec_props().level());
   EXPECT_EQ(16u, sec_props().enc_key_size());
   EXPECT_TRUE(sec_props().secure_connections());
@@ -2823,8 +2822,7 @@ TEST_F(ResponderPairingTest, AuthenticatedSecurityRequestWithInsufficientIoCapRe
   // perform authenticated pairing.
   EXPECT_EQ(0, security_request_count());
   EXPECT_EQ(1, security_callback_count());
-  ASSERT_TRUE(security_status().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kAuthenticationRequirements), security_status());
   EXPECT_EQ(SecurityLevel::kNoSecurity, sec_props().level());
 }
 
@@ -2849,7 +2847,7 @@ TEST_F(ResponderPairingTest, HandlesMultipleSecurityRequestsCorrectly) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(SecurityLevel::kEncrypted, sec_props().level());
@@ -2891,7 +2889,7 @@ TEST_F(ResponderPairingTest, ReceiveSecondPairingRequestWhilePairing) {
   EXPECT_EQ(0, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(received_error_code(), pairing_complete_status().protocol_error());
+  EXPECT_EQ(ToResult(received_error_code()), pairing_complete_status());
 }
 
 TEST_F(ResponderPairingTest, ReceiveConfirmValueWhileWaitingForTK) {
@@ -2953,7 +2951,7 @@ TEST_F(ResponderPairingTest, LegacyPhase2ReceivePairingRandomInWrongOrder) {
   EXPECT_EQ(0, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_complete_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), pairing_complete_status());
 }
 
 TEST_F(ResponderPairingTest, LegacyPhase2MconfirmValueInvalid) {
@@ -2999,7 +2997,7 @@ TEST_F(ResponderPairingTest, LegacyPhase2MconfirmValueInvalid) {
   EXPECT_EQ(0, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(ErrorCode::kConfirmValueFailed, received_error_code());
-  EXPECT_EQ(ErrorCode::kConfirmValueFailed, pairing_complete_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kConfirmValueFailed), pairing_complete_status());
 }
 
 TEST_F(ResponderPairingTest, LegacyPhase2ConfirmValuesExchanged) {
@@ -3199,7 +3197,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3ReceiveInitiatorEncKey) {
   // Pairing should have succeeded.
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_TRUE(security_status());
+  EXPECT_TRUE(security_status().is_ok());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // No pairing callbacks needed as this is a peer-initiated pairing.
@@ -3395,7 +3393,7 @@ TEST_F(ResponderPairingTest, PairingRequestStartsPairingTimer) {
   // Pairing should fail, but no callbacks should be notified because the pairing was initiated
   // remotely, not through UpgradeSecurity locally
   ASSERT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(HostError::kTimedOut, pairing_complete_status().error());
+  EXPECT_EQ(ToResult(HostError::kTimedOut), pairing_complete_status());
   EXPECT_EQ(0, security_callback_count());
 }
 
@@ -3413,7 +3411,7 @@ TEST_F(ResponderPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnly
 
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, security_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kAuthenticationRequirements), security_status());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
@@ -3429,7 +3427,7 @@ TEST_F(ResponderPairingTest, RejectInsufficientKeySizeRequestInSecureConnections
 
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kEncryptionKeySize, pairing_complete_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kEncryptionKeySize), pairing_complete_status());
 }
 
 // Tests that Secure Connections works as responder
@@ -3460,7 +3458,7 @@ TEST_F(ResponderPairingTest, SecureConnectionsWorks) {
   // Pairing should complete successfully
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, pairing_failed_count());
-  EXPECT_TRUE(pairing_complete_status());
+  EXPECT_TRUE(pairing_complete_status().is_ok());
 
   // No callbacks are notified as the peer started this pairing, not a call to UpgradeSecurity.
   EXPECT_EQ(0, security_callback_count());

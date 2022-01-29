@@ -41,7 +41,7 @@ constexpr ChannelParameters kChannelParams;
 void DoNothing() {}
 void NopRxCallback(ByteBufferPtr) {}
 void NopLeConnParamCallback(const hci_spec::LEPreferredConnectionParameters&) {}
-void NopSecurityCallback(hci_spec::ConnectionHandle, sm::SecurityLevel, sm::StatusCallback) {}
+void NopSecurityCallback(hci_spec::ConnectionHandle, sm::SecurityLevel, sm::ResultFunction<>) {}
 
 // Holds expected outbound data packets including the source location where the expectation is set.
 struct PacketExpectation {
@@ -1765,15 +1765,15 @@ TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
 
 TEST_F(ChannelManagerTest, UpgradeSecurity) {
   // The callback passed to to Channel::UpgradeSecurity().
-  sm::Status received_status;
+  sm::Result<> received_status = fitx::ok();
   int security_status_count = 0;
-  auto status_callback = [&](sm::Status status) {
+  auto status_callback = [&](sm::Result<> status) {
     received_status = status;
     security_status_count++;
   };
 
   // The security handler callback assigned when registering a link.
-  sm::Status delivered_status;
+  sm::Result<> delivered_status = fitx::ok();
   sm::SecurityLevel last_requested_level = sm::SecurityLevel::kNoSecurity;
   int security_request_count = 0;
   auto security_handler = [&](hci_spec::ConnectionHandle handle, sm::SecurityLevel level,
@@ -1796,10 +1796,10 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   RunLoopUntilIdle();
   EXPECT_EQ(0, security_request_count);
   EXPECT_EQ(1, security_status_count);
-  EXPECT_TRUE(received_status);
+  EXPECT_TRUE(received_status.is_ok());
 
   // Test reporting an error.
-  delivered_status = sm::Status(HostError::kNotSupported);
+  delivered_status = ToResult(HostError::kNotSupported);
   chan->UpgradeSecurity(sm::SecurityLevel::kEncrypted, status_callback, dispatcher());
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_request_count);

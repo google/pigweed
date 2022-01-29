@@ -53,7 +53,7 @@ class FakeListener : public PairingPhase::Listener {
   }
 
   // PairingPhase::Listener override:
-  void OnPairingFailed(Status error) override {
+  void OnPairingFailed(Result<> error) override {
     pairing_error_count_++;
     last_error_ = error;
   }
@@ -76,7 +76,7 @@ class FakeListener : public PairingPhase::Listener {
   }
 
   int pairing_error_count() const { return pairing_error_count_; }
-  Status last_error() const { return last_error_; }
+  Result<> last_error() const { return last_error_; }
 
  private:
   std::optional<IdentityInfo> identity_info_ = std::nullopt;
@@ -88,7 +88,7 @@ class FakeListener : public PairingPhase::Listener {
   RequestPasskeyDelegate request_passkey_delegate_;
 
   int pairing_error_count_ = 0;
-  Status last_error_;
+  Result<> last_error_ = fitx::ok();
 
   fxl::WeakPtrFactory<FakeListener> weak_ptr_factory_;
 };

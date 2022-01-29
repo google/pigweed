@@ -123,7 +123,7 @@ class SecurityManagerImpl final : public SecurityManager,
   void OnNewLongTermKey(const LTK& ltk);
 
   // PairingPhase::Listener overrides:
-  void OnPairingFailed(Status status) override;
+  void OnPairingFailed(Result<> status) override;
   std::optional<IdentityInfo> OnIdentityRequest() override;
   void ConfirmPairing(ConfirmCallback confirm) override;
   void DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
@@ -161,7 +161,7 @@ class SecurityManagerImpl final : public SecurityManager,
 
   // Validates that both SM and the link have stored LTKs, and that these values match. Disconnects
   // the link if it finds an issue. Should only be called when an LTK is expected to exist.
-  Status ValidateExistingLocalLtk();
+  Result<> ValidateExistingLocalLtk();
 
   // The ID that will be assigned to the next pairing operation.
   PairingProcedureId next_pairing_id_;
@@ -293,7 +293,7 @@ void SecurityManagerImpl::UpgradeSecurity(SecurityLevel level, PairingCallback c
   }
 
   if (level <= security().level()) {
-    callback(Status(), security());
+    callback(fitx::ok(), security());
     return;
   }
 
@@ -344,7 +344,7 @@ void SecurityManagerImpl::UpgradeSecurityInternal() {
   const PendingRequest& next_req = request_queue_.front();
   ErrorCode code = RequestSecurityUpgrade(next_req.level);
   if (code != ErrorCode::kNoError) {
-    next_req.callback(Status(code), security());
+    next_req.callback(ToResult(code), security());
     request_queue_.pop();
     if (!request_queue_.empty()) {
       UpgradeSecurityInternal();
@@ -514,7 +514,7 @@ void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
   ZX_ASSERT(delegate_);
   ZX_ASSERT(features_.has_value());
   bt_log(DEBUG, "sm", "LE pairing complete");
-  delegate_->OnPairingComplete(Status());
+  delegate_->OnPairingComplete(fitx::ok());
   // In Secure Connections, the LTK will be generated in Phase 2, not exchanged in Phase 3, so
   // we want to ensure that it is still put in the pairing_data.
   if (features_->secure_connections) {
@@ -585,7 +585,7 @@ void SecurityManagerImpl::NotifySecurityCallbacks() {
 
   // Notify the satisfied requests with success.
   while (!satisfied.empty()) {
-    satisfied.front().callback(Status(), security());
+    satisfied.front().callback(fitx::ok(), security());
     satisfied.pop();
   }
 
@@ -699,7 +699,7 @@ void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
 void SecurityManagerImpl::OnRxBFrame(ByteBufferPtr sdu) {
   fpromise::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
-    bt_log(INFO, "sm", "dropped SMP packet: %s", bt_str(Status(maybe_reader.error())));
+    bt_log(INFO, "sm", "dropped SMP packet: %s", bt_str(ToResult(maybe_reader.error())));
     return;
   }
   ValidPacketReader reader = maybe_reader.value();
@@ -718,7 +718,7 @@ void SecurityManagerImpl::OnChannelClosed() {
   bt_log(DEBUG, "sm", "SMP channel closed while not pairing");
 }
 
-void SecurityManagerImpl::OnPairingFailed(Status status) {
+void SecurityManagerImpl::OnPairingFailed(Result<> status) {
   std::string phase_status = std::visit(
       [=](auto& arg) {
         using T = std::decay_t<decltype(arg)>;
@@ -733,7 +733,7 @@ void SecurityManagerImpl::OnPairingFailed(Status status) {
         return s;
       },
       current_phase_);
-  bt_log(ERROR, "sm", "LE pairing failed: %s. Current pairing phase: %s", status.ToString().c_str(),
+  bt_log(ERROR, "sm", "LE pairing failed: %s. Current pairing phase: %s", bt_str(status),
          phase_status.c_str());
   StopTimer();
   // TODO(fxbug.dev/910): implement "waiting interval" to prevent repeated attempts
@@ -754,7 +754,7 @@ void SecurityManagerImpl::OnPairingFailed(Status status) {
   }
   ResetState();
   // Reset state before potentially disconnecting link to avoid causing pairing phase to fail twice.
-  if (!status && status.error() == HostError::kTimedOut) {
+  if (status == ToResult(HostError::kTimedOut)) {
     // Per v5.2 Vol. 3 Part H 3.4, after a pairing timeout "No further SMP commands shall be sent
     // over the L2CAP Security Manager Channel. A new Pairing process shall only be performed when a
     // new physical link has been established."
@@ -784,9 +784,9 @@ void SecurityManagerImpl::OnPairingTimeout() {
       [=](auto& arg) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<std::unique_ptr<Phase1>, T>) {
-          arg->OnFailure(Status(HostError::kTimedOut));
+          arg->OnFailure(ToResult(HostError::kTimedOut));
         } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
-          arg.OnFailure(Status(HostError::kTimedOut));
+          arg.OnFailure(ToResult(HostError::kTimedOut));
         } else {
           ZX_PANIC("cannot timeout when current_phase_ is std::monostate!");
         }
@@ -809,7 +809,7 @@ void SecurityManagerImpl::OnNewLongTermKey(const LTK& ltk) {
   le_link_->set_le_ltk(ltk.key());
 }
 
-Status SecurityManagerImpl::ValidateExistingLocalLtk() {
+Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
   auto err = HostError::kNoError;
   if (!ltk_.has_value() || !le_link_->ltk().has_value()) {
     // The LTKs should always be present when this method is called.
@@ -819,8 +819,8 @@ Status SecurityManagerImpl::ValidateExistingLocalLtk() {
     // in sync, i.e. something in the system is acting unreliably if they get out of sync.
     err = HostError::kNotReliable;
   }
-  Status status(err);
-  if (!status) {
+  Result<> status = ToResult(err);
+  if (status.is_error()) {
     // SM does not own the link, so although the checks above should never fail, disconnecting the
     // link (vs. ASSERTing these checks) is safer against non-SM code potentially touching the key.
     delegate_->OnAuthenticationFailure(ToResult(hci_spec::StatusCode::kPinOrKeyMissing));

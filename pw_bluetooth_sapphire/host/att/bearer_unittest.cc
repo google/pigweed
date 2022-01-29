@@ -1044,7 +1044,7 @@ class BearerTestSecurity : public BearerTest {
 
     fake_chan()->SetSecurityCallback(
         [this](hci_spec::ConnectionHandle handle, sm::SecurityLevel level,
-               sm::StatusCallback callback) {
+               sm::ResultFunction<> callback) {
           security_request_count_++;
           requested_security_level_ = level;
 
@@ -1083,10 +1083,10 @@ class BearerTestSecurity : public BearerTest {
   }
 
   // Resolves the currently pending security request.
-  void ResolvePendingSecurityRequest(sm::Status status) {
+  void ResolvePendingSecurityRequest(sm::Result<> status) {
     ASSERT_TRUE(security_responder_);
 
-    if (status) {
+    if (status.is_ok()) {
       fake_chan()->set_security(sm::SecurityProperties(requested_security_level_, 16, false));
     }
 
@@ -1125,7 +1125,7 @@ class BearerTestSecurity : public BearerTest {
   sm::SecurityLevel requested_security_level_ = sm::SecurityLevel::kNoSecurity;
   size_t security_request_count_ = 0u;
 
-  sm::StatusCallback security_responder_;
+  sm::ResultFunction<> security_responder_;
 };
 
 TEST_F(BearerTestSecurity, SecurityUpgradeAfterInsufficientAuthentication) {
@@ -1149,7 +1149,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeAfterInsufficientAuthentication) {
   // Configure the endpoint to respond with success and notify the Bearer of the
   // security upgrade. The Bearer should re-send the request.
   SetUpResponder();
-  ResolvePendingSecurityRequest(sm::Status());
+  ResolvePendingSecurityRequest(fitx::ok());
   RunLoopUntilIdle();
 
   // We should have received the same request again.
@@ -1183,7 +1183,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeWithMitmAfterInsufficientAuthenticatio
   // Configure the endpoint to respond with success and notify the Bearer of the
   // security upgrade. The Bearer should re-send the request.
   SetUpResponder();
-  ResolvePendingSecurityRequest(sm::Status());
+  ResolvePendingSecurityRequest(fitx::ok());
   RunLoopUntilIdle();
 
   // We should have received the same request again.
@@ -1215,7 +1215,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeFailsAfterAuthError) {
   // Configure the endpoint to respond with success and notify the Bearer of the
   // security upgrade. The Bearer should re-send the request.
   SetUpResponder();
-  ResolvePendingSecurityRequest(sm::Status(HostError::kFailed));
+  ResolvePendingSecurityRequest(ToResult(HostError::kFailed));
   RunLoopUntilIdle();
 
   // The request should not have been retried and failed with the original
@@ -1248,7 +1248,7 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
   // Resolve the pending security request with success while the channel is
   // configured to respond with "Insufficient Authentication". The Bearer should
   // re-send the request.
-  ResolvePendingSecurityRequest(sm::Status());
+  ResolvePendingSecurityRequest(fitx::ok());
   RunLoopUntilIdle();
 
   // The request should have been retried once. The "Insufficient
@@ -1262,7 +1262,7 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
   // Resolve the pending security request with success while the channel is
   // configured to respond with "Insufficient Authentication. The Bearer should
   // retry the request one last time.
-  ResolvePendingSecurityRequest(sm::Status());
+  ResolvePendingSecurityRequest(fitx::ok());
   RunLoopUntilIdle();
 
   // The request should have failed without retrying the request a third time as

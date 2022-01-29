@@ -163,7 +163,7 @@ class LowEnergyConnectionManager final {
   //                    A device in non-bondable mode will not allow pairing that forms a bond.
   //   |cb|: callback called upon completion of this function, whether pairing takes place or not.
   void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
-            sm::StatusCallback cb);
+            sm::ResultFunction<> cb);
 
   // Sets the LE security mode of the local device (see v5.2 Vol. 3 Part C Section 10.2). If set to
   // SecureConnectionsOnly, any currently encrypted links not meeting the requirements of Security

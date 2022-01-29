@@ -38,10 +38,10 @@ FakePairingDelegate::~FakePairingDelegate() {
   }
 }
 
-void FakePairingDelegate::CompletePairing(PeerId peer_id, sm::Status status) {
+void FakePairingDelegate::CompletePairing(PeerId peer_id, sm::Result<> status) {
   if (!complete_pairing_cb_) {
     AddFailure(__func__, peer_id);
-    ADD_FAILURE() << "status: " << status.ToString();
+    ADD_FAILURE() << "status: " << bt_str(status);
     return;
   }
   complete_pairing_cb_(peer_id, status);

@@ -38,7 +38,7 @@ class Delegate {
   virtual std::optional<IdentityInfo> OnIdentityInformationRequest() = 0;
 
   // Called when an ongoing pairing is completed with the given |status|.
-  virtual void OnPairingComplete(Status status) = 0;
+  virtual void OnPairingComplete(Result<> status) = 0;
 
   // Called when new pairing data has been obtained for this peer.
   virtual void OnNewPairingData(const PairingData& data) = 0;

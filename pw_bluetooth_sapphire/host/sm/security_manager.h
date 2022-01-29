@@ -86,7 +86,7 @@ class SecurityManager {
   // If no pairing is in progress then the local device will initiate pairing.
   //
   // If pairing fails |callback| will be called with a |status| that represents the error.
-  using PairingCallback = fit::function<void(Status status, const SecurityProperties& sec_props)>;
+  using PairingCallback = fit::function<void(Result<> status, const SecurityProperties& sec_props)>;
   virtual void UpgradeSecurity(SecurityLevel level, PairingCallback callback) = 0;
 
   // Assign I/O capabilities. This aborts any ongoing pairing procedure and sets

@@ -407,7 +407,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectL2capChannelParameters) {
   pairing_delegate->SetConfirmPairingCallback(
       [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
   pairing_delegate->SetCompletePairingCallback(
-      [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [&](bt::PeerId, bt::sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   bt::l2cap::ChannelParameters expected_params;
   expected_params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
@@ -455,7 +455,7 @@ TEST_F(ProfileServerTestConnectedPeer,
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kNoInputNoOutput);
   adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
   pairing_delegate->SetCompletePairingCallback(
-      [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [&](bt::PeerId, bt::sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   fidlbredr::SecurityRequirements security;
   security.set_authentication_required(true);
@@ -493,7 +493,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectEmptyChannelResponse) {
   pairing_delegate->SetConfirmPairingCallback(
       [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
   pairing_delegate->SetCompletePairingCallback(
-      [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [&](bt::PeerId, bt::sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   // Make the l2cap channel creation fail.
   l2cap()->set_simulate_open_channel_failure(true);
@@ -585,7 +585,7 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
   pairing_delegate->SetConfirmPairingCallback(
       [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
   pairing_delegate->SetCompletePairingCallback(
-      [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [&](bt::PeerId, bt::sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
                                       bt::l2cap::ChannelParameters());
@@ -705,7 +705,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectReturnsValidSocket) {
   pairing_delegate->SetConfirmPairingCallback(
       [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
   pairing_delegate->SetCompletePairingCallback(
-      [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [&](bt::PeerId, bt::sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   bt::l2cap::ChannelParameters expected_params;
   l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,

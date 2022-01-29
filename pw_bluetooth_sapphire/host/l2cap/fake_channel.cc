@@ -110,7 +110,7 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
   return true;
 }
 
-void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
                                   async_dispatcher_t* dispatcher) {
   ZX_ASSERT(dispatcher);
   auto result_cb = [cb = std::move(callback), dispatcher](auto status) mutable {

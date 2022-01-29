@@ -667,10 +667,10 @@ void HostServer::PairLowEnergy(PeerId peer_id, fsys::PairingOptions options,
     bondable_mode = bt::sm::BondableMode::NonBondable;
   }
   auto on_complete = [peer_id, callback = std::move(callback),
-                      func = __FUNCTION__](bt::sm::Status status) {
-    if (!status) {
+                      func = __FUNCTION__](bt::sm::Result<> status) {
+    if (status.is_error()) {
       bt_log(WARN, "fidl", "%s: failed to pair (peer: %s)", func, bt_str(peer_id));
-      callback(fpromise::error(HostErrorToFidl(status.error())));
+      callback(fpromise::error(HostErrorToFidl(status.error_value())));
     } else {
       callback(fpromise::ok());
     }
@@ -772,10 +772,10 @@ bt::sm::IOCapability HostServer::io_capability() const {
   return io_capability_;
 }
 
-void HostServer::CompletePairing(PeerId id, bt::sm::Status status) {
+void HostServer::CompletePairing(PeerId id, bt::sm::Result<> status) {
   bt_log(DEBUG, "fidl", "pairing complete for peer: %s, status: %s", bt_str(id), bt_str(status));
   ZX_DEBUG_ASSERT(pairing_delegate_);
-  pairing_delegate_->OnPairingComplete(fbt::PeerId{id.value()}, status.is_success());
+  pairing_delegate_->OnPairingComplete(fbt::PeerId{id.value()}, status.is_ok());
 }
 
 void HostServer::ConfirmPairing(PeerId id, ConfirmCallback confirm) {

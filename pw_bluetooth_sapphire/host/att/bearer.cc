@@ -594,10 +594,10 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
   chan_->UpgradeSecurity(
       security_requirement,
       [self = weak_ptr_factory_.GetWeakPtr(), error_code, attr_in_error, security_requirement,
-       t = std::move(transaction)](sm::Status status) mutable {
+       t = std::move(transaction)](sm::Result<> status) mutable {
         // If the security upgrade failed or the bearer got destroyed, then
         // resolve the transaction with the original error.
-        if (!self || !status) {
+        if (!self || status.is_error()) {
           t->error_callback(ToResult(error_code), attr_in_error);
           return;
         }

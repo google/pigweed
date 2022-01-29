@@ -145,7 +145,7 @@ class Adapter {
     //                    mode.
     //   |cb|: callback called upon completion of this function, whether pairing takes place or not.
     virtual void Pair(PeerId peer_id, sm::SecurityLevel pairing_level,
-                      sm::BondableMode bondable_mode, sm::StatusCallback cb) = 0;
+                      sm::BondableMode bondable_mode, sm::ResultFunction<> cb) = 0;
 
     // Sets the LE security mode of the local device (see v5.2 Vol. 3 Part C Section 10.2). If set
     // to SecureConnectionsOnly, any currently encrypted links not meeting the requirements of

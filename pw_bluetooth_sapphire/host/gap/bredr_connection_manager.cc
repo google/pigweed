@@ -584,7 +584,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
                                                              sm::SecurityLevel level, auto cb) {
     add_parent_context(log_ctx);
     bt_log(INFO, "gap-bredr", "Ignoring security upgrade request; not implemented");
-    cb(sm::Status(HostError::kNotSupported));
+    cb(ToResult(HostError::kNotSupported));
   };
 
   // Register with L2CAP to handle services on the ACL signaling channel.

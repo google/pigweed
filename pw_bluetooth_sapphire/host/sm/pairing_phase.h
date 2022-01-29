@@ -49,7 +49,7 @@ class PairingPhase {
 
     // Called when an on-going pairing procedure terminates with an error. This method should
     // destroy the Phase that calls it. |status| will never indicate success.
-    virtual void OnPairingFailed(Status status) = 0;
+    virtual void OnPairingFailed(Result<> status) = 0;
   };
 
   virtual ~PairingPhase() = default;
@@ -65,7 +65,7 @@ class PairingPhase {
   }
 
   // Cleans up pairing state and and invokes Listener::OnPairingFailed.
-  void OnFailure(Status status);
+  void OnFailure(Result<> status);
 
   // Ends the current pairing procedure unsuccessfully with |ecode| as the reason, and calls
   // OnFailure.

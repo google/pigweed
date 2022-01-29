@@ -116,7 +116,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
  private:
   // bt::gap::PairingDelegate overrides:
   bt::sm::IOCapability io_capability() const override;
-  void CompletePairing(bt::PeerId id, bt::sm::Status status) override;
+  void CompletePairing(bt::PeerId id, bt::sm::Result<> status) override;
   void ConfirmPairing(bt::PeerId id, ConfirmCallback confirm) override;
   void DisplayPasskey(bt::PeerId id, uint32_t passkey, DisplayMethod method,
                       ConfirmCallback confirm) override;

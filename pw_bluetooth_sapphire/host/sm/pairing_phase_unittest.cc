@@ -96,27 +96,24 @@ using PairingPhaseDeathTest = PairingPhaseTest;
 
 TEST_F(PairingPhaseDeathTest, CallMethodOnFailedPhaseDies) {
   pairing_phase()->Abort(ErrorCode::kUnspecifiedReason);
-  ASSERT_DEATH_IF_SUPPORTED(pairing_phase()->OnFailure(Status(HostError::kFailed)), ".*failed.*");
+  ASSERT_DEATH_IF_SUPPORTED(pairing_phase()->OnFailure(ToResult(HostError::kFailed)), ".*failed.*");
 }
 
 TEST_F(PairingPhaseTest, ChannelClosedNotifiesListener) {
-  ASSERT_EQ(listener()->last_error().error(), HostError::kNoError);
   ASSERT_EQ(listener()->pairing_error_count(), 0);
   fake_chan()->Close();
   RunLoopUntilIdle();
   ASSERT_EQ(listener()->pairing_error_count(), 1);
-  ASSERT_EQ(listener()->last_error().error(), HostError::kLinkDisconnected);
+  EXPECT_EQ(ToResult(HostError::kLinkDisconnected), listener()->last_error());
 }
 
 TEST_F(PairingPhaseTest, OnFailureNotifiesListener) {
   auto ecode = ErrorCode::kDHKeyCheckFailed;
-  ASSERT_EQ(listener()->last_error().error(), HostError::kNoError);
   ASSERT_EQ(listener()->pairing_error_count(), 0);
-  pairing_phase()->OnFailure(Status(ecode));
+  pairing_phase()->OnFailure(ToResult(ecode));
   RunLoopUntilIdle();
-  ASSERT_TRUE(listener()->last_error().is_protocol_error());
-  ASSERT_EQ(listener()->last_error().protocol_error(), ecode);
   ASSERT_EQ(listener()->pairing_error_count(), 1);
+  EXPECT_EQ(ToResult(ecode), listener()->last_error());
 }
 
 TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
@@ -135,9 +132,7 @@ TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
 
   // Check the listener PairingFailed callback was made.
   ASSERT_EQ(1, listener()->pairing_error_count());
-  Status failure_status = listener()->last_error();
-  ASSERT_TRUE(failure_status.is_protocol_error());
-  ASSERT_EQ(ErrorCode::kDHKeyCheckFailed, failure_status.protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kDHKeyCheckFailed), listener()->last_error());
 }
 
 }  // namespace

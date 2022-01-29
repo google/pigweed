@@ -232,11 +232,11 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
 }
 
 void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_level,
-                                      sm::BondableMode bondable_mode, sm::StatusCallback cb) {
+                                      sm::BondableMode bondable_mode, sm::ResultFunction<> cb) {
   auto iter = connections_.find(peer_id);
   if (iter == connections_.end()) {
     bt_log(WARN, "gap-le", "cannot pair: peer not connected (peer: %s)", bt_str(peer_id));
-    cb(bt::sm::Status(bt::HostError::kNotFound));
+    cb(bt::ToResult(bt::HostError::kNotFound));
     return;
   }
   bt_log(INFO, "gap-le", "pairing with security level: %d (peer: %s)", pairing_level,

@@ -304,7 +304,7 @@ void Phase1::OnRxBFrame(ByteBufferPtr sdu) {
   Code smp_code = reader.code();
 
   if (smp_code == kPairingFailed) {
-    OnFailure(Status(reader.payload<ErrorCode>()));
+    OnFailure(ToResult(reader.payload<ErrorCode>()));
   } else if (smp_code == kPairingResponse) {
     OnPairingResponse(reader.payload<PairingResponseParams>());
   } else {

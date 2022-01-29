@@ -1091,7 +1091,7 @@ TEST_F(BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUserRej
   test_device()->SendCommandChannelPacket(MakeUserConfirmationRequest(kPasskey));
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_EQ(sm::Status(HostError::kFailed), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(ToResult(HostError::kFailed), status); });
 
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteError);
 
@@ -1155,7 +1155,7 @@ TEST_F(BrEdrConnectionManagerTest, RespondToPasskeyEntryPairingAfterUserProvides
   test_device()->SendCommandChannelPacket(kUserPasskeyRequest);
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_EQ(sm::Status(HostError::kFailed), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(ToResult(HostError::kFailed), status); });
 
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteError);
 
@@ -1272,7 +1272,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyEntryPairingAndUserProvide
   test_device()->SendCommandChannelPacket(kUserPasskeyRequest);
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
@@ -1326,7 +1326,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
   test_device()->SendCommandChannelPacket(MakeUserPasskeyNotification(kPasskey));
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   ASSERT_TRUE(IsInitializing(peer));
@@ -1386,7 +1386,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAn
   test_device()->SendCommandChannelPacket(MakeUserConfirmationRequest(kPasskey));
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   ASSERT_TRUE(IsInitializing(peer));
@@ -1869,7 +1869,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   // Initial connection request
 
@@ -2080,7 +2080,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   // Initial connection request
 
@@ -2167,7 +2167,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComple
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   // Initiate pairing from the peer
   test_device()->SendCommandChannelPacket(
@@ -2248,7 +2248,7 @@ TEST_F(BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNotL2c
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   // Initiate pairing from the peer before interrogation completes
   test_device()->SendCommandChannelPacket(
@@ -3027,7 +3027,7 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   QueueSuccessfulPairing();
 
@@ -3075,7 +3075,7 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   QueueSuccessfulPairing();
 
@@ -3128,7 +3128,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelPara
   pairing_delegate.SetDisplayPasskeyCallback(
       [](PeerId, uint32_t passkey, auto method, auto confirm_cb) { confirm_cb(true); });
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   QueueSuccessfulPairing();
   RunLoopUntilIdle();
@@ -3207,7 +3207,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
     cb(true);
   });
   pairing_delegate_no_io.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   size_t sock_cb_count = 0;
   auto sock_cb = [&](auto chan_sock) {
@@ -3236,7 +3236,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   pairing_delegate_with_display.SetDisplayPasskeyCallback(
       [](PeerId, uint32_t passkey, auto method, auto confirm_cb) { confirm_cb(true); });
   pairing_delegate_with_display.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   // Pairing caused by insufficient link key.
   QueueSuccessfulPairing();
@@ -3274,7 +3274,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
     cb(true);
   });
   pairing_delegate_no_io.SetCompletePairingCallback(
-      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+      [](PeerId, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   size_t sock_cb_count = 0;
   auto sock_cb = [&](auto chan_sock) {

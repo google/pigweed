@@ -164,7 +164,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // Requests to upgrade the security properties of the underlying link to the requested |level|
   // and reports the result via |callback|, run on |dispatcher|. Has no effect if the channel is
   // not active.
-  virtual void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+  virtual void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
                                async_dispatcher_t* dispatcher) = 0;
 
   // Queue the given SDU payload for transmission over this channel, taking
@@ -268,7 +268,7 @@ class ChannelImpl : public Channel {
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
-  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+  void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
                        async_dispatcher_t* dispatcher) override;
   void RequestAclPriority(hci::AclPriority priority,
                           fit::callback<void(fitx::result<fitx::failed>)> callback) override;

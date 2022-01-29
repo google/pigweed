@@ -280,7 +280,7 @@ void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
                   bt_str(peer_id()))) {
     // TODO(fxbug.dev/37447): Checking pairing_delegate() for reset like this isn't thread safe.
     if (pairing_delegate()) {
-      pairing_delegate()->CompletePairing(peer_id(), sm::Status(HostError::kFailed));
+      pairing_delegate()->CompletePairing(peer_id(), ToResult(HostError::kFailed));
     }
     state_ = State::kFailed;
     SignalStatus(result);
@@ -294,7 +294,7 @@ void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
   }
   ZX_ASSERT(is_pairing());
 
-  pairing_delegate()->CompletePairing(peer_id(), sm::Status());
+  pairing_delegate()->CompletePairing(peer_id(), fitx::ok());
   state_ = State::kWaitLinkKey;
 }
 

@@ -56,7 +56,7 @@ class NoOpPairingDelegate final : public PairingDelegate {
   // PairingDelegate overrides that do nothing.
   ~NoOpPairingDelegate() override = default;
   sm::IOCapability io_capability() const override { return io_capability_; }
-  void CompletePairing(PeerId peer_id, sm::Status status) override {}
+  void CompletePairing(PeerId peer_id, sm::Result<> status) override {}
   void ConfirmPairing(PeerId peer_id, ConfirmCallback confirm) override {}
   void DisplayPasskey(PeerId peer_id, uint32_t passkey, DisplayMethod method,
                       ConfirmCallback confirm) override {}
@@ -680,9 +680,9 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDispl
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -715,9 +715,9 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -751,9 +751,9 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -782,9 +782,9 @@ TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
       });
   pairing_state.OnUserPasskeyNotification(kTestPasskey);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -821,9 +821,9 @@ TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide)
   ASSERT_TRUE(passkey);
   EXPECT_EQ(kTestPasskey, *passkey);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -853,9 +853,9 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -881,9 +881,9 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -914,9 +914,9 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
   EXPECT_FALSE(confirmed);
 
   // Eventually the controller sends a SimplePairingComplete indicating the failure.
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_FALSE(status);
+    EXPECT_TRUE(status.is_error());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kAuthenticationFailure);
 
@@ -955,9 +955,9 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
   EXPECT_FALSE(confirmed);
 
   // Eventually the controller sends a SimplePairingComplete indicating the failure.
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_FALSE(status);
+    EXPECT_TRUE(status.is_error());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kAuthenticationFailure);
 
@@ -993,9 +993,9 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -1031,9 +1031,9 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -1928,9 +1928,9 @@ TEST_F(PairingStateTest,
 
   EXPECT_FALSE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_FALSE(status);
+    EXPECT_TRUE(status.is_error());
   });
 
   // The controller sends a SimplePairingComplete indicating the failure after we send a
@@ -1991,9 +1991,9 @@ TEST_F(PairingStateTest,
 
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   });
 
   // The controller sends a SimplePairingComplete indicating the success, then the controller
@@ -2174,7 +2174,7 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
                                                      PairingDelegate::DisplayMethod method,
                                                      auto cb) { cb(true); });
   fake_pairing_delegate.SetCompletePairingCallback(
-      [](PeerId peer_id, sm::Status status) { EXPECT_TRUE(status); });
+      [](PeerId peer_id, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
 
   // Pairing for second request should start.
   EXPECT_EQ(2u, auth_request_count());
