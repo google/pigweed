@@ -106,8 +106,8 @@ TEST(NanopbClientCall, Unary_SendsRequestPacket) {
       {.integer = 123, .status_code = 0},
       nullptr);
 
-  EXPECT_EQ(context.output().packet_count(), 1u);
-  auto packet = context.output().sent_packet();
+  EXPECT_EQ(context.output().total_packets(), 1u);
+  auto packet = context.output().last_packet();
   EXPECT_EQ(packet.channel_id(), context.channel().id());
   EXPECT_EQ(packet.service_id(), kServiceId);
   EXPECT_EQ(packet.method_id(), kUnaryMethodId);
@@ -258,8 +258,7 @@ class ServerStreamingClientCall : public ::testing::Test {
 };
 
 TEST_F(ServerStreamingClientCall, SendsRequestPacket) {
-  ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
-      context;
+  ClientContextForTest<128, 99, kServiceId, kServerStreamingMethodId> context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
       context.client(),
@@ -268,8 +267,8 @@ TEST_F(ServerStreamingClientCall, SendsRequestPacket) {
       nullptr,
       nullptr);
 
-  EXPECT_EQ(context.output().packet_count(), 1u);
-  auto packet = context.output().sent_packet();
+  EXPECT_EQ(context.output().total_packets(), 1u);
+  auto packet = context.output().last_packet();
   EXPECT_EQ(packet.channel_id(), context.channel().id());
   EXPECT_EQ(packet.service_id(), kServiceId);
   EXPECT_EQ(packet.method_id(), kServerStreamingMethodId);
@@ -279,8 +278,7 @@ TEST_F(ServerStreamingClientCall, SendsRequestPacket) {
 }
 
 TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
-  ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
-      context;
+  ClientContextForTest<128, 99, kServiceId, kServerStreamingMethodId> context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
       context.client(),
@@ -315,8 +313,7 @@ TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
 }
 
 TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
-  ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
-      context;
+  ClientContextForTest<128, 99, kServiceId, kServerStreamingMethodId> context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
       context.client(),
@@ -350,8 +347,7 @@ TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
 }
 
 TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
-  ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
-      context;
+  ClientContextForTest<128, 99, kServiceId, kServerStreamingMethodId> context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
       context.client(),

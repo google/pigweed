@@ -41,7 +41,7 @@ namespace {
 using log::pw_rpc::raw::Logs;
 
 #define LOG_SERVICE_METHOD_CONTEXT \
-  PW_RAW_TEST_METHOD_CONTEXT(LogService, Listen, 10, 256)
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, Listen, 10)
 
 constexpr size_t kMaxMessageSize = 50;
 constexpr size_t kMaxLogEntrySize =
@@ -502,9 +502,8 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   ASSERT_TRUE(drain.ok());
 
   LogService log_service(drain_map_);
-  const size_t output_buffer_size = 128;
   const size_t max_packets = 10;
-  rpc::RawFakeChannelOutput<10, output_buffer_size, 512> output;
+  rpc::RawFakeChannelOutput<10, 512> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 
@@ -513,9 +512,8 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
       AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp);
   ASSERT_TRUE(status.ok());
 
-  // In reality less than output_buffer_size is given as a buffer, since some
-  // bytes are used for the RPC framing.
-  const uint32_t max_messages_per_response = output_buffer_size / status.size();
+  const uint32_t max_messages_per_response =
+      encoding_buffer_.size() / status.size();
   // Send less packets than the max to avoid crashes.
   const uint32_t packets_sent = max_packets / 2;
   const size_t total_entries = packets_sent * max_messages_per_response;
@@ -598,9 +596,8 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   ASSERT_TRUE(drain.ok());
 
   LogService log_service(drain_map_);
-  const size_t output_buffer_size = 128;
   const size_t max_packets = 20;
-  rpc::RawFakeChannelOutput<max_packets, output_buffer_size, 512> output;
+  rpc::RawFakeChannelOutput<max_packets, 512> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 
@@ -609,9 +606,8 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
       AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp);
   ASSERT_TRUE(status.ok());
 
-  // In reality less than output_buffer_size is given as a buffer, since some
-  // bytes are used for the RPC framing.
-  const uint32_t max_messages_per_response = output_buffer_size / status.size();
+  const uint32_t max_messages_per_response =
+      encoding_buffer_.size() / status.size();
   // Send less packets than the max to avoid crashes.
   const uint32_t packets_sent = 4;
   const size_t total_entries = packets_sent * max_messages_per_response;
@@ -767,7 +763,7 @@ TEST_F(LogServiceTest, ReopenClosedLogStreamWithAcquiredBuffer) {
   ASSERT_TRUE(drain.ok());
 
   LogService log_service(drain_map_);
-  rpc::RawFakeChannelOutput<10, 128, 512> output;
+  rpc::RawFakeChannelOutput<10, 512> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 

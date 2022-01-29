@@ -145,6 +145,7 @@ pw_cc_library(
         "//pw_containers:filtered_view",
         "//pw_containers:vector",
         "//pw_containers:wrapped_iterator",
+        "//pw_rpc/raw:fake_channel_output",
         "//pw_span",
     ],
 )

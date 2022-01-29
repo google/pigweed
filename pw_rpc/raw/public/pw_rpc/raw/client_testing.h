@@ -99,7 +99,7 @@ class FakeServer {
   internal::test::FakeChannelOutput& output_;
   Client& client_;
   const uint32_t channel_id_;
-  ByteSpan packet_buffer_;
+  ByteSpan packet_buffer_;  // For encoding packets sent by the server
 };
 
 // Instantiates a FakeServer, Client, Channel, and RawFakeChannelOutput for
@@ -133,10 +133,7 @@ class RawClientTestContext {
   Status CloseClientChannel(uint32_t id) { return client_.CloseChannel(id); }
 
  private:
-  RawFakeChannelOutput<kMaxPackets,
-                       kPacketEncodeBufferSizeBytes,
-                       kPayloadsBufferSizeBytes>
-      channel_output_;
+  RawFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes> channel_output_;
   Channel channel_;
   Client client_;
   std::byte packet_buffer_[kPacketEncodeBufferSizeBytes];

@@ -216,7 +216,7 @@ TEST(NanopbMethod, AsyncUnaryRpc_SendsResponse) {
   rpc_lock().lock();
   kAsyncUnary.Invoke(context.get(), context.request(request));
 
-  const Packet& response = context.output().sent_packet();
+  const Packet& response = context.output().last_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
 
   // Field 1 (encoded as 1 << 3) with 128 as the value.
@@ -237,7 +237,7 @@ TEST(NanopbMethod, SyncUnaryRpc_InvalidPayload_SendsError) {
   rpc_lock().lock();
   kSyncUnary.Invoke(context.get(), context.request(bad_payload));
 
-  const Packet& packet = context.output().sent_packet();
+  const Packet& packet = context.output().last_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::DataLoss(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
@@ -249,13 +249,13 @@ TEST(NanopbMethod, AsyncUnaryRpc_ResponseEncodingFails_SendsInternalError) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = value, .status_code = 0);
 
-  ServerContextForTest<FakeService, 22> context(kAsyncUnary);
+  ServerContextForTest<FakeService> context(kAsyncUnary);
   context.service().fail_to_encode_async_unary_response = true;
 
   rpc_lock().lock();
   kAsyncUnary.Invoke(context.get(), context.request(request));
 
-  const Packet& packet = context.output().sent_packet();
+  const Packet& packet = context.output().last_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::Internal(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
@@ -273,7 +273,7 @@ TEST(NanopbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request(request));
 
-  EXPECT_EQ(0u, context.output().packet_count());
+  EXPECT_EQ(0u, context.output().total_packets());
   EXPECT_EQ(555, context.service().last_request.integer);
 }
 
@@ -290,11 +290,11 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
   auto encoded = context.server_stream(payload).Encode(encoded_response);
   ASSERT_EQ(OkStatus(), encoded.status());
 
-  ASSERT_EQ(encoded.value().size(), context.output().sent_data().size());
-  EXPECT_EQ(0,
-            std::memcmp(encoded.value().data(),
-                        context.output().sent_data().data(),
-                        encoded.value().size()));
+  ConstByteSpan sent_payload = context.output().last_packet().payload();
+  EXPECT_TRUE(std::equal(payload.begin(),
+                         payload.end(),
+                         sent_payload.begin(),
+                         sent_payload.end()));
 }
 
 TEST(NanopbMethod, ServerWriter_WriteWhenClosed_ReturnsFailedPrecondition) {
@@ -379,11 +379,11 @@ TEST(NanopbMethod, ServerReaderWriter_WritesResponses) {
   auto encoded = context.server_stream(payload).Encode(encoded_response);
   ASSERT_EQ(OkStatus(), encoded.status());
 
-  ASSERT_EQ(encoded.value().size(), context.output().sent_data().size());
-  EXPECT_EQ(0,
-            std::memcmp(encoded.value().data(),
-                        context.output().sent_data().data(),
-                        encoded.value().size()));
+  ConstByteSpan sent_payload = context.output().last_packet().payload();
+  EXPECT_TRUE(std::equal(payload.begin(),
+                         payload.end(),
+                         sent_payload.begin(),
+                         sent_payload.end()));
 }
 
 TEST(NanopbMethod, ServerReaderWriter_HandlesRequests) {

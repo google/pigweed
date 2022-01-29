@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -138,6 +138,13 @@ class FakeChannelOutput : public ChannelOutput {
   // When negative, ignores `send_status_` processes buffer.
   Status Send(ConstByteSpan buffer) final;
 
+  // Gives access to the last received internal::Packet. This is hidden by the
+  // raw/Nanopb implementations, since it gives access to an internal class.
+  const Packet& last_packet() const {
+    PW_ASSERT(!packets_.empty());
+    return packets_.back();
+  }
+
  protected:
   constexpr FakeChannelOutput(Vector<Packet>& packets,
                               Vector<std::byte>& payloads)
@@ -162,9 +169,7 @@ class FakeChannelOutput : public ChannelOutput {
 };
 
 // Adds the packet output buffer to a FakeChannelOutput.
-template <size_t kOutputSizeBytes,
-          size_t kMaxPackets,
-          size_t kPayloadsBufferSizeBytes>
+template <size_t kMaxPackets, size_t kPayloadsBufferSizeBytes>
 class FakeChannelOutputBuffer : public FakeChannelOutput {
  protected:
   constexpr FakeChannelOutputBuffer()

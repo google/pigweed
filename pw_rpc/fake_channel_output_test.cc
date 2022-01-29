@@ -26,7 +26,6 @@
 namespace pw::rpc::internal::test {
 namespace {
 
-constexpr size_t kOutputSize = 50;
 constexpr uint32_t kChannelId = 1;
 constexpr uint32_t kServiceId = 1;
 constexpr uint32_t kMethodId = 1;
@@ -34,8 +33,7 @@ constexpr uint32_t kCallId = 0;
 constexpr std::array<std::byte, 3> kPayload = {
     std::byte(1), std::byte(2), std::byte(3)};
 
-class TestFakeChannelOutput final
-    : public FakeChannelOutputBuffer<kOutputSize, 9, 128> {
+class TestFakeChannelOutput final : public FakeChannelOutputBuffer<9, 128> {
  public:
   TestFakeChannelOutput() = default;
 

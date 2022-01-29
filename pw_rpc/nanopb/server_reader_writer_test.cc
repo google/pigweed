@@ -54,7 +54,7 @@ struct ReaderWriterTestContext {
       : channel(Channel::Create<1>(&output)), server(std::span(&channel, 1)) {}
 
   TestServiceImpl service;
-  NanopbFakeChannelOutput<4, 128> output;
+  NanopbFakeChannelOutput<4> output;
   Channel channel;
   Server server;
 };

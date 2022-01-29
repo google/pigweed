@@ -30,7 +30,7 @@ using rpc::test::pw_rpc::nanopb::TestService;
 using Info = internal::MethodInfo<TestService::TestUnaryRpc>;
 
 TEST(NanopbFakeChannelOutput, Requests) {
-  NanopbFakeChannelOutput<1, 128> output;
+  NanopbFakeChannelOutput<1> output;
 
   std::byte payload_buffer[32] = {};
   constexpr Info::Request request{.integer = -100, .status_code = 5};
@@ -60,7 +60,7 @@ TEST(NanopbFakeChannelOutput, Requests) {
 }
 
 TEST(NanopbFakeChannelOutput, Responses) {
-  NanopbFakeChannelOutput<1, 128> output;
+  NanopbFakeChannelOutput<1> output;
 
   std::byte payload_buffer[32] = {};
   constexpr Info::Response response{.value = -9876, .repeated_field = {}};

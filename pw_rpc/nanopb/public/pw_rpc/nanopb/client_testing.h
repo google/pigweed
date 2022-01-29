@@ -102,9 +102,7 @@ class NanopbClientTestContext {
  private:
   static constexpr uint32_t kDefaultChannelId = 1;
 
-  NanopbFakeChannelOutput<kMaxPackets,
-                          kPacketEncodeBufferSizeBytes,
-                          kPayloadsBufferSizeBytes>
+  NanopbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>
       channel_output_;
   Channel channel_;
   Client client_;

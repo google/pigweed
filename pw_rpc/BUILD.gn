@@ -197,9 +197,10 @@ pw_source_set("test_utils") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":client",
-    ":fake_channel_output",
     ":server",
     "$dir_pw_containers:vector",
+    "raw:fake_channel_output",
+    "raw:server_api",
     dir_pw_assert,
     dir_pw_bytes,
   ]

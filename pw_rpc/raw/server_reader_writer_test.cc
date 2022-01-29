@@ -47,7 +47,7 @@ struct ReaderWriterTestContext {
         server(std::span(&channel, 1)) {}
 
   TestServiceImpl service;
-  RawFakeChannelOutput<4, 128> output;
+  RawFakeChannelOutput<4> output;
   Channel channel;
   Server server;
 };
