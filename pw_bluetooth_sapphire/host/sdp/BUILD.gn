@@ -11,11 +11,11 @@ source_set("definitions") {
   sources = [
     "data_element.cc",
     "data_element.h",
+    "error.cc",
+    "error.h",
     "sdp.h",
     "service_record.cc",
     "service_record.h",
-    "status.cc",
-    "status.h",
   ]
 
   public_deps = [

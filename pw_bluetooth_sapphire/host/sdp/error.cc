@@ -1,21 +1,14 @@
-// Copyright 2018 The Fuchsia Authors. All rights reserved.
+// Copyright 2021 The Fuchsia Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "status.h"
+#include "error.h"
 
 namespace bt {
-
-// static
-std::string ProtocolErrorTraits<sdp::ErrorCode>::ToString(sdp::ErrorCode ecode) {
-  return bt_lib_cpp_string::StringPrintf("%s (SDP %#.2x)",
-                                         bt::sdp::ErrorCodeToString(ecode).c_str(),
-                                         static_cast<unsigned int>(ecode));
-}
-
 namespace sdp {
+namespace {
 
-std::string ErrorCodeToString(ErrorCode code) {
+constexpr const char* ErrorCodeToString(ErrorCode code) {
   switch (code) {
     case ErrorCode::kReserved:
       return "reserved";
@@ -37,11 +30,12 @@ std::string ErrorCodeToString(ErrorCode code) {
   return "unknown status";
 }
 
-using Base = bt::Status<ErrorCode>;
-
-Status::Status(HostError ecode) : Base(ecode) {}
-
-Status::Status(ErrorCode proto_code) : Base(proto_code) {}
-
+}  // namespace
 }  // namespace sdp
+
+std::string ProtocolErrorTraits<sdp::ErrorCode>::ToString(sdp::ErrorCode ecode) {
+  return bt_lib_cpp_string::StringPrintf("%s (SDP %#.2x)", bt::sdp::ErrorCodeToString(ecode),
+                                         static_cast<unsigned int>(ecode));
+}
+
 }  // namespace bt
