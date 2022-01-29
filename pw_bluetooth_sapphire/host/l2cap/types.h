@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt::l2cap {

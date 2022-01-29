@@ -26,7 +26,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"

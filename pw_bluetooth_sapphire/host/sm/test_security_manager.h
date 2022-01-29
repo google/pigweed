@@ -16,9 +16,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 

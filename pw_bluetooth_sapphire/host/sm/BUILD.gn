@@ -7,12 +7,11 @@ import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 source_set("definitions") {
   sources = [
+    "error.cc",
     "error.h",
     "packet.cc",
     "packet.h",
     "smp.h",
-    "status.cc",
-    "status.h",
     "types.cc",
     "types.h",
   ]

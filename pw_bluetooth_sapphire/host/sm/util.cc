@@ -20,8 +20,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt::sm::util {

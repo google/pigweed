@@ -18,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/phase_1.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/phase_2_legacy.h"
@@ -25,7 +26,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/phase_3.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_request_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 

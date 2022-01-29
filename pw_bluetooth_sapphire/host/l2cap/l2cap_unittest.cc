@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"

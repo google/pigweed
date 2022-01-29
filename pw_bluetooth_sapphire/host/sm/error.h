@@ -10,7 +10,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
-namespace bt::sm {
+namespace bt {
+namespace sm {
 
 using Error = Error<bt::sm::ErrorCode>;
 
@@ -23,6 +24,15 @@ using ResultFunction = fit::function<void(bt::sm::Result<V...> result)>;
 template <typename... V>
 using ResultCallback = fit::callback<void(bt::sm::Result<V...> result)>;
 
-}  // namespace bt::sm
+}  // namespace sm
+
+template <>
+struct ProtocolErrorTraits<sm::ErrorCode> {
+  static std::string ToString(sm::ErrorCode ecode);
+
+  static constexpr bool is_success(sm::ErrorCode ecode) { return ecode == sm::ErrorCode::kNoError; }
+};
+
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_ERROR_H_

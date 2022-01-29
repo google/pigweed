@@ -30,7 +30,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/hci_defs.h"
