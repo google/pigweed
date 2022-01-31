@@ -17,7 +17,6 @@
 #include "pairing_delegate.h"
 #include "peer.h"
 #include "peer_cache.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/generic_access_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"

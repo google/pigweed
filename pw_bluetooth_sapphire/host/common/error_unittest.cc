@@ -6,7 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
 namespace bt {
@@ -232,14 +231,6 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
   // account.
   EXPECT_EQ(ToResult(HostError::kFailed).error_value(), error_with_value_holding_host_error);
   EXPECT_NE(ToResult(HostError::kFailed).error_value(), error_with_value);
-}
-
-TEST(ErrorTest, ToResultFromLegacyStatusType) {
-  EXPECT_EQ(fitx::ok(), ToResult(Status<TestError>()));
-  EXPECT_EQ(ToResult(TestError::kFail1), ToResult(Status(TestError::kFail1)));
-  EXPECT_EQ(ToResult(HostError::kCanceled), ToResult(Status<TestError>(HostError::kCanceled)));
-  EXPECT_EQ(ToResult<TestError>(HostError::kCanceled),
-            ToResult(Status<TestError>(HostError::kCanceled)));
 }
 
 TEST(ErrorTest, ToResultFromBtError) {

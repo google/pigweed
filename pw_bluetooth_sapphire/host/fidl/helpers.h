@@ -21,7 +21,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -105,14 +104,6 @@ fpromise::result<void, fuchsia::bluetooth::sys::Error> ResultToFidl(
   } else {
     return fpromise::error(HostErrorToFidl(std::move(status).error_value()));
   }
-}
-
-// Convert any bt::Status to a fpromise::result that uses the fuchsia.bluetooth.sys library error
-// codes.
-template <typename ProtocolErrorCode>
-fpromise::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
-    bt::Status<ProtocolErrorCode> status) {
-  return ResultToFidl(ToResult(status));
 }
 
 // Convert a bt::att::Error to fuchsia.bluetooth.gatt.Error.
