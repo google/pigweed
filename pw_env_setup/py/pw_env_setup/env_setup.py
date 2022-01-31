@@ -429,6 +429,15 @@ Then use `set +x` to go back to normal.
             if not result.ok():
                 return -1
 
+            # Log the environment state at the end of each step for debugging.
+            log_dir = os.path.join(self._install_dir, 'logs')
+            if not os.path.isdir(log_dir):
+                os.makedirs(log_dir)
+            actions_json = os.path.join(
+                log_dir, 'post-{}.json'.format(name.replace(' ', '_')))
+            with open(actions_json, 'w') as outs:
+                self._env.json(outs)
+
         self._log('')
         self._env.echo('')
 
