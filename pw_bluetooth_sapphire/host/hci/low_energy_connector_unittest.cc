@@ -127,7 +127,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnection) {
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_FALSE(connector()->pending_peer_address());
   EXPECT_TRUE(callback_called);
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_TRUE(in_connections().empty());
 
   ASSERT_TRUE(conn);
@@ -313,7 +313,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1u, callback_count);
   ASSERT_EQ(1u, in_connections().size());
 
@@ -355,7 +355,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionTimeout) {
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
   EXPECT_TRUE(request_canceled);
-  EXPECT_EQ(ToResult(HostError::kTimedOut), status) << bt_str(status);
+  EXPECT_EQ(ToResult(HostError::kTimedOut), status);
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(conn);
 }

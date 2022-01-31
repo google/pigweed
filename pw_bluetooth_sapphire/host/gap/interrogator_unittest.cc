@@ -110,7 +110,7 @@ TEST_F(InterrogatorTest, DroppingInterrogationRefCompletesInterrogation) {
   ref.reset();
 
   ASSERT_TRUE(result.has_value());
-  EXPECT_TRUE(result->is_ok());
+  EXPECT_EQ(fitx::ok(), *result);
 }
 
 TEST_F(InterrogatorTest,

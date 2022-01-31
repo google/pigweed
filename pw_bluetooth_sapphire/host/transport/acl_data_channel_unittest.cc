@@ -1281,7 +1281,7 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
                                                     result_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
-  EXPECT_TRUE(cb_status->is_ok());
+  EXPECT_EQ(fitx::ok(), *cb_status);
   cb_status.reset();
 
   // Test msec to parameter conversion (hci_spec::kMaxAutomaticFlushTimeoutDuration(1279) *
@@ -1292,7 +1292,7 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
                                                     kLinkHandle, result_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
-  EXPECT_TRUE(cb_status->is_ok());
+  EXPECT_EQ(fitx::ok(), *cb_status);
   cb_status.reset();
 
   // Test too large flush timeout (no command should be sent).

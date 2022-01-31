@@ -284,7 +284,7 @@ TEST_F(LowEnergyCentralServerTest, ConnectPeripheralAlreadyConnectedInLecm) {
   adapter()->le()->Connect(
       peer->identifier(),
       [&le_conn](auto result) {
-        ASSERT_TRUE(result.is_ok());
+        ASSERT_EQ(fitx::ok(), result);
         le_conn = std::move(result).value();
       },
       bt::gap::LowEnergyConnectionOptions());
@@ -1052,7 +1052,7 @@ TEST_F(LowEnergyCentralServerTest, ConnectToPeerAlreadyConnectedInLowEnergyConne
   adapter()->le()->Connect(
       peer->identifier(),
       [&le_conn](auto result) {
-        ASSERT_TRUE(result.is_ok());
+        ASSERT_EQ(fitx::ok(), result);
         le_conn = std::move(result).value();
       },
       bt::gap::LowEnergyConnectionOptions());

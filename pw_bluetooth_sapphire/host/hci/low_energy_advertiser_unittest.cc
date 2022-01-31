@@ -90,7 +90,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
   ResultFunction<> GetSuccessCallback() {
     return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_TRUE(status.is_ok()) << bt_str(status);
+      EXPECT_EQ(fitx::ok(), status);
     };
   }
 

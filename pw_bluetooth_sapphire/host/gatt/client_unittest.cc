@@ -237,7 +237,7 @@ TEST_F(ClientTest, ExchangeMTUSelectLocal) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(kPreferredMTU, final_mtu);
   EXPECT_EQ(kPreferredMTU, att()->mtu());
 }
@@ -274,7 +274,7 @@ TEST_F(ClientTest, ExchangeMTUSelectRemote) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(kServerRxMTU, final_mtu);
   EXPECT_EQ(kServerRxMTU, att()->mtu());
 }
@@ -311,7 +311,7 @@ TEST_F(ClientTest, ExchangeMTUSelectDefault) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(att::kLEMinMTU, final_mtu);
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
@@ -428,7 +428,7 @@ TEST_F(ClientTest, DiscoverPrimaryEmptyDataList) {
                                               ));
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 // The first request results in "Attribute Not Found".
@@ -452,7 +452,7 @@ TEST_F(ClientTest, DiscoverPrimaryAttributeNotFound) {
   RunLoopUntilIdle();
 
   // The procedure succeeds with no services.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 // The first request results in an error.
@@ -531,7 +531,7 @@ TEST_F(ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(2u, services.size());
   EXPECT_EQ(0x0001, services[0].range_start);
   EXPECT_EQ(0x0005, services[0].range_end);
@@ -568,7 +568,7 @@ TEST_F(ClientTest, DiscoverPrimary128BitResultSingleRequest) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1u, services.size());
   EXPECT_EQ(0x0001, services[0].range_start);
   EXPECT_EQ(0xFFFF, services[0].range_end);
@@ -646,7 +646,7 @@ TEST_F(ClientTest, DiscoverAllPrimaryMultipleRequests) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(3u, services.size());
 
   EXPECT_EQ(0x0001, services[0].range_start);
@@ -726,7 +726,7 @@ TEST_F(ClientTest, DiscoverServicesInRangeMultipleRequests) {
   fake_chan()->Receive(kNotFoundResponse2);
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(3u, services.size());
 
   EXPECT_EQ(0x0010, services[0].range_start);
@@ -845,7 +845,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsAttributeNotFound) {
   RunLoopUntilIdle();
 
   // The procedure succeeds with no services.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 // The first request results in an error.
@@ -944,7 +944,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(2u, services.size());
   EXPECT_EQ(0x0001, services[0].range_start);
   EXPECT_EQ(0x0005, services[0].range_end);
@@ -977,7 +977,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1u, services.size());
   EXPECT_EQ(0x0001, services[0].range_start);
   EXPECT_EQ(0xFFFF, services[0].range_end);
@@ -1047,7 +1047,7 @@ TEST_F(ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(3u, services.size());
 
   EXPECT_EQ(0x0001, services[0].range_start);
@@ -1127,7 +1127,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
   fake_chan()->Receive(kNotFoundResponse3);
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(2u, services.size());
 
   EXPECT_EQ(0x0001, services[0].range_start);
@@ -1209,7 +1209,7 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   fake_chan()->Receive(kNotFoundResponse3);
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(2u, services.size());
 
   EXPECT_EQ(0x0002, services[0].range_start);
@@ -1269,7 +1269,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryHandlesEqual) {
 
   // Should succeed immediately.
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST_F(ClientTest, CharacteristicDiscoveryResponseTooShort) {
@@ -1432,7 +1432,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryAttributeNotFound) {
   RunLoopUntilIdle();
 
   // Attribute Not Found error means the procedure is over.
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST_F(ClientTest, CharacteristicDiscoveryError) {
@@ -1505,7 +1505,7 @@ TEST_F(ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(2u, chrcs.size());
   EXPECT_EQ(0x0003, chrcs[0].handle);
   EXPECT_EQ(0, chrcs[0].properties);
@@ -1552,7 +1552,7 @@ TEST_F(ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1u, chrcs.size());
   EXPECT_EQ(0x0005, chrcs[0].handle);
   EXPECT_EQ(0, chrcs[0].properties);
@@ -1631,7 +1631,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryMultipleRequests) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(3u, chrcs.size());
 
   EXPECT_EQ(0x0003, chrcs[0].handle);
@@ -1890,7 +1890,7 @@ TEST_F(ClientTest, DescriptorDiscoveryEmptyDataList) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
@@ -1906,7 +1906,7 @@ TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryError) {
@@ -1948,7 +1948,7 @@ TEST_F(ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(3u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
@@ -1983,7 +1983,7 @@ TEST_F(ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(2u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
@@ -2035,7 +2035,7 @@ TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
                                               ));
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(3u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
@@ -2198,7 +2198,7 @@ TEST_F(ClientTest, WriteRequestSuccess) {
                                               ));
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2282,7 +2282,7 @@ TEST_F(ClientTest, PrepareWriteRequestSuccess) {
                                               ));
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2304,7 +2304,7 @@ TEST_F(ClientTest, ExecuteWriteRequestPendingSuccess) {
   );
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2326,7 +2326,7 @@ TEST_F(ClientTest, ExecuteWriteRequestCancelSuccess) {
   );
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2389,7 +2389,7 @@ TEST_F(ClientTest, ExecutePrepareWritesSuccess) {
   );
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2580,7 +2580,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
 
   // The first request should be fully complete now, and should trigger the
   // second.
-  EXPECT_TRUE(status1.is_ok());
+  EXPECT_EQ(fitx::ok(), status1);
 
   const auto kExecuteWriteResponse = StaticByteBuffer(0x19);  // opcode: execute write response
   ASSERT_TRUE(ReceiveAndExpect(kExecuteWriteResponse, kExpectedPrep3));
@@ -2608,7 +2608,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   );
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status2.is_ok());
+  EXPECT_EQ(fitx::ok(), status2);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2695,7 +2695,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
 
   // The first request should be fully complete now, and should trigger the
   // second.
-  EXPECT_TRUE(status1.is_ok());
+  EXPECT_EQ(fitx::ok(), status1);
 
   ASSERT_TRUE(ReceiveAndExpect(kExecuteWriteResponse, kExpectedPrep3));
 
@@ -2722,7 +2722,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
   );
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status2.is_ok());
+  EXPECT_EQ(fitx::ok(), status2);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2787,7 +2787,7 @@ TEST_F(ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
   );
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2851,7 +2851,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
   );
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2897,7 +2897,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
   );
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3138,7 +3138,7 @@ TEST_F(ClientTest, WriteWithoutResponseSuccess) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
   ASSERT_TRUE(status.has_value());
-  ASSERT_TRUE(status->is_ok());
+  ASSERT_EQ(fitx::ok(), *status);
 }
 
 TEST_F(ClientTest, ReadRequestEmptyResponse) {
@@ -3166,7 +3166,7 @@ TEST_F(ClientTest, ReadRequestEmptyResponse) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3196,7 +3196,7 @@ TEST_F(ClientTest, ReadRequestSuccess) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3223,7 +3223,7 @@ TEST_F(ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
 
   fake_chan()->Receive(expected_response);
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3256,7 +3256,7 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
                                         ));
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(mtu_status.is_ok());
+  EXPECT_EQ(fitx::ok(), mtu_status);
   EXPECT_EQ(kPreferredMTU, final_mtu);
   EXPECT_EQ(kPreferredMTU, att()->mtu());
 
@@ -3283,7 +3283,7 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
 
   fake_chan()->Receive(expected_response);
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3342,7 +3342,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess16BitUUID) {
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
     cb_called = true;
-    ASSERT_TRUE(result.is_ok());
+    ASSERT_EQ(fitx::ok(), result);
     const auto& values = result.value();
     ASSERT_EQ(2u, values.size());
     EXPECT_EQ(kHandle0, values[0].handle);
@@ -3389,7 +3389,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess128BitUUID) {
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
     cb_called = true;
-    ASSERT_TRUE(result.is_ok());
+    ASSERT_EQ(fitx::ok(), result);
     const auto& values = result.value();
     ASSERT_EQ(2u, values.size());
     EXPECT_EQ(kHandle0, values[0].handle);
@@ -3571,7 +3571,7 @@ TEST_F(ClientTest, ReadBlobRequestEmptyResponse) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3602,7 +3602,7 @@ TEST_F(ClientTest, ReadBlobRequestSuccess) {
   fake_chan()->Receive(kExpectedResponse);
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3632,7 +3632,7 @@ TEST_F(ClientTest, ReadBlobRequestMaybeTruncated) {
 
   fake_chan()->Receive(expected_response);
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3662,7 +3662,7 @@ TEST_F(ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxV
 
   fake_chan()->Receive(expected_response);
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3837,7 +3837,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
     cb_called = true;
-    ASSERT_TRUE(result.is_ok()) << bt_str(result.error_value().error);
+    ASSERT_EQ(fitx::ok(), result);
     const auto& values = result.value();
     ASSERT_EQ(1u, values.size());
     EXPECT_EQ(kHandle, values[0].handle);

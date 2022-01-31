@@ -80,7 +80,7 @@ TEST(ErrorTest, ResultFromNonSuccessHostError) {
 
 TEST(ErrorTest, ResultFromSuccessHostError) {
   constexpr fitx::result result = ToResult<TestError>(TestError::kSuccess);
-  ASSERT_TRUE(result.is_ok());
+  ASSERT_EQ(fitx::ok(), result);
 
   // Compare result to error
   const Error error = MakeError(TestError::kFail1);
@@ -142,7 +142,7 @@ TEST(ErrorTest, ResultFromNonSuccessProtocolError) {
 
 TEST(ErrorTest, ResultFromSuccessProtocolError) {
   constexpr fitx::result result = ToResult(TestError::kSuccess);
-  ASSERT_TRUE(result.is_ok());
+  ASSERT_EQ(fitx::ok(), result);
 
   // Compare result to error
   const Error error = MakeError(TestError::kFail1);

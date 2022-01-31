@@ -57,14 +57,14 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
   ResultFunction<> GetSuccessCallback() {
     return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_TRUE(status.is_ok()) << bt_str(status);
+      EXPECT_EQ(fitx::ok(), status);
     };
   }
 
   ResultFunction<> GetErrorCallback() {
     return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_TRUE(status.is_error()) << bt_str(status);
+      EXPECT_EQ(fitx::failed(), status);
     };
   }
 
@@ -152,8 +152,8 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   AdvertisingData::ParseResult actual_ad = AdvertisingData::FromBytes(st.advertised_view());
   AdvertisingData::ParseResult actual_scan_rsp = AdvertisingData::FromBytes(st.scan_rsp_view());
 
-  ASSERT_TRUE(actual_ad.is_ok());
-  ASSERT_TRUE(actual_scan_rsp.is_ok());
+  ASSERT_EQ(fitx::ok(), actual_ad);
+  ASSERT_EQ(fitx::ok(), actual_scan_rsp);
   EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax, actual_ad.value().tx_power());
   EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax, actual_scan_rsp.value().tx_power());
 }

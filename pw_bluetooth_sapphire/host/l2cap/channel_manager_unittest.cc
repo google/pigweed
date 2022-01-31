@@ -1796,7 +1796,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   RunLoopUntilIdle();
   EXPECT_EQ(0, security_request_count);
   EXPECT_EQ(1, security_status_count);
-  EXPECT_TRUE(received_status.is_ok());
+  EXPECT_EQ(fitx::ok(), received_status);
 
   // Test reporting an error.
   delivered_status = ToResult(HostError::kNotSupported);
@@ -2372,7 +2372,7 @@ TEST_F(ChannelManagerTest, RequestAclPriorityNormal) {
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kNormal, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
 
@@ -2402,7 +2402,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
 
@@ -2412,7 +2412,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
   EXPECT_EQ(*requested_priority, hci::AclPriority::kSink);
 
   channel->RequestAclPriority(hci::AclPriority::kNormal, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
 
@@ -2445,7 +2445,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfterResul
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
 
@@ -2478,7 +2478,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
 
@@ -2515,7 +2515,7 @@ TEST_F(ChannelManagerTest,
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
@@ -2580,7 +2580,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
 
   size_t result_cb_count = 0;
   channel_0->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
   ASSERT_TRUE(requested_priority);
@@ -2590,7 +2590,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
   requested_priority.reset();
 
   channel_1->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
   // Priority is already sink. No additional request should be sent.
@@ -2632,7 +2632,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
 
   size_t result_cb_count = 0;
   channel_0->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
   ASSERT_TRUE(requested_priority);
@@ -2727,7 +2727,7 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 1u);
@@ -2736,7 +2736,7 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
 
   // Source request is queued and request is sent.
   channel->RequestAclPriority(hci::AclPriority::kSource, [&](auto result) {
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 2u);
@@ -2980,7 +2980,7 @@ TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
       });
 
   flushable_channel->SetBrEdrAutomaticFlushTimeout(
-      zx::msec(0), [](auto result) { EXPECT_TRUE(result.is_ok()); });
+      zx::msec(0), [](auto result) { EXPECT_EQ(fitx::ok(), result); });
   EXPECT_EQ(flush_timeout_cb_count, 1);
   EXPECT_FALSE(nonflushable_channel->info().flush_timeout.has_value());
   ASSERT_TRUE(flushable_channel->info().flush_timeout.has_value());

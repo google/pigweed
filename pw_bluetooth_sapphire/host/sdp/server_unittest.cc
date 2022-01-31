@@ -529,7 +529,7 @@ TEST_F(ServerTest, ServiceSearchRequest) {
     packet.Resize(len);
     ServiceSearchResponse resp;
     auto status = resp.Parse(packet.payload_data());
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
     handles = resp.service_record_handle_list();
     recv = true;
   };
@@ -596,7 +596,7 @@ TEST_F(ServerTest, ServiceSearchRequestOneOfMany) {
     packet.Resize(len);
     ServiceSearchResponse resp;
     auto status = resp.Parse(packet.payload_data());
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
     handles = resp.service_record_handle_list();
     recv = true;
   };
@@ -1093,7 +1093,7 @@ TEST_F(ServerTest, BrowseGroup) {
     uint16_t len = betoh16(packet.header().param_length);
     packet.Resize(len);
     auto status = rsp.Parse(packet.payload_data());
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   };
 
   fake_chan()->SetSendCallback(send_cb, dispatcher());

@@ -108,7 +108,7 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
 
   std::optional<DecodableCommandCompleteEvent> event;
   handler().SendCommand(kTestCommandWithCommandCompleteEvent, [&event](auto result) {
-    ASSERT_TRUE(result.is_ok());
+    ASSERT_EQ(fitx::ok(), result);
     event = result.value();
   });
 
@@ -157,7 +157,7 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
   std::optional<DecodableEvent> event;
   size_t cb_count = 0;
   handler().SendCommand(kTestCommandWithAsyncEvent, [&event, &cb_count](auto result) {
-    ASSERT_TRUE(result.is_ok());
+    ASSERT_EQ(fitx::ok(), result);
     event = result.value();
     cb_count++;
   });
@@ -203,7 +203,7 @@ TEST_F(CommandHandlerTest, SendCommandFinishOnStatus) {
 
   size_t cb_count = 0;
   handler().SendCommandFinishOnStatus(kTestCommandWithAsyncEvent, [&cb_count](auto result) {
-    ASSERT_TRUE(result.is_ok());
+    ASSERT_EQ(fitx::ok(), result);
     cb_count++;
   });
 

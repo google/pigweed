@@ -161,7 +161,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(4, status_cb_called);
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   cb_called = 0;
   status_cb_called = 0;
 
@@ -179,7 +179,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(0, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
@@ -405,7 +405,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(5, cb_called);
-  EXPECT_TRUE(status.is_ok());
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1, status_cb_called);
   cb_called = 0;
   status_cb_called = 0;

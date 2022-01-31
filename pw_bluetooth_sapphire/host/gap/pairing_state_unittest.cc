@@ -682,7 +682,7 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDispl
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -717,7 +717,7 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -753,7 +753,7 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -784,7 +784,7 @@ TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -823,7 +823,7 @@ TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide)
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -855,7 +855,7 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -883,7 +883,7 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -995,7 +995,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -1033,7 +1033,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
 
@@ -1467,7 +1467,7 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   pairing_state().OnEncryptionChange(fitx::ok(true));
   EXPECT_EQ(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_TRUE(status_handler().status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *status_handler().status());
   EXPECT_FALSE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1738,7 +1738,7 @@ TEST_F(PairingStateTest, SkipPairingIfExistingKeyMeetsSecurityRequirements) {
   EXPECT_FALSE(pairing_state.initiator());
   EXPECT_EQ(0, status_handler.call_count());
   ASSERT_EQ(1, initiator_status_handler.call_count());
-  EXPECT_TRUE(initiator_status_handler.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *initiator_status_handler.status());
 }
 
 TEST_F(PairingStateTest,
@@ -1993,7 +1993,7 @@ TEST_F(PairingStateTest,
 
   pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
     EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_ok());
+    EXPECT_EQ(fitx::ok(), status);
   });
 
   // The controller sends a SimplePairingComplete indicating the success, then the controller
@@ -2046,11 +2046,11 @@ TEST_F(PairingStateTest,
   connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_TRUE(status_handler.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *status_handler.status());
   ASSERT_EQ(1, initiate_status_handler_0.call_count());
-  EXPECT_TRUE(initiate_status_handler_0.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *initiate_status_handler_0.status());
   ASSERT_EQ(1, initiate_status_handler_1.call_count());
-  EXPECT_TRUE(initiate_status_handler_1.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *initiate_status_handler_1.status());
 }
 
 TEST_F(
@@ -2084,7 +2084,7 @@ TEST_F(
   connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_TRUE(status_handler.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *status_handler.status());
   ASSERT_EQ(1, initiate_status_handler_0.call_count());
   EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), initiate_status_handler_0.status().value());
   ASSERT_EQ(1, initiate_status_handler_1.call_count());
@@ -2122,9 +2122,9 @@ TEST_F(PairingStateTest,
   connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_TRUE(status_handler.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *status_handler.status());
   ASSERT_EQ(1, initiate_status_handler_0.call_count());
-  EXPECT_TRUE(initiate_status_handler_0.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *initiate_status_handler_0.status());
   ASSERT_EQ(1, initiate_status_handler_1.call_count());
   EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), initiate_status_handler_1.status().value());
 
@@ -2165,16 +2165,16 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
 
   connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   ASSERT_EQ(1, status_handler.call_count());
-  EXPECT_TRUE(status_handler.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *status_handler.status());
   ASSERT_EQ(1, initiator_status_handler_0.call_count());
-  EXPECT_TRUE(initiator_status_handler_0.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *initiator_status_handler_0.status());
   EXPECT_EQ(0, initiator_status_handler_1.call_count());
 
   fake_pairing_delegate.SetDisplayPasskeyCallback([](PeerId peer_id, uint32_t value,
                                                      PairingDelegate::DisplayMethod method,
                                                      auto cb) { cb(true); });
   fake_pairing_delegate.SetCompletePairingCallback(
-      [](PeerId peer_id, sm::Result<> status) { EXPECT_TRUE(status.is_ok()); });
+      [](PeerId peer_id, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
 
   // Pairing for second request should start.
   EXPECT_EQ(2u, auth_request_count());
@@ -2195,10 +2195,10 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
 
   connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   ASSERT_EQ(2, status_handler.call_count());
-  EXPECT_TRUE(status_handler.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *status_handler.status());
   EXPECT_EQ(1, initiator_status_handler_0.call_count());
   ASSERT_EQ(1, initiator_status_handler_1.call_count());
-  EXPECT_TRUE(initiator_status_handler_1.status()->is_ok());
+  EXPECT_EQ(fitx::ok(), *initiator_status_handler_1.status());
 
   // No further pairing should occur.
   EXPECT_EQ(2u, auth_request_count());

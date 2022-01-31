@@ -1191,7 +1191,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeWithMitmAfterInsufficientAuthenticatio
   EXPECT_EQ(1u, security_request_count());
   EXPECT_EQ(1u, request_success_count());
   EXPECT_EQ(0u, request_error_count());
-  EXPECT_TRUE(last_request_status().is_ok());
+  EXPECT_EQ(fitx::ok(), last_request_status());
 }
 
 TEST_F(BearerTestSecurity, SecurityUpgradeFailsAfterAuthError) {

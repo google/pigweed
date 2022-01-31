@@ -204,7 +204,7 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   LowEnergyAdvertisingManager::AdvertisingStatusCallback GetSuccessCallback() {
     return [this](AdvertisementInstance instance, hci::Result<> status) {
       EXPECT_NE(kInvalidAdvertisementId, instance.id());
-      EXPECT_TRUE(status.is_ok());
+      EXPECT_EQ(fitx::ok(), status);
       last_instance_ = std::move(instance);
       last_status_ = status;
     };
@@ -479,7 +479,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement) {
                                 AdvertisingInterval::FAST1, /*anonymous=*/false,
                                 /*include_tx_power_level*/ false,
                                 [&](AdvertisementInstance i, auto status) {
-                                  ASSERT_TRUE(status.is_ok());
+                                  ASSERT_EQ(fitx::ok(), status);
                                   instance = std::move(i);
                                 });
     RunLoopUntilIdle();
@@ -498,7 +498,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement) {
                               AdvertisingInterval::FAST1, /*anonymous=*/false,
                               /*include_tx_power_level*/ false,
                               [&](AdvertisementInstance i, auto status) {
-                                ASSERT_TRUE(status.is_ok());
+                                ASSERT_EQ(fitx::ok(), status);
                                 instance = std::move(i);
                               });
   RunLoopUntilIdle();
@@ -516,7 +516,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, MovingInstanceTransfersOwnershipOfAdvert
                               AdvertisingInterval::FAST1, /*anonymous=*/false,
                               /*include_tx_power_level*/ false,
                               [&](AdvertisementInstance i, auto status) {
-                                ASSERT_TRUE(status.is_ok());
+                                ASSERT_EQ(fitx::ok(), status);
                                 *instance = std::move(i);
                               });
   RunLoopUntilIdle();

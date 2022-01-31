@@ -121,7 +121,7 @@ TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
   bool cb_called = false;
   link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
     cb_called = true;
-    EXPECT_TRUE(result.is_ok());
+    EXPECT_EQ(fitx::ok(), result);
   });
   EXPECT_TRUE(cb_called);
 }

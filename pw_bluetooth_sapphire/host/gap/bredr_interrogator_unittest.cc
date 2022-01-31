@@ -147,7 +147,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_ok());
+  EXPECT_EQ(fitx::ok(), *status);
 
   EXPECT_TRUE(peer->name());
   EXPECT_TRUE(peer->version());
@@ -167,7 +167,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_ok());
+  EXPECT_EQ(fitx::ok(), *status);
   status = std::nullopt;
 
   QueueSuccessfulReadRemoteExtendedFeatures(kConnectionHandle);
@@ -175,7 +175,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
                         [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_ok());
+  EXPECT_EQ(fitx::ok(), *status);
 }
 
 TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
