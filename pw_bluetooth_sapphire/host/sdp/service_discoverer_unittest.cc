@@ -108,13 +108,12 @@ TEST_F(ServiceDiscovererTest, NoResults) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  client->SetServiceSearchAttributesCallback(
-      [&searches](auto pattern, auto attributes, auto callback, auto *cb_dispatcher) {
-        searches.emplace_back(std::move(pattern));
-        async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-          cb(ToResult(HostError::kNotFound).take_error());
-        });
-      });
+  client->SetServiceSearchAttributesCallback([&searches](auto pattern, auto attributes,
+                                                         auto callback, auto *cb_dispatcher) {
+    searches.emplace_back(std::move(pattern));
+    async::PostTask(cb_dispatcher,
+                    [cb = std::move(callback)]() { cb(fitx::error(Error(HostError::kNotFound))); });
+  });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
@@ -158,13 +157,12 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  client->SetServiceSearchAttributesCallback(
-      [&searches](auto pattern, auto attributes, auto callback, auto *cb_dispatcher) {
-        searches.emplace_back(std::move(pattern));
-        async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-          cb(ToResult(HostError::kNotFound).take_error());
-        });
-      });
+  client->SetServiceSearchAttributesCallback([&searches](auto pattern, auto attributes,
+                                                         auto callback, auto *cb_dispatcher) {
+    searches.emplace_back(std::move(pattern));
+    async::PostTask(cb_dispatcher,
+                    [cb = std::move(callback)]() { cb(fitx::error(Error(HostError::kNotFound))); });
+  });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
@@ -191,7 +189,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            cb(ToResult(HostError::kNotFound).take_error());
+            cb(fitx::error(Error(HostError::kNotFound)));
           });
         } else if (pattern.count(profile::kAudioSink)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
@@ -202,7 +200,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            cb(ToResult(HostError::kNotFound).take_error());
+            cb(fitx::error(Error(HostError::kNotFound)));
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -246,7 +244,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             if (!cb(fitx::ok(std::cref(rsp.attributes(1))))) {
               return;
             }
-            cb(ToResult(HostError::kNotFound).take_error());
+            cb(fitx::error(Error(HostError::kNotFound)));
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -289,7 +287,7 @@ TEST_F(ServiceDiscovererTest, Disconnected) {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-            cb(ToResult(HostError::kLinkDisconnected).take_error());
+            cb(fitx::error(Error(HostError::kLinkDisconnected)));
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -356,7 +354,7 @@ TEST_F(ServiceDiscovererTest, UnregisterInProgress) {
             if (!cb(fitx::ok(std::cref(rsp.attributes(1))))) {
               return;
             }
-            cb(ToResult(HostError::kNotFound).take_error());
+            cb(fitx::error(Error(HostError::kNotFound)));
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;

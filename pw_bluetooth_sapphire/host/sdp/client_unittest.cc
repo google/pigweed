@@ -55,7 +55,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
                 attrs_result) {
           cb_count++;
           if (cb_count == 3) {
-            EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+            EXPECT_EQ(Error(HostError::kNotFound), attrs_result);
             return true;
           }
           const std::map<AttributeId, DataElement>& attrs = attrs_result.value();
@@ -151,7 +151,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
                 attrs_result) {
           cb_count++;
           // We return no results for both queries.
-          EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+          EXPECT_EQ(Error(HostError::kNotFound), attrs_result);
           return true;
         };
 
@@ -228,7 +228,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
                 attrs_result) {
           cb_count++;
           // We return no results for both queries.
-          EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+          EXPECT_EQ(Error(HostError::kNotFound), attrs_result);
           return true;
         };
 
@@ -310,7 +310,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
               attrs_result) {
         cb_count++;
         if (cb_count == 3) {
-          EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+          EXPECT_EQ(Error(HostError::kNotFound), attrs_result);
           return true;
         }
         const std::map<AttributeId, DataElement>& attrs = attrs_result.value();
@@ -386,7 +386,7 @@ TEST_F(ClientTest, NoResults) {
       [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
-        EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+        EXPECT_EQ(Error(HostError::kNotFound), attrs_result);
         return true;
       };
 
@@ -449,7 +449,7 @@ TEST_F(ClientTest, Disconnected) {
       [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
-        EXPECT_EQ(ToResult(HostError::kLinkDisconnected).error_value(), attrs_result);
+        EXPECT_EQ(Error(HostError::kLinkDisconnected), attrs_result);
         return true;
       };
 
@@ -508,7 +508,7 @@ TEST_F(ClientTest, InvalidResponse) {
       [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
-        EXPECT_EQ(ToResult(HostError::kPacketMalformed).error_value(), attrs_result);
+        EXPECT_EQ(Error(HostError::kPacketMalformed), attrs_result);
         return true;
       };
 
@@ -568,7 +568,7 @@ TEST_F(ClientTest, Timeout) {
       [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
-        EXPECT_EQ(ToResult(HostError::kTimedOut).error_value(), attrs_result);
+        EXPECT_EQ(Error(HostError::kTimedOut), attrs_result);
         return true;
       };
 

@@ -644,7 +644,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
         att::Handle error_handle = result.error_value().handle.value();
         if (error_handle < start || error_handle > end) {
           deferred_cb = [&cb] {
-            cb(ToResult(HostError::kPacketMalformed).take_error(), /*values=*/{});
+            cb(fitx::error(Error(HostError::kPacketMalformed)), /*values=*/{});
           };
           return;
         }

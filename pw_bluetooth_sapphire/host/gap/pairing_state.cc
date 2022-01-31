@@ -457,7 +457,7 @@ void PairingState::OnEncryptionChange(hci::Result<bool> result) {
     // Part E, Sec 7.1.16) at all.
     bt_log(WARN, "gap-bredr", "Pairing failed due to encryption disable on link %#.4x (id: %s)",
            handle(), bt_str(peer_id()));
-    result = ToResult(HostError::kFailed).take_error();
+    result = fitx::error(Error(HostError::kFailed));
   }
 
   // Perform state transition.

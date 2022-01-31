@@ -180,7 +180,7 @@ void Impl::Finish(TransactionId id) {
                         return;
                       }
                     }
-                    cb(ToResult(HostError::kNotFound).take_error());
+                    cb(fitx::error(Error(HostError::kNotFound)));
                   });
   TrySendNextTransaction();
 }

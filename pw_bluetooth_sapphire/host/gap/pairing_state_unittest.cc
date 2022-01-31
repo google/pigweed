@@ -383,8 +383,7 @@ TEST_F(PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
   ASSERT_EQ(0, status_handler.call_count());
 
   EXPECT_EQ(1, connection.start_encryption_count());
-  connection.TriggerEncryptionChangeCallback(
-      ToResult(HostError::kInsufficientSecurity).take_error());
+  connection.TriggerEncryptionChangeCallback(fitx::error(Error(HostError::kInsufficientSecurity)));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());

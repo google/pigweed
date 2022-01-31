@@ -590,7 +590,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   int callback_count = 0;
   auto conn = NewConnection();
 
-  Result<bool> result = ToResult(HostError::kFailed).take_error();
+  Result<bool> result = fitx::error(Error(HostError::kFailed));
   conn->set_encryption_change_callback([&](Result<bool> cb_result) {
     callback_count++;
     result = cb_result;
@@ -722,7 +722,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   int callback_count = 0;
   auto conn = NewConnection();
 
-  Result<bool> result = ToResult(HostError::kFailed).take_error();
+  Result<bool> result = fitx::error(Error(HostError::kFailed));
   conn->set_encryption_change_callback([&](Result<bool> cb_result) {
     callback_count++;
     result = cb_result;
