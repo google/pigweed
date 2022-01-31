@@ -226,11 +226,11 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
 
   // Returns a pointer to the characteristic with |id|. Returns nullptr if not
   // found.
-  HostError GetCharacteristic(CharacteristicHandle id, RemoteCharacteristic** out_char);
+  fitx::result<Error<>> GetCharacteristic(CharacteristicHandle id, RemoteCharacteristic** out_char);
 
   // Returns a pointer to the characteristic descriptor with |id|. Returns
   // nullptr if not found.
-  HostError GetDescriptor(DescriptorHandle id, const DescriptorData** out_desc);
+  fitx::result<Error<>> GetDescriptor(DescriptorHandle id, const DescriptorData** out_desc);
 
   // Called immediately after characteristic discovery to initiate descriptor
   // discovery.

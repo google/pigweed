@@ -67,10 +67,6 @@ class NoProtocolError {
 // the kind of protocol error that the result could hold instead.
 template <typename ProtocolErrorCode = NoProtocolError>
 [[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(HostError host_error) {
-  // TODO(fxbug.dev/86900): Remove this enum value alongside bt::Status
-  if (host_error == HostError::kNoError) {
-    return fitx::success();
-  }
   return fitx::error(Error<ProtocolErrorCode>(host_error));
 }
 
@@ -119,6 +115,8 @@ class [[nodiscard]] Error {
   constexpr Error(Error&&) noexcept = default;
   constexpr Error& operator=(const Error&) = default;
   constexpr Error& operator=(Error&&) noexcept = default;
+
+  constexpr explicit Error(const HostError& host_error) : error_(host_error) {}
 
   // Intentionally implicit conversion from Error<NoProtocolError> that holds only HostErrors.
   // This allows any Error<…> to be compared to an Error<NoProtocolError>'s HostError payload. Also,
@@ -240,16 +238,9 @@ class [[nodiscard]] Error {
   // Factory functions
   friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(
       ProtocolErrorCode);
-  friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(HostError);
 
   constexpr explicit Error(ProtocolErrorCode proto_error) : error_(proto_error) {
     ZX_ASSERT(!ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error));
-  }
-
-  constexpr explicit Error(HostError host_error) : error_(host_error) {
-    // TODO(fxbug.dev/86900): Make this ctor public after these enums are removed
-    ZX_ASSERT(host_error != HostError::kNoError);
-    ZX_ASSERT(host_error != HostError::kProtocolError);
   }
 
   std::variant<HostError, ProtocolErrorCode> error_;

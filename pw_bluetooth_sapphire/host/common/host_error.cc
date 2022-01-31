@@ -8,8 +8,6 @@ namespace bt {
 
 std::string HostErrorToString(HostError error) {
   switch (error) {
-    case HostError::kNoError:
-      return "success";
     case HostError::kNotFound:
       return "not found";
     case HostError::kNotReady:
@@ -40,8 +38,6 @@ std::string HostErrorToString(HostError error) {
       return "insufficient security";
     case HostError::kNotReliable:
       return "not reliable";
-    case HostError::kProtocolError:
-      return "protocol error";
     case HostError::kFailed:
       return "failed";
   }

@@ -3043,7 +3043,7 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
   ASSERT_FALSE(peer->bonded());
   RunLoopUntilIdle();
 
-  ASSERT_EQ(ToResult(HostError::kNoError), pairing_status);
+  ASSERT_EQ(fitx::ok(), pairing_status);
   ASSERT_TRUE(IsConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
@@ -3089,7 +3089,7 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
   connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, pairing_complete_cb);
   RunLoopUntilIdle();
 
-  ASSERT_EQ(ToResult(HostError::kNoError), pairing_status);
+  ASSERT_EQ(fitx::ok(), pairing_status);
   ASSERT_TRUE(IsConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
@@ -3099,7 +3099,7 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
   // Note that we do not call QueueSuccessfulPairing twice, even though we pair twice - this is to
   // test that pairing on an already-paired link succeeds without sending any messages to the peer.
   RunLoopUntilIdle();
-  ASSERT_EQ(ToResult(HostError::kNoError), pairing_status);
+  ASSERT_EQ(fitx::ok(), pairing_status);
   ASSERT_TRUE(peer->bonded());
 
   QueueDisconnection(kConnectionHandle);

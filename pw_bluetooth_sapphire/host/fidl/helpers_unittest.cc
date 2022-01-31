@@ -83,7 +83,7 @@ TEST(HelpersTest, HostErrorToFidl) {
   EXPECT_EQ(fsys::Error::PEER_NOT_FOUND, HostErrorToFidl(bt::HostError::kNotFound));
 
   // All other errors currently map to FAILED.
-  EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kProtocolError));
+  EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kNotReady));
 }
 
 TEST(HelpersTest, GattErrorToFidl) {

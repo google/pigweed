@@ -51,10 +51,6 @@ constexpr Error<TestError> MakeError(TestError proto_code) {
   return ToResult(proto_code).error_value();
 }
 
-constexpr Error<TestError> MakeError(HostError host_code) {
-  return ToResult<TestError>(host_code).error_value();
-}
-
 TEST(ErrorTest, ResultFromNonSuccessHostError) {
   // Create a result that can hold TestError but which holds a HostError
   constexpr fitx::result result = ToResult<TestError>(HostError::kFailed);
@@ -66,7 +62,6 @@ TEST(ErrorTest, ResultFromNonSuccessHostError) {
   EXPECT_FALSE(error.is_protocol_error());
   EXPECT_EQ(HostError::kFailed, error.host_error());
   EXPECT_TRUE(error.is(HostError::kFailed));
-  EXPECT_FALSE(error.is(HostError::kNoError));
   EXPECT_FALSE(error.is(HostError::kTimedOut));
 
   // Compare to protocol error
@@ -99,7 +94,6 @@ TEST(ErrorTest, ResultFromNonSuccessGeneralHostError) {
   EXPECT_FALSE(general_error.is_protocol_error());
   EXPECT_EQ(HostError::kFailed, general_error.host_error());
   EXPECT_TRUE(general_error.is(HostError::kFailed));
-  EXPECT_FALSE(general_error.is(HostError::kNoError));
   EXPECT_FALSE(general_error.is(HostError::kTimedOut));
 
   // Compare result to error
@@ -133,7 +127,6 @@ TEST(ErrorTest, ResultFromNonSuccessProtocolError) {
 
   // Compare to HostError
   EXPECT_FALSE(error.is(HostError::kFailed));
-  EXPECT_FALSE(error.is(HostError::kNoError));
 
   // Compare result to error
   EXPECT_EQ(error, result);
@@ -156,7 +149,7 @@ TEST(ErrorDeathTest, ReadingHostErrorThatIsNotPresentIsFatal) {
 }
 
 TEST(ErrorDeathTest, ReadingProtocolErrorThatIsNotPresentIsFatal) {
-  const Error error = MakeError(HostError::kFailed);
+  const Error<TestError> error(HostError::kFailed);
   ASSERT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = error.protocol_error(), "protocol error");
 }
 
@@ -197,7 +190,8 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
   // And explicitly
   EXPECT_FALSE(result == ToResult<TestError>(HostError::kCanceled));
   EXPECT_FALSE(result == ToResult(HostError::kCanceled));
-  EXPECT_FALSE(result == ToResult(HostError::kNoError));
+  EXPECT_FALSE(result == fitx::ok());
+  EXPECT_FALSE(result == fitx::result<Error<TestError>>(fitx::ok()));
 
   // Use operator!= through GTest
   EXPECT_NE(ToResult<TestError>(HostError::kCanceled), result);
@@ -205,7 +199,7 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
 
   // Compare to a general result
   EXPECT_NE(ToResult(HostError::kCanceled), result);
-  EXPECT_NE(ToResult(HostError::kNoError), result);
+  EXPECT_NE(fitx::result<Error<NoProtocolError>>(fitx::ok()), result);
 
   // Compare results to fix::success
   EXPECT_NE(fitx::ok(), result);
@@ -225,12 +219,12 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
   EXPECT_NE(ToResult(TestError::kFail2).error_value(), error_with_value);
 
   const fitx::result<Error<TestError>, int> error_with_value_holding_host_error =
-      fitx::error(MakeError(HostError::kFailed));
+      fitx::error(Error<TestError>(HostError::kFailed));
 
   // ToResult(HostError) constructs a bt::Error<NoProtocolError> so comparisons must take this into
   // account.
-  EXPECT_EQ(ToResult(HostError::kFailed).error_value(), error_with_value_holding_host_error);
-  EXPECT_NE(ToResult(HostError::kFailed).error_value(), error_with_value);
+  EXPECT_EQ(Error(HostError::kFailed), error_with_value_holding_host_error);
+  EXPECT_NE(Error(HostError::kFailed), error_with_value);
 }
 
 TEST(ErrorTest, ToResultFromBtError) {
@@ -253,7 +247,7 @@ TEST(ErrorTest, ToResultFromTakeError) {
 }
 
 TEST(ErrorTest, VisitOnHostError) {
-  constexpr Error error = MakeError(HostError::kFailed);
+  constexpr Error<TestError> error(HostError::kFailed);
   ASSERT_TRUE(error.is_host_error());
 
   bool host_visited = false;
@@ -277,12 +271,12 @@ TEST(ErrorTest, VisitOnProtoError) {
 }
 
 TEST(ErrorTest, HostErrorToString) {
-  constexpr Error error = MakeError(HostError::kFailed);
+  constexpr Error error(HostError::kFailed);
   EXPECT_EQ(HostErrorToString(error.host_error()), error.ToString());
 }
 
 TEST(ErrorTest, GeneralHostErrorToString) {
-  constexpr Error error = ToResult(HostError::kFailed).error_value();
+  constexpr Error error(HostError::kFailed);
   EXPECT_EQ(HostErrorToString(error.host_error()), error.ToString());
 }
 

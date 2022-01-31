@@ -810,16 +810,15 @@ void SecurityManagerImpl::OnNewLongTermKey(const LTK& ltk) {
 }
 
 Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
-  auto err = HostError::kNoError;
+  Result<> status = fitx::ok();
   if (!ltk_.has_value() || !le_link_->ltk().has_value()) {
     // The LTKs should always be present when this method is called.
-    err = HostError::kNotFound;
+    status = fitx::error(Error(HostError::kNotFound));
   } else if (!(*le_link_->ltk() == ltk_->key())) {
     // As only SM should ever change the LE Link encryption key, these two values should always be
     // in sync, i.e. something in the system is acting unreliably if they get out of sync.
-    err = HostError::kNotReliable;
+    status = fitx::error(Error(HostError::kNotReliable));
   }
-  Result<> status = ToResult(err);
   if (status.is_error()) {
     // SM does not own the link, so although the checks above should never fail, disconnecting the
     // link (vs. ASSERTing these checks) is safer against non-SM code potentially touching the key.

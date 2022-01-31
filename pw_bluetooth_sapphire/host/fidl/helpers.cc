@@ -372,8 +372,6 @@ ErrorCode HostErrorToFidlDeprecated(bt::HostError host_error) {
       return ErrorCode::NOT_SUPPORTED;
     case bt::HostError::kNotFound:
       return ErrorCode::NOT_FOUND;
-    case bt::HostError::kProtocolError:
-      return ErrorCode::PROTOCOL_ERROR;
     default:
       break;
   }
@@ -390,7 +388,6 @@ Status NewFidlError(ErrorCode error_code, std::string description) {
 }
 
 fsys::Error HostErrorToFidl(bt::HostError error) {
-  ZX_DEBUG_ASSERT(error != bt::HostError::kNoError);
   switch (error) {
     case bt::HostError::kFailed:
       return fsys::Error::FAILED;
