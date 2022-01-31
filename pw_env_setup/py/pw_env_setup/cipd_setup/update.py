@@ -68,11 +68,9 @@ def check_auth(cipd, package_files, spin):
         with open(package_file, 'r') as ins:
             # This is an expensive RPC, so only check the first few entries
             # in each file.
-            for i, entry in enumerate(json.load(ins)):
+            for i, entry in enumerate(json.load(ins).get('packages', ())):
                 if i >= 3:
                     break
-                if not isinstance(entry, dict):
-                    continue
                 parts = entry['path'].split('/')
                 while '${' in parts[-1]:
                     parts.pop(-1)
@@ -193,19 +191,9 @@ def all_package_files(env_vars, package_files):
         result.append(package_file)
 
         with open(package_file, 'r') as ins:
-            entries = json.load(ins)
-
-        # TODO(pwbug/599) Always assume isinstance(entries, dict).
-        if isinstance(entries, dict):
-            entries = entries.get('included_files', ())
+            entries = json.load(ins).get('included_files', ())
 
         for entry in entries:
-            # If there's an entry that's not a string it's a package and can be
-            # ignored here.
-            # TODO(pwbug/599) Don't ignore non-str entries.
-            if isinstance(entry, dict):
-                continue
-
             entry = os.path.join(os.path.dirname(package_file), entry)
 
             if entry not in result and entry not in to_process:
@@ -216,11 +204,7 @@ def all_package_files(env_vars, package_files):
 
 def write_ensure_file(package_file, ensure_file):
     with open(package_file, 'r') as ins:
-        packages = json.load(ins)
-
-    # TODO(pwbug/599) Always assume isinstance(entries, dict).
-    if isinstance(packages, dict):
-        packages = packages.get('packages', ())
+        packages = json.load(ins).get('packages', ())
 
     with open(ensure_file, 'w') as outs:
         outs.write('$VerifiedPlatform linux-amd64\n'
@@ -228,12 +212,6 @@ def write_ensure_file(package_file, ensure_file):
                    '$ParanoidMode CheckPresence\n')
 
         for pkg in packages:
-            # Strings in package files are references to other package files.
-            # Ignore them here.
-            # TODO(pwbug/599) Error on non-dict entries.
-            if not isinstance(pkg, dict):
-                continue
-
             # If this is a new-style package manifest platform handling must
             # be done here instead of by the cipd executable.
             if 'platforms' in pkg and _platform() not in pkg['platforms']:

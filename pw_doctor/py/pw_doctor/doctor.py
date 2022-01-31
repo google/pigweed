@@ -333,7 +333,7 @@ def cipd_versions(ctx: DoctorContext):
                     'CIPD package %s is out of date, please rerun bootstrap',
                     installed['package_name'])
 
-    for package in json.loads(json_path.read_text()):
+    for package in json.loads(json_path.read_text()).get('packages', ()):
         ctx.submit(check_cipd, package)
 
 

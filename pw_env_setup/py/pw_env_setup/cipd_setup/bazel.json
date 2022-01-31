@@ -1,13 +1,15 @@
-[
-  {
-    "path": "pigweed/third_party/bazel/${platform}",
-    "platforms": [
-      "linux-amd64",
-      "mac-amd64",
-      "windows-amd64"
-    ],
-    "tags": [
-      "version:5.0.0"
-    ]
-  }
-]
+{
+  "packages": [
+    {
+      "path": "pigweed/third_party/bazel/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "mac-amd64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "version:5.0.0"
+      ]
+    }
+  ]
+}
