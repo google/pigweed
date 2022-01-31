@@ -627,6 +627,49 @@ TEST_F(LowEnergyCentralServerTest, IgnorePeersThatDoNotMatchFilter) {
   EXPECT_TRUE(scan_stopped);
 }
 
+TEST_F(LowEnergyCentralServerTest, IgnorePeerThatDoesNotMatchServiceDataFilter) {
+  fble::ScanOptions options;
+  fble::Filter filter;
+  const bt::UUID kServiceUuid(static_cast<uint16_t>(2));
+  filter.set_connectable(true);
+  filter.set_service_data_uuid(fuchsia::bluetooth::Uuid{kServiceUuid.value()});
+  std::vector<fble::Filter> filters;
+  filters.emplace_back(std::move(filter));
+  options.set_filters(std::move(filters));
+
+  fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
+  auto result_watcher_server = result_watcher_handle.NewRequest();
+  auto result_watcher_client = result_watcher_handle.Bind();
+  std::optional<zx_status_t> epitaph;
+  result_watcher_client.set_error_handler([&](zx_status_t cb_epitaph) { epitaph = cb_epitaph; });
+
+  bool scan_stopped = false;
+  central_proxy()->Scan(std::move(options), std::move(result_watcher_server),
+                        [&]() { scan_stopped = true; });
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_stopped);
+  EXPECT_FALSE(epitaph);
+
+  std::optional<std::vector<fble::Peer>> peers;
+  result_watcher_client->Watch(
+      [&](std::vector<fble::Peer> updated) { peers = std::move(updated); });
+  RunLoopUntilIdle();
+  ASSERT_FALSE(peers.has_value());
+
+  // Peer is connectable but doesn't have any service data.
+  adapter()->peer_cache()->NewPeer(
+      bt::DeviceAddress(bt::DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0}),
+      /*connectable=*/true);
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(peers.has_value());
+
+  result_watcher_client.Unbind();
+  RunLoopUntilIdle();
+  EXPECT_TRUE(scan_stopped);
+}
+
 TEST_F(LowEnergyCentralServerTest,
        DoNotNotifyResultWatcherWithPeerThatWasRemovedFromPeerCacheWhileQueued) {
   bt::gap::Peer* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/false);

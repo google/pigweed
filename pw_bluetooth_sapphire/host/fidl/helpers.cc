@@ -757,14 +757,21 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
 }
 
 bool IsScanFilterValid(const fble::ScanFilter& fidl_filter) {
-  // |service_uuids| is the only field that can potentially contain invalid
-  // data, since they are represented as strings.
-  if (!fidl_filter.service_uuids)
-    return true;
+  // |service_uuids| and |service_data_uuids| are the only fields that can potentially contain
+  // invalid data, since they are represented as strings.
+  if (fidl_filter.service_uuids) {
+    for (const auto& uuid_str : *fidl_filter.service_uuids) {
+      if (!bt::IsStringValidUuid(uuid_str)) {
+        return false;
+      }
+    }
+  }
 
-  for (const auto& uuid_str : *fidl_filter.service_uuids) {
-    if (!bt::IsStringValidUuid(uuid_str))
-      return false;
+  if (fidl_filter.service_data_uuids) {
+    for (const auto& uuid_str : *fidl_filter.service_data_uuids) {
+      if (!bt::IsStringValidUuid(uuid_str))
+        return false;
+    }
   }
 
   return true;
@@ -787,6 +794,22 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
 
     if (!uuids.empty())
       out_filter->set_service_uuids(uuids);
+  }
+
+  if (fidl_filter.service_data_uuids) {
+    std::vector<bt::UUID> uuids;
+    for (const auto& uuid_str : *fidl_filter.service_data_uuids) {
+      bt::UUID uuid;
+      if (!bt::StringToUuid(uuid_str, &uuid)) {
+        bt_log(WARN, "fidl", "invalid service data UUID given to scan filter: %s",
+               uuid_str.c_str());
+        return false;
+      }
+      uuids.push_back(uuid);
+    }
+
+    if (!uuids.empty())
+      out_filter->set_service_data_uuids(uuids);
   }
 
   if (fidl_filter.connectable) {
@@ -816,7 +839,9 @@ bt::gap::DiscoveryFilter DiscoveryFilterFromFidl(
     out.set_service_uuids({bt::UUID(fidl_filter.service_uuid().value)});
   }
 
-  // TODO(fxbug.dev/77549): Set service data UUIDs.
+  if (fidl_filter.has_service_data_uuid()) {
+    out.set_service_data_uuids({bt::UUID(fidl_filter.service_data_uuid().value)});
+  }
 
   if (fidl_filter.has_manufacturer_id()) {
     out.set_manufacturer_code(fidl_filter.manufacturer_id());
