@@ -66,6 +66,18 @@ Entry {
   std::array<char, kStringSize> string_;
 };
 
+// Use this MakeEntry function so that the type doesn't have to be specified in
+// the macro. Specifying the type causes problems when the tokenization macro is
+// used as an argument to another macro because it requires template arguments,
+// which the preprocessor misinterprets as macro arguments.
+template <uint32_t kDomainSize, uint32_t kStringSize>
+constexpr Entry<kDomainSize, kStringSize> MakeEntry(
+    uint32_t token,
+    const char (&domain)[kDomainSize],
+    const char (&string)[kStringSize]) {
+  return {token, domain, string};
+}
+
 }  // namespace internal
 }  // namespace tokenizer
 }  // namespace pw
