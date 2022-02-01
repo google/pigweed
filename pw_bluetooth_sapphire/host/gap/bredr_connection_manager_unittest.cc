@@ -568,12 +568,11 @@ constexpr l2cap::ChannelParameters kChannelParams;
     return ::testing::AssertionFailure() << "Expected BrEdrConnection, but found nullptr";
   }
   if (peer->identifier() != conn->peer_id()) {
-    return ::testing::AssertionFailure()
-           << "Expected connection peer_id " << bt_str(peer->identifier()) << " but found "
-           << bt_str(conn->peer_id());
+    return ::testing::AssertionFailure() << "Expected connection peer_id " << peer->identifier()
+                                         << " but found " << conn->peer_id();
   }
   return ::testing::AssertionSuccess()
-         << "Peer " << bt_str(peer->identifier()) << " connected to the connection given";
+         << "Peer " << peer->identifier() << " connected to the connection given";
 }
 
 #define CALLBACK_EXPECT_FAILURE(status_param)       \

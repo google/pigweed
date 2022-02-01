@@ -4,6 +4,8 @@
 
 #include "error.h"
 
+#include <sstream>
+
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -286,6 +288,10 @@ TEST(ErrorTest, ProtocolErrorToString) {
 
   // Test that GoogleTest's value printer converts to the same string
   EXPECT_EQ(internal::ToString(error), ::testing::PrintToString(error));
+
+  // ostringstream::operator<< returns a ostream&, so test that our operator is compatible
+  std::ostringstream oss;
+  oss << error;
 }
 
 TEST(ErrorTest, ToStringOnResult) {

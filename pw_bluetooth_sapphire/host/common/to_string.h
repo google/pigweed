@@ -59,8 +59,8 @@ constexpr bool HasToStringV = HasToString<T>::value;
 //   namespace bt::gap {
 //   using ::bt::operator<<;
 //   }  // namespace bt::gap
-template <typename T, typename OStream>
-std::enable_if_t<internal::HasToStringV<T>, OStream&> operator<<(OStream& os, const T& t) {
+template <typename T, typename OStream, typename = std::enable_if_t<internal::HasToStringV<T>>>
+auto& operator<<(OStream& os, const T& t) {
   return os << ::bt::internal::ToString(t);
 }
 

@@ -1882,7 +1882,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsErrorIfUuidIsInternal) {
     });
 
     RunLoopUntilIdle();
-    ASSERT_TRUE(status.has_value()) << "UUID: " << bt_str(uuid);
+    ASSERT_TRUE(status.has_value()) << "UUID: " << uuid;
     EXPECT_EQ(ToResult(HostError::kInvalidParameters), *status);
   }
 }

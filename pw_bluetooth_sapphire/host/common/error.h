@@ -460,6 +460,9 @@ constexpr bool IsStreamableV = IsStreamable<Lhs, Rhs>::value;
 // find this overload. |os|'s type is templated in order to avoid including <iostream>.
 namespace fitx {
 
+// Some GoogleTest internal objects (like testing::Message, the return type of ADD_FAILURE())
+// declare broad operator<< overloads that conflict with this one. In those cases, it's likely
+// easiest to wrap the result in bt_str(…).
 template <typename OStream, typename ProtocolErrorCode, typename... Ts>
 OStream& operator<<(OStream& os,
                     const fitx::result<::bt::Error<ProtocolErrorCode>, Ts...>& result) {

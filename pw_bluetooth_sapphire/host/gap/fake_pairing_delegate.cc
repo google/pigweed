@@ -41,7 +41,7 @@ FakePairingDelegate::~FakePairingDelegate() {
 void FakePairingDelegate::CompletePairing(PeerId peer_id, sm::Result<> status) {
   if (!complete_pairing_cb_) {
     AddFailure(__func__, peer_id);
-    ADD_FAILURE() << "status: " << bt_str(status);
+    ADD_FAILURE() << status;
     return;
   }
   complete_pairing_cb_(peer_id, status);
