@@ -54,7 +54,7 @@ class TestLogStore(unittest.TestCase):
         # LogStore state checks
         viewer.new_logs_arrived.assert_called()
         self.assertEqual(5, log_store.get_total_count())
-        self.assertEqual(4, log_store.get_last_log_line_index())
+        self.assertEqual(4, log_store.get_last_log_index())
 
         log_store.clear_logs()
         self.assertEqual(0, log_store.get_total_count())

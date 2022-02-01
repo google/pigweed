@@ -103,7 +103,7 @@ class LogStore(logging.Handler):
         """Total size of the logs store."""
         return len(self.logs)
 
-    def get_last_log_line_index(self):
+    def get_last_log_index(self):
         """Last valid index of the logs."""
         # Subtract 1 since self.logs is zero indexed.
         total = self.get_total_count()

@@ -275,7 +275,7 @@ class TestLogView(unittest.TestCase):
 
         # Current line
         self.assertEqual(log_view.hidden_line_count(), 4)
-        self.assertEqual(log_view.get_last_log_line_index(), 7)
+        self.assertEqual(log_view.get_last_log_index(), 7)
         self.assertEqual(log_view.get_current_line(), 7)
         self.assertEqual(log_view.get_total_count(), 8)
         # Only the last 4 logs should appear

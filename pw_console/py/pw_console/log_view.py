@@ -21,7 +21,7 @@ import itertools
 import logging
 import re
 import time
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import (
@@ -87,9 +87,9 @@ class LogView:
         self.filter_existing_logs_task = None
 
         # Current log line index state variables:
-        self._last_line_index = -1
-        self._line_index = 0
-        self._filtered_line_index = 0
+        self._last_log_index = -1
+        self._log_index = 0
+        self._filtered_log_index = 0
         self._last_start_index = 0
         self._last_end_index = 0
         self._current_start_index = 0
@@ -119,30 +119,30 @@ class LogView:
         self._reset_log_screen_on_next_render = True
 
     @property
-    def line_index(self):
+    def log_index(self):
         if self.filtering_on:
-            return self._filtered_line_index
-        return self._line_index
+            return self._filtered_log_index
+        return self._log_index
 
-    @line_index.setter
-    def line_index(self, line_index):
-        # Save the old line_index
-        self._last_line_index = self.line_index
+    @log_index.setter
+    def log_index(self, new_log_index):
+        # Save the old log_index
+        self._last_log_index = self.log_index
         if self.filtering_on:
-            self._filtered_line_index = line_index
+            self._filtered_log_index = new_log_index
         else:
-            self._line_index = line_index
+            self._log_index = new_log_index
 
-    def _reset_line_index_changed(self) -> None:
-        self._last_line_index = self.line_index
+    def _reset_log_index_changed(self) -> None:
+        self._last_log_index = self.log_index
 
-    def line_index_changed_since_last_render(self) -> bool:
-        return self._last_line_index != self.line_index
+    def log_index_changed_since_last_render(self) -> bool:
+        return self._last_log_index != self.log_index
 
     def _set_match_position(self, position: int):
         self.follow = False
-        self.line_index = position
-        self.log_screen.reset_logs(log_index=self.line_index)
+        self.log_index = position
+        self.log_screen.reset_logs(log_index=self.log_index)
         self._user_scroll_event = True
         self.log_pane.application.redraw_ui()
 
@@ -159,14 +159,14 @@ class LogView:
 
         log_beginning_index = self.hidden_line_count()
 
-        starting_index = self.line_index + 1
-        if starting_index > self.get_last_log_line_index():
+        starting_index = self.log_index + 1
+        if starting_index > self.get_last_log_index():
             starting_index = log_beginning_index
 
-        logs = self._get_log_lines()
+        _, logs = self._get_log_lines()
 
         # From current position +1 and down
-        for i in range(starting_index, self.get_last_log_line_index() + 1):
+        for i in range(starting_index, self.get_last_log_index() + 1):
             if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
@@ -184,11 +184,11 @@ class LogView:
 
         log_beginning_index = self.hidden_line_count()
 
-        starting_index = self.line_index - 1
+        starting_index = self.log_index - 1
         if starting_index < 0:
-            starting_index = self.get_last_log_line_index()
+            starting_index = self.get_last_log_index()
 
-        logs = self._get_log_lines()
+        _, logs = self._get_log_lines()
 
         # From current position - 1 and up
         for i in range(starting_index, log_beginning_index - 1, -1):
@@ -197,7 +197,7 @@ class LogView:
                 return
 
         # From the end to the original start
-        for i in range(self.get_last_log_line_index(), starting_index, -1):
+        for i in range(self.get_last_log_index(), starting_index, -1):
             if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
@@ -299,14 +299,14 @@ class LogView:
         self.search_highlight = False
         self._reset_log_screen_on_next_render = True
 
-    def _get_log_lines(self):
+    def _get_log_lines(self) -> Tuple[int, collections.deque[LogLine]]:
         logs = self.log_store.logs
         if self.filtering_on:
             logs = self.filtered_logs
-        return logs
+        return self._scrollback_start_index, logs
 
     def _get_visible_log_lines(self):
-        logs = self._get_log_lines()
+        _, logs = self._get_log_lines()
         if self._scrollback_start_index > 0:
             return collections.deque(
                 itertools.islice(logs, self.hidden_line_count(), len(logs)))
@@ -347,7 +347,7 @@ class LogView:
 
     async def filter_past_logs(self):
         """Filter past log lines."""
-        starting_index = self.log_store.get_last_log_line_index()
+        starting_index = self.log_store.get_last_log_index()
         ending_index = -1
 
         # From the end of the log store to the beginning.
@@ -368,20 +368,20 @@ class LogView:
     def _update_log_index(self) -> ScreenLine:
         line_at_cursor = self.log_screen.get_line_at_cursor_position()
         if line_at_cursor.log_index is not None:
-            self.line_index = line_at_cursor.log_index
+            self.log_index = line_at_cursor.log_index
         return line_at_cursor
 
     def get_current_line(self) -> int:
         """Return the currently selected log event index."""
         self._update_log_index()
-        return self.line_index
+        return self.log_index
 
     def get_total_count(self):
         """Total size of the logs store."""
         return (len(self.filtered_logs)
                 if self.filtering_on else self.log_store.get_total_count())
 
-    def get_last_log_line_index(self):
+    def get_last_log_index(self):
         total = self.get_total_count()
         return 0 if total < 0 else total - 1
 
@@ -390,7 +390,8 @@ class LogView:
         # Enable follow and scroll to the bottom, then clear.
         if not self.follow:
             self.toggle_follow()
-        self._scrollback_start_index = self.line_index
+        self._scrollback_start_index = self.log_index
+        self._reset_log_screen_on_next_render = True
 
     def hidden_line_count(self):
         """Return the number of hidden lines."""
@@ -464,10 +465,10 @@ class LogView:
         """Move selected index to the beginning."""
         # Stop following so cursor doesn't jump back down to the bottom.
         self.follow = False
-        # First possible line index that should be displayed
+        # First possible log index that should be displayed
         log_beginning_index = self.hidden_line_count()
-        self.line_index = log_beginning_index
-        self.log_screen.reset_logs(log_index=self.line_index)
+        self.log_index = log_beginning_index
+        self.log_screen.reset_logs(log_index=self.log_index)
         self.log_screen.shift_selected_log_to_top()
         self._user_scroll_event = True
 
@@ -477,7 +478,7 @@ class LogView:
         # Update selected line
         self._update_log_index()
 
-        self.log_screen.reset_logs(log_index=self.line_index)
+        self.log_screen.reset_logs(log_index=self.log_index)
         self.log_screen.shift_selected_log_to_top()
         self._user_scroll_event = True
 
@@ -487,15 +488,15 @@ class LogView:
         # Update selected line
         self._update_log_index()
 
-        self.log_screen.reset_logs(log_index=self.line_index)
+        self.log_screen.reset_logs(log_index=self.log_index)
         self.log_screen.shift_selected_log_to_center()
         self._user_scroll_event = True
 
     def scroll_to_bottom(self):
         """Move selected index to the end."""
         # Don't change following state like scroll_to_top.
-        self.line_index = max(0, self.get_last_log_line_index())
-        self.log_screen.reset_logs(log_index=self.line_index)
+        self.log_index = max(0, self.get_last_log_index())
+        self.log_screen.reset_logs(log_index=self.log_index)
 
         # Sticky follow mode
         self.follow = True
@@ -516,7 +517,7 @@ class LogView:
         current_line = self._update_log_index()
 
         # Is the last log line selected?
-        if self.line_index == self.get_last_log_line_index():
+        if self.log_index == self.get_last_log_index():
             # Is the last line of the current log selected?
             if current_line.subline + 1 == current_line.height:
                 # Sticky follow mode
@@ -584,20 +585,20 @@ class LogView:
         if self._reset_log_screen_on_next_render or self.log_screen.empty():
             # Clear the reset flag.
             self._reset_log_screen_on_next_render = False
-            self.log_screen.reset_logs(log_index=self.line_index)
+            self.log_screen.reset_logs(log_index=self.log_index)
             screen_update_needed = True
 
         elif self.follow and self._new_logs_since_last_render:
             # Follow mode is on so add new logs to the screen
             self._new_logs_since_last_render = False
 
-            current_log_index = self.line_index
+            current_log_index = self.log_index
             last_rendered_log_index = self.log_screen.last_appended_log_index
             # If so many logs have arrived than can fit on the screen, redraw
             # the whole screen from the new position.
             if (current_log_index -
                     last_rendered_log_index) > self.log_screen.height:
-                self.log_screen.reset_logs(log_index=self.line_index)
+                self.log_screen.reset_logs(log_index=self.log_index)
             # A small amount of logs have arrived, append them one at a time
             # without redrawing the whole screen.
             else:

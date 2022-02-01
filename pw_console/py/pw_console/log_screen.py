@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import logging
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
@@ -126,7 +126,7 @@ class LogScreen:
     It is responsible for moving the cursor_position, prepending and appending
     log lines as the user moves the cursor."""
     # Callable functions to retrieve logs and display formatting.
-    get_log_source: Callable[[], list[LogLine]]
+    get_log_source: Callable[[], Tuple[int, collections.deque[LogLine]]]
     get_line_wrapping: Callable[[], bool]
     get_log_formatter: Callable[[], Optional[Callable[[LogLine],
                                                       StyleAndTextTuples]]]
@@ -175,7 +175,7 @@ class LogScreen:
         """Erase the screen and append logs starting from log_index."""
         self.clear_screen()
 
-        log_source = self.get_log_source()
+        start_log_index, log_source = self.get_log_source()
         if len(log_source) == 0:
             return
 
@@ -193,7 +193,7 @@ class LogScreen:
             # If i is < 0 it's an invalid log, skip to the next line. The next
             # index could be 0 or higher since we are traversing in increasing
             # order.
-            if i < 0:
+            if i < start_log_index:
                 continue
             self.append_log(i)
         # Make sure the bottom line is highlighted.
@@ -411,6 +411,7 @@ class LogScreen:
         Returns:
             int: The number of lines that were not fetched. Returns 0 if the
                 desired number of lines were fetched successfully."""
+        start_log_index, _log_source = self.get_log_source()
         remaining_lines = line_count
         for _ in range(line_count, 0, 1):
             current_line = self.get_line_at_cursor_position()
@@ -431,7 +432,7 @@ class LogScreen:
                 target_log_index = current_line.log_index
                 target_subline = current_line.subline - 1
 
-            if target_log_index < 0:
+            if target_log_index < start_log_index:
                 # Invalid log_index, don't scroll further
                 return remaining_lines + 1
 
@@ -454,7 +455,7 @@ class LogScreen:
         Returns:
             int: The number of lines that were not fetched. Returns 0 if the
                 desired number of lines were fetched successfully."""
-        log_source = self.get_log_source()
+        _start_log_index, log_source = self.get_log_source()
         remaining_lines = line_count
         for _ in range(line_count):
             # Skip this line if not at the bottom
@@ -511,7 +512,7 @@ class LogScreen:
 
         Before fetching the log message this function updates the log_source and
         formatting options."""
-        log_source = self.get_log_source()
+        _start_log_index, log_source = self.get_log_source()
         log = log_source[log_index]
         table_formatter = self.get_log_formatter()
         truncate_lines = not self.get_line_wrapping()
