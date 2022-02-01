@@ -140,6 +140,14 @@ Result<bool> String::Equal(std::string_view str) {
 }
 
 Message::iterator& Message::iterator::operator++() {
+  // If this is not a valid iterator, increment it to the end iterator,
+  // so loop will end.
+  if (!ok()) {
+    reader_.Exhaust();
+    eof_ = true;
+    return *this;
+  }
+
   // Store the starting offset of the field.
   size_t field_start = reader_.current();
   protobuf::StreamDecoder decoder(reader_);
@@ -147,14 +155,25 @@ Message::iterator& Message::iterator::operator++() {
   if (status.IsOutOfRange()) {
     eof_ = true;
     return *this;
+  } else if (!status.ok()) {
+    // In the case of error, invalidate the iterator. We don't immediately
+    // move the iterator to end(), so that calling code has a chance to catch
+    // the error.
+    status_ = status;
+    current_ = Field(status_);
+    return *this;
   }
 
-  PW_CHECK(status.ok());
   Result<uint32_t> field_number = decoder.FieldNumber();
   // Consume the field so that the reader will be pointing to the start
   // of the next field, which is equivalent to the end offset of the
   // current field.
-  PW_CHECK(ConsumeCurrentField(decoder).ok());
+  status = ConsumeCurrentField(decoder);
+  if (!status.ok()) {
+    status_ = status;
+    current_ = Field(status_);
+    return *this;
+  }
 
   // Create a Field object with the field interval.
   current_ = Field(stream::IntervalReader(
@@ -164,17 +183,18 @@ Message::iterator& Message::iterator::operator++() {
 }
 
 Message::iterator Message::begin() {
-  PW_CHECK(ok());
+  if (!ok()) {
+    return end();
+  }
+
   return iterator(reader_.Reset());
 }
 
 Message::iterator Message::end() {
-  PW_CHECK(ok());
   // The end iterator is created by using an exahusted stream::IntervalReader,
   // i.e. the reader is pointing at the internval end.
   stream::IntervalReader reader_end = reader_;
-  PW_CHECK(reader_end.Seek(0, stream::Stream::Whence::kEnd).ok());
-  return iterator(reader_end);
+  return iterator(reader_end.Exhaust());
 }
 
 RepeatedBytes Message::AsRepeatedBytes(uint32_t field_number) {
