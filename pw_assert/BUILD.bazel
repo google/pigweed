@@ -27,10 +27,12 @@ pw_cc_facade(
     name = "facade",
     hdrs = [
         "assert_lite_public_overrides/pw_assert_backend/assert_lite_backend.h",
+        "print_and_abort_public_overrides/pw_assert_backend/assert_lite_backend.h",
         "public/pw_assert/assert.h",
         "public/pw_assert/check.h",
         "public/pw_assert/config.h",
         "public/pw_assert/internal/check_impl.h",
+        "public/pw_assert/internal/print_and_abort.h",
         "public/pw_assert/short.h",
     ],
     includes = [

@@ -33,6 +33,7 @@ _host_common = {
 
   # Configure backend for assert facade.
   pw_assert_BACKEND = "$dir_pw_assert_basic"
+  pw_assert_LITE_BACKEND = "$dir_pw_assert:print_and_abort"
 
   # Configure backend for logging facade.
   pw_log_BACKEND = "$dir_pw_log_basic"
