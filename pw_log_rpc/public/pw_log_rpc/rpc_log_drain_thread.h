@@ -15,8 +15,10 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <span>
 
+#include "pw_chrono/system_clock.h"
 #include "pw_log_rpc/log_service.h"
 #include "pw_log_rpc/rpc_log_drain_map.h"
 #include "pw_multisink/multisink.h"
@@ -24,7 +26,7 @@
 #include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
-#include "pw_sync/thread_notification.h"
+#include "pw_sync/timed_thread_notification.h"
 #include "pw_thread/thread_core.h"
 
 namespace pw::log_rpc {
@@ -53,10 +55,26 @@ class RpcLogDrainThread : public thread::ThreadCore,
       multisink_.AttachDrain(drain);
     }
     multisink_.AttachListener(*this);
+
+    bool drains_pending = true;
+    std::optional<chrono::SystemClock::duration> min_delay =
+        chrono::SystemClock::duration::zero();
     while (true) {
-      new_log_available_notification_.acquire();
+      if (drains_pending && min_delay.has_value()) {
+        new_log_available_notification_.try_acquire_for(min_delay.value());
+      } else {
+        new_log_available_notification_.acquire();
+      }
+      drains_pending = false;
+      min_delay = std::nullopt;
       for (auto& drain : drain_map_.drains()) {
-        drain.Flush(encoding_buffer_).IgnoreError();
+        std::optional<chrono::SystemClock::duration> drain_ready_in =
+            drain.Trickle(encoding_buffer_);
+        if (drain_ready_in.has_value()) {
+          min_delay = std::min(drain_ready_in.value(),
+                               min_delay.value_or(drain_ready_in.value()));
+          drains_pending = true;
+        }
       }
     }
   }
@@ -75,7 +93,7 @@ class RpcLogDrainThread : public thread::ThreadCore,
   }
 
  private:
-  sync::ThreadNotification new_log_available_notification_;
+  sync::TimedThreadNotification new_log_available_notification_;
   RpcLogDrainMap& drain_map_;
   multisink::MultiSink& multisink_;
   std::span<std::byte> encoding_buffer_;

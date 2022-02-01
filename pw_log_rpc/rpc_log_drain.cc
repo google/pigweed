@@ -14,9 +14,17 @@
 
 #include "pw_log_rpc/rpc_log_drain.h"
 
+#include <limits>
 #include <mutex>
+#include <optional>
 
 #include "pw_assert/check.h"
+#include "pw_chrono/system_clock.h"
+#include "pw_log/proto/log.pwpb.h"
+#include "pw_result/result.h"
+#include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_status/status.h"
+#include "pw_status/try.h"
 
 namespace pw::log_rpc {
 namespace {
@@ -46,17 +54,49 @@ Status RpcLogDrain::Open(rpc::RawServerWriter& writer) {
 }
 
 Status RpcLogDrain::Flush(ByteSpan encoding_buffer) {
+  Status status;
+  SendLogs(std::numeric_limits<size_t>::max(), encoding_buffer, status);
+  return status;
+}
+
+std::optional<chrono::SystemClock::duration> RpcLogDrain::Trickle(
+    ByteSpan encoding_buffer) {
+  chrono::SystemClock::time_point now = chrono::SystemClock::now();
+  // Called before drain is ready to send more logs. Ignore this request and
+  // remind the caller how much longer they'll need to wait.
+  if (no_writes_until_ > now) {
+    return no_writes_until_ - now;
+  }
+
+  Status encoding_status;
+  if (SendLogs(max_bundles_per_trickle_, encoding_buffer, encoding_status) ==
+      LogDrainState::kCaughtUp) {
+    return std::nullopt;
+  }
+
+  no_writes_until_ = chrono::SystemClock::TimePointAfterAtLeast(trickle_delay_);
+  return trickle_delay_;
+}
+
+RpcLogDrain::LogDrainState RpcLogDrain::SendLogs(size_t max_num_bundles,
+                                                 ByteSpan encoding_buffer,
+                                                 Status& encoding_status_out) {
   PW_CHECK_NOTNULL(multisink_);
 
   LogDrainState log_sink_state = LogDrainState::kMoreEntriesRemaining;
   std::lock_guard lock(mutex_);
-  do {
+  size_t sent_bundle_count = 0;
+  while (sent_bundle_count < max_num_bundles &&
+         log_sink_state != LogDrainState::kCaughtUp) {
     if (!server_writer_.active()) {
-      return Status::Unavailable();
+      encoding_status_out = Status::Unavailable();
+      // No reason to keep polling this drain until the writer is opened.
+      return LogDrainState::kCaughtUp;
     }
     log::LogEntries::MemoryEncoder encoder(encoding_buffer);
     uint32_t packed_entry_count = 0;
     log_sink_state = EncodeOutgoingPacket(encoder, packed_entry_count);
+
     // Avoid sending empty packets.
     if (encoder.size() == 0) {
       continue;
@@ -64,17 +104,19 @@ Status RpcLogDrain::Flush(ByteSpan encoding_buffer) {
 
     encoder.WriteFirstEntrySequenceId(sequence_id_);
     sequence_id_ += packed_entry_count;
+    const Status status = server_writer_.Write(encoder);
+    sent_bundle_count++;
 
-    if (const Status status = server_writer_.Write(encoder); !status.ok()) {
-      if (error_handling_ == LogDrainErrorHandling::kCloseStreamOnWriterError) {
-        // Only update this drop count when writer errors are not ignored.
-        committed_entry_drop_count_ += packed_entry_count;
-        server_writer_.Finish().IgnoreError();
-        return Status::Aborted();
-      }
+    if (!status.ok() &&
+        error_handling_ == LogDrainErrorHandling::kCloseStreamOnWriterError) {
+      // Only update this drop count when writer errors are not ignored.
+      committed_entry_drop_count_ += packed_entry_count;
+      server_writer_.Finish().IgnoreError();
+      encoding_status_out = Status::Aborted();
+      return log_sink_state;
     }
-  } while (log_sink_state == LogDrainState::kMoreEntriesRemaining);
-  return OkStatus();
+  }
+  return log_sink_state;
 }
 
 RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
@@ -112,6 +154,7 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
     if (possible_entry.status().IsOutOfRange()) {
       return LogDrainState::kCaughtUp;  // There are no more entries.
     }
+
     // At this point all expected error modes have been handled.
     PW_CHECK_OK(possible_entry.status());
 

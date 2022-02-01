@@ -159,6 +159,34 @@ Future work might replace this with enqueueing the flush work on a work queue.
 The user can also choose to have different threads flushing individual
 ``RpcLogDrain``\s with different priorities.
 
+When creating a ``RpcLogDrainThread``, the thread can be configured to
+rate limit logs by introducing a limit to how many logs can be flushed from
+each sink before a configurable sleep period begins to give the sinks time to
+handle the flushed logs. For example, if the rate limiting is configured to 2
+log bundles per flush with minimum delay of 100ms between flushes, the logging
+thread will send at most 20 log bundles per second over each sink. Log bundle
+size is dictated by the size of the encode buffer provided to the
+RpcLogDrainThread.
+
+Rate limiting is helpful in cases where transient bursts of high volumes of logs
+cause transport buffers to saturate. By rate limiting the RPC log drain, the
+transport buffers are given time to send data. As long as the average logging
+rate is significantly less than the rate limit imposed by the
+``RpcLogDrainThread``, the logging pipeline should be more resilient high
+volume log bursts.
+
+Rate limiting log drains is particularly helpful for systems that collect logs
+to a multisink in bulk when communications aren't available (e.g. collecting
+early boot logs until the logging thread starts). If a very full log buffer is
+suddenly flushed to the sinks without rate limiting, it's possible to overwhelm
+the output buffers if they don't have sufficient headroom.
+
+.. note::
+  Introducing a logging drain rate limit will increase logging latency, but
+  usually not by much. It's important to tune the rate limit configuration to
+  ensure it doesn't unnecessarily introduce a logging bottleneck or
+  significantly increase latency.
+
 Calling ``OpenUnrequestedLogStream()`` is a convenient way to set up a log
 stream that is started without the need to receive an RCP request for logs.
 

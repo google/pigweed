@@ -105,12 +105,29 @@ pw_cc_library(
     deps = [
         ":log_service",
         ":rpc_log_drain",
+        "//pw_chrono:system_clock",
         "//pw_multisink",
         "//pw_result",
         "//pw_rpc/raw:server_api",
         "//pw_status",
-        "//pw_sync:thread_notification",
+        "//pw_sync:timed_thread_notification",
         "//pw_thread:thread",
+    ],
+)
+
+pw_cc_library(
+    name = "test_utils",
+    srcs = ["test_utils.cc"],
+    hdrs = ["pw_log_rpc_private/test_utils.h"],
+    deps = [
+        "//pw_bytes",
+        "//pw_containers:vector",
+        "//pw_log",
+        "//pw_log:log_pwpb",
+        "//pw_log_tokenized:metadata",
+        "//pw_protobuf",
+        "//pw_protobuf:bytes_utils",
+        "//pw_unit_test",
     ],
 )
 
@@ -120,6 +137,7 @@ pw_cc_test(
     deps = [
         ":log_filter",
         ":log_service",
+        ":test_utils",
         "//pw_containers:vector",
         "//pw_log",
         "//pw_log:log_proto_cc.pwpb",
@@ -169,7 +187,16 @@ pw_cc_test(
     deps = [
         ":log_service",
         ":rpc_log_drain",
+        ":test_utils",
+        "//pw_bytes",
+        "//pw_log:log_pwpb",
+        "//pw_multisink",
+        "//pw_protobuf",
+        "//pw_rpc",
+        "//pw_rpc/raw:server_api",
         "//pw_rpc/raw:test_method_context",
+        "//pw_status",
+        "//pw_sync:mutex",
         "//pw_unit_test",
     ],
 )
