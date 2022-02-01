@@ -37,18 +37,17 @@ if TYPE_CHECKING:
 
 class LineInfoBar(ConditionalContainer):
     """One line bar for showing current and total log lines."""
-    @staticmethod
-    def get_tokens(log_pane: 'LogPane'):
+    def get_tokens(self):
         """Return formatted text tokens for display."""
         tokens = ' Log {} / {} '.format(
-            log_pane.log_view.get_current_line() + 1,
-            log_pane.log_view.get_total_count(),
+            self.log_pane.log_view.get_current_line() + 1,
+            self.log_pane.log_view.get_total_count(),
         )
         return [('', tokens)]
 
     def __init__(self, log_pane: 'LogPane'):
-        info_bar_control = FormattedTextControl(
-            functools.partial(LineInfoBar.get_tokens, log_pane))
+        self.log_pane = log_pane
+        info_bar_control = FormattedTextControl(self.get_tokens)
         info_bar_window = Window(content=info_bar_control,
                                  align=WindowAlign.RIGHT,
                                  dont_extend_width=True)
@@ -57,12 +56,12 @@ class LineInfoBar(ConditionalContainer):
             VSplit([info_bar_window],
                    height=1,
                    style=functools.partial(pw_console.style.get_toolbar_style,
-                                           log_pane,
+                                           self.log_pane,
                                            dim=True),
                    align=HorizontalAlign.RIGHT),
             # Only show current/total line info if not auto-following
             # logs. Similar to tmux behavior.
-            filter=Condition(lambda: not log_pane.log_view.follow))
+            filter=Condition(lambda: not self.log_pane.log_view.follow))
 
 
 class TableToolbar(ConditionalContainer):

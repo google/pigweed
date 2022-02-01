@@ -19,15 +19,14 @@ import collections
 import copy
 import itertools
 import logging
+import operator
+from pathlib import Path
 import re
 import time
-from typing import Callable, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.formatted_text import (
-    fragment_list_to_text,
-    StyleAndTextTuples,
-)
+from prompt_toolkit.formatted_text import StyleAndTextTuples
 
 from pw_console.log_filter import (
     DEFAULT_SEARCH_MATCHER,
@@ -38,6 +37,7 @@ from pw_console.log_filter import (
 )
 from pw_console.log_screen import ScreenLine, LogScreen
 from pw_console.log_store import LogStore
+from pw_console.text_formatting import remove_formatting
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
@@ -64,6 +64,7 @@ class LogView:
             prefs=application.prefs)
         self.log_store.register_viewer(self)
 
+        self.marked_logs: Dict[int, int] = {}
         # Search variables
         self.search_text: Optional[str] = None
         self.search_filter: Optional[LogFilter] = None
@@ -111,6 +112,8 @@ class LogView:
 
         # Should new log lines be tailed?
         self.follow: bool = True
+
+        self.visual_select_mode: bool = False
 
         # Cache of formatted text tuples used in the last UI render.
         self._line_fragment_cache: StyleAndTextTuples = []
@@ -373,7 +376,6 @@ class LogView:
 
     def get_current_line(self) -> int:
         """Return the currently selected log event index."""
-        self._update_log_index()
         return self.log_index
 
     def get_total_count(self):
@@ -516,6 +518,9 @@ class LogView:
         # Update the current log
         current_line = self._update_log_index()
 
+        # Don't check for sticky follow mode if selecting lines.
+        if self.visual_select_mode:
+            return
         # Is the last log line selected?
         if self.log_index == self.get_last_log_index():
             # Is the last line of the current log selected?
@@ -523,12 +528,86 @@ class LogView:
                 # Sticky follow mode
                 self.follow = True
 
+    def visual_selected_log_count(self) -> int:
+        return len(self.marked_logs)
+
+    def clear_visual_selection(self) -> None:
+        self.marked_logs = {}
+        self.visual_select_mode = False
+        self._user_scroll_event = True
+        self.log_pane.application.redraw_ui()
+
+    def visual_select_all(self) -> None:
+        for i in range(self._scrollback_start_index, self.get_total_count()):
+            self.marked_logs[i] = 1
+        self.visual_select_mode = True
+        self._user_scroll_event = True
+        self.log_pane.application.redraw_ui()
+
+    def visual_select_up(self) -> None:
+        # Select the current line
+        self.visual_select_line(self.get_cursor_position(), autoscroll=False)
+        # Move the cursor by 1
+        self.scroll_up(1)
+        # Select the new line
+        self.visual_select_line(self.get_cursor_position(), autoscroll=False)
+
+    def visual_select_down(self) -> None:
+        # Select the current line
+        self.visual_select_line(self.get_cursor_position(), autoscroll=False)
+        # Move the cursor by 1
+        self.scroll_down(1)
+        # Select the new line
+        self.visual_select_line(self.get_cursor_position(), autoscroll=False)
+
+    def visual_select_line(self,
+                           mouse_position: Point,
+                           deselect: bool = False,
+                           autoscroll: bool = True):
+        """Mark the log under mouse_position as visually selected."""
+        # Check mouse_position is valid
+        if not 0 <= mouse_position.y < len(self.log_screen.line_buffer):
+            return
+        # Update mode flags
+        self.visual_select_mode = True
+        self.follow = False
+        # Get the ScreenLine for the cursor position
+        screen_line = self.log_screen.line_buffer[mouse_position.y]
+        if screen_line.log_index is None:
+            return
+
+        # If deselecting
+        if deselect:
+            self.marked_logs[screen_line.log_index] = 0
+            if screen_line.log_index in self.marked_logs:
+                del self.marked_logs[screen_line.log_index]
+        # Selecting
+        else:
+            self.marked_logs[screen_line.log_index] = self.marked_logs.get(
+                screen_line.log_index, 0) + 1
+
+        # Update cursor position
+        self.log_screen.move_cursor_to_position(mouse_position.y)
+
+        # Autoscroll when mouse dragging on the top or bottom of the window.
+        if autoscroll:
+            if mouse_position.y == 0:
+                self.scroll_up(1)
+            elif mouse_position.y == self._window_height - 1:
+                self.scroll_down(1)
+
+        # If no selection left, turn off visual_select_mode flag.
+        if len(self.marked_logs) == 0:
+            self.visual_select_mode = False
+
+        # Trigger a rerender.
+        self._user_scroll_event = True
+        self.log_pane.application.redraw_ui()
+
     def scroll_to_position(self, mouse_position: Point):
         """Set the selected log line to the mouse_position."""
-        # If auto following don't move the cursor arbitrarily. That would stop
-        # following and position the cursor incorrectly.
-        if self.follow:
-            return
+        # Disable follow mode when the user clicks or mouse drags on a log line.
+        self.follow = False
 
         self.log_screen.move_cursor_to_position(mouse_position.y)
         self._update_log_index()
@@ -618,13 +697,63 @@ class LogView:
             screen_update_needed = True
 
         if screen_update_needed:
-            self._line_fragment_cache = self.log_screen.get_lines()
+            self._line_fragment_cache = self.log_screen.get_lines(
+                marked_logs=self.marked_logs)
         return self._line_fragment_cache
 
-    def copy_visible_lines(self):
-        """Copy the currently visible log lines to the system clipboard."""
-        if self._line_fragment_cache is None:
-            return
-        text = fragment_list_to_text(self._line_fragment_cache)
-        text = text.rstrip()
-        self.log_pane.application.application.clipboard.set_text(text)
+    def _logs_to_text(
+        self,
+        use_table_formatting: bool = True,
+        selected_lines_only: bool = False,
+    ) -> str:
+        """Convert all or selected log messages to plaintext."""
+        def get_table_string(log: LogLine) -> str:
+            return remove_formatting(self.log_store.table.formatted_row(log))
+
+        formatter: Callable[[LogLine],
+                            str] = operator.attrgetter('ansi_stripped_log')
+        if use_table_formatting:
+            formatter = get_table_string
+
+        _start_log_index, log_source = self._get_log_lines()
+
+        log_indexes = (i for i in range(self._scrollback_start_index,
+                                        self.get_total_count()))
+        if selected_lines_only:
+            log_indexes = (i for i in sorted(self.marked_logs.keys()))
+
+        text_output = ''
+        for i in log_indexes:
+            log_text = formatter(log_source[i])
+            text_output += log_text
+            if not log_text.endswith('\n'):
+                text_output += '\n'
+
+        return text_output
+
+    def export_logs(
+        self,
+        use_table_formatting: bool = True,
+        selected_lines_only: bool = False,
+        file_name: Optional[str] = None,
+        to_clipboard: bool = False,
+        add_markdown_fence: bool = False,
+    ) -> bool:
+        """Export log lines to file or clipboard."""
+        text_output = self._logs_to_text(use_table_formatting,
+                                         selected_lines_only)
+
+        if file_name:
+            target_path = Path(file_name).expanduser()
+            with target_path.open('w') as output_file:
+                output_file.write(text_output)
+            _LOG.debug('Saved to file: %s', file_name)
+
+        elif to_clipboard:
+            if add_markdown_fence:
+                text_output = '```\n' + text_output + '```\n'
+            self.log_pane.application.application.clipboard.set_text(
+                text_output)
+            _LOG.debug('Copied logs to clipboard.')
+
+        return True

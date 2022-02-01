@@ -47,8 +47,12 @@ def _create_log_view():
 
 class TestLogView(unittest.TestCase):
     """Tests for LogView."""
+
+    # pylint: disable=invalid-name
     def setUp(self):
-        self.maxDiff = None  # pylint: disable=invalid-name
+        self.maxDiff = None
+
+    # pylint: enable=invalid-name
 
     def _create_log_view_with_logs(self, log_count=100):
         log_view, log_pane = _create_log_view()
@@ -170,14 +174,15 @@ class TestLogView(unittest.TestCase):
         log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 90)
 
-        # Clicking if follow is enabled should not scroll.
+        # Disable follow mode if mouse click on line.
         log_view.toggle_follow()
         log_view.render_content()
         self.assertTrue(log_view.follow)
         self.assertEqual(log_view.get_current_line(), 99)
         log_view.scroll_to_position(Point(0, 5))
         log_view.render_content()
-        self.assertEqual(log_view.get_current_line(), 99)
+        self.assertEqual(log_view.get_current_line(), 95)
+        self.assertFalse(log_view.follow)
 
     def test_render_content_and_cursor_position(self) -> None:
         """Test render_content results and get_cursor_position
@@ -312,6 +317,13 @@ if _PYTHON_3_8:
 
     class TestLogViewFiltering(IsolatedAsyncioTestCase):  # pylint: disable=undefined-variable
         """Test LogView log filtering capabilities."""
+
+        # pylint: disable=invalid-name
+        def setUp(self):
+            self.maxDiff = None
+
+        # pylint: enable=invalid-name
+
         def _create_log_view_from_list(self, log_messages):
             log_view, log_pane = _create_log_view()
 
@@ -336,6 +348,10 @@ if _PYTHON_3_8:
                     'Log some item',
                     'Log another item',
                 ],
+                (
+                    '  DEBUG  Log some item\n'
+                    '  DEBUG  Log another item\n'
+                ),
                 None,  # field
                 False,  # invert
             ),
@@ -354,6 +370,10 @@ if _PYTHON_3_8:
                     'Log another item',
                     'Some exception',
                 ],
+                (
+                    '  DEBUG  Earth    Log another item\n'
+                    '  DEBUG  Earth    Some exception\n'
+                ),
                 'planet',  # field
                 False,  # invert
             ),
@@ -371,6 +391,9 @@ if _PYTHON_3_8:
                 [
                     'Log some item',
                 ],
+                (
+                    '  DEBUG  Jupiter  Log some item\n'
+                ),
                 'planet',  # field
                 True,  # invert
             ),
@@ -381,6 +404,7 @@ if _PYTHON_3_8:
             input_text,
             input_lines,
             expected_matched_lines,
+            expected_export_text,
             field=None,
             invert=False,
         ) -> None:
@@ -388,16 +412,40 @@ if _PYTHON_3_8:
             log_view, _log_pane = self._create_log_view_from_list(input_lines)
             self.assertEqual(log_view.get_total_count(), len(input_lines))
 
+            # Apply the filter and wait for the background task
             log_view.new_search(input_text, invert=invert, field=field)
             log_view.apply_filter()
             await log_view.filter_existing_logs_task
 
+            # Do the number of logs match the expected count?
             self.assertEqual(log_view.get_total_count(),
                              len(expected_matched_lines))
             self.assertEqual(
                 [log.record.message for log in log_view.filtered_logs],
                 expected_matched_lines)
 
+            # Check exported text respects filtering
+            log_text = log_view._logs_to_text(  # pylint: disable=protected-access
+                use_table_formatting=True)
+            # Remove leading time from resulting logs
+            log_text_no_datetime = ''
+            for line in log_text.splitlines():
+                log_text_no_datetime += (line[17:] + '\n')
+            self.assertEqual(log_text_no_datetime, expected_export_text)
+
+            # Select the bottom log line
+            log_view.render_content()
+            log_view.visual_select_line(Point(0, 9))  # Window height is 10
+            # Export to text
+            log_text = log_view._logs_to_text(  # pylint: disable=protected-access
+                selected_lines_only=True,
+                use_table_formatting=False)
+            self.assertEqual(
+                # Remove date, time, and level
+                log_text[24:].strip(),
+                expected_matched_lines[0].strip())
+
+            # Clear filters and check the numbe of lines is back to normal.
             log_view.clear_filters()
             self.assertEqual(log_view.get_total_count(), len(input_lines))
 

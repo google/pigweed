@@ -133,9 +133,7 @@ class WatchApp(PluginMixin):
 
         pw_console.python_logging.setup_python_logging()
         #log pane
-        log_pane = LogPane(application=self,
-                           pane_title='log pane',
-                           use_ctrl_c_binding=False)
+        log_pane = LogPane(application=self, pane_title='log pane')
         for logger in loggers:
             log_pane.add_log_handler(logger, level_name='INFO')
         # disable table view to allow teriminal based coloring

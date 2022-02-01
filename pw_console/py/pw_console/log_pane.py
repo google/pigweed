@@ -33,7 +33,7 @@ from prompt_toolkit.layout import (
     VerticalAlign,
     Window,
 )
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseButton
 
 import pw_console.widgets.checkbox
 import pw_console.style
@@ -42,6 +42,8 @@ from pw_console.log_pane_toolbars import (
     LineInfoBar,
     TableToolbar,
 )
+from pw_console.log_pane_saveas_dialog import LogPaneSaveAsDialog
+from pw_console.log_pane_selection_dialog import LogPaneSelectionDialog
 from pw_console.search_toolbar import SearchToolbar
 from pw_console.filter_toolbar import FilterToolbar
 from pw_console.widgets import (
@@ -55,6 +57,7 @@ if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
 
 _LOG_OUTPUT_SCROLL_AMOUNT = 5
+_LOG = logging.getLogger(__package__)
 
 
 class LogContentControl(FormattedTextControl):
@@ -65,13 +68,13 @@ class LogContentControl(FormattedTextControl):
             self.log_pane.last_log_content_height = height
         return super().create_content(width, height)
 
-    def __init__(self,
-                 log_pane: 'LogPane',
-                 *args,
-                 use_ctrl_c_binding=True,
-                 **kwargs) -> None:
+    def __init__(self, log_pane: 'LogPane', *args, **kwargs) -> None:
         # pylint: disable=too-many-locals
         self.log_pane = log_pane
+
+        # Mouse drag visual selection flags.
+        self.visual_select_mode_drag_start = False
+        self.visual_select_mode_drag_stop = False
 
         # Key bindings.
         key_bindings = KeyBindings()
@@ -121,14 +124,24 @@ class LogContentControl(FormattedTextControl):
         @key_bindings.add('up')
         @key_bindings.add('k')
         def _up(_event: KeyPressEvent) -> None:
-            """Select previous log line."""
+            """Move cursor up."""
             self.log_pane.log_view.scroll_up()
 
         @key_bindings.add('down')
         @key_bindings.add('j')
         def _down(_event: KeyPressEvent) -> None:
-            """Select next log line."""
+            """Move cursor down."""
             self.log_pane.log_view.scroll_down()
+
+        @key_bindings.add('s-up')
+        def _visual_select_up(_event: KeyPressEvent) -> None:
+            """Select previous log line."""
+            self.log_pane.log_view.visual_select_up()
+
+        @key_bindings.add('s-down')
+        def _visual_select_down(_event: KeyPressEvent) -> None:
+            """Select next log line."""
+            self.log_pane.log_view.visual_select_down()
 
         @key_bindings.add('pageup')
         def _pageup(_event: KeyPressEvent) -> None:
@@ -139,6 +152,11 @@ class LogContentControl(FormattedTextControl):
         def _pagedown(_event: KeyPressEvent) -> None:
             """Scroll the logs down by one page."""
             self.log_pane.log_view.scroll_down_one_page()
+
+        @key_bindings.add('c-o')
+        def _start_saveas(_event: KeyPressEvent) -> None:
+            """Save logs to a file."""
+            self.log_pane.start_saveas()
 
         @key_bindings.add('/')
         @key_bindings.add('c-f')
@@ -174,13 +192,6 @@ class LogContentControl(FormattedTextControl):
             """Reset / erase active filters."""
             self.log_pane.log_view.clear_filters()
 
-        if use_ctrl_c_binding:
-
-            @key_bindings.add('c-c')
-            def _copy_log_lines(_event: KeyPressEvent) -> None:
-                """Copy visible log lines to the system clipboard."""
-                self.log_pane.copy_text()
-
         kwargs['key_bindings'] = key_bindings
         super().__init__(*args, **kwargs)
 
@@ -188,25 +199,56 @@ class LogContentControl(FormattedTextControl):
         """Mouse handler for this control."""
         mouse_position = mouse_event.position
 
-        # Check for pane focus first.
-        # If not in focus, change forus to the log pane and do nothing else.
-        if not has_focus(self)():
-            if mouse_event.event_type == MouseEventType.MOUSE_UP:
-                # Focus the search bar if it is open.
-                if self.log_pane.search_bar_active:
+        # Left mouse button release should:
+        # 1. check if a mouse drag just completed.
+        # 2. If not in focus, switch focus to this log pane
+        #    If in focus, move the cursor to that position.
+        if (mouse_event.event_type == MouseEventType.MOUSE_UP
+                and mouse_event.button == MouseButton.LEFT):
+
+            # If a drag was in progress and this is the first mouse release
+            # press, set the stop flag.
+            if (self.visual_select_mode_drag_start
+                    and not self.visual_select_mode_drag_stop):
+                self.visual_select_mode_drag_stop = True
+
+            if not has_focus(self)():
+                # Focus the save as dialog if open.
+                if self.log_pane.saveas_dialog_active:
+                    get_app().layout.focus(self.log_pane.saveas_dialog)
+                # Focus the search bar if open.
+                elif self.log_pane.search_bar_active:
                     get_app().layout.focus(self.log_pane.search_toolbar)
-                # Otherwise focus on the log pane content.
+                # Otherwise, focus on the log pane content.
                 else:
                     get_app().layout.focus(self)
                 # Mouse event handled, return None.
                 return None
 
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            # Scroll to the line clicked.
+            # Log pane in focus already, move the cursor to the position of the
+            # mouse click.
             self.log_pane.log_view.scroll_to_position(mouse_position)
             # Mouse event handled, return None.
             return None
 
+        # Mouse drag with left button should start selecting lines.
+        # The log pane does not need to be in focus to start this.
+        if (mouse_event.event_type == MouseEventType.MOUSE_MOVE
+                and mouse_event.button == MouseButton.LEFT):
+            # If a previous mouse drag was completed, clear the selection.
+            if (self.visual_select_mode_drag_start
+                    and self.visual_select_mode_drag_stop):
+                self.log_pane.log_view.clear_visual_selection()
+            # Drag select in progress, set flags accordingly.
+            self.visual_select_mode_drag_start = True
+            self.visual_select_mode_drag_stop = False
+
+            self.log_pane.log_view.visual_select_line(mouse_position)
+            # Mouse event handled, return None.
+            return None
+
+        # Mouse wheel events should move the cursor +/- some amount of lines
+        # even if this pane is not in focus.
         if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
             self.log_pane.log_view.scroll_down(lines=_LOG_OUTPUT_SCROLL_AMOUNT)
             # Mouse event handled, return None.
@@ -229,7 +271,6 @@ class LogPane(WindowPane):
         self,
         application: Any,
         pane_title: str = 'Logs',
-        use_ctrl_c_binding: bool = True,
     ):
         super().__init__(application, pane_title)
 
@@ -254,6 +295,10 @@ class LogPane(WindowPane):
         self.search_toolbar = SearchToolbar(self)
         self.filter_toolbar = FilterToolbar(self)
 
+        self.saveas_dialog = LogPaneSaveAsDialog(self)
+        self.saveas_dialog_active = False
+        self.visual_selection_bar = LogPaneSelectionDialog(self)
+
         # Table header bar, only shown if table view is active.
         self.table_header_toolbar = TableToolbar(self)
 
@@ -261,11 +306,8 @@ class LogPane(WindowPane):
         self.bottom_toolbar = WindowPaneToolbar(self)
         self.bottom_toolbar.add_button(
             ToolbarButton('/', 'Search', self.start_search))
-        if use_ctrl_c_binding:
-            self.bottom_toolbar.add_button(
-                ToolbarButton('Ctrl-c', 'Copy Lines',
-                              self.log_view.copy_visible_lines))
-
+        self.bottom_toolbar.add_button(
+            ToolbarButton('Ctrl-o', 'Save', self.start_saveas))
         self.bottom_toolbar.add_button(
             ToolbarButton('f',
                           'Follow',
@@ -342,6 +384,15 @@ class LogPane(WindowPane):
                 floats=[
                     # Floating LineInfoBar
                     Float(top=0, right=0, height=1, content=LineInfoBar(self)),
+                    Float(top=0,
+                          right=0,
+                          height=LogPaneSelectionDialog.DIALOG_HEIGHT,
+                          content=self.visual_selection_bar),
+                    Float(top=3,
+                          left=2,
+                          right=2,
+                          height=LogPaneSaveAsDialog.DIALOG_HEIGHT + 2,
+                          content=self.saveas_dialog),
                 ]),
             filter=Condition(lambda: self.show_pane))
 
@@ -383,16 +434,22 @@ class LogPane(WindowPane):
 
         return logger_names[0] + additional_text
 
-    def copy_text(self):
-        """Copy visible text in this window pane to the system clipboard."""
-        self.log_view.copy_visible_lines()
-
     def start_search(self):
         """Show the search bar to begin a search."""
         # Show the search bar
         self.search_bar_active = True
         # Focus on the search bar
         self.application.focus_on_container(self.search_toolbar)
+
+    def start_saveas(self, **export_kwargs) -> bool:
+        """Show the saveas bar to begin saving logs to a file."""
+        # Show the search bar
+        self.saveas_dialog_active = True
+        # Set export options if any
+        self.saveas_dialog.set_export_options(**export_kwargs)
+        # Focus on the search bar
+        self.application.focus_on_container(self.saveas_dialog)
+        return True
 
     def pane_resized(self) -> bool:
         """Return True if the current window size has changed."""
@@ -449,6 +506,11 @@ class LogPane(WindowPane):
 
         options = [
             # Menu separator
+            ('-', None),
+            (
+                'Save a copy',
+                self.start_saveas,
+            ),
             ('-', None),
             (
                 '{check} Line wrapping'.format(

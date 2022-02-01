@@ -215,9 +215,9 @@ def flatten_formatted_text_tuples(
     return fragments
 
 
-def remove_formatting(formatted_text):
+def remove_formatting(formatted_text: StyleAndTextTuples) -> str:
     """Throw away style info from prompt_toolkit formatted text tuples."""
-    return ''.join([formatted_tuple[1] for formatted_tuple in formatted_text])  # pylint: disable=not-an-iterable
+    return ''.join([formatted_tuple[1] for formatted_tuple in formatted_text])
 
 
 def get_line_height(text_width, screen_width, prefix_width):

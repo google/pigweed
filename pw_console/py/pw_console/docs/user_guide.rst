@@ -92,35 +92,60 @@ shortcut highlighted in blue:
 Log Window
 ~~~~~~~~~~
 
-Log Window Scrolling
-^^^^^^^^^^^^^^^^^^^^
+Log Window Navigation
+^^^^^^^^^^^^^^^^^^^^^
 
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Scroll logs up (1 line)                       :kbd:`Up`
+Move cursor up 1 line                         :kbd:`Up`
                                               :kbd:`k`
 
-Scroll logs down (1 line)                     :kbd:`Down`
+Move cursor down 1 line                       :kbd:`Down`
                                               :kbd:`j`
 
-Scroll logs up (5 lines)                      :guilabel:`Mouse Wheel Up`
-Scroll logs down (5 lines)                    :guilabel:`Mouse Wheel Down`
+Move cursor up 5 lines                        :guilabel:`Mouse Wheel Up`
+Move cursor down 5 lines                      :guilabel:`Mouse Wheel Down`
 
-Scroll logs up one page                       :kbd:`PageUp`
-Scroll logs down one page                     :kbd:`PageDown`
+Move cursor up one page                       :kbd:`PageUp`
+Move cursor down one page                     :kbd:`PageDown`
 
 Jump to the beginning                         :kbd:`g`
 Jump to the end                               :kbd:`G`
 ============================================  =====================
 
-Log Window View Options
-^^^^^^^^^^^^^^^^^^^^^^^
+Log Line Selection
+^^^^^^^^^^^^^^^^^^
 
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Copy visible log lines to the clipboard.      :kbd:`Ctrl-c`
+Select the next log line                      :kbd:`Shift-Down`
+Select the previous log line                  :kbd:`Shift-Up`
+
+Select a range of log lines                   :guilabel:`Left Mouse Drag`
+============================================  =====================
+
+When making log line selections a popup will appear in the upper right of the log
+window showing the number of lines selected along with copy and export options.
+
+::
+
+  +--------------------------------------------------------+
+  | 32 Selected  Format:  [✓] Table  [ ] Markdown          |
+  | [ Cancel ]  [ Select All ]   [ Save as File ] [ Copy ] |
+  +--------------------------------------------------------+
+
+
+Log Window Functions
+^^^^^^^^^^^^^^^^^^^^
+
+============================================  =====================
+Function                                      Keys
+============================================  =====================
+Open the search bar                           :kbd:`/`
+                                              :kbd:`Ctrl-f`
+Save a copy of logs to a file                 :kbd:`Ctrl-o`
 Toggle line following.                        :kbd:`f`
 Toggle table view.                            :kbd:`t`
 Toggle line wrapping.                         :kbd:`w`
@@ -174,20 +199,20 @@ parameters.
 
 - ``Matcher``: How the search input should be interpreted.
 
-    - ``REGEX``: Treat input text as a regex.
+  - ``REGEX``: Treat input text as a regex.
 
-    - ``STRING``: Treat input as a plain string. Any regex characters will be
-      escaped when search is performed.
+  - ``STRING``: Treat input as a plain string. Any regex characters will be
+    escaped when search is performed.
 
-    - ``FUZZY``: input text is split on spaces using the ``.*`` regex. For
-      example if you search for ``idle run`` the resulting search regex used
-      under the hood is ``(idle)(.*?)(run)``. This would match both of these
-      lines:
+  - ``FUZZY``: input text is split on spaces using the ``.*`` regex. For
+    example if you search for ``idle run`` the resulting search regex used
+    under the hood is ``(idle)(.*?)(run)``. This would match both of these
+    lines:
 
-      .. code-block:: text
+    .. code-block:: text
 
-         Idle task is running
-         Idle thread is running
+       Idle task is running
+       Idle thread is running
 
 **Active Search Shortcuts**
 
@@ -337,32 +362,32 @@ accessed under the :guilabel:`[Edit]` menu.
 If you need to copy text from any other part of the UI you will have to use your
 terminal's built in text selection:
 
-- **Linux**
+**Linux**
 
-  - Holding :kbd:`Shift` and dragging the mouse in most terminals.
+- Holding :kbd:`Shift` and dragging the mouse in most terminals.
 
-- **Mac**
+**Mac**
 
-  - **Apple Terminal**:
+- **Apple Terminal**:
 
-    Hold :kbd:`Fn` and drag the mouse
+  Hold :kbd:`Fn` and drag the mouse
 
-  - **iTerm2**:
+- **iTerm2**:
 
-    Hold :kbd:`Cmd+Option` and drag the mouse
+  Hold :kbd:`Cmd+Option` and drag the mouse
 
-- **Windows**
+**Windows**
 
-  - **Git CMD** (included in `Git for Windows <https://git-scm.com/downloads>`__)
+- **Git CMD** (included in `Git for Windows <https://git-scm.com/downloads>`__)
 
-    1. Click on the Git window icon in the upper left of the title bar
-    2. Click ``Edit`` then ``Mark``
-    3. Drag the mouse to select text and press Enter to copy.
+  1. Click on the Git window icon in the upper left of the title bar
+  2. Click ``Edit`` then ``Mark``
+  3. Drag the mouse to select text and press Enter to copy.
 
-  - **Windows Terminal**
+- **Windows Terminal**
 
-    1. Hold :kbd:`Shift` and drag the mouse to select text
-    2. Press :kbd:`Ctrl-Shift-C` to copy.
+  1. Hold :kbd:`Shift` and drag the mouse to select text
+  2. Press :kbd:`Ctrl-Shift-C` to copy.
 
 Pasting Text
 ^^^^^^^^^^^^
@@ -376,29 +401,29 @@ computer where you copied the text. In that case you will need to use your
 terminal emulator's paste function. How to do this depends on what terminal you
 are using and on which OS. Here's how on various platforms:
 
-- **Linux**
+**Linux**
 
-  - **XTerm**
+- **XTerm**
 
-    :kbd:`Shift-Insert` pastes text
+  :kbd:`Shift-Insert` pastes text
 
-  - **Gnome Terminal**
+- **Gnome Terminal**
 
-    :kbd:`Ctrl-Shift-V` pastes text
+  :kbd:`Ctrl-Shift-V` pastes text
 
-- **Windows**
+**Windows**
 
-  - **Git CMD** (included in `Git for Windows <https://git-scm.com/downloads>`__)
+- **Git CMD** (included in `Git for Windows <https://git-scm.com/downloads>`__)
 
-    1. Click on the Git icon in the upper left of the windows title bar and open
-       ``Properties``.
-    2. Checkmark the option ``Use Ctrl+Shift+C/V as Copy Paste`` and hit ok.
-    3. Then use :kbd:`Ctrl-Shift-V` to paste.
+  1. Click on the Git icon in the upper left of the windows title bar and open
+     ``Properties``.
+  2. Checkmark the option ``Use Ctrl+Shift+C/V as Copy Paste`` and hit ok.
+  3. Then use :kbd:`Ctrl-Shift-V` to paste.
 
-  - **Windows Terminal**
+- **Windows Terminal**
 
-   -  :kbd:`Ctrl-Shift-V` pastes text.
-   -  :kbd:`Shift-RightClick` also pastes text.
+  1. :kbd:`Ctrl-Shift-V` pastes text.
+  2. :kbd:`Shift-RightClick` also pastes text.
 
 
 Window Management
@@ -647,9 +672,6 @@ Known Issues
 
 Log Window
 ~~~~~~~~~~
-
-- Rendering for log lines that include ``\n`` characters is broken and hidden if
-  Table view is turned on.
 
 - Tab character rendering will not work in the log pane view. They will
   appear as ``^I`` since prompt_toolkit can't render them. See this issue for details:

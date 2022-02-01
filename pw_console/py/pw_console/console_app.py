@@ -339,9 +339,20 @@ class ConsoleApp:
         return self.jinja_env.get_template(file_name)
 
     def run_pane_menu_option(self, function_to_run):
-        function_to_run()
+        # Run the function for a particular menu item.
+        return_value = function_to_run()
+        # It's return value dictates if the main menu should close or not.
+        # - True: The main menu stays open. This is the default prompt_toolkit
+        #   menu behavior.
+        # - False: The main menu closes.
+
+        # Update menu content. This will refresh checkboxes and add/remove
+        # items.
         self.update_menu_items()
-        self.focus_main_menu()
+        # Check if the main menu should stay open.
+        if not return_value:
+            # Keep the main menu open
+            self.focus_main_menu()
 
     def open_new_log_pane_for_logger(
             self,
@@ -491,10 +502,6 @@ class ConsoleApp:
             MenuItem(
                 '[Edit]',
                 children=[
-                    MenuItem('Copy visible lines from active window',
-                             handler=functools.partial(
-                                 self.window_manager.run_action_on_active_pane,
-                                 'copy_text')),
                     MenuItem('Paste to Python Input',
                              handler=self.repl_pane.
                              paste_system_clipboard_to_input_buffer),
