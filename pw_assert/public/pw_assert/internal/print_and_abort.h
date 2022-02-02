@@ -35,6 +35,7 @@
 //
 // This is done with single printf to work better in multithreaded enironments.
 #define PW_ASSERT_HANDLE_FAILURE(expression)           \
+  fflush(stdout);                                      \
   fprintf(stderr,                                      \
           "\033[41m\033[37m\033[1m%s:%d:\033[0m "      \
           "\033[1mPW_ASSERT() " _PW_ASSERT_DEBUG_MACRO \
