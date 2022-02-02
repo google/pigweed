@@ -162,7 +162,7 @@ TEST_F(Phase1Test, FeatureExchangePairingFailed) {
                                               ));
   RunLoopUntilIdle();
 
-  EXPECT_EQ(ErrorCode::kPairingNotSupported, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kPairingNotSupported), listener()->last_error());
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -197,7 +197,7 @@ TEST_F(Phase1Test, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
   EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInvalidParameters), listener()->last_error());
   EXPECT_EQ(0, feature_exchange_count());
 }
 
@@ -232,7 +232,7 @@ TEST_F(Phase1Test, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
   EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInvalidParameters), listener()->last_error());
   EXPECT_EQ(0, feature_exchange_count());
 }
 
@@ -269,7 +269,7 @@ TEST_F(Phase1Test, FeatureExchangeFailureAuthenticationRequirements) {
   EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kAuthenticationRequirements), listener()->last_error());
   EXPECT_EQ(0, feature_exchange_count());
 }
 
@@ -289,7 +289,7 @@ TEST_F(Phase1Test, FeatureExchangeFailureMalformedRequest) {
 
   EXPECT_TRUE(ReceiveAndExpect(kMalformedResponse, kFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInvalidParameters), listener()->last_error());
 }
 
 TEST_F(Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
@@ -530,7 +530,7 @@ TEST_F(Phase1Test, FeatureExchangeEncryptionKeySize) {
 
   EXPECT_EQ(0, feature_exchange_count());
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kEncryptionKeySize, listener()->last_error());
+  ASSERT_EQ(ToResult(ErrorCode::kEncryptionKeySize), listener()->last_error());
 }
 
 TEST_F(Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
@@ -568,7 +568,7 @@ TEST_F(Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
 
   EXPECT_EQ(0, feature_exchange_count());
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kEncryptionKeySize, listener()->last_error());
+  ASSERT_EQ(ToResult(ErrorCode::kEncryptionKeySize), listener()->last_error());
 }
 
 TEST_F(Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
@@ -606,7 +606,7 @@ TEST_F(Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
 
   EXPECT_EQ(0, feature_exchange_count());
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kAuthenticationRequirements), listener()->last_error());
 }
 
 TEST_F(Phase1Test, FeatureExchangeBothSupportScLinkKeyAndCt2GenerateH7CtKey) {
@@ -986,7 +986,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderFailedAuthenticationRequirements) {
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kAuthenticationRequirements), listener()->last_error());
 }
 
 TEST_F(Phase1Test, FeatureExchangeResponderJustWorks) {
@@ -1218,7 +1218,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderRejectsMethodOfInsufficientSecurity) 
   ASSERT_TRUE(Expect(kFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kAuthenticationRequirements), listener()->last_error());
 }
 
 TEST_F(Phase1Test, FeatureExchangeResponderSecureAuthenticatedInitiatorNoInputNoOutput) {
@@ -1246,7 +1246,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderSecureAuthenticatedInitiatorNoInputNo
   ASSERT_TRUE(Expect(kFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kAuthenticationRequirements), listener()->last_error());
 }
 
 TEST_F(Phase1Test, FeatureExchangeResponderDoesntSupportScDoNotGenerateCtKey) {
@@ -1289,7 +1289,7 @@ TEST_F(Phase1Test, UnsupportedCommandDuringPairing) {
   );
   ReceiveAndExpect(CreateStaticByteBuffer(0xFF), kExpected);
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kCommandNotSupported, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kCommandNotSupported), listener()->last_error());
 }
 
 TEST_F(Phase1Test, OnSecurityRequestWhilePairing) {
@@ -1471,7 +1471,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
   // Check that we fail with invalid parameters when a peer requests nonbondable mode
   // with a non-zero KeyDistGen field
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInvalidParameters), listener()->last_error());
 }
 
 }  // namespace

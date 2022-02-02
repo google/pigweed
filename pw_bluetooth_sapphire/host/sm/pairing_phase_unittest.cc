@@ -95,7 +95,7 @@ using PairingPhaseDeathTest = PairingPhaseTest;
 
 TEST_F(PairingPhaseDeathTest, CallMethodOnFailedPhaseDies) {
   pairing_phase()->Abort(ErrorCode::kUnspecifiedReason);
-  ASSERT_DEATH_IF_SUPPORTED(pairing_phase()->OnFailure(Error(HostError::kFailed)), ".*failed.*");
+  ASSERT_DEATH_IF_SUPPORTED(pairing_phase()->OnFailure(ToResult(HostError::kFailed)), ".*failed.*");
 }
 
 TEST_F(PairingPhaseTest, ChannelClosedNotifiesListener) {
@@ -103,16 +103,16 @@ TEST_F(PairingPhaseTest, ChannelClosedNotifiesListener) {
   fake_chan()->Close();
   RunLoopUntilIdle();
   ASSERT_EQ(listener()->pairing_error_count(), 1);
-  EXPECT_EQ(HostError::kLinkDisconnected, listener()->last_error());
+  EXPECT_EQ(ToResult(HostError::kLinkDisconnected), listener()->last_error());
 }
 
 TEST_F(PairingPhaseTest, OnFailureNotifiesListener) {
   auto ecode = ErrorCode::kDHKeyCheckFailed;
   ASSERT_EQ(listener()->pairing_error_count(), 0);
-  pairing_phase()->OnFailure(ToResult(ecode).error_value());
+  pairing_phase()->OnFailure(ToResult(ecode));
   RunLoopUntilIdle();
   ASSERT_EQ(listener()->pairing_error_count(), 1);
-  EXPECT_EQ(ecode, listener()->last_error());
+  EXPECT_EQ(ToResult(ecode), listener()->last_error());
 }
 
 TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
@@ -131,7 +131,7 @@ TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
 
   // Check the listener PairingFailed callback was made.
   ASSERT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ErrorCode::kDHKeyCheckFailed, listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kDHKeyCheckFailed), listener()->last_error());
 }
 
 }  // namespace
