@@ -75,26 +75,6 @@ void Endpoint::RegisterCall(Call& call) {
   }
 }
 
-Channel* Endpoint::GetInternalChannel(uint32_t id) const {
-  for (Channel& c : channels_) {
-    if (c.id() == id) {
-      return &c;
-    }
-  }
-  return nullptr;
-}
-
-Channel* Endpoint::AssignChannel(uint32_t id, ChannelOutput& interface) {
-  internal::Channel* channel =
-      GetInternalChannel(Channel::kUnassignedChannelId);
-  if (channel == nullptr) {
-    return nullptr;
-  }
-
-  *channel = Channel(id, &interface);
-  return channel;
-}
-
 Call* Endpoint::FindCallById(uint32_t channel_id,
                              uint32_t service_id,
                              uint32_t method_id) {
@@ -110,21 +90,26 @@ Call* Endpoint::FindCallById(uint32_t channel_id,
 Status Endpoint::CloseChannel(uint32_t channel_id) {
   LockGuard lock(rpc_lock());
 
-  Channel* channel = GetInternalChannel(channel_id);
+  Channel* channel = channels_.Get(channel_id);
   if (channel == nullptr) {
     return Status::NotFound();
   }
+  channel->Close();
 
   // Close pending calls on the channel that's going away.
-  for (Call& call : calls_) {
-    if (channel_id == call.channel_id_locked()) {
-      // A call removes itself from its endpoint's call list by calling
-      // Endpoint::UnregisterCall().
-      call.Terminate();
+  auto previous = calls_.before_begin();
+  auto current = calls_.begin();
+
+  while (current != calls_.end()) {
+    if (channel_id == current->channel_id_locked()) {
+      current->HandleChannelClose();
+      current = calls_.erase_after(previous);  // previous stays the same
+    } else {
+      previous = current;
+      ++current;
     }
   }
 
-  channel->Close();
   return OkStatus();
 }
 

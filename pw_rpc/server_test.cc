@@ -215,27 +215,22 @@ TEST_F(BasicServer, ProcessPacket_InvalidService_SendsError) {
   EXPECT_EQ(packet.status(), Status::NotFound());
 }
 
-TEST_F(BasicServer, ProcessPacket_UnassignedChannel_AssignsToAvailableSlot) {
-  RawFakeChannelOutput<1> unassigned_output;
-  EXPECT_EQ(OkStatus(),
+TEST_F(BasicServer, ProcessPacket_UnassignedChannel) {
+  EXPECT_EQ(Status::Unavailable(),
             server_.ProcessPacket(
-                EncodePacket(PacketType::REQUEST, /*channel_id=*/99, 42, 100),
-                unassigned_output));
-  EXPECT_EQ(channels_[2].id(), 99u);
+                EncodePacket(PacketType::REQUEST, /*channel_id=*/99, 42, 27)));
 }
 
 TEST_F(BasicServer,
-       ProcessPacket_UnassignedChannel_SendsResourceExhaustedIfCannotAssign) {
-  channels_[2] = Channel::Create<3>(&output_);  // Occupy only available channel
-
-  EXPECT_EQ(OkStatus(),
+       ProcessPacket_UnassignedChannel_SendsUnavailableToProvidedInterface) {
+  EXPECT_EQ(Status::Unavailable(),
             server_.ProcessPacket(
                 EncodePacket(PacketType::REQUEST, /*channel_id=*/99, 42, 27),
                 output_));
 
   const Packet& packet =
       static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
-  EXPECT_EQ(packet.status(), Status::ResourceExhausted());
+  EXPECT_EQ(packet.status(), Status::Unavailable());
   EXPECT_EQ(packet.channel_id(), 99u);
   EXPECT_EQ(packet.service_id(), 42u);
   EXPECT_EQ(packet.method_id(), 27u);
@@ -245,7 +240,7 @@ TEST_F(BasicServer, ProcessPacket_ClientErrorOnUnassignedChannel_NoResponse) {
   channels_[2] = Channel::Create<3>(&output_);  // Occupy only available channel
 
   EXPECT_EQ(
-      OkStatus(),
+      Status::Unavailable(),
       server_.ProcessPacket(
           EncodePacket(PacketType::CLIENT_ERROR, /*channel_id=*/99, 42, 27),
           output_));
@@ -261,25 +256,77 @@ TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsNothing) {
   EXPECT_EQ(output_.total_packets(), 0u);
 }
 
-const Channel* GetChannel(Server& server, uint32_t id) {
+const Channel* GetChannel(internal::Endpoint& endpoint, uint32_t id) {
   internal::LockGuard lock(internal::rpc_lock());
-  return static_cast<internal::Endpoint&>(server).GetInternalChannel(id);
+  return endpoint.GetInternalChannel(id);
 }
 
-TEST_F(BasicServer, CloseChannel_Idle) {
+TEST_F(BasicServer, CloseChannel_NoCalls) {
   EXPECT_NE(nullptr, GetChannel(server_, 2));
   EXPECT_EQ(OkStatus(), server_.CloseChannel(2));
   EXPECT_EQ(nullptr, GetChannel(server_, 2));
+  ASSERT_EQ(output_.total_packets(), 0u);
 }
 
-TEST_F(BasicServer, CloseChannel_Pending_Call) {
+TEST_F(BasicServer, CloseChannel_UnknownChannel) {
+  ASSERT_EQ(nullptr, GetChannel(server_, 13579));
+  EXPECT_EQ(Status::NotFound(), server_.CloseChannel(13579));
+}
+
+TEST_F(BasicServer, CloseChannel_PendingCall) {
   EXPECT_NE(nullptr, GetChannel(server_, 1));
+  EXPECT_EQ(static_cast<internal::Endpoint&>(server_).active_call_count(), 0u);
+
+  internal::TestMethod::FakeServerCall call;
+  service_.method(100).keep_call_active(call);
+
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 100),
                                   output_));
 
+  Status on_error_status;
+  call.set_on_error(
+      [&on_error_status](Status error) { on_error_status = error; });
+
+  ASSERT_TRUE(call.active());
+  EXPECT_EQ(static_cast<internal::Endpoint&>(server_).active_call_count(), 1u);
+
   EXPECT_EQ(OkStatus(), server_.CloseChannel(1));
   EXPECT_EQ(nullptr, GetChannel(server_, 1));
+
+  EXPECT_EQ(static_cast<internal::Endpoint&>(server_).active_call_count(), 0u);
+
+  // Should call on_error, but not send a packet since the channel is closed.
+  EXPECT_EQ(Status::Aborted(), on_error_status);
+  ASSERT_EQ(output_.total_packets(), 0u);
+}
+
+TEST_F(BasicServer, OpenChannel_UnusedSlot) {
+  const std::span request = EncodePacket(PacketType::REQUEST, 9, 42, 100);
+  EXPECT_EQ(Status::Unavailable(), server_.ProcessPacket(request, output_));
+
+  EXPECT_EQ(OkStatus(), server_.OpenChannel(9, output_));
+  EXPECT_EQ(OkStatus(), server_.ProcessPacket(request, output_));
+
+  const Packet& packet =
+      static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
+  EXPECT_EQ(packet.type(), PacketType::RESPONSE);
+  EXPECT_EQ(packet.channel_id(), 9u);
+  EXPECT_EQ(packet.service_id(), 42u);
+  EXPECT_EQ(packet.method_id(), 100u);
+}
+
+TEST_F(BasicServer, OpenChannel_AlreadyExists) {
+  ASSERT_NE(nullptr, GetChannel(server_, 1));
+  EXPECT_EQ(Status::AlreadyExists(), server_.OpenChannel(1, output_));
+}
+
+TEST_F(BasicServer, OpenChannel_AdditionalSlot) {
+  EXPECT_EQ(OkStatus(), server_.OpenChannel(3, output_));
+
+  constexpr Status kExpected =
+      PW_RPC_DYNAMIC_ALLOCATION == 0 ? Status::ResourceExhausted() : OkStatus();
+  EXPECT_EQ(kExpected, server_.OpenChannel(19823, output_));
 }
 
 class BidiMethod : public BasicServer {

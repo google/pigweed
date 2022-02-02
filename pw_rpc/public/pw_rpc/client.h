@@ -27,7 +27,7 @@ class Client : public internal::Endpoint {
  public:
   // Creates a client that uses a set of RPC channels. Channels can be shared
   // between a client and a server, but not between multiple clients.
-  constexpr Client(std::span<Channel> channels) : Endpoint(channels) {}
+  _PW_RPC_CONSTEXPR Client(std::span<Channel> channels) : Endpoint(channels) {}
 
   // Processes an incoming RPC packet. The packet may be an RPC response or a
   // control packet, the result of which is processed in this function. Returns
@@ -42,7 +42,9 @@ class Client : public internal::Endpoint {
       PW_LOCKS_EXCLUDED(internal::rpc_lock());
 
  private:
-  using Endpoint::GetInternalChannel;  // Remove from public interface
+  // Remove these internal::Endpoint functions from the public interface.
+  using Endpoint::active_call_count;
+  using Endpoint::GetInternalChannel;
 };
 
 }  // namespace pw::rpc

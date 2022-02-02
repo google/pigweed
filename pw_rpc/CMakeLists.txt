@@ -66,6 +66,7 @@ endif()
 pw_add_module_library(pw_rpc.common
   SOURCES
     channel.cc
+    channel_list.cc
     packet.cc
   PUBLIC_DEPS
     pw_assert

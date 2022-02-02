@@ -50,31 +50,20 @@ Status Server::ProcessPacket(ConstByteSpan packet_data,
   //              static_cast<unsigned>(packet.method_id()));
 
   internal::Channel* channel = GetInternalChannel(packet.channel_id());
-
   if (channel == nullptr) {
-    if (interface == nullptr) {
-      internal::rpc_lock().unlock();
-      PW_LOG_WARN("RPC server received packet for unknown channel %u",
-                  static_cast<unsigned>(packet.channel_id()));
-      PW_LOG_WARN(
-          "No ChannelOutput was provided, so a channel cannot be created");
-      return OkStatus();  // OK since the packet was handled
+    // If an interface was provided, respond with a SERVER_ERROR to indicate
+    // that the channel is not available on this server. Don't send responses to
+    // error messages, though, to avoid potential infinite cycles.
+    if (interface != nullptr && packet.type() != PacketType::CLIENT_ERROR) {
+      internal::Channel(packet.channel_id(), interface)
+          .Send(Packet::ServerError(packet, Status::Unavailable()))
+          .IgnoreError();
     }
 
-    // If the requested channel doesn't exist, try to dynamically assign one.
-    channel = AssignChannel(packet.channel_id(), *interface);
-    if (channel == nullptr) {
-      // If a channel can't be assigned, send a RESOURCE_EXHAUSTED error. Never
-      // send responses to error messages, though, to avoid infinite cycles.
-      if (packet.type() != PacketType::CLIENT_ERROR) {
-        internal::Channel temp_channel(packet.channel_id(), interface);
-        temp_channel
-            .Send(Packet::ServerError(packet, Status::ResourceExhausted()))
-            .IgnoreError();
-      }
-      internal::rpc_lock().unlock();
-      return OkStatus();  // OK since the packet was handled
-    }
+    internal::rpc_lock().unlock();
+    PW_LOG_WARN("RPC server received packet for unknown channel %u",
+                static_cast<unsigned>(packet.channel_id()));
+    return Status::Unavailable();
   }
 
   const auto [service, method] = FindMethod(packet);

@@ -31,7 +31,7 @@ namespace pw::rpc {
 
 class Server : public internal::Endpoint {
  public:
-  constexpr Server(std::span<Channel> channels) : Endpoint(channels) {}
+  _PW_RPC_CONSTEXPR Server(std::span<Channel> channels) : Endpoint(channels) {}
 
   // Registers a service with the server. This should not be called directly
   // with a Service; instead, use a generated class which inherits from it.
@@ -44,10 +44,11 @@ class Server : public internal::Endpoint {
   //   OK - The packet was processed by the server.
   //   DATA_LOSS - Failed to decode the packet.
   //   INVALID_ARGUMENT - The packet is intended for a client, not a server.
+  //   UNAVAILABLE - No RPC channel with the requested ID was found.
   //
   // ProcessPacket optionally accepts a ChannelOutput as a second argument. If
-  // provided, the server will be able to dynamically assign channels as
-  // requests come in instead of requiring channels to be known at compile time.
+  // provided, the server respond on that interface if an unknown channel is
+  // requested.
   Status ProcessPacket(ConstByteSpan packet_data) {
     return ProcessPacket(packet_data, nullptr);
   }
@@ -88,7 +89,7 @@ class Server : public internal::Endpoint {
     if constexpr (kExpected == MethodType::kUnary) {
       static_assert(
           Info::kType == kExpected,
-          "ServerResponse objects may only be opened for unary RPCs.");
+          "UnaryResponder objects may only be opened for unary RPCs.");
     } else if constexpr (kExpected == MethodType::kServerStreaming) {
       static_assert(
           Info::kType == kExpected,
@@ -122,7 +123,9 @@ class Server : public internal::Endpoint {
                                 internal::ServerCall* call) const
       PW_UNLOCK_FUNCTION(internal::rpc_lock());
 
-  using Endpoint::GetInternalChannel;  // Remove from public interface
+  // Remove these internal::Endpoint functions from the public interface.
+  using Endpoint::active_call_count;
+  using Endpoint::GetInternalChannel;
 
   IntrusiveList<Service> services_;
 };

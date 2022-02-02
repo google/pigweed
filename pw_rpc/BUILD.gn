@@ -144,11 +144,13 @@ pw_source_set("common") {
   sources = [
     "call.cc",
     "channel.cc",
+    "channel_list.cc",
     "endpoint.cc",
     "packet.cc",
     "public/pw_rpc/internal/call.h",
     "public/pw_rpc/internal/call_context.h",
     "public/pw_rpc/internal/channel.h",
+    "public/pw_rpc/internal/channel_list.h",
     "public/pw_rpc/internal/endpoint.h",
     "public/pw_rpc/internal/lock.h",
     "public/pw_rpc/internal/method_info.h",

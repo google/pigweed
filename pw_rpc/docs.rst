@@ -366,6 +366,14 @@ output.
     dynamic_channel.Configure(GetChannelId(), some_output);
   }
 
+Adding and removing channels
+----------------------------
+New channels may be registered with the ``OpenChannel`` function. If dynamic
+allocation is enabled (:c:macro:`PW_RPC_DYNAMIC_ALLOCATION` is 1), any number of
+channels may be registered. If dynamic allocation is disabled, new channels may
+only be registered if there are availale channel slots in the span provided to
+the RPC endpoint at construction.
+
 A channel may be closed and unregistered with an endpoint by calling
 ``ChannelClose`` on the endpoint with the corresponding channel ID.  This
 will terminate any pending calls and call their ``on_error`` callback
@@ -577,6 +585,7 @@ status codes result in the same action by the server: aborting the RPC.
 * ``DATA_LOSS`` -- Received a corrupt packet for a pending service method.
 * ``INVALID_ARGUMENT`` -- The server sent a packet type to an RPC that does not
   support it (a ``SERVER_STREAM`` was sent to an RPC with no server stream).
+* ``UNAVAILABLE`` -- Received a packet for an unknown channel.
 
 Server-to-client packets
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -638,6 +647,7 @@ status field indicates the type of error.
 * ``ABORTED`` -- The RPC was aborted due its channel being closed.
 * ``INTERNAL`` -- The server was unable to respond to an RPC due to an
   unrecoverable internal error.
+* ``UNAVAILABLE`` -- Received a packet for an unknown channel.
 
 Inovking a service method
 -------------------------
@@ -1033,6 +1043,27 @@ more details.
   be configured for pw_sync:mutex.
 
   This is disabled by default.
+
+.. c:macro:: PW_RPC_DYNAMIC_ALLOCATION
+
+  Whether pw_rpc should use dynamic memory allocation internally. If enabled,
+  pw_rpc dynamically allocates channels and its encoding buffers. RPC users may
+  use dynamic allocation independently of this option (e.g. to allocate pw_rpc
+  call objects).
+
+  The semantics for allocating and initializing channels change depending on
+  this option. If dynamic allocation is disabled, pw_rpc endpoints (servers or
+  clients) use an externally-allocated, fixed-size array of channels.
+  That array must include unassigned channels or existing channels must be
+  closed to add new channels.
+
+  If dynamic allocation is enabled, an span of channels may be passed to the
+  endpoint at construction, but these channels are only used to initialize its
+  internal std::vector of channels. External channel objects are NOT used by
+  the endpoint cannot be updated if dynamic allocation is enabled. No
+  unassigned channels should be passed to the endpoint; they will be ignored.
+  Any number of channels may be added to the endpoint, without closing existing
+  channels, but adding channels will use more memory.
 
 .. c:macro:: PW_RPC_CONFIG_LOG_LEVEL
 

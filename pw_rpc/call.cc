@@ -115,9 +115,7 @@ Status Call::WriteLocked(ConstByteSpan payload) {
 void Call::UnregisterAndMarkClosed() {
   if (active_locked()) {
     endpoint().UnregisterCall(*this);
-    channel_id_ = Channel::kUnassignedChannelId;
-    rpc_state_ = kInactive;
-    client_stream_state_ = kClientStreamInactive;
+    MarkClosed();
   }
 }
 

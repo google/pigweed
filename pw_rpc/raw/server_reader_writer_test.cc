@@ -179,6 +179,28 @@ TEST(RawUnaryResponder, Open_ReturnsUsableResponder) {
       "hello from pw_rpc");
 }
 
+TEST(RawServerReaderWriter, Open_UnknownChannel) {
+  ReaderWriterTestContext ctx;
+  ASSERT_EQ(OkStatus(), ctx.server.CloseChannel(ctx.kChannelId));
+
+  RawServerReaderWriter call =
+      RawServerReaderWriter::Open<TestService::TestBidirectionalStreamRpc>(
+          ctx.server, ctx.kChannelId, ctx.service);
+
+  EXPECT_TRUE(call.active());
+  EXPECT_EQ(call.channel_id(), ctx.kChannelId);
+  EXPECT_EQ(Status::Unavailable(), call.Write({}));
+
+  ASSERT_EQ(OkStatus(), ctx.server.OpenChannel(ctx.kChannelId, ctx.output));
+
+  EXPECT_EQ(OkStatus(), call.Write({}));
+  EXPECT_TRUE(call.active());
+
+  EXPECT_EQ(OkStatus(), call.Finish());
+  EXPECT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+}
+
 TEST(RawUnaryResponder, Open_MultipleTimes_CancelsPrevious) {
   ReaderWriterTestContext ctx;
 

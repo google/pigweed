@@ -25,10 +25,12 @@ namespace pw::rpc::internal {
 
 namespace {
 
+// TODO(pwbug/615): Dynamically allocate this buffer if
+//     PW_RPC_DYNAMIC_ALLOCATION is enabled.
 std::array<std::byte, cfg::kEncodingBufferSizeBytes> encoding_buffer
     PW_GUARDED_BY(rpc_lock());
 
-}
+}  // namespace
 
 ByteSpan GetPayloadBuffer() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
   return ByteSpan(encoding_buffer)

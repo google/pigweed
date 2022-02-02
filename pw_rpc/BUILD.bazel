@@ -72,6 +72,7 @@ pw_cc_library(
     srcs = [
         "call.cc",
         "channel.cc",
+        "channel_list.cc",
         "client.cc",
         "client_call.cc",
         "endpoint.cc",
@@ -79,6 +80,7 @@ pw_cc_library(
         "public/pw_rpc/internal/call.h",
         "public/pw_rpc/internal/call_context.h",
         "public/pw_rpc/internal/channel.h",
+        "public/pw_rpc/internal/channel_list.h",
         "public/pw_rpc/internal/client_call.h",
         "public/pw_rpc/internal/config.h",
         "public/pw_rpc/internal/endpoint.h",

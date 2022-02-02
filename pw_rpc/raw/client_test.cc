@@ -177,18 +177,64 @@ TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
   EXPECT_EQ(context.client().ProcessPacket(*result), Status::InvalidArgument());
 }
 
-TEST(Client, ProcessPacket_ChannelCloseCallsErrorCallback) {
-  RawClientTestContext context;
-  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
+const Channel* GetChannel(internal::Endpoint& endpoint, uint32_t id) {
+  internal::LockGuard lock(internal::rpc_lock());
+  return endpoint.GetInternalChannel(id);
+}
+
+TEST(Client, CloseChannel_NoCalls) {
+  RawClientTestContext ctx;
+  ASSERT_NE(nullptr, GetChannel(ctx.client(), ctx.kDefaultChannelId));
+  EXPECT_EQ(OkStatus(), ctx.client().CloseChannel(ctx.kDefaultChannelId));
+  EXPECT_EQ(nullptr, GetChannel(ctx.client(), ctx.kDefaultChannelId));
+  EXPECT_EQ(ctx.output().total_packets(), 0u);
+}
+
+TEST(Client, CloseChannel_UnknownChannel) {
+  RawClientTestContext ctx;
+  ASSERT_EQ(nullptr, GetChannel(ctx.client(), 13579));
+  EXPECT_EQ(Status::NotFound(), ctx.client().CloseChannel(13579));
+}
+
+TEST(Client, CloseChannel_CallsErrorCallback) {
+  RawClientTestContext ctx;
+  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(ctx);
   internal::rpc_lock().lock();
   call.SendInitialClientRequest({});
 
   ASSERT_NE(call.completed, OkStatus());
+  ASSERT_EQ(1u,
+            static_cast<internal::Endpoint&>(ctx.client()).active_call_count());
 
-  context.CloseClientChannel(1);
+  EXPECT_EQ(OkStatus(), ctx.client().CloseChannel(1));
 
-  // call.error is set by the on_error callback.
-  ASSERT_EQ(call.error, Status::Aborted());
+  EXPECT_EQ(0u,
+            static_cast<internal::Endpoint&>(ctx.client()).active_call_count());
+  ASSERT_EQ(call.error, Status::Aborted());  // set by the on_error callback
+}
+
+TEST(Client, OpenChannel_UnusedSlot) {
+  RawClientTestContext ctx;
+  ASSERT_EQ(OkStatus(), ctx.client().CloseChannel(1));
+  ASSERT_EQ(nullptr, GetChannel(ctx.client(), 9));
+
+  EXPECT_EQ(OkStatus(), ctx.client().OpenChannel(9, ctx.output()));
+
+  EXPECT_NE(nullptr, GetChannel(ctx.client(), 9));
+}
+
+TEST(Client, OpenChannel_AlreadyExists) {
+  RawClientTestContext ctx;
+  ASSERT_NE(nullptr, GetChannel(ctx.client(), 1));
+  EXPECT_EQ(Status::AlreadyExists(), ctx.client().OpenChannel(1, ctx.output()));
+}
+
+TEST(Client, OpenChannel_AdditionalSlot) {
+  RawClientTestContext ctx;
+
+  constexpr Status kExpected =
+      PW_RPC_DYNAMIC_ALLOCATION == 0 ? Status::ResourceExhausted() : OkStatus();
+  EXPECT_EQ(kExpected, ctx.client().OpenChannel(19823, ctx.output()));
 }
 
 }  // namespace

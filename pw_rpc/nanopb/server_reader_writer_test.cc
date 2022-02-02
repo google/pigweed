@@ -50,8 +50,11 @@ template <auto kMethod>
 struct ReaderWriterTestContext {
   using Info = internal::MethodInfo<kMethod>;
 
+  static constexpr uint32_t kChannelId = 1;
+
   ReaderWriterTestContext()
-      : channel(Channel::Create<1>(&output)), server(std::span(&channel, 1)) {}
+      : channel(Channel::Create<kChannelId>(&output)),
+        server(std::span(&channel, 1)) {}
 
   TestServiceImpl service;
   NanopbFakeChannelOutput<4> output;
@@ -236,6 +239,30 @@ TEST(NanopbServerReaderWriter, Open_ReturnsUsableReaderWriter) {
                 .number,
             321u);
   EXPECT_EQ(ctx.output.last_status(), Status::NotFound());
+}
+
+TEST(RawServerReaderWriter, Open_UnknownChannel) {
+  ReaderWriterTestContext<TestService::TestBidirectionalStreamRpc> ctx;
+  ASSERT_EQ(OkStatus(), ctx.server.CloseChannel(ctx.kChannelId));
+
+  NanopbServerReaderWriter call =
+      NanopbServerReaderWriter<pw_rpc_test_TestRequest,
+                               pw_rpc_test_TestStreamResponse>::
+          Open<TestService::TestBidirectionalStreamRpc>(
+              ctx.server, ctx.kChannelId, ctx.service);
+
+  EXPECT_TRUE(call.active());
+  EXPECT_EQ(call.channel_id(), ctx.kChannelId);
+  EXPECT_EQ(Status::Unavailable(), call.Write({}));
+
+  ASSERT_EQ(OkStatus(), ctx.server.OpenChannel(ctx.kChannelId, ctx.output));
+
+  EXPECT_EQ(OkStatus(), call.Write({}));
+  EXPECT_TRUE(call.active());
+
+  EXPECT_EQ(OkStatus(), call.Finish());
+  EXPECT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 }
 
 TEST(NanopbServerReader, CallbacksMoveCorrectly) {

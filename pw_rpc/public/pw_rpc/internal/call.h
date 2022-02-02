@@ -165,11 +165,13 @@ class Call : public IntrusiveList<Call>::Item {
     CallOnError(status);
   }
 
-  void Terminate() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  // Aborts the RPC because its channel was closed. Does NOT unregister the
+  // call! The calls are removed when iterating over the list in the endpoint.
+  void HandleChannelClose() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     // Locking here is problematic because CallOnError releases rpc_lock().
     //
     // pwbug/597 must be addressed before the locking here can be cleaned up.
-    UnregisterAndMarkClosed();
+    MarkClosed();
 
     CallOnError(Status::Aborted());
 
@@ -311,6 +313,12 @@ class Call : public IntrusiveList<Call>::Item {
                   id_,
                   payload,
                   status);
+  }
+
+  void MarkClosed() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    channel_id_ = Channel::kUnassignedChannelId;
+    rpc_state_ = kInactive;
+    client_stream_state_ = kClientStreamInactive;
   }
 
   // Sends a payload with the specified type. The payload may either be in a

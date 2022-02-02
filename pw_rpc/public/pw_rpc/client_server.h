@@ -22,7 +22,7 @@ namespace pw::rpc {
 // a device needs to function as both.
 class ClientServer {
  public:
-  constexpr ClientServer(std::span<Channel> channels)
+  _PW_RPC_CONSTEXPR ClientServer(std::span<Channel> channels)
       : client_(channels), server_(channels) {}
 
   // Sends a packet to either the client or the server, depending on its type.
