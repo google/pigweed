@@ -61,6 +61,125 @@ struct ReaderWriterTestContext {
 
 using test::pw_rpc::nanopb::TestService;
 
+TEST(NanopbUnaryResponder, DefaultConstructed) {
+  NanopbUnaryResponder<pw_rpc_test_TestResponse> call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish({}, OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerWriter, DefaultConstructed) {
+  NanopbServerWriter<pw_rpc_test_TestStreamResponse> call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerReader, DefaultConstructed) {
+  NanopbServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>
+      call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish({}, OkStatus()));
+
+  call.set_on_next([](const pw_rpc_test_TestRequest&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerReaderWriter, DefaultConstructed) {
+  NanopbServerReaderWriter<pw_rpc_test_TestRequest,
+                           pw_rpc_test_TestStreamResponse>
+      call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
+
+  call.set_on_next([](const pw_rpc_test_TestRequest&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbUnaryResponder, Closed) {
+  ReaderWriterTestContext<TestService::TestUnaryRpc> ctx;
+  NanopbUnaryResponder call =
+      NanopbUnaryResponder<pw_rpc_test_TestResponse>::Open<
+          TestService::TestUnaryRpc>(ctx.server, ctx.channel.id(), ctx.service);
+  ASSERT_EQ(OkStatus(), call.Finish({}, OkStatus()));
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish({}, OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerWriter, Closed) {
+  ReaderWriterTestContext<TestService::TestServerStreamRpc> ctx;
+  NanopbServerWriter call =
+      NanopbServerWriter<pw_rpc_test_TestStreamResponse>::Open<
+          TestService::TestServerStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+  ASSERT_EQ(OkStatus(), call.Finish(OkStatus()));
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerReader, Closed) {
+  ReaderWriterTestContext<TestService::TestClientStreamRpc> ctx;
+  NanopbServerReader call = NanopbServerReader<pw_rpc_test_TestRequest,
+                                               pw_rpc_test_TestStreamResponse>::
+      Open<TestService::TestClientStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+  ASSERT_EQ(OkStatus(), call.Finish({}, OkStatus()));
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish({}, OkStatus()));
+
+  call.set_on_next([](const pw_rpc_test_TestRequest&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerReaderWriter, Closed) {
+  ReaderWriterTestContext<TestService::TestBidirectionalStreamRpc> ctx;
+  NanopbServerReaderWriter call =
+      NanopbServerReaderWriter<pw_rpc_test_TestRequest,
+                               pw_rpc_test_TestStreamResponse>::
+          Open<TestService::TestBidirectionalStreamRpc>(
+              ctx.server, ctx.channel.id(), ctx.service);
+  ASSERT_EQ(OkStatus(), call.Finish(OkStatus()));
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
+
+  call.set_on_next([](const pw_rpc_test_TestRequest&) {});
+  call.set_on_error([](Status) {});
+}
+
 TEST(NanopbUnaryResponder, Open_ReturnsUsableResponder) {
   ReaderWriterTestContext<TestService::TestUnaryRpc> ctx;
   NanopbUnaryResponder responder =
@@ -117,61 +236,6 @@ TEST(NanopbServerReaderWriter, Open_ReturnsUsableReaderWriter) {
                 .number,
             321u);
   EXPECT_EQ(ctx.output.last_status(), Status::NotFound());
-}
-
-TEST(NanopbUnaryResponder, DefaultConstructed) {
-  NanopbUnaryResponder<pw_rpc_test_TestStreamResponse> call;
-
-  ASSERT_FALSE(call.active());
-  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
-
-  EXPECT_EQ(Status::FailedPrecondition(),
-            call.Finish(pw_rpc_test_TestStreamResponse{}));
-
-  call.set_on_error([](Status) {});
-}
-
-TEST(NanopbServerWriter, DefaultConstructed) {
-  NanopbServerWriter<pw_rpc_test_TestStreamResponse> call;
-
-  ASSERT_FALSE(call.active());
-  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
-
-  EXPECT_EQ(Status::FailedPrecondition(),
-            call.Write(pw_rpc_test_TestStreamResponse{}));
-  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
-
-  call.set_on_error([](Status) {});
-}
-
-TEST(NanopbServerReader, DefaultConstructed) {
-  NanopbServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>
-      call;
-
-  ASSERT_FALSE(call.active());
-  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
-
-  EXPECT_EQ(Status::FailedPrecondition(),
-            call.Finish(pw_rpc_test_TestStreamResponse{}));
-
-  call.set_on_next([](const pw_rpc_test_TestRequest&) {});
-  call.set_on_error([](Status) {});
-}
-
-TEST(NanopbServerReaderWriter, DefaultConstructed) {
-  NanopbServerReaderWriter<pw_rpc_test_TestRequest,
-                           pw_rpc_test_TestStreamResponse>
-      call;
-
-  ASSERT_FALSE(call.active());
-  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
-
-  EXPECT_EQ(Status::FailedPrecondition(),
-            call.Write(pw_rpc_test_TestStreamResponse{}));
-  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
-
-  call.set_on_next([](const pw_rpc_test_TestRequest&) {});
-  call.set_on_error([](Status) {});
 }
 
 TEST(NanopbServerReader, CallbacksMoveCorrectly) {

@@ -54,6 +54,117 @@ struct ReaderWriterTestContext {
 
 using test::pw_rpc::raw::TestService;
 
+TEST(RawUnaryResponder, DefaultConstructed) {
+  RawUnaryResponder call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish({}, OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawServerWriter, DefaultConstructed) {
+  RawServerWriter call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawServerReader, DefaultConstructed) {
+  RawServerReader call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish({}, OkStatus()));
+
+  call.set_on_next([](ConstByteSpan) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawServerReaderWriter, DefaultConstructed) {
+  RawServerReaderWriter call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(Status::Cancelled()));
+
+  call.set_on_next([](ConstByteSpan) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawUnaryResponder, Closed) {
+  ReaderWriterTestContext ctx;
+  RawUnaryResponder call = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+  ASSERT_EQ(OkStatus(), call.Finish({}, OkStatus()));
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish({}, OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawServerWriter, Closed) {
+  ReaderWriterTestContext ctx;
+  RawServerWriter call =
+      RawServerWriter::Open<TestService::TestServerStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+  ASSERT_EQ(OkStatus(), call.Finish(OkStatus()));
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawServerReader, Closed) {
+  ReaderWriterTestContext ctx;
+  RawServerReader call =
+      RawServerReader::Open<TestService::TestClientStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+  ASSERT_EQ(OkStatus(), call.Finish({}, OkStatus()));
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish({}, OkStatus()));
+
+  call.set_on_next([](ConstByteSpan) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawServerReaderWriter, Closed) {
+  ReaderWriterTestContext ctx;
+  RawServerReaderWriter call =
+      RawServerReaderWriter::Open<TestService::TestBidirectionalStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+  ASSERT_EQ(OkStatus(), call.Finish(OkStatus()));
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(Status::Cancelled()));
+
+  call.set_on_next([](ConstByteSpan) {});
+  call.set_on_error([](Status) {});
+}
+
 TEST(RawUnaryResponder, Open_ReturnsUsableResponder) {
   ReaderWriterTestContext ctx;
   RawUnaryResponder call = RawUnaryResponder::Open<TestService::TestUnaryRpc>(

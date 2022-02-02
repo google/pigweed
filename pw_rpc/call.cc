@@ -87,7 +87,10 @@ void Call::MoveFrom(Call& other) {
 }
 
 Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
-  PW_DCHECK_NOTNULL(endpoint_);
+  if (!active_locked()) {
+    return Status::FailedPrecondition();
+  }
+
   Channel* channel = endpoint_->GetInternalChannel(channel_id_);
   if (channel == nullptr) {
     return Status::Unavailable();
@@ -98,17 +101,12 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
 Status Call::CloseAndSendFinalPacketLocked(PacketType type,
                                            ConstByteSpan response,
                                            Status status) {
-  if (!active_locked()) {
-    return Status::FailedPrecondition();
-  }
+  const Status send_status = SendPacket(type, response, status);
   UnregisterAndMarkClosed();
-  return SendPacket(type, response, status);
+  return send_status;
 }
 
 Status Call::WriteLocked(ConstByteSpan payload) {
-  if (!active_locked()) {
-    return Status::FailedPrecondition();
-  }
   return SendPacket(call_type_ == kServerCall ? PacketType::SERVER_STREAM
                                               : PacketType::CLIENT_STREAM,
                     payload);
@@ -117,6 +115,7 @@ Status Call::WriteLocked(ConstByteSpan payload) {
 void Call::UnregisterAndMarkClosed() {
   if (active_locked()) {
     endpoint().UnregisterCall(*this);
+    channel_id_ = Channel::kUnassignedChannelId;
     rpc_state_ = kInactive;
     client_stream_state_ = kClientStreamInactive;
   }

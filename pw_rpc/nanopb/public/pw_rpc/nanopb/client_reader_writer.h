@@ -244,6 +244,7 @@ class NanopbClientReaderWriter
   }
 
   using internal::Call::Cancel;
+  using internal::Call::CloseClientStream;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
@@ -332,6 +333,7 @@ class NanopbClientWriter
   }
 
   using internal::Call::Cancel;
+  using internal::Call::CloseClientStream;
 
  private:
   friend class internal::NanopbUnaryResponseClientCall<Response>;
