@@ -14,26 +14,26 @@ PairingPhase::PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Liste
                            Role role)
     : sm_chan_(std::move(chan)), listener_(std::move(listener)), role_(role), has_failed_(false) {}
 
-void PairingPhase::OnFailure(Result<> status) {
+void PairingPhase::OnFailure(Error error) {
   ZX_ASSERT(!has_failed());
-  bt_log(WARN, "sm", "pairing failed: %s", bt_str(status));
+  bt_log(WARN, "sm", "pairing failed: %s", bt_str(error));
   has_failed_ = true;
   ZX_ASSERT(listener_);
-  listener_->OnPairingFailed(status);
+  listener_->OnPairingFailed(error);
 }
 
 void PairingPhase::Abort(ErrorCode ecode) {
   ZX_ASSERT(!has_failed());
-  Result<> status = ToResult(ecode);
-  bt_log(INFO, "sm", "abort pairing: %s", bt_str(status));
+  Error error = ToResult(ecode).error_value();
+  bt_log(INFO, "sm", "abort pairing: %s", bt_str(error));
 
   sm_chan().SendMessage(kPairingFailed, ecode);
-  OnFailure(status);
+  OnFailure(error);
 }
 
 void PairingPhase::HandleChannelClosed() {
   bt_log(WARN, "sm", "channel closed while pairing");
 
-  OnFailure(ToResult(HostError::kLinkDisconnected));
+  OnFailure(Error(HostError::kLinkDisconnected));
 }
 }  // namespace bt::sm

@@ -498,7 +498,7 @@ TEST_F(Phase2LegacyTest, ReceivePairingFailed) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ToResult(ErrorCode::kPairingNotSupported), listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kPairingNotSupported).error_value(), listener()->last_error());
 }
 
 TEST_F(Phase2LegacyTest, UnsupportedCommandDuringPairing) {
@@ -510,7 +510,7 @@ TEST_F(Phase2LegacyTest, UnsupportedCommandDuringPairing) {
                                                             ErrorCode::kCommandNotSupported};
   ASSERT_TRUE(ReceiveAndExpect(StaticByteBuffer<1>(0xFF), kExpected));  // 0xFF is not an SMP code.
   EXPECT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ToResult(ErrorCode::kCommandNotSupported), listener()->last_error());
+  EXPECT_EQ(ToResult(ErrorCode::kCommandNotSupported).error_value(), listener()->last_error());
 }
 
 TEST_F(Phase2LegacyTest, ReceiveMalformedPacket) {

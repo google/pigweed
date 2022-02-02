@@ -330,7 +330,7 @@ void Phase3::OnRxBFrame(ByteBufferPtr sdu) {
 
   switch (smp_code) {
     case kPairingFailed:
-      OnFailure(ToResult(reader.payload<ErrorCode>()));
+      OnFailure(ToResult(reader.payload<ErrorCode>()).error_value());
       break;
     case kEncryptionInformation:
       OnEncryptionInformation(reader.payload<EncryptionInformationParams>());

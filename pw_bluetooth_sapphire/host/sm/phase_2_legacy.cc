@@ -329,7 +329,7 @@ void Phase2Legacy::OnRxBFrame(ByteBufferPtr sdu) {
   Code smp_code = reader.code();
 
   if (smp_code == kPairingFailed) {
-    OnFailure(ToResult(reader.payload<ErrorCode>()));
+    OnFailure(ToResult(reader.payload<ErrorCode>()).error_value());
   } else if (smp_code == kPairingConfirm) {
     OnPairingConfirm(reader.payload<PairingConfirmValue>());
   } else if (smp_code == kPairingRandom) {
