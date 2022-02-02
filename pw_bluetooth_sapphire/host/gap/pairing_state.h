@@ -11,7 +11,6 @@
 
 #include <fbl/macros.h>
 
-#include "lib/fitx/internal/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"

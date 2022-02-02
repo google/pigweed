@@ -80,10 +80,10 @@ class SecurityManagerImpl final : public SecurityManager,
   void UpgradeSecurityInternal();
 
   // Creates the pairing phase responsible for sending the security upgrade request to the peer
-  // (a PairingRequest if we are initiator, otherwise a SecurityRequest). Returns ErrorCode::
-  // kAuthenticationRequirements if the local IOCapabilities are insufficient for SecurityLevel,
-  // otherwise returns kNoError.
-  [[nodiscard]] ErrorCode RequestSecurityUpgrade(SecurityLevel level);
+  // (a PairingRequest if we are initiator, otherwise a SecurityRequest). Returns
+  // fitx::error(ErrorCode:: kAuthenticationRequirements) if the local IOCapabilities are
+  // insufficient for SecurityLevel, otherwise returns fitx::ok().
+  [[nodiscard]] fitx::result<ErrorCode> RequestSecurityUpgrade(SecurityLevel level);
 
   // Called when the feature exchange (Phase 1) completes and the relevant features of both sides
   // have been resolved into `features`. `preq` and `pres` need to be retained for cryptographic
@@ -274,11 +274,10 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
   // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Security Request command, the
   // Security Manager Timer shall be [...] restarted."
   StartNewTimer();
-  ErrorCode code = RequestSecurityUpgrade(requested_level);
-  if (code != ErrorCode::kNoError) {
+  if (fitx::result result = RequestSecurityUpgrade(requested_level); result.is_error()) {
     // Per v5.3 Vol. 3 Part H 2.4.6, "When a Central receives a Security Request command it may
     // [...] reject the request.", which we do here as we know we are unable to fulfill it.
-    sm_chan_->SendMessageNoTimerReset(kPairingFailed, code);
+    sm_chan_->SendMessageNoTimerReset(kPairingFailed, result.error_value());
     // If we fail to start pairing, we need to stop the timer.
     StopTimer();
   }
@@ -342,9 +341,8 @@ void SecurityManagerImpl::UpgradeSecurityInternal() {
   ZX_ASSERT_MSG(!SecurityUpgradeInProgress(),
                 "cannot upgrade security while security upgrade already in progress!");
   const PendingRequest& next_req = request_queue_.front();
-  ErrorCode code = RequestSecurityUpgrade(next_req.level);
-  if (code != ErrorCode::kNoError) {
-    next_req.callback(ToResult(code), security());
+  if (fitx::result result = RequestSecurityUpgrade(next_req.level); result.is_error()) {
+    next_req.callback(ToResult(result.error_value()), security());
     request_queue_.pop();
     if (!request_queue_.empty()) {
       UpgradeSecurityInternal();
@@ -352,11 +350,11 @@ void SecurityManagerImpl::UpgradeSecurityInternal() {
   }
 }
 
-ErrorCode SecurityManagerImpl::RequestSecurityUpgrade(SecurityLevel level) {
+fitx::result<ErrorCode> SecurityManagerImpl::RequestSecurityUpgrade(SecurityLevel level) {
   if (level >= SecurityLevel::kAuthenticated && io_cap_ == IOCapability::kNoInputNoOutput) {
     bt_log(WARN, "sm",
            "cannot fulfill authenticated security request as IOCapabilities are NoInputNoOutput");
-    return ErrorCode::kAuthenticationRequirements;
+    return fitx::error(ErrorCode::kAuthenticationRequirements);
   }
 
   if (role_ == Role::kInitiator) {
@@ -370,7 +368,7 @@ ErrorCode SecurityManagerImpl::RequestSecurityUpgrade(SecurityLevel level) {
         fit::bind_member<&SecurityManagerImpl::OnPairingRequest>(this));
     std::get<SecurityRequestPhase>(current_phase_).Start();
   }
-  return ErrorCode::kNoError;
+  return fitx::ok();
 }
 
 void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features, PairingRequestParams preq,

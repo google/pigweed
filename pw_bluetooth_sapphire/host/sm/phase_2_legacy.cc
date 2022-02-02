@@ -155,9 +155,8 @@ void Phase2Legacy::SendConfirmValue() {
 }
 
 void Phase2Legacy::OnPairingConfirm(PairingConfirmValue confirm) {
-  ErrorCode err = CanReceivePairingConfirm();
-  if (err != ErrorCode::kNoError) {
-    Abort(err);
+  if (fitx::result result = CanReceivePairingConfirm(); result.is_error()) {
+    Abort(result.error_value());
     return;
   }
 
@@ -195,9 +194,8 @@ void Phase2Legacy::SendRandomValue() {
 }
 
 void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
-  ErrorCode err = CanReceivePairingRandom();
-  if (err != ErrorCode::kNoError) {
-    Abort(err);
+  if (fitx::result result = CanReceivePairingRandom(); result.is_error()) {
+    Abort(result.error_value());
     return;
   }
   // These should have been checked in CanReceivePairingRandom
@@ -240,11 +238,11 @@ void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
   }
 }
 
-ErrorCode Phase2Legacy::CanReceivePairingConfirm() const {
+fitx::result<ErrorCode> Phase2Legacy::CanReceivePairingConfirm() const {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG, "sm", "\"Confirm value\" over BR/EDR not supported!");
-    return ErrorCode::kCommandNotSupported;
+    return fitx::error(ErrorCode::kCommandNotSupported);
   }
 
   // Per the message sequence charts in V5.1 Vol. 3 Part H Appendix C.2.1, reject the pairing
@@ -254,56 +252,56 @@ ErrorCode Phase2Legacy::CanReceivePairingConfirm() const {
   if ((role() == Role::kInitiator && !sent_local_confirm_) ||
       (role() == Role::kResponder && sent_local_confirm_)) {
     bt_log(WARN, "sm", "abort pairing due to confirm value received out of order");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
 
   // Legacy pairing only allows for one confirm/random exchange per pairing.
   if (peer_confirm_.has_value()) {
     bt_log(WARN, "sm", "already received confirm value! aborting");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
 
   // The confirm value shouldn't be sent after the random value. (See spec V5.0 Vol 3, Part H,
   // 2.3.5.5 and Appendix C.2.1.1 for the specific order of events).
   if (peer_rand_.has_value() || sent_local_rand_) {
     bt_log(WARN, "sm", "\"Pairing Confirm\" must come before \"Pairing Random\"");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
 
-  return ErrorCode::kNoError;
+  return fitx::ok();
 }
 
-ErrorCode Phase2Legacy::CanReceivePairingRandom() const {
+fitx::result<ErrorCode> Phase2Legacy::CanReceivePairingRandom() const {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG, "sm", "\"Random value\" over BR/EDR not supported!");
-    return ErrorCode::kCommandNotSupported;
+    return fitx::error(ErrorCode::kCommandNotSupported);
   }
 
   if (!tk_.has_value()) {
     bt_log(WARN, "sm", "abort pairing, random value received before user input");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
 
   // V5.0 Vol 3, Part H, 2.3.5.5 dictates that there should be exactly one pairing random value
   // received by each peer in Legacy Pairing Phase 2.
   if (peer_rand_.has_value()) {
     bt_log(WARN, "sm", "already received random value! aborting");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
 
   // The random value shouldn't be sent before the confirm value. See V5.0 Vol 3, Part H, 2.3.5.5
   // and Appendix C.2.1.1 for the specific order of events.
   if (!peer_confirm_.has_value()) {
     bt_log(WARN, "sm", "\"Pairing Rand\" expected after \"Pairing Confirm\"");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
 
   if (role() == Role::kInitiator) {
     // The initiator distributes both values before the responder sends Srandom.
     if (!sent_local_rand_ || !sent_local_confirm_) {
       bt_log(WARN, "sm", "\"Pairing Random\" received in wrong order!");
-      return ErrorCode::kUnspecifiedReason;
+      return fitx::error(ErrorCode::kUnspecifiedReason);
     }
   } else {
     // We know we have not received Mrand, and should not have sent Srand without receiving Mrand.
@@ -312,11 +310,11 @@ ErrorCode Phase2Legacy::CanReceivePairingRandom() const {
     // We need to send Sconfirm before the initiator sends Mrand.
     if (!sent_local_confirm_) {
       bt_log(WARN, "sm", "\"Pairing Random\" received in wrong order!");
-      return ErrorCode::kUnspecifiedReason;
+      return fitx::error(ErrorCode::kUnspecifiedReason);
     }
   }
 
-  return ErrorCode::kNoError;
+  return fitx::ok();
 }
 
 void Phase2Legacy::OnRxBFrame(ByteBufferPtr sdu) {

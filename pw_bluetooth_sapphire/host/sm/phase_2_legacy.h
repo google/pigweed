@@ -64,8 +64,8 @@ class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
 
   // Check the preconditions for being able to receive a pairing confirm/random value according to
   // the current state.
-  ErrorCode CanReceivePairingConfirm() const;
-  ErrorCode CanReceivePairingRandom() const;
+  fitx::result<ErrorCode> CanReceivePairingConfirm() const;
+  fitx::result<ErrorCode> CanReceivePairingRandom() const;
 
   // l2cap::Channel callbacks
   void OnRxBFrame(ByteBufferPtr sdu) final;

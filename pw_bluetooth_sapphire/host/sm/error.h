@@ -30,7 +30,7 @@ template <>
 struct ProtocolErrorTraits<sm::ErrorCode> {
   static std::string ToString(sm::ErrorCode ecode);
 
-  static constexpr bool is_success(sm::ErrorCode ecode) { return ecode == sm::ErrorCode::kNoError; }
+  static constexpr bool is_success(sm::ErrorCode ecode) { return false; }
 };
 
 }  // namespace bt

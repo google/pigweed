@@ -11,7 +11,6 @@
 
 #include <fbl/macros.h>
 
-#include "lib/fitx/internal/result.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"

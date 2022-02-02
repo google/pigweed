@@ -331,7 +331,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   hci::testing::FakeConnection* fake_link() const { return fake_link_.get(); }
 
   int security_callback_count() const { return security_callback_count_; }
-  ErrorCode received_error_code() const { return received_error_code_; }
+  const std::optional<ErrorCode>& received_error_code() const { return received_error_code_; }
   const Result<>& security_status() const { return security_status_; }
   const SecurityProperties& sec_props() const { return sec_props_; }
 
@@ -468,7 +468,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   uint16_t ediv_;
   uint64_t rand_;
 
-  ErrorCode received_error_code_ = ErrorCode::kNoError;
+  std::optional<ErrorCode> received_error_code_;
 
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<hci::testing::FakeConnection> fake_link_;
@@ -2887,8 +2887,8 @@ TEST_F(ResponderPairingTest, ReceiveSecondPairingRequestWhilePairing) {
   EXPECT_EQ(1, pairing_failed_count());
   EXPECT_EQ(0, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(ToResult(received_error_code()), pairing_complete_status());
+  ASSERT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
+  EXPECT_EQ(ToResult(received_error_code().value()), pairing_complete_status());
 }
 
 TEST_F(ResponderPairingTest, ReceiveConfirmValueWhileWaitingForTK) {

@@ -74,27 +74,26 @@ void Phase2SecureConnections::SendLocalPublicKey() {
   }
 }
 
-ErrorCode Phase2SecureConnections::CanReceivePeerPublicKey() const {
+fitx::result<ErrorCode> Phase2SecureConnections::CanReceivePeerPublicKey() const {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG, "sm", "cannot accept peer ecdh key value over BR/EDR");
-    return ErrorCode::kCommandNotSupported;
+    return fitx::error(ErrorCode::kCommandNotSupported);
   }
   if (peer_ecdh_.has_value()) {
     bt_log(WARN, "sm", "received peer ecdh key twice!");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
   if (role() == Role::kInitiator && !sent_local_ecdh_) {
     bt_log(WARN, "sm", "received peer ecdh key before sending local key as initiator!");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
-  return ErrorCode::kNoError;
+  return fitx::ok();
 }
 
 void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_key) {
-  ErrorCode ecode = CanReceivePeerPublicKey();
-  if (ecode != ErrorCode::kNoError) {
-    Abort(ecode);
+  if (fitx::result result = CanReceivePeerPublicKey(); result.is_error()) {
+    Abort(result.error_value());
     return;
   }
   std::optional<EcdhKey> maybe_peer_key = EcdhKey::ParseFromPublicKey(peer_pub_key);
@@ -234,32 +233,31 @@ void Phase2SecureConnections::SendDhKeyCheckE() {
   }
 }
 
-ErrorCode Phase2SecureConnections::CanReceiveDhKeyCheck() const {
+fitx::result<ErrorCode> Phase2SecureConnections::CanReceiveDhKeyCheck() const {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(WARN, "sm", "cannot accept peer ecdh key check over BR/EDR (SC)");
-    return ErrorCode::kCommandNotSupported;
+    return fitx::error(ErrorCode::kCommandNotSupported);
   }
   if (!stage_1_results_.has_value() && !stage_1_) {
     bt_log(WARN, "sm", "received peer ecdh check too early! (before stage 1 started)");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
   if (actual_peer_dhkey_check_.has_value()) {
     bt_log(WARN, "sm", "received peer ecdh key check twice (SC)");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
   if (role() == Role::kInitiator && !sent_local_dhkey_check_) {
     bt_log(WARN, "sm",
            "received peer ecdh key check as initiator before sending local ecdh key check (SC)");
-    return ErrorCode::kUnspecifiedReason;
+    return fitx::error(ErrorCode::kUnspecifiedReason);
   }
-  return ErrorCode::kNoError;
+  return fitx::ok();
 }
 
 void Phase2SecureConnections::OnDhKeyCheck(PairingDHKeyCheckValueE check) {
-  ErrorCode ecode = CanReceiveDhKeyCheck();
-  if (ecode != ErrorCode::kNoError) {
-    Abort(ecode);
+  if (fitx::result result = CanReceiveDhKeyCheck(); result.is_error()) {
+    Abort(result.error_value());
     return;
   }
   actual_peer_dhkey_check_ = check;

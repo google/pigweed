@@ -55,7 +55,7 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
  private:
   // The devices exchange ECDH Public Keys using the below methods (SMP Section 2.3.5.6.1).
   void SendLocalPublicKey();
-  ErrorCode CanReceivePeerPublicKey() const;
+  fitx::result<ErrorCode> CanReceivePeerPublicKey() const;
   void OnPeerPublicKey(PairingPublicKeyParams peer_pub_key);
 
   // After exchanging ECDH Public Keys, the devices perform one of four possible authentication
@@ -73,7 +73,7 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
   void SendDhKeyCheckE();
   // Receives and stores the peer DH Key check
   void OnDhKeyCheck(PairingDHKeyCheckValueE dh_key_check);
-  ErrorCode CanReceiveDhKeyCheck() const;
+  fitx::result<ErrorCode> CanReceiveDhKeyCheck() const;
   // Checks that the received DH key check matches what we calculate locally.
   void ValidatePeerDhKeyCheck();
 
