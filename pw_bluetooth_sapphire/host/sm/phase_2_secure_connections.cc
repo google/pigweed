@@ -317,7 +317,7 @@ void Phase2SecureConnections::OnRxBFrame(ByteBufferPtr sdu) {
   Code smp_code = reader.code();
 
   if (smp_code == kPairingFailed) {
-    OnFailure(ToResult(reader.payload<ErrorCode>()));
+    OnFailure(ToResult(reader.payload<ErrorCode>()).error_value());
   } else if (smp_code == kPairingPublicKey) {
     OnPeerPublicKey(reader.payload<PairingPublicKeyParams>());
   } else if (smp_code == kPairingConfirm) {

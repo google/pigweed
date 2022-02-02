@@ -123,7 +123,7 @@ class SecurityManagerImpl final : public SecurityManager,
   void OnNewLongTermKey(const LTK& ltk);
 
   // PairingPhase::Listener overrides:
-  void OnPairingFailed(Result<> status) override;
+  void OnPairingFailed(Error error) override;
   std::optional<IdentityInfo> OnIdentityRequest() override;
   void ConfirmPairing(ConfirmCallback confirm) override;
   void DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
@@ -718,7 +718,7 @@ void SecurityManagerImpl::OnChannelClosed() {
   bt_log(DEBUG, "sm", "SMP channel closed while not pairing");
 }
 
-void SecurityManagerImpl::OnPairingFailed(Result<> status) {
+void SecurityManagerImpl::OnPairingFailed(Error error) {
   std::string phase_status = std::visit(
       [=](auto& arg) {
         using T = std::decay_t<decltype(arg)>;
@@ -733,18 +733,18 @@ void SecurityManagerImpl::OnPairingFailed(Result<> status) {
         return s;
       },
       current_phase_);
-  bt_log(ERROR, "sm", "LE pairing failed: %s. Current pairing phase: %s", bt_str(status),
+  bt_log(ERROR, "sm", "LE pairing failed: %s. Current pairing phase: %s", bt_str(error),
          phase_status.c_str());
   StopTimer();
   // TODO(fxbug.dev/910): implement "waiting interval" to prevent repeated attempts
   // as described in Vol 3, Part H, 2.3.6.
 
   ZX_ASSERT(delegate_);
-  delegate_->OnPairingComplete(status);
+  delegate_->OnPairingComplete(fitx::error(error));
 
   auto requests = std::move(request_queue_);
   while (!requests.empty()) {
-    requests.front().callback(status, security());
+    requests.front().callback(fitx::error(error), security());
     requests.pop();
   }
 
@@ -754,7 +754,7 @@ void SecurityManagerImpl::OnPairingFailed(Result<> status) {
   }
   ResetState();
   // Reset state before potentially disconnecting link to avoid causing pairing phase to fail twice.
-  if (status == ToResult(HostError::kTimedOut)) {
+  if (error.is(HostError::kTimedOut)) {
     // Per v5.2 Vol. 3 Part H 3.4, after a pairing timeout "No further SMP commands shall be sent
     // over the L2CAP Security Manager Channel. A new Pairing process shall only be performed when a
     // new physical link has been established."
@@ -784,9 +784,9 @@ void SecurityManagerImpl::OnPairingTimeout() {
       [=](auto& arg) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<std::unique_ptr<Phase1>, T>) {
-          arg->OnFailure(ToResult(HostError::kTimedOut));
+          arg->OnFailure(Error(HostError::kTimedOut));
         } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
-          arg.OnFailure(ToResult(HostError::kTimedOut));
+          arg.OnFailure(Error(HostError::kTimedOut));
         } else {
           ZX_PANIC("cannot timeout when current_phase_ is std::monostate!");
         }
