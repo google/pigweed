@@ -76,7 +76,7 @@ class Call : public IntrusiveList<Call>::Item {
     return channel_id_locked();
   }
   uint32_t channel_id_locked() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return channel_ == nullptr ? Channel::kUnassignedChannelId : channel().id();
+    return channel_id_;
   }
   uint32_t service_id() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return service_id_;
@@ -201,7 +201,7 @@ class Call : public IntrusiveList<Call>::Item {
   // Creates an inactive Call.
   constexpr Call()
       : endpoint_{},
-        channel_{},
+        channel_id_{},
         id_{},
         service_id_{},
         method_id_{},
@@ -215,7 +215,7 @@ class Call : public IntrusiveList<Call>::Item {
   Call(const CallContext& context, MethodType type)
       : Call(context.server(),
              context.call_id(),
-             context.channel().id(),
+             context.channel_id(),
              context.service().id(),
              context.method().id(),
              type,
@@ -300,10 +300,6 @@ class Call : public IntrusiveList<Call>::Item {
        MethodType type,
        CallType call_type);
 
-  Channel& channel() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return *channel_;
-  }
-
   Packet MakePacket(PacketType type,
                     ConstByteSpan payload,
                     Status status = OkStatus()) const
@@ -324,9 +320,7 @@ class Call : public IntrusiveList<Call>::Item {
   Status SendPacket(PacketType type,
                     ConstByteSpan payload,
                     Status status = OkStatus())
-      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return channel().Send(MakePacket(type, payload, status));
-  }
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   Status CloseAndSendFinalPacketLocked(PacketType type,
                                        ConstByteSpan response,
@@ -334,7 +328,7 @@ class Call : public IntrusiveList<Call>::Item {
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   internal::Endpoint* endpoint_ PW_GUARDED_BY(rpc_lock());
-  internal::Channel* channel_ PW_GUARDED_BY(rpc_lock());
+  uint32_t channel_id_ PW_GUARDED_BY(rpc_lock());
   uint32_t id_ PW_GUARDED_BY(rpc_lock());
   uint32_t service_id_ PW_GUARDED_BY(rpc_lock());
   uint32_t method_id_ PW_GUARDED_BY(rpc_lock());

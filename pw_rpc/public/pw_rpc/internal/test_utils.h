@@ -47,11 +47,8 @@ class ServerContextForTest {
       : channel_(Channel::Create<kChannelId>(&output_)),
         server_(std::span(&channel_, 1)),
         service_(kServiceId),
-        context_(static_cast<Server&>(server_),
-                 static_cast<Channel&>(channel_),
-                 service_,
-                 method,
-                 0) {
+        context_(
+            static_cast<Server&>(server_), channel_.id(), service_, method, 0) {
     server_.RegisterService(service_);
   }
 

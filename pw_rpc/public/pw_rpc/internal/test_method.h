@@ -52,7 +52,7 @@ class TestMethod : public Method {
   static void InvokeForTest(const CallContext& context, const Packet& request)
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     const auto& test_method = static_cast<const TestMethod&>(context.method());
-    test_method.last_channel_id_ = context.channel().id();
+    test_method.last_channel_id_ = context.channel_id();
     test_method.last_request_ = request;
     test_method.invocations_ += 1;
 

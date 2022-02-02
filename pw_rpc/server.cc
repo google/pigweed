@@ -94,7 +94,7 @@ Status Server::ProcessPacket(ConstByteSpan packet_data,
       // If the REQUEST is for an ongoing RPC, the existing call will be
       // cancelled when the new call object is created.
       const internal::CallContext context(
-          *this, *channel, *service, *method, packet.call_id());
+          *this, channel->id(), *service, *method, packet.call_id());
       method->Invoke(context, packet);
       break;
     }

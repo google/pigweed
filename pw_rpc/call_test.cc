@@ -114,7 +114,8 @@ TEST(ServerWriter, Finish_ReturnsStatusFromChannelSend) {
   FakeServerWriter writer(context.get());
   context.output().set_send_status(Status::Unauthenticated());
 
-  EXPECT_EQ(Status::Unauthenticated(), writer.Finish());
+  // All non-OK statuses are remapped to UNKNOWN.
+  EXPECT_EQ(Status::Unknown(), writer.Finish());
 }
 
 TEST(ServerWriter, Finish) {

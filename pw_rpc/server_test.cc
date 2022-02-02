@@ -261,31 +261,32 @@ TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsNothing) {
   EXPECT_EQ(output_.total_packets(), 0u);
 }
 
+const Channel* GetChannel(Server& server, uint32_t id) {
+  internal::LockGuard lock(internal::rpc_lock());
+  return static_cast<internal::Endpoint&>(server).GetInternalChannel(id);
+}
+
 TEST_F(BasicServer, CloseChannel_Idle) {
-  EXPECT_NE(nullptr, server_.GetChannel(2));
+  EXPECT_NE(nullptr, GetChannel(server_, 2));
   EXPECT_EQ(OkStatus(), server_.CloseChannel(2));
-  EXPECT_EQ(nullptr, server_.GetChannel(2));
+  EXPECT_EQ(nullptr, GetChannel(server_, 2));
 }
 
 TEST_F(BasicServer, CloseChannel_Pending_Call) {
-  EXPECT_NE(nullptr, server_.GetChannel(1));
+  EXPECT_NE(nullptr, GetChannel(server_, 1));
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 100),
                                   output_));
 
   EXPECT_EQ(OkStatus(), server_.CloseChannel(1));
-  EXPECT_EQ(nullptr, server_.GetChannel(1));
+  EXPECT_EQ(nullptr, GetChannel(server_, 1));
 }
 
 class BidiMethod : public BasicServer {
  protected:
   BidiMethod()
-      : responder_(
-            internal::CallContext(server_,
-                                  static_cast<internal::Channel&>(channels_[0]),
-                                  service_,
-                                  service_.method(100),
-                                  0)) {
+      : responder_(internal::CallContext(
+            server_, channels_[0].id(), service_, service_.method(100), 0)) {
     ASSERT_TRUE(responder_.active());
   }
 
@@ -420,11 +421,7 @@ TEST_F(BidiMethod, ClientStreamEnd_ErrorWhenClosed) {
 class ServerStreamingMethod : public BasicServer {
  protected:
   ServerStreamingMethod()
-      : call_(server_,
-              static_cast<internal::Channel&>(channels_[0]),
-              service_,
-              service_.method(100),
-              0),
+      : call_(server_, channels_[0].id(), service_, service_.method(100), 0),
         responder_(call_) {
     ASSERT_TRUE(responder_.active());
   }

@@ -38,7 +38,12 @@ class InvocationContext {
   const Service& service() const { return service_; }
 
   // Sets the channel ID, which defaults to an arbitrary value.
-  void set_channel_id(uint32_t id) { channel_ = Channel(id, &output_); }
+  void set_channel_id(uint32_t channel_id) {
+    PW_ASSERT(channel_id != Channel::kUnassignedChannelId);
+
+    channel_ = Channel(channel_id, &output_);
+    context_.set_channel_id(channel_id);
+  }
 
   size_t total_responses() const { return responses().size(); }
 
@@ -89,11 +94,7 @@ class InvocationContext {
         channel_(Channel::Create<123>(&output_)),
         server_(std::span(&channel_, 1)),
         service_(std::forward<ServiceArgs>(service_args)...),
-        context_(server_,
-                 static_cast<internal::Channel&>(channel_),
-                 service_,
-                 method,
-                 0) {
+        context_(server_, channel_.id(), service_, method, 0) {
     server_.RegisterService(service_);
   }
 

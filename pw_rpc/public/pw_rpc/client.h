@@ -40,6 +40,9 @@ class Client : public internal::Endpoint {
   //
   Status ProcessPacket(ConstByteSpan data)
       PW_LOCKS_EXCLUDED(internal::rpc_lock());
+
+ private:
+  using Endpoint::GetInternalChannel;  // Remove from public interface
 };
 
 }  // namespace pw::rpc

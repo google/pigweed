@@ -103,16 +103,12 @@ class Server : public internal::Endpoint {
                     "streaming RPCs.");
     }
 
-    // TODO(pwbug/505): Update the CallContext to store the ID instead, and
-    //     lookup the channel by ID.
-    internal::Channel* channel = GetInternalChannel(channel_id);
-    PW_ASSERT(channel != nullptr);
-
     // Unrequested RPCs always use 0 as the call ID. When an actual request is
     // sent, the call will be replaced with its real ID.
     constexpr uint32_t kOpenCallId = 0;
 
-    return internal::CallContext(*this, *channel, service, method, kOpenCallId);
+    return internal::CallContext(
+        *this, channel_id, service, method, kOpenCallId);
   }
 
   Status ProcessPacket(ConstByteSpan packet_data, ChannelOutput* interface)
@@ -125,6 +121,8 @@ class Server : public internal::Endpoint {
                                 internal::Channel& channel,
                                 internal::ServerCall* call) const
       PW_UNLOCK_FUNCTION(internal::rpc_lock());
+
+  using Endpoint::GetInternalChannel;  // Remove from public interface
 
   IntrusiveList<Service> services_;
 };

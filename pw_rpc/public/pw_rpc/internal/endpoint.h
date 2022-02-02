@@ -37,11 +37,9 @@ class Endpoint {
  public:
   ~Endpoint();
 
-  // Finds an RPC Channel with this ID or nullptr if none matches.
-  rpc::Channel* GetChannel(uint32_t id) const PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
-    return GetInternalChannel(id);
-  }
+  // Finds an internal::Channel with this ID or nullptr if none matches.
+  Channel* GetInternalChannel(uint32_t id) const
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Closes a channel and terminates any pending calls on that channel.
   // If the calls are client requests, their on_error callback will be
@@ -66,10 +64,6 @@ class Endpoint {
     return FindCallById(
         packet.channel_id(), packet.service_id(), packet.method_id());
   }
-
-  // Finds an internal::Channel with this ID or nullptr if none matches.
-  Channel* GetInternalChannel(uint32_t id) const
-      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Creates a channel with the provided ID and ChannelOutput, if a channel slot
   // is available. Returns a pointer to the channel if one is created, nullptr

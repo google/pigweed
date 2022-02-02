@@ -54,19 +54,9 @@ Status Channel::Send(const Packet& packet) {
                  static_cast<unsigned>(id()),
                  sent.code());
 
-    // TODO(pwbug/503): It is important that pw_rpc provide a consistent set of
-    //     status codes in its APIs. This status comes from a user class and
-    //     should not be returned directly unless it maps to a standardized
-    //     code. For now, just remap FAILED_PRECONDITION because that value is
-    //     used within the RPC system for another purpose (attempted to use a
-    //     closed RPC call object). Long term, the statuses need to be
-    //     standardized across all APIs. For example, this might return OK,
-    //     UNAVAILABLE, or DATA_LOSS and other codes are mapped to UNKNOWN.
-    if (sent.IsFailedPrecondition()) {
-      sent = Status::Unknown();
-    }
+    return Status::Unknown();
   }
-  return sent;
+  return OkStatus();
 }
 
 }  // namespace pw::rpc::internal

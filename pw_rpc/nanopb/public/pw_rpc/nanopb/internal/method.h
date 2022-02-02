@@ -405,7 +405,7 @@ class NanopbMethod : public Method {
 
   // Decodes a request protobuf with Nanopb to the provided buffer. Sends an
   // error packet if the request failed to decode.
-  bool DecodeRequest(Channel& channel,
+  bool DecodeRequest(const CallContext& context,
                      const Packet& request,
                      void* proto_struct) const
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());

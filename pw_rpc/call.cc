@@ -44,7 +44,7 @@ Call::Call(Endpoint& endpoint_ref,
            MethodType type,
            CallType call_type)
     : endpoint_(&endpoint_ref),
-      channel_(endpoint().GetInternalChannel(channel_id)),
+      channel_id_(channel_id),
       id_(call_id),
       service_id_(service_id),
       method_id_(method_id),
@@ -53,13 +53,6 @@ Call::Call(Endpoint& endpoint_ref,
       call_type_(call_type),
       client_stream_state_(HasClientStream(type) ? kClientStreamActive
                                                  : kClientStreamInactive) {
-  // TODO(pwbug/505): Defer channel lookup until it's needed to support dynamic
-  // registration/removal of channels.
-  PW_CHECK_NOTNULL(channel_,
-                   "An RPC call was created for channel %u, but that channel "
-                   "is not known to the server/client.",
-                   static_cast<unsigned>(channel_id));
-
   endpoint().RegisterCall(*this);
 }
 
@@ -72,7 +65,7 @@ void Call::MoveFrom(Call& other) {
 
   // Copy all members from the other call.
   endpoint_ = other.endpoint_;
-  channel_ = other.channel_;
+  channel_id_ = other.channel_id_;
   id_ = other.id_;
   service_id_ = other.service_id_;
   method_id_ = other.method_id_;
@@ -91,6 +84,15 @@ void Call::MoveFrom(Call& other) {
 
   endpoint().UnregisterCall(other);
   endpoint().RegisterUniqueCall(*this);
+}
+
+Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
+  PW_DCHECK_NOTNULL(endpoint_);
+  Channel* channel = endpoint_->GetInternalChannel(channel_id_);
+  if (channel == nullptr) {
+    return Status::Unavailable();
+  }
+  return channel->Send(MakePacket(type, payload, status));
 }
 
 Status Call::CloseAndSendFinalPacketLocked(PacketType type,

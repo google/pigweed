@@ -21,9 +21,10 @@ documents:
   For a quick intro to ``pw_rpc``, see the
   :ref:`module-pw_hdlc-rpc-example` in the :ref:`module-pw_hdlc` module.
 
-.. attention::
+.. warning::
 
-  This documentation is under construction.
+  This documentation is under construction. Many sections are outdated or
+  incomplete. The content needs to be reorgnanized.
 
 Implementations
 ===============
@@ -73,6 +74,18 @@ call and reinvokes the RPC with the new request. This applies to unary and
 streaming RPCs, though the server may not have an opportunity to cancel a
 synchronously handled unary RPC before it completes. The same RPC may be invoked
 multiple times simultaneously if the invocations are on different channels.
+
+Status codes
+------------
+``pw_rpc`` call objects (``ClientReaderWriter``, ``ServerReaderWriter``, etc.)
+use certain status codes to indicate what occurred. These codes are returned
+from functions like ``Write()`` or ``Finish()``.
+
+* ``OK`` -- The operation succeeded.
+* ``UNAVAILABLE`` -- The channel is not currently registered with the server or
+  client.
+* ``UNKNOWN`` -- Sending a packet failed due to an unrecoverable
+  :cpp:func:`pw::rpc::ChannelOutput::Send` error.
 
 Unrequested responses
 ---------------------
