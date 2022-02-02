@@ -124,8 +124,11 @@ enum KeyDistGen : uint8_t {
 using KeyDistGenField = uint8_t;
 
 // Possible failure reason codes used in the "Pairing Failed" command.
-// (Vol 3, Part H, 3.5.5).
+// (Core Spec v5.3, Vol 3, Part H, 3.5.5, Table 3.7).
 enum class ErrorCode : uint8_t {
+  // TODO(fxbug.dev/92460): This is not a spec value but used to hold internal success results.
+  // Table 3.7 reserves this value for future use so successes should be represented using
+  // fitx::result instead.
   kNoError = 0x00,
 
   // User input of passkey failed, e.g. due to cancelation.

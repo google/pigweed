@@ -32,9 +32,23 @@ struct ProtocolErrorTraits {
   // Returns a string representation of the given ProtocolErrorCode value.
   static std::string ToString(ProtocolErrorCode);
 
-  // Returns true if the given ProtocolErrorCode value represents success. May always return false
-  // if no such value exists.
-  static constexpr bool is_success(ProtocolErrorCode);
+  // Optional: returns true if the given ProtocolErrorCode value represents success. If no such
+  // value exists, do not declare this static function in the specialization.
+  // static constexpr bool is_success(ProtocolErrorCode);
+};
+
+// Marker used to indicate that an Error holds only HostError.
+class NoProtocolError {
+  constexpr NoProtocolError() = delete;
+};
+
+template <>
+struct ProtocolErrorTraits<NoProtocolError> {
+  // This won't be called but still needs to be stubbed out to link correctly.
+  static std::string ToString(NoProtocolError) {
+    ZX_ASSERT(false);
+    return std::string();
+  }
 };
 
 namespace detail {
@@ -52,14 +66,21 @@ struct IsError<T<U>,
     : std::true_type {};
 
 template <typename T>
-static constexpr bool IsErrorV = IsError<T>::value;
+constexpr bool IsErrorV = IsError<T>::value;
+
+// Detects whether ProtocolErrorTraits<ProtocolErrorCode>::is_success has been declared.
+template <typename ProtocolErrorCode, typename = void>
+struct CanRepresentSuccess : std::false_type {};
+
+template <typename ProtocolErrorCode>
+struct CanRepresentSuccess<ProtocolErrorCode,
+                           std::void_t<decltype(ProtocolErrorTraits<ProtocolErrorCode>::is_success(
+                               std::declval<ProtocolErrorCode>()))>> : std::true_type {};
+
+template <typename ProtocolErrorCode>
+constexpr bool CanRepresentSuccessV = CanRepresentSuccess<ProtocolErrorCode>::value;
 
 }  // namespace detail
-
-// Marker used to indicate that an Error holds only HostError.
-class NoProtocolError {
-  constexpr NoProtocolError() = delete;
-};
 
 // Create a fitx::result<Error<…>> from a HostError. The template parameter may be omitted to
 // default to an fitx::result<Error<NoProtocolError>> in the case that it's not useful to specify
@@ -75,8 +96,10 @@ template <typename ProtocolErrorCode = NoProtocolError>
 template <typename ProtocolErrorCode>
 [[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(
     ProtocolErrorCode proto_error) {
-  if (ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error)) {
-    return fitx::success();
+  if constexpr (detail::CanRepresentSuccessV<ProtocolErrorCode>) {
+    if (ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error)) {
+      return fitx::success();
+    }
   }
   return fitx::error(Error(std::move(proto_error)));
 }
@@ -96,6 +119,12 @@ class [[nodiscard]] Error {
   constexpr Error& operator=(Error&&) noexcept = default;
 
   constexpr explicit Error(const HostError& host_error) : error_(host_error) {}
+
+  // This is disabled if ProtocolErrorCode may hold a value that means success, leaving only the
+  // private ctor. Instead use ToResult(ProtocolErrorCode), whose return value may hold success.
+  template <typename T = ProtocolErrorCode,
+            std::enable_if_t<!detail::CanRepresentSuccessV<T>, int> = 0>
+  constexpr explicit Error(const ProtocolErrorCode& proto_error) : error_(proto_error) {}
 
   // Intentionally implicit conversion from Error<NoProtocolError> that holds only HostErrors.
   // This allows any Error<…> to be compared to an Error<NoProtocolError>'s HostError payload. Also,
@@ -217,7 +246,9 @@ class [[nodiscard]] Error {
   friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(
       ProtocolErrorCode);
 
-  constexpr explicit Error(ProtocolErrorCode proto_error) : error_(proto_error) {
+  template <typename T = ProtocolErrorCode,
+            std::enable_if_t<detail::CanRepresentSuccessV<T>, int> = 0>
+  constexpr explicit Error(const ProtocolErrorCode& proto_error) : error_(proto_error) {
     ZX_ASSERT(!ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error));
   }
 
@@ -306,15 +337,6 @@ constexpr bool operator!=(const fitx::result<Error<LErrorCode>>& lhs,
                           const fitx::result<Error<RErrorCode>>& rhs) {
   return !(lhs == rhs);
 }
-
-template <>
-struct ProtocolErrorTraits<NoProtocolError> {
-  // This won't be called but still needs to be stubbed out to link correctly.
-  static std::string ToString(NoProtocolError) {
-    ZX_ASSERT(false);
-    return std::string();
-  }
-};
 
 namespace internal {
 

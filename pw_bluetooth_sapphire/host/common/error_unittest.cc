@@ -19,6 +19,11 @@ enum class TestError : uint8_t {
   kFail2 = 2,
 };
 
+enum class TestErrorWithoutSuccess {
+  kFail0 = 0,
+  kFail1 = 1,
+};
+
 // Test detail::IsErrorV
 static_assert(detail::IsErrorV<Error<TestError>>);
 static_assert(!detail::IsErrorV<TestError>);
@@ -44,6 +49,22 @@ struct ProtocolErrorTraits<TestError> {
   static constexpr bool is_success(TestError proto_code) {
     return proto_code == TestError::kSuccess;
   }
+};
+
+template <>
+struct ProtocolErrorTraits<TestErrorWithoutSuccess> {
+  static std::string ToString(TestErrorWithoutSuccess code) {
+    switch (code) {
+      case TestErrorWithoutSuccess::kFail0:
+        return "fail 0 (TestErrorWithoutSuccess 0)";
+      case TestErrorWithoutSuccess::kFail1:
+        return "fail 1 (TestErrorWithoutSuccess 1)";
+      default:
+        return "unknown (TestError)";
+    }
+  }
+
+  // is_success() is omitted
 };
 
 namespace {
@@ -144,6 +165,12 @@ TEST(ErrorTest, ResultFromSuccessProtocolError) {
   const Error error = MakeError(TestError::kFail1);
   EXPECT_NE(error, result);
   EXPECT_NE(result, error);
+}
+
+TEST(ErrorTest, ResultFromNonSuccessProtocolErrorThatOnlyHoldsErrors) {
+  // Use public ctor to construct the error directly.
+  constexpr Error<TestErrorWithoutSuccess> error(TestErrorWithoutSuccess::kFail0);
+  EXPECT_TRUE(error.is(TestErrorWithoutSuccess::kFail0));
 }
 
 TEST(ErrorDeathTest, ReadingHostErrorThatIsNotPresentIsFatal) {
