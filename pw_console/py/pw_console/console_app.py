@@ -58,8 +58,9 @@ from pw_console.console_prefs import ConsolePrefs
 from pw_console.help_window import HelpWindow
 import pw_console.key_bindings
 from pw_console.log_pane import LogPane
-from pw_console.python_logging import all_loggers
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
+from pw_console.python_logging import all_loggers
+from pw_console.quit_dialog import QuitDialog
 from pw_console.repl_pane import ReplPane
 import pw_console.style
 import pw_console.widgets.checkbox
@@ -200,9 +201,6 @@ class ConsoleApp:
                                           title=(self.app_title + ' Help'))
         self.app_help_window.generate_help_text()
 
-        # Used for tracking which pane was in focus before showing help window.
-        self.last_focused_pane = None
-
         # Create a ptpython repl instance.
         self.pw_ptpython_repl = PwPtPythonRepl(
             get_globals=lambda: global_vars,
@@ -229,6 +227,8 @@ class ConsoleApp:
 
         # Top of screen menu items
         self.menu_items = self._create_menu_items()
+
+        self.quit_dialog = QuitDialog(self)
 
         # Key bindings registry.
         self.key_bindings = pw_console.key_bindings.create_key_bindings(self)
@@ -269,6 +269,11 @@ class ConsoleApp:
                     bottom=2,
                     # Callable to get width
                     width=self.keybind_help_window.content_width,
+                ),
+                Float(
+                    content=self.quit_dialog,
+                    top=2,
+                    left=2,
                 ),
                 # Completion menu that can overlap other panes since it lives in
                 # the top level Float container.
@@ -729,12 +734,15 @@ class ConsoleApp:
         return self.application.layout.current_window
 
     def modal_window_is_open(self):
+        """Return true if any modal window or dialog is open."""
         if self.app_help_text:
             return (self.app_help_window.show_window
                     or self.keybind_help_window.show_window
-                    or self.user_guide_window.show_window)
+                    or self.user_guide_window.show_window
+                    or self.quit_dialog.show_dialog)
         return (self.keybind_help_window.show_window
-                or self.user_guide_window.show_window)
+                or self.user_guide_window.show_window
+                or self.quit_dialog.show_dialog)
 
     def exit_console(self):
         """Quit the console prompt_toolkit application UI."""

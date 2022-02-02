@@ -594,6 +594,79 @@ Python Input & Output
        | the way to the beginning and end of the buffer.
      - |checkbox|
 
+Quit Confirmation Dialog
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Press :kbd:`Ctrl-d`
+     - | The quit dialog appears
+     - |checkbox|
+
+   * - 2
+     - | Press :kbd:`n`
+     - | The quit dialog disappears
+     - |checkbox|
+
+   * - 3
+     - | Press :kbd:`Ctrl-d`
+     - | The quit dialog appears
+     - |checkbox|
+
+   * - 4
+     - | Press :kbd:`y`
+     - | The console exits
+     - |checkbox|
+
+   * - 5
+     - | Restart the console and
+       | Press :kbd:`Ctrl-d` twice in quick succession.
+     - | The console exits
+     - |checkbox|
+
+   * - 6
+     - | Restart the console and Press :kbd:`F1`
+     - | The help window appears
+     - |checkbox|
+
+   * - 7
+     - | Press :kbd:`Ctrl-d`
+     - | The quit dialog appears on top of the help window
+     - |checkbox|
+
+   * - 8
+     - | Press :kbd:`n`
+     - | The quit dialog disappears and the help window is
+       | back in focus.
+     - |checkbox|
+
+   * - 9
+     - | Press :kbd:`q`
+     - | The help window disappears and the Python Input is in focus.
+     - |checkbox|
+
+   * - 10
+     - | Type some text into the Python Input.
+       | Press :kbd:`Home` or move the cursor to the
+       | beginning of the text you just entered.
+       | Press :kbd:`Ctrl-d`
+     - | Each :kbd:`Ctrl-d` press deletes one character
+     - |checkbox|
+
+   * - 11
+     - | Press :kbd:`Ctrl-c` to clear the Python Input text
+       | Press :kbd:`Ctrl-d`
+     - | The quit dialog appears.
+     - |checkbox|
+
 Add note to the commit message
 ==============================
 

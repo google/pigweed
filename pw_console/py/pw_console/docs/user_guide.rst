@@ -22,8 +22,14 @@ Starting the Console
 Exiting
 ~~~~~~~
 
+There are a few ways to exit the Pigweed Console user interface:
+
 1.  Click the :guilabel:`[File]` menu and then :guilabel:`Exit`.
 2.  Type ``quit`` or ``exit`` in the Python Input window and press :kbd:`Enter`.
+3.  Press :kbd:`Ctrl-d` once to show the quit confirmation dialog. From there
+    pressing :kbd:`Ctrl-d` a second time or :kbd:`y` will exit.
+4.  Pressing :kbd:`Ctrl-x` quickly followed by :kbd:`Ctrl-c` will exit without
+    confirmation.
 
 
 Interface Layout

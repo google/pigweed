@@ -325,6 +325,10 @@ def generate_styles(theme_name='dark'):
         'selection-dialog-border': 'bg:{} {}'.format(theme.inactive_bg,
                                                      theme.yellow_accent),
 
+        'quit-dialog': 'bg:{}'.format(theme.inactive_bg),
+        'quit-dialog-border': 'bg:{} {}'.format(theme.inactive_bg,
+                                                theme.red_accent),
+
         # Progress Bar Styles
         # Entire set of ProgressBars - no title is used in pw_console
         'title': '',
