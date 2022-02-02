@@ -103,10 +103,6 @@ function(pw_auto_add_simple_module MODULE)
       ${headers}
   )
 
-  if(arg_IMPLEMENTS_FACADE)
-    target_include_directories("${MODULE}" PUBLIC public_overrides)
-  endif()
-
   pw_auto_add_module_tests("${MODULE}"
     PRIVATE_DEPS
       ${arg_PUBLIC_DEPS}
@@ -199,7 +195,18 @@ function(pw_add_module_library NAME)
     )
   endif()
 
-  add_library("${NAME}" EXCLUDE_FROM_ALL ${arg_HEADERS} ${arg_SOURCES})
+  # Instead of forking all of the code below or injecting an empty source file,
+  # conditionally select PUBLIC vs INTERFACE depending on whether there are
+  # sources to compile.
+  if(NOT "${arg_SOURCES}" STREQUAL "")
+    add_library("${NAME}" EXCLUDE_FROM_ALL)
+    set(public_or_interface PUBLIC)
+  else("${arg_SOURCES}" STREQUAL "")
+    add_library("${NAME}" EXCLUDE_FROM_ALL INTERFACE)
+    set(public_or_interface INTERFACE)
+  endif(NOT "${arg_SOURCES}" STREQUAL "")
+
+  target_sources("${NAME}" PRIVATE ${arg_SOURCES} ${arg_HEADERS})
 
   # CMake 3.22 does not have a notion of target_headers yet, so in the mean
   # time we ask for headers to be specified for consistency with GN & Bazel and
@@ -216,62 +223,82 @@ function(pw_add_module_library NAME)
   endforeach()
 
   if(NOT "${arg_PUBLIC_INCLUDES}" STREQUAL "")
-    target_include_directories("${NAME}" PUBLIC ${arg_PUBLIC_INCLUDES})
-  else()
+    target_include_directories("${NAME}"
+      ${public_or_interface}
+        ${arg_PUBLIC_INCLUDES}
+    )
+  else("${arg_PUBLIC_INCLUDES}" STREQUAL "")
     # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
-    target_include_directories("${NAME}" PUBLIC public)
-  endif()
+    target_include_directories("${NAME}" ${public_or_interface} public)
+  endif(NOT "${arg_PUBLIC_INCLUDES}" STREQUAL "")
+
   if(NOT "${arg_PRIVATE_INCLUDES}" STREQUAL "")
     target_include_directories("${NAME}" PRIVATE ${arg_PRIVATE_INCLUDES})
-  endif()
+  endif(NOT "${arg_PRIVATE_INCLUDES}" STREQUAL "")
+
   target_link_libraries("${NAME}"
-    PUBLIC
+    ${public_or_interface}
       pw_build
       ${arg_PUBLIC_DEPS}
-    PRIVATE
-      pw_build.warnings
-      ${arg_PRIVATE_DEPS}
   )
 
+  if(NOT "${arg_SOURCES}" STREQUAL "")
+    target_link_libraries("${NAME}"
+      PRIVATE
+        pw_build.warnings
+        ${arg_PRIVATE_DEPS}
+    )
+  endif(NOT "${arg_SOURCES}" STREQUAL "")
+
   if(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
-    target_include_directories("${NAME}" PUBLIC public_overrides)
+    target_include_directories("${NAME}"
+      ${public_or_interface}
+        public_overrides
+    )
     if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
       # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
-      target_include_directories("${NAME}" PUBLIC public_overrides)
-    endif()
+      target_include_directories("${NAME}"
+        ${public_or_interface}
+          public_overrides
+      )
+    endif("${arg_PUBLIC_INCLUDES}" STREQUAL "")
     set(facades ${arg_IMPLEMENTS_FACADES})
     list(TRANSFORM facades APPEND ".facade")
-    target_link_libraries("${NAME}" PUBLIC ${facades})
-  endif()
-
-  # Libraries require at least one source file.
-  if(NOT arg_SOURCES)
-    target_sources("${NAME}" PRIVATE $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
-  endif()
+    target_link_libraries("${NAME}" ${public_or_interface} ${facades})
+  endif(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
 
   if(NOT "${arg_PUBLIC_DEFINES}" STREQUAL "")
-    target_compile_definitions("${NAME}" PUBLIC ${arg_PUBLIC_DEFINES})
-  endif()
+    target_compile_definitions("${NAME}"
+      ${public_or_interface}
+        ${arg_PUBLIC_DEFINES}
+    )
+  endif(NOT "${arg_PUBLIC_DEFINES}" STREQUAL "")
 
   if(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
     target_compile_definitions("${NAME}" PRIVATE ${arg_PRIVATE_DEFINES})
-  endif()
+  endif(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
 
   if(NOT "${arg_PUBLIC_COMPILE_OPTIONS}" STREQUAL "")
-    target_compile_options("${NAME}" PUBLIC ${arg_PUBLIC_COMPILE_OPTIONS})
-  endif()
+    target_compile_options("${NAME}"
+      ${public_or_interface}
+        ${arg_PUBLIC_COMPILE_OPTIONS}
+    )
+  endif(NOT "${arg_PUBLIC_COMPILE_OPTIONS}" STREQUAL "")
 
   if(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
     target_compile_options("${NAME}" PRIVATE ${arg_PRIVATE_COMPILE_OPTIONS})
-  endif()
+  endif(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
 
   if(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
-    target_link_options("${NAME}" PUBLIC ${arg_PUBLIC_LINK_OPTIONS})
-  endif()
+    target_link_options("${NAME}"
+      ${public_or_interface}
+        ${arg_PUBLIC_LINK_OPTIONS}
+    )
+  endif(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
 
   if(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
     target_link_options("${NAME}" PRIVATE ${arg_PRIVATE_LINK_OPTIONS})
-  endif()
+  endif(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
 endfunction(pw_add_module_library)
 
 # Declares a module as a facade.

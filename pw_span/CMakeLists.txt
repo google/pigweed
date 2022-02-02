@@ -19,7 +19,7 @@ pw_auto_add_simple_module(pw_span
     pw_polyfill
     pw_polyfill.standard_library
 )
-target_include_directories(pw_span PUBLIC public_overrides)
+target_include_directories(pw_span INTERFACE public_overrides)
 
 if(Zephyr_FOUND AND CONFIG_PIGWEED_SPAN)
   zephyr_link_libraries(pw_span)

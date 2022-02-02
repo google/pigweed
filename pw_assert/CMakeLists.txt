@@ -21,4 +21,4 @@ pw_add_facade(pw_assert
     pw_preprocessor
     ${pw_assert_CONFIG}
 )
-target_include_directories(pw_assert PUBLIC assert_lite_public_overrides)
+target_include_directories(pw_assert INTERFACE assert_lite_public_overrides)
