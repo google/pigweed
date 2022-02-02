@@ -468,7 +468,7 @@ void PairingState::OnEncryptionChange(hci::Result<bool> result) {
     state_ = State::kFailed;
   }
 
-  SignalStatus(result.is_ok() ? fitx::ok() : ToResult(result.take_error()));
+  SignalStatus(result.is_ok() ? hci::Result<>(fitx::ok()) : result.take_error());
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(

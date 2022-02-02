@@ -3447,7 +3447,7 @@ TEST_F(ClientTest, ReadByTypeRequestError) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(error.has_value());
-  EXPECT_EQ(att::ErrorCode::kAttributeNotFound, *error);
+  EXPECT_EQ(ToResult(att::ErrorCode::kAttributeNotFound).error_value(), *error);
   ASSERT_TRUE(handle.has_value());
   EXPECT_EQ(kStartHandle, handle.value());
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3539,7 +3539,7 @@ TEST_F(ClientTest, ReadByTypeRequestInvalidResponses) {
     RunLoopUntilIdle();
 
     ASSERT_TRUE(error.has_value());
-    EXPECT_EQ(HostError::kPacketMalformed, *error);
+    EXPECT_EQ(Error(HostError::kPacketMalformed), *error);
     EXPECT_FALSE(fake_chan()->link_error());
   }
 }

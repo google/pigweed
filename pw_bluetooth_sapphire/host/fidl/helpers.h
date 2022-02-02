@@ -64,7 +64,7 @@ fuchsia::bluetooth::Status ResultToFidlDeprecated(
     result.error_value().Visit(
         [&error](bt::HostError c) { error->error_code = HostErrorToFidlDeprecated(c); },
         [&](ProtocolErrorCode c) {
-          if constexpr (!std::is_same_v<ProtocolErrorCode, bt::NoProtocolError>) {
+          if constexpr (bt::Error<ProtocolErrorCode>::may_hold_protocol_error()) {
             error->error_code = fuchsia::bluetooth::ErrorCode::PROTOCOL_ERROR;
             error->protocol_error_code = static_cast<uint32_t>(c);
           } else {

@@ -48,7 +48,8 @@ struct ProtocolErrorTraits<TestError> {
 
 namespace {
 
-// Build an Error when |proto_code| is guaranteed to be an error
+// Build an Error when |proto_code| is guaranteed to be an error. This could be consteval in C++20
+// so that if the code isn't an error, it doesn't compile.
 constexpr Error<TestError> MakeError(TestError proto_code) {
   return ToResult(proto_code).error_value();
 }
@@ -175,12 +176,11 @@ TEST(ErrorTest, ErrorCanBeComparedInTests) {
 
   // Use operator== through GTest
   EXPECT_EQ(error, error);
-  EXPECT_EQ(TestError::kFail1, error);
 
   // Use operator!= through GTest
-  EXPECT_NE(TestError::kSuccess, error);
-  EXPECT_NE(TestError::kFail2, error);
   EXPECT_NE(MakeError(TestError::kFail2), error);
+  EXPECT_NE(Error<>(HostError::kFailed), error);
+  EXPECT_NE(Error<TestError>(HostError::kFailed), error);
 }
 
 TEST(ErrorTest, ResultCanBeComparedInTests) {
@@ -227,25 +227,6 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
   // account.
   EXPECT_EQ(Error(HostError::kFailed), error_with_value_holding_host_error);
   EXPECT_NE(Error(HostError::kFailed), error_with_value);
-}
-
-TEST(ErrorTest, ToResultFromBtError) {
-  fitx::result<Error<TestError>, int> error_with_value = fitx::error(MakeError(TestError::kFail1));
-
-  // Note that ToResult is unnecessary here. |fitx::error(error_with_value.error_value())| can be
-  // used to construct a fitx::result. This test ensures that ToResult doesn't produce unexpected
-  // behavior.
-  const fitx::result<Error<TestError>> result = ToResult(std::move(error_with_value).error_value());
-  EXPECT_EQ(ToResult(TestError::kFail1), result);
-}
-
-TEST(ErrorTest, ToResultFromTakeError) {
-  fitx::result<Error<TestError>, int> error_with_value = fitx::error(MakeError(TestError::kFail1));
-
-  // Note that ToResult is unnecessary here. The return value of |take_error()| can be used to
-  // construct a fitx::result. This test ensures that ToResult doesn't produce unexpected behavior.
-  const fitx::result<Error<TestError>> result = ToResult(error_with_value.take_error());
-  EXPECT_EQ(ToResult(TestError::kFail1), result);
 }
 
 TEST(ErrorTest, VisitOnHostError) {

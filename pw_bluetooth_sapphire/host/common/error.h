@@ -58,7 +58,6 @@ static constexpr bool IsErrorV = IsError<T>::value;
 
 // Marker used to indicate that an Error holds only HostError.
 class NoProtocolError {
-  friend class Error<NoProtocolError>;
   constexpr NoProtocolError() = delete;
 };
 
@@ -80,26 +79,6 @@ template <typename ProtocolErrorCode>
     return fitx::success();
   }
   return fitx::error(Error(std::move(proto_error)));
-}
-
-// Create a fitx::result<Error<…>> from an Error.
-// This overload takes precedence over the ToResult(ProtocolErrorCode) in order to avoid creating
-// fitx::result<Error<Error<…>> types.
-template <typename ProtocolErrorCode>
-[[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(
-    Error<ProtocolErrorCode> error) {
-  return fitx::error(std::move(error));
-}
-
-// Create a fitx::result<Error<…>> from a wrapped protocol error.
-// This is used when calling, for example
-//   fitx::result<Error<…>, int> result = …;
-//   fitx::result error_without_value = ToResult(result.take_error());
-// which extracts the error from |result| into a new variable that does not hold a success value.
-template <typename ProtocolErrorCode>
-[[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(
-    fitx::error<Error<ProtocolErrorCode>> result) {
-  return result;
 }
 
 template <typename ProtocolErrorCode = NoProtocolError>
@@ -132,7 +111,7 @@ class [[nodiscard]] Error {
   // The seemingly-extraneous template parameter serves to disable this overload when |*this| is an
   // Error<NoProtocolError>
   template <typename T = ProtocolErrorCode,
-            std::enable_if_t<!std::is_same_v<NoProtocolError, T>, bool> = true>
+            std::enable_if_t<Error<T>::may_hold_protocol_error(), int> = 0>
   // NOLINTNEXTLINE(google-explicit-constructor)
   constexpr Error(const Error<NoProtocolError>& other) : error_(other.host_error()) {}
 
@@ -143,13 +122,12 @@ class [[nodiscard]] Error {
   template <typename RErrorCode>
   constexpr bool operator==(const Error<RErrorCode>& rhs) const {
     auto proto_error_visitor = [&](ProtocolErrorCode held) {
-      if constexpr (std::is_same_v<ProtocolErrorCode, NoProtocolError> ||
-                    std::is_same_v<RErrorCode, NoProtocolError>) {
-        // This unreachable branch makes comparisons to Error<NoProtocolError> well-defined, which
-        // allows the "else" branch to compile so long as the protocol error codes are comparable.
-        return false;
-      } else {
+      if constexpr (may_hold_protocol_error() && Error<RErrorCode>::may_hold_protocol_error()) {
         return held == rhs.protocol_error();
+      } else {
+        // This unreachable branch makes comparisons to Error<NoProtocolError> well-defined, so that
+        // the lambda compiles as long as the protocol error codes are comparable.
+        return false;
       }
     };
     if (is_host_error() != rhs.is_host_error()) {
@@ -221,17 +199,17 @@ class [[nodiscard]] Error {
   //
   // Returns the return value of the visitor that was called (which may return void).
   template <typename HostVisitor, typename ProtoVisitor>
-  [[nodiscard]] constexpr auto Visit(HostVisitor host_error_visitor,
-                                     ProtoVisitor proto_error_visitor) const {
-    // This doesn't just check that the return types match but also that the visitors can be invoked
-    // with the appropriate types.
-    static_assert(std::is_same_v<std::invoke_result_t<HostVisitor, HostError>,
-                                 std::invoke_result_t<ProtoVisitor, ProtocolErrorCode>>,
-                  "Return types of both visitors must match");
+  [[nodiscard]] constexpr std::common_type_t<std::invoke_result_t<HostVisitor, HostError>,
+                                             std::invoke_result_t<ProtoVisitor, ProtocolErrorCode>>
+  Visit(HostVisitor host_error_visitor, ProtoVisitor proto_error_visitor) const {
     if (is_host_error()) {
       return host_error_visitor(host_error());
     }
     return proto_error_visitor(protocol_error());
+  }
+
+  static constexpr bool may_hold_protocol_error() {
+    return !std::is_same_v<ProtocolErrorCode, NoProtocolError>;
   }
 
  private:
@@ -256,53 +234,11 @@ Error(HostError)->Error<NoProtocolError>;
 // generically defined because there's no way to test if those variants can actually be instantiated
 // (using decltype etc), causing problems with e.g. fitx::result<E, T> == fitx::result<F, U>.
 
-// Comparisons to ProtocolErrorCode
-template <typename ProtocolErrorCode>
-constexpr bool operator==(const Error<ProtocolErrorCode>& lhs, const ProtocolErrorCode& rhs) {
-  return lhs.is(rhs);
-}
-
-template <typename ProtocolErrorCode>
-constexpr bool operator==(const ProtocolErrorCode& lhs, const Error<ProtocolErrorCode>& rhs) {
-  return rhs == lhs;
-}
-
-template <typename ProtocolErrorCode>
-constexpr bool operator!=(const Error<ProtocolErrorCode>& lhs, const ProtocolErrorCode& rhs) {
-  return !(lhs == rhs);
-}
-
-template <typename ProtocolErrorCode>
-constexpr bool operator!=(const ProtocolErrorCode& lhs, const Error<ProtocolErrorCode>& rhs) {
-  return !(rhs == lhs);
-}
-
-// Comparisons to HostError
-template <typename ProtocolErrorCode>
-constexpr bool operator==(const Error<ProtocolErrorCode>& lhs, const HostError& rhs) {
-  return lhs.is(rhs);
-}
-
-template <typename ProtocolErrorCode>
-constexpr bool operator==(const HostError& lhs, const Error<ProtocolErrorCode>& rhs) {
-  return rhs == lhs;
-}
-
-template <typename ProtocolErrorCode>
-constexpr bool operator!=(const HostError& lhs, const Error<ProtocolErrorCode>& rhs) {
-  return !(lhs == rhs);
-}
-
-template <typename ProtocolErrorCode>
-constexpr bool operator!=(const Error<ProtocolErrorCode>& lhs, const HostError& rhs) {
-  return !(rhs == lhs);
-}
-
 // Comparisons to fitx::result<Error<ProtocolErrorCode>>
 template <typename LErrorCode, typename RErrorCode, typename... Ts>
 constexpr bool operator==(const Error<LErrorCode>& lhs,
                           const fitx::result<Error<RErrorCode>, Ts...>& rhs) {
-  static_assert(std::conjunction_v<std::negation<detail::IsError<Ts>>...>,
+  static_assert((!detail::IsErrorV<Ts> && ...),
                 "fitx::result should not contain Error as a success value");
   return rhs.is_error() && (rhs.error_value() == lhs);
 }
@@ -403,7 +339,7 @@ std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result
   std::string out;
   auto append_value_string = [&] {
     if constexpr (sizeof...(Ts) > 0) {
-      if constexpr (std::conjunction_v<bt::internal::HasToString<Ts>...>) {
+      if constexpr ((bt::internal::HasToStringV<Ts> && ...)) {
         out += ToString(result.value());
       } else {
         // It's not possible to portably print e.g. the name of the value's type, so fall back to a
@@ -468,9 +404,9 @@ OStream& operator<<(OStream& os,
                     const fitx::result<::bt::Error<ProtocolErrorCode>, Ts...>& result) {
   auto stream_value_string = [&] {
     if constexpr (sizeof...(Ts) > 0) {
-      if constexpr (std::conjunction_v<::bt::internal::HasToString<Ts>...>) {
+      if constexpr ((::bt::internal::HasToStringV<Ts> && ...)) {
         os << ::bt::internal::ToString(result.value());
-      } else if constexpr (std::conjunction_v<::bt::detail::IsStreamable<OStream, Ts>...>) {
+      } else if constexpr ((::bt::detail::IsStreamableV<OStream, Ts> && ...)) {
         os << result.value();
       } else {
         // It may be prettier to default to ::testing::PrintToString here but that would require
