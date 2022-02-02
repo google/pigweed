@@ -16,3 +16,20 @@ config PIGWEED_SYS_IO
     bool "Enable the Zephyr system IO module"
     select PIGWEED_SPAN
     select PIGWEED_STATUS
+    help
+      The system I/O module uses the Zephyr console under the hood to perform
+      I/O operations.
+
+if PIGWEED_SYS_IO
+
+config PIGWEED_SYS_IO_INIT_PRIORITY
+    int "The initialization priority of the system I/O module"
+    default 1
+    help
+      The system I/O module uses the APPLICATION initialization level. Use this
+      config to set the priority.
+
+config PIGWEED_SYS_IO_USB
+    bool "Use the USB for I/O"
+
+endif # PIGWEED_SYS_IO
