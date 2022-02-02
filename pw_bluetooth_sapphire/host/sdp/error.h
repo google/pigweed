@@ -19,7 +19,8 @@ template <>
 struct ProtocolErrorTraits<sdp::ErrorCode> {
   static std::string ToString(sdp::ErrorCode ecode);
 
-  static constexpr bool is_success(sdp::ErrorCode) { return false; }
+  // is_success() not declared because ErrorCode does not include a "success" value (Core Spec v5.3,
+  // Vol 3, Part B, Sec 4.4.1).
 };
 
 }  // namespace bt

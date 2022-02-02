@@ -10,8 +10,6 @@ namespace {
 
 constexpr const char* ErrorCodeToString(ErrorCode code) {
   switch (code) {
-    case ErrorCode::kReserved:
-      return "reserved";
     case ErrorCode::kUnsupportedVersion:
       return "unsupported version";
     case ErrorCode::kInvalidRecordHandle:

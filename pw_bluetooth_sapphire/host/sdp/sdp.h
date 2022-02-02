@@ -55,7 +55,6 @@ struct Header {
 
 // v5.0, Vol 3, Part B, 4.4.1
 enum class ErrorCode : uint16_t {
-  kReserved = 0x0000,
   kUnsupportedVersion = 0x0001,
   kInvalidRecordHandle = 0x0002,
   kInvalidRequestSyntax = 0x0003,

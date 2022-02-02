@@ -40,6 +40,8 @@ bool MatchesOneOf(const Container1& one, const Container2& two, const Container3
 TEST(PDUTest, ErrorResponse) {
   ErrorResponse response;
   EXPECT_FALSE(response.complete());
+  EXPECT_EQ(nullptr, response.GetPDU(0xF00F /* ignored */, 0xDEAD, kDefaultMaxSize /* ignored */,
+                                     BufferView()));
 
   auto kInvalidContState =
       CreateStaticByteBuffer(0x01,        // opcode: kErrorResponse
@@ -61,6 +63,7 @@ TEST(PDUTest, ErrorResponse) {
   auto ptr =
       response.GetPDU(0xF00F /* ignored */, 0xDEAD, kDefaultMaxSize /* ignored */, BufferView());
 
+  ASSERT_TRUE(ptr);
   EXPECT_TRUE(ContainersEqual(kInvalidContState.view(0, 7), *ptr));
 }
 

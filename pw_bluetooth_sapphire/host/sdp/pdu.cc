@@ -192,10 +192,13 @@ fitx::result<Error<>> ErrorResponse::Parse(const ByteBuffer& buf) {
 
 MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid, uint16_t,
                                            const ByteBuffer&) const {
+  if (!complete()) {
+    return nullptr;
+  }
   auto ptr = BuildNewPdu(kErrorResponse, tid, sizeof(ErrorCode));
   size_t written = sizeof(Header);
 
-  ptr->WriteObj(htobe16(static_cast<uint16_t>(error_code_)), written);
+  ptr->WriteObj(htobe16(static_cast<uint16_t>(error_code_.value())), written);
 
   return ptr;
 }

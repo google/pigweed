@@ -103,9 +103,9 @@ class Response {
 // See v5.0, Vol 3, Part B, 4.4.1
 class ErrorResponse : public Response {
  public:
-  ErrorResponse(ErrorCode code = ErrorCode::kReserved) : error_code_(code) {}
+  ErrorResponse(std::optional<ErrorCode> code = std::nullopt) : error_code_(code) {}
   // Response overrides.
-  bool complete() const override { return error_code_ != ErrorCode::kReserved; }
+  bool complete() const override { return error_code_.has_value(); }
 
   const BufferView ContinuationState() const override {
     // ErrorResponses never have continuation state.
@@ -119,11 +119,11 @@ class ErrorResponse : public Response {
   MutableByteBufferPtr GetPDU(uint16_t req_max, TransactionId tid, uint16_t max_size,
                               const ByteBuffer& cont_state) const override;
 
-  ErrorCode error_code() const { return error_code_; }
+  const std::optional<ErrorCode>& error_code() const { return error_code_; }
   void set_error_code(ErrorCode code) { error_code_ = code; }
 
  private:
-  ErrorCode error_code_;
+  std::optional<ErrorCode> error_code_;
 };
 
 // Used to locate service records that match a pattern.
