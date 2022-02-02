@@ -200,6 +200,21 @@ function(pw_add_module_library NAME)
   endif()
 
   add_library("${NAME}" EXCLUDE_FROM_ALL ${arg_HEADERS} ${arg_SOURCES})
+
+  # CMake 3.22 does not have a notion of target_headers yet, so in the mean
+  # time we ask for headers to be specified for consistency with GN & Bazel and
+  # to improve the IDE experience. However, we do want to ensure all the headers
+  # which are otherwise ignored by CMake are present.
+  #
+  # See https://gitlab.kitware.com/cmake/cmake/-/issues/22468 for adding support
+  # to CMake to associate headers with targets properly for CMake 3.23.
+  foreach(header IN ITEMS ${arg_HEADERS})
+    get_filename_component(header "${header}" ABSOLUTE)
+    if(NOT EXISTS ${header})
+      message(FATAL_ERROR "Header not found: \"${header}\"")
+    endif()
+  endforeach()
+
   if(NOT "${arg_PUBLIC_INCLUDES}" STREQUAL "")
     target_include_directories("${NAME}" PUBLIC ${arg_PUBLIC_INCLUDES})
   else()
