@@ -69,6 +69,13 @@ log_rpc::RpcLogDrainMap drain_map(drains);
 
 const int64_t boot_time_count =
     pw::chrono::SystemClock::now().time_since_epoch().count();
+
+// TODO(amontanez): Is there a helper to subtract RPC overhead?
+constexpr size_t kMaxPackedLogMessagesSize =
+    PW_SYSTEM_MAX_TRANSMISSION_UNIT - 32;
+
+std::array<std::byte, kMaxPackedLogMessagesSize> log_packing_buffer;
+
 }  // namespace
 
 // Deferred log buffer, for storing log entries while logging_thread_ streams
@@ -79,7 +86,8 @@ multisink::MultiSink& GetMultiSink() {
 }
 
 log_rpc::RpcLogDrainThread& GetLogThread() {
-  static log_rpc::RpcLogDrainThread logging_thread(GetMultiSink(), drain_map);
+  static log_rpc::RpcLogDrainThread logging_thread(
+      GetMultiSink(), drain_map, log_packing_buffer);
   return logging_thread;
 }
 
