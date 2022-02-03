@@ -206,6 +206,7 @@ filegroup(
         "nanopb/public/pw_rpc/nanopb/test_method_context.h",
         "nanopb/pw_rpc_nanopb_private/internal_test_utils.h",
         "nanopb/serde_test.cc",
+        "nanopb/server_callback_test.cc",
         "nanopb/server_reader_writer.cc",
         "nanopb/server_reader_writer_test.cc",
         "nanopb/stub_generation_test.cc",

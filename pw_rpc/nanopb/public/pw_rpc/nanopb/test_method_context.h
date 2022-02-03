@@ -39,6 +39,25 @@ namespace pw::rpc {
 //   EXPECT_EQ(OkStatus(), context.call({.some_arg = 123}));
 //   EXPECT_EQ(500, context.response().some_response_value);
 //
+// For a unary RPC with repeated fields in the response, nanopb uses a
+// pb_callback_t field called when parsing the response as many times as the
+// field is present in the protobuf. To set the pb_callback_t fields create the
+// Response struct and pass it to the response method:
+//
+//   PW_NANOPB_TEST_METHOD_CONTEXT(my::CoolService, TheMethod) context;
+//   EXPECT_EQ(OkStatus(), context.call({.some_arg = 123}));
+//
+//   TheMethodResponse response{};
+//   response.repeated_field.funcs.decode = +[](pb_istream_t* stream,
+//                                              const pb_field_iter_t* field,
+//                                              void** arg) -> bool {
+//     ... decode the field from stream with pb_decode* functions ...
+//     EXPECT_EQ(submsg.some_field, 123);
+//     return true;
+//   };
+//   response.repeated_field.arg = &some_context_passed_decode_if_needed;
+//   context.response(response);  // Callbacks called from here.
+//
 // For a server streaming RPC, context.call(request) invokes the method. As in a
 // normal RPC, the method completes when the ServerWriter's Finish method is
 // called (or it goes out of scope).
@@ -106,6 +125,14 @@ class NanopbInvocationContext
     PW_ASSERT(kMethodInfo.serde().DecodeResponse(Base::responses().back(),
                                                  &response));
     return response;
+  }
+
+  // Gives access to the RPC's most recent response using pased Response object
+  // to parse the nanopb. Use this version when you need to set pb_callback_t
+  // fields in the Response object before parsing.
+  void response(Response& response) const {
+    PW_ASSERT(kMethodInfo.serde().DecodeResponse(Base::responses().back(),
+                                                 &response));
   }
 
   NanopbPayloadsView<Response> responses() const {
