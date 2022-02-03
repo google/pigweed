@@ -171,6 +171,12 @@ def parse_args() -> argparse.Namespace:
                         type=int,
                         default=metadata.DEFAULT_METADATA_VERSION,
                         help='Version number for the targets metadata')
+    parser.add_argument('--targets-metadata-version-file',
+                        type=Path,
+                        default=None,
+                        help='Read version number string from this file. When '
+                        'provided, content of this file supersede '
+                        '--targets-metadata-version')
     parser.add_argument('--signed-root-metadata',
                         type=Path,
                         default=None,
@@ -182,6 +188,7 @@ def main(targets: Iterable[str],
          out: Path,
          persist: Path = None,
          targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
+         targets_metadata_version_file: Path = None,
          signed_root_metadata: Path = None) -> None:
     """Generates an UpdateBundle and serializes it to disk."""
     target_dict = {}
@@ -193,6 +200,10 @@ def main(targets: Iterable[str],
     if signed_root_metadata:
         root_metadata = SignedRootMetadata.FromString(
             signed_root_metadata.read_bytes())
+
+    if targets_metadata_version_file:
+        with targets_metadata_version_file.open() as version_file:
+            targets_metadata_version = int(version_file.read().strip())
 
     bundle = gen_unsigned_update_bundle(target_dict, persist,
                                         targets_metadata_version,
