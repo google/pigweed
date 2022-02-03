@@ -53,6 +53,9 @@ struct Chunk {
   std::optional<Type> type;
 };
 
+// Partially decodes a transfer chunk to find its transfer ID field.
+Result<uint32_t> ExtractTransferId(ConstByteSpan message);
+
 Status DecodeChunk(ConstByteSpan message, Chunk& chunk);
 Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer);
 

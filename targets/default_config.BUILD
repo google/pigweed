@@ -75,6 +75,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_sync_timed_thread_notification_backend",
+    build_setting_default = "@pigweed//pw_sync:timed_thread_notification_backend_multiplexer",
+)
+
+label_flag(
     name = "pw_interrupt_backend",
     build_setting_default = "@pigweed//pw_interrupt:backend_multiplexer",
 )

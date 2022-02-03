@@ -96,8 +96,9 @@ class TransferServiceIntegrationTest(unittest.TestCase):
 
     def test_read_large_amount_of_data(self) -> None:
         for _ in range(ITERATIONS):
-            self.set_content(27, '~' * 512)
-            self.assertEqual(self.manager.read(27), b'~' * 512)
+            size = 2**13  # TODO(hepler): Increase to 2**14 when it passes.
+            self.set_content(27, '~' * size)
+            self.assertEqual(self.manager.read(27), b'~' * size)
 
     def test_write_unknown_id(self) -> None:
         with self.assertRaises(pw_transfer.Error) as ctx:

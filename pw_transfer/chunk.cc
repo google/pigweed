@@ -22,6 +22,28 @@ namespace pw::transfer::internal {
 
 namespace ProtoChunk = transfer::Chunk;
 
+Result<uint32_t> ExtractTransferId(ConstByteSpan message) {
+  protobuf::Decoder decoder(message);
+
+  while (decoder.Next().ok()) {
+    ProtoChunk::Fields field =
+        static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
+
+    switch (field) {
+      case ProtoChunk::Fields::TRANSFER_ID: {
+        uint32_t transfer_id;
+        PW_TRY(decoder.ReadUint32(&transfer_id));
+        return transfer_id;
+      }
+
+      default:
+        continue;
+    }
+  }
+
+  return Status::DataLoss();
+}
+
 Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
   protobuf::Decoder decoder(message);
   Status status;

@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -32,27 +32,61 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "pw_transfer",
+    name = "core",
     srcs = [
-        "client_connection.cc",
-        "public/pw_transfer/internal/client_connection.h",
+        "chunk.cc",
+        "client_context.cc",
+        "context.cc",
+        "public/pw_transfer/internal/chunk.h",
+        "public/pw_transfer/internal/client_context.h",
+        "public/pw_transfer/internal/context.h",
+        "public/pw_transfer/internal/event.h",
         "public/pw_transfer/internal/server_context.h",
         "server_context.cc",
-        "transfer.cc",
+        "transfer_thread.cc",
     ],
     hdrs = [
         "public/pw_transfer/handler.h",
+        "public/pw_transfer/transfer_thread.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":config",
+        ":transfer_pwpb",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
+        "//pw_chrono:system_timer",
+        "//pw_containers:intrusive_list",
+        "//pw_log",
+        "//pw_preprocessor",
+        "//pw_protobuf",
+        "//pw_result",
+        "//pw_rpc:client_server",
+        "//pw_rpc:internal_packet_cc.pwpb",
+        "//pw_rpc/raw:client_api",
+        "//pw_rpc/raw:server_api",
+        "//pw_status",
+        "//pw_stream",
+        "//pw_sync:timed_thread_notification",
+        "//pw_thread:thread_core",
+        "//pw_varint",
+    ],
+)
+
+pw_cc_library(
+    name = "pw_transfer",
+    srcs = [
+        "transfer.cc",
+    ],
+    hdrs = [
         "public/pw_transfer/transfer.h",
     ],
     includes = ["public"],
     deps = [
-        ":context",
-        ":transfer_pwpb",
+        ":core",
         "//pw_assert",
         "//pw_bytes",
-        "//pw_containers:intrusive_list",
         "//pw_log",
-        "//pw_protobuf",
         "//pw_result",
         "//pw_rpc:internal_packet_cc.pwpb",
         "//pw_rpc/raw:server_api",
@@ -65,53 +99,17 @@ pw_cc_library(
     name = "client",
     srcs = [
         "client.cc",
-        "client_context.cc",
-        "public/pw_transfer/internal/client_context.h",
     ],
     hdrs = [
         "public/pw_transfer/client.h",
     ],
     includes = ["public"],
     deps = [
-        ":context",
+        ":core",
         "//pw_assert",
         "//pw_function",
         "//pw_log",
-        "//pw_rpc/raw:client_api",
-        "//pw_rpc/raw:server_api",
         "//pw_stream",
-        "//pw_sync:lock_annotations",
-        "//pw_sync:mutex",
-    ],
-)
-
-pw_cc_library(
-    name = "context",
-    srcs = [
-        "chunk.cc",
-        "chunk_data_buffer.cc",
-        "context.cc",
-        "public/pw_transfer/internal/chunk.h",
-        "public/pw_transfer/internal/chunk_data_buffer.h",
-    ],
-    hdrs = [
-        "public/pw_transfer/internal/context.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":config",
-        ":transfer_pwpb",
-        "//pw_bytes",
-        "//pw_chrono:system_timer",
-        "//pw_protobuf",
-        "//pw_result",
-        "//pw_rpc:client_server",
-        "//pw_status",
-        "//pw_stream",
-        "//pw_sync:interrupt_spin_lock",
-        "//pw_sync:lock_annotations",
-        "//pw_varint",
-        "//pw_work_queue",
     ],
 )
 
@@ -121,7 +119,7 @@ pw_cc_library(
         "pw_transfer_private/chunk_testing.h",
     ],
     deps = [
-        ":context",
+        ":core",
         "//pw_containers",
     ],
 )
@@ -142,12 +140,28 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "transfer_thread_test",
+    srcs = ["transfer_thread_test.cc"],
+    deps = [
+        ":pw_transfer",
+        ":test_helpers",
+        "//pw_rpc:thread_testing",
+        "//pw_rpc/raw:client_testing",
+        "//pw_rpc/raw:test_method_context",
+        "//pw_thread:thread",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "transfer_test",
     srcs = ["transfer_test.cc"],
     deps = [
         ":pw_transfer",
         ":test_helpers",
+        "//pw_rpc:thread_testing",
         "//pw_rpc/raw:test_method_context",
+        "//pw_thread:thread",
         "//pw_unit_test",
     ],
 )
@@ -158,6 +172,7 @@ pw_cc_test(
     deps = [
         ":client",
         ":test_helpers",
+        "//pw_rpc:thread_testing",
         "//pw_rpc/raw:client_testing",
         "//pw_thread:sleep",
         "//pw_thread:thread",

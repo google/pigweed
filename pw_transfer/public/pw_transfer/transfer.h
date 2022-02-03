@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -19,11 +19,10 @@
 
 #include "pw_bytes/span.h"
 #include "pw_transfer/handler.h"
-#include "pw_transfer/internal/client_connection.h"
 #include "pw_transfer/internal/config.h"
 #include "pw_transfer/internal/server_context.h"
 #include "pw_transfer/transfer.raw_rpc.pb.h"
-#include "pw_work_queue/work_queue.h"
+#include "pw_transfer/transfer_thread.h"
 
 namespace pw::transfer {
 namespace internal {
@@ -54,17 +53,12 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
   // larger values could slow down a transfer in the event of repeated packet
   // loss.
   TransferService(
-      work_queue::WorkQueue& work_queue,
-      ByteSpan transfer_data_buffer,
+      TransferThread& transfer_thread,
       uint32_t max_pending_bytes,
       chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
       uint8_t max_retries = cfg::kDefaultMaxRetries)
-      : read_transfers_(internal::kRead, handlers_),
-        write_transfers_(internal::kWrite, handlers_),
-        work_queue_(work_queue),
-        client_(
-            encoding_buffer_, max_pending_bytes, transfer_data_buffer.size()),
-        chunk_data_buffer_(transfer_data_buffer),
+      : max_parameters_(max_pending_bytes, transfer_thread.max_chunk_size()),
+        thread_(transfer_thread),
         chunk_timeout_(chunk_timeout),
         max_retries_(max_retries) {}
 
@@ -75,23 +69,25 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
   TransferService& operator=(TransferService&&) = delete;
 
   void Read(RawServerReaderWriter& reader_writer) {
-    client_.InitializeRead(reader_writer, [this](ConstByteSpan message) {
-      HandleChunk(message, internal::kRead);
+    reader_writer.set_on_next([this](ConstByteSpan message) {
+      HandleChunk(message, internal::TransferType::kTransmit);
     });
+    thread_.SetServerReadStream(reader_writer);
   }
 
   void Write(RawServerReaderWriter& reader_writer) {
-    client_.InitializeWrite(reader_writer, [this](ConstByteSpan message) {
-      HandleChunk(message, internal::kWrite);
+    reader_writer.set_on_next([this](ConstByteSpan message) {
+      HandleChunk(message, internal::TransferType::kReceive);
     });
+    thread_.SetServerWriteStream(reader_writer);
   }
 
   void RegisterHandler(internal::Handler& handler) {
-    handlers_.push_front(handler);
+    thread_.AddTransferHandler(handler);
   }
 
   void UnregisterHandler(internal::Handler& handler) {
-    handlers_.remove(handler);
+    thread_.RemoveTransferHandler(handler);
   }
 
   void set_chunk_timeout(chrono::SystemClock::duration chunk_timeout) {
@@ -101,43 +97,13 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
   void set_max_retries(uint8_t max_retries) { max_retries_ = max_retries; }
 
  private:
-  // Calls transfer.Finish() and sends the final status chunk.
-  void FinishTransfer(internal::ServerContext& transfer, Status status);
-
-  // Sends a out data chunk for a read transfer. Returns true if the data was
-  // sent successfully.
-  bool SendNextReadChunk(internal::ServerContext& context);
-
   void HandleChunk(ConstByteSpan message, internal::TransferType type);
 
-  // All registered transfer handlers.
-  IntrusiveList<internal::Handler> handlers_;
-
-  internal::ServerContextPool read_transfers_;
-  internal::ServerContextPool write_transfers_;
-
-  work_queue::WorkQueue& work_queue_;
-  internal::EncodingBuffer encoding_buffer_;
-
-  // Stores the RPC streams and parameters for communicating with the client.
-  internal::ClientConnection client_;
-
-  internal::ChunkDataBuffer chunk_data_buffer_;
+  internal::TransferParameters max_parameters_;
+  TransferThread& thread_;
 
   chrono::SystemClock::duration chunk_timeout_;
   uint8_t max_retries_;
-};
-
-// A transfer service with its own buffer for transfer data.
-template <size_t kSizeBytes>
-class TransferServiceBuffer : public TransferService {
- public:
-  constexpr TransferServiceBuffer(work_queue::WorkQueue& work_queue,
-                                  uint32_t max_pending_bytes)
-      : TransferService(work_queue, transfer_data_buffer_, max_pending_bytes) {}
-
- private:
-  std::array<std::byte, kSizeBytes> transfer_data_buffer_;
 };
 
 }  // namespace pw::transfer

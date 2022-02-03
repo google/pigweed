@@ -17,7 +17,7 @@
 #include "pw_containers/intrusive_list.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
-#include "pw_transfer/internal/client_connection.h"
+#include "pw_transfer/internal/event.h"
 
 namespace pw::transfer {
 namespace internal {
@@ -74,7 +74,8 @@ class Handler : public IntrusiveList<Handler>::Item {
 
   // Prepares for either a read or write transfer.
   Status Prepare(internal::TransferType type) {
-    return type == internal::kRead ? PrepareRead() : PrepareWrite();
+    return type == internal::TransferType::kTransmit ? PrepareRead()
+                                                     : PrepareWrite();
   }
 
   // Only valid after a PrepareRead() call that returns OK.

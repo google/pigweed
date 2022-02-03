@@ -18,40 +18,33 @@
 
 namespace pw::transfer::internal {
 
-void ClientContext::StartRead(Client& client,
-                              uint32_t transfer_id,
-                              work_queue::WorkQueue& work_queue,
-                              EncodingBuffer& encoding_buffer,
-                              stream::Writer& writer,
-                              rpc::RawClientReaderWriter& stream,
-                              Function<void(Status)>&& on_completion,
-                              chrono::SystemClock::duration timeout) {
-  PW_DCHECK(!active());
-  PW_DCHECK(on_completion != nullptr);
+Status ClientContext::StartTransfer(const NewTransferEvent& new_transfer) {
+  if (new_transfer.type == TransferType::kTransmit) {
+    InitializeForTransmit(new_transfer.transfer_id,
+                          *new_transfer.rpc_writer,
+                          *static_cast<stream::Reader*>(new_transfer.stream),
+                          new_transfer.max_parameters,
+                          *new_transfer.transfer_thread,
+                          new_transfer.timeout,
+                          new_transfer.max_retries);
+  } else {
+    InitializeForReceive(new_transfer.transfer_id,
+                         *new_transfer.rpc_writer,
+                         *static_cast<stream::Writer*>(new_transfer.stream),
+                         new_transfer.max_parameters,
+                         *new_transfer.transfer_thread,
+                         new_transfer.timeout,
+                         new_transfer.max_retries);
+  }
 
-  client_ = &client;
-  on_completion_ = std::move(on_completion);
+  // Send the initial chunk to begin the transfer.
+  if (Status status = InitiateTransfer();
+      !status.ok() && on_completion_ != nullptr) {
+    on_completion_(status);
+  }
 
-  InitializeForReceive(
-      transfer_id, work_queue, encoding_buffer, stream, writer, timeout);
-}
-
-void ClientContext::StartWrite(Client& client,
-                               uint32_t transfer_id,
-                               work_queue::WorkQueue& work_queue,
-                               EncodingBuffer& encoding_buffer,
-                               stream::Reader& reader,
-                               rpc::RawClientReaderWriter& stream,
-                               Function<void(Status)>&& on_completion,
-                               chrono::SystemClock::duration timeout) {
-  PW_DCHECK(!active());
-  PW_DCHECK(on_completion != nullptr);
-
-  client_ = &client;
-  on_completion_ = std::move(on_completion);
-
-  InitializeForTransmit(
-      transfer_id, work_queue, encoding_buffer, stream, reader, timeout);
+  // Always return OK as the event was successfully processed.
+  return OkStatus();
 }
 
 }  // namespace pw::transfer::internal

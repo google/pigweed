@@ -27,11 +27,10 @@ pw_add_module_library(pw_transfer.config
 pw_add_module_library(pw_transfer
   PUBLIC_DEPS
     pw_assert
-    pw_containers.intrusive_list
     pw_result
     pw_status
     pw_stream
-    pw_transfer.context
+    pw_transfer.core
     pw_transfer.proto.raw_rpc
   PRIVATE_DEPS
     pw_log
@@ -46,7 +45,7 @@ pw_add_module_library(pw_transfer.client
     pw_function
     pw_stream
     pw_sync.mutex
-    pw_transfer.context
+    pw_transfer.core
     pw_transfer.proto.raw_rpc
   PRIVATE_DEPS
     pw_log
@@ -55,17 +54,17 @@ pw_add_module_library(pw_transfer.client
     pw_rpc.test_utils
 )
 
-pw_add_module_library(pw_transfer.context
+pw_add_module_library(pw_transfer.core
   PUBLIC_DEPS
     pw_bytes
+    pw_containers.intrusive_list
     pw_result
     pw_rpc.client
     pw_status
     pw_stream
-    pw_sync.interrupt_spin_lock
-    pw_sync.lock_annotations
+    pw_sync.binary_semaphore
+    pw_thread.thread_core
     pw_transfer.config
-    pw_work_queue
   PRIVATE_DEPS
     pw_protobuf
     pw_transfer.proto.pwpb

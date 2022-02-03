@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -25,55 +25,51 @@
 
 namespace pw::transfer::internal {
 
-Status ServerContext::Start(TransferType type,
-                            Handler& handler,
-                            work_queue::WorkQueue& work_queue,
-                            EncodingBuffer& encoding_buffer,
-                            rpc::RawServerReaderWriter& stream,
-                            chrono::SystemClock::duration timeout,
-                            uint8_t max_retries) {
+Status ServerContext::StartTransfer(const NewTransferEvent& new_transfer) {
   PW_DCHECK(!active());
 
-  PW_LOG_INFO("Starting transfer %u", static_cast<unsigned>(handler.id()));
+  PW_LOG_INFO("Starting transfer %u with handler %u",
+              static_cast<unsigned>(new_transfer.transfer_id),
+              static_cast<unsigned>(new_transfer.handler_id));
 
-  if (const Status status = handler.Prepare(type); !status.ok()) {
-    PW_LOG_WARN("Transfer %u prepare failed with status %u",
-                static_cast<unsigned>(handler.id()),
+  type_ = new_transfer.type;
+  handler_ = new_transfer.handler;
+
+  if (const Status status = handler_->Prepare(type_); !status.ok()) {
+    PW_LOG_WARN("Transfer handler %u prepare failed with status %u",
+                static_cast<unsigned>(handler_->id()),
                 status.code());
     return status.IsPermissionDenied() ? status : Status::DataLoss();
   }
 
-  type_ = type;
-  handler_ = &handler;
-
-  if (type == kRead) {
-    InitializeForTransmit(handler.id(),
-                          work_queue,
-                          encoding_buffer,
-                          stream,
-                          handler.reader(),
-                          timeout,
-                          max_retries);
+  if (new_transfer.type == TransferType::kTransmit) {
+    InitializeForTransmit(handler_->id(),
+                          *new_transfer.rpc_writer,
+                          handler_->reader(),
+                          new_transfer.max_parameters,
+                          *new_transfer.transfer_thread,
+                          new_transfer.timeout,
+                          new_transfer.max_retries);
   } else {
-    InitializeForReceive(handler.id(),
-                         work_queue,
-                         encoding_buffer,
-                         stream,
-                         handler.writer(),
-                         timeout,
-                         max_retries);
+    InitializeForReceive(handler_->id(),
+                         *new_transfer.rpc_writer,
+                         handler_->writer(),
+                         new_transfer.max_parameters,
+                         *new_transfer.transfer_thread,
+                         new_transfer.timeout,
+                         new_transfer.max_retries);
   }
 
   return OkStatus();
 }
 
-Status ServerContext::Finish(const Status status) {
+Status ServerContext::DoFinish(const Status status) {
   PW_DCHECK(active());
 
   Handler& handler = *handler_;
   set_transfer_state(TransferState::kCompleted);
 
-  if (type_ == kRead) {
+  if (type_ == TransferType::kTransmit) {
     handler.FinalizeRead(status);
     return OkStatus();
   }
@@ -86,75 +82,8 @@ Status ServerContext::Finish(const Status status) {
         static_cast<int>(finalized.code()));
     return Status::DataLoss();
   }
+
   return OkStatus();
-}
-
-Result<ServerContext*> ServerContextPool::StartTransfer(
-    uint32_t transfer_id,
-    work_queue::WorkQueue& work_queue,
-    EncodingBuffer& encoding_buffer,
-    rpc::RawServerReaderWriter& stream,
-    chrono::SystemClock::duration timeout,
-    uint8_t max_retries) {
-  ServerContext* new_transfer = nullptr;
-
-  // Check if the ID belongs to an active transfer. If not, pick an inactive
-  // slot to start a new transfer.
-  for (ServerContext& transfer : transfers_) {
-    if (transfer.active()) {
-      // Check if restarting a currently pending transfer.
-      if (transfer.transfer_id() == transfer_id) {
-        PW_LOG_DEBUG(
-            "Received initial chunk for transfer %u which was already in "
-            "progress; aborting and restarting",
-            static_cast<unsigned>(transfer_id));
-        transfer.Finish(Status::Aborted());
-        new_transfer = &transfer;
-        break;
-      }
-    } else {
-      // Remember this but keep searching for an active transfer with this ID.
-      new_transfer = &transfer;
-    }
-  }
-
-  if (new_transfer == nullptr) {
-    return Status::Unavailable();
-  }
-
-  // Try to start the new transfer by checking if a handler for it exists.
-  auto handler = std::find_if(handlers_.begin(), handlers_.end(), [&](auto& h) {
-    return h.id() == transfer_id;
-  });
-
-  if (handler == handlers_.end()) {
-    return Status::NotFound();
-  }
-
-  PW_TRY(new_transfer->Start(type_,
-                             *handler,
-                             work_queue,
-                             encoding_buffer,
-                             stream,
-                             timeout,
-                             max_retries));
-  return new_transfer;
-}
-
-Result<ServerContext*> ServerContextPool::GetPendingTransfer(
-    uint32_t transfer_id) {
-  auto transfer =
-      std::find_if(transfers_.begin(), transfers_.end(), [=](auto& t) {
-        return t.initialized() && t.transfer_id() == transfer_id;
-      });
-
-  if (transfer == transfers_.end()) {
-    PW_LOG_DEBUG("Ignoring chunk for transfer %u, which is not pending",
-                 static_cast<unsigned>(transfer_id));
-    return Status::FailedPrecondition();
-  }
-
-  return &(*transfer);
 }
 
 }  // namespace pw::transfer::internal
