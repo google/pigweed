@@ -257,11 +257,17 @@ def main() -> int:
 
     dev_signed_root = test_bundle.generate_dev_signed_root_metadata()
     dev_signed_bundle = test_bundle.generate_dev_signed_bundle()
+    dev_signed_bundle_with_root = test_bundle.generate_dev_signed_bundle(
+        signed_root_metadata=dev_signed_root)
+    unsigned_bundle_with_root = test_bundle.generate_unsigned_bundle(
+        signed_root_metadata=dev_signed_root)
     manifest_proto = test_bundle.generate_manifest()
     prod_signed_root = \
         test_bundle.generate_prod_signed_root_metadata()
     prod_signed_bundle = test_bundle.generate_prod_signed_bundle(
         None, prod_signed_root)
+    dev_signed_bundle_with_prod_root = test_bundle.generate_dev_signed_bundle(
+        signed_root_metadata=prod_signed_root)
 
     # Generates a prod root metadata that fails signature verification against
     # the dev root (i.e. it has a bad prod signature). This is done by making
@@ -363,6 +369,15 @@ def main() -> int:
         header.write(HEADER)
         header.write(
             proto_array_declaration(dev_signed_bundle, 'kTestDevBundle'))
+        header.write(
+            proto_array_declaration(dev_signed_bundle_with_root,
+                                    'kTestDevBundleWithRoot'))
+        header.write(
+            proto_array_declaration(unsigned_bundle_with_root,
+                                    'kTestUnsignedBundleWithRoot'))
+        header.write(
+            proto_array_declaration(dev_signed_bundle_with_prod_root,
+                                    'kTestDevBundleWithProdRoot'))
         header.write(
             proto_array_declaration(manifest_proto, 'kTestBundleManifest'))
         header.write(proto_array_declaration(dev_signed_root,

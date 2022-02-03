@@ -73,11 +73,10 @@ void LogKeyId(ConstByteSpan key_id) {
 }
 
 // Verifies signatures of a TUF metadata.
-Result<bool> VerifyMetadataSignatures(
-    protobuf::Bytes message,
-    protobuf::RepeatedMessages signatures,
-    protobuf::Message signature_requirement,
-    protobuf::StringToMessageMap key_mapping) {
+Status VerifyMetadataSignatures(protobuf::Bytes message,
+                                protobuf::RepeatedMessages signatures,
+                                protobuf::Message signature_requirement,
+                                protobuf::StringToMessageMap key_mapping) {
   // Gets the threshold -- at least `threshold` number of signatures must
   // pass verification in order to trust this metadata.
   protobuf::Uint32 threshold = signature_requirement.AsUint32(
@@ -93,7 +92,9 @@ Result<bool> VerifyMetadataSignatures(
   // Verifies the signatures. Check that at least `threshold` number of
   // signatures can be verified using the allowed keys.
   size_t verified_count = 0;
+  size_t total_signatures = 0;
   for (protobuf::Message signature : signatures) {
+    total_signatures++;
     protobuf::Bytes key_id =
         signature.AsBytes(static_cast<uint32_t>(Signature::Fields::KEY_ID));
     PW_TRY(key_id.status());
@@ -154,9 +155,14 @@ Result<bool> VerifyMetadataSignatures(
     if (res.value()) {
       verified_count++;
       if (verified_count == threshold.value()) {
-        return true;
+        return OkStatus();
       }
     }
+  }
+
+  if (total_signatures == 0) {
+    // For self verification to tell apart unsigned bundles.
+    return Status::NotFound();
   }
 
   PW_LOG_DEBUG(
@@ -164,7 +170,7 @@ Result<bool> VerifyMetadataSignatures(
       "verified %u",
       threshold.value(),
       verified_count);
-  return false;
+  return Status::Unauthenticated();
 }
 
 // Verifies the signatures of a signed new root metadata against a given
@@ -201,8 +207,9 @@ Result<bool> VerifyRootMetadataSignatures(protobuf::Message trusted_root,
   PW_TRY(signature_requirement.status());
 
   // Verifies the signatures.
-  return VerifyMetadataSignatures(
-      serialized, signatures, signature_requirement, key_mapping);
+  PW_TRY(VerifyMetadataSignatures(
+      serialized, signatures, signature_requirement, key_mapping));
+  return true;
 }
 
 Result<uint32_t> GetMetadataVersion(protobuf::Message& metadata,
@@ -480,11 +487,6 @@ Status UpdateBundleAccessor::DoVerify() {
   return OkStatus();
 #else   // PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
   bundle_verified_ = false;
-  if (disable_verification_) {
-    PW_LOG_WARN("Update bundle verification is disabled.");
-    bundle_verified_ = true;
-    return OkStatus();
-  }
 
   // Verify and upgrade the on-device trust to the incoming root metadata if
   // one is included.
@@ -519,22 +521,29 @@ protobuf::Message UpdateBundleAccessor::GetOnDeviceTrustedRoot() {
 Status UpdateBundleAccessor::UpgradeRoot() {
   protobuf::Message new_root = decoder_.AsMessage(
       static_cast<uint32_t>(UpdateBundle::Fields::ROOT_METADATA));
-  if (new_root.status().IsNotFound()) {
+
+  // Try self-verification even if verification is disabled by the caller. This
+  // minimizes surprises when the caller do decide to turn on verification.
+  bool self_verifying = disable_verification_;
+
+  // Choose and cache the root metadata to trust.
+  trusted_root_ = self_verifying ? new_root : GetOnDeviceTrustedRoot();
+
+  if (!new_root.status().ok()) {
+    // Don't bother upgrading if not found or invalid.
+    PW_LOG_WARN("Incoming root metadata not found or invalid.");
     return OkStatus();
   }
 
-  PW_TRY(new_root.status());
-
-  // Get the trusted root and prepare for verification.
-  protobuf::Message trusted_root = GetOnDeviceTrustedRoot();
-  PW_TRY(trusted_root.status());
+  // A valid trust anchor is required onwards from here.
+  PW_TRY(trusted_root_.status());
 
   // TODO(pwbug/456): Check whether the bundle contains a root metadata that
   // is different from the on-device trusted root.
 
   // Verify the signatures against the trusted root metadata.
   Result<bool> verify_res =
-      VerifyRootMetadataSignatures(trusted_root, new_root);
+      VerifyRootMetadataSignatures(trusted_root_, new_root);
   PW_TRY(verify_res.status());
   if (!verify_res.value()) {
     PW_LOG_INFO("Fail to verify signatures against the current root");
@@ -561,7 +570,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
   // TODO(pwbug/456): Check rollback.
   // Retrieves the trusted root metadata content message.
   protobuf::Message trusted_root_content =
-      trusted_root.AsMessage(static_cast<uint32_t>(
+      trusted_root_.AsMessage(static_cast<uint32_t>(
           SignedRootMetadata::Fields::SERIALIZED_ROOT_METADATA));
   PW_TRY(trusted_root_content.status());
   Result<uint32_t> trusted_root_version = GetMetadataVersion(
@@ -585,14 +594,17 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     return Status::Unauthenticated();
   }
 
-  // Persist the root immediately after it is successfully verified. This is
-  // to make sure the trust anchor is up-to-date in storage as soon as
-  // we are confident. Although targets metadata and product-specific
-  // verification have not been done yet. They should be independent from and
-  // not gate the upgrade of root key. This allows timely revokation of
-  // compromise keys.
-  stream::IntervalReader new_root_reader = new_root.ToBytes().GetBytesReader();
-  PW_TRY(backend_.SafelyPersistRootMetadata(new_root_reader));
+  if (!self_verifying) {
+    // Persist the root immediately after it is successfully verified. This is
+    // to make sure the trust anchor is up-to-date in storage as soon as
+    // we are confident. Although targets metadata and product-specific
+    // verification have not been done yet. They should be independent from and
+    // not gate the upgrade of root key. This allows timely revokation of
+    // compromise keys.
+    stream::IntervalReader new_root_reader =
+        new_root.ToBytes().GetBytesReader();
+    PW_TRY(backend_.SafelyPersistRootMetadata(new_root_reader));
+  }
 
   // TODO(pwbug/456): Implement key change detection to determine whether
   // rotation has occured or not. Delete the persisted targets metadata version
@@ -602,6 +614,17 @@ Status UpdateBundleAccessor::UpgradeRoot() {
 }
 
 Status UpdateBundleAccessor::VerifyTargetsMetadata() {
+  bool self_verifying = disable_verification_;
+
+  if (self_verifying && !trusted_root_.status().ok()) {
+    PW_LOG_WARN(
+        "Targets metadata self-verification is noop due to unavailable Root.");
+    return OkStatus();
+  }
+
+  // A valid trust anchor is required from now on.
+  PW_TRY(trusted_root_.status());
+
   // Retrieve the signed targets metadata map.
   //
   // message UpdateBundle {
@@ -637,13 +660,9 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
           static_cast<uint32_t>(SignedTargetsMetadata::Fields::SIGNATURES));
   PW_TRY(signatures.status());
 
-  // Get the trusted root and prepare for verification.
-  protobuf::Message signed_trusted_root = GetOnDeviceTrustedRoot();
-  PW_TRY(signed_trusted_root.status());
-
   // Retrieve the trusted root metadata message.
   protobuf::Message trusted_root =
-      signed_trusted_root.AsMessage(static_cast<uint32_t>(
+      trusted_root_.AsMessage(static_cast<uint32_t>(
           SignedRootMetadata::Fields::SERIALIZED_ROOT_METADATA));
   PW_TRY(trusted_root.status());
 
@@ -659,19 +678,27 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
   PW_TRY(signature_requirement.status());
 
   // Verify the sigantures
-  Result<bool> sig_res =
+  Status sig_res =
       VerifyMetadataSignatures(top_level_targets_metadata.ToBytes(),
                                signatures,
                                signature_requirement,
                                key_mapping);
 
-  PW_TRY(sig_res.status());
-  if (!sig_res.value()) {
-    PW_LOG_DEBUG("Fail to verify targets metadata signatures");
-    return Status::Unauthenticated();
+  if (self_verifying && sig_res.IsNotFound()) {
+    PW_LOG_WARN("Unsigned bundles ignored by self-verification.");
+    return OkStatus();
   }
 
+  PW_TRY(sig_res);
+
   // TODO(pwbug/456): Check targets metadtata content.
+
+  if (self_verifying) {
+    // Don't bother because it does not matter.
+    PW_LOG_WARN(
+        "Self verification does not do Targets metadata anti-rollback.");
+    return OkStatus();
+  }
 
   // Get on-device manifest.
   Result<stream::SeekableReader*> manifest_reader =

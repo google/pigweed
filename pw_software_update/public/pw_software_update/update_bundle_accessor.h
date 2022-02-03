@@ -156,6 +156,8 @@ class UpdateBundleAccessor {
   BundledUpdateBackend& backend_;
   blob_store::BlobStore::BlobReader bundle_reader_;
   protobuf::Message decoder_;
+  // The current, cached, trusted `SignedRootMetadata{}`.
+  protobuf::Message trusted_root_;
   bool disable_verification_;
   bool bundle_verified_ = false;
 

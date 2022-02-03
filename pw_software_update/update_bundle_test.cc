@@ -257,14 +257,14 @@ TEST_F(UpdateBundleTest, PersistManifestFailIfNotVerified) {
   ASSERT_NOT_OK(update_bundle.PersistManifest(manifest_writer));
 }
 
-TEST_F(UpdateBundleTest, BundleVerificationDisabled) {
-  backend().SetTrustedRoot(kDevSignedRoot);
-  StageTestBundle(kTestBadProdSignature);
-  UpdateBundleAccessor update_bundle(bundle_blob(), backend(), true);
+TEST_F(UpdateBundleTest, SelfVerificationWithIncomingRoot) {
+  StageTestBundle(kTestDevBundleWithRoot);
+  UpdateBundleAccessor update_bundle(
+      bundle_blob(), backend(), /* disable_verification = */ true);
 
-  // Since bundle verification is disabled. The bad bundle should not report
-  // error.
   ASSERT_OK(update_bundle.OpenAndVerify());
+  // Self verification must not persist anything.
+  ASSERT_FALSE(backend().IsNewRootPersisted());
 
   // Manifest persisting should be allowed as well.
   std::byte manifest_buffer[sizeof(kTestBundleManifest)];
@@ -274,6 +274,46 @@ TEST_F(UpdateBundleTest, BundleVerificationDisabled) {
   ASSERT_EQ(
       memcmp(manifest_buffer, kTestBundleManifest, sizeof(kTestBundleManifest)),
       0);
+}
+
+TEST_F(UpdateBundleTest, SelfVerificationWithoutIncomingRoot) {
+  StageTestBundle(kTestDevBundle);
+  UpdateBundleAccessor update_bundle(
+      bundle_blob(), backend(), /* disable_verification = */ true);
+
+  ASSERT_OK(update_bundle.OpenAndVerify());
+}
+
+TEST_F(UpdateBundleTest, SelfVerificationWithMessedUpRoot) {
+  StageTestBundle(kTestDevBundleWithProdRoot);
+  UpdateBundleAccessor update_bundle(
+      bundle_blob(), backend(), /* disable_verification = */ true);
+
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify());
+}
+
+TEST_F(UpdateBundleTest, SelfVerificationChecksMissingHashes) {
+  StageTestBundle(kTestBundleMissingTargetHashFile0);
+  UpdateBundleAccessor update_bundle(
+      bundle_blob(), backend(), /* disable_verification = */ true);
+
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify());
+}
+
+TEST_F(UpdateBundleTest, SelfVerificationChecksBadHashes) {
+  StageTestBundle(kTestBundleMismatchedTargetHashFile0);
+  UpdateBundleAccessor update_bundle(
+      bundle_blob(), backend(), /* disable_verification = */ true);
+
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify());
+}
+
+TEST_F(UpdateBundleTest, SelfVerificationIgnoresUnsignedBundle) {
+  StageTestBundle(kTestUnsignedBundleWithRoot);
+  UpdateBundleAccessor update_bundle(
+      bundle_blob(), backend(), /* disable_verification = */ true);
+
+  ASSERT_OK(update_bundle.OpenAndVerify());
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithAllVerification) {
