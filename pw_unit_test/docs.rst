@@ -269,6 +269,14 @@ Build arguments
   Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
   Usage: toolchain-controlled only
 
+.. option:: pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT <timeout_seconds>
+
+  An optional timeout to apply when running the automatic runner. Timeout is
+  in seconds. Defaults to empty which means no timeout.
+
+  Type: string (number of seconds to wait before killing test runner)
+  Usage: toolchain-controlled only
+
 .. option:: pw_unit_test_PUBLIC_DEPS <dependencies>
 
   Additional dependencies required by all unit test targets. (For example, if
