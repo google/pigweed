@@ -24,7 +24,7 @@ void PairingPhase::OnFailure(Error error) {
 
 void PairingPhase::Abort(ErrorCode ecode) {
   ZX_ASSERT(!has_failed());
-  Error error = ToResult(ecode).error_value();
+  Error error(ecode);
   bt_log(INFO, "sm", "abort pairing: %s", bt_str(error));
 
   sm_chan().SendMessage(kPairingFailed, ecode);

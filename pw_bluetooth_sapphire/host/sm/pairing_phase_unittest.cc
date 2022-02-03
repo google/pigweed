@@ -109,10 +109,10 @@ TEST_F(PairingPhaseTest, ChannelClosedNotifiesListener) {
 TEST_F(PairingPhaseTest, OnFailureNotifiesListener) {
   auto ecode = ErrorCode::kDHKeyCheckFailed;
   ASSERT_EQ(listener()->pairing_error_count(), 0);
-  pairing_phase()->OnFailure(ToResult(ecode).error_value());
+  pairing_phase()->OnFailure(Error(ecode));
   RunLoopUntilIdle();
   ASSERT_EQ(listener()->pairing_error_count(), 1);
-  EXPECT_EQ(ToResult(ecode).error_value(), listener()->last_error());
+  EXPECT_EQ(Error(ecode), listener()->last_error());
 }
 
 TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
@@ -131,7 +131,7 @@ TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
 
   // Check the listener PairingFailed callback was made.
   ASSERT_EQ(1, listener()->pairing_error_count());
-  EXPECT_EQ(ToResult(ErrorCode::kDHKeyCheckFailed).error_value(), listener()->last_error());
+  EXPECT_EQ(Error(ErrorCode::kDHKeyCheckFailed), listener()->last_error());
 }
 
 }  // namespace
