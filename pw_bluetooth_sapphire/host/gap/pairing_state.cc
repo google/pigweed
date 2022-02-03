@@ -151,6 +151,13 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
 }
 
 void PairingState::OnIoCapabilityResponse(IOCapability peer_iocap) {
+  // If we preivously provided a key for peer to pair, but that didn't work, they may try to
+  // re-pair.  Cancel the previous pairing if they try to restart.
+  if (state() == State::kWaitEncryption) {
+    ZX_ASSERT(is_pairing());
+    current_pairing_ = nullptr;
+    state_ = State::kIdle;
+  }
   if (state() == State::kIdle) {
     ZX_ASSERT(!is_pairing());
     current_pairing_ = Pairing::MakeResponder(peer_iocap, outgoing_connection_);
@@ -327,7 +334,13 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
   // The link key request may be received outside of Simple Pairing (e.g. when the peer initiates
   // the authentication procedure).
   if (state() == State::kIdle) {
-    return link_key.has_value() ? link_key->key() : std::optional<hci_spec::LinkKey>();
+    if (link_key.has_value()) {
+      ZX_ASSERT(!is_pairing());
+      current_pairing_ = Pairing::MakeResponderForBonded();
+      state_ = State::kWaitEncryption;
+      return link_key->key();
+    }
+    return std::optional<hci_spec::LinkKey>();
   }
 
   ZX_ASSERT(is_pairing());
@@ -471,20 +484,28 @@ void PairingState::OnEncryptionChange(hci::Result<bool> result) {
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
-    BrEdrSecurityRequirements security_requirements, bool outgoing) {
+    BrEdrSecurityRequirements security_requirements, bool link_initiated) {
   // Private ctor is inaccessible to std::make_unique.
-  std::unique_ptr<Pairing> pairing(new Pairing(outgoing));
+  std::unique_ptr<Pairing> pairing(new Pairing(link_initiated));
   pairing->initiator = true;
   pairing->preferred_security = security_requirements;
   return pairing;
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponder(
-    hci_spec::IOCapability peer_iocap, bool outgoing) {
+    hci_spec::IOCapability peer_iocap, bool link_initiated) {
   // Private ctor is inaccessible to std::make_unique.
-  std::unique_ptr<Pairing> pairing(new Pairing(outgoing));
+  std::unique_ptr<Pairing> pairing(new Pairing(link_initiated));
   pairing->initiator = false;
   pairing->peer_iocap = peer_iocap;
+  // Don't try to upgrade security as responder.
+  pairing->preferred_security = {.authentication = false, .secure_connections = false};
+  return pairing;
+}
+
+std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponderForBonded() {
+  std::unique_ptr<Pairing> pairing(new Pairing(/* link initiated */ false));
+  pairing->initiator = false;
   // Don't try to upgrade security as responder.
   pairing->preferred_security = {.authentication = false, .secure_connections = false};
   return pairing;
@@ -558,7 +579,7 @@ PairingState::State PairingState::GetStateForPairingEvent(hci_spec::EventCode ev
 }
 
 void PairingState::SignalStatus(hci::Result<> status) {
-  bt_log(TRACE, "gap-bredr", "Signaling pairing listeners for %#.4x (id: %s) with %s", handle(),
+  bt_log(INFO, "gap-bredr", "Signaling pairing listeners for %#.4x (id: %s) with %s", handle(),
          bt_str(peer_id()), bt_str(status));
 
   // Collect the callbacks before invoking them so that CompletePairingRequests() can safely access

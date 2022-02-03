@@ -308,6 +308,8 @@ class PairingState final {
                                                   bool link_initiated);
     static std::unique_ptr<Pairing> MakeResponder(hci_spec::IOCapability peer_iocap,
                                                   bool link_inititated);
+    // Make a responder for a peer that has initiated a pairing (asked for our key while in idle)
+    static std::unique_ptr<Pairing> MakeResponderForBonded();
 
     // For a Pairing whose |initiator|, |local_iocap|, and |peer_iocap| are already set, compute and
     // set |action|, |expected_event|, |authenticated|, and |security_properties| for the pairing

@@ -1427,10 +1427,15 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsInitiator) {
 
   RETURN_IF_FATAL(InjectEvent());
 
-  // Should not receive anything other than OnEncryptionChange.
-  EXPECT_EQ(1, status_handler().call_count());
-  ASSERT_TRUE(status_handler().status());
-  EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
+  if (event() == IoCapabilityResponse) {
+    // Restarting the pairing is allowed in this state.
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    // Should not receive anything else other than OnEncryptionChange.
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
+  }
 }
 
 TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
@@ -1444,10 +1449,39 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
 
   RETURN_IF_FATAL(InjectEvent());
 
-  // Should not receive anything other than OnEncryptionChange.
-  EXPECT_EQ(1, status_handler().call_count());
-  ASSERT_TRUE(status_handler().status());
-  EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
+  if (event() == IoCapabilityResponse) {
+    // Restarting the pairing is allowed in this state.
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    // Should not receive anything else other than OnEncryptionChange.
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
+  }
+}
+
+TEST_P(HandlesEvent, InWaitEncryptionStateAsResponderForBonded) {
+  // We are previously bonded.
+  auto existing_link_key =
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey);
+  peer()->MutBrEdr().SetBondData(existing_link_key);
+
+  // Advance state machine.
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
+  ASSERT_FALSE(pairing_state().initiator());
+
+  RETURN_IF_FATAL(InjectEvent());
+
+  if (event() == IoCapabilityResponse) {
+    // This re-starts the pairing as a responder.
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    // Should not receive anything else other than OnEncryptionChange, receiving anything else is a
+    // failure.
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
+  }
 }
 
 TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
@@ -1943,6 +1977,45 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status().has_value());
   EXPECT_EQ(ToResult(status_code), status_handler.status().value());
+}
+
+TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
+                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  EXPECT_FALSE(pairing_state.initiator());
+
+  auto existing_link_key =
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey);
+
+  peer()->MutBrEdr().SetBondData(existing_link_key);
+  EXPECT_FALSE(connection.ltk().has_value());
+
+  auto reply_key = pairing_state.OnLinkKeyRequest();
+  ASSERT_TRUE(reply_key.has_value());
+  EXPECT_EQ(kTestLinkKey, reply_key.value());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  // If a pairing request comes in after the peer has already asked for the key, we
+  // add it's completion to the queue.
+  TestStatusHandler new_pairing_handler;
+  pairing_state.InitiatePairing(kNoSecurityRequirements, new_pairing_handler.MakeStatusCallback());
+
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
+
+  auto expected_status = hci_spec::StatusCode::kSuccess;
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.status().has_value());
+  EXPECT_EQ(ToResult(expected_status), status_handler.status().value());
+
+  // and the new pairing handler gets called back too
+  EXPECT_EQ(1, new_pairing_handler.call_count());
+  ASSERT_TRUE(new_pairing_handler.status().has_value());
+  EXPECT_EQ(ToResult(expected_status), new_pairing_handler.status().value());
+
+  // The link key should be stored in the connection now.
+  EXPECT_EQ(kTestLinkKey, connection.ltk());
 }
 
 TEST_F(PairingStateTest,
