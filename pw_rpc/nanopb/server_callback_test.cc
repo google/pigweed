@@ -67,8 +67,6 @@ class TestServiceImpl final
                                pw_rpc_test_TestStreamResponse>&) {}
 };
 
-using test::pw_rpc::nanopb::TestService;
-
 TEST(NanopbTestMethodContext, ResponseWithCallbacks) {
   PW_NANOPB_TEST_METHOD_CONTEXT(TestServiceImpl, TestAnotherUnaryRpc) ctx;
   ASSERT_EQ(ctx.call(pw_rpc_test_TestRequest_init_default), OkStatus());
