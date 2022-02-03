@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstddef>
 #include <iterator>
 #include <type_traits>
 
@@ -26,17 +27,16 @@ namespace intrusive_list_impl {
 template <typename T, typename I>
 class Iterator {
  public:
-  using difference_type = void;
+  using difference_type = std::ptrdiff_t;
   using value_type = std::remove_cv_t<T>;
   using pointer = T*;
   using reference = T&;
   using iterator_category = std::forward_iterator_tag;
 
-  constexpr explicit Iterator() : item_(nullptr), next_item_(nullptr) {}
+  constexpr explicit Iterator() : item_(nullptr) {}
 
   constexpr Iterator& operator++() {
-    item_ = next_item_;
-    next_item_ = static_cast<I*>(item_->next_);
+    item_ = static_cast<I*>(item_->next_);
     return *this;
   }
 
@@ -70,11 +70,9 @@ class Iterator {
   friend class ::pw::IntrusiveList;
 
   // Only allow IntrusiveList to create iterators that point to something.
-  constexpr explicit Iterator(I* item)
-      : item_(item), next_item_(static_cast<I*>(item->next_)) {}
+  constexpr explicit Iterator(I* item) : item_{item} {}
 
   I* item_;
-  I* next_item_;
 };
 
 class List {
