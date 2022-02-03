@@ -24,57 +24,74 @@ set(pw_third_party_freertos_PORT "" CACHE STRING
 option(pw_third_party_freertos_DISABLE_TASKS_STATICS
        "Whether to disable statics inside of tasks.c")
 
-if("${dir_pw_third_party_freertos}" STREQUAL "")
-  return()
-elseif("${pw_third_party_freertos_PORT}" STREQUAL "")
-  message(FATAL_ERROR "FreeRTOS is being used, but "
-          "pw_third_party_freertos_PORT is not set.")
-elseif("${pw_third_party_freertos_CONFIG}" STREQUAL "")
-  message(FATAL_ERROR "FreeRTOS is being used, but "
-          "pw_third_party_freertos_CONFIG is not set.")
-endif()
-
 pw_add_module_library(pw_third_party.freertos.disable_warnings
   PUBLIC_COMPILE_OPTIONS
     -Wno-unused-parameter
     -Wno-cast-qual
 )
 
-pw_add_module_library(pw_third_party.freertos
-  HEADERS
-    ${dir_pw_third_party_freertos}/include/FreeRTOS.h
-    ${dir_pw_third_party_freertos}/include/StackMacros.h
-    ${dir_pw_third_party_freertos}/include/croutine.h
-    ${dir_pw_third_party_freertos}/include/deprecated_definitions.h
-    ${dir_pw_third_party_freertos}/include/event_groups.h
-    ${dir_pw_third_party_freertos}/include/list.h
-    ${dir_pw_third_party_freertos}/include/message_buffer.h
-    ${dir_pw_third_party_freertos}/include/mpu_prototypes.h
-    ${dir_pw_third_party_freertos}/include/mpu_wrappers.h
-    ${dir_pw_third_party_freertos}/include/portable.h
-    ${dir_pw_third_party_freertos}/include/projdefs.h
-    ${dir_pw_third_party_freertos}/include/queue.h
-    ${dir_pw_third_party_freertos}/include/semphr.h
-    ${dir_pw_third_party_freertos}/include/stack_macros.h
-    ${dir_pw_third_party_freertos}/include/stream_buffer.h
-    ${dir_pw_third_party_freertos}/include/task.h
-    ${dir_pw_third_party_freertos}/include/timers.h
-  PUBLIC_INCLUDES
-    ${dir_pw_third_party_freertos}/include
-  PUBLIC_DEPS
-    ${pw_third_party_freertos_CONFIG}
-    ${pw_third_party_freertos_PORT}
-  SOURCES
-    ${dir_pw_third_party_freertos}/croutine.c
-    ${dir_pw_third_party_freertos}/event_groups.c
-    ${dir_pw_third_party_freertos}/list.c
-    ${dir_pw_third_party_freertos}/queue.c
-    ${dir_pw_third_party_freertos}/stream_buffer.c
-    ${dir_pw_third_party_freertos}/timers.c
-  PRIVATE_DEPS
-    pw_third_party.freertos.freertos_tasks
-    pw_third_party.freertos.disable_warnings
-)
+# If FreeRTOS is not configured, a script that displays an error message is used
+# instead. If the build rule is used in the build it fails with this error.
+if(NOT dir_pw_third_party_freertos)
+  add_custom_target(pw_third_party.freertos._not_configured
+    COMMAND
+      "${CMAKE_COMMAND}" -E echo
+        "ERROR: Attempted to build the pw_third_party.freertos without"
+        "configuring it via dir_pw_third_party_freertos."
+        "See https://pigweed.dev/third_party/freertos."
+    COMMAND
+      "${CMAKE_COMMAND}" -E false
+  )
+  add_library(pw_third_party.freertos INTERFACE)
+  add_dependencies(pw_third_party.freertos
+    pw_third_party.freertos._not_configured)
+  return()
+else(dir_pw_third_party_freertos)
+  if(NOT pw_third_party_freertos_PORT)
+    message(FATAL_ERROR "FreeRTOS is being used, but "
+            "pw_third_party_freertos_PORT is not set.")
+  endif()
+  if(NOT pw_third_party_freertos_CONFIG)
+    message(FATAL_ERROR "FreeRTOS is being used, but "
+            "pw_third_party_freertos_CONFIG is not set.")
+  endif()
+
+  pw_add_module_library(pw_third_party.freertos
+    HEADERS
+      ${dir_pw_third_party_freertos}/include/FreeRTOS.h
+      ${dir_pw_third_party_freertos}/include/StackMacros.h
+      ${dir_pw_third_party_freertos}/include/croutine.h
+      ${dir_pw_third_party_freertos}/include/deprecated_definitions.h
+      ${dir_pw_third_party_freertos}/include/event_groups.h
+      ${dir_pw_third_party_freertos}/include/list.h
+      ${dir_pw_third_party_freertos}/include/message_buffer.h
+      ${dir_pw_third_party_freertos}/include/mpu_prototypes.h
+      ${dir_pw_third_party_freertos}/include/mpu_wrappers.h
+      ${dir_pw_third_party_freertos}/include/portable.h
+      ${dir_pw_third_party_freertos}/include/projdefs.h
+      ${dir_pw_third_party_freertos}/include/queue.h
+      ${dir_pw_third_party_freertos}/include/semphr.h
+      ${dir_pw_third_party_freertos}/include/stack_macros.h
+      ${dir_pw_third_party_freertos}/include/stream_buffer.h
+      ${dir_pw_third_party_freertos}/include/task.h
+      ${dir_pw_third_party_freertos}/include/timers.h
+    PUBLIC_INCLUDES
+      ${dir_pw_third_party_freertos}/include
+    PUBLIC_DEPS
+      ${pw_third_party_freertos_CONFIG}
+      ${pw_third_party_freertos_PORT}
+    SOURCES
+      ${dir_pw_third_party_freertos}/croutine.c
+      ${dir_pw_third_party_freertos}/event_groups.c
+      ${dir_pw_third_party_freertos}/list.c
+      ${dir_pw_third_party_freertos}/queue.c
+      ${dir_pw_third_party_freertos}/stream_buffer.c
+      ${dir_pw_third_party_freertos}/timers.c
+    PRIVATE_DEPS
+      pw_third_party.freertos.freertos_tasks
+      pw_third_party.freertos.disable_warnings
+  )
+endif()
 
 if(pw_third_party_freertos_DISABLE_TASKS_STATICS)
   set(disable_tasks_statics "static=" "PW_THIRD_PARTY_FREERTOS_NO_STATICS=1")
