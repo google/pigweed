@@ -59,7 +59,7 @@ class BlobStore {
   // already erased, the Write will do any needed erase.
   //
   // Only one writter (of either type) is allowed to be open at a time.
-  // Additionally, writters are unable to open if a reader is already open.
+  // Additionally, writers are unable to open if a reader is already open.
   class BlobWriter : public stream::NonSeekableWriter {
    public:
     constexpr BlobWriter(BlobStore& store, ByteSpan metadata_buffer)
@@ -111,8 +111,7 @@ class BlobStore {
     // UNAVAILABLE - Unable to erase while reader is open.
     // [error status] - flash erase failed.
     Status Erase() {
-      PW_DASSERT(open_);
-      return store_.Erase();
+      return open_ ? store_.Erase() : Status::FailedPrecondition();
     }
 
     // Discard the current blob. Any written bytes to this point are considered
@@ -121,8 +120,7 @@ class BlobStore {
     // OK - success.
     // FAILED_PRECONDITION - not open.
     Status Discard() {
-      PW_DASSERT(open_);
-      return store_.Invalidate();
+      return open_ ? store_.Invalidate() : Status::FailedPrecondition();
     }
 
     // Sets file name to be associated with the data written by this
@@ -142,9 +140,8 @@ class BlobStore {
     //   buffer, file name not set.
     Status SetFileName(std::string_view file_name);
 
-    size_t CurrentSizeBytes() {
-      PW_DASSERT(open_);
-      return store_.write_address_;
+    size_t CurrentSizeBytes() const {
+      return open_ ? store_.write_address_ : 0;
     }
 
     // Max file name length, not including null terminator (null terminators
@@ -159,8 +156,7 @@ class BlobStore {
 
    protected:
     Status DoWrite(ConstByteSpan data) override {
-      PW_DASSERT(open_);
-      return store_.Write(data);
+      return open_ ? store_.Write(data) : Status::FailedPrecondition();
     }
 
     // Commits changes to KVS as a BlobStore metadata entry.
@@ -176,8 +172,7 @@ class BlobStore {
     // the blob. Returns zero if, in the current state, Write would return
     // status other than OK. See stream.h for additional details.
     size_t ConservativeLimit(LimitType limit) const override {
-      if (limit == LimitType::kWrite) {
-        PW_DASSERT(open_);
+      if (open_ && limit == LimitType::kWrite) {
         return store_.WriteBytesRemaining();
       }
       return 0;
@@ -198,7 +193,7 @@ class BlobStore {
   // BlobStore. If not already erased, the Flush will do any needed erase.
   //
   // Only one writter (of either type) is allowed to be open at a time.
-  // Additionally, writters are unable to open if a reader is already open.
+  // Additionally, writers are unable to open if a reader is already open.
   class DeferredWriter : public BlobWriter {
    public:
     constexpr DeferredWriter(BlobStore& store, ByteSpan metadata_buffer)
@@ -211,8 +206,7 @@ class BlobStore {
     // are written in the flush. Any remainder is held until later for either
     // a flush with flash_write_size_bytes buffered or the writer is closed.
     Status Flush() {
-      PW_DASSERT(open_);
-      return store_.Flush();
+      return open_ ? store_.Flush() : Status::FailedPrecondition();
     }
 
     // Probable (not guaranteed) minimum number of bytes at this time that can
@@ -220,8 +214,7 @@ class BlobStore {
     // the blob. Returns zero if, in the current state, Write would return
     // status other than OK. See stream.h for additional details.
     size_t ConservativeLimit(LimitType limit) const final {
-      if (limit == LimitType::kWrite) {
-        PW_DASSERT(open_);
+      if (open_ && limit == LimitType::kWrite) {
         // Deferred writes need to fit in the write buffer.
         return store_.WriteBufferBytesFree();
       }
@@ -237,8 +230,8 @@ class BlobStore {
     // erase error (buffer space permitting). Write errors during Flush will
     // result in no new data being accepted.
     Status DoWrite(ConstByteSpan data) final {
-      PW_DASSERT(open_);
-      return store_.AddToWriteBuffer(data);
+      return open_ ? store_.AddToWriteBuffer(data)
+                   : Status::FailedPrecondition();
     }
   };
 
@@ -264,7 +257,7 @@ class BlobStore {
 
     ~BlobReader() {
       if (open_) {
-        Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        Close().IgnoreError();
       }
     }
 
@@ -272,18 +265,23 @@ class BlobStore {
     // when already open. Multiple readers can be open at the same time.
     // Returns:
     //
-    // OK - success.
-    // FAILED_PRECONDITION - No readable blob available.
-    // INVALID_ARGUMENT - Invalid offset.
-    // UNAVAILABLE - Unable to open, already open.
+    //   OK - success.
+    //   FAILED_PRECONDITION - No readable blob available.
+    //   INVALID_ARGUMENT - Invalid offset.
+    //   UNAVAILABLE - Unable to open, already open.
+    //
     Status Open(size_t offset = 0);
 
     // Finish reading a blob. Close fails in the closed state, do NOT retry
     // Close on error. Returns:
     //
-    // OK - success.
+    //   OK - success
+    //   FAILED_PRECONDITION - already closed
+    //
     Status Close() {
-      PW_DASSERT(open_);
+      if (!open_) {
+        return Status::FailedPrecondition();
+      }
       open_ = false;
       return store_.CloseRead();
     }
@@ -297,21 +295,25 @@ class BlobStore {
     //   RESOURCE_EXHAUSTED - `dest` too small to fit file name, size contains
     //     first N bytes of the file name.
     //   NOT_FOUND - No file name set for this blob.
+    //   FAILED_PRECONDITION - not open
+    //
     StatusWithSize GetFileName(std::span<char> dest) {
-      PW_DASSERT(open_);
-      return store_.GetFileName(dest);
+      return open_ ? store_.GetFileName(dest)
+                   : StatusWithSize::FailedPrecondition();
     }
 
     bool IsOpen() const { return open_; }
 
     // Get a span with the MCU pointer and size of the data. Returns:
     //
-    // OK with span - Valid span respresenting the blob data
-    // FAILED_PRECONDITION - Reader not open.
-    // UNIMPLEMENTED - Memory mapped access not supported for this blob.
+    //   OK with span - Valid span respresenting the blob data
+    //   FAILED_PRECONDITION - Reader not open.
+    //   UNIMPLEMENTED - Memory mapped access not supported for this blob.
+    //   FAILED_PRECONDITION - Writer is closed
+    //
     Result<ConstByteSpan> GetMemoryMappedBlob() {
-      PW_DASSERT(open_);
-      return store_.GetMemoryMappedBlob();
+      return open_ ? store_.GetMemoryMappedBlob()
+                   : Status::FailedPrecondition();
     }
 
    private:
