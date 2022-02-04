@@ -998,10 +998,11 @@ Client unit testing in C++
 ``pw_rpc`` supports invoking RPCs, simulating server responses, and checking
 what packets are sent by an RPC client in tests. Both raw and Nanopb interfaces
 are supported. Code that uses the raw API may be tested with the Nanopb test
-helpers, and vice versa.
+helpers, and vice versa. The Nanopb API also provides a test helper with a real
+client-server pair that supports testing of synchronously messaging.
 
-To test code that invokes RPCs, declare a ``RawClientTestContext``,
-``PwpbClientTestContext``, or ``NanopbClientTestContext``. These test context
+To test sychronous code that invokes RPCs, declare a ``RawClientTestContext``,
+``PwpbClientTestContext``,  or ``NanopbClientTestContext``. These test context
 objects provide a preconfigured RPC client, channel, server fake, and buffer for
 encoding packets.
 
@@ -1019,12 +1020,12 @@ the expected data was sent and then simulates a response from the server.
 
   #include "pw_rpc/raw/client_testing.h"
 
-  class ThingThatCallsRpcs {
+  class ClientUnderTest {
    public:
     // To support injecting an RPC client for testing, classes that make RPC
     // calls should take an RPC client and channel ID or an RPC service client
     // (e.g. pw_rpc::raw::MyService::Client).
-    ThingThatCallsRpcs(pw::rpc::Client& client, uint32_t channel_id);
+    ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
 
     void DoSomethingThatInvokesAnRpc();
 
@@ -1033,7 +1034,7 @@ the expected data was sent and then simulates a response from the server.
 
   TEST(TestAThing, InvokesRpcAndHandlesResponse) {
     RawClientTestContext context;
-    ThingThatCallsRpcs thing(context.client(), context.channel().id());
+    ClientUnderTest thing(context.client(), context.channel().id());
 
     // Execute the code that invokes the MyService.TheMethod RPC.
     things.DoSomethingThatInvokesAnRpc();
@@ -1052,6 +1053,67 @@ the expected data was sent and then simulates a response from the server.
         final_message, OkStatus());
 
     EXPECT_TRUE(thing.SetToTrueWhenRpcCompletes());
+  }
+
+To test client code that uses asynchronous responses or encapsulates multiple
+rpc calls to one or more services, declare a ``NanopbClientServerTestContext``.
+This test object is defined in ``pw_rpc/nanopb/client_server_testing.h``.
+
+Use the context's ``server()`` to register a ``Service`` implementation, and
+``client()`` and ``channel()`` to invoke RPCs. Create a ``Thread`` using the
+context as a ``ThreadCore`` to have it asycronously forward request/responses or
+call ``ForwardNewPackets`` to synchronously process all messages. To verify that
+the client/server sent the expected data, use the context's
+``request(uint32_t index)`` and ``response(uint32_t index)`` to retrieve the
+ordered messages.
+
+For example, the following tests a class that invokes an RPC and blocks till a
+response is received. It verifies that expected data was both sent and received.
+
+.. code-block:: cpp
+
+  #include "my_library_protos/my_service.rpc.pb.h"
+  #include "pw_rpc/nanopb/client_server_testing.h"
+  #include "pw_thread/detached_thread.h"
+  #include "pw_thread_stl/options.h"
+
+  class ClientUnderTest {
+   public:
+    // To support injecting an RPC client for testing, classes that make RPC
+    // calls should take an RPC client and channel ID or an RPC service client
+    // (e.g. pw_rpc::raw::MyService::Client).
+    ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
+
+    Status BlockOnResponse(uint32_t value);
+  };
+
+
+  class TestService final : public MyService<TestService> {
+   public:
+    Status TheMethod(const pw_rpc_test_TheMethod& request,
+                        pw_rpc_test_TheMethod& response) {
+      response.value = request.integer + 1;
+      return pw::OkStatus();
+    }
+  };
+
+  TEST(TestServiceTest, ReceivesUnaryRpcReponse) {
+    NanopbClientServerTestContext ctx;
+    TestService service;
+    ctx.server().RegisterService(service);
+    pw::thread::DetachedThread(pw::thread::stl::Options(), ctx);
+    ClientUnderTest client(ctx.client(), ctx.channel().id());
+
+    // Execute the code that invokes the MyService.TheMethod RPC.
+    constexpr uint32_t value = 1;
+    const auto result = client.BlockOnResponse(value);
+    const auto request = ctx.request<MyService::TheMethod>(0);
+    const auto response = ctx.resonse<MyService::TheMethod>(0);
+
+    // Verify content of messages
+    EXPECT_EQ(result, pw::OkStatus());
+    EXPECT_EQ(request.value, value);
+    EXPECT_EQ(response.value, value + 1);
   }
 
 Integration testing with ``pw_rpc``

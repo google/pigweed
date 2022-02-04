@@ -71,14 +71,201 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_ECHO_SERVICE)
   zephyr_link_libraries(pw_rpc.nanopb.echo_service)
 endif()
 
-pw_auto_add_module_tests(pw_rpc.nanopb
-  PRIVATE_DEPS
+pw_add_module_library(pw_rpc.nanopb.client_testing
+  PUBLIC_DEPS
     pw_rpc.client
     pw_rpc.raw
     pw_rpc.server
-    pw_rpc.synchronous_client_api
     pw_rpc.nanopb.common
     pw_rpc.protos.nanopb_rpc
     pw_rpc.test_protos.nanopb_rpc
     pw_rpc.test_utils
 )
+
+pw_add_module_library(pw_rpc.nanopb.client_server_testing
+  PUBLIC_DEPS
+    pw_rpc.client_server
+    pw_rpc.nanopb.client_testing
+    pw_sync.binary_semaphore
+    pw_sync.mutex
+    pw_thread.thread_core
+)
+
+pw_add_test(pw_rpc.nanopb.client_call_test
+  SOURCES
+    client_call_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(pw_rpc.nanopb.client_reader_writer_test
+  SOURCES
+    client_reader_writer_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
+   (NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL
+   "pw_sync.binary_semaphore.NO_BACKEND_SET") AND
+   (NOT "${pw_sync.mutex_BACKEND}" STREQUAL
+   "pw_sync.binary_semaphore.NO_BACKEND_SET"))
+  pw_add_test(pw_rpc.nanopb.client_server_context_test
+    SOURCES
+      client_server_context_test.cc
+    DEPS
+      pw_rpc.nanopb.client_server_testing
+    GROUPS
+      modules
+      pw_rpc.nanopb
+  )
+
+  pw_add_test(pw_rpc.nanopb.client_server_context_threaded_test
+    SOURCES
+      client_server_context_threaded_test.cc
+    DEPS
+      pw_rpc.nanopb.client_server_testing
+      pw_sync.binary_semaphore
+      pw_thread.thread
+    GROUPS
+      modules
+      pw_rpc.nanopb
+  )
+endif()
+
+pw_add_test(codegen_test
+  SOURCES
+    codegen_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(fake_channel_output_test
+  SOURCES
+    fake_channel_output_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(method_test
+  SOURCES
+    method_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(method_info_test
+  SOURCES
+    method_info_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(method_lookup_test
+  SOURCES
+    method_lookup_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(method_union_test
+  SOURCES
+    method_union_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(echo_service_test
+  SOURCES
+    echo_service_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(serde_test
+  SOURCES
+    serde_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(server_callback_test
+  SOURCES
+    server_callback_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(server_reader_writer_test
+  SOURCES
+    server_reader_writer_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+pw_add_test(stub_generation_test
+  SOURCES
+    stub_generation_test.cc
+  DEPS
+    pw_rpc.nanopb.client_testing
+  GROUPS
+    modules
+    pw_rpc.nanopb
+)
+
+# Test currently disabled as pw_work_queue lacks CMakeLists.txt
+if((TARGET pw_work_queue.pw_work_queue) AND
+   ("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
+   (NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL
+   "pw_sync.timed_thread_notification.NO_BACKEND_SET"))
+  pw_add_test(synchronous_call_test
+    SOURCES
+      synchronous_call_test.cc
+    DEPS
+      pw_rpc.nanopb.client_testing
+      pw_rpc.synchronous_client_api
+      pw_thread.thread
+      pw_work_queue.pw_work_queue
+      pw_work_queue.test_thread
+      pw_work_queue.stl_test_thread
+    GROUPS
+      modules
+      pw_rpc.nanopb
+  )
+endif()

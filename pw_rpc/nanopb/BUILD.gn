@@ -18,6 +18,7 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public") {
@@ -102,6 +103,18 @@ pw_source_set("client_testing") {
   ]
 }
 
+pw_source_set("client_server_testing") {
+  public = [ "public/pw_rpc/nanopb/client_server_testing.h" ]
+  public_deps = [
+    ":client_testing",
+    "$dir_pw_bytes",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_thread:thread_core",
+    "..:client_server",
+  ]
+}
+
 pw_source_set("internal_test_utils") {
   public = [ "pw_rpc_nanopb_private/internal_test_utils.h" ]
   public_deps = []
@@ -136,6 +149,8 @@ pw_test_group("tests") {
   tests = [
     ":client_call_test",
     ":client_reader_writer_test",
+    ":client_server_context_test",
+    ":client_server_context_threaded_test",
     ":codegen_test",
     ":echo_service_test",
     ":fake_channel_output_test",
@@ -170,6 +185,34 @@ pw_test("client_reader_writer_test") {
   ]
   sources = [ "client_reader_writer_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+}
+
+_stl_threading_and_nanopb_enabled =
+    pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
+    pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
+    dir_pw_third_party_nanopb != ""
+
+pw_test("client_server_context_test") {
+  deps = [
+    ":client_api",
+    ":client_server_testing",
+    "..:test_protos.nanopb_rpc",
+  ]
+  sources = [ "client_server_context_test.cc" ]
+  enable_if = _stl_threading_and_nanopb_enabled
+}
+
+# requires threading.
+pw_test("client_server_context_threaded_test") {
+  deps = [
+    ":client_api",
+    ":client_server_testing",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_thread:thread",
+    "..:test_protos.nanopb_rpc",
+  ]
+  sources = [ "client_server_context_threaded_test.cc" ]
+  enable_if = _stl_threading_and_nanopb_enabled
 }
 
 pw_test("codegen_test") {

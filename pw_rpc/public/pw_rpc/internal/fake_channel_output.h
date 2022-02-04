@@ -29,6 +29,16 @@
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::rpc {
+namespace internal {
+
+// Forward declare for a friend statement.
+template <size_t, size_t, size_t>
+class WatchableChannelOutput;
+
+}  // namespace internal
+}  // namespace pw::rpc
+
+namespace pw::rpc {
 
 class FakeServer;
 
@@ -219,6 +229,8 @@ class FakeChannelOutput : public ChannelOutput {
 
  private:
   friend class rpc::FakeServer;
+  template <size_t, size_t, size_t>
+  friend class internal::WatchableChannelOutput;
 
   Status HandlePacket(ConstByteSpan buffer) PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void CopyPayloadToBuffer(Packet& packet) PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
