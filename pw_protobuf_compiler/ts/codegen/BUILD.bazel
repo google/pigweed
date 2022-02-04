@@ -23,7 +23,7 @@ ts_library(
         "template_replacement.ts",
     ],
     deps = [
-        "@//pw_rpc:packet_proto_tspb",
+        "@//pw_rpc/ts:packet_proto_tspb",
         "@npm//@types/argparse",
         "@npm//@types/google-protobuf",
         "@npm//@types/node",

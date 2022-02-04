@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_binary",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -70,18 +71,31 @@ pw_cc_library(
     ],
 )
 
-filegroup(
+pw_cc_library(
     name = "logging_event_handler",
     srcs = [
         "logging_event_handler.cc",
+    ],
+    hdrs = [
         "public/pw_unit_test/logging_event_handler.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        "//pw_log",
+        "//pw_unit_test",
     ],
 )
 
-filegroup(
+pw_cc_binary(
     name = "logging_main",
     srcs = [
         "logging_main.cc",
+    ],
+    deps = [
+        ":logging_event_handler",
+        "//pw_unit_test",
     ],
 )
 
@@ -105,7 +119,7 @@ proto_library(
 )
 
 pw_proto_library(
-    name = "unit_test_pwpb",
+    name = "unit_test_cc",
     deps = [":unit_test_proto"],
 )
 
@@ -121,12 +135,9 @@ pw_cc_library(
     ],
     deps = [
         ":pw_unit_test",
-        ":unit_test_pwpb",
+        ":unit_test_cc.pwpb",
+        ":unit_test_cc.raw_rpc",
         "//pw_log",
-        # TODO(hepler): RPC deps not used directly should be provided by the proto library
-        "//pw_rpc",
-        "//pw_rpc/raw:client_api",
-        "//pw_rpc/raw:server_api",
     ],
 )
 

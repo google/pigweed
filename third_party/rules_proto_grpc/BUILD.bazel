@@ -11,12 +11,5 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Embedded-friendly replacement for native.cc_proto_library."""
 
-load(
-    "//third_party/rules_proto_grpc:internal_proto.bzl",
-    _pw_proto_library = "pw_proto_library",
-)
-
-# Export internal symbols.
-pw_proto_library = _pw_proto_library
+exports_files(["internal_proto.bzl"])

@@ -31,12 +31,13 @@ load("@cipd_deps//:cipd_init.bzl", "cipd_init")
 cipd_init()
 
 # Set up Python support.
-# Required by: rules_fuzzing.
+# Required by: rules_fuzzing, com_github_nanopb_nanopb.
 # Used in modules: None.
 http_archive(
     name = "rules_python",
-    sha256 = "934c9ceb552e84577b0faf1e5a2f0450314985b4d8712b2b70717dc679fdc01b",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.3.0/rules_python-0.3.0.tar.gz",
+    sha256 = "a30abdfc7126d497a7698c29c46ea9901c6392d6ed315171a6df5ce433aa4502",
+    strip_prefix = "rules_python-0.6.0",
+    url = "https://github.com/bazelbuild/rules_python/archive/0.6.0.tar.gz",
 )
 
 # Set up Starlark library.
@@ -121,6 +122,41 @@ load(
 rules_proto_grpc_toolchains()
 
 rules_proto_grpc_repos()
+
+# Set up Protobuf rules.
+# Required by: pigweed, com_github_bazelbuild_buildtools.
+# Used in modules: //pw_protobuf.
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "c6003e1d2e7fefa78a3039f19f383b4f3a61e81be8c19356f85b6461998ad3db",
+    strip_prefix = "protobuf-3.17.3",
+    url = "https://github.com/protocolbuffers/protobuf/archive/v3.17.3.tar.gz",
+)
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
+# Setup Nanopb protoc plugin.
+# Required by: Pigweed.
+# Used in modules: pw_protobuf.
+git_repository(
+    name = "com_github_nanopb_nanopb",
+    commit = "e601fca6d9ed7fb5c09e2732452753b2989f128b",
+    remote = "https://github.com/nanopb/nanopb.git",
+)
+
+load("@com_github_nanopb_nanopb//:nanopb_deps.bzl", "nanopb_deps")
+
+nanopb_deps()
+
+load("@com_github_nanopb_nanopb//:python_deps.bzl", "nanopb_python_deps")
+
+nanopb_python_deps()
+
+load("@com_github_nanopb_nanopb//:nanopb_workspace.bzl", "nanopb_workspace")
+
+nanopb_workspace()
 
 # Set up Bazel platforms.
 # Required by: pigweed.
