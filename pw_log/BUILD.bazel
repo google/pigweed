@@ -58,7 +58,7 @@ pw_cc_library(
     ],
     deps = [
         ":facade",
-        ":log_proto_cc.pwpb",
+        ":log_pwpb",
         "//pw_bytes",
         "//pw_log_tokenized:headers",
         "//pw_result",
@@ -79,7 +79,7 @@ proto_library(
 )
 
 pw_proto_library(
-    name = "log_proto_cc",
+    name = "log_pwpb",
     deps = [":log_proto"],
 )
 

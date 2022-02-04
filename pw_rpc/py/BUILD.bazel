@@ -42,7 +42,7 @@ filegroup(
 )
 
 py_binary(
-    name = "plugin_raw",
+    name = "plugin",
     srcs = [":pw_rpc_common_sources"],
     imports = ["."],
     main = "pw_rpc/plugin_raw.py",

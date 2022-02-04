@@ -180,11 +180,8 @@ proto_library(
 )
 
 pw_proto_library(
-    name = "codegen_test_proto_cc",
-    deps = [
-        ":codegen_test_proto",
-        ":common_protos",
-    ],
+    name = "codegen_test_protos_pwpb",
+    deps = [":codegen_test_proto"],
 )
 
 pw_cc_test(
@@ -193,7 +190,7 @@ pw_cc_test(
         "codegen_test.cc",
     ],
     deps = [
-        ":codegen_test_proto_cc.pwpb",
+        ":codegen_test_protos_pwpb",
         ":pw_protobuf",
         "//pw_span",
         "//pw_unit_test",
