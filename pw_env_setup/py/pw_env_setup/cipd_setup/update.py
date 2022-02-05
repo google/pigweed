@@ -221,6 +221,17 @@ def write_ensure_file(package_file, ensure_file):
             outs.write('{} {}\n'.format(pkg['path'], ' '.join(pkg['tags'])))
 
 
+def package_installation_path(root_install_dir, package_file):
+    """Returns the package installation path.
+
+    Args:
+      root_install_dir: The CIPD installation directory.
+      package_file: The path to the .json package definition file.
+    """
+    return os.path.join(root_install_dir,
+                        os.path.basename(os.path.splitext(package_file)[0]))
+
+
 def update(
     cipd,
     package_files,
@@ -262,9 +273,7 @@ def update(
                     os.path.splitext(package_file)[0] + '.ensure'))
             write_ensure_file(package_file, ensure_file)
 
-        install_dir = os.path.join(
-            root_install_dir,
-            os.path.basename(os.path.splitext(package_file)[0]))
+        install_dir = package_installation_path(root_install_dir, package_file)
 
         name = os.path.basename(install_dir)
 
