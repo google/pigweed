@@ -302,6 +302,12 @@ def generate_styles(theme_name='dark'):
         'search-bar-setting': '{}'.format(theme.cyan_accent),
         'search-bar-border': 'bg:{} {}'.format(theme.inactive_bg,
                                                theme.cyan_accent),
+        'search-match-count-dialog': 'bg:{}'.format(theme.inactive_bg),
+        'search-match-count-dialog-title': '{}'.format(theme.cyan_accent),
+        'search-match-count-dialog-default-fg': '{}'.format(theme.default_fg),
+        'search-match-count-dialog-border': 'bg:{} {}'.format(
+            theme.inactive_bg,
+            theme.cyan_accent),
 
         'filter-bar': 'bg:{}'.format(theme.inactive_bg),
         'filter-bar-title': 'bg:{} {}'.format(theme.red_accent,

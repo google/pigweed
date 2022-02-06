@@ -153,54 +153,94 @@ Log Pane: Search and Filtering
      - | Type ``lorem``
        | Press :kbd:`Enter`
      - | Logs stop following
-       | The previous ``Lorem`` word is highlighted in yellow
-       | All other ``Lorem`` words are highlighted in cyan
+       | ``Lorem`` words are highlighted in cyan
+       | The cursor on the first log message
+       | The search toolbar is un-focused and displays:
+       | ``Match 1 / 10`` where the second number (the total match count)
+       | increases once every 10 seconds when new logs arrive.
      - |checkbox|
 
    * - 4
      - Press :kbd:`Ctrl-f`
-     - | The search bar appears
-       | The cursor should appear after the ``/``
+     - | The search bar is focused
+       | The cursor should appear after ``/Lorem``
      - |checkbox|
 
    * - 5
+     - Press :kbd:`Ctrl-c`
+     - | The search bar disappears
+       | ``Lorem`` words are no longer highlighted
+     - |checkbox|
+
+   * - 6
+     - Press :kbd:`/`
+     - | The search bar appears and is empty
+       | The cursor should appear after ``/``
+     - |checkbox|
+
+   * - 7
      - Click :guilabel:`Matcher:` once
      - ``Matcher:STRING`` is shown
      - |checkbox|
 
-   * - 6
+   * - 8
      - | Type ``[=``
        | Press :kbd:`Enter`
-     - All instances of ``[=`` should be highlighted
+     - | All instances of ``[=`` should be highlighted
+       | The cursor should be on log message 2
      - |checkbox|
 
    * - 7
      - Press :kbd:`/`
-     - | The search bar appears
-       | The cursor should appear after the ``/``
+     - | The search bar is focused
+       | The cursor should appear after the ``/[=``
      - |checkbox|
 
    * - 8
+     - Press :kbd:`Ctrl-c`
+     - | The search bar disappears
+       | ``[=`` matches are no longer highlighted
+     - |checkbox|
+
+   * - 9
+     - Press :kbd:`/`
+     - | The search bar appears and is empty
+       | The cursor should appear after ``/``
+     - |checkbox|
+
+   * - 10
      - Press :kbd:`Up`
      - The text ``[=`` should appear in the search input field
      - |checkbox|
 
-   * - 9
+   * - 11
+     - Click :guilabel:`Search Enter`
+     - | All instances of ``[=`` should be highlighted
+       | The cursor should be on log message 12
+     - |checkbox|
+
+   * - 12
      - Click :guilabel:`Add Filter`
      - | A ``Filters`` toolbar will appear
        | showing the new filter: ``<\[= (X)>``.
        | Only log messages matching ``[=`` appear in the logs.
+       | Follow mode is enabled
      - |checkbox|
 
-   * - 10
+   * - 13
      - | Press :kbd:`/`
-       | Type ``# 1``
+     - | The search bar appears and is empty
+       | The cursor should appear after ``/``
+     - |checkbox|
+
+   * - 14
+     - | Type ``# 1`` and press :kbd:`Enter`
        | Click :guilabel:`Add Filter`
      - | The ``Filters`` toolbar shows a new filter: ``<\#\ 1 (X)>``.
        | Only log messages matching both filters will appear in the logs.
      - |checkbox|
 
-   * - 11
+   * - 15
      - | Click the first :guilabel:`(X)`
        | in the filter toolbar.
      - | The ``Filters`` toolbar shows only one filter: ``<\#\ 1 (X)>``.
@@ -208,40 +248,64 @@ Log Pane: Search and Filtering
        | Lines all end in: ``# 1.*``
      - |checkbox|
 
-   * - 12
+   * - 16
      - Click :guilabel:`Clear Filters`
      - | The ``Filters`` toolbar will disappear.
        | All log messages will be shown in the log window.
      - |checkbox|
 
-   * - 13
+   * - 17
      - | Press :kbd:`/`
        | Type ``BAT``
-       | Click :guilabel:`Column`
-     - ``Column:Module`` is shown
+       | Click :guilabel:`Column` until ``Column:Module`` is shown
+       | Press :kbd:`Enter`
+     - | Logs stop following
+       | ``BAT`` is highlighted in cyan
+       | The cursor on the 3rd log message
+       | The search toolbar is un-focused and displays:
+       | ``Match 1 / 10`` where the second number (the total match count)
      - |checkbox|
 
-   * - 14
+   * - 18
+     - Press :kbd:`n`
+     - | ``BAT`` is highlighted in cyan
+       | The cursor on the 7th log message and is in the center of the
+       | log window (not the bottom).
+     - |checkbox|
+
+   * - 19
+     - Click :guilabel:`Jump to new matches`
+     - | :guilabel:`Jump to new matches` is checked and every 5 seconds
+       | the cursor jumps to the latest matching log message.
+     - |checkbox|
+
+   * - 20
+     - Click :guilabel:`Follow`
+     - | :guilabel:`Jump to new matches` is unchecked
+       | The cursor jumps to every new log message once a second.
+     - |checkbox|
+
+   * - 21
      - | Click :guilabel:`Add Filter`
      - | The Filters toolbar appears with one filter: ``<module BAT (X)>``
        | Only logs with Module matching ``BAT`` appear.
      - |checkbox|
 
-   * - 15
+   * - 22
      - Click :guilabel:`Clear Filters`
      - | The ``Filters`` toolbar will disappear.
        | All log messages will be shown in the log window.
      - |checkbox|
 
-   * - 16
+   * - 23
      - | Press :kbd:`/`
        | Type ``BAT``
        | Click :guilabel:`Invert`
      - ``[x] Invert`` setting is shown
      - |checkbox|
 
-   * - 17
-     - | Click :guilabel:`Add Filter`
+   * - 24
+     - | Press :kbd:`Enter` then click :guilabel:`Add Filter`
      - | The Filters toolbar appears
        | One filter is shown: ``<NOT module BAT (X)>``
        | Only logs with Modules other than ``BAT`` appear.

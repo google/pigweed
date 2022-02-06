@@ -389,17 +389,24 @@ if _PYTHON_3_8:
 
         @parameterized.expand([
             (
+                # Test name
                 'regex filter',
+                # Search input_text
                 'log.*item',
+                # input_logs
                 [
                     ('Log some item', dict()),
                     ('Log another item', dict()),
                     ('Some exception', dict()),
                 ],
+                # expected_matched_lines
                 [
                     'Log some item',
                     'Log another item',
                 ],
+                # expected_match_line_numbers
+                {0: 0, 1: 1},
+                # expected_export_text
                 (
                     '  DEBUG  Log some item\n'
                     '  DEBUG  Log another item\n'
@@ -408,8 +415,11 @@ if _PYTHON_3_8:
                 False,  # invert
             ),
             (
+                # Test name
                 'regex filter with field',
+                # Search input_text
                 'earth',
+                # input_logs
                 [
                     ('Log some item',
                     dict(extra_metadata_fields={'planet': 'Jupiter'})),
@@ -418,10 +428,14 @@ if _PYTHON_3_8:
                     ('Some exception',
                     dict(extra_metadata_fields={'planet': 'Earth'})),
                 ],
+                # expected_matched_lines
                 [
                     'Log another item',
                     'Some exception',
                 ],
+                # expected_match_line_numbers
+                {1: 0, 2: 1},
+                # expected_export_text
                 (
                     '  DEBUG  Earth    Log another item\n'
                     '  DEBUG  Earth    Some exception\n'
@@ -430,8 +444,11 @@ if _PYTHON_3_8:
                 False,  # invert
             ),
             (
+                # Test name
                 'regex filter with field inverted',
+                # Search input_text
                 'earth',
+                # input_logs
                 [
                     ('Log some item',
                     dict(extra_metadata_fields={'planet': 'Jupiter'})),
@@ -440,9 +457,13 @@ if _PYTHON_3_8:
                     ('Some exception',
                     dict(extra_metadata_fields={'planet': 'Earth'})),
                 ],
+                # expected_matched_lines
                 [
                     'Log some item',
                 ],
+                # expected_match_line_numbers
+                {0: 0},
+                # expected_export_text
                 (
                     '  DEBUG  Jupiter  Log some item\n'
                 ),
@@ -452,20 +473,27 @@ if _PYTHON_3_8:
         ]) # yapf: disable
         async def test_log_filtering(
             self,
-            _name,
+            _test_name,
             input_text,
-            input_lines,
+            input_logs,
             expected_matched_lines,
+            expected_match_line_numbers,
             expected_export_text,
             field=None,
             invert=False,
         ) -> None:
             """Test run log view filtering."""
-            log_view, _log_pane = self._create_log_view_from_list(input_lines)
-            self.assertEqual(log_view.get_total_count(), len(input_lines))
+            log_view, _log_pane = self._create_log_view_from_list(input_logs)
+            log_view.render_content()
 
-            # Apply the filter and wait for the background task
+            self.assertEqual(log_view.get_total_count(), len(input_logs))
+            # Apply the search and wait for the match count background task
             log_view.new_search(input_text, invert=invert, field=field)
+            await log_view.search_match_count_task
+            self.assertEqual(log_view.search_matched_lines,
+                             expected_match_line_numbers)
+
+            # Apply the filter and wait for the filter background task
             log_view.apply_filter()
             await log_view.filter_existing_logs_task
 
@@ -499,7 +527,7 @@ if _PYTHON_3_8:
 
             # Clear filters and check the numbe of lines is back to normal.
             log_view.clear_filters()
-            self.assertEqual(log_view.get_total_count(), len(input_lines))
+            self.assertEqual(log_view.get_total_count(), len(input_logs))
 
 
 if __name__ == '__main__':

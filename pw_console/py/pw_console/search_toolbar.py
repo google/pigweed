@@ -18,13 +18,18 @@ import functools
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.filters import (
-    Condition, )
-from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
+from prompt_toolkit.filters import Condition, has_focus
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.key_binding import (
+    KeyBindings,
+    KeyBindingsBase,
+    KeyPressEvent,
+)
 from prompt_toolkit.layout import (
     ConditionalContainer,
     FormattedTextControl,
     HSplit,
+    VSplit,
     Window,
     WindowAlign,
 )
@@ -40,40 +45,217 @@ if TYPE_CHECKING:
 
 
 class SearchToolbar(ConditionalContainer):
-    """One line toolbar for entering search text."""
+    """Toolbar for entering search text and viewing match counts."""
 
-    TOOLBAR_HEIGHT = 3
+    TOOLBAR_HEIGHT = 2
 
-    def focus_self(self):
+    def __init__(self, log_pane: 'LogPane'):
+        self.log_pane = log_pane
+        self.log_view = log_pane.log_view
+        self.search_validator = RegexValidator()
+        self._search_successful = False
+        self._search_invert = False
+        self._search_field = None
+
+        # FormattedText of the search column headers.
+        self.input_field = TextArea(
+            prompt=[
+                ('class:search-bar-setting', '/',
+                 functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                   self.focus_self))
+            ],
+            focusable=True,
+            focus_on_click=True,
+            scrollbar=False,
+            multiline=False,
+            height=1,
+            dont_extend_height=True,
+            dont_extend_width=False,
+            accept_handler=self._search_accept_handler,
+            validator=DynamicValidator(self.get_search_matcher),
+            history=self.log_pane.application.search_history,
+        )
+
+        self.input_field.control.key_bindings = self._create_key_bindings()
+
+        match_count_window = Window(
+            content=FormattedTextControl(self.get_match_count_fragments),
+            height=1,
+            align=WindowAlign.LEFT,
+            dont_extend_width=True,
+            style='class:search-match-count-dialog',
+        )
+
+        match_buttons_window = Window(
+            content=FormattedTextControl(self.get_button_fragments),
+            height=1,
+            align=WindowAlign.LEFT,
+            dont_extend_width=False,
+            style='class:search-match-count-dialog',
+        )
+
+        input_field_buttons_window = Window(
+            content=FormattedTextControl(self.get_search_help_fragments),
+            height=1,
+            align=WindowAlign.RIGHT,
+            dont_extend_width=True,
+        )
+
+        settings_bar_window = Window(
+            content=FormattedTextControl(self.get_search_settings_fragments),
+            height=1,
+            align=WindowAlign.LEFT,
+            dont_extend_width=False,
+        )
+
+        super().__init__(
+            HSplit(
+                [
+                    # Top row
+                    VSplit([
+                        # Search Settings toggles, only show if the search input
+                        # field is in focus.
+                        ConditionalContainer(settings_bar_window,
+                                             filter=has_focus(
+                                                 self.input_field)),
+
+                        # Match count numbers and buttons, only show if the
+                        # search input is NOT in focus.
+                        ConditionalContainer(
+                            match_count_window,
+                            filter=~has_focus(self.input_field)),  # pylint: disable=invalid-unary-operand-type
+                        ConditionalContainer(
+                            match_buttons_window,
+                            filter=~has_focus(self.input_field)),  # pylint: disable=invalid-unary-operand-type
+                    ]),
+                    # Bottom row
+                    VSplit([
+                        self.input_field,
+                        ConditionalContainer(input_field_buttons_window,
+                                             filter=has_focus(self))
+                    ])
+                ],
+                height=SearchToolbar.TOOLBAR_HEIGHT,
+                style='class:search-bar',
+            ),
+            filter=Condition(lambda: log_pane.search_bar_active),
+        )
+
+    def _create_key_bindings(self) -> KeyBindingsBase:
+        """Create additional key bindings for the search input."""
+        # Clear filter keybind is handled by the parent log_pane.
+
+        key_bindings = KeyBindings()
+
+        @key_bindings.add('escape')
+        @key_bindings.add('c-c')
+        @key_bindings.add('c-d')
+        def _close_search_bar(_event: KeyPressEvent) -> None:
+            """Close search bar."""
+            self._cancel_search()
+
+        @key_bindings.add('c-n')
+        def _select_next_search_matcher(_event: KeyPressEvent) -> None:
+            """Select the next search matcher."""
+            self.log_pane.log_view.select_next_search_matcher()
+
+        @key_bindings.add('escape', 'c-f')  # Alt-Ctrl-f
+        def _create_filter(_event: KeyPressEvent) -> None:
+            """Create a filter."""
+            self.create_filter()
+
+        @key_bindings.add('c-v')
+        def _toggle_search_invert(_event: KeyPressEvent) -> None:
+            """Toggle inverted search matching."""
+            self._invert_search()
+
+        @key_bindings.add('c-t')
+        def _select_next_field(_event: KeyPressEvent) -> None:
+            """Select next search field/column."""
+            self._next_field()
+
+        return key_bindings
+
+    def focus_self(self) -> None:
         self.log_pane.application.application.layout.focus(self)
 
-    def close_search_bar(self):
+    def focus_log_pane(self) -> None:
+        self.log_pane.application.focus_on_container(self.log_pane)
+
+    def _create_filter(self) -> None:
+        self.input_field.buffer.reset()
+        self.close_search_bar()
+        self.log_view.apply_filter()
+
+    def _next_match(self) -> None:
+        self.log_view.search_forwards()
+
+    def _previous_match(self) -> None:
+        self.log_view.search_backwards()
+
+    def _cancel_search(self) -> None:
+        self.input_field.buffer.reset()
+        self.close_search_bar()
+        self.log_view.clear_search()
+
+    def close_search_bar(self) -> None:
         """Close search bar."""
         # Reset invert setting for the next search
         self._search_invert = False
+        self.log_view.follow_search_match = False
         # Hide the search bar
         self.log_pane.search_bar_active = False
         # Focus on the log_pane.
         self.log_pane.application.focus_on_container(self.log_pane)
         self.log_pane.redraw_ui()
 
-    def _start_search(self):
+    def _start_search(self) -> None:
         self.input_field.buffer.validate_and_handle()
 
-    def _invert_search(self):
+    def _invert_search(self) -> None:
         self._search_invert = not self._search_invert
 
-    def _next_field(self):
+    def _toggle_search_follow(self) -> None:
+        self.log_view.follow_search_match = (
+            not self.log_view.follow_search_match)
+        # If automatically jumping to the next search match, disable normal
+        # follow mode.
+        if self.log_view.follow_search_match:
+            self.log_view.follow = False
+
+    def _next_field(self) -> None:
         fields = self.log_pane.log_view.log_store.table.all_column_names()
         fields.append(None)
         current_index = fields.index(self._search_field)
         next_index = (current_index + 1) % len(fields)
         self._search_field = fields[next_index]
 
-    def create_filter(self):
+    def create_filter(self) -> None:
         self._start_search()
         if self._search_successful:
             self.log_pane.log_view.apply_filter()
+
+    def _search_accept_handler(self, buff: Buffer) -> bool:
+        """Function run when hitting Enter in the search bar."""
+        self._search_successful = False
+        if len(buff.text) == 0:
+            self.close_search_bar()
+            # Don't apply an empty search.
+            return False
+
+        if self.log_pane.log_view.new_search(buff.text,
+                                             invert=self._search_invert,
+                                             field=self._search_field):
+            self._search_successful = True
+
+            # Don't close the search bar, instead focus on the log content.
+            self.log_pane.application.focus_on_container(
+                self.log_pane.log_display_window)
+            # Keep existing search text.
+            return True
+
+        # Keep existing text if regex error
+        return True
 
     def get_search_help_fragments(self):
         """Return FormattedText with search general help keybinds."""
@@ -81,13 +263,8 @@ class SearchToolbar(ConditionalContainer):
                                   self.focus_self)
         start_search = functools.partial(
             pw_console.widgets.mouse_handlers.on_click, self._start_search)
-        add_filter = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.create_filter)
-        clear_filters = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click,
-            self.log_pane.log_view.clear_filters)
         close_search = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.close_search_bar)
+            pw_console.widgets.mouse_handlers.on_click, self._cancel_search)
 
         # Search toolbar is darker than pane toolbars, use the darker button
         # style here.
@@ -108,25 +285,8 @@ class SearchToolbar(ConditionalContainer):
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-Alt-f',
-                'Add Filter',
-                add_filter,
-                base_style=button_style))
-        fragments.extend(separator_text)
+                'Ctrl-c', 'Cancel', close_search, base_style=button_style))
 
-        fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-Alt-r',
-                'Clear Filters',
-                clear_filters,
-                base_style=button_style))
-        fragments.extend(separator_text)
-
-        fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-c', 'Close', close_search, base_style=button_style))
-
-        fragments.extend(separator_text)
         return fragments
 
     def get_search_settings_fragments(self):
@@ -199,109 +359,97 @@ class SearchToolbar(ConditionalContainer):
             return self.log_pane.log_view.search_validator
         return False
 
-    def __init__(self, log_pane: 'LogPane'):
-        self.log_pane = log_pane
-        self.search_validator = RegexValidator()
-        self._search_successful = False
-        self._search_invert = False
-        self._search_field = None
+    def get_match_count_fragments(self):
+        """Return formatted text for the match count indicator."""
+        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.focus_log_pane)
+        two_spaces = ('', '  ', focus)
 
-        # FormattedText of the search column headers.
-        self.input_field = TextArea(
-            prompt=[
-                ('class:search-bar-setting', '/',
-                 functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                   self.focus_self))
-            ],
-            focusable=True,
-            focus_on_click=True,
-            scrollbar=False,
-            multiline=False,
-            height=1,
-            dont_extend_height=True,
-            dont_extend_width=False,
-            accept_handler=self._search_accept_handler,
-            validator=DynamicValidator(self.get_search_matcher),
-            history=self.log_pane.application.search_history,
-        )
+        # Check if this line is a search match
+        match_number = self.log_view.search_matched_lines.get(
+            self.log_view.log_index, -1)
 
-        search_help_bar_control = FormattedTextControl(
-            self.get_search_help_fragments)
-        search_help_bar_window = Window(content=search_help_bar_control,
-                                        height=1,
-                                        align=WindowAlign.LEFT,
-                                        dont_extend_width=False)
+        # If valid, increment the zero indexed value by one for better human
+        # readability.
+        if match_number >= 0:
+            match_number += 1
+        # If no match, mark as zero
+        else:
+            match_number = 0
 
-        search_settings_bar_control = FormattedTextControl(
-            self.get_search_settings_fragments)
-        search_settings_bar_window = Window(
-            content=search_settings_bar_control,
-            height=1,
-            align=WindowAlign.LEFT,
-            dont_extend_width=False)
+        return [
+            ('class:search-match-count-dialog-title', ' Match ', focus),
+            ('', '{} / {}'.format(match_number,
+                                  len(self.log_view.search_matched_lines)),
+             focus),
+            two_spaces,
+        ]
 
-        # Additional keybindings for the text area.
-        key_bindings = KeyBindings()
+    def get_button_fragments(self) -> StyleAndTextTuples:
+        """Return formatted text for the action buttons."""
+        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.focus_log_pane)
 
-        @key_bindings.add('escape')
-        @key_bindings.add('c-c')
-        @key_bindings.add('c-d')
-        def _close_search_bar(_event: KeyPressEvent) -> None:
-            """Close search bar."""
-            self.close_search_bar()
+        one_space = ('', ' ', focus)
+        two_spaces = ('', '  ', focus)
+        cancel = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                   self._cancel_search)
+        create_filter = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self._create_filter)
+        next_match = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self._next_match)
+        previous_match = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self._previous_match)
+        toggle_search_follow = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click,
+            self._toggle_search_follow)
 
-        @key_bindings.add('c-n')
-        def _select_next_search_matcher(_event: KeyPressEvent) -> None:
-            """Select the next search matcher."""
-            self.log_pane.log_view.select_next_search_matcher()
+        button_style = 'class:toolbar-button-inactive'
 
-        @key_bindings.add('escape', 'c-f')  # Alt-Ctrl-f
-        def _create_filter(_event: KeyPressEvent) -> None:
-            """Create a filter."""
-            self.create_filter()
+        fragments = []
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                key='n',
+                description='Next',
+                mouse_handler=next_match,
+                base_style=button_style,
+            ))
+        fragments.append(two_spaces)
 
-        @key_bindings.add('c-v')
-        def _toggle_search_invert(_event: KeyPressEvent) -> None:
-            """Toggle inverted search matching."""
-            self._invert_search()
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                key='N',
+                description='Previous',
+                mouse_handler=previous_match,
+                base_style=button_style,
+            ))
+        fragments.append(two_spaces)
 
-        @key_bindings.add('c-t')
-        def _select_next_field(_event: KeyPressEvent) -> None:
-            """Select next search field/column."""
-            self._next_field()
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                key='Ctrl-l',
+                description='Cancel',
+                mouse_handler=cancel,
+                base_style=button_style,
+            ))
+        fragments.append(two_spaces)
 
-        # Clear filter keybind is handled by the parent log_pane.
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                key='Ctrl-Alt-f',
+                description='Add Filter',
+                mouse_handler=create_filter,
+                base_style=button_style,
+            ))
+        fragments.append(two_spaces)
 
-        self.input_field.control.key_bindings = key_bindings
+        fragments.extend(
+            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+                checked=self.log_view.follow_search_match,
+                key='',
+                description='Jump to new matches',
+                mouse_handler=toggle_search_follow,
+                base_style=button_style))
+        fragments.append(one_space)
 
-        super().__init__(
-            HSplit(
-                [
-                    search_help_bar_window,
-                    search_settings_bar_window,
-                    self.input_field,
-                ],
-                height=SearchToolbar.TOOLBAR_HEIGHT,
-                style='class:search-bar',
-            ),
-            filter=Condition(lambda: log_pane.search_bar_active),
-        )
-
-    def _search_accept_handler(self, buff: Buffer) -> bool:
-        """Function run when hitting Enter in the search bar."""
-        self._search_successful = False
-        if len(buff.text) == 0:
-            self.close_search_bar()
-            # Don't apply an empty search.
-            return False
-
-        if self.log_pane.log_view.new_search(buff.text,
-                                             invert=self._search_invert,
-                                             field=self._search_field):
-            self._search_successful = True
-            self.close_search_bar()
-            # Erase existing search text.
-            return False
-
-        # Keep existing text if regex error
-        return True
+        return fragments

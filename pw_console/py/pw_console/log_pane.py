@@ -182,12 +182,14 @@ class LogContentControl(UIControl):
 
         @key_bindings.add('c-l')
         def _clear_search_highlight(_event: KeyPressEvent) -> None:
-            """Remove search highlighting."""
-            self.log_pane.log_view.clear_search_highlighting()
+            """Clear search."""
+            self.log_pane.log_view.clear_search()
+            self.log_pane.search_toolbar.close_search_bar()
 
         @key_bindings.add('escape', 'c-f')  # Alt-Ctrl-f
         def _apply_filter(_event: KeyPressEvent) -> None:
             """Apply current search as a filter."""
+            self.log_pane.search_toolbar.close_search_bar()
             self.log_view.apply_filter()
 
         @key_bindings.add('escape', 'c-r')  # Alt-Ctrl-r
@@ -336,7 +338,7 @@ class LogPane(WindowPane):
 
         self.saveas_dialog = LogPaneSaveAsDialog(self)
         self.saveas_dialog_active = False
-        self.visual_selection_bar = LogPaneSelectionDialog(self)
+        self.visual_selection_dialog = LogPaneSelectionDialog(self)
 
         # Table header bar, only shown if table view is active.
         self.table_header_toolbar = TableToolbar(self)
@@ -412,12 +414,11 @@ class LogPane(WindowPane):
                                             self),
                 ),
                 floats=[
-                    # Floating LineInfoBar
                     Float(top=0, right=0, height=1, content=LineInfoBar(self)),
                     Float(top=0,
                           right=0,
                           height=LogPaneSelectionDialog.DIALOG_HEIGHT,
-                          content=self.visual_selection_bar),
+                          content=self.visual_selection_dialog),
                     Float(top=3,
                           left=2,
                           right=2,
