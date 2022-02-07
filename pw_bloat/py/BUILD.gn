@@ -27,9 +27,11 @@ pw_python_package("py") {
     "pw_bloat/binary_diff.py",
     "pw_bloat/bloat.py",
     "pw_bloat/bloat_output.py",
+    "pw_bloat/bloaty_config.py",
     "pw_bloat/no_bloaty.py",
     "pw_bloat/no_toolchains.py",
   ]
+  tests = [ "bloaty_config_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
   python_deps = [ "$dir_pw_cli/py" ]
 }
