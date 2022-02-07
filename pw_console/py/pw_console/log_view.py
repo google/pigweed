@@ -23,7 +23,7 @@ import operator
 from pathlib import Path
 import re
 import time
-from typing import Callable, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -105,7 +105,7 @@ class LogView:
 
         # Max frequency in seconds of prompt_toolkit UI redraws triggered by new
         # log lines.
-        self._ui_update_frequency = 0.1
+        self._ui_update_frequency = 0.05
         self._last_ui_update_time = time.time()
         self._last_log_store_index = 0
         self._new_logs_since_last_render = True
@@ -116,7 +116,7 @@ class LogView:
         self.visual_select_mode: bool = False
 
         # Cache of formatted text tuples used in the last UI render.
-        self._line_fragment_cache: StyleAndTextTuples = []
+        self._line_fragment_cache: List[StyleAndTextTuples] = []
 
     def view_mode_changed(self) -> None:
         self._reset_log_screen_on_next_render = True

@@ -24,7 +24,10 @@ from prompt_toolkit.data_structures import Point
 
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_view import LogView
-from pw_console.text_formatting import join_adjacent_style_tuples
+from pw_console.text_formatting import (
+    flatten_formatted_text_tuples,
+    join_adjacent_style_tuples,
+)
 
 _PYTHON_3_8 = sys.version_info >= (
     3,
@@ -213,27 +216,31 @@ class TestLogView(unittest.TestCase):
         self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=9))
 
         expected_formatted_text = [
-            ('', '\n\n\n\n\n\n'),
+            ('', ''),
             ('class:log-time', '20210713 00:00:00'),
             ('', '  '),
             ('class:log-level-10', 'DEBUG'),
-            ('', '  Test log 0\n'),
+            ('', '  Test log 0'),
+
             ('class:log-time', '20210713 00:00:00'),
             ('', '  '),
             ('class:log-level-10', 'DEBUG'),
-            ('', '  Test log 1\n'),
+            ('', '  Test log 1'),
+
             ('class:log-time', '20210713 00:00:00'),
             ('', '  '),
             ('class:log-level-10', 'DEBUG'),
-            ('', '  Test log 2\n'),
+            ('', '  Test log 2'),
+
             ('class:selected-log-line class:log-time', '20210713 00:00:00'),
             ('class:selected-log-line ', '  '),
             ('class:selected-log-line class:log-level-10', 'DEBUG'),
             ('class:selected-log-line ',
-             '  Test log 3                                            \n')
+             '  Test log 3                                             ')
         ]  # yapf: disable
 
-        result_text = join_adjacent_style_tuples(log_view._line_fragment_cache)  # pylint: disable=protected-access
+        result_text = join_adjacent_style_tuples(
+            flatten_formatted_text_tuples(log_view._line_fragment_cache))  # pylint: disable=protected-access
 
         self.assertEqual(result_text, expected_formatted_text)
 

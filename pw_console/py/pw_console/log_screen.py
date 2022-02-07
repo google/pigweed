@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import logging
-from typing import Callable, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
@@ -156,7 +156,7 @@ class LogScreen:
     def _fill_top_with_empty_lines(self) -> None:
         """Add empty lines to fill the remaining empty screen space."""
         for _ in range(self.height - len(self.line_buffer)):
-            self.line_buffer.appendleft(ScreenLine([('', '\n')]))
+            self.line_buffer.appendleft(ScreenLine([('', '')]))
 
     def clear_screen(self) -> None:
         """Erase all lines and fill with empty lines."""
@@ -207,15 +207,15 @@ class LogScreen:
         self.height = height
 
     def get_lines(
-            self,
-            marked_logs: Optional[Dict[int,
-                                       int]] = None) -> StyleAndTextTuples:
+        self,
+        marked_logs: Optional[Dict[int, int]] = None,
+    ) -> List[StyleAndTextTuples]:
         """Return lines for final display.
 
         Styling is added for the line under the cursor."""
         if not marked_logs:
             marked_logs = {}
-        all_lines: StyleAndTextTuples = []
+        all_lines: List[StyleAndTextTuples] = []
         # Loop through a copy of the line_buffer in case it is mutated before
         # this function is complete.
         for i, line in enumerate(list(self.line_buffer)):
@@ -233,7 +233,7 @@ class LogScreen:
                 )
 
                 # Apply a style to highlight this line.
-                all_lines.extend(
+                all_lines.append(
                     to_formatted_text(new_fragments,
                                       style='class:selected-log-line'))
             elif line.log_index in marked_logs:
@@ -244,12 +244,12 @@ class LogScreen:
                 )
 
                 # Apply a style to highlight this line.
-                all_lines.extend(
+                all_lines.append(
                     to_formatted_text(new_fragments,
                                       style='class:marked-log-line'))
 
             else:
-                all_lines.extend(line.fragments)
+                all_lines.append(line.fragments)
 
         return all_lines
 

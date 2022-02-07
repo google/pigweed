@@ -23,13 +23,18 @@ from prompt_toolkit.filters import (
     Condition,
     has_focus,
 )
-from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.key_binding import (
+    KeyBindings,
+    KeyPressEvent,
+    KeyBindingsBase,
+)
 from prompt_toolkit.layout import (
     ConditionalContainer,
     Float,
     FloatContainer,
-    FormattedTextControl,
     UIContent,
+    UIControl,
     VerticalAlign,
     Window,
 )
@@ -60,21 +65,19 @@ _LOG_OUTPUT_SCROLL_AMOUNT = 5
 _LOG = logging.getLogger(__package__)
 
 
-class LogContentControl(FormattedTextControl):
+class LogContentControl(UIControl):
     """LogPane prompt_toolkit UIControl for displaying LogContainer lines."""
-    def create_content(self, width: int, height: Optional[int]) -> UIContent:
-        # Save redered height
-        if height:
-            self.log_pane.last_log_content_height = height
-        return super().create_content(width, height)
-
-    def __init__(self, log_pane: 'LogPane', *args, **kwargs) -> None:
+    def __init__(self, log_pane: 'LogPane') -> None:
         # pylint: disable=too-many-locals
         self.log_pane = log_pane
+        self.log_view = log_pane.log_view
 
         # Mouse drag visual selection flags.
         self.visual_select_mode_drag_start = False
         self.visual_select_mode_drag_stop = False
+
+        self.uicontent: Optional[UIContent] = None
+        self.lines: List[StyleAndTextTuples] = []
 
         # Key bindings.
         key_bindings = KeyBindings()
@@ -109,12 +112,12 @@ class LogContentControl(FormattedTextControl):
         @key_bindings.add('g')
         def _scroll_to_top(_event: KeyPressEvent) -> None:
             """Scroll to top."""
-            self.log_pane.log_view.scroll_to_top()
+            self.log_view.scroll_to_top()
 
         @key_bindings.add('G')
         def _scroll_to_bottom(_event: KeyPressEvent) -> None:
             """Scroll to bottom."""
-            self.log_pane.log_view.scroll_to_bottom()
+            self.log_view.scroll_to_bottom()
 
         @key_bindings.add('f')
         def _toggle_follow(_event: KeyPressEvent) -> None:
@@ -125,33 +128,33 @@ class LogContentControl(FormattedTextControl):
         @key_bindings.add('k')
         def _up(_event: KeyPressEvent) -> None:
             """Move cursor up."""
-            self.log_pane.log_view.scroll_up()
+            self.log_view.scroll_up()
 
         @key_bindings.add('down')
         @key_bindings.add('j')
         def _down(_event: KeyPressEvent) -> None:
             """Move cursor down."""
-            self.log_pane.log_view.scroll_down()
+            self.log_view.scroll_down()
 
         @key_bindings.add('s-up')
         def _visual_select_up(_event: KeyPressEvent) -> None:
             """Select previous log line."""
-            self.log_pane.log_view.visual_select_up()
+            self.log_view.visual_select_up()
 
         @key_bindings.add('s-down')
         def _visual_select_down(_event: KeyPressEvent) -> None:
             """Select next log line."""
-            self.log_pane.log_view.visual_select_down()
+            self.log_view.visual_select_down()
 
         @key_bindings.add('pageup')
         def _pageup(_event: KeyPressEvent) -> None:
             """Scroll the logs up by one page."""
-            self.log_pane.log_view.scroll_up_one_page()
+            self.log_view.scroll_up_one_page()
 
         @key_bindings.add('pagedown')
         def _pagedown(_event: KeyPressEvent) -> None:
             """Scroll the logs down by one page."""
-            self.log_pane.log_view.scroll_down_one_page()
+            self.log_view.scroll_down_one_page()
 
         @key_bindings.add('c-o')
         def _start_saveas(_event: KeyPressEvent) -> None:
@@ -169,13 +172,13 @@ class LogContentControl(FormattedTextControl):
         @key_bindings.add('c-g')
         def _next_search(_event: KeyPressEvent) -> None:
             """Next search match."""
-            self.log_pane.log_view.search_forwards()
+            self.log_view.search_forwards()
 
         @key_bindings.add('N')
         @key_bindings.add('c-r')
         def _previous_search(_event: KeyPressEvent) -> None:
             """Previous search match."""
-            self.log_pane.log_view.search_backwards()
+            self.log_view.search_backwards()
 
         @key_bindings.add('c-l')
         def _clear_search_highlight(_event: KeyPressEvent) -> None:
@@ -185,15 +188,51 @@ class LogContentControl(FormattedTextControl):
         @key_bindings.add('escape', 'c-f')  # Alt-Ctrl-f
         def _apply_filter(_event: KeyPressEvent) -> None:
             """Apply current search as a filter."""
-            self.log_pane.log_view.apply_filter()
+            self.log_view.apply_filter()
 
         @key_bindings.add('escape', 'c-r')  # Alt-Ctrl-r
         def _clear_filter(_event: KeyPressEvent) -> None:
             """Reset / erase active filters."""
-            self.log_pane.log_view.clear_filters()
+            self.log_view.clear_filters()
 
-        kwargs['key_bindings'] = key_bindings
-        super().__init__(*args, **kwargs)
+        self.key_bindings = key_bindings
+
+    def is_focusable(self) -> bool:
+        return True
+
+    def get_key_bindings(self) -> Optional[KeyBindingsBase]:
+        return self.key_bindings
+
+    def preferred_width(self, max_available_width: int) -> int:
+        """Return the width of the longest line."""
+        line_lengths = [len(l) for l in self.lines]
+        return max(line_lengths)
+
+    def preferred_height(
+        self,
+        width: int,
+        max_available_height: int,
+        wrap_lines: bool,
+        get_line_prefix,
+    ) -> Optional[int]:
+        """Return the preferred height for the log lines."""
+        content = self.create_content(width, None)
+        return content.line_count
+
+    def create_content(self, width: int, height: Optional[int]) -> UIContent:
+        # Update lines to render
+        self.lines = self.log_view.render_content()
+
+        # Create a UIContent instance if none exists
+        if self.uicontent is None:
+            self.uicontent = UIContent(get_line=lambda i: self.lines[i],
+                                       line_count=len(self.lines),
+                                       show_cursor=False)
+
+        # Update line_count
+        self.uicontent.line_count = len(self.lines)
+
+        return self.uicontent
 
     def mouse_handler(self, mouse_event: MouseEvent):
         """Mouse handler for this control."""
@@ -267,6 +306,7 @@ class LogPane(WindowPane):
     """LogPane class."""
 
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
+
     def __init__(
         self,
         application: Any,
@@ -288,7 +328,6 @@ class LogPane(WindowPane):
         self.current_log_pane_height = 0
         self.last_log_pane_width = None
         self.last_log_pane_height = None
-        self.last_log_content_height = 0
 
         # Search tracking
         self.search_bar_active = False
@@ -329,16 +368,7 @@ class LogPane(WindowPane):
         self.bottom_toolbar.add_button(
             ToolbarButton('C', 'Clear', self.clear_history))
 
-        self.log_content_control = LogContentControl(
-            self,  # parent LogPane
-            # FormattedTextControl args:
-            self.log_view.render_content,
-            # Hide the cursor, use cursorline=True in self.log_display_window to
-            # indicate currently selected line.
-            show_cursor=False,
-            focusable=True,
-            get_cursor_position=self.log_content_control_get_cursor_position,
-        )
+        self.log_content_control = LogContentControl(self)
 
         self.log_display_window = Window(
             content=self.log_content_control,
@@ -567,17 +597,6 @@ class LogPane(WindowPane):
         ]
 
         return options
-
-    def after_render_hook(self):
-        """Run tasks after the last UI render."""
-        self.reset_log_content_height()
-
-    def reset_log_content_height(self):
-        """Reset log line pane content height."""
-        self.last_log_content_height = 0
-
-    def log_content_control_get_cursor_position(self):
-        return self.log_view.get_cursor_position()
 
     def apply_filters_from_config(self, window_options) -> None:
         if 'filters' not in window_options:

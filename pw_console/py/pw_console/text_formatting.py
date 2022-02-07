@@ -33,13 +33,13 @@ def split_lines(
         input_fragments: StyleAndTextTuples) -> List[StyleAndTextTuples]:
     """Break a flattened list of StyleAndTextTuples into a list of lines.
 
-    Ending line breaks are preserved."""
+    Ending line breaks are not preserved."""
     lines: List[StyleAndTextTuples] = []
     this_line: StyleAndTextTuples = []
     for item in input_fragments:
         this_line.append(item)
         if item[1].endswith('\n'):
-            lines.append(this_line)
+            lines.append(this_line[:-1])
             this_line = []
     return lines
 
