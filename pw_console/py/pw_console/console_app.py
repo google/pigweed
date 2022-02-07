@@ -810,9 +810,9 @@ class ConsoleApp:
                     '            return "t({}) seconds done".format(s)\n\n')
 
             module_name = module_names[message_count % len(module_names)]
-            _FAKE_DEVICE_LOG.info(
-                new_log_line,
-                extra=dict(extra_metadata_fields=dict(module=module_name)))
+            _FAKE_DEVICE_LOG.info(new_log_line,
+                                  extra=dict(extra_metadata_fields=dict(
+                                      module=module_name, file='fake_app.cc')))
             message_count += 1
 
 

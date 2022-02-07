@@ -30,7 +30,7 @@ class TableView:
     # Should allow for string format, column color, and column ordering.
     FLOAT_FORMAT = '%.3f'
     INT_FORMAT = '%s'
-    LAST_TABLE_COLUMN_NAMES = ['msg', 'message', 'file']
+    LAST_TABLE_COLUMN_NAMES = ['msg', 'message']
 
     def __init__(self, prefs: ConsolePrefs):
         self.prefs = prefs
@@ -123,7 +123,7 @@ class TableView:
 
         for name, width in self._ordered_column_widths():
             # These fields will be shown at the end
-            if name in ['msg', 'message', 'file']:
+            if name in ['msg', 'message']:
                 continue
             fragments.append(
                 (default_style, name.title()[:width].ljust(width)))
@@ -156,7 +156,7 @@ class TableView:
         columns = {}
         for name, width in self._ordered_column_widths():
             # Skip these modifying these fields
-            if name in ['msg', 'message', 'file']:
+            if name in ['msg', 'message']:
                 continue
 
             # hasattr checks are performed here since a log record may not have
@@ -222,9 +222,6 @@ class TableView:
             message = (message_style, message)
         # Add to columns
         columns['message'] = message
-
-        # TODO(tonymd): Display 'file' metadata right justified after the
-        # message? It could also appear in the column section.
 
         index_modifier = 0
         # Go through columns and convert to FormattedText where needed.
