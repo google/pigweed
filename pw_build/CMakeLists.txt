@@ -29,6 +29,9 @@ target_compile_options(pw_build
     $<$<CXX_COMPILER_ID:Clang>:-fcolor-diagnostics>
     $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always>
 )
+if(ZEPHYR_PIGWEED_MODULE_DIR)
+  target_link_libraries(pw_build INTERFACE zephyr_interface)
+endif()
 
 # Declare top-level targets for tests.
 add_custom_target(pw_tests.default)
