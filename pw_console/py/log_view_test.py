@@ -24,6 +24,7 @@ from prompt_toolkit.data_structures import Point
 
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_view import LogView
+from pw_console.log_screen import ScreenLine
 from pw_console.text_formatting import (
     flatten_formatted_text_tuples,
     join_adjacent_style_tuples,
@@ -317,6 +318,50 @@ class TestLogView(unittest.TestCase):
         log_view.scroll_to_bottom()
         log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 7)
+
+    def test_get_line_at_cursor_position(self) -> None:
+        """Tests fuctions that rely on getting a log_index for the current
+        cursor position.
+
+        Including:
+        - LogScreen.fetch_subline_up
+        - LogScreen.fetch_subline_down
+        - LogView._update_log_index
+        """
+        # pylint: disable=protected-access
+        # Create log_view with 4 logs
+        starting_log_count = 4
+        log_view, _pane = self._create_log_view_with_logs(
+            log_count=starting_log_count)
+        log_view.render_content()
+
+        # Check setup is correct
+        self.assertTrue(log_view.follow)
+        self.assertEqual(log_view.get_current_line(), 3)
+        self.assertEqual(log_view.get_total_count(), 4)
+        self.assertEqual(
+            list(log.record.message
+                 for log in log_view._get_visible_log_lines()),
+            ['Test log 0', 'Test log 1', 'Test log 2', 'Test log 3'])
+
+        self.assertEqual(log_view.log_screen.cursor_position, 9)
+        # Force the cursor_position to be larger than the log_screen
+        # line_buffer.
+        log_view.log_screen.cursor_position = 10
+        # Attempt to get the current line, no exception should be raised
+        result = log_view.log_screen.get_line_at_cursor_position()
+        # Log index should be None
+        self.assertEqual(result.log_index, None)
+
+        # Force the cursor_position to be < 0. This won't produce an error but
+        # would wrap around to the beginning.
+        log_view.log_screen.cursor_position = -1
+        # Attempt to get the current line, no exception should be raised
+        result = log_view.log_screen.get_line_at_cursor_position()
+        # Result should be a blank line
+        self.assertEqual(result, ScreenLine([('', '')]))
+        # Log index should be None
+        self.assertEqual(result.log_index, None)
 
 
 if _PYTHON_3_8:

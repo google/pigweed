@@ -40,6 +40,7 @@ _DEFAULT_CONFIG = {
         'column_colors': {},
         'show_python_file': False,
         'show_python_logger': False,
+        'show_source_file': False,
         'hide_date_from_log_time': False,
         # Window arrangement
         'windows': {},
@@ -169,6 +170,10 @@ class ConsolePrefs:
     @property
     def show_python_file(self) -> bool:
         return self._config.get('show_python_file', False)
+
+    @property
+    def show_source_file(self) -> bool:
+        return self._config.get('show_source_file', False)
 
     @property
     def show_python_logger(self) -> bool:

@@ -563,7 +563,7 @@ class LogView:
     def visual_select_line(self,
                            mouse_position: Point,
                            deselect: bool = False,
-                           autoscroll: bool = True):
+                           autoscroll: bool = True) -> None:
         """Mark the log under mouse_position as visually selected."""
         # Check mouse_position is valid
         if not 0 <= mouse_position.y < len(self.log_screen.line_buffer):

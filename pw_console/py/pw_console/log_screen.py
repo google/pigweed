@@ -222,6 +222,7 @@ class LogScreen:
 
             # Is this line the cursor_position? Apply line highlighting
             if (i == self.cursor_position
+                    and (self.cursor_position < len(self.line_buffer))
                     and not self.line_buffer[self.cursor_position].empty()):
                 # Fill in empty charaters to the width of the screen. This
                 # ensures the backgound is highlighted to the edge of the
@@ -295,7 +296,8 @@ class LogScreen:
             new_index = self.cursor_position - 1
             if new_index < 0:
                 break
-            if self.line_buffer[new_index].empty():
+            if (new_index < len(self.line_buffer)
+                    and self.line_buffer[new_index].empty()):
                 # The next line is empty and has no content.
                 break
             self.cursor_position -= 1
@@ -317,7 +319,8 @@ class LogScreen:
             new_index = self.cursor_position + 1
             if new_index >= self.height:
                 break
-            if self.line_buffer[new_index].empty():
+            if (new_index < len(self.line_buffer)
+                    and self.line_buffer[new_index].empty()):
                 # The next line is empty and has no content.
                 break
             self.cursor_position += 1
@@ -337,6 +340,8 @@ class LogScreen:
 
     def move_cursor_to_position(self, window_row: int) -> None:
         """Move the cursor to a line if there is a log message there."""
+        if window_row >= len(self.line_buffer):
+            return
         if 0 <= window_row < self.height:
             current_line = self.line_buffer[window_row]
             if current_line.log_index is not None:
@@ -355,6 +360,9 @@ class LogScreen:
         This moves the lines on screen and keeps the originally selected line
         highlighted. Example use case: when jumping to a search match the
         matched line will be shown at the top of the screen."""
+        if self.cursor_position >= len(self.line_buffer):
+            return
+
         current_line = self.line_buffer[self.cursor_position]
         amount = max(self.cursor_position, current_line.height)
         amount -= current_line.subline
@@ -373,6 +381,9 @@ class LogScreen:
         This moves the lines on screen and keeps the originally selected line
         highlighted. Example use case: when jumping to a search match the
         matched line will be shown at the center of the screen."""
+        if self.cursor_position >= len(self.line_buffer):
+            return
+
         half_height = int(self.height / 2)
         current_line = self.line_buffer[self.cursor_position]
 
@@ -459,6 +470,9 @@ class LogScreen:
 
     def get_line_at_cursor_position(self) -> ScreenLine:
         """Returns the ScreenLine under the cursor."""
+        if (self.cursor_position >= len(self.line_buffer)
+                or self.cursor_position < 0):
+            return ScreenLine([('', '')])
         return self.line_buffer[self.cursor_position]
 
     def fetch_subline_down(self, line_count: int = 1) -> int:
@@ -510,6 +524,8 @@ class LogScreen:
         """Scan the screen for the first valid log_index and return it."""
         log_index = None
         for i in range(self.height):
+            if i >= len(self.line_buffer):
+                break
             if self.line_buffer[i].log_index is not None:
                 log_index = self.line_buffer[i].log_index
                 break
@@ -518,6 +534,8 @@ class LogScreen:
     def last_rendered_log_index(self) -> Optional[int]:
         """Return the last log_index shown on screen."""
         log_index = None
+        if len(self.line_buffer) == 0:
+            return None
         if self.line_buffer[-1].log_index is not None:
             log_index = self.line_buffer[-1].log_index
         return log_index
@@ -529,6 +547,8 @@ class LogScreen:
         Before fetching the log message this function updates the log_source and
         formatting options."""
         _start_log_index, log_source = self.get_log_source()
+        if log_index >= len(log_source):
+            return []
         log = log_source[log_index]
         table_formatter = self.get_log_formatter()
         truncate_lines = not self.get_line_wrapping()

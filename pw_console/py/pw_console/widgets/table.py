@@ -90,6 +90,8 @@ class TableView:
             del ordered_columns['py_file']
         if not self.prefs.show_python_logger and 'py_logger' in ordered_columns:
             del ordered_columns['py_logger']
+        if not self.prefs.show_source_file and 'file' in ordered_columns:
+            del ordered_columns['file']
 
         return ordered_columns.items()
 

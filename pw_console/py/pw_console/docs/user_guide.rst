@@ -572,6 +572,13 @@ Example Config
      # Hide the year month and day from the time column.
      hide_date_from_log_time: False
 
+     # Show the Python file and line number responsible for creating log messages.
+     show_python_file: False
+     # Show the Python logger responsible for creating log messages.
+     show_python_logger: False
+     # Show the 'file' metadata column.
+     show_source_file: False
+
      # Custom Column Ordering
      # By default columns are ordered as:
      #   time, level, metadata1, metadata2, ..., message
@@ -582,7 +589,7 @@ Example Config
        - level
        - metadata1
        - metadata2
-     # If Any metadata field not listed above will be hidden in table view.
+     # If True, any metadata field not listed above will be hidden in table view.
      column_order_omit_unspecified_columns: False
 
      # Unique Colors for Column Values

@@ -471,6 +471,16 @@ class ConsoleApp:
                                         'hide_date_from_log_time')),
                             ),
                             MenuItem(
+                                '{check} Show Source File'.format(
+                                    check=pw_console.widgets.checkbox.
+                                    to_checkbox_text(
+                                        self.prefs.show_source_file, end='')),
+                                handler=functools.partial(
+                                    self.run_pane_menu_option,
+                                    functools.partial(self.toggle_pref_option,
+                                                      'show_source_file')),
+                            ),
+                            MenuItem(
                                 '{check} Show Python File'.format(
                                     check=pw_console.widgets.checkbox.
                                     to_checkbox_text(
