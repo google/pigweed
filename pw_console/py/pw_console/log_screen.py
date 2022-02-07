@@ -523,7 +523,7 @@ class LogScreen:
         return log_index
 
     def _get_fragments_per_line(self,
-                                log_index: int) -> list[StyleAndTextTuples]:
+                                log_index: int) -> List[StyleAndTextTuples]:
         """Return a list of lines wrapped to the screen width for a log.
 
         Before fetching the log message this function updates the log_source and
