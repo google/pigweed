@@ -51,6 +51,28 @@ class TestConsolePrefs(unittest.TestCase):
         self.assertTrue(
             str(prefs.search_history).endswith('pw_console_search'))
 
+    def test_load_empty_file(self) -> None:
+        # Create an empty file
+        project_config_file = _create_tempfile('')
+        try:
+            prefs = ConsolePrefs(project_file=project_config_file,
+                                 user_file=False)
+            result_settings = {
+                k: v
+                for k, v in prefs._config.items()
+                if k in _DEFAULT_CONFIG['pw_console'].keys()
+            }
+            other_settings = {
+                k: v
+                for k, v in prefs._config.items()
+                if k not in _DEFAULT_CONFIG['pw_console'].keys()
+            }
+            # Check that only the default config was loaded.
+            self.assertEqual(_DEFAULT_CONFIG['pw_console'], result_settings)
+            self.assertEqual(0, len(other_settings))
+        finally:
+            project_config_file.unlink()
+
     def test_load_project_file(self) -> None:
         project_config = {
             'pw_console': {

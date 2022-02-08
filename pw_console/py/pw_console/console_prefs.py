@@ -109,7 +109,8 @@ class ConsolePrefs:
             self.load_config(env_file_path)
 
     def _update_config(self, cfg: Dict[Any, Any]) -> None:
-        assert 'pw_console' in cfg
+        if cfg is None:
+            cfg = {}
         self._config.update(cfg.get('pw_console', {}))
 
     def reset_config(self) -> None:

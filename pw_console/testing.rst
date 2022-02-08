@@ -39,75 +39,85 @@ Log Pane: Basic Actions
      - |checkbox|
 
    * - 2
+     - In the main menu enable :guilabel:`[File] > Log Table View > Hide Date`
+     - The time column shows only the time. E.g. ``09:34:53``.
+     - |checkbox|
+
+   * - 3
+     - In the main menu turn off :guilabel:`[File] > Log Table View > Hide Date`
+     - The time column shows the date and time. E.g. ``20220208 09:34:53``.
+     - |checkbox|
+
+   * - 4
      - Click :guilabel:`Search` on the log toolbar
      - | The search bar appears
        | The cursor should appear after the ``/``
      - |checkbox|
 
-   * - 3
+   * - 5
      - Press :kbd:`Ctrl-c`
      - The search bar disappears
      - |checkbox|
 
-   * - 4
+   * - 6
      - Click :guilabel:`Follow` on the log toolbar
      - Logs stop following
      - |checkbox|
 
-   * - 5
+   * - 7
      - Click :guilabel:`Table` on the log toolbar
      - Table mode is disabled
      - |checkbox|
 
-   * - 6
+   * - 8
      - Click :guilabel:`Wrap` on the log toolbar
      - Line wrapping is enabled
      - |checkbox|
 
-   * - 7
+   * - 9
      - Click :guilabel:`Clear` on the log toolbar
      - | All log lines are erased
        | Follow mode is on
        | New lines start appearing
      - |checkbox|
 
-   * - 8
+   * - 10
      - | Mouse drag across a few log messages
      - | Entire logs are highlighted and a dialog
        | box appears in the upper right
      - |checkbox|
 
-   * - 9
+   * - 11
      - | Without scrolling mouse drag across a set
        | of different log messages.
      - | The old selection disappears leaving only the new selection.
      - |checkbox|
 
-   * - 10
+   * - 12
      - | Click the :guilabel:`Cancel` button
        | in the selection dialog box.
      - | The selection and the dialog box disappears.
      - |checkbox|
 
-   * - 11
+   * - 13
      - | Mouse drag across a few log messages and
        | click the :guilabel:`Save as File` button.
      - | The save as file dialog appears with the
        | :guilabel:`[x] Selected Lines Only` opion checked.
      - |checkbox|
 
-   * - 12
+   * - 14
      - | Press :kbd:`Cancel`
      - | The save dialog closes
      - |checkbox|
 
-   * - 13
+   * - 15
      - | Click the :guilabel:`Save` button on the log toolbar.
        | A dialog appears prompting for a file.
      - | The current working directory should be pre-filled.
      - |checkbox|
 
-   * - 14
+   * - 16
      - | Check :guilabel:`[x] Table Formatting`
        | Uncheck :guilabel:`[ ] Selected Lines Only`
        | Add ``/log.txt`` to the end and press :kbd:`Enter`

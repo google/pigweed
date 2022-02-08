@@ -45,9 +45,6 @@ class TableView:
         self.column_widths['time'] = self._default_time_width
         self.column_widths['level'] = 3
         self._year_month_day_width: int = 9
-        if self.prefs.hide_date_from_log_time:
-            self.column_widths['time'] = (self._default_time_width -
-                                          self._year_month_day_width)
 
         # Width of all columns except the final message
         self.column_width_prefix_total = 0
@@ -122,6 +119,12 @@ class TableView:
     def _update_table_header(self):
         default_style = 'bold'
         fragments: collections.deque = collections.deque()
+
+        # Update time column width to current prefs setting
+        self.column_widths['time'] = self._default_time_width
+        if self.prefs.hide_date_from_log_time:
+            self.column_widths['time'] = (self._default_time_width -
+                                          self._year_month_day_width)
 
         for name, width in self._ordered_column_widths():
             # These fields will be shown at the end

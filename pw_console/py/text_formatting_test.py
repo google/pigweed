@@ -234,6 +234,19 @@ class TestTextFormatting(unittest.TestCase):
                 ANSI(' elit.').__pt_formatted_text__(),
             ],
         ),
+        (
+            'empty lines',
+            # Each line should have at least one StyleAndTextTuple but without
+            # an ending line break.
+            [
+                ('', '\n'),
+                ('', '\n'),
+            ],
+            [
+                [('', '')],
+                [('', '')],
+            ],
+        )
     ]) # yapf: disable
     def test_split_lines(
         self,

@@ -37,10 +37,15 @@ def split_lines(
     lines: List[StyleAndTextTuples] = []
     this_line: StyleAndTextTuples = []
     for item in input_fragments:
-        this_line.append(item)
         if item[1].endswith('\n'):
-            lines.append(this_line[:-1])
+            # If there are no elements in this line except for a linebreak add
+            # an empty StyleAndTextTuple so this line isn't an empty list.
+            if len(this_line) == 0 and item[1] == '\n':
+                this_line.append((item[0], item[1][:-1]))
+            lines.append(this_line)
             this_line = []
+        else:
+            this_line.append(item)
     return lines
 
 
