@@ -19,6 +19,10 @@
 
 #include "pw_polyfill/language_feature_macros.h"
 
+#ifndef PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
+#define PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE 128
+#endif  // PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
+
 #ifndef PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
 #define PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE 16384
 #endif  // PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
@@ -26,6 +30,9 @@
 namespace pw {
 namespace unit_test {
 namespace config {
+
+PW_INLINE_VARIABLE constexpr size_t kEventBufferSize =
+    PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE;
 
 PW_INLINE_VARIABLE constexpr size_t kMemoryPoolSize =
     PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE;

@@ -58,8 +58,9 @@ from pw_console.console_prefs import ConsolePrefs
 from pw_console.help_window import HelpWindow
 import pw_console.key_bindings
 from pw_console.log_pane import LogPane
-from pw_console.python_logging import all_loggers
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
+from pw_console.python_logging import all_loggers
+from pw_console.quit_dialog import QuitDialog
 from pw_console.repl_pane import ReplPane
 import pw_console.style
 import pw_console.widgets.checkbox
@@ -200,9 +201,6 @@ class ConsoleApp:
                                           title=(self.app_title + ' Help'))
         self.app_help_window.generate_help_text()
 
-        # Used for tracking which pane was in focus before showing help window.
-        self.last_focused_pane = None
-
         # Create a ptpython repl instance.
         self.pw_ptpython_repl = PwPtPythonRepl(
             get_globals=lambda: global_vars,
@@ -229,6 +227,8 @@ class ConsoleApp:
 
         # Top of screen menu items
         self.menu_items = self._create_menu_items()
+
+        self.quit_dialog = QuitDialog(self)
 
         # Key bindings registry.
         self.key_bindings = pw_console.key_bindings.create_key_bindings(self)
@@ -269,6 +269,11 @@ class ConsoleApp:
                     bottom=2,
                     # Callable to get width
                     width=self.keybind_help_window.content_width,
+                ),
+                Float(
+                    content=self.quit_dialog,
+                    top=2,
+                    left=2,
                 ),
                 # Completion menu that can overlap other panes since it lives in
                 # the top level Float container.
@@ -339,9 +344,20 @@ class ConsoleApp:
         return self.jinja_env.get_template(file_name)
 
     def run_pane_menu_option(self, function_to_run):
-        function_to_run()
+        # Run the function for a particular menu item.
+        return_value = function_to_run()
+        # It's return value dictates if the main menu should close or not.
+        # - True: The main menu stays open. This is the default prompt_toolkit
+        #   menu behavior.
+        # - False: The main menu closes.
+
+        # Update menu content. This will refresh checkboxes and add/remove
+        # items.
         self.update_menu_items()
-        self.focus_main_menu()
+        # Check if the main menu should stay open.
+        if not return_value:
+            # Keep the main menu open
+            self.focus_main_menu()
 
     def open_new_log_pane_for_logger(
             self,
@@ -443,6 +459,28 @@ class ConsoleApp:
                         'Log Table View',
                         children=[
                             MenuItem(
+                                '{check} Hide Date'.format(
+                                    check=pw_console.widgets.checkbox.
+                                    to_checkbox_text(
+                                        self.prefs.hide_date_from_log_time,
+                                        end='')),
+                                handler=functools.partial(
+                                    self.run_pane_menu_option,
+                                    functools.partial(
+                                        self.toggle_pref_option,
+                                        'hide_date_from_log_time')),
+                            ),
+                            MenuItem(
+                                '{check} Show Source File'.format(
+                                    check=pw_console.widgets.checkbox.
+                                    to_checkbox_text(
+                                        self.prefs.show_source_file, end='')),
+                                handler=functools.partial(
+                                    self.run_pane_menu_option,
+                                    functools.partial(self.toggle_pref_option,
+                                                      'show_source_file')),
+                            ),
+                            MenuItem(
                                 '{check} Show Python File'.format(
                                     check=pw_console.widgets.checkbox.
                                     to_checkbox_text(
@@ -479,10 +517,6 @@ class ConsoleApp:
             MenuItem(
                 '[Edit]',
                 children=[
-                    MenuItem('Copy visible lines from active window',
-                             handler=functools.partial(
-                                 self.window_manager.run_action_on_active_pane,
-                                 'copy_text')),
                     MenuItem('Paste to Python Input',
                              handler=self.repl_pane.
                              paste_system_clipboard_to_input_buffer),
@@ -710,12 +744,15 @@ class ConsoleApp:
         return self.application.layout.current_window
 
     def modal_window_is_open(self):
+        """Return true if any modal window or dialog is open."""
         if self.app_help_text:
             return (self.app_help_window.show_window
                     or self.keybind_help_window.show_window
-                    or self.user_guide_window.show_window)
+                    or self.user_guide_window.show_window
+                    or self.quit_dialog.show_dialog)
         return (self.keybind_help_window.show_window
-                or self.user_guide_window.show_window)
+                or self.user_guide_window.show_window
+                or self.quit_dialog.show_dialog)
 
     def exit_console(self):
         """Quit the console prompt_toolkit application UI."""
@@ -759,7 +796,8 @@ class ConsoleApp:
         # Fake module column names.
         module_names = ['APP', 'RADIO', 'BAT', 'USB', 'CPU']
         while True:
-            await asyncio.sleep(1)
+            if message_count > 32 or message_count < 2:
+                await asyncio.sleep(1)
             bar_size = 10
             position = message_count % bar_size
             bar_content = " " * (bar_size - position - 1) + "="
@@ -768,21 +806,23 @@ class ConsoleApp:
             new_log_line = 'Log message [{}] # {}'.format(
                 bar_content, message_count)
             if message_count % 10 == 0:
-                new_log_line += (" Lorem ipsum dolor sit amet, consectetur "
-                                 "adipiscing elit.") * 8
-            # TODO(tonymd): Add this in when testing log lines with included
-            # linebreaks.
-            # if message_count % 11 == 0:
-            #     new_log_line += inspect.cleandoc(""" [PYTHON] START
-            #         In []: import time;
-            #                 def t(s):
-            #                     time.sleep(s)
-            #                     return 't({}) seconds done'.format(s)""")
+                new_log_line += (
+                    ' Lorem ipsum \033[34m\033[1mdolor sit amet\033[0m'
+                    ', consectetur '
+                    'adipiscing elit.') * 8
+            if message_count % 11 == 0:
+                new_log_line += ' '
+                new_log_line += (
+                    '[PYTHON] START\n'
+                    'In []: import time;\n'
+                    '        def t(s):\n'
+                    '            time.sleep(s)\n'
+                    '            return "t({}) seconds done".format(s)\n\n')
 
             module_name = module_names[message_count % len(module_names)]
-            _FAKE_DEVICE_LOG.info(
-                new_log_line,
-                extra=dict(extra_metadata_fields=dict(module=module_name)))
+            _FAKE_DEVICE_LOG.info(new_log_line,
+                                  extra=dict(extra_metadata_fields=dict(
+                                      module=module_name, file='fake_app.cc')))
             message_count += 1
 
 

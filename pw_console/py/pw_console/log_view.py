@@ -19,17 +19,14 @@ import collections
 import copy
 import itertools
 import logging
+import operator
+from pathlib import Path
 import re
 import time
-from typing import List, Optional, TYPE_CHECKING
+from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.formatted_text import (
-    to_formatted_text,
-    fragment_list_to_text,
-    fragment_list_width,
-    StyleAndTextTuples,
-)
+from prompt_toolkit.formatted_text import StyleAndTextTuples
 
 from pw_console.log_filter import (
     DEFAULT_SEARCH_MATCHER,
@@ -38,8 +35,9 @@ from pw_console.log_filter import (
     SearchMatcher,
     preprocess_search_regex,
 )
+from pw_console.log_screen import ScreenLine, LogScreen
 from pw_console.log_store import LogStore
-import pw_console.text_formatting
+from pw_console.text_formatting import remove_formatting
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
@@ -66,12 +64,21 @@ class LogView:
             prefs=application.prefs)
         self.log_store.register_viewer(self)
 
+        self.marked_logs: Dict[int, int] = {}
         # Search variables
         self.search_text: Optional[str] = None
         self.search_filter: Optional[LogFilter] = None
         self.search_highlight: bool = False
         self.search_matcher = DEFAULT_SEARCH_MATCHER
         self.search_validator = RegexValidator()
+
+        self.log_screen = LogScreen(
+            get_log_source=self._get_log_lines,
+            get_line_wrapping=self.wrap_lines_enabled,
+            get_log_formatter=self._get_table_formatter,
+            get_search_filter=lambda: self.search_filter,
+            get_search_highlight=lambda: self.search_highlight,
+        )
 
         # Filter
         self.filtering_on: bool = False
@@ -81,8 +88,9 @@ class LogView:
         self.filter_existing_logs_task = None
 
         # Current log line index state variables:
-        self._line_index = 0
-        self._filtered_line_index = 0
+        self._last_log_index = -1
+        self._log_index = 0
+        self._filtered_log_index = 0
         self._last_start_index = 0
         self._last_end_index = 0
         self._current_start_index = 0
@@ -92,38 +100,53 @@ class LogView:
         # LogPane prompt_toolkit container render size.
         self._window_height = 20
         self._window_width = 80
+        self._reset_log_screen_on_next_render: bool = True
+        self._user_scroll_event: bool = False
 
         # Max frequency in seconds of prompt_toolkit UI redraws triggered by new
         # log lines.
-        self._ui_update_frequency = 0.1
+        self._ui_update_frequency = 0.05
         self._last_ui_update_time = time.time()
         self._last_log_store_index = 0
+        self._new_logs_since_last_render = True
 
         # Should new log lines be tailed?
         self.follow: bool = True
 
-        # Cache of formatted text tuples used in the last UI render.  Used after
-        # rendering by `get_cursor_position()`.
-        self._line_fragment_cache: collections.deque = collections.deque()
-        self._line_fragment_cache_flattened: Optional[
-            StyleAndTextTuples] = None
+        self.visual_select_mode: bool = False
+
+        # Cache of formatted text tuples used in the last UI render.
+        self._line_fragment_cache: List[StyleAndTextTuples] = []
+
+    def view_mode_changed(self) -> None:
+        self._reset_log_screen_on_next_render = True
 
     @property
-    def line_index(self):
+    def log_index(self):
         if self.filtering_on:
-            return self._filtered_line_index
-        return self._line_index
+            return self._filtered_log_index
+        return self._log_index
 
-    @line_index.setter
-    def line_index(self, line_index):
+    @log_index.setter
+    def log_index(self, new_log_index):
+        # Save the old log_index
+        self._last_log_index = self.log_index
         if self.filtering_on:
-            self._filtered_line_index = line_index
+            self._filtered_log_index = new_log_index
         else:
-            self._line_index = line_index
+            self._log_index = new_log_index
+
+    def _reset_log_index_changed(self) -> None:
+        self._last_log_index = self.log_index
+
+    def log_index_changed_since_last_render(self) -> bool:
+        return self._last_log_index != self.log_index
 
     def _set_match_position(self, position: int):
         self.follow = False
-        self.line_index = position
+        self.log_index = position
+        self.log_screen.reset_logs(log_index=self.log_index)
+        self._user_scroll_event = True
         self.log_pane.application.redraw_ui()
 
     def select_next_search_matcher(self):
@@ -139,14 +162,14 @@ class LogView:
 
         log_beginning_index = self.hidden_line_count()
 
-        starting_index = self.line_index + 1
-        if starting_index > self.get_last_log_line_index():
+        starting_index = self.log_index + 1
+        if starting_index > self.get_last_log_index():
             starting_index = log_beginning_index
 
-        logs = self._get_log_lines()
+        _, logs = self._get_log_lines()
 
         # From current position +1 and down
-        for i in range(starting_index, self.get_last_log_line_index() + 1):
+        for i in range(starting_index, self.get_last_log_index() + 1):
             if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
@@ -164,11 +187,11 @@ class LogView:
 
         log_beginning_index = self.hidden_line_count()
 
-        starting_index = self.line_index - 1
+        starting_index = self.log_index - 1
         if starting_index < 0:
-            starting_index = self.get_last_log_line_index()
+            starting_index = self.get_last_log_index()
 
-        logs = self._get_log_lines()
+        _, logs = self._get_log_lines()
 
         # From current position - 1 and up
         for i in range(starting_index, log_beginning_index - 1, -1):
@@ -177,7 +200,7 @@ class LogView:
                 return
 
         # From the end to the original start
-        for i in range(self.get_last_log_line_index(), starting_index, -1):
+        for i in range(self.get_last_log_index(), starting_index, -1):
             if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
@@ -269,23 +292,34 @@ class LogView:
         self.install_new_filter()
         self._restart_filtering()
 
+    def clear_search_highlighting(self):
+        self.search_highlight = False
+        self._reset_log_screen_on_next_render = True
+
     def clear_search(self):
         self.search_text = None
         self.search_filter = None
         self.search_highlight = False
+        self._reset_log_screen_on_next_render = True
 
-    def _get_log_lines(self):
+    def _get_log_lines(self) -> Tuple[int, collections.deque[LogLine]]:
         logs = self.log_store.logs
         if self.filtering_on:
             logs = self.filtered_logs
-        return logs
+        return self._scrollback_start_index, logs
 
     def _get_visible_log_lines(self):
-        logs = self._get_log_lines()
+        _, logs = self._get_log_lines()
         if self._scrollback_start_index > 0:
             return collections.deque(
                 itertools.islice(logs, self.hidden_line_count(), len(logs)))
         return logs
+
+    def _get_table_formatter(self) -> Optional[Callable]:
+        table_formatter = None
+        if self.log_pane.table_view:
+            table_formatter = self.log_store.table.formatted_row
+        return table_formatter
 
     def delete_filter(self, filter_text):
         if filter_text not in self.filters:
@@ -316,7 +350,7 @@ class LogView:
 
     async def filter_past_logs(self):
         """Filter past log lines."""
-        starting_index = self.log_store.get_last_log_line_index()
+        starting_index = self.log_store.get_last_log_index()
         ending_index = -1
 
         # From the end of the log store to the beginning.
@@ -334,16 +368,22 @@ class LogView:
         """Set the parent LogPane instance."""
         self.log_pane = log_pane
 
-    def get_current_line(self):
+    def _update_log_index(self) -> ScreenLine:
+        line_at_cursor = self.log_screen.get_line_at_cursor_position()
+        if line_at_cursor.log_index is not None:
+            self.log_index = line_at_cursor.log_index
+        return line_at_cursor
+
+    def get_current_line(self) -> int:
         """Return the currently selected log event index."""
-        return self.line_index
+        return self.log_index
 
     def get_total_count(self):
         """Total size of the logs store."""
         return (len(self.filtered_logs)
                 if self.filtering_on else self.log_store.get_total_count())
 
-    def get_last_log_line_index(self):
+    def get_last_log_index(self):
         total = self.get_total_count()
         return 0 if total < 0 else total - 1
 
@@ -352,7 +392,8 @@ class LogView:
         # Enable follow and scroll to the bottom, then clear.
         if not self.follow:
             self.toggle_follow()
-        self._scrollback_start_index = self.line_index
+        self._scrollback_start_index = self.log_index
+        self._reset_log_screen_on_next_render = True
 
     def hidden_line_count(self):
         """Return the number of hidden lines."""
@@ -375,13 +416,6 @@ class LogView:
         self.follow = not self.follow
         if self.follow:
             self.scroll_to_bottom()
-
-    def get_line_wrap_prefix_width(self):
-        if self.wrap_lines_enabled():
-            if self.log_pane.table_view:
-                return self.log_store.table.column_width_prefix_total
-            return self.log_store.longest_channel_prefix_width
-        return 0
 
     def filter_scan(self, log: 'LogLine'):
         filter_match_count = 0
@@ -406,6 +440,7 @@ class LogView:
                     self.filtered_logs.append(self.log_store.logs[i])
 
         self._last_log_store_index = latest_total
+        self._new_logs_since_last_render = True
 
         if self.follow:
             self.scroll_to_bottom()
@@ -426,43 +461,50 @@ class LogView:
 
     def get_cursor_position(self) -> Point:
         """Return the position of the cursor."""
-        # This implementation is based on get_cursor_position from
-        # prompt_toolkit's FormattedTextControl class.
-
-        fragment = "[SetCursorPosition]"
-        # If no lines were rendered.
-        if not self._line_fragment_cache:
-            return Point(0, 0)
-        # For each line rendered in the last pass:
-        for row, line in enumerate(self._line_fragment_cache):
-            # TODO(tonymd): This assumes every row contains exactly one '\n'
-            column = 0
-            # For each style string and raw text tuple in this line:
-            for style_str, text, *_ in line:
-                # If [SetCursorPosition] is in the style set the cursor position
-                # to this row and column.
-                if fragment in style_str:
-                    return Point(x=column +
-                                 self.log_pane.get_horizontal_scroll_amount(),
-                                 y=row)
-                column += len(text)
-        return Point(0, 0)
+        return Point(0, self.log_screen.cursor_position)
 
     def scroll_to_top(self):
         """Move selected index to the beginning."""
         # Stop following so cursor doesn't jump back down to the bottom.
         self.follow = False
+        # First possible log index that should be displayed
         log_beginning_index = self.hidden_line_count()
-        self.line_index = log_beginning_index
+        self.log_index = log_beginning_index
+        self.log_screen.reset_logs(log_index=self.log_index)
+        self.log_screen.shift_selected_log_to_top()
+        self._user_scroll_event = True
+
+    def move_selected_line_to_top(self):
+        self.follow = False
+
+        # Update selected line
+        self._update_log_index()
+
+        self.log_screen.reset_logs(log_index=self.log_index)
+        self.log_screen.shift_selected_log_to_top()
+        self._user_scroll_event = True
+
+    def center_log_line(self):
+        self.follow = False
+
+        # Update selected line
+        self._update_log_index()
+
+        self.log_screen.reset_logs(log_index=self.log_index)
+        self.log_screen.shift_selected_log_to_center()
+        self._user_scroll_event = True
 
     def scroll_to_bottom(self):
         """Move selected index to the end."""
         # Don't change following state like scroll_to_top.
-        self.line_index = max(0, self.get_last_log_line_index())
+        self.log_index = max(0, self.get_last_log_index())
+        self.log_screen.reset_logs(log_index=self.log_index)
+
         # Sticky follow mode
         self.follow = True
+        self._user_scroll_event = True
 
-    def scroll(self, lines):
+    def scroll(self, lines) -> None:
         """Scroll up or down by plus or minus lines.
 
         This method is only called by user keybindings.
@@ -470,32 +512,107 @@ class LogView:
         # If the user starts scrolling, stop auto following.
         self.follow = False
 
-        last_index = self.get_last_log_line_index()
+        self.log_screen.scroll_subline(lines)
+        self._user_scroll_event = True
 
-        log_beginning_index = self.hidden_line_count()
+        # Update the current log
+        current_line = self._update_log_index()
 
-        # If scrolling to an index below zero, set to zero.
-        new_line_index = max(log_beginning_index, self.line_index + lines)
-        # If past the end, set to the last index of self.logs.
-        if new_line_index >= self.get_total_count():
-            new_line_index = last_index
-        # Set the new selected line index.
-        self.line_index = new_line_index
-        # Sticky follow mode
-        if self.line_index == last_index:
-            self.follow = True
+        # Don't check for sticky follow mode if selecting lines.
+        if self.visual_select_mode:
+            return
+        # Is the last log line selected?
+        if self.log_index == self.get_last_log_index():
+            # Is the last line of the current log selected?
+            if current_line.subline + 1 == current_line.height:
+                # Sticky follow mode
+                self.follow = True
+
+    def visual_selected_log_count(self) -> int:
+        return len(self.marked_logs)
+
+    def clear_visual_selection(self) -> None:
+        self.marked_logs = {}
+        self.visual_select_mode = False
+        self._user_scroll_event = True
+        self.log_pane.application.redraw_ui()
+
+    def visual_select_all(self) -> None:
+        for i in range(self._scrollback_start_index, self.get_total_count()):
+            self.marked_logs[i] = 1
+        self.visual_select_mode = True
+        self._user_scroll_event = True
+        self.log_pane.application.redraw_ui()
+
+    def visual_select_up(self) -> None:
+        # Select the current line
+        self.visual_select_line(self.get_cursor_position(), autoscroll=False)
+        # Move the cursor by 1
+        self.scroll_up(1)
+        # Select the new line
+        self.visual_select_line(self.get_cursor_position(), autoscroll=False)
+
+    def visual_select_down(self) -> None:
+        # Select the current line
+        self.visual_select_line(self.get_cursor_position(), autoscroll=False)
+        # Move the cursor by 1
+        self.scroll_down(1)
+        # Select the new line
+        self.visual_select_line(self.get_cursor_position(), autoscroll=False)
+
+    def visual_select_line(self,
+                           mouse_position: Point,
+                           deselect: bool = False,
+                           autoscroll: bool = True) -> None:
+        """Mark the log under mouse_position as visually selected."""
+        # Check mouse_position is valid
+        if not 0 <= mouse_position.y < len(self.log_screen.line_buffer):
+            return
+        # Update mode flags
+        self.visual_select_mode = True
+        self.follow = False
+        # Get the ScreenLine for the cursor position
+        screen_line = self.log_screen.line_buffer[mouse_position.y]
+        if screen_line.log_index is None:
+            return
+
+        # If deselecting
+        if deselect:
+            self.marked_logs[screen_line.log_index] = 0
+            if screen_line.log_index in self.marked_logs:
+                del self.marked_logs[screen_line.log_index]
+        # Selecting
+        else:
+            self.marked_logs[screen_line.log_index] = self.marked_logs.get(
+                screen_line.log_index, 0) + 1
+
+        # Update cursor position
+        self.log_screen.move_cursor_to_position(mouse_position.y)
+
+        # Autoscroll when mouse dragging on the top or bottom of the window.
+        if autoscroll:
+            if mouse_position.y == 0:
+                self.scroll_up(1)
+            elif mouse_position.y == self._window_height - 1:
+                self.scroll_down(1)
+
+        # If no selection left, turn off visual_select_mode flag.
+        if len(self.marked_logs) == 0:
+            self.visual_select_mode = False
+
+        # Trigger a rerender.
+        self._user_scroll_event = True
+        self.log_pane.application.redraw_ui()
 
     def scroll_to_position(self, mouse_position: Point):
         """Set the selected log line to the mouse_position."""
-        # If auto following don't move the cursor arbitrarily. That would stop
-        # following and position the cursor incorrectly.
-        if self.follow:
-            return
+        # Disable follow mode when the user clicks or mouse drags on a log line.
+        self.follow = False
 
-        cursor_position = self.get_cursor_position()
-        if cursor_position:
-            scroll_amount = cursor_position.y - mouse_position.y
-            self.scroll(-1 * scroll_amount)
+        self.log_screen.move_cursor_to_position(mouse_position.y)
+        self._update_log_index()
+
+        self._user_scroll_event = True
 
     def scroll_up_one_page(self):
         """Move the selected log index up by one window height."""
@@ -519,162 +636,124 @@ class LogView:
         """Move the selected log index up by one or more lines."""
         self.scroll(-1 * lines)
 
-    def get_log_window_indices(self,
-                               available_width=None,
-                               available_height=None):
-        """Get start and end index."""
-        self._last_start_index = self._current_start_index
-        self._last_end_index = self._current_end_index
-
-        log_beginning_index = self.hidden_line_count()
-        starting_index = log_beginning_index
-        ending_index = self.line_index
-
-        self._window_width = self.log_pane.current_log_pane_width
-        self._window_height = self.log_pane.current_log_pane_height
-        if available_width:
-            self._window_width = available_width
-        if available_height:
-            self._window_height = available_height
-
-        # If render info is available we use the last window height.
-        if self._window_height > 0:
-            # Window lines are zero indexed so subtract 1 from the height.
-            max_window_row_index = self._window_height - 1
-
-            starting_index = max(log_beginning_index,
-                                 self.line_index - max_window_row_index)
-            # Use the current_window_height if line_index is less
-            ending_index = max(self.line_index, max_window_row_index)
-
-            # If log scrollback is cleared we may end up with only 1 visible log
-            # line. Compare the total line_count with the available window
-            # height.
-            line_count = ending_index + 1 - starting_index
-            if self._window_height > line_count:
-                ending_index += self._window_height - line_count
-
-        if ending_index > self.get_last_log_line_index():
-            ending_index = self.get_last_log_line_index()
-
-        # Save start and end index.
-        self._current_start_index = starting_index
-        self._current_end_index = ending_index
-
-        return starting_index, ending_index
+    def log_start_end_indexes_changed(self) -> bool:
+        return (self._last_start_index != self._current_start_index
+                or self._last_end_index != self._current_end_index)
 
     def render_table_header(self):
         """Get pre-formatted table header."""
         return self.log_store.render_table_header()
 
-    def render_content(self) -> List:
-        """Return log lines as a list of FormattedText tuples.
+    def render_content(self) -> list:
+        """Return logs to display on screen as a list of FormattedText tuples.
 
-        This function handles selecting the lines that should be displayed for
-        the current log line position and the given window size. It also sets
-        the cursor position depending on which line is selected.
+        This function determines when the log screen requires re-rendeing based
+        on user scroll events, follow mode being on, or log pane being
+        empty. The FormattedText tuples passed to prompt_toolkit are cached if
+        no updates are required.
         """
+        screen_update_needed = False
 
-        logs = self._get_log_lines()
+        # Check window size
+        if self.log_pane.pane_resized():
+            self._window_width = self.log_pane.current_log_pane_width
+            self._window_height = self.log_pane.current_log_pane_height
+            self.log_screen.resize(self._window_width, self._window_height)
+            self._reset_log_screen_on_next_render = True
 
-        # Reset _line_fragment_cache ( used in self.get_cursor_position )
-        self._line_fragment_cache.clear()
+        if self._reset_log_screen_on_next_render or self.log_screen.empty():
+            # Clear the reset flag.
+            self._reset_log_screen_on_next_render = False
+            self.log_screen.reset_logs(log_index=self.log_index)
+            screen_update_needed = True
 
-        # Track used lines.
-        total_used_lines = 0
+        elif self.follow and self._new_logs_since_last_render:
+            # Follow mode is on so add new logs to the screen
+            self._new_logs_since_last_render = False
 
-        # If we have no logs add one with at least a single space character for
-        # the cursor to land on. Otherwise the cursor will be left on the line
-        # above the log pane container.
-        if self.get_total_count() < 1:
-            return [(
-                '[SetCursorPosition]', '\n' * self._window_height
-                # LogContentControl.mouse_handler will handle focusing the log
-                # pane on click.
-            )]
+            current_log_index = self.log_index
+            last_rendered_log_index = self.log_screen.last_appended_log_index
+            # If so many logs have arrived than can fit on the screen, redraw
+            # the whole screen from the new position.
+            if (current_log_index -
+                    last_rendered_log_index) > self.log_screen.height:
+                self.log_screen.reset_logs(log_index=self.log_index)
+            # A small amount of logs have arrived, append them one at a time
+            # without redrawing the whole screen.
+            else:
+                for i in range(last_rendered_log_index + 1,
+                               current_log_index + 1):
+                    self.log_screen.append_log(i)
 
-        # Get indices of stored logs that will fit on screen.
-        starting_index, ending_index = self.get_log_window_indices()
+            screen_update_needed = True
 
-        # NOTE: Since range() is not inclusive use ending_index + 1.
-        #
-        # Build up log lines from the bottom of the window working up.
-        #
-        # From the ending_index to the starting index in reverse:
-        for i in range(ending_index, starting_index - 1, -1):
-            # Stop if we have used more lines than available.
-            if total_used_lines > self._window_height:
-                break
+        if self.follow:
+            # Select the last line for follow mode.
+            self.log_screen.move_cursor_to_bottom()
+            screen_update_needed = True
 
-            # Grab the rendered log line using the table or standard view.
-            line_fragments: StyleAndTextTuples = (
-                self.log_store.table.formatted_row(logs[i])
-                if self.log_pane.table_view else logs[i].get_fragments())
+        if self._user_scroll_event:
+            self._user_scroll_event = False
+            screen_update_needed = True
 
-            # Get the width, height and remaining width.
-            fragment_width = fragment_list_width(line_fragments)
-            line_height = 1
-            remaining_width = 0
-            # Get the line height respecting line wrapping.
-            if self.wrap_lines_enabled() and (fragment_width >
-                                              self._window_width):
-                line_height, remaining_width = (
-                    pw_console.text_formatting.get_line_height(
-                        fragment_width, self._window_width,
-                        self.get_line_wrap_prefix_width()))
+        if screen_update_needed:
+            self._line_fragment_cache = self.log_screen.get_lines(
+                marked_logs=self.marked_logs)
+        return self._line_fragment_cache
 
-            # Keep track of how many lines are used.
-            used_lines = line_height
+    def _logs_to_text(
+        self,
+        use_table_formatting: bool = True,
+        selected_lines_only: bool = False,
+    ) -> str:
+        """Convert all or selected log messages to plaintext."""
+        def get_table_string(log: LogLine) -> str:
+            return remove_formatting(self.log_store.table.formatted_row(log))
 
-            # Count the number of line breaks are included in the log line.
-            line_breaks = logs[i].ansi_stripped_log.count('\n')
-            used_lines += line_breaks
+        formatter: Callable[[LogLine],
+                            str] = operator.attrgetter('ansi_stripped_log')
+        if use_table_formatting:
+            formatter = get_table_string
 
-            # If this is the selected line apply a style class for highlighting.
-            selected = i == self.line_index
-            if selected:
-                line_fragments = (
-                    pw_console.text_formatting.fill_character_width(
-                        line_fragments,
-                        fragment_width,
-                        self._window_width,
-                        remaining_width,
-                        self.wrap_lines_enabled(),
-                        horizontal_scroll_amount=(
-                            self.log_pane.get_horizontal_scroll_amount()),
-                        add_cursor=True))
+        _start_log_index, log_source = self._get_log_lines()
 
-                # Apply the selected-log-line background color
-                line_fragments = to_formatted_text(
-                    line_fragments, style='class:selected-log-line')
+        log_indexes = (i for i in range(self._scrollback_start_index,
+                                        self.get_total_count()))
+        if selected_lines_only:
+            log_indexes = (i for i in sorted(self.marked_logs.keys()))
 
-            # Apply search term highlighting.
-            if self.search_filter and self.search_highlight and (
-                    self.search_filter.matches(logs[i])):
-                line_fragments = self.search_filter.highlight_search_matches(
-                    line_fragments, selected)
+        text_output = ''
+        for i in log_indexes:
+            log_text = formatter(log_source[i])
+            text_output += log_text
+            if not log_text.endswith('\n'):
+                text_output += '\n'
 
-            # Save this line to the beginning of the cache.
-            self._line_fragment_cache.appendleft(line_fragments)
-            total_used_lines += used_lines
+        return text_output
 
-        # Pad empty lines above current lines if the window isn't filled. This
-        # will push the table header to the top.
-        if total_used_lines < self._window_height:
-            empty_line_count = self._window_height - total_used_lines
-            for i in range(empty_line_count):
-                self._line_fragment_cache.appendleft([('', '\n')])
+    def export_logs(
+        self,
+        use_table_formatting: bool = True,
+        selected_lines_only: bool = False,
+        file_name: Optional[str] = None,
+        to_clipboard: bool = False,
+        add_markdown_fence: bool = False,
+    ) -> bool:
+        """Export log lines to file or clipboard."""
+        text_output = self._logs_to_text(use_table_formatting,
+                                         selected_lines_only)
 
-        self._line_fragment_cache_flattened = (
-            pw_console.text_formatting.flatten_formatted_text_tuples(
-                self._line_fragment_cache))
+        if file_name:
+            target_path = Path(file_name).expanduser()
+            with target_path.open('w') as output_file:
+                output_file.write(text_output)
+            _LOG.debug('Saved to file: %s', file_name)
 
-        return self._line_fragment_cache_flattened
+        elif to_clipboard:
+            if add_markdown_fence:
+                text_output = '```\n' + text_output + '```\n'
+            self.log_pane.application.application.clipboard.set_text(
+                text_output)
+            _LOG.debug('Copied logs to clipboard.')
 
-    def copy_visible_lines(self):
-        """Copy the currently visible log lines to the system clipboard."""
-        if self._line_fragment_cache_flattened is None:
-            return
-        text = fragment_list_to_text(self._line_fragment_cache_flattened)
-        text = text.strip()
-        self.log_pane.application.application.clipboard.set_text(text)
+        return True

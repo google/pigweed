@@ -48,13 +48,6 @@ def create_key_bindings(console_app):
     # F2 is ptpython settings
     # F3 is ptpython history
 
-    @bindings.add('c-q')
-    def exit_(event):
-        """Quit the console application."""
-        # TODO(tonymd): Cancel any existing user repl or plugin tasks before
-        # exiting.
-        event.app.exit()
-
     @bindings.add('c-left')
     def app_focus_previous(event):
         """Move focus to the previous widget."""
@@ -74,17 +67,20 @@ def create_key_bindings(console_app):
         """Reset the python repl on Ctrl-c"""
         console_app.repl_pane.ctrl_c()
 
-    @bindings.add('c-d',
-                  filter=console_app.pw_ptpython_repl.
-                  has_focus_and_input_empty_condition())
-    def handle_ctrl_d_hidden(event):
-        """Do nothing on ctrl-d."""
-        # TODO(tonymd): Ctrl-d should quit the whole app with confirmation.
-        # Ctrl-d in ptpython repl prompts y/n to quit if the input is empty. If
-        # not empty, it deletes forward characters. This binding should block
-        # ctrl-d if the input is empty. The quit confirmation dialog breaks the
-        # ptpython state and further repl invocations.
-        pass
+    @bindings.add('c-x', 'c-c')
+    def quit_no_confirm(event):
+        """Quit without confirmation."""
+        event.app.exit()
+
+    @bindings.add(
+        'c-d',
+        filter=console_app.pw_ptpython_repl.input_empty_if_in_focus_condition(
+        ) | has_focus(console_app.quit_dialog))
+    def quit(event):
+        """Quit with confirmation dialog."""
+        # If the python repl is in focus and has text input then Ctrl-d will
+        # delete forward characters instead.
+        console_app.quit_dialog.open_dialog()
 
     @bindings.add('c-v', filter=has_focus(console_app.pw_ptpython_repl))
     def paste_into_repl(event):

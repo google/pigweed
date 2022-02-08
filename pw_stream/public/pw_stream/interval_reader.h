@@ -58,8 +58,13 @@ class IntervalReader : public SeekableReader {
 
   // Reset the read offset to the start of the interval
   IntervalReader& Reset() {
-    Check();
     current_ = start_;
+    return *this;
+  }
+
+  // Move the read offset to the end of the intetrval;
+  IntervalReader& Exhaust() {
+    current_ = end_;
     return *this;
   }
 
@@ -82,7 +87,6 @@ class IntervalReader : public SeekableReader {
   StatusWithSize DoRead(ByteSpan destination) final;
   Status DoSeek(ptrdiff_t offset, Whence origin) final;
   size_t DoTell() const final { return current_ - start_; }
-  void Check();
   size_t ConservativeLimit(LimitType limit) const override {
     if (limit == LimitType::kRead) {
       return end_ - current_;

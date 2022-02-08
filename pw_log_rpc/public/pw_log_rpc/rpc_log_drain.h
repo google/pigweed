@@ -16,9 +16,12 @@
 
 #include <array>
 #include <cstdint>
+#include <limits>
+#include <optional>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
+#include "pw_chrono/system_clock.h"
 #include "pw_log/proto/log.pwpb.h"
 #include "pw_log_rpc/log_filter.h"
 #include "pw_multisink/multisink.h"
@@ -57,41 +60,38 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // must account for the max message size to avoid log entry drops. The dropped
   // field is not accounted since a dropped message has all other fields unset.
   static constexpr size_t kMinEntrySizeWithoutPayload =
-      // message
-      protobuf::SizeOfFieldKey(1) +
-      1  // Assume minimum varint length, skip the payload bytes.
-      // line_level
-      + protobuf::SizeOfFieldKey(2) +
-      protobuf::kMaxSizeBytesUint32
-      // flags
-      + protobuf::SizeOfFieldKey(3) +
-      protobuf::kMaxSizeBytesUint32
-      // timestamp or time_since_last_entry
-      + protobuf::SizeOfFieldKey(4) +
-      protobuf::kMaxSizeBytesInt64
-      // Module
-      + protobuf::SizeOfFieldKey(7) +
-      1;  // Assume minimum varint length, skip the module bytes.
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MESSAGE, 0) +
+      protobuf::SizeOfFieldUint32(log::LogEntry::Fields::LINE_LEVEL) +
+      protobuf::SizeOfFieldUint32(log::LogEntry::Fields::FLAGS) +
+      protobuf::SizeOfFieldInt64(log::LogEntry::Fields::TIMESTAMP) +
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MODULE, 0);
+
   // The smallest buffer size must be able to fit a typical token size: 4 bytes.
   static constexpr size_t kMinEntryBufferSize = kMinEntrySizeWithoutPayload + 4;
 
-  // When encoding LogEntry in LogEntries, there are kLogEntryEncodeFrameSize
+  // When encoding LogEntry in LogEntries, there are kLogEntriesEncodeFrameSize
   // bytes added to the encoded LogEntry. This constant and kMinEntryBufferSize
   // can be used to calculate the minimum RPC ChannelOutput buffer size.
-  static constexpr size_t kLogEntryEncodeFrameSize =
-      protobuf::SizeOfFieldKey(1)  // LogEntry
-      + protobuf::kMaxSizeOfLength;
+  static constexpr size_t kLogEntriesEncodeFrameSize =
+      protobuf::FieldNumberSizeBytes(log::LogEntries::Fields::ENTRIES) +
+      protobuf::kMaxSizeOfLength +
+      protobuf::SizeOfFieldUint32(
+          log::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID);
 
   // Creates a closed log stream with a writer that can be set at a later time.
   // The provided buffer must be large enough to hold the largest transmittable
   // log::LogEntry or a drop count message at the very least. The user can
   // choose to provide a unique mutex for the drain, or share it to save RAM as
   // long as they are aware of contengency issues.
-  RpcLogDrain(const uint32_t channel_id,
-              ByteSpan log_entry_buffer,
-              sync::Mutex& mutex,
-              LogDrainErrorHandling error_handling,
-              Filter* filter = nullptr)
+  RpcLogDrain(
+      const uint32_t channel_id,
+      ByteSpan log_entry_buffer,
+      sync::Mutex& mutex,
+      LogDrainErrorHandling error_handling,
+      Filter* filter = nullptr,
+      size_t max_bundles_per_trickle = std::numeric_limits<size_t>::max(),
+      pw::chrono::SystemClock::duration trickle_delay =
+          chrono::SystemClock::duration::zero())
       : channel_id_(channel_id),
         error_handling_(error_handling),
         server_writer_(),
@@ -99,7 +99,10 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
         committed_entry_drop_count_(0),
         mutex_(mutex),
         filter_(filter),
-        sequence_id_(0) {
+        sequence_id_(0),
+        max_bundles_per_trickle_(max_bundles_per_trickle),
+        trickle_delay_(trickle_delay),
+        no_writes_until_(chrono::SystemClock::now()) {
     PW_ASSERT(log_entry_buffer.size_bytes() >= kMinEntryBufferSize);
   }
 
@@ -128,7 +131,15 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // OK - all entries were consumed.
   // ABORTED - there was an error writing the packet, and error_handling equals
   // `kCloseStreamOnWriterError`.
-  Status Flush() PW_LOCKS_EXCLUDED(mutex_);
+  Status Flush(ByteSpan encoding_buffer) PW_LOCKS_EXCLUDED(mutex_);
+
+  // Writes entries as dictated by this drain's rate limiting configuration.
+  //
+  // Returns:
+  //   A minimum wait duration before Trickle() will be ready to write more logs
+  // If no duration is returned, this drain is caught up.
+  std::optional<pw::chrono::SystemClock::duration> Trickle(
+      ByteSpan encoding_buffer) PW_LOCKS_EXCLUDED(mutex_);
 
   // Ends RPC log stream without flushing.
   //
@@ -140,11 +151,25 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
 
   uint32_t channel_id() const { return channel_id_; }
 
+  size_t max_bundles_per_trickle() const { return max_bundles_per_trickle_; }
+  void set_max_bundles_per_trickle(size_t max_num_entries) {
+    max_bundles_per_trickle_ = max_num_entries;
+  }
+
+  chrono::SystemClock::duration trickle_delay() const { return trickle_delay_; }
+  void set_trickle_delay(chrono::SystemClock::duration trickle_delay) {
+    trickle_delay_ = trickle_delay;
+  }
+
  private:
   enum class LogDrainState {
     kCaughtUp,
     kMoreEntriesRemaining,
   };
+
+  LogDrainState SendLogs(size_t max_num_bundles,
+                         ByteSpan encoding_buffer,
+                         Status& encoding_status) PW_LOCKS_EXCLUDED(mutex_);
 
   // Fills the outgoing buffer with as many entries as possible.
   LogDrainState EncodeOutgoingPacket(log::LogEntries::MemoryEncoder& encoder,
@@ -158,8 +183,10 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   uint32_t committed_entry_drop_count_ PW_GUARDED_BY(mutex_);
   sync::Mutex& mutex_;
   Filter* filter_;
-
   uint32_t sequence_id_;
+  size_t max_bundles_per_trickle_;
+  pw::chrono::SystemClock::duration trickle_delay_;
+  pw::chrono::SystemClock::time_point no_writes_until_;
 };
 
 }  // namespace pw::log_rpc

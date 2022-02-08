@@ -50,12 +50,17 @@ pw_cc_library(
         "public/pw_containers/vector.h",
     ],
     includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_polyfill",
+    ],
 )
 
 pw_cc_library(
     name = "filtered_view",
     hdrs = ["public/pw_containers/filtered_view.h"],
     includes = ["public"],
+    deps = ["//pw_assert"],
 )
 
 pw_cc_library(

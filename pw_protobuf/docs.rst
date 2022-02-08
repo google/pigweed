@@ -504,8 +504,15 @@ different fields in a proto message:
 
   // Parse repeated field `repeated string rep_str = 5;`
   RepeatedStrings rep_str = message.AsRepeatedString(5);
-  // Iterate through the entries. For iteration
+  // Iterate through the entries. If proto is malformed when
+  // iterating, the next element (`str` in this case) will be invalid
+  // and loop will end in the iteration after.
   for (String element : rep_str) {
+    // Check status
+    if (!str.ok()) {
+      // In the case of error, loop will end in the next iteration if
+      // continues. This is the chance for code to catch the error.
+    }
     // Process str
   }
 
@@ -513,6 +520,11 @@ different fields in a proto message:
   RepeatedStrings rep_str = message.AsRepeatedString(6);
   // Iterate through the entries. For iteration
   for (Message element : rep_rep_nestedstr) {
+    // Check status
+    if (!element.ok()) {
+      // In the case of error, loop will end in the next iteration if
+      // continues. This is the chance for code to catch the error.
+    }
     // Process element
   }
 
@@ -522,6 +534,11 @@ different fields in a proto message:
   Bytes bytes_for_key = str_to_bytes["key"];
   // Or iterate through map entries
   for (StringToBytesMapEntry entry : str_to_bytes) {
+    // Check status
+    if (!entry.ok()) {
+      // In the case of error, loop will end in the next iteration if
+      // continues. This is the chance for code to catch the error.
+    }
     String key = entry.Key();
     Bytes value = entry.Value();
     // process entry
@@ -533,6 +550,13 @@ different fields in a proto message:
   Message nested_for_key = str_to_nested["key"];
   // Or iterate through map entries
   for (StringToMessageMapEntry entry : str_to_nested) {
+    // Check status
+    if (!entry.ok()) {
+      // In the case of error, loop will end in the next iteration if
+      // continues. This is the chance for code to catch the error.
+      // However it is still recommended that the user breaks here.
+      break;
+    }
     String key = entry.Key();
     Message value = entry.Value();
     // process entry
@@ -551,6 +575,11 @@ single fields directly.
 .. code-block:: c++
 
   for (Message::Field field : message) {
+    // Check status
+    if (!field.ok()) {
+      // In the case of error, loop will end in the next iteration if
+      // continues. This is the chance for code to catch the error.
+    }
     if (field.field_number() == 1) {
       Uint32 integer = field.As<Uint32>();
       ...
@@ -591,6 +620,17 @@ fields to the decode callback to demonstrate the incremental cost of decoding
 fields in a message.
 
 .. include:: size_report/decoder_incremental
+
+---------------------------
+Serialized size calculation
+---------------------------
+``pw_protobuf/serialized_size.h`` provides a set of functions for calculating
+how much memory serialized protocol buffer fields require. The
+``kMaxSizeBytes*`` variables provide the maximum encoded sizes of each field
+type. The ``SizeOfField*()`` functions calculate the encoded size of a field of
+the specified type, given a particular key and, for variable length fields
+(varint or delimited), a value. The ``SizeOf*Field`` functions calculate the
+encoded size of fields with a particular wire format (delimited, varint).
 
 --------------------------
 Available protobuf modules

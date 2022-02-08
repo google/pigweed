@@ -22,29 +22,17 @@ load("@rules_proto_grpc//js:defs.bzl", "js_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
-filegroup(
-    name = "echo_service",
-    srcs = [
-        "@//pw_rpc:echo",
-    ],
-)
-
-proto_library(
-    name = "rpc_protos",
-    srcs = [
-        ":echo_service",
-    ],
-)
-
 js_proto_library(
     name = "rpc_protos_tspb",
-    protos = [":rpc_protos"],
+    protos = [
+        "//pw_rpc:echo_proto",
+    ],
 )
 
 ts_proto_collection(
     name = "web_proto_collection",
     js_proto_library = "@//pw_web_ui:rpc_protos_tspb",
-    proto_library = "@//pw_web_ui:rpc_protos",
+    proto_library = "@//pw_rpc:echo_proto",
 )
 
 ts_project(

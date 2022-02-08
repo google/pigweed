@@ -39,6 +39,10 @@ declare_args() {
   # Usage: toolchain-controlled only
   pw_unit_test_AUTOMATIC_RUNNER_ARGS = []
 
+  # Optional timeout to apply when running tests via the automatic runner.
+  # Timeout is in seconds. Defaults to empty which means no timeout.
+  pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT = ""
+
   # Additional dependencies required by all unit test targets. (For example, if
   # using a different test library like Googletest.)
   #
@@ -238,6 +242,12 @@ template("pw_test") {
         "--test",
         "<TARGET_FILE(:$_test_to_run)>",
       ]
+      if (pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT != "") {
+        args += [
+          "--timeout",
+          pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT,
+        ]
+      }
       if (pw_unit_test_AUTOMATIC_RUNNER_ARGS != []) {
         args += [ "--" ] + pw_unit_test_AUTOMATIC_RUNNER_ARGS
       }

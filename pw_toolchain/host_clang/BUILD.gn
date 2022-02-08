@@ -110,7 +110,7 @@ config("xcode_sysroot") {
 # not on Linux) will fall back to the system libc++, which is
 # incompatible due to an ABI change.
 #
-# Pull the appropriate pathd from our Pigweed env setup.
+# Pull the appropriate paths from our Pigweed env setup.
 config("no_system_libcpp") {
   if (current_os == "mac") {
     install_dir = getenv("PW_PIGWEED_CIPD_INSTALL_DIR")

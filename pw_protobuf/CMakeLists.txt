@@ -18,26 +18,58 @@ include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 pw_add_module_config(pw_protobuf_CONFIG)
 
 pw_add_module_library(pw_protobuf.config
-  PUBLIC_DEPS
-    ${pw_protobuf_CONFIG}
   HEADERS
     public/pw_protobuf/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_protobuf_CONFIG}
 )
 
 pw_add_module_library(pw_protobuf
-  SOURCES
-    decoder.cc
-    encoder.cc
-    find.cc
-    stream_decoder.cc
+  HEADERS
+    public/pw_protobuf/decoder.h
+    public/pw_protobuf/encoder.h
+    public/pw_protobuf/find.h
+    public/pw_protobuf/internal/proto_integer_base.h
+    public/pw_protobuf/map_utils.h
+    public/pw_protobuf/message.h
+    public/pw_protobuf/serialized_size.h
+    public/pw_protobuf/stream_decoder.h
+    public/pw_protobuf/wire_format.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_assert
     pw_bytes
     pw_protobuf.config
+    pw_polyfill.span
+    pw_polyfill.cstddef
     pw_result
     pw_status
     pw_stream
+    pw_stream.interval_reader
     pw_varint
+    pw_varint.stream
+  SOURCES
+    decoder.cc
+    encoder.cc
+    find.cc
+    map_utils.cc
+    message.cc
+    stream_decoder.cc
+)
+
+pw_add_module_library(pw_protobuf.bytes_utils
+  HEADERS
+    public/pw_protobuf/bytes_utils.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_protobuf
+    pw_bytes
+    pw_result
+    pw_status
 )
 
 pw_add_test(pw_protobuf.decoder_test
@@ -81,9 +113,39 @@ pw_add_test(pw_protobuf.codegen_test
     pw_protobuf
 )
 
+pw_add_test(pw_protobuf.serialized_size_test
+  SOURCES
+    serialized_size_test.cc
+  DEPS
+    pw_protobuf
+  GROUPS
+    modules
+    pw_protobuf
+)
+
 pw_add_test(pw_protobuf.stream_decoder_test
   SOURCES
     stream_decoder_test.cc
+  DEPS
+    pw_protobuf
+  GROUPS
+    modules
+    pw_protobuf
+)
+
+pw_add_test(pw_protobuf.map_utils_test
+  SOURCES
+    map_utils_test.cc
+  DEPS
+    pw_protobuf
+  GROUPS
+    modules
+    pw_protobuf
+)
+
+pw_add_test(pw_protobuf.message_test
+  SOURCES
+    message_test.cc
   DEPS
     pw_protobuf
   GROUPS

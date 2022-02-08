@@ -26,6 +26,7 @@ pw_cc_library(
     hdrs = ["public/pw_rpc_system_server/rpc_server.h"],
     includes = ["public"],
     deps = [
+        "//pw_rpc",
         "//pw_span",
         "//pw_status",
     ],
@@ -39,8 +40,10 @@ pw_cc_library(
     ],
     deps = [
         ":facade",
+        "//pw_rpc",
         "//pw_span",
         "//pw_status",
+        "//pw_stream",
         "@pigweed_config//:pw_rpc_system_server_backend",
     ],
 )

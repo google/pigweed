@@ -81,9 +81,27 @@ That means two key things:
     PW_LOG_INFO("Found a square with an area of %lu", square.Area());
   }
 
-  // It is safe to remove items from a list while iterating over it.
-  for (const auto& square : squares) {
-    squares.remove(item);
+  // Like std::forward_list, an iterator is invalidated when the item it refers
+  // to is removed. It is *NOT* safe to remove items from a list while iterating
+  // over it in a range-based for loop.
+  for (const auto& square_bad_example : squares) {
+    if (square_bad_example.verticies() != 4) {
+      // BAD EXAMPLE of how to remove matching items from a singly linked list.
+      squares.remove(square_bad_example);  // NEVER DO THIS! THIS IS A BUG!
+    }
+  }
+
+  // To remove items while iterating, use an iterator to the previous item.
+  auto previous = squares.before_begin();
+  auto current = squares.begin();
+
+  while (current != squares.end()) {
+    if (current->verticies() != 4) {
+      current = squares.erase_after(previous);
+    } else {
+      previous = current;
+      ++current;
+    }
   }
 
 pw::containers::FlatMap

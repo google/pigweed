@@ -31,11 +31,13 @@ void NanopbMethod::CallSynchronousUnary(const CallContext& context,
                                         const Packet& request,
                                         void* request_struct,
                                         void* response_struct) const {
-  if (!DecodeRequest(context.channel(), request, request_struct)) {
+  if (!DecodeRequest(context, request, request_struct)) {
+    rpc_lock().unlock();
     return;
   }
 
   NanopbServerCall responder(context, MethodType::kUnary);
+  rpc_lock().unlock();
   const Status status = function_.synchronous_unary(
       context.service(), request_struct, response_struct);
   responder.SendUnaryResponse(response_struct, status).IgnoreError();
@@ -45,24 +47,31 @@ void NanopbMethod::CallUnaryRequest(const CallContext& context,
                                     MethodType type,
                                     const Packet& request,
                                     void* request_struct) const {
-  if (!DecodeRequest(context.channel(), request, request_struct)) {
+  if (!DecodeRequest(context, request, request_struct)) {
+    rpc_lock().unlock();
     return;
   }
 
   NanopbServerCall server_writer(context, type);
+  rpc_lock().unlock();
   function_.unary_request(context.service(), request_struct, server_writer);
 }
 
-bool NanopbMethod::DecodeRequest(Channel& channel,
+bool NanopbMethod::DecodeRequest(const CallContext& context,
                                  const Packet& request,
                                  void* proto_struct) const {
   if (serde_.DecodeRequest(request.payload(), proto_struct)) {
     return true;
   }
 
-  channel.Send(Packet::ServerError(request, Status::DataLoss())).IgnoreError();
+  // The channel is known to exist. It was found when the request was processed
+  // and the lock has been held since, so GetInternalChannel cannot fail.
+  static_cast<internal::Channel*>(
+      context.server().GetInternalChannel(context.channel_id()))
+      ->Send(Packet::ServerError(request, Status::DataLoss()))
+      .IgnoreError();
   PW_LOG_WARN("Nanopb failed to decode request payload from channel %u",
-              unsigned(channel.id()));
+              unsigned(context.channel_id()));
   return false;
 }
 

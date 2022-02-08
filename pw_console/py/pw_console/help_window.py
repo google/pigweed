@@ -90,6 +90,10 @@ class HelpWindow(ConditionalContainer):
         self.help_text_sections: Dict[str, Dict] = {}
         self._pane_title: str = title
 
+        # Tracks the last focused container, to enable restoring focus after
+        # closing the dialog.
+        self.last_focused_pane = None
+
         # Generated keybinding text
         self.preamble: str = preamble
         self.additional_help_text: str = additional_help_text
@@ -176,17 +180,18 @@ class HelpWindow(ConditionalContainer):
         # Toggle state variable.
         self.show_window = not self.show_window
 
-        # Set the help window in focus.
         if self.show_window:
-            self.application.last_focused_pane = (
-                self.application.focused_window())
+            # Save previous focus
+            self.last_focused_pane = self.application.focused_window()
+            # Set the help window in focus.
             self.application.layout.focus(self.help_text_area)
-        # Restore original focus.
         else:
-            if self.application.last_focused_pane:
-                self.application.layout.focus(
-                    self.application.last_focused_pane)
-            self.application.last_focused_pane = None
+            # Restore original focus if possible.
+            if self.last_focused_pane:
+                self.application.layout.focus(self.last_focused_pane)
+            else:
+                # Fallback to focusing on the first window pane.
+                self.application.focus_main_menu()
 
     def content_width(self) -> int:
         """Return total width of help window."""

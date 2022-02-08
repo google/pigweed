@@ -24,17 +24,9 @@ class Output : public pw::rpc::ChannelOutput {
  public:
   Output() : ChannelOutput("output") {}
 
-  size_t MaximumTransmissionUnit() override { return sizeof(buffer_); }
-
-  std::span<std::byte> AcquireBuffer() override { return buffer_; }
-
-  pw::Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
-    PW_DCHECK_PTR_EQ(buffer.data(), buffer_);
+  pw::Status Send(std::span<const std::byte> buffer) override {
     return pw::sys_io::WriteBytes(buffer).status();
   }
-
- private:
-  std::byte buffer_[128];
 };
 
 namespace my_product {

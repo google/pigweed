@@ -39,6 +39,25 @@ namespace pw::rpc {
 //   EXPECT_EQ(OkStatus(), context.call({.some_arg = 123}));
 //   EXPECT_EQ(500, context.response().some_response_value);
 //
+// For a unary RPC with repeated fields in the response, nanopb uses a
+// pb_callback_t field called when parsing the response as many times as the
+// field is present in the protobuf. To set the pb_callback_t fields create the
+// Response struct and pass it to the response method:
+//
+//   PW_NANOPB_TEST_METHOD_CONTEXT(my::CoolService, TheMethod) context;
+//   EXPECT_EQ(OkStatus(), context.call({.some_arg = 123}));
+//
+//   TheMethodResponse response{};
+//   response.repeated_field.funcs.decode = +[](pb_istream_t* stream,
+//                                              const pb_field_iter_t* field,
+//                                              void** arg) -> bool {
+//     ... decode the field from stream with pb_decode* functions ...
+//     EXPECT_EQ(submsg.some_field, 123);
+//     return true;
+//   };
+//   response.repeated_field.arg = &some_context_passed_decode_if_needed;
+//   context.response(response);  // Callbacks called from here.
+//
 // For a server streaming RPC, context.call(request) invokes the method. As in a
 // normal RPC, the method completes when the ServerWriter's Finish method is
 // called (or it goes out of scope).
@@ -61,10 +80,9 @@ namespace pw::rpc {
 //
 //   PW_NANOPB_TEST_METHOD_CONTEXT(MyService, Go) context(service, args);
 //
-// PW_NANOPB_TEST_METHOD_CONTEXT takes two optional arguments:
+// PW_NANOPB_TEST_METHOD_CONTEXT takes one optional argument:
 //
 //   size_t kMaxPackets: maximum packets to store
-//   size_t kOutputSizeBytes: buffer size; must be large enough for a packet
 //
 // Example:
 //
@@ -80,7 +98,6 @@ template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kMaxPackets = 6,
-          size_t kOutputSizeBytes = 128,
           size_t kPayloadsBufferSizeBytes = 256>
 class NanopbTestMethodContext;
 
@@ -92,13 +109,10 @@ template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kMaxPackets,
-          size_t kOutputSize,
           size_t kPayloadsBufferSizeBytes>
 class NanopbInvocationContext
     : public InvocationContext<
-          NanopbFakeChannelOutput<kMaxPackets,
-                                  kOutputSize,
-                                  kPayloadsBufferSizeBytes>,
+          NanopbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>,
           Service,
           kMethodId> {
  public:
@@ -111,6 +125,14 @@ class NanopbInvocationContext
     PW_ASSERT(kMethodInfo.serde().DecodeResponse(Base::responses().back(),
                                                  &response));
     return response;
+  }
+
+  // Gives access to the RPC's most recent response using pased Response object
+  // to parse the nanopb. Use this version when you need to set pb_callback_t
+  // fields in the Response object before parsing.
+  void response(Response& response) const {
+    PW_ASSERT(kMethodInfo.serde().DecodeResponse(Base::responses().back(),
+                                                 &response));
   }
 
   NanopbPayloadsView<Response> responses() const {
@@ -129,24 +151,18 @@ class NanopbInvocationContext
              MethodTraits<decltype(kMethod)>::kType,
              std::forward<Args>(args)...) {}
 
-  void SendClientStream(const Request& request) {
-    // Borrow a buffer from the ChannelOutput for sending the request.
-    ChannelOutput& channel_output = Base::output();
-    std::span buffer = channel_output.AcquireBuffer();
-
-    Base::SendClientStream(buffer.first(
+  template <size_t kEncodingBufferSizeBytes = 128>
+  void SendClientStream(const Request& request) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::array<std::byte, kEncodingBufferSizeBytes> buffer;
+    Base::SendClientStream(std::span(buffer).first(
         kMethodInfo.serde().EncodeRequest(&request, buffer).size()));
-
-    channel_output.DiscardBuffer(buffer);
   }
 
  private:
-  using Base =
-      InvocationContext<NanopbFakeChannelOutput<kMaxPackets,
-                                                kOutputSize,
-                                                kPayloadsBufferSizeBytes>,
-                        Service,
-                        kMethodId>;
+  using Base = InvocationContext<
+      NanopbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>,
+      Service,
+      kMethodId>;
 
   static constexpr NanopbMethod kMethodInfo =
       MethodLookup::GetNanopbMethod<Service, kMethodId>();
@@ -157,20 +173,17 @@ class NanopbInvocationContext
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kOutputSize,
           size_t kPayloadsBufferSizeBytes>
 class UnaryContext : public NanopbInvocationContext<Service,
                                                     kMethod,
                                                     kMethodId,
                                                     1,
-                                                    kOutputSize,
                                                     kPayloadsBufferSizeBytes> {
  private:
   using Base = NanopbInvocationContext<Service,
                                        kMethod,
                                        kMethodId,
                                        1,
-                                       kOutputSize,
                                        kPayloadsBufferSizeBytes>;
 
  public:
@@ -204,21 +217,18 @@ template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kMaxPackets,
-          size_t kOutputSize,
           size_t kPayloadsBufferSizeBytes>
 class ServerStreamingContext
     : public NanopbInvocationContext<Service,
                                      kMethod,
                                      kMethodId,
                                      kMaxPackets,
-                                     kOutputSize,
                                      kPayloadsBufferSizeBytes> {
  private:
   using Base = NanopbInvocationContext<Service,
                                        kMethod,
                                        kMethodId,
                                        kMaxPackets,
-                                       kOutputSize,
                                        kPayloadsBufferSizeBytes>;
 
  public:
@@ -245,21 +255,18 @@ template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kMaxPackets,
-          size_t kOutputSize,
           size_t kPayloadsBufferSizeBytes>
 class ClientStreamingContext
     : public NanopbInvocationContext<Service,
                                      kMethod,
                                      kMethodId,
                                      kMaxPackets,
-                                     kOutputSize,
                                      kPayloadsBufferSizeBytes> {
  private:
   using Base = NanopbInvocationContext<Service,
                                        kMethod,
                                        kMethodId,
                                        kMaxPackets,
-                                       kOutputSize,
                                        kPayloadsBufferSizeBytes>;
 
  public:
@@ -290,21 +297,18 @@ template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kMaxPackets,
-          size_t kOutputSize,
           size_t kPayloadsBufferSizeBytes>
 class BidirectionalStreamingContext
     : public NanopbInvocationContext<Service,
                                      kMethod,
                                      kMethodId,
                                      kMaxPackets,
-                                     kOutputSize,
                                      kPayloadsBufferSizeBytes> {
  private:
   using Base = NanopbInvocationContext<Service,
                                        kMethod,
                                        kMethodId,
                                        kMaxPackets,
-                                       kOutputSize,
                                        kPayloadsBufferSizeBytes>;
 
  public:
@@ -338,33 +342,26 @@ template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kMaxPackets,
-          size_t kOutputSize,
           size_t kPayloadsBufferSizeBytes>
 using Context = std::tuple_element_t<
     static_cast<size_t>(internal::MethodTraits<decltype(kMethod)>::kType),
-    std::tuple<UnaryContext<Service,
-                            kMethod,
-                            kMethodId,
-                            kOutputSize,
-                            kPayloadsBufferSizeBytes>,
-               ServerStreamingContext<Service,
+    std::tuple<
+        UnaryContext<Service, kMethod, kMethodId, kPayloadsBufferSizeBytes>,
+        ServerStreamingContext<Service,
+                               kMethod,
+                               kMethodId,
+                               kMaxPackets,
+                               kPayloadsBufferSizeBytes>,
+        ClientStreamingContext<Service,
+                               kMethod,
+                               kMethodId,
+                               kMaxPackets,
+                               kPayloadsBufferSizeBytes>,
+        BidirectionalStreamingContext<Service,
                                       kMethod,
                                       kMethodId,
                                       kMaxPackets,
-                                      kOutputSize,
-                                      kPayloadsBufferSizeBytes>,
-               ClientStreamingContext<Service,
-                                      kMethod,
-                                      kMethodId,
-                                      kMaxPackets,
-                                      kOutputSize,
-                                      kPayloadsBufferSizeBytes>,
-               BidirectionalStreamingContext<Service,
-                                             kMethod,
-                                             kMethodId,
-                                             kMaxPackets,
-                                             kOutputSize,
-                                             kPayloadsBufferSizeBytes>>>;
+                                      kPayloadsBufferSizeBytes>>>;
 
 }  // namespace internal::test::nanopb
 
@@ -372,14 +369,12 @@ template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kMaxPackets,
-          size_t kOutputSizeBytes,
           size_t kPayloadsBufferSizeBytes>
 class NanopbTestMethodContext
     : public internal::test::nanopb::Context<Service,
                                              kMethod,
                                              kMethodId,
                                              kMaxPackets,
-                                             kOutputSizeBytes,
                                              kPayloadsBufferSizeBytes> {
  public:
   // Forwards constructor arguments to the service class.
@@ -389,7 +384,6 @@ class NanopbTestMethodContext
                                         kMethod,
                                         kMethodId,
                                         kMaxPackets,
-                                        kOutputSizeBytes,
                                         kPayloadsBufferSizeBytes>(
             std::forward<ServiceArgs>(service_args)...) {}
 };

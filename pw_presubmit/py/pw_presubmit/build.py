@@ -47,17 +47,15 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
 
     Intended for use with bazel build and test. May not work with others.
     """
-    call(
-        'bazel',
-        cmd,
-        '--verbose_failures',
-        '--verbose_explanations',
-        '--worker_verbose',
-        f'--symlink_prefix={ctx.output_dir / "bazel-"}',
-        '--experimental_no_product_name_out_symlink',  # No top-level bazel-out
-        *args,
-        cwd=ctx.root,
-        env=env_with_clang_vars())
+    call('bazel',
+         cmd,
+         '--verbose_failures',
+         '--verbose_explanations',
+         '--worker_verbose',
+         f'--symlink_prefix={ctx.output_dir / "bazel-"}',
+         *args,
+         cwd=ctx.root,
+         env=env_with_clang_vars())
 
 
 def install_package(root: Path, name: str) -> None:

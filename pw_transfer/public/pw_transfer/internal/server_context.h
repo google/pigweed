@@ -36,6 +36,7 @@ class ServerContext : public Context {
   Status Start(TransferType type,
                Handler& handler,
                work_queue::WorkQueue& work_queue,
+               EncodingBuffer& encoding_buffer,
                rpc::RawServerReaderWriter& stream,
                chrono::SystemClock::duration timeout,
                uint8_t max_retries);
@@ -74,6 +75,7 @@ class ServerContextPool {
   //
   Result<ServerContext*> StartTransfer(uint32_t transfer_id,
                                        work_queue::WorkQueue& work_queue,
+                                       EncodingBuffer& encoding_buffer,
                                        rpc::RawServerReaderWriter& stream,
                                        chrono::SystemClock::duration timeout,
                                        uint8_t max_retries);

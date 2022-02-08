@@ -120,6 +120,96 @@ described in :ref:`module-pw_build-python`.
 
   python
 
+
+.. _module-pw_build-cc_blob_library:
+
+pw_cc_blob_library
+------------------
+The ``pw_cc_blob_library`` template is useful for embedding binary data into a
+program. The template takes in a mapping of symbol names to file paths, and
+generates a set of C++ source and header files that embed the contents of the
+passed-in files as arrays.
+
+**Arguments**
+
+* ``blobs``: A list of GN scopes, where each scope corresponds to a binary blob
+  to be transformed from file to byte array. This is a required field. Blob
+  fields include:
+
+  * ``symbol_name``: The C++ symbol for the byte array.
+  * ``file_path``: The file path for the binary blob.
+  * ``linker_section``: If present, places the byte array in the specified
+    linker section.
+
+* ``out_header``: The header file to generate. Users will include this file
+  exactly as it is written here to reference the byte arrays.
+* ``namespace``: An optional (but highly recommended!) C++ namespace to place
+  the generated blobs within.
+
+Example
+^^^^^^^
+
+**BUILD.gn**
+
+.. code-block::
+
+  pw_cc_blob_library("foo_bar_blobs") {
+    blobs: [
+      {
+        symbol_name: "kFooBlob"
+        file_path: "${target_out_dir}/stuff/bin/foo.bin"
+      },
+      {
+        symbol_name: "kBarBlob"
+        file_path: "//stuff/bin/bar.bin"
+        linker_section: ".bar_section"
+      },
+    ]
+    out_header: "my/stuff/foo_bar_blobs.h"
+    namespace: "my::stuff"
+    deps = [ ":generate_foo_bin" ]
+  }
+
+.. note:: If the binary blobs are generated as part of the build, be sure to
+          list them as deps to the pw_cc_blob_library target.
+
+**Generated Header**
+
+.. code-block::
+
+  #pragma once
+
+  #include <array>
+  #include <cstddef>
+
+  namespace my::stuff {
+
+  extern const std::array<std::byte, 100> kFooBlob;
+
+  extern const std::array<std::byte, 50> kBarBlob;
+
+  }  // namespace my::stuff
+
+**Generated Source**
+
+.. code-block::
+
+  #include "my/stuff/foo_bar_blobs.h"
+
+  #include <array>
+  #include <cstddef>
+
+  #include "pw_preprocessor/compiler.h"
+
+  namespace my::stuff {
+
+  const std::array<std::byte, 100> kFooBlob = { ... };
+
+  PW_PLACE_IN_SECTION(".bar_section")
+  const std::array<std::byte, 50> kBarBlob = { ... };
+
+  }  // namespace my::stuff
+
 .. _module-pw_build-facade:
 
 pw_facade
@@ -187,6 +277,9 @@ target. Additionally, it has some of its own arguments:
   output file, ``stamp`` must be in the build directory. Defaults to false.
 * ``environment``: Optional list of strings. Environment variables to set,
   passed as NAME=VALUE strings.
+* ``working_directory``: Optional file path. When provided the current working
+  directory will be set to this location before the Python module or script is
+  run.
 
 **Expressions**
 

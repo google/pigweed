@@ -23,6 +23,12 @@ from typing import Callable, Collection, Optional, Sequence
 from pw_presubmit import git_repo, presubmit
 
 _LOG = logging.getLogger(__name__)
+DEFAULT_PATH = Path('out', 'presubmit')
+
+_OUTPUT_PATH_README = '''\
+This directory was created by pw_presubmit to run presubmit checks for the
+{repo} repository. This directory may be deleted safely.
+'''
 
 
 def add_path_arguments(parser) -> None:
@@ -116,7 +122,7 @@ def add_arguments(parser: argparse.ArgumentParser,
     parser.add_argument(
         '--output-directory',
         type=Path,
-        help='Output directory (default: <repo root>/.presubmit)',
+        help=f'Output directory (default: {"<repo root>" / DEFAULT_PATH})',
     )
     parser.add_argument(
         '--package-root',
@@ -182,7 +188,11 @@ def run(
         repositories = [root]
 
     if output_directory is None:
-        output_directory = root / '.presubmit'
+        output_directory = root / DEFAULT_PATH
+
+    output_directory.mkdir(parents=True, exist_ok=True)
+    output_directory.joinpath('README.txt').write_text(
+        _OUTPUT_PATH_README.format(repo=root))
 
     if not package_root:
         package_root = output_directory / 'packages'

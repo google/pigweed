@@ -21,6 +21,7 @@
 
 #include "pw_function/function.h"
 #include "pw_rpc/internal/config.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/nanopb/internal/common.h"
@@ -319,19 +320,22 @@ class NanopbMethod : public Method {
   void CallSynchronousUnary(const CallContext& context,
                             const Packet& request,
                             void* request_struct,
-                            void* response_struct) const;
+                            void* response_struct) const
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
   void CallUnaryRequest(const CallContext& context,
                         MethodType type,
                         const Packet& request,
-                        void* request_struct) const;
+                        void* request_struct) const
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
   // Invoker function for synchronous unary RPCs. Allocates request and response
   // structs by size, with maximum alignment, to avoid generating unnecessary
   // copies of this function for each request/response type.
   template <size_t kRequestSize, size_t kResponseSize>
   static void SynchronousUnaryInvoker(const CallContext& context,
-                                      const Packet& request) {
+                                      const Packet& request)
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
         request_struct{};
@@ -349,7 +353,8 @@ class NanopbMethod : public Method {
   // NanopbUnaryResponder.
   template <size_t kRequestSize>
   static void AsynchronousUnaryInvoker(const CallContext& context,
-                                       const Packet& request) {
+                                       const Packet& request)
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
         request_struct{};
@@ -364,7 +369,8 @@ class NanopbMethod : public Method {
   // NanopbServerWriter.
   template <size_t kRequestSize>
   static void ServerStreamingInvoker(const CallContext& context,
-                                     const Packet& request) {
+                                     const Packet& request)
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
         request_struct{};
@@ -376,10 +382,11 @@ class NanopbMethod : public Method {
 
   // Invoker function for client streaming RPCs.
   template <typename Request>
-  static void ClientStreamingInvoker(const CallContext& context,
-                                     const Packet&) {
+  static void ClientStreamingInvoker(const CallContext& context, const Packet&)
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
     BaseNanopbServerReader<Request> reader(context,
                                            MethodType::kClientStreaming);
+    rpc_lock().unlock();
     static_cast<const NanopbMethod&>(context.method())
         .function_.stream_request(context.service(), reader);
   }
@@ -387,18 +394,21 @@ class NanopbMethod : public Method {
   // Invoker function for bidirectional streaming RPCs.
   template <typename Request>
   static void BidirectionalStreamingInvoker(const CallContext& context,
-                                            const Packet&) {
+                                            const Packet&)
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
     BaseNanopbServerReader<Request> reader_writer(
         context, MethodType::kBidirectionalStreaming);
+    rpc_lock().unlock();
     static_cast<const NanopbMethod&>(context.method())
         .function_.stream_request(context.service(), reader_writer);
   }
 
   // Decodes a request protobuf with Nanopb to the provided buffer. Sends an
   // error packet if the request failed to decode.
-  bool DecodeRequest(Channel& channel,
+  bool DecodeRequest(const CallContext& context,
                      const Packet& request,
-                     void* proto_struct) const;
+                     void* proto_struct) const
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Stores the user-defined RPC in a generic wrapper.
   Function function_;

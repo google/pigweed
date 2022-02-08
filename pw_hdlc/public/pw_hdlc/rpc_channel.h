@@ -27,66 +27,23 @@ namespace pw::hdlc {
 // the HDLC protocol.
 //
 // WARNING: This ChannelOutput is not thread-safe. If thread-safety is required,
-// wrap this in a pw::rpc::SynchronizedChannelOutput.
+// create a similar class that adds a mtuex to Send.
 class RpcChannelOutput : public rpc::ChannelOutput {
  public:
   // The RpcChannelOutput class does not own the buffer it uses to store the
   // protobuf bytes. This buffer is specified at the time of creation along with
   // a writer object to which will be used to write and send the bytes.
   constexpr RpcChannelOutput(stream::Writer& writer,
-                             std::span<std::byte> buffer,
                              uint64_t address,
                              const char* channel_name)
-      : ChannelOutput(channel_name),
-        writer_(writer),
-        buffer_(buffer),
-        address_(address) {}
-
-  size_t MaximumTransmissionUnit() override { return buffer_.size(); }
-
-  std::span<std::byte> AcquireBuffer() override { return buffer_; }
-
-  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
-    PW_DASSERT(buffer.data() == buffer_.data());
-    if (buffer.empty()) {
-      return OkStatus();
-    }
-    return hdlc::WriteUIFrame(address_, buffer, writer_);
-  }
-
- private:
-  stream::Writer& writer_;
-  const std::span<std::byte> buffer_;
-  const uint64_t address_;
-};
-
-// RpcChannelOutput with its own buffer.
-//
-// WARNING: This ChannelOutput is not thread-safe. If thread-safety is required,
-// wrap this in a pw::rpc::SynchronizedChannelOutput.
-template <size_t kBufferSize>
-class RpcChannelOutputBuffer : public rpc::ChannelOutput {
- public:
-  constexpr RpcChannelOutputBuffer(stream::Writer& writer,
-                                   uint64_t address,
-                                   const char* channel_name)
       : ChannelOutput(channel_name), writer_(writer), address_(address) {}
 
-  size_t MaximumTransmissionUnit() override { return buffer_.size(); }
-
-  std::span<std::byte> AcquireBuffer() override { return buffer_; }
-
-  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
-    PW_DASSERT(buffer.data() == buffer_.data());
-    if (buffer.empty()) {
-      return OkStatus();
-    }
+  Status Send(std::span<const std::byte> buffer) override {
     return hdlc::WriteUIFrame(address_, buffer, writer_);
   }
 
  private:
   stream::Writer& writer_;
-  std::array<std::byte, kBufferSize> buffer_;
   const uint64_t address_;
 };
 

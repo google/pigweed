@@ -60,7 +60,6 @@ pw_add_module_library("pw_system.rpc"
     "pw_assert"
     "pw_hdlc.pw_rpc"
     "pw_hdlc.rpc_channel_output"
-    "pw_rpc.synchronized_channel_output"
     "pw_sync.mutex"
   SOURCES
     "rpc.cc"

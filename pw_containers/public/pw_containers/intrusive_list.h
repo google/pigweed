@@ -118,9 +118,7 @@ class IntrusiveList {
   // Removes the item following pos from the list. The item is not destructed.
   iterator erase_after(iterator pos) {
     list_.erase_after(pos.item_);
-    // Return a new iterator so that we're not using a stale shadow copy of
-    // pos.item_->next.
-    return ++iterator(pos.item_);
+    return ++pos;
   }
 
   // Removes all items from the list. The items themselves are not destructed.

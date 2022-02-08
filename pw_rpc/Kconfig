@@ -45,9 +45,4 @@ config PIGWEED_RPC_COMMON
     select PIGWEED_STATUS
     select PIGWEED_LOG
 
-config PIGWEED_RPC_SYNCHRONIZED_CHANNEL_OUTPUT
-    bool "Enable Pigweed RPC synchronized channel output library (pw_rpc.synchronized_channel_output)"
-    select PIGWEED_RPC_COMMON
-    select PIGWEED_SYNC_MUTEX
-
 endif # PIGWEED_RPC

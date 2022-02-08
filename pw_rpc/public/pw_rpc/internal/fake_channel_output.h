@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <iterator>
+#include <limits>
 
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
@@ -35,8 +36,6 @@ class FakeChannelOutput : public ChannelOutput {
  public:
   FakeChannelOutput(const FakeChannelOutput&) = delete;
   FakeChannelOutput(FakeChannelOutput&&) = delete;
-
-  ~FakeChannelOutput();
 
   FakeChannelOutput& operator=(const FakeChannelOutput&) = delete;
   FakeChannelOutput& operator=(FakeChannelOutput&&) = delete;
@@ -132,31 +131,26 @@ class FakeChannelOutput : public ChannelOutput {
   // Logs which packets have been sent for debugging purposes.
   void LogPackets() const;
 
-  size_t MaximumTransmissionUnit() final { return encoding_buffer_.size(); }
-
-  ByteSpan AcquireBuffer() final;
-
   // Processes buffer according to packet type and `return_after_packet_count_`
   // value as follows:
   // When positive, returns `send_status_` once,
   // When equals 0, returns `send_status_` in all future calls,
   // When negative, ignores `send_status_` processes buffer.
-  Status SendAndReleaseBuffer(ConstByteSpan buffer) final {
-    const Status status = HandlePacket(buffer);
-    // Clear the encoding buffer to catch code that uses this buffer after
-    // releasing it.
-    std::fill(encoding_buffer_.begin(), encoding_buffer_.end(), std::byte{0});
-    return status;
+  Status Send(ConstByteSpan buffer) final;
+
+  // Gives access to the last received internal::Packet. This is hidden by the
+  // raw/Nanopb implementations, since it gives access to an internal class.
+  const Packet& last_packet() const {
+    PW_ASSERT(!packets_.empty());
+    return packets_.back();
   }
 
  protected:
   constexpr FakeChannelOutput(Vector<Packet>& packets,
-                              Vector<std::byte>& payloads,
-                              ByteSpan encoding_buffer)
+                              Vector<std::byte>& payloads)
       : ChannelOutput("pw::rpc::internal::test::FakeChannelOutput"),
         packets_(packets),
-        payloads_(payloads),
-        encoding_buffer_(encoding_buffer) {}
+        payloads_(payloads) {}
 
   const Vector<Packet>& packets() const { return packets_; }
 
@@ -168,28 +162,20 @@ class FakeChannelOutput : public ChannelOutput {
 
   int return_after_packet_count_ = -1;
   unsigned total_response_packets_ = 0;
-  bool buffer_acquired_ = false;
 
   Vector<Packet>& packets_;
   Vector<std::byte>& payloads_;
   Status send_status_ = OkStatus();
-  const ByteSpan encoding_buffer_;
 };
 
 // Adds the packet output buffer to a FakeChannelOutput.
-template <size_t kOutputSizeBytes,
-          size_t kMaxPackets,
-          size_t kPayloadsBufferSizeBytes>
+template <size_t kMaxPackets, size_t kPayloadsBufferSizeBytes>
 class FakeChannelOutputBuffer : public FakeChannelOutput {
  protected:
   constexpr FakeChannelOutputBuffer()
-      : FakeChannelOutput(
-            packets_array_, payloads_array_, encoding_buffer_array_),
-        encoding_buffer_array_{},
-        payloads_array_ {}
+      : FakeChannelOutput(packets_array_, payloads_array_), payloads_array_ {}
   {}
 
-  std::byte encoding_buffer_array_[kOutputSizeBytes];
   Vector<std::byte, kPayloadsBufferSizeBytes> payloads_array_;
   Vector<Packet, kMaxPackets> packets_array_;
 };

@@ -19,6 +19,7 @@
 #include "pw_result/result.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/channel_list.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_sync/lock_annotations.h"
@@ -37,16 +38,44 @@ class Endpoint {
  public:
   ~Endpoint();
 
-  // Finds an RPC Channel with this ID or nullptr if none matches.
-  rpc::Channel* GetChannel(uint32_t id) const PW_LOCKS_EXCLUDED(rpc_lock()) {
+  // Creates a channel with the provided ID and ChannelOutput, if a channel slot
+  // is available or can be allocated (if PW_RPC_DYNAMIC_ALLOCATION is enabled).
+  // Returns:
+  //
+  //   OK - the channel was opened successfully
+  //   ALREADY_EXISTS - a channel with this ID is already present; remove it
+  //       first
+  //   RESOURCE_EXHAUSTED - no unassigned channels are available and
+  //       PW_RPC_DYNAMIC_ALLOCATION is disabled
+  //
+  Status OpenChannel(uint32_t id, ChannelOutput& interface)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
-    return GetInternalChannel(id);
+    return channels_.Add(id, interface);
+  }
+
+  // Closes a channel and terminates any pending calls on that channel.
+  // If the calls are client requests, their on_error callback will be
+  // called with the ABORTED status.
+  Status CloseChannel(uint32_t channel_id) PW_LOCKS_EXCLUDED(rpc_lock());
+
+  // For internal use only: returns the number calls in the RPC calls list.
+  size_t active_call_count() const PW_LOCKS_EXCLUDED(rpc_lock()) {
+    LockGuard lock(rpc_lock());
+    return calls_.size();
+  }
+
+  // For internal use only: finds an internal::Channel with this ID or nullptr
+  // if none matches.
+  Channel* GetInternalChannel(uint32_t channel_id)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return channels_.Get(channel_id);
   }
 
  protected:
-  constexpr Endpoint(std::span<rpc::Channel> channels)
-      : channels_(static_cast<internal::Channel*>(channels.data()),
-                  channels.size()),
+  _PW_RPC_CONSTEXPR Endpoint(std::span<rpc::Channel> channels)
+      : channels_(std::span(static_cast<internal::Channel*>(channels.data()),
+                            channels.size())),
         next_call_id_(0) {}
 
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
@@ -62,22 +91,12 @@ class Endpoint {
         packet.channel_id(), packet.service_id(), packet.method_id());
   }
 
-  // Finds an internal::Channel with this ID or nullptr if none matches.
-  Channel* GetInternalChannel(uint32_t id) const
-      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
-
-  // Creates a channel with the provided ID and ChannelOutput, if a channel slot
-  // is available. Returns a pointer to the channel if one is created, nullptr
-  // otherwise.
-  Channel* AssignChannel(uint32_t id, ChannelOutput& interface)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
-
  private:
   // Give Call access to the register/unregister functions.
   friend class Call;
 
   // Returns an ID that can be assigned to a new call.
-  uint32_t NewCallId() {
+  uint32_t NewCallId() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     // Call IDs are varint encoded. Limit the varint size to 2 bytes (14 usable
     // bits).
     constexpr uint32_t kMaxCallId = 1 << 14;
@@ -86,7 +105,7 @@ class Endpoint {
 
   // Adds a call to the internal call registry. If a matching call already
   // exists, it is cancelled locally (on_error called, no packet sent).
-  void RegisterCall(Call& call) PW_LOCKS_EXCLUDED(rpc_lock());
+  void RegisterCall(Call& call) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Registers a call that is known to be unique. The calls list is NOT checked
   // for existing calls.
@@ -105,10 +124,10 @@ class Endpoint {
                      uint32_t method_id)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
-  std::span<Channel> channels_ PW_GUARDED_BY(rpc_lock());
+  ChannelList channels_ PW_GUARDED_BY(rpc_lock());
   IntrusiveList<Call> calls_ PW_GUARDED_BY(rpc_lock());
 
-  uint32_t next_call_id_;
+  uint32_t next_call_id_ PW_GUARDED_BY(rpc_lock());
 };
 
 }  // namespace pw::rpc::internal

@@ -20,7 +20,6 @@
 #include "pw_hdlc/rpc_channel.h"
 #include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
-#include "pw_rpc/synchronized_channel_output.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_stream/socket_stream.h"
 
@@ -31,13 +30,10 @@ constexpr size_t kMaxTransmissionUnit = 512;
 uint16_t socket_port = 33000;
 
 stream::SocketStream socket_stream;
-sync::Mutex channel_output_mutex;
-rpc::SynchronizedChannelOutput<
-    hdlc::RpcChannelOutputBuffer<kMaxTransmissionUnit>>
-    hdlc_channel_output(channel_output_mutex,
-                        socket_stream,
-                        hdlc::kDefaultRpcAddress,
-                        "HDLC channel");
+
+hdlc::RpcChannelOutput hdlc_channel_output(socket_stream,
+                                           hdlc::kDefaultRpcAddress,
+                                           "HDLC channel");
 Channel channels[] = {rpc::Channel::Create<1>(&hdlc_channel_output)};
 rpc::Server server(channels);
 

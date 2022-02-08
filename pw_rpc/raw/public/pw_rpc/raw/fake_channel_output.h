@@ -20,15 +20,15 @@
 namespace pw::rpc {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
-template <size_t kMaxPackets,
-          size_t kOutputSize,
-          size_t kPayloadsBufferSizeBytes = 128>
+template <size_t kMaxPackets, size_t kPayloadsBufferSizeBytes = 128>
 class RawFakeChannelOutput final
-    : public internal::test::FakeChannelOutputBuffer<kOutputSize,
-                                                     kMaxPackets,
+    : public internal::test::FakeChannelOutputBuffer<kMaxPackets,
                                                      kPayloadsBufferSizeBytes> {
  public:
   RawFakeChannelOutput() = default;
+
+ private:
+  using internal::test::FakeChannelOutput::last_packet;
 };
 
 }  // namespace pw::rpc

@@ -49,6 +49,39 @@
 #define PW_RPC_USE_GLOBAL_MUTEX 0
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
 
+// Whether pw_rpc should use dynamic memory allocation internally. If enabled,
+// pw_rpc dynamically allocates channels and its encoding buffers. RPC users may
+// use dynamic allocation independently of this option (e.g. to allocate pw_rpc
+// call objects).
+//
+// The semantics for allocating and initializing channels change depending on
+// this option. If dynamic allocation is disabled, pw_rpc endpoints (servers or
+// clients) use an externally-allocated, fixed-size array of channels.
+// That array must include unassigned channels or existing channels must be
+// closed to add new channels.
+//
+// If dynamic allocation is enabled, an span of channels may be passed to the
+// endpoint at construction, but these channels are only used to initialize its
+// internal std::vector of channels. External channel objects are NOT used by
+// the endpoint cannot be updated if dynamic allocation is enabled. No
+// unassigned channels should be passed to the endpoint; they will be ignored.
+// Any number of channels may be added to the endpoint, without closing existing
+// channels, but adding channels will use more memory.
+#ifndef PW_RPC_DYNAMIC_ALLOCATION
+#define PW_RPC_DYNAMIC_ALLOCATION 0
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
+
+#if PW_RPC_DYNAMIC_ALLOCATION && defined(PW_RPC_ENCODING_BUFFER_SIZE_BYTES)
+static_assert(false,
+              "PW_RPC_ENCODING_BUFFER_SIZE_BYTES cannot be set if "
+              "PW_RPC_DYNAMIC_ALLOCATION is enabled");
+#endif  // PW_RPC_DYNAMIC_ALLOCATION && PW_RPC_ENCODING_BUFFER_SIZE_BYTES
+
+// Size of the global RPC packet encoding buffer in bytes.
+#ifndef PW_RPC_ENCODING_BUFFER_SIZE_BYTES
+#define PW_RPC_ENCODING_BUFFER_SIZE_BYTES 512
+#endif  // PW_RPC_ENCODING_BUFFER_SIZE_BYTES
+
 // The log level to use for this module. Logs below this level are omitted.
 #ifndef PW_RPC_CONFIG_LOG_LEVEL
 #define PW_RPC_CONFIG_LOG_LEVEL PW_LOG_LEVEL_INFO
@@ -65,10 +98,18 @@ template <typename...>
 constexpr std::bool_constant<PW_RPC_CLIENT_STREAM_END_CALLBACK>
     kClientStreamEndCallbackEnabled;
 
+template <typename...>
+constexpr std::bool_constant<PW_RPC_DYNAMIC_ALLOCATION>
+    kDynamicAllocationEnabled;
+
 inline constexpr size_t kNanopbStructMinBufferSize =
     PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE;
 
+inline constexpr size_t kEncodingBufferSizeBytes =
+    PW_RPC_ENCODING_BUFFER_SIZE_BYTES;
+
 #undef PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE
+#undef PW_RPC_ENCODING_BUFFER_SIZE_BYTES
 
 }  // namespace pw::rpc::cfg
 

@@ -62,7 +62,8 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
       : read_transfers_(internal::kRead, handlers_),
         write_transfers_(internal::kWrite, handlers_),
         work_queue_(work_queue),
-        client_(max_pending_bytes, transfer_data_buffer.size()),
+        client_(
+            encoding_buffer_, max_pending_bytes, transfer_data_buffer.size()),
         chunk_data_buffer_(transfer_data_buffer),
         chunk_timeout_(chunk_timeout),
         max_retries_(max_retries) {}
@@ -116,6 +117,7 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
   internal::ServerContextPool write_transfers_;
 
   work_queue::WorkQueue& work_queue_;
+  internal::EncodingBuffer encoding_buffer_;
 
   // Stores the RPC streams and parameters for communicating with the client.
   internal::ClientConnection client_;

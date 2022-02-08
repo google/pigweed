@@ -108,12 +108,13 @@ TEST(RawMethodUnion, InvokesUnary) {
   const Method& method =
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  rpc_lock().lock();
   method.Invoke(context.get(), context.request(test_request));
 
   EXPECT_EQ(context.service().last_request.integer, 456);
   EXPECT_EQ(context.service().last_request.status_code, 7u);
 
-  const Packet& response = context.output().sent_packet();
+  const Packet& response = context.output().last_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
 
   protobuf::Decoder decoder(response.payload());
@@ -136,9 +137,10 @@ TEST(RawMethodUnion, InvokesServerStreaming) {
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
+  rpc_lock().lock();
   method.Invoke(context.get(), context.request(test_request));
 
-  EXPECT_EQ(0u, context.output().packet_count());
+  EXPECT_EQ(0u, context.output().total_packets());
   EXPECT_EQ(777, context.service().last_request.integer);
   EXPECT_EQ(2u, context.service().last_request.status_code);
   EXPECT_TRUE(context.service().last_writer.active());

@@ -38,9 +38,9 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
                         Function<void(const Response&, Status)>&& on_completed,
                         Function<void(Status)>&& on_error,
                         const Request&... request) {
+    rpc_lock().lock();
     CallType call(client, channel_id, service_id, method_id, serde);
 
-    rpc_lock().lock();
     call.set_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
 
@@ -108,6 +108,7 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
             } else {
               // TODO(hepler): This should send a DATA_LOSS error and call the
               //     error callback.
+              rpc_lock().lock();
               CallOnError(Status::DataLoss());
             }
           }
@@ -132,9 +133,9 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
                         Function<void(Status)>&& on_completed,
                         Function<void(Status)>&& on_error,
                         const Request&... request) {
+    rpc_lock().lock();
     CallType call(client, channel_id, service_id, method_id, serde);
 
-    rpc_lock().lock();
     call.set_on_next_locked(std::move(on_next));
     call.set_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
@@ -200,6 +201,7 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
         } else {
           // TODO(hepler): This should send a DATA_LOSS error and call the
           //     error callback.
+          rpc_lock().lock();
           CallOnError(Status::DataLoss());
         }
       }
@@ -242,6 +244,7 @@ class NanopbClientReaderWriter
   }
 
   using internal::Call::Cancel;
+  using internal::Call::CloseClientStream;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
@@ -330,6 +333,7 @@ class NanopbClientWriter
   }
 
   using internal::Call::Cancel;
+  using internal::Call::CloseClientStream;
 
  private:
   friend class internal::NanopbUnaryResponseClientCall<Response>;

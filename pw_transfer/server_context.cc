@@ -28,6 +28,7 @@ namespace pw::transfer::internal {
 Status ServerContext::Start(TransferType type,
                             Handler& handler,
                             work_queue::WorkQueue& work_queue,
+                            EncodingBuffer& encoding_buffer,
                             rpc::RawServerReaderWriter& stream,
                             chrono::SystemClock::duration timeout,
                             uint8_t max_retries) {
@@ -48,6 +49,7 @@ Status ServerContext::Start(TransferType type,
   if (type == kRead) {
     InitializeForTransmit(handler.id(),
                           work_queue,
+                          encoding_buffer,
                           stream,
                           handler.reader(),
                           timeout,
@@ -55,6 +57,7 @@ Status ServerContext::Start(TransferType type,
   } else {
     InitializeForReceive(handler.id(),
                          work_queue,
+                         encoding_buffer,
                          stream,
                          handler.writer(),
                          timeout,
@@ -89,6 +92,7 @@ Status ServerContext::Finish(const Status status) {
 Result<ServerContext*> ServerContextPool::StartTransfer(
     uint32_t transfer_id,
     work_queue::WorkQueue& work_queue,
+    EncodingBuffer& encoding_buffer,
     rpc::RawServerReaderWriter& stream,
     chrono::SystemClock::duration timeout,
     uint8_t max_retries) {
@@ -127,8 +131,13 @@ Result<ServerContext*> ServerContextPool::StartTransfer(
     return Status::NotFound();
   }
 
-  PW_TRY(new_transfer->Start(
-      type_, *handler, work_queue, stream, timeout, max_retries));
+  PW_TRY(new_transfer->Start(type_,
+                             *handler,
+                             work_queue,
+                             encoding_buffer,
+                             stream,
+                             timeout,
+                             max_retries));
   return new_transfer;
 }
 

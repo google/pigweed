@@ -15,7 +15,9 @@
 // Configuration macros for the transfer module.
 #pragma once
 
+#include <array>
 #include <cinttypes>
+#include <cstddef>
 #include <limits>
 
 #include "pw_chrono/system_clock.h"
@@ -32,16 +34,37 @@
 #define PW_TRANSFER_DEFAULT_TIMEOUT_MS 2000
 #endif  // PW_TRANSFER_DEFAULT_TIMEOUT_MS
 
+// The size of buffer to allocate in the transfer service/client.
+// TODO(pwbug/613): Use a different means to provide a buffer.
+#ifndef PW_TRANSFER_ENCODING_BUFFER_SIZE_BYTES
+#define PW_TRANSFER_ENCODING_BUFFER_SIZE_BYTES 512
+#endif  // PW_TRANSFER_ENCODING_BUFFER_SIZE_BYTES
+
 static_assert(PW_TRANSFER_DEFAULT_MAX_RETRIES > 0 &&
               PW_TRANSFER_DEFAULT_MAX_RETRIES <=
                   std::numeric_limits<uint8_t>::max());
 
 static_assert(PW_TRANSFER_DEFAULT_TIMEOUT_MS > 0);
 
-namespace pw::transfer::cfg {
+namespace pw::transfer {
+namespace cfg {
 
 inline constexpr uint8_t kDefaultMaxRetries = PW_TRANSFER_DEFAULT_MAX_RETRIES;
 inline constexpr chrono::SystemClock::duration kDefaultChunkTimeout =
     std::chrono::milliseconds(PW_TRANSFER_DEFAULT_TIMEOUT_MS);
 
-}  // namespace pw::transfer::cfg
+}  // namespace cfg
+
+namespace internal {
+
+// TODO(pwbug/613): Reconsider this buffer as part of the transfer refactor.
+using EncodingBuffer =
+    std::array<std::byte, PW_TRANSFER_ENCODING_BUFFER_SIZE_BYTES>;
+
+}  // namespace internal
+
+}  // namespace pw::transfer
+
+#undef PW_TRANSFER_DEFAULT_MAX_RETRIES
+#undef PW_TRANSFER_DEFAULT_TIMEOUT_MS
+#undef PW_TRANSFER_ENCODING_BUFFER_SIZE_BYTES

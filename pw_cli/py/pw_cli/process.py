@@ -18,7 +18,7 @@ import logging
 import os
 import shlex
 import tempfile
-from typing import IO, Tuple, Union
+from typing import IO, Tuple, Union, Optional
 
 import pw_cli.color
 import pw_cli.log
@@ -78,7 +78,8 @@ async def _run_and_log(program: str, args: Tuple[str, ...], env: dict):
 
 async def run_async(program: str,
                     *args: str,
-                    log_output: bool = False) -> CompletedProcess:
+                    log_output: bool = False,
+                    timeout: Optional[float] = None) -> CompletedProcess:
     """Runs a command, capturing and optionally logging its output.
 
     Returns a CompletedProcess with details from the process.
@@ -102,10 +103,17 @@ async def run_async(program: str,
             stderr=asyncio.subprocess.STDOUT,
             env=env)
 
-    if await process.wait() == 0:
-        _LOG.info('%s exited successfully', program)
-    else:
+    try:
+        await asyncio.wait_for(process.wait(), timeout)
+    except asyncio.TimeoutError:
+        _LOG.error('%s timed out after %d seconds', program, timeout)
+        process.kill()
+        await process.wait()
+
+    if process.returncode:
         _LOG.error('%s exited with status %d', program, process.returncode)
+    else:
+        _LOG.info('%s exited successfully', program)
 
     return CompletedProcess(process, output)
 

@@ -27,6 +27,7 @@ import tempfile
 from typing import Callable, Iterable, List, Set
 
 import pw_cli.pw_command_plugins
+import pw_env_setup.cipd_setup.update as cipd_update
 
 
 def call_stdout(*args, **kwargs):
@@ -293,23 +294,26 @@ def cipd_versions(ctx: DoctorContext):
     except KeyError:
         return  # This case is handled elsewhere.
 
-    if 'PW_PIGWEED_CIPD_INSTALL_DIR' not in os.environ:
-        ctx.error('PW_PIGWEED_CIPD_INSTALL_DIR not set')
-    cipd_dir = pathlib.Path(os.environ['PW_PIGWEED_CIPD_INSTALL_DIR'])
+    if 'PW_CIPD_INSTALL_DIR' not in os.environ:
+        ctx.error('PW_CIPD_INSTALL_DIR not set')
+    cipd_dir = pathlib.Path(os.environ['PW_CIPD_INSTALL_DIR'])
 
-    versions_path = cipd_dir / '.versions'
     # Deliberately not checking luci.json--it's not required to be up-to-date.
-    json_path = root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
-                              'cipd_setup', 'pigweed.json')
+    json_paths = (
+        root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
+                      'pigweed.json'),
+        root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
+                      'bazel.json'),
+    )
 
-    def check_cipd(package):
+    def check_cipd(package, versions_path):
         ctx.debug('checking version of %s', package['path'])
         name = [
             part for part in package['path'].split('/') if '{' not in part
         ][-1]
         path = versions_path.joinpath(f'{name}.cipd_version')
         if not path.is_file():
-            ctx.debug('no version file')
+            ctx.debug(f'no version file for {name} at {path}')
             return
 
         with path.open() as ins:
@@ -333,8 +337,12 @@ def cipd_versions(ctx: DoctorContext):
                     'CIPD package %s is out of date, please rerun bootstrap',
                     installed['package_name'])
 
-    for package in json.loads(json_path.read_text()):
-        ctx.submit(check_cipd, package)
+    for json_path in json_paths:
+        versions_path = pathlib.Path(
+            cipd_update.package_installation_path(cipd_dir,
+                                                  json_path)) / '.versions'
+        for package in json.loads(json_path.read_text()).get('packages', ()):
+            ctx.submit(check_cipd, package, versions_path)
 
 
 @register_into(CHECKS)

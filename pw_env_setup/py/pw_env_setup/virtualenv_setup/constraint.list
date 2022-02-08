@@ -11,6 +11,7 @@ certifi==2021.10.8
 cffi==1.15.0
 charset-normalizer==2.0.10
 coloredlogs==15.0.1
+coverage==6.3
 cryptography==36.0.1
 decorator==5.1.1
 docutils==0.17.1
@@ -42,7 +43,7 @@ pep517==0.12.0
 pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==8.2.0
-prompt-toolkit==3.0.24
+prompt-toolkit==3.0.26
 protobuf==3.19.1
 psutil==5.9.0
 ptpython==3.0.20

@@ -235,12 +235,9 @@ PW_EXTERN_C_END
 #define _PW_TOKENIZER_CONST constexpr
 
 #define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string)            \
-  alignas(1) static constexpr ::pw::tokenizer::internal::Entry<sizeof(domain), \
-                                                               sizeof(string)> \
-      _PW_TOKENIZER_SECTION _PW_TOKENIZER_UNIQUE(                              \
-          _pw_tokenizer_string_entry_) {                                       \
-    token, domain, string                                                      \
-  }
+  alignas(1) static constexpr auto _PW_TOKENIZER_SECTION _PW_TOKENIZER_UNIQUE( \
+      _pw_tokenizer_string_entry_) =                                           \
+      ::pw::tokenizer::internal::MakeEntry(token, domain, string)
 
 namespace pw {
 namespace tokenizer {

@@ -74,7 +74,6 @@ pw_source_set("server") {
     "public/pw_rpc/internal/method.h",
     "public/pw_rpc/internal/method_lookup.h",
     "public/pw_rpc/internal/method_union.h",
-    "public/pw_rpc/internal/open_call.h",
     "public/pw_rpc/internal/server_call.h",
     "server.cc",
     "server_call.cc",
@@ -145,11 +144,13 @@ pw_source_set("common") {
   sources = [
     "call.cc",
     "channel.cc",
+    "channel_list.cc",
     "endpoint.cc",
     "packet.cc",
     "public/pw_rpc/internal/call.h",
     "public/pw_rpc/internal/call_context.h",
     "public/pw_rpc/internal/channel.h",
+    "public/pw_rpc/internal/channel_list.h",
     "public/pw_rpc/internal/endpoint.h",
     "public/pw_rpc/internal/lock.h",
     "public/pw_rpc/internal/method_info.h",
@@ -157,16 +158,6 @@ pw_source_set("common") {
     "public/pw_rpc/method_type.h",
   ]
   friend = [ "./*" ]
-}
-
-pw_source_set("synchronized_channel_output") {
-  public_configs = [ ":public_include_path" ]
-  public_deps = [
-    ":common",
-    "$dir_pw_sync:lock_annotations",
-    "$dir_pw_sync:mutex",
-  ]
-  public = [ "public/pw_rpc/synchronized_channel_output.h" ]
 }
 
 pw_source_set("benchmark") {
@@ -208,9 +199,10 @@ pw_source_set("test_utils") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":client",
-    ":fake_channel_output",
     ":server",
     "$dir_pw_containers:vector",
+    "raw:fake_channel_output",
+    "raw:server_api",
     dir_pw_assert,
     dir_pw_bytes,
   ]

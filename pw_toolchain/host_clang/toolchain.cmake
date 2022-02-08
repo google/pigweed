@@ -61,5 +61,15 @@ pw_set_backend(pw_thread.thread pw_thread_stl.thread)
 # TODO: Migrate this to match GN's tokenized trace setup.
 pw_set_backend(pw_trace pw_trace.null)
 
+# The CIPD provided Clang/LLVM toolchain must link against the matched
+# libc++ which is also from CIPD. However, by default, Clang on Mac (but
+# not on Linux) will fall back to the system libc++, which is
+# incompatible due to an ABI change.
+#
+# Pull the appropriate paths from our Pigweed env setup.
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++ $ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/lib/libc++.a")
+endif()
+
 set(pw_build_WARNINGS pw_build.strict_warnings pw_build.extra_strict_warnings
     CACHE STRING "" FORCE)

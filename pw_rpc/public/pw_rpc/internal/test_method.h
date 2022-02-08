@@ -17,6 +17,7 @@
 #include <cstring>
 #include <span>
 
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_union.h"
 #include "pw_rpc/internal/packet.h"
@@ -30,32 +31,52 @@ namespace pw::rpc::internal {
 // channel ID, request, and payload buffer, and optionally provides a response.
 class TestMethod : public Method {
  public:
+  class FakeServerCall : public ServerCall {
+   public:
+    constexpr FakeServerCall() = default;
+    FakeServerCall(const CallContext& context, MethodType type)
+        : ServerCall(context, type) {}
+
+    FakeServerCall(FakeServerCall&&) = default;
+    FakeServerCall& operator=(FakeServerCall&&) = default;
+
+    using internal::Call::set_on_error;
+  };
+
   constexpr TestMethod(uint32_t id, MethodType type = MethodType::kUnary)
-      : Method(id, GetInvoker(type)), last_channel_id_(0), invocations_(0) {}
+      : Method(id, GetInvoker(type)),
+        last_channel_id_(0),
+        invocations_(0),
+        move_to_call_(nullptr) {}
 
   uint32_t last_channel_id() const { return last_channel_id_; }
   const Packet& last_request() const { return last_request_; }
   size_t invocations() const { return invocations_; }
 
-  void set_response(std::span<const std::byte> payload) { response_ = payload; }
-  void set_status(Status status) { response_status_ = status; }
+  // Sets a call object into which to move the call object when the RPC is
+  // invoked. This keeps the RPC active until the provided call object is
+  // finished or goes out of scope.
+  void keep_call_active(FakeServerCall& move_to_call) const {
+    move_to_call_ = &move_to_call;
+  }
 
  private:
-  class FakeServerCall : public ServerCall {
-   public:
-    FakeServerCall(const CallContext& context, MethodType type)
-        : ServerCall(context, type) {}
-  };
-
   template <MethodType kType>
-  static void InvokeForTest(const CallContext& context, const Packet& request) {
+  static void InvokeForTest(const CallContext& context, const Packet& request)
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
     const auto& test_method = static_cast<const TestMethod&>(context.method());
-    test_method.last_channel_id_ = context.channel().id();
+    test_method.last_channel_id_ = context.channel_id();
     test_method.last_request_ = request;
     test_method.invocations_ += 1;
 
     // Create a call object so it registers / unregisters with the server.
     FakeServerCall fake_call(context, kType);
+
+    rpc_lock().unlock();
+
+    if (test_method.move_to_call_ != nullptr) {
+      *test_method.move_to_call_ = std::move(fake_call);
+    }
   }
 
   static constexpr Invoker GetInvoker(MethodType type) {
@@ -77,6 +98,7 @@ class TestMethod : public Method {
   mutable uint32_t last_channel_id_;
   mutable Packet last_request_;
   mutable size_t invocations_;
+  mutable FakeServerCall* move_to_call_;
 
   std::span<const std::byte> response_;
   Status response_status_;

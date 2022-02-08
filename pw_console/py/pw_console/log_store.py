@@ -103,7 +103,7 @@ class LogStore(logging.Handler):
         """Total size of the logs store."""
         return len(self.logs)
 
-    def get_last_log_line_index(self):
+    def get_last_log_index(self):
         """Last valid index of the logs."""
         # Subtract 1 since self.logs is zero indexed.
         total = self.get_total_count()
@@ -123,16 +123,21 @@ class LogStore(logging.Handler):
                 return
 
             format_without_message = format_string.replace('%(message)s', '')
-            formatted_time_and_level = format_without_message % dict(
-                asctime=record.asctime, levelname=record.levelname)
+            # If any other style parameters are left, get the width of them.
+            if (format_without_message and 'asctime' in format_without_message
+                    and 'levelname' in format_without_message):
+                formatted_time_and_level = format_without_message % dict(
+                    asctime=record.asctime, levelname=record.levelname)
 
-            # Delete ANSI escape sequences.
-            ansi_stripped_time_and_level = (
-                pw_console.text_formatting.strip_ansi(formatted_time_and_level)
-            )
+                # Delete ANSI escape sequences.
+                ansi_stripped_time_and_level = (
+                    pw_console.text_formatting.strip_ansi(
+                        formatted_time_and_level))
 
-            self.channel_formatted_prefix_widths[record.name] = len(
-                ansi_stripped_time_and_level)
+                self.channel_formatted_prefix_widths[record.name] = len(
+                    ansi_stripped_time_and_level)
+            else:
+                self.channel_formatted_prefix_widths[record.name] = 0
 
             # Set the max width of all known formats so far.
             self.longest_channel_prefix_width = max(
@@ -153,8 +158,10 @@ class LogStore(logging.Handler):
         self.channel_counts[record.name] = self.channel_counts.get(
             record.name, 0) + 1
 
-        # Save prefix width of this log line.
-        self._update_log_prefix_width(record)
+        # TODO(pwbug/614): Revisit calculating prefix widths automatically when
+        # line wrapping indentation is supported.
+        # Set the prefix width to 0
+        self.channel_formatted_prefix_widths[record.name] = 0
 
         # Parse metadata fields
         self.logs[-1].update_metadata()

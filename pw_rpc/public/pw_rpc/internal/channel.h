@@ -19,11 +19,14 @@
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_rpc/internal/packet.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc::internal {
 
-class Packet;
+// Returns a portion of the encoding buffer that may be used to encode an
+// outgoing payload.
+ByteSpan GetPayloadBuffer() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
 class Channel : public rpc::Channel {
  public:
@@ -32,80 +35,13 @@ class Channel : public rpc::Channel {
   constexpr Channel(uint32_t id, ChannelOutput* output)
       : rpc::Channel(id, output) {}
 
-  // Represents a buffer acquired from a ChannelOutput.
-  class [[nodiscard]] OutputBuffer {
-   public:
-    constexpr OutputBuffer() = default;
-
-    OutputBuffer(const OutputBuffer&) = delete;
-
-    OutputBuffer(OutputBuffer&& other) { *this = std::move(other); }
-
-    ~OutputBuffer() { PW_DASSERT(buffer_.empty()); }
-
-    OutputBuffer& operator=(const OutputBuffer&) = delete;
-
-    OutputBuffer& operator=(OutputBuffer&& other) {
-      PW_DASSERT(buffer_.empty());
-      buffer_ = other.buffer_;
-      other.buffer_ = {};
-      return *this;
-    }
-
-    // Returns a portion of this OutputBuffer to use as the packet payload.
-    std::span<std::byte> payload(const Packet& packet) const;
-
-    bool Contains(std::span<const std::byte> other) const {
-      return !buffer_.empty() && other.data() >= buffer_.data() &&
-             other.data() + other.size() <= buffer_.data() + buffer_.size();
-    }
-
-    bool empty() const { return buffer_.empty(); }
-
-   private:
-    friend class Channel;
-
-    explicit constexpr OutputBuffer(std::span<std::byte> buffer)
-        : buffer_(buffer) {}
-
-    std::span<std::byte> buffer_;
-  };
-
-  // Acquires a buffer for the packet.
-  OutputBuffer AcquireBuffer() const PW_LOCKS_EXCLUDED(rpc_lock()) {
-    return OutputBuffer(output().AcquireBuffer());
-  }
-
-  // Sends an RPC packet. Acquires and uses a ChannelOutput buffer.
-  Status Send(const internal::Packet& packet) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    return SendSpan(output().AcquireBuffer(), packet);
-  }
-
-  // Sends an RPC packet using the provided output buffer.
-  Status SendBuffer(OutputBuffer& buffer, const internal::Packet& packet)
-      PW_UNLOCK_FUNCTION(rpc_lock()) {
-    // TODO(pwbug/597): It would be cleaner if the Call object released the
-    //     OutputBuffer, unlocked the RPC mutex, and then passed a span to this
-    //     function.
-    const std::span released_buffer = buffer.buffer_;
-    buffer.buffer_ = {};
-    rpc_lock().unlock();
-    return SendSpan(released_buffer, packet);
-  }
-
-  void Release(OutputBuffer& buffer) PW_UNLOCK_FUNCTION(rpc_lock()) {
-    const ConstByteSpan released_buffer = buffer.buffer_;
-    buffer.buffer_ = {};
-    rpc_lock().unlock();
-    output().DiscardBuffer(released_buffer);
-  }
+  // Allow closing a channel for internal API users.
+  using rpc::Channel::Close;
 
   // Allow setting the channel ID for tests.
   using rpc::Channel::set_channel_id;
 
- private:
-  Status SendSpan(ByteSpan buffer, const internal::Packet& packet) const
-      PW_LOCKS_EXCLUDED(rpc_lock());
+  Status Send(const Packet& packet) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 };
 
 }  // namespace pw::rpc::internal

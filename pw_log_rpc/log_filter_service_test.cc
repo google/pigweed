@@ -57,7 +57,7 @@ class FilterServiceTest : public ::testing::Test {
 };
 
 TEST_F(FilterServiceTest, GetFilterIds) {
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, ListFilterIds, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, ListFilterIds, 1)
   context(filter_map_);
   context.call({});
   ASSERT_TRUE(context.done());
@@ -77,7 +77,7 @@ TEST_F(FilterServiceTest, GetFilterIds) {
 
   // No IDs reported when the filter map is empty.
   FilterMap empty_filter_map({});
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, ListFilterIds, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, ListFilterIds, 1)
   no_filter_context(empty_filter_map);
   no_filter_context.call({});
   ASSERT_TRUE(no_filter_context.done());
@@ -166,7 +166,7 @@ TEST_F(FilterServiceTest, SetFilterRules) {
   const auto request = EncodeFilterRequest(new_filter, request_buffer);
   ASSERT_EQ(request.status(), OkStatus());
 
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, SetFilter, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, SetFilter, 1)
   context(filter_map_);
   context.call(request.value());
 
@@ -211,7 +211,7 @@ TEST_F(FilterServiceTest, SetFilterRulesWhenUsedByDrain) {
   const auto request = EncodeFilterRequest(new_filter, request_buffer);
   ASSERT_EQ(request.status(), OkStatus());
 
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, SetFilter, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, SetFilter, 1)
   context(filter_map_);
   context.call(request.value());
 
@@ -221,7 +221,7 @@ TEST_F(FilterServiceTest, SetFilterRulesWhenUsedByDrain) {
   }
 
   // An empty request should not modify the filter.
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, SetFilter, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, SetFilter, 1)
   context_no_filter(filter_map_);
   context_no_filter.call({});
   i = 0;
@@ -264,7 +264,7 @@ TEST_F(FilterServiceTest, SetFilterRulesWhenUsedByDrain) {
   const auto second_filter_request =
       EncodeFilterRequest(second_filter, request_buffer);
   ASSERT_EQ(second_filter_request.status(), OkStatus());
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, SetFilter, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, SetFilter, 1)
   context_new_filter(filter_map_);
   context_new_filter.call(second_filter_request.value());
 
@@ -326,7 +326,7 @@ void VerifyFilterRules(protobuf::Decoder& decoder,
 }
 
 TEST_F(FilterServiceTest, GetFilterRules) {
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, GetFilter, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, GetFilter, 1)
   context(filter_map_);
 
   std::byte request_buffer[64];
@@ -351,7 +351,7 @@ TEST_F(FilterServiceTest, GetFilterRules) {
   rules1_[1].level_greater_than_or_equal = log::FilterRule::Level::ERROR_LEVEL;
   rules1_[1].any_flags_set = 0;
 
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, GetFilter, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, GetFilter, 1)
   context2(filter_map_);
   context2.call(request);
   ASSERT_EQ(context2.responses().size(), 1u);
@@ -366,7 +366,7 @@ TEST_F(FilterServiceTest, GetFilterRules) {
   rules1_[2].module_equals.assign(module2.begin(), module2.end());
   rules1_[3].action = Filter::Rule::Action::kInactive;
 
-  PW_RAW_TEST_METHOD_CONTEXT(FilterService, GetFilter, 1, 128)
+  PW_RAW_TEST_METHOD_CONTEXT(FilterService, GetFilter, 1)
   context3(filter_map_);
   context3.call(request);
   ASSERT_EQ(context3.responses().size(), 1u);

@@ -26,6 +26,7 @@
 #include "pw_containers/vector.h"
 #include "pw_containers/wrapped_iterator.h"
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/method_type.h"
 

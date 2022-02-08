@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -100,6 +101,7 @@ pw_source_set("rpc_log_drain") {
   public_deps = [
     ":log_filter",
     "$dir_pw_assert",
+    "$dir_pw_chrono:system_clock",
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_log:protos.raw_rpc",
     "$dir_pw_multisink",
@@ -114,24 +116,44 @@ pw_source_set("rpc_log_drain") {
 pw_source_set("rpc_log_drain_thread") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_log_rpc/rpc_log_drain_thread.h" ]
-  sources = []
   public_deps = [
     ":log_service",
     ":rpc_log_drain",
+    "$dir_pw_chrono:system_clock",
     "$dir_pw_multisink",
     "$dir_pw_result",
     "$dir_pw_rpc/raw:server_api",
     "$dir_pw_status",
-    "$dir_pw_sync:thread_notification",
+    "$dir_pw_sync:timed_thread_notification",
     "$dir_pw_thread:thread",
   ]
 }
 
+pw_source_set("test_utils") {
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_containers:vector",
+    "$dir_pw_log_tokenized:metadata",
+    "$dir_pw_protobuf",
+    "$dir_pw_unit_test",
+  ]
+  deps = [
+    "$dir_pw_log",
+    "$dir_pw_log:protos.pwpb",
+    "$dir_pw_protobuf:bytes_utils",
+  ]
+  public = [ "pw_log_rpc_private/test_utils.h" ]
+  sources = [ "test_utils.cc" ]
+  visibility = [ ":*" ]
+}
+
 pw_test("log_service_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "log_service_test.cc" ]
   deps = [
     ":log_filter",
     ":log_service",
+    ":test_utils",
     "$dir_pw_containers:vector",
     "$dir_pw_log",
     "$dir_pw_log:proto_utils",
@@ -172,11 +194,25 @@ pw_test("log_filter_test") {
 }
 
 pw_test("rpc_log_drain_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "rpc_log_drain_test.cc" ]
   deps = [
+    ":log_filter",
     ":log_service",
     ":rpc_log_drain",
+    ":test_utils",
+    "$dir_pw_bytes",
+    "$dir_pw_log:proto_utils",
+    "$dir_pw_log:protos.pwpb",
+    "$dir_pw_log_tokenized:metadata",
+    "$dir_pw_multisink",
+    "$dir_pw_protobuf",
+    "$dir_pw_rpc:common",
+    "$dir_pw_rpc/raw:fake_channel_output",
+    "$dir_pw_rpc/raw:server_api",
     "$dir_pw_rpc/raw:test_method_context",
+    "$dir_pw_status",
+    "$dir_pw_sync:mutex",
   ]
 }
 

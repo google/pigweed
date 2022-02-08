@@ -423,6 +423,14 @@ def format_paths_in_repo(paths: Collection[Union[Path, str]],
     files = [Path(path).resolve() for path in paths if os.path.isfile(path)]
     repo = git_repo.root() if git_repo.is_repo() else None
 
+    # Implement a graceful fallback in case the tracking branch isn't available.
+    if (base == git_repo.TRACKING_BRANCH_ALIAS
+            and not git_repo.tracking_branch(repo)):
+        _LOG.warning(
+            'Failed to determine the tracking branch, using --base HEAD~1 '
+            'instead of listing all files')
+        base = 'HEAD~1'
+
     # If this is a Git repo, list the original paths with git ls-files or diff.
     if repo:
         _LOG.info(

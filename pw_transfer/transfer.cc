@@ -54,6 +54,7 @@ void TransferService::HandleChunk(ConstByteSpan message,
   Result<internal::ServerContext*> result =
       chunk.IsInitialChunk() ? pool.StartTransfer(chunk.transfer_id,
                                                   work_queue_,
+                                                  encoding_buffer_,
                                                   stream,
                                                   chunk_timeout_,
                                                   max_retries_)

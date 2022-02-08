@@ -21,62 +21,16 @@
 #include <cstdint>
 #include <span>
 
+#include "gtest/gtest.h"
 #include "pw_assert/assert.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/server.h"
 
 namespace pw::rpc::internal {
-
-template <size_t kOutputBufferSize>
-class TestOutput : public ChannelOutput {
- public:
-  static constexpr size_t buffer_size() { return kOutputBufferSize; }
-
-  constexpr TestOutput(const char* name = "TestOutput")
-      : ChannelOutput(name), sent_data_ {}
-  {}
-
-  size_t MaximumTransmissionUnit() override { return buffer_size(); }
-
-  std::span<std::byte> AcquireBuffer() override { return buffer_; }
-
-  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
-    if (buffer.empty()) {
-      return OkStatus();
-    }
-
-    PW_ASSERT(buffer.data() == buffer_.data());
-
-    packet_count_ += 1;
-    sent_data_ = buffer;
-    Result<internal::Packet> result = internal::Packet::FromBuffer(sent_data_);
-    EXPECT_EQ(OkStatus(), result.status());
-    sent_packet_ = result.value_or(internal::Packet());
-    return send_status_;
-  }
-
-  std::span<const std::byte> buffer() const { return buffer_; }
-
-  size_t packet_count() const { return packet_count_; }
-
-  void set_send_status(Status status) { send_status_ = status; }
-
-  const std::span<const std::byte>& sent_data() const { return sent_data_; }
-  const internal::Packet& sent_packet() const {
-    EXPECT_GT(packet_count_, 0u);
-    return sent_packet_;
-  }
-
- private:
-  std::array<std::byte, buffer_size()> buffer_;
-  std::span<const std::byte> sent_data_;
-  internal::Packet sent_packet_;
-  size_t packet_count_ = 0;
-  Status send_status_;
-};
 
 // Version of the Server with extra methods exposed for testing.
 class TestServer : public Server {
@@ -84,10 +38,7 @@ class TestServer : public Server {
   using Server::FindCall;
 };
 
-template <typename Service,
-          size_t kOutputBufferSize = 128,
-          uint32_t kChannelId = 99,
-          uint32_t kServiceId = 16>
+template <typename Service, uint32_t kChannelId = 99, uint32_t kServiceId = 16>
 class ServerContextForTest {
  public:
   static constexpr uint32_t channel_id() { return kChannelId; }
@@ -97,11 +48,8 @@ class ServerContextForTest {
       : channel_(Channel::Create<kChannelId>(&output_)),
         server_(std::span(&channel_, 1)),
         service_(kServiceId),
-        context_(static_cast<Server&>(server_),
-                 static_cast<Channel&>(channel_),
-                 service_,
-                 method,
-                 0) {
+        context_(
+            static_cast<Server&>(server_), channel_.id(), service_, method, 0) {
     server_.RegisterService(service_);
   }
 
@@ -145,12 +93,12 @@ class ServerContextForTest {
   }
 
   const internal::CallContext& get() { return context_; }
-  auto& output() { return output_; }
+  internal::test::FakeChannelOutput& output() { return output_; }
   TestServer& server() { return static_cast<TestServer&>(server_); }
   Service& service() { return service_; }
 
  private:
-  TestOutput<kOutputBufferSize> output_;
+  RawFakeChannelOutput<5> output_;
   rpc::Channel channel_;
   rpc::Server server_;
   Service service_;
@@ -158,8 +106,7 @@ class ServerContextForTest {
   const internal::CallContext context_;
 };
 
-template <size_t kOutputBufferSize = 128,
-          size_t input_buffer_size = 128,
+template <size_t kInputBufferSize = 128,
           uint32_t kChannelId = 99,
           uint32_t kServiceId = 16,
           uint32_t kMethodId = 111>
@@ -173,7 +120,7 @@ class ClientContextForTest {
       : channel_(Channel::Create<kChannelId>(&output_)),
         client_(std::span(&channel_, 1)) {}
 
-  const auto& output() const { return output_; }
+  const internal::test::FakeChannelOutput& output() const { return output_; }
   Channel& channel() { return static_cast<Channel&>(channel_); }
   Client& client() { return client_; }
 
@@ -183,11 +130,11 @@ class ClientContextForTest {
                     Status status = OkStatus(),
                     std::span<const std::byte> payload = {}) {
     uint32_t call_id =
-        output_.packet_count() > 0 ? output_.sent_packet().call_id() : 0;
+        output().total_packets() > 0 ? output().last_packet().call_id() : 0;
 
     internal::Packet packet(
         type, kChannelId, kServiceId, kMethodId, call_id, payload, status);
-    std::byte buffer[input_buffer_size];
+    std::byte buffer[kInputBufferSize];
     Result result = packet.Encode(buffer);
     EXPECT_EQ(result.status(), OkStatus());
     return client_.ProcessPacket(result.value_or(ConstByteSpan()));
@@ -202,7 +149,7 @@ class ClientContextForTest {
   }
 
  private:
-  TestOutput<kOutputBufferSize> output_;
+  RawFakeChannelOutput<5> output_;
   rpc::Channel channel_;
   Client client_;
 };

@@ -13,11 +13,84 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_config(pw_log_CONFIG)
 
-pw_add_facade(pw_log
+pw_add_module_library(pw_log.config
+  HEADERS
+    public/pw_log/config.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
-    pw_preprocessor
     ${pw_log_CONFIG}
 )
+
+pw_add_facade(pw_log
+  HEADERS
+    public/pw_log/levels.h
+    public/pw_log/log.h
+    public/pw_log/options.h
+    public/pw_log/short.h
+    public/pw_log/shorter.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log.config
+)
+
+pw_add_module_library(pw_log.proto_utils
+  HEADERS
+    public/pw_log/proto_utils.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log.facade
+    pw_bytes
+    pw_log_tokenized.metadata
+    pw_result
+  PRIVATE_DEPS
+    pw_log.protos.pwpb
+  SOURCES
+    proto_utils.cc
+)
+
+pw_proto_library(pw_log.protos
+  SOURCES
+    log.proto
+  PREFIX
+    pw_log/proto
+  DEPS
+    pw_protobuf.common_protos
+    pw_tokenizer.proto
+)
+
+if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
+  pw_add_test(pw_log.basic_log_test
+    SOURCES
+      basic_log_test.cc
+      basic_log_test_plain_c.c
+    DEPS
+      pw_log
+      pw_preprocessor
+    GROUPS
+      modules
+      pw_log
+  )
+endif()
+
+if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
+  pw_add_test(pw_log.proto_utils_test
+    SOURCES
+      proto_utils_test.cc
+    DEPS
+      pw_log
+      pw_log.proto_utils
+      pw_preprocessor
+      pw_protobuf
+      pw_protobuf.bytes_utils
+    GROUPS
+      modules
+      pw_log
+  )
+endif()

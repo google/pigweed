@@ -55,18 +55,26 @@ A project's presubmit script can be registered as a
 presubmit``.
 
 Setting up the command-line interface
--------------------------------------
+=====================================
 The ``pw_presubmit.cli`` module sets up the command-line interface for a
 presubmit script. This defines a standard set of arguments for invoking
 presubmit checks. Its use is optional, but recommended.
 
 pw_presubmit.cli
-~~~~~~~~~~~~~~~~
+----------------
 .. automodule:: pw_presubmit.cli
    :members: add_arguments, run
 
+Presubmit output directory
+--------------------------
+The ``pw_presubmit`` command line interface includes an ``--output-directory``
+option that specifies the working directory to use for presubmits. The default
+path is ``out/presubmit``.  A subdirectory is created for each presubmit step.
+This directory persists between presubmit runs and can be cleaned by deleting it
+or running ``pw presubmit --clean``.
+
 Presubmit checks
-----------------
+================
 A presubmit check is defined as a function or other callable. The function must
 accept one argument: a ``PresubmitContext``, which provides the paths on which
 to run. Presubmit checks communicate failure by raising an exception.
@@ -96,12 +104,12 @@ such as a quick program for local use and a full program for automated use. The
 ``quick`` and ``full`` programs.
 
 Existing Presubmit Checks
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 A small number of presubmit checks are made available through ``pw_presubmit``
 modules.
 
 Code Formatting
-===============
+^^^^^^^^^^^^^^^
 Formatting checks for a variety of languages are available from
 ``pw_presubmit.format_code``. These include C/C++, Java, Go, Python, GN, and
 others. All of these checks can be included by adding
@@ -111,20 +119,20 @@ all use language-specific formatters like clang-format or yapf.
 These will suggest fixes using ``pw format --fix``.
 
 #pragma once
-============
+^^^^^^^^^^^^
 There's a ``pragma_once`` check that confirms the first non-comment line of
 C/C++ headers is ``#pragma once``. This is enabled by adding
 ``pw_presubmit.pragma_once`` to a presubmit program.
 
 Python Checks
-=============
+^^^^^^^^^^^^^
 There are two checks in the ``pw_presubmit.python_checks`` module, ``gn_pylint``
 and ``gn_python_check``. They assume there's a top-level ``python`` GN target.
 ``gn_pylint`` runs Pylint and Mypy checks and ``gn_python_check`` runs Pylint,
 Mypy, and all Python tests.
 
 Inclusive Language
-==================
+^^^^^^^^^^^^^^^^^^
 .. inclusive-language: disable
 
 The inclusive language check looks for words that are typical of non-inclusive
@@ -142,14 +150,14 @@ for entire blocks by using "inclusive-language: disable" before the block and
 .. is repeated here: inclusive-language: enable.
 
 pw_presubmit
-~~~~~~~~~~~~
+------------
 .. automodule:: pw_presubmit
    :members: filter_paths, call, PresubmitFailure, Programs
 
 .. _example-script:
 
 Example
--------
+=======
 A simple example presubmit check script follows. This can be copied-and-pasted
 to serve as a starting point for a project's presubmit check script.
 

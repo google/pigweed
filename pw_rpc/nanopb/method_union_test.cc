@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+//
 
 #include "pw_rpc/nanopb/internal/method_union.h"
 
@@ -98,9 +99,10 @@ TEST(NanopbMethodUnion, Raw_CallsUnaryMethod) {
   const Method& method =
       std::get<0>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  rpc_lock().lock();
   method.Invoke(context.get(), context.request({}));
 
-  const Packet& response = context.output().sent_packet();
+  const Packet& response = context.output().last_packet();
   EXPECT_EQ(response.status(), Status::Unknown());
 }
 
@@ -112,11 +114,12 @@ TEST(NanopbMethodUnion, Raw_CallsServerStreamingMethod) {
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
+  rpc_lock().lock();
   method.Invoke(context.get(), context.request(request));
 
   EXPECT_TRUE(context.service().last_raw_writer.active());
   EXPECT_EQ(OkStatus(), context.service().last_raw_writer.Finish());
-  EXPECT_EQ(context.output().sent_packet().type(), PacketType::RESPONSE);
+  EXPECT_EQ(context.output().last_packet().type(), PacketType::RESPONSE);
 }
 
 TEST(NanopbMethodUnion, Nanopb_CallsUnaryMethod) {
@@ -126,9 +129,10 @@ TEST(NanopbMethodUnion, Nanopb_CallsUnaryMethod) {
   const Method& method =
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  rpc_lock().lock();
   method.Invoke(context.get(), context.request(request));
 
-  const Packet& response = context.output().sent_packet();
+  const Packet& response = context.output().last_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
 
   // Field 1 (encoded as 1 << 3) with 128 as the value.
@@ -151,13 +155,14 @@ TEST(NanopbMethodUnion, Nanopb_CallsServerStreamingMethod) {
       std::get<3>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
+  rpc_lock().lock();
   method.Invoke(context.get(), context.request(request));
 
   EXPECT_EQ(555, context.service().last_request.integer);
   EXPECT_TRUE(context.service().last_writer.active());
 
   EXPECT_EQ(OkStatus(), context.service().last_writer.Finish());
-  EXPECT_EQ(context.output().sent_packet().type(), PacketType::RESPONSE);
+  EXPECT_EQ(context.output().last_packet().type(), PacketType::RESPONSE);
 }
 
 }  // namespace

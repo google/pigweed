@@ -217,21 +217,29 @@ here.
   whether this is provided.)
 
 ``cipd_package_files``
-  CIPD package file. JSON file consisting of a list of dictionaries with "path",
-  "platforms", and "tags" keys. An example is below.
+  CIPD package file. JSON file consisting of a list of additional CIPD package
+  files to import and a list of dictionaries with "path", "platforms", and
+  "tags" keys. Both top-level lists are optional. An example is below.
 
 .. code-block:: json
 
   {
-    "path": "infra/3pp/tools/go/${platform}",
-    "platforms": [
-        "linux-amd64",
-        "linux-arm64",
-        "mac-amd64",
-        "windows-amd64"
+    "included_files": [
+      "foo.json"
     ],
-    "tags": [
-      "version:2@1.16.3"
+    "packages": [
+      {
+        "path": "infra/3pp/tools/go/${platform}",
+        "platforms": [
+            "linux-amd64",
+            "linux-arm64",
+            "mac-amd64",
+            "windows-amd64"
+        ],
+        "tags": [
+          "version:2@1.16.3"
+        ]
+      }
     ]
   }
 
@@ -300,6 +308,30 @@ set the following environment variables.
  - ``PW_LUCI_CIPD_INSTALL_DIR``
  - ``PW_MYPROJECTNAME_CIPD_INSTALL_DIR``
  - ``PW_PIGWEED_CIPD_INSTALL_DIR``
+
+In addition, ``PW_${BASENAME}_CIPD_INSTALL_DIR`` and
+``PW_${BASENAME}_CIPD_INSTALL_DIR/bin`` are both added to ``PATH`` for each
+package directory.
+
+If multiple packages install executables with the same name, the file mentioned
+last topologically takes priority. For example, with the file contents below,
+``d.json``'s entries will appear in ``PATH`` before ``c.json``'s, which will
+appear before ``b.json``'s, which will appear before ``a.json``'s.
+
+``config.json``
+  ``{"cipd_package_files": ["a.json", "b.json", "d.json"], ...}``
+
+``a.json``
+  ``{"package_files": [...]}``
+
+``b.json``
+  ``{"included_files": ["c.json"], "package_files": [...]}``
+
+``c.json``
+  ``{"package_files": [...]}``
+
+``d.json``
+  ``{"package_files": [...]}``
 
 Pinning Python Packages
 ***********************

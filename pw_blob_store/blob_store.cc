@@ -534,7 +534,9 @@ Status BlobStore::CalculateChecksumFromFlash(size_t bytes_to_check) {
 }
 
 Status BlobStore::BlobWriter::SetFileName(std::string_view file_name) {
-  PW_DCHECK(open_);
+  if (!open_) {
+    return Status::FailedPrecondition();
+  }
   PW_DCHECK_NOTNULL(file_name.data());
   PW_DCHECK(store_.writer_open_);
 
@@ -621,7 +623,9 @@ Status BlobStore::BlobWriter::WriteMetadata() {
 }
 
 Status BlobStore::BlobWriter::Close() {
-  PW_DCHECK(open_);
+  if (!open_) {
+    return Status::FailedPrecondition();
+  }
   open_ = false;
 
   // This is a lambda so the BlobWriter will be unconditionally closed even if
@@ -676,8 +680,7 @@ Status BlobStore::BlobWriter::Close() {
 }
 
 size_t BlobStore::BlobReader::ConservativeLimit(LimitType limit) const {
-  if (limit == LimitType::kRead) {
-    PW_DCHECK(open_);
+  if (open_ && limit == LimitType::kRead) {
     return store_.ReadableDataBytes() - offset_;
   }
   return 0;
@@ -701,8 +704,7 @@ Status BlobStore::BlobReader::Open(size_t offset) {
 }
 
 size_t BlobStore::BlobReader::DoTell() const {
-  PW_DCHECK(open_);
-  return offset_;
+  return open_ ? offset_ : kUnknownPosition;
 }
 
 Status BlobStore::BlobReader::DoSeek(ptrdiff_t offset, Whence origin) {

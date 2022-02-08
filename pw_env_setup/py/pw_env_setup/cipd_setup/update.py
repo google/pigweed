@@ -68,7 +68,7 @@ def check_auth(cipd, package_files, spin):
         with open(package_file, 'r') as ins:
             # This is an expensive RPC, so only check the first few entries
             # in each file.
-            for i, entry in enumerate(json.load(ins)):
+            for i, entry in enumerate(json.load(ins).get('packages', ())):
                 if i >= 3:
                     break
                 parts = entry['path'].split('/')
@@ -167,9 +167,44 @@ def _platform():
     return '{}-{}'.format(osname, arch).lower()
 
 
+def all_package_files(env_vars, package_files):
+    """Recursively retrieve all package files."""
+
+    result = []
+    to_process = []
+    for pkg_file in package_files:
+        args = []
+        if env_vars:
+            args.append(env_vars.get('PW_PROJECT_ROOT'))
+        args.append(pkg_file)
+
+        # The signature here is os.path.join(a, *p). Pylint doesn't like when
+        # we call os.path.join(*args), but is happy if we instead call
+        # os.path.join(args[0], *args[1:]). Disabling the option on this line
+        # seems to be a less confusing choice.
+        path = os.path.join(*args)  # pylint: disable=no-value-for-parameter
+
+        to_process.append(path)
+
+    while to_process:
+        package_file = to_process.pop(0)
+        result.append(package_file)
+
+        with open(package_file, 'r') as ins:
+            entries = json.load(ins).get('included_files', ())
+
+        for entry in entries:
+            entry = os.path.join(os.path.dirname(package_file), entry)
+
+            if entry not in result and entry not in to_process:
+                to_process.append(entry)
+
+    return result
+
+
 def write_ensure_file(package_file, ensure_file):
     with open(package_file, 'r') as ins:
-        packages = json.load(ins)
+        packages = json.load(ins).get('packages', ())
 
     with open(ensure_file, 'w') as outs:
         outs.write('$VerifiedPlatform linux-amd64\n'
@@ -186,6 +221,17 @@ def write_ensure_file(package_file, ensure_file):
             outs.write('{} {}\n'.format(pkg['path'], ' '.join(pkg['tags'])))
 
 
+def package_installation_path(root_install_dir, package_file):
+    """Returns the package installation path.
+
+    Args:
+      root_install_dir: The CIPD installation directory.
+      package_file: The path to the .json package definition file.
+    """
+    return os.path.join(root_install_dir,
+                        os.path.basename(os.path.splitext(package_file)[0]))
+
+
 def update(
     cipd,
     package_files,
@@ -195,6 +241,8 @@ def update(
     spin=None,
 ):
     """Grab the tools listed in ensure_files."""
+
+    package_files = all_package_files(env_vars, package_files)
 
     if not check_auth(cipd, package_files, spin):
         return False
@@ -225,9 +273,7 @@ def update(
                     os.path.splitext(package_file)[0] + '.ensure'))
             write_ensure_file(package_file, ensure_file)
 
-        install_dir = os.path.join(
-            root_install_dir,
-            os.path.basename(os.path.splitext(package_file)[0]))
+        install_dir = package_installation_path(root_install_dir, package_file)
 
         name = os.path.basename(install_dir)
 

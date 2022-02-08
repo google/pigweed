@@ -22,6 +22,5 @@ pw_add_module_library(targets.host.system_rpc_server
   PRIVATE_DEPS
     pw_hdlc
     pw_rpc.server
-    pw_rpc.synchronized_channel_output
     pw_stream.socket_stream
 )

@@ -129,7 +129,10 @@ def find_matching_elf(uuid: bytes, search_dir: Path) -> Optional[Path]:
     """Recursively searches a directory for an ELF file with a matching UUID."""
     elf_file_paths = search_dir.glob('**/*.elf')
     for elf_file in elf_file_paths:
-        candidate_id = read_build_id(open(elf_file, 'rb'))
+        try:
+            candidate_id = read_build_id(open(elf_file, 'rb'))
+        except GnuBuildIdError:
+            continue
         if candidate_id is None:
             continue
         if candidate_id == uuid:

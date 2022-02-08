@@ -17,6 +17,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/internal/call_context.h"
+#include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/method_type.h"
 
 namespace pw::rpc::internal::test {
@@ -57,7 +58,6 @@ class FakeServerReaderWriter : private internal::ServerCall {
     return CloseAndSendResponse(status);
   }
 
-  using Call::PayloadBuffer;
   using Call::Write;
 
   // Expose a few additional methods for test use.
@@ -80,7 +80,6 @@ class FakeServerWriter : private FakeServerReaderWriter {
 
   // Functions for test use.
   using FakeServerReaderWriter::as_server_call;
-  using FakeServerReaderWriter::PayloadBuffer;
 };
 
 class FakeServerReader : private FakeServerReaderWriter {
@@ -94,9 +93,6 @@ class FakeServerReader : private FakeServerReaderWriter {
 
   using FakeServerReaderWriter::active;
   using FakeServerReaderWriter::as_server_call;
-
-  // Functions for test use.
-  using FakeServerReaderWriter::PayloadBuffer;
 };
 
 }  // namespace pw::rpc::internal::test

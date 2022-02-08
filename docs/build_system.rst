@@ -564,7 +564,7 @@ containing some details about how Bazel works in general, this section is not
 intended to be a guide on how to use Bazel. To learn more about the tool itself,
 refer to the official `Bazel reference`_.
 
-.. _Bazel reference: https://docs.bazel.build/versions/4.0.0/bazel-overview.html
+.. _Bazel reference: https://www.bazel.build/
 
 General usage
 -------------

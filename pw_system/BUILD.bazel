@@ -73,7 +73,6 @@ pw_cc_library(
         "//pw_assert",
         "//pw_hdlc:pw_rpc",
         "//pw_hdlc:rpc_channel_output",
-        "//pw_rpc:synchronized_channel_output",
         "//pw_rpc/system_server:facade",
         "//pw_sync:mutex",
         "//pw_thread:thread_core",
@@ -131,6 +130,21 @@ pw_cc_library(
         ":io",
         "//pw_stream",
         "//pw_stream:sys_io_stream",
+    ],
+)
+
+pw_cc_library(
+    name = "socket_target_io",
+    srcs = [
+        "socket_target_io.cc",
+    ],
+    includes = ["public"],
+    deps = [
+        ":config",
+        ":io",
+        "//pw_assert",
+        "//pw_stream",
+        "//pw_stream:socket_stream",
     ],
 )
 

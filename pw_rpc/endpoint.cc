@@ -61,38 +61,18 @@ Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
 }
 
 void Endpoint::RegisterCall(Call& call) {
-  rpc_lock().lock();
-
   Call* const existing_call = FindCallById(
       call.channel_id_locked(), call.service_id(), call.method_id());
 
   RegisterUniqueCall(call);
 
   if (existing_call != nullptr) {
-    existing_call->ReplaceWithNewInstance(call);
-  } else {
-    rpc_lock().unlock();
+    // TODO(pwbug/597): Ensure call object is locked when calling callback. For
+    //     on_error, could potentially move the callback and call it after the
+    //     lock is released.
+    existing_call->HandleError(Status::Cancelled());
+    rpc_lock().lock();
   }
-}
-
-Channel* Endpoint::GetInternalChannel(uint32_t id) const {
-  for (Channel& c : channels_) {
-    if (c.id() == id) {
-      return &c;
-    }
-  }
-  return nullptr;
-}
-
-Channel* Endpoint::AssignChannel(uint32_t id, ChannelOutput& interface) {
-  internal::Channel* channel =
-      GetInternalChannel(Channel::kUnassignedChannelId);
-  if (channel == nullptr) {
-    return nullptr;
-  }
-
-  *channel = Channel(id, &interface);
-  return channel;
 }
 
 Call* Endpoint::FindCallById(uint32_t channel_id,
@@ -105,6 +85,32 @@ Call* Endpoint::FindCallById(uint32_t channel_id,
     }
   }
   return nullptr;
+}
+
+Status Endpoint::CloseChannel(uint32_t channel_id) {
+  LockGuard lock(rpc_lock());
+
+  Channel* channel = channels_.Get(channel_id);
+  if (channel == nullptr) {
+    return Status::NotFound();
+  }
+  channel->Close();
+
+  // Close pending calls on the channel that's going away.
+  auto previous = calls_.before_begin();
+  auto current = calls_.begin();
+
+  while (current != calls_.end()) {
+    if (channel_id == current->channel_id_locked()) {
+      current->HandleChannelClose();
+      current = calls_.erase_after(previous);  // previous stays the same
+    } else {
+      previous = current;
+      ++current;
+    }
+  }
+
+  return OkStatus();
 }
 
 }  // namespace pw::rpc::internal

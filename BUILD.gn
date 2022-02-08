@@ -53,6 +53,7 @@ group("default") {
     ":stm32f429i",
     "$dir_pw_env_setup:python.lint",
     "$dir_pw_env_setup:python.tests",
+    "pw_rpc:test_protos.python.install",
   ]
 
   if (pw_RUN_INTEGRATION_TESTS) {

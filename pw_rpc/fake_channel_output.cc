@@ -25,10 +25,6 @@
 
 namespace pw::rpc::internal::test {
 
-FakeChannelOutput::~FakeChannelOutput() {
-  PW_CHECK(!buffer_acquired_, "A FakeChannelOutput buffer was never released");
-}
-
 void FakeChannelOutput::clear() {
   payloads_.clear();
   packets_.clear();
@@ -36,22 +32,7 @@ void FakeChannelOutput::clear() {
   return_after_packet_count_ = -1;
 }
 
-ByteSpan FakeChannelOutput::AcquireBuffer() {
-  PW_CHECK(!buffer_acquired_,
-           "Multiple FakeChannelOutput buffers were acquired");
-  buffer_acquired_ = true;
-
-  return encoding_buffer_;
-}
-
-Status FakeChannelOutput::HandlePacket(std::span<const std::byte> buffer) {
-  PW_CHECK_PTR_EQ(buffer.data(), encoding_buffer_.data());
-  PW_CHECK_UINT_LE(buffer.size(), encoding_buffer_.size());
-
-  PW_CHECK(buffer_acquired_,
-           "Releasing a FakeChannelOutput buffer that wasn't acquired");
-  buffer_acquired_ = false;
-
+Status FakeChannelOutput::Send(std::span<const std::byte> buffer) {
   // If the buffer is empty, this is just releasing an unused buffer.
   if (buffer.empty()) {
     return OkStatus();

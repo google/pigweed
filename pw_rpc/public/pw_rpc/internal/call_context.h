@@ -32,29 +32,32 @@ class Method;
 class CallContext {
  public:
   constexpr CallContext(Endpoint& server,
-                        Channel& channel,
+                        uint32_t channel_id,
                         Service& service,
                         const internal::Method& method,
                         uint32_t call_id)
       : server_(server),
-        channel_(channel),
+        channel_id_(channel_id),
         service_(service),
         method_(method),
         call_id_(call_id) {}
 
   constexpr Endpoint& server() const { return server_; }
 
-  constexpr Channel& channel() const { return channel_; }
+  constexpr const uint32_t& channel_id() const { return channel_id_; }
 
   constexpr Service& service() const { return service_; }
 
   constexpr const internal::Method& method() const { return method_; }
 
-  constexpr uint32_t call_id() const { return call_id_; }
+  constexpr const uint32_t& call_id() const { return call_id_; }
+
+  // For testing use only
+  void set_channel_id(uint32_t channel_id) { channel_id_ = channel_id; }
 
  private:
   Endpoint& server_;
-  Channel& channel_;
+  uint32_t channel_id_;
   Service& service_;
   const internal::Method& method_;
   uint32_t call_id_;

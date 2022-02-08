@@ -52,19 +52,18 @@ TEST(Method, Invoke) {
    public:
     constexpr NullChannelOutput() : ChannelOutput("NullChannelOutput") {}
 
-    size_t MaximumTransmissionUnit() override { return 0; }
-    ByteSpan AcquireBuffer() override { return {}; }
-    Status SendAndReleaseBuffer(ConstByteSpan) override { return OkStatus(); }
+    Status Send(ConstByteSpan) override { return OkStatus(); }
   } channel_output;
 
   Channel channel(123, &channel_output);
   Server server(std::span(static_cast<rpc::Channel*>(&channel), 1));
   TestService service;
 
-  const CallContext context(server, channel, service, kTestMethod, 0);
+  const CallContext context(server, channel.id(), service, kTestMethod, 0);
   Packet empty_packet;
 
   EXPECT_EQ(kTestMethod.invocations(), 0u);
+  rpc_lock().lock();
   kTestMethod.Invoke(context, empty_packet);
   EXPECT_EQ(kTestMethod.invocations(), 1u);
 }

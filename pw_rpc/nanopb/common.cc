@@ -43,16 +43,11 @@ struct NanopbTraits<bool(pb_istream_t*, FieldsType, void*)> {
 
 using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
 
-Result<ByteSpan> EncodeToPayloadBuffer(Call& call,
-                                       const void* payload,
-                                       NanopbSerde serde)
-    PW_UNLOCK_FUNCTION(rpc_lock()) {
-  std::span<std::byte> payload_buffer = call.PayloadBufferInternal();
-  rpc_lock().unlock();
-
+Result<ByteSpan> EncodeToPayloadBuffer(const void* payload, NanopbSerde serde)
+    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  ByteSpan payload_buffer = GetPayloadBuffer();
   StatusWithSize result = serde.Encode(payload, payload_buffer);
   if (!result.ok()) {
-    call.ReleasePayloadBuffer();
     return result.status();
   }
   return payload_buffer.first(result.size());
@@ -109,9 +104,8 @@ void NanopbSendInitialRequest(ClientCall& call,
                               const void* payload) {
   PW_DCHECK(call.active_locked());
 
-  Result<ByteSpan> result = EncodeToPayloadBuffer(call, payload, serde);
+  Result<ByteSpan> result = EncodeToPayloadBuffer(payload, serde);
 
-  rpc_lock().lock();
   if (result.ok()) {
     call.SendInitialClientRequest(*result);
   } else {
@@ -120,33 +114,31 @@ void NanopbSendInitialRequest(ClientCall& call,
 }
 
 Status NanopbSendStream(Call& call, const void* payload, NanopbSerde serde) {
-  rpc_lock().lock();
+  LockGuard lock(rpc_lock());
   if (!call.active_locked()) {
-    rpc_lock().unlock();
     return Status::FailedPrecondition();
   }
 
-  Result<ByteSpan> result = EncodeToPayloadBuffer(call, payload, serde);
+  Result<ByteSpan> result = EncodeToPayloadBuffer(payload, serde);
 
   PW_TRY(result.status());
-  return call.Write(*result);
+  return call.WriteLocked(*result);
 }
 
 Status SendFinalResponse(NanopbServerCall& call,
                          const void* payload,
                          const Status status) {
-  rpc_lock().lock();
+  LockGuard lock(rpc_lock());
   if (!call.active_locked()) {
-    rpc_lock().unlock();
     return Status::FailedPrecondition();
   }
 
   Result<ByteSpan> result =
-      EncodeToPayloadBuffer(call, payload, call.serde().response());
+      EncodeToPayloadBuffer(payload, call.serde().response());
   if (!result.ok()) {
-    return call.CloseAndSendServerError(Status::Internal());
+    return call.CloseAndSendServerErrorLocked(Status::Internal());
   }
-  return call.CloseAndSendResponse(*result, status);
+  return call.CloseAndSendResponseLocked(*result, status);
 }
 
 }  // namespace pw::rpc::internal

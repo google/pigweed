@@ -457,11 +457,20 @@ TEST_F(TokenizeToBuffer, C_Overflow) {
   }
 }
 
-// Test fixture for callback and global handler. Both of these need a global
-// message buffer. To keep the message buffers separate, template this on the
-// derived class type.
-template <typename Impl>
-class GlobalMessage : public ::testing::Test {
+#define MACRO_THAT_CALLS_ANOTHER_MACRO(action) ANOTHER_MACRO(action)
+
+#define ANOTHER_MACRO(action) action
+
+TEST_F(TokenizeToBuffer, AsArgumentToAnotherMacro) {
+  size_t message_size = sizeof(buffer_);
+  MACRO_THAT_CALLS_ANOTHER_MACRO(
+      PW_TOKENIZE_TO_BUFFER(buffer_, &message_size, __func__));
+  constexpr auto expected = ExpectedData(__func__);
+  ASSERT_EQ(expected.size(), message_size);
+  EXPECT_EQ(std::memcmp(expected.data(), buffer_, expected.size()), 0);
+}
+
+class TokenizeToCallback : public ::testing::Test {
  public:
   static void SetMessage(const uint8_t* message, size_t size) {
     ASSERT_LE(size, sizeof(message_));
@@ -470,7 +479,7 @@ class GlobalMessage : public ::testing::Test {
   }
 
  protected:
-  GlobalMessage() {
+  TokenizeToCallback() {
     std::memset(message_, 0, sizeof(message_));
     message_size_bytes_ = 0;
   }
@@ -479,12 +488,8 @@ class GlobalMessage : public ::testing::Test {
   static size_t message_size_bytes_;
 };
 
-template <typename Impl>
-uint8_t GlobalMessage<Impl>::message_[256] = {};
-template <typename Impl>
-size_t GlobalMessage<Impl>::message_size_bytes_ = 0;
-
-class TokenizeToCallback : public GlobalMessage<TokenizeToCallback> {};
+uint8_t TokenizeToCallback::message_[256] = {};
+size_t TokenizeToCallback::message_size_bytes_ = 0;
 
 TEST_F(TokenizeToCallback, Variety) {
   PW_TOKENIZE_TO_CALLBACK(
@@ -542,6 +547,16 @@ TEST_F(TokenizeToCallback, C_SequentialZigZag) {
   ASSERT_EQ(expected.size(), message_size_bytes_);
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
 }
+
+TEST_F(TokenizeToCallback, AsArgumentToAnotherMacro) {
+  MACRO_THAT_CALLS_ANOTHER_MACRO(PW_TOKENIZE_TO_CALLBACK(SetMessage, __func__));
+  constexpr auto expected = ExpectedData(__func__);
+  ASSERT_EQ(expected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
+}
+
+#undef MACRO_THAT_CALLS_ANOTHER_MACRO
+#undef ANOTHER_MACRO
 
 // Hijack an internal macro to capture the tokenizer domain.
 #undef _PW_TOKENIZER_RECORD_ORIGINAL_STRING

@@ -45,6 +45,11 @@ config("lite_backend_overrides") {
   visibility = [ ":*" ]
 }
 
+config("print_and_abort_backend_overrides") {
+  include_dirs = [ "print_and_abort_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 pw_source_set("config") {
   public = [ "public/pw_assert/config.h" ]
   public_configs = [ ":public_include_path" ]
@@ -112,6 +117,30 @@ pw_source_set("lite_compatibility_backend") {
 }
 
 group("lite_compatibility_backend.impl") {
+}
+
+# This backend to pw_assert's PW_ASSERT()/PW_DASSERT() macros prints the assert
+# expression, file/line number, and function with printf, then aborts. It is
+# intended for use with host builds.
+#
+# Warning: The "lite" naming is transitional. assert_lite_backend.h headers
+# will be renamed as the pw_assert API is reassessed. (pwbug/246)
+pw_source_set("print_and_abort") {
+  public_configs = [
+    ":print_and_abort_backend_overrides",
+    ":public_include_path",
+  ]
+  public_deps = [
+    ":config",
+    dir_pw_preprocessor,
+  ]
+  public = [
+    "print_and_abort_public_overrides/pw_assert_backend/assert_lite_backend.h",
+  ]
+  sources = [ "public/pw_assert/internal/print_and_abort.h" ]
+}
+
+group("print_and_abort.impl") {
 }
 
 # pw_assert is low-level and ubiquitous. Because of this, it can often cause

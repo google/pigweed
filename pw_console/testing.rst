@@ -34,41 +34,86 @@ Log Pane: Basic Actions
      - ✅
 
    * - 1
-     - Click the ``Logs`` window title
+     - Click the :guilabel:`Fake Device Logs` window title
      - Log pane is focused
      - |checkbox|
 
    * - 2
-     - Click ``Search`` on the log toolbar
+     - Click :guilabel:`Search` on the log toolbar
      - | The search bar appears
        | The cursor should appear after the ``/``
      - |checkbox|
 
    * - 3
-     - Press ``Ctrl-c``
+     - Press :kbd:`Ctrl-c`
      - The search bar disappears
      - |checkbox|
 
    * - 4
-     - Click ``Follow`` on the log toolbar
+     - Click :guilabel:`Follow` on the log toolbar
      - Logs stop following
      - |checkbox|
 
    * - 5
-     - Click ``Table`` on the log toolbar
+     - Click :guilabel:`Table` on the log toolbar
      - Table mode is disabled
      - |checkbox|
 
    * - 6
-     - Click ``Wrap`` on the log toolbar
+     - Click :guilabel:`Wrap` on the log toolbar
      - Line wrapping is enabled
      - |checkbox|
 
    * - 7
-     - Click ``Clear`` on the log toolbar
+     - Click :guilabel:`Clear` on the log toolbar
      - | All log lines are erased
        | Follow mode is on
        | New lines start appearing
+     - |checkbox|
+
+   * - 8
+     - | Mouse drag across a few log messages
+     - | Entire logs are highlighted and a dialog
+       | box appears in the upper right
+     - |checkbox|
+
+   * - 9
+     - | Without scrolling mouse drag across a set
+       | of different log messages.
+     - | The old selection disappears leaving only the new selection.
+     - |checkbox|
+
+   * - 10
+     - | Click the :guilabel:`Cancel` button
+       | in the selection dialog box.
+     - | The selection and the dialog box disappears.
+     - |checkbox|
+
+   * - 11
+     - | Mouse drag across a few log messages and
+       | click the :guilabel:`Save as File` button.
+     - | The save as file dialog appears with the
+       | :guilabel:`[x] Selected Lines Only` opion checked.
+     - |checkbox|
+
+   * - 12
+     - | Press :kbd:`Cancel`
+     - | The save dialog closes
+     - |checkbox|
+
+   * - 13
+     - | Click the :guilabel:`Save` button on the log toolbar.
+       | A dialog appears prompting for a file.
+     - | The current working directory should be pre-filled.
+     - |checkbox|
+
+   * - 14
+     - | Check :guilabel:`[x] Table Formatting`
+       | Uncheck :guilabel:`[ ] Selected Lines Only`
+       | Add ``/log.txt`` to the end and press :kbd:`Enter`
+       | Click the menu :guilabel:`[File] > Exit`
+     - | In the terminal run ``cat log.txt`` to verify logs
+       | were saved correctly.
      - |checkbox|
 
 Log Pane: Search and Filtering
@@ -84,70 +129,69 @@ Log Pane: Search and Filtering
      - ✅
 
    * - 1
-     - | Click the ``Logs``
-       | window title
+     - Click the :guilabel:`Fake Device Logs` window title
      - Log pane is focused
      - |checkbox|
 
    * - 2
-     - Press ``/``
+     - Press :kbd:`/`
      - | The search bar appears
        | The cursor should appear after the ``/``
      - |checkbox|
 
    * - 3
      - | Type ``lorem``
-       | Press ``Enter``
+       | Press :kbd:`Enter`
      - | Logs stop following
        | The previous ``Lorem`` word is highlighted in yellow
        | All other ``Lorem`` words are highlighted in cyan
      - |checkbox|
 
    * - 4
-     - Press ``Ctrl-f``
+     - Press :kbd:`Ctrl-f`
      - | The search bar appears
        | The cursor should appear after the ``/``
      - |checkbox|
 
    * - 5
-     - Click ``Matcher:`` once
+     - Click :guilabel:`Matcher:` once
      - ``Matcher:STRING`` is shown
      - |checkbox|
 
    * - 6
      - | Type ``[=``
-       | Press ``Enter``
+       | Press :kbd:`Enter`
      - All instances of ``[=`` should be highlighted
      - |checkbox|
 
    * - 7
-     - Press ``/``
+     - Press :kbd:`/`
      - | The search bar appears
        | The cursor should appear after the ``/``
      - |checkbox|
 
    * - 8
-     - Press ``Up``
+     - Press :kbd:`Up`
      - The text ``[=`` should appear in the search input field
      - |checkbox|
 
    * - 9
-     - Click ``Add Filter``
+     - Click :guilabel:`Add Filter`
      - | A ``Filters`` toolbar will appear
        | showing the new filter: ``<\[= (X)>``.
        | Only log messages matching ``[=`` appear in the logs.
      - |checkbox|
 
    * - 10
-     - | Press ``/``
+     - | Press :kbd:`/`
        | Type ``# 1``
-       | Click ``Add Filter``
+       | Click :guilabel:`Add Filter`
      - | The ``Filters`` toolbar shows a new filter: ``<\#\ 1 (X)>``.
        | Only log messages matching both filters will appear in the logs.
      - |checkbox|
 
    * - 11
-     - | Click the first ``(X)``
+     - | Click the first :guilabel:`(X)`
        | in the filter toolbar.
      - | The ``Filters`` toolbar shows only one filter: ``<\#\ 1 (X)>``.
        | More log messages will appear in the log window
@@ -155,39 +199,39 @@ Log Pane: Search and Filtering
      - |checkbox|
 
    * - 12
-     - Click ``Clear Filters``
+     - Click :guilabel:`Clear Filters`
      - | The ``Filters`` toolbar will disappear.
        | All log messages will be shown in the log window.
      - |checkbox|
 
    * - 13
-     - | Press ``/``
+     - | Press :kbd:`/`
        | Type ``BAT``
-       | Click ``Column``
+       | Click :guilabel:`Column`
      - ``Column:Module`` is shown
      - |checkbox|
 
    * - 14
-     - | Click ``Add Filter``
+     - | Click :guilabel:`Add Filter`
      - | The Filters toolbar appears with one filter: ``<module BAT (X)>``
        | Only logs with Module matching ``BAT`` appear.
      - |checkbox|
 
    * - 15
-     - Click ``Clear Filters``
+     - Click :guilabel:`Clear Filters`
      - | The ``Filters`` toolbar will disappear.
        | All log messages will be shown in the log window.
      - |checkbox|
 
    * - 16
-     - | Press ``/``
+     - | Press :kbd:`/`
        | Type ``BAT``
-       | Click ``Invert``
+       | Click :guilabel:`Invert`
      - ``[x] Invert`` setting is shown
      - |checkbox|
 
    * - 17
-     - | Click ``Add Filter``
+     - | Click :guilabel:`Add Filter`
      - | The Filters toolbar appears
        | One filter is shown: ``<NOT module BAT (X)>``
        | Only logs with Modules other than ``BAT`` appear.
@@ -206,7 +250,7 @@ Help Windows
      - ✅
 
    * - 1
-     - Click the :guilabel:`Help > User Guide`
+     - Click the :guilabel:`[Help] > User Guide`
      - | Window appears showing the user guide with
        | RST formatting and syntax highlighting
      - |checkbox|
@@ -217,23 +261,23 @@ Help Windows
      - |checkbox|
 
    * - 3
-     - Click the :guilabel:`Help > Keyboard Shortcuts`
+     - Click the :guilabel:`[Help] > Keyboard Shortcuts`
      - Window appears showing the keybind list
      - |checkbox|
 
    * - 4
-     - Press :guilabel:`f1`
+     - Press :kbd:`F1`
      - Window is hidden
      - |checkbox|
 
    * - 5
-     - Click the :guilabel:`Help > Console Test Mode Help`
+     - Click the :guilabel:`[Help] > Console Test Mode Help`
      - | Window appears showing help with content
        | ``Welcome to the Pigweed Console Test Mode!``
      - |checkbox|
 
    * - 6
-     - Click the :guilabel:`[Close q]` button.
+     - Click the :guilabel:`Close q` button.
      - Window is hidden
      - |checkbox|
 
@@ -250,12 +294,12 @@ Window Management
      - ✅
 
    * - 1
-     - | Click the :guilabel:`Logs` window title
+     - | Click the :guilabel:`Fake Device Logs` window title
      - Log pane is focused
      - |checkbox|
 
    * - 2
-     - | Click the menu :guilabel:`Windows > 1: Logs fake_device.1`
+     - | Click the menu :guilabel:`Windows > #: Fake Device Logs...`
        | Click :guilabel:`Duplicate pane`
      - | 3 panes are visible:
        | Log pane on top
@@ -291,7 +335,7 @@ Window Management
      - |checkbox|
 
    * - 7
-     - | Click the menu :guilabel:`Windows > 1: Logs fake_device.1`
+     - | Click the menu :guilabel:`Windows > #: Fake Device Logs...`
        | Click :guilabel:`Remove pane`
      - | 2 panes are visible:
        | Repl pane on the top
@@ -399,37 +443,44 @@ Copy Paste
      - ✅
 
    * - 1
-     - | Click the :guilabel:`Logs` window title
+     - | Click the :guilabel:`Fake Device Logs` window title
      - Log pane is focused
      - |checkbox|
 
    * - 2
-     - | Click the menu
-       | :guilabel:`[Edit] > Copy visible lines from active window`
-       | Try pasting into a separate text editor
-     - | Log lines like this:
-       | ``20210729 18:31:32  INF  USB Log message ...``
-       | Are in the system clipboard
+     - | Mouse drag across a few log messages
+     - | A dialog appears in the upper right showing
+       | the number of lines selected and
+       | buttons for :guilabel:`Cancel`, :guilabel:`Select All`,
+       | :guilabel:`Save as File`, and :guilabel:`Copy`.
      - |checkbox|
 
    * - 3
+     - | Click the :guilabel:`Copy` button
+     - | Try pasting into a separate text editor
+       | Log lines like this should be pasted:
+       | ``20:07:25  INF  APP    Log message [    =     ] # 25``
+       | ``20:07:25  INF  RADIO  Log message [     =    ] # 26``
+     - |checkbox|
+
+   * - 4
      - | Copy this text in your browser or
        | text editor to the system clipboard:
        | ``print('copy paste test!')``
      - | Click the :guilabel:`Python Input` window title
-       | Press :guilabel:`Ctrl-v`
+       | Press :kbd:`Ctrl-v`
        | ``print('copy paste test!')`` appears
        | after the prompt.
      - |checkbox|
 
-   * - 4
-     - Press :guilabel:`Enter`
+   * - 5
+     - Press :kbd:`Enter`
      - | This appears in Python Results:
        | ``In [1]: print('copy paste test!')``
        | ``copy paste test!``
      - |checkbox|
 
-   * - 5
+   * - 6
      - | Click :guilabel:`Ctrl-Alt-c -> Copy Output`
        | on the Python Results toolbar
        | Try pasting into a separate text editor
@@ -437,27 +488,27 @@ Copy Paste
        | are in the system clipboard.
      - |checkbox|
 
-   * - 6
+   * - 7
      - Click the :guilabel:`Python Results` window title
      - | Python Results is focused with cursor
        | appearing below the last line
      - |checkbox|
 
-   * - 7
+   * - 8
      - | Click and drag over ``copy paste text``
        | highlighting won't appear until
        | after the mouse button is released
      - | ``copy paste text`` is highlighted
      - |checkbox|
 
-   * - 8
-     - | Press :guilabel:`Ctrl-c`
+   * - 9
+     - | Press :kbd:`Ctrl-c`
        | Try pasting into a separate text editor
      - | ``copy paste text`` should appear (and is
        | in the system clipboard)
      - |checkbox|
 
-   * - 9
+   * - 10
      - Click the :guilabel:`Python Input` window title
      - Python Input is focused
      - |checkbox|
@@ -517,7 +568,7 @@ Python Input & Output
      - |checkbox|
 
    * - 4
-     - | Enter the following text and press enter to run
+     - | Enter the following text and press :kbd:`Enter` to run
        | ``[i for i in __builtins__ if not i.startswith('_')]``
      - | The results should appear pretty printed
        | with each list element on it's own line:
@@ -531,7 +582,7 @@ Python Input & Output
      - |checkbox|
 
    * - 5
-     - | Enter the following text and press enter to run
+     - | Enter the following text and press :kbd:`Enter` to run
        | ``globals()``
      - | The results should appear pretty printed
      - |checkbox|
@@ -541,6 +592,79 @@ Python Input & Output
        | use the mouse wheel to scroll up and down.
      - | The output window should be able to scroll all
        | the way to the beginning and end of the buffer.
+     - |checkbox|
+
+Quit Confirmation Dialog
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Press :kbd:`Ctrl-d`
+     - | The quit dialog appears
+     - |checkbox|
+
+   * - 2
+     - | Press :kbd:`n`
+     - | The quit dialog disappears
+     - |checkbox|
+
+   * - 3
+     - | Press :kbd:`Ctrl-d`
+     - | The quit dialog appears
+     - |checkbox|
+
+   * - 4
+     - | Press :kbd:`y`
+     - | The console exits
+     - |checkbox|
+
+   * - 5
+     - | Restart the console and
+       | Press :kbd:`Ctrl-d` twice in quick succession.
+     - | The console exits
+     - |checkbox|
+
+   * - 6
+     - | Restart the console and Press :kbd:`F1`
+     - | The help window appears
+     - |checkbox|
+
+   * - 7
+     - | Press :kbd:`Ctrl-d`
+     - | The quit dialog appears on top of the help window
+     - |checkbox|
+
+   * - 8
+     - | Press :kbd:`n`
+     - | The quit dialog disappears and the help window is
+       | back in focus.
+     - |checkbox|
+
+   * - 9
+     - | Press :kbd:`q`
+     - | The help window disappears and the Python Input is in focus.
+     - |checkbox|
+
+   * - 10
+     - | Type some text into the Python Input.
+       | Press :kbd:`Home` or move the cursor to the
+       | beginning of the text you just entered.
+       | Press :kbd:`Ctrl-d`
+     - | Each :kbd:`Ctrl-d` press deletes one character
+     - |checkbox|
+
+   * - 11
+     - | Press :kbd:`Ctrl-c` to clear the Python Input text
+       | Press :kbd:`Ctrl-d`
+     - | The quit dialog appears.
      - |checkbox|
 
 Add note to the commit message

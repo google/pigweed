@@ -28,7 +28,7 @@ namespace pw::rpc {
 namespace internal::test::nanopb {
 
 // Forward declare for a friend statement.
-template <typename, auto, uint32_t, size_t, size_t, size_t>
+template <typename, auto, uint32_t, size_t, size_t>
 class NanopbInvocationContext;
 
 }  // namespace internal::test::nanopb
@@ -78,7 +78,7 @@ class NanopbPayloadsView {
   using Base =
       containers::WrappedIterator<iterator, PayloadsView::iterator, Payload>;
 
-  template <size_t, size_t, size_t>
+  template <size_t, size_t>
   friend class NanopbFakeChannelOutput;
 
   template <typename... Args>
@@ -90,12 +90,9 @@ class NanopbPayloadsView {
 };
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
-template <size_t kMaxPackets,
-          size_t kOutputSize,
-          size_t kPayloadsBufferSizeBytes = 128>
+template <size_t kMaxPackets, size_t kPayloadsBufferSizeBytes = 128>
 class NanopbFakeChannelOutput final
-    : public internal::test::FakeChannelOutputBuffer<kOutputSize,
-                                                     kMaxPackets,
+    : public internal::test::FakeChannelOutputBuffer<kMaxPackets,
                                                      kPayloadsBufferSizeBytes> {
  private:
   template <auto kMethod>
@@ -150,13 +147,14 @@ class NanopbFakeChannelOutput final
   }
 
  private:
-  template <typename, auto, uint32_t, size_t, size_t, size_t>
+  template <typename, auto, uint32_t, size_t, size_t>
   friend class internal::test::nanopb::NanopbInvocationContext;
 
   using Base =
-      internal::test::FakeChannelOutputBuffer<kOutputSize,
-                                              kMaxPackets,
+      internal::test::FakeChannelOutputBuffer<kMaxPackets,
                                               kPayloadsBufferSizeBytes>;
+
+  using internal::test::FakeChannelOutput::last_packet;
 
   template <typename T>
   NanopbPayloadsView<T> payload_structs(const internal::NanopbSerde& serde,

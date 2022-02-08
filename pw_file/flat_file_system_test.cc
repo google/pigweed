@@ -160,11 +160,19 @@ size_t ValidateExpectedPaths(
   return serialized_path_entry_count;
 }
 
-TEST(FlatFileSystem, List_NoFiles) {
-  std::array<char, 1> file_name_buffer;
+TEST(FlatFileSystem, EncodingBufferSizeBytes) {
+  EXPECT_EQ(FlatFileSystemService::EncodingBufferSizeBytes(10),
+            2u /* path nested message key and size */ + 12 /* path */ +
+                2 /* permissions */ + 6 /* size_bytes */ + 6 /* file_id */);
+  EXPECT_EQ(FlatFileSystemService::EncodingBufferSizeBytes(10, 2),
+            2 * (1u + 1 + 12 + 2 + 6 + 6));
+  EXPECT_EQ(FlatFileSystemService::EncodingBufferSizeBytes(100, 3),
+            3 * (1u + 1 + 102 + 2 + 6 + 6));
+}
 
-  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
-  ctx(std::span<FlatFileSystemService::Entry*>(), file_name_buffer);
+TEST(FlatFileSystem, List_NoFiles) {
+  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemServiceWithBuffer<1>, List)
+  ctx{std::span<FlatFileSystemService::Entry*>()};
   ctx.call(ConstByteSpan());
 
   EXPECT_TRUE(ctx.done());
@@ -173,52 +181,48 @@ TEST(FlatFileSystem, List_NoFiles) {
 }
 
 TEST(FlatFileSystem, List_OneFile) {
-  std::array<char, 20> file_name_buffer;
   FakeFile file{"compressed.zip.gz", 2, 1231};
   std::array<FlatFileSystemService::Entry*, 1> static_file_system{&file};
 
-  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
-  ctx(static_file_system, file_name_buffer);
+  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemServiceWithBuffer<20>, List)
+  ctx(static_file_system);
   ctx.call(ConstByteSpan());
 
   EXPECT_EQ(1u, ValidateExpectedPaths(static_file_system, ctx.responses()));
 }
 
 TEST(FlatFileSystem, List_ThreeFiles) {
-  std::array<char, 10> file_name_buffer;
   std::array<FakeFile, 3> files{
       {{"SNAP_001", 372, 9}, {"tokens.csv", 808, 15038202}, {"a.txt", 0, 2}}};
   std::array<FlatFileSystemService::Entry*, 3> static_file_system{
       &files[0], &files[1], &files[2]};
 
-  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
-  ctx(static_file_system, file_name_buffer);
+  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemServiceWithBuffer<10>, List)
+  ctx(static_file_system);
   ctx.call(ConstByteSpan());
 
   EXPECT_EQ(3u, ValidateExpectedPaths(static_file_system, ctx.responses()));
 }
 
 TEST(FlatFileSystem, List_UnnamedFile) {
-  std::array<char, 10> file_name_buffer;
   FakeFile file{"", 0, 0};
   std::array<FlatFileSystemService::Entry*, 1> static_file_system{&file};
 
-  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
-  ctx(static_file_system, file_name_buffer);
+  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemServiceWithBuffer<10>, List)
+  ctx(static_file_system);
   ctx.call(ConstByteSpan());
 
   EXPECT_EQ(0u, ValidateExpectedPaths(static_file_system, ctx.responses()));
 }
 
 TEST(FlatFileSystem, List_FileMissingName) {
-  std::array<char, 10> file_name_buffer;
   std::array<FakeFile, 3> files{
       {{"SNAP_001", 372, 9}, {"", 808, 15038202}, {"a.txt", 0, 2}}};
   std::array<FlatFileSystemService::Entry*, 3> static_file_system{
       &files[0], &files[1], &files[2]};
 
-  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
-  ctx(static_file_system, file_name_buffer);
+  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemServiceWithBuffer<10>, List)
+  ctx(static_file_system);
   ctx.call(ConstByteSpan());
 
   EXPECT_EQ(2u, ValidateExpectedPaths(static_file_system, ctx.responses()));

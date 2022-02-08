@@ -1,14 +1,16 @@
-[
-  {
-    "path": "infra/3pp/tools/cpython3/${os}-${arch=amd64}",
-    "tags": [
-      "version:3.7.7.chromium.10"
-    ]
-  },
-  {
-    "path": "pigweed/third_party/gcc-arm-none-eabi/${os}-${arch=amd64}",
-    "tags": [
-      "version:9-2020-q2-update"
-    ]
-  }
-]
+{
+  "packages": [
+    {
+      "path": "infra/3pp/tools/cpython3/${os}-${arch=amd64}",
+      "tags": [
+	"version:3.7.7.chromium.10"
+      ]
+    },
+    {
+      "path": "pigweed/third_party/gcc-arm-none-eabi/${os}-${arch=amd64}",
+      "tags": [
+        "version:9-2020-q2-update"
+      ]
+    }
+  ]
+}

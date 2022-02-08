@@ -20,6 +20,7 @@
 #include "pw_bytes/array.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
+#include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method_impl_tester.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/raw/internal/method_union.h"
@@ -183,12 +184,13 @@ TEST(RawMethod, AsyncUnaryRpc_SendsResponse) {
   ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(7));
 
   ServerContextForTest<FakeService> context(kAsyncUnary);
+  rpc_lock().lock();
   kAsyncUnary.Invoke(context.get(), context.request(writer.WrittenData()));
 
   EXPECT_EQ(context.service().last_request.integer, 456);
   EXPECT_EQ(context.service().last_request.status_code, 7u);
 
-  const Packet& response = context.output().sent_packet();
+  const Packet& response = context.output().last_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
 
   protobuf::Decoder decoder(response.payload());
@@ -201,9 +203,10 @@ TEST(RawMethod, AsyncUnaryRpc_SendsResponse) {
 TEST(RawMethod, SyncUnaryRpc_SendsResponse) {
   ServerContextForTest<FakeService> context(kSyncUnary);
 
+  rpc_lock().lock();
   kSyncUnary.Invoke(context.get(), context.request({}));
 
-  const Packet& packet = context.output().sent_packet();
+  const Packet& packet = context.output().last_packet();
   EXPECT_EQ(PacketType::RESPONSE, packet.type());
   EXPECT_EQ(Status::Unknown(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
@@ -218,9 +221,10 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(2));
 
   ServerContextForTest<FakeService> context(kServerStream);
+  rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request(writer.WrittenData()));
 
-  EXPECT_EQ(0u, context.output().packet_count());
+  EXPECT_EQ(0u, context.output().total_packets());
   EXPECT_EQ(777, context.service().last_request.integer);
   EXPECT_EQ(2u, context.service().last_request.status_code);
   EXPECT_TRUE(context.service().last_writer.active());
@@ -229,6 +233,7 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
 
 TEST(RawMethod, ServerReader_HandlesRequests) {
   ServerContextForTest<FakeService> context(kClientStream);
+  rpc_lock().lock();
   kClientStream.Invoke(context.get(), context.request({}));
 
   ConstByteSpan request;
@@ -248,6 +253,7 @@ TEST(RawMethod, ServerReader_HandlesRequests) {
 
 TEST(RawMethod, ServerReaderWriter_WritesResponses) {
   ServerContextForTest<FakeService> context(kBidirectionalStream);
+  rpc_lock().lock();
   kBidirectionalStream.Invoke(context.get(), context.request({}));
 
   constexpr const char kRequestValue[] = "O_o";
@@ -259,50 +265,22 @@ TEST(RawMethod, ServerReaderWriter_WritesResponses) {
   auto encoded = context.server_stream(kRequestBytes).Encode(encoded_response);
   ASSERT_EQ(OkStatus(), encoded.status());
 
-  ASSERT_EQ(encoded.value().size(), context.output().sent_data().size());
-  EXPECT_EQ(0,
-            std::memcmp(encoded.value().data(),
-                        context.output().sent_data().data(),
-                        encoded.value().size()));
+  ConstByteSpan sent_payload = context.output().last_packet().payload();
+  EXPECT_TRUE(std::equal(kRequestBytes.begin(),
+                         kRequestBytes.end(),
+                         sent_payload.begin(),
+                         sent_payload.end()));
 }
 
-// TODO(pwbug/605): Remove this hack for accessing the PayloadBuffer() API.
-class AccessHiddenFunctions : public rpc::RawServerWriter {
- public:
-  using RawServerWriter::PayloadBuffer;
-};
-
-TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
+TEST(RawServerWriter, Write_SendsPayload) {
   ServerContextForTest<FakeService> context(kServerStream);
-  kServerStream.Invoke(context.get(), context.request({}));
-
-  auto buffer =
-      static_cast<AccessHiddenFunctions&>(context.service().last_writer)
-          .PayloadBuffer();
-
-  constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
-  std::memcpy(buffer.data(), data.data(), data.size());
-
-  EXPECT_EQ(context.service().last_writer.Write(buffer.first(data.size())),
-            OkStatus());
-
-  const internal::Packet& packet = context.output().sent_packet();
-  EXPECT_EQ(packet.type(), internal::PacketType::SERVER_STREAM);
-  EXPECT_EQ(packet.channel_id(), context.channel_id());
-  EXPECT_EQ(packet.service_id(), context.service_id());
-  EXPECT_EQ(packet.method_id(), context.get().method().id());
-  EXPECT_EQ(std::memcmp(packet.payload().data(), data.data(), data.size()), 0);
-  EXPECT_EQ(packet.status(), OkStatus());
-}
-
-TEST(RawServerWriter, Write_SendsExternalBuffer) {
-  ServerContextForTest<FakeService> context(kServerStream);
+  rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request({}));
 
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
   EXPECT_EQ(context.service().last_writer.Write(data), OkStatus());
 
-  const internal::Packet& packet = context.output().sent_packet();
+  const internal::Packet& packet = context.output().last_packet();
   EXPECT_EQ(packet.type(), internal::PacketType::SERVER_STREAM);
   EXPECT_EQ(packet.channel_id(), context.channel_id());
   EXPECT_EQ(packet.service_id(), context.service_id());
@@ -313,11 +291,12 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
 
 TEST(RawServerWriter, Write_EmptyBuffer) {
   ServerContextForTest<FakeService> context(kServerStream);
+  rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request({}));
 
   ASSERT_EQ(context.service().last_writer.Write({}), OkStatus());
 
-  const internal::Packet& packet = context.output().sent_packet();
+  const internal::Packet& packet = context.output().last_packet();
   EXPECT_EQ(packet.type(), internal::PacketType::SERVER_STREAM);
   EXPECT_EQ(packet.channel_id(), context.channel_id());
   EXPECT_EQ(packet.service_id(), context.service_id());
@@ -328,6 +307,7 @@ TEST(RawServerWriter, Write_EmptyBuffer) {
 
 TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
   ServerContextForTest<FakeService> context(kServerStream);
+  rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), context.service().last_writer.Finish());
@@ -336,30 +316,15 @@ TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
             Status::FailedPrecondition());
 }
 
-TEST(RawServerWriter, Write_BufferTooSmall_ReturnsOutOfRange) {
-  ServerContextForTest<FakeService, 16> context(kServerStream);
-  kServerStream.Invoke(context.get(), context.request({}));
-
-  constexpr auto data =
-      bytes::Array<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>();
-  EXPECT_EQ(context.service().last_writer.Write(data), Status::OutOfRange());
-}
-
-TEST(RawServerWriter,
-     Destructor_ReleasesAcquiredBufferWithoutSendingAndCloses) {
+TEST(RawServerWriter, Write_PayloadTooLargeForEncodingBuffer_ReturnsInternal) {
   ServerContextForTest<FakeService> context(kServerStream);
+  rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request({}));
 
-  {
-    RawServerWriter writer = std::move(context.service().last_writer);
-    auto buffer = static_cast<AccessHiddenFunctions&>(writer).PayloadBuffer();
-    buffer[0] = std::byte{'!'};
-    // Don't release the buffer.
-  }
-
-  auto output = context.output();
-  EXPECT_EQ(output.packet_count(), 1u);
-  EXPECT_EQ(output.sent_packet().type(), PacketType::RESPONSE);
+  // A kEncodingBufferSizeBytes payload will never fit in the encoding buffer.
+  static constexpr std::array<std::byte, cfg::kEncodingBufferSizeBytes>
+      kBigData = {};
+  EXPECT_EQ(context.service().last_writer.Write(kBigData), Status::Internal());
 }
 
 }  // namespace

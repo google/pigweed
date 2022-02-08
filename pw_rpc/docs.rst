@@ -21,9 +21,10 @@ documents:
   For a quick intro to ``pw_rpc``, see the
   :ref:`module-pw_hdlc-rpc-example` in the :ref:`module-pw_hdlc` module.
 
-.. attention::
+.. warning::
 
-  This documentation is under construction.
+  This documentation is under construction. Many sections are outdated or
+  incomplete. The content needs to be reorgnanized.
 
 Implementations
 ===============
@@ -73,6 +74,18 @@ call and reinvokes the RPC with the new request. This applies to unary and
 streaming RPCs, though the server may not have an opportunity to cancel a
 synchronously handled unary RPC before it completes. The same RPC may be invoked
 multiple times simultaneously if the invocations are on different channels.
+
+Status codes
+------------
+``pw_rpc`` call objects (``ClientReaderWriter``, ``ServerReaderWriter``, etc.)
+use certain status codes to indicate what occurred. These codes are returned
+from functions like ``Write()`` or ``Finish()``.
+
+* ``OK`` -- The operation succeeded.
+* ``UNAVAILABLE`` -- The channel is not currently registered with the server or
+  client.
+* ``UNKNOWN`` -- Sending a packet failed due to an unrecoverable
+  :cpp:func:`pw::rpc::ChannelOutput::Send` error.
 
 Unrequested responses
 ---------------------
@@ -353,6 +366,25 @@ output.
     dynamic_channel.Configure(GetChannelId(), some_output);
   }
 
+Adding and removing channels
+----------------------------
+New channels may be registered with the ``OpenChannel`` function. If dynamic
+allocation is enabled (:c:macro:`PW_RPC_DYNAMIC_ALLOCATION` is 1), any number of
+channels may be registered. If dynamic allocation is disabled, new channels may
+only be registered if there are availale channel slots in the span provided to
+the RPC endpoint at construction.
+
+A channel may be closed and unregistered with an endpoint by calling
+``ChannelClose`` on the endpoint with the corresponding channel ID.  This
+will terminate any pending calls and call their ``on_error`` callback
+with the ``ABORTED`` status.
+
+.. code-block:: cpp
+
+  // When a channel is closed, any pending calls will receive
+  // on_error callbacks with ABORTED status.
+  client->CloseChannel(1);
+
 Services
 ========
 A service is a logical grouping of RPCs defined within a .proto file. ``pw_rpc``
@@ -545,6 +577,7 @@ The status code indicates the type of error. The status code is logged, but all
 status codes result in the same action by the server: aborting the RPC.
 
 * ``CANCELLED`` -- The client requested that the RPC be cancelled.
+* ``ABORTED`` -- The RPC was aborted due its channel being closed.
 * ``NOT_FOUND`` -- Received a packet for a service method the client does not
   recognize.
 * ``FAILED_PRECONDITION`` -- Received a packet for a service method that the
@@ -552,6 +585,7 @@ status codes result in the same action by the server: aborting the RPC.
 * ``DATA_LOSS`` -- Received a corrupt packet for a pending service method.
 * ``INVALID_ARGUMENT`` -- The server sent a packet type to an RPC that does not
   support it (a ``SERVER_STREAM`` was sent to an RPC with no server stream).
+* ``UNAVAILABLE`` -- Received a packet for an unknown channel.
 
 Server-to-client packets
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -610,8 +644,10 @@ status field indicates the type of error.
   support it (a ``CLIENT_STREAM`` was sent to an RPC with no client stream).
 * ``RESOURCE_EXHAUSTED`` -- The request came on a new channel, but a channel
   could not be allocated for it.
+* ``ABORTED`` -- The RPC was aborted due its channel being closed.
 * ``INTERNAL`` -- The server was unable to respond to an RPC due to an
   unrecoverable internal error.
+* ``UNAVAILABLE`` -- Received a packet for an unknown channel.
 
 Inovking a service method
 -------------------------
@@ -1008,6 +1044,27 @@ more details.
 
   This is disabled by default.
 
+.. c:macro:: PW_RPC_DYNAMIC_ALLOCATION
+
+  Whether pw_rpc should use dynamic memory allocation internally. If enabled,
+  pw_rpc dynamically allocates channels and its encoding buffers. RPC users may
+  use dynamic allocation independently of this option (e.g. to allocate pw_rpc
+  call objects).
+
+  The semantics for allocating and initializing channels change depending on
+  this option. If dynamic allocation is disabled, pw_rpc endpoints (servers or
+  clients) use an externally-allocated, fixed-size array of channels.
+  That array must include unassigned channels or existing channels must be
+  closed to add new channels.
+
+  If dynamic allocation is enabled, an span of channels may be passed to the
+  endpoint at construction, but these channels are only used to initialize its
+  internal std::vector of channels. External channel objects are NOT used by
+  the endpoint cannot be updated if dynamic allocation is enabled. No
+  unassigned channels should be passed to the endpoint; they will be ignored.
+  Any number of channels may be added to the endpoint, without closing existing
+  channels, but adding channels will use more memory.
+
 .. c:macro:: PW_RPC_CONFIG_LOG_LEVEL
 
   The log level to use for this module. Logs below this level are omitted.
@@ -1049,35 +1106,60 @@ configuration. This will enable the Kconfig menu for the following:
 * ``pw_rpc.client_server`` which can be enabled via
   ``CONFIG_PIGWEED_RPC_CLIENT_SERVER=y``.
 * ``pw_rpc.common` which can be enabled via ``CONFIG_PIGWEED_RPC_COMMON=y``.
-* ``pw_rpc.synchronized_channel_output`` which can be enabled via
-  ``CONFIG_PIGWEED_RPC_SYNCHRONIZED_CHANNEL_OUTPUT=y``.
 
-ChannelOutput API
-=================
-``pw_rpc`` endpoints sends packets using the :cpp:class:`ChannelOutput`
+Encoding and sending packets
+============================
+``pw_rpc`` has to manage interactions among multiple RPC clients, servers,
+client calls, and server calls. To safely synchronize these interactions with
+minimal overhead, ``pw_rpc`` uses a single, global mutex (when
+``PW_RPC_USE_GLOBAL_MUTEX`` is enabled).
+
+Because ``pw_rpc`` uses a global mutex, it also uses a global buffer to encode
+outgoing packets. The size of the buffer is set with
+``PW_RPC_ENCODING_BUFFER_SIZE``, which defaults to 512 B.
+
+Users of ``pw_rpc`` must implement the :cpp:class:`pw::rpc::ChannelOutput`
 interface.
 
 .. cpp:class:: pw::rpc::ChannelOutput
 
-  pw_rpc endpoints use the ``ChannelOutput`` class to send packets. Systems that
-  integrate pw_rpc must use one or more ``ChannelOutput`` instances.
+  ``pw_rpc`` endpoints use :cpp:class:`ChannelOutput` instances to send packets.
+  Systems that integrate pw_rpc must use one or more :cpp:class:`ChannelOutput`
+  instances.
+
+  .. cpp:member:: static constexpr size_t kUnlimited = std::numeric_limits<size_t>::max()
+
+    Value returned from :cpp:func:`MaximumTransmissionUnit` to indicate an
+    unlimited MTU.
 
   .. cpp:function:: virtual size_t MaximumTransmissionUnit()
 
-    Returns the size of the largest buffer that :cpp:func:`AcquireBuffer` can
-    allocate.
+    Returns the size of the largest packet the :cpp:class:`ChannelOutput` can
+    send. :cpp:class:`ChannelOutput` implementations should only override this
+    function if they impose a limit on the MTU. The default implementation
+    returns :cpp:member:`kUnlimited`, which indicates that there is no MTU
+    limit.
 
-  .. cpp:function:: virtual std::byte* AcquireBuffer(size_t size_bytes)
+  .. cpp:function:: virtual pw::Status Send(std::span<std::byte> packet)
 
-    Acquires a buffer of the specified size into which to write an outgoing RPC
-    packet. If a buffer of the specified size cannot be allocated, returns
-    nullptr. The implementation is expected to handle synchronization if
-    necessary.
+    Sends an encoded RPC packet. Returns OK if further packets may be sent, even
+    if the current packet could not be sent. Returns any other status if the
+    Channel is no longer able to send packets.
 
-  .. cpp:function:: virtual Status SendAndReleaseBuffer(std::span<const std::byte> buffer)
+    The RPC system's internal lock is held while this function is called. Avoid
+    long-running operations, since these will delay any other users of the RPC
+    system.
 
-    Sends the contents of a buffer previously obtained from
-    :cpp:func:`AcquireBuffer`. This may be called with an empty span, in which
-    case the buffer should be released without sending any data. Returns OK if
-    further packets may be sent or any other status if the Channel is no longer
-    able to send packets.
+    .. danger::
+
+      No ``pw_rpc`` APIs may be accessed in this function! Implementations MUST
+      NOT access any RPC endpoints (:cpp:class:`pw::rpc::Client`,
+      :cpp:class:`pw::rpc::Server`) or call objects
+      (:cpp:class:`pw::rpc::ServerReaderWriter`,
+      :cpp:class:`pw::rpc::ClientReaderWriter`, etc.) inside the :cpp:func:`Send`
+      function or any descendent calls. Doing so will result in deadlock! RPC APIs
+      may be used by other threads, just not within :cpp:func:`Send`.
+
+      The buffer provided in ``packet`` must NOT be accessed outside of this
+      function. It must be sent immediately or copied elsewhere before the
+      function returns.

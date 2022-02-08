@@ -16,7 +16,6 @@
 
 #include "pw_cpu_exception_cortex_m/snapshot.h"
 
-#include "pw_cpu_exception/support.h"
 #include "pw_cpu_exception_cortex_m/proto_dump.h"
 #include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
@@ -78,7 +77,6 @@ Status CaptureMainStack(
 Status SnapshotCpuState(
     const pw_cpu_exception_State& cpu_state,
     SnapshotCpuStateOverlay::StreamEncoder& snapshot_encoder) {
-  LogCpuState(cpu_state);
   {
     ArmV7mCpuState::StreamEncoder cpu_state_encoder =
         snapshot_encoder.GetArmv7mCpuStateEncoder();

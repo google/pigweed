@@ -20,12 +20,12 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
 
 namespace pw::rpc::internal::test {
 namespace {
 
-constexpr size_t kOutputSize = 50;
 constexpr uint32_t kChannelId = 1;
 constexpr uint32_t kServiceId = 1;
 constexpr uint32_t kMethodId = 1;
@@ -33,8 +33,7 @@ constexpr uint32_t kCallId = 0;
 constexpr std::array<std::byte, 3> kPayload = {
     std::byte(1), std::byte(2), std::byte(3)};
 
-class TestFakeChannelOutput final
-    : public FakeChannelOutputBuffer<kOutputSize, 9, 128> {
+class TestFakeChannelOutput final : public FakeChannelOutputBuffer<9, 128> {
  public:
   TestFakeChannelOutput() = default;
 
@@ -57,6 +56,7 @@ TEST(FakeChannelOutput, SendAndClear) {
                                               kMethodId,
                                               kCallId,
                                               kPayload);
+  LockGuard lock(rpc_lock());
   ASSERT_EQ(channel.Send(server_stream_packet), OkStatus());
   ASSERT_EQ(output.last_response(type).size(), kPayload.size());
   EXPECT_EQ(
@@ -83,6 +83,7 @@ TEST(FakeChannelOutput, SendAndFakeFutureResults) {
                                          kMethodId,
                                          kCallId,
                                          kPayload);
+  LockGuard lock(rpc_lock());
   EXPECT_EQ(channel.Send(response_packet), OkStatus());
   EXPECT_EQ(output.total_payloads(type), 1u);
   EXPECT_EQ(output.total_packets(), 1u);
@@ -132,6 +133,8 @@ TEST(FakeChannelOutput, SendAndFakeSingleResult) {
   // Multiple calls will return the same error status.
   const int packet_count_fail = 4;
   output.set_send_status(Status::Unknown(), packet_count_fail);
+  LockGuard lock(rpc_lock());
+
   for (int i = 0; i < packet_count_fail; ++i) {
     EXPECT_EQ(channel.Send(response_packet), OkStatus());
   }
@@ -161,6 +164,7 @@ TEST(FakeChannelOutput, SendResponseUpdated) {
                                          kMethodId,
                                          kCallId,
                                          kPayload);
+  LockGuard lock(rpc_lock());
   ASSERT_EQ(channel.Send(response_packet), OkStatus());
   ASSERT_EQ(output.last_response(MethodType::kUnary).size(), kPayload.size());
   EXPECT_EQ(std::memcmp(output.last_response(MethodType::kUnary).data(),

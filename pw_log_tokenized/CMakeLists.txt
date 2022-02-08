@@ -16,10 +16,78 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_log_tokenized_CONFIG)
 
-pw_auto_add_simple_module(pw_log_tokenized
-  IMPLEMENTS_FACADE
-    pw_log
+pw_add_module_library(pw_log_tokenized.config
+  HEADERS
+    public/pw_log_tokenized/config.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
-    pw_tokenizer
+    pw_log.facade
     ${pw_log_tokenized_CONFIG}
+)
+
+pw_add_module_library(pw_log_tokenized
+  IMPLEMENTS_FACADES
+    pw_log
+  HEADERS
+    public/pw_log_tokenized/log_tokenized.h
+    public_overrides/pw_log_backend/log_backend.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log_tokenized.config
+    pw_log_tokenized.metadata
+    pw_tokenizer
+  PRIVATE_DEPS
+    pw_tokenizer.global_handler_with_payload
+)
+
+pw_add_module_library(pw_log_tokenized.metadata
+  HEADERS
+    public/pw_log_tokenized/metadata.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log.facade
+    pw_log_tokenized.config
+)
+
+# This target provides a backend for pw_tokenizer that encodes tokenized logs as
+# Base64, encodes them into HDLC frames, and writes them over sys_io.
+pw_add_module_library(pw_log_tokenized.base64_over_hdlc
+  IMPLEMENTS_FACADES
+    pw_tokenizer.global_handler_with_payload
+  HEADERS
+    public/pw_log_tokenized/base64_over_hdlc.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    base64_over_hdlc.cc
+  PRIVATE_DEPS
+    pw_hdlc.encoder
+    pw_stream.sys_io_stream
+    pw_tokenizer.base64
+)
+
+pw_add_test(pw_log_tokenized.log_tokenized_test
+  SOURCES
+    log_tokenized_test.cc
+    log_tokenized_test_c.c
+    pw_log_tokenized_private/test_utils.h
+  DEPS
+    pw_log_tokenized
+    pw_preprocessor
+  GROUPS
+    modules
+    pw_log_tokenized
+)
+
+pw_add_test(pw_log_tokenized.metadata_test
+  SOURCES
+    metadata_test.cc
+  DEPS
+    pw_log_tokenized.metadata
+  GROUPS
+    modules
+    pw_log_tokenized
 )

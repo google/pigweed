@@ -21,7 +21,6 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/method_lookup.h"
-#include "pw_rpc/internal/open_call.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/server.h"
 #include "pw_rpc/writer.h"
@@ -59,8 +58,8 @@ class RawServerReaderWriter : private internal::ServerCall {
   [[nodiscard]] static RawServerReaderWriter Open(Server& server,
                                                   uint32_t channel_id,
                                                   ServiceImpl& service) {
-    return {internal::OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
-        server,
+    internal::LockGuard lock(internal::rpc_lock());
+    return {server.OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
         channel_id,
         service,
         internal::MethodLookup::GetRawMethod<
@@ -76,9 +75,7 @@ class RawServerReaderWriter : private internal::ServerCall {
   using internal::Call::set_on_next;
   using internal::ServerCall::set_on_client_stream_end;
 
-  // Sends a response packet with the given raw payload. The payload can either
-  // be in the buffer previously acquired from PayloadBuffer(), or an arbitrary
-  // external buffer.
+  // Sends a response packet with the given raw payload.
   using internal::Call::Write;
 
   Status Finish(Status status = OkStatus()) {
@@ -95,13 +92,6 @@ class RawServerReaderWriter : private internal::ServerCall {
       : internal::ServerCall(context, type) {}
 
   using internal::Call::CloseAndSendResponse;
-
-  // TODO(pwbug/605): Remove PayloadBuffer() and ReleaseBuffer().
-  // Returns a buffer in which a response payload can be built.
-  using internal::Call::PayloadBuffer;
-
-  // Releases a buffer acquired from PayloadBuffer() without sending any data.
-  void ReleaseBuffer() { ReleasePayloadBuffer(); }
 
  private:
   friend class internal::RawMethod;  // Needed to construct
@@ -121,8 +111,8 @@ class RawServerReader : private RawServerReaderWriter {
   [[nodiscard]] static RawServerReader Open(Server& server,
                                             uint32_t channel_id,
                                             ServiceImpl& service) {
-    return {internal::OpenContext<kMethod, MethodType::kClientStreaming>(
-        server,
+    internal::LockGuard lock(internal::rpc_lock());
+    return {server.OpenContext<kMethod, MethodType::kClientStreaming>(
         channel_id,
         service,
         internal::MethodLookup::GetRawMethod<
@@ -166,8 +156,8 @@ class RawServerWriter : private RawServerReaderWriter {
   [[nodiscard]] static RawServerWriter Open(Server& server,
                                             uint32_t channel_id,
                                             ServiceImpl& service) {
-    return {internal::OpenContext<kMethod, MethodType::kServerStreaming>(
-        server,
+    internal::LockGuard lock(internal::rpc_lock());
+    return {server.OpenContext<kMethod, MethodType::kServerStreaming>(
         channel_id,
         service,
         internal::MethodLookup::GetRawMethod<
@@ -192,11 +182,6 @@ class RawServerWriter : private RawServerReaderWriter {
   using internal::Call::operator Writer&;
   using internal::Call::operator const Writer&;
 
- protected:
-  // TODO(pwbug/605): Remove PayloadBuffer() and ReleaseBuffer().
-  using RawServerReaderWriter::PayloadBuffer;
-  using RawServerReaderWriter::ReleaseBuffer;
-
  private:
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
@@ -217,8 +202,8 @@ class RawUnaryResponder : private RawServerReaderWriter {
   [[nodiscard]] static RawUnaryResponder Open(Server& server,
                                               uint32_t channel_id,
                                               ServiceImpl& service) {
-    return {internal::OpenContext<kMethod, MethodType::kUnary>(
-        server,
+    internal::LockGuard lock(internal::rpc_lock());
+    return {server.OpenContext<kMethod, MethodType::kUnary>(
         channel_id,
         service,
         internal::MethodLookup::GetRawMethod<
@@ -239,10 +224,6 @@ class RawUnaryResponder : private RawServerReaderWriter {
   Status Finish(ConstByteSpan response, Status status = OkStatus()) {
     return CloseAndSendResponse(response, status);
   }
-
- protected:
-  // TODO(pwbug/605): Remove PayloadBuffer().
-  using RawServerReaderWriter::PayloadBuffer;
 
  private:
   template <typename, typename, uint32_t>

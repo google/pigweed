@@ -19,24 +19,28 @@
 // clang-format on
 
 #include "pw_log/log.h"
-#include "pw_rpc/internal/packet.h"
+#include "pw_rpc/internal/config.h"
 
 namespace pw::rpc::internal {
 
-using std::byte;
+namespace {
 
-std::span<byte> Channel::OutputBuffer::payload(const Packet& packet) const {
-  const size_t reserved_size = packet.MinEncodedSizeBytes();
-  return reserved_size <= buffer_.size() ? buffer_.subspan(reserved_size)
-                                         : std::span<byte>();
+// TODO(pwbug/615): Dynamically allocate this buffer if
+//     PW_RPC_DYNAMIC_ALLOCATION is enabled.
+std::array<std::byte, cfg::kEncodingBufferSizeBytes> encoding_buffer
+    PW_GUARDED_BY(rpc_lock());
+
+}  // namespace
+
+ByteSpan GetPayloadBuffer() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  return ByteSpan(encoding_buffer)
+      .subspan(Packet::kMinEncodedSizeWithoutPayload);
 }
 
-Status Channel::SendSpan(ByteSpan buffer,
-                         const internal::Packet& packet) const {
-  Result encoded = packet.Encode(buffer);
+Status Channel::Send(const Packet& packet) {
+  Result encoded = packet.Encode(encoding_buffer);
 
   if (!encoded.ok()) {
-    output().DiscardBuffer(buffer);
     PW_LOG_ERROR(
         "Failed to encode RPC packet type %u to channel %u buffer, status %u",
         static_cast<unsigned>(packet.type()),
@@ -45,26 +49,16 @@ Status Channel::SendSpan(ByteSpan buffer,
     return Status::Internal();
   }
 
-  Status status = output().SendAndReleaseBuffer(encoded.value());
+  Status sent = output().Send(encoded.value());
 
-  if (!status.ok()) {
+  if (!sent.ok()) {
     PW_LOG_DEBUG("Channel %u failed to send packet with status %u",
                  static_cast<unsigned>(id()),
-                 status.code());
+                 sent.code());
 
-    // TODO(pwbug/503): It is important that pw_rpc provide a consistent set of
-    //     status codes in its APIs. This status comes from a user class and
-    //     should not be returned directly unless it maps to a standardized
-    //     code. For now, just remap FAILED_PRECONDITION because that value is
-    //     used within the RPC system for another purpose (attempted to use a
-    //     closed RPC call object). Long term, the statuses need to be
-    //     standardized across all APIs. For example, this might return OK,
-    //     UNAVAILABLE, or DATA_LOSS and other codes are mapped to UNKNOWN.
-    if (status.IsFailedPrecondition()) {
-      status = Status::Unknown();
-    }
+    return Status::Unknown();
   }
-  return status;
+  return OkStatus();
 }
 
 }  // namespace pw::rpc::internal

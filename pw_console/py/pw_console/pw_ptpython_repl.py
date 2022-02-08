@@ -326,11 +326,11 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
     def line_break_count(self) -> int:
         return self.default_buffer.text.count('\n')
 
-    def has_focus_and_input_empty_condition(self) -> Condition:
+    def input_empty_if_in_focus_condition(self) -> Condition:
         @Condition
         def test() -> bool:
             if has_focus(self)() and len(self.default_buffer.text) == 0:
                 return True
-            return False
+            return not has_focus(self)()
 
         return test

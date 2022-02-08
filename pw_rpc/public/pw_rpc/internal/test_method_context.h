@@ -38,7 +38,18 @@ class InvocationContext {
   const Service& service() const { return service_; }
 
   // Sets the channel ID, which defaults to an arbitrary value.
-  void set_channel_id(uint32_t id) { channel_ = Channel(id, &output_); }
+  void set_channel_id(uint32_t channel_id) {
+    PW_ASSERT(channel_id != Channel::kUnassignedChannelId);
+
+    // If using dynamic allocation, the channel objects are owned by the
+    // endpoint. The external channel is only used to initialize the endpoint's
+    // channels vector. To update that channel, remove and re-add the channel.
+    PW_ASSERT(server_.CloseChannel(context_.channel_id()).ok());
+    PW_ASSERT(server_.OpenChannel(channel_id, output_).ok());
+
+    channel_ = Channel(channel_id, &output_);
+    context_.set_channel_id(channel_id);
+  }
 
   size_t total_responses() const { return responses().size(); }
 
@@ -86,14 +97,10 @@ class InvocationContext {
                     MethodType method_type,
                     ServiceArgs&&... service_args)
       : method_type_(method_type),
-        channel_(Channel::Create<123>(&output_)),
-        server_(std::span(&channel_, 1)),
+        channel_(123, &output_),
+        server_(std::span(static_cast<rpc::Channel*>(&channel_), 1)),
         service_(std::forward<ServiceArgs>(service_args)...),
-        context_(server_,
-                 static_cast<internal::Channel&>(channel_),
-                 service_,
-                 method,
-                 0) {
+        context_(server_, channel_.id(), service_, method, 0) {
     server_.RegisterService(service_);
   }
 
@@ -155,7 +162,7 @@ class InvocationContext {
 
   const MethodType method_type_;
   Output output_;
-  rpc::Channel channel_;
+  Channel channel_;
   rpc::Server server_;
   Service service_;
   internal::CallContext context_;

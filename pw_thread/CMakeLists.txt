@@ -95,7 +95,7 @@ pw_add_module_library(pw_thread.snapshot
 pw_proto_library(pw_thread.protos
   SOURCES
     pw_thread_protos/thread.proto
-  PUBLIC_DEPS
+  DEPS
     pw_tokenizer.proto
 )
 
