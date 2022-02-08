@@ -19,4 +19,12 @@ namespace pw::cpu_exception::cortex_m {
 
 void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state);
 
+// Returns whether the msp was active in thread or handler modes.
+bool MainStackActive(const pw_cpu_exception_State& cpu_state);
+
+// Returns whether the psp was active in thread mode.
+inline bool ProcessStackActive(const pw_cpu_exception_State& cpu_state) {
+  return !MainStackActive(cpu_state);
+}
+
 }  // namespace pw::cpu_exception::cortex_m

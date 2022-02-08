@@ -150,4 +150,14 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
 }
 
+bool MainStackActive(const pw_cpu_exception_State& cpu_state) {
+  // See ARMv7-M Architecture Reference Manual Section B1.5.8 for the exception
+  // return values, in particular bits 0:3.
+  // Bits 0:3 of EXC_RETURN:
+  // 0b0001 - 0x1 Handler mode Main
+  // 0b1001 - 0x9 Thread mode Main
+  // 0b1101 - 0xD Thread mode Process
+  return cpu_state.extended.exc_return & kExcReturnStackMask;
+}
+
 }  // namespace pw::cpu_exception::cortex_m
