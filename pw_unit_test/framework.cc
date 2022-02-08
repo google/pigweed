@@ -92,6 +92,9 @@ void Framework::EndCurrentTest() {
     case TestResult::kFailure:
       run_tests_summary_.failed_tests++;
       break;
+    case TestResult::kSkipped:
+      run_tests_summary_.skipped_tests++;
+      break;
   }
 
   if (event_handler_ != nullptr) {
@@ -99,6 +102,14 @@ void Framework::EndCurrentTest() {
   }
 
   current_test_ = nullptr;
+}
+
+void Framework::CurrentTestSkip(int line) {
+  if (current_result_ == TestResult::kSuccess) {
+    current_result_ = TestResult::kSkipped;
+  }
+  return CurrentTestExpectSimple(
+      "(test skipped)", "(test skipped)", line, true);
 }
 
 void Framework::CurrentTestExpectSimple(const char* expression,

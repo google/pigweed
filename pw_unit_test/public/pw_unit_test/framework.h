@@ -76,6 +76,11 @@
 // Generates a fatal failure with a generic message.
 #define GTEST_FAIL() return ADD_FAILURE()
 
+// Skips test at runtime, which is neither successful nor failed. Skip aborts
+// current function.
+#define GTEST_SKIP() \
+  return ::pw::unit_test::internal::Framework::Get().CurrentTestSkip(__LINE__)
+
 // Define either macro to 1 to omit the definition of FAIL(), which is a
 // generic name and clashes with some other libraries.
 #if !(defined(GTEST_DONT_DEFINE_FAIL) && GTEST_DONT_DEFINE_FAIL)
@@ -268,6 +273,9 @@ class Framework {
     return success;
   }
 
+  // Skips the current test and dispatches an event for it.
+  void CurrentTestSkip(int line);
+
   // Dispatches an event indicating the result of an expectation.
   void CurrentTestExpectSimple(const char* expression,
                                const char* evaluated_expression,
@@ -307,7 +315,7 @@ class Framework {
   // The current test case which is running.
   const TestInfo* current_test_;
 
-  // Overall result of the current test case (pass/fail).
+  // Overall result of the current test case (pass/fail/skip).
   TestResult current_result_;
 
   // Overall result of the ongoing test run, which covers multiple tests.

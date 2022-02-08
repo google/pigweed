@@ -31,6 +31,9 @@ void LoggingEventHandler::RunAllTestsEnd(
     const RunTestsSummary& run_tests_summary) {
   PW_LOG_INFO("[==========] Done running all tests.");
   PW_LOG_INFO("[  PASSED  ] %d test(s).", run_tests_summary.passed_tests);
+  if (run_tests_summary.skipped_tests) {
+    PW_LOG_WARN("[  SKIPPED ] %d test(s).", run_tests_summary.skipped_tests);
+  }
   if (run_tests_summary.failed_tests) {
     PW_LOG_ERROR("[  FAILED  ] %d test(s).", run_tests_summary.failed_tests);
   }
@@ -51,6 +54,10 @@ void LoggingEventHandler::TestCaseEnd(const TestCase& test_case,
     case TestResult::kFailure:
       PW_LOG_ERROR(
           "[  FAILED  ] %s.%s", test_case.suite_name, test_case.test_name);
+      break;
+    case TestResult::kSkipped:
+      PW_LOG_WARN(
+          "[  SKIPPED ] %s.%s", test_case.suite_name, test_case.test_name);
       break;
   }
 }

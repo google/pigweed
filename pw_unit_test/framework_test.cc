@@ -78,6 +78,12 @@ TEST(PigweedTest, SucceedAndFailMacros) {
   }
 }
 
+TEST(PigweedTest, SkipMacro) {
+  GTEST_SKIP();
+  // This code should not run.
+  EXPECT_TRUE(false);
+}
+
 class NonCopyable {
  public:
   NonCopyable(int value) : value_(value) {}
