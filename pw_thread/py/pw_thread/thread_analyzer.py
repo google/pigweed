@@ -189,14 +189,19 @@ class ThreadSnapshotAnalyzer:
 
     def active_thread(self) -> Optional[thread_pb2.Thread]:
         """The thread that requested the snapshot capture."""
-        running_thread = None
+        # First check if an interrupt handler was active.
         for thread in self._threads:
-            if thread.active:
+            if thread.state == thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER:
                 return thread
-            if thread.state == thread_pb2.ThreadState.Enum.RUNNING:
-                running_thread = thread
+            if thread.active:  # The deprecated legacy way to report this.
+                return thread
 
-        return running_thread
+        # If not, search for a running thread.
+        for thread in self._threads:
+            if thread.state == thread_pb2.ThreadState.Enum.RUNNING:
+                return thread
+
+        return None
 
     def __str__(self) -> str:
         """outputs a pw.snapshot.Metadata proto as a multi-line string."""

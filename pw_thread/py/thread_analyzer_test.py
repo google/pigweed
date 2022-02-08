@@ -131,10 +131,10 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
         snapshot.threads.append(temp_thread)
 
         temp_thread = thread_pb2.Thread()
-        temp_thread.name = 'Main/Handler'.encode()
+        temp_thread.name = 'Alice'.encode()
         temp_thread.stack_start_pointer = 0x2001b000
         temp_thread.stack_pointer = 0x2001ae20
-        temp_thread.state = thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER
+        temp_thread.state = thread_pb2.ThreadState.Enum.BLOCKED
         snapshot.threads.append(temp_thread)
 
         expected = '\n'.join((
@@ -148,7 +148,7 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
             '  Est peak usage:  512 bytes, 100.00%',
             '  Stack limits:    0x2001ac00 - 0x2001aa00 (512 bytes)',
             '',
-            'Thread (INTERRUPT_HANDLER): Main/Handler',
+            'Thread (BLOCKED): Alice',
             'Est CPU usage: unknown',
             'Stack info',
             '  Current usage:   0x2001b000 - 0x2001ae20 (480 bytes)',
@@ -158,6 +158,51 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
         ))
         analyzer = ThreadSnapshotAnalyzer(snapshot)
         self.assertEqual(analyzer.active_thread(), None)
+        self.assertEqual(str(ThreadSnapshotAnalyzer(snapshot)), expected)
+
+    def test_interrupts_with_thread(self):
+        """Ensures interrupts are properly reported as active."""
+        snapshot = thread_pb2.SnapshotThreadInfo()
+
+        temp_thread = thread_pb2.Thread()
+        temp_thread.name = 'Idle'.encode()
+        temp_thread.state = thread_pb2.ThreadState.Enum.READY
+        temp_thread.stack_start_pointer = 0x2001ac00
+        temp_thread.stack_end_pointer = 0x2001aa00
+        temp_thread.stack_pointer = 0x2001ab0c
+        temp_thread.stack_pointer_est_peak = 0x2001aa00
+        snapshot.threads.append(temp_thread)
+
+        temp_thread = thread_pb2.Thread()
+        temp_thread.name = 'Main/Handler'.encode()
+        temp_thread.stack_start_pointer = 0x2001b000
+        temp_thread.stack_pointer = 0x2001ae20
+        temp_thread.state = thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER
+        snapshot.threads.append(temp_thread)
+
+        expected = '\n'.join((
+            'Thread State',
+            '  2 threads running, Main/Handler active at the time of capture.',
+            '                     ~~~~~~~~~~~~',
+            '',
+            # Ensure the active thread is moved to the top of the list.
+            'Thread (INTERRUPT_HANDLER): Main/Handler <-- [ACTIVE]',
+            'Est CPU usage: unknown',
+            'Stack info',
+            '  Current usage:   0x2001b000 - 0x2001ae20 (480 bytes)',
+            '  Est peak usage:  size unknown',
+            '  Stack limits:    0x2001b000 - 0x???????? (size unknown)',
+            '',
+            'Thread (READY): Idle',
+            'Est CPU usage: unknown',
+            'Stack info',
+            '  Current usage:   0x2001ac00 - 0x2001ab0c (244 bytes, 47.66%)',
+            '  Est peak usage:  512 bytes, 100.00%',
+            '  Stack limits:    0x2001ac00 - 0x2001aa00 (512 bytes)',
+            '',
+        ))
+        analyzer = ThreadSnapshotAnalyzer(snapshot)
+        self.assertEqual(analyzer.active_thread(), temp_thread)
         self.assertEqual(str(ThreadSnapshotAnalyzer(snapshot)), expected)
 
     def test_active_thread(self):

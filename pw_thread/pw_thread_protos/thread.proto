@@ -50,13 +50,13 @@ message Thread {
   // tokenized data (e.g. base-64 encoded or binary data).
   bytes name = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
+  // This field has been deprecatdin favor of using the state enum to report
+  // RUNNING or INTERRUPT_CONTEXT to mark them as active.
+  //
   // Whether or not this thread is the thread is the currently active context
   // at the time of capture. For multi-thread dumps, this field should only be
   // set on ONE thread.
-  //
-  // Note: in interrupt contexts, the active thread may not be the thread that
-  // is in the THREAD_STATE_RUNNING state.
-  bool active = 2;
+  bool active = 2 [deprecated = true];
 
   // A summarized thread state. RTOS-specific extensions of the Thread message
   // may provide more specific thread state information.
