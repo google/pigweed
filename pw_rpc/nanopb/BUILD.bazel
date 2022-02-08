@@ -20,6 +20,8 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+licenses(["notice"])
+
 pw_cc_library(
     name = "server_api",
     srcs = [

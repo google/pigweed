@@ -235,7 +235,7 @@ _pw_proto_library = rule(
     },
 )
 
-_pw_raw_rpc_proto_compiler_aspect = _proto_compiler_aspect("raw_rpc.pb.h", "//pw_rpc/py:plugin")
+_pw_raw_rpc_proto_compiler_aspect = _proto_compiler_aspect("raw_rpc.pb.h", "//pw_rpc/py:plugin_raw")
 
 _pw_raw_rpc_proto_library = rule(
     implementation = _impl_pw_proto_library,
@@ -247,7 +247,7 @@ _pw_raw_rpc_proto_library = rule(
     },
 )
 
-_pw_nanopb_rpc_proto_compiler_aspect = _proto_compiler_aspect("rpc.pb.h", "//pw_rpc/py:nanopb_plugin")
+_pw_nanopb_rpc_proto_compiler_aspect = _proto_compiler_aspect("rpc.pb.h", "//pw_rpc/py:plugin_nanopb")
 
 _pw_nanopb_rpc_proto_library = rule(
     implementation = _impl_pw_proto_library,
@@ -281,8 +281,8 @@ PIGWEED_PLUGIN = {
         "compiler": _pw_nanopb_rpc_proto_library,
         "deps": [
             "//pw_rpc",
-            "//pw_rpc/nanopb",
-            "//pw_rpc/nanopb:method_union",
+            "//pw_rpc/nanopb:client_api",
+            "//pw_rpc/nanopb:server_api",
         ],
         "include_nanopb_dep": True,
     },

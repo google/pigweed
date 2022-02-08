@@ -346,4 +346,6 @@ proto_library(
 pw_proto_library(
     name = "echo_cc",
     deps = [":echo_proto"],
+    # TODO(tpudlik): We should provide echo.options to nanopb here, but the
+    # current proto codegen implementation provides no mechanism for doing so.
 )
