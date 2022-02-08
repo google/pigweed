@@ -52,7 +52,7 @@ Status FakeServer::ProcessPacket(internal::PacketType type,
                                  ConstByteSpan payload,
                                  Status status) const {
   auto view = internal::test::PacketsView(
-      output_.packets_,
+      output_.packets(),
       internal::test::PacketFilter(internal::PacketType::REQUEST,
                                    internal::PacketType::RESPONSE,
                                    channel_id_,

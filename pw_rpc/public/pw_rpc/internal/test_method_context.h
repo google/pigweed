@@ -88,6 +88,9 @@ class InvocationContext {
                   .ok());
   }
 
+  const Output& output() const { return output_; }
+  Output& output() { return output_; }
+
  protected:
   // Constructs the invocation context. The args for the ChannelOutput type are
   // passed in a std::tuple. The args for the Service are forwarded directly
@@ -103,9 +106,6 @@ class InvocationContext {
         context_(server_, channel_.id(), service_, method, 0) {
     server_.RegisterService(service_);
   }
-
-  const Output& output() const { return output_; }
-  Output& output() { return output_; }
 
   uint32_t channel_id() const { return channel_.id(); }
 

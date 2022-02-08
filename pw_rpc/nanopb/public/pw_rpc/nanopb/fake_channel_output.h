@@ -104,6 +104,12 @@ class NanopbFakeChannelOutput final
   NanopbFakeChannelOutput() = default;
 
   // Iterates over request payloads from request or client stream packets.
+  //
+  // !!! WARNING !!!
+  //
+  // Access to the FakeChannelOutput through the NanopbPayloadsView is NOT
+  // synchronized! The NanopbPayloadsView is immediately invalidated if any
+  // thread accesses the FakeChannelOutput.
   template <auto kMethod>
   NanopbPayloadsView<Request<kMethod>> requests(
       uint32_t channel_id = Channel::kUnassignedChannelId) const {
@@ -122,6 +128,12 @@ class NanopbFakeChannelOutput final
   }
 
   // Iterates over response payloads from response or server stream packets.
+  //
+  // !!! WARNING !!!
+  //
+  // Access to the FakeChannelOutput through the NanopbPayloadsView is NOT
+  // synchronized! The NanopbPayloadsView is immediately invalidated if any
+  // thread accesses the FakeChannelOutput.
   template <auto kMethod>
   NanopbPayloadsView<Response<kMethod>> responses(
       uint32_t channel_id = Channel::kUnassignedChannelId) const {
