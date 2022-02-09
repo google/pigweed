@@ -520,16 +520,40 @@ For Windows command prompt (``cmd.exe``) use the ``set`` command:
 Configuration
 -------------
 
-Pigweed Console supports loading project and user specific settings stored in a
-YAML file. By default these files will be loaded one after the other:
+Pigweed Console supports loading project and user specific settings stored in
+YAML files. Each file follows the same format and are loaded one after the
+other. Any setting specified multiple locations will be overridden by files
+loaded later in the startup sequence.
 
-- ``$PW_PROJECT_ROOT/.pw_console.yaml``
-- ``$HOME/.pw_console.yaml``
+1. ``$PW_PROJECT_ROOT/.pw_console.yaml``
 
-Each file follows the same format with settings in ``$HOME`` overriding ones in
-``$PW_PROJECT_ROOT``.
+   Project level config file. This is intended to be a file living somewhere
+   under a project folder and is checked into version control. It serves as a
+   base config for all users to inherit from.
 
-It's also possible to specify a config file via a shell environment variable.
+2. ``$PW_PROJECT_ROOT/.pw_console.user.yaml``
+
+   User's personal config file for a specific project. This can be a file that
+   lives in a project folder but is git-ignored and not checked into version
+   control. This lets users change settings applicable to this project only.
+
+3. ``$HOME/.pw_console.yaml``
+
+   A global user based config file. This file is located in the user's home
+   directory and settings here apply to all projects. This is a good location to
+   set appearance options such as:
+
+   .. code-block:: yaml
+
+      ui_theme: nord
+      code_theme: pigweed-code
+      swap_light_and_dark: False
+      spaces_between_columns: 2
+      hide_date_from_log_time: False
+
+It's also possible to specify a config file via a shell environment variable. If
+this method is used only this config file is applied. Project and user config
+file options will not be set.
 
 ::
 
@@ -540,144 +564,151 @@ Example Config
 
 .. code-block:: yaml
 
-   pw_console:
+   ---
+   config_title: pw_console
 
-     # Repl and Search History files
-     # Setting these to a file located $PW_PROJECT_ROOT is a
-     # good way to make Python repl history project specific.
+   # Repl and Search History files
+   # Setting these to a file located $PW_PROJECT_ROOT is a
+   # good way to make Python repl history project specific.
 
-     # Default: $HOME/.pw_console_history
-     repl_history: $PW_PROJECT_ROOT/.pw_console_history
+   # Default: $HOME/.pw_console_history
+   repl_history: $PW_PROJECT_ROOT/.pw_console_history
 
-     # Default: $HOME/.pw_console_search
-     search_history: $PW_PROJECT_ROOT/.pw_console_search
+   # Default: $HOME/.pw_console_search
+   search_history: $PW_PROJECT_ROOT/.pw_console_search
 
-     # Theme Settings
+   # Theme Settings
 
-     # Default: dark
-     ui_theme: high-contrast-dark
+   # Default: dark
+   ui_theme: high-contrast-dark
 
-     # Default: pigweed-code
-     code_theme: material
+   # Default: pigweed-code
+   code_theme: material
 
-     # Default: False
-     swap_light_and_dark: False
+   # Default: False
+   swap_light_and_dark: False
 
-     # Log Table View Settings
+   # Log Table View Settings
 
-     # Number of spaces to insert between columns
-     # Default: 2
-     spaces_between_columns: 2
+   # Number of spaces to insert between columns
+   # Default: 2
+   spaces_between_columns: 2
 
-     # Hide the year month and day from the time column.
-     hide_date_from_log_time: False
+   # Hide the year month and day from the time column.
+   hide_date_from_log_time: False
 
-     # Show the Python file and line number responsible for creating log messages.
-     show_python_file: False
-     # Show the Python logger responsible for creating log messages.
-     show_python_logger: False
-     # Show the 'file' metadata column.
-     show_source_file: False
+   # Show the Python file and line number responsible for creating log messages.
+   show_python_file: False
+   # Show the Python logger responsible for creating log messages.
+   show_python_logger: False
+   # Show the 'file' metadata column.
+   show_source_file: False
 
-     # Custom Column Ordering
-     # By default columns are ordered as:
-     #   time, level, metadata1, metadata2, ..., message
-     # The log message is always the last value and not required in this list.
-     column_order:
-       # Column name
-       - time
-       - level
-       - metadata1
-       - metadata2
-     # If True, any metadata field not listed above will be hidden in table view.
-     column_order_omit_unspecified_columns: False
+   # Custom Column Ordering
+   # By default columns are ordered as:
+   #   time, level, metadata1, metadata2, ..., message
+   # The log message is always the last value and not required in this list.
+   column_order:
+     # Column name
+     - time
+     - level
+     - metadata1
+     - metadata2
 
-     # Unique Colors for Column Values
-     #   Color format: 'bg:#BG-HEX #FG-HEX STYLE'
-     # All parts are optional.
-     # Empty strings will leave styling unchanged.
-     # See prompt_toolkit style format docs here:
-     #   https://python-prompt-toolkit.readthedocs.io/en/latest/pages/advanced_topics/styling.html
-     column_colors:
-       # Column name
-       time:
-       level:
-       metadata1:
-         # Field values
-         # Default will be applied if no match found
-         default: '#98be65'
-         BATTERY: 'bg:#6699cc #000000 bold'
-         CORE1: 'bg:#da8548 #000000 bold'
-         CORE2: 'bg:#66cccc #000000 bold'
-       metadata2:
-         default: '#ffcc66'
-         APP: 'bg:#ff6c6b #000000 bold'
-         WIFI: '#555555'
+   # If True, any metadata field not listed above in 'column_order' will be hidden in table view.
+   column_order_omit_unspecified_columns: False
 
-     # Each window column is normally aligned side by side in vertical
-     # splits. You can change this to one group of windows on top of the other
-     # with horizontal splits using this method
-     # Default: vertical
-     window_column_split_method: vertical
+   # Unique Colors for Column Values
+   #   Color format: 'bg:#BG-HEX #FG-HEX STYLE'
+   # All parts are optional.
+   # Empty strings will leave styling unchanged.
+   # See prompt_toolkit style format docs here:
+   #   https://python-prompt-toolkit.readthedocs.io/en/latest/pages/advanced_topics/styling.html
+   column_colors:
+     # Column name
+     time:
+     level:
+     metadata1:
+       # Field values
+       # Default will be applied if no match found
+       default: '#98be65'
+       BATTERY: 'bg:#6699cc #000000 bold'
+       CORE1: 'bg:#da8548 #000000 bold'
+       CORE2: 'bg:#66cccc #000000 bold'
+     metadata2:
+       default: '#ffcc66'
+       APP: 'bg:#ff6c6b #000000 bold'
+       WIFI: '#555555'
 
-     # Window Layout
-     windows:
-       # First window column (vertical split)
-       # Each split should have a unique name and include either
-       # 'stacked' or 'tabbed' to select a window pane display method.
-       Split 1 stacked:
-         # Items here are window titles, each should be unique.
-         # Window 1
-         Device Logs:
-           height: 33  # Weighted value for window height
-           hidden: False  # Hide this window if True
-         # Window 2
-         Python Repl:
-           height: 67
-         # Window 3
-         Host Logs:
-           hidden: True
+   # Each window column is normally aligned side by side in vertical splits. You
+   # can change this to one group of windows on top of the other with horizontal
+   # splits using this method
 
-       # Second window column
-       Split 2 tabbed:
-         # This is a duplicate of the existing 'Device Logs' window with a new title
-         NEW DEVICE:
-           duplicate_of: Device Logs
-           # Log filters are defined here
-           filters:
-             # Metadata column names here or 'all'
-             source_name:
-               # Matching method name here
-               # regex, regex-inverted, string, string-inverted
-               regex: 'USB'
-             module:
-               # An inverted match will remove matching log lines
-               regex-inverted: 'keyboard'
-         NEW HOST:
-           duplicate_of: Host Logs
-           filters:
-             all:
-               string: 'FLASH'
+   # Default: vertical
+   window_column_split_method: vertical
 
-       # Third window column
-       Split 3 tabbed:
-         # This is a brand new log Window
-         Keyboard Logs - IBM:
-           loggers:
-             # Python logger names to include in this log window
-             my_cool_keyboard_device:
-               # Level the logger should be set to.
-               level: DEBUG
-           filters:
-             all:
-               regex: 'IBM Model M'
-         Keyboard Logs - Apple:
-           loggers:
-             my_cool_keyboard_device:
-               level: DEBUG
-           filters:
-             all:
-               regex: 'Apple.*USB'
+   # Window Layout
+   windows:
+     # First window column (vertical split)
+     # Each split should have a unique name and include either
+     # 'stacked' or 'tabbed' to select a window pane display method.
+     Split 1 stacked:
+       # Items here are window titles, each should be unique.
+       # Window 1
+       Device Logs:
+         height: 33  # Weighted value for window height
+         hidden: False  # Hide this window if True
+       # Window 2
+       Python Repl:
+         height: 67
+       # Window 3
+       Host Logs:
+         hidden: True
+
+     # Second window column
+     Split 2 tabbed:
+       # This is a duplicate of the existing 'Device Logs' window with a new title.
+       NEW DEVICE:
+         duplicate_of: Device Logs
+         # Log filters are defined here
+         filters:
+           # Metadata column names here or 'all'
+           source_name:
+             # Matching method name here
+             # regex, regex-inverted, string, string-inverted
+             regex: 'USB'
+           module:
+             # An inverted match will remove matching log lines
+             regex-inverted: 'keyboard'
+       NEW HOST:
+         duplicate_of: Host Logs
+         filters:
+           all:
+             string: 'FLASH'
+
+     # Third window column
+     Split 3 tabbed:
+       # This is a brand new log Window
+       Keyboard Logs - IBM:
+         loggers:
+           # Python logger names to include in this log window
+           my_cool_keyboard_device:
+             # Level the logger should be set to.
+             level: DEBUG
+           # The empty string logger name is the root Python logger.
+           # In most cases this should capture all log messages.
+           '':
+             level: DEBUG
+         filters:
+           all:
+             regex: 'IBM Model M'
+       Keyboard Logs - Apple:
+         loggers:
+           my_cool_keyboard_device:
+             level: DEBUG
+         filters:
+           all:
+             regex: 'Apple.*USB'
 
 
 Known Issues

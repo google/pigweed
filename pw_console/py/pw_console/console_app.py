@@ -650,7 +650,7 @@ class ConsoleApp:
 
     def load_clean_config(self, config_file: Path) -> None:
         self.prefs.reset_config()
-        self.prefs.load_config(config_file)
+        self.prefs.load_config_file(config_file)
 
     def apply_window_config(self) -> None:
         self.window_manager.apply_config(self.prefs)

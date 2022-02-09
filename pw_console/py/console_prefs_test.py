@@ -45,8 +45,10 @@ class TestConsolePrefs(unittest.TestCase):
         self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_load_no_existing_files(self) -> None:
-        prefs = ConsolePrefs(project_file=False, user_file=False)
-        self.assertEqual(_DEFAULT_CONFIG['pw_console'], prefs._config)
+        prefs = ConsolePrefs(project_file=False,
+                             project_user_file=False,
+                             user_file=False)
+        self.assertEqual(_DEFAULT_CONFIG, prefs._config)
         self.assertTrue(str(prefs.repl_history).endswith('pw_console_history'))
         self.assertTrue(
             str(prefs.search_history).endswith('pw_console_search'))
@@ -56,19 +58,20 @@ class TestConsolePrefs(unittest.TestCase):
         project_config_file = _create_tempfile('')
         try:
             prefs = ConsolePrefs(project_file=project_config_file,
+                                 project_user_file=False,
                                  user_file=False)
             result_settings = {
                 k: v
                 for k, v in prefs._config.items()
-                if k in _DEFAULT_CONFIG['pw_console'].keys()
+                if k in _DEFAULT_CONFIG.keys()
             }
             other_settings = {
                 k: v
                 for k, v in prefs._config.items()
-                if k not in _DEFAULT_CONFIG['pw_console'].keys()
+                if k not in _DEFAULT_CONFIG.keys()
             }
             # Check that only the default config was loaded.
-            self.assertEqual(_DEFAULT_CONFIG['pw_console'], result_settings)
+            self.assertEqual(_DEFAULT_CONFIG, result_settings)
             self.assertEqual(0, len(other_settings))
         finally:
             project_config_file.unlink()
@@ -84,6 +87,7 @@ class TestConsolePrefs(unittest.TestCase):
         project_config_file = _create_tempfile(yaml.dump(project_config))
         try:
             prefs = ConsolePrefs(project_file=project_config_file,
+                                 project_user_file=False,
                                  user_file=False)
             result_settings = {
                 k: v
@@ -113,6 +117,16 @@ class TestConsolePrefs(unittest.TestCase):
         }
         project_config_file = _create_tempfile(yaml.dump(project_config))
 
+        project_user_config = {
+            'pw_console': {
+                'ui_theme': 'nord',
+                'repl_history': '~/project_user_history',
+                'search_history': '~/project_user_search',
+            },
+        }
+        project_user_config_file = _create_tempfile(
+            yaml.dump(project_user_config))
+
         user_config = {
             'pw_console': {
                 'ui_theme': 'dark',
@@ -122,6 +136,7 @@ class TestConsolePrefs(unittest.TestCase):
         user_config_file = _create_tempfile(yaml.dump(user_config))
         try:
             prefs = ConsolePrefs(project_file=project_config_file,
+                                 project_user_file=project_user_config_file,
                                  user_file=user_config_file)
             # Set by the project
             self.assertEqual(project_config['pw_console']['code_theme'],
@@ -130,18 +145,28 @@ class TestConsolePrefs(unittest.TestCase):
                 project_config['pw_console']['swap_light_and_dark'],
                 prefs.swap_light_and_dark)
 
-            history = project_config['pw_console']['repl_history']
+            # Project user setting, result should not be project only setting.
+            project_history = project_config['pw_console']['repl_history']
+            assert isinstance(project_history, str)
+            self.assertNotEqual(
+                Path(project_history).expanduser(), prefs.repl_history)
+
+            history = project_user_config['pw_console']['repl_history']
             assert isinstance(history, str)
             self.assertEqual(Path(history).expanduser(), prefs.repl_history)
 
-            # User config overrides project
+            # User config overrides project and project_user
             self.assertEqual(user_config['pw_console']['ui_theme'],
                              prefs.ui_theme)
             self.assertEqual(
                 Path(user_config['pw_console']['search_history']).expanduser(),
                 prefs.search_history)
+            # ui_theme should not be the project_user file setting
+            project_user_theme = project_user_config['pw_console']['ui_theme']
+            self.assertNotEqual(project_user_theme, prefs.ui_theme)
         finally:
             project_config_file.unlink()
+            project_user_config_file.unlink()
             user_config_file.unlink()
 
 

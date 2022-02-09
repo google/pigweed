@@ -13,40 +13,40 @@
 # the License.
 """pw_console preferences"""
 
-from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Union
-
-import yaml
+from typing import List, Union
 
 from pw_console.style import get_theme_colors
+from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 _DEFAULT_REPL_HISTORY: Path = Path.home() / '.pw_console_history'
 _DEFAULT_SEARCH_HISTORY: Path = Path.home() / '.pw_console_search'
 
 _DEFAULT_CONFIG = {
-    'pw_console': {
-        # History files
-        'repl_history': _DEFAULT_REPL_HISTORY,
-        'search_history': _DEFAULT_SEARCH_HISTORY,
-        # Appearance
-        'ui_theme': 'dark',
-        'code_theme': 'pigweed-code',
-        'swap_light_and_dark': False,
-        'spaces_between_columns': 2,
-        'column_order_omit_unspecified_columns': False,
-        'column_order': [],
-        'column_colors': {},
-        'show_python_file': False,
-        'show_python_logger': False,
-        'show_source_file': False,
-        'hide_date_from_log_time': False,
-        # Window arrangement
-        'windows': {},
-        'window_column_split_method': 'vertical',
-    },
+    # History files
+    'repl_history': _DEFAULT_REPL_HISTORY,
+    'search_history': _DEFAULT_SEARCH_HISTORY,
+    # Appearance
+    'ui_theme': 'dark',
+    'code_theme': 'pigweed-code',
+    'swap_light_and_dark': False,
+    'spaces_between_columns': 2,
+    'column_order_omit_unspecified_columns': False,
+    'column_order': [],
+    'column_colors': {},
+    'show_python_file': False,
+    'show_python_logger': False,
+    'show_source_file': False,
+    'hide_date_from_log_time': False,
+    # Window arrangement
+    'windows': {},
+    'window_column_split_method': 'vertical',
 }
+
+_DEFAULT_PROJECT_FILE = Path('$PW_PROJECT_ROOT/.pw_console.yaml')
+_DEFAULT_PROJECT_USER_FILE = Path('$PW_PROJECT_ROOT/.pw_console.user.yaml')
+_DEFAULT_USER_FILE = Path('$HOME/.pw_console.yaml')
 
 
 class UnknownWindowTitle(Exception):
@@ -75,53 +75,22 @@ def error_unknown_window(window_title: str,
         'https://pigweed.dev/pw_console/docs/user_guide.html#example-config')
 
 
-@dataclass
-class ConsolePrefs:
+class ConsolePrefs(YamlConfigLoaderMixin):
     """Pigweed Console preferences storage class."""
-
-    project_file: Union[Path, bool] = Path('$PW_PROJECT_ROOT/.pw_console.yaml')
-    user_file: Union[Path, bool] = Path('$HOME/.pw_console.yaml')
-    _config: Dict[Any, Any] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        self._update_config(_DEFAULT_CONFIG)
-
-        if self.project_file:
-            assert isinstance(self.project_file, Path)
-            self.project_file = Path(
-                os.path.expandvars(str(self.project_file.expanduser())))
-            self.load_config(self.project_file)
-
-        if self.user_file:
-            assert isinstance(self.user_file, Path)
-            self.user_file = Path(
-                os.path.expandvars(str(self.user_file.expanduser())))
-            self.load_config(self.user_file)
-
-        # Check for a config file specified by an environment variable.
-        environment_config = os.environ.get('PW_CONSOLE_CONFIG_FILE', None)
-        if environment_config:
-            env_file_path = Path(environment_config)
-            if not env_file_path.is_file():
-                raise FileNotFoundError(
-                    f'Cannot load config file: {env_file_path}')
-            self.reset_config()
-            self.load_config(env_file_path)
-
-    def _update_config(self, cfg: Dict[Any, Any]) -> None:
-        if cfg is None:
-            cfg = {}
-        self._config.update(cfg.get('pw_console', {}))
-
-    def reset_config(self) -> None:
-        self._config = {}
-        self._update_config(_DEFAULT_CONFIG)
-
-    def load_config(self, file_path: Path) -> None:
-        if not file_path.is_file():
-            return
-        cfg = yaml.load(file_path.read_text(), Loader=yaml.Loader)
-        self._update_config(cfg)
+    def __init__(
+        self,
+        project_file: Union[Path, bool] = _DEFAULT_PROJECT_FILE,
+        project_user_file: Union[Path, bool] = _DEFAULT_PROJECT_USER_FILE,
+        user_file: Union[Path, bool] = _DEFAULT_USER_FILE,
+    ) -> None:
+        self.config_init(
+            config_section_title='pw_console',
+            project_file=project_file,
+            project_user_file=project_user_file,
+            user_file=user_file,
+            default_config=_DEFAULT_CONFIG,
+            environment_var='PW_CONSOLE_CONFIG_FILE',
+        )
 
     @property
     def ui_theme(self) -> str:
