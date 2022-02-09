@@ -614,6 +614,7 @@ class LogPane(WindowPane):
                         invert=inverted,
                         field=field,
                         search_matcher=matcher_name,
+                        interactive=False,
                 ):
                     self.log_view.install_new_filter()
 

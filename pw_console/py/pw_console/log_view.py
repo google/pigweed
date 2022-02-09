@@ -251,6 +251,7 @@ class LogView:
         invert=False,
         field: Optional[str] = None,
         search_matcher: Optional[str] = None,
+        interactive: bool = True,
     ) -> bool:
         """Start a new search for the given text."""
         valid_matchers = list(s.name for s in SearchMatcher)
@@ -264,9 +265,11 @@ class LogView:
 
         # Clear matched lines
         self.search_matched_lines = {}
-        # Start count historical search matches task.
-        self.search_match_count_task = asyncio.create_task(
-            self.count_search_matches())
+
+        if interactive:
+            # Start count historical search matches task.
+            self.search_match_count_task = asyncio.create_task(
+                self.count_search_matches())
 
         # Default search direction when hitting enter in the search bar.
         self.search_forwards()
