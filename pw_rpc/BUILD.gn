@@ -190,9 +190,11 @@ pw_source_set("fake_channel_output") {
 
 pw_source_set("thread_testing") {
   public = [ "public/pw_rpc/thread_testing.h" ]
-  sources = [ "thread_testing.cc" ]
-  public_deps = [ ":fake_channel_output" ]
-  deps = [ "$dir_pw_sync:counting_semaphore" ]
+  public_deps = [
+    ":fake_channel_output",
+    "$dir_pw_sync:counting_semaphore",
+    dir_pw_assert,
+  ]
 }
 
 pw_source_set("test_utils") {

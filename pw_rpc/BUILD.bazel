@@ -120,11 +120,11 @@ pw_cc_library(
 
 pw_cc_library(
     name = "thread_testing",
-    srcs = ["thread_testing.cc"],
     hdrs = ["public/pw_rpc/thread_testing.h"],
     includes = ["public"],
     deps = [
         ":internal_test_utils",
+        "//pw_assert",
         "//pw_sync:counting_semaphore",
     ],
 )
