@@ -186,6 +186,27 @@ SECTIONS
   {
     KEEP(*(.ARM.extab*))
   }
+
+  /*
+   * Do not declare any output sections after this comment. This area is
+   * reserved only for declaring unused sections of memory. These sections are
+   * used by pw_bloat.bloaty_config to create the utilization data source for
+   * bloaty.
+   */
+  .VECTOR_TABLE.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(VECTOR_TABLE) + LENGTH(VECTOR_TABLE));
+  } >VECTOR_TABLE
+
+  .FLASH.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(FLASH) + LENGTH(FLASH));
+  } >FLASH
+
+  .RAM.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));
+  } >RAM
 }
 
 /* Symbols used by core_init.c: */
@@ -202,3 +223,14 @@ _pw_zero_init_ram_end = _pw_zero_init_ram_start + SIZEOF(.zero_init_ram);
 
 /* arm-none-eabi expects `end` symbol to point to start of heap for sbrk. */
 PROVIDE(end = _pw_zero_init_ram_end);
+
+/* These symbols are used by pw_bloat.bloaty_config to create the memoryregions
+ * data source for bloaty in this format (where the optional _N defaults to 0):
+ * pw_bloat_config_memory_region_NAME_{start,end}{_N,} */
+pw_bloat_config_memory_region_VECTOR_TABLE_start = ORIGIN(VECTOR_TABLE);
+pw_bloat_config_memory_region_VECTOR_TABLE_end =
+    ORIGIN(VECTOR_TABLE) + LENGTH(VECTOR_TABLE);
+pw_bloat_config_memory_region_FLASH_start = ORIGIN(FLASH);
+pw_bloat_config_memory_region_FLASH_end = ORIGIN(FLASH) + LENGTH(FLASH);
+pw_bloat_config_memory_region_RAM_start = ORIGIN(RAM);
+pw_bloat_config_memory_region_RAM_end = ORIGIN(RAM) + LENGTH(RAM);
