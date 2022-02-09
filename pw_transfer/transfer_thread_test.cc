@@ -41,9 +41,10 @@ thread::Options& TransferThreadOptions() {
 class TransferThreadTest : public ::testing::Test {
  public:
   TransferThreadTest()
-      : transfer_thread_(chunk_buffer_, encode_buffer_),
-        system_thread_(TransferThreadOptions(), transfer_thread_),
-        max_parameters_(chunk_buffer_.size(), chunk_buffer_.size()) {}
+      : ctx_(transfer_thread_, 512),
+        max_parameters_(chunk_buffer_.size(), chunk_buffer_.size()),
+        transfer_thread_(chunk_buffer_, encode_buffer_),
+        system_thread_(TransferThreadOptions(), transfer_thread_) {}
 
   ~TransferThreadTest() {
     transfer_thread_.Terminate();
@@ -51,13 +52,17 @@ class TransferThreadTest : public ::testing::Test {
   }
 
  protected:
-  transfer::Thread<1, 1> transfer_thread_;
-  thread::Thread system_thread_;
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx_;
+
   std::array<std::byte, 64> chunk_buffer_;
   std::array<std::byte, 64> encode_buffer_;
-  internal::TransferParameters max_parameters_;
 
   rpc::RawClientTestContext<> rpc_client_context_;
+  internal::TransferParameters max_parameters_;
+
+  transfer::Thread<1, 1> transfer_thread_;
+
+  thread::Thread system_thread_;
 };
 
 class SimpleReadTransfer final : public ReadOnlyHandler {
@@ -92,9 +97,7 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
 constexpr auto kData = bytes::Initialized<32>([](size_t i) { return i; });
 
 TEST_F(TransferThreadTest, AddTransferHandler) {
-  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx(transfer_thread_, 512);
-
-  auto reader_writer = ctx.reader_writer();
+  auto reader_writer = ctx_.reader_writer();
   transfer_thread_.SetServerReadStream(reader_writer);
 
   SimpleReadTransfer handler(3, kData);
@@ -113,9 +116,7 @@ TEST_F(TransferThreadTest, AddTransferHandler) {
 }
 
 TEST_F(TransferThreadTest, RemoveTransferHandler) {
-  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx(transfer_thread_, 512);
-
-  auto reader_writer = ctx.reader_writer();
+  auto reader_writer = ctx_.reader_writer();
   transfer_thread_.SetServerReadStream(reader_writer);
 
   SimpleReadTransfer handler(3, kData);
@@ -133,32 +134,28 @@ TEST_F(TransferThreadTest, RemoveTransferHandler) {
 
   EXPECT_FALSE(handler.prepare_read_called);
 
-  ASSERT_EQ(ctx.total_responses(), 1u);
-  auto chunk = DecodeChunk(ctx.response());
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  auto chunk = DecodeChunk(ctx_.response());
   EXPECT_EQ(chunk.transfer_id, 3u);
   ASSERT_TRUE(chunk.status.has_value());
   EXPECT_EQ(chunk.status.value(), Status::NotFound());
 }
 
-// TODO(hepler): Re-enable once ASAN issue is fixed.
-TEST_F(TransferThreadTest, DISABLED_ProcessChunk_SendsWindow) {
-  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx(transfer_thread_, 512);
+TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
+  auto reader_writer = ctx_.reader_writer();
+  transfer_thread_.SetServerReadStream(reader_writer);
 
-  auto reader_writer = ctx.reader_writer();
+  SimpleReadTransfer handler(3, kData);
+  transfer_thread_.AddTransferHandler(handler);
 
-  rpc::test::WaitForPackets(ctx.output(), 2, [&] {
-    transfer_thread_.SetServerReadStream(reader_writer);
+  transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
+                                       3,
+                                       3,
+                                       max_parameters_,
+                                       std::chrono::seconds(2),
+                                       0);
 
-    SimpleReadTransfer handler(3, kData);
-    transfer_thread_.AddTransferHandler(handler);
-
-    transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
-                                         3,
-                                         3,
-                                         max_parameters_,
-                                         std::chrono::seconds(2),
-                                         0);
-
+  rpc::test::WaitForPackets(ctx_.output(), 2, [this] {
     // Malformed transfer parameters chunk without a pending_bytes field.
     transfer_thread_.ProcessServerChunk(
         EncodeChunk({.transfer_id = 3,
@@ -169,14 +166,14 @@ TEST_F(TransferThreadTest, DISABLED_ProcessChunk_SendsWindow) {
                      .type = Chunk::Type::kParametersRetransmit}));
   });
 
-  ASSERT_EQ(ctx.total_responses(), 2u);
-  auto chunk = DecodeChunk(ctx.responses()[0]);
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  auto chunk = DecodeChunk(ctx_.responses()[0]);
   EXPECT_EQ(chunk.transfer_id, 3u);
   EXPECT_EQ(chunk.offset, 0u);
   EXPECT_EQ(chunk.data.size(), 8u);
   EXPECT_EQ(std::memcmp(chunk.data.data(), kData.data(), chunk.data.size()), 0);
 
-  chunk = DecodeChunk(ctx.responses()[1]);
+  chunk = DecodeChunk(ctx_.responses()[1]);
   EXPECT_EQ(chunk.transfer_id, 3u);
   EXPECT_EQ(chunk.offset, 8u);
   EXPECT_EQ(chunk.data.size(), 8u);
@@ -184,17 +181,14 @@ TEST_F(TransferThreadTest, DISABLED_ProcessChunk_SendsWindow) {
             0);
 }
 
-// TODO(hepler): Re-enable once ASAN issue is fixed.
-TEST_F(TransferThreadTest, DISABLED_ProcessChunk_Malformed) {
-  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx(transfer_thread_, 512);
+TEST_F(TransferThreadTest, ProcessChunk_Malformed) {
+  auto reader_writer = ctx_.reader_writer();
+  transfer_thread_.SetServerReadStream(reader_writer);
 
-  auto reader_writer = ctx.reader_writer();
-  rpc::test::WaitForPackets(ctx.output(), 1, [&] {
-    transfer_thread_.SetServerReadStream(reader_writer);
+  SimpleReadTransfer handler(3, kData);
+  transfer_thread_.AddTransferHandler(handler);
 
-    SimpleReadTransfer handler(3, kData);
-    transfer_thread_.AddTransferHandler(handler);
-
+  rpc::test::WaitForPackets(ctx_.output(), 1, [this] {
     transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
                                          3,
                                          3,
@@ -205,8 +199,9 @@ TEST_F(TransferThreadTest, DISABLED_ProcessChunk_Malformed) {
     // Malformed transfer parameters chunk without a pending_bytes field.
     transfer_thread_.ProcessServerChunk(EncodeChunk({.transfer_id = 3}));
   });
-  ASSERT_EQ(ctx.total_responses(), 1u);
-  auto chunk = DecodeChunk(ctx.response());
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  auto chunk = DecodeChunk(ctx_.response());
   EXPECT_EQ(chunk.transfer_id, 3u);
   ASSERT_TRUE(chunk.status.has_value());
   EXPECT_EQ(chunk.status.value(), Status::InvalidArgument());
