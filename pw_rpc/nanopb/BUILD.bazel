@@ -130,3 +130,105 @@ pw_cc_test(
         "//pw_rpc:pw_rpc_test_cc.nanopb",
     ],
 )
+
+pw_cc_test(
+    name = "client_reader_writer_test",
+    srcs = [
+        "client_reader_writer_test.cc",
+    ],
+    deps = [
+        ":client_api",
+        ":client_testing",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "codegen_test",
+    srcs = [
+        "codegen_test.cc",
+    ],
+    deps = [
+        ":internal_test_utils",
+        ":test_method_context",
+        "//pw_preprocessor",
+        "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "fake_channel_output_test",
+    srcs = ["fake_channel_output_test.cc"],
+    deps = [
+        ":common",
+        ":server_api",
+        ":test_method_context",
+        "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "method_test",
+    srcs = ["method_test.cc"],
+    deps = [
+        ":internal_test_utils",
+        ":server_api",
+        "//pw_rpc",
+        "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_cc.nanopb",
+    ],
+)
+
+pw_cc_test(
+    name = "method_info_test",
+    srcs = ["method_info_test.cc"],
+    deps = [
+        "//pw_rpc",
+        "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "method_lookup_test",
+    srcs = ["method_lookup_test.cc"],
+    deps = [
+        ":test_method_context",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+        "//pw_rpc/raw:test_method_context",
+    ],
+)
+
+pw_cc_test(
+    name = "method_union_test",
+    srcs = ["method_union_test.cc"],
+    deps = [
+        ":internal_test_utils",
+        ":server_api",
+        "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_cc.nanopb",
+    ],
+)
+
+# TODO(pwbug/628): Requires nanopb options file support to compile.
+# pw_cc_test(
+#     name = "echo_service_test",
+#     srcs = ["echo_service_test.cc"],
+#     deps = [
+#       ":echo_service",
+#       ":test_method_context",
+#     ],
+# )
+
+pw_cc_test(
+    name = "server_reader_writer_test",
+    srcs = ["server_reader_writer_test.cc"],
+    deps = [
+        ":server_api",
+        ":test_method_context",
+        "//pw_rpc",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+    ],
+)
