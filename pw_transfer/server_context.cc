@@ -42,24 +42,7 @@ Status ServerContext::StartTransfer(const NewTransferEvent& new_transfer) {
     return status.IsPermissionDenied() ? status : Status::DataLoss();
   }
 
-  if (new_transfer.type == TransferType::kTransmit) {
-    InitializeForTransmit(handler_->id(),
-                          *new_transfer.rpc_writer,
-                          handler_->reader(),
-                          new_transfer.max_parameters,
-                          *new_transfer.transfer_thread,
-                          new_transfer.timeout,
-                          new_transfer.max_retries);
-  } else {
-    InitializeForReceive(handler_->id(),
-                         *new_transfer.rpc_writer,
-                         handler_->writer(),
-                         new_transfer.max_parameters,
-                         *new_transfer.transfer_thread,
-                         new_transfer.timeout,
-                         new_transfer.max_retries);
-  }
-
+  Initialize(new_transfer, handler_->stream());
   return OkStatus();
 }
 

@@ -162,36 +162,30 @@ Status Context::UpdateAndSendTransferParameters(TransmitAction action) {
   return SendTransferParameters(action);
 }
 
-void Context::Initialize(TransferType type,
-                         uint32_t transfer_id,
-                         rpc::Writer& rpc_writer,
-                         stream::Stream& stream,
-                         const TransferParameters* max_parameters,
-                         TransferThread& transfer_thread,
-                         chrono::SystemClock::duration chunk_timeout,
-                         uint8_t max_retries) {
+void Context::Initialize(const NewTransferEvent& new_transfer,
+                         stream::Stream& stream) {
   PW_DCHECK(!active());
 
-  transfer_id_ = transfer_id;
-  flags_ = static_cast<uint8_t>(type);
+  transfer_id_ = new_transfer.transfer_id;
+  flags_ = static_cast<uint8_t>(new_transfer.type);
   transfer_state_ = TransferState::kWaiting;
   retries_ = 0;
-  max_retries_ = max_retries;
+  max_retries_ = new_transfer.max_retries;
 
-  rpc_writer_ = &rpc_writer;
+  rpc_writer_ = new_transfer.rpc_writer;
   stream_ = &stream;
 
   offset_ = 0;
   window_size_ = 0;
   window_end_offset_ = 0;
   pending_bytes_ = 0;
-  max_chunk_size_bytes_ = max_parameters->max_chunk_size_bytes();
+  max_chunk_size_bytes_ = new_transfer.max_parameters->max_chunk_size_bytes();
 
-  max_parameters_ = max_parameters;
-  thread_ = &transfer_thread;
+  max_parameters_ = new_transfer.max_parameters;
+  thread_ = new_transfer.transfer_thread;
 
   last_chunk_offset_ = 0;
-  chunk_timeout_ = chunk_timeout;
+  chunk_timeout_ = new_transfer.timeout;
   interchunk_delay_ = chrono::SystemClock::for_at_least(
       std::chrono::microseconds(kDefaultChunkDelayMicroseconds));
   next_timeout_ = kNoTimeout;

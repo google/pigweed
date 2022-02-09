@@ -19,23 +19,7 @@
 namespace pw::transfer::internal {
 
 Status ClientContext::StartTransfer(const NewTransferEvent& new_transfer) {
-  if (new_transfer.type == TransferType::kTransmit) {
-    InitializeForTransmit(new_transfer.transfer_id,
-                          *new_transfer.rpc_writer,
-                          *static_cast<stream::Reader*>(new_transfer.stream),
-                          new_transfer.max_parameters,
-                          *new_transfer.transfer_thread,
-                          new_transfer.timeout,
-                          new_transfer.max_retries);
-  } else {
-    InitializeForReceive(new_transfer.transfer_id,
-                         *new_transfer.rpc_writer,
-                         *static_cast<stream::Writer*>(new_transfer.stream),
-                         new_transfer.max_parameters,
-                         *new_transfer.transfer_thread,
-                         new_transfer.timeout,
-                         new_transfer.max_retries);
-  }
+  Initialize(new_transfer, *new_transfer.stream);
 
   // Send the initial chunk to begin the transfer.
   if (Status status = InitiateTransfer();

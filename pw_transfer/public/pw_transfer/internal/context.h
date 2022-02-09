@@ -100,7 +100,7 @@ class Context {
   // and client transfer contexts.
   //
   // If the status is not OK, the transfer is terminated with that status.
-  virtual Status StartTransfer(const NewTransferEvent&) = 0;
+  virtual Status StartTransfer(const NewTransferEvent& new_transfer) = 0;
 
   // Starts a new transfer from an initialized context by sending the initial
   // transfer chunk. This is only used by transfer clients, as the transfer
@@ -157,45 +157,12 @@ class Context {
 
   void set_transfer_state(TransferState state) { transfer_state_ = state; }
 
-  // Begins a new transmit transfer from this context.
+  // Initializes a new transfer using new_transfer. The provided stream argument
+  // is used in place of the NewTransferEvent's stream. Only initializes state;
+  // no packets are sent.
+  //
   // Precondition: context is not active.
-  void InitializeForTransmit(
-      uint32_t transfer_id,
-      rpc::Writer& rpc_writer,
-      stream::Reader& reader,
-      const TransferParameters* max_parameters,
-      TransferThread& transfer_thread,
-      chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
-      uint8_t max_retries = cfg::kDefaultMaxRetries) {
-    Initialize(TransferType::kTransmit,
-               transfer_id,
-               rpc_writer,
-               reader,
-               max_parameters,
-               transfer_thread,
-               chunk_timeout,
-               max_retries);
-  }
-
-  // Begins a new receive transfer from this context.
-  // Precondition: context is not active.
-  void InitializeForReceive(
-      uint32_t transfer_id,
-      rpc::Writer& rpc_writer,
-      stream::Writer& writer,
-      const TransferParameters* max_parameters,
-      TransferThread& transfer_thread,
-      chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
-      uint8_t max_retries = cfg::kDefaultMaxRetries) {
-    Initialize(TransferType::kReceive,
-               transfer_id,
-               rpc_writer,
-               writer,
-               max_parameters,
-               transfer_thread,
-               chunk_timeout,
-               max_retries);
-  }
+  void Initialize(const NewTransferEvent& new_transfer, stream::Stream& stream);
 
   // Calculates the maximum size of actual data that can be sent within a single
   // client write transfer chunk, accounting for the overhead of the transfer
@@ -212,15 +179,6 @@ class Context {
 
  private:
   enum TransmitAction : bool { kExtend, kRetransmit };
-
-  void Initialize(TransferType type,
-                  uint32_t transfer_id,
-                  rpc::Writer& rpc_writer,
-                  stream::Stream& stream,
-                  const TransferParameters* max_parameters,
-                  TransferThread& transfer_thread,
-                  chrono::SystemClock::duration chunk_timeout,
-                  uint8_t max_retries);
 
   stream::Reader& reader() {
     PW_DASSERT(active() && type() == TransferType::kTransmit);
