@@ -216,6 +216,9 @@ possible. Logs can be dropped when
 .. [#f3] Clients can calculate the number of logs lost in transit using the
          sequence ID and number of entries in each stream packet.
 
+The drop count is combined when possible, and reported only when an entry, that
+passes any filters, is going to be sent.
+
 -------------
 Log Filtering
 -------------

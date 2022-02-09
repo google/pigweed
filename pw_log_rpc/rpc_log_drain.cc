@@ -123,15 +123,53 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
     log::LogEntries::MemoryEncoder& encoder, uint32_t& packed_entry_count_out) {
   const size_t total_buffer_size = encoder.ConservativeWriteLimit();
   do {
-    // Get entry and drop count from drain.
+    // Peek entry and get drop count from multisink.
     uint32_t drop_count = 0;
     Result<multisink::MultiSink::Drain::PeekedEntry> possible_entry =
         PeekEntry(log_entry_buffer_, drop_count);
+
+    // Check if the entry fits in the entry buffer.
     if (possible_entry.status().IsResourceExhausted()) {
+      // TODO(pwbug/630): track when log doesn't fit in log_entry_buffer_, as
+      // this is an issue that could prevent logs from every making it off the
+      // device.
       continue;
     }
 
-    // Report drop count if messages were dropped.
+    // Check if there are any entries left.
+    if (possible_entry.status().IsOutOfRange()) {
+      // Stash multisink's reported drop count that will be reported later with
+      // any other drop counts.
+      committed_entry_drop_count_ += drop_count;
+      return LogDrainState::kCaughtUp;  // There are no more entries.
+    }
+
+    // At this point all expected errors have been handled.
+    PW_CHECK_OK(possible_entry.status());
+
+    // Check if the entry passes any set filter rules.
+    if (filter_ != nullptr &&
+        filter_->ShouldDropLog(possible_entry.value().entry())) {
+      // Add the drop count from the multisink peek, stored in `drop_count`, to
+      // the total drop count. Then drop the entry without counting it towards
+      // the total drop count. Drops will be reported later all together.
+      committed_entry_drop_count_ += drop_count;
+      PW_CHECK_OK(PopEntry(possible_entry.value()));
+      continue;
+    }
+
+    // Check if the entry fits in the encoder buffer by itself.
+    const size_t encoded_entry_size =
+        possible_entry.value().entry().size() + kLogEntriesEncodeFrameSize;
+    if (encoded_entry_size + kLogEntriesEncodeFrameSize > total_buffer_size) {
+      // Entry is larger than the entire available buffer.
+      ++committed_entry_drop_count_;
+      PW_CHECK_OK(PopEntry(possible_entry.value()));
+      continue;
+    }
+
+    // At this point, we have a valid entry that may fit in the encode buffer.
+    // Report any drop counts combined.
     if (committed_entry_drop_count_ > 0 || drop_count > 0) {
       // Reuse the log_entry_buffer_ to send a drop message.
       const Result<ConstByteSpan> drop_message_result =
@@ -151,36 +189,13 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
       }
     }
 
-    if (possible_entry.status().IsOutOfRange()) {
-      return LogDrainState::kCaughtUp;  // There are no more entries.
-    }
-
-    // At this point all expected error modes have been handled.
-    PW_CHECK_OK(possible_entry.status());
-
-    // TODO(pwbug/559): avoid sending multiple drop counts between filtered out
-    // log entries.
-    if (filter_ != nullptr &&
-        filter_->ShouldDropLog(possible_entry.value().entry())) {
-      PW_CHECK_OK(PopEntry(possible_entry.value()));
+    // Check if the entry fits in the partially filled encoder buffer.
+    if (encoded_entry_size > encoder.ConservativeWriteLimit()) {
+      // Notify the caller there are more entries to send.
       return LogDrainState::kMoreEntriesRemaining;
     }
 
-    // Check if the entry fits in encoder buffer.
-    const size_t encoded_entry_size =
-        possible_entry.value().entry().size() + kLogEntriesEncodeFrameSize;
-    if (encoded_entry_size + kLogEntriesEncodeFrameSize > total_buffer_size) {
-      // Entry is larger than the entire available buffer.
-      ++committed_entry_drop_count_;
-      PW_CHECK_OK(PopEntry(possible_entry.value()));
-      continue;
-    } else if (encoded_entry_size > encoder.ConservativeWriteLimit()) {
-      // Entry does not fit in the partially filled encoder buffer. Notify the
-      // caller there are more entries to send.
-      return LogDrainState::kMoreEntriesRemaining;
-    }
-
-    // Encode log entry and remove it from multisink.
+    // Encode the entry and remove it from multisink.
     PW_CHECK_OK(encoder.WriteBytes(
         static_cast<uint32_t>(log::LogEntries::Fields::ENTRIES),
         possible_entry.value().entry()));

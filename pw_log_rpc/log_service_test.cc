@@ -243,9 +243,17 @@ TEST_F(LogServiceTest, HandleDropped) {
 
   // Add log entries.
   const size_t total_entries = 5;
+  const size_t entries_before_drop = 1;
   const uint32_t total_drop_count = 2;
-  AddLogEntries(total_entries, kMessage, kSampleMetadata, kSampleTimestamp);
+
+  // Force a drop entry in between entries.
+  AddLogEntries(
+      entries_before_drop, kMessage, kSampleMetadata, kSampleTimestamp);
   multisink_.HandleDropped(total_drop_count);
+  AddLogEntries(total_entries - entries_before_drop,
+                kMessage,
+                kSampleMetadata,
+                kSampleTimestamp);
 
   // Request logs.
   context.call(rpc_request_buffer);
@@ -258,9 +266,16 @@ TEST_F(LogServiceTest, HandleDropped) {
   // Add create expected messages in a stack to match the order they arrive
   // in.
   Vector<TestLogEntry, total_entries + 1> message_stack;
+  size_t i = total_entries;
+  for (; i > entries_before_drop; --i) {
+    message_stack.push_back({.metadata = kSampleMetadata,
+                             .timestamp = kSampleTimestamp,
+                             .tokenized_data = std::as_bytes(
+                                 std::span(std::string_view(kMessage)))});
+  }
   message_stack.push_back(
       {.metadata = kDropMessageMetadata, .dropped = total_drop_count});
-  for (size_t i = 0; i < total_entries; ++i) {
+  for (; i > 0; --i) {
     message_stack.push_back({.metadata = kSampleMetadata,
                              .timestamp = kSampleTimestamp,
                              .tokenized_data = std::as_bytes(
@@ -279,25 +294,86 @@ TEST_F(LogServiceTest, HandleDropped) {
   EXPECT_EQ(drop_count_found, total_drop_count);
 }
 
-TEST_F(LogServiceTest, HandleSmallBuffer) {
+TEST_F(LogServiceTest, HandleDroppedBetweenFilteredOutLogs) {
+  RpcLogDrain& active_drain = drains_[0];
+  const uint32_t drain_channel_id = active_drain.channel_id();
+  LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
+  context.set_channel_id(drain_channel_id);
+  // Set filter to drop INFO+ and keep DEBUG logs
+  rules1_[0].action = Filter::Rule::Action::kDrop;
+  rules1_[0].level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL;
+
+  // Add log entries.
+  const size_t total_entries = 5;
+  const uint32_t total_drop_count = total_entries - 1;
+
+  // Force a drop entry in between entries that will be filtered out.
+  for (size_t i = 1; i < total_entries; ++i) {
+    AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp);
+    multisink_.HandleDropped(1);
+  }
+  // Add message that won't be filtered out.
+  constexpr auto metadata =
+      log_tokenized::Metadata::Set<PW_LOG_LEVEL_DEBUG, 0, 0, __LINE__>();
+  AddLogEntry(kMessage, metadata, kSampleTimestamp);
+
+  // Request logs.
+  context.call(rpc_request_buffer);
+  EXPECT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
+  active_drain.Close();
+  ASSERT_EQ(context.status(), OkStatus());
+  // There is at least 1 response with multiple log entries packed.
+  ASSERT_GE(context.responses().size(), 1u);
+
+  // Add in the reverse order they are received.
+  Vector<TestLogEntry, 2> message_stack;
+  message_stack.push_back(
+      {.metadata = metadata,
+       .timestamp = kSampleTimestamp,
+       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage)))});
+  message_stack.push_back(
+      {.metadata = kDropMessageMetadata, .dropped = total_drop_count});
+
+  // Verify data in responses.
+  size_t entries_found = 0;
+  uint32_t drop_count_found = 0;
+  for (auto& response : context.responses()) {
+    protobuf::Decoder entry_decoder(response);
+    entries_found += VerifyLogEntries(
+        entry_decoder, message_stack, entries_found, drop_count_found);
+  }
+  EXPECT_EQ(entries_found, 1u);
+  EXPECT_EQ(drop_count_found, total_drop_count);
+}
+
+TEST_F(LogServiceTest, HandleSmallLogEntryBuffer) {
   LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
   context.set_channel_id(kSmallBufferDrainId);
   auto small_buffer_drain =
       drain_map_.GetDrainFromChannelId(kSmallBufferDrainId);
   ASSERT_TRUE(small_buffer_drain.ok());
 
-  // Add log entries.
+  // Add long entries that don't fit the drain's log entry buffer, except for
+  // one, since drop count messages are only sent when a log entry can be sent.
   const size_t total_entries = 5;
-  const uint32_t total_drop_count = total_entries;
-  AddLogEntries(total_entries, kLongMessage, kSampleMetadata, kSampleTimestamp);
+  const uint32_t total_drop_count = total_entries - 1;
+  AddLogEntries(
+      total_entries - 1, kLongMessage, kSampleMetadata, kSampleTimestamp);
+  AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp);
+
   // Request logs.
   context.call(rpc_request_buffer);
   EXPECT_EQ(small_buffer_drain.value()->Flush(encoding_buffer_), OkStatus());
   EXPECT_EQ(small_buffer_drain.value()->Close(), OkStatus());
   ASSERT_EQ(context.status(), OkStatus());
-  ASSERT_GE(context.responses().size(), 1u);
+  ASSERT_EQ(context.responses().size(), 1u);
 
-  Vector<TestLogEntry, total_entries + 1> message_stack;
+  // Add in the reverse order they are received.
+  Vector<TestLogEntry, 2> message_stack;
+  message_stack.push_back(
+      {.metadata = kSampleMetadata,
+       .timestamp = kSampleTimestamp,
+       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage)))});
   message_stack.push_back(
       {.metadata = kDropMessageMetadata, .dropped = total_drop_count});
 
@@ -310,7 +386,7 @@ TEST_F(LogServiceTest, HandleSmallBuffer) {
         entry_decoder, message_stack, entries_found, drop_count_found);
   }
   // No messages fit the buffer, expect a drop message.
-  EXPECT_EQ(entries_found, 0u);
+  EXPECT_EQ(entries_found, 1u);
   EXPECT_EQ(drop_count_found, total_drop_count);
 }
 
