@@ -70,7 +70,7 @@ class Handler : public IntrusiveList<Handler>::Item {
   void set_writer(stream::Writer& writer) { writer_ = &writer; }
 
  private:
-  friend class ServerContext;
+  friend class Context;
 
   // Prepares for either a read or write transfer.
   Status Prepare(internal::TransferType type) {

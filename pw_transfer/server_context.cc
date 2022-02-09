@@ -25,32 +25,16 @@
 
 namespace pw::transfer::internal {
 
-Status ServerContext::StartTransfer(const NewTransferEvent& new_transfer) {
-  PW_DCHECK(!active());
-
-  PW_LOG_INFO("Starting transfer %u with handler %u",
-              static_cast<unsigned>(new_transfer.transfer_id),
-              static_cast<unsigned>(new_transfer.handler_id));
-
-  handler_ = new_transfer.handler;
-
-  if (const Status status = handler_->Prepare(new_transfer.type);
-      !status.ok()) {
-    PW_LOG_WARN("Transfer handler %u prepare failed with status %u",
-                static_cast<unsigned>(handler_->id()),
-                status.code());
-    return status.IsPermissionDenied() ? status : Status::DataLoss();
-  }
-
-  Initialize(new_transfer, handler_->stream());
-  return OkStatus();
-}
-
-Status ServerContext::DoFinish(const Status status) {
+Status ServerContext::FinalCleanup(const Status status) {
   PW_DCHECK(active());
 
+  // If no handler is set, then the Prepare call failed. Nothing to do.
+  if (handler_ == nullptr) {
+    return OkStatus();
+  }
+
   Handler& handler = *handler_;
-  set_transfer_state(TransferState::kCompleted);
+  handler_ = nullptr;
 
   if (type() == TransferType::kTransmit) {
     handler.FinalizeRead(status);

@@ -93,22 +93,8 @@ class Context {
            chrono::SystemClock::now() >= next_timeout.value();
   }
 
+  // Processes an event for this transfer.
   void HandleEvent(const Event& event);
-
-  // Begins a new transfer in this context by initializing state and sending
-  // initial chunks, if necessary. This is implemented by the derived server
-  // and client transfer contexts.
-  //
-  // If the status is not OK, the transfer is terminated with that status.
-  virtual Status StartTransfer(const NewTransferEvent& new_transfer) = 0;
-
-  // Starts a new transfer from an initialized context by sending the initial
-  // transfer chunk. This is only used by transfer clients, as the transfer
-  // service cannot initiate transfers.
-  //
-  // The status is provided to the on_completion callback if initiating a
-  // transfer fails.
-  Status InitiateTransfer();
 
  protected:
   ~Context() = default;
@@ -134,6 +120,11 @@ class Context {
             std::chrono::microseconds(kDefaultChunkDelayMicroseconds))),
         next_timeout_(kNoTimeout) {}
 
+  constexpr TransferType type() const {
+    return static_cast<TransferType>(flags_ & kFlagsType);
+  }
+
+ private:
   enum class TransferState : uint8_t {
     // This ServerContext has never been used for a transfer. It is available
     // for use for a transfer.
@@ -151,18 +142,19 @@ class Context {
     kRecovery,
   };
 
-  constexpr TransferType type() const {
-    return static_cast<TransferType>(flags_ & kFlagsType);
-  }
+  enum TransmitAction : bool { kExtend, kRetransmit };
 
   void set_transfer_state(TransferState state) { transfer_state_ = state; }
 
-  // Initializes a new transfer using new_transfer. The provided stream argument
-  // is used in place of the NewTransferEvent's stream. Only initializes state;
-  // no packets are sent.
-  //
-  // Precondition: context is not active.
-  void Initialize(const NewTransferEvent& new_transfer, stream::Stream& stream);
+  stream::Reader& reader() {
+    PW_DASSERT(active() && type() == TransferType::kTransmit);
+    return static_cast<stream::Reader&>(*stream_);
+  }
+
+  stream::Writer& writer() {
+    PW_DASSERT(active() && type() == TransferType::kReceive);
+    return static_cast<stream::Writer&>(*stream_);
+  }
 
   // Calculates the maximum size of actual data that can be sent within a single
   // client write transfer chunk, accounting for the overhead of the transfer
@@ -177,53 +169,81 @@ class Context {
   uint32_t MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
                              uint32_t channel_id) const;
 
- private:
-  enum TransmitAction : bool { kExtend, kRetransmit };
+  // Initializes a new transfer using new_transfer. The provided stream argument
+  // is used in place of the NewTransferEvent's stream. Only initializes state;
+  // no packets are sent.
+  //
+  // Precondition: context is not active.
+  void Initialize(const NewTransferEvent& new_transfer);
 
-  stream::Reader& reader() {
-    PW_DASSERT(active() && type() == TransferType::kTransmit);
-    return static_cast<stream::Reader&>(*stream_);
-  }
+  // Starts a new transfer from an initialized context by sending the initial
+  // transfer chunk. This is only used by transfer clients, as the transfer
+  // service cannot initiate transfers.
+  //
+  // Calls Finish(), which calls the on_completion callback, if initiating a
+  // transfer fails.
+  void InitiateTransferAsClient();
 
-  stream::Writer& writer() {
-    PW_DASSERT(active() && type() == TransferType::kReceive);
-    return static_cast<stream::Writer&>(*stream_);
-  }
+  // Starts a new transfer on the server after receiving a request from a
+  // client.
+  void StartTransferAsServer(const NewTransferEvent& new_transfer);
 
-  virtual Status DoFinish(Status status) = 0;
+  // Does final cleanup specific to the server or client. Returns whether the
+  // cleanup succeeded. An error in cleanup indicates that the transfer failed.
+  virtual Status FinalCleanup(Status status) = 0;
 
+  // Processes a chunk in either a transfer or receive transfer.
   void HandleChunkEvent(const ChunkEvent& event);
 
   // Processes a chunk in a transmit transfer.
   void HandleTransmitChunk(const Chunk& chunk);
 
+  // Processes a transfer parameters update in a transmit transfer.
+  void HandleTransferParametersUpdate(const Chunk& chunk);
+
   // Sends the next chunk in a transmit transfer, if any.
-  Status TransmitNextChunk();
+  void TransmitNextChunk();
 
   // Processes a chunk in a receive transfer.
   void HandleReceiveChunk(const Chunk& chunk);
 
+  // Processes a data chunk in a received while in the kWaiting state.
+  void HandleReceivedData(const Chunk& chunk);
+
   // Sends the first chunk in a transmit transfer.
-  Status SendInitialTransmitChunk();
+  void SendInitialTransmitChunk();
 
   // In a receive transfer, sends a parameters chunk telling the transmitter how
   // much data they can send.
-  Status SendTransferParameters(TransmitAction action);
+  void SendTransferParameters(TransmitAction action);
 
   // Updates the current receive transfer parameters from the provided object,
   // then sends them.
-  Status UpdateAndSendTransferParameters(TransmitAction action);
+  void UpdateAndSendTransferParameters(TransmitAction action);
 
-  void SendStatusChunk(Status status);
-  Status Finish(Status status);
+  // Sends a final status chunk of a completed transfer without updating the the
+  // transfer. Sends status_, which MUST have been set by a previous Finish()
+  // call.
+  void SendFinalStatusChunk();
 
-  void FinishAndSendStatus(Status status) { SendStatusChunk(Finish(status)); }
+  // Marks the transfer as completed and calls FinalCleanup(). Sets status_ to
+  // the final status for this transfer. The transfer MUST be active when this
+  // is called.
+  void Finish(Status status);
+
+  // Encodes the specified chunk to the encode buffer and sends it with the
+  // rpc_writer_. Calls Finish() with an error if the operation fails.
+  void EncodeAndSendChunk(const Chunk& chunk);
 
   void SetTimeout(chrono::SystemClock::duration timeout);
   void ClearTimeout() { next_timeout_ = kNoTimeout; }
 
+  // Called when the transfer's timeout expires.
   void HandleTimeout();
-  Status Retry();
+
+  // Resends the last packet or aborts the transfer if the maximum retries has
+  // been exceeded.
+  void Retry();
 
   static constexpr uint8_t kFlagsType = 1 << 0;
   static constexpr uint8_t kFlagsDataSent = 1 << 1;
@@ -246,6 +266,7 @@ class Context {
   uint8_t retries_;
   uint8_t max_retries_;
 
+  // The stream from which to read or to which to write data.
   stream::Stream* stream_;
   rpc::Writer* rpc_writer_;
 

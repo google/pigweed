@@ -727,6 +727,25 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   ASSERT_EQ(payloads.size(), 5u);
 }
 
+TEST_F(ReadTransfer, InitialPacketFails_OnCompletedCalledWithDataLoss) {
+  stream::MemoryWriterBuffer<64> writer;
+  Status transfer_status = Status::Unknown();
+
+  context_.output().set_send_status(Status::Unauthenticated());
+
+  client_.Read(
+      14,
+      writer,
+      [&transfer_status](Status status) {
+        ASSERT_EQ(transfer_status, Status::Unknown());  // Must only call once
+        transfer_status = status;
+      },
+      kTestTimeout);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_EQ(transfer_status, Status::Internal());
+}
+
 class WriteTransfer : public ::testing::Test {
  protected:
   WriteTransfer()

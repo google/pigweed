@@ -78,9 +78,14 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
         reader_(data) {}
 
   Status PrepareRead() final {
+    prepare_read_called = true;
+
+    if (!prepare_read_return_status.ok()) {
+      return prepare_read_return_status;
+    }
+
     reader_.Seek(0);
     set_reader(reader_);
-    prepare_read_called = true;
     return OkStatus();
   }
 
@@ -94,6 +99,7 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
 
   bool prepare_read_called;
   bool finalize_read_called;
+  Status prepare_read_return_status;
   Status finalize_read_status;
 
  private:
@@ -407,6 +413,40 @@ TEST_F(ReadTransfer, MaxChunkSize_Client) {
   EXPECT_EQ(handler_.finalize_read_status, OkStatus());
 }
 
+TEST_F(ReadTransfer, HandlerIsClearedAfterTransfer) {
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3,
+                   .window_end_offset = 64,
+                   .pending_bytes = 64,
+                   .offset = 0,
+                   .type = Chunk::Type::kParametersRetransmit}));
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .status = OkStatus()}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  ASSERT_TRUE(handler_.prepare_read_called);
+  ASSERT_TRUE(handler_.finalize_read_called);
+  ASSERT_EQ(OkStatus(), handler_.finalize_read_status);
+
+  // Now, clear state and start a second transfer
+  handler_.prepare_read_return_status = Status::FailedPrecondition();
+  handler_.prepare_read_called = false;
+  handler_.finalize_read_called = false;
+
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3,
+                   .window_end_offset = 64,
+                   .pending_bytes = 64,
+                   .offset = 0,
+                   .type = Chunk::Type::kParametersRetransmit}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Prepare failed, so the handler should not have been stored in the context,
+  // and finalize should not have been called.
+  ASSERT_TRUE(handler_.prepare_read_called);
+  ASSERT_FALSE(handler_.finalize_read_called);
+}
+
 class ReadTransferMaxChunkSize8 : public ReadTransfer {
  protected:
   ReadTransferMaxChunkSize8() : ReadTransfer(/*max_chunk_size_bytes=*/8) {}
@@ -677,7 +717,10 @@ class WriteTransfer : public ::testing::Test {
         handler_(7, buffer),
         transfer_thread_(data_buffer_, encode_buffer_),
         system_thread_(TransferThreadOptions(), transfer_thread_),
-        ctx_(transfer_thread_, max_bytes_to_receive) {
+        ctx_(transfer_thread_,
+             max_bytes_to_receive,
+             // Use a long timeout to avoid accidentally triggering timeouts.
+             std::chrono::minutes(1)) {
     ctx_.service().RegisterHandler(handler_);
 
     ASSERT_FALSE(handler_.prepare_write_called);
@@ -789,6 +832,26 @@ TEST_F(WriteTransfer, MultiChunk) {
   EXPECT_TRUE(handler_.finalize_write_called);
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());
   EXPECT_EQ(std::memcmp(buffer.data(), kData.data(), kData.size()), 0);
+}
+
+TEST_F(WriteTransfer, WriteFailsOnRetry) {
+  // Skip one packet to fail on a retry.
+  ctx_.output().set_send_status(Status::FailedPrecondition(), 1);
+
+  // Wait for 3 packets: initial params, retry attempt, final error
+  rpc::test::WaitForPackets(ctx_.output(), 3, [this] {
+    // Send only one client packet so the service times out.
+    ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+    transfer_thread_.SimulateServerTimeout(7);  // Time out to trigger retry
+  });
+
+  // Attempted to send 3 packets, but the 2nd packet was dropped.
+  // Check that the last packet is an INTERNAL error from the RPC write failure.
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  Chunk chunk = DecodeChunk(ctx_.responses()[1]);
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), Status::Internal());
 }
 
 TEST_F(WriteTransfer, ExtendWindow) {

@@ -18,16 +18,11 @@
 
 namespace pw::transfer::internal {
 
-Status ClientContext::StartTransfer(const NewTransferEvent& new_transfer) {
-  Initialize(new_transfer, *new_transfer.stream);
-
-  // Send the initial chunk to begin the transfer.
-  if (Status status = InitiateTransfer();
-      !status.ok() && on_completion_ != nullptr) {
+Status ClientContext::FinalCleanup(Status status) {
+  PW_DASSERT(active());
+  if (on_completion_ != nullptr) {
     on_completion_(status);
   }
-
-  // Always return OK as the event was successfully processed.
   return OkStatus();
 }
 

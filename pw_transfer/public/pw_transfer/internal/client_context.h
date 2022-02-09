@@ -28,16 +28,7 @@ class ClientContext final : public Context {
   }
 
  private:
-  Status StartTransfer(const NewTransferEvent& new_transfer) override;
-
-  Status DoFinish(Status status) override {
-    PW_DASSERT(active());
-    set_transfer_state(TransferState::kCompleted);
-    if (on_completion_ != nullptr) {
-      on_completion_(status);
-    }
-    return OkStatus();
-  }
+  Status FinalCleanup(Status status) override;
 
   Function<void(Status)> on_completion_;
 };

@@ -28,20 +28,18 @@ class ServerContext final : public Context {
  public:
   constexpr ServerContext() : handler_(nullptr) {}
 
- private:
-  // Begins a new transfer with the specified type and handler. Calls into the
-  // handler's Prepare method.
-  //
-  // Precondition: Context is not already active.
-  Status StartTransfer(const NewTransferEvent& new_transfer) override;
+  // Sets the handler. The handler isn't set by Context::Initialize() since
+  // ClientContexts don't track it.
+  void set_handler(Handler& handler) { handler_ = &handler; }
 
+ private:
   // Ends the transfer with the given status, calling the handler's Finalize
   // method. No chunks are sent.
   //
   // Returns DATA_LOSS if the finalize call fails.
   //
   // Precondition: Transfer context is active.
-  Status DoFinish(Status status) override;
+  Status FinalCleanup(Status status) override;
 
   Handler* handler_;
 };
