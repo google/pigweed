@@ -26,8 +26,7 @@ namespace pw::transfer::internal {
 // pointer to a transfer handler when active to stream the transfer data.
 class ServerContext final : public Context {
  public:
-  constexpr ServerContext()
-      : type_(TransferType::kTransmit), handler_(nullptr) {}
+  constexpr ServerContext() : handler_(nullptr) {}
 
  private:
   // Begins a new transfer with the specified type and handler. Calls into the
@@ -44,7 +43,6 @@ class ServerContext final : public Context {
   // Precondition: Transfer context is active.
   Status DoFinish(Status status) override;
 
-  TransferType type_;
   Handler* handler_;
 };
 

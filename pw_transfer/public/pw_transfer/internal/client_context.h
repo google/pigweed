@@ -23,13 +23,6 @@ class ClientContext final : public Context {
  public:
   constexpr ClientContext() : on_completion_(nullptr) {}
 
-  constexpr bool is_read_transfer() const {
-    return type() == TransferType::kReceive;
-  }
-  constexpr bool is_write_transfer() const {
-    return type() == TransferType::kTransmit;
-  }
-
   void set_on_completion(Function<void(Status)>&& on_completion) {
     on_completion_ = std::move(on_completion);
   }

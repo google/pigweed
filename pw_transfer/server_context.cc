@@ -32,10 +32,10 @@ Status ServerContext::StartTransfer(const NewTransferEvent& new_transfer) {
               static_cast<unsigned>(new_transfer.transfer_id),
               static_cast<unsigned>(new_transfer.handler_id));
 
-  type_ = new_transfer.type;
   handler_ = new_transfer.handler;
 
-  if (const Status status = handler_->Prepare(type_); !status.ok()) {
+  if (const Status status = handler_->Prepare(new_transfer.type);
+      !status.ok()) {
     PW_LOG_WARN("Transfer handler %u prepare failed with status %u",
                 static_cast<unsigned>(handler_->id()),
                 status.code());
@@ -52,7 +52,7 @@ Status ServerContext::DoFinish(const Status status) {
   Handler& handler = *handler_;
   set_transfer_state(TransferState::kCompleted);
 
-  if (type_ == TransferType::kTransmit) {
+  if (type() == TransferType::kTransmit) {
     handler.FinalizeRead(status);
     return OkStatus();
   }
