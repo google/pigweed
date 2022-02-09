@@ -30,20 +30,20 @@ Checks: >
     misc-static-assert,
     misc-unconventional-assign-operator,
     misc-unused-using-decls,
-    modernize-avoid-bind
-    modernize-deprecated-ios-base-aliases
-    modernize-make-shared
-    modernize-make-unique
-    modernize-replace-auto-ptr
-    modernize-replace-disallow-copy-and-assign-macro
-    modernize-replace-random-shuffle
-    modernize-shrink-to-fit
-    modernize-use-bool-literals
-    modernize-use-equals-delete
-    modernize-use-noexcept
-    modernize-use-nullptr
-    modernize-use-transparent-functors
-    modernize-use-uncaught-exceptions
+    modernize-avoid-bind,
+    modernize-deprecated-ios-base-aliases,
+    modernize-make-shared,
+    modernize-make-unique,
+    modernize-replace-auto-ptr,
+    modernize-replace-disallow-copy-and-assign-macro,
+    modernize-replace-random-shuffle,
+    modernize-shrink-to-fit,
+    modernize-use-bool-literals,
+    modernize-use-equals-delete,
+    modernize-use-noexcept,
+    modernize-use-nullptr,
+    modernize-use-transparent-functors,
+    modernize-use-uncaught-exceptions,
     performance-faster-string-find,
     performance-for-range-copy,
     performance-implicit-conversion-in-loop,
