@@ -116,9 +116,9 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
 #if _PW_ARCH_ARM_V8M_MAINLINE
   if (cpu_state.extended.cfsr & kCfsrStkofMask) {
     if (cpu_state.extended.exc_return & kExcReturnStackMask) {
-      PW_LOG_CRITICAL("Encountered stack overflow in thread mode");
+      PW_LOG_CRITICAL("Encountered process stack overflow (psp)");
     } else {
-      PW_LOG_CRITICAL("Encountered main (interrupt handler) stack overflow");
+      PW_LOG_CRITICAL("Encountered main stack overflow (msp)");
     }
   }
 #endif  // _PW_ARCH_ARM_V8M_MAINLINE
@@ -157,7 +157,8 @@ bool MainStackActive(const pw_cpu_exception_State& cpu_state) {
   // 0b0001 - 0x1 Handler mode Main
   // 0b1001 - 0x9 Thread mode Main
   // 0b1101 - 0xD Thread mode Process
-  return cpu_state.extended.exc_return & kExcReturnStackMask;
+  //    ^
+  return (cpu_state.extended.exc_return & kExcReturnStackMask) == 0;
 }
 
 }  // namespace pw::cpu_exception::cortex_m
