@@ -16,8 +16,8 @@
 import abc
 from dataclasses import dataclass
 import logging
-from typing import (Any, Collection, Dict, Iterable, Iterator, NamedTuple,
-                    Optional)
+from typing import (Any, Callable, Collection, Dict, Iterable, Iterator,
+                    NamedTuple, Optional)
 
 from google.protobuf.message import DecodeError, Message
 from pw_status import Status
@@ -385,6 +385,9 @@ class Client:
     """Sends requests and handles responses for a set of channels.
 
     RPC invocations occur through a ChannelClient.
+
+    Users may set an optional response_callback that is called before processing
+    every response or server stream RPC packet.
     """
     @classmethod
     def from_modules(cls, impl: ClientImpl, channels: Iterable[Channel],
@@ -408,6 +411,10 @@ class Client:
                           Services(self._impl, channel, self.services))
             for channel in channels
         }
+
+        # Optional function called before processing every non-error RPC packet.
+        self.response_callback: Optional[Callable[
+            [PendingRpc, Any, Optional[Status]], Any]] = None
 
     def channel(self, channel_id: int = None) -> ChannelClient:
         """Returns a ChannelClient, which is used to call RPCs on a channel.
@@ -500,6 +507,10 @@ class Client:
             # Make this an error packet so the error handler is called.
             packet.type = PacketType.SERVER_ERROR
             status = Status.DATA_LOSS
+
+        # If set, call the response callback with non-error packets.
+        if self.response_callback and packet.type != PacketType.SERVER_ERROR:
+            self.response_callback(rpc, payload, status)  # pylint: disable=not-callable
 
         try:
             context = self._impl.rpcs.get_pending(rpc, status)

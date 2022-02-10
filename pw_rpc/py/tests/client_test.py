@@ -285,6 +285,26 @@ class ClientTest(unittest.TestCase):
                       method_id=method.id,
                       status=Status.FAILED_PRECONDITION.value))
 
+    def test_process_packet_non_pending_calls_response_callback(self) -> None:
+        method = self._client.method('pw.test1.PublicService.SomeUnary')
+        reply = method.response_type(payload='hello')
+
+        def response_callback(rpc: client.PendingRpc, message,
+                              status: Optional[Status]) -> None:
+            self.assertEqual(
+                rpc,
+                client.PendingRpc(
+                    self._client.channel(1).channel, method.service, method))
+            self.assertEqual(message, reply)
+            self.assertIs(status, Status.OK)
+
+        self._client.response_callback = response_callback
+
+        self.assertIs(
+            self._client.process_packet(
+                packets.encode_response((1, method.service, method), reply)),
+            Status.OK)
+
 
 if __name__ == '__main__':
     unittest.main()
