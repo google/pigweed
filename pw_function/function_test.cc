@@ -210,6 +210,13 @@ TEST(Function, MoveAssign_Inline) {
 #endif  // __clang_analyzer__
 }
 
+TEST(Function, MoveAssign_Callable) {
+  Function<int(int, int)> operation = Multiply;
+  EXPECT_EQ(operation(3, 3), 9);
+  operation = [](int a, int b) -> int { return a + b; };
+  EXPECT_EQ(operation(3, 3), 6);
+}
+
 class MoveTracker {
  public:
   MoveTracker() : move_count_(0) {}

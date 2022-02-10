@@ -88,7 +88,11 @@ class Function<Return(Args...)> {
   template <typename Callable>
   Function& operator=(Callable callable) {
     holder_.DestructTarget();
-    InitializeTarget(std::move(callable));
+    if (function_internal::IsNull(callable)) {
+      holder_.InitializeNullTarget();
+    } else {
+      holder_.InitializeInlineTarget(std::move(callable));
+    }
     return *this;
   }
 
