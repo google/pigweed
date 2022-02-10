@@ -19,6 +19,12 @@ namespace pw::cpu_exception::cortex_m {
 
 void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state);
 
+enum class ProcessorMode {
+  kHandlerMode,  // Handling interrupts/exceptions (msp).
+  kThreadMode,   // May be on either psp or msp.
+};
+ProcessorMode ActiveProcessorMode(const pw_cpu_exception_State& cpu_state);
+
 // Returns whether the msp was active in thread or handler modes.
 bool MainStackActive(const pw_cpu_exception_State& cpu_state);
 

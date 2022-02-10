@@ -145,6 +145,7 @@ pw_source_set("cpu_exception.impl") {
     ":config",
     ":cortex_m_constants",
     ":cpu_state",
+    ":util",
     "$dir_pw_cpu_exception:entry.facade",
     "$dir_pw_cpu_exception:handler",
     "$dir_pw_preprocessor:arch",
@@ -175,6 +176,7 @@ pw_source_set("snapshot") {
     ":config",
     ":cortex_m_constants",
     ":proto_dump",
+    ":util",
     dir_pw_log,
   ]
 }
@@ -220,6 +222,16 @@ pw_test("cpu_exception_entry_test") {
     "$dir_pw_cpu_exception:support",
   ]
   sources = [ "exception_entry_test.cc" ]
+}
+
+pw_test("util_test") {
+  enable_if = pw_cpu_exception_ENTRY_BACKEND ==
+              "$dir_pw_cpu_exception_cortex_m:cpu_exception"
+  deps = [
+    ":cpu_state",
+    ":util",
+  ]
+  sources = [ "util_test.cc" ]
 }
 
 pw_doc_group("docs") {

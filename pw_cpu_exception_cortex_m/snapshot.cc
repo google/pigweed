@@ -17,6 +17,7 @@
 #include "pw_cpu_exception_cortex_m/snapshot.h"
 
 #include "pw_cpu_exception_cortex_m/proto_dump.h"
+#include "pw_cpu_exception_cortex_m/util.h"
 #include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_cpu_exception_cortex_m_protos/cpu_state.pwpb.h"
@@ -31,11 +32,6 @@ namespace {
 
 constexpr char kMainStackHandlerModeName[] = "Main Stack (Handler Mode)";
 constexpr char kMainStackThreadModeName[] = "Main Stack (Thread Mode)";
-
-enum class ProcessorMode {
-  kHandlerMode,
-  kThreadMode,
-};
 
 Status CaptureMainStack(
     ProcessorMode mode,
@@ -136,30 +132,14 @@ Status SnapshotMainStackThread(
     uintptr_t stack_high_addr,
     thread::SnapshotThreadInfo::StreamEncoder& encoder,
     thread::ProcessThreadStackCallback& thread_stack_callback) {
-  const uint32_t exc_return = cpu_state.extended.exc_return;
-
-  // See ARMv7-M Architecture Reference Manual Section B1.5.8 for the exception
-  // return values, in particular bits 0:3.
-  // Bits 0:3 of EXC_RETURN:
-  // 0b0001 - 0x1 Handler mode Main
-  // 0b1001 - 0x9 Thread mode Main
-  // 0b1101 - 0xD Thread mode Process
-
-  // First check whether the CPU state shows the main stack was active.
-  if ((exc_return & kExcReturnStackMask) != 0) {
-    return OkStatus();  // Main stack is not currently active.
+  if (!MainStackActive(cpu_state)) {
+    return OkStatus();  // Main stack wasn't active, nothing to capture.
   }
-  const uintptr_t stack_pointer = cpu_state.extended.msp;
 
-  // Second, check if we're in Handler mode, AKA handling exceptions/interrupts.
-  const ProcessorMode mode = ((exc_return & kExcReturnModeMask) == 0)
-                                 ? ProcessorMode::kHandlerMode
-                                 : ProcessorMode::kThreadMode;
-
-  return CaptureMainStack(mode,
+  return CaptureMainStack(ActiveProcessorMode(cpu_state),
                           stack_low_addr,
                           stack_high_addr,
-                          stack_pointer,
+                          cpu_state.extended.msp,
                           encoder,
                           thread_stack_callback);
 }

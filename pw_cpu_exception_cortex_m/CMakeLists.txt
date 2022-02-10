@@ -49,6 +49,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception
     pw_cpu_exception.handler
     pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants
+    pw_cpu_exception_cortex_m.util
   SOURCES
     entry.cc
 )
@@ -118,6 +119,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.snapshot
     pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants
     pw_cpu_exception_cortex_m.proto_dump
+    pw_cpu_exception_cortex_m.util
     pw_log
     pw_polyfill.span
   SOURCES
@@ -147,6 +149,17 @@ if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
       pw_cpu_exception_cortex_m.cpu_exception
       pw_cpu_exception_cortex_m.cpu_state
       pw_polyfill.span
+    GROUPS
+      modules
+      pw_cpu_exception_cortex_m
+  )
+
+  pw_add_test(pw_cpu_exception_cortex_m.util_test
+    SOURCES
+      util_test.cc
+    DEPS
+      pw_cpu_exception_cortex_m.cpu_state
+      pw_cpu_exception_cortex_m.util
     GROUPS
       modules
       pw_cpu_exception_cortex_m

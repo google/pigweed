@@ -19,6 +19,7 @@
 
 #include "pw_cpu_exception/handler.h"
 #include "pw_cpu_exception_cortex_m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m/util.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_preprocessor/arch.h"
 #include "pw_preprocessor/compiler.h"
@@ -29,12 +30,6 @@ pw_CpuExceptionEntry(void);
 
 namespace pw::cpu_exception::cortex_m {
 namespace {
-
-// Checks exc_return in the captured CPU state to determine which stack pointer
-// was in use prior to entering the exception handler.
-bool PspWasActive(const pw_cpu_exception_State& cpu_state) {
-  return cpu_state.extended.exc_return & kExcReturnStackMask;
-}
 
 // Checks exc_return to determine if FPU state was pushed to the stack in
 // addition to the base CPU context frame.
@@ -113,7 +108,8 @@ uint32_t CalculatePspDelta(const pw_cpu_exception_State& cpu_state) {
   // If CPU context was not pushed to program stack (because program stack
   // wasn't in use, or an error occurred when pushing context), the PSP doesn't
   // need to be shifted.
-  if (!PspWasActive(cpu_state) || (cpu_state.extended.cfsr & kCfsrStkerrMask) ||
+  if (!ProcessStackActive(cpu_state) ||
+      (cpu_state.extended.cfsr & kCfsrStkerrMask) ||
 #if _PW_ARCH_ARM_V8M_MAINLINE
       (cpu_state.extended.cfsr & kCfsrStkofMask) ||
 #endif  // _PW_ARCH_ARM_V8M_MAINLINE
@@ -128,7 +124,7 @@ uint32_t CalculatePspDelta(const pw_cpu_exception_State& cpu_state) {
 // at exception-time. On exception return, it is restored to the appropriate
 // location. This calculates the delta that is used for these patch operations.
 uint32_t CalculateMspDelta(const pw_cpu_exception_State& cpu_state) {
-  if (PspWasActive(cpu_state)) {
+  if (ProcessStackActive(cpu_state)) {
     // TODO(amontanez): Since FPU state isn't captured at this time, we ignore
     //                  it when patching MSP. To add FPU capture support,
     //                  delete this if block as CpuContextSize() will include
@@ -159,7 +155,7 @@ PW_USED void pw_PackageAndHandleCpuException(
   // the values can be copied into in the pw_cpu_exception_State struct that is
   // passed to HandleCpuException(). The cpu_state passed to the handler is
   // ALWAYS stored on the main stack (MSP).
-  if (PspWasActive(*cpu_state)) {
+  if (ProcessStackActive(*cpu_state)) {
     CloneBaseRegistersFromPsp(cpu_state);
     // If PSP wasn't active, this delta is 0.
     cpu_state->extended.psp += CalculatePspDelta(*cpu_state);
@@ -182,7 +178,7 @@ PW_USED void pw_PackageAndHandleCpuException(
   // If PSP was active and the CPU pushed a context frame, we must copy the
   // potentially modified state from cpu_state back to the PSP so the CPU can
   // resume execution with the modified values.
-  if (PspWasActive(*cpu_state)) {
+  if (ProcessStackActive(*cpu_state)) {
     // In this case, there's no need to touch the MSP as it's at the location
     // before we entering the exception (effectively popping the state initially
     // pushed to the main stack).
