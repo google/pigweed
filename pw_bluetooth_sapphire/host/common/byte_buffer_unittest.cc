@@ -40,6 +40,10 @@ TEST(ByteBufferTest, StaticByteBuffer) {
   EXPECT_EQ(kBufferSize, buffer_copy1.size());
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
   EXPECT_TRUE(ContainersEqual(kExpected, buffer_copy1));
+
+  // Const ByteBuffer should still permit operator[] access.
+  const StaticByteBuffer<1> const_buff = CreateStaticByteBuffer(0x10);
+  EXPECT_EQ(0x10, const_buff[0]);
 }
 
 TEST(ByteBufferTest, StaticByteBufferVariadicConstructor) {
@@ -76,6 +80,11 @@ TEST(ByteBufferTest, DynamicByteBuffer) {
   EXPECT_EQ(kBufferSize, buffer_moved.size());
   EXPECT_EQ(nullptr, buffer.data());  // NOLINT(bugprone-use-after-move)
   EXPECT_TRUE(ContainersEqual(kExpected, buffer_moved));
+
+  // Const ByteBuffer copied from buffer_moved should permit operator[] access.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+  const DynamicByteBuffer const_buff(buffer_moved);
+  EXPECT_EQ(0x03, const_buff[3]);
 }
 
 TEST(ByteBufferTest, DynamicByteBufferZeroSize) {

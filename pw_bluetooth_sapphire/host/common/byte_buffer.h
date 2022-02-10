@@ -248,6 +248,10 @@ class MutableByteBuffer : public ByteBuffer {
     return mutable_data()[pos];
   }
 
+  // Read-only random access operator. Required because there is no overload resolution from derived
+  // to base classes - without this, |const MutableByteBuffer|s cannot use operator[].
+  uint8_t operator[](size_t pos) const { return ByteBuffer::operator[](pos); }
+
   // Converts the underlying buffer to a mutable reference to the given type, with bounds checking.
   // The buffer is allowed to be larger than T. The user is responsible for checking that the first
   // sizeof(T) bytes represents a valid instance of T.
