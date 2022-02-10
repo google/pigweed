@@ -68,7 +68,7 @@ def add_defaults(kwargs):
         kwargs: cc_* arguments to be modified.
     """
 
-    copts = kwargs.get("copts", []) + PW_DEFAULT_COPTS
+    copts = PW_DEFAULT_COPTS + kwargs.get("copts", [])
     kwargs["copts"] = select({
         "//pw_build:kythe": copts + KYTHE_COPTS,
         "//conditions:default": copts,
