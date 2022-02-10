@@ -213,14 +213,14 @@ pw_cc_test(
 )
 
 # TODO(pwbug/628): Requires nanopb options file support to compile.
-# pw_cc_test(
-#     name = "echo_service_test",
-#     srcs = ["echo_service_test.cc"],
-#     deps = [
-#       ":echo_service",
-#       ":test_method_context",
-#     ],
-# )
+filegroup(
+    name = "echo_service_test",
+    srcs = ["echo_service_test.cc"],
+    #     deps = [
+    #       ":echo_service",
+    #       ":test_method_context",
+    #     ],
+)
 
 pw_cc_test(
     name = "server_reader_writer_test",
@@ -229,6 +229,34 @@ pw_cc_test(
         ":server_api",
         ":test_method_context",
         "//pw_rpc",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "serde_test",
+    srcs = ["serde_test.cc"],
+    deps = [
+        ":common",
+        "//pw_rpc:pw_rpc_test_cc.nanopb",
+    ],
+)
+
+pw_cc_test(
+    name = "server_callback_test",
+    srcs = ["server_callback_test.cc"],
+    deps = [
+        ":test_method_context",
+        "//pw_rpc",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+        "@com_github_nanopb_nanopb//:nanopb",
+    ],
+)
+
+pw_cc_test(
+    name = "stub_generation_test",
+    srcs = ["stub_generation_test.cc"],
+    deps = [
         "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
     ],
 )
