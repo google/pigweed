@@ -25,7 +25,7 @@ namespace pw::bloat {
 char* volatile non_optimizable_pointer;
 
 void BloatThisBinary() {
-  volatile unsigned counter = 0;
+  [[maybe_unused]] volatile unsigned counter = 0;
 
   // In case someone accidentally ends up flashing and running a bloat
   // executable on their device, loop forever instead of running this code.
