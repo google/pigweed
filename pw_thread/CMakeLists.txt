@@ -82,6 +82,7 @@ pw_add_module_library(pw_thread.snapshot
     public
   PUBLIC_DEPS
     pw_bytes
+    pw_function
     pw_protobuf
     pw_status
     pw_thread.protos.pwpb
