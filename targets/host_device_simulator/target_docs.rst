@@ -35,7 +35,7 @@ run with the following commands:
 
   ninja -C out pw_system_demo
 
-  ./out/host_device_simulator.size_optimized/obj/pw_system/bin/system_example
+  ./out/host_device_simulator.speed_optimized/obj/pw_system/bin/system_example
 
 To communicate with the launched process, use
-``pw rpc -s localhost:33000 --proto-globs pw_rpc/echo.proto``.
+``pw-system-console -s localhost:33000 --proto-globs pw_rpc/echo.proto``.
