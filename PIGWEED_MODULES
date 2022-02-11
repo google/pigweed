@@ -11,6 +11,7 @@ pw_assert_zephyr
 pw_base64
 pw_bloat
 pw_blob_store
+pw_bluetooth
 pw_bluetooth_hci
 pw_boot
 pw_boot_cortex_m
