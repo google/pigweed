@@ -90,6 +90,32 @@ zx::channel DdkDeviceWrapper::GetACLDataChannel() {
   return ours;
 }
 
+fitx::result<zx_status_t, zx::channel> DdkDeviceWrapper::GetScoChannel() {
+  zx::channel ours, theirs;
+  zx_status_t status = zx::channel::create(0, &ours, &theirs);
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "Failed to create SCO channel: %s", zx_status_get_string(status));
+  }
+
+  status = bt_hci_open_sco_channel(&hci_proto_, theirs.release());
+
+  if (status != ZX_OK) {
+    bt_log(WARN, "hci", "Failed to bind SCO channel: %s", zx_status_get_string(status));
+    return fitx::error(status);
+  }
+  return fitx::ok(std::move(ours));
+}
+
+void DdkDeviceWrapper::ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
+                                    sco_sample_rate_t sample_rate,
+                                    bt_hci_configure_sco_callback callback, void* cookie) {
+  bt_hci_configure_sco(&hci_proto_, coding_format, encoding, sample_rate, callback, cookie);
+}
+
+void DdkDeviceWrapper::ResetSco(bt_hci_reset_sco_callback callback, void* cookie) {
+  bt_hci_reset_sco(&hci_proto_, callback, cookie);
+}
+
 bt_vendor_features_t DdkDeviceWrapper::GetVendorFeatures() {
   if (!vendor_proto_) {
     return 0;
@@ -128,6 +154,30 @@ DummyDeviceWrapper::DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_
 zx::channel DummyDeviceWrapper::GetCommandChannel() { return std::move(cmd_channel_); }
 
 zx::channel DummyDeviceWrapper::GetACLDataChannel() { return std::move(acl_data_channel_); }
+
+fitx::result<zx_status_t, zx::channel> DummyDeviceWrapper::GetScoChannel() {
+  if (!sco_channel_.is_valid()) {
+    return fitx::error(ZX_ERR_NOT_SUPPORTED);
+  }
+  return fitx::success(std::move(sco_channel_));
+}
+
+void DummyDeviceWrapper::ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
+                                      sco_sample_rate_t sample_rate,
+                                      bt_hci_configure_sco_callback callback, void* cookie) {
+  if (!configure_sco_cb_) {
+    callback(cookie, ZX_ERR_NOT_SUPPORTED);
+    return;
+  }
+  configure_sco_cb_(coding_format, encoding, sample_rate, callback, cookie);
+}
+void DummyDeviceWrapper::ResetSco(bt_hci_reset_sco_callback callback, void* cookie) {
+  if (!reset_sco_cb_) {
+    callback(cookie, ZX_ERR_NOT_SUPPORTED);
+    return;
+  }
+  reset_sco_cb_(callback, cookie);
+}
 
 fpromise::result<DynamicByteBuffer> DummyDeviceWrapper::EncodeVendorCommand(
     bt_vendor_command_t command, bt_vendor_params_t& params) {

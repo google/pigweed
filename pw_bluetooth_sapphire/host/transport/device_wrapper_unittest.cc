@@ -97,5 +97,32 @@ TEST(DdkDeviceWrapperTest, EncodeCommandSuccess) {
   EXPECT_EQ(result.value()[0], 0x01);
 }
 
+TEST(DdkDeviceWrapperTest, GetScoChannelSuccess) {
+  bt_hci_protocol_ops_t hci_ops{.open_sco_channel = [](void* ctx, zx_handle_t channel) {
+    EXPECT_NE(channel, ZX_HANDLE_INVALID);
+    zx_handle_close(channel);
+    return ZX_OK;
+  }};
+  bt_hci_protocol_t hci_proto = {.ops = &hci_ops};
+  bt_vendor_protocol_t vendor_proto;
+  DdkDeviceWrapper wrapper(hci_proto, vendor_proto);
+  auto result = wrapper.GetScoChannel();
+  ASSERT_TRUE(result.is_ok());
+  EXPECT_TRUE(result.value().is_valid());
+}
+
+TEST(DdkDeviceWrapperTest, GetScoChannelFailure) {
+  bt_hci_protocol_ops_t hci_ops{.open_sco_channel = [](void* ctx, zx_handle_t channel) {
+    zx_handle_close(channel);
+    return ZX_ERR_NOT_SUPPORTED;
+  }};
+  bt_hci_protocol_t hci_proto = {.ops = &hci_ops};
+  bt_vendor_protocol_t vendor_proto;
+  DdkDeviceWrapper wrapper(hci_proto, vendor_proto);
+  auto result = wrapper.GetScoChannel();
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(result.error_value(), ZX_ERR_NOT_SUPPORTED);
+}
+
 }  // namespace
 }  // namespace bt::hci

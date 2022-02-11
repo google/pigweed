@@ -9,6 +9,7 @@
 #include <fuchsia/hardware/bt/hci/c/banjo.h>
 #include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/fit/function.h>
+#include <lib/fitx/result.h>
 #include <lib/fpromise/result.h>
 #include <lib/zx/channel.h>
 #include <zircon/status.h>
@@ -37,6 +38,16 @@ class DeviceWrapper {
   // handle on failure.
   virtual zx::channel GetACLDataChannel() = 0;
 
+  // Returns the SCO channel handle for this device. Returns an invalid
+  // handle on failure.
+  virtual fitx::result<zx_status_t, zx::channel> GetScoChannel() = 0;
+
+  virtual void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
+                            sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,
+                            void* cookie) = 0;
+
+  virtual void ResetSco(bt_hci_reset_sco_callback callback, void* cookie) = 0;
+
   virtual bt_vendor_features_t GetVendorFeatures() = 0;
 
   virtual fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
@@ -58,6 +69,19 @@ class FidlDeviceWrapper : public DeviceWrapper {
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
 
+  // SCO is currently not supported for FIDL devices.
+  fitx::result<zx_status_t, zx::channel> GetScoChannel() override {
+    return fitx::error(ZX_ERR_NOT_SUPPORTED);
+  }
+  void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
+                    sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,
+                    void* cookie) override {
+    callback(cookie, ZX_ERR_NOT_SUPPORTED);
+  }
+  void ResetSco(bt_hci_reset_sco_callback callback, void* cookie) override {
+    callback(cookie, ZX_ERR_NOT_SUPPORTED);
+  }
+
   bt_vendor_features_t GetVendorFeatures() override { return 0; }
 
  private:
@@ -77,6 +101,11 @@ class DdkDeviceWrapper : public DeviceWrapper {
   // DeviceWrapper overrides:
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
+  fitx::result<zx_status_t, zx::channel> GetScoChannel() override;
+  void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
+                    sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,
+                    void* cookie) override;
+  void ResetSco(bt_hci_reset_sco_callback callback, void* cookie) override;
   bt_vendor_features_t GetVendorFeatures() override;
   fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
                                                           bt_vendor_params_t& params) override;
@@ -102,12 +131,27 @@ class DummyDeviceWrapper : public DeviceWrapper {
                      EncodeCallback vendor_encode_cb = nullptr);
   ~DummyDeviceWrapper() override = default;
 
+  void set_sco_channel(zx::channel chan) { sco_channel_ = std::move(chan); }
+
+  using ConfigureScoCallback =
+      fit::function<void(sco_coding_format_t, sco_encoding_t, sco_sample_rate_t,
+                         bt_hci_configure_sco_callback, void*)>;
+  void set_configure_sco_callback(ConfigureScoCallback cb) { configure_sco_cb_ = std::move(cb); }
+
+  using ResetScoCallback = fit::function<void(bt_hci_reset_sco_callback, void*)>;
+  void set_reset_sco_callback(ResetScoCallback cb) { reset_sco_cb_ = std::move(cb); }
+
   // DeviceWrapper overrides. Since these methods simply forward the handles
   // they were initialized with, the internal handles will be moved and
   // invalidated after the first call to these methods. Subsequent calls will
   // always return an invalid handle.
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
+  fitx::result<zx_status_t, zx::channel> GetScoChannel() override;
+  void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
+                    sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,
+                    void* cookie) override;
+  void ResetSco(bt_hci_reset_sco_callback callback, void* cookie) override;
 
   bt_vendor_features_t GetVendorFeatures() override { return vendor_features_; }
   fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
@@ -116,8 +160,11 @@ class DummyDeviceWrapper : public DeviceWrapper {
  private:
   zx::channel cmd_channel_;
   zx::channel acl_data_channel_;
+  zx::channel sco_channel_;
   bt_vendor_features_t vendor_features_;
   EncodeCallback vendor_encode_cb_;
+  ConfigureScoCallback configure_sco_cb_ = nullptr;
+  ResetScoCallback reset_sco_cb_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DummyDeviceWrapper);
 };
