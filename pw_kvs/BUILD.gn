@@ -18,6 +18,7 @@ import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -346,29 +347,41 @@ pw_test_group("tests") {
     ":alignment_test",
     ":checksum_test",
     ":converts_to_span_test",
-    ":entry_test",
-    ":entry_cache_test",
-    ":flash_partition_1_stream_test",
-    ":flash_partition_1_alignment_test",
-    ":flash_partition_16_alignment_test",
-    ":flash_partition_64_alignment_test",
-    ":flash_partition_256_alignment_test",
-    ":flash_partition_256_write_size_test",
-    ":key_value_store_test",
-    ":key_value_store_1_alignment_flash_test",
-    ":key_value_store_16_alignment_flash_test",
-    ":key_value_store_64_alignment_flash_test",
-    ":key_value_store_256_alignment_flash_test",
-    ":key_value_store_fuzz_1_alignment_flash_test",
-    ":key_value_store_fuzz_64_alignment_flash_test",
-    ":key_value_store_binary_format_test",
-    ":key_value_store_put_test",
-    ":key_value_store_map_test",
-    ":fake_flash_test_key_value_store_test",
-    ":sectors_test",
     ":key_test",
-    ":key_value_store_wear_test",
   ]
+
+  if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+      pw_toolchain_SCOPE.is_host_toolchain) {
+    # TODO(pwbug/196): KVS tests are not compatible with device builds as they
+    # use features such as std::map and are computationally expensive. Solving
+    # this requires a more complex capabilities-based build and configuration
+    # system which allowing enabling specific tests for targets that support
+    # them and modifying test parameters for different targets.
+
+    tests += [
+      ":entry_test",
+      ":entry_cache_test",
+      ":flash_partition_1_stream_test",
+      ":flash_partition_1_alignment_test",
+      ":flash_partition_16_alignment_test",
+      ":flash_partition_64_alignment_test",
+      ":flash_partition_256_alignment_test",
+      ":flash_partition_256_write_size_test",
+      ":key_value_store_test",
+      ":key_value_store_1_alignment_flash_test",
+      ":key_value_store_16_alignment_flash_test",
+      ":key_value_store_64_alignment_flash_test",
+      ":key_value_store_256_alignment_flash_test",
+      ":key_value_store_fuzz_1_alignment_flash_test",
+      ":key_value_store_fuzz_64_alignment_flash_test",
+      ":key_value_store_binary_format_test",
+      ":key_value_store_put_test",
+      ":key_value_store_map_test",
+      ":key_value_store_wear_test",
+      ":fake_flash_test_key_value_store_test",
+      ":sectors_test",
+    ]
+  }
 }
 
 pw_test("alignment_test") {

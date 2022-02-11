@@ -27,6 +27,9 @@
 #include "pw_transfer/transfer_thread.h"
 #include "pw_varint/varint.h"
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
+
 namespace pw::transfer::internal {
 
 void Context::HandleEvent(const Event& event) {
@@ -731,3 +734,5 @@ uint32_t Context::MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
 }
 
 }  // namespace pw::transfer::internal
+
+PW_MODIFY_DIAGNOSTICS_POP();

@@ -520,6 +520,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bAUTHORS$',
     r'\bLICENSE$',
     r'\bOWNERS$',
+    r'\bPIGWEED_MODULES$',
     r'\brequirements.txt$',
     r'\bgo.(mod|sum)$',
     r'\bpackage.json$',

@@ -20,6 +20,9 @@
 #include "pw_log/log.h"
 #include "pw_transfer/internal/chunk.h"
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
+
 namespace pw::transfer::internal {
 
 void TransferThread::Terminate() {
@@ -313,3 +316,5 @@ void TransferThread::SendStatusChunk(
 }
 
 }  // namespace pw::transfer::internal
+
+PW_MODIFY_DIAGNOSTICS_POP();

@@ -328,6 +328,13 @@ In upstream, Pigweed splits its top-level GN targets into a few logical groups,
 which are described below. In order to build a GN target, it *must* be listed in
 one of the groups in this file.
 
+.. important::
+
+  Pigweed's top-level ``BUILD.gn`` file should not be used by downstream
+  projects. Projects that wish to pull all of Pigweed's code into their build
+  may use the ``pw_modules`` and ``pw_module_tests`` variables in
+  ``modules.gni``.
+
 apps
 ~~~~
 This group defines the application images built in Pigweed. It lists all of the
@@ -372,9 +379,15 @@ pw_modules
 ~~~~~~~~~~
 This group lists the main libraries for all of Pigweed's modules.
 
+The modules in the ``pw_modules`` group are listed in the ``pw_modules``
+variable, which is provided by ``modules.gni``.
+
 pw_module_tests
 ~~~~~~~~~~~~~~~
 All modules' unit tests are collected here, so that they can all be run at once.
+
+The test groups in ``pw_module_tests`` group are listed in the
+``pw_module_tests`` variable, which is provided by ``modules.gni``.
 
 pigweed_default
 ~~~~~~~~~~~~~~~

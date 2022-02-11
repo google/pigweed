@@ -34,6 +34,9 @@ using pw_rpc::raw::Transfer;
 
 using namespace std::chrono_literals;
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
+
 thread::Options& TransferThreadOptions() {
   static thread::stl::Options options;
   return options;
@@ -1365,6 +1368,8 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
 
   EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 }
+
+PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace
 }  // namespace pw::transfer::test

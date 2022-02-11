@@ -70,10 +70,14 @@ pw_source_set("pw_minimal_cpp_stdlib") {
 }
 
 pw_test_group("tests") {
-  tests = [
-    ":minimal_cpp_stdlib_test",
-    ":standard_library_test",
-  ]
+  tests = []
+  if (host_os != "win") {
+    # TODO(amontanez): pw_minimal_cpp_stdlib tests do not build on windows.
+    tests += [
+      ":minimal_cpp_stdlib_test",
+      ":standard_library_test",
+    ]
+  }
 }
 
 pw_source_set("minimal_cpp_stdlib_isolated_test") {

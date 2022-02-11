@@ -49,10 +49,10 @@ group("default") {
   deps = [
     ":docs",
     ":host",
+    ":python.lint",
+    ":python.tests",
     ":static_analysis",
     ":stm32f429i",
-    "$dir_pw_env_setup:python.lint",
-    "$dir_pw_env_setup:python.tests",
     "pw_rpc:test_protos.python.install",
   ]
 
@@ -280,129 +280,11 @@ if (current_toolchain != default_toolchain) {
 
   # All Pigweed modules that can be built using gn. This is not built by default.
   group("pw_modules") {
-    deps = [
-      "$dir_pigweed/docs",
-      "$dir_pw_allocator",
-      "$dir_pw_analog",
-      "$dir_pw_base64",
-      "$dir_pw_blob_store",
-      "$dir_pw_bytes",
-      "$dir_pw_checksum",
-      "$dir_pw_chrono",
-      "$dir_pw_console",
-      "$dir_pw_cpu_exception",
-      "$dir_pw_hdlc",
-      "$dir_pw_i2c",
-      "$dir_pw_metric",
-      "$dir_pw_persistent_ram",
-      "$dir_pw_polyfill",
-      "$dir_pw_preprocessor",
-      "$dir_pw_protobuf",
-      "$dir_pw_result",
-      "$dir_pw_spi",
-      "$dir_pw_status",
-      "$dir_pw_stream",
-      "$dir_pw_string",
-      "$dir_pw_sync",
-      "$dir_pw_sys_io",
-      "$dir_pw_system",
-      "$dir_pw_thread",
-      "$dir_pw_tool",
-      "$dir_pw_trace",
-      "$dir_pw_unit_test",
-      "$dir_pw_varint",
-    ]
-
-    if (host_os != "win") {
-      deps += [
-        # TODO(frolv): Remove these two when new KVS is ready.
-        "$dir_pw_kvs",
-        "$dir_pw_minimal_cpp_stdlib",
-
-        # TODO(pwbug/111): Remove this when building successfully on Windows.
-        "$dir_pw_tokenizer",
-      ]
-    }
+    deps = pw_modules
   }
 
   # Targets for all module unit test groups.
   pw_test_group("pw_module_tests") {
-    group_deps = [
-      "$dir_pw_allocator:tests",
-      "$dir_pw_analog:tests",
-      "$dir_pw_assert:tests",
-      "$dir_pw_base64:tests",
-      "$dir_pw_blob_store:tests",
-      "$dir_pw_bluetooth_hci:tests",
-      "$dir_pw_bytes:tests",
-      "$dir_pw_checksum:tests",
-      "$dir_pw_chrono:tests",
-      "$dir_pw_containers:tests",
-      "$dir_pw_cpu_exception_cortex_m:tests",
-      "$dir_pw_crypto:tests",
-      "$dir_pw_file:tests",
-      "$dir_pw_function:tests",
-      "$dir_pw_fuzzer:tests",
-      "$dir_pw_hdlc:tests",
-      "$dir_pw_hex_dump:tests",
-      "$dir_pw_i2c:tests",
-      "$dir_pw_libc:tests",
-      "$dir_pw_log:tests",
-      "$dir_pw_log_null:tests",
-      "$dir_pw_log_rpc:tests",
-      "$dir_pw_log_tokenized:tests",
-      "$dir_pw_malloc_freelist:tests",
-      "$dir_pw_metric:tests",
-      "$dir_pw_multisink:tests",
-      "$dir_pw_persistent_ram:tests",
-      "$dir_pw_polyfill:tests",
-      "$dir_pw_preprocessor:tests",
-      "$dir_pw_protobuf:tests",
-      "$dir_pw_protobuf_compiler:tests",
-      "$dir_pw_random:tests",
-      "$dir_pw_result:tests",
-      "$dir_pw_ring_buffer:tests",
-      "$dir_pw_router:tests",
-      "$dir_pw_rpc:tests",
-      "$dir_pw_snapshot:tests",
-      "$dir_pw_software_update:tests",
-      "$dir_pw_span:tests",
-      "$dir_pw_spi:tests",
-      "$dir_pw_status:tests",
-      "$dir_pw_stream:tests",
-      "$dir_pw_string:tests",
-      "$dir_pw_sync:tests",
-      "$dir_pw_thread:tests",
-      "$dir_pw_thread_stl:tests",
-      "$dir_pw_tls_client:tests",
-      "$dir_pw_tls_client_boringssl:tests",
-      "$dir_pw_tls_client_mbedtls:tests",
-      "$dir_pw_tokenizer:tests",
-      "$dir_pw_trace:tests",
-      "$dir_pw_trace_tokenized:tests",
-      "$dir_pw_unit_test:tests",
-      "$dir_pw_varint:tests",
-      "$dir_pw_work_queue:tests",
-    ]
-
-    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
-        pw_toolchain_SCOPE.is_host_toolchain) {
-      # TODO(pwbug/196): KVS tests are not compatible with device builds as they
-      # use features such as std::map and are computationally expensive. Solving
-      # this requires a more complex capabilities-based build and configuration
-      # system which allowing enabling specific tests for targets that support
-      # them and modifying test parameters for different targets.
-      group_deps += [ "$dir_pw_kvs:tests" ]
-
-      if (host_os != "win") {
-        # TODO(pwbug/441): Fix transfer tests on Windows.
-        group_deps += [ "$dir_pw_transfer:tests" ]
-      }
-    }
-
-    if (host_os != "win") {
-      # TODO(amontanez): pw_minimal_cpp_stdlib tests do not build on windows.
-      group_deps += [ "$dir_pw_minimal_cpp_stdlib:tests" ]
-    }
+    group_deps = pw_module_tests
   }
 }

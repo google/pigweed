@@ -18,6 +18,8 @@ import("$dir_pw_build/module_config.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_rpc/internal/integration_test_ports.gni")
+import("$dir_pw_thread/backend.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -134,14 +136,24 @@ pw_proto_library("proto") {
 }
 
 pw_test_group("tests") {
-  tests = [
-    # TODO(pwbug/562): These tests flake in CQ as they're timed-based. Rewrite
-    # them to access transfer internals and avoid sleeping.
-    ":client_test",
-    ":handler_test",
-    ":transfer_test",
-    ":transfer_thread_test",
-  ]
+  tests = []
+
+  # pw_transfer requires threading.
+  if (pw_thread_THREAD_BACKEND != "") {
+    tests = [
+      ":client_test",
+      ":transfer_thread_test",
+    ]
+
+    # TODO(pwbug/441): Fix transfer tests on Windows and non-host builds.
+    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+        pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
+      tests += [
+        ":handler_test",
+        ":transfer_test",
+      ]
+    }
+  }
 }
 
 pw_test("handler_test") {

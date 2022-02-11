@@ -32,6 +32,9 @@ namespace {
 
 using internal::Chunk;
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
+
 // TODO(frolv): Have a generic way to obtain a thread for testing on any system.
 thread::Options& TransferThreadOptions() {
   static thread::stl::Options options;
@@ -206,6 +209,8 @@ TEST_F(TransferThreadTest, ProcessChunk_Malformed) {
   ASSERT_TRUE(chunk.status.has_value());
   EXPECT_EQ(chunk.status.value(), Status::InvalidArgument());
 }
+
+PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace
 }  // namespace pw::transfer::test

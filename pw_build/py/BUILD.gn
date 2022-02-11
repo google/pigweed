@@ -31,6 +31,7 @@ pw_python_package("py") {
     "pw_build/exec.py",
     "pw_build/file_prefix_map.py",
     "pw_build/generate_cc_blob_library.py",
+    "pw_build/generate_modules_lists.py",
     "pw_build/generate_python_package.py",
     "pw_build/generate_python_package_gn.py",
     "pw_build/generated_tests.py",
