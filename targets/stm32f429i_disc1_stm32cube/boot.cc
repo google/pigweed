@@ -90,21 +90,21 @@ extern "C" void vApplicationStackOverflowHook(TaskHandle_t, char* pcTaskName) {
 
 // Required for configUSE_TIMERS.
 extern "C" void vApplicationGetTimerTaskMemory(
-    StaticTask_t** ppxIdleTaskTCBBuffer,
-    StackType_t** ppxIdleTaskStackBuffer,
-    uint32_t* pulIdleTaskStackSize) {
-  *ppxIdleTaskTCBBuffer = &freertos_idle_tcb;
-  *ppxIdleTaskStackBuffer = freertos_idle_stack.data();
-  *pulIdleTaskStackSize = freertos_idle_stack.size();
+    StaticTask_t** ppxTimerTaskTCBBuffer,
+    StackType_t** ppxTimerTaskStackBuffer,
+    uint32_t* pulTimerTaskStackSize) {
+  *ppxTimerTaskTCBBuffer = &freertos_timer_tcb;
+  *ppxTimerTaskStackBuffer = freertos_timer_stack.data();
+  *pulTimerTaskStackSize = freertos_timer_stack.size();
 }
 
 extern "C" void vApplicationGetIdleTaskMemory(
     StaticTask_t** ppxIdleTaskTCBBuffer,
     StackType_t** ppxIdleTaskStackBuffer,
     uint32_t* pulIdleTaskStackSize) {
-  *ppxIdleTaskTCBBuffer = &freertos_timer_tcb;
-  *ppxIdleTaskStackBuffer = freertos_timer_stack.data();
-  *pulIdleTaskStackSize = freertos_timer_stack.size();
+  *ppxIdleTaskTCBBuffer = &freertos_idle_tcb;
+  *ppxIdleTaskStackBuffer = freertos_idle_stack.data();
+  *pulIdleTaskStackSize = freertos_idle_stack.size();
 }
 
 extern "C" void pw_boot_PreStaticMemoryInit() {}
