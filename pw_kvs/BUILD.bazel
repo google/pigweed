@@ -61,6 +61,7 @@ pw_cc_library(
         "//pw_log:facade",
         "//pw_span",
         "//pw_status",
+        "//pw_stream",
     ],
 )
 
@@ -257,6 +258,18 @@ pw_cc_test(
         ":fake_flash",
         ":pw_kvs",
         "//pw_log",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "flash_partition_stream_test",
+    srcs = ["flash_partition_stream_test.cc"],
+    deps = [
+        ":fake_flash",
+        ":pw_kvs",
+        "//pw_log",
+        "//pw_random",
         "//pw_unit_test",
     ],
 )

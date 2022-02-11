@@ -65,6 +65,7 @@ pw_source_set("pw_kvs") {
     dir_pw_bytes,
     dir_pw_containers,
     dir_pw_status,
+    dir_pw_stream,
     dir_pw_string,
   ]
   deps = [
@@ -208,6 +209,29 @@ pw_source_set("fake_flash_test_key_value_store") {
   ]
 }
 
+pw_source_set("flash_partition_stream_test") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_kvs/flash_memory.h" ]
+  sources = [ "flash_partition_stream_test.cc" ]
+  public_deps = [
+    "$dir_pw_sync:borrow",
+    dir_pw_bytes,
+    dir_pw_kvs,
+    dir_pw_preprocessor,
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+  deps = [
+    ":config",
+    ":fake_flash",
+    ":flash_test_partition",
+    dir_pw_kvs,
+    dir_pw_log,
+    dir_pw_random,
+    dir_pw_unit_test,
+  ]
+}
+
 pw_source_set("flash_partition_test_100_iterations") {
   deps = [
     ":config",
@@ -324,6 +348,7 @@ pw_test_group("tests") {
     ":converts_to_span_test",
     ":entry_test",
     ":entry_cache_test",
+    ":flash_partition_1_stream_test",
     ":flash_partition_1_alignment_test",
     ":flash_partition_16_alignment_test",
     ":flash_partition_64_alignment_test",
@@ -382,6 +407,15 @@ pw_test("entry_cache_test") {
     dir_pw_bytes,
   ]
   sources = [ "entry_cache_test.cc" ]
+}
+
+pw_test("flash_partition_1_stream_test") {
+  deps = [
+    ":fake_flash",
+    ":fake_flash_1_aligned_partition",
+    ":flash_partition_stream_test",
+    dir_pw_log,
+  ]
 }
 
 pw_test("flash_partition_1_alignment_test") {

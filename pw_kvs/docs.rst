@@ -85,6 +85,8 @@ they are part of. Partition logical sectors may be smaller due to partition
 overhead (encryption, wear tracking, etc) or larger due to combining raw
 sectors into larger logical sectors.
 
+FlashPartition supports access via NonSeekableWriter and SeekableReader.
+
 Size report
 -----------
 The following size report showcases the memory usage of the KVS and

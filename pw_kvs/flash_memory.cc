@@ -31,6 +31,40 @@ namespace pw::kvs {
 
 using std::byte;
 
+Status FlashPartition::Writer::DoWrite(ConstByteSpan data) {
+  if (partition_.size_bytes() <= position_) {
+    return Status::OutOfRange();
+  }
+  if (data.size_bytes() > (partition_.size_bytes() - position_)) {
+    return Status::ResourceExhausted();
+  }
+  if (data.size_bytes() == 0) {
+    return OkStatus();
+  }
+
+  const StatusWithSize sws = partition_.Write(position_, data);
+  if (sws.ok()) {
+    position_ += data.size_bytes();
+  }
+  return sws.status();
+}
+
+StatusWithSize FlashPartition::Reader::DoRead(ByteSpan data) {
+  if (position_ >= partition_.size_bytes()) {
+    return StatusWithSize::OutOfRange();
+  }
+
+  size_t bytes_to_read =
+      std::min(data.size_bytes(), partition_.size_bytes() - position_);
+
+  const StatusWithSize sws =
+      partition_.Read(position_, data.first(bytes_to_read));
+  if (sws.ok()) {
+    position_ += bytes_to_read;
+  }
+  return sws;
+}
+
 StatusWithSize FlashPartition::Output::DoWrite(std::span<const byte> data) {
   PW_TRY_WITH_SIZE(flash_.Write(address_, data));
   address_ += data.size();

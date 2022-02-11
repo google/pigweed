@@ -264,7 +264,7 @@ class Stream {
   Seekability seekability_;
 };
 
-// A Stream that supports writing but not reading. The Write() method is hidden.
+// A Stream that supports reading but not writing. The Write() method is hidden.
 //
 // Use in APIs when:
 //   * Must read from, but not write to, a stream.
