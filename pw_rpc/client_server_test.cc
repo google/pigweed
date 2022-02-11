@@ -31,8 +31,8 @@ constexpr uint32_t kFakeMethodId = 10;
 RawFakeChannelOutput<1> output;
 rpc::Channel channels[] = {Channel::Create<kFakeChannelId>(&output)};
 
-StatusWithSize FakeMethod(ConstByteSpan, ByteSpan) {
-  return StatusWithSize::Unimplemented();
+void FakeMethod(ConstByteSpan, RawUnaryResponder& responder) {
+  ASSERT_EQ(OkStatus(), responder.Finish({}, Status::Unimplemented()));
 }
 
 class FakeService : public Service {
@@ -40,7 +40,7 @@ class FakeService : public Service {
   FakeService(uint32_t id) : Service(id, kMethods) {}
 
   static constexpr std::array<RawMethodUnion, 1> kMethods = {
-      RawMethod::SynchronousUnary<FakeMethod>(kFakeMethodId),
+      RawMethod::AsynchronousUnary<FakeMethod>(kFakeMethodId),
   };
 };
 

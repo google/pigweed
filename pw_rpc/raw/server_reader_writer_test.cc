@@ -26,9 +26,7 @@ namespace pw::rpc {
 class TestServiceImpl final
     : public test::pw_rpc::raw::TestService::Service<TestServiceImpl> {
  public:
-  static StatusWithSize TestUnaryRpc(ConstByteSpan, ByteSpan) {
-    return StatusWithSize(0);
-  }
+  static void TestUnaryRpc(ConstByteSpan, RawUnaryResponder&) {}
 
   void TestAnotherUnaryRpc(ConstByteSpan, RawUnaryResponder&) {}
 

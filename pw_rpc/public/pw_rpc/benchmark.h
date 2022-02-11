@@ -22,7 +22,7 @@ namespace pw::rpc {
 class BenchmarkService
     : public pw_rpc::raw::Benchmark::Service<BenchmarkService> {
  public:
-  static StatusWithSize UnaryEcho(ConstByteSpan request, ByteSpan response);
+  static void UnaryEcho(ConstByteSpan request, RawUnaryResponder& responder);
 
   void BidirectionalEcho(RawServerReaderWriter& reader_writer);
 

@@ -48,19 +48,18 @@ class FakeGeneratedServiceImpl
  public:
   FakeGeneratedServiceImpl(uint32_t id) : FakeGeneratedService(id) {}
 
-  StatusWithSize DoNothing(ConstByteSpan, ByteSpan) {
-    return StatusWithSize::Unknown();
-  }
+  void DoNothing(ConstByteSpan, RawUnaryResponder&) {}
 
-  StatusWithSize AddFive(ConstByteSpan request, ByteSpan response) {
+  void AddFive(ConstByteSpan request, RawUnaryResponder& responder) {
     DecodeRawTestRequest(request);
 
+    std::byte response[32] = {};
     TestResponse::MemoryEncoder test_response(response);
-    test_response.WriteValue(last_request.integer + 5)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    ConstByteSpan payload(test_response);
+    ASSERT_EQ(OkStatus(), test_response.WriteValue(last_request.integer + 5));
 
-    return StatusWithSize::Unauthenticated(payload.size());
+    ASSERT_EQ(OkStatus(),
+              responder.Finish(std::span(response).first(test_response.size()),
+                               Status::Unauthenticated()));
   }
 
   void StartStream(ConstByteSpan request, RawServerWriter& writer) {

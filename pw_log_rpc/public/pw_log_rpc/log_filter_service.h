@@ -28,15 +28,50 @@ class FilterService final
 
   //  Modifies a log filter and its rules. The filter must be registered in the
   //  provided filter map.
-  StatusWithSize SetFilter(ConstByteSpan request, ByteSpan);
+  void SetFilter(ConstByteSpan request, rpc::RawUnaryResponder& responder) {
+    responder.Finish({}, SetFilterImpl(request)).IgnoreError();
+  }
 
   // Retrieves a log filter and its rules. The filter must be registered in the
   // provided filter map.
-  StatusWithSize GetFilter(ConstByteSpan request, ByteSpan response);
+  void GetFilter(ConstByteSpan request, rpc::RawUnaryResponder& responder) {
+    std::byte buffer[kFilterResponseBufferSize] = {};
+    StatusWithSize result = GetFilterImpl(request, buffer);
+    responder.Finish(std::span(buffer).first(result.size()), result.status())
+        .IgnoreError();
+  }
 
-  StatusWithSize ListFilterIds(ConstByteSpan, ByteSpan response);
+  void ListFilterIds(ConstByteSpan, rpc::RawUnaryResponder& responder) {
+    std::byte buffer[kFilterIdsResponseBufferSize] = {};
+    StatusWithSize result = ListFilterIdsImpl(buffer);
+    responder.Finish(std::span(buffer).first(result.size()), result.status())
+        .IgnoreError();
+  }
 
  private:
+  static constexpr size_t kMinSupportedFilters = 4;
+
+  static constexpr size_t kFilterResponseBufferSize =
+      protobuf::FieldNumberSizeBytes(log::Filter::Fields::RULE) +
+      protobuf::kMaxSizeOfLength +
+      kMinSupportedFilters *
+          (protobuf::SizeOfFieldEnum(
+               log::FilterRule::Fields::LEVEL_GREATER_THAN_OR_EQUAL, 7) +
+           protobuf::SizeOfFieldBytes(log::FilterRule::Fields::MODULE_EQUALS,
+                                      6) +
+           protobuf::SizeOfFieldUint32(log::FilterRule::Fields::ANY_FLAGS_SET,
+                                       1) +
+           protobuf::SizeOfFieldEnum(log::FilterRule::Fields::ACTION, 2));
+
+  static constexpr size_t kFilterIdsResponseBufferSize =
+      kMinSupportedFilters *
+      protobuf::SizeOfFieldBytes(log::FilterIdListResponse::Fields::FILTER_ID,
+                                 4);
+
+  Status SetFilterImpl(ConstByteSpan request);
+  StatusWithSize GetFilterImpl(ConstByteSpan request, ByteSpan response);
+  StatusWithSize ListFilterIdsImpl(ByteSpan response);
+
   FilterMap& filter_map_;
 };
 

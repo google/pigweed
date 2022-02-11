@@ -31,9 +31,12 @@ StatusWithSize CopyBuffer(ConstByteSpan input, ByteSpan output) {
 
 }  // namespace
 
-StatusWithSize BenchmarkService::UnaryEcho(ConstByteSpan request,
-                                           ByteSpan response) {
-  return CopyBuffer(request, response);
+void BenchmarkService::UnaryEcho(ConstByteSpan request,
+                                 RawUnaryResponder& responder) {
+  std::byte response[32];
+  StatusWithSize result = CopyBuffer(request, response);
+  responder.Finish(std::span(response).first(result.size()), result.status())
+      .IgnoreError();
 }
 
 void BenchmarkService::BidirectionalEcho(

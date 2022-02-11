@@ -23,8 +23,9 @@ namespace {
 class MixedService1
     : public test::pw_rpc::nanopb::TestService::Service<MixedService1> {
  public:
-  StatusWithSize TestUnaryRpc(ConstByteSpan, ByteSpan) {
-    return StatusWithSize(5);
+  void TestUnaryRpc(ConstByteSpan, RawUnaryResponder& responder) {
+    std::byte response[5] = {};
+    ASSERT_EQ(OkStatus(), responder.Finish(response, OkStatus()));
   }
 
   void TestAnotherUnaryRpc(const pw_rpc_test_TestRequest&,
@@ -86,9 +87,9 @@ class MixedService2
 
 TEST(MixedService1, CallRawMethod_SyncUnary) {
   PW_RAW_TEST_METHOD_CONTEXT(MixedService1, TestUnaryRpc) context;
-  StatusWithSize sws = context.call({});
-  EXPECT_TRUE(sws.ok());
-  EXPECT_EQ(5u, sws.size());
+  context.call({});
+  EXPECT_EQ(OkStatus(), context.status());
+  EXPECT_EQ(5u, context.response().size());
 }
 
 TEST(MixedService1, CallNanopbMethod_AsyncUnary) {

@@ -136,16 +136,15 @@ class RawCodeGenerator(CodeGenerator):
 
 class StubGenerator(codegen.StubGenerator):
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
-        return (f'pw::StatusWithSize {prefix}{method.name()}('
-                'pw::ConstByteSpan request, pw::ByteSpan response)')
+        return (f'void {prefix}{method.name()}(pw::ConstByteSpan request, '
+                'pw::rpc::RawUnaryResponder& responder)')
 
     def unary_stub(self, method: ProtoServiceMethod,
                    output: OutputFile) -> None:
         output.write_line(codegen.STUB_REQUEST_TODO)
         output.write_line('static_cast<void>(request);')
         output.write_line(codegen.STUB_RESPONSE_TODO)
-        output.write_line('static_cast<void>(response);')
-        output.write_line('return pw::StatusWithSize::Unimplemented();')
+        output.write_line('static_cast<void>(responder);')
 
     def server_streaming_signature(self, method: ProtoServiceMethod,
                                    prefix: str) -> str:

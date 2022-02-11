@@ -55,18 +55,23 @@ namespace test {
 class TestService final
     : public pw_rpc::raw::TestService::Service<TestService> {
  public:
-  static StatusWithSize TestUnaryRpc(ConstByteSpan request, ByteSpan response) {
+  static void TestUnaryRpc(ConstByteSpan request,
+                           RawUnaryResponder& responder) {
     int64_t integer;
     Status status;
 
     if (!DecodeRequest(request, integer, status)) {
-      return StatusWithSize::DataLoss();
+      ASSERT_EQ(OkStatus(), responder.Finish({}, Status::DataLoss()));
+      return;
     }
 
+    std::byte response[64] = {};
     TestResponse::MemoryEncoder test_response(response);
     EXPECT_EQ(OkStatus(), test_response.WriteValue(integer + 1));
 
-    return StatusWithSize(status, test_response.size());
+    ASSERT_EQ(OkStatus(),
+              responder.Finish(std::span(response).first(test_response.size()),
+                               status));
   }
 
   void TestAnotherUnaryRpc(ConstByteSpan request,
@@ -74,12 +79,7 @@ class TestService final
     if (request.empty()) {
       last_responder_ = std::move(responder);
     } else {
-      std::byte response[32] = {};
-      StatusWithSize sws = TestUnaryRpc(request, response);
-
-      EXPECT_EQ(OkStatus(),
-                responder.Finish(std::span(response).first(sws.size()),
-                                 sws.status()));
+      TestUnaryRpc(request, responder);
     }
   }
 
@@ -189,8 +189,8 @@ TEST(RawCodegen, Server_CompilesProperly) {
 TEST(RawCodegen, Server_InvokeUnaryRpc) {
   PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestUnaryRpc) context;
 
-  auto sws = context.call(EncodeRequest(123, OkStatus()));
-  EXPECT_EQ(OkStatus(), sws.status());
+  context.call(EncodeRequest(123, OkStatus()));
+  EXPECT_EQ(OkStatus(), context.status());
 
   protobuf::Decoder decoder(context.response());
 

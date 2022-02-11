@@ -124,7 +124,8 @@ void FlatFileSystemService::List(ConstByteSpan request,
   EnumerateAllFiles(writer);
 }
 
-StatusWithSize FlatFileSystemService::Delete(ConstByteSpan request, ByteSpan) {
+void FlatFileSystemService::Delete(ConstByteSpan request,
+                                   rpc::RawUnaryResponder& responder) {
   protobuf::Decoder decoder(request);
   while (decoder.Next().ok()) {
     if (decoder.FieldNumber() !=
@@ -134,11 +135,13 @@ StatusWithSize FlatFileSystemService::Delete(ConstByteSpan request, ByteSpan) {
 
     std::string_view file_name_view;
     if (!decoder.ReadString(&file_name_view).ok()) {
-      return StatusWithSize(Status::DataLoss(), 0);
+      responder.Finish({}, Status::DataLoss()).IgnoreError();
+      return;
     }
-    return StatusWithSize(FindAndDeleteFile(file_name_view), 0);
+    responder.Finish({}, FindAndDeleteFile(file_name_view)).IgnoreError();
+    return;
   }
-  return StatusWithSize(Status::InvalidArgument(), 0);
+  responder.Finish({}, Status::InvalidArgument()).IgnoreError();
 }
 
 Result<Entry*> FlatFileSystemService::FindFile(std::string_view file_name) {

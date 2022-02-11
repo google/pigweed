@@ -83,9 +83,8 @@ class TestServerService
 
   void set_directory(const char* directory) { directory_ = directory; }
 
-  StatusWithSize ReloadTransferFiles(ConstByteSpan, ByteSpan) {
+  void ReloadTransferFiles(ConstByteSpan, rpc::RawUnaryResponder&) {
     LoadFileHandlers();
-    return StatusWithSize();
   }
 
   void LoadFileHandlers() {

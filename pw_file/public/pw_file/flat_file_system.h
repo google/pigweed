@@ -107,7 +107,7 @@ class FlatFileSystemService
   // Returns:
   //   OK - File successfully deleted.
   //   NOT_FOUND - Could not find
-  StatusWithSize Delete(ConstByteSpan request, ByteSpan);
+  void Delete(ConstByteSpan request, rpc::RawUnaryResponder& responder);
 
  private:
   // Returns the maximum size of a single encoded Path proto.

@@ -76,8 +76,8 @@ class FakeGeneratedServiceImpl
     return Status::Unauthenticated();
   }
 
-  StatusWithSize DoNothing(ConstByteSpan, ByteSpan) {
-    return StatusWithSize::Unknown();
+  void DoNothing(ConstByteSpan, RawUnaryResponder& responder) {
+    ASSERT_EQ(OkStatus(), responder.Finish({}, Status::Unknown()));
   }
 
   void RawStream(ConstByteSpan, RawServerWriter& writer) {
