@@ -444,7 +444,8 @@ def run(program: Sequence[Callable],
 
         _LOG.info(
             'Checking %s',
-            git_repo.describe_files(repo, repo, base, pathspecs, exclude))
+            git_repo.describe_files(repo, repo, base, pathspecs, exclude,
+                                    root))
 
     if output_directory is None:
         output_directory = root / '.presubmit'

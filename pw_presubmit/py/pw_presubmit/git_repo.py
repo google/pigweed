@@ -178,16 +178,24 @@ def _describe_constraints(git_root: Path, repo_path: Path,
                ', '.join(p.pattern for p in exclude) + ')')
 
 
-def describe_files(git_root: Path, repo_path: Path, commit: Optional[str],
+def describe_files(git_root: Path,
+                   repo_path: Path,
+                   commit: Optional[str],
                    pathspecs: Collection[PathOrStr],
-                   exclude: Collection[Pattern]) -> str:
+                   exclude: Collection[Pattern],
+                   project_root: Path = None) -> str:
     """Completes 'Doing something to ...' for a set of files in a Git repo."""
     constraints = list(
         _describe_constraints(git_root, repo_path, commit, pathspecs, exclude))
-    if not constraints:
-        return f'all files in the {git_root.name} repo'
 
-    msg = f'files in the {git_root.name} repo'
+    name = git_root.name
+    if project_root and project_root != git_root:
+        name = str(git_root.relative_to(project_root))
+
+    if not constraints:
+        return f'all files in the {name} repo'
+
+    msg = f'files in the {name} repo'
     if len(constraints) == 1:
         return f'{msg} {constraints[0]}'
 

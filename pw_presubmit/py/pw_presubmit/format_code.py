@@ -41,6 +41,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
+import pw_cli.env
 from pw_presubmit import cli, git_repo
 from pw_presubmit.tools import exclude_paths, file_summary, log_run, plural
 
@@ -433,9 +434,11 @@ def format_paths_in_repo(paths: Collection[Union[Path, str]],
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
     if repo:
+        project_root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
         _LOG.info(
             'Formatting %s',
-            git_repo.describe_files(repo, Path.cwd(), base, paths, exclude))
+            git_repo.describe_files(repo, Path.cwd(), base, paths, exclude,
+                                    project_root))
 
         # Add files from Git and remove duplicates.
         files = sorted(
