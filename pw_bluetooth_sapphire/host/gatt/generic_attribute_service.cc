@@ -12,26 +12,20 @@
 #include "src/lib/fxl/strings/string_number_conversions.h"
 
 namespace bt::gatt {
-namespace {
 
-void NopReadHandler(PeerId, IdType, IdType, uint16_t, const ReadResponder&) {}
-
-void NopWriteHandler(PeerId, IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
-
-}  // namespace
-
-GenericAttributeService::GenericAttributeService(LocalServiceManager* local_service_manager,
-                                                 SendIndicationCallback send_indication_callback)
-    : local_service_manager_(local_service_manager),
+GenericAttributeService::GenericAttributeService(
+    fxl::WeakPtr<LocalServiceManager> local_service_manager,
+    SendIndicationCallback send_indication_callback)
+    : local_service_manager_(std::move(local_service_manager)),
       send_indication_callback_(std::move(send_indication_callback)) {
-  ZX_DEBUG_ASSERT(local_service_manager != nullptr);
+  ZX_ASSERT(local_service_manager_);
   ZX_DEBUG_ASSERT(send_indication_callback_);
 
   Register();
 }
 
 GenericAttributeService::~GenericAttributeService() {
-  if (local_service_manager_ != nullptr && service_id_ != kInvalidId) {
+  if (local_service_manager_ && service_id_ != kInvalidId) {
     local_service_manager_->UnregisterService(service_id_);
   }
 }
@@ -40,7 +34,7 @@ void GenericAttributeService::Register() {
   const att::AccessRequirements kDisallowed;
   const att::AccessRequirements kAllowedNoSecurity(false, false, false);
   CharacteristicPtr service_changed_chr =
-      std::make_unique<Characteristic>(0,                                     // id
+      std::make_unique<Characteristic>(kServiceChangedChrcId,                 // id
                                        types::kServiceChangedCharacteristic,  // type
                                        Property::kIndicate,                   // properties
                                        0u,                                    // extended_properties
@@ -116,7 +110,7 @@ void GenericAttributeService::OnServiceChanged(IdType service_id, att::Handle st
            "service: indicating peer %s of service(s) changed "
            "(start: %#.4x, end: %#.4x)",
            bt_str(peer_id), start, end);
-    send_indication_callback_(peer_id, svc_changed_handle_, value);
+    send_indication_callback_(service_id_, kServiceChangedChrcId, peer_id, value.view());
   }
 }
 

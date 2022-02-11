@@ -39,12 +39,12 @@ namespace internal {
 class Connection final {
  public:
   // |peer_id| identifies the peer device.
-  // |local_db| is the local attribute database that the GATT server will
-  // operate on.
   // |att_bearer| is the ATT protocol data transport for this connection.
   // |client| is the ATT client for this connection, which uses |att_bearer| in production.
+  // |local_services| stores state (such as the attribute database) for local GATT services. It
+  // is used by the GATT server.
   Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer, std::unique_ptr<Client> client,
-             fbl::RefPtr<att::Database> local_db, RemoteServiceWatcher svc_watcher,
+             fxl::WeakPtr<LocalServiceManager> local_services, RemoteServiceWatcher svc_watcher,
              async_dispatcher_t* gatt_dispatcher);
   ~Connection() = default;
 

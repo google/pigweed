@@ -31,10 +31,6 @@ inline att::AccessRequirements AllowedNoSecurity() {
   return att::AccessRequirements(false, false, false);
 }
 
-void NopReadHandler(PeerId, IdType, IdType, uint16_t, const ReadResponder&) {}
-void NopWriteHandler(PeerId, IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
-void NopCCCallback(IdType service_id, IdType chrc_id, PeerId peer_id, bool notify, bool indicate) {}
-
 // Convenience function that registers |service| with |mgr| using the NOP
 // handlers above by default.
 IdType RegisterService(LocalServiceManager* mgr, ServicePtr service,

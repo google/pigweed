@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -32,16 +33,18 @@ namespace gatt {
 class Server final {
  public:
   // |peer_id| is the unique system identifier for the peer device.
-  // |database| will be queried by the Server to resolve transactions.
+  // |local_services| will be used to resolve inbound/outbound transactions.
   // |bearer| is the ATT data bearer that this Server operates on.
-  Server(PeerId peer_id, fbl::RefPtr<att::Database> database, fbl::RefPtr<att::Bearer> bearer);
+  Server(PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services,
+         fbl::RefPtr<att::Bearer> bearer);
   ~Server();
 
-  // Sends a Handle-Value notification or indication PDU with the given
-  // attribute handle. If |indicate| is true, then an indication will be sent.
-  // The underlying att::Bearer will disconnect the link if a confirmation is
-  // not received in a timely manner.
-  void SendNotification(att::Handle handle, const ByteBuffer& value, bool indicate);
+  // Sends a Handle-Value notification or indication PDU to the characteristic with ID |chrc_id|
+  // within the service with ID |service_id|. If |indicate| is true, an indication will be sent.
+  // Will not send the indication/notification if the peer hasn't configured it via the CCC.
+  // The underlying att::Bearer will disconnect the link if a confirmation is not received in a
+  // timely manner.
+  void SendNotification(IdType service_id, IdType chrc_id, BufferView value, bool indicate);
 
  private:
   // ATT protocol request handlers:
@@ -73,8 +76,12 @@ class Server final {
                                   size_t entry_prefix_size, size_t* out_value_size,
                                   std::list<const att::Attribute*>* out_results);
 
+  // Convenience "alias"
+  inline fbl::RefPtr<att::Database> db() { return local_services_->database(); }
+
   PeerId peer_id_;
-  fbl::RefPtr<att::Database> db_;
+  // Expected to outlive this |Server| instance
+  fxl::WeakPtr<LocalServiceManager> local_services_;
   fbl::RefPtr<att::Bearer> att_;
 
   // The queue data structure used for queued writes (see Vol 3, Part F, 3.4.6).

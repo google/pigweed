@@ -30,18 +30,18 @@ class Impl final : public GATT {
     local_services_ = std::make_unique<LocalServiceManager>();
 
     // Forwards Service Changed payloads to clients.
-    auto send_indication_callback = [this](PeerId peer_id, att::Handle handle,
-                                           const ByteBuffer& value) {
+    auto send_indication_callback = [this](IdType service_id, IdType chrc_id, PeerId peer_id,
+                                           BufferView value) {
       auto iter = connections_.find(peer_id);
       if (iter == connections_.end()) {
         bt_log(WARN, "gatt", "peer not registered: %s", bt_str(peer_id));
         return;
       }
-      iter->second.server()->SendNotification(handle, value.view(), true);
+      iter->second.server()->SendNotification(service_id, chrc_id, value, /*indicate=*/true);
     };
 
     // Spin up Generic Attribute as the first service.
-    gatt_service_ = std::make_unique<GenericAttributeService>(local_services_.get(),
+    gatt_service_ = std::make_unique<GenericAttributeService>(local_services_->GetWeakPtr(),
                                                               std::move(send_indication_callback));
 
     bt_log(DEBUG, "gatt", "initialized");
@@ -75,7 +75,7 @@ class Impl final : public GATT {
     };
 
     connections_.try_emplace(peer_id, peer_id, std::move(att_bearer), std::move(client),
-                             local_services_->database(), std::move(service_watcher),
+                             local_services_->GetWeakPtr(), std::move(service_watcher),
                              async_get_default_dispatcher());
 
     if (retrieve_service_changed_ccc_callback_) {
@@ -114,23 +114,8 @@ class Impl final : public GATT {
       bt_log(TRACE, "gatt", "cannot notify disconnected peer: %s", bt_str(peer_id));
       return;
     }
-
-    LocalServiceManager::ClientCharacteristicConfig config;
-    if (!local_services_->GetCharacteristicConfig(service_id, chrc_id, peer_id, &config)) {
-      bt_log(TRACE, "gatt", "peer has not configured characteristic: %s", bt_str(peer_id));
-      return;
-    }
-
-    // Make sure that the client has subscribed to the requested protocol
-    // method.
-    if ((indicate & !config.indicate) || (!indicate && !config.notify)) {
-      bt_log(TRACE, "gatt", "peer has no configuration (%s): %s", (indicate ? "ind" : "not"),
-             bt_str(peer_id));
-      return;
-    }
-
-    iter->second.server()->SendNotification(config.handle, BufferView(value.data(), value.size()),
-                                            indicate);
+    iter->second.server()->SendNotification(service_id, chrc_id,
+                                            BufferView(value.data(), value.size()), indicate);
   }
 
   void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override {

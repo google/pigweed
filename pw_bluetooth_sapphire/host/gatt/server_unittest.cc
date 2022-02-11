@@ -9,14 +9,20 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 
 namespace bt::gatt {
 namespace {
 
+constexpr UUID kTestSvcType(uint16_t{0xDEAD});
+constexpr UUID kTestChrcType(uint16_t{0xFEED});
+constexpr IdType kTestChrcId{0xFADE};
 constexpr PeerId kTestPeerId(1);
 constexpr UUID kTestType16(uint16_t{0xBEEF});
 constexpr UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
@@ -39,29 +45,101 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
 
  protected:
   void SetUp() override {
-    db_ = att::Database::Create();
+    local_services_ = std::make_unique<LocalServiceManager>();
 
     ChannelOptions options(l2cap::kATTChannelId);
     auto fake_chan = CreateFakeChannel(options);
     att_ = att::Bearer::Create(std::move(fake_chan));
-    server_ = std::make_unique<Server>(kTestPeerId, db_, att_);
+    server_ = std::make_unique<Server>(kTestPeerId, local_services_->GetWeakPtr(), att_);
   }
 
   void TearDown() override {
     server_ = nullptr;
     att_ = nullptr;
-    db_ = nullptr;
+    local_services_ = nullptr;
   }
 
+  // Registers a service with UUID |svc_type| containing a single characteristic of UUID |chrc_type|
+  // and represented by |chrc_id|. The characteristic supports the indicate and notify properties,
+  // but has not configured them via the CCC. Returns the ID of the registered service.
+  IdType RegisterSvcWithSingleChrc(UUID svc_type, IdType chrc_id, UUID chrc_type) {
+    ServicePtr svc = std::make_unique<Service>(/*primary=*/true, svc_type);
+    CharacteristicPtr chr = std::make_unique<Characteristic>(
+        chrc_id, chrc_type, Property::kIndicate | Property::kNotify,
+        /*extended_properties=*/0u,
+        /*read_permission=*/att::AccessRequirements(),
+        /*write_permissions=*/att::AccessRequirements(),
+        /*update_permisisons=*/AllowedNoSecurity());
+    svc->AddCharacteristic(std::move(chr));
+    return local_services_->RegisterService(std::move(svc), NopReadHandler, NopWriteHandler,
+                                            NopCCCallback);
+  }
+
+  struct SvcIdAndChrcHandle {
+    IdType svc_id;
+    att::Handle chrc_val_handle;
+  };
+  // RegisterSvcWithSingleChrc, but the CCC is configured to |ccc_val| for kTestPeerId.
+  // Returns the ID of the service alongside the handle of the registered characteristic value.
+  SvcIdAndChrcHandle RegisterSvcWithConfiguredChrc(UUID svc_type, IdType chrc_id, UUID chrc_type,
+                                                   uint16_t ccc_val = kCCCIndicationBit |
+                                                                      kCCCNotificationBit) {
+    IdType svc_id = RegisterSvcWithSingleChrc(svc_type, chrc_id, chrc_type);
+    std::vector<att::Handle> chrc_val_handle = SetCCCs(kTestPeerId, chrc_type, ccc_val);
+    EXPECT_EQ(1u, chrc_val_handle.size());
+    return SvcIdAndChrcHandle{.svc_id = svc_id, .chrc_val_handle = chrc_val_handle[0]};
+  }
   Server* server() const { return server_.get(); }
 
-  att::Database* db() const { return db_.get(); }
+  fbl::RefPtr<att::Database> db() const { return local_services_->database(); }
 
   // TODO(armansito): Consider introducing a FakeBearer for testing (fxbug.dev/642).
   att::Bearer* att() const { return att_.get(); }
 
  private:
-  fbl::RefPtr<att::Database> db_;
+  enum CCCSearchState {
+    kSearching,
+    kChrcDeclarationFound,
+    kCorrectChrcUuidFound,
+  };
+  // Sets |local_services_|' CCCs for |peer_id| to |ccc_val| for all characteristics of |chrc_type|,
+  // and returns the handles of the characteristic values for which the CCC was modified.
+  std::vector<att::Handle> SetCCCs(PeerId peer_id, bt::UUID chrc_type, uint16_t ccc_val) {
+    std::vector<att::Handle> modified_attrs;
+    CCCSearchState state = kSearching;
+    for (auto& grouping : db()->groupings()) {
+      att::Handle matching_chrc_value_handle = att::kInvalidHandle;
+      for (auto& attr : grouping.attributes()) {
+        if (attr.type() == types::kCharacteristicDeclaration) {
+          EXPECT_NE(state, kChrcDeclarationFound)
+              << "unexpectedly found two consecutive characteristic declarations";
+          state = kChrcDeclarationFound;
+        } else if (state == kChrcDeclarationFound && attr.type() == chrc_type) {
+          state = kCorrectChrcUuidFound;
+          matching_chrc_value_handle = attr.handle();
+        } else if (state == kChrcDeclarationFound) {
+          state = kSearching;
+        } else if (state == kCorrectChrcUuidFound &&
+                   attr.type() == types::kClientCharacteristicConfig) {
+          ZX_ASSERT(matching_chrc_value_handle != att::kInvalidHandle);
+          DynamicByteBuffer new_ccc(sizeof(ccc_val));
+          new_ccc.WriteObj(ccc_val);
+          auto write_status = att::ErrorCode::kReadNotPermitted;
+          EXPECT_TRUE(attr.WriteAsync(peer_id, /*offset=*/0, new_ccc,
+                                      [&](att::ErrorCode code) { write_status = code; }));
+          // Not strictly necessary with the current WriteAsync implementation, but running the loop
+          // here makes this more future-proof.
+          test_loop().RunUntilIdle();
+          EXPECT_EQ(att::ErrorCode::kNoError, write_status);
+          modified_attrs.push_back(matching_chrc_value_handle);
+        }
+      }
+    }
+    EXPECT_NE(0u, modified_attrs.size()) << "Couldn't find CCC attribute!";
+    return modified_attrs;
+  }
+
+  std::unique_ptr<LocalServiceManager> local_services_;
   fbl::RefPtr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
 
@@ -2273,68 +2351,148 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
   EXPECT_EQ(1, write_count);
 }
 
+TEST_F(ServerTest, TrySendNotificationNoCccConfig) {
+  IdType svc_id = RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
+  const BufferView kTestValue;
+
+  bool sent = false;
+  auto send_cb = [&](auto) { sent = true; };
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+
+  async::PostTask(dispatcher(), [=] {
+    server()->SendNotification(svc_id, kTestChrcId, kTestValue, /*indicate=*/false);
+  });
+  RunLoopUntilIdle();
+  EXPECT_FALSE(sent);
+}
+
+TEST_F(ServerTest, TrySendNotificationConfiguredForIndicationsOnly) {
+  SvcIdAndChrcHandle registered =
+      RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType, kCCCIndicationBit);
+  const BufferView kTestValue;
+
+  bool sent = false;
+  auto send_cb = [&](auto) { sent = true; };
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+
+  async::PostTask(dispatcher(), [=] {
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate=*/false);
+  });
+  RunLoopUntilIdle();
+  EXPECT_FALSE(sent);
+}
+
 TEST_F(ServerTest, SendNotificationEmpty) {
-  constexpr att::Handle kHandle = 0x1234;
+  SvcIdAndChrcHandle registered =
+      RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const BufferView kTestValue;
 
   // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-    0x1B,         // opcode: notification
-    0x34, 0x12    // handle: |kHandle|
-  );
+  const StaticByteBuffer kExpected{
+    att::kNotification,  // Opcode
+    // Handle of the characteristic value being notified
+    LowerBits(registered.chrc_val_handle), UpperBits(registered.chrc_val_handle)
+  };
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] { server()->SendNotification(kHandle, kTestValue, false); });
+  async::PostTask(dispatcher(), [=] {
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate=*/false);
+  });
 
   EXPECT_TRUE(Expect(kExpected));
 }
 
 TEST_F(ServerTest, SendNotification) {
-  constexpr att::Handle kHandle = 0x1234;
+  SvcIdAndChrcHandle registered =
+      RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
   // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-    0x1B,          // opcode: notification
-    0x34, 0x12,    // handle: |kHandle|
-    'f', 'o', 'o'  // value: |kTestValue|
-  );
+  const StaticByteBuffer kExpected{
+    att::kNotification,  // Opcode
+    // Handle of the characteristic value being notified
+    LowerBits(registered.chrc_val_handle), UpperBits(registered.chrc_val_handle),
+    kTestValue[0], kTestValue[1], kTestValue[2]
+  };
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] { server()->SendNotification(kHandle, kTestValue, false); });
+  async::PostTask(dispatcher(), [=] {
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue.view(),
+                               /*indicate=*/false);
+  });
 
   EXPECT_TRUE(Expect(kExpected));
 }
 
+TEST_F(ServerTest, TrySendIndicationNoCccConfig) {
+  IdType svc_id = RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
+  const BufferView kTestValue;
+
+  bool sent = false;
+  auto send_cb = [&](auto) { sent = true; };
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+
+  async::PostTask(dispatcher(), [=] {
+    server()->SendNotification(svc_id, kTestChrcId, kTestValue, /*indicate=*/true);
+  });
+  RunLoopUntilIdle();
+  EXPECT_FALSE(sent);
+}
+
+TEST_F(ServerTest, TrySendIndicationConfiguredForNotificationsOnly) {
+  SvcIdAndChrcHandle registered =
+      RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType, kCCCNotificationBit);
+  const BufferView kTestValue;
+
+  bool sent = false;
+  auto send_cb = [&](auto) { sent = true; };
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+
+  async::PostTask(dispatcher(), [=] {
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate=*/true);
+  });
+  RunLoopUntilIdle();
+  EXPECT_FALSE(sent);
+}
+
 TEST_F(ServerTest, SendIndicationEmpty) {
-  constexpr att::Handle kHandle = 0x1234;
+  SvcIdAndChrcHandle registered =
+      RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const BufferView kTestValue;
 
   // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-    0x1D,         // opcode: indication
-    0x34, 0x12    // handle: |kHandle|
-  );
+  const StaticByteBuffer kExpected{
+    att::kIndication,  // Opcode
+    // Handle of the characteristic value being notified
+    LowerBits(registered.chrc_val_handle), UpperBits(registered.chrc_val_handle)
+  };
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] { server()->SendNotification(kHandle, kTestValue, true); });
+  async::PostTask(dispatcher(), [=] {
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate=*/true);
+  });
 
   EXPECT_TRUE(Expect(kExpected));
 }
 
 TEST_F(ServerTest, SendIndication) {
-  constexpr att::Handle kHandle = 0x1234;
+  SvcIdAndChrcHandle registered =
+      RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
   // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-    0x1D,          // opcode: indication
-    0x34, 0x12,    // handle: |kHandle|
-    'f', 'o', 'o'  // value: |kTestValue|
-  );
+  const StaticByteBuffer kExpected{
+    att::kIndication,  // Opcode
+    // Handle of the characteristic value being notified
+    LowerBits(registered.chrc_val_handle), UpperBits(registered.chrc_val_handle),
+    kTestValue[0], kTestValue[1], kTestValue[2]
+  };
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] { server()->SendNotification(kHandle, kTestValue, true); });
+  async::PostTask(dispatcher(), [=] {
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue.view(),
+                               /*indicate=*/true);
+  });
 
   EXPECT_TRUE(Expect(kExpected));
 }

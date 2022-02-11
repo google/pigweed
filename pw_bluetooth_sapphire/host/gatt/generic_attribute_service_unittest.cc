@@ -13,12 +13,6 @@
 
 namespace bt::gatt {
 namespace {
-
-void NopReadHandler(PeerId, IdType, IdType, uint16_t, const ReadResponder&) {}
-void NopWriteHandler(PeerId, IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
-void NopCCCallback(IdType, IdType, PeerId, bool notify, bool indicate) {}
-void NopSendIndication(PeerId, att::Handle, const ByteBuffer&) {}
-
 // Handles for the third attribute (Service Changed characteristic) and fourth
 // attribute (corresponding client config).
 constexpr att::Handle kChrcHandle = 0x0003;
@@ -44,7 +38,7 @@ class GenericAttributeServiceTest : public ::testing::Test {
 // Test registration and unregistration of the local GATT service itself.
 TEST_F(GenericAttributeServiceTest, RegisterUnregister) {
   {
-    GenericAttributeService gatt_service(&mgr, NopSendIndication);
+    GenericAttributeService gatt_service(mgr.GetWeakPtr(), NopSendIndication);
 
     // Check that the local attribute database has a grouping for the GATT GATT
     // service with four attributes.
@@ -71,31 +65,31 @@ TEST_F(GenericAttributeServiceTest, RegisterUnregister) {
 // Changed characteristic, then registering a different service invokes the
 // callback to send an indication to the "client."
 TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
-  int callback_count = 0;
-  auto send_indication = [&](PeerId peer_id, att::Handle handle, const ByteBuffer& value) {
+  std::optional<IdType> indicated_svc_id;
+  auto send_indication = [&](IdType service_id, IdType chrc_id, PeerId peer_id, BufferView value) {
     EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(kChrcHandle, handle);
-    ASSERT_EQ(4u, value.size());
+    EXPECT_EQ(kServiceChangedChrcId, chrc_id);
+    indicated_svc_id = service_id;
 
+    ASSERT_EQ(4u, value.size());
     // The second service following the four-attribute GATT service should span
     // the subsequent three handles.
     EXPECT_EQ(0x05, value[0]);
     EXPECT_EQ(0x00, value[1]);
     EXPECT_EQ(0x07, value[2]);
     EXPECT_EQ(0x00, value[3]);
-    callback_count++;
   };
 
   // Register the GATT service.
-  GenericAttributeService gatt_service(&mgr, std::move(send_indication));
+  GenericAttributeService gatt_service(mgr.GetWeakPtr(), std::move(send_indication));
 
   // Enable Service Changed indications for the test client.
   att::ErrorCode ecode;
   WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
-  EXPECT_EQ(0, callback_count);
+  EXPECT_EQ(std::nullopt, indicated_svc_id);
 
   constexpr UUID kTestSvcType(uint32_t{0xdeadbeef});
-  constexpr IdType kChrcId = 0;
+  constexpr IdType kChrcId = 12;
   constexpr uint8_t kChrcProps = Property::kRead;
   constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
   const att::AccessRequirements kReadReqs(true, true, true);
@@ -105,30 +99,33 @@ TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
   auto service_id =
       mgr.RegisterService(std::move(service), NopReadHandler, NopWriteHandler, NopCCCallback);
-  EXPECT_NE(0u, service_id);
-  EXPECT_EQ(1, callback_count);
+  // Verify that service registration succeeded
+  EXPECT_NE(kInvalidId, service_id);
+  // Verify that |send_indication| was invoked to indicate the Service Changed chrc within the
+  // gatt_service.
+  EXPECT_EQ(gatt_service.service_id(), indicated_svc_id);
 }
 
 // Same test as above, but the indication is enabled just prior unregistering
 // the latter test service.
 TEST_F(GenericAttributeServiceTest, IndicateOnUnregister) {
-  int callback_count = 0;
-  auto send_indication = [&](PeerId peer_id, att::Handle handle, const ByteBuffer& value) {
+  std::optional<IdType> indicated_svc_id;
+  auto send_indication = [&](IdType service_id, IdType chrc_id, PeerId peer_id, BufferView value) {
     EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(kChrcHandle, handle);
-    ASSERT_EQ(4u, value.size());
+    EXPECT_EQ(kServiceChangedChrcId, chrc_id);
+    indicated_svc_id = service_id;
 
+    ASSERT_EQ(4u, value.size());
     // The second service following the four-attribute GATT service should span
     // the subsequent four handles (update enabled).
     EXPECT_EQ(0x05, value[0]);
     EXPECT_EQ(0x00, value[1]);
     EXPECT_EQ(0x08, value[2]);
     EXPECT_EQ(0x00, value[3]);
-    callback_count++;
   };
 
   // Register the GATT service.
-  GenericAttributeService gatt_service(&mgr, std::move(send_indication));
+  GenericAttributeService gatt_service(mgr.GetWeakPtr(), std::move(send_indication));
 
   constexpr UUID kTestSvcType(uint32_t{0xdeadbeef});
   constexpr IdType kChrcId = 0;
@@ -141,15 +138,18 @@ TEST_F(GenericAttributeServiceTest, IndicateOnUnregister) {
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
   auto service_id =
       mgr.RegisterService(std::move(service), NopReadHandler, NopWriteHandler, NopCCCallback);
-  EXPECT_NE(0u, service_id);
+  // Verify that service registration succeeded
+  EXPECT_NE(kInvalidId, service_id);
 
   // Enable Service Changed indications for the test client.
   att::ErrorCode ecode;
   WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
-  EXPECT_EQ(0, callback_count);
+  EXPECT_EQ(std::nullopt, indicated_svc_id);
 
   mgr.UnregisterService(service_id);
-  EXPECT_EQ(1, callback_count);
+  // Verify that |send_indication| was invoked to indicate the Service Changed chrc within the
+  // gatt_service.
+  EXPECT_EQ(gatt_service.service_id(), indicated_svc_id);
 }
 
 // Tests that registering the GATT service reads a persisted value for the service changed
@@ -165,10 +165,8 @@ TEST_F(GenericAttributeServiceTest, PersistIndicate) {
     persist_callback_count++;
   };
 
-  auto send_indication = [](PeerId peer_id, att::Handle handle, const ByteBuffer& value) {};
-
   // Register the GATT service.
-  GenericAttributeService gatt_service(&mgr, std::move(send_indication));
+  GenericAttributeService gatt_service(mgr.GetWeakPtr(), NopSendIndication);
   gatt_service.SetPersistServiceChangedCCCCallback(std::move(persist_callback));
   EXPECT_EQ(persist_callback_count, 0);
 

@@ -12,18 +12,20 @@
 #include "server.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 
 namespace bt::gatt::internal {
 
 Connection::Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
-                       std::unique_ptr<Client> client, fbl::RefPtr<att::Database> local_db,
+                       std::unique_ptr<Client> client,
+                       fxl::WeakPtr<LocalServiceManager> local_services,
                        RemoteServiceWatcher svc_watcher, async_dispatcher_t* gatt_dispatcher)
     : att_(std::move(att_bearer)), weak_ptr_factory_(this) {
   ZX_ASSERT(att_);
-  ZX_ASSERT(local_db);
+  ZX_ASSERT(local_services);
   ZX_ASSERT(svc_watcher);
 
-  server_ = std::make_unique<gatt::Server>(peer_id, std::move(local_db), att_);
+  server_ = std::make_unique<gatt::Server>(peer_id, std::move(local_services), att_);
   remote_service_manager_ =
       std::make_unique<RemoteServiceManager>(std::move(client), gatt_dispatcher);
   remote_service_manager_->set_service_watcher(std::move(svc_watcher));

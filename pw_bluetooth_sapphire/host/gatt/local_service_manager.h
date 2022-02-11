@@ -12,7 +12,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gatt {
 
@@ -25,7 +27,6 @@ namespace bt::gatt {
 //   - |offset|: The offset into the value that is being read.
 //   - |responder|: Should be called to respond to the read request with a
 //                  characteristic or descriptor value, or an ATT error code.
-using ReadResponder = att::Attribute::ReadResultCallback;
 using ReadHandler = fit::function<void(PeerId peer_id, IdType service_id, IdType id,
                                        uint16_t offset, ReadResponder responder)>;
 
@@ -40,7 +41,6 @@ using ReadHandler = fit::function<void(PeerId peer_id, IdType service_id, IdType
 //                  success or an ATT error code. This can be a null callback
 //                  if the client has initiated a "Write Without Response"
 //                  procedure, in which case a response is not required.
-using WriteResponder = att::Attribute::WriteResultCallback;
 using WriteHandler =
     fit::function<void(PeerId peer_id, IdType service_id, IdType id, uint16_t offset,
                        const ByteBuffer& value, WriteResponder responder)>;
@@ -62,6 +62,7 @@ using ServiceChangedCallback =
 class LocalServiceManager final {
  public:
   LocalServiceManager();
+  // Even though this is a noop, cannot be defaulted due to forward declaration of ServiceData.
   ~LocalServiceManager();
 
   // Registers the GATT service hierarchy represented by |service| with the
@@ -102,7 +103,9 @@ class LocalServiceManager final {
     service_changed_callback_ = std::move(callback);
   }
 
-  fbl::RefPtr<att::Database> database() const { return db_; }
+  inline fbl::RefPtr<att::Database> database() const { return db_; }
+
+  inline fxl::WeakPtr<LocalServiceManager> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   class ServiceData;
@@ -114,6 +117,8 @@ class LocalServiceManager final {
   std::unordered_map<IdType, std::unique_ptr<ServiceData>> services_;
 
   ServiceChangedCallback service_changed_callback_;
+
+  fxl::WeakPtrFactory<LocalServiceManager> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceManager);
 };

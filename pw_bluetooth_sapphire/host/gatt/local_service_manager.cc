@@ -456,7 +456,8 @@ class LocalServiceManager::ServiceData final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceData);
 };
 
-LocalServiceManager::LocalServiceManager() : db_(att::Database::Create()), next_service_id_(1ull) {
+LocalServiceManager::LocalServiceManager()
+    : db_(att::Database::Create()), next_service_id_(1ull), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(db_);
 }
 

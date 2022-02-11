@@ -9,6 +9,7 @@
 #include <zircon/assert.h>
 
 #include "gatt_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
@@ -16,9 +17,13 @@
 
 namespace bt::gatt {
 
-Server::Server(PeerId peer_id, fbl::RefPtr<att::Database> database, fbl::RefPtr<att::Bearer> bearer)
-    : peer_id_(peer_id), db_(database), att_(bearer), weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(db_);
+Server::Server(PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services,
+               fbl::RefPtr<att::Bearer> bearer)
+    : peer_id_(peer_id),
+      local_services_(std::move(local_services)),
+      att_(bearer),
+      weak_ptr_factory_(this) {
+  ZX_ASSERT(local_services_);
   ZX_DEBUG_ASSERT(att_);
 
   exchange_mtu_id_ = att_->RegisterHandler(att::kExchangeMTURequest,
@@ -59,13 +64,26 @@ Server::~Server() {
   att_->UnregisterHandler(exchange_mtu_id_);
 }
 
-void Server::SendNotification(att::Handle handle, const ByteBuffer& value, bool indicate) {
-  auto buffer = NewSlabBuffer(sizeof(att::Header) + sizeof(handle) + value.size());
+void Server::SendNotification(IdType service_id, IdType chrc_id, BufferView value, bool indicate) {
+  auto buffer = NewSlabBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
   ZX_ASSERT(buffer);
+
+  LocalServiceManager::ClientCharacteristicConfig config;
+  if (!local_services_->GetCharacteristicConfig(service_id, chrc_id, peer_id_, &config)) {
+    bt_log(TRACE, "gatt", "peer has not configured characteristic: %s", bt_str(peer_id_));
+    return;
+  }
+
+  // Make sure that the client has subscribed to the requested protocol method.
+  if ((indicate & !config.indicate) || (!indicate && !config.notify)) {
+    bt_log(TRACE, "gatt", "peer has not enabled (%s): %s",
+           (indicate ? "indications" : "notifications"), bt_str(peer_id_));
+    return;
+  }
 
   att::PacketWriter writer(indicate ? att::kIndication : att::kNotification, buffer.get());
   auto rsp_params = writer.mutable_payload<att::AttributeData>();
-  rsp_params->handle = htole16(handle);
+  rsp_params->handle = htole16(config.handle);
   writer.mutable_payload_data().Write(value, sizeof(att::AttributeData));
 
   if (!indicate) {
@@ -137,7 +155,7 @@ void Server::OnFindInformation(att::Bearer::TransactionId tid, const att::Packet
   size_t uuid_size;
   size_t entry_size;
   std::list<const att::Attribute*> results;
-  for (auto it = db_->GetIterator(start, end); !it.AtEnd(); it.Advance()) {
+  for (auto it = db()->GetIterator(start, end); !it.AtEnd(); it.Advance()) {
     const auto* attr = it.get();
     ZX_DEBUG_ASSERT(attr);
 
@@ -208,7 +226,7 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
     return;
   }
 
-  auto iter = db_->GetIterator(start, end, &type, false);
+  auto iter = db()->GetIterator(start, end, &type, false);
   if (iter.AtEnd()) {
     att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kAttributeNotFound);
     return;
@@ -447,7 +465,7 @@ void Server::OnReadBlobRequest(att::Bearer::TransactionId tid, const att::Packet
   att::Handle handle = le16toh(params.handle);
   uint16_t offset = le16toh(params.offset);
 
-  const auto* attr = db_->FindAttribute(handle);
+  const auto* attr = db()->FindAttribute(handle);
   if (!attr) {
     att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidHandle);
     return;
@@ -509,7 +527,7 @@ void Server::OnReadRequest(att::Bearer::TransactionId tid, const att::PacketRead
   const auto& params = packet.payload<att::WriteRequestParams>();
   att::Handle handle = le16toh(params.handle);
 
-  const auto* attr = db_->FindAttribute(handle);
+  const auto* attr = db()->FindAttribute(handle);
   if (!attr) {
     att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidHandle);
     return;
@@ -564,7 +582,7 @@ void Server::OnWriteCommand(att::Bearer::TransactionId tid, const att::PacketRea
 
   const auto& params = packet.payload<att::WriteRequestParams>();
   att::Handle handle = le16toh(params.handle);
-  const auto* attr = db_->FindAttribute(handle);
+  const auto* attr = db()->FindAttribute(handle);
 
   // Attributes can be invalid if the handle is invalid
   if (!attr) {
@@ -601,7 +619,7 @@ void Server::OnWriteRequest(att::Bearer::TransactionId tid, const att::PacketRea
   const auto& params = packet.payload<att::WriteRequestParams>();
   att::Handle handle = le16toh(params.handle);
 
-  const auto* attr = db_->FindAttribute(handle);
+  const auto* attr = db()->FindAttribute(handle);
   if (!attr) {
     att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidHandle);
     return;
@@ -656,7 +674,7 @@ att::ErrorCode Server::ReadByTypeHelper(att::Handle start, att::Handle end, cons
   if (start == att::kInvalidHandle || start > end)
     return att::ErrorCode::kInvalidHandle;
 
-  auto iter = db_->GetIterator(start, end, &type, group_type);
+  auto iter = db()->GetIterator(start, end, &type, group_type);
   if (iter.AtEnd())
     return att::ErrorCode::kAttributeNotFound;
 
@@ -739,7 +757,7 @@ void Server::OnPrepareWriteRequest(att::Bearer::TransactionId tid,
 
   // Validate attribute handle and perform security checks (see Vol 3, Part F,
   // 3.4.6.1 for required checks)
-  const auto* attr = db_->FindAttribute(handle);
+  const auto* attr = db()->FindAttribute(handle);
   if (!attr) {
     att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidHandle);
     return;
@@ -799,8 +817,8 @@ void Server::OnExecuteWriteRequest(att::Bearer::TransactionId tid,
     att::PacketWriter writer(att::kExecuteWriteResponse, rsp.get());
     self->att_->Reply(tid, std::move(rsp));
   };
-  db_->ExecuteWriteQueue(peer_id_, std::move(prepare_queue_), att_->security(),
-                         std::move(result_cb));
+  db()->ExecuteWriteQueue(peer_id_, std::move(prepare_queue_), att_->security(),
+                          std::move(result_cb));
 }
 
 }  // namespace bt::gatt

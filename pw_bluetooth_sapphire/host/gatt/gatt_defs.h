@@ -169,6 +169,17 @@ struct DescriptorData {
   }
 };
 
+// Delegates for ATT read/write operations
+using ReadResponder = fit::function<void(att::ErrorCode status, const ByteBuffer& value)>;
+using WriteResponder = fit::function<void(att::ErrorCode status)>;
+
+// No-op implementations of asynchronous event handlers
+inline void NopReadHandler(PeerId, IdType, IdType, uint16_t, const ReadResponder&) {}
+inline void NopWriteHandler(PeerId, IdType, IdType, uint16_t, const ByteBuffer&,
+                            const WriteResponder&) {}
+inline void NopCCCallback(IdType, IdType, PeerId, bool notify, bool indicate) {}
+inline void NopSendIndication(IdType, IdType, PeerId, BufferView) {}
+
 // Characteristic Declaration attribute value (Core Spec v5.2, Vol 3, Sec 3.3.1).
 template <att::UUIDType Format>
 struct CharacteristicDeclarationAttributeValue {
