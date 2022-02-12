@@ -226,16 +226,6 @@ However, there are some tools to make the process faster and easier.
   into a file, and then point ``PW_BRANDING_BANNER`` at it.  Most of the fonts
   use normal ASCII characters; and fonts with extended ASCII characters use the
   Unicode versions of them (needed for modern terminals).
-* `Online ANSII Edit by Andy Herbert
-  <http://andyherbert.github.io/ansiedit/public/index.html>`_ - Browser based
-  editor that can export to mixed UTF-8 and ANSII color. It's also `open source
-  <https://github.com/andyherbert/ansiedit>`_. What's nice about this editor is
-  that you can create a multi-color banner, and save it with the ``File`` -->
-  ``Export as ANSi (UTF-8)`` option, and use it directly as a Pigweed banner.
-  One caveat is that the editor uses UTF-8 box drawing characters, which don't
-  work well with all terminals. However, the box drawing characters look so
-  slick on terminals that support them that we feel this is a worthwhile
-  tradeoff.
 
 There are other options, but these require additional work to put into Pigweed
 since they only export in the traditional ANS or ICE formats. The old ANS
