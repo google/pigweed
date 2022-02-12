@@ -11,7 +11,6 @@ to verify the code of projects using Pigweed.
 -------
 Summary
 -------
-
 On presubmit or in CI we verify Pigweed using:
 
 * pylint
@@ -34,7 +33,6 @@ Static analysis
 
 PyLint
 ------
-
 `PyLint`_ is a customizable Python linter. Pigweed complies with almost all
 the default checks; see `.pylintrc`_ for details. PyLint detects problems such
 as overly broad catch statements, unused arguments/variables, and mutable
@@ -51,7 +49,6 @@ your Pigweed-based project.
 
 Mypy
 ----
-
 Python 3 allows for `type annotations`_ for variables, function arguments, and
 return values. Most, but not all, of Pigweed's Python code has type
 annotations, and these annotations have caught real bugs in code that didn't
@@ -71,7 +68,6 @@ also included in a variety of presubmit steps, like ``static_analysis`` and
 
 clang-tidy
 ----------
-
 `clang-tidy`_ is a C++ "linter" and static analysis tool. It identifies
 bug-prone patterns (e.g., use after move), non-idiomatic usage (e.g., creating
 ``std::unique_ptr`` with ``new`` rather than ``std::make_unique``), and
@@ -97,11 +93,6 @@ static_analysis``.
 
 Clang sanitizers
 ================
-
-.. note::
-   Running sanitizers in presubmit for all Pigweed code is work in progress.
-   See https://bugs.pigweed.dev/514 for details.
-
 We run all of Pigweed's unit tests with the additional instrumentation
 described in this section. For more detail about these sanitizers, see the
 `Github documentation`_.
@@ -112,6 +103,10 @@ described in this section. For more detail about these sanitizers, see the
 * tsan: `ThreadSanitizer`_ detects data races.
 * ubsan: `UndefinedBehaviorSanitizer`_ is a fast undefined behavior detector.
   We use the default ``-fsanitize=undefined`` option.
+
+.. note::
+   Pigweed does not currently support msan. See https://bugs.pigweed.dev/560
+   for details.
 
 The exact configurations we use for these sanitizers are in
 `pw_toolchain/host_clang/BUILD.gn <https://cs.opensource.google/pigweed/pigweed/+/main:pw_toolchain/host_clang/BUILD.gn>`_.
@@ -131,7 +126,7 @@ Fuzzers
 `Fuzz testing`_ detects errors in software by providing it with randomly
 generated inputs.  We use `OSS-fuzz`_ to continuously uncover potential
 vulnerabilities in Pigweed.  `Dashboard with Pigweed's latest results`_. See
-the `pw_fuzzer <module-pw_fuzzer>`_ module documentation for more details.
+the :ref:`module-pw_fuzzer` module documentation for more details.
 
 .. _Dashboard with Pigweed's latest results: https://oss-fuzz-build-logs.storage.googleapis.com/index.html#pigweed
 .. _Fuzz testing: https://en.wikipedia.org/wiki/Fuzzing
@@ -145,7 +140,6 @@ Enabling analysis for your project
 
 PyLint and Mypy
 ===============
-
 PyLint and Mypy can be configured to run every time your project is built by
 adding ``python.lint`` to your default build group. (You can also add one or both
 individually using ``python.lint.mypy`` and ``python.lint.pylint``.) Likewise,
@@ -157,7 +151,6 @@ directly include the `python_checks.gn_python_lint`_ presubmit step.
 
 clang-tidy
 ==========
-
 `pw_toolchain/static_analysis_toolchain.gni`_ provides the
 ``pw_static_analysis_toolchain`` template that can be used to create a build
 group performing static analysis. See :ref:`module-pw_toolchain` documentation
@@ -174,11 +167,30 @@ source file.
 
 Clang sanitizers
 ================
+There are two ways to enable sanitizers for your build.
 
-.. note::
-   This section is under construction.
+If you are already building your tests with one of the following toolchains (or
+a toolchain derived from one of them):
+
+* ``pw_toolchain_host_clang.debug``
+* ``pw_toolchain_host_clang.speed_optimized``
+* ``pw_toolchain_host_clang.size_optimized``
+
+you can enable the clang sanitizers simply by setting the gn arg
+``pw_toolchain_SANITIZERS`` to the desired subset of
+``["address", "thread", "undefined"]``.
+
+Otherwise, you can build your tests with the appropriate toolchain from the
+following list (or a toolchain derived from one of them):
+
+* ``pw_toolchain_host_clang.asan``
+* ``pw_toolchain_host_clang.ubsan``
+* ``pw_toolchain_host_clang.tsan``
+
+See the :ref:`module-pw_toolchain` module documentation for more
+about Pigweed toolchains.
 
 Fuzzers
 =======
-See the `pw_fuzzer <module-pw_fuzzer>`_ module documentation.
+See the :ref:`module-pw_fuzzer` module documentation.
 
