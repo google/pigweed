@@ -59,5 +59,5 @@ like a file so it can be analyzed at a later time.
 
 While Pigweed provides libraries for each part of a snapshot's lifecycle, the
 glue that puts all these pieces together is project specific. Please see the
-section on `Setting up a Snapshot Pipeline <module-pw_snapshot-setup>`_ for more
-information on how to bring up snapshot support for your project.
+section on :ref:`Setting up a Snapshot Pipeline<module-pw_snapshot-setup>` for
+more information on how to bring up snapshot support for your project.

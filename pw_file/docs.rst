@@ -15,7 +15,7 @@ systems, or by virtual file systems that provide a file-system like interface
 with no true underlying file system.
 
 pw_file does not define a protocol for file transfers.
-`pw_transfer <module-pw_transfer>`_ provides a generalized mechanism for
+:ref:`module-pw_transfer` provides a generalized mechanism for
 performing file transfers, and is recommended to be used in tandem with pw_file.
 
 -----------

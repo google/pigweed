@@ -576,7 +576,7 @@ pw_tokenizer is unable to embed token information as part of C/C++ compilation.
 
 This template produces a JSON file containing an array of strings (file paths
 with ``-ffile-prefix-map``-like transformations applied) that can be used to
-`generate a token database <module-pw_tokenizer-database-creation>`_.
+:ref:`generate a token database <module-pw_tokenizer-database-creation>`.
 
 **Arguments**
 

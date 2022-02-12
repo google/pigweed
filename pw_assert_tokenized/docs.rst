@@ -56,7 +56,7 @@ Setup
 #. Add file name tokens to your token database. pw_assert_tokenized can't create
    file name tokens that can be parsed out of the final compiled binary. The
    ``pw_relative_source_file_names``
-   `GN template <module-pw_build-relative-source-file-names>`_ can be used to
+   :ref:`GN template<module-pw_build-relative-source-file-names>` can be used to
    collect the names of all source files used in your final executable into a
    JSON file, which can then be included in the creation of a tokenizer
    database.
