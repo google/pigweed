@@ -18,6 +18,11 @@ namespace {
 using TransportTest = bt::testing::ControllerTest<bt::testing::MockController>;
 using TransportDeathTest = TransportTest;
 
+class TransportTestWithoutSco : public TransportTest {
+ public:
+  void SetUp() override { TransportTest::SetUp(/*sco_enabled=*/false); }
+};
+
 TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCallback) {
   size_t closed_cb_count = 0;
   transport()->SetTransportClosedCallback([&] { closed_cb_count++; });
@@ -68,6 +73,35 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
 TEST_F(TransportDeathTest, AttachInspectBeforeInitializeACLDataChannelCrashes) {
   inspect::Inspector inspector;
   EXPECT_DEATH_IF_SUPPORTED(transport()->AttachInspect(inspector.GetRoot()), ".*");
+}
+
+TEST_F(TransportTest, ScoChannelClosed) {
+  StartTestDevice();
+
+  size_t closed_cb_count = 0;
+  transport()->SetTransportClosedCallback([&] { closed_cb_count++; });
+
+  EXPECT_TRUE(transport()->InitializeScoDataChannel(
+      DataBufferInfo(/*max_data_length=*/1, /*max_num_packets=*/1)));
+  RunLoopUntilIdle();
+
+  test_device()->CloseScoDataChannel();
+  RunLoopUntilIdle();
+  EXPECT_EQ(closed_cb_count, 1u);
+}
+
+TEST_F(TransportTestWithoutSco, GetScoChannelFailure) {
+  size_t closed_cb_count = 0;
+  transport()->SetTransportClosedCallback([&] { closed_cb_count++; });
+  EXPECT_FALSE(transport()->InitializeScoDataChannel(
+      DataBufferInfo(/*max_data_length=*/1, /*max_num_packets=*/1)));
+  RunLoopUntilIdle();
+  EXPECT_EQ(closed_cb_count, 0u);
+}
+
+TEST_F(TransportTest, InitializeScoFailsBufferNotAvailable) {
+  EXPECT_FALSE(transport()->InitializeScoDataChannel(
+      DataBufferInfo(/*max_data_length=*/0, /*max_num_packets=*/0)));
 }
 
 }  // namespace

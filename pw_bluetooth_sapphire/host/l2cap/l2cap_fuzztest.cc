@@ -36,6 +36,7 @@ class FuzzerController : public ControllerTestDoubleBase {
   void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override {
   }
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override {}
+  void OnScoDataPacketReceived(const ByteBuffer& acl_data_packet) override {}
 };
 
 // Reuse ControllerTest test fixture code even though we're not using gtest.

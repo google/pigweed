@@ -37,11 +37,19 @@ class ControllerTestDoubleBase {
   // Retuns the result of the write operation on the channel.
   zx_status_t SendACLDataChannelPacket(const ByteBuffer& packet);
 
+  // Sends the given packet over this ControllerTestDouble's SCO data channel
+  // endpoint.
+  // Returns the result of the write operation on the channel.
+  zx_status_t SendScoDataChannelPacket(const ByteBuffer& packet);
+
   // Immediately closes the command channel endpoint.
   void CloseCommandChannel();
 
   // Immediately closes the ACL data channel endpoint.
   void CloseACLDataChannel();
+
+  // Immediately closes the SCO data channel endpoint.
+  void CloseScoDataChannel();
 
   // Immediately closes the Snoop channel endpoint.
   void CloseSnoopChannel();
@@ -54,6 +62,10 @@ class ControllerTestDoubleBase {
   // Returns false if already listening on a acl channel
   bool StartAclChannel(zx::channel chan);
 
+  // Starts listening for SCO packets on the given channel.
+  // Returns false if already listening on a SCO channel
+  bool StartScoChannel(zx::channel chan);
+
   // Starts listening for snoop packets on the given channel.
   // Returns false if already listening on a snoop channel
   bool StartSnoopChannel(zx::channel chan);
@@ -62,6 +74,7 @@ class ControllerTestDoubleBase {
   // Getters for our channel endpoints.
   const zx::channel& command_channel() const { return cmd_channel_; }
   const zx::channel& acl_data_channel() const { return acl_channel_; }
+  const zx::channel& sco_data_channel() const { return sco_channel_; }
   const zx::channel& snoop_channel() const { return snoop_channel_; }
 
   // Called when there is an incoming command packet.
@@ -71,11 +84,16 @@ class ControllerTestDoubleBase {
   // Called when there is an outgoing ACL data packet.
   virtual void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) = 0;
 
+  // Called when there is an outgoing SCO data packet.
+  virtual void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) = 0;
+
  private:
   // Read and handle packets received over the channels.
   void HandleCommandPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
                            zx_status_t wait_status, const zx_packet_signal_t* signal);
   void HandleACLPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
+                       zx_status_t wait_status, const zx_packet_signal_t* signal);
+  void HandleScoPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
                        zx_status_t wait_status, const zx_packet_signal_t* signal);
 
   // Sends the given packet over this FakeController's Snoop channel
@@ -86,12 +104,15 @@ class ControllerTestDoubleBase {
 
   zx::channel cmd_channel_;
   zx::channel acl_channel_;
+  zx::channel sco_channel_;
   zx::channel snoop_channel_;
 
   async::WaitMethod<ControllerTestDoubleBase, &ControllerTestDoubleBase::HandleCommandPacket>
       cmd_channel_wait_{this};
   async::WaitMethod<ControllerTestDoubleBase, &ControllerTestDoubleBase::HandleACLPacket>
       acl_channel_wait_{this};
+  async::WaitMethod<ControllerTestDoubleBase, &ControllerTestDoubleBase::HandleScoPacket>
+      sco_channel_wait_{this};
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTestDoubleBase);
 };

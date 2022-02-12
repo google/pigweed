@@ -57,6 +57,24 @@ bool ControllerTestDoubleBase::StartAclChannel(zx::channel chan) {
   return true;
 }
 
+bool ControllerTestDoubleBase::StartScoChannel(zx::channel chan) {
+  if (sco_channel_.is_valid()) {
+    bt_log(WARN, "fake-hci", "failed to start SCO channel because a channel is already registered");
+    return false;
+  }
+
+  sco_channel_ = std::move(chan);
+  sco_channel_wait_.set_object(sco_channel_.get());
+  sco_channel_wait_.set_trigger(ZX_CHANNEL_READABLE | ZX_CHANNEL_PEER_CLOSED);
+  zx_status_t status = sco_channel_wait_.Begin(async_get_default_dispatcher());
+  if (status != ZX_OK) {
+    sco_channel_.reset();
+    bt_log(WARN, "fake-hci", "failed to start SCO channel: %s", zx_status_get_string(status));
+    return false;
+  }
+  return true;
+}
+
 bool ControllerTestDoubleBase::StartSnoopChannel(zx::channel chan) {
   if (snoop_channel_.is_valid()) {
     return false;
@@ -97,6 +115,20 @@ zx_status_t ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer&
   return ZX_OK;
 }
 
+zx_status_t ControllerTestDoubleBase::SendScoDataChannelPacket(const ByteBuffer& packet) {
+  zx_status_t status =
+      sco_channel_.write(0, packet.data(), packet.size(), /*handles=*/nullptr, /*num_handles=*/0);
+  if (status != ZX_OK) {
+    bt_log(WARN, "fake-hci", "failed to write to SCO data channel: %s",
+           zx_status_get_string(status));
+    return status;
+  }
+
+  SendSnoopChannelPacket(packet, BT_HCI_SNOOP_TYPE_SCO, /*is_received=*/true);
+
+  return ZX_OK;
+}
+
 void ControllerTestDoubleBase::SendSnoopChannelPacket(const ByteBuffer& packet,
                                                       bt_hci_snoop_type_t packet_type,
                                                       bool is_received) {
@@ -128,6 +160,14 @@ void ControllerTestDoubleBase::CloseACLDataChannel() {
     acl_channel_wait_.Cancel();
     acl_channel_wait_.set_object(ZX_HANDLE_INVALID);
     acl_channel_.reset();
+  }
+}
+
+void ControllerTestDoubleBase::CloseScoDataChannel() {
+  if (sco_channel_.is_valid()) {
+    sco_channel_wait_.Cancel();
+    sco_channel_wait_.set_object(ZX_HANDLE_INVALID);
+    sco_channel_.reset();
   }
 }
 
@@ -199,6 +239,39 @@ void ControllerTestDoubleBase::HandleACLPacket(async_dispatcher_t* dispatcher,
   if (status != ZX_OK) {
     bt_log(ERROR, "fake-hci", "failed to wait on ACL channel: %s", zx_status_get_string(status));
     CloseACLDataChannel();
+  }
+}
+
+void ControllerTestDoubleBase::HandleScoPacket(async_dispatcher_t* dispatcher,
+                                               async::WaitBase* wait, zx_status_t wait_status,
+                                               const zx_packet_signal_t* signal) {
+  StaticByteBuffer<hci_spec::kMaxSynchronousDataPacketPayloadSize +
+                   sizeof(hci_spec::SynchronousDataHeader)>
+      buffer;
+  uint32_t read_size;
+  zx_status_t status =
+      sco_channel_.read(0u, buffer.mutable_data(), /*handles=*/nullptr, buffer.size(),
+                        /*num_handles=*/0, &read_size, /*actual_handles=*/nullptr);
+  ZX_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
+  if (status != ZX_OK) {
+    if (status == ZX_ERR_PEER_CLOSED) {
+      bt_log(INFO, "fake-hci", "SCO channel was closed");
+    } else {
+      bt_log(ERROR, "fake-hci", "failed to read on SCO channel: %s", zx_status_get_string(status));
+    }
+
+    CloseScoDataChannel();
+    return;
+  }
+
+  BufferView view(buffer.data(), read_size);
+  SendSnoopChannelPacket(view, BT_HCI_SNOOP_TYPE_SCO, /*is_received=*/false);
+  OnScoDataPacketReceived(view);
+
+  status = wait->Begin(dispatcher);
+  if (status != ZX_OK) {
+    bt_log(ERROR, "fake-hci", "failed to wait on SCO channel: %s", zx_status_get_string(status));
+    CloseScoDataChannel();
   }
 }
 

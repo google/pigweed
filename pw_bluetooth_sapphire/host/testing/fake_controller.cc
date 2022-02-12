@@ -2559,6 +2559,10 @@ void FakeController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
   peer->OnRxL2CAP(handle, acl_data_packet.view(sizeof(hci_spec::ACLDataHeader)));
 }
 
+void FakeController::OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) {
+  bt_log(WARN, "fake-hci", "SCO packet received (not supported by FakeController)");
+}
+
 void FakeController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(dispatcher);

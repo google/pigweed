@@ -22,6 +22,7 @@
 #include "lib/inspect/cpp/vmo/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
@@ -40,7 +41,7 @@ class Transport final {
  public:
   // Initializes the command channel.
   //
-  // NOTE: The ACLDataChannel will be left uninitialized. The ACLDataChannel must be
+  // NOTE: AclDataChannel and ScoDataChannel will be left uninitialized. They must be
   // initialized after available data buffer information has been obtained from
   // the controller (via HCI_Read_Buffer_Size and HCI_LE_Read_Buffer_Size).
   static fpromise::result<std::unique_ptr<Transport>> Create(
@@ -57,6 +58,10 @@ class Transport final {
   bool InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info,
                                 const DataBufferInfo& le_buffer_info);
 
+  // Initializes the SCO data channel with the given parameters. Returns false
+  // if an error occurs during initialization.
+  bool InitializeScoDataChannel(const DataBufferInfo& buffer_info);
+
   // Attach command and data channel inspect nodes as children of |parent| using default names
   void AttachInspect(inspect::Node& parent);
 
@@ -70,6 +75,9 @@ class Transport final {
 
   // Returns a pointer to the HCI ACL data flow control handler.
   AclDataChannel* acl_data_channel() const { return acl_data_channel_.get(); }
+
+  // Returns a pointer to the HCI SCO data flow control handler.
+  ScoDataChannel* sco_data_channel() const { return sco_data_channel_.get(); }
 
   // Set a callback that should be invoked when any one of the underlying
   // channels gets closed for any reason (e.g. the HCI device has disappeared)
@@ -107,12 +115,16 @@ class Transport final {
   // The Bluetooth HCI device file descriptor.
   std::unique_ptr<DeviceWrapper> hci_device_;
 
-  // async::Waits for the command and ACL channels
+  // async::Waits for the channels
   Waiter cmd_channel_wait_{this};
   Waiter acl_channel_wait_{this};
+  Waiter sco_channel_wait_{this};
 
   // The ACL data flow control handler.
   std::unique_ptr<AclDataChannel> acl_data_channel_;
+
+  // The SCO data flow control handler.
+  std::unique_ptr<ScoDataChannel> sco_data_channel_;
 
   // The HCI command and event flow control handler.
   std::unique_ptr<CommandChannel> command_channel_;

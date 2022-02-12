@@ -24,6 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/data_buffer_info.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/hci_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 
@@ -35,39 +36,6 @@ namespace bt::hci {
 using UniqueChannelId = uint16_t;
 
 class Transport;
-
-// Represents the controller data buffer settings for the BR/EDR or LE
-// transports.
-class DataBufferInfo {
- public:
-  // Initialize fields to non-zero values.
-  DataBufferInfo(size_t max_data_length, size_t max_num_packets);
-
-  // The default constructor sets all fields to zero. This can be used to
-  // represent a data buffer that does not exist (e.g. the controller has a
-  // single shared buffer and no dedicated LE buffer.
-  DataBufferInfo();
-
-  // The maximum length (in octets) of the data portion of each HCI ACL data
-  // packet that the controller is able to accept.
-  size_t max_data_length() const { return max_data_length_; }
-
-  // Returns the total number of HCI ACL data packets that can be stored in the
-  // data buffer represented by this object.
-  size_t max_num_packets() const { return max_num_packets_; }
-
-  // Returns true if both fields are set to zero.
-  bool IsAvailable() const { return max_data_length_ && max_num_packets_; }
-
-  // Comparison operators.
-  bool operator==(const DataBufferInfo& other) const;
-  bool operator!=(const DataBufferInfo& other) const { return !(*this == other); }
-
- private:
-  size_t max_data_length_;
-  size_t max_num_packets_;
-};
-
 // Represents the Bluetooth ACL Data channel and manages the Host<->Controller
 // ACL data flow control.
 //

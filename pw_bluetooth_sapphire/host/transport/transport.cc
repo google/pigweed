@@ -52,17 +52,21 @@ Transport::~Transport() {
 
   bt_log(INFO, "hci", "transport shutting down");
 
+  sco_data_channel_.reset();
+
   if (acl_data_channel_) {
     acl_data_channel_->ShutDown();
   }
+
+  // Command channel must be shut down last because the data channels unregister events on shut
+  // down or destruction.
   if (command_channel_) {
     command_channel_->ShutDown();
   }
 
+  sco_channel_wait_.Cancel();
   cmd_channel_wait_.Cancel();
-  if (acl_data_channel_) {
-    acl_channel_wait_.Cancel();
-  }
+  acl_channel_wait_.Cancel();
 
   bt_log(INFO, "hci", "transport shut down complete");
 }
@@ -82,6 +86,27 @@ bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info
   acl_data_channel_ = AclDataChannel::Create(this, std::move(channel));
   acl_data_channel_->Initialize(bredr_buffer_info, le_buffer_info);
 
+  return true;
+}
+
+bool Transport::InitializeScoDataChannel(const DataBufferInfo& buffer_info) {
+  if (!buffer_info.IsAvailable()) {
+    bt_log(WARN, "hci", "failed to initialize SCO data channel: buffer info is not available");
+    return false;
+  }
+
+  fitx::result<zx_status_t, zx::channel> sco_result = hci_device_->GetScoChannel();
+  if (sco_result.is_error()) {
+    bt_log(WARN, "hci", "failed to obtain SCO channel handle: %s",
+           zx_status_get_string(sco_result.error_value()));
+    return false;
+  }
+
+  // We watch for handle errors and closures to perform the necessary clean up.
+  WatchChannelClosed(sco_result.value(), sco_channel_wait_);
+
+  sco_data_channel_ =
+      ScoDataChannel::Create(std::move(sco_result.value()), buffer_info, this, hci_device_.get());
   return true;
 }
 
@@ -126,9 +151,8 @@ void Transport::OnChannelClosed(async_dispatcher_t* dispatcher, async::WaitBase*
 void Transport::NotifyClosedCallback() {
   // Clear the handlers so that we stop receiving events.
   cmd_channel_wait_.Cancel();
-  if (acl_data_channel_) {
-    acl_channel_wait_.Cancel();
-  }
+  acl_channel_wait_.Cancel();
+  sco_channel_wait_.Cancel();
 
   bt_log(INFO, "hci", "channel(s) were closed");
   if (closed_cb_) {

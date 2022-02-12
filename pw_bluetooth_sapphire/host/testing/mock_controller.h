@@ -93,11 +93,26 @@ class DataTransaction final : public Transaction {
   DataTransaction& operator=(DataTransaction&& other) = default;
 };
 
+// A ScoTransaction is used to set up an expectation for a SCO data channel
+// SCO packets don't have a concept of "replies".
+class ScoTransaction final : public Transaction {
+ public:
+  ScoTransaction(const ByteBuffer& expected, ExpectationMetadata meta)
+      : Transaction(expected, /*replies=*/{}, meta) {}
+  ScoTransaction(ScoTransaction&& other) = default;
+  ScoTransaction& operator=(ScoTransaction&& other) = default;
+};
+
 // Helper macro for expecting a data packet and specifying a variable number of responses that the
 // MockController should send in response to the expected packet.
 #define EXPECT_ACL_PACKET_OUT(device, expected, ...)        \
   (device)->QueueDataTransaction((expected), {__VA_ARGS__}, \
                                  bt::testing::ExpectationMetadata(__FILE__, __LINE__, #expected))
+
+// Helper macro for expecting a SCO packet.
+#define EXPECT_SCO_PACKET_OUT(device, expected) \
+  (device)->QueueScoTransaction((expected),     \
+                                bt::testing::ExpectationMetadata(__FILE__, __LINE__, #expected))
 
 // Helper macro for expecting a command packet and receiving a variable number of responses.
 #define EXPECT_CMD_PACKET_OUT(device, expected, ...) \
@@ -134,6 +149,15 @@ class MockController : public ControllerTestDoubleBase {
                             const std::vector<const ByteBuffer*>& replies,
                             ExpectationMetadata meta);
 
+  // Queues a transaction into the MockController's expected SCO packet queue. Each
+  // packet received through the SCO data channel endpoint will be verified
+  // against the next expected transaction in the queue. A mismatch will cause a
+  // fatal assertion.
+  void QueueScoTransaction(const ByteBuffer& expected, ExpectationMetadata meta);
+
+  // Returns true iff all transactions queued with QueueScoTransaction() have been received.
+  bool AllExpectedScoPacketsSent() const;
+
   // Returns true iff all transactions queued with QueueDataTransaction() have been received.
   bool AllExpectedDataPacketsSent() const;
 
@@ -160,9 +184,11 @@ class MockController : public ControllerTestDoubleBase {
   // ControllerTestDoubleBase overrides:
   void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
+  void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) override;
 
   std::queue<CommandTransaction> cmd_transactions_;
   std::queue<DataTransaction> data_transactions_;
+  std::queue<ScoTransaction> sco_transactions_;
   bool data_expectations_enabled_;
   DataCallback data_callback_;
   async_dispatcher_t* data_dispatcher_;

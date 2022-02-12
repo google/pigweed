@@ -63,6 +63,16 @@ MockController::~MockController() {
         << ByteContainerToString(transaction.expected().data) << "}";
     data_transactions_.pop();
   }
+
+  while (!sco_transactions_.empty()) {
+    auto& transaction = sco_transactions_.front();
+    auto meta = transaction.expected().meta;
+    ADD_FAILURE_AT(meta.file, meta.line)
+        << "Didn't receive expected outbound SCO packet (" << meta.expectation << ") {"
+        << ByteContainerToString(transaction.expected().data) << "}";
+    sco_transactions_.pop();
+  }
+
   Stop();
 }
 
@@ -92,6 +102,12 @@ void MockController::QueueDataTransaction(const ByteBuffer& expected,
                                           ExpectationMetadata meta) {
   QueueDataTransaction(DataTransaction(DynamicByteBuffer(expected), replies, meta));
 }
+
+void MockController::QueueScoTransaction(const ByteBuffer& expected, ExpectationMetadata meta) {
+  sco_transactions_.push(ScoTransaction(DynamicByteBuffer(expected), meta));
+}
+
+bool MockController::AllExpectedScoPacketsSent() const { return sco_transactions_.empty(); }
 
 bool MockController::AllExpectedDataPacketsSent() const { return data_transactions_.empty(); }
 
@@ -197,6 +213,19 @@ void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
     async::PostTask(data_dispatcher_, [packet_copy = std::move(packet_copy),
                                        cb = data_callback_.share()]() mutable { cb(packet_copy); });
   }
+}
+
+void MockController::OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) {
+  ASSERT_FALSE(sco_transactions_.empty())
+      << "Received unexpected SCO data packet: { " << ByteContainerToString(sco_data_packet) << "}";
+
+  auto& expected = sco_transactions_.front();
+  if (!expected.Match(sco_data_packet.view())) {
+    auto meta = expected.expected().meta;
+    GTEST_FAIL_AT(meta.file, meta.line) << "Expected SCO packet (" << meta.expectation << ")";
+  }
+
+  sco_transactions_.pop();
 }
 
 }  // namespace bt::testing

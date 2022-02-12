@@ -644,6 +644,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // ControllerTestDoubleBase overrides:
   void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
+  void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) override;
 
   Settings settings_;
   LEScanState le_scan_state_;

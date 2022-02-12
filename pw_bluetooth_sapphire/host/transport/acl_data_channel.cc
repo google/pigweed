@@ -28,15 +28,6 @@
 
 namespace bt::hci {
 
-DataBufferInfo::DataBufferInfo(size_t max_data_length, size_t max_num_packets)
-    : max_data_length_(max_data_length), max_num_packets_(max_num_packets) {}
-
-DataBufferInfo::DataBufferInfo() : max_data_length_(0u), max_num_packets_(0u) {}
-
-bool DataBufferInfo::operator==(const DataBufferInfo& other) const {
-  return max_data_length_ == other.max_data_length_ && max_num_packets_ == other.max_num_packets_;
-}
-
 zx_status_t AclDataChannel::ReadAclDataPacketFromChannel(const zx::channel& channel,
                                                          const ACLDataPacketPtr& packet) {
   uint32_t read_size;
@@ -692,7 +683,10 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
 
     auto iter = pending_links_.find(le16toh(data->connection_handle));
     if (iter == pending_links_.end()) {
-      bt_log(WARN, "hci", "controller reported sent packets on unknown connection handle %#.4x!",
+      // This is expected if the completed packet is a SCO packet.
+      bt_log(TRACE, "hci",
+             "controller reported completed packets for connection handle without pending packets: "
+             "%#.4x",
              data->connection_handle);
       continue;
     }
