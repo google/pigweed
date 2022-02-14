@@ -74,16 +74,15 @@ void BrEdrConnection::AddRequestCallback(BrEdrConnection::Request::OnComplete cb
 
 void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params,
                                        l2cap::ChannelCallback cb) {
+  bt_log_scope("peer=%s", bt_str(peer_id()));
   if (!interrogation_complete()) {
     // Connection is not yet ready for L2CAP; return a null channel.
-    bt_log(INFO, "gap-bredr", "Connection to %s not complete; canceling channel to PSM %.4x",
-           bt_str(peer_id()), psm);
+    bt_log(INFO, "gap-bredr", "connection not ready; canceling connect to PSM %.4x", psm);
     cb(nullptr);
     return;
   }
 
-  bt_log(INFO, "gap-bredr", "opening l2cap channel on psm %#.4x (peer: %s)", psm,
-         bt_str(peer_id()));
+  bt_log(INFO, "gap-bredr", "opening l2cap channel on psm %#.4x", psm);
   domain_->OpenL2capChannel(link().handle(), psm, params, std::move(cb));
 }
 

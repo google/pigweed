@@ -85,7 +85,7 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
   // own Authentication Request.
   if (is_pairing()) {
     ZX_ASSERT(state() != State::kIdle);
-    bt_log(DEBUG, "gap-bredr", "Already pairing %#.4x (id: %s); blocking callback on completion",
+    bt_log(INFO, "gap-bredr", "Already pairing %#.4x (id: %s); blocking callback on completion",
            handle(), bt_str(peer_id()));
     PairingRequest request{.security_requirements = security_requirements,
                            .status_callback = std::move(status_cb)};

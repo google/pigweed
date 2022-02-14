@@ -26,7 +26,9 @@ enum class RequestState : uint8_t {
   // The connection request was intentionally cancelled
   kCanceled,
   // The connection request timed out whilst waiting for a response
-  kTimedOut
+  kTimedOut,
+  // The connection request has succeeded
+  kSuccess,
 };
 
 // Bitmask enabling all packets types. By enabling as many as we can, we expect
