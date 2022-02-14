@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -25,6 +26,15 @@ config("public_include_path") {
 
 config("backend_config") {
   include_dirs = [ "public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+pw_build_assert("check_system_clock_backend") {
+  condition =
+      pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
+      pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_embos:system_clock"
+  message = "The embOS pw_sync backends only work with the " +
+            "embOS pw::chrono::SystemClock backend."
   visibility = [ ":*" ]
 }
 
@@ -48,12 +58,10 @@ pw_source_set("binary_semaphore") {
     "$dir_pw_third_party/embos",
   ]
   sources = [ "binary_semaphore.cc" ]
-  deps = [ "$dir_pw_sync:binary_semaphore.facade" ]
-  assert(
-      pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
-          pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_embos:system_clock",
-      "The embOS pw::sync::BinarySemaphore backend only works with the " +
-          "embOS pw::chrono::SystemClock backend.")
+  deps = [
+    ":check_system_clock_backend",
+    "$dir_pw_sync:binary_semaphore.facade",
+  ]
 }
 
 # This target provides the backend for pw::sync::CountingSemaphore.
@@ -76,12 +84,10 @@ pw_source_set("counting_semaphore") {
     "$dir_pw_third_party/embos",
   ]
   sources = [ "counting_semaphore.cc" ]
-  deps = [ "$dir_pw_sync:counting_semaphore.facade" ]
-  assert(
-      pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
-          pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_embos:system_clock",
-      "The embOS pw::sync::CountingSemaphore backend only works with " +
-          "the embOS pw::chrono::SystemClock backend.")
+  deps = [
+    ":check_system_clock_backend",
+    "$dir_pw_sync:counting_semaphore.facade",
+  ]
 }
 
 # This target provides the backend for pw::sync::Mutex.
@@ -120,16 +126,12 @@ pw_source_set("timed_mutex") {
   ]
   sources = [ "timed_mutex.cc" ]
   deps = [
+    ":check_system_clock_backend",
     "$dir_pw_assert",
     "$dir_pw_chrono_embos:system_clock",
     "$dir_pw_interrupt:context",
     "$dir_pw_third_party/embos",
   ]
-  assert(
-      pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
-          pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_embos:system_clock",
-      "The embOS pw::sync::Mutex backend only works with the embOS " +
-          "pw::chrono::SystemClock backend.")
 }
 
 # This target provides the backend for pw::sync::InterruptSpinLock.

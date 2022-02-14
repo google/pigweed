@@ -659,6 +659,23 @@ than being absolute paths (e.g. ``/home/user/ralph/coding/my_proj/main.cc``).
 This is a result of transformations applied to strip absolute pathing prefixes,
 matching the behavior of pw_build's ``$dir_pw_build:relative_paths`` config.
 
+Build time errors: pw_error and pw_build_assert
+-----------------------------------------------
+In Pigweed's complex, multi-toolchain GN build it is not possible to build every
+target in every configuration. GN's ``assert`` statement is not ideal for
+enforcing the correct configuration because it may prevent the GN build files or
+targets from being referred to at all, even if they aren't used.
+
+The ``pw_error`` GN template results in an error if it is executed during the
+build. These error targets can exist in the build graph, but cannot be depended
+on without an error.
+
+``pw_build_assert`` evaluates to a ``pw_error`` if a condition fails or nothing
+(an empty group) if the condition passes. Targets can add a dependency on a
+``pw_build_assert`` to enforce a condition at build time.
+
+The templates for build time errors are defined in ``pw_build/error.gni``.
+
 CMake
 =====
 Pigweed's `CMake`_ support is provided primarily for projects that have an

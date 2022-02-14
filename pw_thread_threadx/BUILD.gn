@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/error.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
@@ -68,6 +69,14 @@ pw_source_set("id") {
 }
 
 if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
+  pw_build_assert("check_system_clock_backend") {
+    condition =
+        pw_thread_OVERRIDE_SYSTEM_CLOCK_BACKEND_CHECK ||
+        pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_threadx:system_clock"
+    message = "The ThreadX pw::this_thread::sleep_{for,until} backend only " +
+              "works with the ThreadX pw::chrono::SystemClock backend."
+  }
+
   # This target provides the backend for pw::this_thread::sleep_{for,until}.
   pw_source_set("sleep") {
     public_configs = [
@@ -81,16 +90,12 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
     public_deps = [ "$dir_pw_chrono:system_clock" ]
     sources = [ "sleep.cc" ]
     deps = [
+      ":check_system_clock_backend",
       "$dir_pw_assert",
       "$dir_pw_chrono_threadx:system_clock",
       "$dir_pw_third_party/threadx",
       "$dir_pw_thread:id",
     ]
-    assert(
-        pw_thread_OVERRIDE_SYSTEM_CLOCK_BACKEND_CHECK ||
-            pw_chrono_SYSTEM_CLOCK_BACKEND ==
-                "$dir_pw_chrono_threadx:system_clock",
-        "The ThreadX pw::this_thread::sleep_{for,until} backend only works with " + "the ThreadX pw::chrono::SystemClock backend.")
   }
 }
 
