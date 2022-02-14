@@ -22,6 +22,7 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_rpc/raw/client_reader_writer.h"
 #include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_sync/binary_semaphore.h"
 #include "pw_sync/timed_thread_notification.h"
 #include "pw_thread/thread_core.h"
 #include "pw_transfer/handler.h"
@@ -221,7 +222,7 @@ class TransferThread : public thread::ThreadCore {
   void SendStatusChunk(const SendStatusChunkEvent& event);
 
   sync::TimedThreadNotification event_notification_;
-  sync::TimedThreadNotification next_event_ownership_;
+  sync::BinarySemaphore next_event_ownership_;
 
   Event next_event_;
   Function<void(Status)> staged_on_completion_;
