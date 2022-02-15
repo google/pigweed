@@ -242,6 +242,23 @@ def gn_software_update_build(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_pw_system_demo_build(ctx: PresubmitContext):
+    build.install_package(ctx.package_root, 'freertos')
+    build.install_package(ctx.package_root, 'nanopb')
+    build.install_package(ctx.package_root, 'stm32cube_f4')
+    build.gn_gen(
+        ctx.root,
+        ctx.output_dir,
+        dir_pw_third_party_freertos='"{}"'.format(ctx.package_root /
+                                                  'freertos'),
+        dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
+        dir_pw_third_party_stm32cube_f4='"{}"'.format(ctx.package_root /
+                                                      'stm32cube_f4'),
+    )
+    build.ninja(ctx.output_dir, 'pw_system_demo')
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_qemu_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_gcc'))
@@ -767,6 +784,7 @@ OTHER_CHECKS = (
     gn_full_qemu_check,
     gn_clang_build,
     gn_gcc_build,
+    gn_pw_system_demo_build,
     renode_check,
     stm32f429i,
 )
