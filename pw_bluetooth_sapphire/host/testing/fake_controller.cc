@@ -1634,6 +1634,21 @@ void FakeController::OnLEStartEncryptionCommand(
                             hci_spec::EncryptionStatus::kOn);
 }
 
+void FakeController::OnWriteSynchronousFlowControlEnableCommand(
+    const hci_spec::WriteSynchronousFlowControlEnableParams& params) {
+  constexpr size_t flow_control_enable_octet = 10;
+  bool supported =
+      settings_.supported_commands[flow_control_enable_octet] &
+      static_cast<uint8_t>(hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
+  if (!supported) {
+    RespondWithCommandComplete(hci_spec::kWriteSynchronousFlowControlEnable,
+                               hci_spec::StatusCode::kUnknownCommand);
+    return;
+  }
+  RespondWithCommandComplete(hci_spec::kWriteSynchronousFlowControlEnable,
+                             hci_spec::StatusCode::kSuccess);
+}
+
 void FakeController::OnLESetAdvertisingSetRandomAddress(
     const hci_spec::LESetAdvertisingSetRandomAddressCommandParams& params) {
   hci_spec::AdvertisingHandle handle = params.adv_handle;
@@ -2523,6 +2538,12 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLEStartEncryption: {
       const auto& params = command_packet.payload<hci_spec::LEStartEncryptionCommandParams>();
       OnLEStartEncryptionCommand(params);
+      break;
+    }
+    case hci_spec::kWriteSynchronousFlowControlEnable: {
+      const auto& params =
+          command_packet.payload<hci_spec::WriteSynchronousFlowControlEnableParams>();
+      OnWriteSynchronousFlowControlEnableCommand(params);
       break;
     }
     default: {

@@ -819,8 +819,10 @@ void AdapterImpl::InitializeStep2(InitializeCallback callback) {
 }
 
 void AdapterImpl::InitializeStep3(InitializeCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(IsInitializing());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
+  ZX_ASSERT(IsInitializing());
+  ZX_ASSERT(init_seq_runner_->IsReady());
+  ZX_ASSERT(!init_seq_runner_->HasQueuedCommands());
 
   if (!state_.bredr_data_buffer_info().IsAvailable() &&
       !state_.low_energy_state().data_buffer_info().IsAvailable()) {
@@ -839,17 +841,48 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
     callback(false);
     return;
   }
+
+  // The controller may not support SCO flow control (as implied by not supporting
+  // HCI_Write_Synchronous_Flow_Control_Enable), in which case we don't support HCI SCO on this
+  // controller yet.
+  // TODO(fxbug.dev/89689): Support controllers that don't support SCO flow control.
+  bool sco_flow_control_supported = state_.IsCommandSupported(
+      /*octet=*/10, hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
+  if (state_.sco_buffer_info().IsAvailable() && sco_flow_control_supported) {
+    // Enable SCO flow control.
+    auto cmd_packet =
+        hci::CommandPacket::New(hci_spec::kWriteSynchronousFlowControlEnable,
+                                sizeof(hci_spec::WriteSynchronousFlowControlEnableParams));
+    auto* flow_control_params =
+        cmd_packet->mutable_payload<hci_spec::WriteSynchronousFlowControlEnableParams>();
+    flow_control_params->synchronous_flow_control_enable = hci_spec::GenericEnableParam::kEnable;
+    init_seq_runner_->QueueCommand(std::move(cmd_packet), [this](const auto& event) {
+      if (hci_is_error(event, ERROR, "gap",
+                       "Write synchronous flow control enable failed, proceeding without HCI "
+                       "SCO support")) {
+        return;
+      }
+
+      if (!hci_->InitializeScoDataChannel(state_.sco_buffer_info())) {
+        bt_log(WARN, "gap",
+               "Failed to initialize ScoDataChannel, proceeding without HCI SCO support");
+        return;
+      }
+      bt_log(DEBUG, "gap", "ScoDataChannel initialized successfully");
+    });
+  } else {
+    bt_log(INFO, "gap",
+           "HCI SCO not supported (SCO buffer available: %d, SCO flow control supported: %d)",
+           state_.sco_buffer_info().IsAvailable(), sco_flow_control_supported);
+  }
+
   hci_->AttachInspect(adapter_node_);
 
-  // Create the data domain, if we haven't been provided one. Doing so here lets us guarantee that
-  // AclDataChannel's lifetime is a superset of Data L2cap's lifetime.
-  // TODO(fxbug.dev/35228) We currently allow tests to inject their own domain in the adapter
-  // constructor, as the adapter_unittests rely on injecting a fake domain to avoid concurrency in
-  // the unit tests.  Once we move to a single threaded model, we would like to remove this and have
-  // the adapter always be responsible for creating the domain.
+  // Create L2cap, if we haven't been provided one for testing. Doing so here lets us guarantee that
+  // AclDataChannel's lifetime is a superset of L2cap's lifetime.
   if (!l2cap_) {
-    // Initialize the data L2cap to make L2CAP available for the next initialization step. The
-    // ACLDataChannel must be initialized before creating the data domain
+    // Initialize L2cap to make L2cap available for the next initialization step. The AclDataChannel
+    // must be initialized before creating L2cap.
     auto l2cap = l2cap::L2cap::Create(hci_->acl_data_channel(), /*random_channel_ids=*/true);
     if (!l2cap) {
       bt_log(ERROR, "gap", "Failed to initialize Data L2cap");
@@ -860,9 +893,6 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
     l2cap->AttachInspect(adapter_node_, l2cap::L2cap::kInspectNodeName);
     l2cap_ = l2cap;
   }
-
-  ZX_DEBUG_ASSERT(init_seq_runner_->IsReady());
-  ZX_DEBUG_ASSERT(!init_seq_runner_->HasQueuedCommands());
 
   // HCI_Set_Event_Mask
   {

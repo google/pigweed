@@ -634,6 +634,9 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // encryption change event.
   void OnLEStartEncryptionCommand(const hci_spec::LEStartEncryptionCommandParams& params);
 
+  void OnWriteSynchronousFlowControlEnableCommand(
+      const hci_spec::WriteSynchronousFlowControlEnableParams& params);
+
   // Called when a command with an OGF of hci_spec::kVendorOGF is received.
   void OnVendorCommand(const PacketView<hci_spec::CommandHeader>& command_packet);
 

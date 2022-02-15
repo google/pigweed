@@ -42,9 +42,11 @@ class AdapterTest : public TestingBase {
   AdapterTest() = default;
   ~AdapterTest() override = default;
 
-  void SetUp() override {
+  void SetUp() override { SetUp(/*sco_enabled=*/true); }
+
+  void SetUp(bool sco_enabled) {
     set_vendor_features(kVendorFeatures);
-    TestingBase::SetUp();
+    TestingBase::SetUp(sco_enabled);
 
     transport_closed_called_ = false;
 
@@ -91,6 +93,11 @@ class AdapterTest : public TestingBase {
   std::unique_ptr<Adapter> adapter_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterTest);
+};
+
+class AdapterScoDisabledTest : public AdapterTest {
+ public:
+  void SetUp() override { AdapterTest::SetUp(/*sco_enabled=*/false); }
 };
 
 TEST_F(AdapterTest, InitializeFailureNoFeaturesSupported) {
@@ -1130,6 +1137,94 @@ TEST_F(AdapterTest, BufferSizesRecordedInState) {
   EXPECT_EQ(adapter()->state().bredr_data_buffer_info().max_num_packets(), 4u);
   EXPECT_EQ(adapter()->state().sco_buffer_info().max_data_length(), 5u);
   EXPECT_EQ(adapter()->state().sco_buffer_info().max_num_packets(), 6u);
+}
+
+TEST_F(AdapterTest, ScoDataChannelInitializedSuccessfully) {
+  // Return valid buffer information and enable LE support.
+  FakeController::Settings settings;
+  settings.AddBREDRSupportedCommands();
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.le_acl_data_packet_length = 5;
+  settings.le_total_num_acl_data_packets = 1;
+  // Ensure SCO buffers are available.
+  settings.synchronous_data_packet_length = 6;
+  settings.total_num_synchronous_data_packets = 2;
+  // Enable SCO flow control command.
+  constexpr size_t flow_control_enable_octet = 10;
+  settings.supported_commands[flow_control_enable_octet] |=
+      static_cast<uint8_t>(hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_TRUE(transport()->sco_data_channel());
+}
+
+TEST_F(AdapterTest, ScoDataChannelNotInitializedBecauseFlowControlNotSupported) {
+  // Return valid buffer information and enable LE support.
+  FakeController::Settings settings;
+  settings.AddBREDRSupportedCommands();
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.le_acl_data_packet_length = 5;
+  settings.le_total_num_acl_data_packets = 1;
+  // Ensure SCO buffers are available.
+  settings.synchronous_data_packet_length = 6;
+  settings.total_num_synchronous_data_packets = 2;
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_FALSE(transport()->sco_data_channel());
+}
+
+TEST_F(AdapterTest, ScoDataChannelNotInitializedBecauseBufferInfoNotAvailable) {
+  // Return valid buffer information and enable LE support.
+  FakeController::Settings settings;
+  settings.AddBREDRSupportedCommands();
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.le_acl_data_packet_length = 5;
+  settings.le_total_num_acl_data_packets = 1;
+  // Ensure SCO buffers are not available.
+  settings.synchronous_data_packet_length = 0;
+  settings.total_num_synchronous_data_packets = 0;
+  // Enable SCO flow control command.
+  constexpr size_t flow_control_enable_octet = 10;
+  settings.supported_commands[flow_control_enable_octet] |=
+      static_cast<uint8_t>(hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_FALSE(transport()->sco_data_channel());
+}
+
+TEST_F(AdapterScoDisabledTest, ScoDataChannelFailsToInitializeBecauseScoDisabled) {
+  // Return valid buffer information and enable LE support.
+  FakeController::Settings settings;
+  settings.AddBREDRSupportedCommands();
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.le_acl_data_packet_length = 5;
+  settings.le_total_num_acl_data_packets = 1;
+  // Ensure SCO buffers are available.
+  settings.synchronous_data_packet_length = 6;
+  settings.total_num_synchronous_data_packets = 2;
+  // Enable SCO flow control command.
+  constexpr size_t flow_control_enable_octet = 10;
+  settings.supported_commands[flow_control_enable_octet] |=
+      static_cast<uint8_t>(hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_FALSE(transport()->sco_data_channel());
 }
 
 }  // namespace

@@ -832,6 +832,16 @@ struct ReadTransmitPowerLevelReturnParams {
   int8_t tx_power_level;
 } __PACKED;
 
+// ===============================================================
+// Write Synchonous Flow Control Enable Command (BR/EDR)
+constexpr OpCode kWriteSynchronousFlowControlEnable = ControllerAndBasebandOpCode(0x002F);
+
+struct WriteSynchronousFlowControlEnableParams {
+  // If enabled, HCI_Number_Of_Completed_Packets events shall be sent from the controller
+  // for synchronous connection handles.
+  GenericEnableParam synchronous_flow_control_enable;
+} __PACKED;
+
 // ===================================
 // Read Inquiry Scan Type (v1.2) (BR/EDR)
 constexpr OpCode kReadInquiryScanType = ControllerAndBasebandOpCode(0x0042);
