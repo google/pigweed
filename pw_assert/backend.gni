@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,22 +14,13 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/facade.gni")
-import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_unit_test/test.gni")
-import("backend.gni")
+declare_args() {
+  # Backend for the pw_assert module's CHECK facade.
+  pw_assert_BACKEND = ""
 
-config("public_include_path") {
-  include_dirs = [ "public" ]
-  visibility = [ ":*" ]
-}
-
-pw_facade("context") {
-  backend = pw_interrupt_CONTEXT_BACKEND
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_interrupt/context.h" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  # Backend for the pw_assert module's ASSERT facade.
+  #
+  # Warning: This naming is transitional. Modifying this build argument WILL
+  #     result in future breakages. (pwbug/246)
+  pw_assert_LITE_BACKEND = "${dir_pw_assert}:lite_compatibility_backend"
 }

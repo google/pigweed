@@ -18,21 +18,13 @@ import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+import("backend.gni")
 
 declare_args() {
   # The build target that overrides the default configuration options for this
   # module. This should point to a source set that provides defines through a
   # public config (which may -include a file or add defines directly).
   pw_assert_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
-
-  # Backend for the pw_assert module's CHECK facade.
-  pw_assert_BACKEND = ""
-
-  # Backend for the pw_assert module's ASSERT facade.
-  #
-  # Warning: This naming is transitional. Modifying this build argument WILL
-  #     result in future breakages. (pwbug/246)
-  pw_assert_LITE_BACKEND = "${dir_pw_assert}:lite_compatibility_backend"
 }
 
 config("public_include_path") {
