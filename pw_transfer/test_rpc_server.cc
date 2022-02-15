@@ -129,8 +129,8 @@ void RunServer(int socket_port, const char* directory) {
   test_server_service.LoadFileHandlers();
 
   rpc::system_server::Init();
-  rpc::system_server::Server().RegisterService(test_server_service);
-  rpc::system_server::Server().RegisterService(transfer_service);
+  rpc::system_server::Server().RegisterService(test_server_service,
+                                               transfer_service);
 
   thread::DetachedThread(thread::stl::Options(), transfer_thread);
 

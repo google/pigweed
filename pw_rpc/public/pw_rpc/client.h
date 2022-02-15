@@ -20,6 +20,7 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/endpoint.h"
+#include "pw_rpc/internal/lock.h"
 
 namespace pw::rpc {
 

@@ -303,13 +303,12 @@ channel output and the example service.
   // Declare the pw_rpc server with the HDLC channel.
   pw::rpc::Server server(channels);
 
-  pw::rpc::TheService the_service;
+  foo::bar::TheService the_service;
+  pw::rpc::SomeOtherService some_other_service;
 
   void RegisterServices() {
-    // Register the foo.bar.TheService example service.
-    server.Register(the_service);
-
-    // Register other services
+    // Register the foo.bar.TheService example service and another service.
+    server.RegisterService(the_service, some_other_service);
   }
 
   int main() {
