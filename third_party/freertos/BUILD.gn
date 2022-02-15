@@ -119,6 +119,25 @@ if (dir_pw_third_party_freertos == "") {
     ]
   }
 
+  # ARM CM7 port of FreeRTOS
+  config("arm_cm7_includes") {
+    include_dirs = [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM7/r0p1" ]
+    visibility = [ ":arm_cm7" ]
+  }
+
+  pw_source_set("arm_cm7") {
+    public_configs = [
+      ":arm_cm7_includes",
+      ":public_includes",
+    ]
+    public_deps = [ pw_third_party_freertos_CONFIG ]
+    public =
+        [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM7/r0p1/portmacro.h" ]
+    sources =
+        [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM7/r0p1/port.c" ]
+    configs = [ ":disable_warnings" ]
+  }
+
   # ARM CM4F port of FreeRTOS.
   config("arm_cm4f_includes") {
     include_dirs = [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM4F" ]

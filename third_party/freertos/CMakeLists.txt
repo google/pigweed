@@ -109,6 +109,21 @@ pw_add_module_library(pw_third_party.freertos.freertos_tasks
     ${disable_tasks_statics}
 )
 
+# ARM CM7 port of FreeRTOS.
+pw_add_module_library(pw_third_party.freertos.arm_cm7
+  HEADERS
+    ${dir_pw_third_party_freertos}/portable/GCC/ARM_CM7/r0p1/portmacro.h
+  PUBLIC_DEPS
+    ${pw_third_party_freertos_CONFIG}
+  PUBLIC_INCLUDES
+    ${dir_pw_third_party_freertos}/include
+    ${dir_pw_third_party_freertos}/portable/GCC/ARM_CM7/r0p1
+  SOURCES
+    ${dir_pw_third_party_freertos}/portable/GCC/ARM_CM7/r0p1/port.c
+  PRIVATE_DEPS
+    pw_third_party.freertos.disable_warnings
+)
+
 # ARM CM4F port of FreeRTOS.
 pw_add_module_library(pw_third_party.freertos.arm_cm4f
   HEADERS
