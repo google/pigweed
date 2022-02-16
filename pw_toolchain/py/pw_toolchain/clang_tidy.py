@@ -104,7 +104,9 @@ def _filter_include_paths(args: Iterable[str],
     for arg in args:
         if arg.startswith('-I'):
             path = Path(arg[2:]).as_posix()
-            if any(path.endswith(f) for f in filters):
+            if any(
+                    path.endswith(f) or re.match(f, str(path))
+                    for f in filters):
                 yield '-isystem' + arg[2:]
                 continue
 

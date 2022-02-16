@@ -109,9 +109,10 @@ provide ``"the_path/.*"`` to exclude all files in all directories under
 
 The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS`` is used
 used to exclude header files from the analysis. This argument must be a list of
-POSIX-style path suffixes for include paths. For example, passing
-``the_path/include`` excludes all header files that are accessed from include
-paths ending in ``the_path/include``.
+POSIX-style path suffixes for include paths, or regular expressions. For
+example, passing ``the_path/include`` excludes all header files that are
+accessed from include paths ending in ``the_path/include``, while passing
+``.*/third_party/.*`` excludes all third-party header files.
 
 Provided toolchains
 -------------------

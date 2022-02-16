@@ -28,13 +28,17 @@ declare_args() {
   pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES = []
 
   # Disable clang-tidy for specific include paths. In the clang-tidy command,
-  # include paths that end with one of these are switched from -I to -isystem,
-  # which causes clang-tidy to ignore them. Unfortunately, clang-tidy provides
-  # no other way to filter header files.
+  # include paths that end with one of these, or match as a regular expression,
+  # are switched from -I to -isystem, which causes clang-tidy to ignore them.
+  # Unfortunately, clang-tidy provides no other way to filter header files.
   #
   # For example, the following ignores header files in "mbedtls/include":
   #
   #   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = ["mbedtls/include"]
+  #
+  # While the following ignores all third-party header files:
+  #
+  #   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = [".*/third_party/.*"]
   #
   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = []
 }
