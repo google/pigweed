@@ -36,10 +36,46 @@ inline constexpr unsigned long long int kBytesInPebibyte = 1ull << 50;
 // Exbibytes (EiB): 1024^6 or 2^60
 inline constexpr unsigned long long int kBytesInExbibyte = 1ull << 60;
 
+// Functions for specifying a number of bytes in powers of two, as defined by
+// IEC 60027-2 A.2 and ISO/IEC 80000:13-2008.
+//
+// These are useful in headers when using user-defined literals are disallowed.
+//
+//   #include "pw_bytes/units.h"
+//
+//   constexpr size_t kBufferSizeBytes = pw::bytes::MiB(1) + pw::bytes::KiB(42);
+inline constexpr unsigned long long int B(unsigned long long int bytes) {
+  return bytes;
+}
+
+inline constexpr unsigned long long int KiB(unsigned long long int kibibytes) {
+  return kibibytes * kBytesInKibibyte;
+}
+
+inline constexpr unsigned long long int MiB(unsigned long long int mibibytes) {
+  return mibibytes * kBytesInMibibyte;
+}
+
+inline constexpr unsigned long long int GiB(unsigned long long int gibibytes) {
+  return gibibytes * kBytesInGibibyte;
+}
+
+inline constexpr unsigned long long int TiB(unsigned long long int tebibytes) {
+  return tebibytes * kBytesInTebibyte;
+}
+
+inline constexpr unsigned long long int PiB(unsigned long long int pebibytes) {
+  return pebibytes * kBytesInPebibyte;
+}
+
+inline constexpr unsigned long long int EiB(unsigned long long int exbibytes) {
+  return exbibytes * kBytesInExbibyte;
+}
+
 namespace unit_literals {
 
-// Helper user-defined literals for specifying a number of bytes in powers of
-// two, as defined by IEC 60027-2 A.2 and ISO/IEC 80000:13-2008.
+// User-defined literals for specifying a number of bytes in powers of two, as
+// defined by IEC 60027-2 A.2 and ISO/IEC 80000:13-2008.
 //
 // The supported prefixes include:
 // _B   for bytes     (1024^0)

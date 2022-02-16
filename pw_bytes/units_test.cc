@@ -21,6 +21,29 @@ namespace {
 
 using namespace pw::bytes::unit_literals;
 
+// Byte Function tests
+static_assert(B(1) == 1ull);
+static_assert(B(42) == 42ull);
+
+static_assert(KiB(1) == 1'024ull);
+static_assert(KiB(42) == 43'008ull);
+
+static_assert(MiB(1) == 1'048'576ull);
+static_assert(MiB(42) == 44'040'192ull);
+
+static_assert(GiB(1) == 1'073'741'824ull);
+static_assert(GiB(42) == 45'097'156'608ull);
+
+static_assert(TiB(1) == 1'099'511'627'776ull);
+static_assert(TiB(42) == 46'179'488'366'592ull);
+
+static_assert(PiB(1) == 1'125'899'906'842'624ull);
+static_assert(PiB(42) == 47'287'796'087'390'208ull);
+
+static_assert(EiB(1) == 1'152'921'504'606'846'976ull);
+static_assert(EiB(4) == 4'611'686'018'427'387'904ull);
+
+// User-defined literal tests
 static_assert(1_B == 1ull);
 static_assert(42_B == 42ull);
 
