@@ -363,6 +363,63 @@ class TestLogView(unittest.TestCase):
         # Log index should be None
         self.assertEqual(result.log_index, None)
 
+    def test_visual_select(self) -> None:
+        """Test log line selection."""
+        log_view, log_pane = self._create_log_view_with_logs(log_count=100)
+        self.assertEqual(100, log_view.get_total_count())
+
+        # Page scrolling needs to know the current window height.
+        log_pane.pane_resized = MagicMock(return_value=True)
+        log_pane.current_log_pane_width = 80
+        log_pane.current_log_pane_height = 10
+
+        log_view.log_screen.reset_logs = MagicMock(
+            wraps=log_view.log_screen.reset_logs)
+        log_view.log_screen.get_lines = MagicMock(
+            wraps=log_view.log_screen.get_lines)
+
+        log_view.render_content()
+        log_view.log_screen.reset_logs.assert_called_once()
+        log_view.log_screen.get_lines.assert_called_once_with(
+            marked_logs_start=None, marked_logs_end=None)
+        log_view.log_screen.get_lines.reset_mock()
+        log_view.log_screen.reset_logs.reset_mock()
+
+        self.assertIsNone(log_view.marked_logs_start)
+        self.assertIsNone(log_view.marked_logs_end)
+        log_view.visual_select_line(Point(0, 9))
+        self.assertEqual(
+            (99, 99), (log_view.marked_logs_start, log_view.marked_logs_end))
+
+        log_view.visual_select_line(Point(0, 8))
+        log_view.visual_select_line(Point(0, 7))
+        self.assertEqual(
+            (97, 99), (log_view.marked_logs_start, log_view.marked_logs_end))
+
+        log_view.clear_visual_selection()
+        self.assertIsNone(log_view.marked_logs_start)
+        self.assertIsNone(log_view.marked_logs_end)
+
+        log_view.visual_select_line(Point(0, 1))
+        log_view.visual_select_line(Point(0, 2))
+        log_view.visual_select_line(Point(0, 3))
+        log_view.visual_select_line(Point(0, 4))
+        self.assertEqual(
+            (91, 94), (log_view.marked_logs_start, log_view.marked_logs_end))
+
+        # Make sure the log screen was not re-generated.
+        log_view.log_screen.reset_logs.assert_not_called()
+        log_view.log_screen.reset_logs.reset_mock()
+
+        # Render the screen
+        log_view.render_content()
+        log_view.log_screen.reset_logs.assert_called_once()
+        # Check the visual selection was specified
+        log_view.log_screen.get_lines.assert_called_once_with(
+            marked_logs_start=91, marked_logs_end=94)
+        log_view.log_screen.get_lines.reset_mock()
+        log_view.log_screen.reset_logs.reset_mock()
+
 
 if _PYTHON_3_8:
     from unittest import IsolatedAsyncioTestCase  # type: ignore # pylint: disable=no-name-in-module

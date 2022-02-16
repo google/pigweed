@@ -47,10 +47,11 @@ from prompt_toolkit.styles import DynamicStyle, merge_styles, Style
 
 from pw_console.console_app import get_default_colordepth
 from pw_console.console_prefs import ConsolePrefs
+from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
 from pw_console.log_pane import LogPane
+from pw_console.plugin_mixin import PluginMixin
 import pw_console.style
 from pw_console.window_manager import WindowManager
-from pw_console.plugin_mixin import PluginMixin
 
 _NINJA_LOG = logging.getLogger('pw_watch_ninja_output')
 _LOG = logging.getLogger('pw_watch')
@@ -81,6 +82,10 @@ class WatchApp(PluginMixin):
         self.external_logfile: Optional[Path] = (Path(log_file_name)
                                                  if log_file_name else None)
         self.color_depth = get_default_colordepth()
+
+        # Necessary for some of pw_console's window manager features to work
+        # such as mouse drag resizing.
+        PW_CONSOLE_APP_CONTEXTVAR.set(self)  # type: ignore
 
         theme_name = 'ansi'
         self.prefs = ConsolePrefs(project_file=False, user_file=False)

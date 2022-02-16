@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import logging
-from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
@@ -208,13 +208,17 @@ class LogScreen:
 
     def get_lines(
         self,
-        marked_logs: Optional[Dict[int, int]] = None,
+        marked_logs_start: Optional[int] = None,
+        marked_logs_end: Optional[int] = None,
     ) -> List[StyleAndTextTuples]:
         """Return lines for final display.
 
         Styling is added for the line under the cursor."""
-        if not marked_logs:
-            marked_logs = {}
+        if not marked_logs_start:
+            marked_logs_start = -1
+        if not marked_logs_end:
+            marked_logs_end = -1
+
         all_lines: List[StyleAndTextTuples] = []
         # Loop through a copy of the line_buffer in case it is mutated before
         # this function is complete.
@@ -237,7 +241,8 @@ class LogScreen:
                 all_lines.append(
                     to_formatted_text(new_fragments,
                                       style='class:selected-log-line'))
-            elif line.log_index in marked_logs:
+            elif line.log_index is not None and (
+                    marked_logs_start <= line.log_index <= marked_logs_end):
                 new_fragments = fill_character_width(
                     line.fragments,
                     len(line.fragments) - 1,  # -1 for the ending line break

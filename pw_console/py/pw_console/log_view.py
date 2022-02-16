@@ -71,7 +71,8 @@ class LogView:
             prefs=application.prefs)
         self.log_store.register_viewer(self)
 
-        self.marked_logs: Dict[int, int] = {}
+        self.marked_logs_start: Optional[int] = None
+        self.marked_logs_end: Optional[int] = None
 
         # Search variables
         self.search_text: Optional[str] = None
@@ -618,17 +619,21 @@ class LogView:
                 self.follow = True
 
     def visual_selected_log_count(self) -> int:
-        return len(self.marked_logs)
+        if self.marked_logs_start is None or self.marked_logs_end is None:
+            return 0
+        return (self.marked_logs_end - self.marked_logs_start) + 1
 
     def clear_visual_selection(self) -> None:
-        self.marked_logs = {}
+        self.marked_logs_start = None
+        self.marked_logs_end = None
         self.visual_select_mode = False
         self._user_scroll_event = True
         self.log_pane.application.redraw_ui()
 
     def visual_select_all(self) -> None:
-        for i in range(self._scrollback_start_index, self.get_total_count()):
-            self.marked_logs[i] = 1
+        self.marked_logs_start = self._scrollback_start_index
+        self.marked_logs_end = self.get_total_count() - 1
+
         self.visual_select_mode = True
         self._user_scroll_event = True
         self.log_pane.application.redraw_ui()
@@ -651,7 +656,6 @@ class LogView:
 
     def visual_select_line(self,
                            mouse_position: Point,
-                           deselect: bool = False,
                            autoscroll: bool = True) -> None:
         """Mark the log under mouse_position as visually selected."""
         # Check mouse_position is valid
@@ -665,15 +669,15 @@ class LogView:
         if screen_line.log_index is None:
             return
 
-        # If deselecting
-        if deselect:
-            self.marked_logs[screen_line.log_index] = 0
-            if screen_line.log_index in self.marked_logs:
-                del self.marked_logs[screen_line.log_index]
-        # Selecting
-        else:
-            self.marked_logs[screen_line.log_index] = self.marked_logs.get(
-                screen_line.log_index, 0) + 1
+        if self.marked_logs_start is None:
+            self.marked_logs_start = screen_line.log_index
+        if self.marked_logs_end is None:
+            self.marked_logs_end = screen_line.log_index
+
+        if screen_line.log_index < self.marked_logs_start:
+            self.marked_logs_start = screen_line.log_index
+        elif screen_line.log_index > self.marked_logs_end:
+            self.marked_logs_end = screen_line.log_index
 
         # Update cursor position
         self.log_screen.move_cursor_to_position(mouse_position.y)
@@ -684,10 +688,6 @@ class LogView:
                 self.scroll_up(1)
             elif mouse_position.y == self._window_height - 1:
                 self.scroll_down(1)
-
-        # If no selection left, turn off visual_select_mode flag.
-        if len(self.marked_logs) == 0:
-            self.visual_select_mode = False
 
         # Trigger a rerender.
         self._user_scroll_event = True
@@ -802,7 +802,9 @@ class LogView:
 
         if screen_update_needed:
             self._line_fragment_cache = self.log_screen.get_lines(
-                marked_logs=self.marked_logs)
+                marked_logs_start=self.marked_logs_start,
+                marked_logs_end=self.marked_logs_end,
+            )
         return self._line_fragment_cache
 
     def _logs_to_text(
@@ -821,13 +823,15 @@ class LogView:
 
         _start_log_index, log_source = self._get_log_lines()
 
-        log_indexes = (i for i in range(self._scrollback_start_index,
-                                        self.get_total_count()))
-        if selected_lines_only:
-            log_indexes = (i for i in sorted(self.marked_logs.keys()))
+        log_index_range = range(self._scrollback_start_index,
+                                self.get_total_count())
+        if (selected_lines_only and self.marked_logs_start is not None
+                and self.marked_logs_end is not None):
+            log_index_range = range(self.marked_logs_start,
+                                    self.marked_logs_end + 1)
 
         text_output = ''
-        for i in log_indexes:
+        for i in log_index_range:
             log_text = formatter(log_source[i])
             text_output += log_text
             if not log_text.endswith('\n'):
