@@ -52,7 +52,7 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
          '--verbose_failures',
          '--verbose_explanations',
          '--worker_verbose',
-         f'--symlink_prefix={ctx.output_dir / "bazel-"}',
+         f'--symlink_prefix={ctx.output_dir / ".bazel-"}',
          *args,
          cwd=ctx.root,
          env=env_with_clang_vars())
