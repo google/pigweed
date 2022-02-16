@@ -205,6 +205,9 @@ class Framework {
 
   bool ShouldRunTest(const TestInfo& test_info) const;
 
+  // Whether the current test is skipped.
+  bool IsSkipped() const { return current_result_ == TestResult::kSkipped; }
+
   // Constructs an instance of a unit test class and runs the test.
   //
   // Tests are constructed within a static memory pool at run time instead of
@@ -400,7 +403,10 @@ class Test {
   // Runs the unit test.
   void PigweedTestRun() {
     SetUp();
-    PigweedTestBody();
+    // TODO(deymo): Skip the test body if there's a fatal error in SetUp().
+    if (!Framework::Get().IsSkipped()) {
+      PigweedTestBody();
+    }
     TearDown();
   }
 
