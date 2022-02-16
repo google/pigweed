@@ -155,11 +155,9 @@ class FakeChannelOutput : public ChannelOutput {
   // Clears and resets the FakeChannelOutput.
   void clear() PW_LOCKS_EXCLUDED(mutex_);
 
-  // Returns `status` for all future SendAndReleaseBuffer calls. Enables packet
-  // processing if `status` is OK.
-  void set_send_status(Status status)
-
-      PW_LOCKS_EXCLUDED(mutex_) {
+  // Returns `status` for all future Send calls. Enables packet processing if
+  // `status` is OK.
+  void set_send_status(Status status) PW_LOCKS_EXCLUDED(mutex_) {
     std::lock_guard lock(mutex_);
     send_status_ = status;
     return_after_packet_count_ = status.ok() ? -1 : 0;

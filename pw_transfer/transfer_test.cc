@@ -798,6 +798,32 @@ TEST_F(WriteTransfer, FinalizeFails) {
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());
 }
 
+TEST_F(WriteTransfer, SendingFinalPacketFails) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ctx_.output().set_send_status(Status::Unknown());
+
+  ctx_.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
+                                         .offset = 0,
+                                         .data = std::span(kData),
+                                         .remaining_bytes = 0}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Should only have sent the transfer parameters.
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses()[0]);
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  ASSERT_TRUE(chunk.pending_bytes.has_value());
+  EXPECT_EQ(chunk.pending_bytes.value(), 32u);
+  ASSERT_TRUE(chunk.max_chunk_size_bytes.has_value());
+  EXPECT_EQ(chunk.max_chunk_size_bytes.value(), 37u);
+
+  // When FinalizeWrite() was called, the transfer was considered successful.
+  EXPECT_TRUE(handler_.finalize_write_called);
+  EXPECT_EQ(handler_.finalize_write_status, OkStatus());
+}
+
 TEST_F(WriteTransfer, MultiChunk) {
   ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
   transfer_thread_.WaitUntilEventIsProcessed();

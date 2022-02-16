@@ -154,7 +154,9 @@ void Context::EncodeAndSendChunk(const Chunk& chunk) {
     PW_LOG_ERROR("Failed to encode chunk for transfer %u: %d",
                  static_cast<unsigned>(chunk.transfer_id),
                  data.status().code());
-    Finish(Status::Internal());
+    if (active()) {
+      Finish(Status::Internal());
+    }
     return;
   }
 
@@ -162,7 +164,9 @@ void Context::EncodeAndSendChunk(const Chunk& chunk) {
     PW_LOG_ERROR("Failed to write chunk for transfer %u: %d",
                  static_cast<unsigned>(chunk.transfer_id),
                  status.code());
-    Finish(Status::Internal());
+    if (active()) {
+      Finish(Status::Internal());
+    }
     return;
   }
 }
