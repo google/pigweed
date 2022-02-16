@@ -34,7 +34,7 @@ Result<ConstByteSpan> CreateEncodedDropMessage(
     uint32_t drop_count, ByteSpan encoded_drop_message_buffer) {
   // Encode message in protobuf.
   log::LogEntry::MemoryEncoder encoder(encoded_drop_message_buffer);
-  encoder.WriteDropped(drop_count);
+  encoder.WriteDropped(drop_count).IgnoreError();
   PW_TRY(encoder.status());
   return ConstByteSpan(encoder);
 }
@@ -102,7 +102,8 @@ RpcLogDrain::LogDrainState RpcLogDrain::SendLogs(size_t max_num_bundles,
       continue;
     }
 
-    encoder.WriteFirstEntrySequenceId(sequence_id_);
+    encoder.WriteFirstEntrySequenceId(sequence_id_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     sequence_id_ += packed_entry_count;
     const Status status = server_writer_.Write(encoder);
     sent_bundle_count++;

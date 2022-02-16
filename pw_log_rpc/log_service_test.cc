@@ -209,7 +209,7 @@ TEST_F(LogServiceTest, StartAndEndStream) {
 
   // Not done until the stream is finished.
   ASSERT_FALSE(context.done());
-  active_drain.Close();
+  EXPECT_EQ(OkStatus(), active_drain.Close());
   ASSERT_TRUE(context.done());
 
   EXPECT_EQ(context.status(), OkStatus());
@@ -258,7 +258,7 @@ TEST_F(LogServiceTest, HandleDropped) {
   // Request logs.
   context.call(rpc_request_buffer);
   EXPECT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
-  active_drain.Close();
+  EXPECT_EQ(OkStatus(), active_drain.Close());
   ASSERT_EQ(context.status(), OkStatus());
   // There is at least 1 response with multiple log entries packed.
   ASSERT_GE(context.responses().size(), 1u);
@@ -309,18 +309,21 @@ TEST_F(LogServiceTest, HandleDroppedBetweenFilteredOutLogs) {
 
   // Force a drop entry in between entries that will be filtered out.
   for (size_t i = 1; i < total_entries; ++i) {
-    AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp);
+    ASSERT_EQ(
+        OkStatus(),
+        AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp).status());
     multisink_.HandleDropped(1);
   }
   // Add message that won't be filtered out.
   constexpr auto metadata =
       log_tokenized::Metadata::Set<PW_LOG_LEVEL_DEBUG, 0, 0, __LINE__>();
-  AddLogEntry(kMessage, metadata, kSampleTimestamp);
+  ASSERT_EQ(OkStatus(),
+            AddLogEntry(kMessage, metadata, kSampleTimestamp).status());
 
   // Request logs.
   context.call(rpc_request_buffer);
   EXPECT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
-  active_drain.Close();
+  EXPECT_EQ(OkStatus(), active_drain.Close());
   ASSERT_EQ(context.status(), OkStatus());
   // There is at least 1 response with multiple log entries packed.
   ASSERT_GE(context.responses().size(), 1u);
@@ -359,7 +362,8 @@ TEST_F(LogServiceTest, HandleSmallLogEntryBuffer) {
   const uint32_t total_drop_count = total_entries - 1;
   AddLogEntries(
       total_entries - 1, kLongMessage, kSampleMetadata, kSampleTimestamp);
-  AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp);
+  EXPECT_EQ(OkStatus(),
+            AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp).status());
 
   // Request logs.
   context.call(rpc_request_buffer);
@@ -442,7 +446,7 @@ TEST_F(LogServiceTest, LargeLogEntry) {
   context.set_channel_id(drain_channel_id);
   context.call(rpc_request_buffer);
   ASSERT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
-  active_drain.Close();
+  EXPECT_EQ(OkStatus(), active_drain.Close());
   ASSERT_EQ(context.status(), OkStatus());
   ASSERT_EQ(context.responses().size(), 1u);
 

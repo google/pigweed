@@ -294,6 +294,7 @@ pw_target_toolchain_host_list = [
 
 # Additional configuration intended only for upstream Pigweed use.
 _pigweed_internal = {
+  pw_status_CONFIG = "$dir_pw_status:check_if_used"
 }
 
 # Host toolchains exclusively for upstream Pigweed use. To give upstream Pigweed

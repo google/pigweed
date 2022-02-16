@@ -71,7 +71,8 @@ class MetricWriter {
 
   void Flush() {
     if (response_.metrics_count) {
-      response_writer_.Write(response_);
+      response_writer_.Write(response_)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       response_ = pw_metric_MetricResponse_init_zero;
     }
   }

@@ -41,6 +41,7 @@ In chrome navigate to chrome://tracing, and load the trace.json file.
 */
 #include <thread>
 
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc/server.h"
 #include "pw_rpc_system_server/rpc_server.h"
@@ -57,7 +58,7 @@ void RpcThread() {
 
   // Set up the server and start processing data.
   pw::rpc::system_server::Server().RegisterService(trace_service);
-  pw::rpc::system_server::Start();
+  PW_CHECK_OK(pw::rpc::system_server::Start());
 }
 
 }  // namespace

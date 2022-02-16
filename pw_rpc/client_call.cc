@@ -18,7 +18,7 @@ namespace pw::rpc::internal {
 
 void ClientCall::CloseClientCall() {
   if (client_stream_open()) {
-    CloseClientStreamLocked();
+    CloseClientStreamLocked().IgnoreError();
   }
   UnregisterAndMarkClosed();
 }

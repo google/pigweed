@@ -138,7 +138,7 @@ TEST_F(UnaryClientCall, InvokesCallbackOnValidResponse) {
       });
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
-  context.SendResponse(OkStatus(), response);
+  EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), response));
 
   ASSERT_EQ(responses_received_, 1);
   EXPECT_EQ(last_status_, OkStatus());
@@ -155,7 +155,7 @@ TEST_F(UnaryClientCall, DoesNothingOnNullCallback) {
       nullptr);
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
-  context.SendResponse(OkStatus(), response);
+  EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), response));
 
   ASSERT_EQ(responses_received_, 0);
 }
@@ -176,7 +176,7 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnInvalidResponse) {
 
   constexpr std::byte bad_payload[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
-  context.SendResponse(OkStatus(), bad_payload);
+  EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), bad_payload));
 
   EXPECT_EQ(responses_received_, 0);
   ASSERT_TRUE(last_error_.has_value());
@@ -197,7 +197,9 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnServerError) {
       },
       [this](Status status) { last_error_ = status; });
 
-  context.SendPacket(internal::PacketType::SERVER_ERROR, Status::NotFound());
+  EXPECT_EQ(OkStatus(),
+            context.SendPacket(internal::PacketType::SERVER_ERROR,
+                               Status::NotFound()));
 
   EXPECT_EQ(responses_received_, 0);
   EXPECT_EQ(last_error_, Status::NotFound());
@@ -218,7 +220,7 @@ TEST_F(UnaryClientCall, DoesNothingOnErrorWithoutCallback) {
 
   constexpr std::byte bad_payload[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
-  context.SendResponse(OkStatus(), bad_payload);
+  EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), bad_payload));
 
   EXPECT_EQ(responses_received_, 0);
 }
@@ -237,11 +239,11 @@ TEST_F(UnaryClientCall, OnlyReceivesOneResponse) {
       });
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, r1, .value = 42);
-  context.SendResponse(Status::Unimplemented(), r1);
+  EXPECT_EQ(OkStatus(), context.SendResponse(Status::Unimplemented(), r1));
   PW_ENCODE_PB(pw_rpc_test_TestResponse, r2, .value = 44);
-  context.SendResponse(Status::OutOfRange(), r2);
+  EXPECT_EQ(OkStatus(), context.SendResponse(Status::OutOfRange(), r2));
   PW_ENCODE_PB(pw_rpc_test_TestResponse, r3, .value = 46);
-  context.SendResponse(Status::Internal(), r3);
+  EXPECT_EQ(OkStatus(), context.SendResponse(Status::Internal(), r3));
 
   EXPECT_EQ(responses_received_, 1);
   EXPECT_EQ(last_status_, Status::Unimplemented());
@@ -294,19 +296,19 @@ TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
       });
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
-  context.SendServerStream(r1);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 1);
   EXPECT_EQ(last_response_number_, 11);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
-  context.SendServerStream(r2);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 2);
   EXPECT_EQ(last_response_number_, 22);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r3, .chunk = {}, .number = 33u);
-  context.SendServerStream(r3);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(r3));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 3);
   EXPECT_EQ(last_response_number_, 33);
@@ -329,18 +331,18 @@ TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
       });
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
-  context.SendServerStream(r1);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
   EXPECT_TRUE(active_);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
-  context.SendServerStream(r2);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
   EXPECT_TRUE(active_);
 
   // Close the stream.
-  context.SendResponse(Status::NotFound());
+  EXPECT_EQ(OkStatus(), context.SendResponse(Status::NotFound()));
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r3, .chunk = {}, .number = 33u);
-  context.SendServerStream(r3);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(r3));
   EXPECT_FALSE(active_);
 
   EXPECT_EQ(responses_received_, 2);
@@ -361,25 +363,27 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
       [this](Status error) { rpc_error_ = error; });
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
-  context.SendServerStream(r1);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 1);
   EXPECT_EQ(last_response_number_, 11);
 
   constexpr std::byte bad_payload[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
-  context.SendServerStream(bad_payload);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(bad_payload));
   EXPECT_EQ(responses_received_, 1);
   ASSERT_TRUE(rpc_error_.has_value());
   EXPECT_EQ(rpc_error_, Status::DataLoss());
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
-  context.SendServerStream(r2);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 2);
   EXPECT_EQ(last_response_number_, 22);
 
-  context.SendPacket(internal::PacketType::SERVER_ERROR, Status::NotFound());
+  EXPECT_EQ(OkStatus(),
+            context.SendPacket(internal::PacketType::SERVER_ERROR,
+                               Status::NotFound()));
   EXPECT_EQ(responses_received_, 2);
   EXPECT_EQ(rpc_error_, Status::NotFound());
 }

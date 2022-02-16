@@ -189,7 +189,8 @@ TEST(NanopbUnaryResponder, Open_ReturnsUsableResponder) {
       NanopbUnaryResponder<pw_rpc_test_TestResponse>::Open<
           TestService::TestUnaryRpc>(ctx.server, ctx.channel.id(), ctx.service);
 
-  responder.Finish({.value = 4321, .repeated_field = {}});
+  ASSERT_EQ(OkStatus(),
+            responder.Finish({.value = 4321, .repeated_field = {}}));
 
   EXPECT_EQ(ctx.output.last_response<TestService::TestUnaryRpc>().value, 4321);
   EXPECT_EQ(ctx.output.last_status(), OkStatus());
@@ -202,8 +203,8 @@ TEST(NanopbServerWriter, Open_ReturnsUsableWriter) {
           TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  responder.Write({.chunk = {}, .number = 321});
-  responder.Finish();
+  ASSERT_EQ(OkStatus(), responder.Write({.chunk = {}, .number = 321}));
+  ASSERT_EQ(OkStatus(), responder.Finish());
 
   EXPECT_EQ(ctx.output.last_response<TestService::TestServerStreamRpc>().number,
             321u);
@@ -218,7 +219,7 @@ TEST(NanopbServerReader, Open_ReturnsUsableReader) {
           Open<TestService::TestClientStreamRpc>(
               ctx.server, ctx.channel.id(), ctx.service);
 
-  responder.Finish({.chunk = {}, .number = 321});
+  ASSERT_EQ(OkStatus(), responder.Finish({.chunk = {}, .number = 321}));
 
   EXPECT_EQ(ctx.output.last_response<TestService::TestClientStreamRpc>().number,
             321u);
@@ -232,8 +233,8 @@ TEST(NanopbServerReaderWriter, Open_ReturnsUsableReaderWriter) {
           Open<TestService::TestBidirectionalStreamRpc>(
               ctx.server, ctx.channel.id(), ctx.service);
 
-  responder.Write({.chunk = {}, .number = 321});
-  responder.Finish(Status::NotFound());
+  ASSERT_EQ(OkStatus(), responder.Write({.chunk = {}, .number = 321}));
+  ASSERT_EQ(OkStatus(), responder.Finish(Status::NotFound()));
 
   EXPECT_EQ(ctx.output.last_response<TestService::TestBidirectionalStreamRpc>()
                 .number,

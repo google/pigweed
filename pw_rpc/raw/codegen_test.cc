@@ -77,7 +77,9 @@ class TestService final
       std::byte response[32] = {};
       StatusWithSize sws = TestUnaryRpc(request, response);
 
-      responder.Finish(std::span(response).first(sws.size()), sws.status());
+      EXPECT_EQ(OkStatus(),
+                responder.Finish(std::span(response).first(sws.size()),
+                                 sws.status()));
     }
   }
 
@@ -247,7 +249,7 @@ TEST(RawCodegen, Server_Finish) {
   ctx.call({});
   ASSERT_TRUE(ctx.service().last_responder().active());
 
-  ctx.service().last_responder().Finish({});
+  EXPECT_EQ(OkStatus(), ctx.service().last_responder().Finish({}));
   EXPECT_FALSE(ctx.service().last_responder().active());
 }
 

@@ -89,28 +89,22 @@ Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
 
   // The payload is encoded first, as it may share the encode buffer.
   if (!payload_.empty()) {
-    rpc_packet.WritePayload(payload_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    rpc_packet.WritePayload(payload_).IgnoreError();
   }
 
-  rpc_packet.WriteType(type_)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  rpc_packet.WriteChannelId(channel_id_)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  rpc_packet.WriteServiceId(service_id_)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  rpc_packet.WriteMethodId(method_id_)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  rpc_packet.WriteType(type_).IgnoreError();
+  rpc_packet.WriteChannelId(channel_id_).IgnoreError();
+  rpc_packet.WriteServiceId(service_id_).IgnoreError();
+  rpc_packet.WriteMethodId(method_id_).IgnoreError();
 
   // Status code 0 is OK. In protobufs, 0 is the default int value, so skip
   // encoding it to save two bytes in the output.
   if (status_.code() != 0) {
-    rpc_packet.WriteStatus(status_.code())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    rpc_packet.WriteStatus(status_.code()).IgnoreError();
   }
 
   if (call_id_ != 0) {
-    rpc_packet.WriteCallId(call_id_);
+    rpc_packet.WriteCallId(call_id_).IgnoreError();
   }
 
   if (rpc_packet.status().ok()) {

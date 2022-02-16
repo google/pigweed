@@ -171,7 +171,8 @@ TEST(RawUnaryResponder, Open_ReturnsUsableResponder) {
       ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
-  call.Finish(std::as_bytes(std::span("hello from pw_rpc")));
+  EXPECT_EQ(OkStatus(),
+            call.Finish(std::as_bytes(std::span("hello from pw_rpc"))));
 
   EXPECT_STREQ(
       reinterpret_cast<const char*>(
@@ -223,7 +224,7 @@ TEST(RawServerWriter, Open_ReturnsUsableWriter) {
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
-  call.Write(std::as_bytes(std::span("321")));
+  EXPECT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("321"))));
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output.payloads<TestService::TestServerStreamRpc>()
@@ -239,7 +240,8 @@ TEST(RawServerReader, Open_ReturnsUsableReader) {
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
-  call.Finish(std::as_bytes(std::span("This is a message")));
+  EXPECT_EQ(OkStatus(),
+            call.Finish(std::as_bytes(std::span("This is a message"))));
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output.payloads<TestService::TestClientStreamRpc>()
@@ -255,7 +257,7 @@ TEST(RawServerReaderWriter, Open_ReturnsUsableReaderWriter) {
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
-  call.Write(std::as_bytes(std::span("321")));
+  EXPECT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("321"))));
 
   EXPECT_STREQ(
       reinterpret_cast<const char*>(

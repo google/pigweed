@@ -45,7 +45,8 @@ void TraceService::GetTraceData(
   while (trace_buffer->PeekFront(
              std::as_writable_bytes(std::span(buffer.data.bytes)), &size) !=
          pw::Status::OutOfRange()) {
-    trace_buffer->PopFront();
+    trace_buffer->PopFront()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     buffer.data.size = size;
     pw::Status status = writer.Write(buffer);
     if (!status.ok()) {
@@ -54,6 +55,6 @@ void TraceService::GetTraceData(
       break;
     }
   }
-  writer.Finish();
+  writer.Finish().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 }
 }  // namespace pw::trace

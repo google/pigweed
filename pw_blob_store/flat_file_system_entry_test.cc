@@ -153,7 +153,7 @@ TEST_F(FlatFileSystemBlobStoreEntryTest, NoData) {
       FlatFileSystemBlobStoreEntry::FilePermissions::READ;
 
   // Ensure the BlobStore is erased.
-  partition_.Erase();
+  ASSERT_EQ(OkStatus(), partition_.Erase());
 
   sync::VirtualMutex blob_store_mutex;
   FlatFileSystemBlobStoreEntry blob_store_file(

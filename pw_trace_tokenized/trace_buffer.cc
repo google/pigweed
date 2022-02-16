@@ -73,7 +73,8 @@ class TraceBuffer {
   };
 
   ConstByteSpan DeringAndViewRawBuffer() {
-    ring_buffer_.Dering();
+    ring_buffer_.Dering()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return ByteSpan(raw_buffer_, ring_buffer_.TotalUsedBytes());
   }
 

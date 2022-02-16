@@ -39,17 +39,21 @@ class TestService final
       const pw_rpc_test_TestRequest& request,
       NanopbUnaryResponder<pw_rpc_test_TestResponse>& responder) {
     pw_rpc_test_TestResponse response{};
-    responder.Finish(response, TestUnaryRpc(request, response));
+    EXPECT_EQ(OkStatus(),
+              responder.Finish(response, TestUnaryRpc(request, response)));
   }
 
   static void TestServerStreamRpc(
       const pw_rpc_test_TestRequest& request,
       ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
     for (int i = 0; i < request.integer; ++i) {
-      writer.Write({.chunk = {}, .number = static_cast<uint32_t>(i)});
+      EXPECT_EQ(
+          OkStatus(),
+          writer.Write({.chunk = {}, .number = static_cast<uint32_t>(i)}));
     }
 
-    writer.Finish(static_cast<Status::Code>(request.status_code));
+    EXPECT_EQ(OkStatus(),
+              writer.Finish(static_cast<Status::Code>(request.status_code)));
   }
 
   void TestClientStreamRpc(
@@ -137,13 +141,13 @@ TEST(NanopbCodegen, Server_InvokeServerStreamingRpc_ManualWriting) {
 
   auto writer = context.writer();
 
-  writer.Write({.chunk = {}, .number = 3});
-  writer.Write({.chunk = {}, .number = 6});
-  writer.Write({.chunk = {}, .number = 9});
+  EXPECT_EQ(OkStatus(), writer.Write({.chunk = {}, .number = 3}));
+  EXPECT_EQ(OkStatus(), writer.Write({.chunk = {}, .number = 6}));
+  EXPECT_EQ(OkStatus(), writer.Write({.chunk = {}, .number = 9}));
 
   EXPECT_FALSE(context.done());
 
-  writer.Finish(Status::Cancelled());
+  EXPECT_EQ(OkStatus(), writer.Finish(Status::Cancelled()));
   ASSERT_TRUE(context.done());
   EXPECT_EQ(Status::Cancelled(), context.status());
 
@@ -237,7 +241,7 @@ TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   EXPECT_EQ(sent_proto.integer, 123);
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
-  context.SendResponse(OkStatus(), response);
+  EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), response));
   EXPECT_EQ(result.last_status, OkStatus());
   EXPECT_EQ(result.response_value, 42);
 
@@ -283,11 +287,11 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
 
   PW_ENCODE_PB(
       pw_rpc_test_TestStreamResponse, response, .chunk = {}, .number = 11u);
-  context.SendServerStream(response);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(response));
   EXPECT_TRUE(result.active);
   EXPECT_EQ(result.response_value, 11);
 
-  context.SendResponse(Status::NotFound());
+  EXPECT_EQ(OkStatus(), context.SendResponse(Status::NotFound()));
   EXPECT_FALSE(result.active);
   EXPECT_EQ(result.stream_status, Status::NotFound());
 }
@@ -325,7 +329,7 @@ TEST(NanopbCodegen, Client_StaticMethod_InvokesUnaryRpcWithCallback) {
   EXPECT_EQ(sent_proto.integer, 123);
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
-  context.SendResponse(OkStatus(), response);
+  EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), response));
   EXPECT_EQ(result.last_status, OkStatus());
   EXPECT_EQ(result.response_value, 42);
 }
@@ -369,11 +373,11 @@ TEST(NanopbCodegen, Client_StaticMethod_InvokesServerStreamingRpcWithCallback) {
 
   PW_ENCODE_PB(
       pw_rpc_test_TestStreamResponse, response, .chunk = {}, .number = 11u);
-  context.SendServerStream(response);
+  EXPECT_EQ(OkStatus(), context.SendServerStream(response));
   EXPECT_TRUE(result.active);
   EXPECT_EQ(result.response_value, 11);
 
-  context.SendResponse(Status::NotFound());
+  EXPECT_EQ(OkStatus(), context.SendResponse(Status::NotFound()));
   EXPECT_FALSE(result.active);
   EXPECT_EQ(result.stream_status, Status::NotFound());
 }

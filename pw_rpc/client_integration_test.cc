@@ -86,7 +86,7 @@ TEST(RawRpcIntegrationTest, BidirectionalStreaming) {
     ASSERT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("Dello"))));
     EXPECT_STREQ(receiver.Wait(), "Dello");
 
-    call.Cancel();
+    ASSERT_EQ(OkStatus(), call.Cancel());
   }
 }
 

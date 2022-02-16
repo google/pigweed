@@ -84,7 +84,7 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
       return prepare_read_return_status;
     }
 
-    reader_.Seek(0);
+    EXPECT_EQ(reader_.seek_status, reader_.Seek(0));
     set_reader(reader_);
     return OkStatus();
   }
@@ -685,7 +685,7 @@ class SimpleWriteTransfer final : public WriteOnlyHandler {
         writer_(data) {}
 
   Status PrepareWrite() final {
-    writer_.Seek(0);
+    EXPECT_EQ(OkStatus(), writer_.Seek(0));
     set_writer(writer_);
     prepare_write_called = true;
     return OkStatus();

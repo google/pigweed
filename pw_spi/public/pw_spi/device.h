@@ -92,7 +92,8 @@ class Device {
       if ((selector_ != nullptr) &&
           (behavior_ == ChipSelectBehavior::kPerTransaction) &&
           (!first_write_read_)) {
-        selector_->Deactivate();
+        selector_->Deactivate()
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
     }
 

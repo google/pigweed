@@ -75,9 +75,10 @@ TEST_F(ReadTransfer, SingleChunk) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(3, writer, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Read(3, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -112,9 +113,10 @@ TEST_F(ReadTransfer, MultiChunk) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(4, writer, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Read(4, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -192,7 +194,7 @@ class ReadTransferMaxBytes32 : public ReadTransfer {
 
 TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromConstructorArg) {
   stream::MemoryWriterBuffer<64> writer;
-  client_.Read(5, writer, [](Status) {});
+  EXPECT_EQ(OkStatus(), client_.Read(5, writer, [](Status) {}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -208,7 +210,7 @@ TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromConstructorArg) {
 
 TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromWriterLimit) {
   stream::MemoryWriterBuffer<16> small_writer;
-  client_.Read(5, small_writer, [](Status) {});
+  EXPECT_EQ(OkStatus(), client_.Read(5, small_writer, [](Status) {}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -226,9 +228,10 @@ TEST_F(ReadTransferMaxBytes32, MultiParameters) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(6, writer, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Read(6, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -278,9 +281,10 @@ TEST_F(ReadTransfer, UnexpectedOffset) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(7, writer, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Read(7, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -342,9 +346,10 @@ TEST_F(ReadTransferMaxBytes32, TooMuchData) {
   stream::MemoryWriterBuffer<32> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(8, writer, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Read(8, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -387,9 +392,10 @@ TEST_F(ReadTransfer, ServerError) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(9, writer, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Read(9, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -417,9 +423,10 @@ TEST_F(ReadTransfer, OnlySendsParametersOnceAfterDrop) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(10, writer, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Read(10, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -479,9 +486,10 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(11, writer, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Read(11, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -564,11 +572,12 @@ TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(
-      12,
-      writer,
-      [&transfer_status](Status status) { transfer_status = status; },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Read(
+                12,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -617,11 +626,12 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(
-      13,
-      writer,
-      [&transfer_status](Status status) { transfer_status = status; },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Read(
+                13,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -679,11 +689,12 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  client_.Read(
-      14,
-      writer,
-      [&transfer_status](Status status) { transfer_status = status; },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Read(
+                14,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -736,14 +747,16 @@ TEST_F(ReadTransfer, InitialPacketFails_OnCompletedCalledWithDataLoss) {
 
   context_.output().set_send_status(Status::Unauthenticated());
 
-  client_.Read(
-      14,
-      writer,
-      [&transfer_status](Status status) {
-        ASSERT_EQ(transfer_status, Status::Unknown());  // Must only call once
-        transfer_status = status;
-      },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Read(
+                14,
+                writer,
+                [&transfer_status](Status status) {
+                  ASSERT_EQ(transfer_status,
+                            Status::Unknown());  // Must only call once
+                  transfer_status = status;
+                },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(transfer_status, Status::Internal());
@@ -776,9 +789,10 @@ TEST_F(WriteTransfer, SingleChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(3, reader, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Write(3, reader, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -827,9 +841,10 @@ TEST_F(WriteTransfer, MultiChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(4, reader, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Write(4, reader, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -886,9 +901,10 @@ TEST_F(WriteTransfer, OutOfOrder_SeekSupported) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(5, reader, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Write(5, reader, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -960,9 +976,10 @@ TEST_F(WriteTransfer, OutOfOrder_SeekNotSupported) {
   FakeNonSeekableReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(6, reader, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Write(6, reader, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -997,9 +1014,10 @@ TEST_F(WriteTransfer, ServerError) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(7, reader, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Write(7, reader, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -1025,9 +1043,10 @@ TEST_F(WriteTransfer, MalformedParametersChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(8, reader, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Write(8, reader, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -1059,9 +1078,10 @@ TEST_F(WriteTransfer, AbortIfZeroBytesAreRequested) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(9, reader, [&transfer_status](Status status) {
-    transfer_status = status;
-  });
+  ASSERT_EQ(OkStatus(),
+            client_.Write(9, reader, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -1093,11 +1113,12 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(
-      10,
-      reader,
-      [&transfer_status](Status status) { transfer_status = status; },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Write(
+                10,
+                reader,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -1125,11 +1146,12 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(
-      11,
-      reader,
-      [&transfer_status](Status status) { transfer_status = status; },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Write(
+                11,
+                reader,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -1186,11 +1208,12 @@ TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(
-      12,
-      reader,
-      [&transfer_status](Status status) { transfer_status = status; },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Write(
+                12,
+                reader,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -1263,11 +1286,12 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(
-      13,
-      reader,
-      [&transfer_status](Status status) { transfer_status = status; },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Write(
+                13,
+                reader,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
@@ -1314,11 +1338,12 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   FakeNonSeekableReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  client_.Write(
-      14,
-      reader,
-      [&transfer_status](Status status) { transfer_status = status; },
-      kTestTimeout);
+  ASSERT_EQ(OkStatus(),
+            client_.Write(
+                14,
+                reader,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by just sending the transfer ID.
