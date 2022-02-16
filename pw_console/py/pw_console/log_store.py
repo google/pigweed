@@ -175,7 +175,7 @@ class LogStore(logging.Handler):
         if self.get_total_count() > self.max_history_size:
             self.byte_size -= sys.getsizeof(self.logs.popleft())
 
-    def emit(self, record):
+    def emit(self, record) -> None:
         """Process a new log record.
 
         This defines the logging.Handler emit() fuction which is called by
@@ -185,7 +185,6 @@ class LogStore(logging.Handler):
         self._append_log(record)
         # Notify viewers of new logs
         for viewer in self.registered_viewers:
-            # TODO(tonymd): Type of viewer does not seem to be checked
             viewer.new_logs_arrived()
 
     def render_table_header(self):

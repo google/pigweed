@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import collections
 import copy
+from enum import Enum
 import itertools
 import logging
 import operator
@@ -45,6 +46,12 @@ if TYPE_CHECKING:
     from pw_console.log_pane import LogPane
 
 _LOG = logging.getLogger(__package__)
+
+
+class FollowEvent(Enum):
+    """Follow mode scroll event types."""
+    SEARCH_MATCH = 'scroll_to_bottom'
+    STICKY_FOLLOW = 'scroll_to_bottom_with_sticky_follow'
 
 
 class LogView:
@@ -81,6 +88,12 @@ class LogView:
         # Flag for automatically jumping to each new search match as they
         # appear.
         self.follow_search_match: bool = False
+        self.last_search_matched_log: Optional[int] = None
+
+        # Follow event flag. This is set to by the new_logs_arrived() function
+        # as a signal that the log screen should be scrolled to the bottom.
+        # This is read by render_content() whenever the screen is drawn.
+        self.follow_event: Optional[FollowEvent] = None
 
         self.log_screen = LogScreen(
             get_log_source=self._get_log_lines,
@@ -485,7 +498,14 @@ class LogView:
         return False
 
     def new_logs_arrived(self):
-        # If follow is on, scroll to the last line.
+        """Check newly arrived log messages.
+
+        Depending on where log statements occur ``new_logs_arrived`` may be in a
+        separate thread since it is triggerd by the Python log handler
+        ``emit()`` function. In this case the log handler is the LogStore
+        instance ``self.log_store``. This function should not redraw the screen
+        or scroll.
+        """
         latest_total = self.log_store.get_total_count()
 
         if self.filtering_on:
@@ -502,13 +522,16 @@ class LogView:
                     self.save_search_matched_line(i)
                     last_matched_log = i
             if last_matched_log and self.follow_search_match:
-                self.scroll_to_bottom(with_sticky_follow=False)
+                # Set the follow event flag for the next render_content call.
+                self.follow_event = FollowEvent.SEARCH_MATCH
+                self.last_search_matched_log = last_matched_log
 
         self._last_log_store_index = latest_total
         self._new_logs_since_last_render = True
 
         if self.follow:
-            self.scroll_to_bottom()
+            # Set the follow event flag for the next render_content call.
+            self.follow_event = FollowEvent.STICKY_FOLLOW
 
         # Trigger a UI update
         self._update_prompt_toolkit_ui()
@@ -726,6 +749,21 @@ class LogView:
             self._window_height = self.log_pane.current_log_pane_height
             self.log_screen.resize(self._window_width, self._window_height)
             self._reset_log_screen_on_next_render = True
+
+        if self.follow_event is not None:
+            if (self.follow_event == FollowEvent.SEARCH_MATCH
+                    and self.last_search_matched_log):
+                self.log_index = self.last_search_matched_log
+                self.last_search_matched_log = None
+                self._reset_log_screen_on_next_render = True
+
+            elif self.follow_event == FollowEvent.STICKY_FOLLOW:
+                # Jump to the last log message
+                self.log_index = max(0, self.get_last_log_index())
+                self.follow = True
+
+            self.follow_event = None
+            screen_update_needed = True
 
         if self._reset_log_screen_on_next_render or self.log_screen.empty():
             # Clear the reset flag.
