@@ -209,6 +209,7 @@ _INCLUDE_DIRS = [
     'hal_driver/Inc/Legacy',
     'cmsis_device/Include',
     'cmsis_core/Include',
+    'cmsis_core/DSP/Include',
 ]
 
 
