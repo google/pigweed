@@ -69,6 +69,8 @@ PW_SYSTEM_SCHEDULER = {
 #  link_deps: Additional link-time dependencies required for all executables.
 #    This is a list of source sets.
 #  build_args: Additional overrides for GN build arguments.
+#  global_configs: Configs that will be globally applied to all pw_source_set,
+#    pw_static_library, and pw_executable targets.
 template("pw_system_target") {
   _OPTIMIZATION_LEVELS = {
     SIZE_OPTIMIZED = "size_optimized"
@@ -78,6 +80,12 @@ template("pw_system_target") {
 
   # Generic defaults.
   _default_configs = [ "$dir_pw_build:extra_strict_warnings" ]
+  if (defined(invoker.global_configs)) {
+    foreach(cfg, invoker.global_configs) {
+      _default_configs += [ get_path_info(cfg, "abspath") ]
+    }
+  }
+
   _link_deps = [
     "$dir_pw_assert:impl",
     "$dir_pw_log:impl",
