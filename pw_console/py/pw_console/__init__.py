@@ -14,3 +14,4 @@
 """Pigweed interactive console."""
 
 from pw_console.embed import PwConsoleEmbed
+from pw_console.log_store import LogStore

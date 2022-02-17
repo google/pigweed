@@ -24,10 +24,12 @@ import pw_cli.argument_types
 
 import pw_console
 import pw_console.python_logging
+from pw_console.log_store import LogStore
 from pw_console.plugins.calc_pane import CalcPane
 from pw_console.plugins.clock_pane import ClockPane
 
 _LOG = logging.getLogger(__package__)
+_ROOT_LOG = logging.getLogger('')
 
 
 # TODO(tonymd): Remove this when no downstream projects are using it.
@@ -86,6 +88,10 @@ def main() -> int:
     global_vars = None
     default_loggers = {}
     if args.test_mode:
+        root_log_store = LogStore()
+        _ROOT_LOG.addHandler(root_log_store)
+        _ROOT_LOG.debug('pw_console test-mode starting...')
+
         fake_logger = logging.getLogger(
             pw_console.console_app.FAKE_DEVICE_LOGGER_NAME)
         default_loggers = {
@@ -93,6 +99,7 @@ def main() -> int:
             # Add the fake logger for test_mode.
             'Fake Device Logs': [fake_logger],
             'PwConsole Debug': [logging.getLogger('pw_console')],
+            'All Logs': root_log_store,
         }
         # Give access to adding log messages from the repl via: `LOG.warning()`
         global_vars = dict(LOG=fake_logger)
@@ -123,8 +130,11 @@ def main() -> int:
     # Add example plugins used to validate behavior in the Pigweed Console
     # manual test procedure: https://pigweed.dev/pw_console/testing.html
     if args.test_mode:
+        _ROOT_LOG.debug('pw_console.PwConsoleEmbed init complete')
+        _ROOT_LOG.debug('Adding plugins...')
         console.add_window_plugin(ClockPane())
         console.add_window_plugin(CalcPane())
+        _ROOT_LOG.debug('Starting prompt_toolkit full-screen application...')
 
     console.embed()
 

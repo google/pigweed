@@ -668,6 +668,34 @@ Python Input & Output
        | the way to the beginning and end of the buffer.
      - |checkbox|
 
+Early Startup
+^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Start the pw console test mode by
+       | running ``pw console --test-mode``
+     - | Console starts up showing an ``All Logs`` window.
+     - |checkbox|
+
+   * - 2
+     - | Click the :guilabel:`All Logs` window title
+       | Press :kbd:`g` to jump to the top of the log history
+     - | These log messages should be at the top:
+       | ``DBG Adding plugins...``
+       | ``DBG Starting prompt_toolkit full-screen application...``
+       | ``DBG pw_console test-mode starting...``
+       | ``DBG pw_console.PwConsoleEmbed init complete``
+     - |checkbox|
+
 Quit Confirmation Dialog
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

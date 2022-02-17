@@ -17,7 +17,7 @@ import copy
 import logging
 import tempfile
 from datetime import datetime
-from typing import Iterator, Optional
+from typing import Iterable, Iterator, Optional
 
 
 def all_loggers() -> Iterator[logging.Logger]:
@@ -68,18 +68,25 @@ def disable_stdout_handlers(logger: logging.Logger) -> None:
             logger.removeHandler(handler)
 
 
-def setup_python_logging(last_resort_filename: Optional[str] = None) -> None:
+def setup_python_logging(
+    last_resort_filename: Optional[str] = None,
+    loggers_with_no_propagation: Optional[Iterable[logging.Logger]] = None
+) -> None:
     """Disable log handlers for full screen prompt_toolkit applications."""
+    if not loggers_with_no_propagation:
+        loggers_with_no_propagation = []
     disable_stdout_handlers(logging.getLogger())
 
     if logging.lastResort is not None:
         set_logging_last_resort_file_handler(last_resort_filename)
 
-    for logger in all_loggers():
-        # Make sure all known loggers propagate to the root logger.
-        logger.propagate = True
+    for logger in list(all_loggers()):
         # Prevent stdout handlers from corrupting the prompt_toolkit UI.
         disable_stdout_handlers(logger)
+        if logger in loggers_with_no_propagation:
+            continue
+        # Make sure all known loggers propagate to the root logger.
+        logger.propagate = True
 
     # Prevent these loggers from propagating to the root logger.
     hidden_host_loggers = [

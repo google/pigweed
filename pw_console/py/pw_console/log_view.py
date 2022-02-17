@@ -69,6 +69,7 @@ class LogView:
         self.log_pane = log_pane
         self.log_store = log_store if log_store else LogStore(
             prefs=application.prefs)
+        self.log_store.set_prefs(application.prefs)
         self.log_store.register_viewer(self)
 
         self.marked_logs_start: Optional[int] = None
@@ -286,7 +287,8 @@ class LogView:
                 self.count_search_matches())
 
         # Default search direction when hitting enter in the search bar.
-        self.search_forwards()
+        if interactive:
+            self.search_forwards()
         return True
 
     def save_search_matched_line(self, log_index: int) -> None:

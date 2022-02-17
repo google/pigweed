@@ -49,6 +49,7 @@ from pw_console.log_pane_toolbars import (
 )
 from pw_console.log_pane_saveas_dialog import LogPaneSaveAsDialog
 from pw_console.log_pane_selection_dialog import LogPaneSelectionDialog
+from pw_console.log_store import LogStore
 from pw_console.search_toolbar import SearchToolbar
 from pw_console.filter_toolbar import FilterToolbar
 from pw_console.widgets import (
@@ -313,6 +314,7 @@ class LogPane(WindowPane):
         self,
         application: Any,
         pane_title: str = 'Logs',
+        log_store: Optional[LogStore] = None,
     ):
         super().__init__(application, pane_title)
 
@@ -322,7 +324,9 @@ class LogPane(WindowPane):
         self.is_a_duplicate = False
 
         # Create the log container which stores and handles incoming logs.
-        self.log_view: LogView = LogView(self, self.application)
+        self.log_view: LogView = LogView(self,
+                                         self.application,
+                                         log_store=log_store)
 
         # Log pane size variables. These are updated just befor rendering the
         # pane by the LogLineHSplit class.

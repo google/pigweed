@@ -58,6 +58,7 @@ from pw_console.console_prefs import ConsolePrefs
 from pw_console.help_window import HelpWindow
 import pw_console.key_bindings
 from pw_console.log_pane import LogPane
+from pw_console.log_store import LogStore
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.python_logging import all_loggers
 from pw_console.quit_dialog import QuitDialog
@@ -642,9 +643,13 @@ class ConsoleApp:
         if theme_name:
             self.prefs.set_ui_theme(theme_name)
 
-    def _create_log_pane(self, title=None) -> 'LogPane':
+    def _create_log_pane(self,
+                         title: str = '',
+                         log_store: Optional[LogStore] = None) -> 'LogPane':
         # Create one log pane.
-        log_pane = LogPane(application=self, pane_title=title)
+        log_pane = LogPane(application=self,
+                           pane_title=title,
+                           log_store=log_store)
         self.window_manager.add_pane(log_pane)
         return log_pane
 
@@ -663,7 +668,7 @@ class ConsoleApp:
     def add_log_handler(
             self,
             window_title: str,
-            logger_instances: Iterable[logging.Logger],
+            logger_instances: Union[Iterable[logging.Logger], LogStore],
             separate_log_panes: bool = False,
             log_level_name: Optional[str] = None) -> Optional[LogPane]:
         """Add the Log pane as a handler for this logger instance."""
@@ -675,11 +680,18 @@ class ConsoleApp:
                 existing_log_pane = pane
                 break
 
-        if not existing_log_pane or separate_log_panes:
-            existing_log_pane = self._create_log_pane(title=window_title)
+        log_store: Optional[LogStore] = None
+        if isinstance(logger_instances, LogStore):
+            log_store = logger_instances
 
-        for logger in logger_instances:
-            _add_log_handler_to_pane(logger, existing_log_pane, log_level_name)
+        if not existing_log_pane or separate_log_panes:
+            existing_log_pane = self._create_log_pane(title=window_title,
+                                                      log_store=log_store)
+
+        if isinstance(logger_instances, list):
+            for logger in logger_instances:
+                _add_log_handler_to_pane(logger, existing_log_pane,
+                                         log_level_name)
 
         self.refresh_layout()
         return existing_log_pane

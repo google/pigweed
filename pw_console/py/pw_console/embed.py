@@ -43,7 +43,9 @@ class PwConsoleEmbed:
                  config_file_path: Optional[Union[str, Path]] = None) -> None:
         """Call this to embed pw console at the call point within your program.
 
-        Example usage: ::
+        Example usage:
+
+        .. code-block:: python
 
             import logging
 
@@ -56,10 +58,10 @@ class PwConsoleEmbed:
                 loggers={
                     'Host Logs': [
                         logging.getLogger(__package__),
-                        logging.getLogger(__file__)
+                        logging.getLogger(__file__),
                     ],
                     'Device Logs': [
-                        logging.getLogger('usb_gadget')
+                        logging.getLogger('usb_gadget'),
                     ],
                 },
                 app_title='My Awesome Console',
@@ -84,9 +86,13 @@ class PwConsoleEmbed:
                 table. Similar to what is returned by `globals()`.
             local_vars: Dictionary representing the desired local symbol
                 table. Similar to what is returned by `locals()`.
-            loggers: Dict with keys of log window titles and values of
-                `logging.getLogger()` instances in lists. Each key that should
-                be shown in the pw console user interface.
+            loggers: Dict with keys of log window titles and values of either:
+
+                    1. List of `logging.getLogger()
+                       <https://docs.python.org/3/library/logging.html#logging.getLogger>`_
+                       instances.
+                    2. A single pw_console.log_store.LogStore instance.
+
             app_title: Custom title text displayed in the user interface.
             repl_startup_message: Custom text shown by default in the repl
                 output pane.
@@ -105,7 +111,7 @@ class PwConsoleEmbed:
         self.config_file_path = Path(
             config_file_path) if config_file_path else None
 
-        self.console_app = None
+        self.console_app: Optional[ConsoleApp] = None
         self.extra_completers: List = []
 
         self.setup_python_logging_called = False
@@ -146,7 +152,7 @@ class PwConsoleEmbed:
 
     def add_sentence_completer(self,
                                word_meta_dict: Dict[str, str],
-                               ignore_case=True):
+                               ignore_case=True) -> None:
         """Include a custom completer that matches on the entire repl input.
 
         Args:
@@ -170,10 +176,12 @@ class PwConsoleEmbed:
 
         self.extra_completers.append(word_completer)
 
-    def _setup_log_panes(self):
+    def _setup_log_panes(self) -> None:
         """Add loggers to ConsoleApp log pane(s)."""
         if not self.loggers:
             return
+
+        assert isinstance(self.console_app, ConsoleApp)
 
         if isinstance(self.loggers, list):
             self.console_app.add_log_handler('Logs', self.loggers)
@@ -183,27 +191,49 @@ class PwConsoleEmbed:
                 window_pane = self.console_app.add_log_handler(
                     window_title, logger_instances)
 
-                if window_pane.pane_title() in self.hidden_by_default_windows:
+                if (window_pane and window_pane.pane_title()
+                        in self.hidden_by_default_windows):
                     window_pane.show_pane = False
 
-    def setup_python_logging(self, last_resort_filename: Optional[str] = None):
-        """Disable log handlers for full screen prompt_toolkit applications.
+    def setup_python_logging(
+        self,
+        last_resort_filename: Optional[str] = None,
+        loggers_with_no_propagation: Optional[Iterable[logging.Logger]] = None
+    ) -> None:
+        """Setup friendly logging for full-screen prompt_toolkit applications.
+
+        This function sets up Python log handlers to be friendly for full-screen
+        prompt_toolkit applications. That is, logging to terminal STDOUT and
+        STDERR is disabled so the terminal user interface can be drawn.
+
+        Specifically, all Python STDOUT and STDERR log handlers are
+        disabled. It also sets `log propagation to True
+        <https://docs.python.org/3/library/logging.html#logging.Logger.propagate>`_.
+        to ensure that all log messages are sent to the root logger.
 
         Args:
             last_resort_filename: If specified use this file as a fallback for
-                unhandled python logging messages. Normally Python will output
+                unhandled Python logging messages. Normally Python will output
                 any log messages with no handlers to STDERR as a fallback. If
-                none, a temp file will be created instead.
+                None, a temp file will be created instead. See Python
+                documentation on `logging.lastResort
+                <https://docs.python.org/3/library/logging.html#logging.lastResort>`_
+                for more info.
+            loggers_with_no_propagation: List of logger instances to skip
+               setting ``propagate = True``. This is useful if you would like
+               log messages from a particular source to not appear in the root
+               logger.
         """
         self.setup_python_logging_called = True
-        pw_console.python_logging.setup_python_logging(last_resort_filename)
+        pw_console.python_logging.setup_python_logging(
+            last_resort_filename, loggers_with_no_propagation)
 
-    def hide_windows(self, *window_titles):
+    def hide_windows(self, *window_titles) -> None:
         """Hide window panes specified by title on console startup."""
         for window_title in window_titles:
             self.hidden_by_default_windows.append(window_title)
 
-    def embed(self):
+    def embed(self) -> None:
         """Start the console."""
 
         # Create the ConsoleApp instance.
@@ -215,7 +245,7 @@ class PwConsoleEmbed:
             app_title=self.app_title,
             extra_completers=self.extra_completers,
         )
-        PW_CONSOLE_APP_CONTEXTVAR.set(self.console_app)
+        PW_CONSOLE_APP_CONTEXTVAR.set(self.console_app)  # type: ignore
         # Setup Python logging and log panes.
         if not self.setup_python_logging_called:
             self.setup_python_logging()
@@ -231,10 +261,8 @@ class PwConsoleEmbed:
 
         # Add toolbar plugins to the layout.
         for toolbar in self.top_toolbar_plugins:
-            toolbar.application = self.console_app
             self.console_app.window_manager.add_top_toolbar(toolbar)
         for toolbar in self.bottom_toolbar_plugins:
-            toolbar.application = self.console_app
             self.console_app.window_manager.add_bottom_toolbar(toolbar)
 
         # Rebuild prompt_toolkit containers, menu items, and help content with

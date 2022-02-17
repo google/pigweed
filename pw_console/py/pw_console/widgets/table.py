@@ -33,10 +33,7 @@ class TableView:
     LAST_TABLE_COLUMN_NAMES = ['msg', 'message']
 
     def __init__(self, prefs: ConsolePrefs):
-        self.prefs = prefs
-        # Max column widths of each log field
-        self.column_padding = ' ' * self.prefs.spaces_between_columns
-
+        self.set_prefs(prefs)
         self.column_widths: collections.OrderedDict = collections.OrderedDict()
         self._header_fragment_cache = None
 
@@ -48,6 +45,11 @@ class TableView:
 
         # Width of all columns except the final message
         self.column_width_prefix_total = 0
+
+    def set_prefs(self, prefs: ConsolePrefs) -> None:
+        self.prefs = prefs
+        # Max column widths of each log field
+        self.column_padding = ' ' * self.prefs.spaces_between_columns
 
     def all_column_names(self):
         columns_names = [

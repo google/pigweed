@@ -18,7 +18,7 @@ import collections
 import logging
 import sys
 from datetime import datetime
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 import pw_cli.color
 
@@ -32,8 +32,60 @@ if TYPE_CHECKING:
 
 
 class LogStore(logging.Handler):
-    """Class to hold many log events."""
-    def __init__(self, prefs: ConsolePrefs):
+    """Pigweed Console logging handler.
+
+    This is a `Python logging.Handler
+    <https://docs.python.org/3/library/logging.html#handler-objects>`_ class
+    used to store logs for display in the pw_console user interface.
+
+    You may optionally add this as a handler to an existing logger
+    instances. This will be required if logs need to be captured for display in
+    the pw_console UI before the user interface is running.
+
+    Example usage:
+
+    .. code-block:: python
+
+        import logging
+
+        from pw_console import PwConsoleEmbed, LogStore
+
+        _DEVICE_LOG = logging.getLogger('usb_gadget')
+
+        # Create a log store and add as a handler.
+        device_log_store = LogStore()
+        _DEVICE_LOG.addHander(device_log_store)
+
+        # Start communication with your device here, before embedding
+        # pw_console.
+
+        # Create the pw_console embed instance
+        console = PwConsoleEmbed(
+            global_vars=globals(),
+            local_vars=locals(),
+            loggers={
+                'Host Logs': [
+                    logging.getLogger(__package__),
+                    logging.getLogger(__file__),
+                ],
+                # Set the LogStore as the value of this logger window.
+                'Device Logs': device_log_store,
+            },
+            app_title='My Awesome Console',
+        )
+
+        console.setup_python_logging()
+        console.embed()
+    """
+    def __init__(self, prefs: Optional[ConsolePrefs] = None):
+        """Initializes the LogStore instance."""
+
+        # ConsolePrefs may not be passed on init. For example, if the user is
+        # creating a LogStore to capture log messages before console startup.
+        if not prefs:
+            prefs = ConsolePrefs(project_file=False,
+                                 project_user_file=False,
+                                 user_file=False)
         self.prefs = prefs
         # Log storage deque for fast addition and deletion from the beginning
         # and end of the iterable.
@@ -66,10 +118,16 @@ class LogStore(logging.Handler):
         # Set formatting after logging.Handler init.
         self.set_formatting()
 
-    def register_viewer(self, viewer: 'LogView'):
+    def set_prefs(self, prefs: ConsolePrefs) -> None:
+        """Set the ConsolePrefs for this LogStore."""
+        self.prefs = prefs
+        self.table.set_prefs(prefs)
+
+    def register_viewer(self, viewer: 'LogView') -> None:
+        """Register this LogStore with a LogView."""
         self.registered_viewers.append(viewer)
 
-    def set_formatting(self):
+    def set_formatting(self) -> None:
         """Setup log formatting."""
         # Copy of pw_cli log formatter
         colors = pw_cli.color.colors(True)
@@ -83,7 +141,7 @@ class LogStore(logging.Handler):
 
         # Update log time character width.
         example_time_string = datetime.now().strftime(timestamp_format)
-        self.table.column_width_time = len(example_time_string)
+        self.table.column_widths['time'] = len(example_time_string)
 
     def clear_logs(self):
         """Erase all stored pane lines."""

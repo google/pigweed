@@ -8,10 +8,18 @@ Embedding Guide
 Using embed()
 -------------
 ``pw console`` is invoked by calling ``PwConsoleEmbed().embed()`` in your
-own Python script.
+own Python script. For a complete example of an embedded device console script see
+:bdg-link-primary-line:`pw_system/py/pw_system/console.py <https://cs.opensource.google/pigweed/pigweed/+/main:pw_system/py/pw_system/console.py>`.
 
 .. automodule:: pw_console.embed
     :members: PwConsoleEmbed
+    :undoc-members:
+    :show-inheritance:
+
+.. _module-pw_console-embedding-logstore:
+
+.. autoclass:: pw_console.log_store.LogStore
+    :members: __init__
     :undoc-members:
     :show-inheritance:
 
