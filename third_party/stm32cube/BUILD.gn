@@ -121,7 +121,10 @@ config("flags") {
     "STM32CUBE_HEADER=\"${files.family}.h\"",
     "__ARMCC_VERSION=0",  # workaround for bug at stm32l552xx.h:1303
   ]
-  visibility = [ ":*" ]
+  visibility = [
+    ":*",
+    pw_third_party_stm32cube_CORE_INIT,
+  ]
 }
 
 config("public_include_paths") {
