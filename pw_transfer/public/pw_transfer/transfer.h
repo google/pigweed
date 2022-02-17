@@ -86,6 +86,10 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
     thread_.AddTransferHandler(handler);
   }
 
+  void set_max_pending_bytes(uint32_t max_pending_bytes) {
+    max_parameters_.set_pending_bytes(max_pending_bytes);
+  }
+
   void UnregisterHandler(internal::Handler& handler) {
     thread_.RemoveTransferHandler(handler);
   }

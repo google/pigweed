@@ -43,7 +43,14 @@ class TransferParameters {
   }
 
   uint32_t pending_bytes() const { return pending_bytes_; }
+  void set_pending_bytes(uint32_t pending_bytes) {
+    pending_bytes_ = pending_bytes;
+  }
+
   uint32_t max_chunk_size_bytes() const { return max_chunk_size_bytes_; }
+  void set_max_chunk_size_bytes(uint32_t max_chunk_size_bytes) {
+    max_chunk_size_bytes_ = max_chunk_size_bytes;
+  }
 
   // The fractional position within a window at which a receive transfer should
   // extend its window size to minimize the amount of time the transmitter

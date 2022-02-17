@@ -1362,6 +1362,37 @@ TEST_F(ReadTransfer, PrepareError) {
   }
 }
 
+TEST_F(WriteTransferMaxBytes16, Service_SetMaxPendingBytes) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler_.prepare_write_called);
+  EXPECT_FALSE(handler_.finalize_write_called);
+
+  // First parameters chunk has default pending bytes of 16.
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses()[0]);
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  ASSERT_TRUE(chunk.pending_bytes.has_value());
+  EXPECT_EQ(chunk.pending_bytes.value(), 16u);
+
+  // Update the pending bytes value.
+  ctx_.service().set_max_pending_bytes(12);
+
+  ctx_.SendClientStream<64>(EncodeChunk(
+      {.transfer_id = 7, .offset = 0, .data = std::span(kData).first(8)}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Second parameters chunk should use the new max pending bytes.
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  chunk = DecodeChunk(ctx_.responses()[1]);
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.offset, 8u);
+  EXPECT_EQ(chunk.window_end_offset, 20u);
+  ASSERT_TRUE(chunk.pending_bytes.has_value());
+  EXPECT_EQ(chunk.pending_bytes.value(), 12u);
+}
+
 PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace
