@@ -174,7 +174,7 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  virtualenv_root, strict, virtualenv_gn_out_dir, json_file,
                  project_root, config_file, use_existing_cipd,
-                 use_pinned_pip_packages):
+                 use_pinned_pip_packages, cipd_only):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -188,6 +188,7 @@ class EnvSetup(object):
         self._virtualenv_root = (virtualenv_root
                                  or os.path.join(install_dir, 'pigweed-venv'))
         self._strict = strict
+        self._cipd_only = cipd_only
 
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
@@ -207,6 +208,7 @@ class EnvSetup(object):
         self._root_variable = None
 
         self._config_file_name = getattr(config_file, 'name', 'config file')
+        self._env.set('_PW_ENVIRONMENT_CONFIG_FILE', self._config_file_name)
         if config_file:
             self._parse_config_file(config_file)
 
@@ -378,6 +380,9 @@ class EnvSetup(object):
         if self._is_windows:
             steps.append(("Windows scripts", self.win_scripts))
 
+        if self._cipd_only:
+            steps = [('CIPD package manager', self.cipd)]
+
         self._log(
             Color.bold('Downloading and installing packages into local '
                        'source directory:\n'))
@@ -452,6 +457,10 @@ Then use `set +x` to go back to normal.
         self._env.echo(
             Color.bold('Environment looks good, you are ready to go!'))
         self._env.echo()
+
+        # Don't write new files if all we did was update CIPD packages.
+        if self._cipd_only:
+            return 0
 
         with open(self._shell_file, 'w') as outs:
             self._env.write(outs)
@@ -704,6 +713,12 @@ def parse(argv=None):
         dest='use_pinned_pip_packages',
         help='Do not use pins of pip packages.',
         action='store_false',
+    )
+
+    parser.add_argument(
+        '--cipd-only',
+        help='Skip non-CIPD steps.',
+        action='store_true',
     )
 
     args = parser.parse_args(argv)
