@@ -824,9 +824,9 @@ class FakeScoConnectionReceiver : public fidlbredr::testing::ScoConnectionReceiv
                             async_dispatcher_t* dispatcher)
       : binding_(this, std::move(request), dispatcher), connected_count_(0), error_count_(0) {}
 
-  void Connected(fidlbredr::ScoConnection connection,
+  void Connected(fidl::InterfaceHandle<::fuchsia::bluetooth::bredr::ScoConnection> connection,
                  fidlbredr::ScoConnectionParameters params) override {
-    connection_ = std::move(connection);
+    connection_.Bind(std::move(connection));
     parameters_ = std::move(params);
     connected_count_++;
   }
@@ -838,7 +838,7 @@ class FakeScoConnectionReceiver : public fidlbredr::testing::ScoConnectionReceiv
   void Close() { binding_.Close(ZX_ERR_PEER_CLOSED); }
 
   size_t connected_count() const { return connected_count_; }
-  const std::optional<fidlbredr::ScoConnection>& connection() const { return connection_; }
+  const fidl::InterfacePtr<fidlbredr::ScoConnection>& connection() const { return connection_; }
   const std::optional<fidlbredr::ScoConnectionParameters>& parameters() const {
     return parameters_;
   }
@@ -849,8 +849,9 @@ class FakeScoConnectionReceiver : public fidlbredr::testing::ScoConnectionReceiv
  private:
   fidl::Binding<ScoConnectionReceiver> binding_;
   size_t connected_count_;
-  std::optional<fidlbredr::ScoConnection> connection_;
+  fidl::InterfacePtr<fidlbredr::ScoConnection> connection_;
   std::optional<fidlbredr::ScoConnectionParameters> parameters_;
+  std::optional<uint16_t> max_tx_data_size_;
   size_t error_count_;
   std::optional<fidlbredr::ScoErrorCode> error_;
   void NotImplemented_(const std::string& name) override {
@@ -868,7 +869,7 @@ TEST_F(ProfileServerTest, ConnectScoWithInvalidParameters) {
   RunLoopUntilIdle();
   ASSERT_TRUE(receiver.error().has_value());
   EXPECT_EQ(receiver.error().value(), fidlbredr::ScoErrorCode::INVALID_ARGUMENTS);
-  EXPECT_FALSE(receiver.connection().has_value());
+  EXPECT_FALSE(receiver.connection().is_bound());
 }
 
 TEST_F(ProfileServerTest, ConnectScoWithEmptyParameters) {
@@ -879,7 +880,7 @@ TEST_F(ProfileServerTest, ConnectScoWithEmptyParameters) {
   RunLoopUntilIdle();
   ASSERT_TRUE(receiver.error().has_value());
   EXPECT_EQ(receiver.error().value(), fidlbredr::ScoErrorCode::INVALID_ARGUMENTS);
-  EXPECT_FALSE(receiver.connection().has_value());
+  EXPECT_FALSE(receiver.connection().is_bound());
 }
 
 TEST_F(ProfileServerTest, ConnectScoInitiatorWithTooManyParameters) {
@@ -894,7 +895,7 @@ TEST_F(ProfileServerTest, ConnectScoInitiatorWithTooManyParameters) {
   RunLoopUntilIdle();
   ASSERT_TRUE(receiver.error().has_value());
   EXPECT_EQ(receiver.error().value(), fidlbredr::ScoErrorCode::INVALID_ARGUMENTS);
-  EXPECT_FALSE(receiver.connection().has_value());
+  EXPECT_FALSE(receiver.connection().is_bound());
 }
 
 TEST_F(ProfileServerTest, ConnectScoWithUnconnectedPeerReturnsError) {
@@ -910,7 +911,7 @@ TEST_F(ProfileServerTest, ConnectScoWithUnconnectedPeerReturnsError) {
   RunLoopUntilIdle();
   ASSERT_TRUE(receiver.error().has_value());
   EXPECT_EQ(receiver.error().value(), fidlbredr::ScoErrorCode::FAILURE);
-  EXPECT_FALSE(receiver.connection().has_value());
+  EXPECT_FALSE(receiver.connection().is_bound());
 }
 
 TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorSuccess) {
@@ -926,11 +927,13 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorSuccess) {
                        std::move(sco_params_list), std::move(receiver_handle));
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
-  ASSERT_TRUE(receiver.connection().has_value());
-  EXPECT_TRUE(receiver.connection()->has_socket());
+  ASSERT_TRUE(receiver.connection().is_bound());
   ASSERT_TRUE(receiver.parameters().has_value());
   ASSERT_TRUE(receiver.parameters()->has_parameter_set());
   EXPECT_EQ(receiver.parameters()->parameter_set(), fidlbredr::HfpParameterSet::MSBC_T1);
+  ASSERT_TRUE(receiver.parameters()->has_max_tx_data_size());
+  // max_tx_data_size is 0 because the test fixture does not support in-band SCO.
+  EXPECT_EQ(receiver.parameters()->max_tx_data_size(), 0u);
 }
 
 TEST_F(ProfileServerTestConnectedPeer, ConnectScoResponderSuccess) {
@@ -950,8 +953,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoResponderSuccess) {
   test_device()->SendConnectionRequest(peer()->address(), bt::hci_spec::LinkType::kSCO);
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
-  ASSERT_TRUE(receiver.connection().has_value());
-  EXPECT_TRUE(receiver.connection()->has_socket());
+  ASSERT_TRUE(receiver.connection().is_bound());
   ASSERT_TRUE(receiver.parameters().has_value());
   ASSERT_TRUE(receiver.parameters()->has_parameter_set());
   EXPECT_EQ(receiver.parameters()->parameter_set(), fidlbredr::HfpParameterSet::CVSD_D0);
@@ -968,7 +970,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoResponderUnconnectedPeerReturns
   RunLoopUntilIdle();
   ASSERT_TRUE(receiver.error().has_value());
   EXPECT_EQ(receiver.error().value(), fidlbredr::ScoErrorCode::FAILURE);
-  EXPECT_FALSE(receiver.connection().has_value());
+  EXPECT_FALSE(receiver.connection().is_bound());
 }
 
 TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiver) {
@@ -984,7 +986,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiver) {
   receiver.Close();
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
-  EXPECT_FALSE(receiver.connection().has_value());
+  EXPECT_FALSE(receiver.connection().is_bound());
 }
 
 // Verifies that the profile server gracefully ignores connection results after the receiver has
@@ -1005,13 +1007,13 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiverBefore
   receiver.Close();
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
-  EXPECT_FALSE(receiver.connection().has_value());
+  EXPECT_FALSE(receiver.connection().is_bound());
   test_device()->SendCommandChannelPacket(bt::testing::SynchronousConnectionCompletePacket(
       0x00, peer()->address(), bt::hci_spec::LinkType::kSCO,
       bt::hci_spec::StatusCode::kConnectionTimeout));
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
-  EXPECT_FALSE(receiver.connection().has_value());
+  EXPECT_FALSE(receiver.connection().is_bound());
 }
 
 class ProfileServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {

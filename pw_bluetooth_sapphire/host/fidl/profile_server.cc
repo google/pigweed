@@ -243,6 +243,48 @@ void ProfileServer::L2capParametersExt::RequestParameters(
   callback(ChannelInfoToFidlChannelParameters(channel_->info()));
 }
 
+ProfileServer::ScoConnectionServer::ScoConnectionServer(
+    fidl::InterfaceRequest<fuchsia::bluetooth::bredr::ScoConnection> request,
+    fbl::RefPtr<bt::sco::ScoConnection> connection)
+    : ServerBase(this, std::move(request)), connection_(std::move(connection)) {
+  binding()->set_error_handler([this](zx_status_t) { Close(); });
+}
+
+ProfileServer::ScoConnectionServer::~ScoConnectionServer() {
+  binding()->Close(ZX_ERR_PEER_CLOSED);
+  if (connection_) {
+    connection_->Deactivate();
+  }
+}
+
+void ProfileServer::ScoConnectionServer::Activate(fit::callback<void()> on_closed) {
+  on_closed_ = std::move(on_closed);
+
+  auto rx_callback = [](auto) {
+    // TODO(fxbug.dev/87453): Implement rx_callback
+  };
+  auto closed_cb = [this] { Close(); };
+  connection_->Activate(std::move(rx_callback), std::move(closed_cb));
+}
+
+void ProfileServer::ScoConnectionServer::Read(ReadCallback callback) {
+  // TODO(fxbug.dev/87453): Implement Read()
+  Close();
+}
+
+void ProfileServer::ScoConnectionServer::Write(std::vector<uint8_t> data, WriteCallback callback) {
+  // TODO(fxbug.dev/87453): Implement Write()
+  Close();
+}
+
+void ProfileServer::ScoConnectionServer::Close() {
+  connection_->Deactivate();
+  connection_.reset();
+  if (on_closed_) {
+    on_closed_();
+  }
+}
+
 void ProfileServer::Advertise(
     std::vector<fidlbredr::ServiceDefinition> definitions, fidlbredr::ChannelParameters parameters,
     fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver,
@@ -570,8 +612,22 @@ void ProfileServer::OnScoConnectionResult(
     return;
   }
 
-  fidlbredr::ScoConnection connection;
-  connection.set_socket(sco_socket_factory_.MakeSocketForChannel(result.value().first));
+  fbl::RefPtr<bt::sco::ScoConnection> connection = std::move(result.value().first);
+  const uint16_t max_tx_data_size = connection->max_tx_sdu_size();
+
+  fidl::InterfaceHandle<fidlbredr::ScoConnection> sco_handle;
+
+  std::unique_ptr<ScoConnectionServer> sco_server =
+      std::make_unique<ScoConnectionServer>(sco_handle.NewRequest(), connection);
+  auto [server_iter, _] = sco_connection_servers_.emplace(connection.get(), std::move(sco_server));
+
+  // Activate after adding the connection to the map in case on_closed is called synchronously.
+  auto on_closed = [this, conn = connection.get()] {
+    auto iter = sco_connection_servers_.find(conn);
+    ZX_ASSERT(iter != sco_connection_servers_.end());
+    sco_connection_servers_.erase(iter);
+  };
+  server_iter->second->Activate(std::move(on_closed));
 
   if (!receiver.is_bound()) {
     return;
@@ -582,7 +638,8 @@ void ProfileServer::OnScoConnectionResult(
                 "parameter_index (%zu)  >= request->parameters.size() (%zu)", parameter_index,
                 request->parameters.size());
   fidlbredr::ScoConnectionParameters parameters = std::move(request->parameters[parameter_index]);
-  receiver->Connected(std::move(connection), std::move(parameters));
+  parameters.set_max_tx_data_size(max_tx_data_size);
+  receiver->Connected(std::move(sco_handle), std::move(parameters));
 }
 
 void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status) {

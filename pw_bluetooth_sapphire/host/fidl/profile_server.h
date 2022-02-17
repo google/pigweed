@@ -43,6 +43,21 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
     fbl::RefPtr<bt::l2cap::Channel> channel_;
   };
 
+  class ScoConnectionServer final : public ServerBase<fuchsia::bluetooth::bredr::ScoConnection> {
+   public:
+    ScoConnectionServer(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::ScoConnection> request,
+                        fbl::RefPtr<bt::sco::ScoConnection> connection);
+    ~ScoConnectionServer() override;
+    void Activate(fit::callback<void()> on_closed);
+    void Read(ReadCallback callback) override;
+    void Write(std::vector<uint8_t> data, WriteCallback callback) override;
+
+   private:
+    void Close();
+    fbl::RefPtr<bt::sco::ScoConnection> connection_;
+    fit::callback<void()> on_closed_;
+  };
+
   struct ScoRequest : public fbl::RefCounted<ScoRequest> {
     std::optional<bt::gap::BrEdrConnectionManager::ScoRequestHandle> request_handle;
     fuchsia::bluetooth::bredr::ScoConnectionReceiverPtr receiver;
@@ -158,8 +173,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // Creates sockets that bridge L2CAP channels to profile processes.
   bt::socket::SocketFactory<bt::l2cap::Channel> l2cap_socket_factory_;
 
-  // Creates sockets that bridge SCO connections to profile processes.
-  bt::socket::SocketFactory<bt::sco::ScoConnection> sco_socket_factory_;
+  std::unordered_map<bt::sco::ScoConnection*, std::unique_ptr<ScoConnectionServer>>
+      sco_connection_servers_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
