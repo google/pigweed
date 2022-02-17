@@ -4,7 +4,14 @@
 pw_system
 =========
 .. warning::
-  Under construction, stay tuned!
+  This module is an early work-in-progress towards an opinionated framework for
+  new projects built on Pigweed. It is under active development, so stay tuned!
+
+Demo on the STM32F429I Discovery Board
+========================================================
+Refer to the :ref:`STM32F429I Discovery<target-stm32f429i-disc1-stm32cube>`
+target documentation for instructions on running a ``pw_system`` demo.
+
 
 GN Target Toolchain Template
 ============================
