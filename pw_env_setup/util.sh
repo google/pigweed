@@ -245,7 +245,8 @@ pw_bootstrap() {
     _PW_ENV_SETUP_STATUS="$?"
   fi
 
-  cp "$PW_ROOT/pw_env_setup/destination.md" "$_PW_ACTUAL_ENVIRONMENT_ROOT/README.md"
+  # Create the environment README file. Use quotes to prevent alias expansion.
+  "cp" "$PW_ROOT/pw_env_setup/destination.md" "$_PW_ACTUAL_ENVIRONMENT_ROOT/README.md"
 }
 
 pw_activate() {
