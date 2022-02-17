@@ -62,11 +62,11 @@ class Function<Return(Args...)> {
   Function& operator=(const Function&) = delete;
 
   template <typename Callable>
-  Function(Callable callable) {
+  Function(Callable&& callable) {
     if (function_internal::IsNull(callable)) {
       holder_.InitializeNullTarget();
     } else {
-      holder_.InitializeInlineTarget(std::move(callable));
+      holder_.InitializeInlineTarget(std::forward<Callable>(callable));
     }
   }
 
@@ -89,12 +89,12 @@ class Function<Return(Args...)> {
   }
 
   template <typename Callable>
-  Function& operator=(Callable callable) {
+  Function& operator=(Callable&& callable) {
     holder_.DestructTarget();
     if (function_internal::IsNull(callable)) {
       holder_.InitializeNullTarget();
     } else {
-      holder_.InitializeInlineTarget(std::move(callable));
+      holder_.InitializeInlineTarget(std::forward<Callable>(callable));
     }
     return *this;
   }
