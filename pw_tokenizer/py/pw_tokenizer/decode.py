@@ -20,6 +20,7 @@ Missing, truncated, or otherwise corrupted arguments are handled and displayed
 in the resulting string with an error message.
 """
 
+from datetime import datetime
 import re
 import struct
 from typing import Iterable, List, NamedTuple, Match, Sequence, Tuple
@@ -275,7 +276,7 @@ class DecodedArg:
         return self.format()
 
     def __repr__(self) -> str:
-        return 'DecodedArg({!r})'.format(self)
+        return f'DecodedArg({self})'
 
 
 def parse_format_specifiers(format_string: str) -> Iterable[FormatSpec]:
@@ -287,6 +288,33 @@ class FormattedString(NamedTuple):
     value: str
     args: Sequence[DecodedArg]
     remaining: bytes
+
+    def ok(self) -> bool:
+        """Arg data decoded successfully and all expected args were found."""
+        return all(arg.ok() for arg in self.args) and not self.remaining
+
+    def score(self, date_removed: datetime = None) -> tuple:
+        """Returns a key for sorting by how successful a decode was.
+
+        Decoded strings are sorted by whether they
+
+          1. decoded all bytes for all arguments without errors,
+          2. decoded all data,
+          3. have the fewest decoding errors,
+          4. decoded the most arguments successfully, or
+          5. have the most recent removal date, if they were removed.
+
+        This must match the collision resolution logic in detokenize.cc.
+
+        To format a list of FormattedStrings from most to least successful,
+        use sort(key=FormattedString.score, reverse=True).
+        """
+        return (
+            self.ok(),  # decocoded all data and all expected args were found
+            not self.remaining,  # decoded all data
+            -sum(not arg.ok() for arg in self.args),  # fewest errors
+            len(self.args),  # decoded the most arguments
+            date_removed or datetime.max)  # most recently present
 
 
 class FormatString:

@@ -954,6 +954,44 @@ functions.
     TransmitLogMessage(base64_buffer, base64_size);
   }
 
+Investigating undecoded messages
+--------------------------------
+Tokenized messages cannot be decoded if the token is not recognized. The Python
+package includes the ``parse_message`` tool, which parses tokenized Base64
+messages without looking up the token in a database. This tool attempts to guess
+the types of the arguments and displays potential ways to decode them.
+
+This tool can be used to extract argument information from an otherwise unusable
+message. It could help identify which statement in the code produced the
+message. This tool is not particularly helpful for tokenized messages without
+arguments, since all it can do is show the value of the unknown token.
+
+The tool is executed by passing Base64 tokenized messages, with or without the
+``$`` prefix, to ``pw_tokenizer.parse_message``. Pass ``-h`` or ``--help`` to
+see full usage information.
+
+Example
+^^^^^^^
+.. code-block::
+
+  $ python -m pw_tokenizer.parse_message '$329JMwA=' koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw== --specs %s %d
+
+  INF Decoding arguments for '$329JMwA='
+  INF Binary: b'\xdfoI3\x00' [df 6f 49 33 00] (5 bytes)
+  INF Token:  0x33496fdf
+  INF Args:   b'\x00' [00] (1 bytes)
+  INF Decoding with up to 8 %s or %d arguments
+  INF   Attempt 1: [%s]
+  INF   Attempt 2: [%d] 0
+
+  INF Decoding arguments for '$koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw=='
+  INF Binary: b'\x92\x84\xa5\xe7n\x13FAILED_PRECONDITION\x02OK' [92 84 a5 e7 6e 13 46 41 49 4c 45 44 5f 50 52 45 43 4f 4e 44 49 54 49 4f 4e 02 4f 4b] (28 bytes)
+  INF Token:  0xe7a58492
+  INF Args:   b'n\x13FAILED_PRECONDITION\x02OK' [6e 13 46 41 49 4c 45 44 5f 50 52 45 43 4f 4e 44 49 54 49 4f 4e 02 4f 4b] (24 bytes)
+  INF Decoding with up to 8 %s or %d arguments
+  INF   Attempt 1: [%d %s %d %d %d] 55 FAILED_PRECONDITION 1 -40 -38
+  INF   Attempt 2: [%d %s %s] 55 FAILED_PRECONDITION OK
+
 Command line utilities
 ^^^^^^^^^^^^^^^^^^^^^^
 ``pw_tokenizer`` provides two standalone command line utilities for detokenizing

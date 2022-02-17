@@ -40,6 +40,7 @@ pw_python_package("py") {
     "pw_tokenizer/detokenize.py",
     "pw_tokenizer/elf_reader.py",
     "pw_tokenizer/encode.py",
+    "pw_tokenizer/parse_message.py",
     "pw_tokenizer/proto/__init__.py",
     "pw_tokenizer/serial_detokenizer.py",
     "pw_tokenizer/tokens.py",
