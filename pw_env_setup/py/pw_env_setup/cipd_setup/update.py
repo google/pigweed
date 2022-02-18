@@ -306,9 +306,15 @@ def update(
         # example, 'share'.
         if env_vars:
             # Some executables get installed at top-level and some get
-            # installed under 'bin'.
-            env_vars.prepend('PATH', install_dir)
-            env_vars.prepend('PATH', os.path.join(install_dir, 'bin'))
+            # installed under 'bin'. A small number of old packages prefix the
+            # entire tree with the platform (e.g., chromium/third_party/tcl).
+            for bin_dir in (
+                    install_dir,
+                    os.path.join(install_dir, 'bin'),
+                    os.path.join(install_dir, _platform(), 'bin'),
+            ):
+                if os.path.isdir(bin_dir):
+                    env_vars.prepend('PATH', bin_dir)
             env_vars.set('PW_{}_CIPD_INSTALL_DIR'.format(name.upper()),
                          install_dir)
 
