@@ -27,6 +27,7 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_status/try.h"
+#include "pw_string/string_builder.h"
 #include "pw_string/util.h"
 #include "pw_sync/mutex.h"
 #include "pw_tokenizer/tokenize.h"
@@ -411,8 +412,23 @@ void BundledUpdateService::DoApply() {
     if (file_name_view.compare(kUserManifestTargetFileName) == 0) {
       continue;  // user_manifest is not applied by the backend.
     }
+    // Try to get an IntervalReader for the current file.
     stream::IntervalReader file_reader =
         bundle_.GetTargetPayload(file_name_view);
+    if (file_reader.status().IsNotFound()) {
+      PW_LOG_INFO(
+          "Contents of file %s missing from bundle; ignoring",
+          pw::MakeString<MAX_TARGET_NAME_LENGTH>(file_name_view).c_str());
+      continue;
+    }
+    if (!file_reader.ok()) {
+      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
+                "Could not open contents of file %s from bundle; "
+                "aborting update apply phase",
+                static_cast<int>(file_reader.status().code()));
+      return;
+    }
+
     const size_t bundle_offset = file_reader.start();
     if (const Status status = backend_.ApplyTargetFile(
             file_name_view, file_reader, bundle_offset);
