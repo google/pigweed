@@ -6,6 +6,7 @@
 
 #include <endian.h>
 
+#include <algorithm>
 #include <set>
 #include <vector>
 

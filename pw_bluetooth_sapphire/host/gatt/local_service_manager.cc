@@ -7,6 +7,8 @@
 #include <endian.h>
 #include <zircon/assert.h>
 
+#include <algorithm>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
