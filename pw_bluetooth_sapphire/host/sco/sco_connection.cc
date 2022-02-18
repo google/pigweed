@@ -17,8 +17,9 @@ ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
   handle_ = connection_->handle();
 
   connection_->set_peer_disconnect_callback([this](auto, auto) {
-    // Notifies ScoConnectionManager that this connection has been disconnected.
-    Deactivate();
+    // Notifies SocketChannelRelay that this connection has been disconnected.
+    // Close() will eventually call Deactivate().
+    Close();
   });
 }
 
@@ -45,8 +46,9 @@ void ScoConnection::Close() {
   }
 
   ZX_ASSERT(activator_closed_cb_);
-  activator_closed_cb_();
-  activator_closed_cb_ = nullptr;
+  // Move cb out of this, since cb may destroy this.
+  auto cb = std::move(activator_closed_cb_);
+  cb();
 }
 
 bool ScoConnection::Activate(ScoConnection::RxCallback /*rx_callback*/,
@@ -63,8 +65,9 @@ void ScoConnection::Deactivate() {
   bt_log(TRACE, "gap-sco", "deactivating sco connection (handle: %.4x)", handle());
   CleanUp();
   if (deactivated_cb_) {
-    deactivated_cb_();
-    deactivated_cb_ = nullptr;
+    // Move cb out of this, since cb may destroy this.
+    auto cb = std::move(deactivated_cb_);
+    cb();
   }
 }
 

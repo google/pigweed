@@ -82,6 +82,14 @@ constexpr hci_spec::SynchronousConnectionParameters EscoConnectionParams() {
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
+// Activate a SCO connection and set the close handler to call Deactivate()
+void activate_connection(OpenConnectionResult& result) {
+  if (result.is_ok()) {
+    result.value()->Activate([](ByteBufferPtr rx_data) {},
+                             [result] { result.value()->Deactivate(); });
+  };
+}
+
 class ScoConnectionManagerTest : public TestingBase {
  public:
   ScoConnectionManagerTest() = default;
@@ -124,7 +132,10 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionSuccess) {
       &setup_status_packet, &conn_complete_packet);
 
   OpenConnectionResult conn_result;
-  auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
+  auto conn_cb = [&conn_result](auto result) {
+    activate_connection(result);
+    conn_result = std::move(result);
+  };
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
@@ -148,7 +159,10 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionAndReceiveFailureStatusEvent) {
       &setup_status_packet);
 
   OpenConnectionResult conn;
-  auto conn_cb = [&conn](auto cb_result) { conn = std::move(cb_result); };
+  auto conn_cb = [&conn](auto cb_result) {
+    activate_connection(cb_result);
+    conn = std::move(cb_result);
+  };
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
@@ -169,7 +183,10 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionAndReceiveFailureCompleteEvent) {
       &setup_status_packet, &conn_complete_packet);
 
   OpenConnectionResult conn;
-  auto conn_cb = [&conn](auto cb_result) { conn = std::move(cb_result); };
+  auto conn_cb = [&conn](auto cb_result) {
+    activate_connection(cb_result);
+    conn = std::move(cb_result);
+  };
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
@@ -222,7 +239,10 @@ TEST_F(ScoConnectionManagerTest, IgnoreWrongAddressInConnectionComplete) {
       &setup_status_packet, &conn_complete_packet_wrong);
 
   OpenConnectionResult conn_result;
-  auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
+  auto conn_cb = [&conn_result](auto result) {
+    activate_connection(result);
+    conn_result = std::move(result);
+  };
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
@@ -260,7 +280,10 @@ TEST_F(ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
       &setup_status_packet, &conn_complete_packet);
 
   OpenConnectionResult conn_result;
-  auto conn_cb = [&conn_result](OpenConnectionResult result) { conn_result = std::move(result); };
+  auto conn_cb = [&conn_result](OpenConnectionResult result) {
+    activate_connection(result);
+    conn_result = std::move(result);
+  };
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
@@ -287,15 +310,24 @@ TEST_F(ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
       &setup_status_packet);
 
   OpenConnectionResult conn_result_0;
-  auto conn_cb_0 = [&conn_result_0](auto cb_conn) { conn_result_0 = std::move(cb_conn); };
+  auto conn_cb_0 = [&conn_result_0](auto cb_conn) {
+    // No need to activate the connection here since Deactivate is called manually.
+    conn_result_0 = std::move(cb_conn);
+  };
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
   OpenConnectionResult conn_result_1;
-  auto conn_cb_1 = [&conn_result_1](auto cb_result) { conn_result_1 = std::move(cb_result); };
+  auto conn_cb_1 = [&conn_result_1](auto cb_result) {
+    activate_connection(cb_result);
+    conn_result_1 = std::move(cb_result);
+  };
   auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
   OpenConnectionResult conn_result_2;
-  auto conn_cb_2 = [&conn_result_2](auto cb_conn) { conn_result_2 = std::move(cb_conn); };
+  auto conn_cb_2 = [&conn_result_2](auto cb_conn) {
+    // No need to activate the connection here since Deactivate is called manually.
+    conn_result_2 = std::move(cb_conn);
+  };
   auto req_handle_2 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_2));
 
   RunLoopUntilIdle();
@@ -346,7 +378,10 @@ TEST_F(ScoConnectionManagerTest, HandleReuse) {
       &setup_status_packet, &conn_complete_packet);
 
   OpenConnectionResult conn_result;
-  auto conn_cb = [&conn_result](auto cb_conn) { conn_result = std::move(cb_conn); };
+  auto conn_cb = [&conn_result](auto cb_conn) {
+    // No need to activate the connection here since Deactivate is called manually.
+    conn_result = std::move(cb_conn);
+  };
 
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, conn_cb);
 
@@ -465,7 +500,10 @@ TEST_F(ScoConnectionManagerTest, AcceptConnectionAndReceiveCompleteEventWithFail
 
 TEST_F(ScoConnectionManagerTest, RejectInboundRequestWhileInitiatorRequestPending) {
   size_t conn_cb_count = 0;
-  auto conn_cb = [&conn_cb_count](auto cb_conn) { conn_cb_count++; };
+  auto conn_cb = [&conn_cb_count](auto cb_conn) {
+    activate_connection(cb_conn);
+    conn_cb_count++;
+  };
 
   auto setup_status_packet = testing::CommandStatusPacket(
       hci_spec::kEnhancedSetupSynchronousConnection, hci_spec::StatusCode::kSuccess);
@@ -662,11 +700,17 @@ TEST_F(ScoConnectionManagerTest, RequestsCancelledOnManagerDestruction) {
       &setup_status_packet);
 
   OpenConnectionResult conn_result_0;
-  auto conn_cb_0 = [&conn_result_0](auto cb_conn) { conn_result_0 = std::move(cb_conn); };
+  auto conn_cb_0 = [&conn_result_0](auto cb_conn) {
+    activate_connection(cb_conn);
+    conn_result_0 = std::move(cb_conn);
+  };
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
   OpenConnectionResult conn_result_1;
-  auto conn_cb_1 = [&conn_result_1](auto cb_conn) { conn_result_1 = std::move(cb_conn); };
+  auto conn_cb_1 = [&conn_result_1](auto cb_conn) {
+    activate_connection(cb_conn);
+    conn_result_1 = std::move(cb_conn);
+  };
   auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
   RunLoopUntilIdle();
@@ -736,7 +780,10 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionCantBeCancelledOnceInProgress) {
       &setup_status_packet);
 
   OpenConnectionResult conn_result;
-  auto conn_cb = [&conn_result](auto cb_conn) { conn_result = std::move(cb_conn); };
+  auto conn_cb = [&conn_result](auto cb_conn) {
+    activate_connection(cb_conn);
+    conn_result = std::move(cb_conn);
+  };
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
   req_handle.Cancel();
@@ -765,12 +812,16 @@ TEST_F(ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
       &setup_status_packet);
 
   OpenConnectionResult conn_result_0;
-  auto conn_cb_0 = [&conn_result_0](auto cb_conn) { conn_result_0 = std::move(cb_conn); };
+  auto conn_cb_0 = [&conn_result_0](auto cb_conn) {
+    // No need to activate the connection here since Deactivate is called manually.
+    conn_result_0 = std::move(cb_conn);
+  };
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
   size_t cb_count_1 = 0;
   OpenConnectionResult conn_result_1;
   auto conn_cb_1 = [&cb_count_1, &conn_result_1](auto cb_conn) {
+    activate_connection(cb_conn);
     cb_count_1++;
     conn_result_1 = std::move(cb_conn);
   };
@@ -810,19 +861,26 @@ TEST_F(ScoConnectionManagerTest,
       &setup_status_packet);
 
   OpenConnectionResult conn_result_0;
-  auto conn_cb_0 = [&conn_result_0](auto cb_conn) { conn_result_0 = std::move(cb_conn); };
+  auto conn_cb_0 = [&conn_result_0](auto cb_conn) {
+    activate_connection(cb_conn);
+    conn_result_0 = std::move(cb_conn);
+  };
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
   std::optional<ScoConnectionManager::RequestHandle> req_handle_1;
   OpenConnectionResult conn_result_1;
   auto conn_cb_1 = [&conn_result_1, &req_handle_1](auto cb_conn) {
+    activate_connection(cb_conn);
     req_handle_1.reset();
     conn_result_1 = std::move(cb_conn);
   };
   req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
   OpenConnectionResult conn_result_2;
-  auto conn_cb_2 = [&conn_result_2](auto cb_conn) { conn_result_2 = std::move(cb_conn); };
+  auto conn_cb_2 = [&conn_result_2](auto cb_conn) {
+    activate_connection(cb_conn);
+    conn_result_2 = std::move(cb_conn);
+  };
   auto req_handle_2 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_2));
 
   RunLoopUntilIdle();
@@ -848,7 +906,10 @@ TEST_F(ScoConnectionManagerTest,
       &setup_status_packet, &conn_complete_packet);
 
   OpenConnectionResult conn_result_0;
-  auto conn_cb_0 = [&conn_result_0](auto result) { conn_result_0 = std::move(result); };
+  auto conn_cb_0 = [&conn_result_0](auto result) {
+    activate_connection(result);
+    conn_result_0 = std::move(result);
+  };
 
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
@@ -867,7 +928,10 @@ TEST_F(ScoConnectionManagerTest,
       &setup_status_packet, &conn_complete_packet);
 
   OpenConnectionResult conn_result_1;
-  auto conn_cb_1 = [&conn_result_1](auto result) { conn_result_1 = std::move(result); };
+  auto conn_cb_1 = [&conn_result_1](auto result) {
+    activate_connection(result);
+    conn_result_1 = std::move(result);
+  };
 
   auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
@@ -910,12 +974,16 @@ TEST_F(ScoConnectionManagerTest,
       &setup_status_packet);
 
   OpenConnectionResult conn_result_0;
-  auto conn_cb_0 = [&conn_result_0](auto cb_conn) { conn_result_0 = std::move(cb_conn); };
+  auto conn_cb_0 = [&conn_result_0](auto cb_conn) {
+    activate_connection(cb_conn);
+    conn_result_0 = std::move(cb_conn);
+  };
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
   std::optional<ScoConnectionManager::RequestHandle> req_handle_1;
   OpenConnectionResult conn_result_1;
   auto conn_cb_1 = [&conn_result_1, &req_handle_1](auto cb_conn) {
+    activate_connection(cb_conn);
     req_handle_1.reset();
     conn_result_1 = std::move(cb_conn);
   };

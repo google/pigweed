@@ -107,7 +107,7 @@ TEST_F(ScoConnectionTest, CloseWithoutActivating) {
   EXPECT_FALSE(hci_conn());
 }
 
-TEST_F(ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
+TEST_F(ScoConnectionTest, ActivateAndPeerDisconnectCloses) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 
@@ -116,13 +116,30 @@ TEST_F(ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
   ASSERT_TRUE(hci_conn());
 
   fake_conn()->TriggerPeerDisconnectCallback();
+  EXPECT_EQ(close_count, 1u);
+  EXPECT_EQ(deactivated_count(), 0u);
+  EXPECT_FALSE(hci_conn());
+}
+
+TEST_F(ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
+  size_t close_count = 0;
+  auto closed_cb = [&] {
+    close_count++;
+    sco_conn()->Deactivate();
+  };
+
+  EXPECT_TRUE(sco_conn()->Activate(nullptr, std::move(closed_cb)));
   EXPECT_EQ(close_count, 0u);
+  ASSERT_TRUE(hci_conn());
+
+  fake_conn()->TriggerPeerDisconnectCallback();
+  EXPECT_EQ(close_count, 1u);
   EXPECT_EQ(deactivated_count(), 1u);
   EXPECT_FALSE(hci_conn());
 
   // Deactivating should be idempotent.
   sco_conn()->Deactivate();
-  EXPECT_EQ(close_count, 0u);
+  EXPECT_EQ(close_count, 1u);
   EXPECT_EQ(deactivated_count(), 1u);
 }
 

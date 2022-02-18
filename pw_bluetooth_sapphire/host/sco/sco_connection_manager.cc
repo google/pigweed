@@ -80,9 +80,16 @@ ScoConnectionManager::~ScoConnectionManager() {
     transport_->command_channel()->RemoveEventHandler(handler_id);
   }
 
-  // Close all connections
-  for (auto [handle, conn] : connections_) {
+  // Close all connections.  Close may remove the connection from the map, so we can't use an
+  // iterator, which would be invalidated by the removal.
+  while (connections_.size() > 0) {
+    auto pair = connections_.begin();
+    auto handle = pair->first;
+    auto conn = pair->second;
+
     conn->Close();
+    // Make sure we erase the connection if Close doesn't so the loop terminates.
+    connections_.erase(handle);
   }
 
   if (queued_request_) {
