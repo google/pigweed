@@ -37,12 +37,12 @@ class RawMethod : public Method {
 
   template <auto kMethod>
   static constexpr RawMethod SynchronousUnary(uint32_t id) {
-    constexpr SynchronousUnaryFunction wrapper =
-        [](Service& service, ConstByteSpan req, ByteSpan res) {
-          return CallMethodImplFunction<kMethod>(service, req, res);
-        };
-    return RawMethod(
-        id, SynchronousUnaryInvoker, Function{.synchronous_unary = wrapper});
+    static_assert(sizeof(kMethod) != sizeof(kMethod),
+                  "Raw synchronous unary methods are not supported. "
+                  "Use an asynchronous unary method instead: "
+                  "void MethodName(pw::ConstByteSpan request, "
+                  "pw::rpc::RawUnaryResponder& responder)");
+    return {id, InvalidInvoker, {}};
   }
 
   template <auto kMethod>

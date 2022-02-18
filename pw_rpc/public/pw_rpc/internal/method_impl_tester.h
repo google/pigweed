@@ -123,14 +123,12 @@ class MethodImplTests {
   struct Type {
     constexpr bool Pass() const { return true; }
 
+    // Don't check kSynchronous for Unary since not all method implementations
+    // support synchronous unary.
     static_assert(MethodTraits<decltype(&TestService::Unary)>::kType ==
                   MethodType::kUnary);
-    static_assert(MethodTraits<decltype(&TestService::Unary)>::kSynchronous);
     static_assert(MethodTraits<decltype(&TestService::StaticUnary)>::kType ==
                   MethodType::kUnary);
-    static_assert(
-        MethodTraits<decltype(&TestService::StaticUnary)>::kSynchronous);
-
     static_assert(MethodTraits<decltype(&TestService::AsyncUnary)>::kType ==
                   MethodType::kUnary);
     static_assert(
@@ -169,8 +167,7 @@ class MethodImplTests {
    public:
     template <typename... Args>
     constexpr bool Pass(const std::tuple<Args...>& args) const {
-      return UnaryMethod(args).id() == 1 && StaticUnaryMethod(args).id() == 2 &&
-             AsyncUnaryMethod(args).id() == 3 &&
+      return AsyncUnaryMethod(args).id() == 3 &&
              StaticAsyncUnaryMethod(args).id() == 4 &&
              ServerStreamingMethod(args).id() == 5 &&
              StaticServerStreamingMethod(args).id() == 6 &&
@@ -182,20 +179,8 @@ class MethodImplTests {
     }
 
    private:
-    template <typename... Args>
-    constexpr MethodImpl UnaryMethod(const std::tuple<Args...>& args) const {
-      return Call(
-          MethodImpl::template SynchronousUnary<&TestService::Unary>, 1, args);
-    }
-
-    template <typename... Args>
-    constexpr MethodImpl StaticUnaryMethod(
-        const std::tuple<Args...>& args) const {
-      return Call(
-          MethodImpl::template SynchronousUnary<&TestService::StaticUnary>,
-          2,
-          args);
-    }
+    // Do not check synchronous unary since not all method implementations
+    // support it.
 
     template <typename... Args>
     constexpr MethodImpl AsyncUnaryMethod(

@@ -38,19 +38,15 @@ class TestRawService final : public Service {
  public:
   // Unary signatures
 
-  StatusWithSize Unary(ConstByteSpan, ByteSpan) { return StatusWithSize(0); }
+  void Unary(ConstByteSpan, RawUnaryResponder&) {}
 
-  static StatusWithSize StaticUnary(ConstByteSpan, ByteSpan) {
-    return StatusWithSize(0);
-  }
+  static void StaticUnary(ConstByteSpan, RawUnaryResponder&) {}
 
   void AsyncUnary(ConstByteSpan, RawUnaryResponder&) {}
 
   static void StaticAsyncUnary(ConstByteSpan, RawUnaryResponder&) {}
 
-  StatusWithSize UnaryWrongArg(ConstByteSpan, ConstByteSpan) {
-    return StatusWithSize(0);
-  }
+  void UnaryWrongArg(ConstByteSpan, ConstByteSpan) {}
 
   // Server streaming signatures
 
@@ -95,7 +91,7 @@ class FakeServiceBase : public Service {
   FakeServiceBase(uint32_t id) : Service(id, kMethods) {}
 
   static constexpr std::array<RawMethodUnion, 5> kMethods = {
-      RawMethod::SynchronousUnary<&Impl::DoNothing>(10u),
+      RawMethod::AsynchronousUnary<&Impl::DoNothing>(10u),
       RawMethod::AsynchronousUnary<&Impl::AddFive>(11u),
       RawMethod::ServerStreaming<&Impl::StartStream>(12u),
       RawMethod::ClientStreaming<&Impl::ClientStream>(13u),
@@ -107,8 +103,8 @@ class FakeService : public FakeServiceBase<FakeService> {
  public:
   FakeService(uint32_t id) : FakeServiceBase(id) {}
 
-  StatusWithSize DoNothing(ConstByteSpan, ByteSpan) {
-    return StatusWithSize::Unknown();
+  void DoNothing(ConstByteSpan, RawUnaryResponder& responder) {
+    ASSERT_EQ(OkStatus(), responder.Finish({}, Status::Unknown()));
   }
 
   void AddFive(ConstByteSpan request, RawUnaryResponder& responder) {
@@ -165,9 +161,9 @@ class FakeService : public FakeServiceBase<FakeService> {
   RawServerReaderWriter last_reader_writer;
 };
 
-constexpr const RawMethod& kSyncUnary =
+constexpr const RawMethod& kAsyncUnary0 =
     std::get<0>(FakeServiceBase<FakeService>::kMethods).raw_method();
-constexpr const RawMethod& kAsyncUnary =
+constexpr const RawMethod& kAsyncUnary1 =
     std::get<1>(FakeServiceBase<FakeService>::kMethods).raw_method();
 constexpr const RawMethod& kServerStream =
     std::get<2>(FakeServiceBase<FakeService>::kMethods).raw_method();
@@ -176,16 +172,16 @@ constexpr const RawMethod& kClientStream =
 constexpr const RawMethod& kBidirectionalStream =
     std::get<4>(FakeServiceBase<FakeService>::kMethods).raw_method();
 
-TEST(RawMethod, AsyncUnaryRpc_SendsResponse) {
+TEST(RawMethod, AsyncUnaryRpc1_SendsResponse) {
   std::byte buffer[16];
   stream::MemoryWriter writer(buffer);
   TestRequest::StreamEncoder test_request(writer, ByteSpan());
   ASSERT_EQ(OkStatus(), test_request.WriteInteger(456));
   ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(7));
 
-  ServerContextForTest<FakeService> context(kAsyncUnary);
+  ServerContextForTest<FakeService> context(kAsyncUnary1);
   rpc_lock().lock();
-  kAsyncUnary.Invoke(context.get(), context.request(writer.WrittenData()));
+  kAsyncUnary1.Invoke(context.get(), context.request(writer.WrittenData()));
 
   EXPECT_EQ(context.service().last_request.integer, 456);
   EXPECT_EQ(context.service().last_request.status_code, 7u);
@@ -200,17 +196,17 @@ TEST(RawMethod, AsyncUnaryRpc_SendsResponse) {
   EXPECT_EQ(value, 461);
 }
 
-TEST(RawMethod, SyncUnaryRpc_SendsResponse) {
-  ServerContextForTest<FakeService> context(kSyncUnary);
+TEST(RawMethod, AsyncUnaryRpc0_SendsResponse) {
+  ServerContextForTest<FakeService> context(kAsyncUnary0);
 
   rpc_lock().lock();
-  kSyncUnary.Invoke(context.get(), context.request({}));
+  kAsyncUnary0.Invoke(context.get(), context.request({}));
 
   const Packet& packet = context.output().last_packet();
   EXPECT_EQ(PacketType::RESPONSE, packet.type());
   EXPECT_EQ(Status::Unknown(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
-  EXPECT_EQ(kSyncUnary.id(), packet.method_id());
+  EXPECT_EQ(kAsyncUnary0.id(), packet.method_id());
 }
 
 TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
