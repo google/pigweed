@@ -25,6 +25,8 @@ pw_python_package("py") {
   sources = [
     "pw_docgen/__init__.py",
     "pw_docgen/docgen.py",
+    "pw_docgen/sphinx/__init__.py",
+    "pw_docgen/sphinx/google_analytics.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

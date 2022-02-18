@@ -13,6 +13,7 @@
 # the License.
 """Pigweed's Sphinx configuration."""
 
+from datetime import date
 import sphinx
 
 # The suffix of source filenames.
@@ -23,7 +24,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Pigweed'
-copyright = '2020 The Pigweed Authors'  # pylint: disable=redefined-builtin
+copyright = f'{date.today().year} The Pigweed Authors'  # pylint: disable=redefined-builtin
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -39,6 +40,7 @@ pygments_style = 'pigweed-code-light'
 pygments_dark_style = 'pigweed-code'
 
 extensions = [
+    'pw_docgen.sphinx.google_analytics',  # Enables optional Google Analytics
     'sphinx.ext.autodoc',  # Automatic documentation for Python code
     'sphinx.ext.napoleon',  # Parses Google-style docstrings
     'sphinxcontrib.mermaid',

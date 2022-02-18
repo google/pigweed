@@ -20,7 +20,7 @@ depend on other build targets, such as report cards for binary size/profiling.
 Any time the code is changed, documentation will be regenerated with the updated
 reports.
 
-Documentation overview
+Documentation Overview
 ======================
 Each Pigweed module provides documentation describing its functionality, use
 cases, and programming API.
@@ -29,7 +29,7 @@ Included in a module's documentation are report cards which show an overview of
 the module's size cost and performance benchmarks. These allow prospective users
 to evaluate the impact of including the module in their projects.
 
-Build integration
+Build Integration
 =================
 
 Pigweed documentation files are written in `reStructuredText`_ format and
@@ -60,12 +60,11 @@ target, which accumulates all of them and renders the resulting HTML. This
 system can either be used directly within Pigweed, or integrated into a
 downstream project.
 
-GN templates
+GN Templates
 ------------
 
 pw_doc_group
 ____________
-
 The main template for defining documentation files is ``pw_doc_group``. It is
 used to logically group a collection of documentation source files and assets.
 Each Pigweed module is expected to provide at least one ``pw_doc_group`` target
@@ -94,7 +93,6 @@ groups, causing them to be built with it.
 
 pw_doc_gen
 __________
-
 The ``pw_doc_gen`` template creates a target which renders complete HTML
 documentation for a project. It depends on registered ``pw_doc_group`` targets
 and creates an action which collects and renders them.
@@ -124,9 +122,8 @@ to tie everything together.
     ]
   }
 
-Generating documentation
+Generating Documentation
 ------------------------
-
 All source files listed under a ``pw_doc_gen`` target and its ``pw_doc_group``
 dependencies get copied out into a directory structure mirroring the original
 layout of the modules in which the sources appear. This is demonstrated below
@@ -173,3 +170,20 @@ practice, relative imports from within modules' documentation groups are
 identical to the project's directory structure. The only special case is the
 top-level ``index.rst`` file's imports; they must start from the project's build
 root.
+
+Sphinx Extensions
+=================
+This module houses Pigweed-specific extensions for the Sphinx documentation
+generator. Extensions are included and configured in ``docs/conf.py``.
+
+google_analytics
+----------------
+When this extension is included and a ``google_analytics_id`` is set in the
+Sphinx configuration, a Google Analytics tracking tag will be added to each
+page of the documentation when it is rendered to HTML.
+
+By default, the Sphinx configuration's ``google_analytics_id`` is set
+automatically based on the value of the GN argument
+``pw_docs_google_analytics_id``, allowing you to control whether tracking is
+enabled or not in your build configuration. Typically, you would only enable
+this for documentation builds intended for deployment on the web.
