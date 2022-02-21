@@ -26,6 +26,7 @@ std::ios::seekdir WhenceToSeekDir(Stream::Whence whence) {
     case Stream::Whence::kEnd:
       return std::ios::end;
   }
+  return std::ios::beg;
 }
 
 }  // namespace
