@@ -57,6 +57,20 @@ TEST(DeviceAddressBytesTest, Comparison) {
   EXPECT_EQ(bdaddr0, bdaddr1);
 }
 
+TEST(DeviceAddressTest, Comparison) {
+  DeviceAddress addr0, addr1;
+  EXPECT_EQ(addr0, addr1);
+
+  addr0 = DeviceAddress(DeviceAddress::Type::kBREDR, {1, 2, 3, 4, 5, 6});
+  EXPECT_NE(addr0, addr1);
+
+  addr1 = DeviceAddress(DeviceAddress::Type::kLEPublic, addr0.value());
+  EXPECT_EQ(addr0, addr1);
+
+  addr0 = DeviceAddress(DeviceAddress::Type::kLERandom, addr0.value());
+  EXPECT_NE(addr0, addr1);
+}
+
 TEST(DeviceAddressTest, Map) {
   std::map<DeviceAddress, int> map;
 
@@ -76,14 +90,18 @@ TEST(DeviceAddressTest, Map) {
   EXPECT_EQ(1, iter->second);
 
   iter = map.find(address3);
-  EXPECT_EQ(map.end(), iter);
+  EXPECT_NE(map.end(), iter);
+  EXPECT_EQ(1, iter->second);
+
   iter = map.find(address4);
   EXPECT_EQ(map.end(), iter);
 
   map[address3] = 2;
   map[address4] = 3;
 
-  EXPECT_EQ(3u, map.size());
+  EXPECT_EQ(2u, map.size());
+  EXPECT_EQ(2, map[address1]);
+  EXPECT_EQ(2, map[address2]);
   EXPECT_EQ(2, map[address3]);
   EXPECT_EQ(3, map[address4]);
 }
@@ -107,14 +125,18 @@ TEST(DeviceAddressTest, UnorderedMap) {
   EXPECT_EQ(1, iter->second);
 
   iter = map.find(address3);
-  EXPECT_EQ(map.end(), iter);
+  EXPECT_NE(map.end(), iter);
+  EXPECT_EQ(1, iter->second);
+
   iter = map.find(address4);
   EXPECT_EQ(map.end(), iter);
 
   map[address3] = 2;
   map[address4] = 3;
 
-  EXPECT_EQ(3u, map.size());
+  EXPECT_EQ(2u, map.size());
+  EXPECT_EQ(2, map[address1]);
+  EXPECT_EQ(2, map[address2]);
   EXPECT_EQ(2, map[address3]);
   EXPECT_EQ(3, map[address4]);
 }

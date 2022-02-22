@@ -37,10 +37,10 @@ constexpr char kAdvDataAndScanRsp[] = "TestData";
 const DeviceAddress kPublicAddress1(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kPublicAddress2(DeviceAddress::Type::kLEPublic, {2});
 
-const DeviceAddress kRandomAddress1(DeviceAddress::Type::kLERandom, {1});
-const DeviceAddress kRandomAddress2(DeviceAddress::Type::kLERandom, {2});
-const DeviceAddress kRandomAddress3(DeviceAddress::Type::kLERandom, {3});
-const DeviceAddress kRandomAddress4(DeviceAddress::Type::kLERandom, {4});
+const DeviceAddress kRandomAddress1(DeviceAddress::Type::kLERandom, {3});
+const DeviceAddress kRandomAddress2(DeviceAddress::Type::kLERandom, {4});
+const DeviceAddress kRandomAddress3(DeviceAddress::Type::kLERandom, {5});
+const DeviceAddress kRandomAddress4(DeviceAddress::Type::kLERandom, {6});
 
 class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::Delegate {
  public:

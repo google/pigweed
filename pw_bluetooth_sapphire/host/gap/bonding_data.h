@@ -19,6 +19,9 @@ struct BondingData {
   PeerId identifier;
   DeviceAddress address;
   std::optional<std::string> name;
+
+  // TODO(fxbug.dev/2761): This should be optional to represent whether the FIDL bonding data has LE
+  // data, instead of using DeviceAddresss's type()
   sm::PairingData le_pairing_data;
   std::optional<sm::LTK> bredr_link_key;
   std::vector<UUID> bredr_services;

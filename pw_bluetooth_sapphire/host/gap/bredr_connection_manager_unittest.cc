@@ -2760,6 +2760,44 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   EXPECT_FALSE(IsNotConnected(peer_b));
 }
 
+TEST_F(BrEdrConnectionManagerTest, ConnectToDualModePeerThatWasFirstLowEnergyOnly) {
+  const DeviceAddress kTestDevAddrLeAlias(DeviceAddress::Type::kLEPublic, kTestDevAddr.value());
+  auto* peer = peer_cache()->NewPeer(kTestDevAddrLeAlias, true);
+  EXPECT_TRUE(peer->temporary());
+  EXPECT_EQ(TechnologyType::kLowEnergy, peer->technology());
+
+  // Make peer dual mode
+  peer->MutBrEdr();
+  EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
+
+  // Queue up the connection
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Result<> status = ToResult(HostError::kFailed);
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(IsInitializing(peer));
+  RunLoopUntilIdle();
+
+  test_device()->SendCommandChannelPacket(kConnectionComplete);
+  QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
+  EXPECT_FALSE(IsNotConnected(peer));
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kCentral);
+}
+
 TEST_F(BrEdrConnectionManagerTest, DisconnectPendingConnections) {
   auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, true);
   auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);

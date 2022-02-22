@@ -57,8 +57,11 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
       bd.le_pairing_data.peer_ltk || bd.le_pairing_data.local_ltk || bd.le_pairing_data.csrk;
   const bool bond_bredr = bd.bredr_link_key.has_value();
 
-  // |bd.le_pairing_data| must contain either a LTK or CSRK for LE
-  // Security Mode 1 or 2.
+  // |bd.le_pairing_data| must contain either a LTK or CSRK for LE Security Mode 1 or 2.
+  //
+  // TODO(fxbug.dev/2761): the address type checks here don't add much value because the address
+  // type is derived from the presence of FIDL bredr_bond and le_bond fields, so the check really
+  // should be whether at least one of the mandatory bond secrets is present.
   if (bd.address.IsLowEnergy() && !bond_le) {
     bt_log(ERROR, "gap-le", "mandatory keys missing: no LTK or CSRK (id: %s)",
            bt_str(bd.identifier));
