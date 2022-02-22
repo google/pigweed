@@ -43,6 +43,8 @@ def platform_normalized(rctx):
     else:
         fail("Could not normalize os:", rctx.os.name)
 
+# TODO(pwbug/388): Enable unused variable check.
+# buildifier: disable=unused-variable
 def arch_normalized(rctx):
     """Normalizes the architecture string to match CIPDs naming system.
 
