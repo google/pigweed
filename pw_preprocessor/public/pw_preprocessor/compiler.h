@@ -127,7 +127,17 @@
 #define PW_HAVE_ATTRIBUTE(x) __has_attribute(x)
 #else
 #define PW_HAVE_ATTRIBUTE(x) 0
-#endif
+#endif  // __has_attribute
+
+// A function-like feature checking macro that accepts C++11 style attributes.
+// It's a wrapper around __has_cpp_attribute
+// (https://en.cppreference.com/w/cpp/feature_test), borrowed from
+// ABSL_HAVE_CPP_ATTRIBUTE. If there is no __has_cpp_attribute, evaluates to 0.
+#if defined(__cplusplus) && defined(__has_cpp_attribute)
+#define PW_HAVE_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
+#else
+#define PW_HAVE_CPP_ATTRIBUTE(x) 0
+#endif  // defined(__cplusplus) && defined(__has_cpp_attribute)
 
 #define _PW_REQUIRE_SEMICOLON \
   static_assert(1, "This macro must be terminated with a semicolon")
@@ -182,3 +192,27 @@
 //   // Driver handler replaced with default unless overridden.
 //   void USART_DriverHandler(void) PW_ALIAS(DefaultDriverHandler);
 #define PW_ALIAS(aliased_to) __attribute__((weak, alias(#aliased_to)))
+
+// PW_ATTRIBUTE_LIFETIME_BOUND indicates that a resource owned by a function
+// parameter or implicit object parameter is retained by the return value of the
+// annotated function (or, for a parameter of a constructor, in the value of the
+// constructed object). This attribute causes warnings to be produced if a
+// temporary object does not live long enough.
+//
+// When applied to a reference parameter, the referenced object is assumed to be
+// retained by the return value of the function. When applied to a non-reference
+// parameter (for example, a pointer or a class type), all temporaries
+// referenced by the parameter are assumed to be retained by the return value of
+// the function.
+//
+// See also the upstream documentation:
+// https://clang.llvm.org/docs/AttributeReference.html#lifetimebound
+//
+// This is a copy of ABSL_ATTRIBUTE_LIFETIME_BOUND.
+#if PW_HAVE_CPP_ATTRIBUTE(clang::lifetimebound)
+#define PW_ATTRIBUTE_LIFETIME_BOUND [[clang::lifetimebound]]
+#elif PW_HAVE_ATTRIBUTE(lifetimebound)
+#define PW_ATTRIBUTE_LIFETIME_BOUND __attribute__((lifetimebound))
+#else
+#define PW_ATTRIBUTE_LIFETIME_BOUND
+#endif  // PW_ATTRIBUTE_LIFETIME_BOUND

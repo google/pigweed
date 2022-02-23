@@ -166,6 +166,12 @@ Macros for compiler-specific features, such as attributes or builtins.
   evaluates to a non zero constant integer if the attribute is supported or 0
   if not.
 
+.. c:macro:: PW_HAVE_CPP_ATTRIBUTE(x)
+
+  Wrapper around `__has_cpp_attribute`, which was introduced in the C++20
+  standard. It is supported by compilers even if C++20 is not in use. Evaluates
+  to a non zero constant integer if the C++ attribute is supported or 0 if not.
+
 .. c:macro:: PW_PRAGMA(contents)
 
   Expands to a _Pragma with the contents as a string. _Pragma must take a
@@ -196,6 +202,25 @@ Macros for compiler-specific features, such as attributes or builtins.
 
     // Driver handler replaced with default unless overridden.
     void USART_DriverHandler(void) PW_ALIAS(DefaultDriverHandler);
+
+.. c:macro:: PW_ATTRIBUTE_LIFETIME_BOUND
+
+  PW_ATTRIBUTE_LIFETIME_BOUND indicates that a resource owned by a function
+  parameter or implicit object parameter is retained by the return value of the
+  annotated function (or, for a parameter of a constructor, in the value of the
+  constructed object). This attribute causes warnings to be produced if a
+  temporary object does not live long enough.
+
+  When applied to a reference parameter, the referenced object is assumed to be
+  retained by the return value of the function. When applied to a non-reference
+  parameter (for example, a pointer or a class type), all temporaries
+  referenced by the parameter are assumed to be retained by the return value of
+  the function.
+
+  See also the upstream documentation:
+  https://clang.llvm.org/docs/AttributeReference.html#lifetimebound
+
+  This is a copy of ABSL_ATTRIBUTE_LIFETIME_BOUND.
 
 Modifying compiler diagnostics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
