@@ -100,12 +100,16 @@ void VerifyLogEntry(protobuf::Decoder& entry_decoder,
   }
 }
 
-// Verifies a stream of log entries and updates the total drop count found.
-size_t VerifyLogEntries(protobuf::Decoder& entries_decoder,
-                        Vector<TestLogEntry>& expected_entries_stack,
-                        uint32_t expected_first_entry_sequence_id,
-                        uint32_t& drop_count_out) {
-  size_t entries_found = 0;
+// Compares an encoded LogEntry's fields against the expected sequence ID and
+// LogEntries, and updates the total entry and drop counts. Starts comparing at
+// `expected_entries[entries_count_out]`. `expected_entries` must be in the same
+// order that messages were added to the MultiSink.
+void VerifyLogEntries(protobuf::Decoder& entries_decoder,
+                      const Vector<TestLogEntry>& expected_entries,
+                      uint32_t expected_first_entry_sequence_id,
+                      size_t& entries_count_out,
+                      uint32_t& drop_count_out) {
+  size_t entry_index = entries_count_out;
   while (entries_decoder.Next().ok()) {
     if (static_cast<pw::log::LogEntries::Fields>(
             entries_decoder.FieldNumber()) ==
@@ -113,18 +117,21 @@ size_t VerifyLogEntries(protobuf::Decoder& entries_decoder,
       ConstByteSpan entry;
       EXPECT_EQ(entries_decoder.ReadBytes(&entry), OkStatus());
       protobuf::Decoder entry_decoder(entry);
-      if (expected_entries_stack.empty()) {
+      if (expected_entries.empty()) {
         break;
       }
+
+      ASSERT_LT(entry_index, expected_entries.size());
+
       // Keep track of entries and drops respective counts.
       uint32_t current_drop_count = 0;
       VerifyLogEntry(
-          entry_decoder, expected_entries_stack.back(), current_drop_count);
+          entry_decoder, expected_entries[entry_index], current_drop_count);
+      ++entry_index;
       drop_count_out += current_drop_count;
       if (current_drop_count == 0) {
-        ++entries_found;
+        ++entries_count_out;
       }
-      expected_entries_stack.pop_back();
     } else if (static_cast<pw::log::LogEntries::Fields>(
                    entries_decoder.FieldNumber()) ==
                log::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID) {
@@ -134,7 +141,6 @@ size_t VerifyLogEntries(protobuf::Decoder& entries_decoder,
       EXPECT_EQ(expected_first_entry_sequence_id, first_entry_sequence_id);
     }
   }
-  return entries_found;
 }
 
 size_t CountLogEntries(protobuf::Decoder& entries_decoder) {

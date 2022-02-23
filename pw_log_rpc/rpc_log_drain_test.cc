@@ -43,48 +43,6 @@ namespace {
 static constexpr size_t kBufferSize =
     RpcLogDrain::kMinEntrySizeWithoutPayload + 32;
 
-// Verifies a stream of log entries and updates the total drop count found.
-// expected_entries is expected to be in the same order that messages were
-// added to the multisink.
-void VerifyLogEntriesInCorrectOrder(
-    protobuf::Decoder& entries_decoder,
-    const Vector<TestLogEntry>& expected_entries,
-    uint32_t expected_first_entry_sequence_id,
-    uint32_t& drop_count_out) {
-  size_t entries_found = 0;
-
-  while (entries_decoder.Next().ok()) {
-    if (static_cast<pw::log::LogEntries::Fields>(
-            entries_decoder.FieldNumber()) ==
-        log::LogEntries::Fields::ENTRIES) {
-      ConstByteSpan entry;
-      EXPECT_EQ(entries_decoder.ReadBytes(&entry), OkStatus());
-      protobuf::Decoder entry_decoder(entry);
-      if (expected_entries.empty()) {
-        break;
-      }
-
-      ASSERT_LT(entries_found, expected_entries.size());
-
-      // Keep track of entries and drops respective counts.
-      uint32_t current_drop_count = 0;
-      VerifyLogEntry(
-          entry_decoder, expected_entries[entries_found], current_drop_count);
-      drop_count_out += current_drop_count;
-      if (current_drop_count == 0) {
-        ++entries_found;
-      }
-    } else if (static_cast<pw::log::LogEntries::Fields>(
-                   entries_decoder.FieldNumber()) ==
-               log::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID) {
-      uint32_t first_entry_sequence_id = 0;
-      EXPECT_EQ(entries_decoder.ReadUint32(&first_entry_sequence_id),
-                OkStatus());
-      EXPECT_EQ(expected_first_entry_sequence_id, first_entry_sequence_id);
-    }
-  }
-}
-
 TEST(RpcLogDrain, TryFlushDrainWithClosedWriter) {
   // Drain without a writer.
   const uint32_t drain_id = 1;
@@ -270,8 +228,6 @@ class TrickleTest : public ::testing::Test {
     multisink_.HandleEntry(encoded_log_result.value());
   }
 
-  // VerifyLogEntriesInCorrectOrder() expects logs to be in the opposite
-  // direction compared to when they were added to the multisink.
   void AddLogEntries(const Vector<TestLogEntry>& entries) {
     for (const TestLogEntry& entry : entries) {
       AddLogEntry(entry);
@@ -325,11 +281,13 @@ TEST_F(TrickleTest, EntriesAreFlushedToSinglePayload) {
   EXPECT_EQ(payloads.size(), 1u);
 
   uint32_t drop_count = 0;
+  size_t entries_count = 0;
   protobuf::Decoder payload_decoder(payloads[0]);
   payload_decoder.Reset(payloads[0]);
-  VerifyLogEntriesInCorrectOrder(
-      payload_decoder, kExpectedEntries, 0, drop_count);
+  VerifyLogEntries(
+      payload_decoder, kExpectedEntries, 0, entries_count, drop_count);
   EXPECT_EQ(drop_count, 0u);
+  EXPECT_EQ(entries_count, 3u);
 }
 
 TEST_F(TrickleTest, ManyLogsOverflowToNextPayload) {
@@ -361,16 +319,20 @@ TEST_F(TrickleTest, ManyLogsOverflowToNextPayload) {
   ASSERT_EQ(payloads.size(), 2u);
 
   uint32_t drop_count = 0;
+  size_t entries_count = 0;
   protobuf::Decoder payload_decoder(payloads[0]);
   payload_decoder.Reset(payloads[0]);
-  VerifyLogEntriesInCorrectOrder(
-      payload_decoder, kFirstFlushedBundle, 0, drop_count);
+  VerifyLogEntries(
+      payload_decoder, kFirstFlushedBundle, 0, entries_count, drop_count);
   EXPECT_EQ(drop_count, 0u);
+  EXPECT_EQ(entries_count, 3u);
 
+  entries_count = 0;
   payload_decoder.Reset(payloads[1]);
-  VerifyLogEntriesInCorrectOrder(
-      payload_decoder, kSecondFlushedBundle, 3, drop_count);
+  VerifyLogEntries(
+      payload_decoder, kSecondFlushedBundle, 3, entries_count, drop_count);
   EXPECT_EQ(drop_count, 0u);
+  EXPECT_EQ(entries_count, 3u);
 }
 
 TEST_F(TrickleTest, LimitedFlushOverflowsToNextPayload) {
@@ -406,22 +368,27 @@ TEST_F(TrickleTest, LimitedFlushOverflowsToNextPayload) {
       output_.payloads<log::pw_rpc::raw::Logs::Listen>(kDrainChannelId);
   ASSERT_EQ(first_flush_payloads.size(), 1u);
   uint32_t drop_count = 0;
+  size_t entries_count = 0;
   protobuf::Decoder payload_decoder(first_flush_payloads[0]);
   payload_decoder.Reset(first_flush_payloads[0]);
-  VerifyLogEntriesInCorrectOrder(
-      payload_decoder, kFirstFlushedBundle, 0, drop_count);
+  VerifyLogEntries(
+      payload_decoder, kFirstFlushedBundle, 0, entries_count, drop_count);
+  EXPECT_EQ(entries_count, 3u);
 
   // An additional flush should produce another payload.
   min_delay = drains_[0].Trickle(channel_encode_buffer_);
   EXPECT_EQ(min_delay.has_value(), false);
   drop_count = 0;
+  entries_count = 0;
+
   rpc::PayloadsView second_flush_payloads =
       output_.payloads<log::pw_rpc::raw::Logs::Listen>(kDrainChannelId);
   ASSERT_EQ(second_flush_payloads.size(), 2u);
   payload_decoder.Reset(second_flush_payloads[1]);
-  VerifyLogEntriesInCorrectOrder(
-      payload_decoder, kSecondFlushedBundle, 3, drop_count);
+  VerifyLogEntries(
+      payload_decoder, kSecondFlushedBundle, 3, entries_count, drop_count);
   EXPECT_EQ(drop_count, 0u);
+  EXPECT_EQ(entries_count, 3u);
 }
 
 }  // namespace

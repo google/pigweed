@@ -35,11 +35,12 @@ void VerifyLogEntry(protobuf::Decoder& entry_decoder,
                     const TestLogEntry& expected_entry,
                     uint32_t& drop_count_out);
 
-// Verifies a stream of log entries and updates the total drop count found.
-size_t VerifyLogEntries(protobuf::Decoder& entries_decoder,
-                        Vector<TestLogEntry>& expected_entries_stack,
-                        uint32_t expected_first_entry_sequence_id,
-                        uint32_t& drop_count_out);
+// Verifies a stream of log entries and updates the total entry and drop counts.
+void VerifyLogEntries(protobuf::Decoder& entries_decoder,
+                      const Vector<TestLogEntry>& expected_entries,
+                      uint32_t expected_first_entry_sequence_id,
+                      size_t& entries_count_out,
+                      uint32_t& drop_count_out);
 
 size_t CountLogEntries(protobuf::Decoder& entries_decoder);
 
