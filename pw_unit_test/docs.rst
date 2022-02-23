@@ -26,14 +26,21 @@ Pigweed.
 ------------------
 Writing unit tests
 ------------------
-
 ``pw_unit_test``'s interface is largely compatible with `Google Test`_. Refer to
 the Google Test documentation for examples of to define unit test cases.
 
 .. note::
 
-  A lot of Google Test's more advanced features are not yet implemented. To
-  request a feature addition, please
+  Many of Google Test's more advanced features are not yet implemented. Missing
+  features include:
+
+  * Any GoogleMock features (e.g. :c:macro:`EXPECT_THAT`)
+  * Floating point comparison macros (e.g. :c:macro:`EXPECT_FLOAT_EQ`)
+  * Death tests (e.g. :c:macro:`EXPECT_DEATH`); ``EXPECT_DEATH_IF_SUPPORTED``
+    does nothing but silently passes
+  * Value-parameterized tests
+
+  To request a feature addition, please
   `let us know <mailto:pigweed@googlegroups.com>`_.
 
 ------------------------

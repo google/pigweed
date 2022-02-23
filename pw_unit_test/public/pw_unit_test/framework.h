@@ -115,6 +115,19 @@
 #define RUN_ALL_TESTS() \
   ::pw::unit_test::internal::Framework::Get().RunAllTests()
 
+// Death tests are not supported. The *_DEATH_IF_SUPPORTED macros do nothing.
+#define GTEST_HAS_DEATH_TEST 0
+
+#define EXPECT_DEATH_IF_SUPPORTED(statement, regex) \
+  if (0) {                                          \
+    static_cast<void>(statement);                   \
+    static_cast<void>(regex);                       \
+  }                                                 \
+  static_assert(true, "Macros must be termianted with a semicolon")
+
+#define ASSERT_DEATH_IF_SUPPORTED(statement, regex) \
+  EXPECT_DEATH_IF_SUPPORTED(statement, regex)
+
 namespace pw {
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
