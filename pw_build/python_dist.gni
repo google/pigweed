@@ -110,18 +110,18 @@ template("pw_python_zip_with_setup") {
   if (defined(invoker.dirs)) {
     _dirs = invoker.dirs
   }
+  _public_deps = []
+  if (defined(invoker.public_deps)) {
+    _public_deps = invoker.public_deps
+  }
 
   pw_python_wheels("$target_name.wheels") {
     packages = invoker.packages
-    forward_variables_from(invoker,
-                           [
-                             "deps",
-                             "public_deps",
-                           ])
+    forward_variables_from(invoker, [ "deps" ])
   }
 
   pw_zip(target_name) {
-    forward_variables_from(invoker, [ "public_deps" ])
+    forward_variables_from(invoker, [ "deps" ])
     inputs = _inputs + [
                "$dir_pw_build/python_dist/setup.bat > /${target_name}/",
                "$dir_pw_build/python_dist/setup.sh > /${target_name}/",
@@ -131,7 +131,8 @@ template("pw_python_zip_with_setup") {
 
     output = _zip_path
 
-    deps = [ ":${_outer_name}.wheels" ]
+    # TODO(pwbug/634): Remove the plumbing-through of invoker's public_deps.
+    public_deps = _public_deps + [ ":${_outer_name}.wheels" ]
   }
 }
 
