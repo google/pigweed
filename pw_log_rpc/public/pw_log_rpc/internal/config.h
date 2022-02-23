@@ -43,6 +43,37 @@
 #define PW_LOG_RPC_CONFIG_LOG_MODULE_NAME "PW_LOG_RPC"
 #endif  // PW_LOG_RPC_CONFIG_LOG_MODULE_NAME
 
+// Messages to descrive the log drop reasons.
+// See https://pigweed.dev/pw_log_rpc/#log-drops
+//
+// Message for when an entry could not be added to the MultiSink.
+#ifndef PW_LOG_RPC_INGRESS_ERROR_MSG
+#define PW_LOG_RPC_INGRESS_ERROR_MSG "Ingress error"
+#endif  // PW_LOG_RPC_INGRESS_ERROR_MSG
+
+// Message for when a drain drains too slow and has to be advanced, dropping
+// logs.
+#ifndef PW_LOG_RPC_SLOW_DRAIN_MSG
+#define PW_LOG_RPC_SLOW_DRAIN_MSG "Slow drain"
+#endif  // PW_LOG_RPC_SLOW_DRAIN_MSG
+
+// Message for when a is too too large to fit in the outbound buffer, so it is
+// dropped.
+#ifndef PW_LOG_RPC_SMALL_OUTBOUND_BUFFER_MSG
+#define PW_LOG_RPC_SMALL_OUTBOUND_BUFFER_MSG "Outbound log buffer too small"
+#endif  // PW_LOG_RPC_SMALL_OUTBOUND_BUFFER_MSG
+
+// Message for when the log entry in the MultiSink is too large to be peeked or
+// popped out, so it is dropped.
+#ifndef PW_LOG_RPC_SMALL_STACK_BUFFER_MSG
+#define PW_LOG_RPC_SMALL_STACK_BUFFER_MSG "Stack log buffer too small"
+#endif  // PW_LOG_RPC_SMALL_STACK_BUFFER_MSG
+
+// Message for when a bulk of logs cannot be sent due to a writer error.
+#ifndef PW_LOG_RPC_WRITER_ERROR_MSG
+#define PW_LOG_RPC_WRITER_ERROR_MSG "Writer error"
+#endif  // PW_LOG_RPC_WRITER_ERROR_MSG
+
 namespace pw::log_rpc::cfg {
 inline constexpr size_t kMaxModuleNameBytes =
     PW_LOG_RPC_CONFIG_MAX_FILTER_RULE_MODULE_NAME_SIZE;

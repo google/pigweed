@@ -205,21 +205,47 @@ possible. Logs can be dropped when
 - They don't pass a filter. This is the expected behavior, so filtered logs will
   not be tracked as dropped logs.
 - The drains are too slow to keep up. In this case, the ring buffer is full of
-  undrained entries; when new logs come in, old entries are dropped. [#f1]_
-- There is an error creating or adding a new log entry, and the ring buffer is
-  notified that the log had to be dropped. [#f1]_
-- A log entry is too large for the outbound buffer. [#f2]_
-- There are detected errors transmitting log entries. [#f2]_
-- There are undetected errors transmitting or receiving log entries, such as an
-  interface interruption. [#f3]_
+  undrained entries; when new logs come in, old entries are dropped. The log
+  stream will contain a ``LogEntry`` message with the number of dropped logs.
+  E.g.
 
-.. [#f1] The log stream will contain a ``LogEntry`` message with the number of
-         dropped logs.
-.. [#f2] The log stream will contain a ``LogEntry`` message with the number of
-         dropped logs the next time the stream is flushed only if the drain's
-         error handling is set to close the stream on error.
-.. [#f3] Clients can calculate the number of logs lost in transit using the
-         sequence ID and number of entries in each stream packet.
+      Dropped 15 logs due to slow reader
+
+- There is an error creating or adding a new log entry, and the ring buffer is
+  notified that the log had to be dropped. The log stream will contain a
+  ``LogEntry`` message with the number of dropped logs.
+  E.g.
+
+      Dropped 15 logs due to slow reader
+
+- A log entry is too large for the stack buffer. The log stream will contain
+  an error message with the drop count. Provide a log buffer that fits the
+  largest entry added to the MultiSink to avoid this error.
+  E.g.
+
+      Dropped 1 log due to stack buffer too small
+
+- A log entry is too large for the outbound buffer. The log stream will contain
+  an error message with the drop count. Provide a log buffer that fits the
+  largest entry added to the MultiSink to avoid this error.
+  E.g.
+
+      Dropped 1 log due to outbound buffer too small
+
+- There are detected errors transmitting log entries. The log stream will
+  contain a ``LogEntry`` with an error message and the number of dropped logs
+  the next time the stream is flushed only if the drain's error handling is set
+  to close the stream on error.
+  E.g.
+
+      Dropped 10 logs due to writer error
+
+- There are undetected errors transmitting or receiving log entries, such as an
+  interface interruption. Clients can calculate the number of logs lost in
+  transit using the sequence ID and number of entries in each stream packet.
+  E.g.
+
+      Dropped 50 logs due to transmission error
 
 The drop count is combined when possible, and reported only when an entry, that
 passes any filters, is going to be sent.

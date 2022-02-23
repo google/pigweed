@@ -46,7 +46,7 @@ using log::pw_rpc::raw::Logs;
 
 constexpr size_t kMaxMessageSize = 50;
 constexpr size_t kMaxLogEntrySize =
-    RpcLogDrain::kMinEntrySizeWithoutPayload + kMaxMessageSize;
+    RpcLogDrain::kMinEntryBufferSize + kMaxMessageSize;
 static_assert(RpcLogDrain::kMinEntryBufferSize < kMaxLogEntrySize);
 constexpr size_t kMultiSinkBufferSize = kMaxLogEntrySize * 10;
 constexpr size_t kMaxDrains = 3;
@@ -57,7 +57,8 @@ constexpr char kMessage[] = "message";
 constexpr char kLongMessage[] =
     "This is a long log message that will be dropped.";
 static_assert(sizeof(kLongMessage) < kMaxMessageSize);
-static_assert(sizeof(kLongMessage) > RpcLogDrain::kMinEntryBufferSize);
+static_assert(sizeof(kLongMessage) + RpcLogDrain::kMinEntrySizeWithoutPayload >
+              RpcLogDrain::kMinEntryBufferSize);
 std::array<std::byte, 1> rpc_request_buffer;
 constexpr auto kSampleMetadata =
     log_tokenized::Metadata::Set<PW_LOG_LEVEL_INFO, 123, 0x03, __LINE__>();
@@ -276,7 +277,10 @@ TEST_F(LogServiceTest, HandleDropped) {
                                      std::span(std::string_view(kMessage)))});
   }
   expected_messages.push_back(
-      {.metadata = kDropMessageMetadata, .dropped = total_drop_count});
+      {.metadata = kDropMessageMetadata,
+       .dropped = total_drop_count,
+       .tokenized_data = std::as_bytes(
+           std::span(std::string_view(RpcLogDrain::kIngressErrorMessage)))});
   for (; i < total_entries; ++i) {
     expected_messages.push_back({.metadata = kSampleMetadata,
                                  .timestamp = kSampleTimestamp,
@@ -335,7 +339,10 @@ TEST_F(LogServiceTest, HandleDroppedBetweenFilteredOutLogs) {
 
   Vector<TestLogEntry, 2> expected_messages;
   expected_messages.push_back(
-      {.metadata = kDropMessageMetadata, .dropped = total_drop_count});
+      {.metadata = kDropMessageMetadata,
+       .dropped = total_drop_count,
+       .tokenized_data = std::as_bytes(
+           std::span(std::string_view(RpcLogDrain::kIngressErrorMessage)))});
   expected_messages.push_back(
       {.metadata = metadata,
        .timestamp = kSampleTimestamp,
@@ -368,7 +375,7 @@ TEST_F(LogServiceTest, HandleSmallLogEntryBuffer) {
   const size_t total_entries = 5;
   const uint32_t total_drop_count = total_entries - 1;
   AddLogEntries(
-      total_entries - 1, kLongMessage, kSampleMetadata, kSampleTimestamp);
+      total_drop_count, kLongMessage, kSampleMetadata, kSampleTimestamp);
   EXPECT_EQ(OkStatus(),
             AddLogEntry(kMessage, kSampleMetadata, kSampleTimestamp).status());
 
@@ -379,14 +386,19 @@ TEST_F(LogServiceTest, HandleSmallLogEntryBuffer) {
   ASSERT_EQ(context.status(), OkStatus());
   ASSERT_EQ(context.responses().size(), 1u);
 
-  Vector<TestLogEntry, 2> expected_messages{
-      {.metadata = kDropMessageMetadata, .dropped = total_drop_count},
+  Vector<TestLogEntry, total_entries + 1> expected_messages;
+  expected_messages.push_back(
+      {.metadata = kDropMessageMetadata,
+       .dropped = total_drop_count,
+       .tokenized_data = std::as_bytes(std::span(
+           std::string_view(RpcLogDrain::kSmallStackBufferErrorMessage)))});
+  expected_messages.push_back(
       {.metadata = kSampleMetadata,
        .timestamp = kSampleTimestamp,
-       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage)))},
-  };
+       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage)))});
 
-  // Verify data in responses.
+  // Expect one drop message with the total drop count, and the only message
+  // that fits the buffer.
   size_t entries_found = 0;
   uint32_t drop_count_found = 0;
   for (auto& response : context.responses()) {
@@ -397,7 +409,6 @@ TEST_F(LogServiceTest, HandleSmallLogEntryBuffer) {
                      entries_found,
                      drop_count_found);
   }
-  // No messages fit the buffer, expect a drop message.
   EXPECT_EQ(entries_found, 1u);
   EXPECT_EQ(drop_count_found, total_drop_count);
 }
@@ -547,7 +558,10 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   const uint32_t total_drop_count = entries_found / successful_packets_sent;
   Vector<TestLogEntry, max_entries> expected_messages_after_reset;
   expected_messages_after_reset.push_back(
-      {.metadata = kDropMessageMetadata, .dropped = total_drop_count});
+      {.metadata = kDropMessageMetadata,
+       .dropped = total_drop_count,
+       .tokenized_data = std::as_bytes(
+           std::span(std::string_view(RpcLogDrain::kWriterErrorMessage)))});
 
   const uint32_t remaining_entries = total_entries - total_drop_count;
   for (size_t i = 0; i < remaining_entries; ++i) {

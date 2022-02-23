@@ -14,16 +14,19 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <string_view>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_function/function.h"
 #include "pw_log/proto/log.pwpb.h"
+#include "pw_log_rpc/internal/config.h"
 #include "pw_log_rpc/log_filter.h"
 #include "pw_multisink/multisink.h"
 #include "pw_protobuf/serialized_size.h"
@@ -69,8 +72,28 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
       protobuf::SizeOfFieldBytes(log::LogEntry::Fields::FILE, 0) +
       protobuf::SizeOfFieldBytes(log::LogEntry::Fields::THREAD, 0);
 
-  // The smallest buffer size must be able to fit a typical token size: 4 bytes.
-  static constexpr size_t kMinEntryBufferSize = kMinEntrySizeWithoutPayload + 4;
+  // Error messages sent when logs are dropped.
+  static constexpr std::string_view kIngressErrorMessage{
+      PW_LOG_RPC_INGRESS_ERROR_MSG};
+  static constexpr std::string_view kSlowDrainErrorMessage{
+      PW_LOG_RPC_SLOW_DRAIN_MSG};
+  static constexpr std::string_view kSmallOutboundBufferErrorMessage{
+      PW_LOG_RPC_SMALL_OUTBOUND_BUFFER_MSG};
+  static constexpr std::string_view kSmallStackBufferErrorMessage{
+      PW_LOG_RPC_SMALL_STACK_BUFFER_MSG};
+  static constexpr std::string_view kWriterErrorMessage{
+      PW_LOG_RPC_WRITER_ERROR_MSG};
+  // The smallest entry buffer must fit the largest error message, or a typical
+  // token size (4B), whichever is largest.
+  static constexpr size_t kLargestErrorMessageOrTokenSize =
+      std::max({size_t(4),
+                kIngressErrorMessage.size(),
+                kSlowDrainErrorMessage.size(),
+                kSmallOutboundBufferErrorMessage.size(),
+                kSmallStackBufferErrorMessage.size(),
+                kWriterErrorMessage.size()});
+  static constexpr size_t kMinEntryBufferSize =
+      kMinEntrySizeWithoutPayload + sizeof(kLargestErrorMessageOrTokenSize);
 
   // When encoding LogEntry in LogEntries, there are kLogEntriesEncodeFrameSize
   // bytes added to the encoded LogEntry. This constant and kMinEntryBufferSize
@@ -99,7 +122,11 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
         error_handling_(error_handling),
         server_writer_(),
         log_entry_buffer_(log_entry_buffer),
-        committed_entry_drop_count_(0),
+        drop_count_ingress_error_(0),
+        drop_count_slow_drain_(0),
+        drop_count_small_outbound_buffer_(0),
+        drop_count_small_stack_buffer_(0),
+        drop_count_writer_error_(0),
         mutex_(mutex),
         filter_(filter),
         sequence_id_(0),
@@ -191,7 +218,11 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   const LogDrainErrorHandling error_handling_;
   rpc::RawServerWriter server_writer_ PW_GUARDED_BY(mutex_);
   const ByteSpan log_entry_buffer_ PW_GUARDED_BY(mutex_);
-  uint32_t committed_entry_drop_count_ PW_GUARDED_BY(mutex_);
+  uint32_t drop_count_ingress_error_ PW_GUARDED_BY(mutex_);
+  uint32_t drop_count_slow_drain_ PW_GUARDED_BY(mutex_);
+  uint32_t drop_count_small_outbound_buffer_ PW_GUARDED_BY(mutex_);
+  uint32_t drop_count_small_stack_buffer_ PW_GUARDED_BY(mutex_);
+  uint32_t drop_count_writer_error_ PW_GUARDED_BY(mutex_);
   sync::Mutex& mutex_;
   Filter* filter_;
   uint32_t sequence_id_;

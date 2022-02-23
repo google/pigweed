@@ -99,6 +99,7 @@ pw_source_set("rpc_log_drain") {
   ]
   sources = [ "rpc_log_drain.cc" ]
   public_deps = [
+    ":config",
     ":log_filter",
     "$dir_pw_assert",
     "$dir_pw_chrono:system_clock",

@@ -78,7 +78,10 @@ pw_cc_library(
 
 pw_cc_library(
     name = "rpc_log_drain",
-    srcs = ["rpc_log_drain.cc"],
+    srcs = [
+        "public/pw_log_rpc/internal/config.h",
+        "rpc_log_drain.cc",
+    ],
     hdrs = [
         "public/pw_log_rpc/rpc_log_drain.h",
         "public/pw_log_rpc/rpc_log_drain_map.h",
