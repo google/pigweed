@@ -29,7 +29,7 @@ def add_google_analytics_tag(app, pagename, templatename, context, doctree):  # 
   function gtag(){{dataLayer.push(arguments);}}
   gtag('js', new Date());
 
-  gtag('config', {app.config.google_analytics_id});
+  gtag('config', '{app.config.google_analytics_id}');
 </script>""")
 
 
