@@ -19,6 +19,7 @@ import re
 import sys
 from typing import BinaryIO, Dict, List, Optional, TextIO
 
+import pw_cli.argument_types
 from elftools.elf import elffile  # type: ignore
 
 _LOG = logging.getLogger('bloaty_config')
@@ -34,7 +35,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Generates useful bloaty configurations entries',
         epilog='Hint: try this:\n'
-        '   python -m pw_bloat.bloaty_config my_app.elf > my_app.bloat')
+        '   python -m pw_bloat.bloaty_config my_app.elf -o my_app.bloat')
     parser.add_argument('elf_file', type=argparse.FileType('rb'))
     parser.add_argument('--output',
                         '-o',
@@ -56,6 +57,12 @@ def _parse_args() -> argparse.Namespace:
               'symbols defined in the linker script matching the following ' +
               'pattern: ' +
               '"pw::bloat::config::memory_region::NAME[0].{start,end}"'))
+    parser.add_argument('-l',
+                        '--loglevel',
+                        type=pw_cli.argument_types.log_level,
+                        default=logging.INFO,
+                        help='Set the log level'
+                        '(debug, info, warning, error, critical)')
     return parser.parse_args()
 
 
@@ -173,6 +180,8 @@ def _parse_segments(parsed_elf_file: elffile.ELFFile) -> Dict:
         segment = parsed_elf_file.get_segment(i)
         start_vmaddr = segment['p_vaddr']
         memory_size = segment['p_memsz']
+        if memory_size == 0:
+            continue  # Not a loaded segment which resides in virtual memory.
         end_vmaddr = start_vmaddr + memory_size
         segments[i] = (start_vmaddr, end_vmaddr)
     return segments
@@ -316,6 +325,9 @@ def generate_bloaty_config(elf_file: BinaryIO, enable_memoryregions: bool,
 def main() -> int:
     """Generates a useful bloaty config file containing new data sources."""
     args = _parse_args()
+
+    logging.basicConfig(format='%(message)s', level=args.loglevel)
+
     generate_bloaty_config(elf_file=args.elf_file,
                            enable_memoryregions=args.memoryregions,
                            enable_utilization=args.utilization,
@@ -324,5 +336,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(message)s', level=logging.INFO)
     sys.exit(main())
