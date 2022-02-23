@@ -260,7 +260,7 @@ ProfileServer::ScoConnectionServer::~ScoConnectionServer() {
 void ProfileServer::ScoConnectionServer::Activate(fit::callback<void()> on_closed) {
   on_closed_ = std::move(on_closed);
 
-  auto rx_callback = [](auto) {
+  auto rx_callback = []() {
     // TODO(fxbug.dev/87453): Implement rx_callback
   };
   auto closed_cb = [this] { Close(); };

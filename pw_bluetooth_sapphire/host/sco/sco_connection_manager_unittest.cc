@@ -85,8 +85,8 @@ using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 // Activate a SCO connection and set the close handler to call Deactivate()
 void activate_connection(OpenConnectionResult& result) {
   if (result.is_ok()) {
-    result.value()->Activate([](ByteBufferPtr rx_data) {},
-                             [result] { result.value()->Deactivate(); });
+    result.value()->Activate(/*rx_callback=*/[]() {},
+                             /*closed_callback=*/[result] { result.value()->Deactivate(); });
   };
 }
 
@@ -98,6 +98,7 @@ class ScoConnectionManagerTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     InitializeACLDataChannel();
+    InitializeScoDataChannel();
     StartTestDevice();
 
     manager_ = std::make_unique<ScoConnectionManager>(PeerId(1), kAclConnectionHandle, kPeerAddress,
@@ -1084,6 +1085,10 @@ TEST_F(
   EXPECT_EQ(conn_result.value().first->handle(), kScoConnectionHandle);
   size_t result_parameter_index = conn_result.value().second;
   EXPECT_EQ(result_parameter_index, 1u);
+
+  // Verify that the correct parameters were given to the ScoConnection.
+  EXPECT_EQ(conn_result.value().first->parameters().packet_types,
+            ScoConnectionParams().packet_types);
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
 }

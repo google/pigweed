@@ -180,9 +180,13 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto conn = ScoConnection::Create(std::move(link), /*deactivated_cb=*/[this, connection_handle] {
+  fit::closure deactivated_cb = [this, connection_handle] {
     ZX_ASSERT(connections_.erase(connection_handle));
-  });
+  };
+  hci_spec::SynchronousConnectionParameters conn_params =
+      in_progress_request_->parameters[in_progress_request_->current_param_index];
+  auto conn = ScoConnection::Create(std::move(link), std::move(deactivated_cb), conn_params,
+                                    transport_->sco_data_channel());
 
   auto [_, success] = connections_.try_emplace(connection_handle, conn);
   ZX_ASSERT_MSG(success, "SCO connection already exists with handle %#.4x (peer: %s)",

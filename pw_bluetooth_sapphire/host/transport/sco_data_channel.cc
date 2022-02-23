@@ -26,6 +26,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   void UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override;
   void OnOutboundPacketReadable() override;
+  uint16_t max_data_length() const override { return buffer_info_.max_data_length(); }
 
  private:
   // HCI callbacks may be executed on a different thread, and they may be called after

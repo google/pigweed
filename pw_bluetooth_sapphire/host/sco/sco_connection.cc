@@ -7,25 +7,35 @@
 namespace bt::sco {
 
 ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
-                             fit::closure deactivated_cb)
+                             fit::closure deactivated_cb,
+                             hci_spec::SynchronousConnectionParameters parameters,
+                             hci::ScoDataChannel* channel)
     : active_(false),
       connection_(std::move(connection)),
-      deactivated_cb_(std::move(deactivated_cb)) {
+      deactivated_cb_(std::move(deactivated_cb)),
+      channel_(channel),
+      parameters_(parameters),
+      weak_ptr_factory_(this) {
   ZX_ASSERT(connection_);
   ZX_ASSERT(connection_->ll_type() == bt::LinkType::kSCO ||
             connection_->ll_type() == bt::LinkType::kESCO);
+  ZX_ASSERT(!channel_ ||
+            channel_->max_data_length() <= hci_spec::kMaxSynchronousDataPacketPayloadSize);
+
   handle_ = connection_->handle();
 
   connection_->set_peer_disconnect_callback([this](auto, auto) {
-    // Notifies SocketChannelRelay that this connection has been disconnected.
-    // Close() will eventually call Deactivate().
+    // Notifies activator that this connection has been disconnected.
+    // Activator will call Deactivate().
     Close();
   });
 }
 
-fbl::RefPtr<ScoConnection> ScoConnection::Create(std::unique_ptr<hci::Connection> connection,
-                                                 fit::closure closed_cb) {
-  return fbl::AdoptRef(new ScoConnection(std::move(connection), std::move(closed_cb)));
+fbl::RefPtr<ScoConnection> ScoConnection::Create(
+    std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
+    hci_spec::SynchronousConnectionParameters parameters, hci::ScoDataChannel* channel) {
+  return fbl::AdoptRef(
+      new ScoConnection(std::move(connection), std::move(deactivated_cb), parameters, channel));
 }
 
 ScoConnection::UniqueId ScoConnection::unique_id() const {
@@ -51,13 +61,17 @@ void ScoConnection::Close() {
   cb();
 }
 
-bool ScoConnection::Activate(ScoConnection::RxCallback /*rx_callback*/,
-                             fit::closure closed_callback) {
+bool ScoConnection::Activate(fit::closure rx_callback, fit::closure closed_callback) {
   // TODO(fxbug.dev/58458): Handle Activate() called on a connection that has been closed already.
   ZX_ASSERT(closed_callback);
   ZX_ASSERT(!active_);
+  ZX_ASSERT(rx_callback);
   activator_closed_cb_ = std::move(closed_callback);
+  rx_callback_ = std::move(rx_callback);
   active_ = true;
+  if (channel_ && parameters_.input_data_path == hci_spec::ScoDataPath::kHci) {
+    channel_->RegisterConnection(weak_ptr_factory_.GetWeakPtr());
+  }
   return true;
 }
 
@@ -72,16 +86,92 @@ void ScoConnection::Deactivate() {
 }
 
 uint16_t ScoConnection::max_tx_sdu_size() const {
-  bt_log(WARN, "gap-sco", "%s is not supported", __func__);
-  return 0u;
+  return channel_ ? channel_->max_data_length() : 0u;
 }
 
-bool ScoConnection::Send(ByteBufferPtr sdu) {
-  bt_log(WARN, "gap-sco", "%s is not supported", __func__);
-  return false;
+bool ScoConnection::Send(ByteBufferPtr payload) {
+  if (!active_) {
+    bt_log(WARN, "gap-sco", "dropping SCO packet for inactive connection (handle: %#.4x)", handle_);
+    return false;
+  }
+
+  if (!channel_) {
+    bt_log(WARN, "gap-sco", "dropping SCO packet because HCI SCO is not supported (handle: %#.4x)",
+           handle_);
+    return false;
+  }
+
+  if (payload->size() > channel_->max_data_length()) {
+    bt_log(WARN, "gap-sco",
+           "dropping SCO packet larger than the buffer data packet length (packet size: %zu, max "
+           "data length: "
+           "%hu)",
+           payload->size(), channel_->max_data_length());
+    return false;
+  }
+
+  outbound_queue_.push(std::move(payload));
+
+  // Notify ScoDataChannel that a packet is available. This is only necessary for the first
+  // packet of an empty queue (flow control will poll this connection otherwise).
+  if (outbound_queue_.size() == 1u) {
+    channel_->OnOutboundPacketReadable();
+  }
+  return true;
+}
+
+std::unique_ptr<hci::ScoDataPacket> ScoConnection::Read() {
+  if (inbound_queue_.empty()) {
+    return nullptr;
+  }
+  std::unique_ptr<hci::ScoDataPacket> packet = std::move(inbound_queue_.front());
+  inbound_queue_.pop();
+  return packet;
+}
+
+hci_spec::SynchronousConnectionParameters ScoConnection::parameters() { return parameters_; }
+
+std::unique_ptr<hci::ScoDataPacket> ScoConnection::GetNextOutboundPacket() {
+  if (outbound_queue_.empty()) {
+    return nullptr;
+  }
+
+  std::unique_ptr<hci::ScoDataPacket> out =
+      hci::ScoDataPacket::New(handle(), static_cast<uint8_t>(outbound_queue_.front()->size()));
+  if (!out) {
+    bt_log(ERROR, "gap-sco", "failed to allocate SCO data packet");
+    return nullptr;
+  }
+  out->mutable_view()->mutable_payload_data().Write(outbound_queue_.front()->view());
+  outbound_queue_.pop();
+  return out;
+}
+
+void ScoConnection::ReceiveInboundPacket(std::unique_ptr<hci::ScoDataPacket> packet) {
+  ZX_ASSERT(packet->connection_handle() == handle_);
+
+  if (!active_ || !rx_callback_) {
+    bt_log(TRACE, "gap-sco", "dropping inbound SCO packet");
+    return;
+  }
+
+  inbound_queue_.push(std::move(packet));
+  // It's only necessary to notify activator of the first packet queued (flow control will poll this
+  // connection otherwise).
+  if (inbound_queue_.size() == 1u) {
+    rx_callback_();
+  }
+}
+
+void ScoConnection::OnHciError() {
+  // Notify activator that this connection should be deactivated.
+  Close();
 }
 
 void ScoConnection::CleanUp() {
+  if (active_ && channel_ && parameters_.input_data_path == hci_spec::ScoDataPath::kHci) {
+    channel_->UnregisterConnection(handle_);
+  }
   active_ = false;
   connection_ = nullptr;
 }

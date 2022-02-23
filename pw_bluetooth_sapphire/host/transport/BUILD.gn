@@ -59,7 +59,11 @@ static_library("transport") {
 source_set("testing") {
   testonly = true
 
-  sources = [ "mock_acl_data_channel.h" ]
+  sources = [
+    "fake_sco_data_channel.cc",
+    "fake_sco_data_channel.h",
+    "mock_acl_data_channel.h",
+  ]
 
   public_deps = [ ":transport" ]
 }

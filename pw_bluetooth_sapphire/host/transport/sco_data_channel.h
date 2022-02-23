@@ -74,6 +74,9 @@ class ScoDataChannel {
   // Called by connections when an outbound packet is available (via
   // ConnectionInterface::GetNextOutboundPacket).
   virtual void OnOutboundPacketReadable() = 0;
+
+  // The controller's SCO max data length (not including header).
+  virtual uint16_t max_data_length() const = 0;
 };
 
 }  // namespace bt::hci
