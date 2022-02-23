@@ -11,7 +11,8 @@
       ],
       "tags": [
         "version:2@3.9.5.chromium.19"
-      ]
+      ],
+      "version_file": ".versions/cpython3.cipd_version"
     },
     {
       "_comment": "TODO(pwbug/455) Use 3.9 for Macs too.",
@@ -21,7 +22,8 @@
       ],
       "tags": [
         "version:2@3.8.10.chromium.21"
-      ]
+      ],
+      "version_file": ".versions/cpython3.cipd_version"
     }
   ]
 }

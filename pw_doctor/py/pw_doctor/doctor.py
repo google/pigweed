@@ -304,17 +304,41 @@ def cipd_versions(ctx: DoctorContext):
                       'pigweed.json'),
         root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
                       'bazel.json'),
+        root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
+                      'python.json'),
+        root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
+                      'arm.json'),
     )
 
-    def check_cipd(package, versions_path):
+    platform = cipd_update.platform()
+
+    def check_cipd(package, install_path):
+        if platform not in package['platforms']:
+            ctx.debug("skipping %s because it doesn't apply to %s",
+                      package['path'], platform)
+            return
+
         ctx.debug('checking version of %s', package['path'])
+
         name = [
             part for part in package['path'].split('/') if '{' not in part
         ][-1]
-        path = versions_path.joinpath(f'{name}.cipd_version')
-        if not path.is_file():
-            ctx.debug(f'no version file for {name} at {path}')
-            return
+
+        # If the exact path is specified in the JSON file use it, and require it
+        # exist.
+        if 'version_file' in package:
+            path = install_path / package['version_file']
+            if not path.is_file():
+                ctx.error(f'no version file for {name} at {path}')
+                return
+
+        # Otherwise, follow a heuristic to find the file but don't require the
+        # file to exist.
+        else:
+            path = install_path / '.versions' / f'{name}.cipd_version'
+            if not path.is_file():
+                ctx.debug(f'no version file for {name} at {path}')
+                return
 
         with path.open() as ins:
             installed = json.load(ins)
@@ -334,15 +358,19 @@ def cipd_versions(ctx: DoctorContext):
         for tag in package['tags']:
             if tag not in output:
                 ctx.error(
-                    'CIPD package %s is out of date, please rerun bootstrap',
-                    installed['package_name'])
+                    'CIPD package %s in %s is out of date, please rerun '
+                    'bootstrap', installed['package_name'], install_path)
+
+            else:
+                ctx.debug('CIPD package %s in %s is current',
+                          installed['package_name'], install_path)
 
     for json_path in json_paths:
-        versions_path = pathlib.Path(
-            cipd_update.package_installation_path(cipd_dir,
-                                                  json_path)) / '.versions'
+        ctx.debug(f'Checking packages in {json_path}')
+        install_path = pathlib.Path(
+            cipd_update.package_installation_path(cipd_dir, json_path))
         for package in json.loads(json_path.read_text()).get('packages', ()):
-            ctx.submit(check_cipd, package, versions_path)
+            ctx.submit(check_cipd, package, install_path)
 
 
 @register_into(CHECKS)

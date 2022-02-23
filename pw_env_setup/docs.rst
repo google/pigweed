@@ -218,8 +218,9 @@ here.
 
 ``cipd_package_files``
   CIPD package file. JSON file consisting of a list of additional CIPD package
-  files to import and a list of dictionaries with "path", "platforms", and
-  "tags" keys. Both top-level lists are optional. An example is below.
+  files to import and a list of dictionaries with "path", "platforms", "tags",
+  and "version_file" keys. Both top-level lists are optional. An example is
+  below.
 
 .. code-block:: json
 
@@ -238,7 +239,8 @@ here.
         ],
         "tags": [
           "version:2@1.16.3"
-        ]
+        ],
+        "version_file": ".versions/go.cipd_version"
       }
     ]
   }

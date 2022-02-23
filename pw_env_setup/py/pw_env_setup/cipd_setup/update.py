@@ -24,7 +24,7 @@ from __future__ import print_function
 import argparse
 import json
 import os
-import platform
+import platform as platform_module
 import re
 import subprocess
 import sys
@@ -148,21 +148,21 @@ def check_auth(cipd, package_files, spin):
     return True
 
 
-def _platform():
+def platform():
     osname = {
         'darwin': 'mac',
         'linux': 'linux',
         'windows': 'windows',
-    }[platform.system().lower()]
+    }[platform_module.system().lower()]
 
-    if platform.machine().startswith(('aarch64', 'armv8')):
+    if platform_module.machine().startswith(('aarch64', 'armv8')):
         arch = 'arm64'
-    elif platform.machine() == 'x86_64':
+    elif platform_module.machine() == 'x86_64':
         arch = 'amd64'
-    elif platform.machine() == 'i686':
+    elif platform_module.machine() == 'i686':
         arch = 'i386'
     else:
-        arch = platform.machine()
+        arch = platform_module.machine()
 
     return '{}-{}'.format(osname, arch).lower()
 
@@ -214,7 +214,7 @@ def write_ensure_file(package_file, ensure_file):
         for pkg in packages:
             # If this is a new-style package manifest platform handling must
             # be done here instead of by the cipd executable.
-            if 'platforms' in pkg and _platform() not in pkg['platforms']:
+            if 'platforms' in pkg and platform() not in pkg['platforms']:
                 continue
 
             outs.write('@Subdir {}\n'.format(pkg.get('subdir', '')))
@@ -311,7 +311,7 @@ def update(
             for bin_dir in (
                     install_dir,
                     os.path.join(install_dir, 'bin'),
-                    os.path.join(install_dir, _platform(), 'bin'),
+                    os.path.join(install_dir, platform(), 'bin'),
             ):
                 if os.path.isdir(bin_dir):
                     env_vars.prepend('PATH', bin_dir)

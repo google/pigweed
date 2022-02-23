@@ -9,7 +9,8 @@
       ],
       "tags": [
         "version:5.0.0.1"
-      ]
+      ],
+      "version_file": ".versions/bazel.cipd_version"
     }
   ]
 }

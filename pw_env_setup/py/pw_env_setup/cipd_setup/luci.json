@@ -11,7 +11,8 @@
       ],
       "tags": [
         "latest"
-      ]
+      ],
+      "version_file": ".versions/bb.cipd_version"
     },
     {
       "path": "infra/tools/luci-auth/${platform}",
@@ -24,7 +25,8 @@
       ],
       "tags": [
         "latest"
-      ]
+      ],
+      "version_file": ".versions/luci-auth.cipd_version"
     },
     {
       "path": "infra/tools/luci/gerrit/${platform}",
@@ -37,7 +39,8 @@
       ],
       "tags": [
         "latest"
-      ]
+      ],
+      "version_file": ".versions/gerrit.cipd_version"
     },
     {
       "path": "infra/tools/luci/gitiles/${platform}",
@@ -50,7 +53,8 @@
       ],
       "tags": [
         "latest"
-      ]
+      ],
+      "version_file": ".versions/gitiles.cipd_version"
     },
     {
       "path": "infra/tools/luci/cas/${platform}",
@@ -63,7 +67,8 @@
       ],
       "tags": [
         "latest"
-      ]
+      ],
+      "version_file": ".versions/cas.cipd_version"
     },
     {
       "path": "infra/tools/luci/led/${platform}",
@@ -76,7 +81,8 @@
       ],
       "tags": [
         "latest"
-      ]
+      ],
+      "version_file": ".versions/led.cipd_version"
     },
     {
       "path": "infra/tools/luci/logdog/logdog/${platform}",
@@ -88,7 +94,8 @@
       ],
       "tags": [
         "latest"
-      ]
+      ],
+      "version_file": ".versions/logdog.cipd_version"
     }
   ]
 }

@@ -9,7 +9,8 @@
       ],
       "tags": [
         "version:10-2020-q4-major"
-      ]
+      ],
+      "version_file": ".versions/gcc-arm-none-eabi.cipd_version"
     }
   ]
 }
