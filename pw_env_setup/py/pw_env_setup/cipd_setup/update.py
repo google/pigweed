@@ -251,6 +251,13 @@ def update(
     if not os.path.isdir(root_install_dir):
         os.makedirs(root_install_dir)
 
+    # This file is read by 'pw doctor' which needs to know which package files
+    # were used in the environment.
+    package_files_file = os.path.join(root_install_dir,
+                                      '_all_package_files.json')
+    with open(package_files_file, 'w') as outs:
+        json.dump(package_files, outs, indent=2)
+
     if env_vars:
         env_vars.prepend('PATH', root_install_dir)
         env_vars.set('PW_CIPD_INSTALL_DIR', root_install_dir)

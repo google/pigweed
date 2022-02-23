@@ -289,26 +289,12 @@ def cipd_versions(ctx: DoctorContext):
     if os.environ.get('PW_DOCTOR_SKIP_CIPD_CHECKS'):
         return
 
-    try:
-        root = pathlib.Path(os.environ['PW_ROOT']).resolve()
-    except KeyError:
-        return  # This case is handled elsewhere.
-
     if 'PW_CIPD_INSTALL_DIR' not in os.environ:
         ctx.error('PW_CIPD_INSTALL_DIR not set')
     cipd_dir = pathlib.Path(os.environ['PW_CIPD_INSTALL_DIR'])
 
-    # Deliberately not checking luci.json--it's not required to be up-to-date.
-    json_paths = (
-        root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
-                      'pigweed.json'),
-        root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
-                      'bazel.json'),
-        root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
-                      'python.json'),
-        root.joinpath('pw_env_setup', 'py', 'pw_env_setup', 'cipd_setup',
-                      'arm.json'),
-    )
+    with open(cipd_dir / '_all_package_files.json', 'r') as ins:
+        json_paths = [pathlib.Path(x) for x in json.load(ins)]
 
     platform = cipd_update.platform()
 
@@ -316,6 +302,12 @@ def cipd_versions(ctx: DoctorContext):
         if platform not in package['platforms']:
             ctx.debug("skipping %s because it doesn't apply to %s",
                       package['path'], platform)
+            return
+
+        tags_without_refs = [x for x in package['tags'] if ':' in x]
+        if not tags_without_refs:
+            ctx.debug('skipping %s because it tracks a ref, not a tag (%s)',
+                      package['path'], ', '.join(package['tags']))
             return
 
         ctx.debug('checking version of %s', package['path'])
