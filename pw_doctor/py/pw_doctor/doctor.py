@@ -334,6 +334,7 @@ def cipd_versions(ctx: DoctorContext):
 
         with path.open() as ins:
             installed = json.load(ins)
+        ctx.debug(f'found version file for {name} at {path}')
 
         describe = (
             'cipd',

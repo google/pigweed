@@ -21,43 +21,12 @@ The stdout of this script is meant to be executed by the invoking shell.
 
 from __future__ import print_function
 
-import argparse
 import json
 import os
 import platform as platform_module
 import re
 import subprocess
 import sys
-
-
-def parse(argv=None):
-    """Parse arguments."""
-
-    script_root = os.path.join(os.environ['PW_ROOT'], 'pw_env_setup', 'py',
-                               'pw_env_setup', 'cipd_setup')
-    git_root = subprocess.check_output(
-        ('git', 'rev-parse', '--show-toplevel'),
-        cwd=script_root,
-    ).decode('utf-8').strip()
-
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument(
-        '--install-dir',
-        dest='root_install_dir',
-        default=os.path.join(git_root, '.cipd'),
-    )
-    parser.add_argument('--package-file',
-                        dest='package_files',
-                        metavar='PACKAGE_FILE',
-                        action='append')
-    parser.add_argument('--cipd',
-                        default=os.path.join(script_root, 'wrapper.py'))
-    parser.add_argument('--cache-dir',
-                        default=os.environ.get(
-                            'CIPD_CACHE_DIR',
-                            os.path.expanduser('~/.cipd-cache-dir')))
-
-    return parser.parse_args(argv)
 
 
 def check_auth(cipd, package_files, spin):
@@ -202,9 +171,19 @@ def all_package_files(env_vars, package_files):
     return result
 
 
-def write_ensure_file(package_file, ensure_file):
-    with open(package_file, 'r') as ins:
-        packages = json.load(ins).get('packages', ())
+def write_ensure_file(package_files, ensure_file):
+    packages = []
+
+    for package_file in package_files:
+        name = package_file_name(package_file)
+        with open(package_file, 'r') as ins:
+            file_packages = json.load(ins).get('packages', ())
+            for package in file_packages:
+                if 'subdir' in package:
+                    package['subdir'] = os.path.join(name, package['subdir'])
+                else:
+                    package['subdir'] = name
+            packages.extend(file_packages)
 
     with open(ensure_file, 'w') as outs:
         outs.write('$VerifiedPlatform linux-amd64\n'
@@ -221,6 +200,10 @@ def write_ensure_file(package_file, ensure_file):
             outs.write('{} {}\n'.format(pkg['path'], ' '.join(pkg['tags'])))
 
 
+def package_file_name(package_file):
+    return os.path.basename(os.path.splitext(package_file)[0])
+
+
 def package_installation_path(root_install_dir, package_file):
     """Returns the package installation path.
 
@@ -228,8 +211,8 @@ def package_installation_path(root_install_dir, package_file):
       root_install_dir: The CIPD installation directory.
       package_file: The path to the .json package definition file.
     """
-    return os.path.join(root_install_dir,
-                        os.path.basename(os.path.splitext(package_file)[0]))
+    return os.path.join(root_install_dir, 'packages',
+                        package_file_name(package_file))
 
 
 def update(
@@ -264,75 +247,61 @@ def update(
         env_vars.set('CIPD_CACHE_DIR', cache_dir)
 
     pw_root = None
+
     if env_vars:
         pw_root = env_vars.get('PW_ROOT', None)
     if not pw_root:
         pw_root = os.environ['PW_ROOT']
 
-    # Run cipd for each json file.
-    for package_file in package_files:
-        if os.path.splitext(package_file)[1] == '.ensure':
-            ensure_file = package_file
-        else:
-            ensure_file = os.path.join(
-                root_install_dir,
-                os.path.basename(
-                    os.path.splitext(package_file)[0] + '.ensure'))
-            write_ensure_file(package_file, ensure_file)
+    ensure_file = os.path.join(root_install_dir, 'packages.ensure')
+    write_ensure_file(package_files, ensure_file)
 
-        install_dir = package_installation_path(root_install_dir, package_file)
+    install_dir = os.path.join(root_install_dir, 'packages')
 
-        name = os.path.basename(install_dir)
+    cmd = [
+        cipd,
+        'ensure',
+        '-ensure-file', ensure_file,
+        '-root', install_dir,
+        '-log-level', 'debug',
+        '-json-output', os.path.join(root_install_dir, 'packages.json'),
+        '-cache-dir', cache_dir,
+        '-max-threads', '0',  # 0 means use CPU count.
+    ]  # yapf: disable
 
-        cmd = [
-            cipd,
-            'ensure',
-            '-ensure-file', ensure_file,
-            '-root', install_dir,
-            '-log-level', 'debug',
-            '-json-output',
-            os.path.join(root_install_dir, '{}-output.json'.format(name)),
-            '-cache-dir', cache_dir,
-            '-max-threads', '0',  # 0 means use CPU count.
-        ]  # yapf: disable
+    # TODO(pwbug/135) Use function from common utility module.
+    log = os.path.join(root_install_dir, 'packages.log')
+    try:
+        with open(log, 'w') as outs:
+            print(*cmd, file=outs)
+            subprocess.check_call(cmd, stdout=outs, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError:
+        with open(log, 'r') as ins:
+            sys.stderr.write(ins.read())
+            raise
 
-        # TODO(pwbug/135) Use function from common utility module.
-        log = os.path.join(root_install_dir, '{}.log'.format(name))
-        try:
-            with open(log, 'w') as outs:
-                print(*cmd, file=outs)
-                subprocess.check_call(cmd,
-                                      stdout=outs,
-                                      stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError:
-            with open(log, 'r') as ins:
-                sys.stderr.write(ins.read())
-                raise
-
-        # Set environment variables so tools can later find things under, for
-        # example, 'share'.
-        if env_vars:
+    # Set environment variables so tools can later find things under, for
+    # example, 'share'.
+    if env_vars:
+        for package_file in package_files:
+            name = package_file_name(package_file)
+            file_install_dir = os.path.join(install_dir, name)
             # Some executables get installed at top-level and some get
             # installed under 'bin'. A small number of old packages prefix the
             # entire tree with the platform (e.g., chromium/third_party/tcl).
             for bin_dir in (
-                    install_dir,
-                    os.path.join(install_dir, 'bin'),
-                    os.path.join(install_dir, platform(), 'bin'),
+                    file_install_dir,
+                    os.path.join(file_install_dir, 'bin'),
+                    os.path.join(file_install_dir, platform(), 'bin'),
             ):
                 if os.path.isdir(bin_dir):
                     env_vars.prepend('PATH', bin_dir)
             env_vars.set('PW_{}_CIPD_INSTALL_DIR'.format(name.upper()),
-                         install_dir)
+                         file_install_dir)
 
             # Windows has its own special toolchain.
             if os.name == 'nt':
-                env_vars.prepend('PATH',
-                                 os.path.join(install_dir, 'mingw64', 'bin'))
+                env_vars.prepend(
+                    'PATH', os.path.join(file_install_dir, 'mingw64', 'bin'))
 
     return True
-
-
-if __name__ == '__main__':
-    update(**vars(parse()))
-    sys.exit(0)
