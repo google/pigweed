@@ -21,10 +21,81 @@ Used by modules.gni to generate:
 - a list of module docs (pw_module_docs).
 """
 
+import argparse
 import difflib
+import io
+import os
 from pathlib import Path
 import sys
-from typing import Iterator, List, Sequence, Tuple
+import subprocess
+from typing import Iterator, List, Optional, Sequence, Tuple
+
+_COPYRIGHT_NOTICE = '''\
+# Copyright 2022 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.'''
+
+_WARNING = '\033[31m\033[1mWARNING:\033[0m '  # Red WARNING: prefix
+_ERROR = '\033[41m\033[37m\033[1mERROR:\033[0m '  # Red background ERROR: prefix
+
+_MISSING_MODULES_WARNING = _WARNING + '''\
+The PIGWEED_MODULES list is missing the following modules:
+{modules}
+
+If the listed modules are Pigweed modules, add them to PIGWEED_MODULES.
+
+If the listed modules are not actual Pigweed modules, remove any stray pw_*
+directories in the Pigweed repository (git clean -fd).
+'''
+
+_OUT_OF_DATE_WARNING = _ERROR + '''\
+The generated Pigweed modules list .gni file is out of date!
+
+Regenerate the modules lists and commit it to fix this:
+
+  ninja -C {out_dir} update_modules
+
+  git add {file}
+'''
+
+_FORMAT_FAILED_WARNING = _ERROR + '''\
+Failed to generate a valid .gni from PIGWEED_MODULES!
+
+This may be a Pigweed bug; please report this to the Pigweed team.
+'''
+
+_DO_NOT_SET = 'DO NOT SET THIS BUILD ARGUMENT!'
+
+
+def _module_list_warnings(root: Path, modules: Sequence[str]) -> Iterator[str]:
+    missing = _missing_modules(root, modules)
+    if missing:
+        yield _MISSING_MODULES_WARNING.format(modules=''.join(
+            f'\n  - {module}' for module in missing))
+
+    if any(modules[i] > modules[i + 1] for i in range(len(modules) - 1)):
+        yield _WARNING + 'The PIGWEED_MODULES list is not sorted!'
+        yield ''
+        yield 'Apply the following diff to fix the order:'
+        yield ''
+        yield from difflib.unified_diff(modules,
+                                        sorted(modules),
+                                        lineterm='',
+                                        n=1,
+                                        fromfile='PIGWEED_MODULES',
+                                        tofile='PIGWEED_MODULES')
+
+        yield ''
 
 
 # TODO(hepler): Add tests and docs targets to all modules.
@@ -37,109 +108,68 @@ def _find_tests_and_docs(
     for module in modules:
         build_gn_contents = root.joinpath(module, 'BUILD.gn').read_bytes()
         if b'group("tests")' in build_gn_contents:
-            tests.append(f'  "$dir_{module}:tests",')
+            tests.append(f'"$dir_{module}:tests",')
 
         if b'group("docs")' in build_gn_contents:
-            docs.append(f'  "$dir_{module}:docs",')
+            docs.append(f'"$dir_{module}:docs",')
 
     return tests, docs
 
 
-_MISSING_MODULES_WARNING = '''
-The PIGWEED_MODULES list is missing the following modules:
-{modules}
-
-If the listed modules are Pigweed modules, add them to PIGWEED_MODULES.
-
-If the listed modules are not actual Pigweed modules, remove any stray pw_*
-directories in the Pigweed repository (git clean -fd).
-'''
-
-
-def _check_modules_list(root: Path, modules: Sequence[str]) -> Iterator[str]:
-    missing = _missing_modules(root, modules)
-
-    out_of_order = any(modules[i] > modules[i + 1]
-                       for i in range(len(modules) - 1))
-
-    if not missing and not out_of_order:
-        return
-
-    yield ''
-    yield 'if (current_toolchain == default_toolchain) {'
-    yield 'print()'
-    yield 'print("\033[41m\033[37m\033[1m!!! WARNING !!!\033[0m")'
-
-    if missing:
-        msg = _MISSING_MODULES_WARNING.format(modules=''.join(
-            f'\n  {module}' for module in missing))
-        for line in msg.splitlines():
-            yield f'print("{line}")'
-
-    if out_of_order:
-        yield 'print()'
-        yield 'print("The Pigweed modules list is not sorted!")'
-        yield 'print("Apply the following diff to fix the order:")'
-        yield 'print()'
-        for line in difflib.unified_diff(modules,
-                                         sorted(modules),
-                                         lineterm='',
-                                         n=1,
-                                         fromfile='PIGWEED_MODULES',
-                                         tofile='PIGWEED_MODULES'):
-            yield f'print("{line}")'
-
-    yield 'print()'
-    yield '}'
-
-
-def _generate_modules_gni(root: Path, prefix: str,
+def _generate_modules_gni(root: Path, prefix: Path,
                           modules: Sequence[str]) -> Iterator[str]:
     """Generates a .gni file with variables and lists for Pigweed modules."""
-    script = Path(__file__).relative_to(root.resolve()).as_posix()
+    script = Path(__file__).resolve().relative_to(root.resolve()).as_posix()
 
+    yield _COPYRIGHT_NOTICE
+    yield ''
     yield '# Build args and lists for all modules in Pigweed.'
     yield '#'
-    yield f'# DO NOT EDIT! Generated by {prefix}{script}.'
+    yield f'# DO NOT EDIT! Generated by {script}.'
     yield '#'
-    yield f'# To add modules here, list them in {prefix}PIGWEED_MODULES.'
+    yield '# To add modules here, list them in PIGWEED_MODULES and build the'
+    yield '# update_modules target and commit the updated version of this file:'
+    yield '#'
+    yield '#   ninja -C out update_modules'
     yield '#'
     yield '# DO NOT IMPORT THIS FILE DIRECTLY!'
     yield '#'
     yield '# Import it through //build_overrides/pigweed.gni instead.'
     yield ''
-    # Create a build arg for each module.
+    yield '# Declare a build arg for each module.'
     yield 'declare_args() {'
 
     for module in modules:
-        yield f'  dir_{module} = get_path_info("{prefix}{module}", "abspath")'
+        module_path = prefix.joinpath(module).as_posix()
+        yield f'dir_{module} = get_path_info("{module_path}", "abspath")'
 
     yield '}'
     yield ''
-    # Create a list with paths to all modules.
+    yield '# Declare these as GN args in case this is imported in args.gni.'
+    yield '# Use a separate block so variables in the prior block can be used.'
+    yield 'declare_args() {'
+    yield f'# A list with paths to all Pigweed module. {_DO_NOT_SET}'
     yield 'pw_modules = ['
 
     for module in modules:
-        yield f'  dir_{module},'
+        yield f'dir_{module},'
 
     yield ']'
     yield ''
 
-    # Create a list of module test targets and a list of module docs targets.
     tests, docs = _find_tests_and_docs(root, modules)
 
+    yield f'# A list with all Pigweed module test groups. {_DO_NOT_SET}'
     yield 'pw_module_tests = ['
     yield from tests
     yield ']'
     yield ''
+    yield f'# A list with all Pigweed modules docs groups. {_DO_NOT_SET}'
     yield 'pw_module_docs = ['
     yield from docs
     yield ']'
-
-    # Display a warning about missing modules when building for upstream
-    # Pigweed. The prefix will only be // when building Pigweed directly.
-    if prefix == '//':
-        yield from _check_modules_list(root, modules)
+    yield ''
+    yield '}'
 
 
 def _missing_modules(root: Path, modules: Sequence[str]) -> Sequence[str]:
@@ -149,22 +179,76 @@ def _missing_modules(root: Path, modules: Sequence[str]) -> Sequence[str]:
             for p in root.glob('pw_*') if p.is_dir()) - frozenset(modules))
 
 
-def _main(root: Path, gn_path_prefix: str, modules_file: Path,
-          modules_gni_file: Path) -> int:
-    modules = tuple(modules_file.read_text().splitlines())
-    with modules_gni_file.open('w', encoding='utf-8') as file:
-        for line in _generate_modules_gni(root, gn_path_prefix, modules):
-            print(line, file=file)
+def _parse_args() -> dict:
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('root', type=Path, help='Root build dir')
+    parser.add_argument('modules_list', type=Path, help='Input modules list')
+    parser.add_argument('modules_gni_file', type=Path, help='Output .gni file')
+    parser.add_argument(
+        '--warn-only',
+        type=Path,
+        help='Only check PIGWEED_MODULES; takes a path to a stamp file to use')
+
+    return vars(parser.parse_args())
+
+
+def _main(root: Path, modules_list: Path, modules_gni_file: Path,
+          warn_only: Optional[Path]) -> int:
+    prefix = Path(os.path.relpath(root, modules_gni_file.parent))
+    modules = modules_list.read_text().splitlines()
+
+    # Detect any problems with the modules list.
+    warnings = list(_module_list_warnings(root, modules))
+    errors = []
+
+    modules.sort()  # Sort in case the modules list in case it wasn't sorted.
+
+    # Check if the contents of the .gni file are out of date.
+    if warn_only:
+        text = io.StringIO()
+        for line in _generate_modules_gni(root, prefix, modules):
+            print(line, file=text)
+
+        process = subprocess.run(['gn', 'format', '--stdin'],
+                                 input=text.getvalue().encode('utf-8'),
+                                 stdout=subprocess.PIPE)
+        if process.returncode != 0:
+            errors.append(_FORMAT_FAILED_WARNING)
+        elif modules_gni_file.read_bytes() != process.stdout:
+            errors.append(
+                _OUT_OF_DATE_WARNING.format(
+                    out_dir=os.path.relpath(os.curdir, root),
+                    file=os.path.relpath(modules_gni_file, root)))
+    elif not warnings:  # Update the modules .gni file.
+        with modules_gni_file.open('w', encoding='utf-8') as file:
+            for line in _generate_modules_gni(root, prefix, modules):
+                print(line, file=file)
+
+        process = subprocess.run(['gn', 'format', modules_gni_file],
+                                 stdout=subprocess.DEVNULL)
+        if process.returncode != 0:
+            errors.append(_FORMAT_FAILED_WARNING)
+
+    # If there are errors, display them and abort.
+    if warnings or errors:
+        for line in warnings + errors:
+            print(line, file=sys.stderr)
+
+        # Delete the stamp so this always reruns. Deleting is necessary since
+        # some of the checks do not depend on input files.
+        if warn_only and warn_only.exists():
+            warn_only.unlink()
+
+        # Warnings are non-fatal if warn_only is True.
+        return 1 if errors or not warn_only else 0
+
+    if warn_only:
+        warn_only.touch()
 
     return 0
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 5:
-        print(__doc__, file=sys.stderr)
-        sys.exit(1)
-
-    # Usage: modules.py PIGWEED_ROOT GN_PATH_PREFIX INPUT OUTPUT
-    sys.exit(
-        _main(Path(sys.argv[1]), sys.argv[2], Path(sys.argv[3]),
-              Path(sys.argv[4])))
+    sys.exit(_main(**_parse_args()))

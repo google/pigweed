@@ -451,12 +451,18 @@ To create a new Pigweed module, follow the below steps.
    Modules must be listed one per line with no extra spaces or comments. This
    automatically adds the new module, its tests, and its docs, to the GN build.
 
-9. Add the new module to CMake build
+9. Update the generated Pigweed modules lists file
+
+   .. code-block:: bash
+
+     ninja -C out update_modules
+
+10. Add the new module to CMake build
 
    - In ``/CMakeLists.txt`` add ``add_subdirectory(pw_new)``
 
-10. Run :ref:`module-pw_module-module-check`
+11. Run :ref:`module-pw_module-module-check`
 
     - ``$ pw module-check {pw_module_dir}``
 
-11. Contribute your module to upstream Pigweed (optional but encouraged!)
+12. Contribute your module to upstream Pigweed (optional but encouraged!)

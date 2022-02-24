@@ -47,6 +47,7 @@ declare_args() {
 # exclusively to facilitate easy upstream development and testing.
 group("default") {
   deps = [
+    ":check_modules",
     ":docs",
     ":host",
     ":python.lint",
@@ -68,6 +69,34 @@ assert(get_path_info("//", "abspath") == get_path_info(".", "abspath"),
            "\$dir_pigweed/modules.gni and create a top-level pw_test_group " +
            "that depends on the tests in pw_modules_tests. See " +
            "https://pigweed.dev/build_system.html for details.")
+
+_update_or_check_modules_lists = {
+  script = "$dir_pw_build/py/pw_build/generate_modules_lists.py"
+  args = [
+    rebase_path(".", root_build_dir),
+    rebase_path("PIGWEED_MODULES", root_build_dir),
+    rebase_path("$dir_pw_build/generated_pigweed_modules_lists.gni",
+                root_build_dir),
+  ]
+  inputs = [
+    "$dir_pw_build/generated_pigweed_modules_lists.gni",
+    "PIGWEED_MODULES",
+  ]
+}
+
+# Check that PIGWEED_MODULES is up-to-date and sorted.
+action("check_modules") {
+  forward_variables_from(_update_or_check_modules_lists, "*")
+  outputs = [ "$target_gen_dir/$target_name.passed" ]
+  args += [ "--warn-only" ] + rebase_path(outputs, root_build_dir)
+}
+
+# Run this command after adding an item to PIGWEED_MODULES to update the
+# generated .gni with Pigweed modules lists.
+action("update_modules") {
+  forward_variables_from(_update_or_check_modules_lists, "*")
+  outputs = [ "$target_gen_dir/$target_name.ALWAYS_RERUN" ]  # Never created
+}
 
 group("pw_system_demo") {
   deps = [ "$dir_pw_system:system_examples" ]
