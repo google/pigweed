@@ -643,7 +643,7 @@ _GN_SOURCES_IN_BUILD = ('setup.cfg', '.toml', '.rst', '.py',
 
 
 @filter_paths(endswith=(*_GN_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'),
-              exclude=['zephyr.*/'])
+              exclude=['zephyr.*/', 'android.*/'])
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
     missing = build.check_builds_for_files(

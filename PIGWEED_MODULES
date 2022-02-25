@@ -47,6 +47,7 @@ pw_interrupt_zephyr
 pw_kvs
 pw_libc
 pw_log
+pw_log_android
 pw_log_basic
 pw_log_null
 pw_log_rpc
