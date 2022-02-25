@@ -33,6 +33,7 @@ pw_doc_group("core_docs") {
   ]
   sources = [
     "code_of_conduct.rst",
+    "concepts/index.rst",
     "contributing.rst",
     "embedded_cpp_guide.rst",
     "faq.rst",

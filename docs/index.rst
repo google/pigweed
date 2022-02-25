@@ -6,6 +6,7 @@
 
   Home <self>
   docs/getting_started
+  docs/concepts/index
   Source Code <https://cs.opensource.google/pigweed/pigweed>
   Code Reviews <https://pigweed-review.googlesource.com>
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
