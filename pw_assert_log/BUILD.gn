@@ -25,28 +25,47 @@ config("backend_config") {
   include_dirs = [ "public_overrides" ]
 }
 
+config("lite_backend_overrides") {
+  include_dirs = [ "assert_lite_public_overrides" ]
+}
+
+# This backend to pw_assert's PW_CHECK()/PW_CRASH() macros via PW_LOG.
 pw_source_set("pw_assert_log") {
   public_configs = [
     ":backend_config",
     ":default_config",
   ]
-  public_deps = [
-    ":core",
-    dir_pw_log,
-  ]
-  public = [ "public_overrides/pw_assert_backend/assert_backend.h" ]
-}
-
-pw_source_set("core") {
-  public_configs = [ ":default_config" ]
   public_deps = [ "$dir_pw_log" ]
+  public = [ "public_overrides/pw_assert_backend/assert_backend.h" ]
   deps = [
     "$dir_pw_assert:config",
     "$dir_pw_assert:facade",
     "$dir_pw_preprocessor",
   ]
-  public = [ "public/pw_assert_log/assert_log.h" ]
-  sources = [ "assert_log.cc" ]
+  sources = [
+    "assert_log.cc",
+    "public/pw_assert_log/assert_log.h",
+  ]
+}
+
+# This backend to pw_assert's PW_ASSERT() macros via PW_LOG. It is intended only
+# for use with PW_LOG backends which are constexpr compatible such as
+# pw_log_android.
+#
+# Warning: The "lite" naming is transitional. assert_lite_backend.h headers
+# will be renamed as the pw_assert API is reassessed. (pwbug/246)
+pw_source_set("lite_backend") {
+  public_configs = [
+    ":lite_backend_overrides",
+    ":default_config",
+  ]
+  public_deps = [ dir_pw_preprocessor ]
+  public =
+      [ "assert_lite_public_overrides/pw_assert_backend/assert_lite_backend.h" ]
+  sources = [ "public/pw_assert_log/assert_lite_log.h" ]
+}
+
+group("lite_compatibility_backend.impl") {
 }
 
 # pw_assert_log doesn't have deps with potential circular dependencies, so this
