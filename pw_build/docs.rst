@@ -386,6 +386,8 @@ The following expressions are supported:
     stamp = true
   }
 
+.. _module-pw_build-pw_exec:
+
 pw_exec
 -------
 ``pw_exec`` allows for execution of arbitrary programs. It is a wrapper around

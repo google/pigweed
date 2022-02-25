@@ -45,6 +45,13 @@ pw_doc_group("core_docs") {
   ]
 }
 
+pw_doc_group("release_notes") {
+  sources = [
+    "release_notes/2022_jan.rst",
+    "release_notes/index.rst",
+  ]
+}
+
 # Documentation for upstream Pigweed targets.
 group("target_docs") {
   deps = [
@@ -89,6 +96,7 @@ pw_doc_gen("docs") {
   deps = [
     ":core_docs",
     ":module_docs",
+    ":release_notes",
     ":sphinx_themes.install",
     ":target_docs",
     ":third_party_docs",

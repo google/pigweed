@@ -1,3 +1,4 @@
+.. _docs-root:
 .. highlight:: sh
 
 .. toctree::
@@ -7,6 +8,7 @@
   Home <self>
   docs/getting_started
   docs/concepts/index
+  docs/release_notes/index
   Source Code <https://cs.opensource.google/pigweed/pigweed>
   Code Reviews <https://pigweed-review.googlesource.com>
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>

@@ -1120,6 +1120,7 @@ outgoing packets. The size of the buffer is set with
 Users of ``pw_rpc`` must implement the :cpp:class:`pw::rpc::ChannelOutput`
 interface.
 
+.. _module-pw_rpc-ChannelOutput:
 .. cpp:class:: pw::rpc::ChannelOutput
 
   ``pw_rpc`` endpoints use :cpp:class:`ChannelOutput` instances to send packets.
