@@ -17,6 +17,8 @@ include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_config(pw_log_CONFIG)
 
+pw_add_module_config(pw_log_GLOG_ADAPTER_CONFIG)
+
 pw_add_module_library(pw_log.config
   HEADERS
     public/pw_log/config.h
@@ -37,6 +39,22 @@ pw_add_facade(pw_log
     public
   PUBLIC_DEPS
     pw_log.config
+)
+
+pw_add_module_library(pw_log.glog_adapter
+  HEADERS
+    public/pw_log/glog_adapter.h
+    public/pw_log/glog_adapter_config.h
+    public/pw_log/internal/glog_adapter.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_log
+    pw_log.config
+    pw_preprocessor
+    pw_string
+    ${pw_log_GLOG_ADAPTER_CONFIG}
 )
 
 pw_add_module_library(pw_log.proto_utils
@@ -77,9 +95,17 @@ if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
       modules
       pw_log
   )
-endif()
 
-if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
+  pw_add_test(pw_log.glog_adapter_test
+    SOURCES
+      glog_adapter_test.cc
+    DEPS
+      pw_log.glog_adapter
+    GROUPS
+      modules
+      pw_log
+  )
+
   pw_add_test(pw_log.proto_utils_test
     SOURCES
       proto_utils_test.cc

@@ -310,9 +310,35 @@ to directly provide dependencies through include paths only, rather than GN
 ``public_deps``. In this case, GN header checking can be disabled with
 ``check_includes = false``.
 
+----------------------
+Google Logging Adapter
+----------------------
+Pigweed provides a minimal C++ stream-style Google Log set of adapter
+macros around PW_LOG under ``pw_log/glog_adapter.h`` for compatibility with
+non-embedded code. While it is effective for porting server code to
+microcontrollers quickly, we do not advise embedded projects use that approach
+unless absolutely necessary.
+
+Configuration
+==============
+
+.. c:macro:: PW_LOG_CFG_GLOG_BUFFER_SIZE_BYTES
+
+  The size of the stack-allocated buffer used by the Google Logging (glog)
+  macros. This only affects the glog macros provided through pw_log/glog.h.
+
+  Pigweed strongly recommends sticking to printf-style logging instead
+  of C++ stream-style Google Log logging unless absolutely necessary. The glog
+  macros are only provided for compatibility with non-embedded code. See
+  :ref:`module-pw_log-design-discussion` for more details.
+
+  Undersizing this buffer will result in truncated log messages.
+
 -----------------
 Design discussion
 -----------------
+
+.. _module-pw_log-design-discussion:
 
 Why not use C++ style stream logging operators like Google Log?
 ===============================================================
@@ -361,15 +387,11 @@ because it:
 - is C compatibile
 - has smaller call sites
 
-The Pigweed authors additionally maintain a C++ stream-style embedded logging
-library for compatibility with non-embedded code. While it is effective for
-porting server code to microcontrollers quickly, we do not advise embedded
-projects use that approach unless absolutely necessary.
+See also :ref:`module-pw_log_tokenized` for details on leveraging Pigweed's
+tokenizer module for logging.
 
-- See also :ref:`module-pw_log_tokenized` for details on leveraging Pigweed's
-  tokenizer module for logging.
-- See also :ref:`module-pw_tokenizer` for details on Pigweed's tokenizer,
-  which is useful for more than just logging.
+See also :ref:`module-pw_tokenizer` for details on Pigweed's tokenizer,
+which is useful for more than just logging.
 
 Why does the facade use header redirection instead of C functions?
 ==================================================================

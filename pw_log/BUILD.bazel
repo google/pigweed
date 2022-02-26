@@ -49,6 +49,22 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "glog_adapter",
+    hdrs = [
+        "public/pw_log/glog_adapter.h",
+        "public/pw_log/glog_adapter_config.h",
+        "public/pw_log/internal/glog_adapter.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_log",
+        "//pw_preprocessor",
+        "//pw_string",
+    ],
+)
+
+pw_cc_library(
     name = "proto_utils",
     srcs = [
         "proto_utils.cc",
@@ -99,6 +115,17 @@ pw_cc_test(
         ":facade",
         ":pw_log",
         "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "glog_adapter_test",
+    srcs = [
+        "glog_adapter_test.cc",
+    ],
+    deps = [
+        ":glog_adapter",
         "//pw_unit_test",
     ],
 )

@@ -27,6 +27,10 @@ declare_args() {
   # module. This should point to a source set that provides defines through a
   # public config (which may -include a file or add defines directly).
   pw_log_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+
+  # The build target that overrides the default configuration options for the
+  # glog adapter portion of this module.
+  pw_log_GLOG_ADAPTER_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
 }
 
 config("public_include_path") {
@@ -53,6 +57,23 @@ pw_facade("pw_log") {
   public_deps = [ ":config" ]
 
   require_link_deps = [ ":impl" ]
+}
+
+pw_source_set("glog_adapter") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_log/glog_adapter.h",
+    "public/pw_log/glog_adapter_config.h",
+  ]
+  public_deps = [
+    ":config",
+    "$dir_pw_assert",
+    "$dir_pw_log",
+    "$dir_pw_preprocessor",
+    "$dir_pw_string",
+    pw_log_GLOG_ADAPTER_CONFIG,
+  ]
+  sources = [ "public/pw_log/internal/glog_adapter.h" ]
 }
 
 pw_source_set("proto_utils") {
@@ -90,6 +111,7 @@ group("impl") {
 pw_test_group("tests") {
   tests = [
     ":basic_log_test",
+    ":glog_adapter_test",
     ":proto_utils_test",
   ]
 }
@@ -106,6 +128,15 @@ pw_test("basic_log_test") {
     "basic_log_test.cc",
     "basic_log_test_plain_c.c",
   ]
+}
+
+pw_test("glog_adapter_test") {
+  enable_if = pw_log_BACKEND != ""
+  deps = [
+    ":glog_adapter",
+    pw_log_BACKEND,
+  ]
+  sources = [ "glog_adapter_test.cc" ]
 }
 
 pw_test("proto_utils_test") {
