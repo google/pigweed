@@ -82,10 +82,11 @@ pw_source_set("proto_utils") {
   public_deps = [
     ":pw_log.facade",
     "$dir_pw_bytes",
+    "$dir_pw_log:protos.pwpb",
     "$dir_pw_log_tokenized:metadata",
     "$dir_pw_result",
   ]
-  deps = [ "$dir_pw_log:protos.pwpb" ]
+  deps = [ "$dir_pw_protobuf" ]
   sources = [ "proto_utils.cc" ]
 }
 
@@ -144,6 +145,7 @@ pw_test("proto_utils_test") {
   deps = [
     ":proto_utils",
     ":pw_log.facade",
+    "$dir_pw_log:protos.pwpb",
     "$dir_pw_preprocessor",
     "$dir_pw_protobuf",
     "$dir_pw_protobuf:bytes_utils",

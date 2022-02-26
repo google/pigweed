@@ -47,6 +47,7 @@ Result<ConstByteSpan> EncodeLogEntry(std::string_view message,
   return log::EncodeTokenizedLog(metadata,
                                  std::as_bytes(std::span(message)),
                                  /*ticks_since_epoch=*/0,
+                                 /*thread_name=*/{},
                                  buffer);
 }
 

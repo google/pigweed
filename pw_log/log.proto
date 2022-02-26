@@ -29,10 +29,10 @@ option java_outer_classname = "Log";
 //
 // Size analysis for tokenized log messages, including each field's proto tag:
 //
-//  - message     - 6-12 bytes, depending on number and value of arguments
+//  - message     - 6-12 bytes; depending on number and value of arguments
 //  - line_level  - 3 bytes; 4 bytes if line > 2048 (uncommon)
 //  - timestamp   - 3 bytes; assuming delta encoding
-//  - thread_name - 6 bytes
+//  - thread      - 2-6 bytes; depending on whether value is a token or string
 //
 // Adding the fields gives the total proto message size:
 //
@@ -138,6 +138,10 @@ message LogEntry {
   // The file path where this log was created, if not encoded in the message.
   optional bytes file = 8 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
+  // The task or thread name that created the log message. If the log was not
+  // created on a thread, it should use a name appropriate to that context.
+  optional bytes thread = 9 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+
   // The following fields are planned but will not be added until they are
   // needed. Protobuf field numbers over 15 use an extra byte, so these fields
   // are left out for now to avoid reserving field numbers unnecessarily.
@@ -145,11 +149,6 @@ message LogEntry {
   // Represents the device from which the log originated. The meaning of this
   // field is implementation defined
   // optional uint32 source_id = ?;
-
-  // The task or thread name that created the log message. If the log was not
-  // created on a thread, it should use a name appropriate to that context.
-  // optional bytes thread_name = ?
-  //     [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // Some messages are associated with trace events, which may carry additional
   // contextual data. This is a tuple of a data format string which could be

@@ -64,7 +64,9 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
       protobuf::SizeOfFieldUint32(log::LogEntry::Fields::LINE_LEVEL) +
       protobuf::SizeOfFieldUint32(log::LogEntry::Fields::FLAGS) +
       protobuf::SizeOfFieldInt64(log::LogEntry::Fields::TIMESTAMP) +
-      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MODULE, 0);
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MODULE, 0) +
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::FILE, 0) +
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::THREAD, 0);
 
   // The smallest buffer size must be able to fit a typical token size: 4 bytes.
   static constexpr size_t kMinEntryBufferSize = kMinEntrySizeWithoutPayload + 4;

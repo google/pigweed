@@ -27,6 +27,8 @@ struct TestLogEntry {
   int64_t timestamp = 0;
   uint32_t dropped = 0;
   ConstByteSpan tokenized_data = {};
+  ConstByteSpan file = {};
+  ConstByteSpan thread = {};
 };
 
 // Unpacks a `LogEntry` proto buffer to compare it with the expected data and

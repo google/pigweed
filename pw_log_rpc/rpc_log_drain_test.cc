@@ -203,12 +203,11 @@ class TrickleTest : public ::testing::Test {
         server_(std::span(&channel_, 1)) {}
 
   TestLogEntry BasicLog(std::string_view message) {
-    constexpr log_tokenized::Metadata kSampleMetadata =
-        log_tokenized::Metadata::Set<PW_LOG_LEVEL_INFO, 123, 0x03, __LINE__>();
     return {.metadata = kSampleMetadata,
-            .timestamp = 123,
+            .timestamp = kSampleTimestamp,
             .dropped = 0,
-            .tokenized_data = std::as_bytes(std::span(message))};
+            .tokenized_data = std::as_bytes(std::span(message)),
+            .thread = std::as_bytes(std::span(kSampleThreadName))};
   }
 
   void AttachDrain() { multisink_.AttachDrain(drains_[0]); }
@@ -222,6 +221,7 @@ class TrickleTest : public ::testing::Test {
         log::EncodeTokenizedLog(entry.metadata,
                                 entry.tokenized_data,
                                 entry.timestamp,
+                                entry.thread,
                                 log_message_encode_buffer_);
     ASSERT_EQ(encoded_log_result.status(), OkStatus());
     EXPECT_LE(encoded_log_result.value().size(), kMaxMessageSize);
@@ -236,8 +236,29 @@ class TrickleTest : public ::testing::Test {
 
   static constexpr uint32_t kDrainChannelId = 1;
   static constexpr size_t kMaxMessageSize = 60;
+
+  // Use the size of the encoded BasicLog entry to calculate buffer sizes and
+  // better control the number of entries in each sent bulk.
+  static constexpr log_tokenized::Metadata kSampleMetadata =
+      log_tokenized::Metadata::Set<PW_LOG_LEVEL_INFO, 123, 0x03, 300>();
+  static constexpr uint64_t kSampleTimestamp = 9000;
+  static constexpr std::string_view kSampleThreadName = "thread";
+  static constexpr size_t kBasicLogSizeWithoutPayload =
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MESSAGE, 0) +
+      protobuf::SizeOfFieldUint32(
+          log::LogEntry::Fields::LINE_LEVEL,
+          log::PackLineLevel(kSampleMetadata.line_number(),
+                             kSampleMetadata.level())) +
+      protobuf::SizeOfFieldUint32(log::LogEntry::Fields::FLAGS,
+                                  kSampleMetadata.flags()) +
+      protobuf::SizeOfFieldInt64(log::LogEntry::Fields::TIMESTAMP,
+                                 kSampleTimestamp) +
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MODULE,
+                                 sizeof(kSampleMetadata.module())) +
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::THREAD,
+                                 kSampleThreadName.size());
   static constexpr size_t kDrainEncodeBufferSize =
-      RpcLogDrain::kMinEntrySizeWithoutPayload + kMaxMessageSize;
+      kBasicLogSizeWithoutPayload + kMaxMessageSize;
   static constexpr size_t kChannelEncodeBufferSize = kDrainEncodeBufferSize * 2;
   std::array<std::byte, kMaxMessageSize> log_message_encode_buffer_;
   std::array<std::byte, kDrainEncodeBufferSize> drain_encode_buffer_;

@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_log/levels.h"
+#include "pw_log/proto/log.pwpb.h"
 #include "pw_protobuf/bytes_utils.h"
 #include "pw_protobuf/decoder.h"
 
@@ -25,10 +26,12 @@ namespace pw::log {
 void VerifyTokenizedLogEntry(pw::protobuf::Decoder& entry_decoder,
                              pw::log_tokenized::Metadata expected_metadata,
                              ConstByteSpan expected_tokenized_data,
-                             const int64_t expected_timestamp) {
+                             const int64_t expected_timestamp,
+                             ConstByteSpan expected_thread_name) {
   ConstByteSpan tokenized_data;
   EXPECT_TRUE(entry_decoder.Next().ok());  // message [tokenized]
-  EXPECT_EQ(1U, entry_decoder.FieldNumber());
+  EXPECT_EQ(entry_decoder.FieldNumber(),
+            static_cast<uint32_t>(log::LogEntry::Fields::MESSAGE));
   EXPECT_TRUE(entry_decoder.ReadBytes(&tokenized_data).ok());
   EXPECT_TRUE(std::memcmp(tokenized_data.begin(),
                           expected_tokenized_data.begin(),
@@ -36,7 +39,8 @@ void VerifyTokenizedLogEntry(pw::protobuf::Decoder& entry_decoder,
 
   uint32_t line_level;
   EXPECT_TRUE(entry_decoder.Next().ok());  // line_level
-  EXPECT_EQ(2U, entry_decoder.FieldNumber());
+  EXPECT_EQ(entry_decoder.FieldNumber(),
+            static_cast<uint32_t>(log::LogEntry::Fields::LINE_LEVEL));
   EXPECT_TRUE(entry_decoder.ReadUint32(&line_level).ok());
 
   uint32_t line_number;
@@ -48,24 +52,41 @@ void VerifyTokenizedLogEntry(pw::protobuf::Decoder& entry_decoder,
   if (expected_metadata.flags() != 0) {
     uint32_t flags;
     EXPECT_TRUE(entry_decoder.Next().ok());  // flags
-    EXPECT_EQ(3U, entry_decoder.FieldNumber());
+    EXPECT_EQ(entry_decoder.FieldNumber(),
+              static_cast<uint32_t>(log::LogEntry::Fields::FLAGS));
     EXPECT_TRUE(entry_decoder.ReadUint32(&flags).ok());
     EXPECT_EQ(expected_metadata.flags(), flags);
   }
 
   int64_t timestamp;
   EXPECT_TRUE(entry_decoder.Next().ok());  // timestamp
-  EXPECT_EQ(4U, entry_decoder.FieldNumber());
+  EXPECT_TRUE(
+      entry_decoder.FieldNumber() ==
+          static_cast<uint32_t>(log::LogEntry::Fields::TIMESTAMP) ||
+      entry_decoder.FieldNumber() ==
+          static_cast<uint32_t>(log::LogEntry::Fields::TIME_SINCE_LAST_ENTRY));
   EXPECT_TRUE(entry_decoder.ReadInt64(&timestamp).ok());
   EXPECT_EQ(expected_timestamp, timestamp);
 
   if (expected_metadata.module() != 0) {
     EXPECT_TRUE(entry_decoder.Next().ok());  // module name
-    EXPECT_EQ(7U, entry_decoder.FieldNumber());
+    EXPECT_EQ(entry_decoder.FieldNumber(),
+              static_cast<uint32_t>(log::LogEntry::Fields::MODULE));
     const Result<uint32_t> module =
         protobuf::DecodeBytesToUint32(entry_decoder);
     ASSERT_TRUE(module.ok());
     EXPECT_EQ(expected_metadata.module(), module.value());
+  }
+
+  if (!expected_thread_name.empty()) {
+    ConstByteSpan tokenized_thread_name;
+    EXPECT_TRUE(entry_decoder.Next().ok());  // thread [tokenized]
+    EXPECT_EQ(entry_decoder.FieldNumber(),
+              static_cast<uint32_t>(log::LogEntry::Fields::THREAD));
+    EXPECT_TRUE(entry_decoder.ReadBytes(&tokenized_thread_name).ok());
+    EXPECT_TRUE(std::memcmp(tokenized_thread_name.begin(),
+                            expected_thread_name.begin(),
+                            expected_thread_name.size()) == 0);
   }
 }
 
@@ -73,13 +94,15 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
                     int expected_level,
                     unsigned int expected_flags,
                     std::string_view expected_module,
+                    std::string_view expected_thread_name,
                     std::string_view expected_file_name,
                     int expected_line_number,
                     int64_t expected_ticks_since_epoch,
                     std::string_view expected_message) {
   std::string_view message;
   EXPECT_TRUE(entry_decoder.Next().ok());  // message
-  EXPECT_EQ(1U, entry_decoder.FieldNumber());
+  EXPECT_EQ(entry_decoder.FieldNumber(),
+            static_cast<uint32_t>(log::LogEntry::Fields::MESSAGE));
   EXPECT_TRUE(entry_decoder.ReadString(&message).ok());
   EXPECT_TRUE(std::equal(message.begin(),
                          message.end(),
@@ -88,7 +111,8 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
 
   uint32_t line_level;
   EXPECT_TRUE(entry_decoder.Next().ok());  // line_level
-  EXPECT_EQ(2U, entry_decoder.FieldNumber());
+  EXPECT_EQ(entry_decoder.FieldNumber(),
+            static_cast<uint32_t>(log::LogEntry::Fields::LINE_LEVEL));
   EXPECT_TRUE(entry_decoder.ReadUint32(&line_level).ok());
   uint32_t line_number;
   uint8_t level;
@@ -99,21 +123,27 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
   if (expected_flags != 0) {
     uint32_t flags;
     EXPECT_TRUE(entry_decoder.Next().ok());  // flags
-    EXPECT_EQ(3U, entry_decoder.FieldNumber());
+    EXPECT_EQ(entry_decoder.FieldNumber(),
+              static_cast<uint32_t>(log::LogEntry::Fields::FLAGS));
     EXPECT_TRUE(entry_decoder.ReadUint32(&flags).ok());
     EXPECT_EQ(expected_flags, flags);
   }
 
   int64_t timestamp;
   EXPECT_TRUE(entry_decoder.Next().ok());  // timestamp
-  EXPECT_EQ(4U, entry_decoder.FieldNumber());
+  EXPECT_TRUE(
+      entry_decoder.FieldNumber() ==
+          static_cast<uint32_t>(log::LogEntry::Fields::TIMESTAMP) ||
+      entry_decoder.FieldNumber() ==
+          static_cast<uint32_t>(log::LogEntry::Fields::TIME_SINCE_LAST_ENTRY));
   EXPECT_TRUE(entry_decoder.ReadInt64(&timestamp).ok());
   EXPECT_EQ(expected_ticks_since_epoch, timestamp);
 
   if (!expected_module.empty()) {
     std::string_view module_name;
     EXPECT_TRUE(entry_decoder.Next().ok());  // module
-    EXPECT_EQ(7U, entry_decoder.FieldNumber());
+    EXPECT_EQ(entry_decoder.FieldNumber(),
+              static_cast<uint32_t>(log::LogEntry::Fields::MODULE));
     EXPECT_TRUE(entry_decoder.ReadString(&module_name).ok());
     EXPECT_TRUE(std::equal(module_name.begin(),
                            module_name.end(),
@@ -124,12 +154,25 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
   if (!expected_file_name.empty()) {
     std::string_view file_name;
     EXPECT_TRUE(entry_decoder.Next().ok());  // file
-    EXPECT_EQ(8U, entry_decoder.FieldNumber());
+    EXPECT_EQ(entry_decoder.FieldNumber(),
+              static_cast<uint32_t>(log::LogEntry::Fields::FILE));
     EXPECT_TRUE(entry_decoder.ReadString(&file_name).ok());
     EXPECT_TRUE(std::equal(file_name.begin(),
                            file_name.end(),
                            expected_file_name.begin(),
                            expected_file_name.end()));
+  }
+
+  if (!expected_thread_name.empty()) {
+    std::string_view thread_name;
+    EXPECT_TRUE(entry_decoder.Next().ok());  // file
+    EXPECT_EQ(entry_decoder.FieldNumber(),
+              static_cast<uint32_t>(log::LogEntry::Fields::THREAD));
+    EXPECT_TRUE(entry_decoder.ReadString(&thread_name).ok());
+    EXPECT_TRUE(std::equal(thread_name.begin(),
+                           thread_name.end(),
+                           expected_thread_name.begin(),
+                           expected_thread_name.end()));
   }
 }
 
@@ -172,61 +215,83 @@ TEST(UtilsTest, LineLevelPackAndUnpack) {
 }
 
 TEST(UtilsTest, EncodeTokenizedLog) {
-  constexpr std::byte kTokenizedData[1] = {(std::byte)0x01};
+  constexpr std::byte kTokenizedData[1] = {std::byte(0x01)};
   constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::byte kExpectedThreadName[1] = {std::byte(0x02)};
   std::byte encode_buffer[32];
 
   pw::log_tokenized::Metadata metadata =
       pw::log_tokenized::Metadata::Set<1, 2, 3, 4>();
 
-  Result<ConstByteSpan> result = EncodeTokenizedLog(
-      metadata, kTokenizedData, kExpectedTimestamp, encode_buffer);
+  Result<ConstByteSpan> result = EncodeTokenizedLog(metadata,
+                                                    kTokenizedData,
+                                                    kExpectedTimestamp,
+                                                    kExpectedThreadName,
+                                                    encode_buffer);
   EXPECT_TRUE(result.ok());
 
   pw::protobuf::Decoder log_decoder(result.value());
-  VerifyTokenizedLogEntry(
-      log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
+  VerifyTokenizedLogEntry(log_decoder,
+                          metadata,
+                          kTokenizedData,
+                          kExpectedTimestamp,
+                          kExpectedThreadName);
 
   result = EncodeTokenizedLog(metadata,
                               reinterpret_cast<const uint8_t*>(kTokenizedData),
                               sizeof(kTokenizedData),
                               kExpectedTimestamp,
+                              kExpectedThreadName,
                               encode_buffer);
   EXPECT_TRUE(result.ok());
 
   log_decoder.Reset(result.value());
-  VerifyTokenizedLogEntry(
-      log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
+  VerifyTokenizedLogEntry(log_decoder,
+                          metadata,
+                          kTokenizedData,
+                          kExpectedTimestamp,
+                          kExpectedThreadName);
 }
 
 TEST(UtilsTest, EncodeTokenizedLog_EmptyFlags) {
-  constexpr std::byte kTokenizedData[1] = {(std::byte)0x01};
+  constexpr std::byte kTokenizedData[1] = {std::byte(0x01)};
   constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::byte kExpectedThreadName[1] = {std::byte(0x02)};
   std::byte encode_buffer[32];
 
   // Create an empty flags set.
   pw::log_tokenized::Metadata metadata =
       pw::log_tokenized::Metadata::Set<1, 2, 0, 4>();
 
-  Result<ConstByteSpan> result = EncodeTokenizedLog(
-      metadata, kTokenizedData, kExpectedTimestamp, encode_buffer);
+  Result<ConstByteSpan> result = EncodeTokenizedLog(metadata,
+                                                    kTokenizedData,
+                                                    kExpectedTimestamp,
+                                                    kExpectedThreadName,
+                                                    encode_buffer);
   EXPECT_TRUE(result.ok());
 
   pw::protobuf::Decoder log_decoder(result.value());
-  VerifyTokenizedLogEntry(
-      log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
+  VerifyTokenizedLogEntry(log_decoder,
+                          metadata,
+                          kTokenizedData,
+                          kExpectedTimestamp,
+                          kExpectedThreadName);
 }
 
 TEST(UtilsTest, EncodeTokenizedLog_InsufficientSpace) {
-  constexpr std::byte kTokenizedData[1] = {(std::byte)0x01};
+  constexpr std::byte kTokenizedData[1] = {std::byte(0x01)};
   constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::byte kExpectedThreadName[1] = {std::byte(0x02)};
   std::byte encode_buffer[1];
 
   pw::log_tokenized::Metadata metadata =
       pw::log_tokenized::Metadata::Set<1, 2, 3, 4>();
 
-  Result<ConstByteSpan> result = EncodeTokenizedLog(
-      metadata, kTokenizedData, kExpectedTimestamp, encode_buffer);
+  Result<ConstByteSpan> result = EncodeTokenizedLog(metadata,
+                                                    kTokenizedData,
+                                                    kExpectedTimestamp,
+                                                    kExpectedThreadName,
+                                                    encode_buffer);
   EXPECT_TRUE(result.status().IsResourceExhausted());
 }
 
@@ -234,6 +299,7 @@ TEST(UtilsTest, EncodeLog) {
   constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
   constexpr unsigned int kExpectedFlags = 2;
   constexpr std::string_view kExpectedModule("TST");
+  constexpr std::string_view kExpectedThread("thread");
   constexpr std::string_view kExpectedFile("proto_test.cc");
   constexpr int kExpectedLine = 14;
   constexpr int64_t kExpectedTimestamp = 1;
@@ -243,6 +309,7 @@ TEST(UtilsTest, EncodeLog) {
   Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
                                            kExpectedFlags,
                                            kExpectedModule,
+                                           kExpectedThread,
                                            kExpectedFile,
                                            kExpectedLine,
                                            kExpectedTimestamp,
@@ -255,6 +322,7 @@ TEST(UtilsTest, EncodeLog) {
                  kExpectedLevel,
                  kExpectedFlags,
                  kExpectedModule,
+                 kExpectedThread,
                  kExpectedFile,
                  kExpectedLine,
                  kExpectedTimestamp,
@@ -265,6 +333,7 @@ TEST(UtilsTest, EncodeLog_EmptyFlags) {
   constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
   constexpr unsigned int kExpectedFlags = 0;
   constexpr std::string_view kExpectedModule("TST");
+  constexpr std::string_view kExpectedThread("thread");
   constexpr std::string_view kExpectedFile("proto_test.cc");
   constexpr int kExpectedLine = 14;
   constexpr int64_t kExpectedTimestamp = 1;
@@ -274,6 +343,7 @@ TEST(UtilsTest, EncodeLog_EmptyFlags) {
   Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
                                            kExpectedFlags,
                                            kExpectedModule,
+                                           kExpectedThread,
                                            kExpectedFile,
                                            kExpectedLine,
                                            kExpectedTimestamp,
@@ -286,6 +356,7 @@ TEST(UtilsTest, EncodeLog_EmptyFlags) {
                  kExpectedLevel,
                  kExpectedFlags,
                  kExpectedModule,
+                 kExpectedThread,
                  kExpectedFile,
                  kExpectedLine,
                  kExpectedTimestamp,
@@ -296,6 +367,7 @@ TEST(UtilsTest, EncodeLog_EmptyFile) {
   constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
   constexpr unsigned int kExpectedFlags = 0;
   constexpr std::string_view kExpectedModule("TST");
+  constexpr std::string_view kExpectedThread("thread");
   constexpr std::string_view kExpectedFile;
   constexpr int kExpectedLine = 14;
   constexpr int64_t kExpectedTimestamp = 1;
@@ -305,6 +377,7 @@ TEST(UtilsTest, EncodeLog_EmptyFile) {
   Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
                                            kExpectedFlags,
                                            kExpectedModule,
+                                           kExpectedThread,
                                            kExpectedFile,
                                            kExpectedLine,
                                            kExpectedTimestamp,
@@ -317,6 +390,7 @@ TEST(UtilsTest, EncodeLog_EmptyFile) {
                  kExpectedLevel,
                  kExpectedFlags,
                  kExpectedModule,
+                 kExpectedThread,
                  kExpectedFile,
                  kExpectedLine,
                  kExpectedTimestamp,
@@ -327,6 +401,7 @@ TEST(UtilsTest, EncodeLog_EmptyModule) {
   constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
   constexpr unsigned int kExpectedFlags = 3;
   constexpr std::string_view kExpectedModule;
+  constexpr std::string_view kExpectedThread("thread");
   constexpr std::string_view kExpectedFile("test.cc");
   constexpr int kExpectedLine = 14;
   constexpr int64_t kExpectedTimestamp = 1;
@@ -336,6 +411,7 @@ TEST(UtilsTest, EncodeLog_EmptyModule) {
   Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
                                            kExpectedFlags,
                                            kExpectedModule,
+                                           kExpectedThread,
                                            kExpectedFile,
                                            kExpectedLine,
                                            kExpectedTimestamp,
@@ -348,6 +424,41 @@ TEST(UtilsTest, EncodeLog_EmptyModule) {
                  kExpectedLevel,
                  kExpectedFlags,
                  kExpectedModule,
+                 kExpectedThread,
+                 kExpectedFile,
+                 kExpectedLine,
+                 kExpectedTimestamp,
+                 kExpectedMessage);
+}
+
+TEST(UtilsTest, EncodeLog_EmptyThread) {
+  constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
+  constexpr unsigned int kExpectedFlags = 2;
+  constexpr std::string_view kExpectedModule("TST");
+  constexpr std::string_view kExpectedThread;
+  constexpr std::string_view kExpectedFile("proto_test.cc");
+  constexpr int kExpectedLine = 14;
+  constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::string_view kExpectedMessage("msg");
+  std::byte encode_buffer[64];
+
+  Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
+                                           kExpectedFlags,
+                                           kExpectedModule,
+                                           kExpectedThread,
+                                           kExpectedFile,
+                                           kExpectedLine,
+                                           kExpectedTimestamp,
+                                           kExpectedMessage,
+                                           encode_buffer);
+  EXPECT_TRUE(result.ok());
+
+  pw::protobuf::Decoder log_decoder(result.value());
+  VerifyLogEntry(log_decoder,
+                 kExpectedLevel,
+                 kExpectedFlags,
+                 kExpectedModule,
+                 kExpectedThread,
                  kExpectedFile,
                  kExpectedLine,
                  kExpectedTimestamp,
@@ -358,6 +469,7 @@ TEST(UtilsTest, EncodeLog_EmptyMessage) {
   constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
   constexpr unsigned int kExpectedFlags = 0;
   constexpr std::string_view kExpectedModule;
+  constexpr std::string_view kExpectedThread;
   constexpr std::string_view kExpectedFile;
   constexpr int kExpectedLine = 14;
   constexpr int64_t kExpectedTimestamp = 1;
@@ -367,6 +479,7 @@ TEST(UtilsTest, EncodeLog_EmptyMessage) {
   Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
                                            kExpectedFlags,
                                            kExpectedModule,
+                                           kExpectedThread,
                                            kExpectedFile,
                                            kExpectedLine,
                                            kExpectedTimestamp,
@@ -380,6 +493,7 @@ TEST(UtilsTest, EncodeLog_InsufficientSpace) {
   constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
   constexpr unsigned int kExpectedFlags = 0;
   constexpr std::string_view kExpectedModule;
+  constexpr std::string_view kExpectedThread;
   constexpr std::string_view kExpectedFile;
   constexpr int kExpectedLine = 14;
   constexpr int64_t kExpectedTimestamp = 1;
@@ -389,6 +503,7 @@ TEST(UtilsTest, EncodeLog_InsufficientSpace) {
   Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
                                            kExpectedFlags,
                                            kExpectedModule,
+                                           kExpectedThread,
                                            kExpectedFile,
                                            kExpectedLine,
                                            kExpectedTimestamp,

@@ -77,6 +77,7 @@ pw_cc_library(
         ":log_proto_cc.pwpb",
         "//pw_bytes",
         "//pw_log_tokenized:headers",
+        "//pw_protobuf",
         "//pw_result",
     ],
 )
@@ -137,6 +138,7 @@ pw_cc_test(
     ],
     deps = [
         ":facade",
+        ":log_proto_cc.pwpb",
         ":proto_utils",
         "//pw_preprocessor",
         "//pw_protobuf",

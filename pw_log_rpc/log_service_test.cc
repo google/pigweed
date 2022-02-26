@@ -94,6 +94,7 @@ class LogServiceTest : public ::testing::Test {
         log::EncodeTokenizedLog(metadata,
                                 std::as_bytes(std::span(message)),
                                 timestamp,
+                                /*thread_name=*/{},
                                 entry_encode_buffer_);
     PW_TRY_WITH_SIZE(encoded_log_result.status());
     multisink_.HandleEntry(encoded_log_result.value());

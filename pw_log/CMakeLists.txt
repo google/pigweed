@@ -65,10 +65,11 @@ pw_add_module_library(pw_log.proto_utils
   PUBLIC_DEPS
     pw_log.facade
     pw_bytes
+    pw_log.protos.pwpb
     pw_log_tokenized.metadata
     pw_result
   PRIVATE_DEPS
-    pw_log.protos.pwpb
+    pw_protobuf
   SOURCES
     proto_utils.cc
 )
@@ -112,6 +113,7 @@ if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
     DEPS
       pw_log
       pw_log.proto_utils
+      pw_log.protos.pwpb
       pw_preprocessor
       pw_protobuf
       pw_protobuf.bytes_utils
