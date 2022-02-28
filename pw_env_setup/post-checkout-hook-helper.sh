@@ -32,6 +32,7 @@ echo -n "Updating CIPD packages..."
   --shell-file "$_PW_ACTUAL_ENVIRONMENT_ROOT/unused.sh" \
   --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" \
   --quiet \
+  --trust-cipd-hash \
   --cipd-only
 
 echo "done."

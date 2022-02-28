@@ -21,6 +21,7 @@ The stdout of this script is meant to be executed by the invoking shell.
 
 from __future__ import print_function
 
+import hashlib
 import json
 import os
 import platform as platform_module
@@ -222,13 +223,11 @@ def update(
     cache_dir,
     env_vars=None,
     spin=None,
+    trust_hash=False,
 ):
     """Grab the tools listed in ensure_files."""
 
     package_files = all_package_files(env_vars, package_files)
-
-    if not check_auth(cipd, package_files, spin):
-        return False
 
     # TODO(mohrr) use os.makedirs(..., exist_ok=True).
     if not os.path.isdir(root_install_dir):
@@ -269,6 +268,33 @@ def update(
         '-max-threads', '0',  # 0 means use CPU count.
     ]  # yapf: disable
 
+    hasher = hashlib.sha256()
+    encoded = '\0'.join(cmd)
+    if hasattr(encoded, 'encode'):
+        encoded = encoded.encode()
+    hasher.update(encoded)
+    with open(ensure_file, 'rb') as ins:
+        hasher.update(ins.read())
+    digest = hasher.hexdigest()
+
+    with open(os.path.join(root_install_dir, 'hash.log'), 'w') as hashlog:
+        print('calculated digest:', digest, file=hashlog)
+
+        hash_file = os.path.join(root_install_dir, 'packages.sha256')
+        print('hash file path:', hash_file, file=hashlog)
+        print('exists:', os.path.isfile(hash_file), file=hashlog)
+        print('trust_hash:', trust_hash, file=hashlog)
+        if trust_hash and os.path.isfile(hash_file):
+            with open(hash_file, 'r') as ins:
+                digest_file = ins.read().strip()
+                print('contents:', digest_file, file=hashlog)
+                print('equal:', digest == digest_file, file=hashlog)
+                if digest == digest_file:
+                    return True
+
+    if not check_auth(cipd, package_files, spin):
+        return False
+
     # TODO(pwbug/135) Use function from common utility module.
     log = os.path.join(root_install_dir, 'packages.log')
     try:
@@ -279,6 +305,9 @@ def update(
         with open(log, 'r') as ins:
             sys.stderr.write(ins.read())
             raise
+
+    with open(hash_file, 'w') as outs:
+        print(digest, file=outs)
 
     # Set environment variables so tools can later find things under, for
     # example, 'share'.

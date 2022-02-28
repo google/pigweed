@@ -174,7 +174,7 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  virtualenv_root, strict, virtualenv_gn_out_dir, json_file,
                  project_root, config_file, use_existing_cipd,
-                 use_pinned_pip_packages, cipd_only):
+                 use_pinned_pip_packages, cipd_only, trust_cipd_hash):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -189,6 +189,7 @@ class EnvSetup(object):
                                  or os.path.join(install_dir, 'pigweed-venv'))
         self._strict = strict
         self._cipd_only = cipd_only
+        self._trust_cipd_hash = trust_cipd_hash
 
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
@@ -522,7 +523,8 @@ Then use `set +x` to go back to normal.
                                   package_files=package_files,
                                   cache_dir=self._cipd_cache_dir,
                                   env_vars=self._env,
-                                  spin=spin):
+                                  spin=spin,
+                                  trust_hash=self._trust_cipd_hash):
             return result(_Result.Status.FAILED)
 
         return result(_Result.Status.DONE)
@@ -648,6 +650,14 @@ def parse(argv=None):
         '--cipd-cache-dir',
         default=os.environ.get('CIPD_CACHE_DIR',
                                os.path.expanduser('~/.cipd-cache-dir')),
+    )
+
+    parser.add_argument(
+        '--trust-cipd-hash',
+        action='store_true',
+        help='Only run the cipd executable if the ensure file or command-line '
+        'has changed. Defaults to false since files could have been deleted '
+        'from the installation directory and cipd would add them back.',
     )
 
     parser.add_argument(
