@@ -41,7 +41,9 @@ class PW_LOCKABLE("pw::rpc::internal::RpcLock") RpcLock {
 
 class PW_SCOPED_LOCKABLE LockGuard {
  public:
-  constexpr LockGuard([[maybe_unused]] RpcLock& mutex)
+  // [[maybe_unused]] needs to be after the parameter to workaround a gcc bug
+  // context: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81429
+  constexpr LockGuard(RpcLock& mutex [[maybe_unused]])
       PW_EXCLUSIVE_LOCK_FUNCTION(mutex) {}
 
   ~LockGuard() PW_UNLOCK_FUNCTION() = default;
