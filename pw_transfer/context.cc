@@ -616,17 +616,16 @@ void Context::HandleTimeout() {
       break;
 
     case TransferState::kWaiting:
-      // A timeout occurring in a WAITING state indicates that no chunk has been
-      // received from the other side. The transfer should retry its previous
-      // operation.
+    case TransferState::kRecovery:
+      // A timeout occurring in a WAITING or RECOVERY state indicates that no
+      // chunk has been received from the other side. The transfer should retry
+      // its previous operation.
       SetTimeout(chunk_timeout_);  // Finish() clears the timeout if retry fails
       Retry();
       break;
 
     case TransferState::kInactive:
-    case TransferState::kRecovery:
-      PW_LOG_ERROR("Timeout occurred in bad state %d",
-                   static_cast<int>(transfer_state_));
+      PW_LOG_ERROR("Timeout occurred in INACTIVE state");
       return;
   }
 

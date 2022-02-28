@@ -880,6 +880,48 @@ TEST_F(WriteTransfer, WriteFailsOnRetry) {
   EXPECT_EQ(chunk.status.value(), Status::Internal());
 }
 
+TEST_F(WriteTransfer, TimeoutInRecoveryState) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.offset, 0u);
+  ASSERT_TRUE(chunk.pending_bytes.has_value());
+  EXPECT_EQ(chunk.pending_bytes.value(), 32u);
+
+  constexpr std::span data(kData);
+
+  ctx_.SendClientStream<64>(
+      EncodeChunk({.transfer_id = 7, .offset = 0, .data = data.first(8)}));
+
+  // Skip offset 8 to enter a recovery state.
+  ctx_.SendClientStream<64>(EncodeChunk(
+      {.transfer_id = 7, .offset = 12, .data = data.subspan(12, 4)}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Recovery parameters should be sent for offset 8.
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.offset, 8u);
+  ASSERT_TRUE(chunk.pending_bytes.has_value());
+  EXPECT_EQ(chunk.pending_bytes.value(), 24u);
+
+  // Timeout while in the recovery state.
+  transfer_thread_.SimulateServerTimeout(7);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Same recovery parameters should be re-sent.
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.offset, 8u);
+  ASSERT_TRUE(chunk.pending_bytes.has_value());
+  EXPECT_EQ(chunk.pending_bytes.value(), 24u);
+}
+
 TEST_F(WriteTransfer, ExtendWindow) {
   ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
   transfer_thread_.WaitUntilEventIsProcessed();
