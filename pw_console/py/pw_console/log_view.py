@@ -760,7 +760,6 @@ class LogView:
             elif self.follow_event == FollowEvent.STICKY_FOLLOW:
                 # Jump to the last log message
                 self.log_index = max(0, self.get_last_log_index())
-                self.follow = True
 
             self.follow_event = None
             screen_update_needed = True
