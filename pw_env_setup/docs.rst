@@ -218,9 +218,12 @@ here.
 
 ``cipd_package_files``
   CIPD package file. JSON file consisting of a list of additional CIPD package
-  files to import and a list of dictionaries with "path", "platforms", "tags",
-  and "version_file" keys. Both top-level lists are optional. An example is
-  below.
+  files to import and a list of dictionaries with "path", "platforms", "subdir",
+  "tags", and "version_file" keys. Both top-level lists are optional. An
+  example is below. Only "path", "platforms", and "tags" are required. If
+  "version_file" is specified then ``pw doctor`` will fail if that version file
+  is not present. If "subdir" is specified then this packages will be installed
+  in a subdirectory of the directory created for packages in this file.
 
 .. code-block:: json
 
@@ -237,6 +240,7 @@ here.
             "mac-amd64",
             "windows-amd64"
         ],
+        "subdir": "pa/th",
         "tags": [
           "version:2@1.16.3"
         ],
