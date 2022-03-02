@@ -59,6 +59,7 @@ pw_cc_library(
         "//pw_containers",
         "//pw_log",
         "//pw_log:facade",
+        "//pw_polyfill",
         "//pw_span",
         "//pw_status",
         "//pw_stream",

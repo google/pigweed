@@ -26,6 +26,8 @@
 #include "pw_log/log.h"
 #include "pw_random/xor_shift.h"
 
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+
 #ifndef PW_FLASH_TEST_ALIGNMENT
 #define PW_FLASH_TEST_ALIGNMENT 1
 #endif
@@ -390,3 +392,5 @@ TEST_F(FlashStreamTest, Invald_Ops) {
 
 }  // namespace
 }  // namespace pw::kvs
+
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)

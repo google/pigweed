@@ -31,6 +31,8 @@ namespace pw::kvs {
 
 using std::byte;
 
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+
 Status FlashPartition::Writer::DoWrite(ConstByteSpan data) {
   if (partition_.size_bytes() <= position_) {
     return Status::OutOfRange();
@@ -64,6 +66,8 @@ StatusWithSize FlashPartition::Reader::DoRead(ByteSpan data) {
   }
   return sws;
 }
+
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 StatusWithSize FlashPartition::Output::DoWrite(std::span<const byte> data) {
   PW_TRY_WITH_SIZE(flash_.Write(address_, data));

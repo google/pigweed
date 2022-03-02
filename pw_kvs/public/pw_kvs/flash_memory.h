@@ -20,10 +20,14 @@
 
 #include "pw_assert/assert.h"
 #include "pw_kvs/alignment.h"
+#include "pw_polyfill/standard.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // Requires C++17 for pw::Result
 #include "pw_stream/seek.h"
 #include "pw_stream/stream.h"
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 namespace pw {
 namespace kvs {
@@ -142,6 +146,7 @@ class FlashPartition {
   // The flash address is in the range of: 0 to PartitionSize.
   using Address = uint32_t;
 
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // Requires C++17 for pw::Result
   class Writer final : public stream::NonSeekableWriter {
    public:
     constexpr Writer(kvs::FlashPartition& partition)
@@ -185,6 +190,7 @@ class FlashPartition {
     FlashPartition& partition_;
     size_t position_;
   };
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   // Implement Output for the Write method.
   class Output final : public pw::Output {
