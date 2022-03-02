@@ -615,12 +615,13 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticatio
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kAuthenticationCompleteEventCode);
   const auto& params = event.params<hci_spec::AuthenticationCompleteEventParams>();
+  auto connection_handle = params.connection_handle;
 
-  auto iter = connections_.find(params.connection_handle);
+  auto iter = connections_.find(connection_handle);
   if (iter == connections_.end()) {
     bt_log(INFO, "gap-bredr",
            "ignoring authentication complete (status: %s) for unknown connection handle %#.04x",
-           bt_str(ToResult(params.status)), params.connection_handle);
+           bt_str(ToResult(params.status)), connection_handle);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 

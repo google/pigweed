@@ -67,16 +67,6 @@ source_set("common") {
     "//zircon/system/ulib/zx",
     "//zircon/system/ulib/zxc",
   ]
-
-  # TODO(fxbug.dev/46637): The ByteBuffer interface relies inherently on
-  # misaligned operations and spreads the misalignment to the caller by vending
-  # references to misaligned memory. See ByteBuffer::As and
-  # MutableByBuffer::AsMutable.
-  public_configs = [ ":undefined_behavior_misaligned_memory" ]
-}
-
-config("undefined_behavior_misaligned_memory") {
-  cflags = [ "-fno-sanitize=alignment" ]
 }
 
 source_set("tests") {

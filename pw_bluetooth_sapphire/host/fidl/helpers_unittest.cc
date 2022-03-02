@@ -1044,6 +1044,12 @@ TEST_F(HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
                                               UuidToFidl(bt::sdp::profile::kAudioSource)));
 }
 
+// Returns a copy to avoid forming references to misaligned fields, which is UB.
+template <typename T>
+T copy(T t) {
+  return t;
+}
+
 TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   fbredr::ScoConnectionParameters params;
   EXPECT_TRUE(FidlToScoParameters(params).is_error());
@@ -1071,8 +1077,8 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(out.receive_bandwidth, 8000u);
 
   EXPECT_EQ(out.transmit_coding_format.coding_format, bt::hci_spec::CodingFormat::kMSbc);
-  EXPECT_EQ(out.transmit_coding_format.company_id, 0u);
-  EXPECT_EQ(out.transmit_coding_format.vendor_codec_id, 0u);
+  EXPECT_EQ(copy(out.transmit_coding_format.company_id), 0u);
+  EXPECT_EQ(copy(out.transmit_coding_format.vendor_codec_id), 0u);
 
   EXPECT_EQ(out.receive_coding_format.coding_format, bt::hci_spec::CodingFormat::kMSbc);
   EXPECT_EQ(out.receive_coding_format.company_id, 0u);
@@ -1081,16 +1087,16 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(out.transmit_codec_frame_size_bytes, 8u);
   EXPECT_EQ(out.receive_codec_frame_size_bytes, 8u);
 
-  EXPECT_EQ(out.input_bandwidth, 32000u);
-  EXPECT_EQ(out.output_bandwidth, 32000u);
+  EXPECT_EQ(copy(out.input_bandwidth), 32000u);
+  EXPECT_EQ(copy(out.output_bandwidth), 32000u);
 
   EXPECT_EQ(out.input_coding_format.coding_format, bt::hci_spec::CodingFormat::kLinearPcm);
-  EXPECT_EQ(out.input_coding_format.company_id, 0u);
-  EXPECT_EQ(out.input_coding_format.vendor_codec_id, 0u);
+  EXPECT_EQ(copy(out.input_coding_format.company_id), 0u);
+  EXPECT_EQ(copy(out.input_coding_format.vendor_codec_id), 0u);
 
   EXPECT_EQ(out.output_coding_format.coding_format, bt::hci_spec::CodingFormat::kLinearPcm);
-  EXPECT_EQ(out.output_coding_format.company_id, 0u);
-  EXPECT_EQ(out.output_coding_format.vendor_codec_id, 0u);
+  EXPECT_EQ(copy(out.output_coding_format.company_id), 0u);
+  EXPECT_EQ(copy(out.output_coding_format.vendor_codec_id), 0u);
 
   EXPECT_EQ(out.input_coded_data_size_bits, 16u);
   EXPECT_EQ(out.output_coded_data_size_bits, 16u);

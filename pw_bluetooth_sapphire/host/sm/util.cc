@@ -15,7 +15,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
@@ -47,17 +46,9 @@ void Swap128(const UInt128& in, UInt128* out) {
 void Xor128(const UInt128& int1, const UInt128& int2, UInt128* out) {
   ZX_DEBUG_ASSERT(out);
 
-  uint64_t lower1 = *reinterpret_cast<const uint64_t*>(int1.data());
-  uint64_t upper1 = *reinterpret_cast<const uint64_t*>(int1.data() + 8);
-
-  uint64_t lower2 = *reinterpret_cast<const uint64_t*>(int2.data());
-  uint64_t upper2 = *reinterpret_cast<const uint64_t*>(int2.data() + 8);
-
-  uint64_t lower_res = lower1 ^ lower2;
-  uint64_t upper_res = upper1 ^ upper2;
-
-  std::memcpy(out->data(), &lower_res, 8);
-  std::memcpy(out->data() + 8, &upper_res, 8);
+  for (size_t i = 0; i < kUInt128Size; ++i) {
+    out->at(i) = int1.at(i) ^ int2.at(i);
+  }
 }
 
 // Writes |data| to |output_data_loc| & returns a view of the remainder of |output_data_loc|.
