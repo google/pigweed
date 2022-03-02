@@ -56,6 +56,22 @@ TEST(Result, Deref) {
   EXPECT_EQ(tester.value().False(), tester->False());
 }
 
+TEST(Result, ConstDeref) {
+  struct Tester {
+    constexpr bool True() const { return true; };
+    constexpr bool False() const { return false; };
+  };
+
+  const auto tester = Result(Tester());
+  EXPECT_TRUE(tester.ok());
+  EXPECT_TRUE(tester->True());
+  EXPECT_FALSE(tester->False());
+  EXPECT_TRUE((*tester).True());
+  EXPECT_FALSE((*tester).False());
+  EXPECT_EQ(tester.value().True(), tester->True());
+  EXPECT_EQ(tester.value().False(), tester->False());
+}
+
 TEST(Result, ConstructType) {
   struct Point {
     Point(int a, int b) : x(a), y(b) {}

@@ -69,7 +69,7 @@ class [[nodiscard]] Result {
     return std::move(value_);
   }
 
-  constexpr T& operator*() const& {
+  constexpr const T& operator*() const& {
     PW_ASSERT(status_.ok());
     return value_;
   }
@@ -79,7 +79,7 @@ class [[nodiscard]] Result {
     return value_;
   }
 
-  constexpr T&& operator*() const&& {
+  constexpr const T&& operator*() const&& {
     PW_ASSERT(status_.ok());
     return std::move(value_);
   }
@@ -89,7 +89,7 @@ class [[nodiscard]] Result {
     return std::move(value_);
   }
 
-  constexpr T* operator->() const {
+  constexpr const T* operator->() const {
     PW_ASSERT(status_.ok());
     return &value_;
   }
