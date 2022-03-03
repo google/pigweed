@@ -152,7 +152,7 @@ class ProtoMethod(abc.ABC):
         return namespace
 
 
-class SubMessageMethod(ProtoMethod):
+class SubMessageEncoderMethod(ProtoMethod):
     """Method which returns a sub-message encoder."""
     def name(self) -> str:
         return 'Get{}Encoder'.format(self._field.name())
@@ -214,8 +214,8 @@ class WriteMethod(ProtoMethod):
         raise NotImplementedError()
 
 
-class PackedMethod(WriteMethod):
-    """A method for a packed repeated field.
+class PackedWriteMethod(WriteMethod):
+    """A method for a writing a packed repeated field.
 
     Same as a WriteMethod, but is only generated for repeated fields.
     """
@@ -232,7 +232,7 @@ class PackedMethod(WriteMethod):
 #
 
 
-class DoubleMethod(WriteMethod):
+class DoubleWriteMethod(WriteMethod):
     """Method which writes a proto double value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('double', 'value')]
@@ -241,7 +241,7 @@ class DoubleMethod(WriteMethod):
         return 'WriteDouble'
 
 
-class PackedDoubleMethod(PackedMethod):
+class PackedDoubleWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of doubles."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const double>', 'values')]
@@ -250,7 +250,7 @@ class PackedDoubleMethod(PackedMethod):
         return 'WritePackedDouble'
 
 
-class FloatMethod(WriteMethod):
+class FloatWriteMethod(WriteMethod):
     """Method which writes a proto float value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('float', 'value')]
@@ -259,7 +259,7 @@ class FloatMethod(WriteMethod):
         return 'WriteFloat'
 
 
-class PackedFloatMethod(PackedMethod):
+class PackedFloatWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of floats."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const float>', 'values')]
@@ -268,7 +268,7 @@ class PackedFloatMethod(PackedMethod):
         return 'WritePackedFloat'
 
 
-class Int32Method(WriteMethod):
+class Int32WriteMethod(WriteMethod):
     """Method which writes a proto int32 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('int32_t', 'value')]
@@ -277,7 +277,7 @@ class Int32Method(WriteMethod):
         return 'WriteInt32'
 
 
-class PackedInt32Method(PackedMethod):
+class PackedInt32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of int32."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int32_t>', 'values')]
@@ -286,7 +286,7 @@ class PackedInt32Method(PackedMethod):
         return 'WritePackedInt32'
 
 
-class Sint32Method(WriteMethod):
+class Sint32WriteMethod(WriteMethod):
     """Method which writes a proto sint32 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('int32_t', 'value')]
@@ -295,7 +295,7 @@ class Sint32Method(WriteMethod):
         return 'WriteSint32'
 
 
-class PackedSint32Method(PackedMethod):
+class PackedSint32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of sint32."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int32_t>', 'values')]
@@ -304,7 +304,7 @@ class PackedSint32Method(PackedMethod):
         return 'WritePackedSint32'
 
 
-class Sfixed32Method(WriteMethod):
+class Sfixed32WriteMethod(WriteMethod):
     """Method which writes a proto sfixed32 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('int32_t', 'value')]
@@ -313,7 +313,7 @@ class Sfixed32Method(WriteMethod):
         return 'WriteSfixed32'
 
 
-class PackedSfixed32Method(PackedMethod):
+class PackedSfixed32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of sfixed32."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int32_t>', 'values')]
@@ -322,7 +322,7 @@ class PackedSfixed32Method(PackedMethod):
         return 'WritePackedSfixed32'
 
 
-class Int64Method(WriteMethod):
+class Int64WriteMethod(WriteMethod):
     """Method which writes a proto int64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('int64_t', 'value')]
@@ -331,7 +331,7 @@ class Int64Method(WriteMethod):
         return 'WriteInt64'
 
 
-class PackedInt64Method(PackedMethod):
+class PackedInt64WriteMethod(PackedWriteMethod):
     """Method which writes a proto int64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int64_t>', 'values')]
@@ -340,7 +340,7 @@ class PackedInt64Method(PackedMethod):
         return 'WritePackedInt64'
 
 
-class Sint64Method(WriteMethod):
+class Sint64WriteMethod(WriteMethod):
     """Method which writes a proto sint64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('int64_t', 'value')]
@@ -349,7 +349,7 @@ class Sint64Method(WriteMethod):
         return 'WriteSint64'
 
 
-class PackedSint64Method(PackedMethod):
+class PackedSint64WriteMethod(PackedWriteMethod):
     """Method which writes a proto sint64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int64_t>', 'values')]
@@ -358,7 +358,7 @@ class PackedSint64Method(PackedMethod):
         return 'WritePackedSint64'
 
 
-class Sfixed64Method(WriteMethod):
+class Sfixed64WriteMethod(WriteMethod):
     """Method which writes a proto sfixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('int64_t', 'value')]
@@ -367,7 +367,7 @@ class Sfixed64Method(WriteMethod):
         return 'WriteSfixed64'
 
 
-class PackedSfixed64Method(PackedMethod):
+class PackedSfixed64WriteMethod(PackedWriteMethod):
     """Method which writes a proto sfixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int64_t>', 'values')]
@@ -376,7 +376,7 @@ class PackedSfixed64Method(PackedMethod):
         return 'WritePackedSfixed4'
 
 
-class Uint32Method(WriteMethod):
+class Uint32WriteMethod(WriteMethod):
     """Method which writes a proto uint32 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('uint32_t', 'value')]
@@ -385,7 +385,7 @@ class Uint32Method(WriteMethod):
         return 'WriteUint32'
 
 
-class PackedUint32Method(PackedMethod):
+class PackedUint32WriteMethod(PackedWriteMethod):
     """Method which writes a proto uint32 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const uint32_t>', 'values')]
@@ -394,7 +394,7 @@ class PackedUint32Method(PackedMethod):
         return 'WritePackedUint32'
 
 
-class Fixed32Method(WriteMethod):
+class Fixed32WriteMethod(WriteMethod):
     """Method which writes a proto fixed32 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('uint32_t', 'value')]
@@ -403,7 +403,7 @@ class Fixed32Method(WriteMethod):
         return 'WriteFixed32'
 
 
-class PackedFixed32Method(PackedMethod):
+class PackedFixed32WriteMethod(PackedWriteMethod):
     """Method which writes a proto fixed32 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const uint32_t>', 'values')]
@@ -412,7 +412,7 @@ class PackedFixed32Method(PackedMethod):
         return 'WritePackedFixed32'
 
 
-class Uint64Method(WriteMethod):
+class Uint64WriteMethod(WriteMethod):
     """Method which writes a proto uint64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('uint64_t', 'value')]
@@ -421,7 +421,7 @@ class Uint64Method(WriteMethod):
         return 'WriteUint64'
 
 
-class PackedUint64Method(PackedMethod):
+class PackedUint64WriteMethod(PackedWriteMethod):
     """Method which writes a proto uint64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const uint64_t>', 'values')]
@@ -430,7 +430,7 @@ class PackedUint64Method(PackedMethod):
         return 'WritePackedUint64'
 
 
-class Fixed64Method(WriteMethod):
+class Fixed64WriteMethod(WriteMethod):
     """Method which writes a proto fixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('uint64_t', 'value')]
@@ -439,7 +439,7 @@ class Fixed64Method(WriteMethod):
         return 'WriteFixed64'
 
 
-class PackedFixed64Method(PackedMethod):
+class PackedFixed64WriteMethod(PackedWriteMethod):
     """Method which writes a proto fixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const uint64_t>', 'values')]
@@ -448,7 +448,7 @@ class PackedFixed64Method(PackedMethod):
         return 'WritePackedFixed64'
 
 
-class BoolMethod(WriteMethod):
+class BoolWriteMethod(WriteMethod):
     """Method which writes a proto bool value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('bool', 'value')]
@@ -457,7 +457,7 @@ class BoolMethod(WriteMethod):
         return 'WriteBool'
 
 
-class BytesMethod(WriteMethod):
+class BytesWriteMethod(WriteMethod):
     """Method which writes a proto bytes value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const std::byte>', 'value')]
@@ -466,7 +466,7 @@ class BytesMethod(WriteMethod):
         return 'WriteBytes'
 
 
-class StringLenMethod(WriteMethod):
+class StringLenWriteMethod(WriteMethod):
     """Method which writes a proto string value with length."""
     def params(self) -> List[Tuple[str, str]]:
         return [('const char*', 'value'), ('size_t', 'len')]
@@ -475,7 +475,7 @@ class StringLenMethod(WriteMethod):
         return 'WriteString'
 
 
-class StringMethod(WriteMethod):
+class StringWriteMethod(WriteMethod):
     """Method which writes a proto string value."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::string_view', 'value')]
@@ -484,7 +484,7 @@ class StringMethod(WriteMethod):
         return 'WriteString'
 
 
-class EnumMethod(WriteMethod):
+class EnumWriteMethod(WriteMethod):
     """Method which writes a proto enum value."""
     def params(self) -> List[Tuple[str, str]]:
         return [(self._relative_type_namespace(), 'value')]
@@ -502,38 +502,40 @@ class EnumMethod(WriteMethod):
 
 
 # Mapping of protobuf field types to their method definitions.
-PROTO_FIELD_METHODS: Dict[int, List] = {
+PROTO_FIELD_WRITE_METHODS: Dict[int, List] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE:
-    [DoubleMethod, PackedDoubleMethod],
+    [DoubleWriteMethod, PackedDoubleWriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT:
-    [FloatMethod, PackedFloatMethod],
+    [FloatWriteMethod, PackedFloatWriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_INT32:
-    [Int32Method, PackedInt32Method],
+    [Int32WriteMethod, PackedInt32WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_SINT32:
-    [Sint32Method, PackedSint32Method],
+    [Sint32WriteMethod, PackedSint32WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32:
-    [Sfixed32Method, PackedSfixed32Method],
+    [Sfixed32WriteMethod, PackedSfixed32WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_INT64:
-    [Int64Method, PackedInt64Method],
+    [Int64WriteMethod, PackedInt64WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_SINT64:
-    [Sint64Method, PackedSint64Method],
+    [Sint64WriteMethod, PackedSint64WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64:
-    [Sfixed64Method, PackedSfixed64Method],
+    [Sfixed64WriteMethod, PackedSfixed64WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_UINT32:
-    [Uint32Method, PackedUint32Method],
+    [Uint32WriteMethod, PackedUint32WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32:
-    [Fixed32Method, PackedFixed32Method],
+    [Fixed32WriteMethod, PackedFixed32WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_UINT64:
-    [Uint64Method, PackedUint64Method],
+    [Uint64WriteMethod, PackedUint64WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64:
-    [Fixed64Method, PackedFixed64Method],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [BoolMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [BytesMethod],
+    [Fixed64WriteMethod, PackedFixed64WriteMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [BoolWriteMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [BytesWriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [
-        StringLenMethod, StringMethod
+        StringLenWriteMethod, StringWriteMethod
     ],
-    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [SubMessageMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [
+        SubMessageEncoderMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumWriteMethod],
 }
 
 
@@ -575,7 +577,7 @@ def generate_code_for_message(message: ProtoMessage, root: ProtoNode,
 
         # Generate methods for each of the message's fields.
         for field in message.fields():
-            for method_class in PROTO_FIELD_METHODS[field.type()]:
+            for method_class in PROTO_FIELD_WRITE_METHODS[field.type()]:
                 method = method_class(field, message, root)
                 if not method.should_appear():
                     continue
@@ -607,7 +609,7 @@ def define_not_in_class_methods(message: ProtoMessage, root: ProtoNode,
     assert message.type() == ProtoNode.Type.MESSAGE
 
     for field in message.fields():
-        for method_class in PROTO_FIELD_METHODS[field.type()]:
+        for method_class in PROTO_FIELD_WRITE_METHODS[field.type()]:
             method = method_class(field, message, root)
             if not method.should_appear() or method.in_class_definition():
                 continue
