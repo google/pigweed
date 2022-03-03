@@ -12,14 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// Some common configs for using mbedtls in Pigweed. These include disabling of
+// file system, socket and linux/windows specific features.
+// See include/mbedtls/config.h for a detail explanation of these
+// configurations.
+
 #pragma once
-
-#if (MSS_SYS_MDDR_CONFIG_BY_CORTEX == 1)
-#error "Please turn off DDR initialization! See the comment in this file above."
-#endif
-
-#define HAL_GPIO_MODULE_ENABLED
-#include "mss_gpio/mss_gpio.h"
-
-#define HAL_UART_MODULE_ENABLED
-#include "mss_uart/mss_uart.h"

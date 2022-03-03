@@ -14,12 +14,6 @@
 
 #pragma once
 
-#if (MSS_SYS_MDDR_CONFIG_BY_CORTEX == 1)
-#error "Please turn off DDR initialization! See the comment in this file above."
-#endif
+#include "configs/config_pigweed_common.h"
 
-#define HAL_GPIO_MODULE_ENABLED
-#include "mss_gpio/mss_gpio.h"
-
-#define HAL_UART_MODULE_ENABLED
-#include "mss_uart/mss_uart.h"
+#define SF2_MSS_NO_BOOTLOADER 1

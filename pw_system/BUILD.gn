@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pigweed/third_party/freertos/freertos.gni")
 import("$dir_pigweed/third_party/nanopb/nanopb.gni")
+import("$dir_pigweed/third_party/smartfusion_mss/mss.gni")
 import("$dir_pigweed/third_party/stm32cube/stm32cube.gni")
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/facade.gni")
@@ -225,6 +226,14 @@ if (dir_pw_third_party_nanopb != "") {
     if (dir_pw_third_party_stm32cube_f4 != "" &&
         dir_pw_third_party_freertos != "") {
       deps += [ ":system_example($dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f429i_disc1_stm32cube.size_optimized)" ]
+    }
+    if (dir_pw_third_party_smartfusion_mss != "" &&
+        dir_pw_third_party_freertos != "") {
+      deps += [
+        ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som.size_optimized)",
+        ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som.speed_optimized)",
+        ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som_debug.debug)",
+      ]
     }
   }
 } else {

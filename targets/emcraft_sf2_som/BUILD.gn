@@ -18,8 +18,10 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_system/system_target.gni")
+import("$dir_pw_third_party/smartfusion_mss/mss.gni")
 import("$dir_pw_tokenizer/backend.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
+
 config("pw_malloc_active") {
   if (pw_malloc_BACKEND != "") {
     defines = [ "PW_MALLOC_ACTIVE=1" ]
@@ -35,9 +37,9 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_malloc",
       "$dir_pw_preprocessor",
       "$dir_pw_string",
+      "$dir_pw_sys_io_emcraft_sf2",
       "$dir_pw_system",
       "$dir_pw_third_party/freertos",
-      "$dir_pw_third_party/smartfusion_mss",
     ]
     sources = [
       "boot.cc",
@@ -51,7 +53,9 @@ if (current_toolchain != default_toolchain) {
 
   pw_source_set("sf2_mss_hal_config") {
     public_configs = [ ":config_includes" ]
-    public = [ "config/sf2_mss_hal_conf.h" ]
+    public =
+        [ "config/sf2_mss_hal_conf.h" ]  # SKEYS likely want to put the MDDR
+                                         # config by cortex etc stuff here
   }
 
   pw_source_set("sf2_freertos_config") {
@@ -61,17 +65,68 @@ if (current_toolchain != default_toolchain) {
   }
 }
 
+# Configured for use with a first stage boot loader to configure DDR and
+# perform memory remapping.
 pw_system_target("emcraft_sf2_som") {
   cpu = PW_SYSTEM_CPU.CORTEX_M3
   scheduler = PW_SYSTEM_SCHEDULER.FREERTOS
-
   link_deps = [ "$dir_pigweed/targets/emcraft_sf2_som:pre_init" ]
+
   build_args = {
     pw_log_BACKEND = dir_pw_log_tokenized
-    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = "//pw_system:log"
+    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND =
+        "$dir_pw_system:log_backend.impl"
     pw_third_party_freertos_CONFIG =
         "$dir_pigweed/targets/emcraft_sf2_som:sf2_freertos_config"
     pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
+    pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
+
+    # Non-debug build for use with the boot loader.
+    pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
+      "PW_BOOT_FLASH_BEGIN=0x00000200",  # After vector table.
+
+      # TODO(skeys) Bootloader is capable of loading 16M of uncompressed code
+      # from SPI flash to external RAM. For now use the allocated eNVM flash
+      # (256K - Bootloader - InSystemProgrammer = 192K)
+      "PW_BOOT_FLASH_SIZE=0x30000",
+
+      # TODO(pwbug/219): Currently "pw_tokenizer/detokenize_test" requires at
+      # least 6K bytes in heap when using pw_malloc_freelist. The heap size
+      # required for tests should be investigated.
+      "PW_BOOT_HEAP_SIZE=4M",
+
+      # With external RAM remapped, we use the entire internal ram for the
+      # stack (64K).
+      "PW_BOOT_MIN_STACK_SIZE=1024K",
+
+      # Using external DDR RAM, we just need to make sure we go past our ROM
+      # sections.
+      "PW_BOOT_RAM_BEGIN=0xA1000000",
+
+      # We assume that the bootloader loaded all 16M of text.
+      "PW_BOOT_RAM_SIZE=48M",
+      "PW_BOOT_VECTOR_TABLE_BEGIN=0x00000000",
+      "PW_BOOT_VECTOR_TABLE_SIZE=512",
+    ]
+  }
+}
+
+# Debug target configured to work with MSS linker script and startup code.
+# TODO(skeys) Add linker script and config for debug builds using SoftConsole.
+pw_system_target("emcraft_sf2_som_debug") {
+  cpu = PW_SYSTEM_CPU.CORTEX_M3
+  scheduler = PW_SYSTEM_SCHEDULER.FREERTOS
+  link_deps = [ "$dir_pigweed/targets/emcraft_sf2_som:pre_init" ]
+
+  build_args = {
+    pw_log_BACKEND = dir_pw_log_tokenized
+    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND =
+        "$dir_pw_system:log_backend.impl"
+    pw_third_party_freertos_CONFIG =
+        "$dir_pigweed/targets/emcraft_sf2_som:sf2_freertos_config"
+    pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
+    pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
+
     pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
       "PW_BOOT_FLASH_BEGIN=0x00000200",
       "PW_BOOT_FLASH_SIZE=200K",

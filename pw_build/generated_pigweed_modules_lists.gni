@@ -126,6 +126,8 @@ declare_args() {
       get_path_info("../pw_sys_io_baremetal_lm3s6965evb", "abspath")
   dir_pw_sys_io_baremetal_stm32f429 =
       get_path_info("../pw_sys_io_baremetal_stm32f429", "abspath")
+  dir_pw_sys_io_emcraft_sf2 =
+      get_path_info("../pw_sys_io_emcraft_sf2", "abspath")
   dir_pw_sys_io_mcuxpresso = get_path_info("../pw_sys_io_mcuxpresso", "abspath")
   dir_pw_sys_io_stdio = get_path_info("../pw_sys_io_stdio", "abspath")
   dir_pw_sys_io_stm32cube = get_path_info("../pw_sys_io_stm32cube", "abspath")
@@ -254,6 +256,7 @@ declare_args() {
     dir_pw_sys_io_arduino,
     dir_pw_sys_io_baremetal_lm3s6965evb,
     dir_pw_sys_io_baremetal_stm32f429,
+    dir_pw_sys_io_emcraft_sf2,
     dir_pw_sys_io_mcuxpresso,
     dir_pw_sys_io_stdio,
     dir_pw_sys_io_stm32cube,
@@ -439,6 +442,7 @@ declare_args() {
     "$dir_pw_sys_io:docs",
     "$dir_pw_sys_io_arduino:docs",
     "$dir_pw_sys_io_baremetal_stm32f429:docs",
+    "$dir_pw_sys_io_emcraft_sf2:docs",
     "$dir_pw_sys_io_mcuxpresso:docs",
     "$dir_pw_sys_io_stdio:docs",
     "$dir_pw_sys_io_stm32cube:docs",

@@ -14,12 +14,9 @@
 
 #pragma once
 
-#if (MSS_SYS_MDDR_CONFIG_BY_CORTEX == 1)
-#error "Please turn off DDR initialization! See the comment in this file above."
-#endif
+// Defaults to USART1 on the SmartFusion2, but can be overridden.
 
-#define HAL_GPIO_MODULE_ENABLED
-#include "mss_gpio/mss_gpio.h"
-
-#define HAL_UART_MODULE_ENABLED
-#include "mss_uart/mss_uart.h"
+// The USART peripheral number to use. (1 for USART1, 2 for USART2, etc.)
+#ifndef PW_SYS_IO_EMCRAFT_SF2_USART_NUM
+#define PW_SYS_IO_EMCRAFT_SF2_USART_NUM 1
+#endif  // PW_SYS_IO_EMCRAFT_SF2_USART_NUM

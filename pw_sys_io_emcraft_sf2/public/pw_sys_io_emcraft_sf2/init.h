@@ -11,15 +11,13 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
 #pragma once
 
-#if (MSS_SYS_MDDR_CONFIG_BY_CORTEX == 1)
-#error "Please turn off DDR initialization! See the comment in this file above."
-#endif
+#include "pw_preprocessor/util.h"
 
-#define HAL_GPIO_MODULE_ENABLED
-#include "mss_gpio/mss_gpio.h"
+PW_EXTERN_C_START
 
-#define HAL_UART_MODULE_ENABLED
-#include "mss_uart/mss_uart.h"
+// The actual implement of PreMainInit() in sys_io_BACKEND.
+void pw_sys_io_Init(void);
+
+PW_EXTERN_C_END
