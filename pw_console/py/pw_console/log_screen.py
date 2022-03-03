@@ -365,7 +365,7 @@ class LogScreen:
         This moves the lines on screen and keeps the originally selected line
         highlighted. Example use case: when jumping to a search match the
         matched line will be shown at the top of the screen."""
-        if self.cursor_position >= len(self.line_buffer):
+        if not 0 <= self.cursor_position < len(self.line_buffer):
             return
 
         current_line = self.line_buffer[self.cursor_position]
@@ -386,7 +386,7 @@ class LogScreen:
         This moves the lines on screen and keeps the originally selected line
         highlighted. Example use case: when jumping to a search match the
         matched line will be shown at the center of the screen."""
-        if self.cursor_position >= len(self.line_buffer):
+        if not 0 <= self.cursor_position < len(self.line_buffer):
             return
 
         half_height = int(self.height / 2)
