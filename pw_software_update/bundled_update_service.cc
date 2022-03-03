@@ -29,63 +29,74 @@
 #include "pw_status/try.h"
 #include "pw_string/string_builder.h"
 #include "pw_string/util.h"
+#include "pw_sync/borrow.h"
 #include "pw_sync/mutex.h"
 #include "pw_tokenizer/tokenize.h"
-
-// TODO(keir): Convert all the CHECKs in the RPC service to gracefully report
-// errors.
-#define SET_ERROR(res, message, ...)                               \
-  do {                                                             \
-    PW_LOG_ERROR(message, __VA_ARGS__);                            \
-    if (!IsFinished()) {                                           \
-      Finish(res);                                                 \
-      size_t note_size = sizeof(status_.note.bytes);               \
-      PW_TOKENIZE_TO_BUFFER(                                       \
-          status_.note.bytes, &(note_size), message, __VA_ARGS__); \
-      status_.note.size = note_size;                               \
-      status_.has_note = true;                                     \
-    }                                                              \
-  } while (false)
 
 namespace pw::software_update {
 namespace {
 
 constexpr std::string_view kTopLevelTargetsName = "targets";
 
+using BorrowedStatus =
+    sync::BorrowedPointer<pw_software_update_BundledUpdateStatus, sync::Mutex>;
+using BundledUpdateState = pw_software_update_BundledUpdateState_Enum;
+using BundledUpdateStatus = pw_software_update_BundledUpdateStatus;
+
+// TODO(keir): Convert all the CHECKs in the RPC service to gracefully report
+// errors.
+#define SET_ERROR(res, message, ...)                                          \
+  do {                                                                        \
+    PW_LOG_ERROR(message, __VA_ARGS__);                                       \
+    if (!IsFinished()) {                                                      \
+      Finish(res);                                                            \
+      {                                                                       \
+        BorrowedStatus borrowed_status = status_.acquire();                   \
+        size_t note_size = sizeof(borrowed_status->note.bytes);               \
+        PW_TOKENIZE_TO_BUFFER(                                                \
+            borrowed_status->note.bytes, &(note_size), message, __VA_ARGS__); \
+        borrowed_status->note.size = note_size;                               \
+        borrowed_status->has_note = true;                                     \
+      }                                                                       \
+    }                                                                         \
+  } while (false)
 }  // namespace
 
-Status BundledUpdateService::GetStatus(
-    const pw_protobuf_Empty&,
-    pw_software_update_BundledUpdateStatus& response) {
-  std::lock_guard lock(mutex_);
-  response = status_;
+Status BundledUpdateService::GetStatus(const pw_protobuf_Empty&,
+                                       BundledUpdateStatus& response) {
+  response = *status_.acquire();
   return OkStatus();
 }
 
 Status BundledUpdateService::Start(
     const pw_software_update_StartRequest& request,
-    pw_software_update_BundledUpdateStatus& response) {
+    BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
   // Check preconditions.
-  if (status_.state != pw_software_update_BundledUpdateState_Enum_INACTIVE) {
+  const BundledUpdateState state = status_.acquire()->state;
+  if (state != pw_software_update_BundledUpdateState_Enum_INACTIVE) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_UNKNOWN_ERROR,
               "Start() can only be called from INACTIVE state. "
               "Current state: %d. Abort() then Reset() must be called first",
-              static_cast<int>(status_.state));
-    response = status_;
+              static_cast<int>(state));
+    response = *status_.acquire();
     return Status::FailedPrecondition();
   }
-  PW_DCHECK(!status_.has_transfer_id);
-  PW_DCHECK(!status_.has_result);
-  PW_DCHECK(status_.current_state_progress_hundreth_percent == 0);
-  PW_DCHECK(status_.bundle_filename[0] == '\0');
-  PW_DCHECK(status_.note.size == 0);
+
+  {
+    BorrowedStatus borrowed_status = status_.acquire();
+    PW_DCHECK(!borrowed_status->has_transfer_id);
+    PW_DCHECK(!borrowed_status->has_result);
+    PW_DCHECK(borrowed_status->current_state_progress_hundreth_percent == 0);
+    PW_DCHECK(borrowed_status->bundle_filename[0] == '\0');
+    PW_DCHECK(borrowed_status->note.size == 0);
+  }
 
   // Notify the backend of pending transfer.
   if (const Status status = backend_.BeforeUpdateStart(); !status.ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_UNKNOWN_ERROR,
               "Backend error on BeforeUpdateStart()");
-    response = status_;
+    response = *status_.acquire();
     return status;
   }
 
@@ -96,60 +107,70 @@ Status BundledUpdateService::Start(
   if (!possible_transfer_id.ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_TRANSFER_FAILED,
               "Couldn't enable bundle transfer");
-    response = status_;
+    response = *status_.acquire();
     return possible_transfer_id.status();
   }
 
   // Update state.
-  status_.transfer_id = possible_transfer_id.value();
-  status_.has_transfer_id = true;
-  if (request.has_bundle_filename) {
-    const StatusWithSize sws = string::Copy(request.bundle_filename,
-                                            status_.bundle_filename,
-                                            sizeof(status_.bundle_filename));
-    PW_DCHECK_OK(sws.status(),
-                 "bundle_filename options max_sizes do not match");
-    status_.has_bundle_filename = true;
+  {
+    BorrowedStatus borrowed_status = status_.acquire();
+    borrowed_status->transfer_id = possible_transfer_id.value();
+    borrowed_status->has_transfer_id = true;
+    if (request.has_bundle_filename) {
+      const StatusWithSize sws =
+          string::Copy(request.bundle_filename,
+                       borrowed_status->bundle_filename,
+                       sizeof(borrowed_status->bundle_filename));
+      PW_DCHECK_OK(sws.status(),
+                   "bundle_filename options max_sizes do not match");
+      borrowed_status->has_bundle_filename = true;
+    }
+    borrowed_status->state =
+        pw_software_update_BundledUpdateState_Enum_TRANSFERRING;
+    response = *borrowed_status;
   }
-  status_.state = pw_software_update_BundledUpdateState_Enum_TRANSFERRING;
-  response = status_;
   return OkStatus();
 }
 
-Status BundledUpdateService::SetTransferred(
-    const pw_protobuf_Empty&,
-    ::pw_software_update_BundledUpdateStatus& response) {
-  if (status_.state !=
-          pw_software_update_BundledUpdateState_Enum_TRANSFERRING &&
-      status_.state != pw_software_update_BundledUpdateState_Enum_INACTIVE) {
+Status BundledUpdateService::SetTransferred(const pw_protobuf_Empty&,
+                                            BundledUpdateStatus& response) {
+  const BundledUpdateState state = status_.acquire()->state;
+
+  if (state != pw_software_update_BundledUpdateState_Enum_TRANSFERRING &&
+      state != pw_software_update_BundledUpdateState_Enum_INACTIVE) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_UNKNOWN_ERROR,
               "SetTransferred() can only be called from TRANSFERRING or "
               "INACTIVE state. State: %d",
-              static_cast<int>(status_.state));
-    response = status_;
+              static_cast<int>(state));
+    response = *status_.acquire();
     return OkStatus();
   }
+
   NotifyTransferSucceeded();
-  response = status_;
+
+  response = *status_.acquire();
   return OkStatus();
 }
 
 // TODO: Check for "ABORTING" state and bail if it's set.
 void BundledUpdateService::DoVerify() {
   std::lock_guard guard(mutex_);
-  if (status_.state == pw_software_update_BundledUpdateState_Enum_VERIFIED) {
+  const BundledUpdateState state = status_.acquire()->state;
+
+  if (state == pw_software_update_BundledUpdateState_Enum_VERIFIED) {
     return;  // Already done!
   }
 
   // Ensure we're in the right state.
-  if (status_.state != pw_software_update_BundledUpdateState_Enum_TRANSFERRED) {
+  if (state != pw_software_update_BundledUpdateState_Enum_TRANSFERRED) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
               "DoVerify() must be called from TRANSFERRED state. State: %d",
-              static_cast<int>(status_.state));
+              static_cast<int>(state));
     return;
   }
 
-  status_.state = pw_software_update_BundledUpdateState_Enum_VERIFYING;
+  status_.acquire()->state =
+      pw_software_update_BundledUpdateState_Enum_VERIFYING;
 
   // Notify backend about pending verify.
   if (const Status status = backend_.BeforeBundleVerify(); !status.ok()) {
@@ -181,30 +202,29 @@ void BundledUpdateService::DoVerify() {
               "Backend::AfterBundleVerified() failed");
     return;
   }
-  status_.state = pw_software_update_BundledUpdateState_Enum_VERIFIED;
+  status_.acquire()->state =
+      pw_software_update_BundledUpdateState_Enum_VERIFIED;
 }
 
-Status BundledUpdateService::Verify(
-    const pw_protobuf_Empty&,
-    pw_software_update_BundledUpdateStatus& response) {
+Status BundledUpdateService::Verify(const pw_protobuf_Empty&,
+                                    BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
+  const BundledUpdateState state = status_.acquire()->state;
 
   // Already done? Bail.
-  if (status_.state == pw_software_update_BundledUpdateState_Enum_VERIFIED) {
+  if (state == pw_software_update_BundledUpdateState_Enum_VERIFIED) {
     PW_LOG_DEBUG("Skipping verify since already verified");
     return OkStatus();
   }
 
   // TODO: Remove the transferring permitted state here ASAP.
   // Ensure we're in the right state.
-  if ((status_.state !=
-       pw_software_update_BundledUpdateState_Enum_TRANSFERRING) &&
-      (status_.state !=
-       pw_software_update_BundledUpdateState_Enum_TRANSFERRED)) {
+  if ((state != pw_software_update_BundledUpdateState_Enum_TRANSFERRING) &&
+      (state != pw_software_update_BundledUpdateState_Enum_TRANSFERRED)) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
               "Verify() must be called from TRANSFERRED state. State: %d",
-              static_cast<int>(status_.state));
-    response = status_;
+              static_cast<int>(state));
+    response = *status_.acquire();
     return Status::FailedPrecondition();
   }
 
@@ -231,35 +251,34 @@ Status BundledUpdateService::Verify(
   if (!status.ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
               "Unable to equeue apply to work queue");
-    response = status_;
+    response = *status_.acquire();
     return status;
   }
   work_enqueued_ = true;
 
-  response = status_;
+  response = *status_.acquire();
   return OkStatus();
 }
 
-Status BundledUpdateService::Apply(
-    const pw_protobuf_Empty&,
-    pw_software_update_BundledUpdateStatus& response) {
+Status BundledUpdateService::Apply(const pw_protobuf_Empty&,
+                                   BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
+  const BundledUpdateState state = status_.acquire()->state;
 
   // We do not wait to go into a finished error state if we're already
   // applying, instead just let them know that yes we are working on it --
   // hold on.
-  if (status_.state == pw_software_update_BundledUpdateState_Enum_APPLYING) {
+  if (state == pw_software_update_BundledUpdateState_Enum_APPLYING) {
     PW_LOG_DEBUG("Apply is already active");
     return OkStatus();
   }
 
-  if ((status_.state !=
-       pw_software_update_BundledUpdateState_Enum_TRANSFERRED) &&
-      (status_.state != pw_software_update_BundledUpdateState_Enum_VERIFIED)) {
+  if ((state != pw_software_update_BundledUpdateState_Enum_TRANSFERRED) &&
+      (state != pw_software_update_BundledUpdateState_Enum_VERIFIED)) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "Apply() must be called from TRANSFERRED or VERIFIED state. "
               "State: %d",
-              static_cast<int>(status_.state));
+              static_cast<int>(state));
     return Status::FailedPrecondition();
   }
 
@@ -287,7 +306,7 @@ Status BundledUpdateService::Apply(
   if (!status.ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "Unable to equeue apply to work queue");
-    response = status_;
+    response = *status_.acquire();
     return status;
   }
   work_enqueued_ = true;
@@ -297,15 +316,18 @@ Status BundledUpdateService::Apply(
 
 void BundledUpdateService::DoApply() {
   std::lock_guard guard(mutex_);
+  const BundledUpdateState state = status_.acquire()->state;
 
   PW_LOG_DEBUG("Attempting to apply the update");
-  if (status_.state != pw_software_update_BundledUpdateState_Enum_VERIFIED) {
+  if (state != pw_software_update_BundledUpdateState_Enum_VERIFIED) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "Apply() must be called from VERIFIED state. State: %d",
-              static_cast<int>(status_.state));
+              static_cast<int>(state));
     return;
   }
-  status_.state = pw_software_update_BundledUpdateState_Enum_APPLYING;
+
+  status_.acquire()->state =
+      pw_software_update_BundledUpdateState_Enum_APPLYING;
 
   protobuf::StringToMessageMap signed_targets_metadata_map =
       bundle_.GetDecoder().AsStringToMessageMap(static_cast<uint32_t>(
@@ -358,8 +380,8 @@ void BundledUpdateService::DoApply() {
     return;
   }
 
-  // In order to report apply progress, quickly scan to see how many bytes will
-  // be applied.
+  // In order to report apply progress, quickly scan to see how many bytes
+  // will be applied.
   size_t target_file_bytes_to_apply = 0;
   protobuf::StringToBytesMap target_payloads =
       bundle_.GetDecoder().AsStringToBytesMap(static_cast<uint32_t>(
@@ -447,9 +469,10 @@ void BundledUpdateService::DoApply() {
                  target_file_bytes_to_apply,
                  static_cast<unsigned long>(progress_hundreth_percent / 100));
     {
-      status_.current_state_progress_hundreth_percent =
+      BorrowedStatus borrowed_status = status_.acquire();
+      borrowed_status->current_state_progress_hundreth_percent =
           progress_hundreth_percent;
-      status_.has_current_state_progress_hundreth_percent = true;
+      borrowed_status->has_current_state_progress_hundreth_percent = true;
     }
   }
 
@@ -468,49 +491,53 @@ void BundledUpdateService::DoApply() {
   Finish(pw_software_update_BundledUpdateResult_Enum_SUCCESS);
 }
 
-Status BundledUpdateService::Abort(
-    const pw_protobuf_Empty&,
-    pw_software_update_BundledUpdateStatus& response) {
+Status BundledUpdateService::Abort(const pw_protobuf_Empty&,
+                                   BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
-  if (status_.state == pw_software_update_BundledUpdateState_Enum_APPLYING) {
+  const BundledUpdateState state = status_.acquire()->state;
+
+  if (state == pw_software_update_BundledUpdateState_Enum_APPLYING) {
     return Status::FailedPrecondition();
   }
 
-  if (status_.state == pw_software_update_BundledUpdateState_Enum_INACTIVE ||
-      status_.state == pw_software_update_BundledUpdateState_Enum_FINISHED) {
+  if (state == pw_software_update_BundledUpdateState_Enum_INACTIVE ||
+      state == pw_software_update_BundledUpdateState_Enum_FINISHED) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_UNKNOWN_ERROR,
               "Tried to abort when already INACTIVE or FINISHED");
     return Status::FailedPrecondition();
   }
   // TODO: Switch abort to async; this state change isn't externally visible.
-  status_.state = pw_software_update_BundledUpdateState_Enum_ABORTING;
+  status_.acquire()->state =
+      pw_software_update_BundledUpdateState_Enum_ABORTING;
 
   SET_ERROR(pw_software_update_BundledUpdateResult_Enum_ABORTED,
             "Update abort requested");
-  response = status_;
+  response = *status_.acquire();
   return OkStatus();
 }
 
-Status BundledUpdateService::Reset(
-    const pw_protobuf_Empty&,
-    pw_software_update_BundledUpdateStatus& response) {
+Status BundledUpdateService::Reset(const pw_protobuf_Empty&,
+                                   BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
+  const BundledUpdateState state = status_.acquire()->state;
 
-  if (status_.state == pw_software_update_BundledUpdateState_Enum_INACTIVE) {
+  if (state == pw_software_update_BundledUpdateState_Enum_INACTIVE) {
     return OkStatus();  // Already done.
   }
 
-  if (status_.state != pw_software_update_BundledUpdateState_Enum_FINISHED) {
+  if (state != pw_software_update_BundledUpdateState_Enum_FINISHED) {
     SET_ERROR(
         pw_software_update_BundledUpdateResult_Enum_UNKNOWN_ERROR,
         "Reset() must be called from FINISHED or INACTIVE state. State: %d",
-        static_cast<int>(status_.state));
-    response = status_;
+        static_cast<int>(state));
+    response = *status_.acquire();
     return Status::FailedPrecondition();
   }
 
-  status_ = {};
-  status_.state = pw_software_update_BundledUpdateState_Enum_INACTIVE;
+  {
+    *status_.acquire() = {
+        .state = pw_software_update_BundledUpdateState_Enum_INACTIVE};
+  }
 
   // Reset the bundle.
   if (bundle_open_) {
@@ -519,37 +546,41 @@ Status BundledUpdateService::Reset(
     bundle_open_ = false;
   }
 
-  response = status_;
+  response = *status_.acquire();
   return OkStatus();
 }
 
 void BundledUpdateService::NotifyTransferSucceeded() {
   std::lock_guard lock(mutex_);
+  const BundledUpdateState state = status_.acquire()->state;
 
-  if (status_.state !=
-      pw_software_update_BundledUpdateState_Enum_TRANSFERRING) {
+  if (state != pw_software_update_BundledUpdateState_Enum_TRANSFERRING) {
     // This can happen if the update gets Abort()'d during the transfer and
     // the transfer completes successfully.
     PW_LOG_WARN(
         "Got transfer succeeded notification when not in TRANSFERRING state. "
         "State: %d",
-        static_cast<int>(status_.state));
+        static_cast<int>(state));
   }
-  if (status_.has_transfer_id) {
+
+  const bool transfer_ongoing = status_.acquire()->has_transfer_id;
+  if (transfer_ongoing) {
     backend_.DisableBundleTransferHandler();
-    status_.has_transfer_id = false;
+    status_.acquire()->has_transfer_id = false;
   } else {
     PW_LOG_WARN("No ongoing transfer found, forcefully set TRANSFERRED.");
   }
 
-  status_.state = pw_software_update_BundledUpdateState_Enum_TRANSFERRED;
+  status_.acquire()->state =
+      pw_software_update_BundledUpdateState_Enum_TRANSFERRED;
 }
 
 void BundledUpdateService::Finish(
     pw_software_update_BundledUpdateResult_Enum result) {
   if (result == pw_software_update_BundledUpdateResult_Enum_SUCCESS) {
-    status_.current_state_progress_hundreth_percent = 0;
-    status_.has_current_state_progress_hundreth_percent = false;
+    BorrowedStatus borrowed_status = status_.acquire();
+    borrowed_status->current_state_progress_hundreth_percent = 0;
+    borrowed_status->has_current_state_progress_hundreth_percent = false;
   } else {
     // In the case of error, notify backend that we're about to abort the
     // software update.
@@ -557,10 +588,11 @@ void BundledUpdateService::Finish(
   }
 
   // Turn down the transfer if one is in progress.
-  if (status_.has_transfer_id) {
+  const bool transfer_ongoing = status_.acquire()->has_transfer_id;
+  if (transfer_ongoing) {
     backend_.DisableBundleTransferHandler();
   }
-  status_.has_transfer_id = false;
+  status_.acquire()->has_transfer_id = false;
 
   // Close out any open bundles.
   if (bundle_open_) {
@@ -568,9 +600,13 @@ void BundledUpdateService::Finish(
     PW_CHECK_OK(bundle_.Close());
     bundle_open_ = false;
   }
-  status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED;
-  status_.result = result;
-  status_.has_result = true;
+  {
+    BorrowedStatus borrowed_status = status_.acquire();
+    borrowed_status->state =
+        pw_software_update_BundledUpdateState_Enum_FINISHED;
+    borrowed_status->result = result;
+    borrowed_status->has_result = true;
+  }
 }
 
 }  // namespace pw::software_update

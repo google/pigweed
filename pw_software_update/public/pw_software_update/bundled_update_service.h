@@ -18,6 +18,7 @@
 #include "pw_software_update/bundled_update_backend.h"
 #include "pw_software_update/update_bundle_accessor.h"
 #include "pw_status/status.h"
+#include "pw_sync/borrow.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 #include "pw_work_queue/work_queue.h"
@@ -32,14 +33,14 @@ class BundledUpdateService
   BundledUpdateService(UpdateBundleAccessor& bundle,
                        BundledUpdateBackend& backend,
                        work_queue::WorkQueue& work_queue)
-      : status_{},
+      : unsafe_status_{.state =
+                           pw_software_update_BundledUpdateState_Enum_INACTIVE},
+        status_(unsafe_status_, status_mutex_),
         backend_(backend),
         bundle_(bundle),
         bundle_open_(false),
         work_queue_(work_queue),
-        work_enqueued_(false) {
-    status_.state = pw_software_update_BundledUpdateState_Enum_INACTIVE;
-  }
+        work_enqueued_(false) {}
 
   Status GetStatus(const pw_protobuf_Empty& request,
                    pw_software_update_BundledUpdateStatus& response);
@@ -85,20 +86,28 @@ class BundledUpdateService
   // ApplyProgress - to update % complete.
 
  private:
-  pw_software_update_BundledUpdateStatus status_ PW_GUARDED_BY(mutex_);
+  // Top-level lock for OTA state coherency. May be held for extended periods.
+  sync::Mutex mutex_;
   BundledUpdateBackend& backend_ PW_GUARDED_BY(mutex_);
   UpdateBundleAccessor& bundle_ PW_GUARDED_BY(mutex_);
   bool bundle_open_ PW_GUARDED_BY(mutex_);
   work_queue::WorkQueue& work_queue_ PW_GUARDED_BY(mutex_);
   bool work_enqueued_ PW_GUARDED_BY(mutex_);
-  sync::Mutex mutex_;
 
-  void DoVerify();
-  void DoApply();
+  // Nested lock for safe status updates and queries.
+  sync::Mutex status_mutex_ PW_ACQUIRED_AFTER(mutex_);
+  pw_software_update_BundledUpdateStatus unsafe_status_
+      PW_GUARDED_BY(status_mutex_);
+  sync::Borrowable<pw_software_update_BundledUpdateStatus, sync::Mutex> status_;
+
+  void DoVerify() PW_LOCKS_EXCLUDED(status_mutex_);
+  void DoApply() PW_LOCKS_EXCLUDED(status_mutex_);
   void Finish(_pw_software_update_BundledUpdateResult_Enum result)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  bool IsFinished() const PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
-    return status_.state == pw_software_update_BundledUpdateState_Enum_FINISHED;
+      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_) PW_LOCKS_EXCLUDED(status_mutex_);
+  bool IsFinished() PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_)
+      PW_LOCKS_EXCLUDED(status_mutex_) {
+    return status_.acquire()->state ==
+           pw_software_update_BundledUpdateState_Enum_FINISHED;
   }
 };
 
