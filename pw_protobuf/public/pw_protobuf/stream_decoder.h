@@ -303,6 +303,31 @@ class StreamDecoder {
   // relative to the given reader.
   Result<Bounds> GetLengthDelimitedPayloadBounds();
 
+ protected:
+  // Specialized move constructor used only for codegen.
+  //
+  // Postcondition: The other decoder is invalidated and cannot be used as it
+  //     acts like a parent decoder with an active child decoder.
+  constexpr StreamDecoder(StreamDecoder&& other)
+      : reader_(other.reader_),
+        stream_bounds_(other.stream_bounds_),
+        position_(other.position_),
+        current_field_(other.current_field_),
+        delimited_field_size_(other.delimited_field_size_),
+        delimited_field_offset_(other.delimited_field_offset_),
+        parent_(other.parent_),
+        field_consumed_(other.field_consumed_),
+        nested_reader_open_(other.nested_reader_open_),
+        status_(other.status_) {
+    PW_ASSERT(!nested_reader_open_);
+    // Make the nested decoder look like it has an open child to block reads for
+    // the remainder of the object's life, and an invalid status to ensure it
+    // doesn't advance the stream on destruction.
+    other.nested_reader_open_ = true;
+    other.parent_ = nullptr;
+    other.status_ = pw::Status::Cancelled();
+  }
+
  private:
   friend class BytesReader;
 
