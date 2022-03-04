@@ -44,6 +44,7 @@ from prompt_toolkit.layout import (
 )
 from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.styles import DynamicStyle, merge_styles, Style
+from prompt_toolkit.formatted_text import StyleAndTextTuples
 
 from pw_console.console_app import get_default_colordepth
 from pw_console.console_prefs import ConsolePrefs
@@ -87,9 +88,7 @@ class WatchApp(PluginMixin):
         # such as mouse drag resizing.
         PW_CONSOLE_APP_CONTEXTVAR.set(self)  # type: ignore
 
-        theme_name = 'ansi'
-        self.prefs = ConsolePrefs(project_file=False, user_file=False)
-        self.prefs.set_ui_theme(theme_name)
+        self.prefs = ConsolePrefs()
 
         key_bindings = KeyBindings()
 
@@ -162,7 +161,13 @@ class WatchApp(PluginMixin):
             Window(
                 content=FormattedTextControl(self.get_statusbar_text),
                 height=Dimension.exact(1),
-                style='',
+                style='class:toolbar_inactive',
+            ),
+            # Result Toolbar.
+            Window(
+                content=FormattedTextControl(self.get_resultbar_text),
+                height=lambda: len(self.event_handler.build_commands),
+                style='class:toolbar_inactive',
             ),
             # The main content.
             DynamicContainer(lambda: self.window_manager_container),
@@ -173,7 +178,8 @@ class WatchApp(PluginMixin):
             key_bindings,
         ])
 
-        self.current_theme = pw_console.style.generate_styles(theme_name)
+        self.current_theme = pw_console.style.generate_styles(
+            self.prefs.ui_theme)
         self.current_theme = merge_styles([
             self.current_theme,
             Style.from_dict({'search': 'bg:ansired ansiblack'}),
@@ -233,6 +239,10 @@ class WatchApp(PluginMixin):
         self.clear_ninja_log()
         self.event_handler.rebuild()
 
+    def rebuild_on_filechange(self):
+        self.ninja_log_view.log_store.clear_logs()
+        self.ninja_log_view.view_mode_changed()
+
     def get_statusbar_text(self):
         status = self.event_handler.status_message
         fragments = [('class:logo', 'Pigweed Watch')]
@@ -259,6 +269,12 @@ class WatchApp(PluginMixin):
             fragments.append(('', self.event_handler.current_build_step))
 
         return fragments
+
+    def get_resultbar_text(self) -> StyleAndTextTuples:
+        result = self.event_handler.result_message
+        if not result:
+            result = [('', 'Loading...')]
+        return result
 
     def exit(self, exit_code: int) -> None:
         log_file = self.external_logfile

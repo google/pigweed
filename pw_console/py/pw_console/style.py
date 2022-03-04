@@ -192,7 +192,7 @@ class AnsiTerm:
     inactive_bg = 'default'
     inactive_fg = 'default'
 
-    line_highlight_bg = 'default underline'
+    line_highlight_bg = 'ansidarkgray white'
     selected_line_bg = 'default reverse'
     dialog_bg = 'default'
 

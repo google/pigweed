@@ -63,6 +63,7 @@ from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
+from prompt_toolkit.formatted_text import StyleAndTextTuples
 
 import pw_cli.branding
 import pw_cli.color
@@ -187,6 +188,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         self.banners = banners
         self.status_message: Optional[OneStyleAndTextTuple] = None
+        self.result_message: Optional[StyleAndTextTuples] = None
         self.current_stdout = ''
         self.current_build_step = ''
         self.current_build_percent = 0.0
@@ -216,10 +218,10 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             self.wait_for_keypress_thread.start()
 
     def rebuild(self):
-        """ Manual rebuild command triggered from watch app."""
+        """ Rebuild command triggered from watch app."""
         self._current_build.terminate()
         self._current_build.wait()
-        self.debouncer.press('Manual build requested...')
+        self.debouncer.press('Manual build requested')
 
     def _wait_for_enter(self) -> NoReturn:
         try:
@@ -267,6 +269,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         log_message = f'File change detected: {os.path.relpath(matching_path)}'
         if self.restart_on_changes:
+            if self.fullscreen_enabled and self.watch_app:
+                self.watch_app.rebuild_on_filechange()
             self.debouncer.press(f'{log_message} Triggering build...')
         else:
             _LOG.info('%s ; not rebuilding', log_message)
@@ -287,11 +291,16 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # Clear the screen and show a banner indicating the build is starting.
         self._clear_screen()
 
-        for line in pw_cli.branding.banner().splitlines():
-            _LOG.info(line)
-        _LOG.info(
-            _COLOR.green(
-                '  Watching for changes. Ctrl-C to exit; enter to rebuild'))
+        if self.fullscreen_enabled:
+            msg = 'Watching for changes. Ctrl-C to exit; enter to rebuild'
+            self.result_message = [('', msg)]
+        else:
+            for line in pw_cli.branding.banner().splitlines():
+                _LOG.info(line)
+            _LOG.info(
+                _COLOR.green(
+                    '  Watching for changes. Ctrl-C to exit; enter to rebuild')
+            )
         _LOG.info('')
         _LOG.info('Change detected: %s', self.matching_path)
 
@@ -432,38 +441,50 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             self.status_message = ('ansired', 'Failed')
             _LOG.info('Finished; some builds failed')
 
-        # Then, show a more distinct colored banner.
-        if not cancelled:
-            # Write out build summary table so you can tell which builds passed
-            # and which builds failed.
-            _LOG.info('')
-            _LOG.info(' .------------------------------------')
-            _LOG.info(' |')
+        # Show individual build results for fullscreen app
+        if self.fullscreen_enabled:
+            self.result_message = []
             for (succeeded, cmd) in zip(self.builds_succeeded,
                                         self.build_commands):
-                slug = (self.charset.slug_ok
-                        if succeeded else self.charset.slug_fail)
-                _LOG.info(' |   %s  %s', slug, cmd)
-            _LOG.info(' |')
-            _LOG.info(" '------------------------------------")
+                if succeeded:
+                    self.result_message.append(
+                        ('class:theme-fg-green', 'OK  '))
+                else:
+                    self.result_message.append(('class:theme-fg-red', 'FAIL'))
+                self.result_message.append(('', f'  {cmd}\n'))
+        # For non-fullscreen pw watch
         else:
-            # Build was interrupted.
-            _LOG.info('')
-            _LOG.info(' .------------------------------------')
-            _LOG.info(' |')
-            _LOG.info(' |  %s- interrupted', self.charset.slug_fail)
-            _LOG.info(' |')
-            _LOG.info(" '------------------------------------")
+            # Show a more distinct colored banner.
+            if not cancelled:
+                # Write out build summary table so you can tell which builds
+                # passed and which builds failed.
+                _LOG.info('')
+                _LOG.info(' .------------------------------------')
+                _LOG.info(' |')
+                for (succeeded, cmd) in zip(self.builds_succeeded,
+                                            self.build_commands):
+                    slug = (self.charset.slug_ok
+                            if succeeded else self.charset.slug_fail)
+                    _LOG.info(' |   %s  %s', slug, cmd)
+                _LOG.info(' |')
+                _LOG.info(" '------------------------------------")
+            else:
+                # Build was interrupted.
+                _LOG.info('')
+                _LOG.info(' .------------------------------------')
+                _LOG.info(' |')
+                _LOG.info(' |  %s- interrupted', self.charset.slug_fail)
+                _LOG.info(' |')
+                _LOG.info(" '------------------------------------")
 
-        # Show a large color banner so it is obvious what the overall result is.
-        if all(self.builds_succeeded) and not cancelled:
+            # Show a large color banner for the overall result.
             if self.banners:
-                for line in _PASS_MESSAGE.splitlines():
-                    _LOG.info(_COLOR.green(line))
-        else:
-            if self.banners:
-                for line in _FAIL_MESSAGE.splitlines():
-                    _LOG.info(_COLOR.red(line))
+                if all(self.builds_succeeded) and not cancelled:
+                    for line in _PASS_MESSAGE.splitlines():
+                        _LOG.info(_COLOR.green(line))
+                else:
+                    for line in _FAIL_MESSAGE.splitlines():
+                        _LOG.info(_COLOR.red(line))
 
         if self.watch_app:
             self.watch_app.redraw_ui()
