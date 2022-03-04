@@ -169,8 +169,7 @@ class GattServerServer::LocalServiceImpl
           bt_log(DEBUG, "fidl", "indication result: %s", bt_str(result));
         };
       }
-      gatt()->SendNotification(id_, characteristic_id, *id, std::move(value),
-                               std::move(indication_cb));
+      gatt()->SendUpdate(id_, characteristic_id, *id, std::move(value), std::move(indication_cb));
     }
   }
 

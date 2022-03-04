@@ -47,8 +47,8 @@ class Server final {
   // indication will be sent, and indicate_cb will be called when the indication is acknowledged
   // or fails to be sent. The underlying att::Bearer will disconnect the link if a confirmation is
   // not received in a timely manner.
-  void SendNotification(IdType service_id, IdType chrc_id, BufferView value,
-                        IndicationCallback indicate_cb);
+  void SendUpdate(IdType service_id, IdType chrc_id, BufferView value,
+                  IndicationCallback indicate_cb);
 
  private:
   // ATT protocol request handlers:

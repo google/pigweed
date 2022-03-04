@@ -64,8 +64,8 @@ Server::~Server() {
   att_->UnregisterHandler(exchange_mtu_id_);
 }
 
-void Server::SendNotification(IdType service_id, IdType chrc_id, BufferView value,
-                              IndicationCallback indicate_cb) {
+void Server::SendUpdate(IdType service_id, IdType chrc_id, BufferView value,
+                        IndicationCallback indicate_cb) {
   auto buffer = NewSlabBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
   ZX_ASSERT(buffer);
 

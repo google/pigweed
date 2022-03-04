@@ -66,8 +66,8 @@ class FakeLayer final : public GATT {
   void RegisterService(ServicePtr service, ServiceIdCallback callback, ReadHandler read_handler,
                        WriteHandler write_handler, ClientConfigCallback ccc_callback) override;
   void UnregisterService(IdType service_id) override;
-  void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
-                        ::std::vector<uint8_t> value, IndicationCallback indicate_cb) override;
+  void SendUpdate(IdType service_id, IdType chrc_id, PeerId peer_id, ::std::vector<uint8_t> value,
+                  IndicationCallback indicate_cb) override;
   void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override;
   void SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) override;
   void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) override;

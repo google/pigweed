@@ -96,8 +96,8 @@ class GATT {
   // effect if |service_id| is not a registered id.
   virtual void UnregisterService(IdType service_id) = 0;
 
-  // Sends a characteristic handle-value notification to a peer that has
-  // configured the characteristic for notifications or indications. Does
+  // Sends a characteristic handle-value notification|indication to a peer that has
+  // configured the characteristic for notifications|indications. Does
   // nothing if the given peer has not configured the characteristic.
   //
   // |service_id|: The GATT service that the characteristic belongs to.
@@ -113,8 +113,8 @@ class GATT {
   // TODO(fxbug.dev/809): Revise this API to involve fewer lookups.
   // TODO(fxbug.dev/657): Fix this to notify all registered peers when |peer_id| is
   // empty.
-  virtual void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
-                                ::std::vector<uint8_t> value, IndicationCallback indicate_cb) = 0;
+  virtual void SendUpdate(IdType service_id, IdType chrc_id, PeerId peer_id,
+                          ::std::vector<uint8_t> value, IndicationCallback indicate_cb) = 0;
 
   // Sets a callback to run when certain local GATT database changes occur.  These changes are to
   // those database attributes which need to be persisted accross reconnects by bonded peers.  This

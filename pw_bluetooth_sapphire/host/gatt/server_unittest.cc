@@ -2360,7 +2360,7 @@ TEST_F(ServerTest, TrySendNotificationNoCccConfig) {
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
+    server()->SendUpdate(svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(sent);
@@ -2376,7 +2376,7 @@ TEST_F(ServerTest, TrySendNotificationConfiguredForIndicationsOnly) {
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
+    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(sent);
@@ -2396,7 +2396,7 @@ TEST_F(ServerTest, SendNotificationEmpty) {
   // clang-format on
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
+    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
   });
 
   EXPECT_TRUE(Expect(kExpected));
@@ -2417,8 +2417,8 @@ TEST_F(ServerTest, SendNotification) {
   // clang-format on
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue.view(),
-                               /*indicate_cb=*/nullptr);
+    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue.view(),
+                         /*indicate_cb=*/nullptr);
   });
 
   EXPECT_TRUE(Expect(kExpected));
@@ -2436,7 +2436,7 @@ TEST_F(ServerTest, TrySendIndicationNoCccConfig) {
   auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
+    server()->SendUpdate(svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(sent);
@@ -2456,7 +2456,7 @@ TEST_F(ServerTest, TrySendIndicationConfiguredForNotificationsOnly) {
   auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
+    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(sent);
@@ -2480,7 +2480,7 @@ TEST_F(ServerTest, SendIndicationEmpty) {
   // clang-format on
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
+    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   });
 
   EXPECT_TRUE(Expect(kExpected));
@@ -2507,8 +2507,7 @@ TEST_F(ServerTest, SendIndication) {
   // clang-format on
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue.view(),
-                               std::move(indicate_cb));
+    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue.view(), std::move(indicate_cb));
   });
 
   EXPECT_TRUE(Expect(kExpected));
