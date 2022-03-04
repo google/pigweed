@@ -127,6 +127,30 @@ pw_source_set("mutex") {
   ]
 }
 
+# This target provides the backend for pw::sync::TimedMutex.
+pw_source_set("timed_mutex") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync_freertos/timed_mutex_inline.h",
+    "public_overrides/pw_sync_backend/timed_mutex_inline.h",
+  ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_sync:timed_mutex.facade",
+  ]
+  sources = [ "timed_mutex.cc" ]
+  deps = [
+    ":check_system_clock_backend",
+    "$dir_pw_assert",
+    "$dir_pw_chrono_freertos:system_clock",
+    "$dir_pw_interrupt:context",
+    "$dir_pw_third_party/freertos",
+  ]
+}
+
 config("public_overrides_thread_notification_include_path") {
   include_dirs = [ "public_overrides/thread_notification" ]
   visibility = [ ":thread_notification" ]
@@ -174,7 +198,6 @@ pw_source_set("timed_thread_notification") {
     "public_overrides/timed_thread_notification/pw_sync_backend/timed_thread_notification_inline.h",
   ]
   public_deps = [
-    ":thread_notification",
     "$dir_pw_chrono:system_clock",
     "$dir_pw_sync:timed_thread_notification.facade",
   ]
@@ -182,30 +205,6 @@ pw_source_set("timed_thread_notification") {
   deps = [
     ":check_system_clock_backend",
     ":config",
-    "$dir_pw_assert",
-    "$dir_pw_chrono_freertos:system_clock",
-    "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/freertos",
-  ]
-}
-
-# This target provides the backend for pw::sync::TimedMutex.
-pw_source_set("timed_mutex") {
-  public_configs = [
-    ":public_include_path",
-    ":backend_config",
-  ]
-  public = [
-    "public/pw_sync_freertos/timed_mutex_inline.h",
-    "public_overrides/pw_sync_backend/timed_mutex_inline.h",
-  ]
-  public_deps = [
-    "$dir_pw_chrono:system_clock",
-    "$dir_pw_sync:timed_mutex.facade",
-  ]
-  sources = [ "timed_mutex.cc" ]
-  deps = [
-    ":check_system_clock_backend",
     "$dir_pw_assert",
     "$dir_pw_chrono_freertos:system_clock",
     "$dir_pw_interrupt:context",
@@ -231,7 +230,6 @@ pw_source_set("interrupt_spin_lock") {
     "$dir_pw_assert",
     "$dir_pw_interrupt:context",
     "$dir_pw_sync:interrupt_spin_lock.facade",
-    "$dir_pw_third_party/freertos",
   ]
 }
 
