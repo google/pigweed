@@ -14,13 +14,31 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_ring_buffer
+pw_add_module_library(pw_ring_buffer
+  HEADERS
+    public/pw_ring_buffer/prefixed_entry_ring_buffer.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_containers
+    pw_polyfill.cstddef
+    pw_polyfill.span
     pw_result
-    pw_span
     pw_status
+  SOURCES
+    prefixed_entry_ring_buffer.cc
   PRIVATE_DEPS
     pw_assert
     pw_varint
+)
+
+pw_add_test(pw_ring_buffer.prefixed_entry_ring_buffer_test
+  SOURCES
+    prefixed_entry_ring_buffer_test.cc
+  DEPS
+    pw_ring_buffer
+    pw_assert
+  GROUPS
+    modules
+    pw_ring_buffer
 )
