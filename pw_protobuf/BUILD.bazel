@@ -188,9 +188,22 @@ pw_proto_library(
 )
 
 pw_cc_test(
-    name = "codegen_test",
+    name = "codegen_decoder_test",
     srcs = [
-        "codegen_test.cc",
+        "codegen_decoder_test.cc",
+    ],
+    deps = [
+        ":codegen_test_proto_cc.pwpb",
+        ":pw_protobuf",
+        "//pw_span",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "codegen_encoder_test",
+    srcs = [
+        "codegen_encoder_test.cc",
     ],
     deps = [
         ":codegen_test_proto_cc.pwpb",

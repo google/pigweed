@@ -154,7 +154,12 @@ template("_pw_pwpb_proto_library") {
     forward_variables_from(invoker, _forwarded_vars)
     public_configs = [ ":$target_name._include_path" ]
     deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
-    public_deps = [ dir_pw_protobuf ] + invoker.deps
+    public_deps = [
+                    dir_pw_assert,
+                    dir_pw_protobuf,
+                    dir_pw_result,
+                    dir_pw_status,
+                  ] + invoker.deps
     sources = invoker.outputs
     public = filter_include(sources, [ "*.pwpb.h" ])
   }

@@ -10,7 +10,7 @@ the Protocol Buffer wire format.
 
   The protobuf module is a work in progress. Wire format encoding and decoding
   is supported, though the APIs are not final. C++ code generation exists for
-  encoding, but not decoding.
+  encoding and decoding, but does not cover all message types.
 
 ------
 Design
@@ -174,12 +174,13 @@ encountered. This status can be accessed via ``StreamEncoder::status()``.
 
 Codegen
 =======
-pw_protobuf encoder codegen integration is supported in GN, Bazel, and CMake.
-The codegen is just a light wrapper around the ``StreamEncoder`` and
-``MemoryEncoder`` objects, providing named helper functions to write proto
-fields rather than requiring that field numbers are directly passed to an
-encoder. Namespaced proto enums are also generated, and used as the arguments
-when writing enum fields of a proto message.
+pw_protobuf codegen integration is supported in GN, Bazel, and CMake.
+The codegen is just a light wrapper around the ``StreamEncoder``,
+``MemoryEncoder``, and ``StreamDecoder`` objects, providing named helper
+functions to write and read proto fields rather than requiring that field
+numbers are directly passed to an encoder. Namespaced proto enums are also
+generated, and used as the arguments when writing and reading enum fields of a
+proto message.
 
 All generated messages provide a ``Fields`` enum that can be used directly for
 out-of-band encoding, or with the ``pw::protobuf::Decoder``.
@@ -208,6 +209,15 @@ Example ``BUILD.gn``:
 
   pw_source_set("example_client") {
     sources = [ "example_client.cc" ]
+    deps = [
+      ":pet_daycare_protos.pwpb",
+      dir_pw_bytes,
+      dir_pw_stream,
+    ]
+  }
+
+  pw_source_set("example_server") {
+    sources = [ "example_server.cc" ]
     deps = [
       ":pet_daycare_protos.pwpb",
       dir_pw_bytes,
@@ -261,6 +271,30 @@ Example ``example_client.cc``:
 
   if (!client.status().ok()) {
     PW_LOG_INFO("Failed to encode proto; %s", client.status().str());
+  }
+
+Example ``example_server.cc``:
+
+.. Code:: cpp
+
+  #include "pet_daycare_protos/client.pwpb.h"
+  #include "pw_protobuf/stream_decoder.h"
+  #include "pw_stream/sys_io_stream.h"
+  #include "pw_bytes/span.h"
+
+  pw::stream::SysIoReader sys_io_reader;
+  // The constructor is the same as a pw::protobuf::StreamDecoder.
+  fuzzy_friends::Client::StreamDecoder client(sys_io_reader);
+  {
+    fuzzy_friends::Pet::StreamDecoder pet1 = client.GetPetsDecoder();
+  }
+
+  {
+    fuzzy_friends::Pet::StreamDecoder pet2 = client.GetPetsDecoder();
+  }
+
+  if (!client.status().ok()) {
+    PW_LOG_INFO("Failed to decode proto; %s", client.status().str());
   }
 
 --------

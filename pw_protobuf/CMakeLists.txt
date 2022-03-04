@@ -102,9 +102,20 @@ pw_add_test(pw_protobuf.find_test
     pw_protobuf
 )
 
-pw_add_test(pw_protobuf.codegen_test
+pw_add_test(pw_protobuf.codegen_decoder_test
   SOURCES
-    codegen_test.cc
+    codegen_decoder_test.cc
+  DEPS
+    pw_protobuf
+    pw_protobuf.codegen_test_protos.pwpb
+  GROUPS
+    modules
+    pw_protobuf
+)
+
+pw_add_test(pw_protobuf.codegen_encoder_test
+  SOURCES
+    codegen_encoder_test.cc
   DEPS
     pw_protobuf
     pw_protobuf.codegen_test_protos.pwpb
