@@ -412,5 +412,56 @@ TEST_F(TrickleTest, LimitedFlushOverflowsToNextPayload) {
   EXPECT_EQ(entries_count, 3u);
 }
 
+TEST(RpcLogDrain, OnOpenCallbackCalled) {
+  // Create drain and log components.
+  const uint32_t drain_id = 1;
+  std::array<std::byte, kBufferSize> buffer;
+  sync::Mutex mutex;
+  RpcLogDrain drain(
+      drain_id,
+      buffer,
+      mutex,
+      RpcLogDrain::LogDrainErrorHandling::kCloseStreamOnWriterError,
+      nullptr);
+  RpcLogDrainMap drain_map(std::span(&drain, 1));
+  LogService log_service(drain_map);
+  std::array<std::byte, kBufferSize * 2> multisink_buffer;
+  multisink::MultiSink multisink(multisink_buffer);
+  multisink.AttachDrain(drain);
+
+  // Create server writer.
+  rpc::RawFakeChannelOutput<3> output;
+  rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
+  rpc::Server server(std::span(&channel, 1));
+  rpc::RawServerWriter writer =
+      rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
+          server, drain_id, log_service);
+
+  int callback_call_times = 0;
+  Function<void()> callback = [&callback_call_times]() {
+    ++callback_call_times;
+  };
+
+  // Callback not called when not set.
+  ASSERT_TRUE(writer.active());
+  ASSERT_EQ(drain.Open(writer), OkStatus());
+  EXPECT_EQ(callback_call_times, 0);
+
+  drain.set_on_open_callback(std::move(callback));
+
+  // Callback called when writer is open.
+  writer = rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
+      server, drain_id, log_service);
+  ASSERT_TRUE(writer.active());
+  ASSERT_EQ(drain.Open(writer), OkStatus());
+  EXPECT_EQ(callback_call_times, 1);
+
+  // Callback not called when writer is closed.
+  rpc::RawServerWriter closed_writer;
+  ASSERT_FALSE(closed_writer.active());
+  ASSERT_EQ(drain.Open(closed_writer), Status::FailedPrecondition());
+  EXPECT_EQ(callback_call_times, 1);
+}
+
 }  // namespace
 }  // namespace pw::log_rpc

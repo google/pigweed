@@ -47,7 +47,9 @@ log should be kept or dropped. This callback can be ``Filter::ShouldDropLog``.
 Depending on the product's requirements, create a thread to flush all
 ``RpcLogDrain``\s or one thread per drain. The thread(s) must continuously call
 ``RpcLogDrain::Flush()`` to pull entries from the ``MultiSink`` and send them to
-the log listeners.
+the log listeners. Alternatively, use ``RpcLogDrain::Trickle`` to control the
+rate of log entries streamed. Optionally, set up a callback to notify the
+thread(s) when a drain is open.
 
 Logging over RPC diagrams
 =========================
@@ -189,6 +191,9 @@ the output buffers if they don't have sufficient headroom.
 
 Calling ``OpenUnrequestedLogStream()`` is a convenient way to set up a log
 stream that is started without the need to receive an RCP request for logs.
+
+The ``RpcLogDrainThread`` sets up a callback for each drain, to be notified when
+a drain is opened and flushing must resume.
 
 ---------
 Log Drops

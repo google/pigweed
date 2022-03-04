@@ -50,6 +50,9 @@ Status RpcLogDrain::Open(rpc::RawServerWriter& writer) {
     return Status::AlreadyExists();
   }
   server_writer_ = std::move(writer);
+  if (on_open_callback_ != nullptr) {
+    on_open_callback_();
+  }
   return OkStatus();
 }
 

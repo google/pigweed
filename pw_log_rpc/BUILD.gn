@@ -102,6 +102,7 @@ pw_source_set("rpc_log_drain") {
     ":log_filter",
     "$dir_pw_assert",
     "$dir_pw_chrono:system_clock",
+    "$dir_pw_function",
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_log:protos.raw_rpc",
     "$dir_pw_multisink",

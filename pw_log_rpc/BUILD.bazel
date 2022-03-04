@@ -87,6 +87,7 @@ pw_cc_library(
     deps = [
         ":log_filter",
         "//pw_assert",
+        "//pw_function",
         "//pw_log:log_proto_cc.pwpb",
         "//pw_log:log_proto_cc.raw_rpc",
         "//pw_multisink",

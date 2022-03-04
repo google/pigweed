@@ -22,6 +22,7 @@
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
+#include "pw_function/function.h"
 #include "pw_log/proto/log.pwpb.h"
 #include "pw_log_rpc/log_filter.h"
 #include "pw_multisink/multisink.h"
@@ -104,7 +105,8 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
         sequence_id_(0),
         max_bundles_per_trickle_(max_bundles_per_trickle),
         trickle_delay_(trickle_delay),
-        no_writes_until_(chrono::SystemClock::now()) {
+        no_writes_until_(chrono::SystemClock::now()),
+        on_open_callback_(nullptr) {
     PW_ASSERT(log_entry_buffer.size_bytes() >= kMinEntryBufferSize);
   }
 
@@ -163,6 +165,13 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
     trickle_delay_ = trickle_delay;
   }
 
+  // Stores a function that is called when Open() is successful. Pass nulltpr to
+  // clear it. This is useful in cases where the owner of the drain needs to be
+  // notified that the drain was opened.
+  void set_on_open_callback(pw::Function<void()>&& callback) {
+    on_open_callback_ = std::move(callback);
+  }
+
  private:
   enum class LogDrainState {
     kCaughtUp,
@@ -189,6 +198,7 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   size_t max_bundles_per_trickle_;
   pw::chrono::SystemClock::duration trickle_delay_;
   pw::chrono::SystemClock::time_point no_writes_until_;
+  pw::Function<void()> on_open_callback_;
 };
 
 }  // namespace pw::log_rpc
