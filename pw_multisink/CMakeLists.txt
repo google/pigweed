@@ -16,7 +16,112 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_multisink_CONFIG)
 
-pw_auto_add_simple_module(pw_multisink
+pw_add_module_library(pw_multisink.config
+  HEADERS
+    public/pw_multisink/config.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     ${pw_multisink_CONFIG}
 )
+
+pw_add_module_library(pw_multisink
+  HEADERS
+    public/pw_multisink/multisink.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_bytes
+    pw_containers
+    pw_function
+    pw_multisink.config
+    pw_result
+    pw_ring_buffer
+    pw_status
+    pw_sync.interrupt_spin_lock
+    pw_sync.lock_annotations
+    pw_sync.mutex
+  SOURCES
+    multisink.cc
+  PRIVATE_DEPS
+    pw_assert
+    pw_log
+    pw_varint
+)
+
+pw_add_module_library(pw_multisink.util
+  HEADERS
+    public/pw_multisink/util.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log.protos.pwpb
+    pw_multisink
+    pw_status
+  SOURCES
+    util.cc
+  PRIVATE_DEPS
+    pw_bytes
+    pw_function
+)
+
+pw_add_module_library(pw_multisink.test_thread
+  HEADERS
+    public/pw_multisink/test_thread.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_thread.thread
+)
+
+# Tests that use threads.
+# To instantiate this test based on a thread backend, create a pw_add_test
+# target that depends on this pw_add_module_library and a pw_add_module_library
+# that provides the implementaiton of pw_multisink.test_thread. See
+# pw_multisink.stl_multisink_test as an example.
+pw_add_module_library(pw_multisink.multisink_threaded_test
+  SOURCES
+    multisink_threaded_test.cc
+  PRIVATE_DEPS
+    pw_multisink
+    pw_multisink.test_thread
+    pw_thread.thread
+    pw_thread.yield
+    pw_unit_test
+)
+
+pw_add_test(pw_multisink.multisink_test
+  SOURCES
+    multisink_test.cc
+  DEPS
+    pw_function
+    pw_multisink
+    pw_polyfill.cstddef
+    pw_polyfill.span
+    pw_status
+  GROUPS
+    modules
+    pw_multisink
+)
+
+pw_add_module_library(pw_multisink.stl_test_thread
+  SOURCES
+    stl_test_thread.cc
+  PRIVATE_DEPS
+    pw_multisink.test_thread
+    pw_thread.thread
+    pw_thread_stl.thread
+)
+
+if("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread")
+  pw_add_test(pw_multisink.stl_multisink_threaded_test
+    DEPS
+      pw_polyfill.cstddef
+      pw_polyfill.span
+      pw_multisink.multisink_threaded_test
+      pw_multisink.stl_test_thread
+    GROUPS
+      modules
+      pw_multisink
+  )
+endif()

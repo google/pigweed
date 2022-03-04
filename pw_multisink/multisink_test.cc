@@ -17,6 +17,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"

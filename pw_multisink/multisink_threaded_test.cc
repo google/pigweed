@@ -12,7 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <cstddef>
 #include <cstdint>
+#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_containers/vector.h"
