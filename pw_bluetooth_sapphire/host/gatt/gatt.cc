@@ -37,7 +37,11 @@ class Impl final : public GATT {
         bt_log(WARN, "gatt", "peer not registered: %s", bt_str(peer_id));
         return;
       }
-      iter->second.server()->SendNotification(service_id, chrc_id, value, /*indicate=*/true);
+      auto indication_cb = [](att::Result<> result) {
+        bt_log(TRACE, "gatt", "service changed indication complete: %s", bt_str(result));
+      };
+      iter->second.server()->SendNotification(service_id, chrc_id, value.view(),
+                                              std::move(indication_cb));
     };
 
     // Spin up Generic Attribute as the first service.
@@ -107,15 +111,15 @@ class Impl final : public GATT {
   }
 
   void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
-                        ::std::vector<uint8_t> value, bool indicate) override {
+                        ::std::vector<uint8_t> value, IndicationCallback indicate_cb) override {
     // There is nothing to do if the requested peer is not connected.
     auto iter = connections_.find(peer_id);
     if (iter == connections_.end()) {
       bt_log(TRACE, "gatt", "cannot notify disconnected peer: %s", bt_str(peer_id));
       return;
     }
-    iter->second.server()->SendNotification(service_id, chrc_id,
-                                            BufferView(value.data(), value.size()), indicate);
+    iter->second.server()->SendNotification(
+        service_id, chrc_id, BufferView(value.data(), value.size()), std::move(indicate_cb));
   }
 
   void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override {

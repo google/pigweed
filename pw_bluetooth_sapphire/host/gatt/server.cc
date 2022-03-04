@@ -64,39 +64,49 @@ Server::~Server() {
   att_->UnregisterHandler(exchange_mtu_id_);
 }
 
-void Server::SendNotification(IdType service_id, IdType chrc_id, BufferView value, bool indicate) {
+void Server::SendNotification(IdType service_id, IdType chrc_id, BufferView value,
+                              IndicationCallback indicate_cb) {
   auto buffer = NewSlabBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
   ZX_ASSERT(buffer);
 
   LocalServiceManager::ClientCharacteristicConfig config;
   if (!local_services_->GetCharacteristicConfig(service_id, chrc_id, peer_id_, &config)) {
     bt_log(TRACE, "gatt", "peer has not configured characteristic: %s", bt_str(peer_id_));
+    if (indicate_cb) {
+      indicate_cb(ToResult(HostError::kNotSupported));
+    }
     return;
   }
 
   // Make sure that the client has subscribed to the requested protocol method.
-  if ((indicate & !config.indicate) || (!indicate && !config.notify)) {
+  if ((indicate_cb && !config.indicate) || (!indicate_cb && !config.notify)) {
     bt_log(TRACE, "gatt", "peer has not enabled (%s): %s",
-           (indicate ? "indications" : "notifications"), bt_str(peer_id_));
+           (indicate_cb ? "indications" : "notifications"), bt_str(peer_id_));
+    if (indicate_cb) {
+      indicate_cb(ToResult(HostError::kNotSupported));
+    }
     return;
   }
 
-  att::PacketWriter writer(indicate ? att::kIndication : att::kNotification, buffer.get());
+  att::PacketWriter writer(indicate_cb ? att::kIndication : att::kNotification, buffer.get());
   auto rsp_params = writer.mutable_payload<att::AttributeData>();
   rsp_params->handle = htole16(config.handle);
   writer.mutable_payload_data().Write(value, sizeof(att::AttributeData));
 
-  if (!indicate) {
+  if (!indicate_cb) {
     att_->SendWithoutResponse(std::move(buffer));
     return;
   }
-
-  att_->StartTransaction(
-      std::move(buffer), [](const auto&) { bt_log(TRACE, "gatt", "got confirmation!"); },
-      [](att::Result<> status, att::Handle handle) {
-        bt_log(DEBUG, "gatt", "indication failed (result %s, handle: %#.4x)", bt_str(status),
-               handle);
-      });
+  auto success_cb = [indicate_cb = indicate_cb.share()](const auto&) mutable {
+    bt_log(DEBUG, "gatt", "got indication ACK");
+    indicate_cb(fitx::ok());
+  };
+  auto failure_cb = [indicate_cb = std::move(indicate_cb)](att::Result<> result,
+                                                           att::Handle handle) mutable {
+    bt_log(WARN, "gatt", "indication failed (result %s, handle: %#.4x)", bt_str(result), handle);
+    indicate_cb(result);
+  };
+  att_->StartTransaction(std::move(buffer), std::move(success_cb), std::move(failure_cb));
 }
 
 void Server::OnExchangeMTU(att::Bearer::TransactionId tid, const att::PacketReader& packet) {

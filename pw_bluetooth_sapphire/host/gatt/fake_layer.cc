@@ -90,7 +90,7 @@ void FakeLayer::UnregisterService(IdType service_id) {
 }
 
 void FakeLayer::SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
-                                 ::std::vector<uint8_t> value, bool indicate) {
+                                 ::std::vector<uint8_t> value, IndicationCallback indicate_cb) {
   // TODO: implement
 }
 

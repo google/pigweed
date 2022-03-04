@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/server.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -103,13 +104,17 @@ class GATT {
   // |chrc_id|: The GATT characteristic that will be notified.
   // |peer_id|: ID of the peer that the notification/indication will be sent to.
   // |value|: The attribute value that will be included in the notification.
-  // |indicate|: If true, an indication will be sent.
+  // |indicate_cb|: If nullptr, a notification will be sent. Otherwise, an
+  //   indication will be attempted, and |indicate_cb| will be resolved when
+  //   the indication is acknowledged by the peer or fails (e.g. if the peer is
+  //   not connected, not configured for indications, or fails to confirm the
+  //   indication within the ATT timeout of 30s (v5.3, Vol. 3, Part F 3.3.3)).
   //
-  // TODO(armansito): Revise this API to involve fewer lookups (fxbug.dev/809).
-  // TODO(armansito): Fix this to notify all registered peers when |peer_id| is
-  // empty (fxbug.dev/657).
+  // TODO(fxbug.dev/809): Revise this API to involve fewer lookups.
+  // TODO(fxbug.dev/657): Fix this to notify all registered peers when |peer_id| is
+  // empty.
   virtual void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
-                                ::std::vector<uint8_t> value, bool indicate) = 0;
+                                ::std::vector<uint8_t> value, IndicationCallback indicate_cb) = 0;
 
   // Sets a callback to run when certain local GATT database changes occur.  These changes are to
   // those database attributes which need to be persisted accross reconnects by bonded peers.  This

@@ -163,7 +163,14 @@ class GattServerServer::LocalServiceImpl
                    bool confirm) override {
     auto id = fidl_helpers::PeerIdFromString(std::move(peer_id));
     if (id) {
-      gatt()->SendNotification(id_, characteristic_id, *id, std::move(value), confirm);
+      bt::gatt::IndicationCallback indication_cb = nullptr;
+      if (confirm) {
+        indication_cb = [](bt::att::Result<> result) {
+          bt_log(DEBUG, "fidl", "indication result: %s", bt_str(result));
+        };
+      }
+      gatt()->SendNotification(id_, characteristic_id, *id, std::move(value),
+                               std::move(indication_cb));
     }
   }
 

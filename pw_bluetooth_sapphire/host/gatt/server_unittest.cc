@@ -2360,7 +2360,7 @@ TEST_F(ServerTest, TrySendNotificationNoCccConfig) {
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(svc_id, kTestChrcId, kTestValue, /*indicate=*/false);
+    server()->SendNotification(svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(sent);
@@ -2376,7 +2376,7 @@ TEST_F(ServerTest, TrySendNotificationConfiguredForIndicationsOnly) {
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate=*/false);
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(sent);
@@ -2396,7 +2396,7 @@ TEST_F(ServerTest, SendNotificationEmpty) {
   // clang-format on
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate=*/false);
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
   });
 
   EXPECT_TRUE(Expect(kExpected));
@@ -2418,7 +2418,7 @@ TEST_F(ServerTest, SendNotification) {
 
   async::PostTask(dispatcher(), [=] {
     server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue.view(),
-                               /*indicate=*/false);
+                               /*indicate_cb=*/nullptr);
   });
 
   EXPECT_TRUE(Expect(kExpected));
@@ -2432,11 +2432,15 @@ TEST_F(ServerTest, TrySendIndicationNoCccConfig) {
   auto send_cb = [&](auto) { sent = true; };
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
+  att::Result<> indicate_res = fitx::ok();
+  auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
+
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(svc_id, kTestChrcId, kTestValue, /*indicate=*/true);
+    server()->SendNotification(svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(sent);
+  EXPECT_EQ(fitx::failed(), indicate_res);
 }
 
 TEST_F(ServerTest, TrySendIndicationConfiguredForNotificationsOnly) {
@@ -2448,17 +2452,24 @@ TEST_F(ServerTest, TrySendIndicationConfiguredForNotificationsOnly) {
   auto send_cb = [&](auto) { sent = true; };
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
+  att::Result<> indicate_res = fitx::ok();
+  auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
+
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate=*/true);
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(sent);
+  EXPECT_EQ(fitx::failed(), indicate_res);
 }
 
 TEST_F(ServerTest, SendIndicationEmpty) {
   SvcIdAndChrcHandle registered =
       RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const BufferView kTestValue;
+
+  att::Result<> indicate_res = ToResult(HostError::kFailed);
+  auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
   // clang-format off
   const StaticByteBuffer kExpected{
@@ -2469,16 +2480,22 @@ TEST_F(ServerTest, SendIndicationEmpty) {
   // clang-format on
 
   async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, /*indicate=*/true);
+    server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   });
 
   EXPECT_TRUE(Expect(kExpected));
+  const StaticByteBuffer kIndicationConfirmation{att::kConfirmation};
+  fake_chan()->Receive(kIndicationConfirmation);
+  EXPECT_EQ(fitx::ok(), indicate_res);
 }
 
 TEST_F(ServerTest, SendIndication) {
   SvcIdAndChrcHandle registered =
       RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+
+  att::Result<> indicate_res = ToResult(HostError::kFailed);
+  auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
   // clang-format off
   const StaticByteBuffer kExpected{
@@ -2491,10 +2508,13 @@ TEST_F(ServerTest, SendIndication) {
 
   async::PostTask(dispatcher(), [=] {
     server()->SendNotification(registered.svc_id, kTestChrcId, kTestValue.view(),
-                               /*indicate=*/true);
+                               std::move(indicate_cb));
   });
 
   EXPECT_TRUE(Expect(kExpected));
+  const StaticByteBuffer kIndicationConfirmation{att::kConfirmation};
+  fake_chan()->Receive(kIndicationConfirmation);
+  EXPECT_EQ(fitx::ok(), indicate_res);
 }
 
 class ServerTestSecurity : public ServerTest {

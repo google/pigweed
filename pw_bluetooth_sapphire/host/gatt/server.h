@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_SERVER_H_
 
+#include <lib/fit/function.h>
+
 #include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
@@ -23,6 +25,7 @@ class PacketReader;
 }  // namespace att
 
 namespace gatt {
+using IndicationCallback = att::ResultCallback<>;
 
 // A GATT Server implements the server-role of the ATT protocol over a single
 // ATT Bearer. A unique Server instance should exist for each logical link that
@@ -39,12 +42,13 @@ class Server final {
          fbl::RefPtr<att::Bearer> bearer);
   ~Server();
 
-  // Sends a Handle-Value notification or indication PDU to the characteristic with ID |chrc_id|
-  // within the service with ID |service_id|. If |indicate| is true, an indication will be sent.
-  // Will not send the indication/notification if the peer hasn't configured it via the CCC.
-  // The underlying att::Bearer will disconnect the link if a confirmation is not received in a
-  // timely manner.
-  void SendNotification(IdType service_id, IdType chrc_id, BufferView value, bool indicate);
+  // Sends a Handle-Value notification or indication PDU with the given
+  // attribute handle. If |indicate_cb| is nullptr, a notification will be sent. Otherwise, an
+  // indication will be sent, and indicate_cb will be called when the indication is acknowledged
+  // or fails to be sent. The underlying att::Bearer will disconnect the link if a confirmation is
+  // not received in a timely manner.
+  void SendNotification(IdType service_id, IdType chrc_id, BufferView value,
+                        IndicationCallback indicate_cb);
 
  private:
   // ATT protocol request handlers:
