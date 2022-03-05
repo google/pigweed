@@ -286,11 +286,19 @@ Example ``example_server.cc``:
   // The constructor is the same as a pw::protobuf::StreamDecoder.
   fuzzy_friends::Client::StreamDecoder client(sys_io_reader);
   {
-    fuzzy_friends::Pet::StreamDecoder pet1 = client.GetPetsDecoder();
+    std::array<char, 32> name{};
+    std::array<char, 32> pet_type{};
+      fuzzy_friends::Pet::StreamDecoder pet1 = client.GetPetsDecoder();
+    pet1.ReadName(name);
+    pet1.ReadPetType(pet_type);
   }
 
   {
+    std::array<char, 32> name{};
+    std::array<char, 32> pet_type{};
     fuzzy_friends::Pet::StreamDecoder pet2 = client.GetPetsDecoder();
+    pet2.ReadName(name);
+    pet2.ReadPetType(pet_type);
   }
 
   if (!client.status().ok()) {
