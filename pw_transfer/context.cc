@@ -183,6 +183,9 @@ void Context::UpdateAndSendTransferParameters(TransmitAction action) {
   max_chunk_size_bytes_ = MaxWriteChunkSize(
       max_parameters_->max_chunk_size_bytes(), rpc_writer_->channel_id());
 
+  PW_LOG_INFO("Transfer rate: %u B/s",
+              static_cast<unsigned>(transfer_rate_.GetRateBytesPerSecond()));
+
   return SendTransferParameters(action);
 }
 
@@ -212,6 +215,8 @@ void Context::Initialize(const NewTransferEvent& new_transfer) {
   interchunk_delay_ = chrono::SystemClock::for_at_least(
       std::chrono::microseconds(kDefaultChunkDelayMicroseconds));
   next_timeout_ = kNoTimeout;
+
+  transfer_rate_.Reset();
 }
 
 void Context::HandleChunkEvent(const ChunkEvent& event) {
@@ -534,6 +539,8 @@ void Context::HandleReceivedData(const Chunk& chunk) {
       Finish(Status::DataLoss());
       return;
     }
+
+    transfer_rate_.Update(chunk.data.size());
   }
 
   // When the client sets remaining_bytes to 0, it indicates completion of the

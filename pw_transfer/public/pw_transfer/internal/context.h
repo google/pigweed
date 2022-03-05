@@ -20,13 +20,13 @@
 
 #include "pw_assert/assert.h"
 #include "pw_chrono/system_clock.h"
-#include "pw_chrono/system_timer.h"
 #include "pw_rpc/writer.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_transfer/internal/chunk.h"
 #include "pw_transfer/internal/config.h"
 #include "pw_transfer/internal/event.h"
+#include "pw_transfer/rate_estimate.h"
 
 namespace pw::transfer::internal {
 
@@ -301,6 +301,8 @@ class Context {
 
   // Timestamp at which the transfer will next time out, or kNoTimeout.
   chrono::SystemClock::time_point next_timeout_;
+
+  RateEstimate transfer_rate_;
 };
 
 }  // namespace pw::transfer::internal

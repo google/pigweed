@@ -79,7 +79,6 @@ pw_source_set("core") {
   public_deps = [
     ":config",
     "$dir_pw_chrono:system_clock",
-    "$dir_pw_chrono:system_timer",
     "$dir_pw_preprocessor",
     "$dir_pw_rpc:client",
     "$dir_pw_rpc/raw:client_api",
@@ -101,6 +100,7 @@ pw_source_set("core") {
   ]
   public = [
     "public/pw_transfer/handler.h",
+    "public/pw_transfer/rate_estimate.h",
     "public/pw_transfer/transfer_thread.h",
   ]
   sources = [
@@ -112,6 +112,7 @@ pw_source_set("core") {
     "public/pw_transfer/internal/context.h",
     "public/pw_transfer/internal/event.h",
     "public/pw_transfer/internal/server_context.h",
+    "rate_estimate.cc",
     "server_context.cc",
     "transfer_thread.cc",
   ]

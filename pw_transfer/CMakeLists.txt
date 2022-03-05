@@ -57,6 +57,7 @@ pw_add_module_library(pw_transfer.client
 pw_add_module_library(pw_transfer.core
   PUBLIC_DEPS
     pw_bytes
+    pw_chrono.system_clock
     pw_containers.intrusive_list
     pw_result
     pw_rpc.client
