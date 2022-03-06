@@ -17,7 +17,7 @@ import collections
 from enum import Enum
 import functools
 import logging
-from typing import Any, Callable, List, Optional, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING
 
 from prompt_toolkit.filters import has_focus
 from prompt_toolkit.layout import (
@@ -29,7 +29,6 @@ from prompt_toolkit.layout import (
     Window,
     WindowAlign,
 )
-from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseButton
 
 import pw_console.style
@@ -37,7 +36,6 @@ import pw_console.widgets.mouse_handlers
 
 if TYPE_CHECKING:
     # pylint: disable=ungrouped-imports
-    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from pw_console.window_manager import WindowManager
 
 _LOG = logging.getLogger(__package__)
@@ -53,21 +51,6 @@ DEFAULT_DISPLAY_MODE = DisplayMode.STACK
 
 # Weighted amount for adjusting window dimensions when enlarging and shrinking.
 _WINDOW_HEIGHT_ADJUST = 1
-
-
-class MouseHandlerWithOverride(MouseHandlers):
-    """
-    Two dimensional raster of callbacks for mouse events.
-    """
-    def set_mouse_handler_for_range(
-        self,
-        x_min: int,
-        x_max: int,
-        y_min: int,
-        y_max: int,
-        handler: Callable[[MouseEvent], 'NotImplementedOrNone'],
-    ) -> None:
-        return
 
 
 class WindowListHSplit(HSplit):
@@ -95,7 +78,8 @@ class WindowListHSplit(HSplit):
         # Is resize mode active?
         if self.parent_window_list.resize_mode:
             # Ignore future mouse_handler updates.
-            new_mouse_handlers = MouseHandlerWithOverride()
+            new_mouse_handlers = (
+                pw_console.widgets.mouse_handlers.EmptyMouseHandler())
             # Set existing mouse_handlers to the parent_window_list's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(
@@ -105,10 +89,10 @@ class WindowListHSplit(HSplit):
                 write_position.ypos + write_position.height,
                 self.parent_window_list.mouse_handler)
 
-        # Save the width and height for the current render pass. This will be
-        # used by the log pane to render the correct amount of log lines.
+        # Save the width, height, and draw position for the current render pass.
         self.parent_window_list.update_window_list_size(
-            write_position.width, write_position.height)
+            write_position.width, write_position.height, write_position.xpos,
+            write_position.ypos)
         # Continue writing content to the screen.
         super().write_to_screen(screen, new_mouse_handlers, write_position,
                                 parent_style, erase_bg, z_index)
@@ -129,6 +113,11 @@ class WindowList:
         self.current_window_list_height: int = 0
         self.last_window_list_width: int = 0
         self.last_window_list_height: int = 0
+
+        self.current_window_list_xposition: int = 0
+        self.last_window_list_xposition: int = 0
+        self.current_window_list_yposition: int = 0
+        self.last_window_list_yposition: int = 0
 
         self.display_mode = DEFAULT_DISPLAY_MODE
         self.active_panes: collections.deque = collections.deque()
@@ -153,6 +142,7 @@ class WindowList:
         available_height = self.current_window_list_height
         remaining_rows = available_height - sum(heights)
         window_index = 0
+
         # Distribute remaining unaccounted rows to each window in turn.
         while remaining_rows > 0:
             # 0 heights are hiden windows, only add +1 to visible windows.
@@ -297,7 +287,8 @@ class WindowList:
 
         self._set_window_heights(new_heights)
 
-    def update_window_list_size(self, width, height):
+    def update_window_list_size(self, width, height, xposition,
+                                yposition) -> None:
         """Save width and height of the repl pane for the current UI render
         pass."""
         if width:
@@ -306,6 +297,14 @@ class WindowList:
         if height:
             self.last_window_list_height = self.current_window_list_height
             self.current_window_list_height = height
+        if xposition:
+            self.last_window_list_xposition = (
+                self.current_window_list_xposition)
+            self.current_window_list_xposition = xposition
+        if yposition:
+            self.last_window_list_yposition = (
+                self.current_window_list_yposition)
+            self.current_window_list_yposition = yposition
 
         if (self.current_window_list_width != self.last_window_list_width
                 or self.current_window_list_height !=
@@ -449,17 +448,29 @@ class WindowList:
         if pane:
             self.adjust_pane_size(pane, -_WINDOW_HEIGHT_ADJUST)
 
-    def mouse_resize(self, _xpos, ypos):
+    def mouse_resize(self, _xpos, ypos) -> None:
+        if self.resize_target_pane_index is None:
+            return
+
         target_pane = self.active_panes[self.resize_target_pane_index]
 
         diff = ypos - self.resize_current_row
+        if not self.window_manager.vertical_window_list_spliting():
+            # The mouse ypos value includes rows from other window lists. If
+            # horizontal splitting is active we need to check the diff relative
+            # to the starting y position row. Subtract the start y position and
+            # an additional 1 for the top menu bar.
+            diff -= self.current_window_list_yposition - 1
+
         if diff == 0:
             return
         self.adjust_pane_size(target_pane, diff)
         self._update_resize_current_row()
         self.application.redraw_ui()
 
-    def adjust_pane_size(self, pane, diff: int = _WINDOW_HEIGHT_ADJUST):
+    def adjust_pane_size(self,
+                         pane,
+                         diff: int = _WINDOW_HEIGHT_ADJUST) -> None:
         """Increase or decrease a given pane's height."""
         # Placeholder next_pane value to allow setting width and height without
         # any consequences if there is no next visible pane.

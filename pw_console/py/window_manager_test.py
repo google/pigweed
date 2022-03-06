@@ -41,18 +41,46 @@ def _create_console_app(logger_count=2):
     return console_app
 
 
+_WINDOW_MANAGER_WIDTH = 80
+_WINDOW_MANAGER_HEIGHT = 30
 _DEFAULT_WINDOW_WIDTH = 10
 _DEFAULT_WINDOW_HEIGHT = 10
 
 
 def _window_list_widths(window_manager):
+    window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
+                                              _WINDOW_MANAGER_HEIGHT)
+
     return [
         window_list.width.preferred
         for window_list in window_manager.window_lists
     ]
 
 
+def _window_list_heights(window_manager):
+    window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
+                                              _WINDOW_MANAGER_HEIGHT)
+
+    return [
+        window_list.height.preferred
+        for window_list in window_manager.window_lists
+    ]
+
+
+def _window_pane_widths(window_manager, window_list_index=0):
+    window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
+                                              _WINDOW_MANAGER_HEIGHT)
+
+    return [
+        pane.width.preferred
+        for pane in window_manager.window_lists[window_list_index].active_panes
+    ]
+
+
 def _window_pane_heights(window_manager, window_list_index=0):
+    window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
+                                              _WINDOW_MANAGER_HEIGHT)
+
     return [
         pane.height.preferred
         for pane in window_manager.window_lists[window_list_index].active_panes
@@ -143,15 +171,16 @@ class TestWindowManager(unittest.TestCase):
             # Should have one window list split of size 50.
             self.assertEqual(
                 _window_list_widths(window_manager),
-                [_DEFAULT_WINDOW_WIDTH],
+                [_WINDOW_MANAGER_WIDTH],
             )
 
             # Move one pane to the right, creating a new window_list split.
             window_manager.move_pane_right()
-            self.assertEqual(
-                _window_list_widths(window_manager),
-                [_DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_WIDTH],
-            )
+
+            self.assertEqual(_window_list_widths(window_manager), [
+                int(_WINDOW_MANAGER_WIDTH / 2),
+                int(_WINDOW_MANAGER_WIDTH / 2),
+            ])
 
             # Move another pane to the right twice, creating a third
             # window_list split.
@@ -166,9 +195,9 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    _DEFAULT_WINDOW_WIDTH,
-                    _DEFAULT_WINDOW_WIDTH,
-                    _DEFAULT_WINDOW_WIDTH,
+                    int(_WINDOW_MANAGER_WIDTH / 3),
+                    int(_WINDOW_MANAGER_WIDTH / 3),
+                    int(_WINDOW_MANAGER_WIDTH / 3),
                 ],
             )
 
@@ -183,9 +212,11 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    _DEFAULT_WINDOW_WIDTH,
-                    _DEFAULT_WINDOW_WIDTH - (2 * _WINDOW_SPLIT_ADJUST),
-                    _DEFAULT_WINDOW_WIDTH + (2 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3),
+                    int(_WINDOW_MANAGER_WIDTH / 3) -
+                    (2 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) +
+                    (2 * _WINDOW_SPLIT_ADJUST),
                 ],
             )
 
@@ -197,9 +228,11 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    _DEFAULT_WINDOW_WIDTH - (1 * _WINDOW_SPLIT_ADJUST),
-                    _DEFAULT_WINDOW_WIDTH + (1 * _WINDOW_SPLIT_ADJUST),
-                    _DEFAULT_WINDOW_WIDTH,
+                    int(_WINDOW_MANAGER_WIDTH / 3) -
+                    (1 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) +
+                    (1 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3),
                 ],
             )
 
@@ -211,9 +244,11 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    _DEFAULT_WINDOW_WIDTH,
-                    _DEFAULT_WINDOW_WIDTH + (1 * _WINDOW_SPLIT_ADJUST),
-                    _DEFAULT_WINDOW_WIDTH - (1 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3),
+                    int(_WINDOW_MANAGER_WIDTH / 3) +
+                    (1 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) -
+                    (1 * _WINDOW_SPLIT_ADJUST),
                 ],
             )
 
@@ -225,9 +260,11 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    _DEFAULT_WINDOW_WIDTH,
-                    _DEFAULT_WINDOW_WIDTH - (3 * _WINDOW_SPLIT_ADJUST),
-                    _DEFAULT_WINDOW_WIDTH + (3 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3),
+                    int(_WINDOW_MANAGER_WIDTH / 3) -
+                    (3 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) +
+                    (3 * _WINDOW_SPLIT_ADJUST),
                 ],
             )
 
@@ -235,13 +272,17 @@ class TestWindowManager(unittest.TestCase):
             _target_list_and_pane(window_manager, 1, 0)
             # Move the middle window pane left
             window_manager.move_pane_left()
+            # This is called on the next render pass
+            window_manager.rebalance_window_list_sizes()
             # Middle split should be removed
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    _DEFAULT_WINDOW_WIDTH,
+                    int(_WINDOW_MANAGER_WIDTH / 2) -
+                    (3 * _WINDOW_SPLIT_ADJUST),
                     # This split is removed
-                    _DEFAULT_WINDOW_WIDTH + (3 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 2) +
+                    (2 * _WINDOW_SPLIT_ADJUST),
                 ],
             )
 
@@ -250,8 +291,8 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    _DEFAULT_WINDOW_WIDTH,
-                    _DEFAULT_WINDOW_WIDTH,
+                    int(_WINDOW_MANAGER_WIDTH / 2),
+                    int(_WINDOW_MANAGER_WIDTH / 2),
                 ],
             )
 
@@ -414,7 +455,7 @@ class TestWindowManager(unittest.TestCase):
             )
 
     def test_focus_next_and_previous_pane(self) -> None:
-        """Test getting the window list for a given pane."""
+        """Test switching focus to next and previous window panes."""
         with create_app_session(output=FakeOutput()):
             console_app = _create_console_app(logger_count=4)
 
@@ -599,6 +640,160 @@ class TestWindowManager(unittest.TestCase):
             # Reset
             window_manager.window_lists[1].switch_to_tab.reset_mock()
             console_app.focus_on_container.reset_mock()
+
+    def test_resize_vertical_splits(self) -> None:
+        """Test resizing window splits."""
+        with create_app_session(output=FakeOutput()):
+            console_app = _create_console_app(logger_count=4)
+            window_manager = console_app.window_manager
+
+            # Required before moving windows
+            window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
+                                                      _WINDOW_MANAGER_HEIGHT)
+            window_manager.create_root_container()
+
+            # Vertical split by default
+            self.assertTrue(window_manager.vertical_window_list_spliting())
+
+            # Move windows to create 3 splits
+            _target_list_and_pane(window_manager, 0, 0)
+            window_manager.move_pane_right()
+            _target_list_and_pane(window_manager, 0, 0)
+            window_manager.move_pane_right()
+            _target_list_and_pane(window_manager, 1, 1)
+            window_manager.move_pane_right()
+
+            # Check windows are where expected
+            self.assertEqual(
+                _window_pane_titles(window_manager),
+                [
+                    [
+                        'Log1 - test_log1',
+                        'Log0 - test_log0',
+                        'Python Repl - ',
+                    ],
+                    [
+                        'Log2 - test_log2',
+                    ],
+                    [
+                        'Log3 - test_log3',
+                    ],
+                ],
+            )
+
+            # Check initial split widths
+            widths = [
+                int(_WINDOW_MANAGER_WIDTH / 3),
+                int(_WINDOW_MANAGER_WIDTH / 3),
+                int(_WINDOW_MANAGER_WIDTH / 3),
+            ]
+            self.assertEqual(_window_list_widths(window_manager), widths)
+
+            # Decrease size of first split
+            window_manager.adjust_split_size(window_manager.window_lists[0],
+                                             -4)
+            widths = [
+                widths[0] - (4 * _WINDOW_SPLIT_ADJUST),
+                widths[1] + (4 * _WINDOW_SPLIT_ADJUST),
+                widths[2],
+            ]
+            self.assertEqual(_window_list_widths(window_manager), widths)
+
+            # Increase size of last split
+            widths = [
+                widths[0],
+                widths[1] - (4 * _WINDOW_SPLIT_ADJUST),
+                widths[2] + (4 * _WINDOW_SPLIT_ADJUST),
+            ]
+            window_manager.adjust_split_size(window_manager.window_lists[2], 4)
+            self.assertEqual(_window_list_widths(window_manager), widths)
+
+            # Check heights are all the same
+            window_manager.rebalance_window_list_sizes()
+            heights = [
+                int(_WINDOW_MANAGER_HEIGHT),
+                int(_WINDOW_MANAGER_HEIGHT),
+                int(_WINDOW_MANAGER_HEIGHT),
+            ]
+            self.assertEqual(_window_list_heights(window_manager), heights)
+
+    def test_resize_horizontal_splits(self) -> None:
+        """Test resizing window splits."""
+        with create_app_session(output=FakeOutput()):
+            console_app = _create_console_app(logger_count=4)
+            window_manager = console_app.window_manager
+
+            # We want horizontal window splits
+            window_manager.vertical_window_list_spliting = (MagicMock(
+                return_value=False))
+            self.assertFalse(window_manager.vertical_window_list_spliting())
+
+            # Required before moving windows
+            window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
+                                                      _WINDOW_MANAGER_HEIGHT)
+            window_manager.create_root_container()
+
+            # Move windows to create 3 splits
+            _target_list_and_pane(window_manager, 0, 0)
+            window_manager.move_pane_right()
+            _target_list_and_pane(window_manager, 0, 0)
+            window_manager.move_pane_right()
+            _target_list_and_pane(window_manager, 1, 1)
+            window_manager.move_pane_right()
+
+            # Check windows are where expected
+            self.assertEqual(
+                _window_pane_titles(window_manager),
+                [
+                    [
+                        'Log1 - test_log1',
+                        'Log0 - test_log0',
+                        'Python Repl - ',
+                    ],
+                    [
+                        'Log2 - test_log2',
+                    ],
+                    [
+                        'Log3 - test_log3',
+                    ],
+                ],
+            )
+
+            # Check initial split widths
+            heights = [
+                int(_WINDOW_MANAGER_HEIGHT / 3),
+                int(_WINDOW_MANAGER_HEIGHT / 3),
+                int(_WINDOW_MANAGER_HEIGHT / 3),
+            ]
+            self.assertEqual(_window_list_heights(window_manager), heights)
+
+            # Decrease size of first split
+            window_manager.adjust_split_size(window_manager.window_lists[0],
+                                             -4)
+            heights = [
+                heights[0] - (4 * _WINDOW_SPLIT_ADJUST),
+                heights[1] + (4 * _WINDOW_SPLIT_ADJUST),
+                heights[2],
+            ]
+            self.assertEqual(_window_list_heights(window_manager), heights)
+
+            # Increase size of last split
+            heights = [
+                heights[0],
+                heights[1] - (4 * _WINDOW_SPLIT_ADJUST),
+                heights[2] + (4 * _WINDOW_SPLIT_ADJUST),
+            ]
+            window_manager.adjust_split_size(window_manager.window_lists[2], 4)
+            self.assertEqual(_window_list_heights(window_manager), heights)
+
+            # Check widths are all the same
+            window_manager.rebalance_window_list_sizes()
+            widths = [
+                int(_WINDOW_MANAGER_WIDTH),
+                int(_WINDOW_MANAGER_WIDTH),
+                int(_WINDOW_MANAGER_WIDTH),
+            ]
+            self.assertEqual(_window_list_widths(window_manager), widths)
 
 
 if __name__ == '__main__':

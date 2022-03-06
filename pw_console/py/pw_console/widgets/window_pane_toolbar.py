@@ -39,8 +39,8 @@ import pw_console.widgets.mouse_handlers
 _LOG = logging.getLogger(__package__)
 
 
-class ResizeHandle(FormattedTextControl):
-    """Button to initiate window resize drag events."""
+class WindowPaneResizeHandle(FormattedTextControl):
+    """Button to initiate window pane resize drag events."""
     def __init__(self, parent_window_pane: Any, *args, **kwargs) -> None:
         self.parent_window_pane = parent_window_pane
         super().__init__(*args, **kwargs)
@@ -134,7 +134,7 @@ class WindowPaneToolbar:
 
     def get_resize_handle(self):
         return pw_console.style.get_pane_indicator(self.focus_check_container,
-                                                   '====',
+                                                   '─══─',
                                                    hide_indicator=True)
 
     def add_button(self, button: ToolbarButton):
@@ -219,7 +219,7 @@ class WindowPaneToolbar:
         ]
         if self.parent_window_pane and include_resize_handle:
             resize_handle = Window(
-                content=ResizeHandle(
+                content=WindowPaneResizeHandle(
                     self.parent_window_pane,
                     self.get_resize_handle,
                 ),

@@ -19,26 +19,139 @@ import functools
 from itertools import chain
 import logging
 import operator
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import (
     Dimension,
     HSplit,
     VSplit,
+    FormattedTextControl,
+    Window,
+    WindowAlign,
 )
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseButton
 from prompt_toolkit.widgets import MenuItem
 
 from pw_console.console_prefs import ConsolePrefs, error_unknown_window
 from pw_console.log_pane import LogPane
 import pw_console.widgets.checkbox
 from pw_console.widgets import WindowPaneToolbar
+import pw_console.widgets.mouse_handlers
 from pw_console.window_list import WindowList, DisplayMode
 
 _LOG = logging.getLogger(__package__)
 
-# Weighted amount for adjusting window dimensions when enlarging and shrinking.
+# Amount for adjusting window dimensions when enlarging and shrinking.
 _WINDOW_SPLIT_ADJUST = 1
+
+
+class WindowListResizeHandle(FormattedTextControl):
+    """Button to initiate window list resize drag events."""
+    def __init__(self, window_manager, window_list: Any, *args,
+                 **kwargs) -> None:
+        self.window_manager = window_manager
+        self.window_list = window_list
+        super().__init__(*args, **kwargs)
+
+    def mouse_handler(self, mouse_event: MouseEvent):
+        """Mouse handler for this control."""
+        # Start resize mouse drag event
+        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+            self.window_manager.start_resize(self.window_list)
+            # Mouse event handled, return None.
+            return None
+
+        # Mouse event not handled, return NotImplemented.
+        return NotImplemented
+
+
+class WindowManagerVSplit(VSplit):
+    """PromptToolkit VSplit class with some additions for size and mouse resize.
+
+    This VSplit has a write_to_screen function that saves the width and height
+    of the container for the current render pass. It also handles overriding
+    mouse handlers for triggering window resize adjustments.
+    """
+    def __init__(self, parent_window_manager, *args, **kwargs):
+        # Save a reference to the parent window pane.
+        self.parent_window_manager = parent_window_manager
+        super().__init__(*args, **kwargs)
+
+    def write_to_screen(
+        self,
+        screen,
+        mouse_handlers,
+        write_position,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: Optional[int],
+    ) -> None:
+        new_mouse_handlers = mouse_handlers
+        # Is resize mode active?
+        if self.parent_window_manager.resize_mode:
+            # Ignore future mouse_handler updates.
+            new_mouse_handlers = (
+                pw_console.widgets.mouse_handlers.EmptyMouseHandler())
+            # Set existing mouse_handlers to the parent_window_managers's
+            # mouse_handler. This will handle triggering resize events.
+            mouse_handlers.set_mouse_handler_for_range(
+                write_position.xpos,
+                write_position.xpos + write_position.width,
+                write_position.ypos,
+                write_position.ypos + write_position.height,
+                self.parent_window_manager.mouse_handler)
+
+        # Save the width and height for the current render pass.
+        self.parent_window_manager.update_window_manager_size(
+            write_position.width, write_position.height)
+        # Continue writing content to the screen.
+        super().write_to_screen(screen, new_mouse_handlers, write_position,
+                                parent_style, erase_bg, z_index)
+
+
+class WindowManagerHSplit(HSplit):
+    """PromptToolkit HSplit class with some additions for size and mouse resize.
+
+    This HSplit has a write_to_screen function that saves the width and height
+    of the container for the current render pass. It also handles overriding
+    mouse handlers for triggering window resize adjustments.
+    """
+    def __init__(self, parent_window_manager, *args, **kwargs):
+        # Save a reference to the parent window pane.
+        self.parent_window_manager = parent_window_manager
+        super().__init__(*args, **kwargs)
+
+    def write_to_screen(
+        self,
+        screen,
+        mouse_handlers,
+        write_position,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: Optional[int],
+    ) -> None:
+        new_mouse_handlers = mouse_handlers
+        # Is resize mode active?
+        if self.parent_window_manager.resize_mode:
+            # Ignore future mouse_handler updates.
+            new_mouse_handlers = (
+                pw_console.widgets.mouse_handlers.EmptyMouseHandler())
+            # Set existing mouse_handlers to the parent_window_managers's
+            # mouse_handler. This will handle triggering resize events.
+            mouse_handlers.set_mouse_handler_for_range(
+                write_position.xpos,
+                write_position.xpos + write_position.width,
+                write_position.ypos,
+                write_position.ypos + write_position.height,
+                self.parent_window_manager.mouse_handler)
+
+        # Save the width and height for the current render pass.
+        self.parent_window_manager.update_window_manager_size(
+            write_position.width, write_position.height)
+        # Continue writing content to the screen.
+        super().write_to_screen(screen, new_mouse_handlers, write_position,
+                                parent_style, erase_bg, z_index)
 
 
 class WindowManager:
@@ -47,7 +160,7 @@ class WindowManager:
     This class handles adding/removing/resizing windows and rendering the
     prompt_toolkit split layout."""
 
-    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
 
     def __init__(
         self,
@@ -59,6 +172,79 @@ class WindowManager:
         self.key_bindings = self._create_key_bindings()
         self.top_toolbars: List[WindowPaneToolbar] = []
         self.bottom_toolbars: List[WindowPaneToolbar] = []
+
+        self.resize_mode: bool = False
+        self.resize_target_window_list_index: Optional[int] = None
+        self.resize_target_window_list: Optional[int] = None
+        self.resize_current_row: int = 0
+        self.resize_current_column: int = 0
+
+        self.current_window_manager_width: int = 0
+        self.current_window_manager_height: int = 0
+        self.last_window_manager_width: int = 0
+        self.last_window_manager_height: int = 0
+
+    def update_window_manager_size(self, width, height):
+        """Save width and height for the current UI render pass."""
+        if width:
+            self.last_window_manager_width = self.current_window_manager_width
+            self.current_window_manager_width = width
+        if height:
+            self.last_window_manager_height = self.current_window_manager_height
+            self.current_window_manager_height = height
+
+        if (self.current_window_manager_width != self.last_window_manager_width
+                or self.current_window_manager_height !=
+                self.last_window_manager_height):
+            self.rebalance_window_list_sizes()
+
+    def _set_window_list_sizes(self, new_heights: List[int],
+                               new_widths: List[int]) -> None:
+        for window_list in self.window_lists:
+            window_list.height = Dimension(preferred=new_heights[0])
+            new_heights = new_heights[1:]
+            window_list.width = Dimension(preferred=new_widths[0])
+            new_widths = new_widths[1:]
+
+    def vertical_window_list_spliting(self) -> bool:
+        return self.application.prefs.window_column_split_method == 'vertical'
+
+    def rebalance_window_list_sizes(self) -> None:
+        """Adjust relative split sizes to fill available space."""
+        available_height = self.current_window_manager_height
+        available_width = self.current_window_manager_width
+
+        old_heights = [w.height.preferred for w in self.window_lists]
+        old_widths = [w.width.preferred for w in self.window_lists]
+
+        # Make sure the old totals are not zero.
+        old_height_total = max(sum(old_heights), 1)
+        old_width_total = max(sum(old_widths), 1)
+
+        height_percentages = [
+            value / old_height_total for value in old_heights
+        ]
+        width_percentages = [value / old_width_total for value in old_widths]
+
+        new_heights = [
+            int(available_height * percentage)
+            for percentage in height_percentages
+        ]
+        new_widths = [
+            int(available_width * percentage)
+            for percentage in width_percentages
+        ]
+
+        if self.vertical_window_list_spliting():
+            new_heights = [
+                self.current_window_manager_height for h in new_heights
+            ]
+        else:
+            new_widths = [
+                self.current_window_manager_width for h in new_widths
+            ]
+
+        self._set_window_list_sizes(new_heights, new_widths)
 
     def _create_key_bindings(self) -> KeyBindings:
         bindings = KeyBindings()
@@ -137,31 +323,56 @@ class WindowManager:
         self.bottom_toolbars.append(toolbar)
 
     def create_root_container(self):
-        """Create a vertical or horizontal split container for all active
-        panes."""
+        """Create vertical or horizontal splits for all active panes."""
         self.delete_empty_window_lists()
 
         for window_list in self.window_lists:
             window_list.update_container()
 
-        window_containers = [
-            window_list.container for window_list in self.window_lists
-        ]
+        vertical_split = self.vertical_window_list_spliting()
 
-        if self.application.prefs.window_column_split_method == 'horizontal':
-            split = HSplit(
-                window_containers,
-                padding=1,
-                padding_char='─',
-                padding_style='class:pane_separator',
-            )
-        else:  # vertical
-            split = VSplit(
-                window_containers,
-                padding=1,
-                padding_char='│',
-                padding_style='class:pane_separator',
-            )
+        window_containers = []
+        for i, window_list in enumerate(self.window_lists):
+            window_containers.append(window_list.container)
+            if (i + 1) >= len(self.window_lists):
+                continue
+
+            if vertical_split:
+                separator_padding = Window(
+                    content=WindowListResizeHandle(self, window_list, "│"),
+                    char='│',
+                    width=1,
+                    dont_extend_height=False,
+                )
+                resize_separator = HSplit(
+                    [
+                        separator_padding,
+                        Window(
+                            content=WindowListResizeHandle(
+                                self, window_list, "║\n║\n║"),
+                            char='│',
+                            width=1,
+                            dont_extend_height=True,
+                        ),
+                        separator_padding,
+                    ],
+                    style='class:pane_separator',
+                )
+            else:
+                resize_separator = Window(
+                    content=WindowListResizeHandle(self, window_list, "════"),
+                    char='─',
+                    height=1,
+                    align=WindowAlign.CENTER,
+                    dont_extend_width=False,
+                    style='class:pane_separator',
+                )
+            window_containers.append(resize_separator)
+
+        if vertical_split:
+            split = WindowManagerVSplit(self, window_containers)
+        else:
+            split = WindowManagerHSplit(self, window_containers)
 
         split_items = []
         split_items.extend(self.top_toolbars)
@@ -184,7 +395,7 @@ class WindowManager:
                 break
         return active_window_list, active_pane
 
-    def window_list_index(self, window_list: WindowList):
+    def window_list_index(self, window_list: WindowList) -> Optional[int]:
         index = None
         try:
             index = self.window_lists.index(window_list)
@@ -211,7 +422,7 @@ class WindowManager:
         """Focus on the next visible window pane or tab."""
         active_window_list, active_pane = (
             self._get_active_window_list_and_pane())
-        if not active_window_list:
+        if active_window_list is None:
             return
 
         # Total count of window lists and panes
@@ -220,6 +431,8 @@ class WindowManager:
 
         # Get currently focused indices
         active_window_list_index = self.window_list_index(active_window_list)
+        if active_window_list_index is None:
+            return
         active_pane_index = active_window_list.pane_index(active_pane)
 
         increment = -1 if reverse_order else 1
@@ -286,6 +499,7 @@ class WindowManager:
             # Add the new WindowList
             target_window_list = WindowList(self)
             self.window_lists.appendleft(target_window_list)
+            self.reset_split_sizes()
             # New index is 0
             target_window_list_index = 0
 
@@ -295,6 +509,7 @@ class WindowManager:
         # Move the pane
         active_window_list.remove_pane_no_checks(active_pane)
         target_window_list.add_pane(active_pane, add_at_beginning=True)
+        target_window_list.reset_pane_sizes()
         self.delete_empty_window_lists()
 
     def move_pane_right(self):
@@ -312,6 +527,7 @@ class WindowManager:
             # Add a new WindowList
             target_window_list = WindowList(self)
             self.window_lists.append(target_window_list)
+            self.reset_split_sizes()
 
         # Get the destination window_list
         target_window_list = self.window_lists[target_window_list_index]
@@ -319,6 +535,7 @@ class WindowManager:
         # Move the pane
         active_window_list.remove_pane_no_checks(active_pane)
         target_window_list.add_pane(active_pane, add_at_beginning=True)
+        target_window_list.reset_pane_sizes()
         self.delete_empty_window_lists()
 
     def move_pane_up(self):
@@ -379,20 +596,22 @@ class WindowManager:
 
     def reset_split_sizes(self):
         """Reset all active pane width and height to defaults"""
-        for window_list in self.window_lists:
-            window_list.height = Dimension(preferred=10)
-            window_list.width = Dimension(preferred=10)
+        available_height = self.current_window_manager_height
+        available_width = self.current_window_manager_width
+        old_heights = [w.height.preferred for w in self.window_lists]
+        old_widths = [w.width.preferred for w in self.window_lists]
+        new_heights = [int(available_height / len(old_heights))
+                       ] * len(old_heights)
+        new_widths = [int(available_width / len(old_widths))] * len(old_widths)
 
-    def adjust_split_size(self,
-                          window_list: WindowList,
-                          diff: int = _WINDOW_SPLIT_ADJUST):
-        """Increase or decrease a given window_list's vertical split width."""
-        # No need to resize if only one split.
-        if len(self.window_lists) < 2:
-            return
+        self._set_window_list_sizes(new_heights, new_widths)
 
-        # Get the next split to subtract a weight value from.
+    def _get_next_window_list_for_resizing(
+            self, window_list: WindowList) -> Optional[WindowList]:
         window_list_index = self.window_list_index(window_list)
+        if window_list_index is None:
+            return None
+
         next_window_list_index = ((window_list_index + 1) %
                                   len(self.window_lists))
 
@@ -401,31 +620,62 @@ class WindowManager:
             next_window_list_index = window_list_index - 1
 
         next_window_list = self.window_lists[next_window_list_index]
+        return next_window_list
 
-        # Get current weight values
-        old_width = window_list.width.preferred
-        next_old_width = next_window_list.width.preferred  # type: ignore
+    def adjust_split_size(self,
+                          window_list: WindowList,
+                          diff: int = _WINDOW_SPLIT_ADJUST) -> None:
+        """Increase or decrease a given window_list's vertical split width."""
+        # No need to resize if only one split.
+        if len(self.window_lists) < 2:
+            return
+
+        # Get the next split to subtract from.
+        next_window_list = self._get_next_window_list_for_resizing(window_list)
+        if not next_window_list:
+            return
+
+        if self.vertical_window_list_spliting():
+            # Get current width
+            old_value = window_list.width.preferred
+            next_old_value = next_window_list.width.preferred  # type: ignore
+        else:
+            # Get current height
+            old_value = window_list.height.preferred
+            next_old_value = next_window_list.height.preferred  # type: ignore
 
         # Add to the current split
-        new_width = old_width + diff
-        if new_width <= 0:
-            new_width = old_width
+        new_value = old_value + diff
+        if new_value <= 0:
+            new_value = old_value
 
         # Subtract from the next split
-        next_new_width = next_old_width - diff
-        if next_new_width <= 0:
-            next_new_width = next_old_width
+        next_new_value = next_old_value - diff
+        if next_new_value <= 0:
+            next_new_value = next_old_value
 
-        # Set new weight values
-        window_list.width.preferred = new_width
-        next_window_list.width.preferred = next_new_width  # type: ignore
+        # If new height is too small or no change, make no adjustments.
+        if new_value < 3 or next_new_value < 3 or old_value == new_value:
+            return
+
+        if self.vertical_window_list_spliting():
+            # Set new width
+            window_list.width.preferred = new_value
+            next_window_list.width.preferred = next_new_value  # type: ignore
+        else:
+            # Set new height
+            window_list.height.preferred = new_value
+            next_window_list.height.preferred = next_new_value  # type: ignore
+            window_list.rebalance_window_heights()
+            next_window_list.rebalance_window_heights()
 
     def toggle_pane(self, pane):
         """Toggle a pane on or off."""
         window_list, _pane_index = (
             self._find_window_list_and_pane_index(pane))
 
-        # Don't hide if tabbed mode is enabled, the container can't be rendered.
+        # Don't hide the window if tabbed mode is enabled. Switching to a
+        # separate tab is preffered.
         if window_list.display_mode == DisplayMode.TABBED:
             return
         pane.show_pane = not pane.show_pane
@@ -469,6 +719,116 @@ class WindowManager:
     def start_resize_pane(self, pane):
         window_list, pane_index = self._find_window_list_and_pane_index(pane)
         window_list.start_resize(pane, pane_index)
+
+    def mouse_resize(self, xpos, ypos):
+        if self.resize_target_window_list_index is None:
+            return
+        target_window_list = self.window_lists[
+            self.resize_target_window_list_index]
+
+        diff = ypos - self.resize_current_row
+        if self.vertical_window_list_spliting():
+            diff = xpos - self.resize_current_column
+        if diff == 0:
+            return
+
+        self.adjust_split_size(target_window_list, diff)
+        self._resize_update_current_row_column()
+        self.application.redraw_ui()
+
+    def mouse_handler(self, mouse_event: MouseEvent):
+        """MouseHandler used when resize_mode == True."""
+        mouse_position = mouse_event.position
+
+        if (mouse_event.event_type == MouseEventType.MOUSE_MOVE
+                and mouse_event.button == MouseButton.LEFT):
+            self.mouse_resize(mouse_position.x, mouse_position.y)
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            self.stop_resize()
+            # Mouse event handled, return None.
+            return None
+        else:
+            self.stop_resize()
+
+        # Mouse event not handled, return NotImplemented.
+        return NotImplemented
+
+    def _calculate_actual_widths(self) -> List[int]:
+        widths = [w.width.preferred for w in self.window_lists]
+
+        available_width = self.current_window_manager_width
+        # Subtract 1 for each separator
+        available_width -= len(self.window_lists) - 1
+        remaining_rows = available_width - sum(widths)
+        window_list_index = 0
+        # Distribute remaining unaccounted columns to each window in turn.
+        while remaining_rows > 0:
+            widths[window_list_index] += 1
+            remaining_rows -= 1
+            window_list_index = (window_list_index + 1) % len(widths)
+
+        return widths
+
+    def _calculate_actual_heights(self) -> List[int]:
+        heights = [w.height.preferred for w in self.window_lists]
+
+        available_height = self.current_window_manager_height
+        # Subtract 1 for each vertical separator
+        available_height -= len(self.window_lists) - 1
+        remaining_rows = available_height - sum(heights)
+        window_list_index = 0
+        # Distribute remaining unaccounted columns to each window in turn.
+        while remaining_rows > 0:
+            heights[window_list_index] += 1
+            remaining_rows -= 1
+            window_list_index = (window_list_index + 1) % len(heights)
+
+        return heights
+
+    def _resize_update_current_row_column(self) -> None:
+        if self.resize_target_window_list_index is None:
+            return
+
+        widths = self._calculate_actual_widths()
+        heights = self._calculate_actual_heights()
+
+        start_column = 0
+        start_row = 0
+
+        # Find the starting column
+        for i in range(self.resize_target_window_list_index + 1):
+            # If we are past the target window_list, exit the loop.
+            if i > self.resize_target_window_list_index:
+                break
+            start_column += widths[i]
+            start_row += heights[i]
+            if i < self.resize_target_window_list_index - 1:
+                start_column += 1
+                start_row += 1
+
+        self.resize_current_column = start_column
+        self.resize_current_row = start_row
+
+    def start_resize(self, window_list):
+        # Check the target window_list isn't the last one.
+        if window_list == self.window_lists[-1]:
+            return
+
+        list_index = self.window_list_index(window_list)
+        if list_index is None:
+            return
+
+        self.resize_mode = True
+        self.resize_target_window_list = window_list
+        self.resize_target_window_list_index = list_index
+        self._resize_update_current_row_column()
+
+    def stop_resize(self):
+        self.resize_mode = False
+        self.resize_target_window_list = None
+        self.resize_target_window_list_index = None
+        self.resize_current_row = 0
+        self.resize_current_column = 0
 
     def _find_window_list_and_pane_index(self, pane: Any):
         pane_index = None

@@ -53,6 +53,10 @@ class UnknownWindowTitle(Exception):
     """Exception for window titles not present in the window manager layout."""
 
 
+class EmptyWindowList(Exception):
+    """Exception for window lists with no content."""
+
+
 def error_unknown_window(window_title: str,
                          existing_pane_titles: List[str]) -> None:
     """Raise an error when the window config has an unknown title.
@@ -71,6 +75,16 @@ def error_unknown_window(window_title: str,
         'If this window should be a duplicate of one of the above,\n'
         f'add "duplicate_of: {existing_pane_title_example}" to your config.\n'
         'If this is a brand new window, include a "loggers:" section.\n'
+        'See also: '
+        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config')
+
+
+def error_empty_window_list(window_list_title: str, ) -> None:
+    """Raise an error if a window list is empty."""
+
+    raise EmptyWindowList(
+        f'\n\nError: The window layout heading "{window_list_title}" contains '
+        'no windows.\n'
         'See also: '
         'https://pigweed.dev/pw_console/docs/user_guide.html#example-config')
 
@@ -191,7 +205,10 @@ class ConsolePrefs(YamlConfigLoaderMixin):
     @property
     def unique_window_titles(self) -> set:
         titles = []
-        for column in self.windows.values():
+        for window_list_title, column in self.windows.items():
+            if not column:
+                error_empty_window_list(window_list_title)
+
             for window_key_title, window_dict in column.items():
                 window_options = window_dict if window_dict else {}
                 # Use 'duplicate_of: Title' if it exists, otherwise use the key.

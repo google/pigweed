@@ -16,7 +16,8 @@ Begin each section below by running the console in test mode:
 
 .. code-block:: shell
 
-  pw console --test-mode
+  touch /tmp/empty.yaml
+  env PW_CONSOLE_CONFIG_FILE='/tmp/empty.yaml' pw console --test-mode
 
 Test Sections
 =============
@@ -491,17 +492,48 @@ Mouse Window Resizing
      - |checkbox|
 
    * - 2
-     - | Left click and hold the :guilabel:`====` of that window
+     - | Left click and hold the :guilabel:`-==-` of that window
        | Drag the mouse up and down
      - This log pane is resized
      - |checkbox|
 
    * - 3
-     - | Left click and hold the :guilabel:`====`
+     - | Left click and hold the :guilabel:`-==-`
        | of the :guilabel:`PwConsole Debug` window
        | Drag the mouse up and down
      - | The :guilabel:`PwConsole Debug` should NOT be focused
        | The window should be resized as expected
+     - |checkbox|
+
+   * - 4
+     - Click the :guilabel:`View > Move Window Right`
+     - :guilabel:`Fake Device Logs` should appear in a right side split
+     - |checkbox|
+
+   * - 5
+     - | Left click and hold anywhere on the vertical separator
+       | Drag the mouse left and right
+     - | The window splits should be resized as expected
+     - |checkbox|
+
+   * - 6
+     - Click the :guilabel:`View > Balance Window Sizes`
+     - Window split sizes should reset to equal widths
+     - |checkbox|
+
+   * - 7
+     - | Focus on the :guilabel:`Python Repl` window
+       | Click the :guilabel:`View > Move Window Left`
+     - | :guilabel:`Python Repl` should appear in a left side split
+       | There should be 3 vertical splits in total
+     - |checkbox|
+
+   * - 8
+     - | Left click and hold anywhere on the vertical separator
+       | between the first two splits (Python Repl and the middle split)
+       | Drag the mouse left and right
+     - | The first two window splits should be resized.
+       | The 3rd split size should not change.
      - |checkbox|
 
 Copy Paste

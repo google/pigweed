@@ -13,9 +13,14 @@
 # the License.
 """Functions for handling mouse events."""
 
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
+from prompt_toolkit.layout.mouse_handlers import MouseHandlers
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+
+if TYPE_CHECKING:
+    # pylint: disable=ungrouped-imports
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
 
 
 def on_click(on_click_function: Callable, mouse_event: MouseEvent):
@@ -44,3 +49,16 @@ def on_click(on_click_function: Callable, mouse_event: MouseEvent):
         on_click_function()
         return None
     return NotImplemented
+
+
+class EmptyMouseHandler(MouseHandlers):
+    """MouseHandler that does not propagate events."""
+    def set_mouse_handler_for_range(
+        self,
+        x_min: int,
+        x_max: int,
+        y_min: int,
+        y_max: int,
+        handler: Callable[[MouseEvent], 'NotImplementedOrNone'],
+    ) -> None:
+        return
