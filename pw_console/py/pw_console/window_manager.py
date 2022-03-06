@@ -690,7 +690,7 @@ class WindowManager:
         """Focus on the first visible container."""
         for pane in self.active_panes():
             if pane.show_pane:
-                self.application.focus_on_container(pane)
+                self.application.application.layout.focus(pane)
                 break
 
     def check_for_all_hidden_panes_and_unhide(self) -> None:
@@ -1000,13 +1000,13 @@ class WindowManager:
                 ))
             menu_items.extend(
                 MenuItem(
-                    '{index}: {title} {subtitle}'.format(
+                    '{index}: {title}'.format(
                         index=pane_index + 1,
                         title=pane.menu_title(),
-                        subtitle=pane.pane_subtitle()),
+                    ),
                     children=[
                         MenuItem(
-                            '{check} Show Window'.format(
+                            '{check} Show/Hide Window'.format(
                                 check=pw_console.widgets.checkbox.
                                 to_checkbox_text(pane.show_pane, end='')),
                             handler=functools.partial(self.toggle_pane, pane),

@@ -5,7 +5,9 @@ User Guide
 
 .. seealso::
 
-   This guide can be viewed online at: https://pigweed.dev/pw_console/
+   This guide can be viewed online at:
+   https://pigweed.dev/pw_console/py/pw_console/docs/user_guide.html
+
 
 The Pigweed Console provides a Python repl (read eval print loop) and log viewer
 in a single-window terminal based interface.
@@ -27,9 +29,11 @@ There are a few ways to exit the Pigweed Console user interface:
 1.  Click the :guilabel:`[File]` menu and then :guilabel:`Exit`.
 2.  Type ``quit`` or ``exit`` in the Python Input window and press :kbd:`Enter`.
 3.  Press :kbd:`Ctrl-d` once to show the quit confirmation dialog. From there
-    pressing :kbd:`Ctrl-d` a second time or :kbd:`y` will exit.
-4.  Pressing :kbd:`Ctrl-x` quickly followed by :kbd:`Ctrl-c` will exit without
+    press :kbd:`Ctrl-d` a second time or :kbd:`y` will exit.
+4.  Press :kbd:`Ctrl-x` quickly followed by :kbd:`Ctrl-c` will exit without
     confirmation.
+5.  Press :kbd:`Ctrl-p` to search for commands, type ``exit``, then press
+    :kbd:`Enter`.
 
 
 Interface Layout
@@ -64,8 +68,36 @@ mouse wheel should work too. This requires that your terminal is able to send
 mouse events.
 
 
-Main Menu Navigation with the Keyboard
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Navigation with the Keyboard
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The main menu can be searched by pressing :kbd:`Ctrl-p`. This opens a fuzzy
+search box containing all main menu item actions.
+
+Words separated by spaces are used to narrow down the match results. The order
+each word is entered does not matter.
+
+.. figure:: /pw_console/images/command_runner_main_menu.svg
+  :alt: Main menu item search dialog.
+
+============================================  =====================
+Function                                      Keys
+============================================  =====================
+Open main menu search                         :kbd:`Ctrl-p`
+Cancel search                                 :kbd:`Ctrl-c`
+Run selected item                             :kbd:`Enter`
+
+Select next item                              :kbd:`Tab`
+                                              :kbd:`Down`
+Select previous item                          :kbd:`Shift-Tab`
+                                              :kbd:`Up`
+============================================  =====================
+
+Switching Focus
+~~~~~~~~~~~~~~~
+
+Clicking on any window will focus on it. Alternatively, the key bindings below
+will switch focus.
 
 ============================================  =====================
 Function                                      Keys
@@ -189,15 +221,13 @@ Here is a view of the search bar:
 
 ::
 
-  +-------------------------------------------------------------------------------+
-  |           Enter : Search  Ctrl-Alt-f : Add Filter  Ctrl-Alt-r : Clear Filters |
-  |  Search   Ctrl-t : Column:All  Ctrl-v : [ ] Invert  Ctrl-n : Matcher:REGEX    |
-  | /                                                                             |
-  +-------------------------------------------------------------------------------+
+  +--------------------------------------------------------------------------+
+  | Search   Column:All Ctrl-t   [ ] Invert Ctrl-v   Matcher:REGEX Ctrl-n    |
+  | /                                            Search Enter  Cancel Ctrl-c |
+  +--------------------------------------------------------------------------+
 
 Across the top are various functions with keyboard shortcuts listed. Each of
-these are clickable with the mouse. The second line shows configurable search
-parameters.
+these are clickable with the mouse.
 
 **Search Parameters**
 
@@ -618,15 +648,14 @@ Example Config
      - metadata1
      - metadata2
 
-   # If True, any metadata field not listed above in 'column_order' will be hidden in table view.
+   # If True, any metadata field not listed above in 'column_order'
+   # will be hidden in table view.
    column_order_omit_unspecified_columns: False
 
    # Unique Colors for Column Values
    #   Color format: 'bg:#BG-HEX #FG-HEX STYLE'
    # All parts are optional.
    # Empty strings will leave styling unchanged.
-   # See prompt_toolkit style format docs here:
-   #   https://python-prompt-toolkit.readthedocs.io/en/latest/pages/advanced_topics/styling.html
    column_colors:
      # Column name
      time:
@@ -670,7 +699,8 @@ Example Config
 
      # Second window column
      Split 2 tabbed:
-       # This is a duplicate of the existing 'Device Logs' window with a new title.
+       # This is a duplicate of the existing 'Device Logs' window.
+       # The title is 'NEW DEVICE'
        NEW DEVICE:
          duplicate_of: Device Logs
          # Log filters are defined here
@@ -713,6 +743,17 @@ Example Config
            all:
              regex: 'Apple.*USB'
 
+   # Command Runner dialog size and position
+   command_runner:
+     width: 80
+     height: 10
+     position:
+       top: 3  # 3 lines below the top edge of the screen
+       # Alternatively one of these options can be used instead:
+       # bottom: 2  # 2 lines above the bottom edge of the screen
+       # left: 2    # 2 lines away from the left edge of the screen
+       # right: 2   # 2 lines away from the right edge of the screen
+
 
 Known Issues
 ------------
@@ -721,7 +762,8 @@ Log Window
 ~~~~~~~~~~
 
 - Tab character rendering will not work in the log pane view. They will
-  appear as ``^I`` since prompt_toolkit can't render them. See this issue for details:
+  appear as ``^I`` since prompt_toolkit can't render them. See this issue for
+  details:
   https://github.com/prompt-toolkit/python-prompt-toolkit/issues/556
 
 

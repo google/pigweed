@@ -98,14 +98,14 @@ def _window_pane_counts(window_manager):
     ]
 
 
-def _window_pane_titles(window_manager):
+def window_pane_titles(window_manager):
     return [[
         pane.pane_title() + ' - ' + pane.pane_subtitle()
         for pane in window_list.active_panes
     ] for window_list in window_manager.window_lists]
 
 
-def _target_list_and_pane(window_manager, list_index, pane_index):
+def target_list_and_pane(window_manager, list_index, pane_index):
     # pylint: disable=protected-access
     # Bypass prompt_toolkit has_focus()
     window_manager._get_active_window_list_and_pane = (
@@ -132,23 +132,23 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual([4], _window_pane_counts(window_manager))
 
             # Move 2 windows to the right into their own splits
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
-            _target_list_and_pane(window_manager, 1, 0)
+            target_list_and_pane(window_manager, 1, 0)
             window_manager.move_pane_right()
             # 3 splits, first split has 2 windows
             self.assertEqual([2, 1, 1], _window_pane_counts(window_manager))
 
             # Move the first window in the first split left
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_left()
             # 4 splits, each with their own window
             self.assertEqual([1, 1, 1, 1], _window_pane_counts(window_manager))
 
             # Move the first window to the right
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
             # 3 splits, first split has 2 windows
             self.assertEqual([2, 1, 1], _window_pane_counts(window_manager))
@@ -171,7 +171,7 @@ class TestWindowManager(unittest.TestCase):
 
             window_manager = console_app.window_manager
 
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             # Should have one window list split of size 50.
             self.assertEqual(
                 _window_list_widths(window_manager),
@@ -188,11 +188,11 @@ class TestWindowManager(unittest.TestCase):
 
             # Move another pane to the right twice, creating a third
             # window_list split.
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
 
             # Above window pane is at a new location
-            _target_list_and_pane(window_manager, 1, 0)
+            target_list_and_pane(window_manager, 1, 0)
             window_manager.move_pane_right()
 
             # Should have 3 splits now
@@ -209,7 +209,7 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(len(list(window_manager.active_panes())), 4)
 
             # Target the middle split
-            _target_list_and_pane(window_manager, 1, 0)
+            target_list_and_pane(window_manager, 1, 0)
             # Shrink the middle split twice
             window_manager.shrink_split()
             window_manager.shrink_split()
@@ -225,7 +225,7 @@ class TestWindowManager(unittest.TestCase):
             )
 
             # Target the first split
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.reset_split_sizes()
             # Shrink the first split twice
             window_manager.shrink_split()
@@ -241,7 +241,7 @@ class TestWindowManager(unittest.TestCase):
             )
 
             # Target the third (last) split
-            _target_list_and_pane(window_manager, 2, 0)
+            target_list_and_pane(window_manager, 2, 0)
             window_manager.reset_split_sizes()
             # Shrink the third split once
             window_manager.shrink_split()
@@ -273,7 +273,7 @@ class TestWindowManager(unittest.TestCase):
             )
 
             # Target the middle split
-            _target_list_and_pane(window_manager, 1, 0)
+            target_list_and_pane(window_manager, 1, 0)
             # Move the middle window pane left
             window_manager.move_pane_left()
             # This is called on the next render pass
@@ -405,7 +405,7 @@ class TestWindowManager(unittest.TestCase):
 
             # Check window pane ordering
             self.assertEqual(
-                _window_pane_titles(window_manager),
+                window_pane_titles(window_manager),
                 [
                     [
                         'Log2 - test_log2',
@@ -419,7 +419,7 @@ class TestWindowManager(unittest.TestCase):
             target_window_pane(0)
             window_manager.move_pane_down()
             self.assertEqual(
-                _window_pane_titles(window_manager),
+                window_pane_titles(window_manager),
                 [
                     [
                         'Log1 - test_log1',
@@ -434,7 +434,7 @@ class TestWindowManager(unittest.TestCase):
             target_window_pane(1)
             window_manager.move_pane_up()
             self.assertEqual(
-                _window_pane_titles(window_manager),
+                window_pane_titles(window_manager),
                 [
                     [
                         'Log0 - test_log0',
@@ -447,7 +447,7 @@ class TestWindowManager(unittest.TestCase):
             target_window_pane(0)
             window_manager.move_pane_up()
             self.assertEqual(
-                _window_pane_titles(window_manager),
+                window_pane_titles(window_manager),
                 [
                     [
                         'Log0 - test_log0',
@@ -465,7 +465,7 @@ class TestWindowManager(unittest.TestCase):
 
             window_manager = console_app.window_manager
             self.assertEqual(
-                _window_pane_titles(window_manager),
+                window_pane_titles(window_manager),
                 [
                     [
                         'Log3 - test_log3',
@@ -480,7 +480,7 @@ class TestWindowManager(unittest.TestCase):
             # Scenario: Move between panes with a single stacked window list.
 
             # Set the first pane in focus.
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             # Switch focus to the next pane
             window_manager.focus_next_pane()
             # Pane index 1 should now be focused.
@@ -489,7 +489,7 @@ class TestWindowManager(unittest.TestCase):
             console_app.focus_on_container.reset_mock()
 
             # Set the first pane in focus.
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             # Switch focus to the previous pane
             window_manager.focus_previous_pane()
             # Previous pane should wrap around to the last pane in the first
@@ -499,7 +499,7 @@ class TestWindowManager(unittest.TestCase):
             console_app.focus_on_container.reset_mock()
 
             # Set the last pane in focus.
-            _target_list_and_pane(window_manager, 0, 4)
+            target_list_and_pane(window_manager, 0, 4)
             # Switch focus to the next pane
             window_manager.focus_next_pane()
             # Next pane should wrap around to the first pane in the first
@@ -520,7 +520,7 @@ class TestWindowManager(unittest.TestCase):
                 wraps=window_manager.window_lists[0].switch_to_tab)
 
             # Set the first pane/tab in focus.
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             # Switch focus to the next pane/tab
             window_manager.focus_next_pane()
             # Check switch_to_tab is called
@@ -533,7 +533,7 @@ class TestWindowManager(unittest.TestCase):
             window_manager.window_lists[0].switch_to_tab.reset_mock()
 
             # Set the last pane/tab in focus.
-            _target_list_and_pane(window_manager, 0, 4)
+            target_list_and_pane(window_manager, 0, 4)
             # Switch focus to the next pane/tab
             window_manager.focus_next_pane()
             # Check switch_to_tab is called
@@ -546,7 +546,7 @@ class TestWindowManager(unittest.TestCase):
             window_manager.window_lists[0].switch_to_tab.reset_mock()
 
             # Set the first pane/tab in focus.
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             # Switch focus to the prev pane/tab
             window_manager.focus_previous_pane()
             # Check switch_to_tab is called
@@ -563,12 +563,12 @@ class TestWindowManager(unittest.TestCase):
 
             # Setup: Move two panes to the right into their own stacked
             # window_list.
-            _target_list_and_pane(window_manager, 0, 4)
+            target_list_and_pane(window_manager, 0, 4)
             window_manager.move_pane_right()
-            _target_list_and_pane(window_manager, 0, 3)
+            target_list_and_pane(window_manager, 0, 3)
             window_manager.move_pane_right()
             self.assertEqual(
-                _window_pane_titles(window_manager),
+                window_pane_titles(window_manager),
                 [
                     [
                         'Log3 - test_log3',
@@ -587,7 +587,7 @@ class TestWindowManager(unittest.TestCase):
                 wraps=window_manager.window_lists[1].switch_to_tab)
 
             # Set Log1 in focus
-            _target_list_and_pane(window_manager, 0, 2)
+            target_list_and_pane(window_manager, 0, 2)
             window_manager.focus_next_pane()
             # Log0 should now have focus
             console_app.focus_on_container.assert_called_once_with(
@@ -595,7 +595,7 @@ class TestWindowManager(unittest.TestCase):
             console_app.focus_on_container.reset_mock()
 
             # Set Log0 in focus
-            _target_list_and_pane(window_manager, 1, 0)
+            target_list_and_pane(window_manager, 1, 0)
             window_manager.focus_previous_pane()
             # Log1 should now have focus
             console_app.focus_on_container.assert_called_once_with(
@@ -609,7 +609,7 @@ class TestWindowManager(unittest.TestCase):
             console_app.focus_on_container.reset_mock()
 
             # Set Python Repl in focus
-            _target_list_and_pane(window_manager, 1, 1)
+            target_list_and_pane(window_manager, 1, 1)
             window_manager.focus_next_pane()
             # Log3 should now have focus
             console_app.focus_on_container.assert_called_once_with(
@@ -621,7 +621,7 @@ class TestWindowManager(unittest.TestCase):
             console_app.focus_on_container.reset_mock()
 
             # Set Log3 in focus
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.focus_next_pane()
             # Log2 should now have focus
             console_app.focus_on_container.assert_called_once_with(
@@ -633,7 +633,7 @@ class TestWindowManager(unittest.TestCase):
             console_app.focus_on_container.reset_mock()
 
             # Set Python Repl in focus
-            _target_list_and_pane(window_manager, 1, 1)
+            target_list_and_pane(window_manager, 1, 1)
             window_manager.focus_previous_pane()
             # Log0 should now have focus
             console_app.focus_on_container.assert_called_once_with(
@@ -660,16 +660,16 @@ class TestWindowManager(unittest.TestCase):
             self.assertTrue(window_manager.vertical_window_list_spliting())
 
             # Move windows to create 3 splits
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
-            _target_list_and_pane(window_manager, 1, 1)
+            target_list_and_pane(window_manager, 1, 1)
             window_manager.move_pane_right()
 
             # Check windows are where expected
             self.assertEqual(
-                _window_pane_titles(window_manager),
+                window_pane_titles(window_manager),
                 [
                     [
                         'Log1 - test_log1',
@@ -738,16 +738,16 @@ class TestWindowManager(unittest.TestCase):
             window_manager.create_root_container()
 
             # Move windows to create 3 splits
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
-            _target_list_and_pane(window_manager, 0, 0)
+            target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
-            _target_list_and_pane(window_manager, 1, 1)
+            target_list_and_pane(window_manager, 1, 1)
             window_manager.move_pane_right()
 
             # Check windows are where expected
             self.assertEqual(
-                _window_pane_titles(window_manager),
+                window_pane_titles(window_manager),
                 [
                     [
                         'Log1 - test_log1',

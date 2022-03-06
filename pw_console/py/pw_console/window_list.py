@@ -203,8 +203,21 @@ class WindowList:
     def get_current_active_pane(self):
         """Return the current active window pane."""
         focused_pane = None
+
+        command_runner_focused_pane = None
+        if self.application.command_runner_is_open():
+            command_runner_focused_pane = (
+                self.application.command_runner_last_focused_pane())
+
         for index, pane in enumerate(self.active_panes):
+            in_focus = False
             if has_focus(pane)():
+                in_focus = True
+            elif command_runner_focused_pane and pane.has_child_container(
+                    command_runner_focused_pane):
+                in_focus = True
+
+            if in_focus:
                 focused_pane = pane
                 self.focused_pane_index = index
                 break

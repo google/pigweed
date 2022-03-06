@@ -66,9 +66,13 @@ class WindowPaneToolbar:
     def get_left_text_tokens(self):
         """Return toolbar indicator and title."""
 
-        title = ' {} '.format(self.title)
+        title = self.title
+        if not title and self.parent_window_pane:
+            # No title was set, fetch the parent window pane title if available.
+            parent_pane_title = self.parent_window_pane.pane_title()
+            title = parent_pane_title if parent_pane_title else title
         return pw_console.style.get_pane_indicator(self.focus_check_container,
-                                                   title,
+                                                   f' {title} ',
                                                    self.focus_mouse_handler)
 
     def get_center_text_tokens(self):
@@ -161,8 +165,6 @@ class WindowPaneToolbar:
 
         # Set parent_window_pane related options
         if self.parent_window_pane:
-            if not title:
-                self.title = self.parent_window_pane.pane_title()
             if not subtitle:
                 self.subtitle = self.parent_window_pane.pane_subtitle
             self.focus_check_container = self.parent_window_pane

@@ -19,6 +19,7 @@ import("$dir_pw_docgen/docs.gni")
 pw_doc_group("docs") {
   inputs = [
     "images/serial_debug.svg",
+    "images/command_runner_main_menu.svg",
     "images/calculator_plugin.png",
     "images/clock_plugin1.png",
     "images/clock_plugin2.png",

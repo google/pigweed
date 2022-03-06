@@ -466,7 +466,7 @@ class LogPane(WindowPane):
         else:
             self._pane_subtitle = self._pane_subtitle + ', ' + text
 
-    def pane_subtitle(self):
+    def pane_subtitle(self) -> str:
         if not self._pane_subtitle:
             return ', '.join(self.log_view.log_store.channel_counts.keys())
         logger_names = self._pane_subtitle.split(', ')
@@ -550,7 +550,7 @@ class LogPane(WindowPane):
             # Menu separator
             ('-', None),
             (
-                'Save a copy',
+                'Save/Export a copy',
                 self.start_saveas,
             ),
             ('-', None),
@@ -585,7 +585,7 @@ class LogPane(WindowPane):
         ]
         if self.is_a_duplicate:
             options += [(
-                'Remove pane',
+                'Remove/Delete pane',
                 functools.partial(self.application.window_manager.remove_pane,
                                   self),
             )]
@@ -603,7 +603,7 @@ class LogPane(WindowPane):
                 self.log_view.apply_filter,
             ),
             (
-                'Reset active filters',
+                'Clear/Reset active filters',
                 self.log_view.clear_filters,
             ),
         ]

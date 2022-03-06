@@ -16,6 +16,8 @@
 import logging
 from dataclasses import dataclass
 
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
 from prompt_toolkit.styles import Style
 from prompt_toolkit.filters import has_focus
 
@@ -211,7 +213,7 @@ _THEME_NAME_MAPPING = {
     'dark': DarkColors(),
     'high-contrast-dark': HighContrastDarkColors(),
     'ansi': AnsiTerm(),
-} # yapf: disable
+}  # yapf: disable
 
 
 def get_theme_colors(theme_name=''):
@@ -373,6 +375,20 @@ def generate_styles(theme_name='dark'):
         'quit-dialog-border': 'bg:{} {}'.format(theme.inactive_bg,
                                                 theme.red_accent),
 
+        'command-runner': 'bg:{}'.format(theme.inactive_bg),
+        'command-runner-title': 'bg:{} {}'.format(theme.inactive_bg,
+                                                  theme.default_fg),
+        'command-runner-setting': '{}'.format(theme.purple_accent),
+        'command-runner-border': 'bg:{} {}'.format(theme.inactive_bg,
+                                                   theme.purple_accent),
+        'command-runner-selected-item': 'bg:{}'.format(theme.selected_line_bg),
+        'command-runner-fuzzy-highlight-0': '{}'.format(theme.blue_accent),
+        'command-runner-fuzzy-highlight-1': '{}'.format(theme.cyan_accent),
+        'command-runner-fuzzy-highlight-2': '{}'.format(theme.green_accent),
+        'command-runner-fuzzy-highlight-3': '{}'.format(theme.yellow_accent),
+        'command-runner-fuzzy-highlight-4': '{}'.format(theme.orange_accent),
+        'command-runner-fuzzy-highlight-5': '{}'.format(theme.red_accent),
+
         # Progress Bar Styles
         # Entire set of ProgressBars - no title is used in pw_console
         'title': '',
@@ -427,7 +443,7 @@ def generate_styles(theme_name='dark'):
 
         'theme-bg-button-active': 'bg:{}'.format(theme.button_active_bg),
         'theme-bg-button-inactive': 'bg:{}'.format(theme.button_inactive_bg),
-    } # yapf: disable
+    }  # yapf: disable
 
     return Style.from_dict(pw_console_styles)
 
@@ -456,8 +472,14 @@ def get_pane_style(pt_container) -> str:
 def get_pane_indicator(pt_container,
                        title,
                        mouse_handler=None,
-                       hide_indicator=False):
+                       hide_indicator=False) -> StyleAndTextTuples:
     """Return formatted text for a pane indicator and title."""
+
+    inactive_indicator: OneStyleAndTextTuple
+    active_indicator: OneStyleAndTextTuple
+    inactive_title: OneStyleAndTextTuple
+    active_title: OneStyleAndTextTuple
+
     if mouse_handler:
         inactive_indicator = ('class:pane_indicator_inactive', ' ',
                               mouse_handler)
@@ -470,7 +492,7 @@ def get_pane_indicator(pt_container,
         inactive_title = ('class:pane_title_inactive', title)
         active_title = ('class:pane_title_active', title)
 
-    fragments = []
+    fragments: StyleAndTextTuples = []
     if has_focus(pt_container.__pt_container__())():
         if not hide_indicator:
             fragments.append(active_indicator)

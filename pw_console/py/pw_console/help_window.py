@@ -203,9 +203,16 @@ class HelpWindow(ConditionalContainer):
         scrollbar_padding = 1
         scrollbar_width = 1
 
-        return self.max_line_length + (left_side_frame_and_padding_width +
-                                       right_side_frame_and_padding_width +
-                                       scrollbar_padding + scrollbar_width)
+        desired_width = self.max_line_length + (
+            left_side_frame_and_padding_width +
+            right_side_frame_and_padding_width + scrollbar_padding +
+            scrollbar_width)
+
+        window_manager_width = (
+            self.application.window_manager.current_window_manager_width)
+        if not window_manager_width:
+            window_manager_width = 80
+        return min(desired_width, window_manager_width)
 
     def load_user_guide(self):
         rstdoc = Path(__file__).parent / 'docs/user_guide.rst'

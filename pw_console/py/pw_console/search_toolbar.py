@@ -57,7 +57,6 @@ class SearchToolbar(ConditionalContainer):
         self._search_invert = False
         self._search_field = None
 
-        # FormattedText of the search column headers.
         self.input_field = TextArea(
             prompt=[
                 ('class:search-bar-setting', '/',

@@ -21,9 +21,11 @@ from prompt_toolkit.layout.dimension import AnyDimension
 
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout import (
+    AnyContainer,
     ConditionalContainer,
     Dimension,
     HSplit,
+    walk,
 )
 
 from pw_console.get_pw_console_app import get_pw_console_app
@@ -199,3 +201,11 @@ class WindowPane(ABC):
                 style=functools.partial(pw_console.style.get_pane_style, self),
             ),
             filter=Condition(lambda: self.show_pane))
+
+    def has_child_container(self, child_container: AnyContainer) -> bool:
+        if not child_container:
+            return False
+        for container in walk(self.__pt_container__()):
+            if container == child_container:
+                return True
+        return False

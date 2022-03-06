@@ -277,7 +277,8 @@ class ReplPane(WindowPane):
                           is_checkbox=True,
                           checked=lambda: self.wrap_output_lines))
         results_toolbar.add_button(
-            ToolbarButton('Ctrl-Alt-c', 'Copy All Output', self.copy_text))
+            ToolbarButton('Ctrl-Alt-c', 'Copy All Output',
+                          self.copy_all_output_text))
         results_toolbar.add_button(
             ToolbarButton('Ctrl-c', 'Copy Selected Text',
                           self.copy_output_selection))
@@ -297,10 +298,15 @@ class ReplPane(WindowPane):
         clipboard_data = self.pw_ptpython_repl.default_buffer.copy_selection()
         self.application.application.clipboard.set_data(clipboard_data)
 
-    def copy_text(self):
-        """Copy visible text in this window pane to the system clipboard."""
+    def copy_all_output_text(self):
+        """Copy all text in the Python output to the system clipboard."""
         self.application.application.clipboard.set_text(
             self.output_field.buffer.text)
+
+    def copy_all_input_text(self):
+        """Copy all text in the Python input to the system clipboard."""
+        self.application.application.clipboard.set_text(
+            self.pw_ptpython_repl.default_buffer.text)
 
     # pylint: disable=no-self-use
     def get_all_key_bindings(self) -> List:
@@ -319,9 +325,6 @@ class ReplPane(WindowPane):
 
     def get_all_menu_options(self):
         return []
-
-    def after_render_hook(self):
-        """Run tasks after the last UI render."""
 
     def run_code(self):
         """Trigger a repl code execution on mouse click."""

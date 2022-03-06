@@ -43,7 +43,9 @@ def _create_log_view():
     log_pane.current_log_pane_height = 10
 
     application = MagicMock()
-    application.prefs = ConsolePrefs()
+    application.prefs = ConsolePrefs(project_file=False,
+                                     project_user_file=False,
+                                     user_file=False)
     application.prefs.reset_config()
     log_view = LogView(log_pane, application)
     return log_view, log_pane

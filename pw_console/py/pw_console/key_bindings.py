@@ -48,6 +48,13 @@ def create_key_bindings(console_app):
     # F2 is ptpython settings
     # F3 is ptpython history
 
+    @bindings.add(
+        'c-p',
+        filter=Condition(lambda: not console_app.modal_window_is_open()))
+    def show_command_runner(event):
+        """Open command runner window."""
+        console_app.open_command_runner_main_menu()
+
     @bindings.add('c-left')
     def app_focus_previous(event):
         """Move focus to the previous widget."""

@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import List, Union
+from typing import Dict, List, Union
 
 from pw_console.style import get_theme_colors
 from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
@@ -42,6 +42,13 @@ _DEFAULT_CONFIG = {
     # Window arrangement
     'windows': {},
     'window_column_split_method': 'vertical',
+    'command_runner': {
+        'width': 80,
+        'height': 10,
+        'position': {
+            'top': 3
+        },
+    },
 }
 
 _DEFAULT_PROJECT_FILE = Path('$PW_PROJECT_ROOT/.pw_console.yaml')
@@ -201,6 +208,24 @@ class ConsolePrefs(YamlConfigLoaderMixin):
     @property
     def window_column_modes(self) -> list:
         return list(column_type for column_type in self.windows.keys())
+
+    @property
+    def command_runner_position(self) -> Dict[str, int]:
+        position = self._config.get('command_runner',
+                                    {}).get('position', {'top': 3})
+        return {
+            key: value
+            for key, value in position.items()
+            if key in ['top', 'bottom', 'left', 'right']
+        }
+
+    @property
+    def command_runner_width(self) -> int:
+        return self._config.get('command_runner', {}).get('width', 80)
+
+    @property
+    def command_runner_height(self) -> int:
+        return self._config.get('command_runner', {}).get('height', 10)
 
     @property
     def unique_window_titles(self) -> set:
