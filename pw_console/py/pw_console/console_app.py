@@ -76,6 +76,9 @@ _FAKE_DEVICE_LOG = logging.getLogger(FAKE_DEVICE_LOGGER_NAME)
 # Don't send fake_device logs to the root Python logger.
 _FAKE_DEVICE_LOG.propagate = False
 
+MAX_FPS = 15
+MIN_REDRAW_INTERVAL = (60.0 / MAX_FPS) / 60.0
+
 
 class FloatingMessageBar(ConditionalContainer):
     """Floating message bar for showing status messages."""
@@ -339,6 +342,7 @@ class ConsoleApp:
             mouse_support=True,
             color_depth=self.color_depth,
             clipboard=PyperclipClipboard(),
+            min_redraw_interval=MIN_REDRAW_INTERVAL,
         )
 
     def get_template(self, file_name: str):
