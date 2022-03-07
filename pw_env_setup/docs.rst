@@ -279,6 +279,15 @@ here.
   A list of packages to install using :ref:`pw_package <module-pw_package>`
   after the rest of bootstrap completes.
 
+``gni_file``
+  Location to write a ``.gni`` file containing paths to many things within the
+  environment directory.
+
+``json_file``
+  Location to write a ``.json`` file containing step-by-step modifications to
+  the environment, for reading by tools that don't inherit an environment from
+  a sourced ``bootstrap.sh``.
+
 An example of a config file is below.
 
 .. code-block:: json
@@ -301,7 +310,9 @@ An example of a config file is below.
     "optional_submodules": [
       "optional/submodule/one",
       "optional/submodule/two"
-    ]
+    ],
+    "gni_file": "tools/environment.gni",
+    "json_file": "tools/environment.json"
   }
 
 In case the CIPD packages need to be referenced from other scripts, variables
@@ -314,6 +325,11 @@ set the following environment variables.
  - ``PW_LUCI_CIPD_INSTALL_DIR``
  - ``PW_MYPROJECTNAME_CIPD_INSTALL_DIR``
  - ``PW_PIGWEED_CIPD_INSTALL_DIR``
+
+These directories are also referenced in the gni_file specified by the
+environment config file as ``dir_cipd_${BASENAME}``. This allows the GN build to
+reliably reference these directories without using GN ``getenv()`` calls or
+hardcoding paths.
 
 In addition, ``PW_${BASENAME}_CIPD_INSTALL_DIR`` and
 ``PW_${BASENAME}_CIPD_INSTALL_DIR/bin`` are both added to ``PATH`` for each
@@ -435,9 +451,9 @@ Non-Shell Environments
 **********************
 If using this outside of bash—for example directly from an IDE or CI
 system—users can process the ``actions.json`` file that's generated in the
-environment directory. It lists variables to set, clear, and modify. An
-example ``actions.json`` is shown below. The "append" and "prepend" actions
-are listed in the order they should be applied, so the
+location specified by the environment config. It lists variables to set, clear,
+and modify. An example ``actions.json`` is shown below. The "append" and
+"prepend" actions are listed in the order they should be applied, so the
 ``<pigweed-root>/out/host/host_tools`` entry should be at the beginning of
 ``PATH`` and not in the middle somewhere.
 
@@ -464,13 +480,24 @@ are listed in the order they should be applied, so the
           "PW_ROOT": "<pigweed-root>",
           "_PW_ACTUAL_ENVIRONMENT_ROOT": "<pigweed-root>/.environment",
           "PW_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd",
-          "CIPD_CACHE_DIR": "/usr/local/google/home/mohrr/.cipd-cache-dir",
+          "CIPD_CACHE_DIR": "<home>/.cipd-cache-dir",
           "PW_PIGWEED_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd/pigweed",
           "PW_LUCI_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd/luci",
           "VIRTUAL_ENV": "<pigweed-root>/.environment/pigweed-venv",
           "PYTHONHOME": null,
           "__PYVENV_LAUNCHER__": null
       }
+  }
+
+Many of these variables are directly exposed to the GN build as well, through
+the GNI file specified in the environment config file.
+
+.. code-block::
+
+  declare_args() {
+    dir_cipd_pigweed = "<pigweed-root>/.environment/cipd/packages/pigweed"
+    dir_cipd_luci = "<pigweed-root>/.environment/cipd/packages/luci"
+    dir_virtual_env = "<pigweed-root>/.environment/pigweed-venv"
   }
 
 Implementation

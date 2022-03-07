@@ -28,6 +28,7 @@ except ImportError:
 
 from . import apply_visitor
 from . import batch_visitor
+from . import gni_visitor
 from . import json_visitor
 from . import shell_visitor
 
@@ -428,6 +429,9 @@ class Environment(object):
     def accept(self, visitor):
         for action in self._actions:
             action.accept(visitor)
+
+    def gni(self, outs, project_root):
+        gni_visitor.GNIVisitor(project_root).serialize(self, outs)
 
     def json(self, outs):
         json_visitor.JSONVisitor().serialize(self, outs)

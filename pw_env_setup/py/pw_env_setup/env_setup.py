@@ -208,16 +208,15 @@ class EnvSetup(object):
         self._pw_packages = []
         self._root_variable = None
 
+        self._json_file = json_file
+        self._gni_file = None
+
         self._config_file_name = getattr(config_file, 'name', 'config file')
         self._env.set('_PW_ENVIRONMENT_CONFIG_FILE', self._config_file_name)
         if config_file:
             self._parse_config_file(config_file)
 
         self._check_submodules()
-
-        self._json_file = json_file
-        if not self._json_file:
-            self._json_file = os.path.join(self._install_dir, 'actions.json')
 
         self._use_existing_cipd = use_existing_cipd
         self._virtualenv_gn_out_dir = virtualenv_gn_out_dir
@@ -260,6 +259,14 @@ class EnvSetup(object):
         config = json.load(config_file)
 
         self._root_variable = config.pop('root_variable', None)
+
+        if 'json_file' in config:
+            self._json_file = config.pop('json_file')
+
+        self._gni_file = config.pop(
+            'gni_file',
+            os.path.join(self._install_dir, 'environment.gni'),
+        )
 
         self._optional_submodules.extend(config.pop('optional_submodules', ()))
         self._required_submodules.extend(config.pop('required_submodules', ()))
@@ -485,9 +492,15 @@ Then use `set +x` to go back to normal.
             outs.write(
                 json.dumps(config, indent=4, separators=(',', ': ')) + '\n')
 
-        if self._json_file is not None:
-            with open(self._json_file, 'w') as outs:
-                self._env.json(outs)
+        json_file = (self._json_file
+                     or os.path.join(self._install_dir, 'actions.json'))
+        with open(json_file, 'w') as outs:
+            self._env.json(outs)
+
+        gni_file = (self._gni_file
+                    or os.path.join(self._install_dir, 'environment.gni'))
+        with open(gni_file, 'w') as outs:
+            self._env.gni(outs, self._project_root)
 
         return 0
 
@@ -699,12 +712,7 @@ def parse(argv=None):
         default=None,
     )
 
-    parser.add_argument(
-        '--json-file',
-        help=('Dump environment variable operations to a JSON file. Default: '
-              '<install_dir>/actions.json'),
-        default=None,
-    )
+    parser.add_argument('--json-file', help=argparse.SUPPRESS, default=None)
 
     parser.add_argument(
         '--use-existing-cipd',
