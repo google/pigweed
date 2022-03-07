@@ -153,7 +153,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                key='',
+                key='Ctrl-c',
                 description='Cancel',
                 mouse_handler=select_none,
                 base_style=button_style,
@@ -162,7 +162,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                key='',
+                key='Ctrl-a',
                 description='Select All',
                 mouse_handler=select_all,
                 base_style=button_style,

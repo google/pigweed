@@ -427,7 +427,7 @@ class SearchToolbar(ConditionalContainer):
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                key='Ctrl-l',
+                key='Ctrl-c',
                 description='Cancel',
                 mouse_handler=cancel,
                 base_style=button_style,

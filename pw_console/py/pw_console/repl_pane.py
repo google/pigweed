@@ -99,7 +99,7 @@ class UserCodeExecution:
 class ReplPane(WindowPane):
     """Pane for reading Python input."""
 
-    # pylint: disable=too-many-instance-attributes,too-few-public-methods
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     def __init__(
         self,
         application: 'ConsoleApp',
@@ -256,7 +256,8 @@ class ReplPane(WindowPane):
             ToolbarButton('Ctrl-v', 'Paste',
                           self.paste_system_clipboard_to_input_buffer))
         bottom_toolbar.add_button(
-            ToolbarButton('Ctrl-c', 'Clear', self.clear_input_buffer))
+            ToolbarButton('Ctrl-c', 'Copy / Clear',
+                          self.copy_or_clear_input_buffer))
         bottom_toolbar.add_button(ToolbarButton('Enter', 'Run', self.run_code))
         bottom_toolbar.add_button(ToolbarButton('F2', 'Settings'))
         bottom_toolbar.add_button(ToolbarButton('F3', 'History'))
@@ -287,9 +288,13 @@ class ReplPane(WindowPane):
         return results_toolbar
 
     def copy_output_selection(self):
-        """Copy the highlighted text the python output buffer to the system
-        clipboard."""
+        """Copy highlighted output text to the system clipboard."""
         clipboard_data = self.output_field.buffer.copy_selection()
+        self.application.application.clipboard.set_data(clipboard_data)
+
+    def copy_input_selection(self):
+        """Copy highlighted input text to the system clipboard."""
+        clipboard_data = self.pw_ptpython_repl.default_buffer.copy_selection()
         self.application.application.clipboard.set_data(clipboard_data)
 
     def copy_text(self):
@@ -324,9 +329,9 @@ class ReplPane(WindowPane):
 
     def ctrl_c(self):
         """Ctrl-C keybinding behavior."""
-        # If there is text in the input buffer, clear it.
+        # If there is text in the input buffer
         if self.pw_ptpython_repl.default_buffer.text:
-            self.clear_input_buffer()
+            self.copy_or_clear_input_buffer()
         else:
             self.interrupt_last_code_execution()
 
@@ -342,6 +347,14 @@ class ReplPane(WindowPane):
         self.pw_ptpython_repl.default_buffer.reset()
         # Clear any displayed function signatures.
         self.pw_ptpython_repl.on_reset()
+
+    def copy_or_clear_input_buffer(self):
+        # Copy selected text if a selection is active.
+        if self.pw_ptpython_repl.default_buffer.selection_state:
+            self.copy_input_selection()
+            return
+        # Otherwise, clear the input buffer
+        self.clear_input_buffer()
 
     def interrupt_last_code_execution(self):
         code = self._get_currently_running_code()

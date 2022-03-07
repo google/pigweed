@@ -130,6 +130,9 @@ Select the next log line                      :kbd:`Shift-Down`
 Select the previous log line                  :kbd:`Shift-Up`
 
 Select a range of log lines                   :guilabel:`Left Mouse Drag`
+
+Select all lines                              :kbd:`Ctrl-a`
+Clear Selection                               :kbd:`Ctrl-c`
 ============================================  =====================
 
 When making log line selections a popup will appear in the upper right of the log
@@ -234,7 +237,7 @@ Move to the next search result                :kbd:`n`
                                               :kbd:`Ctrl-s`
 Move to the previous search result            :kbd:`N`
                                               :kbd:`Ctrl-r`
-Removes search highlighting                   :kbd:`Ctrl-l`
+Clear active search                           :kbd:`Ctrl-c`
 Creates a filter using the active search      :kbd:`Ctrl-Alt-f`
 Reset all active filters.                     :kbd:`Ctrl-Alt-r`
 ============================================  =====================

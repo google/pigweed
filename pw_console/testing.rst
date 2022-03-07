@@ -587,6 +587,15 @@ Copy Paste
      - Python Input is focused
      - |checkbox|
 
+   * - 11
+     - | Type ``print('hello there')`` into the Python input.
+       | Mouse drag select that text
+       | Press :kbd:`Ctrl-c`
+     - | The selection should disappear.
+       | Try pasting into a separate text editor, the paste should
+       | match the text you drag selected.
+     - |checkbox|
+
 Incremental Stdout
 ^^^^^^^^^^^^^^^^^^
 

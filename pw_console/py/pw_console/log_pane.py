@@ -181,11 +181,18 @@ class LogContentControl(UIControl):
             """Previous search match."""
             self.log_view.search_backwards()
 
-        @key_bindings.add('c-l')
-        def _clear_search_highlight(_event: KeyPressEvent) -> None:
+        @key_bindings.add('c-a')
+        def _select_all_logs(_event: KeyPressEvent) -> None:
             """Clear search."""
-            self.log_pane.log_view.clear_search()
-            self.log_pane.search_toolbar.close_search_bar()
+            self.log_pane.log_view.visual_select_all()
+
+        @key_bindings.add('c-c')
+        def _clear_search_and_selection(_event: KeyPressEvent) -> None:
+            """Clear selection or search."""
+            if self.log_pane.log_view.visual_select_mode:
+                self.log_pane.log_view.clear_visual_selection()
+            elif self.log_pane.search_bar_active:
+                self.log_pane.search_toolbar.close_search_bar()
 
         @key_bindings.add('escape', 'c-f')  # Alt-Ctrl-f
         def _apply_filter(_event: KeyPressEvent) -> None:
