@@ -425,6 +425,30 @@ its parent decoder cannot be used.
     // parent decoder can be used again.
   }
 
+Packed Fields
+-------------
+The ``StreamDecoder`` supports two encoded forms of repeated fields: value at a
+time, by repeatedly calling `ReadInt32` etc., and packed fields by calling
+e.g. `ReadPackedInt32`.
+
+If the encoding format is not known, you will need to check ``FieldWireType``
+to determine which function to call.
+
+.. code-block:: c++
+
+  std::array<int32_t, 8> values{};
+  size_t num_values = 0;
+  if (decoder.FieldNumber().value() == 4) {
+    if (decoder.FieldWireType().value() == WireType::kDelimited) {
+      const auto sws = decoder.ReadPackedInt32(values);
+      PW_TRY(sws);
+      num_values = sws.size();
+    } else {
+      PW_TRY_ASSIGN(values[num_values], decoder.ReadInt32());
+      ++num_values;
+    }
+  }
+
 Proto map encoding utils
 ========================
 

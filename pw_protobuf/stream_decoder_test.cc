@@ -14,6 +14,8 @@
 
 #include "pw_protobuf/stream_decoder.h"
 
+#include <array>
+
 #include "gtest/gtest.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -759,6 +761,213 @@ TEST(StreamDecoder, Decode_WithLength_SkipsToEnd) {
   }
 
   EXPECT_EQ(reader.Tell(), 13u);
+}
+
+TEST(StreamDecoder, RepeatedField) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=uint32, k=1, v=0
+    0x08, 0x00,
+    // type=uint32, k=1, v=50
+    0x08, 0x32,
+    // type=uint32, k=1, v=100
+    0x08, 0x64,
+    // type=uint32, k=1, v=150
+    0x08, 0x96, 0x01,
+    // type=uint32, k=1, v=200
+    0x08, 0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  Result<uint32_t> uint32 = decoder.ReadUint32();
+  ASSERT_EQ(uint32.status(), OkStatus());
+  EXPECT_EQ(uint32.value(), 0u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  uint32 = decoder.ReadUint32();
+  ASSERT_EQ(uint32.status(), OkStatus());
+  EXPECT_EQ(uint32.value(), 50u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  uint32 = decoder.ReadUint32();
+  ASSERT_EQ(uint32.status(), OkStatus());
+  EXPECT_EQ(uint32.value(), 100u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  uint32 = decoder.ReadUint32();
+  ASSERT_EQ(uint32.status(), OkStatus());
+  EXPECT_EQ(uint32.value(), 150u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  uint32 = decoder.ReadUint32();
+  ASSERT_EQ(uint32.status(), OkStatus());
+  EXPECT_EQ(uint32.value(), 200u);
+}
+
+TEST(StreamDecoder, PackedVarint) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=uint32[], k=1, v={0, 50, 100, 150, 200}
+    0x0a, 0x07,
+    0x00,
+    0x32,
+    0x64,
+    0x96, 0x01,
+    0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  std::array<uint32_t, 8> uint32{};
+  StatusWithSize size = decoder.ReadPackedUint32(uint32);
+  ASSERT_EQ(size.status(), OkStatus());
+  EXPECT_EQ(size.size(), 5u);
+
+  EXPECT_EQ(uint32[0], 0u);
+  EXPECT_EQ(uint32[1], 50u);
+  EXPECT_EQ(uint32[2], 100u);
+  EXPECT_EQ(uint32[3], 150u);
+  EXPECT_EQ(uint32[4], 200u);
+}
+
+TEST(StreamDecoder, PackedVarintInsufficientSpace) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=uint32[], k=1, v={0, 50, 100, 150, 200}
+    0x0a, 0x07,
+    0x00,
+    0x32,
+    0x64,
+    0x96, 0x01,
+    0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  std::array<uint32_t, 2> uint32{};
+  StatusWithSize size = decoder.ReadPackedUint32(uint32);
+  ASSERT_EQ(size.status(), Status::ResourceExhausted());
+  EXPECT_EQ(size.size(), 2u);
+
+  // Still returns values in case of error.
+  EXPECT_EQ(uint32[0], 0u);
+  EXPECT_EQ(uint32[1], 50u);
+}
+
+TEST(StreamDecoder, PackedZigZag) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=sint32[], k=1, v={-100, -25, -1, 0, 1, 25, 100}
+    0x0a, 0x09,
+    0xc7, 0x01,
+    0x31,
+    0x01,
+    0x00,
+    0x02,
+    0x32,
+    0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  std::array<int32_t, 8> sint32{};
+  StatusWithSize size = decoder.ReadPackedSint32(sint32);
+  ASSERT_EQ(size.status(), OkStatus());
+  EXPECT_EQ(size.size(), 7u);
+
+  EXPECT_EQ(sint32[0], -100);
+  EXPECT_EQ(sint32[1], -25);
+  EXPECT_EQ(sint32[2], -1);
+  EXPECT_EQ(sint32[3], 0);
+  EXPECT_EQ(sint32[4], 1);
+  EXPECT_EQ(sint32[5], 25);
+  EXPECT_EQ(sint32[6], 100);
+}
+
+TEST(StreamDecoder, PackedFixed) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=fixed32[], k=1, v={0, 50, 100, 150, 200}
+    0x0a, 0x14,
+    0x00, 0x00, 0x00, 0x00,
+    0x32, 0x00, 0x00, 0x00,
+    0x64, 0x00, 0x00, 0x00,
+    0x96, 0x00, 0x00, 0x00,
+    0xc8, 0x00, 0x00, 0x00,
+    // type=fixed64[], v=2, v={0x0102030405060708}
+    0x12, 0x08,
+    0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  std::array<uint32_t, 8> fixed32{};
+  StatusWithSize size = decoder.ReadPackedFixed32(fixed32);
+  ASSERT_EQ(size.status(), OkStatus());
+  EXPECT_EQ(size.size(), 5u);
+
+  EXPECT_EQ(fixed32[0], 0u);
+  EXPECT_EQ(fixed32[1], 50u);
+  EXPECT_EQ(fixed32[2], 100u);
+  EXPECT_EQ(fixed32[3], 150u);
+  EXPECT_EQ(fixed32[4], 200u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 2u);
+  std::array<uint64_t, 8> fixed64{};
+  size = decoder.ReadPackedFixed64(fixed64);
+  ASSERT_EQ(size.status(), OkStatus());
+  EXPECT_EQ(size.size(), 1u);
+
+  EXPECT_EQ(fixed64[0], 0x0102030405060708u);
+}
+
+TEST(StreamDecoder, PackedFixedInsufficientSpace) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=sfixed32[], k=1, v={0, 50, 100, 150, 200}
+    0x0a, 0x14,
+    0x00, 0x00, 0x00, 0x00,
+    0x32, 0x00, 0x00, 0x00,
+    0x64, 0x00, 0x00, 0x00,
+    0x96, 0x00, 0x00, 0x00,
+    0xc8, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  std::array<uint32_t, 2> sfixed32{};
+  StatusWithSize size = decoder.ReadPackedFixed32(sfixed32);
+  ASSERT_EQ(size.status(), Status::ResourceExhausted());
 }
 
 }  // namespace

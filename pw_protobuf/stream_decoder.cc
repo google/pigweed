@@ -14,6 +14,7 @@
 
 #include "pw_protobuf/stream_decoder.h"
 
+#include <algorithm>
 #include <limits>
 
 #include "pw_assert/check.h"
@@ -392,17 +393,54 @@ StatusWithSize StreamDecoder::ReadDelimitedField(std::span<std::byte> out) {
   return StatusWithSize(result.value().size());
 }
 
+StatusWithSize StreamDecoder::ReadPackedFixedField(std::span<std::byte> out,
+                                                   size_t elem_size) {
+  if (Status status = CheckOkToRead(WireType::kDelimited); !status.ok()) {
+    return StatusWithSize(status, 0);
+  }
+
+  if (reader_.ConservativeReadLimit() < delimited_field_size_) {
+    status_ = Status::DataLoss();
+    return StatusWithSize(status_, 0);
+  }
+
+  if (out.size() < delimited_field_size_) {
+    // Value can't fit into the provided buffer. Don't advance the cursor so
+    // that the field can be re-read with a larger buffer or through the stream
+    // API.
+    return StatusWithSize::ResourceExhausted();
+  }
+
+  Result<ByteSpan> result = reader_.Read(out.first(delimited_field_size_));
+  if (!result.ok()) {
+    return StatusWithSize(result.status(), 0);
+  }
+
+  position_ += result.value().size();
+  field_consumed_ = true;
+
+  // Decode little-endian serialized packed fields.
+  if (std::endian::native == std::endian::big) {
+    for (auto out_start = out.begin(); out_start != out.end();
+         out_start += elem_size) {
+      std::reverse(out_start, out_start + elem_size);
+    }
+  }
+
+  return StatusWithSize(result.value().size() / elem_size);
+}
+
 Status StreamDecoder::CheckOkToRead(WireType type) {
   PW_CHECK(!nested_reader_open_,
            "Cannot read from a decoder while a nested decoder is open");
-  PW_CHECK(
-      !field_consumed_,
-      "Attempting to read from protobuf decoder without first calling Next()");
+  PW_CHECK(!field_consumed_,
+           "Attempting to read from protobuf decoder without first calling "
+           "Next()");
 
-  // Attempting to read the wrong type is typically a programmer error; however,
-  // it could also occur due to data corruption. As we don't want to crash on
-  // bad data, return NOT_FOUND here to distinguish it from other corruption
-  // cases.
+  // Attempting to read the wrong type is typically a programmer error;
+  // however, it could also occur due to data corruption. As we don't want to
+  // crash on bad data, return NOT_FOUND here to distinguish it from other
+  // corruption cases.
   if (current_field_.wire_type() != type) {
     status_ = Status::NotFound();
   }
