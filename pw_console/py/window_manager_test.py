@@ -23,12 +23,16 @@ from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output import DummyOutput as FakeOutput
 
 from pw_console.console_app import ConsoleApp
+from pw_console.console_prefs import ConsolePrefs
 from pw_console.window_manager import _WINDOW_SPLIT_ADJUST
 from pw_console.window_list import _WINDOW_HEIGHT_ADJUST, DisplayMode
 
 
 def _create_console_app(logger_count=2):
-    console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT)
+    console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
+                             prefs=ConsolePrefs(project_file=False,
+                                                project_user_file=False,
+                                                user_file=False))
     console_app.focus_on_container = MagicMock()
 
     loggers = {}

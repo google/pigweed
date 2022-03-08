@@ -133,8 +133,9 @@ class ConsoleApp:
         app_title=None,
         color_depth=None,
         extra_completers=None,
+        prefs=None,
     ):
-        self.prefs = ConsolePrefs()
+        self.prefs = prefs if prefs else ConsolePrefs()
         self.color_depth = get_default_colordepth(color_depth)
 
         # Create a default global and local symbol table. Values are the same

@@ -22,6 +22,7 @@ from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.output import DummyOutput as FakeOutput
 
 from pw_console.console_app import ConsoleApp
+from pw_console.console_prefs import ConsolePrefs
 
 
 class TestConsoleApp(unittest.TestCase):
@@ -29,14 +30,22 @@ class TestConsoleApp(unittest.TestCase):
     def test_instantiate(self) -> None:
         """Test init."""
         with create_app_session(output=FakeOutput()):
-            console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT)
+            console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
+                                     prefs=ConsolePrefs(
+                                         project_file=False,
+                                         project_user_file=False,
+                                         user_file=False))
             self.assertIsNotNone(console_app)
 
     def test_multiple_loggers_in_one_pane(self) -> None:
         """Test window resizing."""
         # pylint: disable=protected-access
         with create_app_session(output=FakeOutput()):
-            console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT)
+            console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
+                                     prefs=ConsolePrefs(
+                                         project_file=False,
+                                         project_user_file=False,
+                                         user_file=False))
 
             loggers = {
                 'Logs': [

@@ -30,6 +30,7 @@ from prompt_toolkit.output import (
 )
 
 from pw_console.console_app import ConsoleApp
+from pw_console.console_prefs import ConsolePrefs
 from pw_console.repl_pane import ReplPane
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 
@@ -113,7 +114,11 @@ if _PYTHON_3_8:
 
             with create_app_session(output=FakeOutput()):
                 # Setup Mocks
-                app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT)
+                app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
+                                 prefs=ConsolePrefs(project_file=False,
+                                                    project_user_file=False,
+                                                    user_file=False))
+
                 app.start_user_code_thread()
 
                 pw_ptpython_repl = app.pw_ptpython_repl
