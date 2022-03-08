@@ -15,7 +15,8 @@
 import("//build_overrides/pigweed.gni")
 
 declare_args() {
-  # The pw_log_string backend implements the pw_Log C API laid out by the
-  # pw_log_string module's implementation of the pw_log facade.
-  pw_log_string_BACKEND = ""
+  # The pw_log_string:message_handler backend implements the pw_Log C API
+  # which is also used by the pw_log_string module's implementation of the
+  # pw_log facade.
+  pw_log_string_HANDLER_BACKEND = ""
 }

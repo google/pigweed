@@ -194,10 +194,11 @@ template("pw_system_target") {
     _current_cpu = host_cpu
     _arch_build_args = {
       pw_log_BACKEND = dir_pw_log_string
-      pw_log_string_BACKEND = "$dir_pw_system:log"
+      pw_log_string_HANDLER_BACKEND = "$dir_pw_system:log_backend"
       pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
       pw_system_IO_BACKEND = "$dir_pw_system:socket_target_io"
     }
+    _link_deps += [ "$dir_pw_log_string:handler.impl" ]
 
     if (host_os != "win") {
       _toolchains = [

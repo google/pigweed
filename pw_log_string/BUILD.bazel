@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
 )
 
@@ -32,6 +33,23 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
+        ":handler",
         "//pw_preprocessor",
+    ],
+)
+
+pw_cc_facade(
+    name = "handler_facade",
+    hdrs = ["public/pw_log_string/handler.h"],
+    includes = ["public"],
+    deps = ["//pw_preprocessor"],
+)
+
+pw_cc_library(
+    name = "handler",
+    srcs = ["handler.cc"],
+    deps = [
+        ":handler_facade",
+        "@pigweed_config//:pw_log_string_handler_backend",
     ],
 )

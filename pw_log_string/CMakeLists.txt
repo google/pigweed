@@ -17,6 +17,24 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_module_library(pw_log_string
   IMPLEMENTS_FACADES
     pw_log
+  HEADERS
+    public/pw_log_string/log_string.h
+    public_overrides/pw_log_backend/log_backend.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
   PUBLIC_DEPS
     pw_preprocessor
+    pw_log_string.handler
+)
+
+pw_add_facade(pw_log_string.handler
+  HEADERS
+    public/pw_log_string/handler.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_preprocessor
+  SOURCES
+    handler.cc
 )

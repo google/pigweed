@@ -13,29 +13,15 @@
 // the License.
 #pragma once
 
+#include "pw_log_string/handler.h"
 #include "pw_preprocessor/arguments.h"
-#include "pw_preprocessor/compiler.h"
-#include "pw_preprocessor/util.h"
-
-PW_EXTERN_C_START
-
-// Log a message with the listed attributes.
-void pw_log_string_HandleMessage(int level,
-                                 unsigned int flags,
-                                 const char* module_name,
-                                 const char* file_name,
-                                 int line_number,
-                                 const char* message,
-                                 ...) PW_PRINTF_FORMAT(6, 7);
-
-PW_EXTERN_C_END
 
 // Log a message with many attributes included. This is a backend implementation
 // for the logging facade in pw_log/log.h.
 //
-// This is the log macro frontend that funnels everything into the C handler
-// above, pw_log_string_HandleMessage. It's not efficient at the callsite, since
-// it passes many arguments.
+// This is the log macro frontend that funnels everything into the C-based
+// message hangler facade, i.e. pw_log_string_HandleMessage. It's not efficient
+// at the callsite, since it passes many arguments.
 #define PW_HANDLE_LOG(level, flags, message, ...)                    \
   do {                                                               \
     pw_log_string_HandleMessage((level),                             \

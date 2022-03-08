@@ -16,10 +16,12 @@
 
 #include "pw_log_rpc/log_service.h"
 #include "pw_log_rpc/rpc_log_drain_thread.h"
+#include "pw_multisink/multisink.h"
 
 namespace pw::system {
 
-log_rpc::RpcLogDrainThread& GetLogThread();
 log_rpc::LogService& GetLogService();
+log_rpc::RpcLogDrainThread& GetLogThread();
+multisink::MultiSink& GetMultiSink();
 
 }  // namespace pw::system

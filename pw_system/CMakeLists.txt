@@ -25,28 +25,39 @@ pw_add_module_library("pw_system.config"
 
 pw_add_module_library("pw_system.log"
   PUBLIC_DEPS
-    "pw_system.config"
     "pw_log_rpc.log_service"
     "pw_log_rpc.rpc_log_drain_thread"
+    "pw_multisink"
   PRIVATE_DEPS
+    "pw_system.config"
     "pw_system.rpc"
+    "pw_log_rpc.rpc_log_drain"
+    "pw_sync.lock_annotations"
+    "pw_sync.mutex"
+  HEADERS
+    "pw_system_private/log.h"
+  SOURCES
+    "log.cc"
+)
+
+pw_add_module_library("pw_system.log_backend"
+  PRIVATE_DEPS
+    "pw_system.config"
+    "pw_system.log"
     "pw_bytes"
     "pw_chrono.system_clock"
-    "pw_log"
+    "pw_log.facade"
     "pw_log.proto_utils"
-    "pw_log_rpc.rpc_log_drain"
+    "pw_log_string.handler.facade"
     "pw_log_tokenized.metadata"
     "pw_multisink"
     "pw_result"
     "pw_sync.interrupt_spin_lock"
     "pw_sync.lock_annotations"
-    "pw_sync.mutex"
     "pw_tokenizer"
     "pw_tokenizer.global_handler_with_payload.facade"
   SOURCES
-    "log.cc"
-  HEADERS
-    "pw_system_private/log.h"
+    "log_backend.cc"
 )
 
 pw_add_module_library("pw_system.rpc"

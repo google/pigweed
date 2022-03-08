@@ -37,23 +37,37 @@ pw_cc_library(
     hdrs = [
         "pw_system_private/log.h",
     ],
-    includes = ["public"],
     deps = [
-        ":logger",
+        ":config",
         ":rpc",
-        "//pw_bytes",
-        "//pw_chrono:system_clock",
-        "//pw_log",
-        "//pw_log:proto_utils",
         "//pw_log_rpc:log_service",
         "//pw_log_rpc:rpc_log_drain",
         "//pw_log_rpc:rpc_log_drain_thread",
+        "//pw_multisink",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_library(
+    name = "log_backend",
+    srcs = [
+        "log_backend.cc",
+    ],
+    deps = [
+        ":config",
+        ":log",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
+        "//pw_log:facade",
+        "//pw_log:proto_utils",
+        "//pw_log_string:handler_facade",
         "//pw_log_tokenized:metadata",
         "//pw_multisink",
         "//pw_result",
+        "//pw_string",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
-        "//pw_sync:mutex",
         "//pw_tokenizer",
     ],
 )
