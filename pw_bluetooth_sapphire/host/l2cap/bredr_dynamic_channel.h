@@ -260,7 +260,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   CheckForUnacceptableErtmOptions(const ChannelConfiguration& config) const;
 
   // Try to recover from a configuration response with the "Unacceptable Parameters" result.
-  // Returns true if the negative reponse could be recovered from, and false otherwise (in which
+  // Returns true if the negative response could be recovered from, and false otherwise (in which
   // case an error should be reported).
   [[nodiscard]] bool TryRecoverFromUnacceptableParametersConfigRsp(
       const ChannelConfiguration& config);

@@ -31,7 +31,7 @@ bt::l2cap::ChannelParameters ConsumeChannelParameters(FuzzedDataProvider& provid
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   FuzzedDataProvider provider(data, size);
 
-  // Sets dispatcher needed for signaling channel reponse timeout.
+  // Sets dispatcher needed for signaling channel response timeout.
   async::TestLoop loop;
 
   auto fake_chan = fbl::AdoptRef(new bt::l2cap::testing::FakeChannel(
