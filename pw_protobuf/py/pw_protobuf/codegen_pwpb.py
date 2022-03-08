@@ -282,6 +282,21 @@ class ReadMethod(ProtoMethod):
         return True
 
 
+class PackedReadMethod(ReadMethod):
+    """A method for a reading a packed repeated field.
+
+    Same as ReadMethod, but is only generated for repeated fields.
+    """
+    def should_appear(self) -> bool:
+        return self._field.is_repeated()
+
+    def return_type(self, from_root: bool = False) -> str:
+        return '::pw::StatusWithSize'
+
+    def params(self) -> List[Tuple[str, str]]:
+        return [('std::span<{}>'.format(self._result_type()), 'out')]
+
+
 #
 # The following code defines write and read methods for each of the
 # complex protobuf types.
@@ -376,6 +391,15 @@ class DoubleReadMethod(ReadMethod):
         return 'ReadDouble'
 
 
+class PackedDoubleReadMethod(PackedReadMethod):
+    """Method which reads packed double values."""
+    def _result_type(self) -> str:
+        return 'double'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedDouble'
+
+
 class FloatWriteMethod(WriteMethod):
     """Method which writes a proto float value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -401,6 +425,15 @@ class FloatReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadFloat'
+
+
+class PackedFloatReadMethod(PackedReadMethod):
+    """Method which reads packed float values."""
+    def _result_type(self) -> str:
+        return 'float'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedFloat'
 
 
 class Int32WriteMethod(WriteMethod):
@@ -430,6 +463,15 @@ class Int32ReadMethod(ReadMethod):
         return 'ReadInt32'
 
 
+class PackedInt32ReadMethod(PackedReadMethod):
+    """Method which reads packed int32 values."""
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedInt32'
+
+
 class Sint32WriteMethod(WriteMethod):
     """Method which writes a proto sint32 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -455,6 +497,15 @@ class Sint32ReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadSint32'
+
+
+class PackedSint32ReadMethod(PackedReadMethod):
+    """Method which reads packed sint32 values."""
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedSint32'
 
 
 class Sfixed32WriteMethod(WriteMethod):
@@ -484,6 +535,15 @@ class Sfixed32ReadMethod(ReadMethod):
         return 'ReadSfixed32'
 
 
+class PackedSfixed32ReadMethod(PackedReadMethod):
+    """Method which reads packed sfixed32 values."""
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedSfixed32'
+
+
 class Int64WriteMethod(WriteMethod):
     """Method which writes a proto int64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -509,6 +569,15 @@ class Int64ReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadInt64'
+
+
+class PackedInt64ReadMethod(PackedReadMethod):
+    """Method which reads packed int64 values."""
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedInt64'
 
 
 class Sint64WriteMethod(WriteMethod):
@@ -538,6 +607,15 @@ class Sint64ReadMethod(ReadMethod):
         return 'ReadSint64'
 
 
+class PackedSint64ReadMethod(PackedReadMethod):
+    """Method which reads packed sint64 values."""
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedSint64'
+
+
 class Sfixed64WriteMethod(WriteMethod):
     """Method which writes a proto sfixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -563,6 +641,15 @@ class Sfixed64ReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadSfixed64'
+
+
+class PackedSfixed64ReadMethod(PackedReadMethod):
+    """Method which reads packed sfixed64 values."""
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedSfixed64'
 
 
 class Uint32WriteMethod(WriteMethod):
@@ -592,6 +679,15 @@ class Uint32ReadMethod(ReadMethod):
         return 'ReadUint32'
 
 
+class PackedUint32ReadMethod(PackedReadMethod):
+    """Method which reads packed uint32 values."""
+    def _result_type(self) -> str:
+        return 'uint32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedUint32'
+
+
 class Fixed32WriteMethod(WriteMethod):
     """Method which writes a proto fixed32 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -617,6 +713,15 @@ class Fixed32ReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadFixed32'
+
+
+class PackedFixed32ReadMethod(PackedReadMethod):
+    """Method which reads packed fixed32 values."""
+    def _result_type(self) -> str:
+        return 'uint32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedFixed32'
 
 
 class Uint64WriteMethod(WriteMethod):
@@ -646,6 +751,15 @@ class Uint64ReadMethod(ReadMethod):
         return 'ReadUint64'
 
 
+class PackedUint64ReadMethod(PackedReadMethod):
+    """Method which reads packed uint64 values."""
+    def _result_type(self) -> str:
+        return 'uint64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedUint64'
+
+
 class Fixed64WriteMethod(WriteMethod):
     """Method which writes a proto fixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -673,6 +787,15 @@ class Fixed64ReadMethod(ReadMethod):
         return 'ReadFixed64'
 
 
+class PackedFixed64ReadMethod(PackedReadMethod):
+    """Method which reads packed fixed64 values."""
+    def _result_type(self) -> str:
+        return 'uint64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedFixed64'
+
+
 class BoolWriteMethod(WriteMethod):
     """Method which writes a proto bool value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -689,6 +812,15 @@ class BoolReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadBool'
+
+
+class PackedBoolReadMethod(PackedReadMethod):
+    """Method which reads packed bool values."""
+    def _result_type(self) -> str:
+        return 'bool'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadPackedBool'
 
 
 class BytesWriteMethod(WriteMethod):
@@ -815,25 +947,42 @@ PROTO_FIELD_WRITE_METHODS: Dict[int, List] = {
 }
 
 PROTO_FIELD_READ_METHODS: Dict[int, List] = {
-    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [DoubleReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT: [FloatReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_INT32: [Int32ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32: [Sint32ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: [Sfixed32ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_INT64: [Int64ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: [Sint64ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: [Sfixed64ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: [Uint32ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: [Fixed32ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: [Uint64ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: [Fixed64ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [BoolReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES:
-    [BytesReadMethod, BytesReaderMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_STRING:
-    [StringReadMethod, BytesReaderMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE:
-    [SubMessageDecoderMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE:
+    [DoubleReadMethod, PackedDoubleReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT:
+    [FloatReadMethod, PackedFloatReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT32:
+    [Int32ReadMethod, PackedInt32ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32:
+    [Sint32ReadMethod, PackedSint32ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32:
+    [Sfixed32ReadMethod, PackedSfixed32ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT64:
+    [Int64ReadMethod, PackedInt64ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64:
+    [Sint64ReadMethod, PackedSint64ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64:
+    [Sfixed64ReadMethod, PackedSfixed64ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32:
+    [Uint32ReadMethod, PackedUint32ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32:
+    [Fixed32ReadMethod, PackedFixed32ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64:
+    [Uint64ReadMethod, PackedUint64ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64:
+    [Fixed64ReadMethod, PackedFixed64ReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [
+        BoolReadMethod, PackedBoolReadMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [
+        BytesReadMethod, BytesReaderMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [
+        StringReadMethod, BytesReaderMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [
+        SubMessageDecoderMethod
+    ],
     descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumReadMethod],
 }
 

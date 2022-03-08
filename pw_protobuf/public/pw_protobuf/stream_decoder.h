@@ -248,6 +248,15 @@ class StreamDecoder {
   // Reads a proto bool value from the current position.
   Result<bool> ReadBool();
 
+  // Reads repeated bool values from the current position using packed
+  // encoding.
+  //
+  // Returns the number of values read. In the case of error, the return value
+  // indicates the number of values successfully read, in addition to the error.
+  StatusWithSize ReadPackedBool(std::span<bool> out) {
+    return ReadPackedVarintField(out, VarintDecodeType::kNormal);
+  }
+
   // Reads a proto fixed32 value from the current position.
   Result<uint32_t> ReadFixed32() { return ReadFixedField<uint32_t>(); }
 
@@ -532,10 +541,12 @@ class StreamDecoder {
   template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
   StatusWithSize ReadPackedVarintField(std::span<T> out,
                                        VarintDecodeType decode_type) {
-    static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, int32_t> ||
-                      std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>,
-                  "Packed varints must be of type uint32_t, int32_t, uint64_t, "
-                  "or int64_t");
+    static_assert(
+        std::is_same_v<T, bool> || std::is_same_v<T, uint32_t> ||
+            std::is_same_v<T, int32_t> || std::is_same_v<T, uint64_t> ||
+            std::is_same_v<T, int64_t>,
+        "Packed varints must be of type bool, uint32_t, int32_t, uint64_t, "
+        "or int64_t");
 
     if (Status status = CheckOkToRead(WireType::kDelimited); !status.ok()) {
       return StatusWithSize(status, 0);

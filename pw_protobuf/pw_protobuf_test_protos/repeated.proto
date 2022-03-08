@@ -21,6 +21,7 @@ message RepeatedTest {
   repeated string strings = 3;
   repeated double doubles = 4;
   repeated Struct structs = 5;
+  repeated fixed32 fixed32s = 6;
 };
 
 message Struct {

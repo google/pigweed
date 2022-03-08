@@ -416,5 +416,174 @@ TEST(Codegen, BytesReader) {
   EXPECT_EQ(pigweed.Next(), Status::OutOfRange());
 }
 
+TEST(CodegenRepeated, NonPackedScalar) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x08, 0x00,
+    0x08, 0x10,
+    0x08, 0x20,
+    0x08, 0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x35, 0x00, 0x00, 0x00, 0x00,
+    0x35, 0x10, 0x00, 0x00, 0x00,
+    0x35, 0x20, 0x00, 0x00, 0x00,
+    0x35, 0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(repeated_test.Next(), OkStatus());
+    EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+
+    Result<uint32_t> result = repeated_test.ReadUint32s();
+    EXPECT_EQ(result.status(), OkStatus());
+    EXPECT_EQ(result.value(), i * 16u);
+  }
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(repeated_test.Next(), OkStatus());
+    EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+
+    Result<uint32_t> result = repeated_test.ReadFixed32s();
+    EXPECT_EQ(result.status(), OkStatus());
+    EXPECT_EQ(result.value(), i * 16u);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
+}
+
+TEST(CodegenRepeated, PackedScalar) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x0a, 0x04,
+    0x00,
+    0x10,
+    0x20,
+    0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x32, 0x10,
+    0x00, 0x00, 0x00, 0x00,
+    0x10, 0x00, 0x00, 0x00,
+    0x20, 0x00, 0x00, 0x00,
+    0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  std::array<uint32_t, 8> uint32s{};
+  StatusWithSize sws = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(sws.status(), OkStatus());
+  EXPECT_EQ(sws.size(), 4u);
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(uint32s[i], i * 16u);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  std::array<uint32_t, 8> fixed32s{};
+  sws = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(sws.status(), OkStatus());
+  EXPECT_EQ(sws.size(), 4u);
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(fixed32s[i], i * 16u);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
+}
+
+TEST(CodegenRepeated, PackedVarintScalarExhausted) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x0a, 0x04,
+    0x00,
+    0x10,
+    0x20,
+    0x30,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  std::array<uint32_t, 2> uint32s{};
+  StatusWithSize sws = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(sws.status(), Status::ResourceExhausted());
+  EXPECT_EQ(sws.size(), 2u);
+
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(uint32s[i], i * 16u);
+  }
+}
+
+TEST(CodegenRepeated, PackedFixedScalarExhausted) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x32, 0x10,
+    0x00, 0x00, 0x00, 0x00,
+    0x10, 0x00, 0x00, 0x00,
+    0x20, 0x00, 0x00, 0x00,
+    0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  std::array<uint32_t, 2> fixed32s{};
+  StatusWithSize sws = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(sws.status(), Status::ResourceExhausted());
+  EXPECT_EQ(sws.size(), 0u);
+}
+
+TEST(CodegenRepeated, NonScalar) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // strings[], v={"the", "quick", "brown", "fox"}
+    0x1a, 0x03, 't', 'h', 'e',
+    0x1a, 0x5, 'q',  'u', 'i', 'c', 'k',
+    0x1a, 0x5,  'b', 'r', 'o', 'w',  'n',
+    0x1a, 0x3, 'f', 'o', 'x'
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  constexpr std::array<std::string_view, 4> kExpectedString{
+      {{"the"}, {"quick"}, {"brown"}, {"fox"}}};
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(repeated_test.Next(), OkStatus());
+    EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::STRINGS);
+    std::array<char, 32> string{};
+    StatusWithSize sws = repeated_test.ReadStrings(string);
+    EXPECT_EQ(sws.status(), OkStatus());
+    EXPECT_EQ(sws.size(), kExpectedString[i].size());
+    EXPECT_EQ(std::memcmp(string.data(),
+                          kExpectedString[i].data(),
+                          kExpectedString[i].size()),
+              0);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
+}
+
 }  // namespace
 }  // namespace pw::protobuf

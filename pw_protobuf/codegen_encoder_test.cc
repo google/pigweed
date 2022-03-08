@@ -258,8 +258,25 @@ TEST(CodegenRepeated, NonPackedScalar) {
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
+  for (int i = 0; i < 4; ++i) {
+    repeated_test.WriteFixed32s(i * 16)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
+
+  // clang-format off
   constexpr uint8_t expected_proto[] = {
-      0x08, 0x00, 0x08, 0x10, 0x08, 0x20, 0x08, 0x30};
+    // uint32s[], v={0, 16, 32, 48}
+    0x08, 0x00,
+    0x08, 0x10,
+    0x08, 0x20,
+    0x08, 0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x35, 0x00, 0x00, 0x00, 0x00,
+    0x35, 0x10, 0x00, 0x00, 0x00,
+    0x35, 0x20, 0x00, 0x00, 0x00,
+    0x35, 0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
 
   ConstByteSpan result = writer.WrittenData();
   ASSERT_EQ(repeated_test.status(), OkStatus());
@@ -276,8 +293,26 @@ TEST(CodegenRepeated, PackedScalar) {
   constexpr uint32_t values[] = {0, 16, 32, 48};
   repeated_test.WriteUint32s(values)
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  repeated_test.WriteFixed32s(values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
-  constexpr uint8_t expected_proto[] = {0x0a, 0x04, 0x00, 0x10, 0x20, 0x30};
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x0a, 0x04,
+    0x00,
+    0x10,
+    0x20,
+    0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x32, 0x10,
+    0x00, 0x00, 0x00, 0x00,
+    0x10, 0x00, 0x00, 0x00,
+    0x20, 0x00, 0x00, 0x00,
+    0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
   ConstByteSpan result = writer.WrittenData();
   ASSERT_EQ(repeated_test.status(), OkStatus());
   EXPECT_EQ(result.size(), sizeof(expected_proto));
