@@ -741,6 +741,73 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   ASSERT_EQ(payloads.size(), 5u);
 }
 
+TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
+  stream::MemoryWriterBuffer<64> writer;
+  Status transfer_status = Status::Unknown();
+
+  constexpr ConstByteSpan data(kData32);
+
+  ASSERT_EQ(OkStatus(),
+            client_.Read(
+                14,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // First transfer parameters chunk is sent.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Read>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 14u);
+  EXPECT_EQ(c0.offset, 0u);
+  EXPECT_EQ(c0.window_end_offset, 64u);
+
+  // Simulate one less timeout than the maximum amount of retries.
+  for (unsigned retry = 1; retry <= kTestRetries - 1; ++retry) {
+    transfer_thread_.SimulateClientTimeout(14);
+    ASSERT_EQ(payloads.size(), retry + 1);
+
+    Chunk c = DecodeChunk(payloads.back());
+    EXPECT_EQ(c.transfer_id, 14u);
+    EXPECT_EQ(c.offset, 0u);
+    EXPECT_EQ(c.window_end_offset, 64u);
+
+    // Transfer has not yet completed.
+    EXPECT_EQ(transfer_status, Status::Unknown());
+  }
+
+  // Send some data.
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk({.transfer_id = 14u, .offset = 0, .data = data.first(16)}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+  ASSERT_EQ(payloads.size(), 3u);
+
+  // Time out a couple more times. The context's retry count should have been
+  // reset, so it should go through the standard retry flow instead of
+  // terminating the transfer.
+  transfer_thread_.SimulateClientTimeout(14);
+  ASSERT_EQ(payloads.size(), 4u);
+
+  Chunk c = DecodeChunk(payloads.back());
+  EXPECT_FALSE(c.status.has_value());
+  EXPECT_EQ(c.transfer_id, 14u);
+  EXPECT_EQ(c.offset, 16u);
+  EXPECT_EQ(c.window_end_offset, 64u);
+
+  transfer_thread_.SimulateClientTimeout(14);
+  ASSERT_EQ(payloads.size(), 5u);
+
+  c = DecodeChunk(payloads.back());
+  EXPECT_FALSE(c.status.has_value());
+  EXPECT_EQ(c.transfer_id, 14u);
+  EXPECT_EQ(c.offset, 16u);
+  EXPECT_EQ(c.window_end_offset, 64u);
+}
+
 TEST_F(ReadTransfer, InitialPacketFails_OnCompletedCalledWithDataLoss) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();

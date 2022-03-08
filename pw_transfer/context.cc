@@ -227,6 +227,9 @@ void Context::HandleChunkEvent(const ChunkEvent& event) {
     return;
   }
 
+  // Received some data. Reset the retry counter.
+  retries_ = 0;
+
   if (chunk.status.has_value()) {
     if (active()) {
       Finish(chunk.status.value());
