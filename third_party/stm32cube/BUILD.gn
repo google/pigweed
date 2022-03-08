@@ -134,9 +134,6 @@ if (dir_pw_third_party_stm32cube == "") {
       "__ARMCC_VERSION=0",  # workaround for bug at stm32l552xx.h:1303
     ]
     visibility = [ ":*" ]
-    if (pw_third_party_stm32cube_CORE_INIT != "") {
-      visibility += [ pw_third_party_stm32cube_CORE_INIT ]
-    }
   }
 
   config("public_include_paths") {
@@ -159,6 +156,9 @@ if (dir_pw_third_party_stm32cube == "") {
     public += files.headers
     public_deps = [ pw_third_party_stm32cube_CONFIG ]
     visibility = [ ":*" ]
+    if (pw_third_party_stm32cube_CORE_INIT != "") {
+      visibility += [ pw_third_party_stm32cube_CORE_INIT ]
+    }
   }
 
   pw_source_set("stm32cube") {
