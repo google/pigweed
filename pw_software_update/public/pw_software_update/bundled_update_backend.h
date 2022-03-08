@@ -30,14 +30,33 @@ class BundledUpdateBackend {
  public:
   virtual ~BundledUpdateBackend() = default;
 
-  // Optionally verify that the instance/content of the target file in use
-  // on-device matches the metadata in the given manifest, called before apply.
-  // (e.g. by checksum, if failed abort partial update and wipe/mark-invalid
-  // running manifest)
+  // VerifyTargetFile() is called for any target files referenced in the Targets
+  // metadata that is not found in the incoming bundle -- e.g. when some target
+  // files have been "personalized out".
+  //
+  // The backend MUST implement this function to uphold the security statement
+  // that says "the incoming bundle is a complete and officially endorsed
+  // software update". Without this check, a cracker could serve an incomplete
+  // update -- e.g. by removing some important target payloads that are supposed
+  // to be included.
+  //
+  // The actual implementation typically involves retrieving the original
+  // payload of @target_file_name, measuring / hashing it, and comparing that
+  // measurement (hash digest) against records in the (now trusted) @manifest.
+  // The on-device measurement may be cached (preferrably in a tamper resistant
+  // storage) to improve performance on subsequent verifications.
+  //
+  // If the target payload can't not be retrieved, an alternative verification
+  // mechanism could be used such as retrieving the version number via a target
+  // specific safe protocol and comparing that to what is recorded in @manifest.
+  // This is less reliable than hashing and is a product decision.
+  //
+  // In the absense of a good verification mechanism, the target element SHALL
+  // ALWAYS be included in the incoming bundle.
   virtual Status VerifyTargetFile(
       [[maybe_unused]] ManifestAccessor manifest,
       [[maybe_unused]] std::string_view target_file_name) {
-    return OkStatus();
+    return Status::Unimplemented();
   };
 
   // Perform any product-specific tasks needed before starting update sequence.

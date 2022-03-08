@@ -804,7 +804,7 @@ Status UpdateBundleAccessor::VerifyTargetsPayloads() {
       PW_LOG_DEBUG(
           "target payload for %s does not exist. Assumed personalized out",
           target_name_read_buf);
-      // Invoke backend specific check
+      // The backend MUST verify the exact payload already exists on the device.
       PW_TRY(backend_.VerifyTargetFile(GetManifestAccessor(),
                                        target_name_sv.value()));
       continue;
