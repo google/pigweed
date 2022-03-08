@@ -497,7 +497,8 @@ Then use `set +x` to go back to normal.
         with open(json_file, 'w') as outs:
             self._env.json(outs)
 
-        gni_file = (self._gni_file
+        gni_file = (os.path.join(self._env.get('PW_PROJECT_ROOT'),
+                                 self._gni_file)
                     or os.path.join(self._install_dir, 'environment.gni'))
         with open(gni_file, 'w') as outs:
             self._env.gni(outs, self._project_root)
