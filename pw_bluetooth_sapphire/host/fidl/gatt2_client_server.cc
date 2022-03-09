@@ -137,7 +137,7 @@ void Gatt2ClientServer::WatchServices(std::vector<fb::Uuid> fidl_uuids,
 
   // Only allow 1 callback at a time. Close the server if this is violated.
   if (watch_services_request_) {
-    bt_log(WARN, "fidl", "%s: call recieved while previous call is still pending", __FUNCTION__);
+    bt_log(WARN, "fidl", "%s: call received while previous call is still pending", __FUNCTION__);
     binding()->Close(ZX_ERR_ALREADY_BOUND);
     server_error_cb_();
     return;
