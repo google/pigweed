@@ -53,16 +53,14 @@ class QuitDialog(ConditionalContainer):
 
         # Quit keybindings are active when this dialog is in focus
         key_bindings = KeyBindings()
+        register = self.application.prefs.register_keybinding
 
-        @key_bindings.add('y')
-        @key_bindings.add('c-d')
+        @register('quit-dialog.yes', key_bindings)
         def _quit(_event: KeyPressEvent) -> None:
             """Close save as bar."""
             self.quit_action()
 
-        @key_bindings.add('escape')
-        @key_bindings.add('n')
-        @key_bindings.add('c-c')
+        @register('quit-dialog.no', key_bindings)
         def _cancel(_event: KeyPressEvent) -> None:
             """Close save as bar."""
             self.close_dialog()

@@ -130,8 +130,9 @@ class ReplPane(WindowPane):
 
         # Additional keybindings for the text area.
         key_bindings = KeyBindings()
+        register = self.application.prefs.register_keybinding
 
-        @key_bindings.add('c-c')
+        @register('python-repl.copy-output-selection', key_bindings)
         def _copy_selection(_event: KeyPressEvent) -> None:
             """Copy selected text."""
             self.copy_output_selection()
@@ -316,9 +317,9 @@ class ReplPane(WindowPane):
 
         # Hand-crafted bindings for display in the HelpWindow:
         return [{
-            'Execute code': ['Enter', 'Option-Enter', 'Meta-Enter'],
-            'Reverse search history': ['Ctrl-R'],
-            'Erase input buffer.': ['Ctrl-C'],
+            'Execute code': ['Enter', 'Option-Enter', 'Alt-Enter'],
+            'Reverse search history': ['Ctrl-r'],
+            'Erase input buffer.': ['Ctrl-c'],
             'Show settings.': ['F2'],
             'Show history.': ['F3'],
         }]

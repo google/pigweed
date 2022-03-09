@@ -14,10 +14,17 @@
 """Yaml config file loader mixin."""
 
 import os
+import logging
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import yaml
+
+_LOG = logging.getLogger(__package__)
+
+
+class MissingConfigTitle(Exception):
+    """Exception for when an existing YAML file is missing config_title."""
 
 
 class YamlConfigLoaderMixin:
@@ -140,3 +147,8 @@ class YamlConfigLoaderMixin:
 
             elif cfg.get('config_title', False) == self._config_section_title:
                 self._update_config(cfg)
+            else:
+                raise MissingConfigTitle(
+                    '\n\nThe YAML config file "{}" is missing the expected '
+                    '"config_title: {}" setting.'.format(
+                        str(file_path), self._config_section_title))

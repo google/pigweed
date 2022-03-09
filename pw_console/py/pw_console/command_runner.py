@@ -244,9 +244,9 @@ class CommandRunner:
     def _create_key_bindings(self) -> KeyBindingsBase:
         """Create additional key bindings for the command input field."""
         key_bindings = KeyBindings()
+        register = self.application.prefs.register_keybinding
 
-        @key_bindings.add('escape')
-        @key_bindings.add('c-c')
+        @register('command-runner.cancel', key_bindings)
         def _cancel(_event: KeyPressEvent) -> None:
             """Clear input or close command."""
             if self._get_input_field_text() != '':
@@ -255,14 +255,12 @@ class CommandRunner:
 
             self.close_dialog()
 
-        @key_bindings.add('up')
-        @key_bindings.add('s-tab')
+        @register('command-runner.select-previous-item', key_bindings)
         def _select_previous_item(_event: KeyPressEvent) -> None:
             """Select previous completion item."""
             self._previous_item()
 
-        @key_bindings.add('down')
-        @key_bindings.add('tab')
+        @register('command-runner.select-next-item', key_bindings)
         def _select_next_item(_event: KeyPressEvent) -> None:
             """Select next completion item."""
             self._next_item()

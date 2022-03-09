@@ -145,30 +145,29 @@ class SearchToolbar(ConditionalContainer):
         # Clear filter keybind is handled by the parent log_pane.
 
         key_bindings = KeyBindings()
+        register = self.log_pane.application.prefs.register_keybinding
 
-        @key_bindings.add('escape')
-        @key_bindings.add('c-c')
-        @key_bindings.add('c-d')
+        @register('search-toolbar.cancel', key_bindings)
         def _close_search_bar(_event: KeyPressEvent) -> None:
             """Close search bar."""
-            self._cancel_search()
+            self.cancel_search()
 
-        @key_bindings.add('c-n')
+        @register('search-toolbar.toggle-matcher', key_bindings)
         def _select_next_search_matcher(_event: KeyPressEvent) -> None:
             """Select the next search matcher."""
             self.log_pane.log_view.select_next_search_matcher()
 
-        @key_bindings.add('escape', 'c-f')  # Alt-Ctrl-f
+        @register('search-toolbar.create-filter', key_bindings)
         def _create_filter(_event: KeyPressEvent) -> None:
             """Create a filter."""
             self.create_filter()
 
-        @key_bindings.add('c-v')
+        @register('search-toolbar.toggle-invert', key_bindings)
         def _toggle_search_invert(_event: KeyPressEvent) -> None:
             """Toggle inverted search matching."""
             self._invert_search()
 
-        @key_bindings.add('c-t')
+        @register('search-toolbar.toggle-column', key_bindings)
         def _select_next_field(_event: KeyPressEvent) -> None:
             """Select next search field/column."""
             self._next_field()
@@ -192,7 +191,7 @@ class SearchToolbar(ConditionalContainer):
     def _previous_match(self) -> None:
         self.log_view.search_backwards()
 
-    def _cancel_search(self) -> None:
+    def cancel_search(self) -> None:
         self.input_field.buffer.reset()
         self.close_search_bar()
         self.log_view.clear_search()
@@ -263,7 +262,7 @@ class SearchToolbar(ConditionalContainer):
         start_search = functools.partial(
             pw_console.widgets.mouse_handlers.on_click, self._start_search)
         close_search = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._cancel_search)
+            pw_console.widgets.mouse_handlers.on_click, self.cancel_search)
 
         # Search toolbar is darker than pane toolbars, use the darker button
         # style here.
@@ -392,7 +391,7 @@ class SearchToolbar(ConditionalContainer):
         one_space = ('', ' ', focus)
         two_spaces = ('', '  ', focus)
         cancel = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                   self._cancel_search)
+                                   self.cancel_search)
         create_filter = functools.partial(
             pw_console.widgets.mouse_handlers.on_click, self._create_filter)
         next_match = functools.partial(

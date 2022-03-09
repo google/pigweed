@@ -247,66 +247,65 @@ class WindowManager:
         self._set_window_list_sizes(new_heights, new_widths)
 
     def _create_key_bindings(self) -> KeyBindings:
-        bindings = KeyBindings()
+        key_bindings = KeyBindings()
+        register = self.application.prefs.register_keybinding
 
-        @bindings.add('escape', 'c-left')  # Alt-Ctrl-
+        @register('window-manager.move-pane-left', key_bindings)
         def move_pane_left(_event):
             """Move window pane left."""
             self.move_pane_left()
 
-        @bindings.add('escape', 'c-right')  # Alt-Ctrl-
+        @register('window-manager.move-pane-right', key_bindings)
         def move_pane_right(_event):
             """Move window pane right."""
             self.move_pane_right()
 
-        # NOTE: c-up and c-down seem swapped in prompt_toolkit
-        @bindings.add('escape', 'c-up')  # Alt-Ctrl-
+        @register('window-manager.move-pane-down', key_bindings)
         def move_pane_down(_event):
             """Move window pane down."""
             self.move_pane_down()
 
-        # NOTE: c-up and c-down seem swapped in prompt_toolkit
-        @bindings.add('escape', 'c-down')  # Alt-Ctrl-
+        @register('window-manager.move-pane-up', key_bindings)
         def move_pane_up(_event):
             """Move window pane up."""
             self.move_pane_up()
 
-        @bindings.add('escape', '=')  # Alt-= (mnemonic: Alt Plus)
+        @register('window-manager.enlarge-pane', key_bindings)
         def enlarge_pane(_event):
             """Enlarge the active window pane."""
             self.enlarge_pane()
 
-        @bindings.add('escape', '-')  # Alt-minus (mnemonic: Alt Minus)
+        @register('window-manager.shrink-pane', key_bindings)
         def shrink_pane(_event):
             """Shrink the active window pane."""
             self.shrink_pane()
 
-        @bindings.add('escape', ',')  # Alt-, (mnemonic: Alt <)
+        @register('window-manager.shrink-split', key_bindings)
         def shrink_split(_event):
             """Shrink the current window split."""
             self.shrink_split()
 
-        @bindings.add('escape', '.')  # Alt-. (mnemonic: Alt >)
+        @register('window-manager.enlarge-split', key_bindings)
         def enlarge_split(_event):
             """Enlarge the current window split."""
             self.enlarge_split()
 
-        @bindings.add('escape', 'c-p')  # Ctrl-Alt-p
+        @register('window-manager.focus-prev-pane', key_bindings)
         def focus_prev_pane(_event):
             """Switch focus to the previous window pane or tab."""
             self.focus_previous_pane()
 
-        @bindings.add('escape', 'c-n')  # Ctrl-Alt-n
+        @register('window-manager.focus-next-pane', key_bindings)
         def focus_next_pane(_event):
             """Switch focus to the next window pane or tab."""
             self.focus_next_pane()
 
-        @bindings.add('c-u')
+        @register('window-manager.balance-window-panes', key_bindings)
         def balance_window_panes(_event):
             """Balance all window sizes."""
             self.balance_window_sizes()
 
-        return bindings
+        return key_bindings
 
     def delete_empty_window_lists(self):
         empty_lists = [

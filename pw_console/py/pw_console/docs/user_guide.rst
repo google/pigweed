@@ -754,6 +754,173 @@ Example Config
        # left: 2    # 2 lines away from the left edge of the screen
        # right: 2   # 2 lines away from the right edge of the screen
 
+   # Key bindings can be changed as well with the following format:
+   #   named-command: [ list_of_keys ]
+   # Where list_of_keys is a string of keys one for each alternate key
+   # To see all named commands open '[Help] > View Key Binding Config'
+   # See below for the names of special keys
+   key_bindings:
+     log-pane.move-cursor-up:
+     - j
+     - up
+     log-pane.move-cursor-down:
+     - k
+     - down
+     log-pane.search-next-match:
+     - n
+     log-pane.search-previous-match:
+     - N
+
+     # Chorded keys are supported.
+     # For example, 'z t' means pressing z quickly followed by t.
+     log-pane.shift-line-to-top:
+     - z t
+     log-pane.shift-line-to-center:
+     - z z
+
+Changing Keyboard Shortcuts
+---------------------------
+
+Pigweed Console uses `prompt_toolkit
+<https://python-prompt-toolkit.readthedocs.io/en/latest/>`_ to manage its
+keybindings.
+
+Bindings can be changed in the YAML config file under the ``key_bindings:``
+section by adding a named function followed by a of keys to bind. For example
+this config sets the keys for log pane cursor movement.
+
+- Moving down is set to :kbd:`j` or the :kbd:`Down` arrow.
+- Moving up is set to :kbd:`k` or the :kbd:`Up` arrow.
+
+.. code-block:: yaml
+
+   key_bindings:
+     log-pane.move-cursor-down:
+     - j
+     - down
+     log-pane.move-cursor-up:
+     - k
+     - up
+
+List of Special Key Names
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This table is from prompt_toolkit's :bdg-link-primary-line:`List of special keys
+<https://python-prompt-toolkit.readthedocs.io/en/latest/pages/advanced_topics/key_bindings.html#list-of-special-keys>`.
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Keyboard Function
+     - Key Values
+
+   * - Literal characters
+     - ``a b c d e f g h i j k l m n o p q r s t u v w x y z``
+       ``A B C D E F G H I J K L M N O P Q R S T U V W X Y Z``
+       ``1 2 3 4 5 6 7 8 9 0``
+       ``! @ # $ % ^ & * ( )``
+       ``- _ + = ~``
+
+   * - Escape and Shift-Escape
+     - ``escape`` ``s-escape``
+
+   * - Arrows
+     - ``left`` ``right`` ``up`` ``down``
+
+   * - Navigation
+     - ``home`` ``end`` ``delete`` ``pageup`` ``pagedown`` ``insert``
+
+   * - Control-letter
+     - ``c-a c-b c-c c-d c-e c-f c-g c-h c-i c-j c-k c-l c-m``
+       ``c-n c-o c-p c-q c-r c-s c-t c-u c-v c-w c-x c-y c-z``
+
+   * - Control-number
+     - ``c-1`` ``c-2`` ``c-3`` ``c-4`` ``c-5`` ``c-6`` ``c-7`` ``c-8`` ``c-9`` ``c-0``
+
+   * - Control-arrow
+     - ``c-left`` ``c-right`` ``c-up`` ``c-down``
+
+   * - Other control keys
+     - ``c-@`` ``c-\`` ``c-]`` ``c-^`` ``c-_`` ``c-delete``
+
+   * - Shift-arrow
+     - ``s-left`` ``s-right`` ``s-up`` ``s-down``
+
+   * - Control-Shift-arrow
+     - ``c-s-left`` ``c-s-right`` ``c-s-up`` ``c-s-down``
+
+   * - Other Shift` keys
+     - ``s-delete`` ``s-tab``
+
+   * - F Keys
+     - ``f1  f2  f3  f4  f5  f6  f7  f8  f9  f10 f11 f12``
+       ``f13 f14 f15 f16 f17 f18 f19 f20 f21 f22 f23 f24``
+
+There are some key aliases as well. Most of these exist due to how keys are
+processed in VT100 terminals. For example when pressing :kbd:`Tab` terminal
+emulators receive :kbd:`Ctrl-i`.
+
+.. list-table::
+   :widths: 40 60
+   :header-rows: 1
+
+   * - Key
+     - Key Value Alias
+
+   * - Space
+     - ``space``
+
+   * - ``c-h``
+     - ``backspace``
+
+   * - ``c-@``
+     - ``c-space``
+
+   * - ``c-m``
+     - ``enter``
+
+   * - ``c-i``
+     - ``tab``
+
+Binding Alt / Option / Meta
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In terminals the :kbd:`Alt` key is converted into a leading :kbd:`Escape` key
+press. For example pressing :kbd:`Alt-t` actually sends the :kbd:`Escape` key
+followed by the :kbd:`t` key. Similarly :kbd:`Ctrl-Alt-t` sends :kbd:`Escape`
+followed by :kbd:`Ctrl-t`.
+
+To bind :kbd:`Alt` (or :kbd:`Option` on MacOS) add ``escape`` before the key
+that should be modified.
+
+.. code-block:: yaml
+
+   key_bindings:
+     window-manager.move-pane-down:
+     - escape c-up  # Alt-Ctrl-up
+     window-manager.move-pane-left:
+     - escape c-left  # Alt-Ctrl-left
+     window-manager.move-pane-right:
+     - escape c-right  # Alt-Ctrl-right
+     window-manager.move-pane-up:
+     - escape c-down  # Alt-Ctrl-down
+
+Key Sequence Bindings
+~~~~~~~~~~~~~~~~~~~~~
+
+Bindings can consist of multiple key presses in sequence. This is also known as
+chorded keys. Multiple keys separated by spaces define a chorded key
+binding. For example to bind :kbd:`z` quickly followed by :kbd:`t` use ``z t``.
+
+.. code-block:: yaml
+
+   key_bindings:
+     log-pane.shift-line-to-top:
+     - z t
+     log-pane.shift-line-to-center:
+     - z z
+
 
 Known Issues
 ------------

@@ -13,12 +13,17 @@
 # the License.
 """Example text input-output Plugin."""
 
+from typing import TYPE_CHECKING
+
 from prompt_toolkit.document import Document
 from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout import Window
 from prompt_toolkit.widgets import SearchToolbar, TextArea
 
 from pw_console.widgets import ToolbarButton, WindowPane, WindowPaneToolbar
+
+if TYPE_CHECKING:
+    from pw_console.console_app import ConsoleApp
 
 
 class CalcPane(WindowPane):
@@ -87,18 +92,6 @@ class CalcPane(WindowPane):
         # handler defined in this CalcPane class.
         self.input_field.accept_handler = self.accept_input
 
-        # Add some additional keybindings for the output_field.
-        key_bindings = KeyBindings()
-
-        # Copy selected text in the output buffer when pressing ctrl-c.
-        @key_bindings.add('c-c')
-        def _copy_all_output(_event: KeyPressEvent) -> None:
-            """Copy selected text from the output buffer."""
-            self.copy_selected_output()
-
-        # Set the output_field control's key_bindings to the new bindings.
-        self.output_field.control.key_bindings = key_bindings
-
         # Create a toolbar for display at the bottom of this window. It will
         # show the window title and toolbar buttons.
         self.bottom_toolbar = WindowPaneToolbar(self)
@@ -132,6 +125,38 @@ class CalcPane(WindowPane):
             # Lastly, show the toolbar.
             self.bottom_toolbar,
         )
+
+    def pw_console_init(self, app: 'ConsoleApp') -> None:
+        """Set the Pigweed Console application instance.
+
+        This function is called after the Pigweed Console starts up and allows
+        access to the user preferences. Prefs is required for creating new
+        user-remappable keybinds."""
+        self.application = app
+        self.set_custom_keybinds()
+
+    def set_custom_keybinds(self) -> None:
+        # Fetch ConsoleApp preferences to load user keybindings
+        prefs = self.application.prefs
+        # Register a named keybind function that is user re-mappable
+        prefs.register_named_key_function(
+            'calc-pane.copy-selected-text',
+            # default bindings
+            ['c-c'])
+
+        # For setting additional keybindings to the output_field.
+        key_bindings = KeyBindings()
+
+        # Map the 'calc-pane.copy-selected-text' function keybind to the
+        # _copy_all_output function below. This will set
+        @prefs.register_keybinding('calc-pane.copy-selected-text',
+                                   key_bindings)
+        def _copy_all_output(_event: KeyPressEvent) -> None:
+            """Copy selected text from the output buffer."""
+            self.copy_selected_output()
+
+        # Set the output_field controls key_bindings to the new bindings.
+        self.output_field.control.key_bindings = key_bindings
 
     def run_calculation(self):
         """Trigger the input_field's accept_handler.

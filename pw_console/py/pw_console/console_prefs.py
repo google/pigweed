@@ -15,9 +15,13 @@
 
 import os
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, Callable, List, Union
+
+from prompt_toolkit.key_binding import KeyBindings
+import yaml
 
 from pw_console.style import get_theme_colors
+from pw_console.key_bindings import DEFAULT_KEY_BINDINGS
 from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 _DEFAULT_REPL_HISTORY: Path = Path.home() / '.pw_console_history'
@@ -49,6 +53,7 @@ _DEFAULT_CONFIG = {
             'top': 3
         },
     },
+    'key_bindings': DEFAULT_KEY_BINDINGS,
 }
 
 _DEFAULT_PROJECT_FILE = Path('$PW_PROJECT_ROOT/.pw_console.yaml')
@@ -98,6 +103,9 @@ def error_empty_window_list(window_list_title: str, ) -> None:
 
 class ConsolePrefs(YamlConfigLoaderMixin):
     """Pigweed Console preferences storage class."""
+
+    # pylint: disable=too-many-public-methods
+
     def __init__(
         self,
         project_file: Union[Path, bool] = _DEFAULT_PROJECT_FILE,
@@ -112,6 +120,9 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             default_config=_DEFAULT_CONFIG,
             environment_var='PW_CONSOLE_CONFIG_FILE',
         )
+
+        self.registered_commands = DEFAULT_KEY_BINDINGS
+        self.registered_commands.update(self.user_key_bindings)
 
     @property
     def ui_theme(self) -> str:
@@ -228,6 +239,25 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return self._config.get('command_runner', {}).get('height', 10)
 
     @property
+    def user_key_bindings(self) -> Dict[str, List[str]]:
+        return self._config.get('key_bindings', {})
+
+    def current_config_as_yaml(self) -> str:
+        yaml_options = dict(sort_keys=True,
+                            default_style='',
+                            default_flow_style=False)
+
+        title = {'config_title': 'pw_console'}
+        text = '\n'
+        text += yaml.safe_dump(title, **yaml_options)  # type: ignore
+
+        keys = {'key_bindings': self.registered_commands}
+        text += '\n'
+        text += yaml.safe_dump(keys, **yaml_options)  # type: ignore
+
+        return text
+
+    @property
     def unique_window_titles(self) -> set:
         titles = []
         for window_list_title, column in self.windows.items():
@@ -240,3 +270,25 @@ class ConsolePrefs(YamlConfigLoaderMixin):
                 titles.append(
                     window_options.get('duplicate_of', window_key_title))
         return set(titles)
+
+    def get_function_keys(self, name: str) -> List:
+        """Return the keys for the named function."""
+        try:
+            return self.registered_commands[name]
+        except KeyError as error:
+            raise KeyError('Unbound key function: {}'.format(name)) from error
+
+    def register_named_key_function(self, name: str,
+                                    default_bindings: List[str]) -> None:
+        self.registered_commands[name] = default_bindings
+
+    def register_keybinding(self, name: str, key_bindings: KeyBindings,
+                            **kwargs) -> Callable:
+        """Apply registered keys for the given named function."""
+        def decorator(handler: Callable) -> Callable:
+            "`handler` is a callable or Binding."
+            for keys in self.get_function_keys(name):
+                key_bindings.add(*keys.split(' '), **kwargs)(handler)
+            return handler
+
+        return decorator

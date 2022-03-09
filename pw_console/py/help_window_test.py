@@ -50,21 +50,21 @@ class TestHelpWindow(unittest.TestCase):
 
     # pylint: disable=unused-variable,unused-argument
     def test_add_keybind_help_text(self) -> None:
-        bindings = KeyBindings()
+        key_bindings = KeyBindings()
 
-        @bindings.add('f1')
+        @key_bindings.add('f1')
         def show_help(event):
             """Toggle help window."""
 
-        @bindings.add('c-w')
-        @bindings.add('c-q')
+        @key_bindings.add('c-w')
+        @key_bindings.add('c-q')
         def exit_(event):
             """Quit the application."""
 
         app = _create_app_mock()
 
         help_window = HelpWindow(app)
-        help_window.add_keybind_help_text('Global', bindings)
+        help_window.add_keybind_help_text('Global', key_bindings)
 
         self.assertEqual(
             help_window.help_text_sections,

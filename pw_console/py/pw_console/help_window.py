@@ -36,6 +36,7 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.widgets import Box, TextArea
 
 from pygments.lexers.markup import RstLexer  # type: ignore
+from pygments.lexers.data import YamlLexer  # type: ignore
 import pw_console.widgets.mouse_handlers
 
 if TYPE_CHECKING:
@@ -64,17 +65,23 @@ class HelpWindow(ConditionalContainer):
             focus_on_click=True,
             scrollbar=True,
             style='class:help_window_content',
+            wrap_lines=False,
             **kwargs,
         )
 
         # Additional keybindings for the text area.
         key_bindings = KeyBindings()
+        register = self.application.prefs.register_keybinding
 
-        @key_bindings.add('q')
-        @key_bindings.add('f1')
+        @register('help-window.close', key_bindings)
         def _close_window(_event: KeyPressEvent) -> None:
             """Close the current dialog window."""
             self.toggle_display()
+
+        @register('help-window.copy-all', key_bindings)
+        def _copy_all(_event: KeyPressEvent) -> None:
+            """Close the current dialog window."""
+            self.copy_all_text()
 
         help_text_area.control.key_bindings = key_bindings
         return help_text_area
@@ -109,11 +116,27 @@ class HelpWindow(ConditionalContainer):
 
         close_mouse_handler = functools.partial(
             pw_console.widgets.mouse_handlers.on_click, self.toggle_display)
+        copy_mouse_handler = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.copy_all_text)
 
         toolbar_padding = 1
         toolbar_title = ' ' * toolbar_padding
         toolbar_title += self.pane_title()
 
+        buttons = []
+        buttons.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'Ctrl-c',
+                'Copy All',
+                copy_mouse_handler,
+                base_style='class:toolbar-button-active'))
+        buttons.append(('', '  '))
+        buttons.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'q',
+                'Close',
+                close_mouse_handler,
+                base_style='class:toolbar-button-active'))
         top_toolbar = VSplit(
             [
                 Window(
@@ -130,12 +153,7 @@ class HelpWindow(ConditionalContainer):
                     dont_extend_width=False,
                 ),
                 Window(
-                    content=FormattedTextControl(
-                        pw_console.widgets.checkbox.to_keybind_indicator(
-                            'q',
-                            'Close',
-                            close_mouse_handler,
-                            base_style='class:toolbar-button-active')),
+                    content=FormattedTextControl(buttons),
                     align=WindowAlign.RIGHT,
                     dont_extend_width=True,
                 ),
@@ -175,6 +193,11 @@ class HelpWindow(ConditionalContainer):
         object."""
         return self.container
 
+    def copy_all_text(self):
+        """Copy all text in the Python input to the system clipboard."""
+        self.application.application.clipboard.set_text(
+            self.help_text_area.buffer.text)
+
     def toggle_display(self):
         """Toggle visibility of this help window."""
         # Toggle state variable.
@@ -207,6 +230,7 @@ class HelpWindow(ConditionalContainer):
             left_side_frame_and_padding_width +
             right_side_frame_and_padding_width + scrollbar_padding +
             scrollbar_width)
+        desired_width = max(60, desired_width)
 
         window_manager_width = (
             self.application.window_manager.current_window_manager_width)
@@ -228,6 +252,18 @@ class HelpWindow(ConditionalContainer):
         self.help_text_area = self._create_help_text_area(
             lexer=PygmentsLexer(RstLexer),
             text=rst_text,
+        )
+
+    def load_yaml_text(self, content: str):
+        max_line_length = 0
+        for line in content.splitlines():
+            if 'https://' not in line and len(line) > max_line_length:
+                max_line_length = len(line)
+        self.max_line_length = max_line_length
+
+        self.help_text_area = self._create_help_text_area(
+            lexer=PygmentsLexer(YamlLexer),
+            text=content,
         )
 
     def generate_help_text(self):
@@ -286,11 +322,12 @@ class HelpWindow(ConditionalContainer):
                 description, list())
 
             # Save the name of the key e.g. F1, q, ControlQ, ControlUp
-            key_name = '-'.join(
+            key_name = ' '.join(
                 [getattr(key, 'name', str(key)) for key in binding.keys])
             key_name = key_name.replace('Control', 'Ctrl-')
             key_name = key_name.replace('Shift', 'Shift-')
-            key_name = key_name.replace('Escape-', 'Alt-')
+            key_name = key_name.replace('Escape ', 'Alt-')
+            key_name = key_name.replace('Alt-Ctrl-', 'Ctrl-Alt-')
             key_name = key_name.replace('BackTab', 'Shift-Tab')
             key_list.append(key_name)
 

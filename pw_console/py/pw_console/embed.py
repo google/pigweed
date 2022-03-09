@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Dict, List, Iterable, Optional, Union
+from typing import Any, Dict, List, Iterable, Optional, Union
 
 from prompt_toolkit.completion import WordCompleter
 
@@ -25,6 +25,13 @@ from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
 from pw_console.plugin_mixin import PluginMixin
 import pw_console.python_logging
 from pw_console.widgets import WindowPane, WindowPaneToolbar
+
+
+def _set_console_app_instance(plugin: Any, console_app: ConsoleApp) -> None:
+    if hasattr(plugin, 'pw_console_init'):
+        plugin.pw_console_init(console_app)
+    else:
+        plugin.application = console_app
 
 
 class PwConsoleEmbed:
@@ -253,7 +260,7 @@ class PwConsoleEmbed:
 
         # Add window pane plugins to the layout.
         for window_pane in self.window_plugins:
-            window_pane.application = self.console_app
+            _set_console_app_instance(window_pane, self.console_app)
             # Hide window plugins if the title is hidden by default.
             if window_pane.pane_title() in self.hidden_by_default_windows:
                 window_pane.show_pane = False
@@ -261,8 +268,10 @@ class PwConsoleEmbed:
 
         # Add toolbar plugins to the layout.
         for toolbar in self.top_toolbar_plugins:
+            _set_console_app_instance(toolbar, self.console_app)
             self.console_app.window_manager.add_top_toolbar(toolbar)
         for toolbar in self.bottom_toolbar_plugins:
+            _set_console_app_instance(toolbar, self.console_app)
             self.console_app.window_manager.add_bottom_toolbar(toolbar)
 
         # Rebuild prompt_toolkit containers, menu items, and help content with

@@ -207,6 +207,13 @@ class ConsoleApp:
                                           title=(self.app_title + ' Help'))
         self.app_help_window.generate_help_text()
 
+        self.prefs_file_window = HelpWindow(self, title='.pw_console.yaml')
+        self.prefs_file_window.load_yaml_text(
+            self.prefs.current_config_as_yaml())
+
+        # Used for tracking which pane was in focus before showing help window.
+        self.last_focused_pane = None
+
         # Create a ptpython repl instance.
         self.pw_ptpython_repl = PwPtPythonRepl(
             get_globals=lambda: global_vars,
@@ -257,6 +264,13 @@ class ConsoleApp:
                 height=1,
             ),
             # Centered floating help windows
+            Float(
+                content=self.prefs_file_window,
+                top=2,
+                bottom=2,
+                # Callable to get width
+                width=self.prefs_file_window.content_width,
+            ),
             Float(
                 content=self.app_help_window,
                 top=2,
@@ -636,6 +650,9 @@ class ConsoleApp:
                      handler=self.user_guide_window.toggle_display),
             MenuItem(self.keybind_help_window.menu_title(),
                      handler=self.keybind_help_window.toggle_display),
+            MenuItem('-'),
+            MenuItem('View Key Binding Config',
+                     handler=self.prefs_file_window.toggle_display),
         ]
 
         if self.app_help_text:
@@ -803,10 +820,12 @@ class ConsoleApp:
         if self.app_help_text:
             return (self.app_help_window.show_window
                     or self.keybind_help_window.show_window
+                    or self.prefs_file_window.show_window
                     or self.user_guide_window.show_window
                     or self.quit_dialog.show_dialog
                     or self.command_runner.show_dialog)
         return (self.keybind_help_window.show_window
+                or self.prefs_file_window.show_window
                 or self.user_guide_window.show_window
                 or self.quit_dialog.show_dialog
                 or self.command_runner.show_dialog)

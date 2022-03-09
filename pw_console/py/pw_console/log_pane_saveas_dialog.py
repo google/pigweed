@@ -117,10 +117,9 @@ class LogPaneSaveAsDialog(ConditionalContainer):
 
         # Add additional keybindings for the input_field text area.
         key_bindings = KeyBindings()
+        register = self.log_pane.application.prefs.register_keybinding
 
-        @key_bindings.add('escape')
-        @key_bindings.add('c-c')
-        @key_bindings.add('c-d')
+        @register('save-as-dialog.cancel', key_bindings)
         def _close_saveas_dialog(_event: KeyPressEvent) -> None:
             """Close save as dialog."""
             self.close_dialog()
