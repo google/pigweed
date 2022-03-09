@@ -79,7 +79,30 @@ transfer service using their transfer IDs.
 
 Module Configuration Options
 ----------------------------
-todo
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. c:macro:: PW_TRANSFER_DEFAULT_MAX_RETRIES
+
+  The default maximum number of times a transfer should retry sending a chunk
+  when no response is received. This can later be configured per-transfer.
+
+.. c:macro:: PW_TRANSFER_DEFAULT_TIMEOUT_MS
+
+  The default amount of time, in milliseconds, to wait for a chunk to arrive
+  before retrying. This can later be configured per-transfer.
+
+.. c:macro:: PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR
+
+  The fractional position within a window at which a receive transfer should
+  extend its window size to minimize the amount of time the transmitter
+  spends blocked.
+
+  For example, a divisor of 2 will extend the window when half of the
+  requested data has been received, a divisor of three will extend at a third
+  of the window, and so on.
 
 Python
 ======

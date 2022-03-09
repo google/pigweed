@@ -19,6 +19,7 @@
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_transfer/internal/client_context.h"
+#include "pw_transfer/internal/config.h"
 #include "pw_transfer/transfer.raw_rpc.pb.h"
 #include "pw_transfer/transfer_thread.h"
 
@@ -54,13 +55,15 @@ class Client {
   Client(rpc::Client& rpc_client,
          uint32_t channel_id,
          TransferThread& transfer_thread,
-         size_t max_bytes_to_receive = 0)
+         size_t max_bytes_to_receive = 0,
+         uint32_t extend_window_divisor = cfg::kDefaultExtendWindowDivisor)
       : client_(rpc_client, channel_id),
         transfer_thread_(transfer_thread),
         max_parameters_(max_bytes_to_receive > 0
                             ? max_bytes_to_receive
                             : transfer_thread.max_chunk_size(),
-                        transfer_thread.max_chunk_size()),
+                        transfer_thread.max_chunk_size(),
+                        extend_window_divisor),
         has_read_stream_(false),
         has_write_stream_(false) {}
 
@@ -83,6 +86,15 @@ class Client {
       stream::Reader& input,
       CompletionFunc&& on_completion,
       chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout);
+
+  Status set_extend_window_divisor(uint32_t extend_window_divisor) {
+    if (extend_window_divisor <= 1) {
+      return Status::InvalidArgument();
+    }
+
+    max_parameters_.set_extend_window_divisor(extend_window_divisor);
+    return OkStatus();
+  }
 
  private:
   using Transfer = pw_rpc::raw::Transfer;

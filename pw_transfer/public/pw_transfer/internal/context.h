@@ -24,7 +24,6 @@
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_transfer/internal/chunk.h"
-#include "pw_transfer/internal/config.h"
 #include "pw_transfer/internal/event.h"
 #include "pw_transfer/rate_estimate.h"
 
@@ -35,11 +34,14 @@ class TransferThread;
 class TransferParameters {
  public:
   constexpr TransferParameters(uint32_t pending_bytes,
-                               uint32_t max_chunk_size_bytes)
+                               uint32_t max_chunk_size_bytes,
+                               uint32_t extend_window_divisor)
       : pending_bytes_(pending_bytes),
-        max_chunk_size_bytes_(max_chunk_size_bytes) {
+        max_chunk_size_bytes_(max_chunk_size_bytes),
+        extend_window_divisor_(extend_window_divisor) {
     PW_ASSERT(pending_bytes > 0);
     PW_ASSERT(max_chunk_size_bytes > 0);
+    PW_ASSERT(extend_window_divisor > 1);
   }
 
   uint32_t pending_bytes() const { return pending_bytes_; }
@@ -52,21 +54,16 @@ class TransferParameters {
     max_chunk_size_bytes_ = max_chunk_size_bytes;
   }
 
-  // The fractional position within a window at which a receive transfer should
-  // extend its window size to minimize the amount of time the transmitter
-  // spends blocked.
-  //
-  // For example, a divisor of 2 will extend the window when half of the
-  // requested data has been received, a divisor of three will extend at a third
-  // of the window, and so on.
-  //
-  // TODO(frolv): Find a good threshold for this; maybe make it configurable?
-  static constexpr uint32_t kExtendWindowDivisor = 2;
-  static_assert(kExtendWindowDivisor > 1);
+  uint32_t extend_window_divisor() const { return extend_window_divisor_; }
+  void set_extend_window_divisor(uint32_t extend_window_divisor) {
+    PW_DASSERT(extend_window_divisor > 1);
+    extend_window_divisor_ = extend_window_divisor;
+  }
 
  private:
   uint32_t pending_bytes_;
   uint32_t max_chunk_size_bytes_;
+  uint32_t extend_window_divisor_;
 };
 
 // Information about a single transfer.
@@ -136,9 +133,12 @@ class Context {
     // This ServerContext has never been used for a transfer. It is available
     // for use for a transfer.
     kInactive,
-    // A transfer completed and the final status chunk was sent. The Context is
-    // available for use for a new transfer. A receive transfer uses this state
-    // to allow a transmitter to retry its last chunk if the final status chunk
+    // A transfer completed and the final status chunk was sent. The Context
+    // is
+    // available for use for a new transfer. A receive transfer uses this
+    // state
+    // to allow a transmitter to retry its last chunk if the final status
+    // chunk
     // was dropped.
     kCompleted,
     // Waiting for the other end to send a chunk.
@@ -163,22 +163,22 @@ class Context {
     return static_cast<stream::Writer&>(*stream_);
   }
 
-  // Calculates the maximum size of actual data that can be sent within a single
-  // client write transfer chunk, accounting for the overhead of the transfer
-  // protocol and RPC system.
+  // Calculates the maximum size of actual data that can be sent within a
+  // single client write transfer chunk, accounting for the overhead of the
+  // transfer protocol and RPC system.
   //
   // Note: This function relies on RPC protocol internals. This is generally a
-  // *bad* idea, but is necessary here due to limitations of the RPC system and
-  // its asymmetric ingress and egress paths.
+  // *bad* idea, but is necessary here due to limitations of the RPC system
+  // and its asymmetric ingress and egress paths.
   //
   // TODO(frolv): This should be investigated further and perhaps addressed
   // within the RPC system, at the least through a helper function.
   uint32_t MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
                              uint32_t channel_id) const;
 
-  // Initializes a new transfer using new_transfer. The provided stream argument
-  // is used in place of the NewTransferEvent's stream. Only initializes state;
-  // no packets are sent.
+  // Initializes a new transfer using new_transfer. The provided stream
+  // argument is used in place of the NewTransferEvent's stream. Only
+  // initializes state; no packets are sent.
   //
   // Precondition: context is not active.
   void Initialize(const NewTransferEvent& new_transfer);
@@ -196,7 +196,8 @@ class Context {
   void StartTransferAsServer(const NewTransferEvent& new_transfer);
 
   // Does final cleanup specific to the server or client. Returns whether the
-  // cleanup succeeded. An error in cleanup indicates that the transfer failed.
+  // cleanup succeeded. An error in cleanup indicates that the transfer
+  // failed.
   virtual Status FinalCleanup(Status status) = 0;
 
   // Processes a chunk in either a transfer or receive transfer.
@@ -220,17 +221,17 @@ class Context {
   // Sends the first chunk in a transmit transfer.
   void SendInitialTransmitChunk();
 
-  // In a receive transfer, sends a parameters chunk telling the transmitter how
-  // much data they can send.
+  // In a receive transfer, sends a parameters chunk telling the transmitter
+  // how much data they can send.
   void SendTransferParameters(TransmitAction action);
 
   // Updates the current receive transfer parameters from the provided object,
   // then sends them.
   void UpdateAndSendTransferParameters(TransmitAction action);
 
-  // Sends a final status chunk of a completed transfer without updating the the
-  // transfer. Sends status_, which MUST have been set by a previous Finish()
-  // call.
+  // Sends a final status chunk of a completed transfer without updating the
+  // the transfer. Sends status_, which MUST have been set by a previous
+  // Finish() call.
   void SendFinalStatusChunk();
 
   // Marks the transfer as completed and calls FinalCleanup(). Sets status_ to
@@ -259,8 +260,8 @@ class Context {
 
   // How long to wait for the other side to ACK a final transfer chunk before
   // resetting the context so that it can be reused. During this time, the
-  // status chunk will be re-sent for every non-ACK chunk received, continually
-  // notifying the other end that the transfer is over.
+  // status chunk will be re-sent for every non-ACK chunk received,
+  // continually notifying the other end that the transfer is over.
   static constexpr chrono::SystemClock::duration kFinalChunkAckTimeout =
       std::chrono::milliseconds(5000);
 

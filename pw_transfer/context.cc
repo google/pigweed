@@ -566,7 +566,7 @@ void Context::HandleReceivedData(const Chunk& chunk) {
   // the window to allow it to continue sending data without blocking.
   uint32_t remaining_window_size = window_end_offset_ - offset_;
   bool extend_window = remaining_window_size <=
-                       window_size_ / TransferParameters::kExtendWindowDivisor;
+                       window_size_ / max_parameters_->extend_window_divisor();
 
   if (extend_window) {
     UpdateAndSendTransferParameters(kExtend);
