@@ -41,6 +41,7 @@ constexpr int kIterations = 1;
 
 constexpr auto kData512 = bytes::Initialized<512>([](size_t i) { return i; });
 constexpr auto kData8192 = bytes::Initialized<8192>([](size_t i) { return i; });
+constexpr auto kDataHdlcEscape = bytes::Initialized<8192>(0x7e);
 
 std::filesystem::path directory;
 
@@ -235,6 +236,7 @@ PW_TRANSFER_TEST_WRITE(SingleByte_1, "\0");
 PW_TRANSFER_TEST_WRITE(SingleByte_2, "?");
 PW_TRANSFER_TEST_WRITE(SmallData, "hunter2");
 PW_TRANSFER_TEST_WRITE(LargeData, kData512);
+PW_TRANSFER_TEST_WRITE(HdlcEscape, kDataHdlcEscape);
 
 }  // namespace
 }  // namespace pw::transfer
