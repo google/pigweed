@@ -86,7 +86,7 @@ TEST(NanopbTestMethodContext, ResponseWithCallbacks) {
 
   pw_rpc_test_TestResponse response = pw_rpc_test_TestResponse_init_default;
   response.repeated_field.funcs.decode = +[](pb_istream_t* stream,
-                                             const pb_field_iter_t* /* field */,
+                                             const pb_field_t* /* field */,
                                              void** arg) -> bool {
     DecoderContext* dec_ctx = static_cast<DecoderContext*>(*arg);
     uint64_t value;

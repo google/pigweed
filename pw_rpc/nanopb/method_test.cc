@@ -158,9 +158,8 @@ class FakeService : public FakeServiceBase<FakeService> {
 
     if (fail_to_encode_async_unary_response) {
       pw_rpc_test_TestResponse response = pw_rpc_test_TestResponse_init_default;
-      response.repeated_field.funcs.encode = [](pb_ostream_t*,
-                                                const pb_field_iter_t*,
-                                                void* const*) { return false; };
+      response.repeated_field.funcs.encode =
+          [](pb_ostream_t*, const pb_field_t*, void* const*) { return false; };
       ASSERT_EQ(OkStatus(), responder.Finish(response, Status::NotFound()));
     } else {
       ASSERT_EQ(
@@ -337,7 +336,7 @@ TEST(NanopbMethod, ServerStreamingRpc_ResponseEncodingFails_InternalError) {
 
   pw_rpc_test_TestResponse response = pw_rpc_test_TestResponse_init_default;
   response.repeated_field.funcs.encode =
-      [](pb_ostream_t*, const pb_field_iter_t*, void* const*) { return false; };
+      [](pb_ostream_t*, const pb_field_t*, void* const*) { return false; };
   EXPECT_EQ(Status::Internal(), context.service().last_writer.Write(response));
 }
 
