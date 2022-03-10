@@ -722,7 +722,31 @@ TEST_F(BlobStoreTest, InvalidSeekOffset) {
   ASSERT_EQ(Status::OutOfRange(), reader.Seek(kOffset));
 }
 
-// Test reading with a read buffer larger than the available data in the
+// Write a block to blob and close with part of a write buffer with unflushed
+// data.
+TEST_F(BlobStoreTest, WriteBufferWithRemainderInBuffer) {
+  InitSourceBufferToRandom(0x11309);
+
+  kvs::ChecksumCrc16 checksum;
+  constexpr size_t kBufferSize = 256;
+  BlobStoreBuffer<kBufferSize> blob(
+      "TestBlobBlock", partition_, &checksum, kvs::TestKvs(), kBufferSize);
+  EXPECT_EQ(OkStatus(), blob.Init());
+
+  const size_t write_size_bytes = kBlobDataSize - 10;
+  ConstByteSpan write_data = std::span(source_buffer_).first(write_size_bytes);
+
+  BlobStore::BlobWriterWithBuffer writer(blob);
+  EXPECT_EQ(OkStatus(), writer.Open());
+  ASSERT_EQ(OkStatus(), writer.Write(write_data));
+  EXPECT_EQ(OkStatus(), writer.Close());
+
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(OkStatus(), reader.Open());
+  EXPECT_EQ(write_size_bytes, reader.ConservativeReadLimit());
+}
+
+// Test reading with a read buffer larger than the available data in the blob.
 TEST_F(BlobStoreTest, ReadBufferIsLargerThanData) {
   InitSourceBufferToRandom(0x57326);
 

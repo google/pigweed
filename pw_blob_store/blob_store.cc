@@ -345,7 +345,8 @@ Status BlobStore::FlushFinalPartialChunk() {
 
   PW_DCHECK_UINT_GT(bytes_in_buffer, 0);
   PW_DCHECK_UINT_LE(bytes_in_buffer, flash_write_size_bytes_);
-  PW_DCHECK_UINT_LE(flash_write_size_bytes_, WriteBytesRemaining());
+  PW_DCHECK_UINT_LE(flash_write_size_bytes_,
+                    MaxDataSizeBytes() - flash_address_);
 
   // If there is no buffer there should never be any bytes enqueued.
   PW_DCHECK(!write_buffer_.empty());
