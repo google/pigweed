@@ -26,6 +26,12 @@
 // The maximum allowed length of a target name.
 #define MAX_TARGET_NAME_LENGTH 32
 
+// The maximum allowed payload size in bytes. This is used to mitigate DoS
+// attacks.
+#ifndef PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE
+#define PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE (100 * 1024 * 1024)
+#endif  // PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE
+
 // Not recommended. Disable compilation of bundle verification.
 #ifndef PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
 #define PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION (false)

@@ -30,33 +30,18 @@ class BundledUpdateBackend {
  public:
   virtual ~BundledUpdateBackend() = default;
 
-  // VerifyTargetFile() is called for any target files referenced in the Targets
-  // metadata that is not found in the incoming bundle -- e.g. when some target
-  // files have been "personalized out".
+  // Perform optional, product-specific validations to the specified target
+  // file, using whatever metadata available in manifest.
   //
-  // The backend MUST implement this function to uphold the security statement
-  // that says "the incoming bundle is a complete and officially endorsed
-  // software update". Without this check, a cracker could serve an incomplete
-  // update -- e.g. by removing some important target payloads that are supposed
-  // to be included.
-  //
-  // The actual implementation typically involves retrieving the original
-  // payload of @target_file_name, measuring / hashing it, and comparing that
-  // measurement (hash digest) against records in the (now trusted) @manifest.
-  // The on-device measurement may be cached (preferrably in a tamper resistant
-  // storage) to improve performance on subsequent verifications.
-  //
-  // If the target payload can't not be retrieved, an alternative verification
-  // mechanism could be used such as retrieving the version number via a target
-  // specific safe protocol and comparing that to what is recorded in @manifest.
-  // This is less reliable than hashing and is a product decision.
-  //
-  // In the absense of a good verification mechanism, the target element SHALL
-  // ALWAYS be included in the incoming bundle.
+  // This is called for each target file after the standard verification has
+  // passed.
   virtual Status VerifyTargetFile(
       [[maybe_unused]] ManifestAccessor manifest,
       [[maybe_unused]] std::string_view target_file_name) {
-    return Status::Unimplemented();
+    // TODO(backend): Perform any additional product-specific validations.
+    // It is safe to assume the target's payload has passed standard
+    // verification.
+    return OkStatus();
   };
 
   // Perform any product-specific tasks needed before starting update sequence.
@@ -105,16 +90,99 @@ class BundledUpdateBackend {
                                  stream::Reader& target_payload,
                                  size_t update_bundle_offset) = 0;
 
-  // Get reader of the device's current manifest.
+  // Backend to probe the device manifest and prepare a ready-to-go reader
+  // for it. See the comments to `GetCurrentManfestReader()` for more context.
+  virtual Status BeforeManifestRead() {
+    // Todo(backend):
+    // 1. Probe device to see if a well-formed manifest already exists.
+    // 2. If not, return `Status::NotFound()`. Note this will cause
+    //    anti-rollback to skip. So please don't always return
+    //    `Status::NotFound()`!
+    // 3. If yes, instantiate and activate a reader for the manifest!
+    // 4. Return any unexpected condition as errors but note this will cause
+    //    the current software update session to abort.
+    return OkStatus();
+  }
+
+  // Backend to provide a ready-to-go reader for the on-device manifest blob.
+  // This function is called after a successful `BeforeManifestRead()`,
+  // potentially more than once.
+  //
+  // This manifest blob is a serialized `message Manifest{...}` as defined in
+  // update_bundle.proto.
+  //
+  // This manifest blob is ALWAYS and EXCLUSIVELY persisted by a successful
+  // software update. Thus it may not available before the first software
+  // update, in which case `BeforeManifestRead()` should've returned
+  // `Status::NotFound()`.
+  //
+  // This manifest contains trusted metadata of all software currently running
+  // on the device and used for anti-rollback checks. It MUST NOT be tampered
+  // by factory resets, flashing, or any other means other than software
+  // updates.
   virtual Result<stream::SeekableReader*> GetCurrentManifestReader() {
+    // Todo(backend):
+    // 1. Double check if a ready-to-go reader has been prepared by
+    //    `BeforeManifestRead()`.
+    // 2. If yes (expected), return the reader.
+    // 3. If not (unexpected), return `Status::FailedPrecondition()`.
     return Status::Unimplemented();
   }
 
-  // Use a reader that provides a new manifest for the device to save.
-  virtual Status UpdateCurrentManifest(
-      [[maybe_unused]] stream::Reader& manifest) {
+  // TODO(alizhang): Deprecate GetCurrentManifestReader in favor of
+  // `GetManifestReader()`.
+  virtual Result<stream::SeekableReader*> GetManifestReader() {
+    return GetCurrentManifestReader();
+  }
+
+  // Backend to prepare for on-device manifest update, e.g. make necessary
+  // efforts to ready the manifest writer. The manifest writer is used to
+  // persist a new manifest on-device following a successful software update.
+  // Manifest writing is never mixed with reading (i.e. reader and writer are
+  // used sequentially).
+  virtual Status BeforeManifestWrite() {
+    // Todo(backend):
+    // 1. Instantiate and activate a manifest writer pointing at a persistent
+    //    storage that at least could survive a factory data reset (FDR), if not
+    //    tamper-resistant.
     return OkStatus();
-  };
+  }
+
+  // Backend to provide a ready-to-go writer for the on-device manifest blob.
+  // This function is called after a successful `BeforeManifestWrite()`,
+  // potentially more than once.
+  //
+  // This manifest blob is a serialized `message Manifest{...}` as defined in
+  // update_bundle.proto.
+  //
+  // This manifest blob is ALWAYS and EXCLUSIVELY persisted by a successful
+  // software update.
+  //
+  // This manifest contains trusted metadata of all software currently running
+  // on the device and used for anti-rollback checks. It MUST NOT be tampered
+  // by factory resets, flashing, or any other means other than software
+  // updates.
+  virtual Result<stream::Writer*> GetManifestWriter() {
+    // Todo(backend):
+    // 1. Double check a writer is ready to go as result of
+    //    `BeforeManifestWrite()`.
+    // 2. If yes (expected), simply return the writer.
+    // 3. If not (unexpected), return `Status::FailedPrecondition()`.
+    return Status::Unimplemented();
+  }
+
+  // Backend to finish up manifest writing.
+  virtual Status AfterManifestWrite() {
+    // Todo(backend):
+    // Protect the newly persisted manifest blob. This is to make manifest
+    // probing / reading easier and more reliable. This could involve taking
+    // a measurement (e.g. checksum) and storing that measurement in a
+    // FDR-safe tag, replicating the manifest in a backup location if the
+    // backing media is unreliable (e.g. raw NAND) etc.
+    //
+    // It is safe to assume the writing has been successful in this function.
+    return OkStatus();
+  }
 
   // Do any work needed to finish the apply of the update and do a required
   // reboot of the device!

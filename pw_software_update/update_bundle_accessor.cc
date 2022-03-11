@@ -24,6 +24,7 @@
 #include "pw_protobuf/message.h"
 #include "pw_result/result.h"
 #include "pw_software_update/config.h"
+#include "pw_software_update/manifest_accessor.h"
 #include "pw_software_update/update_bundle.pwpb.h"
 #include "pw_stream/interval_reader.h"
 #include "pw_stream/memory_stream.h"
@@ -32,8 +33,6 @@
 
 namespace pw::software_update {
 namespace {
-
-constexpr std::string_view kTopLevelTargetsName = "targets";
 
 Result<bool> VerifyEcdsaSignature(protobuf::Bytes public_key,
                                   ConstByteSpan digest,
@@ -234,90 +233,6 @@ Result<uint32_t> GetMetadataVersion(protobuf::Message& metadata,
   return res.value();
 }
 
-// Gets the list of targets in the top-level targets metadata
-protobuf::RepeatedMessages GetTopLevelTargets(protobuf::Message bundle) {
-  // Get signed targets metadata map.
-  //
-  // message UpdateBundle {
-  //   ...
-  //   map<string, SignedTargetsMetadata> target_metadata = <id>;
-  //   ...
-  // }
-  protobuf::StringToMessageMap signed_targets_metadata_map =
-      bundle.AsStringToMessageMap(
-          static_cast<uint32_t>(UpdateBundle::Fields::TARGETS_METADATA));
-  PW_TRY(signed_targets_metadata_map.status());
-
-  // Get the top-level signed targets metadata.
-  protobuf::Message signed_targets_metadata =
-      signed_targets_metadata_map[kTopLevelTargetsName];
-  PW_TRY(signed_targets_metadata.status());
-
-  // Get the targets metadata.
-  //
-  // message SignedTargetsMetadata {
-  //   ...
-  //   bytes serialized_target_metadata = <id>;
-  //   ...
-  // }
-  protobuf::Message targets_metadata =
-      signed_targets_metadata.AsMessage(static_cast<uint32_t>(
-          SignedTargetsMetadata::Fields::SERIALIZED_TARGETS_METADATA));
-  PW_TRY(targets_metadata.status());
-
-  // Return the target file list
-  //
-  // message TargetsMetadata {
-  //   ...
-  //   repeated TargetFile target_files = <id>;
-  //   ...
-  // }
-  return targets_metadata.AsRepeatedMessages(
-      static_cast<uint32_t>(TargetsMetadata::Fields::TARGET_FILES));
-}
-
-// Verifies a given target payload against a given hash.
-Result<bool> VerifyTargetPayloadHash(protobuf::Message hash_info,
-                                     protobuf::Bytes target_payload) {
-  // Get the hash function field
-  //
-  // message Hash {
-  //   ...
-  //   HashFunction function = <id>;
-  //   ...
-  // }
-  protobuf::Uint32 hash_function =
-      hash_info.AsUint32(static_cast<uint32_t>(Hash::Fields::FUNCTION));
-  PW_TRY(hash_function.status());
-
-  // enum HashFunction {
-  //   UNKNOWN_HASH_FUNCTION = 0;
-  //   SHA256 = 1;
-  // }
-  if (hash_function.value() != static_cast<uint32_t>(HashFunction::SHA256)) {
-    // Unknown hash function
-    PW_LOG_DEBUG("Unknown hash function, %d", hash_function.value());
-    return Status::InvalidArgument();
-  }
-
-  // Get the hash bytes field
-  //
-  // message Hash {
-  //   ...
-  //   bytes hash = <id>;
-  //   ...
-  // }
-  protobuf::Bytes hash_bytes =
-      hash_info.AsBytes(static_cast<uint32_t>(Hash::Fields::HASH));
-  PW_TRY(hash_bytes.status());
-
-  std::byte digest[crypto::sha256::kDigestSizeBytes];
-  stream::IntervalReader target_payload_reader =
-      target_payload.GetBytesReader();
-  PW_TRY(crypto::sha256::Hash(target_payload_reader, digest));
-  return hash_bytes.Equal(digest);
-}
-
 // Reads a protobuf::String into a buffer and returns a std::string_view.
 Result<std::string_view> ReadProtoString(protobuf::String str,
                                          std::span<char> buffer) {
@@ -339,144 +254,97 @@ Status UpdateBundleAccessor::OpenAndVerify() {
   return OkStatus();
 }
 
+Result<uint64_t> UpdateBundleAccessor::GetTotalPayloadSize() {
+  protobuf::RepeatedMessages manifested_targets =
+      GetManifest().GetTargetFiles();
+  PW_TRY(manifested_targets.status());
+
+  protobuf::StringToBytesMap bundled_payloads = bundle_.AsStringToBytesMap(
+      static_cast<uint32_t>(UpdateBundle::Fields::TARGET_PAYLOADS));
+  PW_TRY(bundled_payloads.status());
+
+  uint64_t total_bytes;
+  std::array<std::byte, MAX_TARGET_NAME_LENGTH> name_buffer = {};
+  for (protobuf::Message target : manifested_targets) {
+    protobuf::String target_name =
+        target.AsString(static_cast<uint32_t>(TargetFile::Fields::FILE_NAME));
+
+    stream::IntervalReader name_reader = target_name.GetBytesReader();
+    PW_TRY(name_reader.status());
+    if (name_reader.interval_size() > name_buffer.size()) {
+      return Status::OutOfRange();
+    }
+
+    Result<ByteSpan> read_result = name_reader.Read(name_buffer);
+    PW_TRY(read_result.status());
+
+    ConstByteSpan name_span = read_result.value();
+    std::string_view name_view(reinterpret_cast<const char*>(name_span.data()),
+                               name_span.size_bytes());
+
+    if (!bundled_payloads[name_view].ok()) {
+      continue;
+    }
+    protobuf::Uint64 target_length =
+        target.AsUint64(static_cast<uint32_t>(TargetFile::Fields::LENGTH));
+    PW_TRY(target_length.status());
+    total_bytes += target_length.value();
+  }
+
+  return total_bytes;
+}
+
 // Get the target element corresponding to `target_file`
 stream::IntervalReader UpdateBundleAccessor::GetTargetPayload(
-    std::string_view target_file_name) {
-  if (!bundle_verified_) {
-    PW_LOG_DEBUG("Bundled has not passed verification yet");
-    return Status::FailedPrecondition();
-  }
+    std::string_view target_name) {
+  protobuf::Message manifest_entry = GetManifest().GetTargetFile(target_name);
+  PW_TRY(manifest_entry.status());
 
-  protobuf::StringToBytesMap target_payloads =
-      decoder_.AsStringToBytesMap(static_cast<uint32_t>(
-          pw::software_update::UpdateBundle::Fields::TARGET_PAYLOADS));
-  PW_TRY(target_payloads.status());
-  protobuf::Bytes payload = target_payloads[target_file_name];
-  PW_TRY(payload.status());
-  return payload.GetBytesReader();
+  protobuf::StringToBytesMap payloads_map = bundle_.AsStringToBytesMap(
+      static_cast<uint32_t>(UpdateBundle::Fields::TARGET_PAYLOADS));
+  return payloads_map[target_name].GetBytesReader();
 }
 
-protobuf::Message UpdateBundleAccessor::GetDecoder() {
-  if (!bundle_verified_) {
-    PW_LOG_DEBUG("Bundled has not passed verification yet");
-    return Status::FailedPrecondition();
-  }
-
-  return decoder_;
+// Get the target element corresponding to `target_file`
+stream::IntervalReader UpdateBundleAccessor::GetTargetPayload(
+    protobuf::String target_name) {
+  char name_buf[MAX_TARGET_NAME_LENGTH] = {0};
+  Result<std::string_view> name_view = ReadProtoString(target_name, name_buf);
+  PW_TRY(name_view.status());
+  return GetTargetPayload(name_view.value());
 }
 
-Result<bool> UpdateBundleAccessor::IsTargetPayloadIncluded(
-    std::string_view target_file_name) {
-  if (!bundle_verified_) {
-    PW_LOG_DEBUG("Bundled has not passed verification yet");
-    return Status::FailedPrecondition();
-  }
-  // TODO(pwbug/456): Perform personalization check first. If the target
-  // is personalized out. Don't need to proceed.
+Status UpdateBundleAccessor::PersistManifest() {
+  ManifestAccessor manifest = GetManifest();
+  // GetManifest() fails if the bundle is yet to be verified.
+  PW_TRY(manifest.status());
 
-  protobuf::StringToMessageMap signed_targets_metadata_map =
-      decoder_.AsStringToMessageMap(static_cast<uint32_t>(
-          pw::software_update::UpdateBundle::Fields::TARGETS_METADATA));
-  PW_TRY(signed_targets_metadata_map.status());
+  // Notify backend to prepare to receive a new manifest.
+  PW_TRY(backend_.BeforeManifestWrite());
 
-  // There should only be one element in the map, which is the top-level
-  // targets metadata.
-  protobuf::Message signed_targets_metadata =
-      signed_targets_metadata_map[kTopLevelTargetsName];
-  PW_TRY(signed_targets_metadata.status());
+  Result<stream::Writer*> writer = backend_.GetManifestWriter();
+  PW_TRY(writer.status());
+  PW_CHECK_NOTNULL(writer.value());
 
-  protobuf::Message metadata = signed_targets_metadata.AsMessage(
-      static_cast<uint32_t>(pw::software_update::SignedTargetsMetadata::Fields::
-                                SERIALIZED_TARGETS_METADATA));
-  PW_TRY(metadata.status());
+  PW_TRY(manifest.Export(*writer.value()));
 
-  protobuf::RepeatedMessages target_files =
-      metadata.AsRepeatedMessages(static_cast<uint32_t>(
-          pw::software_update::TargetsMetadata::Fields::TARGET_FILES));
-  PW_TRY(target_files.status());
-
-  for (protobuf::Message target_file : target_files) {
-    protobuf::String name = target_file.AsString(static_cast<uint32_t>(
-        pw::software_update::TargetFile::Fields::FILE_NAME));
-    PW_TRY(name.status());
-    Result<bool> file_name_matches = name.Equal(target_file_name);
-    PW_TRY(file_name_matches.status());
-    if (file_name_matches.value()) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-Status UpdateBundleAccessor::PersistManifest(
-    stream::Writer& staged_manifest_writer) {
-  if (!bundle_verified_) {
-    PW_LOG_DEBUG(
-        "Bundle has not passed verification. Refuse to write manifest");
-    return Status::FailedPrecondition();
-  }
-
-  protobuf::StringToMessageMap signed_targets_metadata_map =
-      decoder_.AsStringToMessageMap(static_cast<uint32_t>(
-          pw::software_update::UpdateBundle::Fields::TARGETS_METADATA));
-  PW_TRY(signed_targets_metadata_map.status());
-
-  // There should only be one element in the map, which is the top-level
-  // targets metadata.
-  protobuf::Message signed_targets_metadata =
-      signed_targets_metadata_map[kTopLevelTargetsName];
-  PW_TRY(signed_targets_metadata.status());
-
-  protobuf::Bytes metadata = signed_targets_metadata.AsBytes(
-      static_cast<uint32_t>(pw::software_update::SignedTargetsMetadata::Fields::
-                                SERIALIZED_TARGETS_METADATA));
-  PW_TRY(metadata.status());
-
-  stream::MemoryReader name_reader(
-      std::as_bytes(std::span(kTopLevelTargetsName)));
-  stream::IntervalReader metadata_reader = metadata.GetBytesReader();
-
-  std::byte stream_pipe_buffer[WRITE_MANIFEST_STREAM_PIPE_BUFFER_SIZE];
-  PW_TRY(protobuf::WriteProtoStringToBytesMapEntry(
-      static_cast<uint32_t>(
-          pw::software_update::Manifest::Fields::TARGETS_METADATA),
-      name_reader,
-      kTopLevelTargetsName.size(),
-      metadata_reader,
-      metadata_reader.interval_size(),
-      stream_pipe_buffer,
-      staged_manifest_writer));
-
-  // Write `user_manifest` file if there is one.
-  Result<bool> user_manifest_exists =
-      IsTargetPayloadIncluded(kUserManifestTargetFileName);
-  PW_TRY(user_manifest_exists);
-  if (user_manifest_exists.value()) {
-    stream::IntervalReader user_manifest_reader =
-        GetTargetPayload(kUserManifestTargetFileName);
-    PW_TRY(user_manifest_reader.status());
-    protobuf::StreamEncoder encoder(staged_manifest_writer, {});
-    PW_TRY(encoder.WriteBytesFromStream(
-        static_cast<uint32_t>(Manifest::Fields::USER_MANIFEST),
-        user_manifest_reader,
-        user_manifest_reader.interval_size(),
-        stream_pipe_buffer));
-  }
+  // Notify backend we are done writing. Backend should finalize
+  // (seal the box).
+  PW_TRY(backend_.AfterManifestWrite());
 
   return OkStatus();
 }
 
 Status UpdateBundleAccessor::Close() {
   bundle_verified_ = false;
-  return bundle_reader_.IsOpen() ? bundle_reader_.Close() : OkStatus();
+  return blob_store_reader_.IsOpen() ? blob_store_reader_.Close() : OkStatus();
 }
 
 Status UpdateBundleAccessor::DoOpen() {
-  PW_TRY(bundle_.Init());
-  PW_TRY(bundle_reader_.Open());
-  decoder_ =
-      protobuf::Message(bundle_reader_, bundle_reader_.ConservativeReadLimit());
+  PW_TRY(blob_store_.Init());
+  PW_TRY(blob_store_reader_.Open());
+  bundle_ = protobuf::Message(blob_store_reader_,
+                              blob_store_reader_.ConservativeReadLimit());
   return OkStatus();
 }
 
@@ -518,8 +386,26 @@ protobuf::Message UpdateBundleAccessor::GetOnDeviceTrustedRoot() {
   return protobuf::Message(*res.value(), res.value()->ConservativeReadLimit());
 }
 
+ManifestAccessor UpdateBundleAccessor::GetOnDeviceManifest() {
+  // Notify backend to check if an on-device manifest exists and is valid and if
+  // yes, prepare a ready-to-go reader.
+  PW_TRY(backend_.BeforeManifestRead());
+
+  Result<stream::SeekableReader*> manifest_reader =
+      backend_.GetManifestReader();
+  PW_TRY(manifest_reader.status());
+  PW_CHECK_NOTNULL(manifest_reader.value());
+
+  // In case `backend_.BeforeManifestRead()` forgot to reset the reader.
+  PW_TRY(manifest_reader.value()->Seek(0, stream::Stream::Whence::kBeginning));
+
+  return ManifestAccessor::FromManifest(
+      protobuf::Message(*manifest_reader.value(),
+                        manifest_reader.value()->ConservativeReadLimit()));
+}
+
 Status UpdateBundleAccessor::UpgradeRoot() {
-  protobuf::Message new_root = decoder_.AsMessage(
+  protobuf::Message new_root = bundle_.AsMessage(
       static_cast<uint32_t>(UpdateBundle::Fields::ROOT_METADATA));
 
   // Try self-verification even if verification is disabled by the caller. This
@@ -633,7 +519,7 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
   //   ...
   // }
   protobuf::StringToMessageMap signed_targets_metadata_map =
-      decoder_.AsStringToMessageMap(
+      bundle_.AsStringToMessageMap(
           static_cast<uint32_t>(UpdateBundle::Fields::TARGETS_METADATA));
   PW_TRY(signed_targets_metadata_map.status());
 
@@ -700,47 +586,15 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
     return OkStatus();
   }
 
-  // Get on-device manifest.
-  Result<stream::SeekableReader*> manifest_reader =
-      backend_.GetCurrentManifestReader();
-  PW_TRY(manifest_reader.status());
-  PW_CHECK_NOTNULL(manifest_reader.value());
-  protobuf::Message manifest(*manifest_reader.value(),
-                             manifest_reader.value()->ConservativeReadLimit());
-
-  // Retrieves the targest metdata map from the manifest
-  //
-  // message Manifest {
-  //   ...
-  //   map<string, TargetsMetadata> targets_metadata = <id>;
-  //   ...
-  // }
-  protobuf::StringToMessageMap manifest_targets_metadata_map =
-      manifest.AsStringToMessageMap(
-          static_cast<uint32_t>(Manifest::Fields::TARGETS_METADATA));
-  PW_TRY(manifest_targets_metadata_map.status());
-
-  // Retrieves the top-level targets metadata from the map and get the version
-  uint32_t current_ver;
-  protobuf::Message manifest_top_level_targets_metadata =
-      manifest_targets_metadata_map[kTopLevelTargetsName];
-  if (manifest_top_level_targets_metadata.status().IsNotFound()) {
-    // If the top-level targets metadata is missing, then either the device has
-    // never received any prior update, or manifest has been reset in the case
-    // of key rotation. In this case, current version is assumed to be 0.
-    PW_LOG_DEBUG(
-        "Cannot find top-level targets metadata from the current manifest. "
-        "Current rollback index is treated as 0");
-    current_ver = 0;
-  } else {
-    PW_TRY(manifest_top_level_targets_metadata.status());
-    Result<uint32_t> version = GetMetadataVersion(
-        manifest_top_level_targets_metadata,
-        static_cast<uint32_t>(
-            software_update::TargetsMetadata::Fields::COMMON_METADATA));
-    PW_TRY(version.status());
-    current_ver = version.value();
+  // Anti-rollback check.
+  ManifestAccessor device_manifest = GetOnDeviceManifest();
+  if (device_manifest.status().IsNotFound()) {
+    PW_LOG_WARN("Skipping OTA anti-rollback due to absent device manifest.");
+    return OkStatus();
   }
+
+  protobuf::Uint32 current_version = device_manifest.GetVersion();
+  PW_TRY(current_version.status());
 
   // Retrieves the version from the new metadata
   Result<uint32_t> new_version = GetMetadataVersion(
@@ -748,9 +602,9 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
       static_cast<uint32_t>(
           software_update::TargetsMetadata::Fields::COMMON_METADATA));
   PW_TRY(new_version.status());
-  if (current_ver > new_version.value()) {
+  if (current_version.value() > new_version.value()) {
     PW_LOG_DEBUG("Targets attempt to rollback from %u to %u.",
-                 current_ver,
+                 current_version.value(),
                  new_version.value());
     return Status::Unauthenticated();
   }
@@ -759,97 +613,176 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
 }
 
 Status UpdateBundleAccessor::VerifyTargetsPayloads() {
-  // Gets the list of targets.
-  protobuf::RepeatedMessages target_files = GetTopLevelTargets(decoder_);
+  ManifestAccessor bundle_manifest = ManifestAccessor::FromBundle(bundle_);
+  PW_TRY(bundle_manifest.status());
+
+  // Target file descriptors (pathname, length, hash, etc.) listed in the bundle
+  // manifest.
+  protobuf::RepeatedMessages target_files = bundle_manifest.GetTargetFiles();
   PW_TRY(target_files.status());
 
-  // Gets the list of payloads.
-  //
-  // message UpdateBundle {
-  //   ...
-  //   map<string, bytes> target_payloads = <id>;
-  //   ...
-  // }
-  protobuf::StringToBytesMap target_payloads = decoder_.AsStringToBytesMap(
-      static_cast<uint32_t>(UpdateBundle::Fields::TARGET_PAYLOADS));
-  PW_TRY(target_payloads.status());
-
-  // Checks hashes for all targets.
+  // Verify length and SHA256 hash for each file listed in the manifest.
   for (protobuf::Message target_file : target_files) {
-    // Extract `file_name`, `length` and `hashes` for each target in the
-    // metadata.
-    //
-    // message TargetFile {
-    //   ...
-    //   string file_name = <id>;
-    //   uint64 length = <id>;
-    //   ...
-    // }
-    protobuf::String target_name = target_file.AsString(
+    // Extract target file name in the form of a `std::string_view`.
+    protobuf::String name_proto = target_file.AsString(
         static_cast<uint32_t>(TargetFile::Fields::FILE_NAME));
+    PW_TRY(name_proto.status());
+    char name_buf[MAX_TARGET_NAME_LENGTH] = {0};
+    Result<std::string_view> target_name =
+        ReadProtoString(name_proto, name_buf);
     PW_TRY(target_name.status());
 
+    // Get target length.
     protobuf::Uint64 target_length =
         target_file.AsUint64(static_cast<uint32_t>(TargetFile::Fields::LENGTH));
     PW_TRY(target_length.status());
-
-    char target_name_read_buf[MAX_TARGET_NAME_LENGTH] = {0};
-    Result<std::string_view> target_name_sv =
-        ReadProtoString(target_name, target_name_read_buf);
-    PW_TRY(target_name_sv.status());
-
-    // Finds the target in the target payloads
-    protobuf::Bytes target_payload = target_payloads[target_name_sv.value()];
-    if (target_payload.status().IsNotFound()) {
-      PW_LOG_DEBUG(
-          "target payload for %s does not exist. Assumed personalized out",
-          target_name_read_buf);
-      // The backend MUST verify the exact payload already exists on the device.
-      PW_TRY(backend_.VerifyTargetFile(GetManifestAccessor(),
-                                       target_name_sv.value()));
-      continue;
+    if (target_length.value() > PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE) {
+      PW_LOG_ERROR("Target payload too large. Maximum supported is %llu bytes.",
+                   PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE);
+      return Status::OutOfRange();
     }
 
-    PW_TRY(target_payload.status());
-    // Payload size must matches file length
-    if (target_payload.GetBytesReader().interval_size() !=
-        target_length.value()) {
-      PW_LOG_DEBUG("Target payload size mismatch");
-      return Status::Unauthenticated();
-    }
-
-    // Gets the list of hashes
-    //
-    // message TargetFile {
-    //   ...
-    //   repeated Hash hashes = <id>;
-    //   ...
-    // }
+    // Get target SHA256 hash.
+    protobuf::Bytes target_sha256 = Status::NotFound();
     protobuf::RepeatedMessages hashes = target_file.AsRepeatedMessages(
         static_cast<uint32_t>(TargetFile::Fields::HASHES));
-    PW_TRY(hashes.status());
-
-    // Check all hashes
-    size_t num_hashes = 0;
     for (protobuf::Message hash : hashes) {
-      num_hashes++;
-      Result<bool> hash_verify_res =
-          VerifyTargetPayloadHash(hash, target_payload);
-      PW_TRY(hash_verify_res.status());
-      if (!hash_verify_res.value()) {
-        PW_LOG_DEBUG("sha256 hash mismatch for file %s", target_name_read_buf);
-        return Status::Unauthenticated();
-      }
-    }  // for (protobuf::Message hash : hashes)
+      protobuf::Uint32 hash_function =
+          hash.AsUint32(static_cast<uint32_t>(Hash::Fields::FUNCTION));
+      PW_TRY(hash_function.status());
 
-    // The packet does not contain any hash
-    if (!num_hashes) {
-      PW_LOG_DEBUG("No hash for file %s", target_name_read_buf);
-      return Status::Unauthenticated();
+      if (hash_function.value() ==
+          static_cast<uint32_t>(HashFunction::SHA256)) {
+        target_sha256 = hash.AsBytes(static_cast<uint32_t>(Hash::Fields::HASH));
+        break;
+      }
     }
-  }  // for (protobuf::Message target_file : target_files)
+    PW_TRY(target_sha256.status());
+
+    PW_TRY(VerifyTargetPayload(
+        bundle_manifest, target_name.value(), target_length, target_sha256));
+  }  // for each target file in manifest.
 
   return OkStatus();
+}
+
+Status UpdateBundleAccessor::VerifyTargetPayload(
+    ManifestAccessor manifest,
+    std::string_view target_name,
+    protobuf::Uint64 expected_length,
+    protobuf::Bytes expected_sha256) {
+  protobuf::StringToBytesMap payloads_map = bundle_.AsStringToBytesMap(
+      static_cast<uint32_t>(UpdateBundle::Fields::TARGET_PAYLOADS));
+  stream::IntervalReader payload_reader =
+      payloads_map[target_name].GetBytesReader();
+
+  Status status;
+  if (payload_reader.ok()) {
+    status = VerifyInBundleTargetPayload(
+        expected_length, expected_sha256, payload_reader);
+  } else {
+    status = VerifyOutOfBundleTargetPayload(
+        target_name, expected_length, expected_sha256);
+  }
+
+  // TODO(alizhang): Notify backend to do additional checks by calling
+  // backend_.VerifyTargetFile(...).
+  return status;
+}
+
+// TODO(alizhang): Add unit tests for all failure conditions.
+Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
+    std::string_view target_name,
+    protobuf::Uint64 expected_length,
+    protobuf::Bytes expected_sha256) {
+  // The target payload is "personalized out". We we can't take a measurement
+  // without backend help. For now we will check against the device manifest
+  // which contains a cached measurement of the last software update.
+  ManifestAccessor device_manifest = GetOnDeviceManifest();
+  if (!device_manifest.ok()) {
+    PW_LOG_ERROR(
+        "Can't verify personalized-out target because on-device manifest is "
+        "not found.");
+    return Status::Unauthenticated();
+  }
+
+  protobuf::Message cached = device_manifest.GetTargetFile(target_name);
+  if (!cached.ok()) {
+    PW_LOG_ERROR(
+        "Can't verify personalized-out target because it is not found from "
+        "on-device manifest.");
+    return Status::Unauthenticated();
+  }
+
+  protobuf::Uint64 cached_length =
+      cached.AsUint64(static_cast<uint32_t>(TargetFile::Fields::LENGTH));
+  PW_TRY(cached_length.status());
+  if (cached_length.value() != expected_length.value()) {
+    PW_LOG_ERROR("Personalized-out target has bad length: %llu, expected: %llu",
+                 cached_length.value(),
+                 expected_length.value());
+    return Status::Unauthenticated();
+  }
+
+  protobuf::Bytes cached_sha256 = Status::NotFound();
+  protobuf::RepeatedMessages hashes = cached.AsRepeatedMessages(
+      static_cast<uint32_t>(TargetFile::Fields::HASHES));
+  for (protobuf::Message hash : hashes) {
+    protobuf::Uint32 hash_function =
+        hash.AsUint32(static_cast<uint32_t>(Hash::Fields::FUNCTION));
+    PW_TRY(hash_function.status());
+
+    if (hash_function.value() == static_cast<uint32_t>(HashFunction::SHA256)) {
+      cached_sha256 = hash.AsBytes(static_cast<uint32_t>(Hash::Fields::HASH));
+      break;
+    }
+  }
+  std::byte sha256[crypto::sha256::kDigestSizeBytes] = {};
+  PW_TRY(cached_sha256.GetBytesReader().Read(sha256));
+
+  Result<bool> hash_equal = expected_sha256.Equal(sha256);
+  PW_TRY(hash_equal.status());
+  if (!hash_equal.value()) {
+    PW_LOG_ERROR("Personalized-out target has a bad hash.");
+    return Status::Unauthenticated();
+  }
+
+  return OkStatus();
+}
+
+Status UpdateBundleAccessor::VerifyInBundleTargetPayload(
+    protobuf::Uint64 expected_length,
+    protobuf::Bytes expected_sha256,
+    stream::IntervalReader payload_reader) {
+  // If the target payload is included in the bundle, simply take a
+  // measurement.
+  uint64_t actual_length = payload_reader.interval_size();
+  if (actual_length != expected_length.value()) {
+    PW_LOG_ERROR("Wrong payload length. Expected: %llu, actual: %llu",
+                 expected_length.value(),
+                 actual_length);
+    return Status::Unauthenticated();
+  }
+
+  std::byte actual_sha256[crypto::sha256::kDigestSizeBytes] = {};
+  PW_TRY(crypto::sha256::Hash(payload_reader, actual_sha256));
+  Result<bool> hash_equal = expected_sha256.Equal(actual_sha256);
+  PW_TRY(hash_equal.status());
+  if (!hash_equal.value()) {
+    PW_LOG_ERROR("Wrong payload sha256 hash.");
+    return Status::Unauthenticated();
+  }
+
+  return OkStatus();
+}
+
+ManifestAccessor UpdateBundleAccessor::GetManifest() {
+  if (!bundle_verified_) {
+    PW_LOG_DEBUG("Bundled has not passed verification yet");
+    return Status::FailedPrecondition();
+  }
+
+  return ManifestAccessor::FromBundle(bundle_);
 }
 
 }  // namespace pw::software_update

@@ -35,9 +35,6 @@
 
 namespace pw::software_update {
 namespace {
-
-constexpr std::string_view kTopLevelTargetsName = "targets";
-
 using BorrowedStatus =
     sync::BorrowedPointer<pw_software_update_BundledUpdateStatus, sync::Mutex>;
 using BundledUpdateState = pw_software_update_BundledUpdateState_Enum;
@@ -189,7 +186,7 @@ void BundledUpdateService::DoVerify() {
   bundle_open_ = true;
 
   // Have the backend verify the user_manifest if present.
-  if (!backend_.VerifyManifest(bundle_.GetManifestAccessor()).ok()) {
+  if (!backend_.VerifyManifest(bundle_.GetManifest()).ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
               "Backend::VerifyUserManifest() failed");
     return;
@@ -329,50 +326,6 @@ void BundledUpdateService::DoApply() {
   status_.acquire()->state =
       pw_software_update_BundledUpdateState_Enum_APPLYING;
 
-  protobuf::StringToMessageMap signed_targets_metadata_map =
-      bundle_.GetDecoder().AsStringToMessageMap(static_cast<uint32_t>(
-          pw::software_update::UpdateBundle::Fields::TARGETS_METADATA));
-  if (const Status status = signed_targets_metadata_map.status();
-      !status.ok()) {
-    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-              "Update bundle does not contain the targets_metadata map: %d",
-              static_cast<int>(status.code()));
-    return;
-  }
-
-  // There should only be one element in the map, which is the top-level
-  // targets metadata.
-  protobuf::Message signed_targets_metadata =
-      signed_targets_metadata_map[kTopLevelTargetsName];
-  if (const Status status = signed_targets_metadata.status(); !status.ok()) {
-    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-              "The targets_metadata map does not contain the targets entry: %d",
-              static_cast<int>(status.code()));
-    return;
-  }
-
-  protobuf::Message targets_metadata = signed_targets_metadata.AsMessage(
-      static_cast<uint32_t>(pw::software_update::SignedTargetsMetadata::Fields::
-                                SERIALIZED_TARGETS_METADATA));
-  if (const Status status = targets_metadata.status(); !status.ok()) {
-    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-              "The targets targets_metadata entry does not contain the "
-              "serialized_target_metadata: %d",
-              static_cast<int>(status.code()));
-    return;
-  }
-
-  protobuf::RepeatedMessages target_files =
-      targets_metadata.AsRepeatedMessages(static_cast<uint32_t>(
-          pw::software_update::TargetsMetadata::Fields::TARGET_FILES));
-  if (const Status status = target_files.status(); !status.ok()) {
-    SET_ERROR(
-        pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-        "The serialized_target_metadata does not contain target_files: %d",
-        static_cast<int>(status.code()));
-    return;
-  }
-
   if (const Status status = backend_.BeforeApply(); !status.ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "BeforeApply() returned unsuccessful result: %d",
@@ -382,51 +335,23 @@ void BundledUpdateService::DoApply() {
 
   // In order to report apply progress, quickly scan to see how many bytes
   // will be applied.
-  size_t target_file_bytes_to_apply = 0;
-  protobuf::StringToBytesMap target_payloads =
-      bundle_.GetDecoder().AsStringToBytesMap(static_cast<uint32_t>(
-          pw::software_update::UpdateBundle::Fields::TARGET_PAYLOADS));
-  if (!target_payloads.status().ok()) {
-    SET_ERROR(
-        pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-        "Failed to iterate the UpdateBundle target_payloads map entries: %d",
-        static_cast<int>(target_payloads.status().code()));
-    return;
-  }
-  for (pw::protobuf::StringToBytesMapEntry target_payload : target_payloads) {
-    protobuf::Bytes target_payload_bytes = target_payload.Value();
-    if (!target_payload_bytes.status().ok()) {
-      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-                "Failed to read a UpdateBundle target_payloads map entry: %d",
-                static_cast<int>(target_payload_bytes.status().code()));
-      return;
-    }
-    target_file_bytes_to_apply +=
-        target_payload_bytes.GetBytesReader().ConservativeReadLimit();
-  }
+  Result<uint64_t> total_payload_bytes = bundle_.GetTotalPayloadSize();
+  PW_CHECK_OK(total_payload_bytes.status());
+  size_t target_file_bytes_to_apply =
+      static_cast<size_t>(total_payload_bytes.value());
+
+  protobuf::RepeatedMessages target_files =
+      bundle_.GetManifest().GetTargetFiles();
+  PW_CHECK_OK(target_files.status());
 
   size_t target_file_bytes_applied = 0;
   for (pw::protobuf::Message file_name : target_files) {
-    // TODO: Use a config.h parameter for this.
-    constexpr size_t kFileNameMaxSize = 32;
-    std::array<std::byte, kFileNameMaxSize> buf = {};
+    std::array<std::byte, MAX_TARGET_NAME_LENGTH> buf = {};
     protobuf::String name = file_name.AsString(static_cast<uint32_t>(
         pw::software_update::TargetFile::Fields::FILE_NAME));
-    if (!name.status().ok()) {
-      SET_ERROR(
-          pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-          "The serialized_target_metadata failed to iterate target files: %d",
-          static_cast<int>(name.status().code()));
-      return;
-    }
+    PW_CHECK_OK(name.status());
     const Result<ByteSpan> read_result = name.GetBytesReader().Read(buf);
-    if (!read_result.ok()) {
-      SET_ERROR(
-          pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-          "The serialized_target_metadata failed to read target filename: %d",
-          static_cast<int>(read_result.status().code()));
-      return;
-    }
+    PW_CHECK_OK(read_result.status());
     const ConstByteSpan file_name_span = read_result.value();
     const std::string_view file_name_view(
         reinterpret_cast<const char*>(file_name_span.data()),

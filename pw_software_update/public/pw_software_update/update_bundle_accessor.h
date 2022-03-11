@@ -21,90 +21,65 @@
 #include "pw_protobuf/message.h"
 #include "pw_software_update/bundled_update_backend.h"
 #include "pw_software_update/manifest_accessor.h"
-#include "pw_stream/memory_stream.h"
 
 namespace pw::software_update {
 class BundledUpdateBackend;
 
+// Name of the top-level Targets metadata.
+constexpr std::string_view kTopLevelTargetsName = "targets";
+
+// Name of the "user manifest" target file. The "user manifest" is a product
+// specific blob that is opaque to upstream but need to be passed around in
+// manifest handling (for now).
 constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
 
-// UpdateBundleAccessor is responsible for parsing, verifying and providing
-// target payload access of a software update bundle. It takes the following as
-// inputs:
+// UpdateBundleAccessor is the trusted custodian of a staged incoming update
+// bundle.
 //
-// 1. A software update bundle via `BlobStore`.
-// 2. A `BundledUpdateBackend`, which implements project-specific update
-//    operations such as enforcing project update policies and
-//    verifying/applying target files on device.
+// It takes exclusive ownership of the blob_store that represents a staged,
+// *untrusted* bundle, and presents convenient and *trusted* accessors.
 //
-// The verification is done according to TUF process. Payload can only be
-// accessed after successful verification.
-//
-// Exmple of use:
-//
-// UpdateBundleAccessor bundle(blob,helper);
-// auto status = bundle.OpenAndVerify();
-// if (!status.ok()) {
-//   // handle error
-//   ...
-// }
-//
-// // Examine and use payload.
-// auto exist = bundle.IsTargetPayloadIncluded("audio");
-// if (!exist.ok() || !exist.value()) {
-//   // handle error
-//   ...
-// }
-//
-// auto payload_reader = bundle.GetTargetPayload("audio");
-// // Process payload
-// ...
-//
-// // Get bundle's manifest and write it to the given writer.
-// status = bundle.PersistManifest(staged_manifest_writer);
-// if (!status.ok()) {
-//   // handle error
-//   ...
-// }
-//
-// status = bundle.Close();
-// if (!status.ok()) {
-//   // handle error
-//   ...
-// }
+// ALL ACCESS to the staged update bundle MUST GO THROUGH the
+// `UpdateBundleAccessor`.
 class UpdateBundleAccessor {
  public:
   // UpdateBundleAccessor
-  // bundle - The software update bundle data on storage.
+  // blob_store - The staged incoming software update bundle.
   // backend - Project-specific BundledUpdateBackend.
   // disable_verification - Disable verification.
-  constexpr UpdateBundleAccessor(blob_store::BlobStore& bundle,
+  constexpr UpdateBundleAccessor(blob_store::BlobStore& blob_store,
                                  BundledUpdateBackend& backend,
                                  bool disable_verification = false)
-      : bundle_(bundle),
+      : blob_store_(blob_store),
+        blob_store_reader_(blob_store_),
         backend_(backend),
-        bundle_reader_(bundle_),
         disable_verification_(disable_verification) {}
 
   // Opens and verifies the software update bundle.
   //
-  // Specifically, the opening process opens a blob reader to the given bundle
-  // and initializes the bundle proto parser. No write will be allowed to the
-  // bundle until Close() is called.
+  // Verification covers the following:
   //
-  // If bundle verification is enabled (see the `option` argument in
-  // the constructor), the verification process does the following:
+  // 1. If a Root metadata is included with the incoming bundle, the Root
+  //    metadata will be verified and used as the new Root metadata to verify
+  //    other metadata in the bundle.
   //
-  // 1. Check whether the bundle contains an incoming new root metadata. If it
-  // does, it verifies the root against the current on-device root. If
-  // successful, the on-device root will be updated to the new root.
+  // 2. The Targets metadata is verified using the Root metadata.
   //
-  // 2. Verify the targets metadata against the current trusted root.
+  // 3. All target payloads referenced in the Targets metadata are verified.
   //
-  // 3. Either verify all target payloads (size and hash) or defer that
-  // verification till when a target is accessed.
+  // Limitations and customizations (compared to standard TUF):
   //
-  // 4. Invoke the backend to do downstream verification of the bundle.
+  // 1. Does not yet support arbitrary Root key rotations. Which means
+  //    There is only one (reliable) chance to rotate the Root key for all
+  //    devices. Rotation of the Targets key is still unlimited.
+  // 2. Timestamp and Snapshot metadata are not used or supported.
+  // 3. Assumes a single top-level Targets metadata and no delegations.
+  // 4. The top-level Targets metadata doubles as the software update
+  //    "manifest". Anti-rollback IS supported via the Targets metadata version.
+  // 5. Supports "personalization", where the staged bundle may have been
+  //    stripped of any target payloads that the device already have. For those
+  //    personalized-out targets, verification relies on the cached manifest of
+  //    a previous successful update to verify target length and hash.
   //
   // Returns:
   // OK - Bundle was successfully opened and verified.
@@ -118,44 +93,35 @@ class UpdateBundleAccessor {
   // DATA_LOSS - Error writing data or fail to verify written data.
   Status Close();
 
-  // Writes the manifest of the staged bundle to the given writer.
+  // Writes out the manifest of the staged bundle via a backend-supplied writer.
   //
   // Returns:
   // FAILED_PRECONDITION - Bundle is not open and verified.
   // TODO(pwbug/456): Add other error codes if necessary.
-  Status PersistManifest(stream::Writer& staged_manifest_writer);
+  Status PersistManifest();
 
-  // Is the target payload present in the bundle (not personalized out).
-  //
-  // Returns:
-  // OK - Whether or not the target_file was included in the UpdateBundle or
-  //      whether it was personalized out.
-  // FAILED_PRECONDITION - Bundle is not open and verified.
-  // TODO(pwbug/456): Add other error codes if necessary.
-  Result<bool> IsTargetPayloadIncluded(std::string_view target_file);
-
-  // Returns a reader for the target file by `target_file` in the update
-  // bundle.
+  // Returns a reader for the (verified) payload bytes of a specified target
+  // file.
   //
   // Returns:
   // A reader instance for the target file.
   // TODO(pwbug/456): Figure out a way to propagate error.
-  stream::IntervalReader GetTargetPayload(std::string_view target_file);
+  stream::IntervalReader GetTargetPayload(std::string_view target_name);
+  stream::IntervalReader GetTargetPayload(protobuf::String target_name);
 
-  // Returns a protobuf::Message representation of the update bundle.
-  //
-  // Returns:
-  // An instance of protobuf::Message of the udpate bundle.
-  // FAILED_PRECONDITION - Bundle is not open and verified.
-  protobuf::Message GetDecoder();
+  // Exposes "manifest" information from the incoming update bundle once it has
+  // passed verification.
+  ManifestAccessor GetManifest();
 
-  ManifestAccessor GetManifestAccessor() { return ManifestAccessor(this); };
+  // Returns the total number of bytes of all target payloads listed in the
+  // manifest *AND* exists in the bundle.
+  Result<uint64_t> GetTotalPayloadSize();
 
  private:
-  blob_store::BlobStore& bundle_;
+  blob_store::BlobStore& blob_store_;
+  blob_store::BlobStore::BlobReader blob_store_reader_;
   BundledUpdateBackend& backend_;
-  blob_store::BlobStore::BlobReader bundle_reader_;
-  protobuf::Message decoder_;
+  protobuf::Message bundle_;
   // The current, cached, trusted `SignedRootMetadata{}`.
   protobuf::Message trusted_root_;
   bool disable_verification_;
@@ -172,8 +138,7 @@ class UpdateBundleAccessor {
   // verification and upgrade flow:
   //
   // 1. Verify the signatures according to the on-device trusted
-  // disable_verificationroot metadata
-  //    obtained from the backend.
+  //    root metadata obtained from the backend.
   // 2. Verify content of the new root metadata, including:
   //    1) Check role magic field.
   //    2) Check signature requirement. Specifically, check that no key is
@@ -194,21 +159,57 @@ class UpdateBundleAccessor {
   // 2. Check the content of the targets metadata.
   // 3. Check rollback against the version from on-device manifest, if one
   //    exists (the manifest may be reset in the case of key rotation).
-  //
-  // TODO(pwbug/456): Should manifest persisting be handled here? The current
-  // API design of this class exposes a PersistManifest() method, which implies
-  // that manifest persisting is handled by some higher level logic.
   Status VerifyTargetsMetadata();
 
   // A helper to get the on-device trusted root metadata. It returns an
   // instance of SignedRootMetadata proto message.
   protobuf::Message GetOnDeviceTrustedRoot();
 
-  // The method performs verification of the target payloads. Specifically, it
-  // 1. For target payloads found in the bundle, verify its size and hash.
-  // 2. For target payloads not found in the bundle, call downstream to verify
-  // it and report back.
+  // A helper to get an accessor to the on-device manifest. The on-device
+  // manifest is a serialized `message Manifest{...}` that represents the
+  // current running firmware of the device. The on-device manifest storage
+  // MUST meet the following requirements.
+  //
+  // 1. MUST NOT get wiped by a factory reset, otherwise a FDR can be used
+  //    to circumvent anti-rollback check.
+  // 2. MUST be kept in-sync with the actual firmware on-device. If any
+  //    mechanism is used to modify the firmware (e.g. via flashing), the
+  //    on-device manifest MUST be updated to reflect the change as well.
+  //    The on-device manifest CAN be erased if updating it is too cumbersome
+  //    BUT ONLY ON DEV DEVICES as erasing the on-device manifest defeats
+  //    anti-rollback.
+  // 3. MUST be integrity-protected and checked. Corrupted on-device manifest
+  //    cannot be used as it may brick a device as a result of anti-rollback
+  //    check. Integrity check is added and enforced by the backend via
+  //    `BundledUpdateBackend` callbacks.
+  //
+  ManifestAccessor GetOnDeviceManifest();
+
+  // Verify all targets referenced in the manifest (Targets metadata) has a
+  // payload blob either within the bundle or on-device, in both cases
+  // measuring up to the length and hash recorded in the manifest.
   Status VerifyTargetsPayloads();
+
+  // Verify a target specified by name measures up to the expected length and
+  // SHA256 hash. Additionally call the backend to perform any product-specific
+  // validations.
+  Status VerifyTargetPayload(ManifestAccessor manifest,
+                             std::string_view name,
+                             protobuf::Uint64 expected_length,
+                             protobuf::Bytes expected_sha256);
+
+  // For a target the payload of which is included in the bundle, verify
+  // it measures up to the expected length and sha256 hash.
+  Status VerifyInBundleTargetPayload(protobuf::Uint64 expected_length,
+                                     protobuf::Bytes expected_sha256,
+                                     stream::IntervalReader payload_reader);
+
+  // For a target with no corresponding payload in the bundle, verify
+  // its on-device payload bytes measures up to the expected length and sha256
+  // hash.
+  Status VerifyOutOfBundleTargetPayload(std::string_view name,
+                                        protobuf::Uint64 expected_length,
+                                        protobuf::Bytes expected_sha256);
 };
 
 }  // namespace pw::software_update
