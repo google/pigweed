@@ -84,15 +84,15 @@ def debug_print(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-class ProtoMethod(abc.ABC):
-    """Base class for a C++ method for a field in a protobuf message."""
+class ProtoMember(abc.ABC):
+    """Base class for a C++ class member for a field in a protobuf message."""
     def __init__(
         self,
         field: ProtoMessageField,
         scope: ProtoNode,
         root: ProtoNode,
     ):
-        """Creates an instance of a method.
+        """Creates an instance of a class member.
 
         Args:
           field: the ProtoMessageField to which the method belongs.
@@ -104,8 +104,35 @@ class ProtoMethod(abc.ABC):
 
     @abc.abstractmethod
     def name(self) -> str:
-        """Returns the name of the method, e.g. DoSomething."""
+        """Returns the name of the member, e.g. DoSomething."""
 
+    @abc.abstractmethod
+    def should_appear(self) -> bool:  # pylint: disable=no-self-use
+        """Whether the member should be generated."""
+
+    def field_cast(self) -> str:
+        return 'static_cast<uint32_t>(Fields::{})'.format(
+            self._field.enum_name())
+
+    def _relative_type_namespace(self, from_root: bool = False) -> str:
+        """Returns relative namespace between member's scope and field type."""
+        scope = self._root if from_root else self._scope
+        type_node = self._field.type_node()
+        assert type_node is not None
+
+        # If a class method is referencing its class, the namespace provided
+        # must be from the root or it will be empty.
+        if type_node == scope:
+            scope = self._root
+
+        ancestor = scope.common_ancestor(type_node)
+        namespace = type_node.cpp_namespace(ancestor)
+        assert namespace
+        return namespace
+
+
+class ProtoMethod(ProtoMember):
+    """Base class for a C++ method for a field in a protobuf message."""
     @abc.abstractmethod
     def params(self) -> List[Tuple[str, str]]:
         """Returns the parameters of the method as a list of (type, name) pairs.
@@ -149,26 +176,6 @@ class ProtoMethod(abc.ABC):
 
     def param_string(self) -> str:
         return ', '.join([f'{type} {name}' for type, name in self.params()])
-
-    def field_cast(self) -> str:
-        return 'static_cast<uint32_t>(Fields::{})'.format(
-            self._field.enum_name())
-
-    def _relative_type_namespace(self, from_root: bool = False) -> str:
-        """Returns relative namespace between method's scope and field type."""
-        scope = self._root if from_root else self._scope
-        type_node = self._field.type_node()
-        assert type_node is not None
-
-        # If a class method is referencing its class, the namespace provided
-        # must be from the root or it will be empty.
-        if type_node == scope:
-            scope = self._root
-
-        ancestor = scope.common_ancestor(type_node)
-        namespace = type_node.cpp_namespace(ancestor)
-        assert namespace
-        return namespace
 
 
 class WriteMethod(ProtoMethod):
@@ -314,6 +321,106 @@ class PackedReadVectorMethod(ReadMethod):
         return [('::pw::Vector<{}>&'.format(self._result_type()), 'out')]
 
 
+class MessageProperty(ProtoMember):
+    """Base class for a C++ property for a field in a protobuf message."""
+    def name(self) -> str:
+        return self._field.enum_name().lower()
+
+    def should_appear(self) -> bool:
+        return True
+
+    @abc.abstractmethod
+    def type_name(self, from_root: bool = False) -> str:
+        """Returns the type of the property, e.g. uint32_t."""
+
+    @abc.abstractmethod
+    def wire_type(self) -> str:
+        """Returns the wire type of the property, e.g. kVarint."""
+
+    def varint_decode_type(self) -> str:
+        """Returns the varint decoding type of the property, e.g. kZigZag.
+
+        Defined in subclasses that return kVarint for wire_type().
+        """
+        raise NotImplementedError()
+
+    def use_callback(self) -> bool:  # pylint: disable=no-self-use
+        """Returns whether the decoder should use a callback."""
+        options = self._field.options()
+        assert options is not None
+        return options.use_callback or (self._field.is_repeated()
+                                        and self.max_size() == 0)
+
+    def max_size(self) -> int:
+        """Returns the maximum size of the field."""
+        if self._field.is_repeated():
+            options = self._field.options()
+            assert options is not None
+            return options.max_count
+
+        return 0
+
+    def fixed_size(self) -> bool:
+        """Returns whether the decoder should use a fixed sized field."""
+        if self._field.is_repeated():
+            options = self._field.options()
+            assert options is not None
+            return options.fixed_count
+
+        return False
+
+    def sub_table(self) -> str:  # pylint: disable=no-self-use
+        return '{}'
+
+    def struct_member(self, from_root: bool = False) -> Tuple[str, str]:
+        """Returns the structure member."""
+        if self.use_callback():
+            return (f'{PROTOBUF_NAMESPACE}::Callback'
+                    '<StreamEncoder, StreamDecoder>', self.name())
+
+        # Non-repeated fields have a member of just the type name.
+        max_size = self.max_size()
+        if max_size == 0:
+            return (self.type_name(from_root), self.name())
+
+        # Fixed size fields use std::array.
+        if self.fixed_size():
+            return ('std::array<{}, {}>'.format(self.type_name(from_root),
+                                                max_size), self.name())
+
+        # Otherwise prefer pw::Vector for repeated fields.
+        return ('::pw::Vector<{}, {}>'.format(self.type_name(from_root),
+                                              max_size), self.name())
+
+    def _varint_type_table_entry(self) -> str:
+        if self.wire_type() == 'kVarint':
+            return '{}::VarintType::{}'.format(PROTOBUF_NAMESPACE,
+                                               self.varint_decode_type())
+
+        return f'static_cast<{PROTOBUF_NAMESPACE}::VarintType>(0)'
+
+    def _wire_type_table_entry(self) -> str:
+        return '{}::WireType::{}'.format(PROTOBUF_NAMESPACE, self.wire_type())
+
+    def _elem_size_table_entry(self) -> str:
+        return 'sizeof({})'.format(self.type_name())
+
+    def table_entry(self) -> List[str]:
+        """Table entry."""
+        return [
+            self.field_cast(),
+            self._wire_type_table_entry(),
+            self._elem_size_table_entry(),
+            self._varint_type_table_entry(),
+            'true' if self.fixed_size() else 'false',
+            'true' if self._field.is_repeated() else 'false',
+            'true' if self.use_callback() else 'false',
+            'offsetof(Message, {})'.format(self.name()),
+            'sizeof(Message::{})'.format(self.name()),
+            self.sub_table(),
+        ]
+
+
 #
 # The following code defines write and read methods for each of the
 # complex protobuf types.
@@ -363,13 +470,54 @@ class SubMessageDecoderMethod(ReadMethod):
         return False
 
 
+class SubMessageProperty(MessageProperty):
+    """Property which contains a sub-message."""
+    def _dependency_removed(self) -> bool:
+        """Returns true if the message dependency was removed to break a cycle.
+
+        Proto allows cycles between messages, but C++ doesn't allow cycles
+        between class references. So when we're forced to break one, the
+        struct member is replaced with a callback.
+        """
+        type_node = self._field.type_node()
+        assert type_node is not None
+        return type_node in cast(ProtoMessage, self._scope).dependency_cycles()
+
+    def _elem_size_table_entry(self) -> str:
+        # Since messages can't be repeated (as we couldn't set callbacks),
+        # only field size is used. Set elem_size to 0 so space can be saved by
+        # not using more than 4 bits for it.
+        return '0'
+
+    def type_name(self, from_root: bool = False) -> str:
+        return '{}::Message'.format(self._relative_type_namespace(from_root))
+
+    def use_callback(self) -> bool:
+        # Always use a callback for a message dependency removed to break a
+        # cycle, and for repeated fields, since in both cases there's no way
+        # to handle the size of nested field.
+        options = self._field.options()
+        assert options is not None
+        return (options.use_callback or self._dependency_removed()
+                or self._field.is_repeated())
+
+    def wire_type(self) -> str:
+        return 'kDelimited'
+
+    def sub_table(self) -> str:
+        if self.use_callback():
+            return 'nullptr'
+
+        return '&{}::kMessageFields'.format(self._relative_type_namespace())
+
+
 class BytesReaderMethod(ReadMethod):
     """Method which returns a bytes reader."""
     def name(self) -> str:
         return 'Get{}Reader'.format(self._field.name())
 
     def return_type(self, from_root: bool = False) -> str:
-        return '::pw::protobuf::StreamDecoder::BytesReader'
+        return f'{PROTOBUF_NAMESPACE}::StreamDecoder::BytesReader'
 
     def _decoder_fn(self) -> str:
         return 'GetBytesReader'
@@ -435,6 +583,15 @@ class PackedDoubleReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedDouble'
 
 
+class DoubleProperty(MessageProperty):
+    """Property which holds a proto double value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'double'
+
+    def wire_type(self) -> str:
+        return 'kFixed64'
+
+
 class FloatWriteMethod(WriteMethod):
     """Method which writes a proto float value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -487,6 +644,15 @@ class PackedFloatReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedFloat'
+
+
+class FloatProperty(MessageProperty):
+    """Property which holds a proto float value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'float'
+
+    def wire_type(self) -> str:
+        return 'kFixed32'
 
 
 class Int32WriteMethod(WriteMethod):
@@ -543,6 +709,18 @@ class PackedInt32ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedInt32'
 
 
+class Int32Property(MessageProperty):
+    """Property which holds a proto int32 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'int32_t'
+
+    def wire_type(self) -> str:
+        return 'kVarint'
+
+    def varint_decode_type(self) -> str:
+        return 'kNormal'
+
+
 class Sint32WriteMethod(WriteMethod):
     """Method which writes a proto sint32 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -595,6 +773,18 @@ class PackedSint32ReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedSint32'
+
+
+class Sint32Property(MessageProperty):
+    """Property which holds a proto sint32 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'int32_t'
+
+    def wire_type(self) -> str:
+        return 'kVarint'
+
+    def varint_decode_type(self) -> str:
+        return 'kZigZag'
 
 
 class Sfixed32WriteMethod(WriteMethod):
@@ -651,6 +841,15 @@ class PackedSfixed32ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedSfixed32'
 
 
+class Sfixed32Property(MessageProperty):
+    """Property which holds a proto sfixed32 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'int32_t'
+
+    def wire_type(self) -> str:
+        return 'kFixed32'
+
+
 class Int64WriteMethod(WriteMethod):
     """Method which writes a proto int64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -703,6 +902,18 @@ class PackedInt64ReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedInt64'
+
+
+class Int64Property(MessageProperty):
+    """Property which holds a proto int64 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'int64_t'
+
+    def wire_type(self) -> str:
+        return 'kVarint'
+
+    def varint_decode_type(self) -> str:
+        return 'kNormal'
 
 
 class Sint64WriteMethod(WriteMethod):
@@ -759,6 +970,18 @@ class PackedSint64ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedSint64'
 
 
+class Sint64Property(MessageProperty):
+    """Property which holds a proto sint64 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'int64_t'
+
+    def wire_type(self) -> str:
+        return 'kVarint'
+
+    def varint_decode_type(self) -> str:
+        return 'kZigZag'
+
+
 class Sfixed64WriteMethod(WriteMethod):
     """Method which writes a proto sfixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -811,6 +1034,15 @@ class PackedSfixed64ReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedSfixed64'
+
+
+class Sfixed64Property(MessageProperty):
+    """Property which holds a proto sfixed64 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'int64_t'
+
+    def wire_type(self) -> str:
+        return 'kFixed64'
 
 
 class Uint32WriteMethod(WriteMethod):
@@ -867,6 +1099,18 @@ class PackedUint32ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedUint32'
 
 
+class Uint32Property(MessageProperty):
+    """Property which holds a proto uint32 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'uint32_t'
+
+    def wire_type(self) -> str:
+        return 'kVarint'
+
+    def varint_decode_type(self) -> str:
+        return 'kUnsigned'
+
+
 class Fixed32WriteMethod(WriteMethod):
     """Method which writes a proto fixed32 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -919,6 +1163,15 @@ class PackedFixed32ReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedFixed32'
+
+
+class Fixed32Property(MessageProperty):
+    """Property which holds a proto fixed32 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'uint32_t'
+
+    def wire_type(self) -> str:
+        return 'kFixed32'
 
 
 class Uint64WriteMethod(WriteMethod):
@@ -975,6 +1228,18 @@ class PackedUint64ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedUint64'
 
 
+class Uint64Property(MessageProperty):
+    """Property which holds a proto uint64 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'uint64_t'
+
+    def wire_type(self) -> str:
+        return 'kVarint'
+
+    def varint_decode_type(self) -> str:
+        return 'kUnsigned'
+
+
 class Fixed64WriteMethod(WriteMethod):
     """Method which writes a proto fixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -1029,6 +1294,15 @@ class PackedFixed64ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedFixed64'
 
 
+class Fixed64Property(MessageProperty):
+    """Property which holds a proto fixed64 value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'uint64_t'
+
+    def wire_type(self) -> str:
+        return 'kFixed64'
+
+
 class BoolWriteMethod(WriteMethod):
     """Method which writes a proto bool value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -1074,6 +1348,18 @@ class PackedBoolReadMethod(PackedReadMethod):
         return 'ReadPackedBool'
 
 
+class BoolProperty(MessageProperty):
+    """Property which holds a proto bool value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'bool'
+
+    def wire_type(self) -> str:
+        return 'kVarint'
+
+    def varint_decode_type(self) -> str:
+        return 'kUnsigned'
+
+
 class BytesWriteMethod(WriteMethod):
     """Method which writes a proto bytes value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -1093,6 +1379,34 @@ class BytesReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadBytes'
+
+
+class BytesProperty(MessageProperty):
+    """Property which holds a proto bytes value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'std::byte'
+
+    def use_callback(self) -> bool:
+        return self.max_size() == 0
+
+    def max_size(self) -> int:
+        if not self._field.is_repeated():
+            options = self._field.options()
+            assert options is not None
+            return options.max_size
+
+        return 0
+
+    def fixed_size(self) -> bool:
+        if not self._field.is_repeated():
+            options = self._field.options()
+            assert options is not None
+            return options.fixed_size
+
+        return False
+
+    def wire_type(self) -> str:
+        return 'kDelimited'
 
 
 class StringLenWriteMethod(WriteMethod):
@@ -1123,6 +1437,29 @@ class StringReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadString'
+
+
+class StringProperty(MessageProperty):
+    """Property which holds a proto string value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return 'char'
+
+    def use_callback(self) -> bool:
+        return self.max_size() == 0
+
+    def max_size(self) -> int:
+        if not self._field.is_repeated():
+            options = self._field.options()
+            assert options is not None
+            return options.max_size
+
+        return 0
+
+    def fixed_size(self) -> bool:
+        return False
+
+    def wire_type(self) -> str:
+        return 'kDelimited'
 
 
 class EnumWriteMethod(WriteMethod):
@@ -1160,6 +1497,18 @@ class EnumReadMethod(ReadMethod):
 
         lines += [f'return {function_name}(value.value());']
         return lines
+
+
+class EnumProperty(MessageProperty):
+    """Property which holds a proto enum value."""
+    def type_name(self, from_root: bool = False) -> str:
+        return self._relative_type_namespace(from_root=from_root)
+
+    def wire_type(self) -> str:
+        return 'kVarint'
+
+    def varint_decode_type(self) -> str:
+        return 'kUnsigned'
 
 
 # Mapping of protobuf field types to their method definitions.
@@ -1260,6 +1609,26 @@ PROTO_FIELD_READ_METHODS: Dict[int, List] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumReadMethod],
 }
 
+PROTO_FIELD_PROPERTIES: Dict[int, List] = {
+    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [DoubleProperty],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT: [FloatProperty],
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT32: [Int32Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32: [Sint32Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: [Sfixed32Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT64: [Int64Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: [Sint64Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: [Sfixed32Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: [Uint32Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: [Fixed32Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: [Uint64Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: [Fixed64Property],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [BoolProperty],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [BytesProperty],
+    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [StringProperty],
+    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [SubMessageProperty],
+    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumProperty],
+}
+
 
 def proto_field_methods(class_type: ClassType, field_type: int) -> List:
     return (PROTO_FIELD_WRITE_METHODS[field_type] if class_type.is_encoder()
@@ -1316,6 +1685,17 @@ def generate_class_for_message(message: ProtoMessage, root: ProtoNode,
                 output.write_line('}')
                 output.write_line(
                     'return static_cast<Fields>(result.value());')
+            output.write_line('}')
+
+        # Generate entry for message table read method.
+        if class_type == ClassType.STREAMING_DECODER:
+            output.write_line()
+            output.write_line('::pw::Status Read(Message& message) {')
+            with output.indent():
+                output.write_line(
+                    f'return {base_class}::Read('
+                    'std::as_writable_bytes(std::span(&message, 1)), '
+                    'kMessageFields);')
             output.write_line('}')
 
         # Generate methods for each of the message's fields.
@@ -1416,6 +1796,10 @@ def forward_declare(node: ProtoMessage, root: ProtoNode,
             output.write_line(f'{field.enum_name()} = {field.number()},')
     output.write_line('};')
 
+    # Declare the message's message struct.
+    output.write_line()
+    output.write_line('struct Message;')
+
     # Declare the message's encoder classes.
     output.write_line()
     output.write_line('class StreamEncoder;')
@@ -1432,6 +1816,75 @@ def forward_declare(node: ProtoMessage, root: ProtoNode,
             generate_code_for_enum(cast(ProtoEnum, child), node, output)
             output.write_line()
             generate_function_for_enum(cast(ProtoEnum, child), node, output)
+
+    output.write_line(f'}}  // namespace {namespace}')
+
+
+def generate_struct_for_message(message: ProtoMessage, root: ProtoNode,
+                                output: OutputFile) -> None:
+    """Creates a C++ struct to hold a protobuf message values."""
+    assert message.type() == ProtoNode.Type.MESSAGE
+
+    output.write_line(f'struct {message.cpp_namespace(root)}::Message {{')
+
+    # Generate members for each of the message's fields.
+    with output.indent():
+        for field in message.fields():
+            for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
+                prop = property_class(field, message, root)
+                if not prop.should_appear():
+                    continue
+
+                (type_name, name) = prop.struct_member()
+                output.write_line(f'{type_name} {name};')
+
+    output.write_line('};')
+
+
+def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
+                               output: OutputFile) -> None:
+    """Creates a C++ array to hold a protobuf message description."""
+    assert message.type() == ProtoNode.Type.MESSAGE
+
+    namespace = message.cpp_namespace(root)
+    output.write_line(f'namespace {namespace} {{')
+
+    properties = []
+    for field in message.fields():
+        for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
+            prop = property_class(field, message, root)
+            if prop.should_appear():
+                properties.append(prop)
+
+    output.write_line('PW_MODIFY_DIAGNOSTICS_PUSH();')
+    output.write_line('PW_MODIFY_DIAGNOSTIC(ignored, "-Winvalid-offsetof");')
+
+    # Generate static_asserts to fail at compile-time if the structure cannot
+    # be converted into a table.
+    for idx, prop in enumerate(properties):
+        if idx > 0:
+            output.write_line(
+                'static_assert(offsetof(Message, {}) > 0);'.format(
+                    prop.name()))
+        output.write_line('static_assert(sizeof(Message::{}) <= '
+                          '{}::MessageField::kMaxFieldSize);'.format(
+                              prop.name(), PROTOBUF_NAMESPACE))
+
+    output.write_line('inline constexpr {}::MessageField _kMessageFields[] '
+                      '= {{'.format(PROTOBUF_NAMESPACE, ))
+
+    # Generate members for each of the message's fields.
+    with output.indent():
+        for prop in properties:
+            table = ', '.join(prop.table_entry())
+            output.write_line(f'{{{table}}},')
+
+    output.write_line('};')
+    output.write_line('PW_MODIFY_DIAGNOSTICS_POP();')
+
+    output.write_line('inline constexpr std::span<const {}::MessageField> '
+                      'kMessageFields = {{ _kMessageFields, {} }};'.format(
+                          PROTOBUF_NAMESPACE, len(properties)))
 
     output.write_line(f'}}  // namespace {namespace}')
 
@@ -1482,13 +1935,16 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
                       f'generated by {PLUGIN_NAME} {PLUGIN_VERSION}')
     output.write_line(f'// on {datetime.now()}')
     output.write_line('#pragma once\n')
+    output.write_line('#include <array>')
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
     output.write_line('#include <span>')
     output.write_line('#include <string_view>\n')
     output.write_line('#include "pw_assert/assert.h"')
     output.write_line('#include "pw_containers/vector.h"')
+    output.write_line('#include "pw_preprocessor/compiler.h"')
     output.write_line('#include "pw_protobuf/encoder.h"')
+    output.write_line('#include "pw_protobuf/internal/codegen.h"')
     output.write_line('#include "pw_protobuf/stream_decoder.h"')
     output.write_line('#include "pw_result/result.h"')
     output.write_line('#include "pw_status/status.h"')
@@ -1520,6 +1976,10 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     # Run through all messages, generating structs and classes for each.
     messages = []
     for message in dependency_sorted_messages(package):
+        output.write_line()
+        generate_struct_for_message(message, package, output)
+        output.write_line()
+        generate_table_for_message(message, package, output)
         output.write_line()
         generate_class_for_message(message, package, output,
                                    ClassType.STREAMING_ENCODER)

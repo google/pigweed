@@ -23,6 +23,7 @@ message RepeatedTest {
   repeated Struct structs = 5;
   repeated fixed32 fixed32s = 6;
   repeated bool bools = 7;
+  repeated uint64 uint64s = 8;
 };
 
 message Struct {

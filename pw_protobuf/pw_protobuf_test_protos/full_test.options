@@ -12,23 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-syntax = "proto3";
+pw.protobuf.test.Pigweed.error_message max_size:64
+pw.protobuf.test.Pigweed.data max_size:8 fixed_size:true
+pw.protobuf.test.Pigweed.special_property use_callback:true
 
-package pw.protobuf;
-
-message Options {
-  // Maximum number of entries for repeated fields.
-  int32 max_count = 1;
-
-  // Use a fixed length std::array for repeated fields instead of pw::Vector.
-  bool fixed_count = 2;
-
-  // Maximum size for bytes and string fields.
-  int32 max_size = 3;
-
-  // Use a fixed size std::array for bytes fields instead of pw::Vector.
-  bool fixed_size = 4;
-
-  // Force the use of a callback function for the field.
-  bool use_callback = 5;
-}
+pw.protobuf.test.Pigweed.device_info use_callback:true
+pw.protobuf.test.DeviceInfo.device_name max_size:32

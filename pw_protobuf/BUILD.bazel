@@ -232,6 +232,14 @@ pw_cc_test(
     ],
 )
 
+# TODO(tpudlik): Figure out how to add options file support to Bazel.
+filegroup(
+    name = "codegen_message_test",
+    srcs = [
+        "codegen_message_test.cc",
+    ],
+)
+
 # TODO(frolv): Figure out how to add facade tests to Bazel.
 filegroup(
     name = "varint_size_test",

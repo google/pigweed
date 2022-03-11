@@ -157,6 +157,8 @@ template("_pw_pwpb_proto_library") {
     public_deps = [
                     "$dir_pw_containers:vector",
                     dir_pw_assert,
+                    dir_pw_function,
+                    dir_pw_preprocessor,
                     dir_pw_protobuf,
                     dir_pw_result,
                     dir_pw_status,

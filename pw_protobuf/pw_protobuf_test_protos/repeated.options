@@ -12,23 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-syntax = "proto3";
-
-package pw.protobuf;
-
-message Options {
-  // Maximum number of entries for repeated fields.
-  int32 max_count = 1;
-
-  // Use a fixed length std::array for repeated fields instead of pw::Vector.
-  bool fixed_count = 2;
-
-  // Maximum size for bytes and string fields.
-  int32 max_size = 3;
-
-  // Use a fixed size std::array for bytes fields instead of pw::Vector.
-  bool fixed_size = 4;
-
-  // Force the use of a callback function for the field.
-  bool use_callback = 5;
-}
+pw.protobuf.test.RepeatedTest.uint32s max_count:8
+pw.protobuf.test.RepeatedTest.fixed32s max_count:8
+pw.protobuf.test.RepeatedTest.doubles max_count:2 fixed_count:true
+pw.protobuf.test.RepeatedTest.uint64s max_count:4 fixed_count:true

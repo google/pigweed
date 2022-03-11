@@ -698,6 +698,28 @@ one that reads a packed field into a `std::span<Type>` and returning a
 
 Message Structure
 =================
+The codegen provides a ``struct Message`` for each protobuf message that can
+hold the set of values encoded by it, following these rules.
+
+* Scalar fields are represented by their appropriate C++ type.
+
+* Nested messages are represented by their own ``struct Message`` provided that
+  a reference cycle does not exist; or by a callback otherwise.
+
+* Repeated scalar fields are represented by `pw::Vector` when the `max_count`
+  option is set for that field; by `std::array` when both `max_count` and
+  `fixed_count:true` are set; and by a callback otherwise.
+
+* `bytes` fields are represented by `pw::Vector` when the `max_size` option is
+  set for that field; by `std::array` when both `max_size` and `fixed_size:true`
+  are set; and by a callback otherwise.
+
+* `string` fields are represented by `pw::Vector` when the `max_size` option is
+  set for that field; and by a callback otherwise. Since the size is provided,
+  the string is not automatically null-terminated.
+
+* Repeated `bytes`, `string` and nested messages are represented by a callback.
+
 Decoding
 --------
 An entire protobuf message can be decoded into a structure of values using the
@@ -785,6 +807,30 @@ e.g.
       "pet_daycare_protos/client.options",
     ]
   }
+
+Valid options are:
+
+* ``max_count``:
+  Maximum number of entries for repeated fields. When set, repeated scalar
+  fields will use the ``pw::Vector`` container type instead of a callback.
+
+* ``fixed_count``:
+  Specified with ``max_count`` to use a fixed length ``std::array`` container
+  instead of ``pw::Vector``.
+
+* ``max_size``:
+  Maximum size of `bytes` and `strings` fields. When set, these field types
+  will use the ``pw::Vector`` container type instead of a callback.
+
+* ``fixed_size``:
+  Specified with ``max_size`` to use a fixed length ``std::array`` container
+  instead of ``pw::Vector`` for `bytes` fields.
+
+* ``use_callback``:
+  Replaces the structure member for the field with a callback function even
+  where a simpler type could be used. This can be useful to ignore fields, to
+  stop decoding of complex structures if certain values are not as expected, or
+  to provide special handling for nested messages.
 
 -----------
 Size report

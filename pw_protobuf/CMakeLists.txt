@@ -127,6 +127,17 @@ pw_add_test(pw_protobuf.codegen_encoder_test
     pw_protobuf
 )
 
+pw_add_test(pw_protobuf.codegen_message_test
+  SOURCES
+    codegen_message_test.cc
+  DEPS
+    pw_protobuf
+    pw_protobuf.codegen_test_protos.pwpb
+  GROUPS
+    modules
+    pw_protobuf
+)
+
 pw_add_test(pw_protobuf.serialized_size_test
   SOURCES
     serialized_size_test.cc
@@ -185,6 +196,9 @@ pw_proto_library(pw_protobuf.codegen_test_protos
     pw_protobuf_test_protos/non_pw_package.proto
     pw_protobuf_test_protos/proto2.proto
     pw_protobuf_test_protos/repeated.proto
+  INPUTS
+    pw_protobuf_test_protos/full_test.options
+    pw_protobuf_test_protos/repeated.options
   DEPS
     pw_protobuf.common_protos
 )

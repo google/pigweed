@@ -74,6 +74,12 @@ message Pigweed {
 
   Proto proto = 9;
   repeated Proto.ID id = 10;
+
+  // Fixed-length bytes field, a string with no maximum size specified in
+  // full_test.options, and a scalar with a forced callback.
+  bytes data = 11;
+  string description = 12;
+  uint32 special_property = 13;
 }
 
 // Another message.

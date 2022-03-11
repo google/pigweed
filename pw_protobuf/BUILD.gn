@@ -102,6 +102,7 @@ pw_test_group("tests") {
   tests = [
     ":codegen_decoder_test",
     ":codegen_encoder_test",
+    ":codegen_message_test",
     ":decoder_test",
     ":encoder_test",
     ":encoder_fuzzer",
@@ -137,6 +138,11 @@ pw_test("codegen_decoder_test") {
 pw_test("codegen_encoder_test") {
   deps = [ ":codegen_test_protos.pwpb" ]
   sources = [ "codegen_encoder_test.cc" ]
+}
+
+pw_test("codegen_message_test") {
+  deps = [ ":codegen_test_protos.pwpb" ]
+  sources = [ "codegen_message_test.cc" ]
 }
 
 pw_test("serialized_size_test") {
@@ -196,6 +202,10 @@ pw_proto_library("codegen_test_protos") {
     "pw_protobuf_test_protos/non_pw_package.proto",
     "pw_protobuf_test_protos/proto2.proto",
     "pw_protobuf_test_protos/repeated.proto",
+  ]
+  inputs = [
+    "pw_protobuf_test_protos/full_test.options",
+    "pw_protobuf_test_protos/repeated.options",
   ]
   deps = [ ":common_protos" ]
 }
