@@ -379,6 +379,17 @@ class BlobStore {
   // Maximum number of data bytes this BlobStore is able to store.
   size_t MaxDataSizeBytes() const;
 
+  // Get the current data state of the blob without needing to instantiate
+  // and/or open a reader or writer. This check is independent of any writers or
+  // readers of this blob that might exist (open or closed).
+  //
+  // NOTE: This state can be changed by any writer that is open(ed) for this
+  //       blob. Readers can not be opened until any open writers are closed.
+  //
+  // true -  Blob is valid/OK and has at least 1 data byte.
+  // false -  Blob is either invalid or does not have any data bytes
+  bool HasData() const { return (valid_data_ && ReadableDataBytes() > 0); }
+
  private:
   Status LoadMetadata();
 
@@ -476,9 +487,6 @@ class BlobStore {
   size_t WriteBufferBytesFree() const;
 
   Status EraseIfNeeded();
-
-  // Blob is valid/OK and has data to read.
-  bool ValidToRead() const { return (valid_data_ && ReadableDataBytes() > 0); }
 
   // Read valid data. Attempts to read the lesser of output.size_bytes() or
   // available bytes worth of data. Returns:

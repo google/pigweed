@@ -16,6 +16,11 @@ Most operations on a ``BlobStore`` are done using ``BlobReader`` and
 a ``BlobStore`` may have multiple open ``BlobReader`` objects, no other
 readers/writers may be active if a ``BlobWriter`` is opened on a blob store.
 
+The data state of a blob can be checked using the ``HasData()`` method.
+The method returns true if the blob is currenty valid and has at least one data
+byte. This allows checking if a blob has stored data without needing to
+instantiate and open a reader or writer.
+
 Write buffer
 ============
 
@@ -88,6 +93,9 @@ for the ``std::string_view`` to be invalidated after the function returns.
 
 Reading from a BlobStore
 ------------------------
+A ``BlobStore`` may have multiple open ``BlobReader`` objects. No other
+readers/writers may be open/active if a ``BlobWriter`` is opened on a blob
+store.
 
   0) Create BlobReader instance
   1) BlobReader::Open().
