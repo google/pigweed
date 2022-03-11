@@ -192,7 +192,7 @@ class HdlcRpcClient:
             _LOG.error('Packet not handled by RPC client: %s', frame.data)
 
 
-def _try_connect(sock: socket.socket, port: int, attempts: int = 10) -> None:
+def _try_connect(port: int, attempts: int = 10) -> socket.socket:
     """Tries to connect to the specified port up to the given number of times.
 
     This is helpful when connecting to a process that was started by this
@@ -205,9 +205,11 @@ def _try_connect(sock: socket.socket, port: int, attempts: int = 10) -> None:
         time.sleep(0.001)
 
         try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect(('localhost', port))
-            return
+            return sock
         except ConnectionRefusedError:
+            sock.close()
             if attempts <= 0:
                 raise
 
@@ -218,20 +220,12 @@ class SocketSubprocess:
         self._server_process = subprocess.Popen(command, stdin=subprocess.PIPE)
         self.stdin = self._server_process.stdin
 
-        sock = None
-
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            _try_connect(sock, port)
+            self.socket: socket.socket = _try_connect(port)  # 🧦
         except:
-            if sock:
-                sock.close()
-
             self._server_process.terminate()
             self._server_process.communicate()
             raise
-
-        self.socket: socket.socket = sock  # 🧦
 
     def close(self) -> None:
         try:
