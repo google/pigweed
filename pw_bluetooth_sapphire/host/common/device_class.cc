@@ -11,9 +11,15 @@ namespace bt {
 namespace {
 
 DeviceClass::ServiceClass bit_no_to_service_class(uint8_t bit_no) {
-  ZX_DEBUG_ASSERT(bit_no >= 16);
+  ZX_DEBUG_ASSERT(bit_no >= 13);
   ZX_DEBUG_ASSERT(bit_no < 24);
   switch (bit_no) {
+    case 13:
+      return DeviceClass::ServiceClass::kLimitedDiscoverableMode;
+    case 14:
+      return DeviceClass::ServiceClass::kLEAudio;
+    case 15:
+      return DeviceClass::ServiceClass::kReserved;
     case 16:
       return DeviceClass::ServiceClass::kPositioning;
     case 17:
@@ -37,6 +43,12 @@ DeviceClass::ServiceClass bit_no_to_service_class(uint8_t bit_no) {
 
 std::string service_class_to_string(const DeviceClass::ServiceClass& serv) {
   switch (serv) {
+    case DeviceClass::ServiceClass::kLimitedDiscoverableMode:
+      return "Limited Discoverable Mode";
+    case DeviceClass::ServiceClass::kLEAudio:
+      return "LE Audio";
+    case DeviceClass::ServiceClass::kReserved:
+      return "Reserved";
     case DeviceClass::ServiceClass::kPositioning:
       return "Positioning";
     case DeviceClass::ServiceClass::kNetworking:
@@ -90,6 +102,11 @@ void DeviceClass::SetServiceClasses(const std::unordered_set<ServiceClass>& clas
 
 std::unordered_set<DeviceClass::ServiceClass> DeviceClass::GetServiceClasses() const {
   std::unordered_set<ServiceClass> classes;
+  for (uint8_t bit_no = 13; bit_no < 16; bit_no++) {
+    if (bytes_[1] & (0x01 << (bit_no - 8))) {
+      classes.emplace(bit_no_to_service_class(bit_no));
+    }
+  }
   for (uint8_t bit_no = 16; bit_no < 24; bit_no++) {
     if (bytes_[2] & (0x01 << (bit_no - 16))) {
       classes.emplace(bit_no_to_service_class(bit_no));
@@ -106,7 +123,7 @@ std::string DeviceClass::ToString() const {
     service_desc = " (" + service_class_to_string(*it);
     ++it;
     for (; it != classes.end(); ++it) {
-      service_desc = service_desc + ", " + service_class_to_string(*it);
+      service_desc += ", " + service_class_to_string(*it);
     }
     service_desc = service_desc + ")";
   }

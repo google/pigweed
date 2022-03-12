@@ -36,6 +36,9 @@ class DeviceClass {
   };
 
   enum class ServiceClass : uint8_t {
+    kLimitedDiscoverableMode = 13,
+    kLEAudio = 14,
+    kReserved = 15,
     kPositioning = 16,
     kNetworking = 17,
     kRendering = 18,
