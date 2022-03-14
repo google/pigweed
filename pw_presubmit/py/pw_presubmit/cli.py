@@ -27,7 +27,8 @@ DEFAULT_PATH = Path('out', 'presubmit')
 
 _OUTPUT_PATH_README = '''\
 This directory was created by pw_presubmit to run presubmit checks for the
-{repo} repository. This directory may be deleted safely.
+{repo} repository. This directory is not used by the regular GN or CMake Ninja
+builds. It may be deleted safely.
 '''
 
 
