@@ -29,13 +29,13 @@ void StringBuilder::clear() {
 }
 
 StringBuilder& StringBuilder::append(size_t count, char ch) {
-  char* const append_destination = buffer_.begin() + size_;
+  char* const append_destination = buffer_.data() + size_;
   std::fill_n(append_destination, ResizeAndTerminate(count), ch);
   return *this;
 }
 
 StringBuilder& StringBuilder::append(const char* str, size_t count) {
-  char* const append_destination = buffer_.begin() + size_;
+  char* const append_destination = buffer_.data() + size_;
   std::copy_n(str, ResizeAndTerminate(count), append_destination);
   return *this;
 }
