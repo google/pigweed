@@ -9,5 +9,6 @@
     "gn_targets": [
       ":python.install"
     ]
-  }
+  },
+  "gni_file": "build_overrides/pigweed_environment.gni"
 }

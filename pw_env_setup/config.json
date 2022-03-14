@@ -9,5 +9,6 @@
       ":python.install"
     ]
   },
-  "pw_packages": []
+  "pw_packages": [],
+  "gni_file": "build_overrides/pigweed_environment.gni"
 }

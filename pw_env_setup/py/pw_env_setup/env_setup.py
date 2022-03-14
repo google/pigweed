@@ -451,6 +451,16 @@ Then use `set +x` to go back to normal.
             with open(actions_json, 'w') as outs:
                 self._env.json(outs)
 
+            # This file needs to be written after the CIPD step and before the
+            # Python virtualenv step. It also needs to be rewritten after the
+            # Python virtualenv step, so it's easiest to just write it after
+            # every step.
+            gni_file = (os.path.join(self._env.get('PW_PROJECT_ROOT'),
+                                     self._gni_file)
+                        or os.path.join(self._install_dir, 'environment.gni'))
+            with open(gni_file, 'w') as outs:
+                self._env.gni(outs, self._project_root)
+
         self._log('')
         self._env.echo('')
 
@@ -496,12 +506,6 @@ Then use `set +x` to go back to normal.
                      or os.path.join(self._install_dir, 'actions.json'))
         with open(json_file, 'w') as outs:
             self._env.json(outs)
-
-        gni_file = (os.path.join(self._env.get('PW_PROJECT_ROOT'),
-                                 self._gni_file)
-                    or os.path.join(self._install_dir, 'environment.gni'))
-        with open(gni_file, 'w') as outs:
-            self._env.gni(outs, self._project_root)
 
         return 0
 
