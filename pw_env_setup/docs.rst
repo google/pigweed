@@ -379,6 +379,8 @@ again, and run ``pw presubmit``.
 
 Environment Variables
 *********************
+Input Variables
+---------------
 The following environment variables affect env setup behavior. Most users will
 never need to set these.
 
@@ -424,6 +426,8 @@ never need to set these.
   The absolute path to the Pigweed repository within ``PW_PROJECT_ROOT``. This
   should be set by the project's bootstrap script.
 
+Output Variables
+----------------
 The following environment variables are set by env setup.
 
 ``PATH``
