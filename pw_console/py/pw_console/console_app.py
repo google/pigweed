@@ -846,6 +846,11 @@ class ConsoleApp:
         if test_mode:
             background_log_task = asyncio.create_task(self.log_forever())
 
+        # Repl pane has focus by default, if it's hidden switch focus to another
+        # visible pane.
+        if not self.repl_pane.show_pane:
+            self.window_manager.focus_first_visible_pane()
+
         try:
             unused_result = await self.application.run_async(
                 set_exception_handler=True)

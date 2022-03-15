@@ -284,6 +284,10 @@ class PwConsoleEmbed:
 
         self.console_app.apply_window_config()
 
+        # Hide the repl pane if it's in the hidden windows list.
+        if 'Python Repl' in self.hidden_by_default_windows:
+            self.console_app.repl_pane.show_pane = False
+
         # Start a thread for running user code.
         self.console_app.start_user_code_thread()
 
