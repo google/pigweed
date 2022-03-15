@@ -141,12 +141,11 @@ class DummyDeviceWrapper : public DeviceWrapper {
   using ResetScoCallback = fit::function<void(bt_hci_reset_sco_callback, void*)>;
   void set_reset_sco_callback(ResetScoCallback cb) { reset_sco_cb_ = std::move(cb); }
 
-  // DeviceWrapper overrides. Since these methods simply forward the handles
-  // they were initialized with, the internal handles will be moved and
-  // invalidated after the first call to these methods. Subsequent calls will
-  // always return an invalid handle.
-  zx::channel GetCommandChannel() override;
-  zx::channel GetACLDataChannel() override;
+  // DeviceWrapper overrides. Since these methods simply forward the handles they were initialized
+  // with, the internal handles will be moved and invalidated after the first call to these methods.
+  // Subsequent calls will always return an invalid handle.
+  zx::channel GetCommandChannel() override { return std::move(cmd_channel_); }
+  zx::channel GetACLDataChannel() override { return std::move(acl_data_channel_); }
   fitx::result<zx_status_t, zx::channel> GetScoChannel() override;
   void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
                     sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,

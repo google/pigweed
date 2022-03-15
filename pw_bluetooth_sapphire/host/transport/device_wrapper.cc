@@ -151,10 +151,6 @@ DummyDeviceWrapper::DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_
       vendor_features_(vendor_features),
       vendor_encode_cb_(std::move(vendor_encode_cb)) {}
 
-zx::channel DummyDeviceWrapper::GetCommandChannel() { return std::move(cmd_channel_); }
-
-zx::channel DummyDeviceWrapper::GetACLDataChannel() { return std::move(acl_data_channel_); }
-
 fitx::result<zx_status_t, zx::channel> DummyDeviceWrapper::GetScoChannel() {
   if (!sco_channel_.is_valid()) {
     return fitx::error(ZX_ERR_NOT_SUPPORTED);
