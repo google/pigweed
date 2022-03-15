@@ -38,7 +38,6 @@ TEST(PacketViewTest, EmptyPayload) {
   PacketView<TestHeader> packet(&buffer);
   EXPECT_EQ(kBufferSize, packet.size());
   EXPECT_EQ(0u, packet.payload_size());
-  EXPECT_EQ(nullptr, packet.payload_bytes());
   EXPECT_EQ(0u, packet.payload_data().size());
 
   EXPECT_EQ(512, packet.header().field16);
@@ -65,7 +64,7 @@ TEST(PacketViewTest, NonEmptyPayload) {
   MutablePacketView<TestHeader> packet(&buffer, kPayloadSize);
   EXPECT_EQ(kBufferSize, packet.size());
   EXPECT_EQ(kPayloadSize, packet.payload_size());
-  EXPECT_NE(nullptr, packet.payload_bytes());
+  EXPECT_NE(nullptr, packet.payload_data().data());
 
   auto payload = packet.mutable_payload<TestPayload>();
   EXPECT_NE(nullptr, payload);

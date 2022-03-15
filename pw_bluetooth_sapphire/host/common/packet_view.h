@@ -84,17 +84,12 @@ class PacketView {
     return size() - sizeof(HeaderType);
   }
 
-  const uint8_t* payload_bytes() const {
-    ZX_ASSERT(is_valid());
-    return payload_size() ? buffer_->data() + sizeof(HeaderType) : nullptr;
-  }
-
   HeaderType header() const { return buffer_->To<HeaderType>(); }
 
   template <typename PayloadType>
   const PayloadType& payload() const {
     ZX_ASSERT(sizeof(PayloadType) <= payload_size());
-    return *reinterpret_cast<const PayloadType*>(payload_bytes());
+    return *reinterpret_cast<const PayloadType*>(payload_data().data());
   }
 
   // A PacketView that contains no backing buffer is considered invalid. A

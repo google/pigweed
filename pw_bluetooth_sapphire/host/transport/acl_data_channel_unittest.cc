@@ -456,7 +456,7 @@ TEST_F(ACLDataChannelTest, SendPackets) {
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
     EXPECT_EQ(1u, packet.payload_size());
 
-    int cur_no = packet.payload_bytes()[0];
+    int cur_no = packet.payload_data().data()[0];
     if (cur_no != seq_no + 1) {
       pass = false;
       return;
