@@ -14,6 +14,35 @@ LowEnergyAdvertiser::LowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
       hci_cmd_runner_(
           std::make_unique<SequentialCommandRunner>(async_get_default_dispatcher(), hci_)) {}
 
+fitx::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
+    const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
+    const AdvertisingOptions& options) const {
+  ZX_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
+
+  if (options.anonymous) {
+    bt_log(WARN, "hci-le", "anonymous advertising not supported");
+    return fitx::error(HostError::kNotSupported);
+  }
+
+  // If the TX Power Level is requested, ensure both buffers have enough space.
+  size_t size_limit = GetSizeLimit();
+  if (options.include_tx_power_level) {
+    size_limit -= kTLVTxPowerLevelSize;
+  }
+
+  if (size_t size = data.CalculateBlockSize(/*include_flags=*/true); size > size_limit) {
+    bt_log(WARN, "hci-le", "advertising data too large (actual: %zu, max: %zu)", size, size_limit);
+    return fitx::error(HostError::kAdvertisingDataTooLong);
+  }
+
+  if (size_t size = scan_rsp.CalculateBlockSize(/*include_flags=*/false); size > size_limit) {
+    bt_log(WARN, "hci-le", "scan response too large (actual: %zu, max: %zu)", size, size_limit);
+    return fitx::error(HostError::kScanResponseTooLong);
+  }
+
+  return fitx::ok();
+}
+
 void LowEnergyAdvertiser::StartAdvertisingInternal(
     const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
     AdvertisingIntervalRange interval, AdvFlags flags, ConnectionCallback connect_callback,

@@ -299,8 +299,15 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
                                                    AdvertisingOptions options,
                                                    ConnectionCallback connect_callback,
                                                    ResultFunction<> result_callback) {
-  ZX_ASSERT(result_callback);
-  ZX_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
+  fitx::result<HostError> result = CanStartAdvertising(address, data, scan_rsp, options);
+  if (result.is_error()) {
+    result_callback(ToResult(result.error_value()));
+    return;
+  }
+
+  if (IsAdvertising(address)) {
+    bt_log(DEBUG, "hci-le", "updating existing advertisement for %s", bt_str(address));
+  }
 
   // if there is an operation currently in progress, enqueue this operation and we will get to it
   // the next time we have a chance
@@ -320,34 +327,6 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
       StartAdvertising(address, data, scan_rsp, options, std::move(conn_cb), std::move(result_cb));
     });
 
-    return;
-  }
-
-  if (options.anonymous) {
-    bt_log(WARN, "hci-le", "anonymous advertising not supported");
-    result_callback(ToResult(HostError::kNotSupported));
-    return;
-  }
-
-  if (IsAdvertising(address)) {
-    bt_log(DEBUG, "hci-le", "updating existing advertisement for %s", bt_str(address));
-  }
-
-  // If the TX Power Level is requested, ensure both buffers have enough space.
-  size_t size_limit = GetSizeLimit();
-  if (options.include_tx_power_level) {
-    size_limit -= kTLVTxPowerLevelSize;
-  }
-
-  if (size_t size = data.CalculateBlockSize(/*include_flags=*/true); size > size_limit) {
-    bt_log(WARN, "hci-le", "advertising data too large (actual: %zu, max: %zu)", size, size_limit);
-    result_callback(ToResult(HostError::kAdvertisingDataTooLong));
-    return;
-  }
-
-  if (size_t size = scan_rsp.CalculateBlockSize(/*include_flags=*/false); size > size_limit) {
-    bt_log(WARN, "hci-le", "scan response too large (actual: %zu, max: %zu)", size, size_limit);
-    result_callback(ToResult(HostError::kScanResponseTooLong));
     return;
   }
 

@@ -113,48 +113,23 @@ static std::unique_ptr<CommandPacket> BuildReadAdvertisingTxPower() {
 void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
                                                  const AdvertisingData& data,
                                                  const AdvertisingData& scan_rsp,
-                                                 AdvertisingOptions adv_options,
+                                                 AdvertisingOptions options,
                                                  ConnectionCallback connect_callback,
                                                  ResultFunction<> result_callback) {
-  ZX_ASSERT(result_callback);
-  ZX_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
+  fitx::result<HostError> result = CanStartAdvertising(address, data, scan_rsp, options);
+  if (result.is_error()) {
+    result_callback(ToResult(result.error_value()));
+    return;
+  }
 
-  if (adv_options.anonymous) {
-    bt_log(WARN, "hci-le", "anonymous advertising not supported");
+  if (IsAdvertising() && !IsAdvertising(address)) {
+    bt_log(INFO, "hci-le", "already advertising (only one advertisement supported at a time)");
     result_callback(ToResult(HostError::kNotSupported));
     return;
   }
 
   if (IsAdvertising()) {
-    if (!IsAdvertising(address)) {
-      bt_log(INFO, "hci-le", "already advertising (only one advertisement supported at a time)");
-      result_callback(ToResult(HostError::kNotSupported));
-      return;
-    }
-
     bt_log(DEBUG, "hci-le", "updating existing advertisement");
-  }
-
-  // If the TX Power Level is requested, ensure both buffers have enough space.
-  size_t size_limit = GetSizeLimit();
-  if (adv_options.include_tx_power_level) {
-    size_limit -= kTLVTxPowerLevelSize;
-  }
-
-  size_t data_size = data.CalculateBlockSize(/*include_flags=*/true);
-  if (data_size > size_limit) {
-    bt_log(WARN, "hci-le", "advertising data too large (size: %zu, limit: %zu)", data_size,
-           size_limit);
-    result_callback(ToResult(HostError::kAdvertisingDataTooLong));
-    return;
-  }
-
-  size_t scan_rsp_size = scan_rsp.CalculateBlockSize(/*include_flags=*/false);
-  if (scan_rsp_size > size_limit) {
-    bt_log(WARN, "hci-le", "scan response too large (size: %zu, limit: %zu)", scan_rsp_size,
-           size_limit);
-    result_callback(ToResult(HostError::kScanResponseTooLong));
-    return;
   }
 
   // Midst of a TX power level read - send a cancel over the previous status callback.
@@ -166,7 +141,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
   // If the TX Power level is requested, then stage the parameters for the read operation.
   // If there already is an outstanding TX Power Level read request, return early.
   // Advertising on the outstanding call will now use the updated |staged_params_|.
-  if (adv_options.include_tx_power_level) {
+  if (options.include_tx_power_level) {
     AdvertisingData data_copy;
     data.Copy(&data_copy);
 
@@ -174,8 +149,8 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
     scan_rsp.Copy(&scan_rsp_copy);
 
     staged_params_ = StagedParams{address,
-                                  adv_options.interval,
-                                  adv_options.flags,
+                                  options.interval,
+                                  options.flags,
                                   std::move(data_copy),
                                   std::move(scan_rsp_copy),
                                   std::move(connect_callback),
@@ -203,7 +178,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
   //
   // If advertising was canceled during the TX power level read (either |starting_| was
   // reset or the |result_callback| was moved), return early.
-  if (adv_options.include_tx_power_level) {
+  if (options.include_tx_power_level) {
     auto power_cb = [this](auto, const hci::EventPacket& event) mutable {
       ZX_ASSERT(staged_params_.has_value());
       if (!starting_ || !staged_params_.value().result_callback) {
@@ -245,7 +220,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
   }
 
   StartAdvertisingInternal(
-      address, data, scan_rsp, adv_options.interval, adv_options.flags, std::move(connect_callback),
+      address, data, scan_rsp, options.interval, options.flags, std::move(connect_callback),
       [this, result_callback = std::move(result_callback)](const Result<>& result) {
         starting_ = false;
         result_callback(result);

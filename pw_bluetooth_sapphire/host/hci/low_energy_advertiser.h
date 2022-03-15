@@ -63,8 +63,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   //
   // -----
   //
-  // Attempt to start advertising |data| with |adv_options.flags| and scan response |scan_rsp| using
-  // advertising address |address|. If |adv_options.anonymous| is set, |address| is ignored.
+  // Attempt to start advertising |data| with |options.flags| and scan response |scan_rsp| using
+  // advertising address |address|. If |options.anonymous| is set, |address| is ignored.
   //
   // If |address| is currently advertised, the advertisement is updated.
   //
@@ -72,7 +72,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // |status_callback| will be called with a connection reference when this advertisement is
   // connected to and the advertisement has been stopped.
   //
-  // |adv_options.interval| must be a value in "controller timeslices". See hci-spec/hci_constants.h
+  // |options.interval| must be a value in "controller timeslices". See hci-spec/hci_constants.h
   // for the valid range.
   //
   // Provides results in |status_callback|. If advertising is setup, the final interval of
@@ -101,7 +101,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   };
   using ConnectionCallback = fit::function<void(ConnectionPtr link)>;
   virtual void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
-                                const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
+                                const AdvertisingData& scan_rsp, AdvertisingOptions options,
                                 ConnectionCallback connect_callback,
                                 ResultFunction<> result_callback) = 0;
 
@@ -175,6 +175,14 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // stop advertising) completes in its entirety. Subclasses can override this method to be notified
   // when the HCI command runner is available once again.
   virtual void OnCurrentOperationComplete() {}
+
+  // Check whether we can actually start advertising given the combination of input parameters (e.g.
+  // check that the requested advertising data and scan response will actually fit within the size
+  // limitations of the advertising PDUs)
+  fitx::result<HostError> CanStartAdvertising(const DeviceAddress& address,
+                                              const AdvertisingData& data,
+                                              const AdvertisingData& scan_rsp,
+                                              const AdvertisingOptions& options) const;
 
   // Unconditionally start advertising (all checks must be performed in the methods that call this
   // one).
