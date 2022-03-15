@@ -18,7 +18,7 @@
 
 #define _PW_ASSERT_TOKENIZED_TO_HANDLER(str)                       \
   do {                                                             \
-    constexpr uint32_t token =                                     \
+    const uint32_t token =                                         \
         PW_TOKENIZE_STRING("Check failure in " __FILE__ ": " str); \
     pw_assert_tokenized_HandleCheckFailure(token, __LINE__);       \
   } while (0)
