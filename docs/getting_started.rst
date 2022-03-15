@@ -102,7 +102,7 @@ Prerequisites
 
 Most Linux installations should work out of box, and not require any manual
 installation of prerequisites beyond basics like ``git`` and
-``build-essential``.  Make sure gcc is set to gcc-8.
+``build-essential`` (or the equivalent for your distro).
 
 **macOS**
 
