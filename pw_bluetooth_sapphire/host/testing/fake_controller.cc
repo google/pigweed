@@ -1886,7 +1886,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
   }
 
   // For backwards compatibility with older devices, the host currently uses legacy advertising
-  // PDUs. The scan response data cannot exceed the legacy advertising PDU limit.
+  // PDUs. The advertising data cannot exceed the legacy advertising PDU limit.
   if (params.adv_data_length > hci_spec::kMaxLEAdvertisingDataLength) {
     bt_log(INFO, "fake-hci", "data length (%d bytes) larger than legacy PDU size limit",
            params.adv_data_length);
@@ -1896,13 +1896,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
   }
 
   state.data_length = params.adv_data_length;
-
-  if (params.adv_data_length == 0) {
-    std::memset(state.data, 0, sizeof(state.data));
-  } else {
-    std::memcpy(state.data, params.adv_data, params.adv_data_length);
-  }
-
+  std::memcpy(state.data, params.adv_data, params.adv_data_length);
   RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingData,
                              hci_spec::StatusCode::kSuccess);
   NotifyAdvertisingState();
@@ -1963,12 +1957,7 @@ void FakeController::OnLESetExtendedScanResponseData(
   }
 
   state.scan_rsp_length = params.scan_rsp_data_length;
-
-  if (params.scan_rsp_data_length == 0) {
-    std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
-  } else {
-    std::memcpy(state.scan_rsp_data, params.scan_rsp_data, params.scan_rsp_data_length);
-  }
+  std::memcpy(state.scan_rsp_data, params.scan_rsp_data, params.scan_rsp_data_length);
 
   RespondWithCommandComplete(hci_spec::kLESetExtendedScanResponseData,
                              hci_spec::StatusCode::kSuccess);
