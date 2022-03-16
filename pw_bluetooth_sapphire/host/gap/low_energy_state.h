@@ -7,7 +7,6 @@
 
 #include <cstdint>
 
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 namespace bt::gap {
@@ -15,10 +14,7 @@ namespace bt::gap {
 // Stores Bluetooth Low Energy settings and state information.
 class LowEnergyState final {
  public:
-  LowEnergyState();
-
-  // Returns true if |feature_bit| is set as supported in the local LE features
-  // list.
+  // Returns true if |feature_bit| is set as supported in the local LE features list.
   inline bool IsFeatureSupported(hci_spec::LESupportedFeature feature_bit) const {
     return supported_features_ & static_cast<uint64_t>(feature_bit);
   }
@@ -32,8 +28,7 @@ class LowEnergyState final {
   friend class Adapter;
   friend class AdapterImpl;
 
-  // Storage capacity information about the controller's internal ACL data
-  // buffers.
+  // Storage capacity information about the controller's internal ACL data buffers.
   hci::DataBufferInfo data_buffer_info_;
 
   // Local supported LE Features reported by the controller.

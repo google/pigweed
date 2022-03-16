@@ -54,7 +54,6 @@ static_library("gap") {
     "low_energy_discovery_manager.h",
     "low_energy_interrogator.cc",
     "low_energy_interrogator.h",
-    "low_energy_state.cc",
     "low_energy_state.h",
     "pairing_delegate.h",
     "pairing_state.cc",
