@@ -17,7 +17,6 @@ static_library("gap") {
   sources = [
     "adapter.cc",
     "adapter.h",
-    "adapter_state.cc",
     "adapter_state.h",
     "bredr_connection.cc",
     "bredr_connection.h",

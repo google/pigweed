@@ -22,8 +22,6 @@ namespace bt::gap {
 // Stores controller settings and state information.
 class AdapterState final {
  public:
-  AdapterState();
-
   // The HCI version supported by the controller.
   hci_spec::HCIVersion hci_version() const { return hci_version_; }
 
@@ -76,7 +74,7 @@ class AdapterState final {
   const hci::DataBufferInfo& sco_buffer_info() const { return sco_buffer_info_; }
 
   // Returns the BR/EDR local name
-  const std::string local_name() const { return local_name_; }
+  const std::string& local_name() const { return local_name_; }
 
  private:
   // Let Adapter directly write to the private members.
@@ -96,10 +94,10 @@ class AdapterState final {
   hci_spec::LMPFeatureSet features_;
 
   // Features reported by vendor driver.
-  bt_vendor_features_t vendor_features_;
+  bt_vendor_features_t vendor_features_ = 0u;
 
   // Bitmask list of HCI commands that the controller supports.
-  uint8_t supported_commands_[64];
+  uint8_t supported_commands_[64] = {0};
 
   // BD_ADDR (for classic) and Public Device Address (for LE).
   DeviceAddressBytes controller_address_;
