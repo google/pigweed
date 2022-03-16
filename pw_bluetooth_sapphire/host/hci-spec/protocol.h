@@ -99,8 +99,8 @@ struct SynchronousDataHeader {
 // can also be used to check the status of HCI commands with more complex return
 // parameters.
 struct SimpleReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 } __PACKED;
 
 // ============= HCI Command and Event (op)code and payloads =============
@@ -200,7 +200,7 @@ struct DisconnectCommandParams {
   ConnectionHandle connection_handle;
 
   // Reason for the disconnect. See Section 7.1.6 for allowed status codes.
-  hci_spec::StatusCode reason;
+  StatusCode reason;
 } __PACKED;
 
 // NOTE on ReturnParams: No Command Complete event will be sent by the
@@ -218,8 +218,8 @@ struct CreateConnectionCancelCommandParams {
 } __PACKED;
 
 struct CreateConnectionCancelReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // BD_ADDR of the Create Connection Command Request
   DeviceAddressBytes bd_addr;
@@ -249,7 +249,7 @@ struct RejectConnectionRequestCommandParams {
 
   // Reason.
   // Must be one of kConnectionRejected* from Status in hci_constants.h
-  hci_spec::StatusCode reason;
+  StatusCode reason;
 } __PACKED;
 
 // NOTE on ReturnParams: No Command Complete event will be sent by the
@@ -271,8 +271,8 @@ struct LinkKeyRequestReplyCommandParams {
 } __PACKED;
 
 struct LinkKeyRequestReplyReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // BD_ADDR of the device whose Link Key Request was fulfilled.
   DeviceAddressBytes bd_addr;
@@ -288,8 +288,8 @@ struct LinkKeyRequestNegativeReplyCommandParams {
 } __PACKED;
 
 struct LinkKeyRequestNegativeReplyReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // BD_ADDR of the device whose Link Key Request was denied.
   DeviceAddressBytes bd_addr;
@@ -416,7 +416,7 @@ struct RejectSynchronousConnectionRequestCommandParams {
   DeviceAddressBytes bd_addr;
 
   // Reason the connection request was rejected.
-  hci_spec::StatusCode reason;
+  StatusCode reason;
 } __PACKED;
 
 // =========================================================
@@ -443,8 +443,8 @@ struct IOCapabilityRequestReplyCommandParams {
 } __PACKED;
 
 struct IOCapabilityRequestReplyReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // BD_ADDR of the remote device involved in simple pairing process
   DeviceAddressBytes bd_addr;
@@ -498,12 +498,12 @@ struct IOCapabilityRequestNegativeReplyCommandParams {
   DeviceAddressBytes bd_addr;
 
   // Reason that Simple Pairing was rejected. See 7.1.36 for valid error codes.
-  hci_spec::StatusCode reason;
+  StatusCode reason;
 } __PACKED;
 
 struct IOCapabilityRequestNegativeReplyReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // BD_ADDR of the remote device involved in simple pairing process
   DeviceAddressBytes bd_addr;
@@ -653,8 +653,8 @@ struct WriteLocalNameCommandParams {
 constexpr OpCode kReadLocalName = ControllerAndBasebandOpCode(0x0014);
 
 struct ReadLocalNameReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // A UTF-8 encoded User Friendly Descriptive Name for the device.
   // If the name contained in the parameter is shorter than 248 octets, the end
@@ -676,8 +676,8 @@ struct WritePageTimeoutCommandParams {
 } __PACKED;
 
 struct WritePageTimeoutReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 } __PACKED;
 
 // ========================================
@@ -685,12 +685,12 @@ struct WritePageTimeoutReturnParams {
 constexpr OpCode kReadScanEnable = ControllerAndBasebandOpCode(0x0019);
 
 struct ReadScanEnableReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Bit Mask of enabled scans. See enum class ScanEnableBit in hci_constants.h
   // for how to interpret this bitfield.
-  hci_spec::ScanEnableType scan_enable;
+  ScanEnableType scan_enable;
 } __PACKED;
 
 // =========================================
@@ -700,7 +700,7 @@ constexpr OpCode kWriteScanEnable = ControllerAndBasebandOpCode(0x001A);
 struct WriteScanEnableCommandParams {
   // Bit Mask of enabled scans. See enum class ScanEnableBit in hci_constants.h
   // for how to construct this bitfield.
-  hci_spec::ScanEnableType scan_enable;
+  ScanEnableType scan_enable;
 } __PACKED;
 
 // ===============================================
@@ -708,8 +708,8 @@ struct WriteScanEnableCommandParams {
 constexpr OpCode kReadPageScanActivity = ControllerAndBasebandOpCode(0x001B);
 
 struct ReadPageScanActivityReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Page_Scan_Interval, in time slices (0.625ms)
   // Range: kPageScanIntervalMin - kPageScanIntervalMax in hci_constants.h
@@ -739,8 +739,8 @@ struct WritePageScanActivityCommandParams {
 constexpr OpCode kReadInquiryScanActivity = ControllerAndBasebandOpCode(0x001D);
 
 struct ReadInquiryScanActivityReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Inquiry_Scan_Interval, in time slices (0.625ms)
   // Range: kInquiryScanIntervalMin - kInquiryScanIntervalMax in hci_constants.h
@@ -771,8 +771,8 @@ struct WriteInquiryScanActivityCommandParams {
 constexpr OpCode kReadClassOfDevice = ControllerAndBasebandOpCode(0x0023);
 
 struct ReadClassOfDeviceReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   DeviceClass class_of_device;
 } __PACKED;
@@ -818,8 +818,8 @@ struct ReadTransmitPowerLevelCommandParams {
 } __PACKED;
 
 struct ReadTransmitPowerLevelReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -847,8 +847,8 @@ struct WriteSynchronousFlowControlEnableParams {
 constexpr OpCode kReadInquiryScanType = ControllerAndBasebandOpCode(0x0042);
 
 struct ReadInquiryScanTypeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // See enum class InquiryScanType in hci_constants.h for possible values.
   InquiryScanType inquiry_scan_type;
@@ -868,8 +868,8 @@ struct WriteInquiryScanTypeCommandParams {
 constexpr OpCode kReadInquiryMode = ControllerAndBasebandOpCode(0x0044);
 
 struct ReadInquiryModeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // See enum InquiryMode in hci_constants.h
   InquiryMode inquiry_mode;
@@ -889,8 +889,8 @@ struct WriteInquiryModeCommandParams {
 constexpr OpCode kReadPageScanType = ControllerAndBasebandOpCode(0x0046);
 
 struct ReadPageScanTypeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // See enum class PageScanType in hci_constants.h for possible values.
   PageScanType page_scan_type;
@@ -922,8 +922,8 @@ struct WriteExtendedInquiryResponseParams {
 constexpr OpCode kReadSimplePairingMode = ControllerAndBasebandOpCode(0x0055);
 
 struct ReadSimplePairingModeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h
+  StatusCode status;
 
   // Simple pairing Mode.
   GenericEnableParam simple_pairing_mode;
@@ -953,8 +953,8 @@ struct SetEventMaskPage2CommandParams {
 constexpr OpCode kReadFlowControlMode = ControllerAndBasebandOpCode(0x0066);
 
 struct ReadFlowControlModeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // See enum class FlowControlMode in hci_constants.h for possible values.
   FlowControlMode flow_control_mode;
@@ -974,8 +974,8 @@ struct WriteFlowControlModeCommandParams {
 constexpr OpCode kReadLEHostSupport = ControllerAndBasebandOpCode(0x006C);
 
 struct ReadLEHostSupportReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   GenericEnableParam le_supported_host;
 
@@ -1007,8 +1007,8 @@ struct ReadAuthenticatedPayloadTimeoutCommandParams {
 } __PACKED;
 
 struct ReadAuthenticatedPayloadTimeoutReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1038,8 +1038,8 @@ struct WriteAuthenticatedPayloadTimeoutCommandParams {
 } __PACKED;
 
 struct WriteAuthenticatedPayloadTimeoutReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1058,8 +1058,8 @@ constexpr OpCode InformationalParamsOpCode(const uint16_t ocf) {
 constexpr OpCode kReadLocalVersionInfo = InformationalParamsOpCode(0x0001);
 
 struct ReadLocalVersionInfoReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // HCI version (see enum class HCIVersion in hci_constants.h)
   HCIVersion hci_version;
@@ -1075,8 +1075,8 @@ struct ReadLocalVersionInfoReturnParams {
 constexpr OpCode kReadLocalSupportedCommands = InformationalParamsOpCode(0x0002);
 
 struct ReadLocalSupportedCommandsReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // See enum class SupportedCommand in hci_constants.h for how to interpret
   // this bitfield.
@@ -1088,8 +1088,8 @@ struct ReadLocalSupportedCommandsReturnParams {
 constexpr OpCode kReadLocalSupportedFeatures = InformationalParamsOpCode(0x0003);
 
 struct ReadLocalSupportedFeaturesReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Bit Mask List of LMP features. See enum class LMPFeature in hci_constants.h
   // for how to interpret this bitfield.
@@ -1109,8 +1109,8 @@ struct ReadLocalExtendedFeaturesCommandParams {
 } __PACKED;
 
 struct ReadLocalExtendedFeaturesReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
   uint8_t page_number;
   uint8_t maximum_page_number;
   uint64_t extended_lmp_features;
@@ -1121,8 +1121,8 @@ struct ReadLocalExtendedFeaturesReturnParams {
 constexpr OpCode kReadBufferSize = InformationalParamsOpCode(0x0005);
 
 struct ReadBufferSizeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   uint16_t hc_acl_data_packet_length;
   uint8_t hc_synchronous_data_packet_length;
@@ -1135,8 +1135,8 @@ struct ReadBufferSizeReturnParams {
 constexpr OpCode kReadBDADDR = InformationalParamsOpCode(0x0009);
 
 struct ReadBDADDRReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   DeviceAddressBytes bd_addr;
 } __PACKED;
@@ -1146,8 +1146,8 @@ struct ReadBDADDRReturnParams {
 constexpr OpCode kReadDataBlockSize = InformationalParamsOpCode(0x000A);
 
 struct ReadDataBlockSizeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   uint16_t max_acl_data_packet_length;
   uint16_t data_block_length;
@@ -1208,8 +1208,8 @@ struct InquiryResultEventParams {
 constexpr EventCode kConnectionCompleteEventCode = 0x03;
 
 struct ConnectionCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h
+  StatusCode status;
 
   // Connection_handle (12 bits meaningful)
   // Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1246,15 +1246,15 @@ struct ConnectionRequestEventParams {
 constexpr EventCode kDisconnectionCompleteEventCode = 0x05;
 
 struct DisconnectionCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
 
   // Reason for the disconnect.
-  hci_spec::StatusCode reason;
+  StatusCode reason;
 } __PACKED;
 
 // =============================================
@@ -1262,8 +1262,8 @@ struct DisconnectionCompleteEventParams {
 constexpr EventCode kAuthenticationCompleteEventCode = 0x06;
 
 struct AuthenticationCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1275,8 +1275,8 @@ struct AuthenticationCompleteEventParams {
 constexpr EventCode kRemoteNameRequestCompleteEventCode = 0x07;
 
 struct RemoteNameRequestCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Address of the device
   DeviceAddressBytes bd_addr;
@@ -1292,8 +1292,8 @@ struct RemoteNameRequestCompleteEventParams {
 constexpr EventCode kEncryptionChangeEventCode = 0x08;
 
 struct EncryptionChangeEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1308,8 +1308,8 @@ struct EncryptionChangeEventParams {
 constexpr EventCode kChangeConnectionLinkKeyCompleteEventCode = 0x09;
 
 struct ChangeConnectionLinkKeyCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1321,8 +1321,8 @@ struct ChangeConnectionLinkKeyCompleteEventParams {
 constexpr EventCode kReadRemoteSupportedFeaturesCompleteEventCode = 0x0B;
 
 struct ReadRemoteSupportedFeaturesCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // A connection handle for an ACL connection.
   //  Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1338,8 +1338,8 @@ struct ReadRemoteSupportedFeaturesCompleteEventParams {
 constexpr EventCode kReadRemoteVersionInfoCompleteEventCode = 0x0C;
 
 struct ReadRemoteVersionInfoCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1381,8 +1381,8 @@ constexpr EventCode kCommandStatusEventCode = 0x0F;
 constexpr uint8_t kCommandStatusPending = 0x00;
 
 struct CommandStatusEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // The Number of HCI command packets which are allowed to be sent to the
   // Controller from the Host.
@@ -1407,8 +1407,8 @@ struct HardwareErrorEventParams {
 constexpr EventCode kRoleChangeEventCode = 0x12;
 
 struct RoleChangeEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // The address of the device for which a role change has completed.
   DeviceAddressBytes bd_addr;
@@ -1509,8 +1509,8 @@ struct InquiryResultWithRSSIEventParams {
 constexpr EventCode kReadRemoteExtendedFeaturesCompleteEventCode = 0x23;
 
 struct ReadRemoteExtendedFeaturesCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // A connection handle for an ACL connection.
   //  Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1534,8 +1534,8 @@ struct ReadRemoteExtendedFeaturesCompleteEventParams {
 constexpr EventCode kSynchronousConnectionCompleteEventCode = 0x2C;
 
 struct SynchronousConnectionCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // A connection handle for the newly created SCO connection.
   ConnectionHandle connection_handle;
@@ -1604,8 +1604,8 @@ struct ExtendedInquiryResultEventParams {
 constexpr EventCode kEncryptionKeyRefreshCompleteEventCode = 0x30;
 
 struct EncryptionKeyRefreshCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1669,8 +1669,8 @@ struct UserPasskeyRequestEventParams {
 constexpr EventCode kSimplePairingCompleteEventCode = 0x36;
 
 struct SimplePairingCompleteEventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Address of the device involved in simple pairing process
   DeviceAddressBytes bd_addr;
@@ -1707,8 +1707,8 @@ struct LEMetaEventParams {
 constexpr EventCode kLEConnectionCompleteSubeventCode = 0x01;
 
 struct LEConnectionCompleteSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1791,8 +1791,8 @@ struct LEAdvertisingReportSubeventParams {
 constexpr EventCode kLEConnectionUpdateCompleteSubeventCode = 0x03;
 
 struct LEConnectionUpdateCompleteSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1816,8 +1816,8 @@ struct LEConnectionUpdateCompleteSubeventParams {
 constexpr EventCode kLEReadRemoteFeaturesCompleteSubeventCode = 0x04;
 
 struct LEReadRemoteFeaturesCompleteSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1891,8 +1891,8 @@ struct LEDataLengthChangeSubeventParams {
 constexpr EventCode kLEReadLocalP256PublicKeyCompleteSubeventCode = 0x08;
 
 struct LEReadLOcalP256PublicKeyCompleteSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Local P-256 public key.
   uint8_t local_p256_public_key[64];
@@ -1902,8 +1902,8 @@ struct LEReadLOcalP256PublicKeyCompleteSubeventParams {
 constexpr EventCode kLEGenerateDHKeyCompleteSubeventCode = 0x09;
 
 struct LEGenerateDHKeyCompleteSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Diffie Hellman Key.
   uint8_t dh_key[32];
@@ -1913,8 +1913,8 @@ struct LEGenerateDHKeyCompleteSubeventParams {
 constexpr EventCode kLEEnhancedConnectionCompleteSubeventCode = 0x0A;
 
 struct LEEnhancedConnectionCompleteSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -1990,8 +1990,8 @@ struct LEDirectedAdvertisingReportSubeventParams {
 constexpr EventCode kLEPHYUpdateCompleteSubeventCode = 0x0C;
 
 struct LEPHYUpdateCompleteSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -2085,8 +2085,8 @@ struct LEExtendedAdvertisingReportSubeventParams {
 constexpr EventCode kLEPeriodicAdvertisingSyncEstablishedSubeventCode = 0x0E;
 
 struct LEPeriodicAdvertisingSyncEstablishedSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Handle used to identify the periodic advertiser (only the lower 12 bits are
   // meaningful).
@@ -2164,8 +2164,8 @@ constexpr EventCode kLEScanTimeoutSubeventCode = 0x11;
 constexpr EventCode kLEAdvertisingSetTerminatedSubeventCode = 0x012;
 
 struct LEAdvertisingSetTerminatedSubeventParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Advertising Handle in which advertising has ended.
   AdvertisingHandle adv_handle;
@@ -2255,8 +2255,8 @@ struct ReadRSSICommandParams {
 } __PACKED;
 
 struct ReadRSSIReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // The Handle for the connection for which the RSSI has been read (only the
   // lower 12-bits are meaningful).
@@ -2289,8 +2289,8 @@ struct ReadEncryptionKeySizeParams {
 } __PACKED;
 
 struct ReadEncryptionKeySizeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Handle of the ACL connection whose encryption key size was read.
   ConnectionHandle connection_handle;
@@ -2323,8 +2323,8 @@ struct LESetEventMaskCommandParams {
 constexpr OpCode kLEReadBufferSize = LEControllerCommandOpCode(0x0002);
 
 struct LEReadBufferSizeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   uint16_t hc_le_acl_data_packet_length;
   uint8_t hc_total_num_le_acl_data_packets;
@@ -2335,8 +2335,8 @@ struct LEReadBufferSizeReturnParams {
 constexpr OpCode kLEReadLocalSupportedFeatures = LEControllerCommandOpCode(0x0003);
 
 struct LEReadLocalSupportedFeaturesReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Bit Mask List of supported LE features. See enum class LESupportedFeature
   // in hci_constants.h.
@@ -2372,7 +2372,7 @@ struct LESetAdvertisingParametersCommandParams {
   // advertising is enabled (see hci_constants.h)
   LEAdvertisingType adv_type;
 
-  hci_spec::LEOwnAddressType own_address_type;
+  LEOwnAddressType own_address_type;
   LEPeerAddressType peer_address_type;
 
   // Public Device Address, Random Device Address, Public Identity Address, or
@@ -2393,8 +2393,8 @@ struct LESetAdvertisingParametersCommandParams {
 constexpr OpCode kLEReadAdvertisingChannelTxPower = LEControllerCommandOpCode(0x0007);
 
 struct LEReadAdvertisingChannelTxPowerReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // The transmit power level used for LE advertising channel packets.
   //
@@ -2416,7 +2416,7 @@ struct LESetAdvertisingDataCommandParams {
   // 3, Part C, Section 11.
   //
   // Default: All octets zero.
-  uint8_t adv_data[hci_spec::kMaxLEAdvertisingDataLength];
+  uint8_t adv_data[kMaxLEAdvertisingDataLength];
 } __PACKED;
 
 // =============================================
@@ -2431,7 +2431,7 @@ struct LESetScanResponseDataCommandParams {
   // 3, Part C, Section 11.
   //
   // Default: All octets zero.
-  uint8_t scan_rsp_data[hci_spec::kMaxLEAdvertisingDataLength];
+  uint8_t scan_rsp_data[kMaxLEAdvertisingDataLength];
 } __PACKED;
 
 // =============================================
@@ -2457,7 +2457,7 @@ struct LESetScanParametersCommandParams {
   uint16_t scan_interval;
   uint16_t scan_window;
 
-  hci_spec::LEOwnAddressType own_address_type;
+  LEOwnAddressType own_address_type;
   LEScanFilterPolicy filter_policy;
 } __PACKED;
 
@@ -2490,7 +2490,7 @@ struct LECreateConnectionCommandParams {
   GenericEnableParam initiator_filter_policy;
   LEAddressType peer_address_type;
   DeviceAddressBytes peer_address;
-  hci_spec::LEOwnAddressType own_address_type;
+  LEOwnAddressType own_address_type;
 
   // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
   // Time: N * 1.25 ms
@@ -2526,8 +2526,8 @@ constexpr OpCode kLECreateConnectionCancel = LEControllerCommandOpCode(0x000E);
 constexpr OpCode kLEReadFilterAcceptListSize = LEControllerCommandOpCode(0x000F);
 
 struct LEReadFilterAcceptListSizeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
   uint8_t filter_accept_list_size;
 } __PACKED;
 
@@ -2627,8 +2627,8 @@ struct LEReadChannelMapCommandParams {
 } __PACKED;
 
 struct LEReadChannelMapReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -2676,8 +2676,8 @@ struct LEEncryptCommandParams {
 } __PACKED;
 
 struct LEEncryptReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // 128 bit encrypted data block.
   uint8_t encrypted_data[16];
@@ -2688,8 +2688,8 @@ struct LEEncryptReturnParams {
 constexpr OpCode kLERand = LEControllerCommandOpCode(0x0018);
 
 struct LERandReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Random Number
   uint64_t random_number;
@@ -2735,8 +2735,8 @@ struct LELongTermKeyRequestReplyCommandParams {
 } __PACKED;
 
 struct LELongTermKeyRequestReplyReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -2754,8 +2754,8 @@ struct LELongTermKeyRequestNegativeReplyCommandParams {
 } __PACKED;
 
 struct LELongTermKeyRequestNegativeReplyReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -2767,8 +2767,8 @@ struct LELongTermKeyRequestNegativeReplyReturnParams {
 constexpr OpCode kLEReadSupportedStates = LEControllerCommandOpCode(0x001C);
 
 struct LEReadSupportedStatesReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Bit-mask of supported state or state combinations. See Core Spec v4.2,
   // Volume 2, Part E, Section 7.8.27 "LE Read Supported States Command".
@@ -2807,8 +2807,8 @@ struct LETransmitterTestCommandParams {
 constexpr OpCode kLETestEnd = LEControllerCommandOpCode(0x001F);
 
 struct LETestEndReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Number of packets received
   uint16_t number_of_packets;
@@ -2844,8 +2844,8 @@ struct LERemoteConnectionParameterRequestReplyCommandParams {
 } __PACKED;
 
 struct LERemoteConnectionParameterRequestReplyReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -2863,12 +2863,12 @@ struct LERemoteConnectionParamReqNegativeReplyCommandParams {
   ConnectionHandle connection_handle;
 
   // Reason that the connection parameter request was rejected.
-  hci_spec::StatusCode reason;
+  StatusCode reason;
 } __PACKED;
 
 struct LERemoteConnectionParamReqNegativeReplyReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -2892,8 +2892,8 @@ struct LESetDataLengthCommandParams {
 } __PACKED;
 
 struct LESetDataLengthReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -2905,8 +2905,8 @@ struct LESetDataLengthReturnParams {
 constexpr OpCode kLEReadSuggestedDefaultDataLength = LEControllerCommandOpCode(0x0023);
 
 struct LEReadSuggestedDefaultDataLengthReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
   uint16_t suggested_max_tx_octets;
@@ -2999,8 +2999,8 @@ constexpr OpCode kLEClearResolvingList = LEControllerCommandOpCode(0x0029);
 constexpr OpCode kLEReadResolvingListSize = LEControllerCommandOpCode(0x002A);
 
 struct LEReadResolvingListReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Number of address translation entries in the resolving list.
   uint8_t resolving_list_size;
@@ -3019,8 +3019,8 @@ struct LEReadPeerResolvableAddressCommandParams {
 } __PACKED;
 
 struct LEReadPeerResolvableAddressReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Resolvable Private Address being used by the peer device.
   DeviceAddressBytes peer_resolvable_address;
@@ -3039,8 +3039,8 @@ struct LEReadLocalResolvableAddressCommandParams {
 } __PACKED;
 
 struct LEReadLocalResolvableAddressReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Resolvable Private Address being used by the local device.
   DeviceAddressBytes local_resolvable_address;
@@ -3069,8 +3069,8 @@ struct LESetResolvablePrivateAddressTimeoutCommandParams {
 constexpr OpCode kLEReadMaximumDataLength = LEControllerCommandOpCode(0x002F);
 
 struct LEReadMaximumDataLengthReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Range: see kLEMaxTxOctets[Min|Max] in hci_constants.h
   uint16_t supported_max_tx_octets;
@@ -3096,8 +3096,8 @@ struct LEReadPHYCommandParams {
 } __PACKED;
 
 struct LEReadPHYReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
@@ -3227,7 +3227,7 @@ struct LESetExtendedAdvertisingParametersCommandParams {
   // values).
   uint8_t primary_adv_channel_map;
 
-  hci_spec::LEOwnAddressType own_address_type;
+  LEOwnAddressType own_address_type;
   LEPeerAddressType peer_address_type;
 
   // Public Device Address, Random Device Address, Public Identity Address, or
@@ -3251,8 +3251,8 @@ struct LESetExtendedAdvertisingParametersCommandParams {
 } __PACKED;
 
 struct LESetExtendedAdvertisingParametersReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
   int8_t selected_tx_power;
 } __PACKED;
 
@@ -3277,7 +3277,7 @@ struct LESetExtendedAdvertisingDataCommandParams {
   // Length of the advertising data included in this command packet, up to
   // kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses
   // legacy advertising PDUs that support advertising data then this shall not
-  // exceed hci_spec::kMaxLEAdvertisingDataLength bytes.
+  // exceed kMaxLEAdvertisingDataLength bytes.
   uint8_t adv_data_length;
 
   // Variable length advertising data.
@@ -3304,10 +3304,10 @@ struct LESetExtendedScanResponseDataCommandParams {
   // Length of the scan response data included in this command packet, up to
   // kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses
   // scannable legacy advertising PDUs then this shall not exceed
-  // hci_spec::kMaxLEAdvertisingDataLength bytes.
+  // kMaxLEAdvertisingDataLength bytes.
   uint8_t scan_rsp_data_length;
 
-  // Variable length advertising data.
+  // Variable length scan response data.
   uint8_t scan_rsp_data[];
 } __PACKED;
 
@@ -3356,8 +3356,8 @@ struct LESetExtendedAdvertisingEnableCommandParams {
 constexpr OpCode kLEReadMaxAdvertisingDataLength = LEControllerCommandOpCode(0x003A);
 
 struct LEReadMaxAdvertisingDataLengthReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   uint16_t max_adv_data_length;
 } __PACKED;
@@ -3367,8 +3367,8 @@ struct LEReadMaxAdvertisingDataLengthReturnParams {
 constexpr OpCode kLEReadNumSupportedAdvertisingSets = LEControllerCommandOpCode(0x003B);
 
 struct LEReadNumSupportedAdvertisingSetsReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   uint8_t num_supported_adv_sets;
 } __PACKED;
@@ -3462,7 +3462,7 @@ struct LESetExtendedScanParametersCommandParams {
 
   // Indicates the type of address being used in the scan request packets (for
   // active scanning).
-  hci_spec::LEOwnAddressType own_address_type;
+  LEOwnAddressType own_address_type;
 
   // The LE filter accept list and privacy filter policy that should be used while scanning for
   // directed and undirected advertisements.
@@ -3538,7 +3538,7 @@ struct LEExtendedCreateConnectionCommandParams {
   DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedCreateConnectionCommandParams);
 
   GenericEnableParam initiator_filter_policy;
-  hci_spec::LEOwnAddressType own_address_type;
+  LEOwnAddressType own_address_type;
   LEPeerAddressType peer_address_type;
 
   // Public Device Address, Random Device Address, Public Identity Address, or
@@ -3659,8 +3659,8 @@ constexpr OpCode kLEClearPeriodicAdvertiserList = LEControllerCommandOpCode(0x00
 constexpr OpCode kLEReadPeriodicAdvertiserListSize = LEControllerCommandOpCode(0x004A);
 
 struct LEReadPeriodicAdvertiserListSizeReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Total number of Periodic Advertiser list entries that can be stored in the
   // Controller.
@@ -3672,8 +3672,8 @@ struct LEReadPeriodicAdvertiserListSizeReturnParams {
 constexpr OpCode kLEReadTransmitPower = LEControllerCommandOpCode(0x004B);
 
 struct LEReadTransmitPowerReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // Range: -127 <= N <= +126
   // Units: dBm
@@ -3686,8 +3686,8 @@ struct LEReadTransmitPowerReturnParams {
 constexpr OpCode kLEReadRFPathCompensation = LEControllerCommandOpCode(0x004C);
 
 struct LEReadRFPathCompensationReturnParams {
-  // See enum hci_spec::StatusCode in hci_constants.h.
-  hci_spec::StatusCode status;
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
 
   // The RF Path Compensation Values parameters used in the Tx Power Level and
   // RSSI calculation.
