@@ -63,15 +63,18 @@ class MultiSink {
     constexpr Drain()
         : last_handled_sequence_id_(0),
           last_peek_sequence_id_(0),
+          last_handled_ingress_drop_count_(0),
           multisink_(nullptr) {}
 
     // Returns the next available entry if it exists and acquires the latest
     // drop count in parallel.
     //
-    // The `drop_count_out` is set to the number of entries that were dropped
-    // since the last call to PopEntry, if the read operation was successful or
-    // returned OutOfRange (i.e. no entries to read). Otherwise, it is set to
-    // zero, so should always be processed.
+    // If the read operation was successful or returned OutOfRange (i.e. no
+    // entries to read) then the `drop_count_out` is set to the number of
+    // entries that were dropped since the last call to PopEntry due to
+    // advancing the drain, and `ingress_drop_count_out` is set to the number of
+    // logs that were dropped before being added to the MultiSink. Otherwise,
+    // the drop counts are set to zero, so should always be processed.
     //
     // Drop counts are internally maintained with a 32-bit counter. If
     // UINT32_MAX entries have been handled by the attached multisink between
@@ -129,8 +132,22 @@ class MultiSink {
     // FAILED_PRECONDITION - The drain must be attached to a sink.
     // RESOURCE_EXHAUSTED - The provided buffer was not large enough to store
     // the next available entry, which was discarded.
-    Result<ConstByteSpan> PopEntry(ByteSpan buffer, uint32_t& drop_count_out)
+    Result<ConstByteSpan> PopEntry(ByteSpan buffer,
+                                   uint32_t& drop_count_out,
+                                   uint32_t& ingress_drop_count)
         PW_LOCKS_EXCLUDED(multisink_->lock_);
+    // Overload that combines drop counts.
+    // TODO(cachinchilla): remove when downstream projects migrated to new API.
+    [[deprecated("Use PopEntry with different drop count outputs")]] Result<
+        ConstByteSpan>
+    PopEntry(ByteSpan buffer, uint32_t& drop_count_out)
+        PW_LOCKS_EXCLUDED(multisink_->lock_) {
+      uint32_t ingress_drop_count = 0;
+      Result<ConstByteSpan> result =
+          PopEntry(buffer, drop_count_out, ingress_drop_count);
+      drop_count_out += ingress_drop_count;
+      return result;
+    }
 
     // Removes the previously peeked entry from the multisink.
     //
@@ -159,7 +176,8 @@ class MultiSink {
         PW_LOCKS_EXCLUDED(multisink_->lock_);
 
     // Returns a copy of the next available entry if it exists and acquires the
-    // latest drop count, without moving the drain forward, except if there is a
+    // latest drop count if the drain was advanced, and the latest ingress drop
+    // count, without moving the drain forward, except if there is a
     // RESOURCE_EXHAUSTED error when peeking, in which case the drain is
     // automatically advanced.
     // The `drop_count_out` follows the same logic as `PopEntry`. The user must
@@ -174,7 +192,9 @@ class MultiSink {
     // FAILED_PRECONDITION - The drain must be attached to a sink.
     // RESOURCE_EXHAUSTED - The provided buffer was not large enough to store
     // the next available entry, which was discarded.
-    Result<PeekedEntry> PeekEntry(ByteSpan buffer, uint32_t& drop_count_out)
+    Result<PeekedEntry> PeekEntry(ByteSpan buffer,
+                                  uint32_t& drop_count_out,
+                                  uint32_t& ingress_drop_count)
         PW_LOCKS_EXCLUDED(multisink_->lock_);
 
     // Drains are not copyable or movable.
@@ -191,6 +211,7 @@ class MultiSink {
     ring_buffer::PrefixedEntryRingBufferMulti::Reader reader_;
     uint32_t last_handled_sequence_id_;
     uint32_t last_peek_sequence_id_;
+    uint32_t last_handled_ingress_drop_count_;
     MultiSink* multisink_;
   };
 
@@ -289,7 +310,8 @@ class MultiSink {
   }
 
   // Constructs a multisink using a ring buffer backed by the provided buffer.
-  MultiSink(ByteSpan buffer) : ring_buffer_(true), sequence_id_(0) {
+  MultiSink(ByteSpan buffer)
+      : ring_buffer_(true), sequence_id_(0), total_ingress_drops_(0) {
     ring_buffer_.SetBuffer(buffer)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     AttachDrain(oldest_entry_drain_);
@@ -385,6 +407,7 @@ class MultiSink {
                                        ByteSpan buffer,
                                        Request request,
                                        uint32_t& drop_count_out,
+                                       uint32_t& ingress_drop_count_out,
                                        uint32_t& entry_sequence_id_out)
       PW_LOCKS_EXCLUDED(lock_);
 
@@ -396,6 +419,7 @@ class MultiSink {
   ring_buffer::PrefixedEntryRingBufferMulti ring_buffer_ PW_GUARDED_BY(lock_);
   Drain oldest_entry_drain_ PW_GUARDED_BY(lock_);
   uint32_t sequence_id_ PW_GUARDED_BY(lock_);
+  uint32_t total_ingress_drops_ PW_GUARDED_BY(lock_);
   LockType lock_;
 };
 

@@ -129,8 +129,12 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
   do {
     // Peek entry and get drop count from multisink.
     uint32_t drop_count = 0;
+    uint32_t ingress_drop_count = 0;
     Result<multisink::MultiSink::Drain::PeekedEntry> possible_entry =
-        PeekEntry(log_entry_buffer_, drop_count);
+        PeekEntry(log_entry_buffer_, drop_count, ingress_drop_count);
+    // TODO(cachinchilla): remove combining these two drop types when reporting
+    // drop reasons individually.
+    drop_count += ingress_drop_count;
 
     // Check if the entry fits in the entry buffer.
     if (possible_entry.status().IsResourceExhausted()) {
@@ -189,7 +193,8 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
         committed_entry_drop_count_ = 0;
       }
       if (possible_entry.ok()) {
-        PW_CHECK_OK(PeekEntry(log_entry_buffer_, drop_count).status());
+        PW_CHECK_OK(PeekEntry(log_entry_buffer_, drop_count, ingress_drop_count)
+                        .status());
       }
     }
 

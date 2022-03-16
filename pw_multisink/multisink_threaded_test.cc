@@ -100,9 +100,10 @@ class LogPopReaderThread : public thread::ThreadCore {
   virtual void ReadAllEntries() {
     do {
       uint32_t drop_count = 0;
+      uint32_t ingress_drop_count = 0;
       const Result<ConstByteSpan> possible_entry =
-          drain_.PopEntry(entry_buffer_, drop_count);
-      total_drop_count_ += drop_count;
+          drain_.PopEntry(entry_buffer_, drop_count, ingress_drop_count);
+      total_drop_count_ += drop_count + ingress_drop_count;
       if (possible_entry.status().IsOutOfRange()) {
         pw::this_thread::yield();
         continue;
@@ -138,9 +139,10 @@ class LogPeekAndCommitReaderThread : public LogPopReaderThread {
   virtual void ReadAllEntries() {
     do {
       uint32_t drop_count = 0;
+      uint32_t ingress_drop_count = 0;
       const Result<MultiSink::Drain::PeekedEntry> possible_entry =
-          drain_.PeekEntry(entry_buffer_, drop_count);
-      total_drop_count_ += drop_count;
+          drain_.PeekEntry(entry_buffer_, drop_count, ingress_drop_count);
+      total_drop_count_ += drop_count + ingress_drop_count;
       if (possible_entry.status().IsOutOfRange()) {
         pw::this_thread::yield();
         continue;

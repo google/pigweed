@@ -179,3 +179,10 @@ the drain to remove the peeked entry from the multisink and advance one entry.
       // ... Handle send error ...
     }
   }
+
+Drop Counts
+===========
+The `PeekEntry` and `PopEntry` return two different drop counts, one for the
+number of entries a drain was skipped forward for providing a small buffer or
+draining too slow, and the other for entries that failed to be added to the
+MultiSink.
