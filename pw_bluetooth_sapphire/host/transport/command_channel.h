@@ -24,6 +24,7 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
@@ -53,6 +54,11 @@ class CommandChannel final {
 
   // Used to identify an individual HCI command<->event transaction.
   using TransactionId = size_t;
+
+  enum class EventType {
+    kHciEvent,
+    kLEMetaEvent,
+  };
 
   // Queues the given |command_packet| to be sent to the controller and returns a transaction ID.
   //
@@ -289,15 +295,17 @@ class CommandChannel final {
   // Data stored for each event handler registered.
   struct EventHandlerData {
     EventHandlerId id;
-    // If |is_le_meta_subevent|, then |event_code| is the LE Meta Event subevent code.
     hci_spec::EventCode event_code;
+
+    // Defines how event_code should be interpreted. For example, if the event_type is kLEMetaEvent,
+    // the event_code is an LE Meta Subevent code.
+    EventType event_type;
 
     // For asynchronous transaction event handlers, the pending command opcode.
     // kNoOp if this is a static event handler.
     hci_spec::OpCode pending_opcode;
 
     EventCallback event_callback;
-    bool is_le_meta_subevent;
 
     // Returns true if handler is for async command transaction, or false if handler is a static
     // event handler.
@@ -320,9 +328,10 @@ class CommandChannel final {
   // Sends |command|, adding an internal event handler if asynchronous.
   void SendQueuedCommand(QueuedCommand&& cmd);
 
-  // Creates a new event handler entry in the event handler map and returns its ID. If |is_le_meta|,
-  // then |event_code| should be the LE Meta Event subevent code.
-  EventHandlerId NewEventHandler(hci_spec::EventCode event_code, bool is_le_meta,
+  // Creates a new event handler entry in the event handler map and returns its ID. The event_code
+  // should correspond to the event_type provided. For example, if event_type is kLEMetaEvent, then
+  // event_code will be interpreted as a LE Meta Subevent code.
+  EventHandlerId NewEventHandler(hci_spec::EventCode event_code, EventType event_type,
                                  hci_spec::OpCode pending_opcode, EventCallback event_callback);
 
   // Notifies any matching event handler for |event|.

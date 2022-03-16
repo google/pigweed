@@ -17,13 +17,18 @@
 
 namespace bt::hci {
 
-namespace {
-
-bool IsAsync(hci_spec::EventCode code) {
+static bool IsAsync(hci_spec::EventCode code) {
   return code != hci_spec::kCommandCompleteEventCode && code != hci_spec::kCommandStatusEventCode;
 }
 
-}  //  namespace
+static std::string EventTypeToString(CommandChannel::EventType event_type) {
+  switch (event_type) {
+    case CommandChannel::EventType::kHciEvent:
+      return "hci_event";
+    case CommandChannel::EventType::kLEMetaEvent:
+      return "le_meta_event";
+  }
+}
 
 CommandChannel::QueuedCommand::QueuedCommand(std::unique_ptr<CommandPacket> command_packet,
                                              std::unique_ptr<TransactionData> transaction_data)
@@ -277,7 +282,7 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(hci_spec::EventCo
   }
 
   auto id =
-      NewEventHandler(event_code, /*is_le_meta=*/false, hci_spec::kNoOp, std::move(event_callback));
+      NewEventHandler(event_code, EventType::kHciEvent, hci_spec::kNoOp, std::move(event_callback));
   event_code_handlers_.emplace(event_code, id);
   return id;
 }
@@ -292,7 +297,7 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
     return 0u;
   }
 
-  auto id = NewEventHandler(le_meta_subevent_code, /*is_le_meta=*/true, hci_spec::kNoOp,
+  auto id = NewEventHandler(le_meta_subevent_code, EventType::kLEMetaEvent, hci_spec::kNoOp,
                             std::move(event_callback));
   le_meta_subevent_code_handlers_.emplace(le_meta_subevent_code, id);
   return id;
@@ -331,21 +336,27 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId id) {
     return;
   }
 
-  if (iter->second.event_code != 0) {
-    auto* event_handlers =
-        iter->second.is_le_meta_subevent ? &le_meta_subevent_code_handlers_ : &event_code_handlers_;
+  std::unordered_multimap<hci_spec::EventCode, EventHandlerId>* handlers = nullptr;
+  switch (iter->second.event_type) {
+    case EventType::kHciEvent:
+      handlers = &event_code_handlers_;
+      break;
+    case EventType::kLEMetaEvent:
+      handlers = &le_meta_subevent_code_handlers_;
+      break;
+  }
 
-    bt_log(TRACE, "hci", "removing handler for %sevent code %#.2x",
-           (iter->second.is_le_meta_subevent ? "LE " : ""), iter->second.event_code);
+  bt_log(TRACE, "hci", "removing handler for %s event code %#.2x",
+         EventTypeToString(iter->second.event_type).c_str(), iter->second.event_code);
 
-    auto range = event_handlers->equal_range(iter->second.event_code);
-    for (auto it = range.first; it != range.second; ++it) {
-      if (it->second == id) {
-        event_handlers->erase(it);
-        break;
-      }
+  auto range = handlers->equal_range(iter->second.event_code);
+  for (auto it = range.first; it != range.second; ++it) {
+    if (it->second == id) {
+      it = handlers->erase(it);
+      break;
     }
   }
+
   event_handler_id_map_.erase(iter);
 }
 
@@ -434,29 +445,37 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
     return;
   }
 
-  const bool is_le_meta = data->le_meta_subevent_code().has_value();
-  auto* const code_handlers = is_le_meta ? &le_meta_subevent_code_handlers_ : &event_code_handlers_;
+  EventType event_type = EventType::kHciEvent;
+  std::unordered_multimap<hci_spec::EventCode, EventHandlerId>* handlers = nullptr;
+
+  if (data->le_meta_subevent_code().has_value()) {
+    event_type = EventType::kLEMetaEvent;
+    handlers = &le_meta_subevent_code_handlers_;
+  } else {
+    event_type = EventType::kHciEvent;
+    handlers = &event_code_handlers_;
+  }
+
   const hci_spec::EventCode code =
       data->le_meta_subevent_code().value_or(data->complete_event_code());
 
-  // We already have a handler for this transaction, or another transaction
-  // is already waiting and it will be queued.
-  if (code_handlers->count(code)) {
+  // We already have a handler for this transaction, or another transaction is already waiting and
+  // it will be queued.
+  if (handlers->count(code)) {
     bt_log(TRACE, "hci", "async command %zu: already has handler", data->id());
     return;
   }
 
-  // The handler hasn't been added yet.
-  EventHandlerId id = NewEventHandler(code, is_le_meta, data->opcode(), data->MakeCallback());
+  EventHandlerId id = NewEventHandler(code, event_type, data->opcode(), data->MakeCallback());
 
   ZX_ASSERT(id != 0u);
   data->set_handler_id(id);
-  code_handlers->emplace(code, id);
+  handlers->emplace(code, id);
   bt_log(TRACE, "hci", "async command %zu assigned handler %zu", data->id(), id);
 }
 
 CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCode event_code,
-                                                               bool is_le_meta,
+                                                               EventType event_type,
                                                                hci_spec::OpCode pending_opcode,
                                                                EventCallback event_callback) {
   ZX_DEBUG_ASSERT(event_code);
@@ -466,12 +485,12 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCo
   EventHandlerData data;
   data.id = id;
   data.event_code = event_code;
+  data.event_type = event_type;
   data.pending_opcode = pending_opcode;
   data.event_callback = std::move(event_callback);
-  data.is_le_meta_subevent = is_le_meta;
 
-  bt_log(TRACE, "hci", "adding event handler %zu for %sevent code %#.2x", id,
-         (is_le_meta ? "LE sub" : ""), event_code);
+  bt_log(TRACE, "hci", "adding event handler %zu for %s event code %#.2x", id,
+         EventTypeToString(event_type).c_str(), event_code);
   ZX_DEBUG_ASSERT(event_handler_id_map_.find(id) == event_handler_id_map_.end());
   event_handler_id_map_[id] = std::move(data);
 
@@ -547,20 +566,21 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   hci_spec::EventCode event_code;
   const std::unordered_multimap<hci_spec::EventCode, EventHandlerId>* event_handlers;
 
-  bool is_le_event = false;
+  EventType event_type;
   if (event->event_code() == hci_spec::kLEMetaEventCode) {
-    is_le_event = true;
+    event_type = EventType::kLEMetaEvent;
     event_code = event->params<hci_spec::LEMetaEventParams>().subevent_code;
     event_handlers = &le_meta_subevent_code_handlers_;
   } else {
+    event_type = EventType::kHciEvent;
     event_code = event->event_code();
     event_handlers = &event_code_handlers_;
   }
 
   auto range = event_handlers->equal_range(event_code);
   if (range.first == range.second) {
-    bt_log(DEBUG, "hci", "%sevent %#.2x received with no handler", (is_le_event ? "LE " : ""),
-           event_code);
+    bt_log(DEBUG, "hci", "%s event %#.2x received with no handler",
+           EventTypeToString(event_type).c_str(), event_code);
     return;
   }
 
