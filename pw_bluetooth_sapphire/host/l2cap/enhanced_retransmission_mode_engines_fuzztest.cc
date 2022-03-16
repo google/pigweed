@@ -5,6 +5,7 @@
 #include <lib/async-testing/test_loop.h>
 
 #include <algorithm>
+#include <limits>
 
 #include <fuzzer/FuzzedDataProvider.h>
 
@@ -46,9 +47,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       bt::l2cap::Fragmenter fragmenter(kTestHandle);
       auto n_bytes = provider.ConsumeIntegral<uint16_t>();
       auto bytes = provider.ConsumeBytes<uint8_t>(n_bytes);
-      auto fcs = provider.ConsumeBool() ? bt::l2cap::FrameCheckSequenceOption::kIncludeFcs
-                                        : bt::l2cap::FrameCheckSequenceOption::kNoFcs;
-      auto pdu = fragmenter.BuildFrame(kTestChannelId, bt::BufferView(bytes), fcs);
+      bool append_fcs = provider.ConsumeBool();
+      if (append_fcs) {
+        const size_t bounded_size =
+            std::min(bytes.size(),
+                     std::numeric_limits<uint16_t>::max() - sizeof(bt::l2cap::FrameCheckSequence));
+        bytes.resize(bounded_size);
+      }
+      auto fcs_option = append_fcs ? bt::l2cap::FrameCheckSequenceOption::kIncludeFcs
+                                   : bt::l2cap::FrameCheckSequenceOption::kNoFcs;
+      auto pdu = fragmenter.BuildFrame(kTestChannelId, bt::BufferView(bytes), fcs_option);
       rx_engine->ProcessPdu(std::move(pdu));
     }
 
