@@ -49,7 +49,7 @@ class AdapterImpl final : public Adapter {
 
   AdapterId identifier() const override { return identifier_; }
 
-  bool Initialize(InitializeCallback callback, fit::closure transport_closed_callback) override;
+  bool Initialize(InitializeCallback callback, fit::closure transport_closed_cb) override;
 
   void ShutDown() override;
 
@@ -65,8 +65,7 @@ class AdapterImpl final : public Adapter {
 
     void Connect(PeerId peer_id, ConnectionResultCallback callback,
                  LowEnergyConnectionOptions connection_options) override {
-      adapter_->le_connection_manager_->Connect(peer_id, std::move(callback),
-                                                std::move(connection_options));
+      adapter_->le_connection_manager_->Connect(peer_id, std::move(callback), connection_options);
       adapter_->metrics_.le.outgoing_connection_requests.Add();
     }
 
