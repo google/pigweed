@@ -61,6 +61,8 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   size_t GetSizeLimit() const override { return max_ad_size_; }
 
+  size_t MaxAdvertisements() const override { return 1; }
+
   bool AllowsRandomAddressChange() const override { return true; }
 
   void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,

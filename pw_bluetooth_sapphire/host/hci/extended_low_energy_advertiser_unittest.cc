@@ -101,7 +101,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, LegacyPduLength) {
 }
 
 TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingHandlesExhausted) {
-  test_device()->set_num_supported_advertising_sets(AdvertisingHandleMap::kMaxElements);
+  test_device()->set_num_supported_advertising_sets(advertiser()->MaxAdvertisements());
 
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data = GetExampleData();
@@ -116,7 +116,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingHandlesExhausted) {
 
   ASSERT_TRUE(GetLastStatus());
   EXPECT_TRUE(advertiser()->IsAdvertising());
-  EXPECT_EQ(AdvertisingHandleMap::kMaxElements, advertiser()->NumAdvertisements());
+  EXPECT_EQ(advertiser()->MaxAdvertisements(), advertiser()->NumAdvertisements());
 
   advertiser()->StartAdvertising(
       DeviceAddress(DeviceAddress::Type::kLEPublic, {hci_spec::kAdvertisingHandleMax + 1}), ad,
@@ -125,7 +125,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingHandlesExhausted) {
   RunLoopUntilIdle();
   ASSERT_TRUE(GetLastStatus());
   EXPECT_TRUE(advertiser()->IsAdvertising());
-  EXPECT_EQ(AdvertisingHandleMap::kMaxElements, advertiser()->NumAdvertisements());
+  EXPECT_EQ(advertiser()->MaxAdvertisements(), advertiser()->NumAdvertisements());
 }
 
 TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {

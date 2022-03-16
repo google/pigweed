@@ -130,6 +130,9 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Returns the number of advertisements currently registered
   size_t NumAdvertisements() const { return connection_callbacks_.size(); }
 
+  // Returns the maximum number of advertisements that can be supported
+  virtual size_t MaxAdvertisements() const = 0;
+
  protected:
   // Build the HCI command packet to enable advertising for the flavor of low energy advertising
   // being implemented.

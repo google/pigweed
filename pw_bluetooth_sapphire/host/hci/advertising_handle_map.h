@@ -22,10 +22,11 @@ namespace bt::hci {
 // maintain, etc.
 class AdvertisingHandleMap {
  public:
-  // AdvertisingHandles range from 0x00 to hci_spec::kMaxAdvertisingHandle. Also,
-  // hci_spec::kMaxAdvertisingHandle is a valid AdvertisingHandle. This value tracks the maximum
-  // number of elements that can be stored in this container.
-  constexpr static std::size_t kMaxElements = hci_spec::kMaxAdvertisingHandle + 1;
+  // Instantiate an AdvertisingHandleMap. The capacity parameter specifies the maximum number of
+  // mappings that this instance will support. Setting the capacity also restricts the range of
+  // advertising handles AdvertisingHandleMap will return: [0, capacity).
+  explicit AdvertisingHandleMap(uint8_t capacity = hci_spec::kMaxAdvertisingHandle + 1)
+      : capacity_(capacity) {}
 
   // Convert a DeviceAddress to an AdvertisingHandle, creating the mapping if it doesn't already
   // exist. The conversion may fail if there are already hci_spec::kMaxAdvertisingHandles in the
@@ -52,6 +53,9 @@ class AdvertisingHandleMap {
   // new mapping with a new AdvertisingHandle.
   void RemoveAddress(const DeviceAddress& address);
 
+  // Get the maximum number of mappings the AdvertisingHandleMap will support.
+  uint8_t capacity() const { return capacity_; }
+
   // Retrieve the advertising handle that was most recently generated. This function is primarily
   // used by unit tests so as to avoid hardcoding values or making assumptions about the starting
   // point or ordering of advertising handle generation.
@@ -70,6 +74,12 @@ class AdvertisingHandleMap {
   // Although not in the range of valid advertising handles (0x00 to 0xEF), kStartHandle is chosen
   // to be 0xFF because adding one to it will overflow to 0, the first valid advertising handle.
   constexpr static hci_spec::AdvertisingHandle kStartHandle = 0xFF;
+
+  // Tracks the maximum number of elements that can be stored in this container.
+  //
+  // NOTE: AdvertisingHandles have a range of [0, capacity_). This value isn't set using default
+  // member initialization because it is set within the constructor itself.
+  uint8_t capacity_;
 
   // Generate the next valid, available, and within range AdvertisingHandle. This function may fail
   // if there are already hci_spec::kMaxAdvertisingHandles in the container: there are no more valid

@@ -46,7 +46,7 @@ TEST(AdvertisingHandleMap, GetHandleAlreadyExists) {
 TEST(AdvertisingHandleMap, GetHandleMoreThanSupported) {
   AdvertisingHandleMap handle_map;
 
-  for (uint8_t i = 0; i < AdvertisingHandleMap::kMaxElements; i++) {
+  for (uint8_t i = 0; i < handle_map.capacity(); i++) {
     DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {i});
     std::optional<hci_spec::AdvertisingHandle> handle = handle_map.MapHandle(address);
     EXPECT_LE(handle.value(), hci_spec::kMaxAdvertisingHandle);
@@ -54,18 +54,17 @@ TEST(AdvertisingHandleMap, GetHandleMoreThanSupported) {
     EXPECT_EQ(i + 1u, handle_map.Size());
   }
 
-  DeviceAddress address =
-      DeviceAddress(DeviceAddress::Type::kLEPublic, {AdvertisingHandleMap::kMaxElements});
+  DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {handle_map.capacity()});
 
   std::optional<hci_spec::AdvertisingHandle> handle = handle_map.MapHandle(address);
   EXPECT_FALSE(handle);
-  EXPECT_EQ(AdvertisingHandleMap::kMaxElements, handle_map.Size());
+  EXPECT_EQ(handle_map.capacity(), handle_map.Size());
 }
 
 TEST(AdvertisingHandleMap, GetHandleSupportHandleReallocation) {
   AdvertisingHandleMap handle_map;
 
-  for (uint8_t i = 0; i < AdvertisingHandleMap::kMaxElements; i++) {
+  for (uint8_t i = 0; i < handle_map.capacity(); i++) {
     DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {i});
     std::optional<hci_spec::AdvertisingHandle> handle = handle_map.MapHandle(address);
     EXPECT_LE(handle.value(), hci_spec::kMaxAdvertisingHandle);
@@ -79,8 +78,7 @@ TEST(AdvertisingHandleMap, GetHandleSupportHandleReallocation) {
 
   handle_map.RemoveHandle(old_handle);
 
-  DeviceAddress address =
-      DeviceAddress(DeviceAddress::Type::kLEPublic, {AdvertisingHandleMap::kMaxElements});
+  DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {handle_map.capacity()});
   std::optional<hci_spec::AdvertisingHandle> new_handle = handle_map.MapHandle(address);
   EXPECT_LE(new_handle.value(), hci_spec::kMaxAdvertisingHandle);
 

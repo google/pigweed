@@ -12,7 +12,7 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
     return it->second;
   }
 
-  if (Size() >= kMaxElements) {
+  if (Size() >= capacity_) {
     return std::nullopt;
   }
 
@@ -70,13 +70,13 @@ void AdvertisingHandleMap::Clear() {
 }
 
 std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
-  if (Size() >= kMaxElements) {
+  if (Size() >= capacity_) {
     return std::nullopt;
   }
 
   hci_spec::AdvertisingHandle handle = last_handle_;
   do {
-    handle = uint8_t(handle + 1) % kMaxElements;
+    handle = uint8_t(handle + 1) % capacity_;
   } while (handle_to_addr_.count(handle) != 0);
 
   last_handle_ = handle;

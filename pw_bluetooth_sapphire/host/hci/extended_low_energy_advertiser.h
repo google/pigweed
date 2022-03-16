@@ -56,6 +56,8 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
                             const DeviceAddress& peer_address,
                             const hci_spec::LEConnectionParameters& conn_params) override;
 
+  size_t MaxAdvertisements() const override { return advertising_handle_map_.capacity(); }
+
   // Returns the last used advertising handle that was used for an advertising set when
   // communicating with the controller.
   std::optional<hci_spec::AdvertisingHandle> LastUsedHandleForTesting() const {
