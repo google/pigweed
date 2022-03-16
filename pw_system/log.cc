@@ -23,7 +23,7 @@
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 #include "pw_system/config.h"
-#include "pw_system_private/rpc.h"
+#include "pw_system/rpc_server.h"
 
 namespace pw::system {
 namespace {
@@ -41,7 +41,7 @@ std::array<std::byte, PW_SYSTEM_MAX_LOG_ENTRY_SIZE> log_decode_buffer
     PW_GUARDED_BY(drains_mutex);
 
 std::array<RpcLogDrain, 1> drains{{
-    RpcLogDrain(kDefaultChannelId,
+    RpcLogDrain(kDefaultRpcChannelId,
                 log_decode_buffer,
                 drains_mutex,
                 RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),

@@ -12,8 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_system_private/rpc.h"
-
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -26,6 +24,7 @@
 #include "pw_sync/mutex.h"
 #include "pw_system/config.h"
 #include "pw_system/io.h"
+#include "pw_system/rpc_server.h"
 
 namespace pw::system {
 namespace {
@@ -36,7 +35,7 @@ hdlc::RpcChannelOutput hdlc_channel_output(GetWriter(),
                                            PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS,
                                            "HDLC channel");
 rpc::Channel channels[] = {
-    rpc::Channel::Create<kDefaultChannelId>(&hdlc_channel_output)};
+    rpc::Channel::Create<kDefaultRpcChannelId>(&hdlc_channel_output)};
 rpc::Server server(channels);
 
 // Declare a buffer for decoding incoming HDLC frames.

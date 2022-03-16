@@ -48,7 +48,7 @@ group("pw_system") {
     ":init",
     ":io",
     ":log",
-    ":rpc",
+    ":rpc_server",
     ":work_queue",
   ]
   deps = [ ":target_hooks" ]
@@ -67,7 +67,7 @@ pw_source_set("log") {
   ]
   deps = [
     ":config",
-    ":rpc",
+    ":rpc_server",
     "$dir_pw_log_rpc:rpc_log_drain",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
@@ -100,24 +100,14 @@ pw_source_set("log_backend.impl") {
   ]
 }
 
-pw_source_set("rpc") {
+pw_facade("rpc_server") {
+  backend = pw_system_RPC_SERVER_BACKEND
   visibility = [ ":*" ]
-  sources = [
-    "pw_system_private/rpc.h",
-    "rpc.cc",
-  ]
+  public = [ "public/pw_system/rpc_server.h" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
-    "$dir_pw_rpc/system_server:facade",
     "$dir_pw_thread:thread_core",
-  ]
-  deps = [
-    ":io",
-    "$dir_pw_assert",
-    "$dir_pw_hdlc:pw_rpc",
-    "$dir_pw_hdlc:rpc_channel_output",
-    "$dir_pw_sync:mutex",
   ]
 }
 
@@ -135,11 +125,25 @@ pw_source_set("init") {
   sources = [ "init.cc" ]
   deps = [
     ":log",
-    ":rpc",
+    ":rpc_server",
     ":target_hooks.facade",
     ":work_queue",
     "$dir_pw_rpc/nanopb:echo_service",
     "$dir_pw_thread:thread",
+  ]
+}
+
+pw_source_set("hdlc_rpc_server") {
+  sources = [ "hdlc_rpc_server.cc" ]
+  deps = [
+    ":config",
+    ":io",
+    ":rpc_server.facade",
+    "$dir_pw_assert",
+    "$dir_pw_hdlc:pw_rpc",
+    "$dir_pw_hdlc:rpc_channel_output",
+    "$dir_pw_log",
+    "$dir_pw_sync:mutex",
   ]
 }
 

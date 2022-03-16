@@ -7,11 +7,64 @@ pw_system
   This module is an early work-in-progress towards an opinionated framework for
   new projects built on Pigweed. It is under active development, so stay tuned!
 
-Demo on the STM32F429I Discovery Board
-========================================================
-Refer to the :ref:`STM32F429I Discovery<target-stm32f429i-disc1-stm32cube>`
-target documentation for instructions on running a ``pw_system`` demo.
+pw_system is quite different from typical Pigweed modules. Rather than providing
+a single slice of vertical functionality, pw_system pulls together many modules
+across Pigweed to construct a working system with RPC, Logging, an OS
+Abstraction layer, and more. pw_system exists to greatly simplify the process
+of starting a new project using Pigweed by drastically reducing the required
+configuration space required to go from first signs of on-device life to a more
+sophisticated production-ready system.
 
+Trying out pw_system
+====================
+If you'd like to give pw_system a spin and have a STM32F429I Discovery board,
+refer to the board's
+:ref:`target documentation<target-stm32f429i-disc1-stm32cube>` for instructions
+on how to build the demo and try things out
+
+If you don't have a discovery board, there's a simulated device variation that
+you can run on your local machine with no additional hardware. Check out the
+steps for trying this out :ref:`here<target-host-device-simulator>`.
+
+Target Bringup
+==============
+Bringing up a new device is as easy as 1-2-3! (Kidding, this is a work in
+progress)
+
+#. **Create a ``pw_system_target`` in your GN build.**
+   This is what will control the configuration of your target from a build
+   system level. This includes which compiler will be used, what architecture
+   flags will be used, which backends will be used, and more. A large quantity
+   of configuration will be pre-set to work with pw_system after you select the
+   CPU and scheduler your target will use, but your target will likely need to
+   set a few other things to get to a fully working state.
+#. **Write target-specific initialization.**
+   Most embedded devices require a linker script, manual initialization of
+   memory, and some clock initialization. pw_system leaves this to users to
+   implement as the exact initialization sequence can be very project-specific.
+   All that's required is that after early memory initialization and clock
+   configuration is complete, your target initialization should call
+   ``pw::system::Init()`` and then start the RTOS scheduler (e.g.
+   ``vTaskStartScheduler()``).
+#. **Implement ``pw::system::UserAppInit()`` in your application.**
+   This is where most of your project's application-specific logic goes. This
+   could be starting threads, registering RPC services, turning on Bluetooth,
+   or more. In ``UserAppInit()``, the RTOS will be running so you're free to use
+   OS primitives and use features that rely on threading (e.g. RPC, logging).
+
+Pigweed's ``stm32f429i_disc1_stm32cube`` target demonstrates what's required by
+the first two steps. The third step is where you get to decide how to turn your
+new platform into a project that does something cool! It might be as simple as
+a blinking LED, or something more complex like a Bluetooth device that brews you
+a cup of coffee whenever ``pw watch`` kicks off a new build.
+
+.. note::
+  Because of the nature of the hard-coded conditions in ``pw_system_target``,
+  you may find that some options are missing for various RTOSes and
+  architectures. The design of the GN integration is still a work-in-progress
+  to improve the scalability of this, but in the meantime the Pigweed team
+  welcomes contributions to expand the breadth of RTOSes and architectures
+  supported as ``pw_system_target``\s.
 
 GN Target Toolchain Template
 ============================

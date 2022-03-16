@@ -96,6 +96,7 @@ template("pw_system_target") {
   _final_binary_extension = ""
 
   _default_build_args = {
+    pw_system_RPC_SERVER_BACKEND = "$dir_pw_system:hdlc_rpc_server"
     pw_system_IO_BACKEND = "$dir_pw_system:sys_io_target_io"
 
     # TODO(amontanez): This should be set to pw_assert_log ASAP.

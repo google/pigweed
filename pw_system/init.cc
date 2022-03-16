@@ -16,10 +16,10 @@
 
 #include "pw_log/log.h"
 #include "pw_rpc/echo_service_nanopb.h"
+#include "pw_system/rpc_server.h"
 #include "pw_system/target_hooks.h"
 #include "pw_system/work_queue.h"
 #include "pw_system_private/log.h"
-#include "pw_system_private/rpc.h"
 #include "pw_thread/detached_thread.h"
 
 namespace pw::system {
@@ -31,7 +31,7 @@ void InitImpl() {
 
   // Setup logging.
   const Status status = GetLogThread().OpenUnrequestedLogStream(
-      kDefaultChannelId, GetRpcServer(), GetLogService());
+      kDefaultRpcChannelId, GetRpcServer(), GetLogService());
   if (!status.ok()) {
     PW_LOG_ERROR("Error opening unrequested log streams %d",
                  static_cast<int>(status.code()));
