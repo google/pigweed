@@ -88,7 +88,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   std::unique_ptr<CommandPacket> BuildUnsetAdvertisingData(const DeviceAddress& address) override;
 
   std::unique_ptr<CommandPacket> BuildSetScanResponse(const DeviceAddress& address,
-                                                      const AdvertisingData& scan_rsp) override;
+                                                      const AdvertisingData& data) override;
 
   std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) override;
 

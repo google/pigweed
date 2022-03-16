@@ -75,7 +75,9 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
   if (!handle) {
-    bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
+    bt_log(WARN, "hci-le",
+           "could not allocate a new advertising handle for address: %s (all in use)",
+           bt_str(address));
     return nullptr;
   }
   payload->adv_handle = handle.value();
@@ -120,15 +122,12 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
-  size_t block_size = data.CalculateBlockSize(/*include_flags=*/true);
-
-  AdvertisingData tx_power_data;
+  AdvertisingData adv_data;
+  data.Copy(&adv_data);
   if (staged_advertising_parameters_.include_tx_power_level) {
-    data.Copy(&tx_power_data);
-
-    tx_power_data.SetTxPower(staged_advertising_parameters_.selected_tx_power_level);
-    block_size = tx_power_data.CalculateBlockSize(/*include_flags=*/true);
+    adv_data.SetTxPower(staged_advertising_parameters_.selected_tx_power_level);
   }
+  size_t block_size = adv_data.CalculateBlockSize(/*include_flags=*/true);
 
   size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingDataCommandParams) + block_size;
   std::unique_ptr<CommandPacket> packet =
@@ -151,14 +150,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingD
 
   // advertising data
   payload->adv_data_length = block_size;
-  MutableBufferView buffer = packet->mutable_view()->mutable_payload_data().mutable_view(
-      sizeof(hci_spec::LESetExtendedAdvertisingDataCommandParams));
-
-  if (staged_advertising_parameters_.include_tx_power_level) {
-    tx_power_data.WriteBlock(&buffer, flags);
-  } else {
-    data.WriteBlock(&buffer, flags);
-  }
+  MutableBufferView data_view(payload->adv_data, payload->adv_data_length);
+  adv_data.WriteBlock(&data_view, flags);
 
   return packet;
 }
@@ -189,16 +182,13 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisin
 }
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
-    const DeviceAddress& address, const AdvertisingData& scan_rsp) {
-  size_t block_size = scan_rsp.CalculateBlockSize();
-
-  AdvertisingData tx_power_scan_rsp;
+    const DeviceAddress& address, const AdvertisingData& data) {
+  AdvertisingData scan_rsp;
+  data.Copy(&scan_rsp);
   if (staged_advertising_parameters_.include_tx_power_level) {
-    scan_rsp.Copy(&tx_power_scan_rsp);
-
-    tx_power_scan_rsp.SetTxPower(staged_advertising_parameters_.selected_tx_power_level);
-    block_size = tx_power_scan_rsp.CalculateBlockSize();
+    scan_rsp.SetTxPower(staged_advertising_parameters_.selected_tx_power_level);
   }
+  size_t block_size = scan_rsp.CalculateBlockSize();
 
   size_t kPayloadSize = sizeof(hci_spec::LESetExtendedScanResponseDataCommandParams) + block_size;
   std::unique_ptr<CommandPacket> packet =
@@ -221,14 +211,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse
 
   // scan response data
   payload->scan_rsp_data_length = block_size;
-  MutableBufferView buffer = packet->mutable_view()->mutable_payload_data().mutable_view(
-      sizeof(hci_spec::LESetExtendedScanResponseDataCommandParams));
-
-  if (staged_advertising_parameters_.include_tx_power_level) {
-    tx_power_scan_rsp.WriteBlock(&buffer, std::nullopt);
-  } else {
-    scan_rsp.WriteBlock(&buffer, std::nullopt);
-  }
+  MutableBufferView scan_rsp_view(payload->scan_rsp_data, payload->scan_rsp_data_length);
+  scan_rsp.WriteBlock(&scan_rsp_view, std::nullopt);
 
   return packet;
 }
