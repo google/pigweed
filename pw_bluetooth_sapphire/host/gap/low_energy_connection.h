@@ -86,7 +86,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // Attach connection as child node of |parent| with specified |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
-  void set_security_mode(LeSecurityMode mode) {
+  void set_security_mode(LESecurityMode mode) {
     ZX_ASSERT(sm_);
     sm_->set_security_mode(mode);
   }

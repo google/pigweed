@@ -71,9 +71,9 @@ class FakeAdapter final : public Adapter {
     void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
               sm::ResultFunction<> cb) override {}
 
-    void SetSecurityMode(LeSecurityMode mode) override {}
+    void SetSecurityMode(LESecurityMode mode) override {}
 
-    LeSecurityMode security_mode() const override { return adapter_->le_security_mode_; }
+    LESecurityMode security_mode() const override { return adapter_->le_security_mode_; }
 
     void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
                           AdvertisingInterval interval, bool anonymous, bool include_tx_power_level,
@@ -234,7 +234,7 @@ class FakeAdapter final : public Adapter {
   bool is_discovering_ = true;
   std::string local_name_;
   DeviceClass device_class_;
-  LeSecurityMode le_security_mode_;
+  LESecurityMode le_security_mode_;
 
   fxl::WeakPtrFactory<FakeAdapter> weak_ptr_factory_;
 };

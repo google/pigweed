@@ -150,10 +150,10 @@ class Adapter {
     // Sets the LE security mode of the local device (see v5.2 Vol. 3 Part C Section 10.2). If set
     // to SecureConnectionsOnly, any currently encrypted links not meeting the requirements of
     // Security Mode 1 Level 4 will be disconnected.
-    virtual void SetSecurityMode(LeSecurityMode mode) = 0;
+    virtual void SetSecurityMode(LESecurityMode mode) = 0;
 
     // Returns the current LE security mode.
-    virtual LeSecurityMode security_mode() const = 0;
+    virtual LESecurityMode security_mode() const = 0;
 
     // Asynchronously attempts to start advertising a set of |data| with
     // additional scan response data |scan_rsp|.

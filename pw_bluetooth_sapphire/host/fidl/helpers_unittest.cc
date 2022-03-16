@@ -499,11 +499,11 @@ TEST(HelpersTest, AdvertisingDataToFidlOmitsNonEnumeratedAppearance) {
 }
 
 TEST(HelpersTest, LeSecurityModeFromFidl) {
-  EXPECT_EQ(bt::gap::LeSecurityMode::Mode1, LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1));
-  EXPECT_EQ(bt::gap::LeSecurityMode::SecureConnectionsOnly,
+  EXPECT_EQ(bt::gap::LESecurityMode::Mode1, LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1));
+  EXPECT_EQ(bt::gap::LESecurityMode::SecureConnectionsOnly,
             LeSecurityModeFromFidl(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY));
   auto nonexistent_security_mode = static_cast<fsys::LeSecurityMode>(0xFF);
-  EXPECT_EQ(bt::gap::LeSecurityMode::SecureConnectionsOnly,
+  EXPECT_EQ(bt::gap::LESecurityMode::SecureConnectionsOnly,
             LeSecurityModeFromFidl(nonexistent_security_mode));
 }
 

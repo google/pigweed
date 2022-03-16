@@ -51,7 +51,7 @@ class SecurityManagerImpl final : public SecurityManager,
   ~SecurityManagerImpl() override;
   SecurityManagerImpl(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
                       IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
-                      BondableMode bondable_mode, gap::LeSecurityMode security_mode);
+                      BondableMode bondable_mode, gap::LESecurityMode security_mode);
   // SecurityManager overrides:
   bool AssignLongTermKey(const LTK& ltk) override;
   void UpgradeSecurity(SecurityLevel level, PairingCallback callback) override;
@@ -97,7 +97,7 @@ class SecurityManagerImpl final : public SecurityManager,
   // Check if encryption using `current_ltk` will satisfy the current security requirements.
   static bool CurrentLtkInsufficientlySecureForEncryption(
       std::optional<LTK> current_ltk, SecurityRequestPhase* security_request_phase,
-      gap::LeSecurityMode mode);
+      gap::LESecurityMode mode);
 
   // Called when the encryption state of the LE link changes.
   void OnEncryptionChange(hci::Result<bool> enabled_result);
@@ -217,7 +217,7 @@ SecurityManagerImpl::~SecurityManagerImpl() {
 
 SecurityManagerImpl::SecurityManagerImpl(
     fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
-    fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode, gap::LeSecurityMode security_mode)
+    fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode, gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
       next_pairing_id_(0),
       delegate_(std::move(delegate)),
@@ -298,7 +298,7 @@ void SecurityManagerImpl::UpgradeSecurity(SecurityLevel level, PairingCallback c
 
   // Secure Connections only mode only permits Secure Connections authenticated pairing with a 128-
   // bit encryption key, so we force all security upgrade requests to that level.
-  if (security_mode() == gap::LeSecurityMode::SecureConnectionsOnly) {
+  if (security_mode() == gap::LESecurityMode::SecureConnectionsOnly) {
     level = SecurityLevel::kSecureAuthenticated;
   }
 
@@ -327,7 +327,7 @@ void SecurityManagerImpl::OnPairingRequest(const PairingRequestParams& req_param
 
   // Secure Connections only mode only permits Secure Connections authenticated pairing with a 128-
   // bit encryption key, so we force all security upgrade requests to that level.
-  if (security_mode() == gap::LeSecurityMode::SecureConnectionsOnly) {
+  if (security_mode() == gap::LESecurityMode::SecureConnectionsOnly) {
     required_level = SecurityLevel::kSecureAuthenticated;
   }
 
@@ -427,12 +427,12 @@ void SecurityManagerImpl::OnPhase2EncryptionKey(const UInt128& new_key) {
 
 bool SecurityManagerImpl::CurrentLtkInsufficientlySecureForEncryption(
     std::optional<LTK> current_ltk, SecurityRequestPhase* security_request_phase,
-    gap::LeSecurityMode mode) {
+    gap::LESecurityMode mode) {
   SecurityLevel current_ltk_sec =
       current_ltk ? current_ltk->security().level() : SecurityLevel::kNoSecurity;
   return (security_request_phase &&
           security_request_phase->pending_security_request() > current_ltk_sec) ||
-         (mode == gap::LeSecurityMode::SecureConnectionsOnly &&
+         (mode == gap::LESecurityMode::SecureConnectionsOnly &&
           current_ltk_sec != SecurityLevel::kSecureAuthenticated);
 }
 
@@ -831,13 +831,13 @@ std::unique_ptr<SecurityManager> SecurityManager::Create(fxl::WeakPtr<hci::Conne
                                                          IOCapability io_capability,
                                                          fxl::WeakPtr<Delegate> delegate,
                                                          BondableMode bondable_mode,
-                                                         gap::LeSecurityMode security_mode) {
+                                                         gap::LESecurityMode security_mode) {
   return std::unique_ptr<SecurityManagerImpl>(
       new SecurityManagerImpl(std::move(link), std::move(smp), io_capability, std::move(delegate),
                               bondable_mode, security_mode));
 }
 
-SecurityManager::SecurityManager(BondableMode bondable_mode, gap::LeSecurityMode security_mode)
+SecurityManager::SecurityManager(BondableMode bondable_mode, gap::LESecurityMode security_mode)
     : bondable_mode_(bondable_mode), security_mode_(security_mode) {}
 
 }  // namespace bt::sm

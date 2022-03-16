@@ -56,7 +56,7 @@ class SecurityManager {
                                                  IOCapability io_capability,
                                                  fxl::WeakPtr<Delegate> delegate,
                                                  BondableMode bondable_mode,
-                                                 gap::LeSecurityMode security_mode);
+                                                 gap::LESecurityMode security_mode);
   virtual ~SecurityManager() = default;
   // Assigns the requested |ltk| to this connection, adopting the security properties of |ltk|. If
   // the local device is the central of the underlying link, then the link layer authentication
@@ -110,11 +110,11 @@ class SecurityManager {
 
   // Sets the LE Security mode of the SecurityManager - see enum definition for details of each
   // mode. If a security upgrade is in-progress, only takes effect on the next security upgrade.
-  void set_security_mode(gap::LeSecurityMode mode) { security_mode_ = mode; }
-  gap::LeSecurityMode security_mode() { return security_mode_; }
+  void set_security_mode(gap::LESecurityMode mode) { security_mode_ = mode; }
+  gap::LESecurityMode security_mode() { return security_mode_; }
 
  protected:
-  SecurityManager(BondableMode bondable_mode, gap::LeSecurityMode security_mode);
+  SecurityManager(BondableMode bondable_mode, gap::LESecurityMode security_mode);
   void set_security(SecurityProperties security) { le_sec_ = security; }
 
  private:
@@ -122,7 +122,7 @@ class SecurityManager {
   BondableMode bondable_mode_ = BondableMode::Bondable;
 
   // The current GAP security mode of the device (v5.2 Vol. 3 Part C Section 10.2)
-  gap::LeSecurityMode security_mode_ = gap::LeSecurityMode::Mode1;
+  gap::LESecurityMode security_mode_ = gap::LESecurityMode::Mode1;
 
   // Current security properties of the LE-U link.
   SecurityProperties le_sec_ = SecurityProperties();

@@ -118,7 +118,7 @@ fuchsia::bluetooth::Uuid UuidToFidl(const bt::UUID& uuid);
 // Functions that convert FIDL types to library objects.
 bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::sys::InputCapability,
                                           const fuchsia::bluetooth::sys::OutputCapability);
-bt::gap::LeSecurityMode LeSecurityModeFromFidl(const fuchsia::bluetooth::sys::LeSecurityMode mode);
+bt::gap::LESecurityMode LeSecurityModeFromFidl(const fuchsia::bluetooth::sys::LeSecurityMode mode);
 std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
     const fuchsia::bluetooth::sys::PairingSecurityLevel level);
 

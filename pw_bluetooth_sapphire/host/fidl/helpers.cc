@@ -502,15 +502,15 @@ bt::sm::IOCapability IoCapabilityFromFidl(fsys::InputCapability input,
   return bt::sm::IOCapability::kNoInputNoOutput;
 }
 
-bt::gap::LeSecurityMode LeSecurityModeFromFidl(const fsys::LeSecurityMode mode) {
+bt::gap::LESecurityMode LeSecurityModeFromFidl(const fsys::LeSecurityMode mode) {
   switch (mode) {
     case fsys::LeSecurityMode::MODE_1:
-      return bt::gap::LeSecurityMode::Mode1;
+      return bt::gap::LESecurityMode::Mode1;
     case fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY:
-      return bt::gap::LeSecurityMode::SecureConnectionsOnly;
+      return bt::gap::LESecurityMode::SecureConnectionsOnly;
   }
   bt_log(WARN, "fidl", "FIDL security mode not recognized, defaulting to SecureConnectionsOnly");
-  return bt::gap::LeSecurityMode::SecureConnectionsOnly;
+  return bt::gap::LESecurityMode::SecureConnectionsOnly;
 }
 
 std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(const fsys::PairingSecurityLevel level) {

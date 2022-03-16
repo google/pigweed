@@ -470,7 +470,7 @@ void HostServer::EnablePrivacy(bool enabled) {
 }
 
 void HostServer::SetLeSecurityMode(fsys::LeSecurityMode mode) {
-  bt::gap::LeSecurityMode gap_mode = LeSecurityModeFromFidl(mode);
+  bt::gap::LESecurityMode gap_mode = LeSecurityModeFromFidl(mode);
   bt_log(INFO, "fidl", "%s: %s", __FUNCTION__, LeSecurityModeToString(gap_mode));
   if (adapter()->le()) {
     adapter()->le()->SetSecurityMode(gap_mode);

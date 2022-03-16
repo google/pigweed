@@ -59,7 +59,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
     pairing_ = SecurityManager::Create(fake_link_->WeakPtr(), fake_chan_, ioc,
                                        weak_ptr_factory_.GetWeakPtr(), bondable_mode,
-                                       gap::LeSecurityMode::Mode1);
+                                       gap::LESecurityMode::Mode1);
   }
 
   void DestroySecurityManager() { pairing_ = nullptr; }
@@ -968,7 +968,7 @@ TEST_F(InitiatorPairingTest, ReceiveConfirmValueInPhase1) {
 
 TEST_F(InitiatorPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnlyMode) {
   SetUpSecurityManager(IOCapability::kKeyboardDisplay);
-  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  pairing()->set_security_mode(gap::LESecurityMode::SecureConnectionsOnly);
   // In SC Only mode, SM should translate this "encrypted" request into a MITM requirement.
   UpgradeSecurity(SecurityLevel::kEncrypted);
   // The peer has NoInputNoOutput IOCapabilities, thus cannot perform authenticated pairing.
@@ -983,7 +983,7 @@ TEST_F(InitiatorPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnly
 }
 
 TEST_F(InitiatorPairingTest, RejectUnauthenticatedEncryptionInSecureConnectionsOnlyMode) {
-  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  pairing()->set_security_mode(gap::LESecurityMode::SecureConnectionsOnly);
   const LTK kUnauthenticatedLtk(SecurityProperties(true /*encrypted*/, false /*authenticated*/,
                                                    true /*SC*/, kMaxEncryptionKeySize),
                                 hci_spec::LinkKey());
@@ -1001,7 +1001,7 @@ TEST_F(InitiatorPairingTest, RejectUnauthenticatedEncryptionInSecureConnectionsO
 
 TEST_F(InitiatorPairingTest, AllowSecureAuthenticatedPairingInSecureConnectionsOnlyMode) {
   SetUpSecurityManager(IOCapability::kDisplayYesNo);
-  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  pairing()->set_security_mode(gap::LESecurityMode::SecureConnectionsOnly);
   UInt128 enc_key;
   FastForwardToPhase3(&enc_key, true, SecurityLevel::kSecureAuthenticated);
   RunLoopUntilIdle();
@@ -3398,7 +3398,7 @@ TEST_F(ResponderPairingTest, PairingRequestStartsPairingTimer) {
 
 TEST_F(ResponderPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnlyMode) {
   SetUpSecurityManager(IOCapability::kKeyboardDisplay);
-  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  pairing()->set_security_mode(gap::LESecurityMode::SecureConnectionsOnly);
   // In SC Only mode, SM should translate this "encrypted" request into a MITM requirement.
   UpgradeSecurity(SecurityLevel::kEncrypted);
   RunLoopUntilIdle();
@@ -3417,7 +3417,7 @@ TEST_F(ResponderPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnly
 
 TEST_F(ResponderPairingTest, RejectInsufficientKeySizeRequestInSecureConnectionsOnlyMode) {
   SetUpSecurityManager(IOCapability::kKeyboardDisplay);
-  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  pairing()->set_security_mode(gap::LESecurityMode::SecureConnectionsOnly);
   // The peer encryption key size is not kMaxEncryptionKeySize, thus does not meet the Secure
   // Connections Only requirements.
   ReceivePairingRequest(IOCapability::kDisplayYesNo, AuthReq::kBondingFlag | AuthReq::kSC,

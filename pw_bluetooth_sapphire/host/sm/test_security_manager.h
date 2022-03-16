@@ -47,7 +47,7 @@ class TestSecurityManager final : public SecurityManager {
   friend class TestSecurityManagerFactory;
   TestSecurityManager(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
                       IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
-                      BondableMode bondable_mode, gap::LeSecurityMode security_mode);
+                      BondableMode bondable_mode, gap::LESecurityMode security_mode);
   Role role_;
   std::optional<LTK> current_ltk_;
   std::optional<SecurityLevel> last_requested_upgrade_;
@@ -76,7 +76,7 @@ class TestSecurityManagerFactory {
                                             IOCapability io_capability,
                                             fxl::WeakPtr<Delegate> delegate,
                                             BondableMode bondable_mode,
-                                            gap::LeSecurityMode security_mode);
+                                            gap::LESecurityMode security_mode);
 
   // Obtain a reference to the TestSecurityManager associated with |conn_handle|'s connection for
   // use in test code.

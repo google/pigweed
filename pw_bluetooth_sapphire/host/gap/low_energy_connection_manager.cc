@@ -84,7 +84,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
     fxl::WeakPtr<gatt::GATT> gatt, fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
     sm::SecurityManagerFactory sm_creator)
     : hci_(std::move(hci)),
-      security_mode_(LeSecurityMode::Mode1),
+      security_mode_(LESecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),
       request_timeout_(kLECreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
@@ -243,9 +243,9 @@ void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_
   iter->second->UpgradeSecurity(pairing_level, bondable_mode, std::move(cb));
 }
 
-void LowEnergyConnectionManager::SetSecurityMode(LeSecurityMode mode) {
+void LowEnergyConnectionManager::SetSecurityMode(LESecurityMode mode) {
   security_mode_ = mode;
-  if (mode == LeSecurityMode::SecureConnectionsOnly) {
+  if (mode == LESecurityMode::SecureConnectionsOnly) {
     // `Disconnect`ing the peer must not be done while iterating through `connections_` as it
     // removes the connection from `connections_`, hence the helper vector.
     std::vector<PeerId> insufficiently_secure_peers;

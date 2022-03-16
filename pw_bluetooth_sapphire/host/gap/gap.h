@@ -33,14 +33,14 @@ enum class Mode {
 };
 
 // Enum for the supported values of the LE Security Mode as defined in spec v5.2 Vol 3 Part C 10.2.
-enum class LeSecurityMode {
+enum class LESecurityMode {
   // Mode 1 entails possibly encrypted, possibly authenticated communication.
   Mode1,
   // Secure Connections Only mode enforces that all encrypted transmissions use 128-bit,
   // SC-generated and authenticated encryption keys.
   SecureConnectionsOnly,
 };
-const char* LeSecurityModeToString(LeSecurityMode mode);
+const char* LeSecurityModeToString(LESecurityMode mode);
 
 // Placeholder assigned as the local name when gap::Adapter is initialized.
 constexpr char kDefaultLocalName[] = "fuchsia";

@@ -168,12 +168,12 @@ class LowEnergyConnectionManager final {
   // Sets the LE security mode of the local device (see v5.2 Vol. 3 Part C Section 10.2). If set to
   // SecureConnectionsOnly, any currently encrypted links not meeting the requirements of Security
   // Mode 1 Level 4 will be disconnected.
-  void SetSecurityMode(LeSecurityMode mode);
+  void SetSecurityMode(LESecurityMode mode);
 
   // Attach manager inspect node as a child node of |parent|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
-  LeSecurityMode security_mode() const { return security_mode_; }
+  LESecurityMode security_mode() const { return security_mode_; }
   sm::SecurityManagerFactory sm_factory_func() const { return sm_factory_func_; }
 
  private:
@@ -249,7 +249,7 @@ class LowEnergyConnectionManager final {
   fxl::WeakPtr<PairingDelegate> pairing_delegate_;
 
   // The GAP LE security mode of the device (v5.2 Vol. 3 Part C 10.2).
-  LeSecurityMode security_mode_;
+  LESecurityMode security_mode_;
 
   // The function used to create each channel's SecurityManager implementation.
   sm::SecurityManagerFactory sm_factory_func_;

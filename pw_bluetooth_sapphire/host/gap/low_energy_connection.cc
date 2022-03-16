@@ -265,7 +265,7 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
   if (conn_mgr_->pairing_delegate()) {
     io_cap = conn_mgr_->pairing_delegate()->io_capability();
   }
-  LeSecurityMode security_mode = conn_mgr_->security_mode();
+  LESecurityMode security_mode = conn_mgr_->security_mode();
   sm_ = conn_mgr_->sm_factory_func()(link_->WeakPtr(), std::move(smp), io_cap,
                                      weak_ptr_factory_.GetWeakPtr(),
                                      connection_options.bondable_mode, security_mode);

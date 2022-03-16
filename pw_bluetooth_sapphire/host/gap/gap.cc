@@ -17,11 +17,11 @@ const char* TechnologyTypeToString(TechnologyType type) {
   }
 }
 
-const char* LeSecurityModeToString(LeSecurityMode mode) {
+const char* LeSecurityModeToString(LESecurityMode mode) {
   switch (mode) {
-    case LeSecurityMode::Mode1:
+    case LESecurityMode::Mode1:
       return "Mode 1";
-    case LeSecurityMode::SecureConnectionsOnly:
+    case LESecurityMode::SecureConnectionsOnly:
       return "Secure Connections Only Mode";
   }
 }

@@ -2536,9 +2536,9 @@ TEST_F(LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuffici
   // Setting Secure Connections Only mode causes connections not allowed under this mode to be
   // disconnected (in this case, `encrypted_peer` is encrypted, SC-generated, and with max
   // encryption key size, but not authenticated).
-  conn_mgr()->SetSecurityMode(LeSecurityMode::SecureConnectionsOnly);
+  conn_mgr()->SetSecurityMode(LESecurityMode::SecureConnectionsOnly);
   RunLoopUntilIdle();
-  EXPECT_EQ(LeSecurityMode::SecureConnectionsOnly, conn_mgr()->security_mode());
+  EXPECT_EQ(LESecurityMode::SecureConnectionsOnly, conn_mgr()->security_mode());
   EXPECT_EQ(2u, connected_peers().size());
   EXPECT_TRUE(unencrypted_conn_handle->active());
   EXPECT_TRUE(secure_authenticated_conn_handle->active());
@@ -2548,7 +2548,7 @@ TEST_F(LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuffici
 // Test that both existing and new peers pick up on a change to Secure Connections Only mode.
 TEST_F(LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   // LE Connection Manager defaults to Mode 1.
-  EXPECT_EQ(LeSecurityMode::Mode1, conn_mgr()->security_mode());
+  EXPECT_EQ(LESecurityMode::Mode1, conn_mgr()->security_mode());
 
   // This peer will already be connected when we set LE Secure Connections Only mode.
   Peer* existing_peer = peer_cache()->NewPeer(kAddress1, true);
@@ -2561,13 +2561,13 @@ TEST_F(LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   RunLoopUntilIdle();
   fxl::WeakPtr<TestSm> existing_peer_sm = TestSmByHandle(existing_conn_handle->handle());
   ASSERT_TRUE(existing_peer_sm);
-  EXPECT_EQ(LeSecurityMode::Mode1, existing_peer_sm->security_mode());
+  EXPECT_EQ(LESecurityMode::Mode1, existing_peer_sm->security_mode());
   EXPECT_EQ(1u, connected_peers().size());
 
-  conn_mgr()->SetSecurityMode(LeSecurityMode::SecureConnectionsOnly);
+  conn_mgr()->SetSecurityMode(LESecurityMode::SecureConnectionsOnly);
   RunLoopUntilIdle();
 
-  EXPECT_EQ(LeSecurityMode::SecureConnectionsOnly, existing_peer_sm->security_mode());
+  EXPECT_EQ(LESecurityMode::SecureConnectionsOnly, existing_peer_sm->security_mode());
 
   // This peer is connected after setting LE Secure Connections Only mode.
   Peer* new_peer = peer_cache()->NewPeer(kAddress3, true);
@@ -2581,7 +2581,7 @@ TEST_F(LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   ASSERT_TRUE(new_peer_sm);
   EXPECT_EQ(2u, connected_peers().size());
 
-  EXPECT_EQ(LeSecurityMode::SecureConnectionsOnly, new_peer_sm->security_mode());
+  EXPECT_EQ(LESecurityMode::SecureConnectionsOnly, new_peer_sm->security_mode());
 }
 
 TEST_F(LowEnergyConnectionManagerTest,

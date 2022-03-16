@@ -79,11 +79,11 @@ class AdapterImpl final : public Adapter {
       adapter_->metrics_.le.pair_requests.Add();
     }
 
-    void SetSecurityMode(LeSecurityMode mode) override {
+    void SetSecurityMode(LESecurityMode mode) override {
       adapter_->le_connection_manager_->SetSecurityMode(mode);
     }
 
-    LeSecurityMode security_mode() const override {
+    LESecurityMode security_mode() const override {
       return adapter_->le_connection_manager_->security_mode();
     }
 
