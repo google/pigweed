@@ -72,7 +72,8 @@ class CommandChannel final {
   // If |complete_event_code| is set to kCommandStatus, the transaction is considered complete when
   // the CommandStatus event is received.
   //
-  // |complete_event_code| cannot be a code that has been registered for events via AddEventHandler.
+  // |complete_event_code| cannot be a code that has been registered for events via AddEventHandler
+  // or its related methods.
   //
   // Returns a ID unique to the command transaction, or zero if the parameters are invalid.  This ID
   // will be supplied to |callback| in its |id| parameter to identify the transaction.
@@ -171,8 +172,8 @@ class CommandChannel final {
   // Event sub-event code namespace. |event_callback| will get invoked whenever the controller sends
   // a LE Meta Event with a matching subevent code.
   //
-  // NOTE: The subevent_code cannot be 0
-  EventHandlerId AddLEMetaEventHandler(hci_spec::EventCode subevent_code,
+  // NOTE: The le_meta_subevent_code cannot be 0
+  EventHandlerId AddLEMetaEventHandler(hci_spec::EventCode le_meta_subevent_code,
                                        EventCallback event_callback);
 
   // Removes a previously registered event handler. Does nothing if an event handler with the given
@@ -203,7 +204,7 @@ class CommandChannel final {
   TransactionId SendExclusiveCommandInternal(
       std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code,
-      std::optional<hci_spec::EventCode> subevent_code = std::nullopt,
+      std::optional<hci_spec::EventCode> le_meta_subevent_code = std::nullopt,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
 
   // Data related to a queued or running command.
@@ -223,7 +224,7 @@ class CommandChannel final {
    public:
     TransactionData(TransactionId id, hci_spec::OpCode opcode,
                     hci_spec::EventCode complete_event_code,
-                    std::optional<hci_spec::EventCode> subevent_code,
+                    std::optional<hci_spec::EventCode> le_meta_subevent_code,
                     std::unordered_set<hci_spec::OpCode> exclusions, CommandCallback callback);
     ~TransactionData();
 
@@ -240,7 +241,9 @@ class CommandChannel final {
     EventCallback MakeCallback();
 
     hci_spec::EventCode complete_event_code() const { return complete_event_code_; }
-    std::optional<hci_spec::EventCode> subevent_code() const { return subevent_code_; }
+    std::optional<hci_spec::EventCode> le_meta_subevent_code() const {
+      return le_meta_subevent_code_;
+    }
     hci_spec::OpCode opcode() const { return opcode_; }
     TransactionId id() const { return id_; }
 
@@ -254,7 +257,7 @@ class CommandChannel final {
     TransactionId id_;
     hci_spec::OpCode opcode_;
     hci_spec::EventCode complete_event_code_;
-    std::optional<hci_spec::EventCode> subevent_code_;
+    std::optional<hci_spec::EventCode> le_meta_subevent_code_;
     std::unordered_set<hci_spec::OpCode> exclusions_;
     CommandCallback callback_;
     async::TaskClosure timeout_task_;
@@ -301,11 +304,12 @@ class CommandChannel final {
     bool is_async() const { return pending_opcode != hci_spec::kNoOp; }
   };
 
-  // Finds the event handler for |code|.  Returns nullptr if one doesn't exist.
+  // Finds the event handler for |code|. Returns nullptr if one doesn't exist.
   EventHandlerData* FindEventHandler(hci_spec::EventCode code);
 
-  // Finds the LE Meta Event handler for |subevent_code|.  Returns nullptr if one doesn't exist.
-  EventHandlerData* FindLEMetaEventHandler(hci_spec::EventCode subevent_code);
+  // Finds the LE Meta Event handler for |le_meta_subevent_code|. Returns nullptr if one doesn't
+  // exist.
+  EventHandlerData* FindLEMetaEventHandler(hci_spec::EventCode le_meta_subevent_code);
 
   // Removes internal event handler structures for |id|.
   void RemoveEventHandlerInternal(EventHandlerId id);
@@ -380,7 +384,7 @@ class CommandChannel final {
 
   // Mapping from LE Meta Event Subevent code to the event handlers that were registered to handle
   // that event code.
-  std::unordered_multimap<hci_spec::EventCode, EventHandlerId> subevent_code_handlers_;
+  std::unordered_multimap<hci_spec::EventCode, EventHandlerId> le_meta_subevent_code_handlers_;
 
   fxl::WeakPtrFactory<CommandChannel> weak_ptr_factory_;
 

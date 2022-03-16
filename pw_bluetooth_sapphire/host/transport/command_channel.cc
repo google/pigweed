@@ -32,15 +32,14 @@ CommandChannel::QueuedCommand::QueuedCommand(std::unique_ptr<CommandPacket> comm
   ZX_DEBUG_ASSERT(packet);
 }
 
-CommandChannel::TransactionData::TransactionData(TransactionId id, hci_spec::OpCode opcode,
-                                                 hci_spec::EventCode complete_event_code,
-                                                 std::optional<hci_spec::EventCode> subevent_code,
-                                                 std::unordered_set<hci_spec::OpCode> exclusions,
-                                                 CommandCallback callback)
+CommandChannel::TransactionData::TransactionData(
+    TransactionId id, hci_spec::OpCode opcode, hci_spec::EventCode complete_event_code,
+    std::optional<hci_spec::EventCode> le_meta_subevent_code,
+    std::unordered_set<hci_spec::OpCode> exclusions, CommandCallback callback)
     : id_(id),
       opcode_(opcode),
       complete_event_code_(complete_event_code),
-      subevent_code_(subevent_code),
+      le_meta_subevent_code_(le_meta_subevent_code),
       exclusions_(std::move(exclusions)),
       callback_(std::move(callback)),
       handler_id_(0u) {
@@ -156,7 +155,7 @@ void CommandChannel::ShutDown() {
   send_queue_ = std::list<QueuedCommand>();
   event_handler_id_map_.clear();
   event_code_handlers_.clear();
-  subevent_code_handlers_.clear();
+  le_meta_subevent_code_handlers_.clear();
   pending_transactions_.clear();
 }
 
@@ -192,7 +191,8 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-    const hci_spec::EventCode complete_event_code, std::optional<hci_spec::EventCode> subevent_code,
+    const hci_spec::EventCode complete_event_code,
+    std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
   if (!is_initialized_) {
     bt_log(DEBUG, "hci", "can't send commands while uninitialized");
@@ -200,15 +200,16 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   }
 
   ZX_ASSERT(command_packet);
-  ZX_ASSERT_MSG((complete_event_code == hci_spec::kLEMetaEventCode) == subevent_code.has_value(),
-                "only LE Meta Event subevents are supported");
+  ZX_ASSERT_MSG(
+      (complete_event_code == hci_spec::kLEMetaEventCode) == le_meta_subevent_code.has_value(),
+      "only LE Meta Event subevents are supported");
 
   if (IsAsync(complete_event_code)) {
     // Cannot send an asynchronous command if there's an external event handler registered for the
     // completion event.
     EventHandlerData* handler = nullptr;
-    if (subevent_code.has_value()) {
-      handler = FindLEMetaEventHandler(*subevent_code);
+    if (le_meta_subevent_code.has_value()) {
+      handler = FindLEMetaEventHandler(*le_meta_subevent_code);
     } else {
       handler = FindEventHandler(complete_event_code);
     }
@@ -224,9 +225,9 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   }
 
   TransactionId id = next_transaction_id_++;
-  auto data =
-      std::make_unique<TransactionData>(id, command_packet->opcode(), complete_event_code,
-                                        subevent_code, std::move(exclusions), std::move(callback));
+  auto data = std::make_unique<TransactionData>(id, command_packet->opcode(), complete_event_code,
+                                                le_meta_subevent_code, std::move(exclusions),
+                                                std::move(callback));
 
   QueuedCommand command(std::move(command_packet), std::move(data));
 
@@ -282,18 +283,18 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(hci_spec::EventCo
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
-    hci_spec::EventCode subevent_code, EventCallback event_callback) {
-  auto* handler = FindLEMetaEventHandler(subevent_code);
+    hci_spec::EventCode le_meta_subevent_code, EventCallback event_callback) {
+  auto* handler = FindLEMetaEventHandler(le_meta_subevent_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR, "hci",
            "async event handler %zu already registered for LE Meta Event subevent code %#.2x",
-           handler->id, subevent_code);
+           handler->id, le_meta_subevent_code);
     return 0u;
   }
 
-  auto id = NewEventHandler(subevent_code, /*is_le_meta=*/true, hci_spec::kNoOp,
+  auto id = NewEventHandler(le_meta_subevent_code, /*is_le_meta=*/true, hci_spec::kNoOp,
                             std::move(event_callback));
-  subevent_code_handlers_.emplace(subevent_code, id);
+  le_meta_subevent_code_handlers_.emplace(le_meta_subevent_code, id);
   return id;
 }
 
@@ -316,9 +317,9 @@ CommandChannel::EventHandlerData* CommandChannel::FindEventHandler(hci_spec::Eve
 }
 
 CommandChannel::EventHandlerData* CommandChannel::FindLEMetaEventHandler(
-    hci_spec::EventCode subevent_code) {
-  auto it = subevent_code_handlers_.find(subevent_code);
-  if (it == subevent_code_handlers_.end()) {
+    hci_spec::EventCode le_meta_subevent_code) {
+  auto it = le_meta_subevent_code_handlers_.find(le_meta_subevent_code);
+  if (it == le_meta_subevent_code_handlers_.end()) {
     return nullptr;
   }
   return &event_handler_id_map_[it->second];
@@ -332,7 +333,7 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId id) {
 
   if (iter->second.event_code != 0) {
     auto* event_handlers =
-        iter->second.is_le_meta_subevent ? &subevent_code_handlers_ : &event_code_handlers_;
+        iter->second.is_le_meta_subevent ? &le_meta_subevent_code_handlers_ : &event_code_handlers_;
 
     bt_log(TRACE, "hci", "removing handler for %sevent code %#.2x",
            (iter->second.is_le_meta_subevent ? "LE " : ""), iter->second.event_code);
@@ -380,7 +381,8 @@ void CommandChannel::TrySendQueuedCommands() {
 
     bool transaction_waiting_on_event = event_code_handlers_.count(data.complete_event_code());
     bool transaction_waiting_on_subevent =
-        data.subevent_code() && subevent_code_handlers_.count(*data.subevent_code());
+        data.le_meta_subevent_code() &&
+        le_meta_subevent_code_handlers_.count(*data.le_meta_subevent_code());
     bool waiting_for_other_transaction =
         transaction_waiting_on_event || transaction_waiting_on_subevent;
 
@@ -432,9 +434,10 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
     return;
   }
 
-  const bool is_le_meta = data->subevent_code().has_value();
-  auto* const code_handlers = is_le_meta ? &subevent_code_handlers_ : &event_code_handlers_;
-  const hci_spec::EventCode code = data->subevent_code().value_or(data->complete_event_code());
+  const bool is_le_meta = data->le_meta_subevent_code().has_value();
+  auto* const code_handlers = is_le_meta ? &le_meta_subevent_code_handlers_ : &event_code_handlers_;
+  const hci_spec::EventCode code =
+      data->le_meta_subevent_code().value_or(data->complete_event_code());
 
   // We already have a handler for this transaction, or another transaction
   // is already waiting and it will be queued.
@@ -548,7 +551,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   if (event->event_code() == hci_spec::kLEMetaEventCode) {
     is_le_event = true;
     event_code = event->params<hci_spec::LEMetaEventParams>().subevent_code;
-    event_handlers = &subevent_code_handlers_;
+    event_handlers = &le_meta_subevent_code_handlers_;
   } else {
     event_code = event->event_code();
     event_handlers = &event_code_handlers_;
