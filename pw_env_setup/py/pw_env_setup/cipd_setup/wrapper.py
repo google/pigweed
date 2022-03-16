@@ -133,6 +133,16 @@ def arch_normalized():
     raise Exception('unrecognized arch: {}'.format(machine))
 
 
+def platform_arch_normalized():
+    platform_arch = '{}-{}'.format(platform_normalized(), arch_normalized())
+
+    # Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
+    if platform_arch == 'mac-arm64':
+        platform_arch = 'mac-amd64'
+
+    return platform_arch
+
+
 def user_agent():
     """Generate a user-agent based on the project name and current hash."""
 
@@ -160,7 +170,7 @@ def actual_hash(path):
 def expected_hash():
     """Pulls expected hash from digests file."""
 
-    expected_plat = '{}-{}'.format(platform_normalized(), arch_normalized())
+    expected_plat = platform_arch_normalized()
 
     with open(DIGESTS_FILE, 'r') as ins:
         for line in ins:
@@ -223,7 +233,7 @@ brew uninstall python && brew install python
         print('=' * 70)
         raise
 
-    full_platform = '{}-{}'.format(platform_normalized(), arch_normalized())
+    full_platform = platform_arch_normalized()
     if full_platform not in SUPPORTED_PLATFORMS:
         raise UnsupportedPlatform(full_platform)
 
@@ -293,8 +303,8 @@ def bootstrap(client, silent=('PW_ENVSETUP_QUIET' in os.environ)):
         os.makedirs(client_dir)
 
     if not silent:
-        print('Bootstrapping cipd client for {}-{}'.format(
-            platform_normalized(), arch_normalized()))
+        print('Bootstrapping cipd client for {}'.format(
+            platform_arch_normalized()))
 
     tmp_path = client + '.tmp'
     with open(tmp_path, 'wb') as tmp:

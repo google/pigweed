@@ -46,6 +46,11 @@ if [ "$ARCH" = "x86_64" ]; then
   ARCH="amd64"
 fi
 
+# Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
+if [[ "$OS" = "mac" ] && [ "$ARCH" = "arm64" ]]; then
+  ARCH="amd64"
+fi
+
 for HASH in $(git --git-dir="$PW_ROOT/.git" --no-pager log --max-count=10 --format=format:%H); do
   URL="https://storage.googleapis.com/pigweed-envsetup/$OS-$ARCH"
   URL="$URL/$HASH/pw_env_setup"

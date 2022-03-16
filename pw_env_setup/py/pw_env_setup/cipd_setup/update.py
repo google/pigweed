@@ -134,7 +134,13 @@ def platform():
     else:
         arch = platform_module.machine()
 
-    return '{}-{}'.format(osname, arch).lower()
+    platform_arch = '{}-{}'.format(osname, arch).lower()
+
+    # Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
+    if platform_arch == 'mac-arm64':
+        return 'mac-amd64'
+
+    return platform_arch
 
 
 def all_package_files(env_vars, package_files):
