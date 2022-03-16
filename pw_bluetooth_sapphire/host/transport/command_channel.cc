@@ -115,13 +115,9 @@ fpromise::result<std::unique_ptr<CommandChannel>> CommandChannel::Create(
 }
 
 CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_channel)
-    : next_transaction_id_(1u),
-      next_event_handler_id_(1u),
-      transport_(transport),
+    : transport_(transport),
       channel_(std::move(hci_command_channel)),
       channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
-      is_initialized_(false),
-      allowed_command_packets_(1u),
       weak_ptr_factory_(this) {
   ZX_ASSERT(transport_);
   ZX_ASSERT(channel_.is_valid());
@@ -137,22 +133,13 @@ CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_cha
   is_initialized_ = true;
 }
 
-CommandChannel::~CommandChannel() {
-  // Do nothing. Since Transport is shared across threads, this can be called
-  // from any thread and calling ShutDown() would be unsafe.
-}
-
 void CommandChannel::ShutDown() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  if (!is_initialized_)
+  if (!is_initialized_) {
     return;
+  }
 
   bt_log(INFO, "hci", "shutting down");
-
-  ShutDownInternal();
-}
-
-void CommandChannel::ShutDownInternal() {
   bt_log(DEBUG, "hci", "removing I/O handler");
 
   // Prevent new command packets from being queued.
@@ -164,8 +151,8 @@ void CommandChannel::ShutDownInternal() {
     bt_log(WARN, "hci", "could not cancel wait on channel: %s", zx_status_get_string(status));
   }
 
-  // Drop all queued commands and event handlers. Pending HCI commands will be
-  // resolved with an "UnspecifiedError" error code upon destruction.
+  // Drop all queued commands and event handlers. Pending HCI commands will be resolved with an
+  // "UnspecifiedError" error code upon destruction.
   send_queue_ = std::list<QueuedCommand>();
   event_handler_id_map_.clear();
   event_code_handlers_.clear();
@@ -217,8 +204,8 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
                 "only LE Meta Event subevents are supported");
 
   if (IsAsync(complete_event_code)) {
-    // Cannot send an asynchronous command if there's an external event handler
-    // registered for the completion event.
+    // Cannot send an asynchronous command if there's an external event handler registered for the
+    // completion event.
     EventHandlerData* handler = nullptr;
     if (subevent_code.has_value()) {
       handler = FindLEMetaEventHandler(*subevent_code);
@@ -256,24 +243,21 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
 }
 
 bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
-  ZX_ASSERT(id != 0u);
-
   auto it = std::find_if(send_queue_.begin(), send_queue_.end(),
                          [id](const auto& cmd) { return cmd.data->id() == id; });
-  if (it != send_queue_.end()) {
-    bt_log(TRACE, "hci", "removing queued command id: %zu", id);
-    TransactionData& data = *it->data;
-    data.Cancel();
-    if (data.handler_id() != 0u) {
-      RemoveEventHandlerInternal(data.handler_id());
-    }
-    send_queue_.erase(it);
-    return true;
+  if (it == send_queue_.end()) {
+    // The transaction to remove has already finished or never existed.
+    bt_log(TRACE, "hci", "command to remove not found, id: %zu", id);
+    return false;
   }
 
-  // The transaction to remove has already finished or never existed.
-  bt_log(TRACE, "hci", "command to remove not found, id: %zu", id);
-  return false;
+  bt_log(TRACE, "hci", "removing queued command id: %zu", id);
+  TransactionData& data = *it->data;
+  data.Cancel();
+
+  RemoveEventHandlerInternal(data.handler_id());
+  send_queue_.erase(it);
+  return true;
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddEventHandler(hci_spec::EventCode event_code,
@@ -291,8 +275,8 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(hci_spec::EventCo
     return 0u;
   }
 
-  auto id = NewEventHandler(event_code, false /* is_le_meta */, hci_spec::kNoOp,
-                            std::move(event_callback));
+  auto id =
+      NewEventHandler(event_code, /*is_le_meta=*/false, hci_spec::kNoOp, std::move(event_callback));
   event_code_handlers_.emplace(event_code, id);
   return id;
 }
@@ -307,7 +291,7 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
     return 0u;
   }
 
-  auto id = NewEventHandler(subevent_code, true /* is_le_meta */, hci_spec::kNoOp,
+  auto id = NewEventHandler(subevent_code, /*is_le_meta=*/true, hci_spec::kNoOp,
                             std::move(event_callback));
   subevent_code_handlers_.emplace(subevent_code, id);
   return id;
@@ -365,8 +349,9 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId id) {
 }
 
 void CommandChannel::TrySendQueuedCommands() {
-  if (!is_initialized_)
+  if (!is_initialized_) {
     return;
+  }
 
   if (allowed_command_packets_ == 0) {
     bt_log(TRACE, "hci", "controller queue full, waiting");
@@ -399,10 +384,9 @@ void CommandChannel::TrySendQueuedCommands() {
     bool waiting_for_other_transaction =
         transaction_waiting_on_event || transaction_waiting_on_subevent;
 
-    // We can send this if we only expect one update, or if we aren't
-    // waiting for another transaction to complete on the same event.
-    // It is unlikely but possible to have commands with different opcodes
-    // wait on the same completion event.
+    // We can send this if we only expect one update, or if we aren't waiting for another
+    // transaction to complete on the same event. It is unlikely but possible to have commands with
+    // different opcodes wait on the same completion event.
     if (!IsAsync(data.complete_event_code()) || data.handler_id() != 0 ||
         !waiting_for_other_transaction) {
       bt_log(TRACE, "hci", "sending previously queued command id %zu", data.id());
@@ -416,7 +400,8 @@ void CommandChannel::TrySendQueuedCommands() {
 
 void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
   auto packet_bytes = cmd.packet->view().data();
-  zx_status_t status = channel_.write(0, packet_bytes.data(), packet_bytes.size(), nullptr, 0);
+  zx_status_t status = channel_.write(/*flags=*/0, packet_bytes.data(), packet_bytes.size(),
+                                      /*handles=*/nullptr, /*num_handles=*/0);
   if (status < 0) {
     // TODO(armansito): We should notify the |status_callback| of the pending
     // command with a special error code in this case.
@@ -498,9 +483,8 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 
   hci_spec::OpCode matching_opcode;
 
-  // The HCI Command Status event with an error status might indicate that an
-  // async command failed. We use this to unregister async command handlers
-  // below.
+  // The HCI Command Status event with an error status might indicate that an async command failed.
+  // We use this to unregister async command handlers below.
   bool unregister_async_handler = false;
 
   if (event->event_code() == hci_spec::kCommandCompleteEventCode) {
@@ -536,8 +520,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     return;
   }
 
-  // TODO(fxbug.dev/1109): Do not allow asynchronous commands to finish with Command
-  // Complete.
+  // TODO(fxbug.dev/1109): Do not allow asynchronous commands to finish with Command Complete.
   if (event_code == hci_spec::kCommandCompleteEventCode) {
     bt_log(WARN, "hci", "async command received CommandComplete");
     unregister_async_handler = true;
@@ -591,7 +574,6 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     EventCallback callback = handler.event_callback.share();
 
     ++iter;  // Advance so we don't point to an invalid iterator.
-
     if (handler.is_async()) {
       bt_log(TRACE, "hci", "removing completed async handler (id %zu, event code: %#.2x)", event_id,
              event_code);
@@ -602,8 +584,8 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     pending_callbacks.push_back({std::move(callback), event_id});
   }
 
-  // Process queue so callbacks can't add a handler if another queued command
-  // finishes on the same event.
+  // Process queue so callbacks can't add a handler if another queued command finishes on the same
+  // event.
   TrySendQueuedCommands();
 
   for (auto it = pending_callbacks.begin(); it != pending_callbacks.end(); ++it) {
@@ -618,15 +600,11 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       event->view().data().Copy(&buf);
     }
 
-    ExecuteEventCallback(std::move(it->callback), it->id, std::move(ev));
-  }
-}
-
-void CommandChannel::ExecuteEventCallback(EventCallback cb, EventHandlerId id,
-                                          std::unique_ptr<EventPacket> event) {
-  auto result = cb(*event);
-  if (result == EventCallbackResult::kRemove) {
-    RemoveEventHandler(id);
+    // execute the event callback
+    EventCallbackResult result = it->callback(*ev);
+    if (result == EventCallbackResult::kRemove) {
+      RemoveEventHandler(it->id);
+    }
   }
 }
 
@@ -641,24 +619,28 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
     return;
   }
 
-  // Allocate a buffer for the event. Since we don't know the size beforehand we
-  // allocate the largest possible buffer.
-  // TODO(armansito): We could first try to read into a small buffer and retry
-  // if the syscall returns ZX_ERR_BUFFER_TOO_SMALL. Not sure if the second
-  // syscall would be worth it but investigate.
-
+  // Allocate a buffer for the event. Since we don't know the size beforehand we allocate the
+  // largest possible buffer.
+  //
+  // TODO(armansito): We could first try to read into a small buffer and retry if the syscall
+  // returns ZX_ERR_BUFFER_TOO_SMALL. Not sure if the second syscall would be worth it but
+  // investigate.
   for (size_t count = 0; count < signal->count; count++) {
     auto packet = EventPacket::New(slab_allocators::kLargeControlPayloadSize);
     if (!packet) {
       bt_log(ERROR, "hci", "failed to allocate event packet!");
       return;
     }
+
     zx_status_t status = ReadEventPacketFromChannel(channel_, packet);
     if (status == ZX_ERR_INVALID_ARGS) {
       continue;
-    } else if (status != ZX_OK) {
+    }
+
+    if (status != ZX_OK) {
       return;
     }
+
     if (packet->event_code() == hci_spec::kCommandStatusEventCode ||
         packet->event_code() == hci_spec::kCommandCompleteEventCode) {
       UpdateTransaction(std::move(packet));
@@ -678,9 +660,10 @@ zx_status_t CommandChannel::ReadEventPacketFromChannel(const zx::channel& channe
                                                        const EventPacketPtr& packet) {
   uint32_t read_size;
   auto packet_bytes = packet->mutable_view()->mutable_data();
-  zx_status_t read_status = channel.read(0u, packet_bytes.mutable_data(), nullptr,
-                                         packet_bytes.size(), 0, &read_size, nullptr);
-  if (read_status < 0) {
+  zx_status_t read_status =
+      channel.read(/*flags=*/0u, packet_bytes.mutable_data(), /*handles=*/nullptr,
+                   packet_bytes.size(), /*num_handles=*/0, &read_size, /*actual_handles=*/nullptr);
+  if (read_status != ZX_OK) {
     bt_log(DEBUG, "hci", "Failed to read event bytes: %s", zx_status_get_string(read_status));
     // Clear the handler so that we stop receiving events from it.
     // TODO(jamuraa): signal upper layers that we can't read the channel.

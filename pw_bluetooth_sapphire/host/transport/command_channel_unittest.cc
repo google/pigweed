@@ -73,8 +73,8 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
   EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp);
   StartTestDevice();
 
-  // Send a HCI_Reset command. We attach an instance of TestCallbackObject to
-  // the callbacks to verify that it gets cleaned up as expected.
+  // Send a HCI_Reset command. We attach an instance of TestCallbackObject to the callbacks to
+  // verify that it gets cleaned up as expected.
   bool test_obj_deleted = false;
   auto test_obj =
       fbl::MakeRefCounted<TestCallbackObject>([&test_obj_deleted] { test_obj_deleted = true; });
@@ -435,8 +435,8 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
   // Should have received the Status but not the result.
   EXPECT_EQ(1u, cb_count);
 
-  // Setting another event up with different opcode will still queue the command
-  // because we don't want to have two commands waiting on an event.
+  // Setting another event up with different opcode will still queue the command because we don't
+  // want to have two commands waiting on an event.
   packet = CommandPacket::New(hci_spec::kInquiryCancel);
   id2 = cmd_channel()->SendCommand(std::move(packet), cb, kTestEventCode0);
   RunLoopUntilIdle();
@@ -449,8 +449,8 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
 
   EXPECT_EQ(3u, cb_count);
 
-  // Should not be able to register an event handler now, we're still waiting on
-  // the asynchronous command.
+  // Should not be able to register an event handler now, we're still waiting on the asynchronous
+  // command.
   auto event_id0 = cmd_channel()->AddEventHandler(
       kTestEventCode0, [](const auto&) { return EventCallbackResult::kContinue; });
   EXPECT_EQ(0u, event_id0);
@@ -554,8 +554,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
 
 // Tests:
 //  - Events are routed to the event handler.
-//  - Can't queue a command on the same event that is already in an event
-//  handler.
+//  - Can't queue a command on the same event that is already in an event handler.
 TEST_F(CommandChannelTest, EventHandlerBasic) {
   constexpr hci_spec::EventCode kTestEventCode0 = 0xFE;
   constexpr hci_spec::EventCode kTestEventCode1 = 0xFF;
@@ -685,9 +684,9 @@ TEST_F(CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   constexpr hci_spec::EventCode kTestEventCode = 0xFF;
   auto event = CreateStaticByteBuffer(kTestEventCode, 0x01, 0x00);
 
-  // We will send the HCI_Reset command with kTestEventCode as the completion
-  // event. The event handler we register below should only get invoked once and
-  // after the pending transaction completes.
+  // We will send the HCI_Reset command with kTestEventCode as the completion event. The event
+  // handler we register below should only get invoked once and after the pending transaction
+  // completes.
   EXPECT_CMD_PACKET_OUT(test_device(), req, &req_complete, &event, &event);
   StartTestDevice();
 
@@ -891,8 +890,8 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
   EXPECT_EQ(1, transaction_count);
   // The queued (then canceled) command should never have gotten an event.
   EXPECT_EQ(0, event_count1);
-  // The sent command should have gotten two events (Command Status, Read Remote
-  // Supported Features Complete).
+  // The sent command should have gotten two events (Command Status, Read Remote Supported Features
+  // Complete).
   EXPECT_EQ(2, event_count0);
 }
 
@@ -1082,8 +1081,8 @@ TEST_F(CommandChannelTest, LEMetaEventHandler) {
 }
 
 TEST_F(CommandChannelTest, EventHandlerIdsDontCollide) {
-  // Add a LE Meta event handler and a event handler and make sure that IDs are
-  // generated correctly across the two methods.
+  // Add a LE Meta event handler and a event handler and make sure that IDs are generated correctly
+  // across the two methods.
   EXPECT_EQ(1u, cmd_channel()->AddLEMetaEventHandler(
                     hci_spec::kLEConnectionCompleteSubeventCode,
                     [](const auto&) { return EventCallbackResult::kContinue; }));
@@ -1104,11 +1103,10 @@ TEST_F(CommandChannelTest, EventHandlerRestrictions) {
   EXPECT_EQ(0u, id0);
 }
 
-// Tests that an asynchronous command with a completion event code does not
-// remove an existing handler for colliding LE meta subevent code.
+// Tests that an asynchronous command with a completion event code does not remove an existing
+// handler for colliding LE meta subevent code.
 TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfere) {
-  // Set up expectations for the asynchronous command and its corresponding
-  // command status event.
+  // Set up expectations for the asynchronous command and its corresponding command status event.
   // clang-format off
   auto cmd = CreateStaticByteBuffer(
       LowerBits(hci_spec::kInquiry), UpperBits(hci_spec::kInquiry),  // HCI_Inquiry opcode
@@ -1138,8 +1136,8 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
   cmd_channel()->AddLEMetaEventHandler(hci_spec::kLEConnectionCompleteSubeventCode,
                                        std::move(le_event_cb));
 
-  // Initiate the async transaction with kTestEventCode as its completion code
-  // (we use hci_spec::kInquiry as a dummy opcode).
+  // Initiate the async transaction with kTestEventCode as its completion code (we use
+  // hci_spec::kInquiry as a dummy opcode).
   int async_cmd_cb_count = 0;
   auto async_cmd_cb = [&](auto id, const EventPacket& event) {
     if (async_cmd_cb_count == 0) {
@@ -1163,15 +1161,14 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
       kTestEventCode);
   // clang-format on
 
-  // Send a spurious LE event before processing the Command Status event. This
-  // should get routed to the correct event handler.
+  // Send a spurious LE event before processing the Command Status event. This should get routed to
+  // the correct event handler.
   test_device()->SendCommandChannelPacket(le_event_bytes);
 
   // Process the async command expectation.
   RunLoopUntilIdle();
 
-  // End the asynchronous transaction. This should NOT unregister the LE event
-  // handler.
+  // End the asynchronous transaction. This should NOT unregister the LE event handler.
   test_device()->SendCommandChannelPacket(event_bytes);
 
   // Send more LE events. These should get routed to the LE event handler.
@@ -1183,8 +1180,8 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
   // Should have received 3 LE events.
   EXPECT_EQ(3, le_event_count);
 
-  // The async command handler should have been called twice: once for Command
-  // Status and once for the completion event.
+  // The async command handler should have been called twice: once for Command Status and once for
+  // the completion event.
   EXPECT_EQ(2, async_cmd_cb_count);
 }
 
@@ -1208,8 +1205,7 @@ TEST_F(CommandChannelTest, CommandTimeoutCallback) {
                                           0x00                          // parameter_total_size
   );
 
-  // Expect the HCI_Reset command but dont send a reply back to make the command
-  // time out.
+  // Expect the HCI_Reset command but dont send a reply back to make the command time out.
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
   StartTestDevice();
 
@@ -1247,8 +1243,7 @@ TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {
                                           0x00                          // parameter_total_size
   );
 
-  // Expect the HCI_Reset command but dont send a reply back to make the command
-  // time out.
+  // Expect the HCI_Reset command but dont send a reply back to make the command time out.
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
   StartTestDevice();
 
@@ -1447,8 +1442,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
                      CommandChannel::TransactionId callback_id, const EventPacket& event) {
     // Expected event -> Action in response
     // 0. Status for kExclusiveOne -> Send a kExclusiveTwo
-    // 1. Complete for kExclusiveOne -> Send Another kExclusiveOne and
-    // kNonExclusive
+    // 1. Complete for kExclusiveOne -> Send Another kExclusiveOne and kNonExclusive
     // 2. Status for kExclusiveTwo -> Nothing
     // 3. Complete for kExclusiveTwo -> Nothing
     // 4. Status for kExclusiveOne -> Nothing
@@ -1557,10 +1551,8 @@ TEST_F(CommandChannelTest, SendCommandFailsIfEventHandlerInstalled) {
       kTestEventCode0, [](const EventPacket& event) { return EventCallbackResult::kContinue; });
   EXPECT_NE(0u, id0);
 
-  // Try to send a command for kTestEventCode0.
-  //
-  // SendCommand should fail for a code already registered with
-  // "AddEventHander".
+  // Try to send a command for kTestEventCode0. SendCommand should fail for a code already
+  // registered with "AddEventHandler".
   auto transaction_id = cmd_channel()->SendCommand(
       CommandPacket::New(hci_spec::kReset), [](auto, const auto&) {}, kTestEventCode0);
   EXPECT_EQ(0u, transaction_id);
@@ -1573,21 +1565,20 @@ TEST_F(CommandChannelTest, EventHandlerResults) {
   auto event_cb = [&event_count, kTestEventCode0](const EventPacket& event) {
     event_count++;
     EXPECT_EQ(kTestEventCode0, event.event_code());
+
     if (event_count == 1) {
       return EventCallbackResult::kContinue;
-    } else {
-      return EventCallbackResult::kRemove;
     }
+
+    return EventCallbackResult::kRemove;
   };
 
   EXPECT_NE(cmd_channel()->AddEventHandler(kTestEventCode0, event_cb), 0u);
 
   StartTestDevice();
 
-  // Send three requests, and process the callbacks immediately.
-  //
-  // The second callback returns "remove" before the third event callback has been
-  // called.
+  // Send three requests, and process the callbacks immediately. The second callback returns
+  // "remove" before the third event callback has been called.
   auto event0 = CreateStaticByteBuffer(kTestEventCode0, 0x00);
   test_device()->SendCommandChannelPacket(event0);
   test_device()->SendCommandChannelPacket(event0);
@@ -1678,8 +1669,8 @@ TEST_F(
 }
 
 TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFirstToComplete) {
-  // Commands have different op codes but same subevent code so that second command is not
-  // blocked because of matching op codes (which would not test LE command handling).
+  // Commands have different op codes but same subevent code so that second command is not blocked
+  // because of matching op codes (which would not test LE command handling).
   constexpr hci_spec::OpCode kOpCode0 = hci_spec::kLEReadRemoteFeatures;
   constexpr hci_spec::OpCode kOpCode1 = hci_spec::kLEReadBufferSize;
   constexpr hci_spec::EventCode kSubeventCode = hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode;
