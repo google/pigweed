@@ -19,7 +19,6 @@
 #include <type_traits>
 
 #include "pw_assert/assert.h"
-#include "pw_bytes/endian.h"
 #include "pw_protobuf/wire_format.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -309,13 +308,7 @@ class StreamDecoder {
   Result<float> ReadFloat() {
     static_assert(sizeof(float) == sizeof(uint32_t),
                   "Float and uint32_t must be the same size for protobufs");
-    float f;
-    if (Status status =
-            ReadFixedField(std::as_writable_bytes(std::span(&f, 1)));
-        !status.ok()) {
-      return status;
-    }
-    return f;
+    return ReadFixedField<float>();
   }
 
   // Reads repeated float values from the current position using packed
@@ -332,13 +325,7 @@ class StreamDecoder {
   Result<double> ReadDouble() {
     static_assert(sizeof(double) == sizeof(uint64_t),
                   "Double and uint64_t must be the same size for protobufs");
-    double d;
-    if (Status status =
-            ReadFixedField(std::as_writable_bytes(std::span(&d, 1)));
-        !status.ok()) {
-      return status;
-    }
-    return d;
+    return ReadFixedField<double>();
   }
 
   // Reads repeated double values from the current position using packed
@@ -592,15 +579,18 @@ class StreamDecoder {
 
   template <typename T>
   Result<T> ReadFixedField() {
-    static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, uint64_t>,
-                  "Protobuf fixed-size fields must be 32- or 64-bit");
+    static_assert(
+        sizeof(T) == sizeof(uint32_t) || sizeof(T) == sizeof(uint64_t),
+        "Protobuf fixed-size fields must be 32- or 64-bit");
 
-    std::array<std::byte, sizeof(T)> buffer;
-    if (Status status = ReadFixedField(std::span(buffer)); !status.ok()) {
+    T result;
+    if (Status status =
+            ReadFixedField(std::as_writable_bytes(std::span(&result, 1)));
+        !status.ok()) {
       return status;
     }
 
-    return bytes::ReadInOrder<T>(std::endian::little, buffer);
+    return result;
   }
 
   StatusWithSize ReadDelimitedField(std::span<std::byte> out);
