@@ -221,19 +221,19 @@ TEST(PacketTest, LEEventParams) {
   // should return nullptr.
   packet->mutable_view()->mutable_data().Write(correct_size_bad_event_code);
   packet->InitializeFromBuffer();
-  EXPECT_EQ(nullptr, packet->le_event_params<TestPayload>());
+  EXPECT_EQ(nullptr, packet->subevent_params<TestPayload>());
 
   packet->mutable_view()->mutable_data().Write(payload_too_small);
   packet->InitializeFromBuffer();
-  EXPECT_EQ(nullptr, packet->le_event_params<TestPayload>());
+  EXPECT_EQ(nullptr, packet->subevent_params<TestPayload>());
 
   // Valid case
   packet->mutable_view()->Resize(valid.size());
   packet->mutable_view()->mutable_data().Write(valid);
   packet->InitializeFromBuffer();
 
-  EXPECT_NE(nullptr, packet->le_event_params<TestPayload>());
-  EXPECT_EQ(127, packet->le_event_params<TestPayload>()->foo);
+  EXPECT_NE(nullptr, packet->subevent_params<TestPayload>());
+  EXPECT_EQ(127, packet->subevent_params<TestPayload>()->foo);
 }
 
 TEST(PacketTest, ACLDataPacketFromFields) {

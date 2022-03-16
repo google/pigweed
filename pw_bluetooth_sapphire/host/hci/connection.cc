@@ -524,7 +524,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
   ZX_DEBUG_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
                   hci_spec::kLELongTermKeyRequestSubeventCode);
 
-  auto* params = event.le_event_params<hci_spec::LELongTermKeyRequestSubeventParams>();
+  auto* params = event.subevent_params<hci_spec::LELongTermKeyRequestSubeventParams>();
   if (!params) {
     bt_log(WARN, "hci", "malformed LE LTK request event");
     return CommandChannel::EventCallbackResult::kContinue;

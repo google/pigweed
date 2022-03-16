@@ -381,7 +381,7 @@ CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSe
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto params = event.le_event_params<hci_spec::LEAdvertisingSetTerminatedSubeventParams>();
+  auto params = event.subevent_params<hci_spec::LEAdvertisingSetTerminatedSubeventParams>();
   ZX_ASSERT(params);
 
   hci_spec::ConnectionHandle connection_handle = params->connection_handle;

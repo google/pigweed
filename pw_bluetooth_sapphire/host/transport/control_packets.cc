@@ -73,7 +73,7 @@ bool StatusCodeFromSubevent(const EventPacket& event, hci_spec::StatusCode* out_
   if (event.view().payload_size() < sizeof(hci_spec::LEMetaEventParams) + sizeof(T))
     return false;
 
-  *out_code = event.le_event_params<T>()->status;
+  *out_code = event.subevent_params<T>()->status;
   return true;
 }
 

@@ -82,7 +82,7 @@ class Packet<hci_spec::EventHeader> : public PacketBase<hci_spec::EventHeader, E
   // would exceed the bounds of the packet or if this packet does not represent
   // a LE Meta Event, this method returns nullptr.
   template <typename SubeventParams>
-  const SubeventParams* le_event_params() const {
+  const SubeventParams* subevent_params() const {
     if (event_code() != hci_spec::kLEMetaEventCode ||
         sizeof(SubeventParams) > view().payload_size() - sizeof(hci_spec::LEMetaEventParams))
       return nullptr;

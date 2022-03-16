@@ -417,7 +417,7 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
   ZX_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
             hci_spec::kLEConnectionUpdateCompleteSubeventCode);
 
-  auto payload = event.le_event_params<hci_spec::LEConnectionUpdateCompleteSubeventParams>();
+  auto payload = event.subevent_params<hci_spec::LEConnectionUpdateCompleteSubeventParams>();
   ZX_ASSERT(payload);
   hci_spec::ConnectionHandle handle = le16toh(payload->connection_handle);
 

@@ -189,7 +189,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   ZX_DEBUG_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
                   hci_spec::kLEConnectionCompleteSubeventCode);
 
-  auto params = event.le_event_params<hci_spec::LEConnectionCompleteSubeventParams>();
+  auto params = event.subevent_params<hci_spec::LEConnectionCompleteSubeventParams>();
   ZX_ASSERT(params);
 
   // First check if this event is related to the currently pending request.

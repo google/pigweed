@@ -64,7 +64,7 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
            bt_str(interrogation->peer_id()));
 
     const auto* params =
-        event.le_event_params<hci_spec::LEReadRemoteFeaturesCompleteSubeventParams>();
+        event.subevent_params<hci_spec::LEReadRemoteFeaturesCompleteSubeventParams>();
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {

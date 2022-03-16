@@ -16,7 +16,7 @@ AdvertisingReportParser::AdvertisingReportParser(const EventPacket& event)
   const auto& params = event.params<hci_spec::LEMetaEventParams>();
   ZX_DEBUG_ASSERT(params.subevent_code == hci_spec::kLEAdvertisingReportSubeventCode);
 
-  auto subevent_params = event.le_event_params<hci_spec::LEAdvertisingReportSubeventParams>();
+  auto subevent_params = event.subevent_params<hci_spec::LEAdvertisingReportSubeventParams>();
 
   remaining_reports_ = subevent_params->num_reports;
   remaining_bytes_ = event.view().payload_size() - sizeof(hci_spec::LEMetaEventParams) -
