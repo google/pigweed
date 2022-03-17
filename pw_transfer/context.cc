@@ -561,6 +561,35 @@ void Context::HandleReceivedData(const Chunk& chunk) {
   offset_ += chunk.data.size();
   pending_bytes_ -= chunk.data.size();
 
+  if (chunk.window_end_offset != 0) {
+    if (chunk.window_end_offset < offset_) {
+      PW_LOG_ERROR(
+          "Transfer %u got invalid end offset of %u (current offset %u)",
+          id_for_log(),
+          static_cast<unsigned>(chunk.window_end_offset),
+          static_cast<unsigned>(offset_));
+      Finish(Status::Internal());
+      return;
+    }
+
+    if (chunk.window_end_offset > window_end_offset_) {
+      // A transmitter should never send a larger end offset than what the
+      // receiver has advertised. If this occurs, there is a bug in the
+      // transmitter implementation. Terminate the transfer.
+      PW_LOG_ERROR(
+          "Transfer %u transmitter sent invalid end offset of %u, "
+          "greater than receiver offset %u",
+          id_for_log(),
+          static_cast<unsigned>(chunk.window_end_offset),
+          static_cast<unsigned>(window_end_offset_));
+      Finish(Status::Internal());
+      return;
+    }
+
+    window_end_offset_ = chunk.window_end_offset;
+    pending_bytes_ = chunk.window_end_offset - offset_;
+  }
+
   SetTimeout(chunk_timeout_);
 
   if (pending_bytes_ == 0u) {

@@ -304,7 +304,7 @@ export class ReadTransfer extends Transfer {
 
     if (chunk.hasRemainingBytes()) {
       if (chunk.getRemainingBytes() === 0) {
-        // No more data to read. Aknowledge receipt and finish.
+        // No more data to read. Acknowledge receipt and finish.
         const endChunk = new Chunk();
         endChunk.setTransferId(this.id);
         endChunk.setStatus(Status.OK);
@@ -321,6 +321,35 @@ export class ReadTransfer extends Transfer {
       if (this.remainingTransferSize <= 0) {
         this.remainingTransferSize = undefined;
       }
+    }
+
+    if (chunk.getWindowEndOffset() !== 0) {
+      if (chunk.getWindowEndOffset() < this.offset) {
+        console.error(
+          `Transfer ${
+            this.id
+          }: transmitter sent invalid earlier end offset ${chunk.getWindowEndOffset()} (receiver offset ${
+            this.offset
+          })`
+        );
+        this.sendError(Status.INTERNAL);
+        return;
+      }
+
+      if (chunk.getWindowEndOffset() < this.offset) {
+        console.error(
+          `Transfer ${
+            this.id
+          }: transmitter sent invalid later end offset ${chunk.getWindowEndOffset()} (receiver end offset ${
+            this.windowEndOffset
+          })`
+        );
+        this.sendError(Status.INTERNAL);
+        return;
+      }
+
+      this.windowEndOffset = chunk.getWindowEndOffset();
+      this.pendingBytes -= chunk.getWindowEndOffset() - this.offset;
     }
 
     const remainingWindowSize = this.windowEndOffset - this.offset;

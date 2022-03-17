@@ -442,6 +442,26 @@ class ReadTransfer(Transfer):
             self._remaining_transfer_size + self._offset)
         self._update_progress(self._offset, self._offset, total_size)
 
+        if chunk.window_end_offset != 0:
+            if chunk.window_end_offset < self._offset:
+                _LOG.error(
+                    'Transfer %d: transmitter sent invalid earlier end offset '
+                    '%d (receiver offset %d)', self.id,
+                    chunk.window_end_offset, self._offset)
+                self._send_error(Status.INTERNAL)
+                return
+
+            if chunk.window_end_offset > self._window_end_offset:
+                _LOG.error(
+                    'Transfer %d: transmitter sent invalid later end offset '
+                    '%d (receiver end offset %d)', self.id,
+                    chunk.window_end_offset, self._window_end_offset)
+                self._send_error(Status.INTERNAL)
+                return
+
+            self._window_end_offset = chunk.window_end_offset
+            self._pending_bytes -= chunk.window_end_offset - self._offset
+
         remaining_window_size = self._window_end_offset - self._offset
         extend_window = (remaining_window_size <= self._max_bytes_to_receive /
                          ReadTransfer.EXTEND_WINDOW_DIVISOR)

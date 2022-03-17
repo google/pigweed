@@ -1024,6 +1024,63 @@ class WriteTransferMaxBytes16 : public WriteTransfer {
   WriteTransferMaxBytes16() : WriteTransfer(/*max_bytes_to_receive=*/16) {}
 };
 
+TEST_F(WriteTransfer, TransmitterReducesWindow) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler_.prepare_write_called);
+  EXPECT_FALSE(handler_.finalize_write_called);
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.window_end_offset, 32u);
+
+  // Send only 12 bytes and set that as the new end offset.
+  ctx_.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
+                                         .window_end_offset = 12,
+                                         .offset = 0,
+                                         .data = std::span(kData).first(12)}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+
+  // Receiver should respond immediately with a retransmit chunk as the end of
+  // the window has been reached.
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.offset, 12u);
+  EXPECT_EQ(chunk.window_end_offset, 32u);
+  EXPECT_EQ(chunk.type, Chunk::Type::kParametersRetransmit);
+}
+
+TEST_F(WriteTransfer, TransmitterExtendsWindow_TerminatesWithInvalid) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler_.prepare_write_called);
+  EXPECT_FALSE(handler_.finalize_write_called);
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.window_end_offset, 32u);
+
+  // Send only 12 bytes and set that as the new end offset.
+  ctx_.SendClientStream<64>(
+      EncodeChunk({.transfer_id = 7,
+                   // Larger window end offset than the receiver's.
+                   .window_end_offset = 48,
+                   .offset = 0,
+                   .data = std::span(kData).first(16)}));
+  transfer_thread_.WaitUntilEventIsProcessed();
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), Status::Internal());
+}
+
 TEST_F(WriteTransferMaxBytes16, MultipleParameters) {
   ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
   transfer_thread_.WaitUntilEventIsProcessed();

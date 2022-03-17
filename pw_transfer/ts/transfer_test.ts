@@ -400,7 +400,9 @@ describe('Encoder', () => {
     ]);
 
     await manager.write(4, textEncoder.encode('hello this is a message'));
-    expect(receivedData()).toEqual(textEncoder.encode('hello this is a message'));
+    expect(receivedData()).toEqual(
+      textEncoder.encode('hello this is a message')
+    );
     expect(sentChunks[1].getData()).toEqual(textEncoder.encode('hell'));
     expect(sentChunks[2].getData()).toEqual(textEncoder.encode('o th'));
     expect(sentChunks[3].getData()).toEqual(textEncoder.encode('is i'));
