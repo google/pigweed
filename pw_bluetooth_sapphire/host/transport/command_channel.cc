@@ -38,17 +38,17 @@ CommandChannel::QueuedCommand::QueuedCommand(std::unique_ptr<CommandPacket> comm
 }
 
 CommandChannel::TransactionData::TransactionData(
-    TransactionId id, hci_spec::OpCode opcode, hci_spec::EventCode complete_event_code,
+    TransactionId transaction_id, hci_spec::OpCode opcode, hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions, CommandCallback callback)
-    : id_(id),
+    : transaction_id_(transaction_id),
       opcode_(opcode),
       complete_event_code_(complete_event_code),
       le_meta_subevent_code_(le_meta_subevent_code),
       exclusions_(std::move(exclusions)),
       callback_(std::move(callback)),
       handler_id_(0u) {
-  ZX_DEBUG_ASSERT(id != 0u);
+  ZX_DEBUG_ASSERT(transaction_id != 0u);
   exclusions_.insert(opcode_);
 }
 
@@ -57,7 +57,7 @@ CommandChannel::TransactionData::~TransactionData() {
     return;
   }
 
-  bt_log(DEBUG, "hci", "sending kUnspecifiedError for unfinished transaction %zu", id_);
+  bt_log(DEBUG, "hci", "sending kUnspecifiedError for unfinished transaction %zu", transaction_id_);
   std::unique_ptr<EventPacket> event = EventPacket::New(sizeof(hci_spec::CommandStatusEventParams));
   // Init buffer to prevent stale data in buffer.
   event->mutable_view()->mutable_data().SetToZeros();
@@ -90,9 +90,10 @@ void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> even
   if (!callback_) {
     return;
   }
-  async::PostTask(async_get_default_dispatcher(),
-                  [event = std::move(event), callback = std::move(callback_),
-                   transaction_id = id_]() mutable { callback(transaction_id, *event); });
+  async::PostTask(
+      async_get_default_dispatcher(),
+      [event = std::move(event), callback = std::move(callback_),
+       transaction_id = transaction_id_]() mutable { callback(transaction_id, *event); });
   callback_ = nullptr;
 }
 
@@ -102,8 +103,8 @@ void CommandChannel::TransactionData::Cancel() {
 }
 
 CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
-  return [id = id_, cb = callback_.share()](const EventPacket& event) {
-    cb(id, event);
+  return [transaction_id = transaction_id_, cb = callback_.share()](const EventPacket& event) {
+    cb(transaction_id, event);
     return EventCallbackResult::kContinue;
   };
 }
@@ -230,9 +231,9 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     next_transaction_id_++;
   }
 
-  TransactionId id = next_transaction_id_++;
+  TransactionId transaction_id = next_transaction_id_++;
   std::unique_ptr<CommandChannel::TransactionData> data = std::make_unique<TransactionData>(
-      id, command_packet->opcode(), complete_event_code, le_meta_subevent_code,
+      transaction_id, command_packet->opcode(), complete_event_code, le_meta_subevent_code,
       std::move(exclusions), std::move(callback));
 
   QueuedCommand command(std::move(command_packet), std::move(data));
@@ -246,19 +247,20 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   async::PostTask(async_get_default_dispatcher(),
                   std::bind(&CommandChannel::TrySendQueuedCommands, this));
 
-  return id;
+  return transaction_id;
 }
 
-bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
-  auto it = std::find_if(send_queue_.begin(), send_queue_.end(),
-                         [id](const QueuedCommand& cmd) { return cmd.data->id() == id; });
+bool CommandChannel::RemoveQueuedCommand(TransactionId transaction_id) {
+  auto it = std::find_if(
+      send_queue_.begin(), send_queue_.end(),
+      [transaction_id](const QueuedCommand& cmd) { return cmd.data->id() == transaction_id; });
   if (it == send_queue_.end()) {
     // The transaction to remove has already finished or never existed.
-    bt_log(TRACE, "hci", "command to remove not found, id: %zu", id);
+    bt_log(TRACE, "hci", "command to remove not found, id: %zu", transaction_id);
     return false;
   }
 
-  bt_log(TRACE, "hci", "removing queued command id: %zu", id);
+  bt_log(TRACE, "hci", "removing queued command id: %zu", transaction_id);
   TransactionData& data = *it->data;
   data.Cancel();
 
@@ -278,14 +280,14 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(hci_spec::EventCo
   EventHandlerData* handler = FindEventHandler(event_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR, "hci", "async event handler %zu already registered for event code %#.2x",
-           handler->id, event_code);
+           handler->handler_id, event_code);
     return 0u;
   }
 
-  EventHandlerId id =
+  EventHandlerId handler_id =
       NewEventHandler(event_code, EventType::kHciEvent, hci_spec::kNoOp, std::move(event_callback));
-  event_code_handlers_.emplace(event_code, id);
-  return id;
+  event_code_handlers_.emplace(event_code, handler_id);
+  return handler_id;
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
@@ -294,24 +296,24 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
   if (handler && handler->is_async()) {
     bt_log(ERROR, "hci",
            "async event handler %zu already registered for LE Meta Event subevent code %#.2x",
-           handler->id, le_meta_subevent_code);
+           handler->handler_id, le_meta_subevent_code);
     return 0u;
   }
 
-  EventHandlerId id = NewEventHandler(le_meta_subevent_code, EventType::kLEMetaEvent,
-                                      hci_spec::kNoOp, std::move(event_callback));
-  le_meta_subevent_code_handlers_.emplace(le_meta_subevent_code, id);
-  return id;
+  EventHandlerId handler_id = NewEventHandler(le_meta_subevent_code, EventType::kLEMetaEvent,
+                                              hci_spec::kNoOp, std::move(event_callback));
+  le_meta_subevent_code_handlers_.emplace(le_meta_subevent_code, handler_id);
+  return handler_id;
 }
 
-void CommandChannel::RemoveEventHandler(EventHandlerId id) {
+void CommandChannel::RemoveEventHandler(EventHandlerId handler_id) {
   // If the ID doesn't exist or it is internal. it can't be removed.
-  auto iter = event_handler_id_map_.find(id);
+  auto iter = event_handler_id_map_.find(handler_id);
   if (iter == event_handler_id_map_.end() || iter->second.is_async()) {
     return;
   }
 
-  RemoveEventHandlerInternal(id);
+  RemoveEventHandlerInternal(handler_id);
 }
 
 CommandChannel::EventHandlerData* CommandChannel::FindEventHandler(hci_spec::EventCode code) {
@@ -331,8 +333,8 @@ CommandChannel::EventHandlerData* CommandChannel::FindLEMetaEventHandler(
   return &event_handler_id_map_[it->second];
 }
 
-void CommandChannel::RemoveEventHandlerInternal(EventHandlerId id) {
-  auto iter = event_handler_id_map_.find(id);
+void CommandChannel::RemoveEventHandlerInternal(EventHandlerId handler_id) {
+  auto iter = event_handler_id_map_.find(handler_id);
   if (iter == event_handler_id_map_.end()) {
     return;
   }
@@ -352,7 +354,7 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId id) {
 
   auto range = handlers->equal_range(iter->second.event_code);
   for (auto it = range.first; it != range.second; ++it) {
-    if (it->second == id) {
+    if (it->second == handler_id) {
       it = handlers->erase(it);
       break;
     }
@@ -427,8 +429,8 @@ void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
   std::unique_ptr<TransactionData>& transaction = cmd.data;
 
   transaction->Start(
-      [this, id = cmd.data->id()] {
-        bt_log(ERROR, "hci", "command %zu timed out, notifying error", id);
+      [this, transaction_id = cmd.data->id()] {
+        bt_log(ERROR, "hci", "command %zu timed out, notifying error", transaction_id);
         if (channel_timeout_cb_) {
           channel_timeout_cb_();
         }
@@ -467,12 +469,13 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
     return;
   }
 
-  EventHandlerId id = NewEventHandler(code, event_type, data->opcode(), data->MakeCallback());
+  EventHandlerId handler_id =
+      NewEventHandler(code, event_type, data->opcode(), data->MakeCallback());
 
-  ZX_ASSERT(id != 0u);
-  data->set_handler_id(id);
-  handlers->emplace(code, id);
-  bt_log(TRACE, "hci", "async command %zu assigned handler %zu", data->id(), id);
+  ZX_ASSERT(handler_id != 0u);
+  data->set_handler_id(handler_id);
+  handlers->emplace(code, handler_id);
+  bt_log(TRACE, "hci", "async command %zu assigned handler %zu", data->id(), handler_id);
 }
 
 CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCode event_code,
@@ -482,20 +485,20 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCo
   ZX_DEBUG_ASSERT(event_code);
   ZX_DEBUG_ASSERT(event_callback);
 
-  size_t id = next_event_handler_id_++;
+  size_t handler_id = next_event_handler_id_++;
   EventHandlerData data;
-  data.id = id;
+  data.handler_id = handler_id;
   data.event_code = event_code;
   data.event_type = event_type;
   data.pending_opcode = pending_opcode;
   data.event_callback = std::move(event_callback);
 
-  bt_log(TRACE, "hci", "adding event handler %zu for %s event code %#.2x", id,
+  bt_log(TRACE, "hci", "adding event handler %zu for %s event code %#.2x", handler_id,
          EventTypeToString(event_type).c_str(), event_code);
-  ZX_DEBUG_ASSERT(event_handler_id_map_.find(id) == event_handler_id_map_.end());
-  event_handler_id_map_[id] = std::move(data);
+  ZX_DEBUG_ASSERT(event_handler_id_map_.find(handler_id) == event_handler_id_map_.end());
+  event_handler_id_map_[handler_id] = std::move(data);
 
-  return id;
+  return handler_id;
 }
 
 void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
@@ -562,7 +565,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   struct PendingCallback {
     EventCallback callback;
-    EventHandlerId id;
+    EventHandlerId handler_id;
   };
   std::vector<PendingCallback> pending_callbacks;
 
@@ -629,7 +632,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     // execute the event callback
     EventCallbackResult result = it->callback(*ev);
     if (result == EventCallbackResult::kRemove) {
-      RemoveEventHandler(it->id);
+      RemoveEventHandler(it->handler_id);
     }
   }
 }

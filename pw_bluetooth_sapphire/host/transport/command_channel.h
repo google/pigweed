@@ -251,7 +251,7 @@ class CommandChannel final {
       return le_meta_subevent_code_;
     }
     hci_spec::OpCode opcode() const { return opcode_; }
-    TransactionId id() const { return id_; }
+    TransactionId id() const { return transaction_id_; }
 
     // The set of opcodes in progress that will hold this transaction in queue.
     const std::unordered_set<hci_spec::OpCode>& exclusions() const { return exclusions_; }
@@ -260,7 +260,7 @@ class CommandChannel final {
     void set_handler_id(EventHandlerId id) { handler_id_ = id; }
 
    private:
-    TransactionId id_;
+    TransactionId transaction_id_;
     hci_spec::OpCode opcode_;
     hci_spec::EventCode complete_event_code_;
     std::optional<hci_spec::EventCode> le_meta_subevent_code_;
@@ -294,7 +294,7 @@ class CommandChannel final {
 
   // Data stored for each event handler registered.
   struct EventHandlerData {
-    EventHandlerId id;
+    EventHandlerId handler_id;
     hci_spec::EventCode event_code;
 
     // Defines how event_code should be interpreted. For example, if the event_type is kLEMetaEvent,
