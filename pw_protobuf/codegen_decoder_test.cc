@@ -121,11 +121,13 @@ TEST(Codegen, StreamDecoder) {
   Pigweed::StreamDecoder pigweed(reader);
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::MAGIC_NUMBER);
   Result<uint32_t> magic_number = pigweed.ReadMagicNumber();
   EXPECT_EQ(magic_number.status(), OkStatus());
   EXPECT_EQ(magic_number.value(), 0x49u);
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::ZIGGY);
   Result<int32_t> ziggy = pigweed.ReadZiggy();
   EXPECT_EQ(ziggy.status(), OkStatus());
   EXPECT_EQ(ziggy.value(), -111);
@@ -133,6 +135,7 @@ TEST(Codegen, StreamDecoder) {
   constexpr std::string_view kExpectedErrorMessage{"not a typewriter"};
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::ERROR_MESSAGE);
   std::array<char, 32> error_message{};
   StatusWithSize error_message_status = pigweed.ReadErrorMessage(error_message);
   EXPECT_EQ(error_message_status.status(), OkStatus());
@@ -143,16 +146,20 @@ TEST(Codegen, StreamDecoder) {
             0);
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::BIN);
   Result<Pigweed::Protobuf::Binary> bin = pigweed.ReadBin();
   EXPECT_EQ(bin.status(), OkStatus());
   EXPECT_EQ(bin.value(), Pigweed::Protobuf::Binary::ZERO);
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::PIGWEED);
   {
     Pigweed::Pigweed::StreamDecoder pigweed_pigweed =
         pigweed.GetPigweedDecoder();
 
     EXPECT_EQ(pigweed_pigweed.Next(), OkStatus());
+    EXPECT_EQ(pigweed_pigweed.Field().value(),
+              Pigweed::Pigweed::Fields::STATUS);
     Result<Bool> pigweed_status = pigweed_pigweed.ReadStatus();
     EXPECT_EQ(pigweed_status.status(), OkStatus());
     EXPECT_EQ(pigweed_status.value(), Bool::FILE_NOT_FOUND);
@@ -161,33 +168,40 @@ TEST(Codegen, StreamDecoder) {
   }
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::PROTO);
   {
     Proto::StreamDecoder proto = pigweed.GetProtoDecoder();
 
     EXPECT_EQ(proto.Next(), OkStatus());
+    EXPECT_EQ(proto.Field().value(), Proto::Fields::BIN);
     Result<Proto::Binary> proto_bin = proto.ReadBin();
     EXPECT_EQ(proto_bin.status(), OkStatus());
     EXPECT_EQ(proto_bin.value(), Proto::Binary::OFF);
 
     EXPECT_EQ(proto.Next(), OkStatus());
+    EXPECT_EQ(proto.Field().value(), Proto::Fields::PIGWEED_PIGWEED_BIN);
     Result<Pigweed::Pigweed::Binary> proto_pigweed_bin =
         proto.ReadPigweedPigweedBin();
     EXPECT_EQ(proto_pigweed_bin.status(), OkStatus());
     EXPECT_EQ(proto_pigweed_bin.value(), Pigweed::Pigweed::Binary::ZERO);
 
     EXPECT_EQ(proto.Next(), OkStatus());
+    EXPECT_EQ(proto.Field().value(), Proto::Fields::PIGWEED_PROTOBUF_BIN);
     Result<Pigweed::Protobuf::Binary> proto_protobuf_bin =
         proto.ReadPigweedProtobufBin();
     EXPECT_EQ(proto_protobuf_bin.status(), OkStatus());
     EXPECT_EQ(proto_protobuf_bin.value(), Pigweed::Protobuf::Binary::ZERO);
 
     EXPECT_EQ(proto.Next(), OkStatus());
+    EXPECT_EQ(proto.Field().value(), Proto::Fields::META);
     {
       Pigweed::Protobuf::Compiler::StreamDecoder meta = proto.GetMetaDecoder();
 
       constexpr std::string_view kExpectedFileName{"/etc/passwd"};
 
       EXPECT_EQ(meta.Next(), OkStatus());
+      EXPECT_EQ(meta.Field().value(),
+                Pigweed::Protobuf::Compiler::Fields::FILE_NAME);
       std::array<char, 32> meta_file_name{};
       StatusWithSize meta_file_name_status = meta.ReadFileName(meta_file_name);
       EXPECT_EQ(meta_file_name_status.status(), OkStatus());
@@ -198,6 +212,8 @@ TEST(Codegen, StreamDecoder) {
                 0);
 
       EXPECT_EQ(meta.Next(), OkStatus());
+      EXPECT_EQ(meta.Field().value(),
+                Pigweed::Protobuf::Compiler::Fields::STATUS);
       Result<Pigweed::Protobuf::Compiler::Status> meta_status =
           meta.ReadStatus();
       EXPECT_EQ(meta_status.status(), OkStatus());
@@ -208,12 +224,14 @@ TEST(Codegen, StreamDecoder) {
     }
 
     EXPECT_EQ(proto.Next(), OkStatus());
+    EXPECT_EQ(proto.Field().value(), Proto::Fields::PIGWEED);
     {
       Pigweed::StreamDecoder proto_pigweed = proto.GetPigweedDecoder();
 
       constexpr std::string_view kExpectedProtoErrorMessage{"here we go again"};
 
       EXPECT_EQ(proto_pigweed.Next(), OkStatus());
+      EXPECT_EQ(proto_pigweed.Field().value(), Pigweed::Fields::ERROR_MESSAGE);
       std::array<char, 32> proto_pigweed_error_message{};
       StatusWithSize proto_pigweed_error_message_status =
           proto_pigweed.ReadErrorMessage(proto_pigweed_error_message);
@@ -226,17 +244,20 @@ TEST(Codegen, StreamDecoder) {
                 0);
 
       EXPECT_EQ(proto_pigweed.Next(), OkStatus());
+      EXPECT_EQ(proto_pigweed.Field().value(), Pigweed::Fields::MAGIC_NUMBER);
       Result<uint32_t> proto_pigweed_magic_number =
           proto_pigweed.ReadMagicNumber();
       EXPECT_EQ(proto_pigweed_magic_number.status(), OkStatus());
       EXPECT_EQ(proto_pigweed_magic_number.value(), 616u);
 
       EXPECT_EQ(proto_pigweed.Next(), OkStatus());
+      EXPECT_EQ(proto_pigweed.Field().value(), Pigweed::Fields::DEVICE_INFO);
       {
         DeviceInfo::StreamDecoder device_info =
             proto_pigweed.GetDeviceInfoDecoder();
 
         EXPECT_EQ(device_info.Next(), OkStatus());
+        EXPECT_EQ(device_info.Field().value(), DeviceInfo::Fields::ATTRIBUTES);
         {
           KeyValuePair::StreamDecoder key_value_pair =
               device_info.GetAttributesDecoder();
@@ -245,6 +266,7 @@ TEST(Codegen, StreamDecoder) {
           constexpr std::string_view kExpectedValue{"5.3.1"};
 
           EXPECT_EQ(key_value_pair.Next(), OkStatus());
+          EXPECT_EQ(key_value_pair.Field().value(), KeyValuePair::Fields::KEY);
           std::array<char, 32> key{};
           StatusWithSize key_status = key_value_pair.ReadKey(key);
           EXPECT_EQ(key_status.status(), OkStatus());
@@ -254,6 +276,8 @@ TEST(Codegen, StreamDecoder) {
               0);
 
           EXPECT_EQ(key_value_pair.Next(), OkStatus());
+          EXPECT_EQ(key_value_pair.Field().value(),
+                    KeyValuePair::Fields::VALUE);
           std::array<char, 32> value{};
           StatusWithSize value_status = key_value_pair.ReadValue(value);
           EXPECT_EQ(value_status.status(), OkStatus());
@@ -267,6 +291,7 @@ TEST(Codegen, StreamDecoder) {
         }
 
         EXPECT_EQ(device_info.Next(), OkStatus());
+        EXPECT_EQ(device_info.Field().value(), DeviceInfo::Fields::ATTRIBUTES);
         {
           KeyValuePair::StreamDecoder key_value_pair =
               device_info.GetAttributesDecoder();
@@ -275,6 +300,7 @@ TEST(Codegen, StreamDecoder) {
           constexpr std::string_view kExpectedValue{"left-soc"};
 
           EXPECT_EQ(key_value_pair.Next(), OkStatus());
+          EXPECT_EQ(key_value_pair.Field().value(), KeyValuePair::Fields::KEY);
           std::array<char, 32> key{};
           StatusWithSize key_status = key_value_pair.ReadKey(key);
           EXPECT_EQ(key_status.status(), OkStatus());
@@ -284,6 +310,8 @@ TEST(Codegen, StreamDecoder) {
               0);
 
           EXPECT_EQ(key_value_pair.Next(), OkStatus());
+          EXPECT_EQ(key_value_pair.Field().value(),
+                    KeyValuePair::Fields::VALUE);
           std::array<char, 32> value{};
           StatusWithSize value_status = key_value_pair.ReadValue(value);
           EXPECT_EQ(value_status.status(), OkStatus());
@@ -297,6 +325,7 @@ TEST(Codegen, StreamDecoder) {
         }
 
         EXPECT_EQ(device_info.Next(), OkStatus());
+        EXPECT_EQ(device_info.Field().value(), DeviceInfo::Fields::STATUS);
         Result<DeviceInfo::DeviceStatus> device_info_status =
             device_info.ReadStatus();
         EXPECT_EQ(device_info_status.status(), OkStatus());
@@ -313,10 +342,12 @@ TEST(Codegen, StreamDecoder) {
 
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(pigweed.Next(), OkStatus());
+    EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::ID);
 
     Proto::ID::StreamDecoder id = pigweed.GetIdDecoder();
 
     EXPECT_EQ(id.Next(), OkStatus());
+    EXPECT_EQ(id.Field().value(), Proto::ID::Fields::ID);
     Result<uint32_t> id_id = id.ReadId();
     EXPECT_EQ(id_id.status(), OkStatus());
     EXPECT_EQ(id_id.value(), 5u * i * i + 3 * i + 49);
@@ -340,6 +371,7 @@ TEST(Codegen, ResourceExhausted) {
   Pigweed::StreamDecoder pigweed(reader);
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::ERROR_MESSAGE);
   std::array<char, 8> error_message{};
   StatusWithSize error_message_status = pigweed.ReadErrorMessage(error_message);
   EXPECT_EQ(error_message_status.status(), Status::ResourceExhausted());
@@ -363,6 +395,7 @@ TEST(Codegen, BytesReader) {
   constexpr std::string_view kExpectedErrorMessage{"not a typewriter"};
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::ERROR_MESSAGE);
   {
     StreamDecoder::BytesReader bytes_reader = pigweed.GetErrorMessageReader();
     EXPECT_EQ(bytes_reader.field_size(), kExpectedErrorMessage.size());

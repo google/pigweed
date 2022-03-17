@@ -285,20 +285,27 @@ Example ``example_server.cc``:
   pw::stream::SysIoReader sys_io_reader;
   // The constructor is the same as a pw::protobuf::StreamDecoder.
   fuzzy_friends::Client::StreamDecoder client(sys_io_reader);
-  {
-    std::array<char, 32> name{};
-    std::array<char, 32> pet_type{};
-      fuzzy_friends::Pet::StreamDecoder pet1 = client.GetPetsDecoder();
-    pet1.ReadName(name);
-    pet1.ReadPetType(pet_type);
-  }
+  while (client.Next().ok()) {
+    switch (client.Field().value) {
+      case fuzzy_friends::Client::Fields::PET: {
+        std::array<char, 32> name{};
+        std::array<char, 32> pet_type{};
 
-  {
-    std::array<char, 32> name{};
-    std::array<char, 32> pet_type{};
-    fuzzy_friends::Pet::StreamDecoder pet2 = client.GetPetsDecoder();
-    pet2.ReadName(name);
-    pet2.ReadPetType(pet_type);
+        fuzzy_friends::Pet::StreamDecoder pet = client.GetPetsDecoder();
+        while (pet.Next().ok()) {
+          switch (pet.Field().value) {
+            case fuzzy_friends::Pet::NAME:
+              pet.ReadName(name);
+              break;
+            case fuzzy_friends::Pet::TYPE:
+              pet.ReadPetType(pet_type);
+              break;
+          }
+        }
+
+        break;
+      }
+    }
   }
 
   if (!client.status().ok()) {

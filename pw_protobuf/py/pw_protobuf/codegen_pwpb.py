@@ -880,6 +880,21 @@ def generate_class_for_message(message: ProtoMessage, root: ProtoNode,
                 f'*static_cast<{PROTOBUF_NAMESPACE}::StreamEncoder*>(this));}}'
             )
 
+        # Add a typed Field() member to StreamDecoder
+        if class_type == ClassType.STREAMING_DECODER:
+            output.write_line()
+            output.write_line('::pw::Result<Fields> Field() {')
+            with output.indent():
+                output.write_line('::pw::Result<uint32_t> result '
+                                  '= FieldNumber();')
+                output.write_line('if (!result.ok()) {')
+                with output.indent():
+                    output.write_line('return result.status();')
+                output.write_line('}')
+                output.write_line(
+                    'return static_cast<Fields>(result.value());')
+            output.write_line('}')
+
         # Generate methods for each of the message's fields.
         for field in message.fields():
             for method_class in proto_field_methods(class_type, field.type()):
