@@ -42,6 +42,7 @@ pw_add_module_library(pw_protobuf
   PUBLIC_DEPS
     pw_assert
     pw_bytes
+    pw_containers.vector
     pw_protobuf.config
     pw_polyfill.span
     pw_polyfill.cstddef

@@ -835,6 +835,109 @@ TEST(StreamDecoder, RepeatedField) {
   uint32 = decoder.ReadUint32();
   ASSERT_EQ(uint32.status(), OkStatus());
   EXPECT_EQ(uint32.value(), 200u);
+
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+}
+
+TEST(StreamDecoder, RepeatedFieldVector) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=uint32, k=1, v=0
+    0x08, 0x00,
+    // type=uint32, k=1, v=50
+    0x08, 0x32,
+    // type=uint32, k=1, v=100
+    0x08, 0x64,
+    // type=uint32, k=1, v=150
+    0x08, 0x96, 0x01,
+    // type=uint32, k=1, v=200
+    0x08, 0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  pw::Vector<uint32_t, 8> uint32{};
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  Status status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32.size(), 1u);
+  EXPECT_EQ(uint32[0], 0u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32.size(), 2u);
+  EXPECT_EQ(uint32[1], 50u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32.size(), 3u);
+  EXPECT_EQ(uint32[2], 100u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32.size(), 4u);
+  EXPECT_EQ(uint32[3], 150u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32.size(), 5u);
+  EXPECT_EQ(uint32[4], 200u);
+
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+}
+
+TEST(StreamDecoder, RepeatedFieldVectorFull) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=uint32, k=1, v=0
+    0x08, 0x00,
+    // type=uint32, k=1, v=50
+    0x08, 0x32,
+    // type=uint32, k=1, v=100
+    0x08, 0x64,
+    // type=uint32, k=1, v=150
+    0x08, 0x96, 0x01,
+    // type=uint32, k=1, v=200
+    0x08, 0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  pw::Vector<uint32_t, 2> uint32{};
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  Status status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32.size(), 1u);
+  EXPECT_EQ(uint32[0], 0u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32.size(), 2u);
+  EXPECT_EQ(uint32[1], 50u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, Status::ResourceExhausted());
+  EXPECT_EQ(uint32.size(), 2u);
 }
 
 TEST(StreamDecoder, PackedVarint) {
@@ -895,6 +998,64 @@ TEST(StreamDecoder, PackedVarintInsufficientSpace) {
   EXPECT_EQ(uint32[1], 50u);
 }
 
+TEST(StreamDecoder, PackedVarintVector) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=uint32[], k=1, v={0, 50, 100, 150, 200}
+    0x0a, 0x07,
+    0x00,
+    0x32,
+    0x64,
+    0x96, 0x01,
+    0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  pw::Vector<uint32_t, 8> uint32{};
+  Status status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32.size(), 5u);
+
+  EXPECT_EQ(uint32[0], 0u);
+  EXPECT_EQ(uint32[1], 50u);
+  EXPECT_EQ(uint32[2], 100u);
+  EXPECT_EQ(uint32[3], 150u);
+  EXPECT_EQ(uint32[4], 200u);
+}
+
+TEST(StreamDecoder, PackedVarintVectorFull) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=uint32[], k=1, v={0, 50, 100, 150, 200}
+    0x0a, 0x07,
+    0x00,
+    0x32,
+    0x64,
+    0x96, 0x01,
+    0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  pw::Vector<uint32_t, 2> uint32{};
+  Status status = decoder.ReadRepeatedUint32(uint32);
+  ASSERT_EQ(status, Status::ResourceExhausted());
+  EXPECT_EQ(uint32.size(), 2u);
+
+  // Still returns values in case of error.
+  EXPECT_EQ(uint32[0], 0u);
+  EXPECT_EQ(uint32[1], 50u);
+}
+
 TEST(StreamDecoder, PackedZigZag) {
   // clang-format off
   constexpr uint8_t encoded_proto[] = {
@@ -919,6 +1080,40 @@ TEST(StreamDecoder, PackedZigZag) {
   StatusWithSize size = decoder.ReadPackedSint32(sint32);
   ASSERT_EQ(size.status(), OkStatus());
   EXPECT_EQ(size.size(), 7u);
+
+  EXPECT_EQ(sint32[0], -100);
+  EXPECT_EQ(sint32[1], -25);
+  EXPECT_EQ(sint32[2], -1);
+  EXPECT_EQ(sint32[3], 0);
+  EXPECT_EQ(sint32[4], 1);
+  EXPECT_EQ(sint32[5], 25);
+  EXPECT_EQ(sint32[6], 100);
+}
+
+TEST(StreamDecoder, PackedZigZagVector) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=sint32[], k=1, v={-100, -25, -1, 0, 1, 25, 100}
+    0x0a, 0x09,
+    0xc7, 0x01,
+    0x31,
+    0x01,
+    0x00,
+    0x02,
+    0x32,
+    0xc8, 0x01
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  pw::Vector<int32_t, 8> sint32{};
+  Status status = decoder.ReadRepeatedSint32(sint32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(sint32.size(), 7u);
 
   EXPECT_EQ(sint32[0], -100);
   EXPECT_EQ(sint32[1], -25);
@@ -1050,6 +1245,62 @@ TEST(StreamDecoder, PackedFixedInsufficientSpace) {
   std::array<uint32_t, 2> fixed32{};
   StatusWithSize size = decoder.ReadPackedFixed32(fixed32);
   ASSERT_EQ(size.status(), Status::ResourceExhausted());
+}
+
+TEST(StreamDecoder, PackedFixedVector) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=sfixed32[], k=1, v={0, -50, 100, -150, 200}
+    0x0a, 0x14,
+    0x00, 0x00, 0x00, 0x00,
+    0xce, 0xff, 0xff, 0xff,
+    0x64, 0x00, 0x00, 0x00,
+    0x6a, 0xff, 0xff, 0xff,
+    0xc8, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  pw::Vector<int32_t, 8> sfixed32{};
+  Status status = decoder.ReadRepeatedSfixed32(sfixed32);
+  ASSERT_EQ(status, OkStatus());
+  EXPECT_EQ(sfixed32.size(), 5u);
+
+  EXPECT_EQ(sfixed32[0], 0);
+  EXPECT_EQ(sfixed32[1], -50);
+  EXPECT_EQ(sfixed32[2], 100);
+  EXPECT_EQ(sfixed32[3], -150);
+  EXPECT_EQ(sfixed32[4], 200);
+
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+}
+
+TEST(StreamDecoder, PackedFixedVectorFull) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=sfixed32[], k=1, v={0, -50, 100, -150, 200}
+    0x0a, 0x14,
+    0x00, 0x00, 0x00, 0x00,
+    0xce, 0xff, 0xff, 0xff,
+    0x64, 0x00, 0x00, 0x00,
+    0x6a, 0xff, 0xff, 0xff,
+    0xc8, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  pw::Vector<int32_t, 2> sfixed32{};
+  Status status = decoder.ReadRepeatedSfixed32(sfixed32);
+  ASSERT_EQ(status, Status::ResourceExhausted());
+  EXPECT_EQ(sfixed32.size(), 0u);
 }
 
 }  // namespace

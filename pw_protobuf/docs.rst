@@ -477,29 +477,23 @@ its parent decoder cannot be used.
     // parent decoder can be used again.
   }
 
-Packed Fields
--------------
+Repeated Fields
+---------------
 The ``StreamDecoder`` supports two encoded forms of repeated fields: value at a
 time, by repeatedly calling `ReadInt32` etc., and packed fields by calling
 e.g. `ReadPackedInt32`.
 
-If the encoding format is not known, you will need to check ``FieldWireType``
-to determine which function to call.
+Since protobuf encoders are permitted to choose either format, including
+splitting repeated fields up into multiple packed fields, ``StreamDecoder``
+also provides method `ReadRepeatedInt32` etc. methods that accept a
+``pw::Vector`` (see :ref:`module-pw_containers` for details). These methods
+correctly extend the vector for either encoding.
 
-.. code-block:: c++
-
-  std::array<int32_t, 8> values{};
-  size_t num_values = 0;
-  if (decoder.FieldNumber().value() == 4) {
-    if (decoder.FieldWireType().value() == WireType::kDelimited) {
-      const auto sws = decoder.ReadPackedInt32(values);
-      PW_TRY(sws);
-      num_values = sws.size();
-    } else {
-      PW_TRY_ASSIGN(values[num_values], decoder.ReadInt32());
-      ++num_values;
-    }
-  }
+The codegen wrappers provide a `ReadFieldName` method with three signatures.
+One that reads a single value at a time, returning a `Result<Type>`, one that
+reads a packed field into a `std::span<Type>` and returning a `StatusWithSize`,
+and one that supports all formats reading into a `pw::Vector<Type>` and
+returning `Status`.
 
 Proto map encoding utils
 ========================

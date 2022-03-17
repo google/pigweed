@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/span.h"
+#include "pw_containers/vector.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
@@ -506,6 +507,136 @@ TEST(CodegenRepeated, NonPackedScalar) {
   EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
 }
 
+TEST(CodegenRepeated, NonPackedScalarVector) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x08, 0x00,
+    0x08, 0x10,
+    0x08, 0x20,
+    0x08, 0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x35, 0x00, 0x00, 0x00, 0x00,
+    0x35, 0x10, 0x00, 0x00, 0x00,
+    0x35, 0x20, 0x00, 0x00, 0x00,
+    0x35, 0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  pw::Vector<uint32_t, 8> uint32s{};
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(repeated_test.Next(), OkStatus());
+    EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+
+    Status status = repeated_test.ReadUint32s(uint32s);
+    EXPECT_EQ(status, OkStatus());
+    EXPECT_EQ(uint32s.size(), i + 1u);
+  }
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(uint32s[i], i * 16u);
+  }
+
+  pw::Vector<uint32_t, 8> fixed32s{};
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(repeated_test.Next(), OkStatus());
+    EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+
+    Status status = repeated_test.ReadFixed32s(fixed32s);
+    EXPECT_EQ(status, OkStatus());
+    EXPECT_EQ(fixed32s.size(), i + 1u);
+  }
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(fixed32s[i], i * 16u);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
+}
+
+TEST(CodegenRepeated, NonPackedVarintScalarVectorFull) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x08, 0x00,
+    0x08, 0x10,
+    0x08, 0x20,
+    0x08, 0x30,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  pw::Vector<uint32_t, 2> uint32s{};
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  Status status = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32s.size(), 1u);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  status = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32s.size(), 2u);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  status = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(status, Status::ResourceExhausted());
+  EXPECT_EQ(uint32s.size(), 2u);
+
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(uint32s[i], i * 16u);
+  }
+}
+
+TEST(CodegenRepeated, NonPackedFixedScalarVectorFull) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x35, 0x00, 0x00, 0x00, 0x00,
+    0x35, 0x10, 0x00, 0x00, 0x00,
+    0x35, 0x20, 0x00, 0x00, 0x00,
+    0x35, 0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  pw::Vector<uint32_t, 2> fixed32s{};
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  Status status = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(fixed32s.size(), 1u);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  status = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(fixed32s.size(), 2u);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  status = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(status, Status::ResourceExhausted());
+  EXPECT_EQ(fixed32s.size(), 2u);
+
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(fixed32s[i], i * 16u);
+  }
+}
+
 TEST(CodegenRepeated, PackedScalar) {
   // clang-format off
   constexpr uint8_t proto_data[] = {
@@ -600,6 +731,172 @@ TEST(CodegenRepeated, PackedFixedScalarExhausted) {
   StatusWithSize sws = repeated_test.ReadFixed32s(fixed32s);
   EXPECT_EQ(sws.status(), Status::ResourceExhausted());
   EXPECT_EQ(sws.size(), 0u);
+}
+
+TEST(CodegenRepeated, PackedScalarVector) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x0a, 0x04,
+    0x00,
+    0x10,
+    0x20,
+    0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x32, 0x10,
+    0x00, 0x00, 0x00, 0x00,
+    0x10, 0x00, 0x00, 0x00,
+    0x20, 0x00, 0x00, 0x00,
+    0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  pw::Vector<uint32_t, 8> uint32s{};
+  Status status = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32s.size(), 4u);
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(uint32s[i], i * 16u);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  pw::Vector<uint32_t, 8> fixed32s{};
+  status = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(fixed32s.size(), 4u);
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(fixed32s[i], i * 16u);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
+}
+
+TEST(CodegenRepeated, PackedVarintScalarVectorFull) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x0a, 0x04,
+    0x00,
+    0x10,
+    0x20,
+    0x30,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  pw::Vector<uint32_t, 2> uint32s{};
+  Status status = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(status, Status::ResourceExhausted());
+  EXPECT_EQ(uint32s.size(), 2u);
+
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(uint32s[i], i * 16u);
+  }
+}
+
+TEST(CodegenRepeated, PackedFixedScalarVectorFull) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x32, 0x10,
+    0x00, 0x00, 0x00, 0x00,
+    0x10, 0x00, 0x00, 0x00,
+    0x20, 0x00, 0x00, 0x00,
+    0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  pw::Vector<uint32_t, 2> fixed32s{};
+  Status status = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(status, Status::ResourceExhausted());
+  EXPECT_EQ(fixed32s.size(), 0u);
+}
+
+TEST(CodegenRepeated, PackedScalarVectorRepeated) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x0a, 0x04,
+    0x00,
+    0x10,
+    0x20,
+    0x30,
+    // uint32s[], v={64, 80, 96, 112}
+    0x0a, 0x04,
+    0x40,
+    0x50,
+    0x60,
+    0x70,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x32, 0x10,
+    0x00, 0x00, 0x00, 0x00,
+    0x10, 0x00, 0x00, 0x00,
+    0x20, 0x00, 0x00, 0x00,
+    0x30, 0x00, 0x00, 0x00,
+    // fixed32s[]. v={64, 80, 96, 112}
+    0x32, 0x10,
+    0x40, 0x00, 0x00, 0x00,
+    0x50, 0x00, 0x00, 0x00,
+    0x60, 0x00, 0x00, 0x00,
+    0x70, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  pw::Vector<uint32_t, 8> uint32s{};
+  Status status = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32s.size(), 4u);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::UINT32S);
+  status = repeated_test.ReadUint32s(uint32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(uint32s.size(), 8u);
+
+  for (int i = 0; i < 8; ++i) {
+    EXPECT_EQ(uint32s[i], i * 16u);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  pw::Vector<uint32_t, 8> fixed32s{};
+  status = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(fixed32s.size(), 4u);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::FIXED32S);
+  status = repeated_test.ReadFixed32s(fixed32s);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(fixed32s.size(), 8u);
+
+  for (int i = 0; i < 8; ++i) {
+    EXPECT_EQ(fixed32s[i], i * 16u);
+  }
+
+  EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
 }
 
 TEST(CodegenRepeated, NonScalar) {

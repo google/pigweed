@@ -297,6 +297,22 @@ class PackedReadMethod(ReadMethod):
         return [('std::span<{}>'.format(self._result_type()), 'out')]
 
 
+class PackedReadVectorMethod(ReadMethod):
+    """A method for a reading a packed repeated field.
+
+    An alternative to ReadMethod for repeated fields that appends values into
+    a pw::Vector.
+    """
+    def should_appear(self) -> bool:
+        return self._field.is_repeated()
+
+    def return_type(self, from_root: bool = False) -> str:
+        return '::pw::Status'
+
+    def params(self) -> List[Tuple[str, str]]:
+        return [('::pw::Vector<{}>&'.format(self._result_type()), 'out')]
+
+
 #
 # The following code defines write and read methods for each of the
 # complex protobuf types.
@@ -400,6 +416,15 @@ class PackedDoubleReadMethod(PackedReadMethod):
         return 'ReadPackedDouble'
 
 
+class PackedDoubleReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed double values."""
+    def _result_type(self) -> str:
+        return 'double'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedDouble'
+
+
 class FloatWriteMethod(WriteMethod):
     """Method which writes a proto float value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -434,6 +459,15 @@ class PackedFloatReadMethod(PackedReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadPackedFloat'
+
+
+class PackedFloatReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed float values."""
+    def _result_type(self) -> str:
+        return 'float'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedFloat'
 
 
 class Int32WriteMethod(WriteMethod):
@@ -472,6 +506,15 @@ class PackedInt32ReadMethod(PackedReadMethod):
         return 'ReadPackedInt32'
 
 
+class PackedInt32ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed int32 values."""
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedInt32'
+
+
 class Sint32WriteMethod(WriteMethod):
     """Method which writes a proto sint32 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -506,6 +549,15 @@ class PackedSint32ReadMethod(PackedReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadPackedSint32'
+
+
+class PackedSint32ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed sint32 values."""
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedSint32'
 
 
 class Sfixed32WriteMethod(WriteMethod):
@@ -544,6 +596,15 @@ class PackedSfixed32ReadMethod(PackedReadMethod):
         return 'ReadPackedSfixed32'
 
 
+class PackedSfixed32ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed sfixed32 values."""
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedSfixed32'
+
+
 class Int64WriteMethod(WriteMethod):
     """Method which writes a proto int64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -578,6 +639,15 @@ class PackedInt64ReadMethod(PackedReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadPackedInt64'
+
+
+class PackedInt64ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed int64 values."""
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedInt64'
 
 
 class Sint64WriteMethod(WriteMethod):
@@ -616,6 +686,15 @@ class PackedSint64ReadMethod(PackedReadMethod):
         return 'ReadPackedSint64'
 
 
+class PackedSint64ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed sint64 values."""
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedSint64'
+
+
 class Sfixed64WriteMethod(WriteMethod):
     """Method which writes a proto sfixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -650,6 +729,15 @@ class PackedSfixed64ReadMethod(PackedReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadPackedSfixed64'
+
+
+class PackedSfixed64ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed sfixed64 values."""
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedSfixed64'
 
 
 class Uint32WriteMethod(WriteMethod):
@@ -688,6 +776,15 @@ class PackedUint32ReadMethod(PackedReadMethod):
         return 'ReadPackedUint32'
 
 
+class PackedUint32ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed uint32 values."""
+    def _result_type(self) -> str:
+        return 'uint32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedUint32'
+
+
 class Fixed32WriteMethod(WriteMethod):
     """Method which writes a proto fixed32 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -722,6 +819,15 @@ class PackedFixed32ReadMethod(PackedReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadPackedFixed32'
+
+
+class PackedFixed32ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed fixed32 values."""
+    def _result_type(self) -> str:
+        return 'uint32_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedFixed32'
 
 
 class Uint64WriteMethod(WriteMethod):
@@ -760,6 +866,15 @@ class PackedUint64ReadMethod(PackedReadMethod):
         return 'ReadPackedUint64'
 
 
+class PackedUint64ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed uint64 values."""
+    def _result_type(self) -> str:
+        return 'uint64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedUint64'
+
+
 class Fixed64WriteMethod(WriteMethod):
     """Method which writes a proto fixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
@@ -794,6 +909,15 @@ class PackedFixed64ReadMethod(PackedReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadPackedFixed64'
+
+
+class PackedFixed64ReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed fixed64 values."""
+    def _result_type(self) -> str:
+        return 'uint64_t'
+
+    def _decoder_fn(self) -> str:
+        return 'ReadRepeatedFixed64'
 
 
 class BoolWriteMethod(WriteMethod):
@@ -950,41 +1074,45 @@ PROTO_FIELD_WRITE_METHODS: Dict[int, List] = {
 
 PROTO_FIELD_READ_METHODS: Dict[int, List] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE:
-    [DoubleReadMethod, PackedDoubleReadMethod],
+    [DoubleReadMethod, PackedDoubleReadMethod, PackedDoubleReadVectorMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT:
-    [FloatReadMethod, PackedFloatReadMethod],
+    [FloatReadMethod, PackedFloatReadMethod, PackedFloatReadVectorMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_INT32:
-    [Int32ReadMethod, PackedInt32ReadMethod],
+    [Int32ReadMethod, PackedInt32ReadMethod, PackedInt32ReadVectorMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_SINT32:
-    [Sint32ReadMethod, PackedSint32ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32:
-    [Sfixed32ReadMethod, PackedSfixed32ReadMethod],
+    [Sint32ReadMethod, PackedSint32ReadMethod, PackedSint32ReadVectorMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: [
+        Sfixed32ReadMethod, PackedSfixed32ReadMethod,
+        PackedSfixed32ReadVectorMethod
+    ],
     descriptor_pb2.FieldDescriptorProto.TYPE_INT64:
-    [Int64ReadMethod, PackedInt64ReadMethod],
+    [Int64ReadMethod, PackedInt64ReadMethod, PackedInt64ReadVectorMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_SINT64:
-    [Sint64ReadMethod, PackedSint64ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64:
-    [Sfixed64ReadMethod, PackedSfixed64ReadMethod],
+    [Sint64ReadMethod, PackedSint64ReadMethod, PackedSint64ReadVectorMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: [
+        Sfixed64ReadMethod, PackedSfixed64ReadMethod,
+        PackedSfixed64ReadVectorMethod
+    ],
     descriptor_pb2.FieldDescriptorProto.TYPE_UINT32:
-    [Uint32ReadMethod, PackedUint32ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32:
-    [Fixed32ReadMethod, PackedFixed32ReadMethod],
+    [Uint32ReadMethod, PackedUint32ReadMethod, PackedUint32ReadVectorMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: [
+        Fixed32ReadMethod, PackedFixed32ReadMethod,
+        PackedFixed32ReadVectorMethod
+    ],
     descriptor_pb2.FieldDescriptorProto.TYPE_UINT64:
-    [Uint64ReadMethod, PackedUint64ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64:
-    [Fixed64ReadMethod, PackedFixed64ReadMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [
-        BoolReadMethod, PackedBoolReadMethod
+    [Uint64ReadMethod, PackedUint64ReadMethod, PackedUint64ReadVectorMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: [
+        Fixed64ReadMethod, PackedFixed64ReadMethod,
+        PackedFixed64ReadVectorMethod
     ],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [
-        BytesReadMethod, BytesReaderMethod
-    ],
-    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [
-        StringReadMethod, BytesReaderMethod
-    ],
-    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [
-        SubMessageDecoderMethod
-    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL:
+    [BoolReadMethod, PackedBoolReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES:
+    [BytesReadMethod, BytesReaderMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_STRING:
+    [StringReadMethod, BytesReaderMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE:
+    [SubMessageDecoderMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumReadMethod],
 }
 
@@ -1117,7 +1245,8 @@ def generate_function_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
 
     enum_name = proto_enum.cpp_namespace(root)
     output.write_line(
-        f'constexpr pw::Result<{enum_name}> Get{enum_name}(uint32_t value) {{')
+        f'constexpr ::pw::Result<{enum_name}> Get{enum_name}(uint32_t value) {{'
+    )
     with output.indent():
         output.write_line('switch (value) {')
         with output.indent():
@@ -1200,6 +1329,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <span>')
     output.write_line('#include <string_view>\n')
     output.write_line('#include "pw_assert/assert.h"')
+    output.write_line('#include "pw_containers/vector.h"')
     output.write_line('#include "pw_protobuf/encoder.h"')
     output.write_line('#include "pw_protobuf/stream_decoder.h"')
     output.write_line('#include "pw_result/result.h"')
