@@ -21,7 +21,6 @@ namespace {
 
 using bt::LowerBits;
 using bt::UpperBits;
-using bt::testing::CommandTransaction;
 using EventCallbackResult = CommandChannel::EventCallbackResult;
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
@@ -556,8 +555,8 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
 //  - Events are routed to the event handler.
 //  - Can't queue a command on the same event that is already in an event handler.
 TEST_F(CommandChannelTest, EventHandlerBasic) {
-  constexpr hci_spec::EventCode kTestEventCode0 = 0xFE;
-  constexpr hci_spec::EventCode kTestEventCode1 = 0xFF;
+  constexpr hci_spec::EventCode kTestEventCode0 = 0xFD;
+  constexpr hci_spec::EventCode kTestEventCode1 = 0xFE;
   auto cmd_status =
       StaticByteBuffer(hci_spec::kCommandStatusEventCode, 0x04, 0x00, 0x01, 0x00, 0x00);
   auto cmd_complete = StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x03, 0x01, 0x00, 0x00);
@@ -680,7 +679,7 @@ TEST_F(CommandChannelTest, EventHandlerEventWhileTransactionPending) {
       );
   // clang-format on
 
-  constexpr hci_spec::EventCode kTestEventCode = 0xFF;
+  constexpr hci_spec::EventCode kTestEventCode = 0xFE;
   auto event = StaticByteBuffer(kTestEventCode, 0x01, 0x00);
 
   // We will send the HCI_Reset command with kTestEventCode as the completion event. The event
@@ -1015,6 +1014,68 @@ TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
   EXPECT_EQ(1, transaction_count);
   // The command should have gotten update and complete events.
   EXPECT_EQ(2, cmd_events);
+}
+
+TEST_F(CommandChannelTest, VendorEventHandler) {
+  constexpr hci_spec::EventCode kTestSubeventCode0 = 0x10;
+  constexpr hci_spec::EventCode kTestSubeventCode1 = 0x12;
+  auto vendor_event_bytes0 =
+      CreateStaticByteBuffer(hci_spec::kVendorDebugEventCode, 0x01, kTestSubeventCode0);
+  auto vendor_event_bytes1 =
+      CreateStaticByteBuffer(hci_spec::kVendorDebugEventCode, 0x01, kTestSubeventCode1);
+
+  int event_count0 = 0;
+  auto event_cb0 = [&event_count0, kTestSubeventCode0](const EventPacket& event) {
+    event_count0++;
+    EXPECT_EQ(hci_spec::kVendorDebugEventCode, event.event_code());
+    EXPECT_EQ(kTestSubeventCode0, event.params<hci_spec::VendorEventParams>().subevent_code);
+    return EventCallbackResult::kContinue;
+  };
+
+  int event_count1 = 0;
+  auto event_cb1 = [&event_count1, kTestSubeventCode1](const EventPacket& event) {
+    event_count1++;
+    EXPECT_EQ(hci_spec::kVendorDebugEventCode, event.event_code());
+    EXPECT_EQ(kTestSubeventCode1, event.params<hci_spec::VendorEventParams>().subevent_code);
+    return EventCallbackResult::kContinue;
+  };
+
+  auto id0 = cmd_channel()->AddVendorEventHandler(kTestSubeventCode0, event_cb0);
+  EXPECT_NE(0u, id0);
+
+  // Can register a handler for the same event code more than once.
+  auto id1 = cmd_channel()->AddVendorEventHandler(kTestSubeventCode0, event_cb0);
+  EXPECT_NE(0u, id1);
+  EXPECT_NE(id0, id1);
+
+  // Add a handler for a different event code.
+  auto id2 = cmd_channel()->AddVendorEventHandler(kTestSubeventCode1, event_cb1);
+  EXPECT_NE(0u, id2);
+
+  StartTestDevice();
+
+  test_device()->SendCommandChannelPacket(vendor_event_bytes0);
+  RunLoopUntilIdle();
+  EXPECT_EQ(2, event_count0);
+  EXPECT_EQ(0, event_count1);
+
+  test_device()->SendCommandChannelPacket(vendor_event_bytes0);
+  RunLoopUntilIdle();
+  EXPECT_EQ(4, event_count0);
+  EXPECT_EQ(0, event_count1);
+
+  test_device()->SendCommandChannelPacket(vendor_event_bytes1);
+  RunLoopUntilIdle();
+  EXPECT_EQ(4, event_count0);
+  EXPECT_EQ(1, event_count1);
+
+  // Remove the first event handler.
+  cmd_channel()->RemoveEventHandler(id0);
+  test_device()->SendCommandChannelPacket(vendor_event_bytes0);
+  test_device()->SendCommandChannelPacket(vendor_event_bytes1);
+  RunLoopUntilIdle();
+  EXPECT_EQ(5, event_count0);
+  EXPECT_EQ(2, event_count1);
 }
 
 TEST_F(CommandChannelTest, LEMetaEventHandler) {

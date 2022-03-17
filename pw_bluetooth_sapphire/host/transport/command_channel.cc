@@ -27,6 +27,8 @@ static std::string EventTypeToString(CommandChannel::EventType event_type) {
       return "hci_event";
     case CommandChannel::EventType::kLEMetaEvent:
       return "le_meta_event";
+    case CommandChannel::EventType::kVendorEvent:
+      return "vendor_event";
   }
 }
 
@@ -306,6 +308,22 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
   return handler_id;
 }
 
+CommandChannel::EventHandlerId CommandChannel::AddVendorEventHandler(
+    hci_spec::EventCode vendor_subevent_code, EventCallback event_callback) {
+  CommandChannel::EventHandlerData* handler = FindVendorEventHandler(vendor_subevent_code);
+  if (handler && handler->is_async()) {
+    bt_log(ERROR, "hci",
+           "async event handler %zu already registered for Vendor Event subevent code %#.2x",
+           handler->handler_id, vendor_subevent_code);
+    return 0u;
+  }
+
+  EventHandlerId handler_id = NewEventHandler(vendor_subevent_code, EventType::kVendorEvent,
+                                              hci_spec::kNoOp, std::move(event_callback));
+  vendor_subevent_code_handlers_.emplace(vendor_subevent_code, handler_id);
+  return handler_id;
+}
+
 void CommandChannel::RemoveEventHandler(EventHandlerId handler_id) {
   // If the ID doesn't exist or it is internal. it can't be removed.
   auto iter = event_handler_id_map_.find(handler_id);
@@ -333,6 +351,16 @@ CommandChannel::EventHandlerData* CommandChannel::FindLEMetaEventHandler(
   return &event_handler_id_map_[it->second];
 }
 
+CommandChannel::EventHandlerData* CommandChannel::FindVendorEventHandler(
+    hci_spec::EventCode vendor_subevent_code) {
+  auto it = vendor_subevent_code_handlers_.find(vendor_subevent_code);
+  if (it == vendor_subevent_code_handlers_.end()) {
+    return nullptr;
+  }
+
+  return &event_handler_id_map_[it->second];
+}
+
 void CommandChannel::RemoveEventHandlerInternal(EventHandlerId handler_id) {
   auto iter = event_handler_id_map_.find(handler_id);
   if (iter == event_handler_id_map_.end()) {
@@ -346,6 +374,9 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId handler_id) {
       break;
     case EventType::kLEMetaEvent:
       handlers = &le_meta_subevent_code_handlers_;
+      break;
+    case EventType::kVendorEvent:
+      handlers = &vendor_subevent_code_handlers_;
       break;
   }
 
@@ -573,14 +604,22 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   const std::unordered_multimap<hci_spec::EventCode, EventHandlerId>* event_handlers;
 
   EventType event_type;
-  if (event->event_code() == hci_spec::kLEMetaEventCode) {
-    event_type = EventType::kLEMetaEvent;
-    event_code = event->params<hci_spec::LEMetaEventParams>().subevent_code;
-    event_handlers = &le_meta_subevent_code_handlers_;
-  } else {
-    event_type = EventType::kHciEvent;
-    event_code = event->event_code();
-    event_handlers = &event_code_handlers_;
+  switch (event->event_code()) {
+    case hci_spec::kLEMetaEventCode:
+      event_type = EventType::kLEMetaEvent;
+      event_code = event->params<hci_spec::LEMetaEventParams>().subevent_code;
+      event_handlers = &le_meta_subevent_code_handlers_;
+      break;
+    case hci_spec::kVendorDebugEventCode:
+      event_type = EventType::kVendorEvent;
+      event_code = event->params<hci_spec::VendorEventParams>().subevent_code;
+      event_handlers = &vendor_subevent_code_handlers_;
+      break;
+    default:
+      event_type = EventType::kHciEvent;
+      event_code = event->event_code();
+      event_handlers = &event_code_handlers_;
+      break;
   }
 
   auto range = event_handlers->equal_range(event_code);

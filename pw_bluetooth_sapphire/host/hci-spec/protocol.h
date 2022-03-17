@@ -1161,6 +1161,17 @@ struct ReadDataBlockSizeReturnParams {
 // (Vol 2, Part E, Section 5.4.4)
 constexpr EventCode kVendorDebugEventCode = 0xFF;
 
+struct VendorEventParams {
+  VendorEventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(VendorEventParams);
+
+  // The event code for the vendor subevent.
+  EventCode subevent_code;
+
+  // Beginning of parameters that are specific to the vendor subevent.
+  uint8_t subevent_parameters[];
+} __PACKED;
+
 // ======================================
 // Inquiry Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kInquiryCompleteEventCode = 0x01;

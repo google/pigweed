@@ -58,6 +58,7 @@ class CommandChannel final {
   enum class EventType {
     kHciEvent,
     kLEMetaEvent,
+    kVendorEvent,
   };
 
   // Queues the given |command_packet| to be sent to the controller and returns a transaction ID.
@@ -172,14 +173,19 @@ class CommandChannel final {
   // - HCI_Command_Complete event code
   // - HCI_Command_Status event code
   // - HCI_LE_Meta event code (use AddLEMetaEventHandler instead)
+  // - HCI_Vendor_Debug event code (use AddVendorEventHandler instead)
   EventHandlerId AddEventHandler(hci_spec::EventCode event_code, EventCallback event_callback);
 
   // Works just like AddEventHandler but the passed in event code is only valid within the LE Meta
   // Event sub-event code namespace. |event_callback| will get invoked whenever the controller sends
   // a LE Meta Event with a matching subevent code.
-  //
-  // NOTE: The le_meta_subevent_code cannot be 0
   EventHandlerId AddLEMetaEventHandler(hci_spec::EventCode le_meta_subevent_code,
+                                       EventCallback event_callback);
+
+  // Works just like AddEventHandler but the passed in event code is only valid for vendor related
+  // debugging events. The event_callback will get invoked whenever the controller sends one of
+  // these vendor debugging events with a matching subevent code.
+  EventHandlerId AddVendorEventHandler(hci_spec::EventCode vendor_subevent_code,
                                        EventCallback event_callback);
 
   // Removes a previously registered event handler. Does nothing if an event handler with the given
@@ -319,6 +325,10 @@ class CommandChannel final {
   // exist.
   EventHandlerData* FindLEMetaEventHandler(hci_spec::EventCode le_meta_subevent_code);
 
+  // Finds the Vendor Event handler for |vendor_subevent_code|. Returns nullptr if one doesn't
+  // exist.
+  EventHandlerData* FindVendorEventHandler(hci_spec::EventCode vendor_subevent_code);
+
   // Removes internal event handler structures for |id|.
   void RemoveEventHandlerInternal(EventHandlerId id);
 
@@ -394,6 +404,10 @@ class CommandChannel final {
   // Mapping from LE Meta Event Subevent code to the event handlers that were registered to handle
   // that event code.
   std::unordered_multimap<hci_spec::EventCode, EventHandlerId> le_meta_subevent_code_handlers_;
+
+  // Mapping from Vendor Subevent code to the event handlers that were registered to handle that
+  // event code.
+  std::unordered_multimap<hci_spec::EventCode, EventHandlerId> vendor_subevent_code_handlers_;
 
   fxl::WeakPtrFactory<CommandChannel> weak_ptr_factory_;
 
