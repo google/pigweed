@@ -153,6 +153,12 @@ class Context {
 
   void set_transfer_state(TransferState state) { transfer_state_ = state; }
 
+  // The transfer ID as unsigned instead of uint32_t so it can be used with %u.
+  unsigned id_for_log() const {
+    static_assert(sizeof(unsigned) >= sizeof(transfer_id_));
+    return static_cast<unsigned>(transfer_id_);
+  }
+
   stream::Reader& reader() {
     PW_DASSERT(active() && type() == TransferType::kTransmit);
     return static_cast<stream::Reader&>(*stream_);
@@ -210,7 +216,7 @@ class Context {
   void HandleTransferParametersUpdate(const Chunk& chunk);
 
   // Sends the next chunk in a transmit transfer, if any.
-  void TransmitNextChunk();
+  void TransmitNextChunk(bool retransmit_requested);
 
   // Processes a chunk in a receive transfer.
   void HandleReceiveChunk(const Chunk& chunk);

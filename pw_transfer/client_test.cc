@@ -1171,9 +1171,9 @@ TEST_F(WriteTransfer, AbortIfZeroBytesAreRequested) {
   Chunk c1 = DecodeChunk(payloads[1]);
   EXPECT_EQ(c1.transfer_id, 9u);
   ASSERT_TRUE(c1.status.has_value());
-  EXPECT_EQ(c1.status.value(), Status::Internal());
+  EXPECT_EQ(c1.status.value(), Status::ResourceExhausted());
 
-  EXPECT_EQ(transfer_status, Status::Internal());
+  EXPECT_EQ(transfer_status, Status::ResourceExhausted());
 }
 
 TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {

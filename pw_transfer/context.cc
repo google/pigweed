@@ -348,10 +348,10 @@ void Context::HandleTransferParametersUpdate(const Chunk& chunk) {
   // Parsed all of the parameters; start sending the window.
   set_transfer_state(TransferState::kTransmitting);
 
-  TransmitNextChunk();
+  TransmitNextChunk(retransmit);
 }
 
-void Context::TransmitNextChunk() {
+void Context::TransmitNextChunk(bool retransmit_requested) {
   ByteSpan buffer = thread_->encode_buffer();
 
   // Begin by doing a partial encode of all the metadata fields, leaving the
@@ -383,16 +383,20 @@ void Context::TransmitNextChunk() {
                  static_cast<unsigned>(transfer_id_));
   } else if (data.ok()) {
     if (offset_ == window_end_offset_) {
-      PW_LOG_DEBUG(
-          "Transfer %u is not finished, but the receiver cannot accept any "
-          "more data (offset == window_end_offset)",
-          static_cast<unsigned>(transfer_id_));
-
-      // TODO(frolv): The transfer shouldn't end here as this may just indicate
-      // that the receiver is temporarily busy. Instead, we should wait to see
-      // if more data is requested.
-      Finish(Status::Internal());
-      return;
+      if (retransmit_requested) {
+        PW_LOG_DEBUG(
+            "Transfer %u: received an empty retransmit request, but there is "
+            "still data to send; aborting with RESOURCE_EXHAUSTED",
+            id_for_log());
+        Finish(Status::ResourceExhausted());
+      } else {
+        PW_LOG_DEBUG(
+            "Transfer %u: ignoring continuation packet for transfer window "
+            "that has already been sent",
+            id_for_log());
+        SetTimeout(chunk_timeout_);
+      }
+      return;  // No data was requested, so there is nothing else to do.
     }
 
     PW_LOG_DEBUG("Transfer %u sending chunk offset=%u size=%u",
@@ -622,7 +626,7 @@ void Context::HandleTimeout() {
       // A timeout occurring in a TRANSMITTING state indicates that the transfer
       // has waited for its inter-chunk delay and should transmit its next
       // chunk.
-      TransmitNextChunk();
+      TransmitNextChunk(/*retransmit_requested=*/false);
       break;
 
     case TransferState::kWaiting:
@@ -691,7 +695,7 @@ void Context::Retry() {
   offset_ = last_chunk_offset_;
   pending_bytes_ += last_size_sent;
 
-  TransmitNextChunk();
+  TransmitNextChunk(/*retransmit_requested=*/false);
 }
 
 uint32_t Context::MaxWriteChunkSize(uint32_t max_chunk_size_bytes,

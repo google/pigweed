@@ -270,6 +270,41 @@ TEST_F(ReadTransfer, MultiChunk) {
   EXPECT_EQ(handler_.finalize_read_status, OkStatus());
 }
 
+TEST_F(ReadTransfer, MultiChunk_RepeatedContinuePackets) {
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3,
+                   .window_end_offset = 16,
+                   .pending_bytes = 16,
+                   .offset = 0,
+                   .type = Chunk::Type::kParametersRetransmit}));
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  const auto continue_chunk =
+      EncodeChunk({.transfer_id = 3,
+                   .window_end_offset = 24,
+                   .pending_bytes = 8,
+                   .offset = 16,
+                   .type = Chunk::Type::kParametersContinue});
+  ctx_.SendClientStream(continue_chunk);
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Resend the CONTINUE packets that don't actually advance the window.
+  for (int i = 0; i < 3; ++i) {
+    ctx_.SendClientStream(continue_chunk);
+    transfer_thread_.WaitUntilEventIsProcessed();
+  }
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);  // Only sent one packet
+  Chunk c1 = DecodeChunk(ctx_.responses()[1]);
+
+  EXPECT_EQ(c1.transfer_id, 3u);
+  EXPECT_EQ(c1.offset, 16u);
+  ASSERT_EQ(c1.data.size(), 8u);
+  EXPECT_EQ(std::memcmp(c1.data.data(), kData.data() + 16, c1.data.size()), 0);
+}
+
 TEST_F(ReadTransfer, PendingBytes_MultiChunk) {
   ctx_.SendClientStream(
       EncodeChunk({.transfer_id = 3, .pending_bytes = 16, .offset = 0}));
@@ -601,10 +636,10 @@ TEST_F(ReadTransfer, ZeroPendingBytesWithRemainingData_Aborts) {
 
   ASSERT_EQ(ctx_.total_responses(), 1u);
   ASSERT_TRUE(handler_.finalize_read_called);
-  EXPECT_EQ(handler_.finalize_read_status, Status::Internal());
+  EXPECT_EQ(handler_.finalize_read_status, Status::ResourceExhausted());
 
   Chunk chunk = DecodeChunk(ctx_.responses().back());
-  EXPECT_EQ(chunk.status, Status::Internal());
+  EXPECT_EQ(chunk.status, Status::ResourceExhausted());
 }
 
 TEST_F(ReadTransfer, ZeroPendingBytesNoRemainingData_Completes) {
