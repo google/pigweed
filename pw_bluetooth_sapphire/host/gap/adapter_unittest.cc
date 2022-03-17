@@ -667,7 +667,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   InitializeAdapter([](bool) {});
 
   // Set-up a device for testing.
-  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
+  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -722,7 +722,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   test_device()->set_settings(settings);
   InitializeAdapter([](bool) {});
 
-  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
+  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
 
   // Cause scanning to succeed and the connection request to hang.
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
@@ -820,7 +820,7 @@ TEST_F(AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
     ASSERT_TRUE(conn_ref);
   };
 
-  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
+  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
   test_device()->AddPeer(std::move(fake_peer));
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
@@ -1082,23 +1082,23 @@ TEST_F(AdapterConstructorTest, GattCallbacks) {
   EXPECT_EQ(set_retrieve_cb_count, 1);
 
   // Before the peer exists, adding its gatt info to the peer cache does nothing.
-  gatt_->CallPersistServiceChangedCCCCallback(kPeerId, true, false);
+  gatt_->CallPersistServiceChangedCCCCallback(kPeerId, /*notify=*/true, /*indicate=*/false);
   auto persisted_data_1 = gatt_->CallRetrieveServiceChangedCCCCallback(kPeerId);
   EXPECT_EQ(persisted_data_1, std::nullopt);
 
   // After adding a classic peer, adding its info to the peer cache still does nothing.
-  Peer* classic_peer = adapter->peer_cache()->NewPeer(kTestAddrBrEdr, true /* connectable */);
+  Peer* classic_peer = adapter->peer_cache()->NewPeer(kTestAddrBrEdr, /*connectable=*/true);
   PeerId classic_peer_id = classic_peer->identifier();
 
-  gatt_->CallPersistServiceChangedCCCCallback(classic_peer_id, false, true);
+  gatt_->CallPersistServiceChangedCCCCallback(classic_peer_id, /*notify=*/false, /*indicate=*/true);
   auto persisted_data_2 = gatt_->CallRetrieveServiceChangedCCCCallback(classic_peer_id);
   EXPECT_EQ(persisted_data_2, std::nullopt);
 
   // After adding an LE peer, adding its info to the peer cache works.
-  Peer* le_peer = adapter->peer_cache()->NewPeer(kTestAddr, true /* connectable */);
+  Peer* le_peer = adapter->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   PeerId le_peer_id = le_peer->identifier();
 
-  gatt_->CallPersistServiceChangedCCCCallback(le_peer_id, true, true);
+  gatt_->CallPersistServiceChangedCCCCallback(le_peer_id, /*notify=*/true, /*indicate=*/true);
   auto persisted_data_3 = gatt_->CallRetrieveServiceChangedCCCCallback(le_peer_id);
   ASSERT_TRUE(persisted_data_3.has_value());
   auto persisted_data_3_value = persisted_data_3.value();

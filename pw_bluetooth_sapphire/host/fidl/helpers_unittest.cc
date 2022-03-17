@@ -44,7 +44,7 @@ namespace {
 // Constants as BT stack types
 const bt::UInt128 kTestKeyValue{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
-                                               true);
+                                               /*secure_connections=*/true);
 const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci_spec::LinkKey(kTestKeyValue, 0, 0));
 const bt::sm::Key kTestKey(kTestSecurity, kTestKeyValue);
 
@@ -895,7 +895,7 @@ TEST(HelpersTest, BredrKeyFromFidlEmpty) { EXPECT_FALSE(BredrKeyFromFidl(fsys::B
 
 TEST(HelpersTest, BredrKeyFromFidl) {
   const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
-                                                 true);
+                                                 /*secure_connections=*/true);
   const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci_spec::LinkKey(kTestKeyValue, 0, 0));
 
   fsys::BredrBondData bredr;

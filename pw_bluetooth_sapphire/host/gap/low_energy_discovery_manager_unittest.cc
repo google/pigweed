@@ -892,7 +892,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConnectab
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDualMode) {
-  Peer* peer = peer_cache()->NewPeer(kAddrAlias0, true);
+  Peer* peer = peer_cache()->NewPeer(kAddrAlias0, /*connectable=*/true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(peer, peer_cache()->FindByAddress(kAddress0));
   ASSERT_EQ(TechnologyType::kClassic, peer->technology());

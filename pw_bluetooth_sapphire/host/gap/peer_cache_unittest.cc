@@ -63,13 +63,13 @@ const bt::sm::LTK kLTK;
 const bt::sm::Key kKey{};
 
 const bt::sm::LTK kBrEdrKey;
-const bt::sm::LTK kInsecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/,
-                                                           false /*authenticated*/,
-                                                           false /*secure_connections*/,
+const bt::sm::LTK kInsecureBrEdrKey(sm::SecurityProperties(/*encrypted=*/true,
+                                                           /*authenticated=*/false,
+                                                           /*secure_connections=*/false,
                                                            sm::kMaxEncryptionKeySize),
                                     hci_spec::LinkKey(UInt128{1}, 2, 3));
-const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/, true /*authenticated*/,
-                                                         true /*secure_connections*/,
+const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(/*encrypted=*/true, /*authenticated=*/true,
+                                                         /*secure_connections=*/true,
                                                          sm::kMaxEncryptionKeySize),
                                   hci_spec::LinkKey(UInt128{4}, 5, 6));
 
@@ -142,10 +142,10 @@ TEST_F(PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemoved
   inspect::Inspector inspector;
   cache()->AttachInspect(inspector.GetRoot());
 
-  Peer* peer0 = cache()->NewPeer(kAddrLePublic, true);
+  Peer* peer0 = cache()->NewPeer(kAddrLePublic, /*connectable=*/true);
   auto peer0_matcher = AllOf(NodeMatches(AllOf(NameMatches("peer_0x0"))));
 
-  cache()->NewPeer(kAddrBrEdr, true);
+  cache()->NewPeer(kAddrBrEdr, /*connectable=*/true);
   auto peer1_matcher = AllOf(NodeMatches(AllOf(NameMatches("peer_0x1"))));
 
   auto metrics_matcher = AllOf(NodeMatches(AllOf(NameMatches(PeerMetrics::kInspectNodeName))));
@@ -176,7 +176,7 @@ TEST_F(PeerCacheTest, LookUp) {
   EXPECT_FALSE(cache()->FindByAddress(kAddrLePublic));
   EXPECT_FALSE(cache()->FindById(kId));
 
-  auto peer = cache()->NewPeer(kAddrLePublic, true);
+  auto peer = cache()->NewPeer(kAddrLePublic, /*connectable=*/true);
   ASSERT_TRUE(peer);
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(TechnologyType::kLowEnergy, peer->technology());
@@ -229,7 +229,7 @@ TEST_F(PeerCacheTest, LookUpLePeerByBrEdrAlias) {
 }
 
 TEST_F(PeerCacheTest, NewPeerDoesNotCrashWhenNoCallbackIsRegistered) {
-  cache()->NewPeer(kAddrLePublic, true);
+  cache()->NewPeer(kAddrLePublic, /*connectable=*/true);
 }
 
 TEST_F(PeerCacheTest, ForEachEmpty) {
@@ -252,7 +252,7 @@ TEST_F(PeerCacheTest, ForEach) {
 TEST_F(PeerCacheTest, NewPeerInvokesCallbackWhenPeerIsFirstRegistered) {
   bool was_called = false;
   cache()->add_peer_updated_callback([&was_called](const auto&) { was_called = true; });
-  cache()->NewPeer(kAddrLePublic, true);
+  cache()->NewPeer(kAddrLePublic, /*connectable=*/true);
   EXPECT_TRUE(was_called);
 }
 
@@ -263,23 +263,23 @@ TEST_F(PeerCacheTest, MultiplePeerUpdatedCallbacks) {
   PeerCache::CallbackId id_1 =
       cache()->add_peer_updated_callback([&](const auto&) { updated_count_1++; });
 
-  cache()->NewPeer(kAddrLePublic, true);
+  cache()->NewPeer(kAddrLePublic, /*connectable=*/true);
   EXPECT_EQ(updated_count_0, 1u);
   EXPECT_EQ(updated_count_1, 1u);
 
-  cache()->NewPeer(kAddrLeRandom, true);
+  cache()->NewPeer(kAddrLeRandom, /*connectable=*/true);
   EXPECT_EQ(updated_count_0, 2u);
   EXPECT_EQ(updated_count_1, 2u);
 
   EXPECT_TRUE(cache()->remove_peer_updated_callback(id_0));
   EXPECT_FALSE(cache()->remove_peer_updated_callback(id_0));
-  cache()->NewPeer(kAddrLeRandom2, true);
+  cache()->NewPeer(kAddrLeRandom2, /*connectable=*/true);
   EXPECT_EQ(updated_count_0, 2u);
   EXPECT_EQ(updated_count_1, 3u);
 
   EXPECT_TRUE(cache()->remove_peer_updated_callback(id_1));
   EXPECT_FALSE(cache()->remove_peer_updated_callback(id_1));
-  cache()->NewPeer(kAddrBrEdr, true);
+  cache()->NewPeer(kAddrBrEdr, /*connectable=*/true);
   EXPECT_EQ(updated_count_0, 2u);
   EXPECT_EQ(updated_count_1, 3u);
 }
@@ -287,8 +287,8 @@ TEST_F(PeerCacheTest, MultiplePeerUpdatedCallbacks) {
 TEST_F(PeerCacheTest, NewPeerDoesNotInvokeCallbackWhenPeerIsReRegistered) {
   int call_count = 0;
   cache()->add_peer_updated_callback([&call_count](const auto&) { ++call_count; });
-  cache()->NewPeer(kAddrLePublic, true);
-  cache()->NewPeer(kAddrLePublic, true);
+  cache()->NewPeer(kAddrLePublic, /*connectable=*/true);
+  cache()->NewPeer(kAddrLePublic, /*connectable=*/true);
   EXPECT_EQ(1, call_count);
 }
 
@@ -313,9 +313,9 @@ TEST_F(PeerCacheTest, NewPeerInitialTechnologyIsClassic) {
 
 TEST_F(PeerCacheTest, NewPeerInitialTechnologyLowEnergy) {
   // LE address types should initialize the peer as LE-only.
-  auto* le_publ_peer = cache()->NewPeer(kAddrLePublic, true /*connectable*/);
-  auto* le_rand_peer = cache()->NewPeer(kAddrLeRandom, true /*connectable*/);
-  auto* le_anon_peer = cache()->NewPeer(kAddrLeAnon, false /*connectable*/);
+  auto* le_publ_peer = cache()->NewPeer(kAddrLePublic, /*connectable=*/true);
+  auto* le_rand_peer = cache()->NewPeer(kAddrLeRandom, /*connectable=*/true);
+  auto* le_anon_peer = cache()->NewPeer(kAddrLeAnon, /*connectable=*/false);
   ASSERT_TRUE(le_publ_peer);
   ASSERT_TRUE(le_rand_peer);
   ASSERT_TRUE(le_anon_peer);
@@ -338,7 +338,7 @@ TEST_F(PeerCacheTest, DisallowNewLowEnergyPeerIfBrEdrPeerExists) {
 
   // Try to add new LE peer with a public identity address containing the same
   // value as the existing BR/EDR peer's BD_ADDR.
-  auto* le_alias_peer = cache()->NewPeer(kAddrLeAlias, true);
+  auto* le_alias_peer = cache()->NewPeer(kAddrLeAlias, /*connectable=*/true);
   EXPECT_FALSE(le_alias_peer);
 }
 
@@ -347,7 +347,7 @@ TEST_F(PeerCacheTest, DisallowNewBrEdrPeerIfLowEnergyPeerExists) {
 
   // Try to add new BR/EDR peer with BD_ADDR containing the same value as the
   // existing LE peer's public identity address.
-  auto* bredr_alias_peer = cache()->NewPeer(kAddrBrEdr, true);
+  auto* bredr_alias_peer = cache()->NewPeer(kAddrBrEdr, /*connectable=*/true);
   ASSERT_FALSE(bredr_alias_peer);
 }
 
@@ -717,7 +717,7 @@ TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithCsrk) {
 // StoreLowEnergyBond fails if it contains the address of a different,
 // previously known peer.
 TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithExistingDifferentIdentity) {
-  auto* p = cache()->NewPeer(kAddrLeRandom, true);
+  auto* p = cache()->NewPeer(kAddrLeRandom, /*connectable=*/true);
 
   // Assign the other peer's address as identity.
   sm::PairingData data;
@@ -1337,7 +1337,7 @@ class PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
   void SetUp() {
     TestLoopFixture::SetUp();
     cache_.set_peer_removed_callback([this](PeerId) { peers_removed_++; });
-    auto* peer = cache_.NewPeer(kAddrLeAlias, true /*connectable*/);
+    auto* peer = cache_.NewPeer(kAddrLeAlias, /*connectable=*/true);
     ASSERT_TRUE(peer);
     ASSERT_TRUE(peer->temporary());
     peer_addr_ = peer->address();
@@ -1466,7 +1466,7 @@ TEST_F(PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
   PeerId custom_peer_id;
   std::optional<Peer::ConnectionToken> conn_token;
   {
-    auto* custom_peer = NewPeer(kAddrLeRandom, true);
+    auto* custom_peer = NewPeer(kAddrLeRandom, /*connectable=*/true);
     ASSERT_TRUE(custom_peer);
     ASSERT_TRUE(custom_peer->temporary());
     ASSERT_FALSE(custom_peer->identity_known());
@@ -1503,7 +1503,7 @@ TEST_F(PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
   PeerId custom_peer_id;
   std::optional<Peer::ConnectionToken> conn_token;
   {
-    auto* custom_peer = NewPeer(kAddrLePublic, true);
+    auto* custom_peer = NewPeer(kAddrLePublic, /*connectable=*/true);
     ASSERT_TRUE(custom_peer);
     conn_token = custom_peer->MutLe().RegisterConnection();
     custom_peer_id = custom_peer->identifier();

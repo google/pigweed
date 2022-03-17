@@ -161,7 +161,7 @@ class L2capTest : public TestingBase {
     acl_data_channel()->RegisterLink(handle, bt::LinkType::kACL);
     l2cap()->AddACLConnection(
         handle, role, /*link_error_callback=*/[]() {},
-        /*security_upgrade_callback=*/[](auto, auto, auto) {});
+        /*security_callback=*/[](auto, auto, auto) {});
     return cmd_ids;
   }
 

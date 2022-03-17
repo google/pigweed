@@ -90,27 +90,27 @@ void ControllerTestDoubleBase::Stop() {
 }
 
 zx_status_t ControllerTestDoubleBase::SendCommandChannelPacket(const ByteBuffer& packet) {
-  zx_status_t status = cmd_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
+  zx_status_t status = cmd_channel_.write(0, packet.data(), packet.size(), /*handles=*/nullptr, 0);
   if (status != ZX_OK) {
     bt_log(WARN, "fake-hci", "failed to write to control channel: %s",
            zx_status_get_string(status));
     return status;
   }
 
-  SendSnoopChannelPacket(packet, BT_HCI_SNOOP_TYPE_EVT, true);
+  SendSnoopChannelPacket(packet, BT_HCI_SNOOP_TYPE_EVT, /*is_received=*/true);
 
   return ZX_OK;
 }
 
 zx_status_t ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer& packet) {
-  zx_status_t status = acl_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
+  zx_status_t status = acl_channel_.write(0, packet.data(), packet.size(), /*handles=*/nullptr, 0);
   if (status != ZX_OK) {
     bt_log(WARN, "fake-hci", "failed to write to ACL data channel: %s",
            zx_status_get_string(status));
     return status;
   }
 
-  SendSnoopChannelPacket(packet, BT_HCI_SNOOP_TYPE_ACL, true);
+  SendSnoopChannelPacket(packet, BT_HCI_SNOOP_TYPE_ACL, /*is_received=*/true);
 
   return ZX_OK;
 }
@@ -138,7 +138,8 @@ void ControllerTestDoubleBase::SendSnoopChannelPacket(const ByteBuffer& packet,
 
     snoop_buffer[0] = flags;
     memcpy(snoop_buffer + 1, packet.data(), packet.size());
-    zx_status_t status = snoop_channel_.write(0, snoop_buffer, packet.size() + 1, nullptr, 0);
+    zx_status_t status =
+        snoop_channel_.write(0, snoop_buffer, packet.size() + 1, /*handles=*/nullptr, 0);
     if (status != ZX_OK) {
       bt_log(WARN, "fake-hci", "cleaning up snoop channel after failed write: %s",
              zx_status_get_string(status));
@@ -182,9 +183,9 @@ void ControllerTestDoubleBase::HandleCommandPacket(async_dispatcher_t* dispatche
                                                    const zx_packet_signal_t* signal) {
   StaticByteBuffer<hci_spec::kMaxCommandPacketPayloadSize> buffer;
   uint32_t read_size;
-  zx_status_t status =
-      cmd_channel_.read(0u, buffer.mutable_data(), nullptr, hci_spec::kMaxCommandPacketPayloadSize,
-                        0, &read_size, nullptr);
+  zx_status_t status = cmd_channel_.read(0u, buffer.mutable_data(), /*handles=*/nullptr,
+                                         hci_spec::kMaxCommandPacketPayloadSize, 0, &read_size,
+                                         /*actual_handles=*/nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
   if (status < 0) {
     if (status == ZX_ERR_PEER_CLOSED) {
@@ -201,7 +202,7 @@ void ControllerTestDoubleBase::HandleCommandPacket(async_dispatcher_t* dispatche
   } else {
     MutableBufferView view(buffer.mutable_data(), read_size);
     PacketView<hci_spec::CommandHeader> packet(&view, read_size - sizeof(hci_spec::CommandHeader));
-    SendSnoopChannelPacket(packet.data(), BT_HCI_SNOOP_TYPE_CMD, false);
+    SendSnoopChannelPacket(packet.data(), BT_HCI_SNOOP_TYPE_CMD, /*is_received=*/false);
     OnCommandPacketReceived(packet);
   }
 
@@ -217,8 +218,8 @@ void ControllerTestDoubleBase::HandleACLPacket(async_dispatcher_t* dispatcher,
                                                const zx_packet_signal_t* signal) {
   StaticByteBuffer<hci_spec::kMaxACLPayloadSize + sizeof(hci_spec::ACLDataHeader)> buffer;
   uint32_t read_size;
-  zx_status_t status =
-      acl_channel_.read(0u, buffer.mutable_data(), nullptr, buffer.size(), 0, &read_size, nullptr);
+  zx_status_t status = acl_channel_.read(0u, buffer.mutable_data(), /*handles=*/nullptr,
+                                         buffer.size(), 0, &read_size, /*actual_handles=*/nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
   if (status < 0) {
     if (status == ZX_ERR_PEER_CLOSED) {
@@ -232,7 +233,7 @@ void ControllerTestDoubleBase::HandleACLPacket(async_dispatcher_t* dispatcher,
   }
 
   BufferView view(buffer.data(), read_size);
-  SendSnoopChannelPacket(view, BT_HCI_SNOOP_TYPE_ACL, false);
+  SendSnoopChannelPacket(view, BT_HCI_SNOOP_TYPE_ACL, /*is_received=*/false);
   OnACLDataPacketReceived(view);
 
   status = wait->Begin(dispatcher);

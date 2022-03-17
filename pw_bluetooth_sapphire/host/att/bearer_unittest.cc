@@ -1087,7 +1087,8 @@ class BearerTestSecurity : public BearerTest {
     ASSERT_TRUE(security_responder_);
 
     if (status.is_ok()) {
-      fake_chan()->set_security(sm::SecurityProperties(requested_security_level_, 16, false));
+      fake_chan()->set_security(
+          sm::SecurityProperties(requested_security_level_, 16, /*secure_connections=*/false));
     }
 
     // Clear the responder before invoking it.
@@ -1161,7 +1162,8 @@ TEST_F(BearerTestSecurity, SecurityUpgradeAfterInsufficientAuthentication) {
 
 TEST_F(BearerTestSecurity, SecurityUpgradeWithMitmAfterInsufficientAuthentication) {
   // Configure the channel to be already encrypted.
-  fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
+  fake_chan()->set_security(
+      sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
 
   // Configure the endpoint to respond with an authentication error.
   SetUpErrorResponder(ErrorCode::kInsufficientAuthentication);
@@ -1276,7 +1278,8 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
 
 TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncrypted) {
   // Configure the channel to be already encrypted.
-  fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
+  fake_chan()->set_security(
+      sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
 
   // Configure the endpoint to respond with an encryption error.
   SetUpErrorResponder(ErrorCode::kInsufficientEncryption);
@@ -1294,7 +1297,8 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncrypted) {
 
 TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncryptedWithMitm) {
   // Configure the channel to be already encrypted with MITM protection
-  fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16, false));
+  fake_chan()->set_security(
+      sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false));
 
   // Configure the endpoint to respond with an authentication error.
   SetUpErrorResponder(ErrorCode::kInsufficientAuthentication);

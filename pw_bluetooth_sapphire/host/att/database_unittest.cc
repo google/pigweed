@@ -20,8 +20,10 @@ constexpr UUID kTestType1(uint16_t{1});
 constexpr UUID kTestType2(uint16_t{2});
 constexpr UUID kTestType3(uint16_t{3});
 
-const AccessRequirements kAllowed(false, false, false);
-const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16, false);
+const AccessRequirements kAllowed(/*encryption=*/false, /*authentication=*/false,
+                                  /*authorization=*/false);
+const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16,
+                                         /*secure_connections=*/false);
 
 // Values with different lengths
 const auto kTestValue1 = CreateStaticByteBuffer('x', 'x');
@@ -222,7 +224,8 @@ TEST(DatabaseTest, IteratorGroupOnlySingleInactive) {
   db->NewGrouping(kTestType1, 0, kTestValue1);
 
   // |grp| is not active
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr, true /* groups_only */);
+  auto iter =
+      db->GetIterator(kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
   EXPECT_TRUE(iter.AtEnd());
   EXPECT_FALSE(iter.get());
 }
@@ -233,12 +236,12 @@ TEST(DatabaseTest, IteratorGroupOnlySingle) {
   grp->set_active(true);
 
   // Not within range.
-  auto iter =
-      db->GetIterator(grp->start_handle() + 1, kTestRangeEnd, nullptr, true /* groups_only */);
+  auto iter = db->GetIterator(grp->start_handle() + 1, kTestRangeEnd, /*type=*/nullptr,
+                              /*groups_only=*/true);
   EXPECT_TRUE(iter.AtEnd());
   EXPECT_FALSE(iter.get());
 
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr, true /* groups_only */);
+  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -258,7 +261,8 @@ TEST(DatabaseTest, IteratorGroupOnlyMultiple) {
   grp3->set_active(true);
   grp4->set_active(true);
 
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr, true /* groups_only */);
+  auto iter =
+      db->GetIterator(kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   // |grp2| should be omitted.
@@ -271,7 +275,8 @@ TEST(DatabaseTest, IteratorGroupOnlyMultiple) {
   grp2->set_active(true);
 
   // Pick a narrow range that excludes |grp1| and |grp4|.
-  iter = db->GetIterator(grp2->start_handle(), grp3->end_handle(), nullptr, true /* groups_only */);
+  iter = db->GetIterator(grp2->start_handle(), grp3->end_handle(), /*type=*/nullptr,
+                         /*groups_only=*/true);
   handles = IterHandles(&iter);
   ASSERT_EQ(2u, handles.size());
   EXPECT_EQ(grp2->start_handle(), handles[0]);
@@ -285,10 +290,10 @@ TEST(DatabaseTest, IteratorGroupOnlySingleWithFilter) {
   grp->set_active(true);
 
   // No match.
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2, true /* groups_only */);
+  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2, /*groups_only=*/true);
   EXPECT_TRUE(iter.AtEnd());
 
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1, true /* groups_only */);
+  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -318,7 +323,7 @@ TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   grp6->set_active(true);
 
   // Filter by |kTestType1|
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1, true /* groups_only */);
+  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -328,7 +333,7 @@ TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   EXPECT_EQ(grp6->start_handle(), handles[2]);
 
   // Filter by |kTestType2|
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2, true /* groups_only */);
+  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   handles = IterHandles(&iter);
@@ -338,8 +343,7 @@ TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   EXPECT_EQ(grp5->start_handle(), handles[2]);
 
   // Search narrower range.
-  iter =
-      db->GetIterator(grp1->end_handle(), grp5->end_handle(), &kTestType1, true /* groups_only */);
+  iter = db->GetIterator(grp1->end_handle(), grp5->end_handle(), &kTestType1, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   handles = IterHandles(&iter);
@@ -661,9 +665,10 @@ TEST_F(DatabaseExecuteWriteQueueTest, WritingStaticValueNotPermitted) {
 
 TEST_F(DatabaseExecuteWriteQueueTest, SecurityChecks) {
   auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
-  auto* attr =
-      grp->AddAttribute(kTestType2, att::AccessRequirements(),
-                        att::AccessRequirements(true, false, false));  // write requires encryption
+  auto* attr = grp->AddAttribute(
+      kTestType2, att::AccessRequirements(),
+      att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
+                              /*authorization=*/false));  // write requires encryption
   SetAttributeWriteHandler(attr);
   grp->set_active(true);
 
@@ -679,8 +684,9 @@ TEST_F(DatabaseExecuteWriteQueueTest, SecurityChecks) {
   wq.push(QueuedWrite(attr->handle(), 0, kTestValue1));
 
   // Request should succeed with an encrypted link.
-  ExecuteWriteQueue(kPeerId, std::move(wq),
-                    sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
+  ExecuteWriteQueue(
+      kPeerId, std::move(wq),
+      sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
   ResolveNextPendingWrite(ErrorCode::kNoError);
   EXPECT_EQ(2, callback_count());
   EXPECT_EQ(ErrorCode::kNoError, ecode());

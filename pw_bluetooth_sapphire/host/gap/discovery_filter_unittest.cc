@@ -62,22 +62,22 @@ TEST(DiscoveryFilterTest, Flags) {
 
   // The following filters requre that *all* bits be present in the advertising
   // data.
-  filter.set_flags(0b101, true);
+  filter.set_flags(0b101, /*require_all=*/true);
   EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci_spec::kRSSIInvalid));
   EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci_spec::kRSSIInvalid));
   EXPECT_TRUE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci_spec::kRSSIInvalid));
 
-  filter.set_flags(0b111, true);
+  filter.set_flags(0b111, /*require_all=*/true);
   EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci_spec::kRSSIInvalid));
   EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci_spec::kRSSIInvalid));
   EXPECT_FALSE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci_spec::kRSSIInvalid));
 
-  filter.set_flags(0b011, true);
+  filter.set_flags(0b011, /*require_all=*/true);
   EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci_spec::kRSSIInvalid));
   EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci_spec::kRSSIInvalid));
   EXPECT_FALSE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci_spec::kRSSIInvalid));
 
-  filter.set_flags(0b010, true);
+  filter.set_flags(0b010, /*require_all=*/true);
   EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci_spec::kRSSIInvalid));
   EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci_spec::kRSSIInvalid));
   EXPECT_FALSE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci_spec::kRSSIInvalid));
@@ -651,7 +651,7 @@ TEST(DiscoveryFilterTest, Combined) {
 
   // Toggle each field one by one to test that a single mismatch causes the
   // filter to fail.
-  filter.set_flags(0x03, true);
+  filter.set_flags(0x03, /*require_all=*/true);
   EXPECT_FALSE(filter.MatchLowEnergyResult(kAdvertisingData, true, kRSSI));
   filter.set_flags(0x01);
 

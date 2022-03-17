@@ -357,7 +357,7 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
  protected:
   void SetUp() override {
     ProfileServerTest::SetUp();
-    peer_ = peer_cache()->NewPeer(kTestDevAddr, true);
+    peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
     auto fake_peer = std::make_unique<bt::testing::FakePeer>(kTestDevAddr);
     test_device()->AddPeer(std::move(fake_peer));
 

@@ -65,7 +65,9 @@ const char* LevelToString(SecurityLevel level) {
   return "not secure";
 }
 
-SecurityProperties::SecurityProperties() : SecurityProperties(false, false, false, 0u) {}
+SecurityProperties::SecurityProperties()
+    : SecurityProperties(/*encrypted=*/false, /*authenticated=*/false, /*secure_connections=*/false,
+                         0u) {}
 
 SecurityProperties::SecurityProperties(bool encrypted, bool authenticated, bool secure_connections,
                                        size_t enc_key_size)

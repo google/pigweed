@@ -405,8 +405,9 @@ void FakeController::L2CAPConnectionParameterUpdate(
 
     // TODO(armansito): Instead of picking the first handle we should pick
     // the handle that matches the current LE-U link.
-    SendL2CAPCFrame(*peer->logical_links().begin(), true, l2cap::kConnectionParameterUpdateRequest,
-                    NextL2CAPCommandId(), BufferView(&payload, sizeof(payload)));
+    SendL2CAPCFrame(*peer->logical_links().begin(), /*is_le=*/true,
+                    l2cap::kConnectionParameterUpdateRequest, NextL2CAPCommandId(),
+                    BufferView(&payload, sizeof(payload)));
   });
 }
 

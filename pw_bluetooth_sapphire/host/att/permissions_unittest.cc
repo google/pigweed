@@ -10,19 +10,30 @@ namespace bt::att {
 namespace {
 
 const AccessRequirements kDisallowed;
-const AccessRequirements kNoSecurityReq(false, false, false);
-const AccessRequirements kEncryptionReq(true, false, false);
-const AccessRequirements kEncryptionWithMinKeySizeReq(true, false, false, 7);
-const AccessRequirements kAuthenticationReq(false, true, false);
-const AccessRequirements kAuthorizationReq(false, false, true);
-const AccessRequirements kAuthorizationWithMinKeySizeReq(false, false, true, 7);
+const AccessRequirements kNoSecurityReq(/*encryption=*/false, /*authentication=*/false,
+                                        /*authorization=*/false);
+const AccessRequirements kEncryptionReq(/*encryption=*/true, /*authentication=*/false,
+                                        /*authorization=*/false);
+const AccessRequirements kEncryptionWithMinKeySizeReq(/*encryption=*/true, /*authentication=*/false,
+                                                      /*authorization=*/false, 7);
+const AccessRequirements kAuthenticationReq(/*encryption=*/false, /*authentication=*/true,
+                                            /*authorization=*/false);
+const AccessRequirements kAuthorizationReq(/*encryption=*/false, /*authentication=*/false,
+                                           /*authorization=*/true);
+const AccessRequirements kAuthorizationWithMinKeySizeReq(/*encryption=*/false,
+                                                         /*authentication=*/false,
+                                                         /*authorization=*/true, 7);
 
-const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16, false);
-const sm::SecurityProperties kEncrypted(sm::SecurityLevel::kEncrypted, 16, false);
-const sm::SecurityProperties kEncryptedWithMinKeySize(sm::SecurityLevel::kEncrypted, 7, false);
-const sm::SecurityProperties kAuthenticated(sm::SecurityLevel::kAuthenticated, 16, false);
+const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16,
+                                         /*secure_connections=*/false);
+const sm::SecurityProperties kEncrypted(sm::SecurityLevel::kEncrypted, 16,
+                                        /*secure_connections=*/false);
+const sm::SecurityProperties kEncryptedWithMinKeySize(sm::SecurityLevel::kEncrypted, 7,
+                                                      /*secure_connections=*/false);
+const sm::SecurityProperties kAuthenticated(sm::SecurityLevel::kAuthenticated, 16,
+                                            /*secure_connections=*/false);
 const sm::SecurityProperties kAuthenticatedWithMinKeySize(sm::SecurityLevel::kAuthenticated, 7,
-                                                          false);
+                                                          /*secure_connections=*/false);
 
 TEST(PermissionsTest, ReadNotPermittedWhenDisallowed) {
   EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kNoSecurity));

@@ -162,7 +162,7 @@ void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback
   // TODO(fxbug.dev/968): Implement channels for LE credit-based connections
   if (type_ == bt::LinkType::kLE) {
     bt_log(WARN, "l2cap", "not opening LE channel for PSM %.4x", psm);
-    CompleteDynamicOpen(nullptr, std::move(callback));
+    CompleteDynamicOpen(/*dyn_chan=*/nullptr, std::move(callback));
     return;
   }
 

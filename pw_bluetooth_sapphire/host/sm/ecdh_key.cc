@@ -73,7 +73,7 @@ UInt256 EcdhKey::GetPublicKeyX() const {
   BN_init(&x);
   bool success =
       EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(key_), EC_KEY_get0_public_key(key_), &x,
-                                          nullptr, nullptr) == 1;
+                                          /*y=*/nullptr, /*ctx=*/nullptr) == 1;
   ZX_ASSERT(success);
   UInt256 out{};
   success = BN_bn2le_padded(out.data(), out.size(), &x) == 1;
@@ -87,7 +87,7 @@ UInt256 EcdhKey::GetPublicKeyY() const {
   BN_init(&y);
   bool success =
       EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(key_), EC_KEY_get0_public_key(key_),
-                                          nullptr, &y, nullptr) == 1;
+                                          /*x=*/nullptr, &y, /*ctx=*/nullptr) == 1;
   ZX_ASSERT(success);
   UInt256 out{};
   success = BN_bn2le_padded(out.data(), out.size(), &y) == 1;
@@ -129,7 +129,7 @@ UInt256 LocalEcdhKey::CalculateDhKey(const EcdhKey& peer_public_key) const {
   UInt256 out{0};
   bool success = ECDH_compute_key(out.data(), out.size(),
                                   EC_KEY_get0_public_key(peer_public_key.boringssl_key()),
-                                  boringssl_key(), nullptr) == out.size();
+                                  boringssl_key(), /*kdf=*/nullptr) == out.size();
   ZX_ASSERT(success);
   std::reverse(out.begin(), out.end());
   return out;

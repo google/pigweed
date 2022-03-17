@@ -39,7 +39,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
     DeviceAddress addr(DeviceAddress::Type::kBREDR, response.bd_addr);
     Peer* peer = cache->FindByAddress(addr);
     if (!peer) {
-      peer = cache->NewPeer(addr, /* conectable= */ true);
+      peer = cache->NewPeer(addr, /* connectable= */ true);
     }
     ZX_ASSERT(peer);
 
@@ -106,7 +106,7 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
   ZX_DEBUG_ASSERT(eir_handler_id_);
 
   // Set the Inquiry Scan Settings
-  WriteInquiryScanSettings(kInquiryScanInterval, kInquiryScanWindow, true);
+  WriteInquiryScanSettings(kInquiryScanInterval, kInquiryScanWindow, /*interlaced=*/true);
 }
 
 BrEdrDiscoveryManager::~BrEdrDiscoveryManager() {
@@ -269,7 +269,7 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryR
   DeviceAddress addr(DeviceAddress::Type::kBREDR, result.bd_addr);
   Peer* peer = cache_->FindByAddress(addr);
   if (!peer) {
-    peer = cache_->NewPeer(addr, true);
+    peer = cache_->NewPeer(addr, /*connectable=*/true);
   }
   ZX_DEBUG_ASSERT(peer);
 

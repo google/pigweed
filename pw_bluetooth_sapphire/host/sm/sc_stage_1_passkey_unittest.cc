@@ -147,7 +147,7 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
 
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, true /*gen_initiator_confirm*/, r), init_confirm);
+    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/true, r), init_confirm);
     stage_1()->OnPairingRandom(vals.random);
     RunLoopUntilIdle();
   }
@@ -188,7 +188,7 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryInput) {
 
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, true /*gen_initiator_confirm*/, r), init_confirm);
+    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/true, r), init_confirm);
     stage_1()->OnPairingRandom(vals.random);
     RunLoopUntilIdle();
   }
@@ -346,7 +346,7 @@ TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryDisplay) {
     RunLoopUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, false /*gen_initiator_confirm*/, r), init_confirm);
+    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
   }
   UInt128 passkey_array{0};
   // Copy little-endian uint64 passkey to the UInt128 array needed for Stage 2
@@ -386,7 +386,7 @@ TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryInput) {
     RunLoopUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, false /*gen_initiator_confirm*/, r), init_confirm);
+    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
   }
   UInt128 passkey_array{0};
   // Copy little-endian uint64 passkey to the UInt128 array needed for Stage 2
@@ -426,7 +426,7 @@ TEST_F(ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
   RunLoopUntilIdle();
   ASSERT_EQ(kPairingRandom, last_packet()->code());
   UInt128 last_rand = last_packet()->payload<PairingRandomValue>();
-  ASSERT_EQ(GenerateConfirmValue(last_rand, false /*gen_initiator_confirm*/, r), init_confirm);
+  ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
   for (size_t i = 1; i < 20; ++i) {
     r = (kPasskey & (1 << i)) ? 0x81 : 0x80;
     vals = GenerateMatchingConfirmAndRandom(r);
@@ -439,7 +439,7 @@ TEST_F(ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
     RunLoopUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, false /*gen_initiator_confirm*/, r), init_confirm);
+    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
   }
   UInt128 passkey_array{0};
   // Copy little-endian uint64 passkey to the UInt128 array needed for Stage 2

@@ -88,7 +88,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
   if (irk_) {
     random_addr = sm::util::GenerateRpa(*irk_);
   } else {
-    random_addr = sm::util::GenerateRandomAddress(false /* is_static */);
+    random_addr = sm::util::GenerateRandomAddress(/*is_static=*/false);
   }
 
   auto cmd = hci::CommandPacket::New(hci_spec::kLESetRandomAddress,

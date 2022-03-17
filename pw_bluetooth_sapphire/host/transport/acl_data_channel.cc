@@ -32,8 +32,9 @@ zx_status_t AclDataChannel::ReadAclDataPacketFromChannel(const zx::channel& chan
                                                          const ACLDataPacketPtr& packet) {
   uint32_t read_size;
   auto packet_bytes = packet->mutable_view()->mutable_data();
-  zx_status_t read_status = channel.read(0u, packet_bytes.mutable_data(), nullptr,
-                                         packet_bytes.size(), 0, &read_size, nullptr);
+  zx_status_t read_status =
+      channel.read(0u, packet_bytes.mutable_data(), /*handles=*/nullptr, packet_bytes.size(), 0,
+                   &read_size, /*actual_handles=*/nullptr);
   if (read_status < 0) {
     bt_log(DEBUG, "hci", "failed to read RX bytes: %s", zx_status_get_string(read_status));
     // Clear the handler so that we stop receiving events from it.
@@ -833,7 +834,8 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
     const QueuedDataPacket& packet = to_send.front();
 
     auto packet_bytes = packet.packet->view().data();
-    zx_status_t status = channel_.write(0, packet_bytes.data(), packet_bytes.size(), nullptr, 0);
+    zx_status_t status =
+        channel_.write(0, packet_bytes.data(), packet_bytes.size(), /*handles=*/nullptr, 0);
     if (status < 0) {
       bt_log(ERROR, "hci", "failed to send data packet to HCI driver (%s) - dropping packet",
              zx_status_get_string(status));

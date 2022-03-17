@@ -83,7 +83,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   const hci_spec::LESupportedFeatures kFeatures{0x0123456789abcdef};
   QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
   EXPECT_FALSE(peer->version());
   EXPECT_FALSE(peer->le()->features());
@@ -109,7 +109,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeature
   EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
                         &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
   EXPECT_FALSE(peer->le()->features());
   peer->MutLe().SetFeatures(kFeatures);
@@ -128,7 +128,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeature
 TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
   QueueSuccessfulInterrogation(kConnectionHandle);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
@@ -163,7 +163,7 @@ TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
                         &le_read_remote_features_error_status_packet);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
   EXPECT_FALSE(peer->le()->features());
 
@@ -187,7 +187,7 @@ TEST_F(LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesComplete)
   EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
                         &kLEReadRemoteFeaturesRsp);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
   EXPECT_FALSE(peer->le()->features());
 
@@ -216,7 +216,7 @@ TEST_F(LowEnergyInterrogatorTest, ReadLERemoteFeaturesCallbackHandlesCanceledInt
   EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
                         &kLEReadRemoteFeaturesRsp);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
   EXPECT_FALSE(peer->version());
   EXPECT_FALSE(peer->le()->features());

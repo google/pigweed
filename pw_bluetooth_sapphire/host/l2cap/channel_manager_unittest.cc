@@ -1723,7 +1723,7 @@ TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
 }
 
 TEST_F(ChannelManagerTest, LinkSecurityProperties) {
-  sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, false);
+  sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false);
 
   // Has no effect.
   chanmgr()->AssignLinkSecurityProperties(kTestHandle1, security);
@@ -1756,7 +1756,7 @@ TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
   RunLoopUntilIdle();
 
   // Assign a new security level.
-  sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, false);
+  sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false);
   chanmgr()->AssignLinkSecurityProperties(kTestHandle1, security);
 
   // Channel should return the old security level.
@@ -2143,8 +2143,7 @@ TEST_F(ChannelManagerTest,
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  RegisterLE(kTestHandle1, hci::Connection::Role::kCentral, /*LinkErrorCallback=*/DoNothing,
-             std::move(param_cb));
+  RegisterLE(kTestHandle1, hci::Connection::Role::kCentral, /*lec=*/DoNothing, std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 
@@ -2176,7 +2175,7 @@ TEST_F(ChannelManagerTest,
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  RegisterLE(kTestHandle1, hci::Connection::Role::kPeripheral, /*LinkErrorCallback=*/DoNothing,
+  RegisterLE(kTestHandle1, hci::Connection::Role::kPeripheral, /*lec=*/DoNothing,
              std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
@@ -2202,8 +2201,7 @@ TEST_F(ChannelManagerTest,
 
   // Callback should not be called for request with invalid parameters.
   LEConnectionParameterUpdateCallback param_cb = [](auto /*params*/) { ADD_FAILURE(); };
-  RegisterLE(kTestHandle1, hci::Connection::Role::kCentral, /*LinkErrorCallback=*/DoNothing,
-             std::move(param_cb));
+  RegisterLE(kTestHandle1, hci::Connection::Role::kCentral, /*lec=*/DoNothing, std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 

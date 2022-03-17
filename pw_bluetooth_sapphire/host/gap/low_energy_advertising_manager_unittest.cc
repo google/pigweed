@@ -284,7 +284,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DataSize) {
   EXPECT_EQ(1u, ad_store().size());
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(kDefaultMaxAdSize + 1), AdvertisingData(),
-                              nullptr, kTestInterval, false /* anonymous */,
+                              nullptr, kTestInterval, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetErrorCallback());
 
   RunLoopUntilIdle();
@@ -302,7 +302,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, RegisterUnregister) {
   EXPECT_FALSE(adv_mgr()->StopAdvertising(kInvalidAdvertisementId));
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
-                              kTestInterval, false /* anonymous */,
+                              kTestInterval, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetSuccessCallback());
 
   RunLoopUntilIdle();
@@ -325,7 +325,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, AdvertiserError) {
 
   EXPECT_FALSE(adv_mgr()->advertising());
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
-                              kTestInterval, false /* anonymous */,
+                              kTestInterval, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetErrorCallback());
   RunLoopUntilIdle();
 
@@ -343,7 +343,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
     EXPECT_EQ(advertised_id, connected_id);
   };
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), connect_cb,
-                              kTestInterval, false /* anonymous */,
+                              kTestInterval, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetSuccessCallback());
 
   RunLoopUntilIdle();
@@ -367,7 +367,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
   auto connect_cb = [](AdvertisementId connected_id, hci::ConnectionPtr conn) {};
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), connect_cb,
-                              kTestInterval, true /* anonymous */, /*include_tx_power_level*/ false,
+                              kTestInterval, /*anonymous=*/true, /*include_tx_power_level*/ false,
                               GetErrorCallback());
 
   EXPECT_TRUE(MoveLastStatus());
@@ -377,7 +377,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
 TEST_F(LowEnergyAdvertisingManagerTest, SendsCorrectData) {
   adv_mgr()->StartAdvertising(
       CreateFakeAdvertisingData(), CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
-      kTestInterval, false /* anonymous */, /*include_tx_power_level*/ false, GetSuccessCallback());
+      kTestInterval, /*anonymous=*/false, /*include_tx_power_level*/ false, GetSuccessCallback());
 
   RunLoopUntilIdle();
 
@@ -400,7 +400,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, SendsCorrectData) {
 TEST_F(LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               CreateFakeAdvertisingData(21 /* size of ad */), NopConnectCallback,
-                              AdvertisingInterval::FAST1, false /* anonymous */,
+                              AdvertisingInterval::FAST1, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
@@ -411,7 +411,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               CreateFakeAdvertisingData(21 /* size of ad */), NopConnectCallback,
-                              AdvertisingInterval::FAST2, false /* anonymous */,
+                              AdvertisingInterval::FAST2, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
@@ -422,7 +422,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               CreateFakeAdvertisingData(21 /* size of ad */), NopConnectCallback,
-                              AdvertisingInterval::SLOW, false /* anonymous */,
+                              AdvertisingInterval::SLOW, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
@@ -441,7 +441,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
   // certain controllers.
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
-                              AdvertisingInterval::FAST1, false /* anonymous */,
+                              AdvertisingInterval::FAST1, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
@@ -452,7 +452,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
-                              AdvertisingInterval::FAST2, false /* anonymous */,
+                              AdvertisingInterval::FAST2, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
@@ -463,7 +463,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
-                              AdvertisingInterval::SLOW, false /* anonymous */,
+                              AdvertisingInterval::SLOW, /*anonymous=*/false,
                               /*include_tx_power_level*/ false, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());

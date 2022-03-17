@@ -33,7 +33,7 @@ using PasskeyResponseCallback = FakeListener::PasskeyResponseCallback;
 
 // clang-format off
 const PairingFeatures kDefaultFeatures(
-    true,                                     // initiator
+    /*initiator=*/true,                                     // initiator
     true,                                     // secure_connections
     true,                                     // will_bond
     std::optional<CrossTransportKeyAlgo>{std::nullopt},
@@ -250,7 +250,7 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
     RunLoopUntilIdle();
 
     ZX_ASSERT_MSG(kPairingRandom == sent_code, "did not send pairing random when expected!");
-    ZX_ASSERT_MSG(GenerateConfirmValue(rsp_rand, false /*gen_init_confirm*/) == rsp_confirm,
+    ZX_ASSERT_MSG(GenerateConfirmValue(rsp_rand, /*gen_initiator_confirm=*/false) == rsp_confirm,
                   "send invalid confirm value as JustWorks responder");
     return GenerateLtkAndChecks(initiator_rand, rsp_rand);
   }
@@ -611,7 +611,7 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryDisplay) {
 
     ASSERT_EQ(kPairingRandom, sent_code);
     last_sent_rand = sent_payload;
-    EXPECT_EQ(GenerateConfirmValue(sent_payload, true /*gen_initiator_confirm*/, r), init_confirm);
+    EXPECT_EQ(GenerateConfirmValue(sent_payload, /*gen_initiator_confirm=*/true, r), init_confirm);
     ReceiveCmd(kPairingRandom, stage1_vals.random);
   }
   LtkAndChecks vals = GenerateLtkAndChecks(last_sent_rand, stage1_vals.random, uint64_t{passkey});
@@ -653,7 +653,7 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryInput) {
 
     ASSERT_EQ(kPairingRandom, sent_code);
     last_sent_rand = sent_payload;
-    EXPECT_EQ(GenerateConfirmValue(sent_payload, true /*gen_initiator_confirm*/, r), init_confirm);
+    EXPECT_EQ(GenerateConfirmValue(sent_payload, /*gen_initiator_confirm=*/true, r), init_confirm);
     ReceiveCmd(kPairingRandom, stage1_vals.random);
   }
   LtkAndChecks vals = GenerateLtkAndChecks(last_sent_rand, stage1_vals.random, uint64_t{passkey});
@@ -710,7 +710,8 @@ TEST_F(Phase2SecureConnectionsTest, ResponderFlowSuccessJustWorks) {
 
   ASSERT_EQ(kPairingRandom, sent_code);
   UInt128 responder_rand = sent_payload;
-  ASSERT_EQ(GenerateConfirmValue(responder_rand, false /*gen_init_confirm*/), responder_confirm);
+  ASSERT_EQ(GenerateConfirmValue(responder_rand, /*gen_initiator_confirm=*/false),
+            responder_confirm);
   ASSERT_TRUE(confirm_cb);
   LtkAndChecks expected_stage2_vals = GenerateLtkAndChecks(kInitiatorRand, responder_rand);
   // After receiving user confirmation & the peer dhkey check, we should send the DHKey Check Eb.

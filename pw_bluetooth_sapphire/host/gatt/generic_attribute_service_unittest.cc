@@ -92,9 +92,10 @@ TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
   constexpr IdType kChrcId = 12;
   constexpr uint8_t kChrcProps = Property::kRead;
   constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
-  const att::AccessRequirements kReadReqs(true, true, true);
+  const att::AccessRequirements kReadReqs(/*encryption=*/true, /*authentication=*/true,
+                                          /*authorization=*/true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
-  auto service = std::make_unique<Service>(false /* primary */, kTestSvcType);
+  auto service = std::make_unique<Service>(/*primary=*/false, kTestSvcType);
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
   auto service_id =
@@ -132,8 +133,9 @@ TEST_F(GenericAttributeServiceTest, IndicateOnUnregister) {
   constexpr uint8_t kChrcProps = Property::kNotify;
   constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
   const att::AccessRequirements kReadReqs, kWriteReqs;
-  const att::AccessRequirements kUpdateReqs(true, true, true);
-  auto service = std::make_unique<Service>(false /* primary */, kTestSvcType);
+  const att::AccessRequirements kUpdateReqs(/*encryption=*/true, /*authentication=*/true,
+                                            /*authorization=*/true);
+  auto service = std::make_unique<Service>(/*primary=*/false, kTestSvcType);
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
   auto service_id =

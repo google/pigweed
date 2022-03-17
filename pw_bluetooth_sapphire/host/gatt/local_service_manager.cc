@@ -28,10 +28,11 @@ att::Handle InsertCharacteristicAttributes(att::AttributeGrouping* grouping,
   ZX_DEBUG_ASSERT(write_handler);
 
   // Characteristic Declaration (Vol 3, Part G, 3.3.1).
-  auto* decl_attr =
-      grouping->AddAttribute(types::kCharacteristicDeclaration,
-                             att::AccessRequirements(false, false, false),  // read (no security)
-                             att::AccessRequirements());                    // write (not allowed)
+  auto* decl_attr = grouping->AddAttribute(
+      types::kCharacteristicDeclaration,
+      att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                              /*authorization=*/false),  // read (no security)
+      att::AccessRequirements());                        // write (not allowed)
   ZX_DEBUG_ASSERT(decl_attr);
 
   // Characteristic Value Declaration (Vol 3, Part G, 3.3.2)
@@ -42,7 +43,7 @@ att::Handle InsertCharacteristicAttributes(att::AttributeGrouping* grouping,
   value_attr->set_read_handler(std::move(read_handler));
   value_attr->set_write_handler(std::move(write_handler));
 
-  size_t uuid_size = chrc.type().CompactSize(false /* allow_32bit */);
+  size_t uuid_size = chrc.type().CompactSize(/*allow_32bit=*/false);
   ZX_DEBUG_ASSERT(uuid_size == 2 || uuid_size == 16);
 
   // The characteristic declaration value contains:
@@ -55,7 +56,7 @@ att::Handle InsertCharacteristicAttributes(att::AttributeGrouping* grouping,
   decl_value[2] = static_cast<uint8_t>(value_attr->handle() >> 8);
 
   auto uuid_view = decl_value.mutable_view(3);
-  chrc.type().ToBytes(&uuid_view, false /* allow_32bit */);
+  chrc.type().ToBytes(&uuid_view, /*allow_32bit=*/false);
   decl_attr->SetValue(decl_value);
 
   return value_attr->handle();
@@ -160,8 +161,8 @@ class LocalServiceManager::ServiceData final {
     // Sort characteristics by UUID size (see Vol 3, Part G, 3.3.1).
     auto chrcs = service->ReleaseCharacteristics();
     std::sort(chrcs.begin(), chrcs.end(), [](const auto& chrc_ptr1, const auto& chrc_ptr2) {
-      return chrc_ptr1->type().CompactSize(false /* allow_32bit */) <
-             chrc_ptr2->type().CompactSize(false /* allow_32bit */);
+      return chrc_ptr1->type().CompactSize(/*allow_32bit=*/false) <
+             chrc_ptr2->type().CompactSize(/*allow_32bit=*/false);
     });
     for (auto& chrc : chrcs) {
       AddCharacteristic(grouping, std::move(chrc));
@@ -346,8 +347,9 @@ class LocalServiceManager::ServiceData final {
     if (ext_props) {
       auto* decl_attr = grouping->AddAttribute(
           types::kCharacteristicExtProperties,
-          att::AccessRequirements(false, false, false),  // read (no security)
-          att::AccessRequirements());                    // write (not allowed)
+          att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                  /*authorization=*/false),  // read (no security)
+          att::AccessRequirements());                        // write (not allowed)
       ZX_DEBUG_ASSERT(decl_attr);
       decl_attr->SetValue(CreateStaticByteBuffer((uint8_t)(ext_props & 0x00FF),
                                                  (uint8_t)((ext_props & 0xFF00) >> 8)));
@@ -361,8 +363,8 @@ class LocalServiceManager::ServiceData final {
     // Information response.
     auto descs = chrc->ReleaseDescriptors();
     std::sort(descs.begin(), descs.end(), [](const auto& desc_ptr1, const auto& desc_ptr2) {
-      return desc_ptr1->type().CompactSize(false /* allow_32bit */) <
-             desc_ptr2->type().CompactSize(false /* allow_32bit */);
+      return desc_ptr1->type().CompactSize(/*allow_32bit=*/false) <
+             desc_ptr2->type().CompactSize(/*allow_32bit=*/false);
     });
     for (auto& desc : descs) {
       AddDescriptor(grouping, std::move(desc));
@@ -408,8 +410,9 @@ class LocalServiceManager::ServiceData final {
 
     // Readable with no authentication or authorization (Vol 3, Part G,
     // 3.3.3.3). We let the service determine the encryption permission.
-    att::AccessRequirements read_reqs(chrc.update_permissions().encryption_required(), false,
-                                      false);
+    att::AccessRequirements read_reqs(chrc.update_permissions().encryption_required(),
+                                      /*authentication=*/false,
+                                      /*authorization=*/false);
 
     IdType id = chrc.id();
     auto self = weak_ptr_factory_.GetWeakPtr();
@@ -483,7 +486,7 @@ IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read
     return kInvalidId;
 
   // GATT does not support 32-bit UUIDs.
-  const BufferView service_decl_value = service->type().CompactView(false /* allow_32bit */);
+  const BufferView service_decl_value = service->type().CompactView(/*allow_32bit=*/false);
 
   // TODO(armansito): Cluster services with 16-bit and 128-bit together inside
   // |db_| (Vol 3, Part G, 3.1).

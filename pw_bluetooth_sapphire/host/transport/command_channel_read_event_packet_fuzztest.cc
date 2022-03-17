@@ -20,7 +20,7 @@ void fuzz(const uint8_t* data, size_t size) {
   if (status != ZX_OK) {
     return;
   }
-  a.write(0u, data, size, nullptr, 0);
+  a.write(0u, data, size, /*handles=*/nullptr, 0);
   CommandChannel::ReadEventPacketFromChannel(b, packet);
 }
 

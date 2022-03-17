@@ -27,7 +27,7 @@ namespace {
 
 // clang-format off
 const PairingFeatures kDefaultFeatures(
-    true,                                     // initiator
+    /*initiator=*/true,                                     // initiator
     false,                                    // secure_connections
     true,                                     // will_bond
     std::optional<CrossTransportKeyAlgo>{std::nullopt},

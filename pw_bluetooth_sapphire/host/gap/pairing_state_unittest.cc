@@ -79,7 +79,7 @@ class PairingStateTest : public ::gtest::TestLoopFixture {
 
   void SetUp() override {
     peer_cache_ = std::make_unique<PeerCache>();
-    peer_ = peer_cache_->NewPeer(kPeerAddress, true);
+    peer_ = peer_cache_->NewPeer(kPeerAddress, /*connectable=*/true);
 
     auth_request_count_ = 0;
     send_auth_request_callback_ = [this]() { auth_request_count_++; };

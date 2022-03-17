@@ -68,7 +68,7 @@ class BrEdrInterrogatorTest : public TestingBase {
     const DynamicByteBuffer remote_version_complete_packet =
         testing::ReadRemoteVersionInfoCompletePacket(conn);
     const DynamicByteBuffer remote_supported_complete_packet =
-        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, true);
+        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, /*extended_features=*/true);
 
     EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
                           &kRemoteNameRequestRsp, &remote_name_request_complete_packet);
@@ -121,7 +121,7 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestCo
   EXPECT_CMD_PACKET_OUT(test_device(),
                         testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   hci::Result<> status = fitx::ok();
   interrogator()->Start(peer->identifier(), kConnectionHandle,
@@ -134,7 +134,7 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestCo
 TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_FALSE(peer->name());
   EXPECT_FALSE(peer->version());
   EXPECT_FALSE(peer->features().HasPage(0));
@@ -159,7 +159,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
 TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
@@ -187,7 +187,7 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
   EXPECT_CMD_PACKET_OUT(test_device(),
                         testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_FALSE(peer->name());
 
   std::optional<hci::Result<>> status;

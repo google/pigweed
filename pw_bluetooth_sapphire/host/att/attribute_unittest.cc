@@ -35,33 +35,34 @@ TEST(AttributeTest, AccessRequirementsDefault) {
 }
 
 TEST(AttributeTest, AccessRequirements) {
-  AccessRequirements reqs0(true, false, false);
+  AccessRequirements reqs0(/*encryption=*/true, /*authentication=*/false, /*authorization=*/false);
   EXPECT_TRUE(reqs0.allowed());
   EXPECT_TRUE(reqs0.encryption_required());
   EXPECT_FALSE(reqs0.authentication_required());
   EXPECT_FALSE(reqs0.authorization_required());
   EXPECT_EQ(reqs0.min_enc_key_size(), sm::kMaxEncryptionKeySize);
 
-  AccessRequirements reqs1(true, false, false, 8);
+  AccessRequirements reqs1(/*encryption=*/true, /*authentication=*/false, /*authorization=*/false,
+                           8);
   EXPECT_TRUE(reqs1.allowed());
   EXPECT_TRUE(reqs1.encryption_required());
   EXPECT_FALSE(reqs1.authentication_required());
   EXPECT_FALSE(reqs1.authorization_required());
   EXPECT_EQ(reqs1.min_enc_key_size(), 8u);
 
-  AccessRequirements reqs2(false, true, false);
+  AccessRequirements reqs2(/*encryption=*/false, /*authentication=*/true, /*authorization=*/false);
   EXPECT_TRUE(reqs2.allowed());
   EXPECT_FALSE(reqs2.encryption_required());
   EXPECT_TRUE(reqs2.authentication_required());
   EXPECT_FALSE(reqs2.authorization_required());
 
-  AccessRequirements reqs3(false, false, true);
+  AccessRequirements reqs3(/*encryption=*/false, /*authentication=*/false, /*authorization=*/true);
   EXPECT_TRUE(reqs3.allowed());
   EXPECT_FALSE(reqs3.encryption_required());
   EXPECT_FALSE(reqs3.authentication_required());
   EXPECT_TRUE(reqs3.authorization_required());
 
-  AccessRequirements reqs4(false, false, false);
+  AccessRequirements reqs4(/*encryption=*/false, /*authentication=*/false, /*authorization=*/false);
   EXPECT_TRUE(reqs4.allowed());
   EXPECT_FALSE(reqs4.encryption_required());
   EXPECT_FALSE(reqs4.authentication_required());
@@ -140,8 +141,10 @@ TEST(AttributeTest, ReadAsyncReadNotAllowed) {
 TEST(AttributeTest, ReadAsyncReadNoHandler) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr =
-      group.AddAttribute(kTestType2, AccessRequirements(false, false, false),  // read (no security)
-                         AccessRequirements());                                // write not allowed
+      group.AddAttribute(kTestType2,
+                         AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                            /*authorization=*/false),  // read (no security)
+                         AccessRequirements());                        // write not allowed
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, [](auto, const auto&) {}));
 }
 
@@ -151,8 +154,10 @@ TEST(AttributeTest, ReadAsync) {
 
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr =
-      group.AddAttribute(kTestType2, AccessRequirements(false, false, false),  // read (no security)
-                         AccessRequirements());                                // write not allowed
+      group.AddAttribute(kTestType2,
+                         AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                            /*authorization=*/false),  // read (no security)
+                         AccessRequirements());                        // write not allowed
 
   bool callback_called = false;
   auto callback = [&](ErrorCode status, const auto& value) {
@@ -185,8 +190,9 @@ TEST(AttributeTest, WriteAsyncWriteNoHandler) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr =
       group.AddAttribute(kTestType2,
-                         AccessRequirements(),                      // read not allowed
-                         AccessRequirements(false, false, false));  // write no security
+                         AccessRequirements(),  // read not allowed
+                         AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                            /*authorization=*/false));  // write no security
   EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
@@ -197,8 +203,9 @@ TEST(AttributeTest, WriteAsync) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr =
       group.AddAttribute(kTestType2,
-                         AccessRequirements(),                      // read not allowed
-                         AccessRequirements(false, false, false));  // write no security
+                         AccessRequirements(),  // read not allowed
+                         AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                            /*authorization=*/false));  // write no security
 
   bool callback_called = false;
   auto callback = [&](ErrorCode status) {

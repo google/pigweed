@@ -709,7 +709,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     const DynamicByteBuffer remote_version_complete_packet =
         testing::ReadRemoteVersionInfoCompletePacket(conn);
     const DynamicByteBuffer remote_supported_complete_packet =
-        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, true);
+        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, /*extended_features=*/true);
 
     EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
                           &kRemoteNameRequestRsp, &remote_name_complete_packet);
@@ -727,7 +727,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     const DynamicByteBuffer remote_version_complete_packet =
         testing::ReadRemoteVersionInfoCompletePacket(conn);
     const DynamicByteBuffer remote_supported_complete_packet =
-        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, true);
+        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, /*extended_features=*/true);
     const DynamicByteBuffer remote_extended1_complete_packet =
         testing::ReadRemoteExtended1CompletePacket(conn);
 
@@ -828,7 +828,7 @@ TEST_F(BrEdrConnectionManagerTest, DisableConnectivity) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableNone, &kWriteScanEnableRsp);
 
-  connmgr()->SetConnectable(false, cb);
+  connmgr()->SetConnectable(/*connectable=*/false, cb);
 
   RunLoopUntilIdle();
 
@@ -837,7 +837,7 @@ TEST_F(BrEdrConnectionManagerTest, DisableConnectivity) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
 
-  connmgr()->SetConnectable(false, cb);
+  connmgr()->SetConnectable(/*connectable=*/false, cb);
 
   RunLoopUntilIdle();
 
@@ -856,7 +856,7 @@ TEST_F(BrEdrConnectionManagerTest, EnableConnectivity) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspNone);
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnablePage, &kWriteScanEnableRsp);
 
-  connmgr()->SetConnectable(true, cb);
+  connmgr()->SetConnectable(/*connectable=*/true, cb);
 
   RunLoopUntilIdle();
 
@@ -867,7 +867,7 @@ TEST_F(BrEdrConnectionManagerTest, EnableConnectivity) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspInquiry);
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
 
-  connmgr()->SetConnectable(true, cb);
+  connmgr()->SetConnectable(/*connectable=*/true, cb);
 
   RunLoopUntilIdle();
 
@@ -925,7 +925,7 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
 // matching address to a dual mode peer.
 TEST_F(BrEdrConnectionManagerTest, IncomingConnectionUpgradesKnownLowEnergyPeerToDualMode) {
   const DeviceAddress le_alias_addr(DeviceAddress::Type::kLEPublic, kTestDevAddr.value());
-  Peer* const peer = peer_cache()->NewPeer(le_alias_addr, true);
+  Peer* const peer = peer_cache()->NewPeer(le_alias_addr, /*connectable=*/true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
@@ -1541,7 +1541,7 @@ TEST_F(BrEdrConnectionManagerTest, InitializingPeerDoesNotTimeout) {
 
 TEST_F(BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSearchedFor) {
   constexpr UUID kServiceUuid1 = sdp::profile::kAudioSink;
-  auto* const peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* const peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   peer->MutBrEdr().AddService(kServiceUuid1);
 
   // Search for different service.
@@ -1592,7 +1592,7 @@ TEST_F(BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSear
 
 TEST_F(BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSearchOfSameService) {
   constexpr UUID kServiceUuid = sdp::profile::kAudioSink;
-  auto* const peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* const peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   peer->MutBrEdr().AddService(kServiceUuid);
 
   size_t search_cb_count = 0;
@@ -1772,7 +1772,8 @@ TEST_F(BrEdrConnectionManagerTest, SearchOnReconnect) {
   const DynamicByteBuffer remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
   const DynamicByteBuffer remote_supported_complete_packet =
-      testing::ReadRemoteSupportedFeaturesCompletePacket(kConnectionHandle, false);
+      testing::ReadRemoteSupportedFeaturesCompletePacket(kConnectionHandle,
+                                                         /*extended_features=*/false);
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(kTestDevAddr),
                         &kRemoteNameRequestRsp, &remote_name_complete_packet);
@@ -2300,7 +2301,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectUnknownPeer) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, ConnectLowEnergyPeer) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddrLe, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddrLe, /*connectable=*/true);
   EXPECT_FALSE(connmgr()->Connect(peer->identifier(), {}));
 }
 
@@ -2456,7 +2457,7 @@ TEST_F(BrEdrConnectionManagerTest, AddServiceSearchAll) {
 
 // An error is received via the HCI Command cb_status event
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRspError);
 
@@ -2474,7 +2475,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
 
 // Connection Complete event reports error
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
                         &kConnectionCompleteError);
@@ -2500,7 +2501,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnectionCancel, &kCreateConnectionCancelRsp,
@@ -2523,7 +2524,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
 
 // Successful connection to single peer
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeer) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
@@ -2552,7 +2553,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeer) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
   // Queue up outbound connection.
@@ -2588,7 +2589,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
 
 // Connecting to an already connected peer should complete instantly
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
@@ -2630,7 +2631,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
 // Initiating Two Connections to the same (currently unconnected) peer should
 // successfully establish both
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
@@ -2668,7 +2669,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInterrogation) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
@@ -2709,8 +2710,8 @@ TEST_F(BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInt
 }
 
 TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
-  auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, true);
-  auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);
+  auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
+  auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, /*connectable=*/true);
 
   // Enqueue first connection request (which will timeout and be cancelled)
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
@@ -2762,7 +2763,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
 
 TEST_F(BrEdrConnectionManagerTest, ConnectToDualModePeerThatWasFirstLowEnergyOnly) {
   const DeviceAddress kTestDevAddrLeAlias(DeviceAddress::Type::kLEPublic, kTestDevAddr.value());
-  auto* peer = peer_cache()->NewPeer(kTestDevAddrLeAlias, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddrLeAlias, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
   EXPECT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
@@ -2799,8 +2800,8 @@ TEST_F(BrEdrConnectionManagerTest, ConnectToDualModePeerThatWasFirstLowEnergyOnl
 }
 
 TEST_F(BrEdrConnectionManagerTest, DisconnectPendingConnections) {
-  auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, true);
-  auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);
+  auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
+  auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, /*connectable=*/true);
 
   // Enqueue first connection request (which will await Connection Complete)
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
@@ -2826,7 +2827,7 @@ TEST_F(BrEdrConnectionManagerTest, DisconnectPendingConnections) {
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   // Peer successfully connects to us.
   QueueSuccessfulIncomingConn(kTestDevAddr);
@@ -3027,7 +3028,7 @@ TEST_F(BrEdrConnectionManagerTest,
 }
 
 TEST_F(BrEdrConnectionManagerTest, PairUnconnectedPeer) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
   ASSERT_EQ(peer_cache()->count(), 1u);
   uint count_cb_called = 0;
@@ -3192,7 +3193,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelPara
 // Tests that the connection manager cleans up its connection map correctly following a
 // disconnection due to encryption failure.
 TEST_F(BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
@@ -3498,7 +3499,7 @@ TEST_F(BrEdrConnectionManagerTest, RejectUnsupportedConnectionRequest) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
 
   hci::Result<> status = ToResult(HostError::kFailed);
@@ -3544,7 +3545,7 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
   hci::Result<> status = ToResult(HostError::kFailed);
   BrEdrConnection* conn_ref = nullptr;
@@ -3583,7 +3584,7 @@ TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, DuplicateIncomingConnectionsFromSamePeerRejected) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
   ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
 
   // Our first request should be accepted - we send back a success status, not the connection

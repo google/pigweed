@@ -170,7 +170,7 @@ void Server::OnFindInformation(att::Bearer::TransactionId tid, const att::Packet
     ZX_DEBUG_ASSERT(attr);
 
     // GATT does not allow 32-bit UUIDs
-    size_t compact_size = attr->type().CompactSize(false /* allow_32bit */);
+    size_t compact_size = attr->type().CompactSize(/*allow_32bit=*/false);
     if (results.empty()) {
       // |uuid_size| is determined by the first attribute.
       uuid_size = compact_size;
@@ -205,7 +205,7 @@ void Server::OnFindInformation(att::Bearer::TransactionId tid, const att::Packet
   for (const auto& attr : results) {
     *reinterpret_cast<att::Handle*>(out_entries.mutable_data()) = htole16(attr->handle());
     auto uuid_view = out_entries.mutable_view(sizeof(att::Handle));
-    attr->type().ToBytes(&uuid_view, false /* allow32_bit */);
+    attr->type().ToBytes(&uuid_view, /*allow_32bit=*/false);
 
     // advance
     out_entries = out_entries.mutable_view(entry_size);
@@ -236,7 +236,7 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
     return;
   }
 
-  auto iter = db()->GetIterator(start, end, &type, false);
+  auto iter = db()->GetIterator(start, end, &type, /*groups_only=*/false);
   if (iter.AtEnd()) {
     att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kAttributeNotFound);
     return;
@@ -320,7 +320,7 @@ void Server::OnReadByGroupType(att::Bearer::TransactionId tid, const att::Packet
 
   size_t value_size;
   std::list<const att::Attribute*> results;
-  auto error_code = ReadByTypeHelper(start, end, group_type, true /* group_type */,
+  auto error_code = ReadByTypeHelper(start, end, group_type, /*group_type=*/true,
                                      att_->mtu() - kHeaderSize, att::kMaxReadByGroupTypeValueLength,
                                      sizeof(att::AttributeGroupDataEntry), &value_size, &results);
   if (error_code != att::ErrorCode::kNoError) {
@@ -387,7 +387,7 @@ void Server::OnReadByType(att::Bearer::TransactionId tid, const att::PacketReade
 
   size_t value_size;
   std::list<const att::Attribute*> results;
-  auto error_code = ReadByTypeHelper(start, end, type, false /* group_type */,
+  auto error_code = ReadByTypeHelper(start, end, type, /*group_type=*/false,
                                      att_->mtu() - kHeaderSize, att::kMaxReadByTypeValueLength,
                                      sizeof(att::AttributeData), &value_size, &results);
   if (error_code != att::ErrorCode::kNoError) {

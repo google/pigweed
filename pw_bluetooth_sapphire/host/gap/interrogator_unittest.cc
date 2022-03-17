@@ -95,7 +95,7 @@ TEST_F(InterrogatorTest, DroppingInterrogationRefCompletesInterrogation) {
   std::optional<InterrogationRefPtr> ref;
   interrogator()->set_send_commands_cb([&ref](InterrogationRefPtr r) { ref = std::move(r); });
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   ASSERT_FALSE(ref.has_value());
 
@@ -122,7 +122,7 @@ TEST_F(InterrogatorTest,
     interrogator()->ReadRemoteVersionInformation(*ref);
   });
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   ASSERT_FALSE(ref.has_value());
 
@@ -154,7 +154,7 @@ TEST_F(InterrogatorTest, Cancel) {
     interrogator()->ReadRemoteVersionInformation(*ref);
   });
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
 
   ASSERT_FALSE(ref.has_value());
 

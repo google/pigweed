@@ -1060,7 +1060,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
 }
 
 TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
-  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress1, true);
+  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress1, /*connectable=*/true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
@@ -1089,7 +1089,7 @@ TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualM
 }
 
 TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
-  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress2, true);
+  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress2, /*connectable=*/true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 

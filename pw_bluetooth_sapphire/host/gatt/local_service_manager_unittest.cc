@@ -28,7 +28,8 @@ constexpr att::Handle kFirstChrcValueHandle = 0x0003;
 constexpr att::Handle kFirstDescrHandle = 0x0004;
 
 inline att::AccessRequirements AllowedNoSecurity() {
-  return att::AccessRequirements(false, false, false);
+  return att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                 /*authorization=*/false);
 }
 
 // Convenience function that registers |service| with |mgr| using the NOP
@@ -44,11 +45,11 @@ IdType RegisterService(LocalServiceManager* mgr, ServicePtr service,
 TEST(LocalServiceManagerTest, EmptyService) {
   LocalServiceManager mgr;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto id1 = RegisterService(&mgr, std::move(service));
   EXPECT_NE(0u, id1);
 
-  service = std::make_unique<Service>(false /* primary */, kTestType32);
+  service = std::make_unique<Service>(/*primary=*/false, kTestType32);
   auto id2 = RegisterService(&mgr, std::move(service));
   EXPECT_NE(0u, id2);
 
@@ -81,7 +82,7 @@ TEST(LocalServiceManagerTest, EmptyService) {
 TEST(LocalServiceManagerTest, UnregisterService) {
   LocalServiceManager mgr;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto id1 = RegisterService(&mgr, std::move(service));
   EXPECT_NE(0u, id1);
   EXPECT_EQ(1u, mgr.database()->groupings().size());
@@ -103,10 +104,11 @@ TEST(LocalServiceManagerTest, RegisterCharacteristic) {
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
   constexpr UUID kTestChrcType(uint16_t{0xabcd});
-  const att::AccessRequirements kReadReqs(true, true, true);
+  const att::AccessRequirements kReadReqs(/*encryption=*/true, /*authentication=*/true,
+                                          /*authorization=*/true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
   auto id1 = RegisterService(&mgr, std::move(service));
@@ -154,10 +156,11 @@ TEST(LocalServiceManagerTest, RegisterCharacteristic32) {
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
   constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
-  const att::AccessRequirements kReadReqs(true, true, true);
+  const att::AccessRequirements kReadReqs(/*encryption=*/true, /*authentication=*/true,
+                                          /*authorization=*/true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
   auto id1 = RegisterService(&mgr, std::move(service));
@@ -205,10 +208,11 @@ TEST(LocalServiceManagerTest, RegisterCharacteristic128) {
   constexpr uint8_t kChrcProps = Property::kRead;
   UUID kTestChrcType;
   EXPECT_TRUE(StringToUuid("00112233-4455-6677-8899-AABBCCDDEEFF", &kTestChrcType));
-  const att::AccessRequirements kReadReqs(true, true, true);
+  const att::AccessRequirements kReadReqs(/*encryption=*/true, /*authentication=*/true,
+                                          /*authorization=*/true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
   auto id1 = RegisterService(&mgr, std::move(service));
@@ -255,7 +259,7 @@ TEST(LocalServiceManagerTest, ExtPropSetSuccess) {
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr IdType kChrcId = 5;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
 
   constexpr uint8_t kChrcProps = Property::kRead;
   constexpr uint8_t kExtChrcProps = ExtendedProperty::kReliableWrite;
@@ -281,7 +285,7 @@ TEST(LocalServiceManagerTest, ExtPropSetFailure) {
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr UUID kDescType16(uint16_t{0x2900});  // UUID for Ext Prop
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto chrc =
       std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
   chrc->AddDescriptor(std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
@@ -306,7 +310,7 @@ TEST(LocalServiceManagerTest, RegisterCharacteristicSorted) {
   constexpr IdType kChrcId3 = 3;
   constexpr uint8_t kChrcProps3 = 3;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId0, kType128, kChrcProps0, 0,
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId1, kType16, kChrcProps1, 0,
@@ -344,7 +348,7 @@ TEST(LocalServiceManagerTest, RegisterDescriptor) {
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr UUID kDescType16(uint16_t{0x5678});
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto chrc =
       std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
   chrc->AddDescriptor(std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
@@ -369,7 +373,7 @@ TEST(LocalServiceManagerTest, DuplicateChrcIds) {
 
   constexpr UUID kChrcType16(uint16_t{0x1234});
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
 
   // Use same characteristic ID twice.
   service->AddCharacteristic(
@@ -387,7 +391,7 @@ TEST(LocalServiceManagerTest, DuplicateDescIds) {
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr UUID kDescType16(uint16_t{0x5678});
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
 
   // Use same descriptor ID twice.
   auto chrc =
@@ -406,7 +410,7 @@ TEST(LocalServiceManagerTest, DuplicateChrcAndDescIds) {
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr UUID kDescType16(uint16_t{0x5678});
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
 
   // Use same descriptor ID twice.
   auto chrc =
@@ -423,7 +427,7 @@ TEST(LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr IdType kChrcId = 5;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(
       kChrcId, kChrcType16, Property::kRead, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
@@ -453,7 +457,7 @@ TEST(LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
   auto kReadReqs = AllowedNoSecurity();
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs,
                                                               kWriteReqs, kUpdateReqs));
 
@@ -487,7 +491,7 @@ TEST(LocalServiceManagerTest, ReadCharacteristic) {
   auto kReadReqs = AllowedNoSecurity();
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(
       kChrcId, kChrcType16, Property::kRead, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
@@ -528,7 +532,7 @@ TEST(LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
   constexpr IdType kChrcId = 5;
   const BufferView kTestValue;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(
       kChrcId, kChrcType16, Property::kWrite, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
@@ -558,7 +562,7 @@ TEST(LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
   const att::AccessRequirements kReadReqs, kUpdateReqs;
   auto kWriteReqs = AllowedNoSecurity();
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs,
                                                               kWriteReqs, kUpdateReqs));
 
@@ -592,7 +596,7 @@ TEST(LocalServiceManagerTest, WriteCharacteristic) {
   const att::AccessRequirements kReadReqs, kUpdateReqs;
   auto kWriteReqs = AllowedNoSecurity();
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   service->AddCharacteristic(std::make_unique<Characteristic>(
       kChrcId, kChrcType16, Property::kWrite, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
@@ -633,7 +637,7 @@ TEST(LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
   constexpr IdType kChrcId = 0;
   constexpr IdType kDescId = 1;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs,
                                                kUpdateReqs);
   chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kWriteReqs));
@@ -669,7 +673,7 @@ TEST(LocalServiceManagerTest, ReadDescriptor) {
   auto kReadReqs = AllowedNoSecurity();
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs,
                                                kUpdateReqs);
   chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kReadReqs));
@@ -714,7 +718,7 @@ TEST(LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
   constexpr IdType kDescId = 1;
   const BufferView kTestValue;
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs,
                                                kUpdateReqs);
   chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kWriteReqs));
@@ -750,7 +754,7 @@ TEST(LocalServiceManagerTest, WriteDescriptor) {
   const att::AccessRequirements kReadReqs, kUpdateReqs;
   auto kWriteReqs = AllowedNoSecurity();
 
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs,
                                                kUpdateReqs);
   chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kWriteReqs));
@@ -806,19 +810,20 @@ TEST(LocalServiceManagerTest, ServiceChanged) {
   expected_id = 1u;
   expected_start = 1u;
   expected_end = 1u;
-  auto service = std::make_unique<Service>(true /* primary */, kTestType16);
+  auto service = std::make_unique<Service>(/*primary=*/true, kTestType16);
   auto id1 = RegisterService(&mgr, std::move(service));
   EXPECT_NE(0u, id1);
   EXPECT_EQ(1, callback_count);
 
   expected_start = 2u;
   expected_end = 2u;
-  service = std::make_unique<Service>(false /* primary */, kTestType32);
+  service = std::make_unique<Service>(/*primary=*/false, kTestType32);
 
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
   constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
-  const att::AccessRequirements kReadReqs(true, true, true);
+  const att::AccessRequirements kReadReqs(/*encryption=*/true, /*authentication=*/true,
+                                          /*authorization=*/true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
   service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
                                                               kReadReqs, kWriteReqs, kUpdateReqs));
@@ -871,7 +876,7 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
 
   void BuildService(uint8_t props, const att::AccessRequirements& update_reqs) {
     const att::AccessRequirements kReqs;
-    auto service = std::make_unique<Service>(true /* is_primary */, kTestType16);
+    auto service = std::make_unique<Service>(/*is_primary=*/true, kTestType16);
     service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestType32, props, 0,
                                                                 kReqs, kReqs, update_reqs));
     auto ccc_callback = [this](IdType cb_svc_id, IdType id, PeerId peer_id, bool notify,
@@ -923,7 +928,8 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
 TEST_F(LocalClientCharacteristicConfigurationTest, UpdatePermissions) {
   // Require authentication. This should have no bearing on reads but it should
   // prevent writes.
-  const att::AccessRequirements kUpdateReqs(false, true, false);
+  const att::AccessRequirements kUpdateReqs(/*encryption=*/false, /*authentication=*/true,
+                                            /*authorization=*/false);
   constexpr uint8_t kProps = Property::kNotify;
   BuildService(kProps, kUpdateReqs);
 

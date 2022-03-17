@@ -527,8 +527,8 @@ class Impl final : public Client {
         }
 
         // Notify the handler. By default, there are no extended properties to report.
-        chrc_cb(CharacteristicData(properties, /*extended_properties=*/std::nullopt,
-                                   char_attr.handle, value_handle, value_uuid));
+        chrc_cb(CharacteristicData(properties, /*ext_props=*/std::nullopt, char_attr.handle,
+                                   value_handle, value_uuid));
       }
 
       // The procedure is over if we have reached the end of the handle

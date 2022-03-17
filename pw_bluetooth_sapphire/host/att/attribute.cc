@@ -79,8 +79,9 @@ AttributeGrouping::AttributeGrouping(const UUID& group_type, Handle start_handle
   // TODO(armansito): Allow callers to require at most encryption.
   attributes_.push_back(
       Attribute(this, start_handle, group_type,
-                AccessRequirements(false, false, false),  // read allowed, no security
-                AccessRequirements()));                   // write disallowed
+                AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                   /*authorization=*/false),  // read allowed, no security
+                AccessRequirements()));                       // write disallowed
 
   attributes_[0].SetValue(decl_value);
 }

@@ -108,7 +108,7 @@ class SocketChannelRelayTest : public ::testing::Test {
   // Note: A call to RunLoopOnce() may cause multiple timer-based tasks
   // to be dispatched. (When the timer expires, async_loop_run_once() dispatches
   // all expired timer-based tasks.)
-  void RunLoopOnce() { loop_.Run(zx::time::infinite(), true); }
+  void RunLoopOnce() { loop_.Run(zx::time::infinite(), /*once=*/true); }
   void RunLoopUntilIdle() { loop_.RunUntilIdle(); }
   void ShutdownLoop() { loop_.Shutdown(); }
 
@@ -258,7 +258,7 @@ TEST_F(SocketChannelRelayLifetimeTest, DeactivationClosesSocket) {
 class SocketChannelRelayDataPathTest : public SocketChannelRelayTest {
  public:
   SocketChannelRelayDataPathTest()
-      : relay_(ConsumeLocalSocket(), channel(), nullptr /* deactivation_cb */) {
+      : relay_(ConsumeLocalSocket(), channel(), /*deactivation_cb=*/nullptr) {
     channel()->SetSendCallback([&](auto data) { sent_to_channel_.push_back(std::move(data)); },
                                dispatcher());
   }
@@ -521,8 +521,8 @@ TEST_F(SocketChannelRelayRxTest, NoDataFromChannelIsWrittenToSocketAfterDeactiva
 
   zx_info_socket_t info = {};
   info.rx_buf_available = std::numeric_limits<size_t>::max();
-  const auto status =
-      remote_socket()->get_info(ZX_INFO_SOCKET, &info, sizeof(info), nullptr, nullptr);
+  const auto status = remote_socket()->get_info(ZX_INFO_SOCKET, &info, sizeof(info),
+                                                /*actual_count=*/nullptr, /*avail_count=*/nullptr);
   EXPECT_EQ(ZX_OK, status);
   EXPECT_EQ(0u, info.rx_buf_available);
 }
@@ -649,7 +649,7 @@ TEST_F(SocketChannelRelayTxTest, NewSocketDataAfterChannelClosureIsNotSentToChan
   channel()->Close();
 
   const char data = kGoodChar;
-  const auto write_res = remote_socket()->write(0, &data, sizeof(data), nullptr);
+  const auto write_res = remote_socket()->write(0, &data, sizeof(data), /*actual=*/nullptr);
   ASSERT_TRUE(write_res == ZX_OK || write_res == ZX_ERR_PEER_CLOSED)
       << ": " << zx_status_get_string(write_res);
   RunLoopUntilIdle();

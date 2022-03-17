@@ -244,8 +244,8 @@ TEST(UUIDTest, CompactSize) {
 
   EXPECT_EQ(4u, direct.CompactSize());
   EXPECT_EQ(4u, fromstring.CompactSize());
-  EXPECT_EQ(16u, direct.CompactSize(false /* allow_32bit */));
-  EXPECT_EQ(16u, fromstring.CompactSize(false /* allow_32bit */));
+  EXPECT_EQ(16u, direct.CompactSize(/*allow_32bit=*/false));
+  EXPECT_EQ(16u, fromstring.CompactSize(/*allow_32bit=*/false));
 
   direct = UUID(kId3As128);
   StringToUuid(kId3AsString, &fromstring);
@@ -279,7 +279,7 @@ TEST(UUIDTest, ToBytes32) {
   EXPECT_TRUE(ContainersEqual(kUuid32Bytes, bytes));
 
   StaticByteBuffer<16> bytes128;
-  EXPECT_EQ(bytes128.size(), uuid.ToBytes(&bytes128, false /* allow_32bit */));
+  EXPECT_EQ(bytes128.size(), uuid.ToBytes(&bytes128, /*allow_32bit=*/false));
   EXPECT_TRUE(ContainersEqual(kId2As128, bytes128));
 }
 
@@ -304,7 +304,7 @@ TEST(UUIDTest, CompactView32) {
   BufferView view = uuid.CompactView();
   EXPECT_TRUE(ContainersEqual(kUuid32Bytes, view));
 
-  view = uuid.CompactView(false /* allow_32bit */);
+  view = uuid.CompactView(/*allow_32bit=*/false);
   EXPECT_TRUE(ContainersEqual(kId2As128, view));
 }
 

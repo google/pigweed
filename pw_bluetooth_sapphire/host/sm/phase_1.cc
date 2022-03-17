@@ -101,7 +101,7 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   pres_->responder_key_dist_gen = pres_values.local_keys & req_params.responder_key_dist_gen;
 
   fpromise::result<PairingFeatures, ErrorCode> maybe_features =
-      ResolveFeatures(false /* local_initiator */, req_params, *pres_);
+      ResolveFeatures(/*local_initiator=*/false, req_params, *pres_);
   if (maybe_features.is_error()) {
     bt_log(DEBUG, "sm", "rejecting pairing features");
     Abort(maybe_features.error());
@@ -281,7 +281,7 @@ void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
   }
 
   fpromise::result<PairingFeatures, ErrorCode> maybe_features =
-      ResolveFeatures(true /* local_initiator */, *preq_, response_params);
+      ResolveFeatures(/*local_initiator=*/true, *preq_, response_params);
 
   if (maybe_features.is_error()) {
     bt_log(DEBUG, "sm", "rejecting pairing features");

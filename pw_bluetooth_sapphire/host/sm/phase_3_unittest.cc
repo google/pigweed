@@ -31,7 +31,7 @@ using util::PacketSize;
 
 // clang-format off
 const PairingFeatures kDefaultFeatures(
-    true,   // initiator
+    /*initiator=*/true,   // initiator
     false,  // secure_connections
     true,   // will_bond
     std::optional<CrossTransportKeyAlgo>{std::nullopt},
@@ -44,7 +44,7 @@ const PairingFeatures kDefaultFeatures(
 const SecurityProperties kDefaultProperties(
   SecurityLevel::kEncrypted,
   kMaxEncryptionKeySize,
-  false  // Secure Connections
+  /*secure_connections=*/false  // Secure Connections
 );
 
 struct Phase3Args {
@@ -198,7 +198,7 @@ TEST_F(Phase3DeathTest, NoRemoteLtkDistributionDuringSecureConnections) {
 TEST_F(Phase3DeathTest, CannotDistributeKeysOnUnencryptedChannel) {
   Phase3Args args;
   args.le_props = SecurityProperties(SecurityLevel::kNoSecurity, kMaxEncryptionKeySize,
-                                     false /* secure connections */);
+                                     /*secure_connections=*/false);
   ASSERT_DEATH_IF_SUPPORTED(NewPhase3(args), ".*NoSecurity.*");
 }
 

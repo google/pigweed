@@ -35,7 +35,8 @@ const auto kTestValue4 = CreateStaticByteBuffer('l', 'o', 'l');
 const auto kTestValueLong = CreateStaticByteBuffer('l', 'o', 'n', 'g');
 
 inline att::AccessRequirements AllowedNoSecurity() {
-  return att::AccessRequirements(false, false, false);
+  return att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                 /*authorization=*/false);
 }
 
 class ServerTest : public l2cap::testing::FakeChannelTest {
@@ -1383,7 +1384,8 @@ TEST_F(ServerTest, WriteRequestSecurity) {
 
   // Requires encryption
   grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                    att::AccessRequirements(true, false, false));
+                    att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
+                                            /*authorization=*/false));
   grp->set_active(true);
 
   // We send two write requests:
@@ -1581,7 +1583,9 @@ TEST_F(ServerTest, ReadRequestSecurity) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // Requires encryption
-  grp->AddAttribute(kTestType16, att::AccessRequirements(true, false, false),
+  grp->AddAttribute(kTestType16,
+                    att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
+                                            /*authorization=*/false),
                     att::AccessRequirements());
   grp->set_active(true);
 
@@ -1853,8 +1857,10 @@ TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
       'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
       't', 't', 'r', 'i', 'b', 'u', 't', 'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                 att::AccessRequirements(true, false, false));
+  auto* attr =
+      grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                        att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
+                                                /*authorization=*/false));
   attr->set_read_handler(
       [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
         EXPECT_EQ(kTestPeerId, peer_id);
@@ -1987,8 +1993,10 @@ TEST_F(ServerTest, PrepareWriteRequestSucceeds) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // No security requirement
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                 att::AccessRequirements(false, false, false));
+  auto* attr =
+      grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                        att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                                /*authorization=*/false));
   grp->set_active(true);
 
   int write_count = 0;
@@ -2023,8 +2031,10 @@ TEST_F(ServerTest, PrepareWriteRequestPrepareQueueFull) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // No security requirement
-  const auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                       att::AccessRequirements(false, false, false));
+  const auto* attr =
+      grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                        att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+                                                /*authorization=*/false));
   grp->set_active(true);
 
   ASSERT_EQ(0x0002, attr->handle());
@@ -2521,9 +2531,12 @@ class ServerTestSecurity : public ServerTest {
   void InitializeAttributesForReading() {
     auto* grp = db()->NewGrouping(types::kPrimaryService, 4, kTestValue1);
 
-    const att::AccessRequirements encryption(true, false, false);
-    const att::AccessRequirements authentication(false, true, false);
-    const att::AccessRequirements authorization(false, false, true);
+    const att::AccessRequirements encryption(/*encryption=*/true, /*authentication=*/false,
+                                             /*authorization=*/false);
+    const att::AccessRequirements authentication(/*encryption=*/false, /*authentication=*/true,
+                                                 /*authorization=*/false);
+    const att::AccessRequirements authorization(/*encryption=*/false, /*authentication=*/false,
+                                                /*authorization=*/true);
 
     not_permitted_attr_ = grp->AddAttribute(kTestType16);
     encryption_required_attr_ = grp->AddAttribute(kTestType16, encryption);
@@ -2545,9 +2558,12 @@ class ServerTestSecurity : public ServerTest {
   void InitializeAttributesForWriting() {
     auto* grp = db()->NewGrouping(types::kPrimaryService, 4, kTestValue1);
 
-    const att::AccessRequirements encryption(true, false, false);
-    const att::AccessRequirements authentication(false, true, false);
-    const att::AccessRequirements authorization(false, false, true);
+    const att::AccessRequirements encryption(/*encryption=*/true, /*authentication=*/false,
+                                             /*authorization=*/false);
+    const att::AccessRequirements authentication(/*encryption=*/false, /*authentication=*/true,
+                                                 /*authorization=*/false);
+    const att::AccessRequirements authorization(/*encryption=*/false, /*authentication=*/false,
+                                                /*authorization=*/true);
 
     auto write_handler = [this](const auto&, att::Handle, uint16_t, const auto& value,
                                 auto responder) {
@@ -2695,7 +2711,8 @@ class ServerTestSecurity : public ServerTest {
                                        att::ErrorCode::kInsufficientAuthentication));
 
     // Link encrypted.
-    fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
+    fake_chan()->set_security(
+        sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
     EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
     EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
                                        att::ErrorCode::kNoError));  // success
@@ -2705,7 +2722,8 @@ class ServerTestSecurity : public ServerTest {
                                        att::ErrorCode::kInsufficientAuthentication));
 
     // Link encrypted w/ MITM.
-    fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16, false));
+    fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16,
+                                                     /*secure_connections=*/false));
     EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
     EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
                                        att::ErrorCode::kNoError));  // success

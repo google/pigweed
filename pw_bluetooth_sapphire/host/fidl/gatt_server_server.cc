@@ -328,7 +328,7 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdTy
     if (optional_value.has_value()) {
       value = std::move(optional_value.value());
     }
-    responder(GattErrorCodeFromFidl(error_code, true /* is_read */),
+    responder(GattErrorCodeFromFidl(error_code, /*is_read=*/true),
               bt::BufferView(value.data(), value.size()));
   };
 
@@ -357,7 +357,7 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdT
   }
 
   auto cb = [responder = std::move(responder)](auto error_code) {
-    responder(GattErrorCodeFromFidl(error_code, false /* is_read */));
+    responder(GattErrorCodeFromFidl(error_code, /*is_read=*/false));
   };
 
   delegate->OnWriteValue(id, offset, std::move(fidl_value), std::move(cb));

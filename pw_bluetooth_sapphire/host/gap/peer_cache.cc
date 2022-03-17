@@ -73,7 +73,7 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
     return false;
   }
 
-  auto* peer = InsertPeerRecord(bd.identifier, bd.address, true);
+  auto* peer = InsertPeerRecord(bd.identifier, bd.address, /*connectable=*/true);
   if (!peer) {
     return false;
   }

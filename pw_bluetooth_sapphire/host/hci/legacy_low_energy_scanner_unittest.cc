@@ -103,27 +103,27 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
     // Generates ADV_IND, scan response is reported in a single HCI event.
     auto fake_peer = std::make_unique<FakePeer>(kPublicAddress1, true, true);
     fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(true, kPlainScanRspBytes);
+    fake_peer->SetScanResponse(/*should_batch_reports=*/true, kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_SCAN_IND, scan response is reported over multiple HCI
     // events.
     fake_peer = std::make_unique<FakePeer>(kRandomAddress1, false, true);
     fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(false, kPlainScanRspBytes);
+    fake_peer->SetScanResponse(/*should_batch_reports=*/false, kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty scan response is reported over multiple HCI
     // events.
     fake_peer = std::make_unique<FakePeer>(kPublicAddress2, true, true);
     fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(false, DynamicByteBuffer());
+    fake_peer->SetScanResponse(/*should_batch_reports=*/false, DynamicByteBuffer());
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty adv data and non-empty scan response is reported
     // over multiple HCI events.
     fake_peer = std::make_unique<FakePeer>(kRandomAddress2, true, true);
-    fake_peer->SetScanResponse(false, kPlainScanRspBytes);
+    fake_peer->SetScanResponse(/*should_batch_reports=*/false, kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, a scan response is never sent even though ADV_IND is
@@ -294,7 +294,7 @@ TEST_F(LegacyLowEnergyScannerTest, ScanResponseTimeout) {
   // Add a peer that sends a scan response and one that doesn't.
   auto fake_peer = std::make_unique<FakePeer>(kRandomAddress1, false, true);
   fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-  fake_peer->SetScanResponse(false, kPlainScanRspBytes);
+  fake_peer->SetScanResponse(/*should_batch_reports=*/false, kPlainScanRspBytes);
   test_device()->AddPeer(std::move(fake_peer));
 
   fake_peer = std::make_unique<FakePeer>(kRandomAddress2, true, false);

@@ -32,7 +32,8 @@ GenericAttributeService::~GenericAttributeService() {
 
 void GenericAttributeService::Register() {
   const att::AccessRequirements kDisallowed;
-  const att::AccessRequirements kAllowedNoSecurity(false, false, false);
+  const att::AccessRequirements kAllowedNoSecurity(/*encryption=*/false, /*authentication=*/false,
+                                                   /*authorization=*/false);
   CharacteristicPtr service_changed_chr =
       std::make_unique<Characteristic>(kServiceChangedChrcId,                 // id
                                        types::kServiceChangedCharacteristic,  // type

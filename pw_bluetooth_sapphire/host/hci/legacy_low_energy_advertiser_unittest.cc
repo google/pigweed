@@ -185,7 +185,8 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
 TEST_F(LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data = GetExampleData();
-  AdvertisingOptions options(kTestInterval, false, kDefaultNoAdvFlags, true);
+  AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/true);
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
                                  GetSuccessCallback());
@@ -220,9 +221,11 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
   DeviceAddress addr = kRandomAddress;
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
-  AdvertisingOptions options(old_interval, false, kDefaultNoAdvFlags, true);
+  AdvertisingOptions options(old_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/true);
   const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
-  AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, true);
+  AdvertisingOptions new_options(new_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                                 /*include_tx_power_level=*/true);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
@@ -255,9 +258,11 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingTxPowerRequestedThenNotR
   DeviceAddress addr = kRandomAddress;
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
-  AdvertisingOptions options(old_interval, false, kDefaultNoAdvFlags, true);
+  AdvertisingOptions options(old_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/true);
   const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
-  AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, false);
+  AdvertisingOptions new_options(new_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                                 /*include_tx_power_level=*/false);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
@@ -285,9 +290,11 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartingWhileStartingTxPowerNotRequestedTh
   DeviceAddress addr = kRandomAddress;
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
-  AdvertisingOptions options(old_interval, false, kDefaultNoAdvFlags, false);
+  AdvertisingOptions options(old_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/false);
   const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
-  AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, true);
+  AdvertisingOptions new_options(new_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                                 /*include_tx_power_level=*/true);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
@@ -317,9 +324,11 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   DeviceAddress addr = kRandomAddress;
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
-  AdvertisingOptions options(old_interval, false, kDefaultNoAdvFlags, true);
+  AdvertisingOptions options(old_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/true);
   const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
-  AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, true);
+  AdvertisingOptions new_options(new_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                                 /*include_tx_power_level=*/true);
 
   // Hold off on responding to the first TX Power Level Read command.
   test_device()->set_tx_power_level_read_response_flag(/*respond=*/false);
@@ -348,7 +357,8 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
 TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data;
-  AdvertisingOptions options(kTestInterval, false, kDefaultNoAdvFlags, true);
+  AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/true);
 
   // Simulate failure for Read TX Power operation.
   test_device()->SetDefaultResponseStatus(hci_spec::kLEReadAdvertisingChannelTxPower,

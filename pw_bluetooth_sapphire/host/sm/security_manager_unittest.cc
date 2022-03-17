@@ -496,7 +496,7 @@ class InitiatorPairingTest : public SecurityManagerTest {
     ZX_DEBUG_ASSERT(out_confirm);
     ZX_DEBUG_ASSERT(out_random);
     *out_random = kHardCodedPairingRandom;
-    GenerateLegacyConfirmValue(*out_random, out_confirm, false /* peer_initiator */, tk);
+    GenerateLegacyConfirmValue(*out_random, out_confirm, /*peer_initiator=*/false, tk);
   }
 
   struct MatchingPair {
@@ -506,7 +506,8 @@ class InitiatorPairingTest : public SecurityManagerTest {
   MatchingPair GenerateMatchingScConfirmAndRandom(const LocalEcdhKey& peer_key, uint8_t r = 0) {
     MatchingPair pair;
     pair.random = kHardCodedPairingRandom;
-    pair.confirm = GenerateScConfirmValue(peer_key, pair.random, Role::kInitiator, false, r);
+    pair.confirm = GenerateScConfirmValue(peer_key, pair.random, Role::kInitiator,
+                                          /*gen_initiator_confirm=*/false, r);
     return pair;
   }
   // Emulate legacy pairing up until before encryption with STK. Returns the STK
@@ -569,7 +570,7 @@ class InitiatorPairingTest : public SecurityManagerTest {
     EXPECT_EQ(1, fake_link()->start_encryption_count());
 
     // Resolve the encryption request.
-    fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+    fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
     RunLoopUntilIdle();
     EXPECT_EQ(1, new_sec_props_count());
     EXPECT_EQ(level, new_sec_props().level());
@@ -670,7 +671,7 @@ class ResponderPairingTest : public SecurityManagerTest {
     ZX_DEBUG_ASSERT(out_confirm);
     ZX_DEBUG_ASSERT(out_random);
     *out_random = kHardCodedPairingRandom;
-    GenerateLegacyConfirmValue(*out_random, out_confirm, true /* peer_initiator */, tk);
+    GenerateLegacyConfirmValue(*out_random, out_confirm, /*peer_initiator=*/true, tk);
   }
   struct MatchingPair {
     UInt128 confirm;
@@ -679,13 +680,14 @@ class ResponderPairingTest : public SecurityManagerTest {
   MatchingPair GenerateMatchingScConfirmAndRandom(const LocalEcdhKey& peer_key, uint8_t r = 0) {
     MatchingPair pair;
     pair.random = kHardCodedPairingRandom;
-    pair.confirm = GenerateScConfirmValue(peer_key, pair.random, Role::kResponder, true, r);
+    pair.confirm = GenerateScConfirmValue(peer_key, pair.random, Role::kResponder,
+                                          /*gen_initiator_confirm=*/true, r);
     return pair;
   }
   void ReceivePairingRequest(IOCapability ioc = IOCapability::kNoInputNoOutput,
                              AuthReqField auth_req = 0,
                              uint8_t max_enc_key_size = kMaxEncryptionKeySize) {
-    ReceivePairingFeatures(ioc, auth_req, max_enc_key_size, true /* peer_initiator */);
+    ReceivePairingFeatures(ioc, auth_req, max_enc_key_size, /*peer_initiator=*/true);
   }
 
   void FastForwardToSTK(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
@@ -700,7 +702,7 @@ class ResponderPairingTest : public SecurityManagerTest {
     pairing_params.max_encryption_key_size = max_key_size;
     pairing_params.initiator_key_dist_gen = remote_keys;
     pairing_params.responder_key_dist_gen = local_keys;
-    ReceivePairingFeatures(pairing_params, true /* peer_initiator */);
+    ReceivePairingFeatures(pairing_params, /*peer_initiator=*/true);
 
     // Run the loop until the harness caches the feature exchange PDUs (preq &
     // pres) so that we can generate a valid confirm value.
@@ -751,7 +753,7 @@ class ResponderPairingTest : public SecurityManagerTest {
     EXPECT_EQ(0, fake_link()->start_encryption_count());
 
     // Pretend that the initiator succeeded in encrypting the connection.
-    fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+    fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
     RunLoopUntilIdle();
     EXPECT_EQ(1, new_sec_props_count());
     EXPECT_EQ(level, new_sec_props().level());
@@ -768,7 +770,7 @@ class ResponderPairingTest : public SecurityManagerTest {
     preq.max_encryption_key_size = kMaxEncryptionKeySize;
     preq.initiator_key_dist_gen = local_keys;
     preq.responder_key_dist_gen = peer_keys;
-    ReceivePairingFeatures(preq, true /* peer_initiator */);
+    ReceivePairingFeatures(preq, /*peer_initiator=*/true);
     RunLoopUntilIdle();
     ASSERT_EQ(1, pairing_response_count());
 
@@ -984,14 +986,15 @@ TEST_F(InitiatorPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnly
 
 TEST_F(InitiatorPairingTest, RejectUnauthenticatedEncryptionInSecureConnectionsOnlyMode) {
   pairing()->set_security_mode(gap::LESecurityMode::SecureConnectionsOnly);
-  const LTK kUnauthenticatedLtk(SecurityProperties(true /*encrypted*/, false /*authenticated*/,
-                                                   true /*SC*/, kMaxEncryptionKeySize),
-                                hci_spec::LinkKey());
+  const LTK kUnauthenticatedLtk(
+      SecurityProperties(/*encrypted=*/true, /*authenticated=*/false,
+                         /*secure_connections=*/true, kMaxEncryptionKeySize),
+      hci_spec::LinkKey());
   pairing()->AssignLongTermKey(kUnauthenticatedLtk);
   RunLoopUntilIdle();
   // After setting SC Only mode, assigning and encrypting with an unauthenticated LTK should cause
   // the channel to be disconnected with an authentication failure.
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, auth_failure_callback_count());
@@ -1003,7 +1006,7 @@ TEST_F(InitiatorPairingTest, AllowSecureAuthenticatedPairingInSecureConnectionsO
   SetUpSecurityManager(IOCapability::kDisplayYesNo);
   pairing()->set_security_mode(gap::LESecurityMode::SecureConnectionsOnly);
   UInt128 enc_key;
-  FastForwardToPhase3(&enc_key, true, SecurityLevel::kSecureAuthenticated);
+  FastForwardToPhase3(&enc_key, /*secure_connections=*/true, SecurityLevel::kSecureAuthenticated);
   RunLoopUntilIdle();
   // After setting SC Only mode, secure authenticated pairing should still complete successfully.
   EXPECT_EQ(1, pairing_data_callback_count());
@@ -1616,7 +1619,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase2ConfirmValuesExchangedWithUserTK) {
 
   // Our Mconfirm/Mrand should be correct.
   UInt128 expected_confirm;
-  GenerateLegacyConfirmValue(pairing_random(), &expected_confirm, false /* peer_initiator */, *tk);
+  GenerateLegacyConfirmValue(pairing_random(), &expected_confirm, /*peer_initiator=*/false, *tk);
   EXPECT_EQ(expected_confirm, pairing_confirm());
 
   // Send Srandom.
@@ -1700,7 +1703,7 @@ TEST_F(InitiatorPairingTest, EncryptionDisabledInPhase2) {
   EXPECT_EQ(1, fake_link()->start_encryption_count());
   EXPECT_EQ(SecurityProperties(), pairing()->security());
 
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(false /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/false));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1745,7 +1748,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase3CompleteWithoutKeyExchange) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   // Pairing should succeed without any pairing data.
@@ -1783,8 +1786,8 @@ TEST_F(InitiatorPairingTest, LegacyPhase3CompleteWithoutKeyExchange) {
 TEST_F(InitiatorPairingTest, ScPhase3CompleteWithoutKeyExchange) {
   UInt128 ltk_bytes;
   const SecurityProperties kExpectedSecurity(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
-                                             true /* secure connections */);
-  FastForwardToPhase3(&ltk_bytes, true /*secure_connections*/, kExpectedSecurity.level(),
+                                             /*secure_connections=*/true);
+  FastForwardToPhase3(&ltk_bytes, /*secure_connections=*/true, kExpectedSecurity.level(),
                       KeyDistGenField{0}, KeyDistGenField{0});
 
   const LTK kExpectedLtk(kExpectedSecurity, hci_spec::LinkKey(ltk_bytes, 0, 0));
@@ -1825,7 +1828,7 @@ TEST_F(InitiatorPairingTest, ScPhase3CompleteWithoutKeyExchange) {
 TEST_F(InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   UInt128 ltk_bytes;
   const SecurityProperties kExpectedSecurity(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
-                                             true /* secure connections */);
+                                             /*secure_connections=*/true);
   // We will request the EncKey from the peer and the peer will respond that it is capable of
   // sending it, but as this is SC pairing that should not occur.
   KeyDistGenField remote_keys{KeyDistGen::kEncKey}, local_keys{0};
@@ -1839,7 +1842,7 @@ TEST_F(InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   // Pairing should succeed without any messages being sent in "Phase 3". The LTK was generated in
@@ -1877,7 +1880,7 @@ TEST_F(InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
   // Must have DisplayYesNo IOC to generate Authenticated security per kExpectedSecurity
   SetUpSecurityManager(IOCapability::kDisplayYesNo);
   const SecurityProperties kExpectedSecurity(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
-                                             true /* secure connections */);
+                                             /*secure_connections=*/true);
   UInt128 ltk_bytes;
   FastForwardToScLtk(&ltk_bytes, kExpectedSecurity.level(), KeyDistGenField{0}, KeyDistGenField{0},
                      BondableMode::NonBondable);
@@ -1889,7 +1892,7 @@ TEST_F(InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   // Pairing should succeed with the LTK as we are in SC, but as the pairing is non-bondable, no
@@ -1915,7 +1918,7 @@ TEST_F(InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
 
 TEST_F(InitiatorPairingTest, Phase3EncryptionInformationReceivedTwice) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
 
   // Pairing should still be in progress.
@@ -1944,7 +1947,7 @@ TEST_F(InitiatorPairingTest, Phase3EncryptionInformationReceivedTwice) {
 // The responder sends EDIV and Rand before LTK.
 TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedInWrongOrder) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
 
   // Pairing should still be in progress.
@@ -1968,7 +1971,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedInWrongOrder) {
 // The responder sends the sample LTK from the specification doc
 TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveSampleLTK) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
 
   const UInt128 kLtkSample{{0xBF, 0x01, 0xFB, 0x9D, 0x4E, 0xF3, 0xBC, 0x36, 0xD8, 0x74, 0xF5, 0x39,
@@ -1994,7 +1997,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveSampleLTK) {
 // The responder sends the sample Rand from the specification doc
 TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveExampleRand) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
 
   uint64_t kRandSample = 0xABCDEF1234567890;
@@ -2022,7 +2025,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveExampleRand) {
 TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveLongLTK) {
   UInt128 stk;
   auto max_key_size = 8;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey, 0, max_key_size);
 
   const UInt128 kLtk{{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}};
@@ -2046,7 +2049,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveLongLTK) {
 
 TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedTwice) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
 
   // Pairing should still be in progress.
@@ -2080,7 +2083,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedTwice) {
 // Pairing completes after obtaining peer encryption information only.
 TEST_F(InitiatorPairingTest, Phase3CompleteWithReceivingEncKey) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
 
   const UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
@@ -2140,7 +2143,8 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithReceivingEncKey) {
 TEST_F(InitiatorPairingTest, Phase3CompleteWithSendingEncKey) {
   UInt128 stk;
   KeyDistGenField remote_keys{0u}, local_keys{KeyDistGen::kEncKey};
-  FastForwardToPhase3(&stk, false, SecurityLevel::kEncrypted, remote_keys, local_keys);
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted, remote_keys,
+                      local_keys);
   RunLoopUntilIdle();
 
   // Pairing should have succeeded.
@@ -2170,7 +2174,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithSendingEncKey) {
 TEST_F(InitiatorPairingTest, Phase3CompleteWithShortEncKey) {
   UInt128 stk;
   uint8_t max_key_size = 12;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey, 0u, max_key_size);
 
   // This LTK is within the max_key_size specified above.
@@ -2235,7 +2239,7 @@ TEST_F(InitiatorPairingTest, Phase3WithLocalIdKey) {
   set_local_id_info(local_id_info);
 
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       0,                    // remote keys
                       KeyDistGen::kIdKey);  // local keys
 
@@ -2279,7 +2283,7 @@ TEST_F(InitiatorPairingTest, Phase3IsAbortedIfLocalIdKeyIsRemoved) {
   set_local_id_info(std::nullopt);
 
   // Encrypt with the STK to finish phase 2.
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   // Pairing should have been aborted.
@@ -2293,7 +2297,7 @@ TEST_F(InitiatorPairingTest, Phase3IsAbortedIfLocalIdKeyIsRemoved) {
 
 TEST_F(InitiatorPairingTest, Phase3IRKReceivedTwice) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kIdKey);
 
   // Pairing should still be in progress.
@@ -2323,7 +2327,7 @@ TEST_F(InitiatorPairingTest, Phase3IRKReceivedTwice) {
 // The responder sends its identity address before sending its IRK.
 TEST_F(InitiatorPairingTest, Phase3IdentityAddressReceivedInWrongOrder) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kIdKey);
 
   // Pairing should still be in progress.
@@ -2348,7 +2352,7 @@ TEST_F(InitiatorPairingTest, Phase3IdentityAddressReceivedTwice) {
   UInt128 stk;
   // Request enc key to prevent pairing from completing after sending the first
   // identity address.
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey | KeyDistGen::kIdKey);
 
   // Pairing should still be in progress.
@@ -2373,7 +2377,7 @@ TEST_F(InitiatorPairingTest, Phase3IdentityAddressReceivedTwice) {
 // Pairing completes after obtaining identity information only.
 TEST_F(InitiatorPairingTest, Phase3CompleteWithIdKey) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kIdKey);
 
   // Pairing should still be in progress.
@@ -2412,7 +2416,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithIdKey) {
 
 TEST_F(InitiatorPairingTest, Phase3CompleteWithAllKeys) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey | KeyDistGen::kIdKey);
 
   const UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
@@ -2477,7 +2481,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithAllKeys) {
 TEST_F(InitiatorPairingTest, GenerateCrossTransportLinkKey) {
   UInt128 stk;
   // Indicate support for SC and for link keys in both directions to enable CTKG.
-  FastForwardToPhase3(&stk, true /*secure connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/true, SecurityLevel::kEncrypted,
                       KeyDistGen::kLinkKey, KeyDistGen::kLinkKey);
   RunLoopUntilIdle();
 
@@ -2494,14 +2498,14 @@ TEST_F(InitiatorPairingTest, GenerateCrossTransportLinkKey) {
 
 TEST_F(InitiatorPairingTest, AssignLongTermKeyFailsDuringPairing) {
   UpgradeSecurity(SecurityLevel::kEncrypted);  // Initiate pairing.
-  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
+  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   EXPECT_FALSE(pairing()->AssignLongTermKey(LTK(sec_props, hci_spec::LinkKey())));
   EXPECT_EQ(0, fake_link()->start_encryption_count());
   EXPECT_EQ(SecurityLevel::kNoSecurity, pairing()->security().level());
 }
 
 TEST_F(InitiatorPairingTest, AssignLongTermKey) {
-  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
+  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   LTK ltk(sec_props, hci_spec::LinkKey());
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(ltk));
@@ -2511,7 +2515,7 @@ TEST_F(InitiatorPairingTest, AssignLongTermKey) {
 
   // The link security level is not assigned until successful encryption.
   EXPECT_EQ(SecurityProperties(), pairing()->security());
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, new_sec_props_count());
@@ -2531,7 +2535,7 @@ TEST_F(InitiatorPairingTest, ReceiveSecurityRequest) {
 
 TEST_F(InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
   EXPECT_EQ(stk, fake_link()->ltk()->value());
   EXPECT_EQ(1, pairing_request_count());
@@ -2543,7 +2547,7 @@ TEST_F(InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   ReceiveEncryptionInformation(kLTK);
   ReceiveCentralIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_EQ(fitx::ok(), security_status());
@@ -2620,7 +2624,7 @@ TEST_F(InitiatorPairingTest, PairingTimeoutWorks) {
 
 TEST_F(InitiatorPairingTest, NoTimeoutAfterSuccessfulPairing) {
   UInt128 out_stk;
-  FastForwardToPhase3(&out_stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&out_stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGenField{0}, KeyDistGenField{0});
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_EQ(1, security_callback_count());
@@ -2692,7 +2696,7 @@ TEST_F(InitiatorPairingTest, SendingMessageRestartsTimer) {
 }
 
 TEST_F(InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDisconnect) {
-  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
+  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   const LTK kOriginalLtk(sec_props, hci_spec::LinkKey({1}, 2, 3));
   const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
 
@@ -2734,7 +2738,7 @@ TEST_F(ResponderPairingTest, SecurityRequestCausesPairing) {
   EXPECT_EQ(1, security_request_count());
   EXPECT_EQ(expected_auth_req, security_request_payload());
   UInt128 ltk_bytes;
-  FastForwardToPhase3(&ltk_bytes, true /*secure_connections*/);
+  FastForwardToPhase3(&ltk_bytes, /*secure_connections=*/true);
   // Pairing should have succeeded
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
@@ -2759,7 +2763,8 @@ TEST_F(ResponderPairingTest, SecurityRequestCausesPairing) {
 }
 
 TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
-  const SecurityProperties kProps(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize, true);
+  const SecurityProperties kProps(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
+                                  /*secure_connections=*/true);
   const LTK kLtk(kProps, hci_spec::LinkKey({1, 2, 3}, 0, 0));
   // This pretends that we have an already-bonded LTK.
   pairing()->AssignLongTermKey(kLtk);
@@ -2773,7 +2778,7 @@ TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
   AuthReqField expected_auth_req = AuthReq::kBondingFlag | AuthReq::kMITM;
   EXPECT_EQ(1, security_request_count());
   EXPECT_EQ(expected_auth_req, security_request_payload());
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
 
   // Security should be upgraded.
   EXPECT_EQ(1, security_callback_count());
@@ -2789,7 +2794,8 @@ TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
 }
 
 TEST_F(ResponderPairingTest, SecurityRequestInitiatorEncryptsWithInsufficientSecurityLtk) {
-  const SecurityProperties kProps(SecurityLevel::kEncrypted, kMaxEncryptionKeySize, true);
+  const SecurityProperties kProps(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
+                                  /*secure_connections=*/true);
   const LTK kLtk(kProps, hci_spec::LinkKey({1, 2, 3}, 0, 0));
   // This pretends that we have an already-bonded LTK with kEncrypted security level.
   pairing()->AssignLongTermKey(kLtk);
@@ -2805,7 +2811,7 @@ TEST_F(ResponderPairingTest, SecurityRequestInitiatorEncryptsWithInsufficientSec
   EXPECT_EQ(expected_auth_req, security_request_payload());
 
   // Pretend the SMP initiator started encryption with the bonded LTK of SecurityLevel::kEncrypted.
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
 
   // If the peer responds to our MITM security request by encrypting with an unauthenticated key,
   // they stored the LTK/handle security request incorrectly - either way, disconnect the link.
@@ -2841,7 +2847,7 @@ TEST_F(ResponderPairingTest, HandlesMultipleSecurityRequestsCorrectly) {
 
   // Handle the first Security Request
   UInt128 ltk_bytes;
-  FastForwardToPhase3(&ltk_bytes, true /*secure_connections*/, SecurityLevel::kEncrypted);
+  FastForwardToPhase3(&ltk_bytes, /*secure_connections=*/true, SecurityLevel::kEncrypted);
   // Pairing should have succeeded
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
@@ -3045,7 +3051,7 @@ TEST_F(ResponderPairingTest, LegacyPhase2ConfirmValuesExchanged) {
 
   // Sconfirm/Srand values we sent should be correct.
   UInt128 expected_confirm;
-  GenerateLegacyConfirmValue(pairing_random(), &expected_confirm, true /* peer_initiator */);
+  GenerateLegacyConfirmValue(pairing_random(), &expected_confirm, /*peer_initiator=*/true);
   EXPECT_EQ(expected_confirm, pairing_confirm());
 }
 
@@ -3055,7 +3061,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
 
   UInt128 stk;
   KeyDistGenField remote_keys{0}, local_keys{KeyDistGen::kEncKey};
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted, remote_keys,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted, remote_keys,
                       local_keys);
 
   // Local LTK, EDiv, and Rand should be sent to the peer.
@@ -3081,7 +3087,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
   EXPECT_EQ(fake_link()->ltk(), pairing_data().local_ltk->key());
 
   // Make sure that an encryption change has no effect.
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   EXPECT_EQ(1, pairing_data_callback_count());
 
@@ -3095,7 +3101,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionWithRemoteKeys) {
   EXPECT_EQ(0, central_ident_count());
 
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kIdKey,    // remote keys
                       KeyDistGen::kEncKey);  // local keys
 
@@ -3145,7 +3151,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKMaxLength) {
   UInt128 stk;
   uint16_t max_key_size = 7;
 
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       0u,                   // remote keys
                       KeyDistGen::kEncKey,  // local keys
                       max_key_size);
@@ -3183,7 +3189,8 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKMaxLength) {
 TEST_F(ResponderPairingTest, LegacyPhase3ReceiveInitiatorEncKey) {
   UInt128 stk;
   KeyDistGenField remote_keys{KeyDistGen::kEncKey}, local_keys{0u};
-  FastForwardToPhase3(&stk, false, SecurityLevel::kEncrypted, remote_keys, local_keys);
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted, remote_keys,
+                      local_keys);
 
   const uint64_t kRand = 5;
   const uint16_t kEDiv = 20;
@@ -3227,7 +3234,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
   EXPECT_EQ(0, central_ident_count());
 
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       KeyDistGen::kIdKey,   // remote keys
                       KeyDistGen::kIdKey);  // local keys
 
@@ -3264,14 +3271,14 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
 TEST_F(ResponderPairingTest, AssignLongTermKeyFailsDuringPairing) {
   ReceivePairingRequest();
   RunLoopUntilIdle();
-  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
+  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   EXPECT_FALSE(pairing()->AssignLongTermKey(LTK(sec_props, hci_spec::LinkKey())));
   EXPECT_EQ(0, fake_link()->start_encryption_count());
   EXPECT_EQ(SecurityLevel::kNoSecurity, pairing()->security().level());
 }
 
 TEST_F(ResponderPairingTest, AssignLongTermKey) {
-  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
+  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   LTK ltk(sec_props, hci_spec::LinkKey());
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(ltk));
@@ -3284,7 +3291,7 @@ TEST_F(ResponderPairingTest, AssignLongTermKey) {
 
   // The link security level is not assigned until successful encryption.
   EXPECT_EQ(SecurityProperties(), pairing()->security());
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, new_sec_props_count());
@@ -3293,13 +3300,13 @@ TEST_F(ResponderPairingTest, AssignLongTermKey) {
 }
 
 TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
-  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
+  SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   const LTK kOriginalLtk(sec_props, hci_spec::LinkKey({1}, 2, 3));
   const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
   fake_link()->set_le_ltk(kModifiedLtk);
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
@@ -3310,7 +3317,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   // The LE link LTK should always be assigned through SM, so while encryption could succeed with
   // a link LTK but no SM LTK, this is a violation of bt-host assumptions and we will disconnect.
   fake_link()->set_le_ltk(hci_spec::LinkKey({1}, 2, 3));
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
@@ -3334,7 +3341,7 @@ TEST_F(ResponderPairingTest, RejectSecurityRequest) {
 TEST_F(ResponderPairingTest, BothSidesRequestBondingLTKCreated) {
   UInt128 stk;
   SetUpSecurityManager(IOCapability::kDisplayOnly);
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       0u,                   // remote keys
                       KeyDistGen::kEncKey,  // local keys
                       kMaxEncryptionKeySize, BondableMode::Bondable);
@@ -3348,7 +3355,7 @@ TEST_F(ResponderPairingTest, BothSidesRequestBondingLTKCreated) {
 TEST_F(ResponderPairingTest, LocalRequestsNonBondableNoLTKCreated) {
   UInt128 stk;
   SetUpSecurityManager(IOCapability::kDisplayOnly, BondableMode::NonBondable);
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       0u,                   // remote keys
                       KeyDistGen::kEncKey,  // local keys
                       kMaxEncryptionKeySize, BondableMode::Bondable);
@@ -3362,7 +3369,7 @@ TEST_F(ResponderPairingTest, LocalRequestsNonBondableNoLTKCreated) {
 TEST_F(ResponderPairingTest, PeerRequestsNonBondableNoLTKCreated) {
   UInt128 stk;
   SetUpSecurityManager(IOCapability::kDisplayOnly, BondableMode::Bondable);
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       0u,  // remote keys
                       0u,  // local keys
                       kMaxEncryptionKeySize, BondableMode::NonBondable);
@@ -3376,7 +3383,7 @@ TEST_F(ResponderPairingTest, PeerRequestsNonBondableNoLTKCreated) {
 TEST_F(ResponderPairingTest, BothSidesRequestNonBondableNoLTKCreated) {
   UInt128 stk;
   SetUpSecurityManager(IOCapability::kDisplayOnly, BondableMode::NonBondable);
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
+  FastForwardToPhase3(&stk, /*secure_connections=*/false, SecurityLevel::kEncrypted,
                       0u,  // remote keys
                       0u,  // local keys
                       kMaxEncryptionKeySize, BondableMode::NonBondable);
@@ -3435,8 +3442,8 @@ TEST_F(ResponderPairingTest, SecureConnectionsWorks) {
   SetUpSecurityManager(IOCapability::kDisplayYesNo);
   UInt128 ltk_bytes;
   const SecurityProperties kExpectedSecurity(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
-                                             true /* secure connections */);
-  FastForwardToPhase3(&ltk_bytes, true /*secure_connections*/, kExpectedSecurity.level());
+                                             /*secure_connections=*/true);
+  FastForwardToPhase3(&ltk_bytes, /*secure_connections=*/true, kExpectedSecurity.level());
 
   const LTK kExpectedLtk(kExpectedSecurity, hci_spec::LinkKey(ltk_bytes, 0, 0));
   ASSERT_TRUE(fake_link()->ltk());

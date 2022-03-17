@@ -119,7 +119,7 @@ HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapt
   });
   adapter->set_auto_connect_callback([self](auto conn_ref) {
     if (self) {
-      self->RegisterLowEnergyConnection(std::move(conn_ref), true);
+      self->RegisterLowEnergyConnection(std::move(conn_ref), /*auto_connect=*/true);
     }
   });
 
@@ -566,7 +566,7 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
     callback(fpromise::ok());
 
     if (self)
-      self->RegisterLowEnergyConnection(std::move(connection), false);
+      self->RegisterLowEnergyConnection(std::move(connection), /*auto_connect=*/false);
   };
 
   adapter()->le()->Connect(peer_id, std::move(on_complete), bt::gap::LowEnergyConnectionOptions());

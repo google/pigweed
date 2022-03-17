@@ -309,7 +309,7 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
   }
 
   auto req_id = next_req_id_++;
-  queued_request_ = {req_id, initiator, /*received_request=*/false, std::move(params),
+  queued_request_ = {req_id, initiator, /*received_request_arg=*/false, std::move(params),
                      std::move(cb)};
 
   TryCreateNextConnection();

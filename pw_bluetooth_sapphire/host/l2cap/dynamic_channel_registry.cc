@@ -34,7 +34,7 @@ void DynamicChannelRegistry::OpenOutbound(PSM psm, ChannelParameters params,
   }
 
   auto iter = channels_.emplace(id, MakeOutbound(psm, id, params)).first;
-  ActivateChannel(iter->second.get(), std::move(open_cb), true);
+  ActivateChannel(iter->second.get(), std::move(open_cb), /*pass_failed=*/true);
 }
 
 void DynamicChannelRegistry::CloseChannel(ChannelId local_cid, fit::closure close_cb) {
@@ -88,7 +88,7 @@ DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_
       channels_
           .emplace(local_cid, MakeInbound(psm, local_cid, remote_cid, service_info->channel_params))
           .first;
-  ActivateChannel(iter->second.get(), std::move(service_info->channel_cb), false);
+  ActivateChannel(iter->second.get(), std::move(service_info->channel_cb), /*pass_failed=*/false);
   return iter->second.get();
 }
 

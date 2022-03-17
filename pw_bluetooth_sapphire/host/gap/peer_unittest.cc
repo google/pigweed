@@ -45,8 +45,8 @@ const DeviceAddress kAddrBrEdr(DeviceAddress::Type::kBREDR, {0xFF, 0xEE, 0xDD, 0
 const DeviceAddress kAddrLeAlias(DeviceAddress::Type::kLEPublic,
                                  {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
 
-const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/, true /*authenticated*/,
-                                                         true /*secure_connections*/,
+const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(/*encrypted=*/true, /*authenticated=*/true,
+                                                         /*secure_connections=*/true,
                                                          sm::kMaxEncryptionKeySize),
                                   hci_spec::LinkKey(UInt128{4}, 5, 6));
 

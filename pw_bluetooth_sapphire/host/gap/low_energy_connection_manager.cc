@@ -534,7 +534,7 @@ void LowEnergyConnectionManager::CleanUpConnection(
 Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::Connection& link) {
   Peer* peer = peer_cache_->FindByAddress(link.peer_address());
   if (!peer) {
-    peer = peer_cache_->NewPeer(link.peer_address(), true /* connectable */);
+    peer = peer_cache_->NewPeer(link.peer_address(), /*connectable=*/true);
   }
   peer->MutLe().SetConnectionParameters(link.low_energy_parameters());
   peer_cache_->SetAutoConnectBehaviorForSuccessfulConnection(peer->identifier());

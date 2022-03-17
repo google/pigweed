@@ -157,12 +157,18 @@ TEST(TypesTest, HasKeysToDistribute) {
 }
 
 TEST(TypesTest, SecurityPropertiesComparisonWorks) {
-  const SecurityProperties kInsecure(SecurityLevel::kNoSecurity, kMinEncryptionKeySize, false),
-      kEncryptedLegacy(SecurityLevel::kEncrypted, kMaxEncryptionKeySize, false),
-      kEncryptedSecure(SecurityLevel::kEncrypted, kMaxEncryptionKeySize, true),
-      kAuthenticatedLegacy(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize, false),
-      kAuthenticatedSecure(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize, true),
-      kAuthenticatedSecureShortKey(SecurityLevel::kAuthenticated, kMinEncryptionKeySize, true);
+  const SecurityProperties kInsecure(SecurityLevel::kNoSecurity, kMinEncryptionKeySize,
+                                     /*secure_connections=*/false),
+      kEncryptedLegacy(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
+                       /*secure_connections=*/false),
+      kEncryptedSecure(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
+                       /*secure_connections=*/true),
+      kAuthenticatedLegacy(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
+                           /*secure_connections=*/false),
+      kAuthenticatedSecure(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
+                           /*secure_connections=*/true),
+      kAuthenticatedSecureShortKey(SecurityLevel::kAuthenticated, kMinEncryptionKeySize,
+                                   /*secure_connections=*/true);
 
   const std::array kTestProperties{kInsecure,
                                    kEncryptedLegacy,

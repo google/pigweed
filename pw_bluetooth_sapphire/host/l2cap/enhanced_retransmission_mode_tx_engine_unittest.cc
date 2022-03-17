@@ -156,7 +156,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduRollsOverSequenceNumber) 
   constexpr size_t kMaxSeq = 64;
   for (size_t i = 0; i < kMaxSeq; ++i) {
     tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
-    tx_engine.UpdateAckSeq((i + 1) % kMaxSeq, false);
+    tx_engine.UpdateAckSeq((i + 1) % kMaxSeq, /*is_poll_response=*/false);
   }
 
   // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
@@ -168,7 +168,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduRollsOverSequenceNumber) 
   // Free up space for more transmissions. We need room for the 64th frame from
   // above (since the TxWindow is 63), and the new 0th frame. Hence we
   // acknowledge original frames 0 and 1.
-  tx_engine.UpdateAckSeq(2, false);
+  tx_engine.UpdateAckSeq(2, /*is_poll_response=*/false);
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
   ASSERT_TRUE(last_pdu);
   EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
@@ -301,7 +301,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
 
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   RunLoopUntilIdle();
 
   EXPECT_FALSE(RunLoopFor(zx::sec(2)));  // No tasks were run.
@@ -322,7 +322,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
 
-  tx_engine.UpdateAckSeq(3, false);
+  tx_engine.UpdateAckSeq(3, /*is_poll_response=*/false);
   RunLoopUntilIdle();
 
   EXPECT_FALSE(RunLoopFor(zx::sec(2)));  // No tasks were run.
@@ -342,7 +342,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, PartialAckDoesNotCancelReceiverRe
   ASSERT_TRUE(last_pdu);
   last_pdu = nullptr;
 
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   RunLoopUntilIdle();
 
   // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.5.6, under heading
@@ -362,7 +362,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   // Send a frame, and get the ACK.
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunLoopUntilIdle();
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   RunLoopUntilIdle();
 
   // Send a new frame.
@@ -434,7 +434,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 
   ASSERT_TRUE(RunLoopFor(zx::sec(2)));   // receiver_ready_poll_task_
   ASSERT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
-  tx_engine.UpdateAckSeq(1, true);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/true);
   EXPECT_FALSE(RunLoopFor(zx::sec(13)));  // No other tasks.
 }
 
@@ -453,7 +453,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 
   ASSERT_TRUE(RunLoopFor(zx::sec(2)));   // receiver_ready_poll_task_
   ASSERT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   EXPECT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
@@ -585,7 +585,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineClosesChannelAfterMaxTransm
 
   // The peer indicates that it has not received any frames. This causes us to
   // retransmit the frame.
-  tx_engine.UpdateAckSeq(0, true);
+  tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
   EXPECT_EQ(2u, num_info_frames_sent);
 
   // Not having received an acknowledgement after 2 seconds,
@@ -598,7 +598,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineClosesChannelAfterMaxTransm
   EXPECT_FALSE(connection_failed);
 
   // The peer again indicates that it has not received any frames.
-  tx_engine.UpdateAckSeq(0, true);
+  tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
 
   // Because we've exhausted kMaxTransmissions, the connection will be closed.
   EXPECT_TRUE(connection_failed);
@@ -633,7 +633,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     EXPECT_FALSE(connection_failed);
 
     // The peer indicates that it has not received any frames.
-    tx_engine.UpdateAckSeq(0, true);
+    tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
   }
 
   // The connection is closed, and we've exhausted kMaxTransmissions.
@@ -676,7 +676,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     EXPECT_FALSE(connection_failed);
 
     // The peer indicates that it has not received any frames.
-    tx_engine.UpdateAckSeq(0, true);
+    tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
   }
 
   // The connection is still open and we have transmitted more times than the greatest possible
@@ -716,7 +716,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_FALSE(connection_failed);
 
   // The peer indicates that it has not received any frames.
-  tx_engine.UpdateAckSeq(0, true);
+  tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
   EXPECT_TRUE(connection_failed);
 }
 
@@ -734,7 +734,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineRetransmitsMissingFrameOnPo
   ASSERT_TRUE(RunLoopFor(zx::sec(2)));  // receiver_ready_poll_task_
   last_pdu = nullptr;
 
-  tx_engine.UpdateAckSeq(0, true);
+  tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
   ASSERT_TRUE(last_pdu->To<EnhancedControlField>().designates_information_frame());
@@ -765,7 +765,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineRetransmitsAllMissingFrames
   n_pdus = 0;
   last_pdu = nullptr;
 
-  tx_engine.UpdateAckSeq(0, true);
+  tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
   EXPECT_EQ(kTxWindow, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
@@ -792,7 +792,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   }
 
   // Acknowledge the first 32 of these frames (with sequence numbers 0...31).
-  tx_engine.UpdateAckSeq(32, false);
+  tx_engine.UpdateAckSeq(32, /*is_poll_response=*/false);
 
   // Queue 32 new frames (with sequence numbers 63, 0 ... 30).
   for (size_t i = 0; i < 32; ++i) {
@@ -808,7 +808,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 
   // Repeat the earlier acknowledgement. This indicates that the peer has
   // not received frame 32.
-  tx_engine.UpdateAckSeq(32, true);
+  tx_engine.UpdateAckSeq(32, /*is_poll_response=*/true);
 
   // We expect to retransmit frames 32...63, and then 0...30. That's 63 frames
   // in total.
@@ -838,7 +838,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   }
 
   // Acknowledge the first 62 of these frames (with sequence numbers 0...61).
-  tx_engine.UpdateAckSeq(62, false);
+  tx_engine.UpdateAckSeq(62, /*is_poll_response=*/false);
 
   // Queue 62 new frames. These frames have sequence numebrs 63, 0...60.
   // (Sequence number 62 was used when we queued the first batch of frames
@@ -855,7 +855,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   last_pdu = nullptr;
 
   // Acknowledge an additional 5 frames (with sequence numbers 62, 63, 0, 1, 2).
-  tx_engine.UpdateAckSeq(3, true);
+  tx_engine.UpdateAckSeq(3, /*is_poll_response=*/true);
 
   // Verify that all unacknowledged frames are retransmitted.
   EXPECT_EQ(58u, n_pdus);
@@ -889,7 +889,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineDoesNotRetransmitFramesBeyo
   n_pdus = 0;
   last_pdu = nullptr;
 
-  tx_engine.UpdateAckSeq(0, true);
+  tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
   EXPECT_EQ(kTxWindow, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
@@ -914,7 +914,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   for (size_t i = 0; i < 48; ++i) {
     tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   }
-  tx_engine.UpdateAckSeq(48, false);
+  tx_engine.UpdateAckSeq(48, /*is_poll_response=*/false);
   RunLoopUntilIdle();
 
   // Queue another TxWindow's worth of frames. These have sequence
@@ -940,7 +940,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 
   // Report that the peer has not received frame 48. This should trigger
   // retranmissions of unacknowledged frames within the TxWindow.
-  tx_engine.UpdateAckSeq(48, true);
+  tx_engine.UpdateAckSeq(48, /*is_poll_response=*/true);
 
   // We expect to retransmit frames 48..63 and 0..31. The other frames are
   // beyond the transmit window.
@@ -975,7 +975,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   last_pdu = nullptr;
 
   constexpr size_t kPollResponseReqSeq = 1;
-  tx_engine.UpdateAckSeq(kPollResponseReqSeq, true);
+  tx_engine.UpdateAckSeq(kPollResponseReqSeq, /*is_poll_response=*/true);
   EXPECT_EQ(kTxWindow - kPollResponseReqSeq, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
@@ -988,7 +988,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, AckOfFrameWithNoneOutstandingClos
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
                      NoOpTxCallback, [&] { connection_failed = true; });
 
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   EXPECT_TRUE(connection_failed);
 }
 
@@ -998,7 +998,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, AckOfMoreFramesThanAreOutstanding
                      NoOpTxCallback, [&] { connection_failed = true; });
 
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  tx_engine.UpdateAckSeq(2, true);
+  tx_engine.UpdateAckSeq(2, /*is_poll_response=*/true);
   EXPECT_TRUE(connection_failed);
 }
 
@@ -1007,8 +1007,8 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineDoesNotCrashOnSpuriousAckAf
                      NoOpTxCallback, NoOpFailureCallback);
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunLoopUntilIdle();
-  tx_engine.UpdateAckSeq(1, true);
-  tx_engine.UpdateAckSeq(2, true);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/true);
+  tx_engine.UpdateAckSeq(2, /*is_poll_response=*/true);
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
@@ -1016,7 +1016,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
                      NoOpTxCallback, NoOpFailureCallback);
   for (size_t i = 0; i <= EnhancedControlField::kMaxSeqNum; ++i) {
-    tx_engine.UpdateAckSeq(i, true);
+    tx_engine.UpdateAckSeq(i, /*is_poll_response=*/true);
   }
 }
 
@@ -1045,7 +1045,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, UpdateAckSeqTransmitsQueuedDataWh
   ASSERT_EQ(1u, n_pdus);
 
   n_pdus = 0;
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   RunLoopUntilIdle();
   EXPECT_EQ(1u, n_pdus);
 }
@@ -1065,7 +1065,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   ASSERT_EQ(1u, n_pdus);
 
   n_pdus = 0;
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   RunLoopUntilIdle();
   EXPECT_EQ(1u, n_pdus);
 }
@@ -1085,7 +1085,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 
   n_pdus = 0;
   tx_engine.SetRemoteBusy();
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   RunLoopUntilIdle();
   EXPECT_EQ(0u, n_pdus);
 }
@@ -1105,7 +1105,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 
   n_pdus = 0;
   tx_engine.SetRemoteBusy();
-  tx_engine.UpdateAckSeq(1, true);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/true);
   RunLoopUntilIdle();
   EXPECT_EQ(0u, n_pdus);
 }
@@ -1258,7 +1258,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   // be retransmitted. And that retransmission should come before the (initial)
   // transmission of the third frame.
   tx_engine.ClearRemoteBusy();
-  tx_engine.UpdateAckSeq(1, true);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/true);
   RunLoopUntilIdle();
   EXPECT_EQ((std::vector{uint8_t{1}, uint8_t{2}}), pdu_seq_numbers);
 }
@@ -1318,7 +1318,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   // Acknowledge the first frame, making room for the transmission of the second
   // frame.
   pdu_seq_numbers.clear();
-  tx_engine.UpdateAckSeq(1, false);
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/false);
   RunLoopUntilIdle();
 
   // Because we're still in the WAIT_F state, the second frame should _not_ be
@@ -1351,7 +1351,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 
   // Acknowledge the first frame, making room for the transmission of the third
   // frame. If the code is buggy, we may encounter use-after-free errors here.
-  tx_engine->UpdateAckSeq(1, true);
+  tx_engine->UpdateAckSeq(1, /*is_poll_response=*/true);
   RunLoopUntilIdle();
 
   // Because we only allow one transmission, the connection should have failed.
@@ -1420,7 +1420,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   RunLoopUntilIdle();
 
   tx_engine.UpdateReqSeq(5);
-  tx_engine.UpdateAckSeq(1, true);  // Peer acks first PDU.
+  tx_engine.UpdateAckSeq(1, /*is_poll_response=*/true);  // Peer acks first PDU.
   RunLoopUntilIdle();
 
   // The second PDU should have been transmitted with ReqSeq = 5.
@@ -1454,7 +1454,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, RetransmissionOfPduIncludesCurren
   ASSERT_TRUE(RunLoopFor(zx::sec(2)));
 
   // Our peer indicates that it has not received our data.
-  tx_engine.UpdateAckSeq(0, true);
+  tx_engine.UpdateAckSeq(0, /*is_poll_response=*/true);
   RunLoopUntilIdle();
 
   // Our retransmission should include our current request sequence number.
@@ -1468,7 +1468,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, PollTaskLoopsEvenWhenRemoteIsBusy
   bool failure = false;
   auto connection_failure_callback = [&] { failure = true; };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/2, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/2, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/connection_failure_callback);
 
@@ -1503,7 +1503,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, SetRangeRetransmitCausesUpdateAck
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1542,7 +1542,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/3, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/3, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1567,7 +1567,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1609,7 +1609,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1644,7 +1644,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1688,7 +1688,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, SetSingleRetransmitCausesUpdateAc
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1726,7 +1726,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/3, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/3, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1758,7 +1758,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/2,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/2,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1807,7 +1807,7 @@ TEST_F(
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1861,7 +1861,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 
@@ -1913,7 +1913,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
-                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_window=*/kDefaultTxWindow,
                      /*send_frame_callback=*/tx_callback,
                      /*connection_failure_callback=*/NoOpFailureCallback);
 

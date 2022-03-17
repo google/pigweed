@@ -558,7 +558,7 @@ TEST(ByteBufferDeathTest, MutableByteBufferWrite) {
   // Writing zero bytes should have no effect.
   buffer = CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
   buffer.Write(kData1.data(), 0u);
-  buffer.Write(nullptr, 0u);  // Passing nullptr is OK when size is 0
+  buffer.Write(/*data=*/nullptr, 0u);  // Passing nullptr is OK when size is 0
   EXPECT_EQ("XXXXXXXX", buffer.AsString());
 
   // Writing zero bytes just past the buffer should be accepted (i.e. no

@@ -502,7 +502,7 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
       chan_.get(),
       [this](async_dispatcher_t* /*unused*/, async::Task* /*unused*/, zx_status_t status) {
         if (status == ZX_OK)
-          ShutDownInternal(true /* due_to_timeout */);
+          ShutDownInternal(/*due_to_timeout=*/true);
       },
       kTransactionTimeout);
 }

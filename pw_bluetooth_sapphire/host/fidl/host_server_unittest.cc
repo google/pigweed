@@ -247,7 +247,7 @@ class HostServerPairingTest : public HostServerTest {
   // frees. These failures mostly stem from the Host server notifying the client upon pairing
   // delegate destruction, which is not important behavior for many tests.
   void TearDown() override {
-    fake_chan_->SetSendCallback(nullptr, nullptr);
+    fake_chan_->SetSendCallback(nullptr, /*dispatcher=*/nullptr);
     host_client_ptr().Unbind();
     HostServerTest::TearDown();
   }
@@ -589,7 +589,7 @@ TEST_F(HostServerTest, WatchDiscoverableState) {
   host_server()->WatchState([&](auto value) { info = std::move(value); });
   EXPECT_FALSE(info.has_value());
 
-  host_server()->SetDiscoverable(true, [](auto) {});
+  host_server()->SetDiscoverable(/*discoverable=*/true, [](auto) {});
   RunLoopUntilIdle();
   ASSERT_TRUE(info.has_value());
   ASSERT_TRUE(info->has_discoverable());
@@ -598,7 +598,7 @@ TEST_F(HostServerTest, WatchDiscoverableState) {
   info.reset();
   host_server()->WatchState([&](auto value) { info = std::move(value); });
   EXPECT_FALSE(info.has_value());
-  host_server()->SetDiscoverable(false, [](auto) {});
+  host_server()->SetDiscoverable(/*discoverable=*/false, [](auto) {});
   RunLoopUntilIdle();
   ASSERT_TRUE(info.has_value());
   ASSERT_TRUE(info->has_discoverable());
@@ -1075,7 +1075,7 @@ TEST_F(HostServerTest, OnNewBondingData) {
   const std::string kTestName = "florp";
   const bt::UInt128 kTestKeyValue{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
   const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
-                                                 true);
+                                                 /*secure_connections=*/true);
   const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci_spec::LinkKey(kTestKeyValue, 0, 0));
   const fsys::PeerKey kTestKeyFidl{
       .security =

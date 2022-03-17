@@ -379,19 +379,19 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
 
   SequentialCommandRunner cmd_runner(dispatcher(), transport()->WeakPtr());
 
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, false);
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, false);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, /*wait=*/false);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, /*wait=*/false);
   cmd_runner.QueueCommand(
       CommandPacket::New(kTestOpCode),
       [&](const auto&) {
         EXPECT_EQ(2, cb_called);
         cb_called++;
       },
-      true);
+      /*wait=*/true);
   // We can also queue to the end of the queue without the last one being a
   // wait.
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, false);
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, false);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, /*wait=*/false);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, /*wait=*/false);
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
 
@@ -415,8 +415,8 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, );
   EXPECT_CMD_PACKET_OUT(test_device(), command2_bytes, );
 
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, false);
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, false);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, /*wait=*/false);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, /*wait=*/false);
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
                           cb);  // shouldn't run
 
