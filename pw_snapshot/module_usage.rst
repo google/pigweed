@@ -26,31 +26,29 @@ write a few fields in a snapshot, you can do so with minimal memory overhead.
 
 .. code-block:: cpp
 
+  #include "pw_bytes/span.h"
   #include "pw_protobuf/encoder.h"
   #include "pw_snapshot_protos/snapshot.pwpb.h"
+  #include "pw_status/status.h"
+  #include "pw_stream/stream.h"
 
-  Result<ConstByteSpan> EncodeSnapshot(pw::ByteSpan encode_buffer,
-                                       const CrashInfo &crash_info) {
-    // Instantiate a generic proto encoder.
-    pw::protobuf::NestedEncoder<kMaxNestedProtoDepth> proto_encoder(
-        encode_buffer);
-    // Get a proto-specific wrapper for the encoder.
-    pw::snapshot::Snapshot::Encoder snapshot_encoder(&proto_encoder);
+  pw::Status EncodeSnapshot(pw::stream::Writer& writer,
+                            pw::ByteSpan submessage_encode_buffer,
+                            const CrashInfo &crash_info) {
+    // Create a snapshot proto encoder.
+    pw::snapshot::Snapshot::StreamEncoder snapshot_encoder(
+        writer, submessage_encode_buffer);
     {  // This scope is required to handle RAII behavior of the submessage.
       // Start writing the Metadata submessage.
-      pw::snapshot::Metadata::Encoder metadata_encoder =
+      pw::snapshot::Metadata::StreamEncoder metadata_encoder =
           snapshot_encoder.GetMetadataEncoder();
       metadata_encoder.WriteReason(EncodeReasonLog(crash_info));
       metadata_encoder.WriteFatal(true);
       metadata_encoder.WriteProjectName(std::as_bytes(std::span("smart-shoe")));
       metadata_encoder.WriteDeviceName(
           std::as_bytes(std::span("smart-shoe-p1")));
-      metadata_encoder.WriteUptime(
-          std::chrono::time_point_cast<std::chrono::milliseconds>(
-              pw::chrono::SystemClock::now()));
     }
-    // Finalize the proto encode so it can be flushed somewhere.
-    return proto_encoder.Encode();
+    return proto_encoder.status();
   }
 
 -------------------
@@ -69,7 +67,7 @@ pw_protobuf.
 .. code-block:: cpp
 
   {
-    pw::Snapshot::TagsEntry::Encoder tags_encoder =
+    pw::Snapshot::TagsEntry::StreamEncoder tags_encoder =
         snapshot_encoder.GetTagsEncoder();
     tags_encoder.WriteKey("BtState");
     tags_encoder.WriteValue("connected");
