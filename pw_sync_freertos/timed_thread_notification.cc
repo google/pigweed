@@ -52,6 +52,10 @@ bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
   // Enforce that only a single thread can block at a time.
   PW_DCHECK(native_handle().blocked_thread == nullptr);
 
+  // Ensure that no one forgot to clean up nor corrupted the task notification
+  // state in the TCB.
+  PW_DCHECK(xTaskNotifyStateClear(nullptr) == pdFALSE);
+
   taskENTER_CRITICAL();
   {
     const bool notified = native_handle().notified;

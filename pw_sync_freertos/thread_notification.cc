@@ -48,6 +48,10 @@ void ThreadNotification::acquire() {
   // Enforce that only a single thread can block at a time.
   PW_DCHECK(native_type_.blocked_thread == nullptr);
 
+  // Ensure that no one forgot to clean up nor corrupted the task notification
+  // state in the TCB.
+  PW_DCHECK(xTaskNotifyStateClear(nullptr) == pdFALSE);
+
   taskENTER_CRITICAL();
   if (native_type_.notified) {
     native_type_.notified = false;
