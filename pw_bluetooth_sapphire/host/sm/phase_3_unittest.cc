@@ -29,34 +29,27 @@ namespace {
 
 using util::PacketSize;
 
-// clang-format off
-const PairingFeatures kDefaultFeatures(
-    /*initiator=*/true,   // initiator
-    false,  // secure_connections
-    true,   // will_bond
-    std::optional<CrossTransportKeyAlgo>{std::nullopt},
-    PairingMethod::kJustWorks,
-    kMaxEncryptionKeySize, // encryption_key_size
-    KeyDistGen::kEncKey,   // local_key_distribution; kEncKey because it lets Phase 3 "just work"
-    0u                     // remote_key_distribution
-);
+const PairingFeatures kDefaultFeatures = {
+    .initiator = true,
+    .secure_connections = false,
+    .will_bond = true,
+    .generate_ct_key = std::optional<CrossTransportKeyAlgo>{std::nullopt},
+    .method = PairingMethod::kJustWorks,
+    .encryption_key_size = kMaxEncryptionKeySize,
+    .local_key_distribution = KeyDistGen::kEncKey,  // kEncKey because it lets Phase 3 "just work"
+    .remote_key_distribution = 0u};
 
-const SecurityProperties kDefaultProperties(
-  SecurityLevel::kEncrypted,
-  kMaxEncryptionKeySize,
-  /*secure_connections=*/false  // Secure Connections
-);
+const SecurityProperties kDefaultProperties(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
+                                            /*secure_connections=*/false);
 
 struct Phase3Args {
   PairingFeatures features = kDefaultFeatures;
   SecurityProperties le_props = kDefaultProperties;
 };
 
-const hci_spec::LinkKey kSampleLinkKey(
-  UInt128{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},  // value
-  /* rand= */ 0x1234, /* ediv= */ 0x5678
-);
-// clang-format on
+const hci_spec::LinkKey kSampleLinkKey(/*value=*/UInt128{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+                                                         14, 15, 16},
+                                       /*rand=*/0x1234, /*ediv=*/0x5678);
 
 const DeviceAddress kSampleDeviceAddress(DeviceAddress::Type::kLEPublic, {1});
 

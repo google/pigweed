@@ -44,36 +44,31 @@ enum CrossTransportKeyAlgo {
 
 // Represents the features exchanged during Pairing Phase 1.
 struct PairingFeatures final {
-  PairingFeatures();
-  PairingFeatures(bool initiator, bool sc, bool will_bond,
-                  std::optional<CrossTransportKeyAlgo> algo, PairingMethod method,
-                  uint8_t enc_key_size, KeyDistGenField local_kd, KeyDistGenField remote_kd);
-
   // True if the local device is in the "initiator" role.
-  bool initiator;
+  bool initiator = false;
 
   // True if LE Secure Connections pairing should be used. Otherwise, LE Legacy
   // Pairing should be used.
-  bool secure_connections;
+  bool secure_connections = false;
 
   // True if pairing is to be performed with bonding, false if not
-  bool will_bond;
+  bool will_bond = false;
 
   // If present, prescribes the algorithm to use during cross-transport key derivation. If not
   // present, cross-transport key derivation should not take place.
   std::optional<CrossTransportKeyAlgo> generate_ct_key;
 
   // Indicates the key generation model used for Phase 2.
-  PairingMethod method;
+  PairingMethod method = PairingMethod::kJustWorks;
 
   // The negotiated encryption key size.
-  uint8_t encryption_key_size;
+  uint8_t encryption_key_size = 0;
 
   // The keys that we must distribute to the peer.
-  KeyDistGenField local_key_distribution;
+  KeyDistGenField local_key_distribution = 0;
 
   // The keys that will be distributed to us by the peer.
-  KeyDistGenField remote_key_distribution;
+  KeyDistGenField remote_key_distribution = 0;
 };
 
 constexpr KeyDistGenField DistributableKeys(KeyDistGenField keys) {

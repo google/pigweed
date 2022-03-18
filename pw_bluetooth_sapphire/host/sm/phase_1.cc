@@ -262,8 +262,14 @@ fpromise::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(
     return fpromise::error(ErrorCode::kAuthenticationRequirements);
   }
 
-  return fpromise::ok(PairingFeatures(local_initiator, sc, will_bond, generate_ct_key, method,
-                                      enc_key_size, local_keys, remote_keys));
+  return fpromise::ok(PairingFeatures{.initiator = local_initiator,
+                                      .secure_connections = sc,
+                                      .will_bond = will_bond,
+                                      .generate_ct_key = generate_ct_key,
+                                      .method = method,
+                                      .encryption_key_size = enc_key_size,
+                                      .local_key_distribution = local_keys,
+                                      .remote_key_distribution = remote_keys});
 }
 
 void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {

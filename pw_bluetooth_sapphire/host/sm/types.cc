@@ -31,21 +31,6 @@ bool IsSecureConnectionsKey(hci_spec::LinkKeyType lk_type) {
 
 }  // namespace
 
-PairingFeatures::PairingFeatures() { std::memset(this, 0, sizeof(*this)); }
-
-PairingFeatures::PairingFeatures(bool initiator, bool sc, bool will_bond,
-                                 std::optional<CrossTransportKeyAlgo> algo, PairingMethod method,
-                                 uint8_t enc_key_size, KeyDistGenField local_kd,
-                                 KeyDistGenField remote_kd)
-    : initiator(initiator),
-      secure_connections(sc),
-      will_bond(will_bond),
-      generate_ct_key(algo),
-      method(method),
-      encryption_key_size(enc_key_size),
-      local_key_distribution(local_kd),
-      remote_key_distribution(remote_kd) {}
-
 bool HasKeysToDistribute(PairingFeatures features) {
   return DistributableKeys(features.local_key_distribution) ||
          DistributableKeys(features.remote_key_distribution);

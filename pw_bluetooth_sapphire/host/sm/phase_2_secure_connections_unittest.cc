@@ -31,17 +31,15 @@ namespace {
 using ConfirmCallback = FakeListener::ConfirmCallback;
 using PasskeyResponseCallback = FakeListener::PasskeyResponseCallback;
 
-// clang-format off
-const PairingFeatures kDefaultFeatures(
-    /*initiator=*/true,                                     // initiator
-    true,                                     // secure_connections
-    true,                                     // will_bond
-    std::optional<CrossTransportKeyAlgo>{std::nullopt},
-    PairingMethod::kJustWorks,
-    kMaxEncryptionKeySize,                    // encryption_key_size
-    KeyDistGen::kIdKey,                       // local_key_distribution
-    KeyDistGen::kIdKey | KeyDistGen::kEncKey  // remote_key_distribution
-);
+const PairingFeatures kDefaultFeatures = {
+    .initiator = true,
+    .secure_connections = true,
+    .will_bond = true,
+    .generate_ct_key = std::optional<CrossTransportKeyAlgo>{std::nullopt},
+    .method = PairingMethod::kJustWorks,
+    .encryption_key_size = kMaxEncryptionKeySize,
+    .local_key_distribution = KeyDistGen::kIdKey,
+    .remote_key_distribution = KeyDistGen::kIdKey | KeyDistGen::kEncKey};
 
 const PairingRequestParams kDefaultPreq{
     .io_capability = IOCapability::kNoInputNoOutput,
@@ -49,8 +47,7 @@ const PairingRequestParams kDefaultPreq{
     .auth_req = AuthReq::kSC | AuthReq::kBondingFlag,
     .max_encryption_key_size = kMaxEncryptionKeySize,
     .initiator_key_dist_gen = KeyDistGen::kIdKey,
-    .responder_key_dist_gen = KeyDistGen::kIdKey | KeyDistGen::kEncKey
-};
+    .responder_key_dist_gen = KeyDistGen::kIdKey | KeyDistGen::kEncKey};
 
 const PairingResponseParams kDefaultPres{
     .io_capability = IOCapability::kNoInputNoOutput,
@@ -58,9 +55,8 @@ const PairingResponseParams kDefaultPres{
     .auth_req = AuthReq::kSC | AuthReq::kBondingFlag,
     .max_encryption_key_size = kMaxEncryptionKeySize,
     .initiator_key_dist_gen = KeyDistGen::kIdKey,
-    .responder_key_dist_gen = KeyDistGen::kIdKey | KeyDistGen::kEncKey
-};
-// clang-format on
+    .responder_key_dist_gen = KeyDistGen::kIdKey | KeyDistGen::kEncKey};
+
 const DeviceAddress kAddr1(DeviceAddress::Type::kLEPublic, {0x00, 0x00, 0x00, 0x00, 0x00, 0x01});
 const DeviceAddress kAddr2(DeviceAddress::Type::kLEPublic, {0x00, 0x00, 0x00, 0x00, 0x00, 0x02});
 const LocalEcdhKey kDefaultEcdhKey = LocalEcdhKey::Create().value();

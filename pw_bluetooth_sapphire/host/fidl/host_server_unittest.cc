@@ -247,7 +247,7 @@ class HostServerPairingTest : public HostServerTest {
   // frees. These failures mostly stem from the Host server notifying the client upon pairing
   // delegate destruction, which is not important behavior for many tests.
   void TearDown() override {
-    fake_chan_->SetSendCallback(nullptr, /*dispatcher=*/nullptr);
+    fake_chan_->SetSendCallback(/*callback=*/nullptr, /*dispatcher=*/nullptr);
     host_client_ptr().Unbind();
     HostServerTest::TearDown();
   }

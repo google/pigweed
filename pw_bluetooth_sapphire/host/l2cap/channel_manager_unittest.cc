@@ -269,10 +269,10 @@ class ChannelManagerTest : public TestingBase {
 
   // Helper functions for registering logical links with default arguments.
   void RegisterLE(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
-                  LinkErrorCallback lec = DoNothing,
+                  LinkErrorCallback link_error_cb = DoNothing,
                   LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
                   SecurityUpgradeCallback suc = NopSecurityCallback) {
-    chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(lec), std::move(suc));
+    chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(link_error_cb), std::move(suc));
   }
 
   struct QueueRegisterACLRetVal {
@@ -282,7 +282,7 @@ class ChannelManagerTest : public TestingBase {
 
   QueueRegisterACLRetVal QueueRegisterACL(hci_spec::ConnectionHandle handle,
                                           hci::Connection::Role role,
-                                          LinkErrorCallback lec = DoNothing,
+                                          LinkErrorCallback link_error_cb = DoNothing,
                                           SecurityUpgradeCallback suc = NopSecurityCallback) {
     QueueRegisterACLRetVal cmd_ids;
     cmd_ids.extended_features_id = NextCommandId();
@@ -294,14 +294,14 @@ class ChannelManagerTest : public TestingBase {
     EXPECT_ACL_PACKET_OUT(
         testing::AclFixedChannelsSupportedInfoReq(cmd_ids.fixed_channels_supported_id, handle),
         kHighPriority);
-    RegisterACL(handle, role, std::move(lec), std::move(suc));
+    RegisterACL(handle, role, std::move(link_error_cb), std::move(suc));
     return cmd_ids;
   }
 
   void RegisterACL(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
-                   LinkErrorCallback lec = DoNothing,
+                   LinkErrorCallback link_error_cb = DoNothing,
                    SecurityUpgradeCallback suc = NopSecurityCallback) {
-    chanmgr()->RegisterACL(handle, role, std::move(lec), std::move(suc));
+    chanmgr()->RegisterACL(handle, role, std::move(link_error_cb), std::move(suc));
   }
 
   void ReceiveL2capInformationResponses(CommandId extended_features_id,
@@ -2143,7 +2143,8 @@ TEST_F(ChannelManagerTest,
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  RegisterLE(kTestHandle1, hci::Connection::Role::kCentral, /*lec=*/DoNothing, std::move(param_cb));
+  RegisterLE(kTestHandle1, hci::Connection::Role::kCentral, /*link_error_cb=*/DoNothing,
+             std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 
@@ -2175,7 +2176,7 @@ TEST_F(ChannelManagerTest,
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  RegisterLE(kTestHandle1, hci::Connection::Role::kPeripheral, /*lec=*/DoNothing,
+  RegisterLE(kTestHandle1, hci::Connection::Role::kPeripheral, /*link_error_cb=*/DoNothing,
              std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
@@ -2201,7 +2202,8 @@ TEST_F(ChannelManagerTest,
 
   // Callback should not be called for request with invalid parameters.
   LEConnectionParameterUpdateCallback param_cb = [](auto /*params*/) { ADD_FAILURE(); };
-  RegisterLE(kTestHandle1, hci::Connection::Role::kCentral, /*lec=*/DoNothing, std::move(param_cb));
+  RegisterLE(kTestHandle1, hci::Connection::Role::kCentral, /*link_error_cb=*/DoNothing,
+             std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 

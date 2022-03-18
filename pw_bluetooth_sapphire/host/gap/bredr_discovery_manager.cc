@@ -39,7 +39,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
     DeviceAddress addr(DeviceAddress::Type::kBREDR, response.bd_addr);
     Peer* peer = cache->FindByAddress(addr);
     if (!peer) {
-      peer = cache->NewPeer(addr, /* connectable= */ true);
+      peer = cache->NewPeer(addr, /*connectable=*/true);
     }
     ZX_ASSERT(peer);
 
