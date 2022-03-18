@@ -409,6 +409,34 @@ TEST_F(EmptyInitializedKvs, Iteration_EmptyAfterDeletion) {
   }
 }
 
+TEST_F(EmptyInitializedKvs, Iterator) {
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
+
+  for (KeyValueStore::iterator it = kvs_.begin(); it != kvs_.end(); ++it) {
+    EXPECT_STREQ(it->key(), "kEy");
+
+    char temp[sizeof("123")] = {};
+    EXPECT_EQ(OkStatus(), it->Get(&temp));
+    EXPECT_STREQ("123", temp);
+  }
+}
+
+TEST_F(EmptyInitializedKvs, Iterator_PostIncrement) {
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
+
+  KeyValueStore::iterator it = kvs_.begin();
+  EXPECT_EQ(it++, kvs_.begin());
+  EXPECT_EQ(it, kvs_.end());
+}
+
+TEST_F(EmptyInitializedKvs, Iterator_PreIncrement) {
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
+
+  KeyValueStore::iterator it = kvs_.begin();
+  EXPECT_EQ(++it, kvs_.end());
+  EXPECT_EQ(it, kvs_.end());
+}
+
 TEST_F(EmptyInitializedKvs, Basic) {
   // Add some data
   uint8_t value1 = 0xDA;

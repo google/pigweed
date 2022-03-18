@@ -262,7 +262,11 @@ class KeyValueStore {
    public:
     iterator& operator++();
 
-    iterator& operator++(int) { return operator++(); }
+    iterator operator++(int) {
+      const iterator original(item_.kvs_, item_.iterator_);
+      operator++();
+      return original;
+    }
 
     // Reads the entry's key from flash.
     const Item& operator*() {
