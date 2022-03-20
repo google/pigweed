@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pi_pico.gni")
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_arduino_build/arduino.gni")
@@ -50,6 +51,7 @@ group("default") {
     ":check_modules",
     ":docs",
     ":host",
+    ":pi_pico",
     ":python.lint",
     ":python.tests",
     ":static_analysis",
@@ -100,6 +102,12 @@ action("update_modules") {
 
 group("pw_system_demo") {
   deps = [ "$dir_pw_system:system_examples" ]
+}
+
+group("pi_pico") {
+  if (PICO_SRC_DIR != "") {
+    deps = [ ":pw_module_tests(targets/rp2040)" ]
+  }
 }
 
 _internal_toolchains = "$dir_pigweed/targets/host/pigweed_internal"
