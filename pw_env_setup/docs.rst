@@ -504,6 +504,14 @@ the GNI file specified in the environment config file.
     dir_virtual_env = "<pigweed-root>/.environment/pigweed-venv"
   }
 
+It's straightforward to use these variables.
+
+.. code-block:: cpp
+
+    import("//build_overrides/pigweed_environment.gni")
+
+    deps = [ "$dir_cipd_pigweed/..." ]
+
 Implementation
 **************
 
