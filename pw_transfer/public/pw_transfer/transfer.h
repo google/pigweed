@@ -93,6 +93,12 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
     max_parameters_.set_pending_bytes(max_pending_bytes);
   }
 
+  // Sets the maximum size for the data in a pw_transfer chunk. Note that the
+  // max chunk size must always fit within the transfer thread's chunk buffer.
+  void set_max_chunk_size_bytes(uint32_t max_chunk_size_bytes) {
+    max_parameters_.set_max_chunk_size_bytes(max_chunk_size_bytes);
+  }
+
   void UnregisterHandler(internal::Handler& handler) {
     thread_.RemoveTransferHandler(handler);
   }
