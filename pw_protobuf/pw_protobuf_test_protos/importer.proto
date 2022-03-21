@@ -26,3 +26,7 @@ message Period {
 message Nothing {
   pw.protobuf.Empty nothing = 1;
 }
+
+message TestResult {
+  imported.Status status = 1;
+}

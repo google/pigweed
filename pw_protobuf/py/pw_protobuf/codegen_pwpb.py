@@ -902,10 +902,12 @@ class EnumReadMethod(ReadMethod):
         lines += ['if (!value.ok()) {']
         lines += ['  return value.status();']
         lines += ['}']
-        lines += [
-            'return static_cast<{}>(value.value());'.format(
-                self._result_type())
-        ]
+
+        name_parts = self._relative_type_namespace().split('::')
+        enum_name = name_parts.pop()
+        function_name = '::'.join(name_parts + [f'Get{enum_name}'])
+
+        lines += [f'return {function_name}(value.value());']
         return lines
 
 
@@ -1108,6 +1110,25 @@ def generate_code_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
     output.write_line('};')
 
 
+def generate_function_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
+                               output: OutputFile) -> None:
+    """Creates a C++ validation function for for a proto enum."""
+    assert proto_enum.type() == ProtoNode.Type.ENUM
+
+    enum_name = proto_enum.cpp_namespace(root)
+    output.write_line(
+        f'constexpr pw::Result<{enum_name}> Get{enum_name}(uint32_t value) {{')
+    with output.indent():
+        output.write_line('switch (value) {')
+        with output.indent():
+            for name, number in proto_enum.values():
+                output.write_line(
+                    f'case {number}: return {enum_name}::{name};')
+            output.write_line('default: return ::pw::Status::DataLoss();')
+        output.write_line('}')
+    output.write_line('}')
+
+
 def forward_declare(node: ProtoMessage, root: ProtoNode,
                     output: OutputFile) -> None:
     """Generates code forward-declaring entities in a message's namespace."""
@@ -1136,6 +1157,8 @@ def forward_declare(node: ProtoMessage, root: ProtoNode,
         if child.type() == ProtoNode.Type.ENUM:
             output.write_line()
             generate_code_for_enum(cast(ProtoEnum, child), node, output)
+            output.write_line()
+            generate_function_for_enum(cast(ProtoEnum, child), node, output)
 
     output.write_line(f'}}  // namespace {namespace}')
 
@@ -1203,6 +1226,8 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
         if node.type() == ProtoNode.Type.ENUM:
             output.write_line()
             generate_code_for_enum(cast(ProtoEnum, node), package, output)
+            output.write_line()
+            generate_function_for_enum(cast(ProtoEnum, node), package, output)
 
     generate_class_wrappers(package, ClassType.STREAMING_ENCODER, output)
     generate_class_wrappers(package, ClassType.MEMORY_ENCODER, output)

@@ -416,6 +416,56 @@ TEST(Codegen, BytesReader) {
   EXPECT_EQ(pigweed.Next(), Status::OutOfRange());
 }
 
+TEST(Codegen, Enum) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // pigweed.bin (value value)
+    0x40, 0x01,
+    // pigweed.bin (invalid value)
+    0x40, 0xff,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  Pigweed::StreamDecoder pigweed(reader);
+
+  EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::BIN);
+  Result<Pigweed::Protobuf::Binary> bin = pigweed.ReadBin();
+  EXPECT_EQ(bin.status(), OkStatus());
+  EXPECT_EQ(bin.value(), Pigweed::Protobuf::Binary::ZERO);
+
+  EXPECT_EQ(pigweed.Next(), OkStatus());
+  EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::BIN);
+  bin = pigweed.ReadBin();
+  EXPECT_EQ(bin.status(), Status::DataLoss());
+}
+
+TEST(Codegen, ImportedEnum) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // result.status (value value)
+    0x08, 0x01,
+    // result.status (invalid value)
+    0x08, 0xff,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  TestResult::StreamDecoder test_result(reader);
+
+  EXPECT_EQ(test_result.Next(), OkStatus());
+  EXPECT_EQ(test_result.Field().value(), TestResult::Fields::STATUS);
+  Result<imported::Status> status = test_result.ReadStatus();
+  EXPECT_EQ(status.status(), OkStatus());
+  EXPECT_EQ(status.value(), imported::Status::NOT_OK);
+
+  EXPECT_EQ(test_result.Next(), OkStatus());
+  EXPECT_EQ(test_result.Field().value(), TestResult::Fields::STATUS);
+  status = test_result.ReadStatus();
+  EXPECT_EQ(status.status(), Status::DataLoss());
+}
+
 TEST(CodegenRepeated, NonPackedScalar) {
   // clang-format off
   constexpr uint8_t proto_data[] = {

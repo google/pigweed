@@ -178,9 +178,12 @@ pw_protobuf codegen integration is supported in GN, Bazel, and CMake.
 The codegen is just a light wrapper around the ``StreamEncoder``,
 ``MemoryEncoder``, and ``StreamDecoder`` objects, providing named helper
 functions to write and read proto fields rather than requiring that field
-numbers are directly passed to an encoder. Namespaced proto enums are also
-generated, and used as the arguments when writing and reading enum fields of a
-proto message.
+numbers are directly passed to an encoder.
+
+Namespaced proto enums are also generated, and used as the arguments when
+writing enum fields of a proto message. When reading enum fields of a proto
+message, the enum value is validated and returned as the correct type, or
+``Status::DataLoss()`` if the decoded enum value was not given in the proto.
 
 All generated messages provide a ``Fields`` enum that can be used directly for
 out-of-band encoding, or with the ``pw::protobuf::Decoder``.

@@ -19,3 +19,9 @@ message Timestamp {
   uint64 seconds = 1;
   uint32 nanoseconds = 2;
 }
+
+enum Status {
+  UNKNOWN = 0;
+  NOT_OK = 1;
+  OK = 2;
+}
