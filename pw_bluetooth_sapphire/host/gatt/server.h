@@ -33,83 +33,32 @@ using IndicationCallback = att::ResultCallback<>;
 //
 // A Server responds to incoming requests by querying the database that it
 // is initialized with. Each Server shares an att::Bearer with a Client.
-class Server final {
+class Server {
  public:
+  // Constructs a new Server bearer.
   // |peer_id| is the unique system identifier for the peer device.
   // |local_services| will be used to resolve inbound/outbound transactions.
   // |bearer| is the ATT data bearer that this Server operates on.
-  Server(PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services,
-         fbl::RefPtr<att::Bearer> bearer);
-  ~Server();
+  static std::unique_ptr<Server> Create(PeerId peer_id,
+                                        fxl::WeakPtr<LocalServiceManager> local_services,
+                                        fbl::RefPtr<att::Bearer> bearer);
+  // Servers can be constructed without production att::Bearers (e.g. for testing), so the
+  // FactoryFunction type reflects that.
+  using FactoryFunction =
+      fit::function<std::unique_ptr<Server>(PeerId, fxl::WeakPtr<LocalServiceManager>)>;
 
-  // Sends a Handle-Value notification or indication PDU with the given
-  // attribute handle. If |indicate_cb| is nullptr, a notification will be sent. Otherwise, an
-  // indication will be sent, and indicate_cb will be called when the indication is acknowledged
-  // or fails to be sent. The underlying att::Bearer will disconnect the link if a confirmation is
-  // not received in a timely manner.
-  void SendUpdate(IdType service_id, IdType chrc_id, BufferView value,
-                  IndicationCallback indicate_cb);
+  virtual ~Server() = default;
 
- private:
-  // ATT protocol request handlers:
-  void OnExchangeMTU(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnFindInformation(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnReadByGroupType(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnReadByType(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnReadRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnWriteCommand(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnReadBlobRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnFindByTypeValueRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnPrepareWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
-  void OnExecuteWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  // Sends a Handle-Value notification or indication PDU on the given |chrc_id| within |service_id|.
+  // If |indicate_cb| is nullptr, a notification is sent. Otherwise, an indication is sent, and
+  // indicate_cb is called with the result of the indication. The underlying att::Bearer will
+  // disconnect the link if a confirmation is not received in a timely manner.
+  virtual void SendUpdate(IdType service_id, IdType chrc_id, BufferView value,
+                          IndicationCallback indicate_cb) = 0;
 
-  // Helper function to serve the Read By Type and Read By Group Type requests.
-  // This searches |db| for attributes with the given |type| and adds as many
-  // attributes as it can fit within the given |max_data_list_size|. The
-  // attribute value that should be included within each attribute data list
-  // entry is returned in |out_value_size|.
-  //
-  // If the result is a dynamic attribute, |out_results| will contain at most
-  // one entry. |out_value_size| will point to an undefined value in that case.
-  //
-  // Returns att::ErrorCode::kNoError on success. On error, returns an error
-  // code that can be used in a ATT Error Response.
-  att::ErrorCode ReadByTypeHelper(att::Handle start, att::Handle end, const UUID& type,
-                                  bool group_type, size_t max_data_list_size, size_t max_value_size,
-                                  size_t entry_prefix_size, size_t* out_value_size,
-                                  std::list<const att::Attribute*>* out_results);
-
-  // Convenience "alias"
-  inline fbl::RefPtr<att::Database> db() { return local_services_->database(); }
-
-  PeerId peer_id_;
-  // Expected to outlive this |Server| instance
-  fxl::WeakPtr<LocalServiceManager> local_services_;
-  fbl::RefPtr<att::Bearer> att_;
-
-  // The queue data structure used for queued writes (see Vol 3, Part F, 3.4.6).
-  att::PrepareWriteQueue prepare_queue_;
-
-  // ATT protocol request handler IDs
-  // TODO(armansito): Storing all these IDs here feels wasteful. Provide a way
-  // to unregister GATT server callbacks collectively from an att::Bearer, given
-  // that it's server-role functionalities are uniquely handled by this class.
-  att::Bearer::HandlerId exchange_mtu_id_;
-  att::Bearer::HandlerId find_information_id_;
-  att::Bearer::HandlerId read_by_group_type_id_;
-  att::Bearer::HandlerId read_by_type_id_;
-  att::Bearer::HandlerId read_req_id_;
-  att::Bearer::HandlerId write_req_id_;
-  att::Bearer::HandlerId write_cmd_id_;
-  att::Bearer::HandlerId read_blob_req_id_;
-  att::Bearer::HandlerId find_by_type_value_id_;
-  att::Bearer::HandlerId prepare_write_id_;
-  att::Bearer::HandlerId exec_write_id_;
-
-  fxl::WeakPtrFactory<Server> weak_ptr_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Server);
+  // Shuts down the transport on which this Server operates, which may also disconnect any other
+  // objects using the same transport, like the gatt::Client.
+  virtual void ShutDown() = 0;
 };
 
 }  // namespace gatt

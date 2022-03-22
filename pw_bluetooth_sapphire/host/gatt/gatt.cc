@@ -61,8 +61,8 @@ class Impl final : public GATT {
 
   // GATT overrides:
 
-  void AddConnection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
-                     std::unique_ptr<Client> client) override {
+  void AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
+                     Server::FactoryFunction server_factory) override {
     bt_log(DEBUG, "gatt", "add connection %s", bt_str(peer_id));
 
     auto iter = connections_.find(peer_id);
@@ -77,10 +77,9 @@ class Impl final : public GATT {
                                                std::vector<fbl::RefPtr<RemoteService>> modified) {
       OnServicesChanged(peer_id, removed, added, modified);
     };
-
-    connections_.try_emplace(peer_id, peer_id, std::move(att_bearer), std::move(client),
-                             local_services_->GetWeakPtr(), std::move(service_watcher),
-                             async_get_default_dispatcher());
+    std::unique_ptr<Server> server = server_factory(peer_id, local_services_->GetWeakPtr());
+    connections_.try_emplace(peer_id, std::move(client), std::move(server),
+                             std::move(service_watcher), async_get_default_dispatcher());
 
     if (retrieve_service_changed_ccc_callback_) {
       auto optional_service_changed_ccc_data = retrieve_service_changed_ccc_callback_(peer_id);

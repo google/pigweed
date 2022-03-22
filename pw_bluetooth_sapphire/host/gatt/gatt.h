@@ -50,14 +50,14 @@ class GATT {
   //
   // |peer_id|: The identifier for the peer device that the link belongs to.
   //            This is used to identify the peer while handling certain events.
-  // |att_chan|: The ATT fixed channel over which the ATT protocol bearer will
-  //             operate. The bearer will be associated with the link that
-  //             underlies this channel.
-  // |client|: The GATT client that operates on |att_chan|. This can be a production |Client| or a
+  // |client|: The GATT client specific to this connection. This can be a production |Client| or a
   //           |FakeClient| for testing.
-  // TODO(fxbug.dev/83231): Replace att_bearer with gatt::Server to facilitate testing.
-  virtual void AddConnection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
-                             std::unique_ptr<Client> client) = 0;
+  // |server_factory|: Factory method for a GATT server that operates on this connection. This can
+  //                   be a production |Server| or a |MockServer| for testing. Note: the server
+  //                   handles GATT server procedures, but importantly does *not* store any GATT
+  //                   server state itself.
+  virtual void AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
+                             Server::FactoryFunction server_factory) = 0;
 
   // Unregisters the GATT profile connection to the peer with Id |peer_id|.
   virtual void RemoveConnection(PeerId peer_id) = 0;

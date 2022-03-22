@@ -16,16 +16,11 @@
 
 namespace bt::gatt::internal {
 
-Connection::Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
-                       std::unique_ptr<Client> client,
-                       fxl::WeakPtr<LocalServiceManager> local_services,
+Connection::Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> server,
                        RemoteServiceWatcher svc_watcher, async_dispatcher_t* gatt_dispatcher)
-    : att_(std::move(att_bearer)), weak_ptr_factory_(this) {
-  ZX_ASSERT(att_);
-  ZX_ASSERT(local_services);
+    : server_(std::move(server)), weak_ptr_factory_(this) {
   ZX_ASSERT(svc_watcher);
 
-  server_ = std::make_unique<gatt::Server>(peer_id, std::move(local_services), att_);
   remote_service_manager_ =
       std::make_unique<RemoteServiceManager>(std::move(client), gatt_dispatcher);
   remote_service_manager_->set_service_watcher(std::move(svc_watcher));
@@ -43,7 +38,7 @@ void Connection::Initialize(std::vector<UUID> service_uuids) {
 
     if (bt_is_error(status, ERROR, "gatt", "client setup failed")) {
       // Signal a link error.
-      self->att_->ShutDown();
+      self->ShutDown();
     } else if (uuids_count > 0) {
       bt_log(DEBUG, "gatt", "primary service discovery complete for (%zu) service uuids",
              uuids_count);
@@ -55,4 +50,9 @@ void Connection::Initialize(std::vector<UUID> service_uuids) {
   remote_service_manager_->Initialize(std::move(status_cb), std::move(service_uuids));
 }
 
+void Connection::ShutDown() {
+  // We shut down the connection from the server not for any technical reason, but just because it
+  // was simpler to expose the att::Bearer's ShutDown behavior from the server.
+  server_->ShutDown();
+}
 }  // namespace bt::gatt::internal

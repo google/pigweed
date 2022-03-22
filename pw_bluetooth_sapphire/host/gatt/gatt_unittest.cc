@@ -6,7 +6,13 @@
 
 #include "fake_client.h"
 #include "lib/gtest/test_loop_fixture.h"
+#include "mock_server.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
 namespace bt::gatt::internal {
@@ -14,6 +20,12 @@ namespace {
 
 const PeerId kPeerId(1);
 constexpr UUID kTestServiceUuid0(uint16_t{0xbeef});
+
+// Factory function for tests of client-facing behavior that don't care about the server
+std::unique_ptr<Server> CreateMockServer(PeerId peer_id,
+                                         fxl::WeakPtr<LocalServiceManager> local_services) {
+  return std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+}
 
 class GattTest : public ::gtest::TestLoopFixture {
  public:
@@ -91,10 +103,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
                                                       .modified = std::move(modified)});
       });
 
-  auto fake_chan = fbl::AdoptRef(
-      new l2cap::testing::FakeChannel(/*id=*/1, /*remote_id=*/2, /*handle=*/3, bt::LinkType::kLE));
-  fbl::RefPtr<att::Bearer> att_bearer = att::Bearer::Create(fake_chan);
-  gatt()->AddConnection(kPeerId, att_bearer, take_client());
+  gatt()->AddConnection(kPeerId, take_client(), CreateMockServer);
   RunLoopUntilIdle();
   EXPECT_EQ(write_request_count, 0);
 
@@ -175,10 +184,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   auto client_0 = std::make_unique<testing::FakeClient>(dispatcher());
   client_0->set_services({svc_data_0});
 
-  auto fake_chan_0 = fbl::AdoptRef(
-      new l2cap::testing::FakeChannel(/*id=*/1, /*remote_id=*/2, /*handle=*/3, bt::LinkType::kLE));
-  fbl::RefPtr<att::Bearer> att_bearer_0 = att::Bearer::Create(fake_chan_0);
-  gatt()->AddConnection(kPeerId0, att_bearer_0, std::move(client_0));
+  gatt()->AddConnection(kPeerId0, std::move(client_0), CreateMockServer);
 
   std::vector<ServiceWatcherData> watcher_data_0;
   GATT::RemoteServiceWatcherId id_0 = gatt()->RegisterRemoteServiceWatcherForPeer(
@@ -212,10 +218,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   client_1->set_write_request_callback([&](att::Handle handle, const auto& value,
                                            auto status_callback) { status_callback(fitx::ok()); });
 
-  auto fake_chan_1 = fbl::AdoptRef(
-      new l2cap::testing::FakeChannel(/*id=*/1, /*remote_id=*/2, /*handle=*/3, bt::LinkType::kLE));
-  fbl::RefPtr<att::Bearer> att_bearer_1 = att::Bearer::Create(fake_chan_1);
-  gatt()->AddConnection(kPeerId1, att_bearer_1, std::move(client_1));
+  gatt()->AddConnection(kPeerId1, std::move(client_1), CreateMockServer);
 
   // Register 2 watchers for kPeerId1.
   std::vector<ServiceWatcherData> watcher_data_1;
@@ -279,5 +282,90 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   EXPECT_EQ(watcher_data_2[1].added[0]->handle(), kSvcStartHandle1);
 }
 
+TEST_F(GattTest, ServiceDiscoveryFailureShutsDownConnection) {
+  fxl::WeakPtr<testing::MockServer> mock_server;
+  auto mock_server_factory = [&](PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services) {
+    auto unique_mock_server =
+        std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+    mock_server = unique_mock_server->AsMockWeakPtr();
+    return unique_mock_server;
+  };
+  fake_client()->set_discover_services_callback(
+      [](ServiceKind kind) { return ToResult(att::ErrorCode::kRequestNotSupported); });
+  gatt()->AddConnection(kPeerId, take_client(), std::move(mock_server_factory));
+  ASSERT_TRUE(mock_server);
+  EXPECT_FALSE(mock_server->was_shut_down());
+  gatt()->DiscoverServices(kPeerId, std::vector<UUID>{});
+  RunLoopUntilIdle();
+  EXPECT_TRUE(mock_server->was_shut_down());
+}
+
+class GattTestBoolParam : public GattTest, public ::testing::WithParamInterface<bool> {};
+
+TEST_P(GattTestBoolParam, SendIndicationReceiveResponse) {
+  fxl::WeakPtr<testing::MockServer> mock_server;
+  auto mock_server_factory = [&](PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services) {
+    auto unique_mock_server =
+        std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+    mock_server = unique_mock_server->AsMockWeakPtr();
+    return unique_mock_server;
+  };
+  gatt()->AddConnection(kPeerId, take_client(), std::move(mock_server_factory));
+  ASSERT_TRUE(mock_server);
+
+  // Configure how the mock server handles updates sent from the GATT object.
+  IndicationCallback mock_ind_cb = nullptr;
+  const std::vector<uint8_t> kIndicateVal{114};  // 114 is arbitrary
+  testing::UpdateHandler handler = [&](auto /*ignore*/, auto /*ignore*/, const ByteBuffer& bytes,
+                                       IndicationCallback ind_cb) {
+    EXPECT_EQ(kIndicateVal, bytes.ToVector());
+    mock_ind_cb = std::move(ind_cb);
+  };
+  mock_server->set_update_handler(std::move(handler));
+
+  // Register an arbitrary service with a single characteristic on which to send indications. This
+  // boilerplate isn't strictly necessary as gatt::GATT itself is not responsible for verifying
+  // that a service exists before sending an update, but it's a more realistic test.
+  const bt::UUID kSvcUuid = bt::UUID(112u);
+  auto svc = std::make_unique<Service>(/*primary=*/true, kSvcUuid);
+  const IdType kChrcId = 13;
+  const bt::UUID kChrcUuid = bt::UUID(113u);
+  const att::AccessRequirements kReadPerm, kWritePerm;  // Default is not allowed
+  // Allow "update" (i.e. indications / notifications) with no security
+  const att::AccessRequirements kUpdatePerm(/*encryption=*/false, /*authentication=*/false,
+                                            /*authorization=*/false);
+  auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcUuid, Property::kIndicate,
+                                               /*extended_properties=*/0, kReadPerm, kWritePerm,
+                                               kUpdatePerm);
+  svc->AddCharacteristic(std::move(chrc));
+
+  std::optional<IdType> svc_id = std::nullopt;
+  auto id_cb = [&svc_id](IdType received_id) {
+    EXPECT_NE(kInvalidId, received_id);
+    svc_id = received_id;
+  };
+  gatt()->RegisterService(std::move(svc), std::move(id_cb), NopReadHandler, NopWriteHandler,
+                          NopCCCallback);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(svc_id.has_value());
+
+  std::optional<att::Result<>> indicate_status;
+  auto indicate_cb = [&](att::Result<> status) { indicate_status = status; };
+  gatt()->SendUpdate(*svc_id, kChrcId, kPeerId, kIndicateVal, std::move(indicate_cb));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(mock_ind_cb);
+  EXPECT_FALSE(indicate_status.has_value());
+  if (GetParam()) {
+    mock_ind_cb(fitx::ok());
+    ASSERT_TRUE(indicate_status.has_value());
+    EXPECT_TRUE(indicate_status->is_ok());
+  } else {
+    mock_ind_cb(ToResult(HostError::kTimedOut));
+    ASSERT_TRUE(indicate_status.has_value());
+    EXPECT_EQ(ToResult(HostError::kTimedOut), *indicate_status);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(GattTestBoolParamTests, GattTestBoolParam, ::testing::Bool());
 }  // namespace
 }  // namespace bt::gatt::internal

@@ -38,28 +38,25 @@ namespace internal {
 // link.
 class Connection final {
  public:
-  // |peer_id| identifies the peer device.
-  // |att_bearer| is the ATT protocol data transport for this connection.
-  // |client| is the ATT client for this connection, which uses |att_bearer| in production.
-  // |local_services| stores state (such as the attribute database) for local GATT services. It
-  // is used by the GATT server.
-  Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer, std::unique_ptr<Client> client,
-             fxl::WeakPtr<LocalServiceManager> local_services, RemoteServiceWatcher svc_watcher,
-             async_dispatcher_t* gatt_dispatcher);
+  // |client| is the GATT client for this connection, which uses |att_bearer| in production.
+  // |server| is the GATT server for this connection, which uses |att_bearer| in production.
+  // |svc_watcher| communicates updates about the peer's GATT services to the Connection's owner.
+  Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> server,
+             RemoteServiceWatcher svc_watcher, async_dispatcher_t* gatt_dispatcher);
   ~Connection() = default;
 
   Server* server() const { return server_.get(); }
   RemoteServiceManager* remote_service_manager() const { return remote_service_manager_.get(); }
 
-  // Initiate MTU exchange followed by primary service discovery. On failure,
-  // signals a link error through the ATT channel (which is expected to
-  // disconnect the link).
+  // Performs MTU exchange, then primary service discovery. Shuts down the connection on failure.
   // If |service_uuids| is non-empty, discovery is only performed for services with the indicated
   // UUIDs.
   void Initialize(std::vector<UUID> service_uuids);
 
+  // Closes the ATT bearer on which the connection operates.
+  void ShutDown();
+
  private:
-  fbl::RefPtr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
   std::unique_ptr<RemoteServiceManager> remote_service_manager_;
 

@@ -60,8 +60,8 @@ class FakeLayer final : public GATT {
       PeerId peer_id);
 
   // GATT overrides:
-  void AddConnection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
-                     std::unique_ptr<Client> client) override;
+  void AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
+                     Server::FactoryFunction server_factory) override;
   void RemoveConnection(PeerId peer_id) override;
   void RegisterService(ServicePtr service, ServiceIdCallback callback, ReadHandler read_handler,
                        WriteHandler write_handler, ClientConfigCallback ccc_callback) override;

@@ -72,8 +72,8 @@ void FakeLayer::RemovePeerService(PeerId peer_id, att::Handle handle) {
   }
 }
 
-void FakeLayer::AddConnection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
-                              std::unique_ptr<Client> client) {
+void FakeLayer::AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
+                              Server::FactoryFunction server_factory) {
   peers_.try_emplace(peer_id);
 }
 

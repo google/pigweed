@@ -485,7 +485,11 @@ void LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att_channel
     return;
   }
   std::unique_ptr<gatt::Client> gatt_client = gatt::Client::Create(att_bearer);
-  gatt_->AddConnection(peer_id(), std::move(att_bearer), std::move(gatt_client));
+  auto server_factory = [att_bearer](PeerId peer_id,
+                                     fxl::WeakPtr<gatt::LocalServiceManager> local_services) {
+    return gatt::Server::Create(peer_id, std::move(local_services), att_bearer);
+  };
+  gatt_->AddConnection(peer_id(), std::move(gatt_client), std::move(server_factory));
 
   std::vector<UUID> service_uuids;
   if (service_uuid) {

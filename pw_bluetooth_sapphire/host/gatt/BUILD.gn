@@ -61,6 +61,8 @@ source_set("testing") {
     "fake_layer.h",
     "fake_layer_test.cc",
     "fake_layer_test.h",
+    "mock_server.cc",
+    "mock_server.h",
   ]
 
   public_deps = [

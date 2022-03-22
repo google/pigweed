@@ -51,7 +51,7 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
     ChannelOptions options(l2cap::kATTChannelId);
     auto fake_chan = CreateFakeChannel(options);
     att_ = att::Bearer::Create(std::move(fake_chan));
-    server_ = std::make_unique<Server>(kTestPeerId, local_services_->GetWeakPtr(), att_);
+    server_ = gatt::Server::Create(kTestPeerId, local_services_->GetWeakPtr(), att_);
   }
 
   void TearDown() override {
