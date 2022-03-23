@@ -21,4 +21,4 @@
 // generated offline separately.
 #define PW_ASSERT_HANDLE_FAILURE(expression)                                   \
   pw_assert_tokenized_HandleAssertFailure(PW_TOKENIZER_STRING_TOKEN(__FILE__), \
-                                          __LINE__);
+                                          __LINE__)
