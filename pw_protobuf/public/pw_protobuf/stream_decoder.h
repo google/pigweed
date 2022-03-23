@@ -168,7 +168,9 @@ class StreamDecoder {
   //
 
   // Reads a proto int32 value from the current position.
-  Result<int32_t> ReadInt32();
+  Result<int32_t> ReadInt32() {
+    return ReadVarintField<int32_t>(VarintDecodeType::kNormal);
+  }
 
   // Reads repeated int32 values from the current position using packed
   // encoding.
@@ -176,11 +178,15 @@ class StreamDecoder {
   // Returns the number of values read. In the case of error, the return value
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedInt32(std::span<int32_t> out) {
-    return ReadPackedVarintField(out, VarintDecodeType::kNormal);
+    return ReadPackedVarintField(std::as_writable_bytes(out),
+                                 sizeof(int32_t),
+                                 VarintDecodeType::kNormal);
   }
 
   // Reads a proto uint32 value from the current position.
-  Result<uint32_t> ReadUint32();
+  Result<uint32_t> ReadUint32() {
+    return ReadVarintField<uint32_t>(VarintDecodeType::kUnsigned);
+  }
 
   // Reads repeated uint32 values from the current position using packed
   // encoding.
@@ -188,11 +194,15 @@ class StreamDecoder {
   // Returns the number of values read. In the case of error, the return value
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedUint32(std::span<uint32_t> out) {
-    return ReadPackedVarintField(out, VarintDecodeType::kNormal);
+    return ReadPackedVarintField(std::as_writable_bytes(out),
+                                 sizeof(uint32_t),
+                                 VarintDecodeType::kUnsigned);
   }
 
   // Reads a proto int64 value from the current position.
-  Result<int64_t> ReadInt64();
+  Result<int64_t> ReadInt64() {
+    return ReadVarintField<int64_t>(VarintDecodeType::kNormal);
+  }
 
   // Reads repeated int64 values from the current position using packed
   // encoding.
@@ -200,16 +210,14 @@ class StreamDecoder {
   // Returns the number of values read. In the case of error, the return value
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedInt64(std::span<int64_t> out) {
-    return ReadPackedVarintField(out, VarintDecodeType::kNormal);
+    return ReadPackedVarintField(std::as_writable_bytes(out),
+                                 sizeof(int64_t),
+                                 VarintDecodeType::kNormal);
   }
 
   // Reads a proto uint64 value from the current position.
   Result<uint64_t> ReadUint64() {
-    uint64_t varint;
-    if (Status status = ReadVarintField(&varint); !status.ok()) {
-      return status;
-    }
-    return varint;
+    return ReadVarintField<uint64_t>(VarintDecodeType::kUnsigned);
   }
 
   // Reads repeated uint64 values from the current position using packed
@@ -218,11 +226,15 @@ class StreamDecoder {
   // Returns the number of values read. In the case of error, the return value
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedUint64(std::span<uint64_t> out) {
-    return ReadPackedVarintField(out, VarintDecodeType::kNormal);
+    return ReadPackedVarintField(std::as_writable_bytes(out),
+                                 sizeof(uint64_t),
+                                 VarintDecodeType::kUnsigned);
   }
 
   // Reads a proto sint32 value from the current position.
-  Result<int32_t> ReadSint32();
+  Result<int32_t> ReadSint32() {
+    return ReadVarintField<int32_t>(VarintDecodeType::kZigZag);
+  }
 
   // Reads repeated sint32 values from the current position using packed
   // encoding.
@@ -230,11 +242,15 @@ class StreamDecoder {
   // Returns the number of values read. In the case of error, the return value
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedSint32(std::span<int32_t> out) {
-    return ReadPackedVarintField(out, VarintDecodeType::kZigZag);
+    return ReadPackedVarintField(std::as_writable_bytes(out),
+                                 sizeof(int32_t),
+                                 VarintDecodeType::kZigZag);
   }
 
   // Reads a proto sint64 value from the current position.
-  Result<int64_t> ReadSint64();
+  Result<int64_t> ReadSint64() {
+    return ReadVarintField<int64_t>(VarintDecodeType::kZigZag);
+  }
 
   // Reads repeated int64 values from the current position using packed
   // encoding.
@@ -242,11 +258,15 @@ class StreamDecoder {
   // Returns the number of values read. In the case of error, the return value
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedSint64(std::span<int64_t> out) {
-    return ReadPackedVarintField(out, VarintDecodeType::kZigZag);
+    return ReadPackedVarintField(std::as_writable_bytes(out),
+                                 sizeof(int64_t),
+                                 VarintDecodeType::kZigZag);
   }
 
   // Reads a proto bool value from the current position.
-  Result<bool> ReadBool();
+  Result<bool> ReadBool() {
+    return ReadVarintField<bool>(VarintDecodeType::kUnsigned);
+  }
 
   // Reads repeated bool values from the current position using packed
   // encoding.
@@ -254,7 +274,8 @@ class StreamDecoder {
   // Returns the number of values read. In the case of error, the return value
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedBool(std::span<bool> out) {
-    return ReadPackedVarintField(out, VarintDecodeType::kNormal);
+    return ReadPackedVarintField(
+        std::as_writable_bytes(out), sizeof(bool), VarintDecodeType::kUnsigned);
   }
 
   // Reads a proto fixed32 value from the current position.
@@ -280,13 +301,7 @@ class StreamDecoder {
   }
 
   // Reads a proto sfixed32 value from the current position.
-  Result<int32_t> ReadSfixed32() {
-    Result<uint32_t> fixed32 = ReadFixed32();
-    if (!fixed32.ok()) {
-      return fixed32.status();
-    }
-    return fixed32.value();
-  }
+  Result<int32_t> ReadSfixed32() { return ReadFixedField<int32_t>(); }
 
   // Reads repeated sfixed32 values from the current position using packed
   // encoding.
@@ -297,13 +312,7 @@ class StreamDecoder {
   }
 
   // Reads a proto sfixed64 value from the current position.
-  Result<int64_t> ReadSfixed64() {
-    Result<uint64_t> fixed64 = ReadFixed64();
-    if (!fixed64.ok()) {
-      return fixed64.status();
-    }
-    return fixed64.value();
-  }
+  Result<int64_t> ReadSfixed64() { return ReadFixedField<int64_t>(); }
 
   // Reads repeated sfixed64 values from the current position using packed
   // encoding.
@@ -451,6 +460,7 @@ class StreamDecoder {
   friend class BytesReader;
 
   enum class VarintDecodeType {
+    kUnsigned,
     kNormal,
     kZigZag,
   };
@@ -503,87 +513,29 @@ class StreamDecoder {
   Status ReadFieldKey();
   Status SkipField();
 
-  Status ReadVarintField(uint64_t* out);
+  Status ReadVarintField(std::span<std::byte> out,
+                         VarintDecodeType decode_type);
+
+  StatusWithSize ReadOneVarint(std::span<std::byte> out,
+                               VarintDecodeType decode_type);
 
   template <typename T>
-  typename std::enable_if_t<std::is_signed_v<T>, Status> StoreCheckedValue(
-      uint64_t varint, VarintDecodeType decode_type, T& value) {
-    int64_t signed_value = static_cast<int64_t>(varint);
-    if (decode_type == VarintDecodeType::kZigZag) {
-      signed_value = varint::ZigZagDecode(varint);
-    }
-
-    if (signed_value > std::numeric_limits<T>::max() ||
-        signed_value < std::numeric_limits<T>::min()) {
-      return Status::OutOfRange();
-    }
-
-    value = signed_value;
-    return OkStatus();
-  }
-
-  template <typename T>
-  std::enable_if_t<std::is_unsigned_v<T>, Status> StoreCheckedValue(
-      uint64_t varint, VarintDecodeType /*decode_type*/, T& value) {
-    if (varint > std::numeric_limits<T>::max()) {
-      return Status::OutOfRange();
-    }
-
-    value = varint;
-    return OkStatus();
-  }
-
-  // Reads repeated varint values from the current position using packed
-  // encoding.
-  //
-  // Returns the number of values read. In the case of error, the return value
-  // indicates the number of values successfully read, in addition to the error.
-  template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-  StatusWithSize ReadPackedVarintField(std::span<T> out,
-                                       VarintDecodeType decode_type) {
+  Result<T> ReadVarintField(VarintDecodeType decode_type) {
     static_assert(
         std::is_same_v<T, bool> || std::is_same_v<T, uint32_t> ||
             std::is_same_v<T, int32_t> || std::is_same_v<T, uint64_t> ||
             std::is_same_v<T, int64_t>,
-        "Packed varints must be of type bool, uint32_t, int32_t, uint64_t, "
+        "Protobuf varints must be of type bool, uint32_t, int32_t, uint64_t, "
         "or int64_t");
 
-    if (Status status = CheckOkToRead(WireType::kDelimited); !status.ok()) {
-      return StatusWithSize(status, 0);
+    T result;
+    if (Status status = ReadVarintField(
+            std::as_writable_bytes(std::span(&result, 1)), decode_type);
+        !status.ok()) {
+      return status;
     }
 
-    size_t bytes_read = 0;
-    size_t number_out = 0;
-    for (T& val : out) {
-      uint64_t varint;
-      StatusWithSize sws = varint::Read(reader_, &varint);
-      if (sws.IsOutOfRange()) {
-        // Out of range indicates the end of the stream. As a value is expected
-        // here, report it as a data loss and terminate the decode operation.
-        return StatusWithSize(Status::DataLoss(), number_out);
-      }
-      if (!sws.ok()) {
-        return StatusWithSize(sws.status(), number_out);
-      }
-
-      bytes_read += sws.size();
-      if (const auto status = StoreCheckedValue(varint, decode_type, val);
-          !status.ok()) {
-        return StatusWithSize(status, number_out);
-      }
-      ++number_out;
-
-      if (bytes_read == delimited_field_size_) {
-        break;
-      }
-    }
-
-    if (bytes_read < delimited_field_size_) {
-      return StatusWithSize(Status::ResourceExhausted(), number_out);
-    }
-
-    field_consumed_ = true;
-    return StatusWithSize(OkStatus(), number_out);
+    return result;
   }
 
   Status ReadFixedField(std::span<std::byte> out);
@@ -608,6 +560,10 @@ class StreamDecoder {
 
   StatusWithSize ReadPackedFixedField(std::span<std::byte> out,
                                       size_t elem_size);
+
+  StatusWithSize ReadPackedVarintField(std::span<std::byte> out,
+                                       size_t elem_size,
+                                       VarintDecodeType decode_type);
 
   Status CheckOkToRead(WireType type);
 
