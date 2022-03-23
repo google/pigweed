@@ -250,7 +250,12 @@ Result<std::string_view> ReadProtoString(protobuf::String str,
 
 Status UpdateBundleAccessor::OpenAndVerify() {
   PW_TRY(DoOpen());
-  PW_TRY(DoVerify());
+
+  if (Status status = DoVerify(); !status.ok()) {
+    Close();
+    return status;
+  }
+
   return OkStatus();
 }
 
@@ -345,6 +350,10 @@ Status UpdateBundleAccessor::DoOpen() {
   PW_TRY(blob_store_reader_.Open());
   bundle_ = protobuf::Message(blob_store_reader_,
                               blob_store_reader_.ConservativeReadLimit());
+  if (!bundle_.ok()) {
+    blob_store_reader_.Close();
+    return bundle_.status();
+  }
   return OkStatus();
 }
 
