@@ -97,6 +97,10 @@ source_set("tests") {
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
   configs += [ "//build/config:Wno-conversion" ]
+
+  # TODO(fxbug.dev/95833): This target uses the deprecated C bindings.
+  # Consider switching to the C++ bindings. See linked bug for details.
+  configs += [ "//build/c:fidl-deprecated-c-bindings" ]
 }
 
 bt_gtest_package("bt-host-hci-tests") {

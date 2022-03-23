@@ -87,6 +87,10 @@ source_set("adapter_test_fixture") {
     "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/fbl",
   ]
+
+  # TODO(fxbug.dev/95833): This target uses the deprecated C bindings.
+  # Consider switching to the C++ bindings. See linked bug for details.
+  configs += [ "//build/c:fidl-deprecated-c-bindings" ]
 }
 
 source_set("tests") {
@@ -119,6 +123,10 @@ source_set("tests") {
     "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/fbl",
   ]
+
+  # TODO(fxbug.dev/95833): This target uses the deprecated C bindings.
+  # Consider switching to the C++ bindings. See linked bug for details.
+  configs += [ "//build/c:fidl-deprecated-c-bindings" ]
 }
 
 bt_gtest_package("bt-host-fidl-tests") {
