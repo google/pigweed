@@ -18,6 +18,7 @@ the command.
 """
 
 import argparse
+import atexit
 from dataclasses import dataclass
 import enum
 import logging
@@ -27,10 +28,16 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 from typing import Callable, Dict, Iterable, Iterator, List, NamedTuple
 from typing import Optional, Tuple
 
+if sys.platform != 'win32':
+    import fcntl  # pylint: disable=import-error
+    # TODO(b/227670947): Support Windows.
+
 _LOG = logging.getLogger(__name__)
+_LOCK_ACQUISITION_TIMEOUT = 30 * 60  # 30 minutes in seconds
 
 
 def _parse_args() -> argparse.Namespace:
@@ -76,6 +83,12 @@ def _parse_args() -> argparse.Namespace:
         nargs=argparse.REMAINDER,
         help='Python script with arguments to run',
     )
+    parser.add_argument(
+        '--lockfile',
+        type=Path,
+        required=True,
+        help=('Path to a pip lockfile. Any pip execution will aquire an '
+              'exclusive lock on it, any other module a shared lock.'))
     return parser.parse_args()
 
 
@@ -442,7 +455,57 @@ def expand_expressions(paths: GnPaths, arg: str) -> Iterable[str]:
     return (''.join(arg) for arg in expanded_args if arg)
 
 
-def main(
+class LockAcquisitionTimeoutError(Exception):
+    """Raised on a timeout."""
+
+
+def acquire_lock(lockfile: Path, exclusive: bool):
+    """Attempts to acquire the lock.
+
+    Args:
+      lockfile: pathlib.Path to the lock.
+      exclusive: whether this needs to be an exclusive lock.
+
+    Raises:
+      LockAcquisitionTimeoutError: If the lock is not acquired after a
+        reasonable time.
+    """
+    if sys.platform == 'win32':
+        # No-op on Windows, which doesn't have POSIX file locking.
+        # TODO(b/227670947): Get this working on Windows, too.
+        return
+
+    start_time = time.monotonic()
+    if exclusive:
+        lock_type = fcntl.LOCK_EX  # type: ignore[name-defined]
+    else:
+        lock_type = fcntl.LOCK_SH  # type: ignore[name-defined]
+    fd = os.open(lockfile, os.O_RDWR | os.O_CREAT)
+
+    # Make sure we close the file when the process exits. If we manage to
+    # acquire the lock below, closing the file will release it.
+    def cleanup():
+        os.close(fd)
+
+    atexit.register(cleanup)
+
+    backoff = 1
+    while time.monotonic() - start_time < _LOCK_ACQUISITION_TIMEOUT:
+        try:
+            fcntl.flock(  # type: ignore[name-defined]
+                fd, lock_type | fcntl.LOCK_NB)  # type: ignore[name-defined]
+            return  # Lock acquired!
+        except BlockingIOError:
+            pass  # Keep waiting.
+
+        time.sleep(backoff * 0.05)
+        backoff += 1
+
+    raise LockAcquisitionTimeoutError(
+        f"Failed to acquire lock {lockfile} in {_LOCK_ACQUISITION_TIMEOUT}")
+
+
+def main(  # pylint: disable=too-many-arguments
     gn_root: Path,
     current_path: Path,
     original_cmd: List[str],
@@ -453,6 +516,7 @@ def main(
     capture_output: bool,
     touch: Optional[Path],
     working_directory: Optional[Path],
+    lockfile: Path,
 ) -> int:
     """Script entry point."""
 
@@ -496,6 +560,12 @@ def main(
 
     if working_directory:
         run_args['cwd'] = working_directory
+
+    try:
+        acquire_lock(lockfile, module == 'pip')
+    except LockAcquisitionTimeoutError as exception:
+        _LOG.error('%s', exception)
+        return 1
 
     _LOG.debug('RUN %s', ' '.join(shlex.quote(arg) for arg in command))
 
