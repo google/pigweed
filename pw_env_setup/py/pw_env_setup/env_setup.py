@@ -263,10 +263,7 @@ class EnvSetup(object):
         if 'json_file' in config:
             self._json_file = config.pop('json_file')
 
-        self._gni_file = config.pop(
-            'gni_file',
-            os.path.join(self._install_dir, 'environment.gni'),
-        )
+        self._gni_file = config.pop('gni_file', None)
 
         self._optional_submodules.extend(config.pop('optional_submodules', ()))
         self._required_submodules.extend(config.pop('required_submodules', ()))
@@ -360,6 +357,15 @@ class EnvSetup(object):
             print('', file=sys.stderr)
 
             raise MissingSubmodulesError(', '.join(sorted(missing)))
+
+    def _write_gni_file(self):
+        gni_file = os.path.join(self._project_root, 'build_overrides',
+                                'pigweed_environment.gni')
+        if self._gni_file:
+            gni_file = os.path.join(self._project_root, self._gni_file)
+
+        with open(gni_file, 'w') as outs:
+            self._env.gni(outs, self._project_root)
 
     def _log(self, *args, **kwargs):
         # Not using logging module because it's awkward to flush a log handler.
@@ -455,11 +461,7 @@ Then use `set +x` to go back to normal.
             # Python virtualenv step. It also needs to be rewritten after the
             # Python virtualenv step, so it's easiest to just write it after
             # every step.
-            gni_file = (os.path.join(self._env.get('PW_PROJECT_ROOT'),
-                                     self._gni_file)
-                        or os.path.join(self._install_dir, 'environment.gni'))
-            with open(gni_file, 'w') as outs:
-                self._env.gni(outs, self._project_root)
+            self._write_gni_file()
 
         self._log('')
         self._env.echo('')

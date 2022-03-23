@@ -281,7 +281,8 @@ here.
 
 ``gni_file``
   Location to write a ``.gni`` file containing paths to many things within the
-  environment directory.
+  environment directory. Defaults to
+  ``build_overrides/pigweed_environment.gni``.
 
 ``json_file``
   Location to write a ``.json`` file containing step-by-step modifications to
