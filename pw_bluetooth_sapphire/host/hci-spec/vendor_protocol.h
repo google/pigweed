@@ -101,6 +101,184 @@ struct LEGetVendorCapabilitiesReturnParams {
   uint32_t dynamic_audio_buffer_support;
 } __PACKED;
 
+// ============================================================================
+// Multiple Advertising
+//
+// NOTE: Multiple advertiser support is deprecated in the Google feature spec v0.98 and above. Users
+// of the following vendor extension HCI commands should first ensure that the controller is using a
+// compatible Google feature spec.
+
+// The kLEMultiAdvt opcode is shared across all multiple advertising HCI commands. To differentiate
+// between multiple advertising commands, a subopcode field is included in the command payload.
+// Where noted, these subopcode fields must be set to a specific value.
+constexpr OpCode kLEMultiAdvt = VendorOpCode(0x154);
+
+// ============================================================================
+// LE Multiple Advertising Set Advertising Parameters
+constexpr uint8_t kLEMultiAdvtSetAdvtParamSubopcode = 0x01;
+
+struct LEMultiAdvtSetAdvtParamCommandParams {
+  // Must always be set to kLEMultiAdvtSetAdvtParametersSubopcode
+  uint8_t opcode;
+
+  // Range: see kLEAdvertisingInterval[Min|Max] in hci_constants.h
+  // Default: N = kLEAdvertisingIntervalDefault (see hci_constants.h)
+  // Time: N * 0.625 ms
+  // Time Range: 20 ms to 10.24 s
+  uint16_t adv_interval_min;
+
+  // Range: see kLEAdvertisingInterval[Min|Max] in hci_constants.h
+  // Default: N = kLEAdvertisingIntervalDefault (see hci_constants.h)
+  // Time: N * 0.625 ms
+  // Time Range: 20 ms to 10.24 s
+  uint16_t adv_interval_max;
+
+  // Used to determine the packet type that is used for advertising when advertising is enabled (see
+  // hci_constants.h)
+  LEAdvertisingType adv_type;
+
+  LEOwnAddressType own_address_type;
+  LEPeerAddressType peer_address_type;
+
+  // Public Device Address, Random Device Address, Public Identity Address, or Random (static)
+  // Identity Address of the device to be connected.
+  DeviceAddressBytes peer_address;
+
+  // (See the constants kLEAdvertisingChannel* in hci_constants.h for possible values).
+  uint8_t adv_channel_map;
+
+  // This parameter shall be ignored when directed advertising is enabled (see hci_constants.h for
+  // possible values).
+  LEAdvFilterPolicy adv_filter_policy;
+
+  // Handle used to identify an advertising set.
+  AdvertisingHandle adv_handle;
+
+  // Transmit_Power, Unit: dBm
+  // Range (-70 to +20)
+  int8_t adv_tx_power;
+} __PACKED;
+
+struct LEMultiAdvtSetAdvtParametersReturnParams {
+  StatusCode status;
+
+  // Will always be set to kLEMultiAdvtSetAdvtParametersSubopcode
+  uint8_t opcode;
+} __PACKED;
+
+// =======================================
+// LE Multiple Advertising Set Advertising Data
+constexpr uint8_t kLEMultiAdvtSetAdvtDataSubopcode = 0x2;
+
+struct LEMultiAdvtSetAdvtDataCommandParams {
+  // Must always be set to kLEMultiAdvtSetAdvtDataSubopcode
+  uint8_t opcode;
+
+  // Length of the advertising data included in this command packet, up to
+  // kMaxLEAdvertisingDataLength bytes.
+  uint8_t adv_data_length;
+
+  // 31 octets of advertising data formatted as defined in Core Spec v5.0, Vol 3, Part C, Section 11
+  uint8_t adv_data[kMaxLEAdvertisingDataLength];
+
+  // Handle used to identify an advertising set.
+  AdvertisingHandle adv_handle;
+} __PACKED;
+
+struct LEMultiAdvtSetAdvtDataReturnParams {
+  StatusCode status;
+
+  // Will always be set to kLEMultiAdvtSetAdvtDataSubopcode
+  uint8_t opcode;
+} __PACKED;
+
+// =======================================
+// LE Multiple Advertising Set Scan Response
+constexpr uint8_t kLEMultiAdvtSetScanRespSubopcode = 0x3;
+
+struct LEMultiAdvtSetScanRespCommandParams {
+  // Must always be set to kLEMultiAdvtSetScanRespSubopcode
+  uint8_t opcode;
+
+  // Length of the scan response data included in this command packet, up to
+  // kMaxLEAdvertisingDataLength bytes.
+  uint8_t scan_rsp_data_length;
+
+  // 31 octets of advertising data formatted as defined in Core Spec v5.0, Vol 3, Part C, Section 11
+  uint8_t scan_rsp_data[kMaxLEAdvertisingDataLength];
+
+  // Handle used to identify an advertising set.
+  AdvertisingHandle adv_handle;
+} __PACKED;
+
+struct LEMultiAdvtSetScanRespReturnParams {
+  StatusCode status;
+
+  // Will always be set to kLEMultiAdvtSetScanRespSubopcode
+  uint8_t opcode;
+} __PACKED;
+
+// =======================================
+// LE Multiple Advertising Set Random Address
+constexpr uint8_t kLEMultiAdvtSetRandomAddrSubopcode = 0x4;
+
+struct LEMultiAdvtSetRandomAddrCommandParams {
+  // Must always be set to kLEMultiAdvtSetRandomAddrSubopcode
+  uint8_t opcode;
+
+  DeviceAddressBytes random_address;
+
+  // Handle used to identify an advertising set.
+  AdvertisingHandle adv_handle;
+} __PACKED;
+
+struct LEMultiAdvtSetRandomAddrReturnParams {
+  StatusCode status;
+
+  // Will always be set to kLEMultiAdvtSetRandomAddrSubopcode
+  uint8_t opcode;
+} __PACKED;
+
+// =======================================
+// LE Multiple Advertising Set Advertising Enable
+constexpr uint8_t kLEMultiAdvtEnableSubopcode = 0x5;
+
+struct LEMultiAdvtEnableCommandParams {
+  // Must always be set to kLEMultiAdvtEnableSubopcode
+  uint8_t opcode;
+
+  // A value of 1 means enable. Any other value means disable.
+  GenericEnableParam enable;
+
+  // Handle used to identify an advertising set.
+  AdvertisingHandle adv_handle;
+} __PACKED;
+
+struct LEMultiAdvtEnableReturnParams {
+  StatusCode status;
+
+  // Will always be set to kLEMultiAdvtSetRandomAddrSubopcode
+  uint8_t opcode;
+} __PACKED;
+
+// ======= Events =======
+
+// LE multi-advertising state change sub-event
+constexpr EventCode kLEMultiAdvtStateChangeSubeventCode = 0x55;
+
+struct LEMultiAdvtStateChangeSubeventParams {
+  // Handle used to identify an advertising set.
+  AdvertisingHandle adv_handle;
+
+  // Reason for state change. Currently will always be 0x00.
+  // 0x00: Connection received
+  StatusCode status;
+
+  // Handle used to identify the connection that caused the state change (i.e. advertising
+  // instance to be disabled). Value will be 0xFFFF if invalid.
+  ConnectionHandle connection_handle;
+} __PACKED;
+
 }  // namespace bt::hci_spec::vendor::android
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_VENDOR_PROTOCOL_H_
