@@ -22,11 +22,14 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bt::testing {
+
+namespace hci_android = bt::hci_spec::vendor::android;
 
 class FakePeer;
 
@@ -46,6 +49,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     void ApplyLEOnlyDefaults();
     void ApplyLegacyLEConfig();
     void ApplyLEConfig();
+    void ApplyAndroidVendorExtensionDefaults();
 
     void AddBREDRSupportedCommands();
     void AddLESupportedCommands();
@@ -78,6 +82,9 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     uint8_t le_total_num_acl_data_packets;
     uint16_t synchronous_data_packet_length;
     uint8_t total_num_synchronous_data_packets;
+
+    // Vendor extensions
+    hci_spec::vendor::android::LEGetVendorCapabilitiesReturnParams android_extension_settings;
   };
 
   // Current device low energy scan state.
@@ -224,20 +231,14 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     le_read_remote_features_cb_ = std::move(callback);
   }
 
-  // Sets a callback to be invoked when a vendor command is received. A command complete event with
-  // the status code returned by the callback will be sent in response. If no callback is set, the
-  // kUnknownCommand status will be returned.
-  using VendorCommandCallback =
-      fit::function<hci_spec::StatusCode(const PacketView<hci_spec::CommandHeader>&)>;
-  void set_vendor_command_callback(VendorCommandCallback callback) {
-    vendor_command_cb_ = std::move(callback);
-  }
-
   // Sends a HCI event with the given parameters.
   void SendEvent(hci_spec::EventCode event_code, const ByteBuffer& payload);
 
   // Sends a LE Meta event with the given parameters.
   void SendLEMetaEvent(hci_spec::EventCode subevent_code, const ByteBuffer& payload);
+
+  // Sends a Vendor (e.g. Microsoft or Android vendor extensions) event with the given parameters.
+  void SendVendorEvent(hci_spec::EventCode subevent_code, const ByteBuffer& payload);
 
   // Sends an ACL data packet with the given parameters.
   void SendACLPacket(hci_spec::ConnectionHandle handle, const ByteBuffer& payload);
@@ -330,6 +331,12 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // extended advertising listeners.
   void SendLEAdvertisingSetTerminatedEvent(hci_spec::ConnectionHandle conn_handle,
                                            hci_spec::AdvertisingHandle adv_handle);
+
+  // Inform the controller that the advertising handle is connected via the connection handle. This
+  // method then generates the necessary Vendor Event (e.g. LE multi-advertising state change
+  // sub-event) to inform Android Multiple Advertising listeners.
+  void SendAndroidLEMultipleAdvertisingStateChangeSubevent(hci_spec::ConnectionHandle conn_handle,
+                                                           hci_spec::AdvertisingHandle adv_handle);
 
   // The maximum number of advertising sets supported by the controller. Core Spec Volume 4, Part E,
   // Section 7.8.58: the memory used to store advertising sets can also be used for other purposes.
@@ -637,6 +644,24 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   void OnWriteSynchronousFlowControlEnableCommand(
       const hci_spec::WriteSynchronousFlowControlEnableParams& params);
 
+  void OnAndroidLEGetVendorCapabilities();
+
+  void OnAndroidLEMultiAdvt(const PacketView<hci_spec::CommandHeader>& command_packet);
+
+  void OnAndroidLEMultiAdvtSetAdvtParam(
+      const hci_android::LEMultiAdvtSetAdvtParamCommandParams& params);
+
+  void OnAndroidLEMultiAdvtSetAdvtData(
+      const hci_android::LEMultiAdvtSetAdvtDataCommandParams& params);
+
+  void OnAndroidLEMultiAdvtSetScanResp(
+      const hci_android::LEMultiAdvtSetScanRespCommandParams& params);
+
+  void OnAndroidLEMultiAdvtSetRandomAddr(
+      const hci_android::LEMultiAdvtSetRandomAddrCommandParams& params);
+
+  void OnAndroidLEMultiAdvtEnable(const hci_android::LEMultiAdvtEnableCommandParams& params);
+
   // Called when a command with an OGF of hci_spec::kVendorOGF is received.
   void OnVendorCommand(const PacketView<hci_spec::CommandHeader>& command_packet);
 
@@ -717,7 +742,6 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   ConnectionStateCallback conn_state_cb_;
   LEConnectionParametersCallback le_conn_params_cb_;
   fit::closure le_read_remote_features_cb_;
-  VendorCommandCallback vendor_command_cb_;
 
   // Associates opcodes with client-supplied pause listeners. Commands with these opcodes will hang
   // with no response until the client invokes the passed-out closure.

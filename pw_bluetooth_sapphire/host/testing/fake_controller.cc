@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
@@ -54,6 +55,8 @@ hci_spec::LEPeerAddressType ToPeerAddrType(DeviceAddress::Type type) {
 }
 
 }  // namespace
+
+namespace hci_android = hci_spec::vendor::android;
 
 FakeController::Settings::Settings() {
   std::memset(this, 0, sizeof(*this));
@@ -162,6 +165,17 @@ void FakeController::Settings::ApplyLEConfig() {
   SetBit(supported_commands + 37, hci_spec::SupportedCommand::kLEClearAdvertisingSets);
 }
 
+void FakeController::Settings::ApplyAndroidVendorExtensionDefaults() {
+  // Settings for the android vendor extensions component within the Fake Controller. These settings
+  // correspond to the vendor capabilities returned by the controller. See
+  // src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h and LEGetVendorCapabilities
+  // for more information.
+  android_extension_settings.max_advt_instances = 3;
+  android_extension_settings.total_scan_results_storage = 1024;
+  android_extension_settings.version_supported_major = 0;
+  android_extension_settings.version_supported_minor = 0;
+}
+
 void FakeController::SetDefaultCommandStatus(hci_spec::OpCode opcode, hci_spec::StatusCode status) {
   default_command_status_map_[opcode] = status;
 }
@@ -261,8 +275,14 @@ void FakeController::SendLEMetaEvent(hci_spec::EventCode subevent_code, const By
   DynamicByteBuffer buffer(sizeof(hci_spec::LEMetaEventParams) + payload.size());
   buffer[0] = subevent_code;
   buffer.Write(payload, 1);
-
   SendEvent(hci_spec::kLEMetaEventCode, buffer);
+}
+
+void FakeController::SendVendorEvent(hci_spec::EventCode subevent_code, const ByteBuffer& payload) {
+  DynamicByteBuffer buffer(sizeof(hci_spec::VendorEventParams) + payload.size());
+  buffer[0] = subevent_code;
+  buffer.Write(payload, 1);
+  SendEvent(hci_spec::kVendorDebugEventCode, buffer);
 }
 
 void FakeController::SendACLPacket(hci_spec::ConnectionHandle handle, const ByteBuffer& payload) {
@@ -1764,7 +1784,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   if (interval_min >= interval_max) {
     bt_log(INFO, "fake-hci", "advertising interval min (%d) not strictly less than max (%d)",
            interval_min, interval_max);
-    RespondWithCommandComplete(hci_spec::kLESetAdvertisingParameters,
+    RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
                                hci_spec::StatusCode::kUnsupportedFeatureOrParameter);
     return;
   }
@@ -2127,16 +2147,6 @@ void FakeController::OnLEClearAdvertisingSets() {
   NotifyAdvertisingState();
 }
 
-void FakeController::OnVendorCommand(const PacketView<hci_spec::CommandHeader>& command_packet) {
-  auto opcode = le16toh(command_packet.header().opcode);
-  auto status = hci_spec::StatusCode::kUnknownCommand;
-  if (vendor_command_cb_) {
-    status = vendor_command_cb_(command_packet);
-  }
-
-  RespondWithCommandComplete(opcode, status);
-}
-
 void FakeController::OnLEReadAdvertisingChannelTxPower() {
   if (!respond_to_tx_power_read_) {
     return;
@@ -2160,6 +2170,16 @@ void FakeController::SendLEAdvertisingSetTerminatedEvent(hci_spec::ConnectionHan
                   BufferView(&params, sizeof(params)));
 }
 
+void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
+    hci_spec::ConnectionHandle conn_handle, hci_spec::AdvertisingHandle adv_handle) {
+  hci_android::LEMultiAdvtStateChangeSubeventParams params;
+  params.adv_handle = adv_handle;
+  params.status = hci_spec::StatusCode::kSuccess;  // Connection received
+  params.connection_handle = conn_handle;
+  SendVendorEvent(hci_android::kLEMultiAdvtStateChangeSubeventCode,
+                  BufferView(&params, sizeof(params)));
+}
+
 void FakeController::OnCommandPacketReceived(
     const PacketView<hci_spec::CommandHeader>& command_packet) {
   hci_spec::OpCode opcode = le16toh(command_packet.header().opcode);
@@ -2178,6 +2198,366 @@ void FakeController::OnCommandPacketReceived(
             &packet_data, packet_data.size() - sizeof(hci_spec::CommandHeader));
         HandleReceivedCommandPacket(command_packet);
       });
+}
+
+void FakeController::OnAndroidLEGetVendorCapabilities() {
+  hci_android::LEGetVendorCapabilitiesReturnParams params;
+  std::memcpy(&params, &settings_.android_extension_settings, sizeof(params));
+  params.status = hci_spec::StatusCode::kSuccess;
+  RespondWithCommandComplete(hci_android::kLEGetVendorCapabilities,
+                             BufferView(&params, sizeof(params)));
+}
+
+void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
+    const hci_android::LEMultiAdvtSetAdvtParamCommandParams& params) {
+  hci_spec::AdvertisingHandle handle = params.adv_handle;
+
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  // ensure we can allocate memory for this advertising set if not already present
+  if (extended_advertising_states_.count(handle) == 0 &&
+      extended_advertising_states_.size() >= num_supported_advertising_sets()) {
+    bt_log(INFO, "fake-hci", "no available memory for new advertising set, handle: %d", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kMemoryCapacityExceeded;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  // In case there is an error below, we want to reject all parameters instead of storing a dead
+  // state and taking up an advertising handle. Avoid creating the LEAdvertisingState directly in
+  // the map and add it in only once we have made sure all is good.
+  LEAdvertisingState state;
+  if (extended_advertising_states_.count(handle) != 0) {
+    state = extended_advertising_states_[handle];
+  }
+
+  uint16_t interval_min = le16toh(params.adv_interval_min);
+  uint16_t interval_max = le16toh(params.adv_interval_max);
+
+  if (interval_min >= interval_max) {
+    bt_log(INFO, "fake-hci", "advertising interval min (%d) not strictly less than max (%d)",
+           interval_min, interval_max);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  if (interval_min < hci_spec::kLEAdvertisingIntervalMin) {
+    bt_log(INFO, "fake-hci", "advertising interval min (%d) less than spec min (%d)", interval_min,
+           hci_spec::kLEAdvertisingIntervalMin);
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kUnsupportedFeatureOrParameter;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  if (interval_max > hci_spec::kLEAdvertisingIntervalMax) {
+    bt_log(INFO, "fake-hci", "advertising interval max (%d) greater than spec max (%d)",
+           interval_max, hci_spec::kLEAdvertisingIntervalMax);
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kUnsupportedFeatureOrParameter;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  state.interval_min = interval_min;
+  state.interval_max = interval_max;
+  state.adv_type = params.adv_type;
+  state.own_address_type = params.own_address_type;
+
+  // write full state back only at the end (we don't have a reference because we only want to write
+  // if there are no errors)
+  extended_advertising_states_[handle] = state;
+
+  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+  ret.status = hci_spec::StatusCode::kSuccess;
+  ret.opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+  NotifyAdvertisingState();
+}
+
+void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
+    const hci_android::LEMultiAdvtSetAdvtDataCommandParams& params) {
+  hci_spec::AdvertisingHandle handle = params.adv_handle;
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  if (extended_advertising_states_.count(handle) == 0) {
+    bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kUnknownAdvertisingIdentifier;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  LEAdvertisingState& state = extended_advertising_states_[handle];
+
+  // removing advertising data entirely doesn't require us to check for error conditions
+  if (params.adv_data_length == 0) {
+    state.data_length = 0;
+    std::memset(state.data, 0, sizeof(state.data));
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kSuccess;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    NotifyAdvertisingState();
+    return;
+  }
+
+  // directed advertising doesn't support advertising data
+  if (state.IsDirectedAdvertising()) {
+    bt_log(INFO, "fake-hci", "cannot provide advertising data when using directed advertising");
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  if (params.adv_data_length > hci_spec::kMaxLEAdvertisingDataLength) {
+    bt_log(INFO, "fake-hci", "data length (%d bytes) larger than legacy PDU size limit",
+           params.adv_data_length);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  state.data_length = params.adv_data_length;
+  std::memcpy(state.data, params.adv_data, params.adv_data_length);
+
+  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+  ret.status = hci_spec::StatusCode::kSuccess;
+  ret.opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+  NotifyAdvertisingState();
+}
+
+void FakeController::OnAndroidLEMultiAdvtSetScanResp(
+    const hci_android::LEMultiAdvtSetScanRespCommandParams& params) {
+  hci_spec::AdvertisingHandle handle = params.adv_handle;
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  if (extended_advertising_states_.count(handle) == 0) {
+    bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kUnknownAdvertisingIdentifier;
+    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  LEAdvertisingState& state = extended_advertising_states_[handle];
+
+  // removing scan response data entirely doesn't require us to check for error conditions
+  if (params.scan_rsp_data_length == 0) {
+    state.scan_rsp_length = 0;
+    std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kSuccess;
+    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    NotifyAdvertisingState();
+    return;
+  }
+
+  // adding or changing scan response data, check for error conditions
+  if (!state.IsScannableAdvertising()) {
+    bt_log(INFO, "fake-hci", "cannot provide scan response data for unscannable advertising types");
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  if (params.scan_rsp_data_length > hci_spec::kMaxLEAdvertisingDataLength) {
+    bt_log(INFO, "fake-hci", "data length (%d bytes) larger than legacy PDU size limit",
+           params.scan_rsp_data_length);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  state.scan_rsp_length = params.scan_rsp_data_length;
+  std::memcpy(state.scan_rsp_data, params.scan_rsp_data, params.scan_rsp_data_length);
+
+  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+  ret.status = hci_spec::StatusCode::kSuccess;
+  ret.opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+  NotifyAdvertisingState();
+}
+
+void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
+    const hci_android::LEMultiAdvtSetRandomAddrCommandParams& params) {
+  hci_spec::AdvertisingHandle handle = params.adv_handle;
+
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+    ret.opcode = hci_android::kLEMultiAdvtSetRandomAddrSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  if (extended_advertising_states_.count(handle) == 0) {
+    bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kUnknownAdvertisingIdentifier;
+    ret.opcode = hci_android::kLEMultiAdvtSetRandomAddrSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  LEAdvertisingState& state = extended_advertising_states_[handle];
+  if (state.IsConnectableAdvertising() && state.enabled) {
+    bt_log(INFO, "fake-hci", "cannot set LE random address while connectable advertising enabled");
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kCommandDisallowed;
+    ret.opcode = hci_android::kLEMultiAdvtSetRandomAddrSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  state.random_address = DeviceAddress(DeviceAddress::Type::kLERandom, params.random_address);
+
+  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+  ret.status = hci_spec::StatusCode::kSuccess;
+  ret.opcode = hci_android::kLEMultiAdvtSetRandomAddrSubopcode;
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+}
+
+void FakeController::OnAndroidLEMultiAdvtEnable(
+    const hci_android::LEMultiAdvtEnableCommandParams& params) {
+  hci_spec::AdvertisingHandle handle = params.adv_handle;
+
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+
+    hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+    ret.status = hci_spec::StatusCode::kUnknownAdvertisingIdentifier;
+    ret.opcode = hci_android::kLEMultiAdvtEnableSubopcode;
+    RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  bool enabled = false;
+  if (params.enable == hci_spec::GenericEnableParam::kEnable) {
+    enabled = true;
+  }
+
+  extended_advertising_states_[handle].enabled = enabled;
+
+  hci_android::LEMultiAdvtSetAdvtParamReturnParams ret;
+  ret.status = hci_spec::StatusCode::kSuccess;
+  ret.opcode = hci_android::kLEMultiAdvtEnableSubopcode;
+  RespondWithCommandComplete(hci_android::kLEMultiAdvt, BufferView(&ret, sizeof(ret)));
+  NotifyAdvertisingState();
+}
+
+void FakeController::OnAndroidLEMultiAdvt(
+    const PacketView<hci_spec::CommandHeader>& command_packet) {
+  const auto& payload = command_packet.payload_data();
+
+  uint8_t subopcode = payload.To<uint8_t>();
+  switch (subopcode) {
+    case hci_android::kLEMultiAdvtSetAdvtParamSubopcode: {
+      auto params = payload.To<hci_android::LEMultiAdvtSetAdvtParamCommandParams>();
+      OnAndroidLEMultiAdvtSetAdvtParam(params);
+      break;
+    }
+    case hci_android::kLEMultiAdvtSetAdvtDataSubopcode: {
+      auto params = payload.To<hci_android::LEMultiAdvtSetAdvtDataCommandParams>();
+      OnAndroidLEMultiAdvtSetAdvtData(params);
+      break;
+    }
+    case hci_android::kLEMultiAdvtSetScanRespSubopcode: {
+      auto params = payload.To<hci_android::LEMultiAdvtSetScanRespCommandParams>();
+      OnAndroidLEMultiAdvtSetScanResp(params);
+      break;
+    }
+    case hci_android::kLEMultiAdvtSetRandomAddrSubopcode: {
+      auto params = payload.To<hci_android::LEMultiAdvtSetRandomAddrCommandParams>();
+      OnAndroidLEMultiAdvtSetRandomAddr(params);
+      break;
+    }
+    case hci_android::kLEMultiAdvtEnableSubopcode: {
+      auto params = payload.To<hci_android::LEMultiAdvtEnableCommandParams>();
+      OnAndroidLEMultiAdvtEnable(params);
+      break;
+    }
+    default: {
+      bt_log(WARN, "fake-hci", "unhandled android multiple advertising command, subopcode: %#.4x",
+             subopcode);
+      RespondWithCommandComplete(subopcode, hci_spec::StatusCode::kUnknownCommand);
+      break;
+    }
+  }
+}
+
+void FakeController::OnVendorCommand(const PacketView<hci_spec::CommandHeader>& command_packet) {
+  auto opcode = le16toh(command_packet.header().opcode);
+
+  switch (opcode) {
+    case hci_android::kLEGetVendorCapabilities:
+      OnAndroidLEGetVendorCapabilities();
+      break;
+    case hci_android::kLEMultiAdvt: {
+      OnAndroidLEMultiAdvt(command_packet);
+      break;
+    }
+    default:
+      bt_log(WARN, "fake-hci", "received unhandled vendor command with opcode: %#.4x", opcode);
+      RespondWithCommandComplete(opcode, hci_spec::StatusCode::kUnknownCommand);
+      break;
+  }
 }
 
 void FakeController::HandleReceivedCommandPacket(

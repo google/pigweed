@@ -159,7 +159,7 @@ struct LEMultiAdvtSetAdvtParamCommandParams {
   int8_t adv_tx_power;
 } __PACKED;
 
-struct LEMultiAdvtSetAdvtParametersReturnParams {
+struct LEMultiAdvtSetAdvtParamReturnParams {
   StatusCode status;
 
   // Will always be set to kLEMultiAdvtSetAdvtParametersSubopcode
