@@ -38,7 +38,7 @@ TEST(PacketTest, CommandPacket) {
 
   // clang-format off
 
-  auto kExpected = CreateStaticByteBuffer(
+  auto kExpected = StaticByteBuffer(
       0xFF, 0x07,  // opcode
       0x01,        // parameter_total_size
       0x7F         // foo
@@ -55,7 +55,7 @@ TEST(PacketTest, EventPacket) {
 
   // clang-format off
 
-  auto bytes = CreateStaticByteBuffer(
+  auto bytes = StaticByteBuffer(
       0xFF,  // event code
       0x01,  // parameter_total_size
       0x7F   // foo
@@ -73,7 +73,7 @@ TEST(PacketTest, EventPacket) {
 TEST(PacketTest, EventPacketReturnParams) {
   // clang-format off
 
-  auto correct_size_bad_event_code = CreateStaticByteBuffer(
+  auto correct_size_bad_event_code = StaticByteBuffer(
       // Event header
       0xFF, 0x04,  // (event_code is not CommandComplete)
 
@@ -82,13 +82,13 @@ TEST(PacketTest, EventPacketReturnParams) {
 
       // Return parameters
       0x7F);
-  auto cmd_complete_small_payload = CreateStaticByteBuffer(
+  auto cmd_complete_small_payload = StaticByteBuffer(
       // Event header
       0x0E, 0x03,
 
       // hci_spec::CommandCompleteEventParams
       0x01, 0xFF, 0x07);
-  auto valid = CreateStaticByteBuffer(
+  auto valid = StaticByteBuffer(
       // Event header
       0x0E, 0x04,
 
@@ -125,7 +125,7 @@ TEST(PacketTest, EventPacketReturnParams) {
 
 TEST(PacketTest, EventPacketStatus) {
   // clang-format off
-  auto evt = CreateStaticByteBuffer(
+  auto evt = StaticByteBuffer(
       // Event header
       0x05, 0x04,  // (event_code is DisconnectionComplete)
 
@@ -146,7 +146,7 @@ TEST(PacketTest, EventPacketStatus) {
 
 TEST(PacketTest, CommandCompleteEventStatus) {
   // clang-format off
-  auto evt = CreateStaticByteBuffer(
+  auto evt = StaticByteBuffer(
       // Event header
       0x0E, 0x04,  // (event code is CommandComplete)
 
@@ -167,7 +167,7 @@ TEST(PacketTest, CommandCompleteEventStatus) {
 
 TEST(PacketTest, EventPacketMalformed) {
   // clang-format off
-  auto evt = CreateStaticByteBuffer(
+  auto evt = StaticByteBuffer(
       // Event header
       0x05, 0x03,  // (event_code is DisconnectionComplete)
 
@@ -189,7 +189,7 @@ TEST(PacketTest, EventPacketMalformed) {
 TEST(PacketTest, LEEventParams) {
   // clang-format off
 
-  auto correct_size_bad_event_code = CreateStaticByteBuffer(
+  auto correct_size_bad_event_code = StaticByteBuffer(
       // Event header
       0xFF, 0x02,  // (event_code is not hci_spec::LEMetaEventCode)
 
@@ -198,12 +198,12 @@ TEST(PacketTest, LEEventParams) {
 
       // Subevent payload
       0x7F);
-  auto payload_too_small = CreateStaticByteBuffer(
+  auto payload_too_small = StaticByteBuffer(
       0x3E, 0x01,
 
       // Subevent code
       0xFF);
-  auto valid = CreateStaticByteBuffer(
+  auto valid = StaticByteBuffer(
       // Event header
       0x3E, 0x02,
 
@@ -280,7 +280,7 @@ TEST(PacketTest, ACLDataPacketFromBuffer) {
 
   // First 12-bits: 0x07F
   // Upper 4-bits: 0b0101
-  auto bytes = CreateStaticByteBuffer(0x7F, 0x50, 0x01, 0x00, 0x00);
+  auto bytes = StaticByteBuffer(0x7F, 0x50, 0x01, 0x00, 0x00);
   auto packet = ACLDataPacket::New(kSmallDataLength);
   packet->mutable_view()->mutable_data().Write(bytes);
   packet->InitializeFromBuffer();
@@ -292,7 +292,7 @@ TEST(PacketTest, ACLDataPacketFromBuffer) {
 
   // First 12-bits: 0xFFF
   // Upper 4-bits: 0b0111
-  bytes = CreateStaticByteBuffer(0xFF, 0x7F, 0x01, 0x00, 0x00);
+  bytes = StaticByteBuffer(0xFF, 0x7F, 0x01, 0x00, 0x00);
   packet->mutable_view()->mutable_data().Write(bytes);
   packet->InitializeFromBuffer();
 
@@ -302,7 +302,7 @@ TEST(PacketTest, ACLDataPacketFromBuffer) {
   EXPECT_EQ(kSmallDataLength, packet->view().payload_size());
 
   packet = ACLDataPacket::New(kLargeDataLength);
-  packet->mutable_view()->mutable_data().Write(CreateStaticByteBuffer(0xFF, 0x0F, 0x00, 0x01));
+  packet->mutable_view()->mutable_data().Write(StaticByteBuffer(0xFF, 0x0F, 0x00, 0x01));
   packet->InitializeFromBuffer();
 
   EXPECT_EQ(0x0FFF, packet->connection_handle());
