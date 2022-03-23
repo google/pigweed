@@ -17,8 +17,6 @@ ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
       parameters_(parameters),
       weak_ptr_factory_(this) {
   ZX_ASSERT(connection_);
-  ZX_ASSERT(connection_->ll_type() == bt::LinkType::kSCO ||
-            connection_->ll_type() == bt::LinkType::kESCO);
   ZX_ASSERT(!channel_ ||
             channel_->max_data_length() <= hci_spec::kMaxSynchronousDataPacketPayloadSize);
 

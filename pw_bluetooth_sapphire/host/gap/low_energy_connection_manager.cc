@@ -25,7 +25,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
@@ -284,9 +283,9 @@ void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent, std::strin
   }
 }
 
-void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr link,
-                                                             sm::BondableMode bondable_mode,
-                                                             ConnectionResultCallback callback) {
+void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
+    std::unique_ptr<hci::LowEnergyConnection> link, sm::BondableMode bondable_mode,
+    ConnectionResultCallback callback) {
   ZX_ASSERT(link);
 
   Peer* peer = UpdatePeerWithLink(*link);
@@ -531,7 +530,7 @@ void LowEnergyConnectionManager::CleanUpConnection(
   conn.reset();
 }
 
-Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::Connection& link) {
+Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::LowEnergyConnection& link) {
   Peer* peer = peer_cache_->FindByAddress(link.peer_address());
   if (!peer) {
     peer = peer_cache_->NewPeer(link.peer_address(), /*connectable=*/true);

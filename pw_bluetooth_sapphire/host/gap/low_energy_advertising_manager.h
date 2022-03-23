@@ -12,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -96,8 +97,8 @@ class LowEnergyAdvertisingManager {
   //      or if the requested parameters are not supported by the hardware.
   //    * HostError::kProtocolError with a HCI error reported from
   //      the controller, otherwise.
-  using ConnectionCallback =
-      fit::function<void(AdvertisementId advertisement_id, std::unique_ptr<hci::Connection> link)>;
+  using ConnectionCallback = fit::function<void(AdvertisementId advertisement_id,
+                                                std::unique_ptr<hci::LowEnergyConnection> link)>;
   using AdvertisingStatusCallback =
       fit::function<void(AdvertisementInstance instance, hci::Result<> status)>;
   void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,

@@ -14,11 +14,15 @@
 
 namespace bt::sm::testing {
 
-TestSecurityManager::TestSecurityManager(
-    fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
-    fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode, gap::LESecurityMode security_mode)
+TestSecurityManager::TestSecurityManager(fxl::WeakPtr<hci::LowEnergyConnection> link,
+                                         fbl::RefPtr<l2cap::Channel> smp,
+                                         IOCapability io_capability,
+                                         fxl::WeakPtr<Delegate> delegate,
+                                         BondableMode bondable_mode,
+                                         gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
-      role_(link->role() == hci::Connection::Role::kCentral ? Role::kInitiator : Role::kResponder),
+      role_(link->role() == hci_spec::ConnectionRole::kCentral ? Role::kInitiator
+                                                               : Role::kResponder),
       weak_ptr_factory_(this) {}
 
 bool TestSecurityManager::AssignLongTermKey(const LTK& ltk) {
@@ -39,8 +43,8 @@ void TestSecurityManager::Reset(IOCapability io_capability) {}
 void TestSecurityManager::Abort(ErrorCode ecode) {}
 
 std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
-    fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
-    fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode,
+    fxl::WeakPtr<hci::LowEnergyConnection> link, fbl::RefPtr<l2cap::Channel> smp,
+    IOCapability io_capability, fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode,
     gap::LESecurityMode security_mode) {
   hci_spec::ConnectionHandle conn = link->handle();
   auto test_sm = std::unique_ptr<TestSecurityManager>(

@@ -24,6 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
@@ -121,7 +122,8 @@ class LowEnergyConnectionManager final {
   // address that was connected to.
   //
   // A link with the given handle should not have been previously registered.
-  void RegisterRemoteInitiatedLink(hci::ConnectionPtr link, sm::BondableMode bondable_mode,
+  void RegisterRemoteInitiatedLink(std::unique_ptr<hci::LowEnergyConnection> link,
+                                   sm::BondableMode bondable_mode,
                                    ConnectionResultCallback callback);
 
   // Returns the PairingDelegate currently assigned to this connection manager.
@@ -227,7 +229,7 @@ class LowEnergyConnectionManager final {
   // parameters are updated.
   //
   // Called by RegisterRemoteInitiatedLink() and RegisterLocalInitiatedLink().
-  Peer* UpdatePeerWithLink(const hci::Connection& link);
+  Peer* UpdatePeerWithLink(const hci::LowEnergyConnection& link);
 
   // Called when the peer disconnects with a "Connection Failed to be Established" error.
   // Cleans up the existing connection and adds the connection request back to the queue for a

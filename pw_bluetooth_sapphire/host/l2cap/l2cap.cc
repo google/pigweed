@@ -36,7 +36,7 @@ class Impl final : public L2cap {
     channel_manager_ = nullptr;
   }
 
-  void AddACLConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                         LinkErrorCallback link_error_callback,
                         SecurityUpgradeCallback security_callback) override {
     channel_manager_->RegisterACL(handle, role, std::move(link_error_callback),
@@ -48,7 +48,7 @@ class Impl final : public L2cap {
     channel_manager_->AttachInspect(node_);
   }
 
-  LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                                   LinkErrorCallback link_error_callback,
                                   LEConnectionParameterUpdateCallback conn_param_callback,
                                   SecurityUpgradeCallback security_callback) override {

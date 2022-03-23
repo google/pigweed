@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/generic_access_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -48,7 +49,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // |l2cap|, |gatt|, and |transport| are pointers to the interfaces of the corresponding layers.
   using PeerDisconnectCallback = fit::callback<void(hci_spec::StatusCode)>;
   using ErrorCallback = fit::callback<void()>;
-  LowEnergyConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::Connection> link,
+  LowEnergyConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
                       LowEnergyConnectionOptions connection_options,
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
@@ -115,7 +116,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   PeerId peer_id() const { return peer_->identifier(); }
   hci_spec::ConnectionHandle handle() const { return link_->handle(); }
-  hci::Connection* link() const { return link_.get(); }
+  hci::LowEnergyConnection* link() const { return link_.get(); }
   sm::BondableMode bondable_mode() const {
     ZX_ASSERT(sm_);
     return sm_->bondable_mode();
@@ -256,7 +257,7 @@ class LowEnergyConnection final : public sm::Delegate {
   std::optional<Peer::ConnectionToken> peer_conn_token_;
 
   fxl::WeakPtr<Peer> peer_;
-  std::unique_ptr<hci::Connection> link_;
+  std::unique_ptr<hci::LowEnergyConnection> link_;
   LowEnergyConnectionOptions connection_options_;
   fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr_;
 

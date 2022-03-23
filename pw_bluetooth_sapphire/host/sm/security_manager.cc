@@ -22,7 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/phase_2_secure_connections.h"
@@ -49,7 +49,7 @@ class SecurityManagerImpl final : public SecurityManager,
                                   public PairingChannel::Handler {
  public:
   ~SecurityManagerImpl() override;
-  SecurityManagerImpl(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
+  SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link, fbl::RefPtr<l2cap::Channel> smp,
                       IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
                       BondableMode bondable_mode, gap::LESecurityMode security_mode);
   // SecurityManager overrides:
@@ -170,7 +170,7 @@ class SecurityManagerImpl final : public SecurityManager,
   fxl::WeakPtr<Delegate> delegate_;
 
   // Data for the currently registered LE-U link, if any.
-  fxl::WeakPtr<hci::Connection> le_link_;
+  fxl::WeakPtr<hci::LowEnergyConnection> le_link_;
 
   // The IO capabilities of the device
   IOCapability io_cap_;
@@ -215,9 +215,12 @@ SecurityManagerImpl::~SecurityManagerImpl() {
   }
 }
 
-SecurityManagerImpl::SecurityManagerImpl(
-    fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
-    fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode, gap::LESecurityMode security_mode)
+SecurityManagerImpl::SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link,
+                                         fbl::RefPtr<l2cap::Channel> smp,
+                                         IOCapability io_capability,
+                                         fxl::WeakPtr<Delegate> delegate,
+                                         BondableMode bondable_mode,
+                                         gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
       next_pairing_id_(0),
       delegate_(std::move(delegate)),
@@ -225,14 +228,13 @@ SecurityManagerImpl::SecurityManagerImpl(
       io_cap_(io_capability),
       sm_chan_(std::make_unique<PairingChannel>(
           smp, fit::bind_member<&SecurityManagerImpl::StartNewTimer>(this))),
-      role_(le_link_->role() == hci::Connection::Role::kCentral ? Role::kInitiator
-                                                                : Role::kResponder),
+      role_(le_link_->role() == hci_spec::ConnectionRole::kCentral ? Role::kInitiator
+                                                                   : Role::kResponder),
       weak_ptr_factory_(this) {
   ZX_ASSERT(delegate_);
   ZX_ASSERT(le_link_);
   ZX_ASSERT(smp);
   ZX_ASSERT(le_link_->handle() == smp->link_handle());
-  ZX_ASSERT(le_link_->ll_type() == bt::LinkType::kLE);
   ZX_ASSERT(smp->id() == l2cap::kLESMPChannelId);
   // `current_phase_` is default constructed into std::monostate in the initializer list as no
   // security upgrade is in progress upon construction.
@@ -412,7 +414,7 @@ void SecurityManagerImpl::OnPhase2EncryptionKey(const UInt128& new_key) {
   } else {
     // `set_le_ltk` sets the encryption key of the LE link (which is the STK for Legacy), not the
     // long-term key that results from pairing (which is generated in Phase 3 for Legacy).
-    le_link_->set_le_ltk(new_link_key);
+    le_link_->set_ltk(new_link_key);
   }
   // If we're the initiator, we encrypt the link. If we're the responder, we wait for the initiator
   // to encrypt the link with the new key.|le_link_| will respond to the HCI "LTK request" event
@@ -748,7 +750,7 @@ void SecurityManagerImpl::OnPairingFailed(Error error) {
 
   if (SecurityUpgradeInProgress()) {
     ZX_ASSERT(le_link_);
-    le_link_->set_le_ltk(hci_spec::LinkKey());
+    le_link_->set_ltk(hci_spec::LinkKey());
   }
   ResetState();
   // Reset state before potentially disconnecting link to avoid causing pairing phase to fail twice.
@@ -804,7 +806,7 @@ std::pair<DeviceAddress, DeviceAddress> SecurityManagerImpl::LEPairingAddresses(
 
 void SecurityManagerImpl::OnNewLongTermKey(const LTK& ltk) {
   ltk_ = ltk;
-  le_link_->set_le_ltk(ltk.key());
+  le_link_->set_ltk(ltk.key());
 }
 
 Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
@@ -826,12 +828,10 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
   return status;
 }
 
-std::unique_ptr<SecurityManager> SecurityManager::Create(fxl::WeakPtr<hci::Connection> link,
-                                                         fbl::RefPtr<l2cap::Channel> smp,
-                                                         IOCapability io_capability,
-                                                         fxl::WeakPtr<Delegate> delegate,
-                                                         BondableMode bondable_mode,
-                                                         gap::LESecurityMode security_mode) {
+std::unique_ptr<SecurityManager> SecurityManager::Create(
+    fxl::WeakPtr<hci::LowEnergyConnection> link, fbl::RefPtr<l2cap::Channel> smp,
+    IOCapability io_capability, fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode,
+    gap::LESecurityMode security_mode) {
   return std::unique_ptr<SecurityManagerImpl>(
       new SecurityManagerImpl(std::move(link), std::move(smp), io_capability, std::move(delegate),
                               bondable_mode, security_mode));

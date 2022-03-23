@@ -44,7 +44,7 @@ class L2cap : public fbl::RefCounted<L2cap> {
   // service-level client via Channel::UpgradeSecurity().
   //
   // Has no effect if this L2cap is uninitialized or shut down.
-  virtual void AddACLConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  virtual void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                                 l2cap::LinkErrorCallback link_error_callback,
                                 l2cap::SecurityUpgradeCallback security_callback) = 0;
 
@@ -70,7 +70,7 @@ class L2cap : public fbl::RefCounted<L2cap> {
     fbl::RefPtr<l2cap::Channel> smp;
   };
   virtual LEFixedChannels AddLEConnection(
-      hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+      hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
       l2cap::LinkErrorCallback link_error_callback,
       l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
       l2cap::SecurityUpgradeCallback security_callback) = 0;

@@ -103,7 +103,7 @@ class SignalingChannelInterface {
 // TODO(armansito): Implement flow control (RTX/ERTX timers).
 class SignalingChannel : public SignalingChannelInterface {
  public:
-  SignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role);
+  SignalingChannel(fbl::RefPtr<Channel> chan, hci_spec::ConnectionRole role);
   ~SignalingChannel() override;
 
   // SignalingChannelInterface overrides
@@ -164,7 +164,7 @@ class SignalingChannel : public SignalingChannelInterface {
   bool is_thread_valid() const { return thread_checker_.is_thread_valid(); }
 
   // Returns the logical link that signaling channel is operating on.
-  hci::Connection::Role role() const { return role_; }
+  hci_spec::ConnectionRole role() const { return role_; }
 
   // Generates a command identifier in sequential order that is never
   // kInvalidId. The caller is responsible for bookkeeping when reusing command
@@ -252,7 +252,7 @@ class SignalingChannel : public SignalingChannelInterface {
 
   bool is_open_;
   l2cap::ScopedChannel chan_;
-  hci::Connection::Role role_;
+  hci_spec::ConnectionRole role_;
   uint16_t mtu_;
   uint8_t next_cmd_id_;
 

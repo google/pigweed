@@ -7,6 +7,7 @@
 #include <lib/async/default.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/sco_connection.h"
 
 namespace bt::sco {
 namespace {
@@ -171,8 +172,8 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   }
 
   auto connection_handle = letoh16(params.connection_handle);
-  auto link = hci::Connection::CreateSCO(link_type, connection_handle, local_address_,
-                                         peer_address_, transport_);
+  auto link = std::make_unique<hci::ScoConnection>(connection_handle, local_address_, peer_address_,
+                                                   transport_);
 
   if (!in_progress_request_) {
     bt_log(ERROR, "gap-sco", "Unexpected SCO connection complete, disconnecting (peer: %s)",

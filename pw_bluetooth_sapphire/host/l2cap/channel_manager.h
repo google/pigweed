@@ -88,7 +88,7 @@ class ChannelManager final {
   //
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
-  void RegisterACL(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  void RegisterACL(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                    LinkErrorCallback link_error_callback,
                    SecurityUpgradeCallback security_callback);
 
@@ -108,7 +108,7 @@ class ChannelManager final {
   //
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
-  void RegisterLE(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  void RegisterLE(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                   LEConnectionParameterUpdateCallback conn_param_callback,
                   LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback);
 
@@ -174,7 +174,7 @@ class ChannelManager final {
   // Called by the various Register functions. Returns a pointer to the newly
   // added link.
   internal::LogicalLink* RegisterInternal(hci_spec::ConnectionHandle handle, bt::LinkType ll_type,
-                                          hci::Connection::Role role, size_t max_payload_size);
+                                          hci_spec::ConnectionRole role, size_t max_payload_size);
 
   // If a service (identified by |psm|) requested has been registered, return a ServiceInfo object
   // containing preferred channel parameters and a callback that passes an inbound channel to the

@@ -18,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -50,8 +51,8 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //  - |conn_params|: Connection related parameters.
   using IncomingConnectionDelegate = fit::function<void(
-      hci_spec::ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
-      const hci_spec::LEConnectionParameters& conn_params)>;
+      hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+      const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params)>;
 
   // The constructor expects the following arguments:
   //   - |hci|: The HCI transport this should operate on.
@@ -84,7 +85,8 @@ class LowEnergyConnector : public LocalAddressClient {
   // |timeout_ms| specifies a time period after which the request will time out. When a request to
   // create connection times out, |status_callback| will be called with a null |link| and a |status|
   // with error Host::Error::kTimedOut.
-  using StatusCallback = fit::function<void(Result<> status, ConnectionPtr link)>;
+  using StatusCallback =
+      fit::function<void(Result<> status, std::unique_ptr<LowEnergyConnection> link)>;
   bool CreateConnection(bool use_accept_list, const DeviceAddress& peer_address,
                         uint16_t scan_interval, uint16_t scan_window,
                         const hci_spec::LEPreferredConnectionParameters& initial_parameters,
@@ -149,7 +151,7 @@ class LowEnergyConnector : public LocalAddressClient {
   CommandChannel::EventCallbackResult OnConnectionCompleteEvent(const EventPacket& event);
 
   // Called when a LE Create Connection request has completed.
-  void OnCreateConnectionComplete(Result<> result, ConnectionPtr link);
+  void OnCreateConnectionComplete(Result<> result, std::unique_ptr<LowEnergyConnection> link);
 
   // Called when a LE Create Connection request has timed out.
   void OnCreateConnectionTimeout();

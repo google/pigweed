@@ -16,7 +16,7 @@ namespace bt::l2cap::internal {
 // the L2CAP thread in production.
 class BrEdrSignalingChannel final : public SignalingChannel {
  public:
-  BrEdrSignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role);
+  BrEdrSignalingChannel(fbl::RefPtr<Channel> chan, hci_spec::ConnectionRole role);
   ~BrEdrSignalingChannel() override = default;
 
   // Test the link using an Echo Request command that can have an arbitrary

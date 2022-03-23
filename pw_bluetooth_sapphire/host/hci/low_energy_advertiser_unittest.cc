@@ -200,7 +200,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/false);
 
-  ConnectionPtr link;
+  std::unique_ptr<LowEnergyConnection> link;
   auto conn_cb = [&link](auto cb_link) { link = std::move(cb_link); };
 
   // Start advertising kPublicAddress
@@ -213,7 +213,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
 
   // Accept a connection and ensure that connection state is set up correctly
   link.reset();
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kPeripheral,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle, hci_spec::ConnectionRole::kPeripheral,
                                            kRandomAddress, hci_spec::LEConnectionParameters());
   std::optional<hci_spec::AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -243,7 +243,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   // Accept a connection from kPublicAddress. The internal advertising state should get assigned
   // correctly with no remnants of the previous advertise.
   link.reset();
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kPeripheral,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle, hci_spec::ConnectionRole::kPeripheral,
                                            kPublicAddress, hci_spec::LEConnectionParameters());
   handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -262,13 +262,12 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
   AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/false);
 
-  ConnectionPtr link;
+  std::unique_ptr<LowEnergyConnection> link;
   auto conn_cb = [&, this](auto cb_link) {
     link = std::move(cb_link);
 
     this->advertiser()->StartAdvertising(
-        kPublicAddress, ad, scan_data, options, [](ConnectionPtr) { /*noop*/ },
-        this->GetSuccessCallback());
+        kPublicAddress, ad, scan_data, options, [](auto) { /*noop*/ }, this->GetSuccessCallback());
   };
 
   this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, conn_cb,
@@ -287,7 +286,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
     }
   });
 
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kPeripheral,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle, hci_spec::ConnectionRole::kPeripheral,
                                            kRandomAddress, hci_spec::LEConnectionParameters());
   std::optional<hci_spec::AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -321,8 +320,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
 
   // Notify the advertiser of the incoming connection. It should reject it and the controller
   // should become disconnected.
-  this->advertiser()->OnIncomingConnection(handle, Connection::Role::kPeripheral, kRandomAddress,
-                                           hci_spec::LEConnectionParameters());
+  this->advertiser()->OnIncomingConnection(handle, hci_spec::ConnectionRole::kPeripheral,
+                                           kRandomAddress, hci_spec::LEConnectionParameters());
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, 0);
   this->RunLoopUntilIdle();
   ASSERT_EQ(2u, connection_states.size());
@@ -361,8 +360,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
 
   // Notify the advertiser of the incoming connection. It should reject it and the controller
   // should become disconnected.
-  this->advertiser()->OnIncomingConnection(handle, Connection::Role::kPeripheral, kRandomAddress,
-                                           hci_spec::LEConnectionParameters());
+  this->advertiser()->OnIncomingConnection(handle, hci_spec::ConnectionRole::kPeripheral,
+                                           kRandomAddress, hci_spec::LEConnectionParameters());
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, 0);
   this->RunLoopUntilIdle();
   ASSERT_EQ(2u, connection_states.size());

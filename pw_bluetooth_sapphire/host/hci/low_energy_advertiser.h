@@ -8,8 +8,8 @@
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
@@ -99,7 +99,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
     AdvFlags flags;
     bool include_tx_power_level;
   };
-  using ConnectionCallback = fit::function<void(ConnectionPtr link)>;
+  using ConnectionCallback = fit::function<void(std::unique_ptr<hci::LowEnergyConnection> link)>;
   virtual void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
                                 const AdvertisingData& scan_rsp, AdvertisingOptions options,
                                 ConnectionCallback connect_callback,
@@ -115,7 +115,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Callback for an incoming LE connection. This function should be called in reaction to any
   // connection that was not initiated locally. This object will determine if it was a result of an
   // active advertisement and route the connection accordingly.
-  virtual void OnIncomingConnection(hci_spec::ConnectionHandle handle, Connection::Role role,
+  virtual void OnIncomingConnection(hci_spec::ConnectionHandle handle,
+                                    hci_spec::ConnectionRole role,
                                     const DeviceAddress& peer_address,
                                     const hci_spec::LEConnectionParameters& conn_params) = 0;
 
@@ -200,7 +201,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Handle shared housekeeping tasks when an incoming connection is completed (e.g. clean up
   // internal state, call callbacks, etc)
-  void CompleteIncomingConnection(hci_spec::ConnectionHandle handle, Connection::Role role,
+  void CompleteIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                                   const DeviceAddress& local_address,
                                   const DeviceAddress& peer_address,
                                   const hci_spec::LEConnectionParameters& conn_params);

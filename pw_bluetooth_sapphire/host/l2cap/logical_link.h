@@ -64,7 +64,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
   static fbl::RefPtr<LogicalLink> New(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                                      hci::Connection::Role role, fpromise::executor* executor,
+                                      hci_spec::ConnectionRole role, fpromise::executor* executor,
                                       size_t max_payload_size,
                                       QueryServiceCallback query_service_cb,
                                       hci::AclDataChannel* acl_data_channel,
@@ -163,7 +163,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   void set_connection_parameter_update_callback(LEConnectionParameterUpdateCallback callback);
 
   bt::LinkType type() const { return type_; }
-  hci::Connection::Role role() const { return role_; }
+  hci_spec::ConnectionRole role() const { return role_; }
   hci_spec::ConnectionHandle handle() const { return handle_; }
 
   const sm::SecurityProperties security() { return security_; }
@@ -178,7 +178,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   friend class ChannelImpl;
   friend fbl::RefPtr<LogicalLink>;
 
-  LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type, hci::Connection::Role role,
+  LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type, hci_spec::ConnectionRole role,
               fpromise::executor* executor, size_t max_acl_payload_size,
               QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel);
 
@@ -255,7 +255,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Information about the underlying controller logical link.
   hci_spec::ConnectionHandle handle_;
   bt::LinkType type_;
-  hci::Connection::Role role_;
+  hci_spec::ConnectionRole role_;
 
   // The duration after which BR/EDR packets are flushed from the controller.
   // By default, the flush timeout is infinite (no automatic flush).

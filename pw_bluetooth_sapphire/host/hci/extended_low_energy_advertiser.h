@@ -52,7 +52,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // true if advertising will be stopped, false otherwise.
   void StopAdvertising(const DeviceAddress& address) override;
 
-  void OnIncomingConnection(hci_spec::ConnectionHandle handle, Connection::Role role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                             const DeviceAddress& peer_address,
                             const hci_spec::LEConnectionParameters& conn_params) override;
 
@@ -66,7 +66,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
  private:
   struct StagedConnectionParameters {
-    Connection::Role role;
+    hci_spec::ConnectionRole role;
     DeviceAddress peer_address;
     hci_spec::LEConnectionParameters conn_params;
   };

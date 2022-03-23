@@ -45,7 +45,7 @@ class TestSecurityManager final : public SecurityManager {
 
  private:
   friend class TestSecurityManagerFactory;
-  TestSecurityManager(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
+  TestSecurityManager(fxl::WeakPtr<hci::LowEnergyConnection> link, fbl::RefPtr<l2cap::Channel> smp,
                       IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
                       BondableMode bondable_mode, gap::LESecurityMode security_mode);
   Role role_;
@@ -71,7 +71,7 @@ class TestSecurityManagerFactory {
   // |delegate|: Delegate which handles SMP interactions with the rest of the Bluetooth stack.
   // |bondable_mode|: the operating bondable mode of the device (see v5.2, Vol. 3, Part C 9.4).
   // |security_mode|: the security mode this SecurityManager is in (see v5.2, Vol. 3, Part C 10.2).
-  std::unique_ptr<SecurityManager> CreateSm(fxl::WeakPtr<hci::Connection> link,
+  std::unique_ptr<SecurityManager> CreateSm(fxl::WeakPtr<hci::LowEnergyConnection> link,
                                             fbl::RefPtr<l2cap::Channel> smp,
                                             IOCapability io_capability,
                                             fxl::WeakPtr<Delegate> delegate,

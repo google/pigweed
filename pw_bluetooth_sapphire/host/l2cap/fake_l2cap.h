@@ -46,10 +46,10 @@ class FakeL2cap final : public L2cap {
   void TriggerLinkError(hci_spec::ConnectionHandle handle);
 
   // L2cap overrides:
-  void AddACLConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                         LinkErrorCallback link_error_callback,
                         SecurityUpgradeCallback security_callback) override;
-  LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                                   LinkErrorCallback link_error_callback,
                                   LEConnectionParameterUpdateCallback conn_param_callback,
                                   SecurityUpgradeCallback security_callback) override;
@@ -98,7 +98,7 @@ class FakeL2cap final : public L2cap {
     // Expectations on links can be created before they are connected.
     bool connected;
     hci_spec::ConnectionHandle handle;
-    hci::Connection::Role role;
+    hci_spec::ConnectionRole role;
     bt::LinkType type;
 
     async_dispatcher_t* dispatcher;
@@ -114,7 +114,7 @@ class FakeL2cap final : public L2cap {
   FakeL2cap() = default;
   ~FakeL2cap() override;
 
-  LinkData* RegisterInternal(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  LinkData* RegisterInternal(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                              bt::LinkType link_type, LinkErrorCallback link_error_callback);
 
   fbl::RefPtr<testing::FakeChannel> OpenFakeChannel(

@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
@@ -178,7 +178,7 @@ class PairingState final {
   // this peer.
   //
   // |link| must be valid for the lifetime of this object.
-  PairingState(fxl::WeakPtr<Peer> peer, hci::Connection* link, bool link_initiated,
+  PairingState(fxl::WeakPtr<Peer> peer, hci::BrEdrConnection* link, bool link_initiated,
                fit::closure auth_cb, StatusCallback status_cb);
   PairingState(PairingState&&) = default;
   PairingState& operator=(PairingState&&) = default;
@@ -401,7 +401,7 @@ class PairingState final {
   fxl::WeakPtr<Peer> peer_;
 
   // The BR/EDR link whose pairing is being driven by this object.
-  hci::Connection* link_;
+  hci::BrEdrConnection* link_;
 
   // True when the BR/EDR |link_| was locally requested.
   bool outgoing_connection_;

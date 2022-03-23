@@ -13,13 +13,15 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/fake_low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "util.h"
 
@@ -42,6 +44,8 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   void TearDown() override {
     RunLoopUntilIdle();
     DestroySecurityManager();
+    fake_link_.reset();
+    transport_.reset();
   }
 
   void NewSecurityManager(Role role, IOCapability ioc, BondableMode bondable_mode) {
@@ -52,12 +56,15 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
                                 dispatcher());
 
     // Setup a fake logical link.
-    auto link_role = role == Role::kInitiator ? hci::Connection::Role::kCentral
-                                              : hci::Connection::Role::kPeripheral;
-    fake_link_ = std::make_unique<hci::testing::FakeConnection>(1, bt::LinkType::kLE, link_role,
-                                                                kLocalAddr, kPeerAddr);
+    auto link_role = role == Role::kInitiator ? hci_spec::ConnectionRole::kCentral
+                                              : hci_spec::ConnectionRole::kPeripheral;
 
-    pairing_ = SecurityManager::Create(fake_link_->WeakPtr(), fake_chan_, ioc,
+    fake_link_.reset();
+    InitializeTransport();
+    fake_link_ = std::make_unique<hci::testing::FakeLowEnergyConnection>(
+        1, kLocalAddr, kPeerAddr, link_role, transport_->WeakPtr());
+
+    pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(), fake_chan_, ioc,
                                        weak_ptr_factory_.GetWeakPtr(), bondable_mode,
                                        gap::LESecurityMode::Mode1);
   }
@@ -328,7 +335,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
   SecurityManager* pairing() const { return pairing_.get(); }
   l2cap::testing::FakeChannel* fake_chan() const { return fake_chan_.get(); }
-  hci::testing::FakeConnection* fake_link() const { return fake_link_.get(); }
+  hci::testing::FakeLowEnergyConnection* fake_link() const { return fake_link_.get(); }
 
   int security_callback_count() const { return security_callback_count_; }
   const std::optional<ErrorCode>& received_error_code() const { return received_error_code_; }
@@ -404,6 +411,26 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     fake_chan()->Receive(buffer);
   }
 
+  void InitializeTransport() {
+    // Ensure any tasks posted by an existing transport are dispatched.
+    RunLoopUntilIdle();
+    zx::channel cmd0;
+    zx::channel::create(0, &cmd0, &cmd_chan_);
+    zx::channel acl0;
+    zx::channel::create(0, &acl0, &acl_chan_);
+    auto vendor_encode_cb = [](auto cmd, auto params) -> fpromise::result<DynamicByteBuffer> {
+      return fpromise::error();
+    };
+    auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(
+        std::move(cmd0), std::move(acl0), bt_vendor_features_t(), std::move(vendor_encode_cb));
+    transport_ = hci::Transport::Create(std::move(hci_dev)).take_value();
+    transport_->InitializeACLDataChannel(hci::DataBufferInfo(1, 1), hci::DataBufferInfo(1, 1));
+  }
+
+  zx::channel cmd_chan_;
+  zx::channel acl_chan_;
+  std::unique_ptr<hci::Transport> transport_;
+
   // We store the preq/pres values here to generate a valid confirm value for
   // the fake side.
   StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)> local_pairing_cmd_,
@@ -471,7 +498,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   std::optional<ErrorCode> received_error_code_;
 
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
-  std::unique_ptr<hci::testing::FakeConnection> fake_link_;
+  std::unique_ptr<hci::testing::FakeLowEnergyConnection> fake_link_;
   std::unique_ptr<SecurityManager> pairing_;
 
   fxl::WeakPtrFactory<SecurityManagerTest> weak_ptr_factory_;
@@ -2701,7 +2728,7 @@ TEST_F(InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDis
   const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
-  fake_link()->set_le_ltk(kModifiedLtk);
+  fake_link()->set_ltk(kModifiedLtk);
   // When we receive the Security Request on a bonded (i.e. AssignLongTermKey has been called)
   // connection, we will refresh the encryption key. This checks that the link LTK = the SMP LTK
   // which is not the case.
@@ -3305,7 +3332,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
   const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
-  fake_link()->set_le_ltk(kModifiedLtk);
+  fake_link()->set_ltk(kModifiedLtk);
   fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
@@ -3316,7 +3343,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
 TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   // The LE link LTK should always be assigned through SM, so while encryption could succeed with
   // a link LTK but no SM LTK, this is a violation of bt-host assumptions and we will disconnect.
-  fake_link()->set_le_ltk(hci_spec::LinkKey({1}, 2, 3));
+  fake_link()->set_ltk(hci_spec::LinkKey({1}, 2, 3));
   fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());

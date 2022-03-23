@@ -24,6 +24,8 @@ std::string StatusCodeToString(hci_spec::StatusCode code);
 // Returns a user-friendly string representation of |link_type|.
 std::string LinkTypeToString(hci_spec::LinkType link_type);
 
+std::string ConnectionRoleToString(hci_spec::ConnectionRole role);
+
 // Encode a legacy advertising interval to an extended advertising 3-octet interval, taking
 // endianness into account.
 void EncodeLegacyAdvertisingInterval(uint16_t input, uint8_t (&result)[3]);

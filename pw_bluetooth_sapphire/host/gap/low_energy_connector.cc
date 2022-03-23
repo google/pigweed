@@ -44,10 +44,10 @@ std::unique_ptr<LowEnergyConnector> LowEnergyConnector::CreateOutboundConnector(
 }
 
 std::unique_ptr<LowEnergyConnector> LowEnergyConnector::CreateInboundConnector(
-    PeerId peer_id, std::unique_ptr<hci::Connection> connection, LowEnergyConnectionOptions options,
-    fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
-    fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, fbl::RefPtr<l2cap::L2cap> l2cap,
-    fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb) {
+    PeerId peer_id, std::unique_ptr<hci::LowEnergyConnection> connection,
+    LowEnergyConnectionOptions options, fxl::WeakPtr<hci::Transport> transport,
+    PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+    fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb) {
   return std::unique_ptr<LowEnergyConnector>(new LowEnergyConnector(
       /*outbound=*/false, peer_id, std::move(connection), options, /*connector=*/nullptr,
       /*request_timeout=*/zx::duration(0), transport, peer_cache, conn_mgr,
@@ -55,7 +55,7 @@ std::unique_ptr<LowEnergyConnector> LowEnergyConnector::CreateInboundConnector(
 }
 
 LowEnergyConnector::LowEnergyConnector(
-    bool outbound, PeerId peer_id, std::unique_ptr<hci::Connection> connection,
+    bool outbound, PeerId peer_id, std::unique_ptr<hci::LowEnergyConnection> connection,
     LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
     zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
     fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
@@ -288,7 +288,8 @@ void LowEnergyConnector::RequestCreateConnection() {
       kInitialConnectionParameters, std::move(status_cb), hci_request_timeout_));
 }
 
-void LowEnergyConnector::OnConnectResult(hci::Result<> status, hci::ConnectionPtr link) {
+void LowEnergyConnector::OnConnectResult(hci::Result<> status,
+                                         std::unique_ptr<hci::LowEnergyConnection> link) {
   if (status.is_error()) {
     bt_log(INFO, "gap-le", "failed to connect to peer (id: %s, status: %s)", bt_str(peer_id_),
            bt_str(status));
@@ -305,7 +306,7 @@ void LowEnergyConnector::OnConnectResult(hci::Result<> status, hci::ConnectionPt
   }
 }
 
-bool LowEnergyConnector::InitializeConnection(hci::ConnectionPtr link) {
+bool LowEnergyConnector::InitializeConnection(std::unique_ptr<hci::LowEnergyConnection> link) {
   ZX_ASSERT(link);
 
   auto peer_disconnect_cb = fit::bind_member<&LowEnergyConnector::OnPeerDisconnect>(this);

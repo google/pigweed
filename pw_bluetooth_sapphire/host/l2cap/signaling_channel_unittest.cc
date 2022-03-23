@@ -27,7 +27,7 @@ const auto kTestResponseHandler = [](Status status, const ByteBuffer& rsp_payloa
 class TestSignalingChannel : public SignalingChannel {
  public:
   explicit TestSignalingChannel(fbl::RefPtr<Channel> chan)
-      : SignalingChannel(std::move(chan), hci::Connection::Role::kCentral) {
+      : SignalingChannel(std::move(chan), hci_spec::ConnectionRole::kCentral) {
     set_mtu(kTestMTU);
   }
   ~TestSignalingChannel() override = default;

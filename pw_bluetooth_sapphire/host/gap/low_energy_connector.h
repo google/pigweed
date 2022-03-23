@@ -31,7 +31,7 @@ class LowEnergyConnector final {
   // Start interrogating peer using an already established |connection|. |cb| will be called with
   // the result of the procedure.
   static std::unique_ptr<LowEnergyConnector> CreateInboundConnector(
-      PeerId peer_id, std::unique_ptr<hci::Connection> connection,
+      PeerId peer_id, std::unique_ptr<hci::LowEnergyConnection> connection,
       LowEnergyConnectionOptions options, fxl::WeakPtr<hci::Transport> transport,
       PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
       fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb);
@@ -62,7 +62,8 @@ class LowEnergyConnector final {
     kFailed,
   };
 
-  LowEnergyConnector(bool outbound, PeerId peer_id, std::unique_ptr<hci::Connection> connection,
+  LowEnergyConnector(bool outbound, PeerId peer_id,
+                     std::unique_ptr<hci::LowEnergyConnection> connection,
                      LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
                      zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport,
                      PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
@@ -78,11 +79,11 @@ class LowEnergyConnector final {
 
   // Initiate HCI connection procedure.
   void RequestCreateConnection();
-  void OnConnectResult(hci::Result<> status, hci::ConnectionPtr link);
+  void OnConnectResult(hci::Result<> status, std::unique_ptr<hci::LowEnergyConnection> link);
 
   // Creates LowEnergyConnection and initializes fixed channels & timers.
   // Returns true on success, false on failure.
-  bool InitializeConnection(hci::ConnectionPtr link);
+  bool InitializeConnection(std::unique_ptr<hci::LowEnergyConnection> link);
 
   void StartInterrogation();
   void OnInterrogationComplete(hci::Result<> status);

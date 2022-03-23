@@ -125,6 +125,17 @@ std::string LinkTypeToString(hci_spec::LinkType link_type) {
   };
 }
 
+std::string ConnectionRoleToString(hci_spec::ConnectionRole role) {
+  switch (role) {
+    case ConnectionRole::kCentral:
+      return "central";
+    case ConnectionRole::kPeripheral:
+      return "peripheral";
+    default:
+      return "<unknown role>";
+  }
+}
+
 // TODO(fxbug.dev/80048): various parts of the spec call for a 3 byte integer. If we need to in the
 // future, we should generalize this logic and make a uint24_t type that makes it easier to work
 // with these types of conversions.

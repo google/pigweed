@@ -244,18 +244,20 @@ bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(const DeviceAddress& ad
 }
 
 void LowEnergyAdvertiser::CompleteIncomingConnection(
-    hci_spec::ConnectionHandle handle, Connection::Role role, const DeviceAddress& local_address,
-    const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params) {
+    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+    const DeviceAddress& local_address, const DeviceAddress& peer_address,
+    const hci_spec::LEConnectionParameters& conn_params) {
   // Immediately construct a Connection object. If this object goes out of scope following the error
   // checks below, it will send the a command to disconnect the link.
-  std::unique_ptr<Connection> link =
-      Connection::CreateLE(handle, role, local_address, peer_address, conn_params, hci());
+  std::unique_ptr<LowEnergyConnection> link = std::make_unique<LowEnergyConnection>(
+      handle, local_address, peer_address, conn_params, role, hci());
 
   if (!IsAdvertising(local_address)) {
     bt_log(DEBUG, "hci-le",
            "connection received without advertising address (role: %d, local address: %s, peer "
            "address: %s, connection parameters: %s)",
-           role, bt_str(local_address), bt_str(peer_address), bt_str(conn_params));
+           static_cast<uint8_t>(role), bt_str(local_address), bt_str(peer_address),
+           bt_str(conn_params));
     return;
   }
 
@@ -263,7 +265,8 @@ void LowEnergyAdvertiser::CompleteIncomingConnection(
     bt_log(WARN, "hci-le",
            "connection received when not connectable (role: %d, local address: %s, peer "
            "address: %s, connection parameters: %s)",
-           role, bt_str(local_address), bt_str(peer_address), bt_str(conn_params));
+           static_cast<uint8_t>(role), bt_str(local_address), bt_str(peer_address),
+           bt_str(conn_params));
     return;
   }
 

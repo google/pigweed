@@ -26,7 +26,7 @@ static const hci_spec::LEPreferredConnectionParameters kDefaultPreferredConnecti
 }  // namespace
 
 LowEnergyConnection::LowEnergyConnection(
-    fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::Connection> link,
+    fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
     ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
     fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
@@ -183,7 +183,7 @@ void LowEnergyConnection::AttachInspect(inspect::Node& parent, std::string name)
 }
 
 void LowEnergyConnection::StartConnectionPauseTimeout() {
-  if (link_->role() == hci::Connection::Role::kCentral) {
+  if (link_->role() == hci_spec::ConnectionRole::kCentral) {
     StartConnectionPauseCentralTimeout();
   } else {
     StartConnectionPausePeripheralTimeout();
@@ -255,8 +255,9 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
     // security information (LTK, EDIV, and Rand) distributed by the Peripheral in LE legacy [...]
     // to setup an encrypted session" (v5.3, Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
     // and local_ltk will be equal, so this check is unnecessary but correct.
-    ltk = (link()->role() == hci::Connection::Role::kCentral) ? peer_->le()->bond_data()->peer_ltk
-                                                              : peer_->le()->bond_data()->local_ltk;
+    ltk = (link()->role() == hci_spec::ConnectionRole::kCentral)
+              ? peer_->le()->bond_data()->peer_ltk
+              : peer_->le()->bond_data()->local_ltk;
   }
 
   // Obtain the local I/O capabilities from the delegate. Default to
@@ -266,7 +267,7 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
     io_cap = conn_mgr_->pairing_delegate()->io_capability();
   }
   LESecurityMode security_mode = conn_mgr_->security_mode();
-  sm_ = conn_mgr_->sm_factory_func()(link_->WeakPtr(), std::move(smp), io_cap,
+  sm_ = conn_mgr_->sm_factory_func()(link_->GetWeakPtr(), std::move(smp), io_cap,
                                      weak_ptr_factory_.GetWeakPtr(),
                                      connection_options.bondable_mode, security_mode);
 
@@ -295,7 +296,7 @@ void LowEnergyConnection::OnNewLEConnectionParams(
 
 void LowEnergyConnection::RequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kPeripheral,
+  ZX_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::kPeripheral,
                 "tried to send connection parameter update request as central");
 
   ZX_ASSERT(peer_);
@@ -359,7 +360,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
 
 void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kPeripheral,
+  ZX_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::kPeripheral,
                 "tried to send l2cap connection parameter update request as central");
 
   bt_log(DEBUG, "gap-le", "sending l2cap connection parameter update request (peer: %s)",
@@ -459,7 +460,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
 
   connection_parameters_update_requested_ = true;
 
-  if (link_->role() == hci::Connection::Role::kCentral) {
+  if (link_->role() == hci_spec::ConnectionRole::kCentral) {
     // If the GAP service preferred connection parameters characteristic has not been read by now,
     // just use the default parameters.
     // TODO(fxbug.dev/66031): Wait for preferred connection parameters to be read.

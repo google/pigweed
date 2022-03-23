@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco_connection_manager.h"
@@ -34,7 +34,7 @@ class BrEdrConnection final {
   // |on_peer_disconnect_cb| is called when the peer disconnects and this connection should be
   // destroyed.
   using Request = BrEdrConnectionRequest;
-  BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::Connection> link,
+  BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::BrEdrConnection> link,
                   fit::closure send_auth_request_cb, fit::callback<void()> disconnect_cb,
                   fit::closure on_peer_disconnect_cb, fbl::RefPtr<l2cap::L2cap> l2cap,
                   fxl::WeakPtr<hci::Transport> transport, std::optional<Request> request);
@@ -70,7 +70,7 @@ class BrEdrConnection final {
   void AttachInspect(inspect::Node& parent, std::string name);
 
   const hci::Connection& link() const { return *link_; }
-  hci::Connection& link() { return *link_; }
+  hci::BrEdrConnection& link() { return *link_; }
   PeerId peer_id() const { return peer_id_; }
   PairingState& pairing_state() { return *pairing_state_; }
 
@@ -90,7 +90,7 @@ class BrEdrConnection final {
 
   PeerId peer_id_;
   fxl::WeakPtr<Peer> peer_;
-  std::unique_ptr<hci::Connection> link_;
+  std::unique_ptr<hci::BrEdrConnection> link_;
   std::optional<Request> request_;
   std::unique_ptr<PairingState> pairing_state_;
   fbl::RefPtr<l2cap::L2cap> domain_;

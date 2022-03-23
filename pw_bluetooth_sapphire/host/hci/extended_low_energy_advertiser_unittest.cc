@@ -134,7 +134,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/true);
 
-  ConnectionPtr link;
+  std::unique_ptr<LowEnergyConnection> link;
   auto conn_cb = [&link](auto cb_link) { link = std::move(cb_link); };
 
   advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, conn_cb,

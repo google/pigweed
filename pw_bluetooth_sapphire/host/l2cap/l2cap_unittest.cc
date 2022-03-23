@@ -145,7 +145,7 @@ class L2capTest : public TestingBase {
 
   QueueAclConnectionRetVal QueueAclConnection(
       hci_spec::ConnectionHandle handle,
-      hci::Connection::Role role = hci::Connection::Role::kCentral) {
+      hci_spec::ConnectionRole role = hci_spec::ConnectionRole::kCentral) {
     QueueAclConnectionRetVal cmd_ids;
     cmd_ids.extended_features_id = NextCommandId();
     cmd_ids.fixed_channels_supported_id = NextCommandId();
@@ -166,7 +166,7 @@ class L2capTest : public TestingBase {
   }
 
   L2cap::LEFixedChannels QueueLEConnection(hci_spec::ConnectionHandle handle,
-                                           hci::Connection::Role role) {
+                                           hci_spec::ConnectionRole role) {
     acl_data_channel()->RegisterLink(handle, bt::LinkType::kLE);
     return l2cap()->AddLEConnection(
         handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
@@ -604,7 +604,7 @@ TEST_F(L2capTest, RequestConnectionParameterUpdateAndReceiveResponse) {
                                                           kPeripheralLatency, kTimeoutMult);
 
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  QueueLEConnection(kLinkHandle, hci::Connection::Role::kPeripheral);
+  QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::kPeripheral);
 
   std::optional<bool> accepted;
   auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
@@ -641,7 +641,7 @@ TEST_F(L2capTest, InspectHierarchy) {
 
 TEST_F(L2capTest, AddLEConnectionReturnsFixedChannels) {
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  auto channels = QueueLEConnection(kLinkHandle, hci::Connection::Role::kPeripheral);
+  auto channels = QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::kPeripheral);
   ASSERT_TRUE(channels.att);
   EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
   ASSERT_TRUE(channels.smp);

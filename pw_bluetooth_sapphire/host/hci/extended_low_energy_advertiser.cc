@@ -355,8 +355,8 @@ void ExtendedLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) 
 }
 
 void ExtendedLowEnergyAdvertiser::OnIncomingConnection(
-    hci_spec::ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
-    const hci_spec::LEConnectionParameters& conn_params) {
+    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+    const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params) {
   // Core Spec Volume 4, Part E, Section 7.8.56: Incoming connections to LE Extended Advertising
   // occur through two events: HCI_LE_Connection_Complete and HCI_LE_Advertising_Set_Terminated.
   // This method is called as a result of the HCI_LE_Connection_Complete event. At this point, we

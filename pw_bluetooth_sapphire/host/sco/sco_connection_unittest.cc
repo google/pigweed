@@ -8,7 +8,7 @@
 
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/fake_sco_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
@@ -21,7 +21,7 @@ hci_spec::ConnectionHandle kConnectionHandle = 1u;
 
 constexpr uint16_t kHciScoMtu = 1;
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = testing::ControllerTest<testing::MockController>;
 class ScoConnectionTest : public TestingBase {
  public:
   ScoConnectionTest() = default;
@@ -30,11 +30,11 @@ class ScoConnectionTest : public TestingBase {
  protected:
   void SetUp() override {
     TestingBase::SetUp();
+    InitializeACLDataChannel();
 
-    auto fake_conn = std::make_unique<hci::testing::FakeConnection>(
-        kConnectionHandle, bt::LinkType::kSCO, hci::Connection::Role::kCentral, DeviceAddress(),
-        DeviceAddress());
-    hci_conn_ = fake_conn->WeakPtr();
+    auto fake_conn = std::make_unique<hci::testing::FakeScoConnection>(
+        kConnectionHandle, DeviceAddress(), DeviceAddress(), transport()->WeakPtr());
+    hci_conn_ = fake_conn->GetWeakPtr();
     fake_conn_ = fake_conn.get();
     deactivated_cb_count_ = 0;
     sco_conn_ = CreateScoConnection(std::move(fake_conn));
@@ -65,8 +65,8 @@ class ScoConnectionTest : public TestingBase {
  private:
   size_t deactivated_cb_count_;
   fbl::RefPtr<ScoConnection> sco_conn_;
-  fxl::WeakPtr<hci::Connection> hci_conn_;
-  hci::testing::FakeConnection* fake_conn_;
+  fxl::WeakPtr<hci::ScoConnection> hci_conn_;
+  hci::testing::FakeScoConnection* fake_conn_;
 };
 
 class HciScoConnectionTest : public ScoConnectionTest {

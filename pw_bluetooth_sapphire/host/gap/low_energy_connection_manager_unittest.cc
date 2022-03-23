@@ -32,6 +32,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
@@ -150,7 +151,9 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   // Addresses of peers with a canceled connection attempt.
   const PeerList& canceled_peers() const { return canceled_peers_; }
 
-  hci::ConnectionPtr MoveLastRemoteInitiated() { return std::move(last_remote_initiated_); }
+  std::unique_ptr<hci::LowEnergyConnection> MoveLastRemoteInitiated() {
+    return std::move(last_remote_initiated_);
+  }
 
   fxl::WeakPtr<TestSm> TestSmByHandle(hci_spec::ConnectionHandle handle) {
     return sm_factory_->GetTestSm(handle);
@@ -158,15 +161,15 @@ class LowEnergyConnectionManagerTest : public TestingBase {
 
  private:
   // Called by |connector_| when a new remote initiated connection is received.
-  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                             const DeviceAddress& peer_address,
                             const hci_spec::LEConnectionParameters& conn_params) {
     DeviceAddress local_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});
 
     // Create a production connection object that can interact with the fake
     // controller.
-    last_remote_initiated_ = hci::Connection::CreateLE(handle, role, local_address, peer_address,
-                                                       conn_params, transport()->WeakPtr());
+    last_remote_initiated_ = std::make_unique<hci::LowEnergyConnection>(
+        handle, local_address, peer_address, conn_params, role, transport()->WeakPtr());
   }
 
   // Called by FakeController on connection events.
@@ -200,7 +203,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   std::unique_ptr<LowEnergyConnectionManager> conn_mgr_;
 
   // The most recent remote-initiated connection reported by |connector_|.
-  hci::ConnectionPtr last_remote_initiated_;
+  std::unique_ptr<hci::LowEnergyConnection> last_remote_initiated_;
 
   PeerList connected_peers_;
   PeerList canceled_peers_;

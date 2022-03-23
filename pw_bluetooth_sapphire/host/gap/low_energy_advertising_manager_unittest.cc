@@ -15,8 +15,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/fake_low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
@@ -51,9 +51,9 @@ struct AdvertisementStatus {
 //  - Actually just accepts all ads and stores them in ad_store
 class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
  public:
-  FakeLowEnergyAdvertiser(fxl::WeakPtr<hci::Transport> hci, size_t max_ad_size,
+  FakeLowEnergyAdvertiser(const fxl::WeakPtr<hci::Transport>& hci, size_t max_ad_size,
                           std::unordered_map<DeviceAddress, AdvertisementStatus>* ad_store)
-      : hci::LowEnergyAdvertiser(std::move(hci)), max_ad_size_(max_ad_size), ads_(ad_store) {
+      : hci::LowEnergyAdvertiser(hci), max_ad_size_(max_ad_size), ads_(ad_store), hci_(hci) {
     ZX_ASSERT(ads_);
   }
 
@@ -95,7 +95,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   void StopAdvertising(const DeviceAddress& address) override { ads_->erase(address); }
 
-  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                             const DeviceAddress& peer_address,
                             const hci_spec::LEConnectionParameters& conn_params) override {
     // Right now, we call the first callback, because we can't call any other
@@ -104,8 +104,8 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     // determine which one that is.
     const auto& cb = ads_->begin()->second.connect_cb;
     if (cb) {
-      cb(std::make_unique<hci::testing::FakeConnection>(handle, bt::LinkType::kLE, role,
-                                                        ads_->begin()->first, peer_address));
+      cb(std::make_unique<hci::testing::FakeLowEnergyConnection>(handle, ads_->begin()->first,
+                                                                 peer_address, role, hci_));
     }
   }
 
@@ -155,6 +155,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   size_t max_ad_size_;
   std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
   hci::Result<> pending_error_ = fitx::ok();
+  fxl::WeakPtr<hci::Transport> hci_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
 };
@@ -167,6 +168,8 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
  protected:
   void SetUp() override {
     TestingBase::SetUp();
+    InitializeACLDataChannel();
+    StartTestDevice();
 
     fake_address_delegate_.set_local_address(kRandomAddress);
     MakeFakeAdvertiser();
@@ -335,10 +338,11 @@ TEST_F(LowEnergyAdvertisingManagerTest, AdvertiserError) {
 
 //  - It calls the connectable callback correctly when connected to
 TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
-  hci::ConnectionPtr link;
+  std::unique_ptr<hci::LowEnergyConnection> link;
   AdvertisementId advertised_id = kInvalidAdvertisementId;
 
-  auto connect_cb = [&](AdvertisementId connected_id, hci::ConnectionPtr cb_link) {
+  auto connect_cb = [&](AdvertisementId connected_id,
+                        std::unique_ptr<hci::LowEnergyConnection> cb_link) {
     link = std::move(cb_link);
     EXPECT_EQ(advertised_id, connected_id);
   };
@@ -352,7 +356,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
   advertised_id = last_ad_id();
 
   DeviceAddress peer_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});
-  advertiser()->OnIncomingConnection(1, hci::Connection::Role::kPeripheral, peer_address,
+  advertiser()->OnIncomingConnection(1, hci_spec::ConnectionRole::kPeripheral, peer_address,
                                      hci_spec::LEConnectionParameters());
   RunLoopUntilIdle();
   ASSERT_TRUE(link);
@@ -364,7 +368,8 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
 
 //  - Error: Connectable and Anonymous at the same time
 TEST_F(LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
-  auto connect_cb = [](AdvertisementId connected_id, hci::ConnectionPtr conn) {};
+  auto connect_cb = [](AdvertisementId connected_id,
+                       std::unique_ptr<hci::LowEnergyConnection> conn) {};
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), connect_cb,
                               kTestInterval, /*anonymous=*/true, /*include_tx_power_level=*/false,

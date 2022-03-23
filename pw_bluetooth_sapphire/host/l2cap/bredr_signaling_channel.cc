@@ -10,7 +10,8 @@
 
 namespace bt::l2cap::internal {
 
-BrEdrSignalingChannel::BrEdrSignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role)
+BrEdrSignalingChannel::BrEdrSignalingChannel(fbl::RefPtr<Channel> chan,
+                                             hci_spec::ConnectionRole role)
     : SignalingChannel(std::move(chan), role) {
   set_mtu(kDefaultMTU);
 

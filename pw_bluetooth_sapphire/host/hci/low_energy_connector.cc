@@ -215,9 +215,6 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   }
 
   hci_spec::ConnectionHandle handle = le16toh(params->connection_handle);
-  Connection::Role role = (params->role == hci_spec::ConnectionRole::kCentral)
-                              ? Connection::Role::kCentral
-                              : Connection::Role::kPeripheral;
   DeviceAddress peer_address(AddressTypeFromHCI(params->peer_address_type), params->peer_address);
   hci_spec::LEConnectionParameters connection_params(le16toh(params->conn_interval),
                                                      le16toh(params->conn_latency),
@@ -226,14 +223,14 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   // If the connection did not match a pending request then we pass the
   // information down to the incoming connection delegate.
   if (!matches_pending_request) {
-    delegate_(handle, role, peer_address, connection_params);
+    delegate_(handle, params->role, peer_address, connection_params);
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
   // A new link layer connection was created. Create an object to track this
   // connection. Destroying this object will disconnect the link.
-  auto connection = Connection::CreateLE(handle, role, pending_request_->local_address,
-                                         peer_address, connection_params, hci_);
+  auto connection = std::make_unique<LowEnergyConnection>(
+      handle, pending_request_->local_address, peer_address, connection_params, params->role, hci_);
 
   Result<> result = fitx::ok();
   if (pending_request_->timed_out) {
@@ -252,7 +249,8 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   return CommandChannel::EventCallbackResult::kContinue;
 }
 
-void LowEnergyConnector::OnCreateConnectionComplete(Result<> result, ConnectionPtr link) {
+void LowEnergyConnector::OnCreateConnectionComplete(Result<> result,
+                                                    std::unique_ptr<LowEnergyConnection> link) {
   ZX_DEBUG_ASSERT(pending_request_);
 
   bt_log(DEBUG, "hci-le", "connection complete - status: %s", bt_str(result));

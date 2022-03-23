@@ -242,8 +242,8 @@ void LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
 }
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(
-    hci_spec::ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
-    const hci_spec::LEConnectionParameters& conn_params) {
+    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+    const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params) {
   static DeviceAddress identity_address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
 
   // We use the identity address as the local address if we aren't advertising. If we aren't

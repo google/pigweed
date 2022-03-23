@@ -42,7 +42,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // TODO(fxbug.dev/50542): Update documentation.
   void StopAdvertising(const DeviceAddress& address) override;
 
-  void OnIncomingConnection(hci_spec::ConnectionHandle handle, Connection::Role role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                             const DeviceAddress& peer_address,
                             const hci_spec::LEConnectionParameters& conn_params) override;
 

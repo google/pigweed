@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
@@ -460,8 +460,6 @@ BrEdrConnectionManager::FindConnectionById(PeerId peer_id) {
   }
 
   auto& [handle, conn] = *it;
-  ZX_ASSERT(conn.link().ll_type() != bt::LinkType::kLE);
-
   return std::pair(handle, &conn);
 }
 
@@ -488,10 +486,8 @@ Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
 void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                                                   hci_spec::ConnectionHandle connection_handle,
                                                   hci_spec::ConnectionRole role) {
-  hci::Connection::Role conn_role = role == hci_spec::ConnectionRole::kCentral
-                                        ? hci::Connection::Role::kCentral
-                                        : hci::Connection::Role::kPeripheral;
-  auto link = hci::Connection::CreateACL(connection_handle, conn_role, local_address_, addr, hci_);
+  auto link =
+      std::make_unique<hci::BrEdrConnection>(connection_handle, local_address_, addr, role, hci_);
   Peer* const peer = FindOrInitPeer(addr);
   auto peer_id = peer->identifier();
   bt_log(INFO, "gap-bredr", "Beginning interrogation for peer %s", bt_str(peer_id));
@@ -567,10 +563,10 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
            bt_str(conn_state.peer_id()));
     return;
   }
-  hci::Connection* const connection = &conn_state.link();
+  hci::BrEdrConnection* const connection = &conn_state.link();
 
   auto error_handler = [self, log_ctx = capture_log_context(), peer_id = peer->identifier(),
-                        connection = connection->WeakPtr()] {
+                        connection = connection->GetWeakPtr()] {
     if (!self || !connection)
       return;
     add_parent_context(log_ctx);
@@ -954,7 +950,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
   if (!handle) {
     bt_log(WARN, "gap-bredr", "can't find current connection for ltk (peer: %s)", bt_str(peer_id));
   } else {
-    handle->second->link().set_bredr_link_key(hci_key, key_type);
+    handle->second->link().set_link_key(hci_key, key_type);
     handle->second->pairing_state().OnLinkKeyNotification(key_value, key_type);
   }
 
@@ -1081,18 +1077,14 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  hci::Connection::Role new_role = params.new_role == hci_spec::ConnectionRole::kCentral
-                                       ? hci::Connection::Role::kCentral
-                                       : hci::Connection::Role::kPeripheral;
-  const char* new_role_str = new_role == hci::Connection::Role::kCentral ? "leader" : "follower";
-
   if (hci_is_error(event, WARN, "gap-bredr", "role change failed and remains %s (peer: %s)",
-                   new_role_str, bt_str(peer_id))) {
+                   hci_spec::ConnectionRoleToString(params.new_role).c_str(), bt_str(peer_id))) {
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  bt_log(DEBUG, "gap-bredr", "role changed to %s (peer: %s)", new_role_str, bt_str(peer_id));
-  conn_pair->second->link().set_role(new_role);
+  bt_log(DEBUG, "gap-bredr", "role changed to %s (peer: %s)",
+         hci_spec::ConnectionRoleToString(params.new_role).c_str(), bt_str(peer_id));
+  conn_pair->second->link().set_role(params.new_role);
 
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }

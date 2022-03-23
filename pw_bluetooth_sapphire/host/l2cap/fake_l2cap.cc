@@ -85,14 +85,14 @@ void FakeL2cap::TriggerLinkError(hci_spec::ConnectionHandle handle) {
   link_data.link_error_cb();
 }
 
-void FakeL2cap::AddACLConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+void FakeL2cap::AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                                  l2cap::LinkErrorCallback link_error_cb,
                                  l2cap::SecurityUpgradeCallback security_cb) {
   RegisterInternal(handle, role, bt::LinkType::kACL, std::move(link_error_cb));
 }
 
 L2cap::LEFixedChannels FakeL2cap::AddLEConnection(
-    hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
     l2cap::LinkErrorCallback link_error_cb,
     l2cap::LEConnectionParameterUpdateCallback conn_param_cb,
     l2cap::SecurityUpgradeCallback security_cb) {
@@ -173,7 +173,8 @@ FakeL2cap::~FakeL2cap() {
 }
 
 FakeL2cap::LinkData* FakeL2cap::RegisterInternal(hci_spec::ConnectionHandle handle,
-                                                 hci::Connection::Role role, bt::LinkType link_type,
+                                                 hci_spec::ConnectionRole role,
+                                                 bt::LinkType link_type,
                                                  l2cap::LinkErrorCallback link_error_cb) {
   auto& data = GetLinkData(handle);
   ZX_DEBUG_ASSERT_MSG(!data.connected, "connection handle re-used (handle: %#.4x)", handle);

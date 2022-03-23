@@ -15,7 +15,7 @@ using hci_spec::AuthRequirements;
 using hci_spec::IOCapability;
 using sm::util::IOCapabilityForHci;
 
-PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::Connection* link, bool link_initiated,
+PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::BrEdrConnection* link, bool link_initiated,
                            fit::closure auth_cb, StatusCallback status_cb)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
@@ -26,7 +26,6 @@ PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::Connection* link, bool 
       send_auth_request_callback_(std::move(auth_cb)),
       status_callback_(std::move(status_cb)) {
   ZX_ASSERT(link_);
-  ZX_ASSERT(link_->ll_type() != bt::LinkType::kLE);
   ZX_ASSERT(send_auth_request_callback_);
   ZX_ASSERT(status_callback_);
   link_->set_encryption_change_callback(fit::bind_member<&PairingState::OnEncryptionChange>(this));
@@ -326,7 +325,7 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
     const auto link_key_type = link_key->security().GetLinkKeyType();
     ZX_ASSERT(link_key_type.has_value());
 
-    link_->set_bredr_link_key(link_key->key(), link_key_type.value());
+    link_->set_link_key(link_key->key(), link_key_type.value());
   } else {
     bt_log(INFO, "gap-bredr", "peer %s not bonded", bt_str(peer_->identifier()));
   }
@@ -376,7 +375,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     }
 
     bt_log(DEBUG, "gap-bredr", "Changing link key on %#.4x (id: %s)", handle(), bt_str(peer_id()));
-    link_->set_bredr_link_key(hci_spec::LinkKey(link_key, 0, 0), key_type);
+    link_->set_link_key(hci_spec::LinkKey(link_key, 0, 0), key_type);
     return;
   }
 
@@ -412,7 +411,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     return;
   }
 
-  link_->set_bredr_link_key(hci_spec::LinkKey(link_key, 0, 0), key_type);
+  link_->set_link_key(hci_spec::LinkKey(link_key, 0, 0), key_type);
   if (initiator()) {
     state_ = State::kInitiatorWaitAuthComplete;
   } else {

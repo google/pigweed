@@ -53,7 +53,7 @@ hci::ACLPacketHandler ChannelManager::MakeInboundDataHandler() {
   };
 }
 
-void ChannelManager::RegisterACL(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+void ChannelManager::RegisterACL(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                                  LinkErrorCallback link_error_cb,
                                  SecurityUpgradeCallback security_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
@@ -64,7 +64,7 @@ void ChannelManager::RegisterACL(hci_spec::ConnectionHandle handle, hci::Connect
   ll->set_security_upgrade_callback(std::move(security_cb));
 }
 
-void ChannelManager::RegisterLE(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
+void ChannelManager::RegisterLE(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                                 LEConnectionParameterUpdateCallback conn_param_cb,
                                 LinkErrorCallback link_error_cb,
                                 SecurityUpgradeCallback security_cb) {
@@ -236,7 +236,7 @@ void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
 
 internal::LogicalLink* ChannelManager::RegisterInternal(hci_spec::ConnectionHandle handle,
                                                         bt::LinkType ll_type,
-                                                        hci::Connection::Role role,
+                                                        hci_spec::ConnectionRole role,
                                                         size_t max_payload_size) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   TRACE_DURATION("bluetooth", "ChannelManager::RegisterInternal", "handle", handle);

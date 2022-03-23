@@ -99,7 +99,7 @@ class AdapterImpl final : public Adapter {
         // being reported to higher layers.
         advertisement_connect_cb = [this, connectable = std::move(connectable)](
                                        AdvertisementId advertisement_id,
-                                       std::unique_ptr<hci::Connection> link) mutable {
+                                       std::unique_ptr<hci::LowEnergyConnection> link) mutable {
           auto register_link_cb = [advertisement_id,
                                    connection_callback = std::move(connectable->connection_cb)](
                                       ConnectionResult result) {

@@ -11,8 +11,8 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/fake_low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -57,6 +57,7 @@ class LowEnergyConnectorTest : public TestingBase {
 
   void TearDown() override {
     connector_ = nullptr;
+    in_connections_.clear();
     test_device()->Stop();
     TestingBase::TearDown();
   }
@@ -65,16 +66,18 @@ class LowEnergyConnectorTest : public TestingBase {
 
   bool request_canceled = false;
 
-  const std::vector<std::unique_ptr<Connection>>& in_connections() const { return in_connections_; }
+  const std::vector<std::unique_ptr<LowEnergyConnection>>& in_connections() const {
+    return in_connections_;
+  }
   LowEnergyConnector* connector() const { return connector_.get(); }
   FakeLocalAddressDelegate* fake_address_delegate() { return &fake_address_delegate_; }
 
  private:
-  void OnIncomingConnectionCreated(hci_spec::ConnectionHandle handle, Connection::Role role,
+  void OnIncomingConnectionCreated(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                                    const DeviceAddress& peer_address,
                                    const hci_spec::LEConnectionParameters& conn_params) {
-    in_connections_.push_back(std::make_unique<testing::FakeConnection>(
-        handle, bt::LinkType::kLE, role, kLocalAddress, peer_address));
+    in_connections_.push_back(std::make_unique<testing::FakeLowEnergyConnection>(
+        handle, kLocalAddress, peer_address, role, transport()->WeakPtr()));
   }
 
   void OnConnectionStateChanged(const DeviceAddress& address, hci_spec::ConnectionHandle handle,
@@ -86,7 +89,7 @@ class LowEnergyConnectorTest : public TestingBase {
   std::unique_ptr<LowEnergyConnector> connector_;
 
   // Incoming connections.
-  std::vector<std::unique_ptr<Connection>> in_connections_;
+  std::vector<std::unique_ptr<LowEnergyConnection>> in_connections_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectorTest);
 };
@@ -101,7 +104,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnection) {
   EXPECT_FALSE(connector()->pending_peer_address());
 
   Result<> status = fitx::ok();
-  ConnectionPtr conn;
+  std::unique_ptr<LowEnergyConnection> conn;
   bool callback_called = false;
 
   auto callback = [&](auto cb_status, auto cb_conn) {
@@ -146,7 +149,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionStatusError) {
   EXPECT_FALSE(connector()->request_pending());
 
   Result<> status = fitx::ok();
-  ConnectionPtr conn;
+  std::unique_ptr<LowEnergyConnection> conn;
   bool callback_called = false;
 
   auto callback = [&](auto cb_status, auto cb_conn) {
@@ -179,7 +182,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionEventError) {
   EXPECT_FALSE(connector()->request_pending());
 
   Result<> status = fitx::ok();
-  ConnectionPtr conn;
+  std::unique_ptr<LowEnergyConnection> conn;
   bool callback_called = false;
 
   auto callback = [&](auto cb_status, auto cb_conn) {
@@ -212,7 +215,7 @@ TEST_F(LowEnergyConnectorTest, Cancel) {
   test_device()->AddPeer(std::move(fake_peer));
 
   hci::Result<> status = fitx::ok();
-  ConnectionPtr conn;
+  std::unique_ptr<LowEnergyConnection> conn;
   bool callback_called = false;
 
   auto callback = [&](auto cb_status, auto cb_conn) {
@@ -284,7 +287,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
   test_device()->AddPeer(std::move(fake_peer));
 
   Result<> status = fitx::ok();
-  ConnectionPtr conn;
+  std::unique_ptr<LowEnergyConnection> conn;
   unsigned int callback_count = 0;
 
   auto callback = [&](auto cb_status, auto cb_conn) {
@@ -333,7 +336,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionTimeout) {
   EXPECT_FALSE(connector()->request_pending());
 
   Result<> status = fitx::ok();
-  ConnectionPtr conn;
+  std::unique_ptr<LowEnergyConnection> conn;
   bool callback_called = false;
 
   auto callback = [&](auto cb_status, auto cb_conn) {
@@ -451,7 +454,7 @@ TEST_F(LowEnergyConnectorTest, ConnectUsingRandomAddress) {
 
 TEST_F(LowEnergyConnectorTest, CancelConnectWhileWaitingForLocalAddress) {
   Result<> status = fitx::ok();
-  ConnectionPtr conn;
+  std::unique_ptr<LowEnergyConnection> conn;
   auto callback = [&](auto s, auto c) {
     status = s;
     conn = std::move(c);

@@ -57,8 +57,8 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 
 // static
 fbl::RefPtr<LogicalLink> LogicalLink::New(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                                          hci::Connection::Role role, fpromise::executor* executor,
-                                          size_t max_acl_payload_size,
+                                          hci_spec::ConnectionRole role,
+                                          fpromise::executor* executor, size_t max_acl_payload_size,
                                           QueryServiceCallback query_service_cb,
                                           hci::AclDataChannel* acl_data_channel,
                                           bool random_channel_ids) {
@@ -69,7 +69,7 @@ fbl::RefPtr<LogicalLink> LogicalLink::New(hci_spec::ConnectionHandle handle, bt:
 }
 
 LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                         hci::Connection::Role role, fpromise::executor* executor,
+                         hci_spec::ConnectionRole role, fpromise::executor* executor,
                          size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel)
     : handle_(handle),
@@ -564,7 +564,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
     ConnectionParameterUpdateRequestCallback request_cb) {
   ZX_ASSERT(signaling_channel_);
   ZX_ASSERT(type_ == bt::LinkType::kLE);
-  ZX_ASSERT(role_ == hci::Connection::Role::kPeripheral);
+  ZX_ASSERT(role_ == hci_spec::ConnectionRole::kPeripheral);
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
   cmd_handler.SendConnectionParameterUpdateRequest(
@@ -736,7 +736,7 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
   // Only a LE peripheral can send this command. "If a Peripheral’s Host receives an
   // L2CAP_CONNECTION_PARAMETER_UPDATE_REQ packet it shall respond with an L2CAP_COMMAND_REJECT_RSP
   // packet with reason 0x0000 (Command not understood)." (v5.0, Vol 3, Part A, Section 4.20)
-  if (role_ == hci::Connection::Role::kPeripheral) {
+  if (role_ == hci_spec::ConnectionRole::kPeripheral) {
     bt_log(DEBUG, "l2cap", "rejecting conn. param. update request from central");
     responder->RejectNotUnderstood();
     return;
