@@ -34,14 +34,15 @@ TEST(PacketTest, CommandPacket) {
   EXPECT_EQ(kTestOpCode, packet->opcode());
   EXPECT_EQ(kPayloadSize, packet->view().payload_size());
 
-  packet->mutable_payload<TestPayload>()->foo = 127;
+  uint8_t foo = 0x7F;
+  packet->mutable_payload<TestPayload>()->foo = foo;
 
   // clang-format off
 
   auto kExpected = StaticByteBuffer(
       0xFF, 0x07,  // opcode
       0x01,        // parameter_total_size
-      0x7F         // foo
+      foo
   );
 
   // clang-format on
@@ -52,27 +53,27 @@ TEST(PacketTest, CommandPacket) {
 TEST(PacketTest, EventPacket) {
   constexpr size_t kPayloadSize = sizeof(TestPayload);
   auto packet = EventPacket::New(kPayloadSize);
+  uint8_t foo = 0x7F;
 
   // clang-format off
-
   auto bytes = StaticByteBuffer(
       0xFF,  // event code
       0x01,  // parameter_total_size
-      0x7F   // foo
+      foo   // foo
   );
   packet->mutable_view()->mutable_data().Write(bytes);
   packet->InitializeFromBuffer();
-
   // clang-format on
 
   EXPECT_EQ(kTestEventCode, packet->event_code());
   EXPECT_EQ(kPayloadSize, packet->view().payload_size());
-  EXPECT_EQ(127, packet->params<TestPayload>().foo);
+  EXPECT_EQ(foo, packet->params<TestPayload>().foo);
 }
 
 TEST(PacketTest, EventPacketReturnParams) {
-  // clang-format off
+  uint8_t return_parameter = 0x7F;
 
+  // clang-format off
   auto correct_size_bad_event_code = StaticByteBuffer(
       // Event header
       0xFF, 0x04,  // (event_code is not CommandComplete)
@@ -80,8 +81,7 @@ TEST(PacketTest, EventPacketReturnParams) {
       // hci_spec::CommandCompleteEventParams
       0x01, 0xFF, 0x07,
 
-      // Return parameters
-      0x7F);
+      return_parameter);
   auto cmd_complete_small_payload = StaticByteBuffer(
       // Event header
       0x0E, 0x03,
@@ -95,9 +95,7 @@ TEST(PacketTest, EventPacketReturnParams) {
       // hci_spec::CommandCompleteEventParams
       0x01, 0xFF, 0x07,
 
-      // Return parameters
-      0x7F);
-
+      return_parameter);
   // clang-format on
 
   // Allocate a large enough packet which we'll reuse for the 3 payloads.
@@ -120,7 +118,7 @@ TEST(PacketTest, EventPacketReturnParams) {
   packet->mutable_view()->mutable_data().Write(valid);
   packet->InitializeFromBuffer();
   ASSERT_NE(nullptr, packet->return_params<TestPayload>());
-  EXPECT_EQ(127, packet->return_params<TestPayload>()->foo);
+  EXPECT_EQ(return_parameter, packet->return_params<TestPayload>()->foo);
 }
 
 TEST(PacketTest, EventPacketStatus) {
@@ -187,17 +185,17 @@ TEST(PacketTest, EventPacketMalformed) {
 }
 
 TEST(PacketTest, LEEventParams) {
-  // clang-format off
+  uint8_t subevent_payload = 0x7F;
 
+  // clang-format off
   auto correct_size_bad_event_code = StaticByteBuffer(
       // Event header
-      0xFF, 0x02,  // (event_code is not hci_spec::LEMetaEventCode)
+      0xFE, 0x02,  // (event_code is not hci_spec::kLEMetaEventCode)
 
       // Subevent code
       0xFF,
 
-      // Subevent payload
-      0x7F);
+      subevent_payload);
   auto payload_too_small = StaticByteBuffer(
       0x3E, 0x01,
 
@@ -210,9 +208,7 @@ TEST(PacketTest, LEEventParams) {
       // Subevent code
       0xFF,
 
-      // Subevent payload
-      0x7F);
-
+      subevent_payload);
   // clang-format on
 
   auto packet = EventPacket::New(valid.size());
@@ -233,7 +229,55 @@ TEST(PacketTest, LEEventParams) {
   packet->InitializeFromBuffer();
 
   EXPECT_NE(nullptr, packet->subevent_params<TestPayload>());
-  EXPECT_EQ(127, packet->subevent_params<TestPayload>()->foo);
+  EXPECT_EQ(subevent_payload, packet->subevent_params<TestPayload>()->foo);
+}
+
+TEST(PacketTest, VendorEventParams) {
+  uint8_t subevent_payload = 0x7F;
+
+  // clang-format off
+  auto correct_size_bad_event_code = CreateStaticByteBuffer(
+      // Event header
+      0xFE, 0x02,  // (event_code is not hci_spec::kVendorDebugEventCode)
+
+      // Subevent code
+      0xFF,
+
+      subevent_payload);
+  auto payload_too_small = CreateStaticByteBuffer(
+      0xFF, 0x01,
+
+      // Subevent code
+      0xFF);
+  auto valid = CreateStaticByteBuffer(
+      // Event header
+      0xFF, 0x02,
+
+      // Subevent code
+      0xFF,
+
+      subevent_payload);
+  // clang-format on
+
+  auto packet = EventPacket::New(valid.size());
+
+  // If the event code or the payload size don't match, then return_params()
+  // should return nullptr.
+  packet->mutable_view()->mutable_data().Write(correct_size_bad_event_code);
+  packet->InitializeFromBuffer();
+  EXPECT_EQ(nullptr, packet->subevent_params<TestPayload>());
+
+  packet->mutable_view()->mutable_data().Write(payload_too_small);
+  packet->InitializeFromBuffer();
+  EXPECT_EQ(nullptr, packet->subevent_params<TestPayload>());
+
+  // Valid case
+  packet->mutable_view()->Resize(valid.size());
+  packet->mutable_view()->mutable_data().Write(valid);
+  packet->InitializeFromBuffer();
+
+  EXPECT_NE(nullptr, packet->subevent_params<TestPayload>());
+  EXPECT_EQ(subevent_payload, packet->subevent_params<TestPayload>()->foo);
 }
 
 TEST(PacketTest, ACLDataPacketFromFields) {

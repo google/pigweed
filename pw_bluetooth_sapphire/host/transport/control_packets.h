@@ -13,6 +13,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
 
@@ -77,17 +78,31 @@ class Packet<hci_spec::EventHeader> : public PacketBase<hci_spec::EventHeader, E
         params<hci_spec::CommandCompleteEventParams>().return_parameters);
   }
 
-  // If this is a LE Meta Event packet, this method returns a pointer to the
-  // beginning of the subevent parameter structure. If the given template type
-  // would exceed the bounds of the packet or if this packet does not represent
-  // a LE Meta Event, this method returns nullptr.
+  // If this is a LE Meta Event or Vendor Event packet, this method returns a pointer to the
+  // beginning of the subevent parameter structure. If the given template type would exceed the
+  // bounds of the packet or if this packet does not represent a LE Meta Event or a Vendor Event,
+  // this method returns nullptr.
   template <typename SubeventParams>
   const SubeventParams* subevent_params() const {
-    if (event_code() != hci_spec::kLEMetaEventCode ||
-        sizeof(SubeventParams) > view().payload_size() - sizeof(hci_spec::LEMetaEventParams))
-      return nullptr;
-    return reinterpret_cast<const SubeventParams*>(
-        params<hci_spec::LEMetaEventParams>().subevent_parameters);
+    hci_spec::EventCode ev_code = event_code();
+    switch (ev_code) {
+      case hci_spec::kLEMetaEventCode:
+        if (sizeof(SubeventParams) > view().payload_size() - sizeof(hci_spec::LEMetaEventParams)) {
+          return nullptr;
+        }
+
+        return reinterpret_cast<const SubeventParams*>(
+            params<hci_spec::LEMetaEventParams>().subevent_parameters);
+      case hci_spec::kVendorDebugEventCode:
+        if (sizeof(SubeventParams) > view().payload_size() - sizeof(hci_spec::VendorEventParams)) {
+          return nullptr;
+        }
+
+        return reinterpret_cast<const SubeventParams*>(
+            params<hci_spec::VendorEventParams>().subevent_parameters);
+      default:
+        return nullptr;
+    }
   }
 
   // If this is an event packet with a standard status (See Vol 2, Part D), this

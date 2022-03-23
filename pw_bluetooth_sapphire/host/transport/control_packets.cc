@@ -93,6 +93,8 @@ bool StatusCodeFromEvent<hci_spec::CommandCompleteEventParams>(const EventPacket
 
 }  // namespace
 
+namespace hci_android = bt::hci_spec::vendor::android;
+
 // static
 std::unique_ptr<CommandPacket> CommandPacket::New(hci_spec::OpCode opcode, size_t payload_size) {
   auto packet = NewCommandPacket(payload_size);
@@ -124,6 +126,10 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
   case hci_spec::k##subevent_name##SubeventCode: \
     return StatusCodeFromSubevent<hci_spec::subevent_name##SubeventParams>(*this, out_code)
 
+#define CASE_ANDROID_SUBEVENT_STATUS(subevent_name) \
+  case hci_android::k##subevent_name##SubeventCode: \
+    return StatusCodeFromSubevent<hci_android::subevent_name##SubeventParams>(*this, out_code)
+
   switch (event_code()) {
     CASE_EVENT_STATUS(AuthenticationComplete);
     CASE_EVENT_STATUS(ChangeConnectionLinkKeyComplete);
@@ -149,6 +155,15 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
         CASE_SUBEVENT_STATUS(LEReadRemoteFeaturesComplete);
         default:
           ZX_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);
+          break;
+      }
+    }
+    case hci_spec::kVendorDebugEventCode: {
+      auto subevent_code = params<hci_spec::VendorEventParams>().subevent_code;
+      switch (subevent_code) {
+        CASE_ANDROID_SUBEVENT_STATUS(LEMultiAdvtStateChange);
+        default:
+          ZX_PANIC("Vendor subevent (%#.2x) not implemented!", subevent_code);
           break;
       }
     }
