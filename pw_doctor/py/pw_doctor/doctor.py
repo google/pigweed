@@ -135,6 +135,19 @@ def pw_plugins(ctx: DoctorContext):
         ctx.error('Not all pw plugins loaded successfully')
 
 
+def unames_are_equivalent(uname_actual: str, uname_expected: str) -> bool:
+    """Determine if uname values are equivalent for this tool's purposes."""
+
+    # Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
+    # Expected and actual unames will not literally match on M1 Macs because
+    # they pretend to be Intel Macs for the purpose of environment setup. But
+    # that's intentional and doesn't require any user action.
+    if "Darwin" in uname_expected and "arm64" in uname_expected:
+        uname_expected = uname_expected.replace("arm64", "x86_64")
+
+    return uname_actual == uname_expected
+
+
 @register_into(CHECKS)
 def env_os(ctx: DoctorContext):
     """Check that the environment matches this machine."""
@@ -156,7 +169,7 @@ def env_os(ctx: DoctorContext):
     # redundant because it's contained in release or version, and
     # skipping it here simplifies logic.
     uname = ' '.join(getattr(os, 'uname', lambda: ())()[2:])
-    if data['uname'] != uname:
+    if not unames_are_equivalent(uname, data['uname']):
         ctx.warning(
             'Current uname (%s) does not match Bootstrap uname (%s), '
             'you may need to rerun bootstrap on this system', uname,
