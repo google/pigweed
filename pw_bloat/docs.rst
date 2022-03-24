@@ -41,11 +41,11 @@ base for the size diff can be specified either globally through the top-level
     sources = [ "empty_main.cc" ]
   }
 
-  exectuable("hello_world_printf") {
+  executable("hello_world_printf") {
     sources = [ "hello_printf.cc" ]
   }
 
-  exectuable("hello_world_iostream") {
+  executable("hello_world_iostream") {
     sources = [ "hello_iostream.cc" ]
   }
 
