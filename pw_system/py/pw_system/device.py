@@ -100,10 +100,9 @@ class Device:
         if error != Status.CANCELLED:
             self.listen_to_log_stream()
 
-    def _handle_log_drop_count(self, drop_count: int):
-        message = f'Dropped {drop_count} log'
-        if drop_count > 1:
-            message += 's'
+    def _handle_log_drop_count(self, drop_count: int, reason: str):
+        log_text = 'log' if drop_count == 1 else 'logs'
+        message = f'Dropped {drop_count} {log_text} due to {reason}'
         self._emit_device_log(logging.WARNING, '', '', '', message)
 
     def _check_for_dropped_logs(self, log_entries_proto: log_pb2.LogEntries):
@@ -115,7 +114,7 @@ class Device:
         self._expected_log_sequence_id = (
             log_entries_proto.first_entry_sequence_id + messages_received)
         if dropped_log_count > 0:
-            self._handle_log_drop_count(dropped_log_count)
+            self._handle_log_drop_count(dropped_log_count, 'loss at transport')
         elif dropped_log_count < 0:
             _LOG.error('Log sequence ID is smaller than expected')
 
@@ -135,8 +134,10 @@ class Device:
 
             # Handle dropped count.
             if log_proto.dropped:
-                self._handle_log_drop_count(log_proto.dropped)
-                return
+                drop_reason = log_proto.message.decode("utf-8").lower(
+                ) if log_proto.message else 'enqueue failure on device'
+                self._handle_log_drop_count(log_proto.dropped, drop_reason)
+                continue
             self._emit_device_log(level, '', decoded_timestamp, log.module,
                                   log.message, **dict(log.fields))
 
