@@ -183,7 +183,7 @@ template("pw_size_report") {
         python_deps = [ "$dir_pw_bloat/py" ]
         inputs = _bloaty_configs
         outputs = [
-          "$target_gen_dir/${target_name}.txt",
+          "${_doc_rst_output}.txt",
           _doc_rst_output,
         ]
         deps = _all_target_dependencies
