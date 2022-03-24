@@ -315,6 +315,18 @@ Example ``example_server.cc``:
     PW_LOG_INFO("Failed to decode proto; %s", client.status().str());
   }
 
+Repeated Fields
+---------------
+Repeated fields can be encoded a value at a time by repeatedly calling
+`WriteInt32` etc., or as a packed field by calling e.g. `WritePackedInt32` with
+a `std::span<Type>` or `WriteRepeatedInt32` with a `pw::Vector<Type>` (see
+:ref:`module-pw_containers` for details).
+
+The codegen wrappers provide a `WriteFieldName` method with three signatures.
+One that encodes a single value at a time, one that encodes a packed field
+from a `std::span<Type>`, and one that encodes a packed field from a
+`pw::Vector<Type>`. All three return `Status`.
+
 --------
 Decoding
 --------

@@ -398,6 +398,15 @@ class PackedDoubleWriteMethod(PackedWriteMethod):
         return 'WritePackedDouble'
 
 
+class PackedDoubleWriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of doubles."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<double>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedDouble'
+
+
 class DoubleReadMethod(ReadMethod):
     """Method which reads a proto double value."""
     def _result_type(self) -> str:
@@ -441,6 +450,15 @@ class PackedFloatWriteMethod(PackedWriteMethod):
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFloat'
+
+
+class PackedFloatWriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of floats."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<float>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedFloat'
 
 
 class FloatReadMethod(ReadMethod):
@@ -488,6 +506,15 @@ class PackedInt32WriteMethod(PackedWriteMethod):
         return 'WritePackedInt32'
 
 
+class PackedInt32WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of int32."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<int32_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedInt32'
+
+
 class Int32ReadMethod(ReadMethod):
     """Method which reads a proto int32 value."""
     def _result_type(self) -> str:
@@ -531,6 +558,15 @@ class PackedSint32WriteMethod(PackedWriteMethod):
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSint32'
+
+
+class PackedSint32WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of sint32."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<int32_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedSint32'
 
 
 class Sint32ReadMethod(ReadMethod):
@@ -578,6 +614,15 @@ class PackedSfixed32WriteMethod(PackedWriteMethod):
         return 'WritePackedSfixed32'
 
 
+class PackedSfixed32WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of sfixed32."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<int32_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedSfixed32'
+
+
 class Sfixed32ReadMethod(ReadMethod):
     """Method which reads a proto sfixed32 value."""
     def _result_type(self) -> str:
@@ -615,12 +660,21 @@ class Int64WriteMethod(WriteMethod):
 
 
 class PackedInt64WriteMethod(PackedWriteMethod):
-    """Method which writes a proto int64 value."""
+    """Method which writes a packed list of int64."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedInt64'
+
+
+class PackedInt64WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of int64."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<int64_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedInt64'
 
 
 class Int64ReadMethod(ReadMethod):
@@ -660,12 +714,21 @@ class Sint64WriteMethod(WriteMethod):
 
 
 class PackedSint64WriteMethod(PackedWriteMethod):
-    """Method which writes a proto sint64 value."""
+    """Method which writes a packst list of sint64."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSint64'
+
+
+class PackedSint64WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of sint64."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<int64_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedSint64'
 
 
 class Sint64ReadMethod(ReadMethod):
@@ -705,12 +768,21 @@ class Sfixed64WriteMethod(WriteMethod):
 
 
 class PackedSfixed64WriteMethod(PackedWriteMethod):
-    """Method which writes a proto sfixed64 value."""
+    """Method which writes a packed list of sfixed64."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSfixed4'
+
+
+class PackedSfixed64WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of sfixed64."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<int64_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedSfixed4'
 
 
 class Sfixed64ReadMethod(ReadMethod):
@@ -750,12 +822,21 @@ class Uint32WriteMethod(WriteMethod):
 
 
 class PackedUint32WriteMethod(PackedWriteMethod):
-    """Method which writes a proto uint32 value."""
+    """Method which writes a packed list of uint32."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const uint32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedUint32'
+
+
+class PackedUint32WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of uint32."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<uint32_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedUint32'
 
 
 class Uint32ReadMethod(ReadMethod):
@@ -795,12 +876,21 @@ class Fixed32WriteMethod(WriteMethod):
 
 
 class PackedFixed32WriteMethod(PackedWriteMethod):
-    """Method which writes a proto fixed32 value."""
+    """Method which writes a packed list of fixed32."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const uint32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFixed32'
+
+
+class PackedFixed32WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of fixed32."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<uint32_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedFixed32'
 
 
 class Fixed32ReadMethod(ReadMethod):
@@ -840,12 +930,21 @@ class Uint64WriteMethod(WriteMethod):
 
 
 class PackedUint64WriteMethod(PackedWriteMethod):
-    """Method which writes a proto uint64 value."""
+    """Method which writes a packed list of uint64."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const uint64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedUint64'
+
+
+class PackedUint64WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of uint64."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<uint64_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedUint64'
 
 
 class Uint64ReadMethod(ReadMethod):
@@ -885,12 +984,21 @@ class Fixed64WriteMethod(WriteMethod):
 
 
 class PackedFixed64WriteMethod(PackedWriteMethod):
-    """Method which writes a proto fixed64 value."""
+    """Method which writes a packed list of fixed64."""
     def params(self) -> List[Tuple[str, str]]:
         return [('std::span<const uint64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFixed64'
+
+
+class PackedFixed64WriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed list of fixed64."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<uint64_t>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedFixed64'
 
 
 class Fixed64ReadMethod(ReadMethod):
@@ -936,6 +1044,15 @@ class PackedBoolWriteMethod(PackedWriteMethod):
 
     def _encoder_fn(self) -> str:
         return 'WritePackedBool'
+
+
+class PackedBoolWriteVectorMethod(PackedWriteMethod):
+    """Method which writes a packed vector of bools."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('const ::pw::Vector<bool>&', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteRepeatedBool'
 
 
 class BoolReadMethod(ReadMethod):
@@ -1046,40 +1163,55 @@ class EnumReadMethod(ReadMethod):
 
 # Mapping of protobuf field types to their method definitions.
 PROTO_FIELD_WRITE_METHODS: Dict[int, List] = {
-    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE:
-    [DoubleWriteMethod, PackedDoubleWriteMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [
+        DoubleWriteMethod, PackedDoubleWriteMethod,
+        PackedDoubleWriteVectorMethod
+    ],
     descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT:
-    [FloatWriteMethod, PackedFloatWriteMethod],
+    [FloatWriteMethod, PackedFloatWriteMethod, PackedFloatWriteVectorMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_INT32:
-    [Int32WriteMethod, PackedInt32WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32:
-    [Sint32WriteMethod, PackedSint32WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32:
-    [Sfixed32WriteMethod, PackedSfixed32WriteMethod],
+    [Int32WriteMethod, PackedInt32WriteMethod, PackedInt32WriteVectorMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32: [
+        Sint32WriteMethod, PackedSint32WriteMethod,
+        PackedSint32WriteVectorMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: [
+        Sfixed32WriteMethod, PackedSfixed32WriteMethod,
+        PackedSfixed32WriteVectorMethod
+    ],
     descriptor_pb2.FieldDescriptorProto.TYPE_INT64:
-    [Int64WriteMethod, PackedInt64WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64:
-    [Sint64WriteMethod, PackedSint64WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64:
-    [Sfixed64WriteMethod, PackedSfixed64WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32:
-    [Uint32WriteMethod, PackedUint32WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32:
-    [Fixed32WriteMethod, PackedFixed32WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64:
-    [Uint64WriteMethod, PackedUint64WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64:
-    [Fixed64WriteMethod, PackedFixed64WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [
-        BoolWriteMethod, PackedBoolWriteMethod
+    [Int64WriteMethod, PackedInt64WriteMethod, PackedInt64WriteVectorMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: [
+        Sint64WriteMethod, PackedSint64WriteMethod,
+        PackedSint64WriteVectorMethod
     ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: [
+        Sfixed64WriteMethod, PackedSfixed64WriteMethod,
+        PackedSfixed64WriteVectorMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: [
+        Uint32WriteMethod, PackedUint32WriteMethod,
+        PackedUint32WriteVectorMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: [
+        Fixed32WriteMethod, PackedFixed32WriteMethod,
+        PackedFixed32WriteVectorMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: [
+        Uint64WriteMethod, PackedUint64WriteMethod,
+        PackedUint64WriteVectorMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: [
+        Fixed64WriteMethod, PackedFixed64WriteMethod,
+        PackedFixed64WriteVectorMethod
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL:
+    [BoolWriteMethod, PackedBoolWriteMethod, PackedBoolWriteVectorMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [BytesWriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [
-        StringLenWriteMethod, StringWriteMethod
-    ],
-    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [
-        SubMessageEncoderMethod
-    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_STRING:
+    [StringLenWriteMethod, StringWriteMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE:
+    [SubMessageEncoderMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumWriteMethod],
 }
 

@@ -307,6 +307,37 @@ TEST(StreamEncoder, PackedVarintInsufficientSpace) {
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
 }
 
+TEST(StreamEncoder, PackedVarintVector) {
+  std::byte encode_buffer[32];
+  MemoryEncoder encoder(encode_buffer);
+
+  // repeated uint32 values = 1;
+  const pw::Vector<uint32_t, 5> values = {0, 50, 100, 150, 200};
+  encoder.WriteRepeatedUint32(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  constexpr uint8_t encoded_proto[] = {
+      0x0a, 0x07, 0x00, 0x32, 0x64, 0x96, 0x01, 0xc8, 0x01};
+  //  key   size  v[0]  v[1]  v[2]  v[3]        v[4]
+
+  ASSERT_EQ(encoder.status(), OkStatus());
+  ConstByteSpan result(encoder);
+  EXPECT_EQ(result.size(), sizeof(encoded_proto));
+  EXPECT_EQ(std::memcmp(result.data(), encoded_proto, sizeof(encoded_proto)),
+            0);
+}
+
+TEST(StreamEncoder, PackedVarintVectorInsufficientSpace) {
+  std::byte encode_buffer[8];
+  MemoryEncoder encoder(encode_buffer);
+
+  const pw::Vector<uint32_t, 5> values = {0, 50, 100, 150, 200};
+  encoder.WriteRepeatedUint32(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
+}
+
 TEST(StreamEncoder, PackedBool) {
   std::byte encode_buffer[32];
   MemoryEncoder encoder(encode_buffer);
@@ -353,6 +384,32 @@ TEST(StreamEncoder, PackedFixed) {
             0);
 }
 
+TEST(StreamEncoder, PackedFixedVector) {
+  std::byte encode_buffer[32];
+  MemoryEncoder encoder(encode_buffer);
+
+  // repeated fixed32 values = 1;
+  const pw::Vector<uint32_t, 5> values = {0, 50, 100, 150, 200};
+  encoder.WriteRepeatedFixed32(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  // repeated fixed64 values64 = 2;
+  const pw::Vector<uint64_t, 1> values64 = {0x0102030405060708};
+  encoder.WriteRepeatedFixed64(2, values64)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  constexpr uint8_t encoded_proto[] = {
+      0x0a, 0x14, 0x00, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x64,
+      0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x00, 0xc8, 0x00, 0x00, 0x00,
+      0x12, 0x08, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01};
+
+  ASSERT_EQ(encoder.status(), OkStatus());
+  ConstByteSpan result(encoder);
+  EXPECT_EQ(result.size(), sizeof(encoded_proto));
+  EXPECT_EQ(std::memcmp(result.data(), encoded_proto, sizeof(encoded_proto)),
+            0);
+}
+
 TEST(StreamEncoder, PackedZigzag) {
   std::byte encode_buffer[32];
   MemoryEncoder encoder(encode_buffer);
@@ -360,6 +417,25 @@ TEST(StreamEncoder, PackedZigzag) {
   // repeated sint32 values = 1;
   constexpr int32_t values[] = {-100, -25, -1, 0, 1, 25, 100};
   encoder.WritePackedSint32(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  constexpr uint8_t encoded_proto[] = {
+      0x0a, 0x09, 0xc7, 0x01, 0x31, 0x01, 0x00, 0x02, 0x32, 0xc8, 0x01};
+
+  ASSERT_EQ(encoder.status(), OkStatus());
+  ConstByteSpan result(encoder);
+  EXPECT_EQ(result.size(), sizeof(encoded_proto));
+  EXPECT_EQ(std::memcmp(result.data(), encoded_proto, sizeof(encoded_proto)),
+            0);
+}
+
+TEST(StreamEncoder, PackedZigzagVector) {
+  std::byte encode_buffer[32];
+  MemoryEncoder encoder(encode_buffer);
+
+  // repeated sint32 values = 1;
+  const pw::Vector<int32_t, 7> values = {-100, -25, -1, 0, 1, 25, 100};
+  encoder.WriteRepeatedSint32(1, values)
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   constexpr uint8_t encoded_proto[] = {

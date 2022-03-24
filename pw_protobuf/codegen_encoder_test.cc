@@ -343,6 +343,41 @@ TEST(CodegenRepeated, PackedBool) {
             0);
 }
 
+TEST(CodegenRepeated, PackedScalarVector) {
+  std::byte encode_buffer[32];
+
+  stream::MemoryWriter writer(encode_buffer);
+  RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
+  const pw::Vector<uint32_t, 4> values = {0, 16, 32, 48};
+  repeated_test.WriteUint32s(values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  repeated_test.WriteFixed32s(values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x0a, 0x04,
+    0x00,
+    0x10,
+    0x20,
+    0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x32, 0x10,
+    0x00, 0x00, 0x00, 0x00,
+    0x10, 0x00, 0x00, 0x00,
+    0x20, 0x00, 0x00, 0x00,
+    0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  ConstByteSpan result = writer.WrittenData();
+  ASSERT_EQ(repeated_test.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
 TEST(CodegenRepeated, NonScalar) {
   std::byte encode_buffer[32];
 
