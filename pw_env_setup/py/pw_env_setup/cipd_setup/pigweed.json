@@ -111,16 +111,17 @@
       ]
     },
     {
-      "_comment": "TODO(pwbug/66) Put openocd in cipd for Windows.",
-      "path": "pigweed/third_party/openocd/${platform}",
+      "path": "infra/3pp/tools/openocd/${platform}",
       "platforms": [
         "linux-amd64",
-        "mac-amd64"
+        "linux-arm64",
+        "mac-amd64",
+        "mac-arm64",
+        "windows-amd64"
       ],
       "tags": [
-        "git_revision:e41c0f4906e46d1076ce62a0da5518aa1ca280b8"
-      ],
-      "version_file": ".versions/openocd.cipd_version"
+        "version:2@0.11.0-3"
+      ]
     },
     {
       "path": "pigweed/third_party/mingw64-x86_64-win32-seh/${platform}",
