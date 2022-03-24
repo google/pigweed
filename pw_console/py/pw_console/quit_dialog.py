@@ -16,7 +16,8 @@
 from __future__ import annotations
 import functools
 import logging
-from typing import TYPE_CHECKING
+import sys
+from typing import Optional, Callable, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
@@ -44,12 +45,17 @@ class QuitDialog(ConditionalContainer):
 
     DIALOG_HEIGHT = 2
 
-    def __init__(self, application: ConsoleApp):
+    def __init__(self,
+                 application: ConsoleApp,
+                 on_quit: Optional[Callable] = None):
         self.application = application
         self.show_dialog = False
         # Tracks the last focused container, to enable restoring focus after
         # closing the dialog.
         self.last_focused_pane = None
+
+        self.on_quit_function = (on_quit if on_quit else
+                                 self._default_on_quit_function)
 
         # Quit keybindings are active when this dialog is in focus
         key_bindings = KeyBindings()
@@ -114,8 +120,14 @@ class QuitDialog(ConditionalContainer):
         self.focus_self()
         self.application.redraw_ui()
 
+    def _default_on_quit_function(self):
+        if hasattr(self.application, 'application'):
+            self.application.application.exit()
+        else:
+            sys.exit()
+
     def quit_action(self):
-        self.application.application.exit()
+        self.on_quit_function()
 
     def get_action_fragments(self):
         """Return FormattedText with action buttons."""

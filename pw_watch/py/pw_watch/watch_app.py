@@ -37,6 +37,8 @@ from prompt_toolkit.key_binding import (
 from prompt_toolkit.layout import (
     Dimension,
     DynamicContainer,
+    Float,
+    FloatContainer,
     FormattedTextControl,
     HSplit,
     Layout,
@@ -51,7 +53,9 @@ from pw_console.console_prefs import ConsolePrefs
 from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
 from pw_console.log_pane import LogPane
 from pw_console.plugin_mixin import PluginMixin
+from pw_console.quit_dialog import QuitDialog
 import pw_console.style
+import pw_console.widgets.border
 from pw_console.window_manager import WindowManager
 
 _NINJA_LOG = logging.getLogger('pw_watch_ninja_output')
@@ -90,18 +94,7 @@ class WatchApp(PluginMixin):
 
         self.prefs = ConsolePrefs()
 
-        key_bindings = KeyBindings()
-
-        @key_bindings.add('c-c', filter=self.input_box_not_focused())
-        def _quit(_event):
-            "Quit."
-            _LOG.info('Got quit signal; exiting...')
-            self.exit(0)
-
-        @key_bindings.add('enter', filter=self.input_box_not_focused())
-        def _run_build(_event):
-            "Rebuild."
-            self.run_build()
+        self.quit_dialog = QuitDialog(self, self.exit)  # type: ignore
 
         self.search_history_filename = self.prefs.search_history
         # History instance for search toolbars.
@@ -156,22 +149,64 @@ class WatchApp(PluginMixin):
         self.window_manager_container = (
             self.window_manager.create_root_container())
 
-        self.root_container = HSplit([
-            # The top toolbar.
-            Window(
-                content=FormattedTextControl(self.get_statusbar_text),
-                height=Dimension.exact(1),
-                style='class:toolbar_inactive',
-            ),
-            # Result Toolbar.
-            Window(
-                content=FormattedTextControl(self.get_resultbar_text),
-                height=lambda: len(self.event_handler.build_commands),
-                style='class:toolbar_inactive',
-            ),
-            # The main content.
-            DynamicContainer(lambda: self.window_manager_container),
-        ])
+        self.status_bar_border_style = 'class:command-runner-border'
+
+        self.root_container = FloatContainer(
+            HSplit([
+                pw_console.widgets.border.create_border(
+                    HSplit([
+                        # The top toolbar.
+                        Window(
+                            content=FormattedTextControl(
+                                self.get_statusbar_text),
+                            height=Dimension.exact(1),
+                            style='class:toolbar_inactive',
+                        ),
+                        # Result Toolbar.
+                        Window(
+                            content=FormattedTextControl(
+                                self.get_resultbar_text),
+                            height=lambda: len(self.event_handler.
+                                               build_commands),
+                            style='class:toolbar_inactive',
+                        ),
+                    ]),
+                    border_style=lambda: self.status_bar_border_style,
+                    base_style='class:toolbar_inactive',
+                    left_margin_columns=1,
+                    right_margin_columns=1,
+                ),
+                # The main content.
+                DynamicContainer(lambda: self.window_manager_container),
+            ]),
+            floats=[
+                Float(
+                    content=self.quit_dialog,
+                    top=2,
+                    left=2,
+                ),
+            ],
+        )
+
+        key_bindings = KeyBindings()
+
+        @key_bindings.add('enter', filter=self.input_box_not_focused())
+        def _run_build(_event):
+            "Rebuild."
+            self.run_build()
+
+        register = self.prefs.register_keybinding
+
+        @register('global.exit-no-confirmation', key_bindings)
+        def _quit_no_confirm(_event):
+            """Quit without confirmation."""
+            _LOG.info('Got quit signal; exiting...')
+            self.exit(0)
+
+        @register('global.exit-with-confirmation', key_bindings)
+        def _quit_with_confirm(_event):
+            """Quit with confirmation dialog."""
+            self.quit_dialog.open_dialog()
 
         self.key_bindings = merge_key_bindings([
             self.window_manager.key_bindings,
@@ -185,9 +220,11 @@ class WatchApp(PluginMixin):
             Style.from_dict({'search': 'bg:ansired ansiblack'}),
         ])
 
+        self.layout = Layout(self.root_container,
+                             focused_element=self.ninja_log_pane)
+
         self.application: Application = Application(
-            layout=Layout(self.root_container,
-                          focused_element=self.ninja_log_pane),
+            layout=self.layout,
             key_bindings=self.key_bindings,
             mouse_support=True,
             color_depth=self.color_depth,
@@ -200,7 +237,7 @@ class WatchApp(PluginMixin):
 
         self.plugin_init(
             plugin_callback=self.check_build_status,
-            plugin_callback_frequency=1.0,
+            plugin_callback_frequency=0.5,
             plugin_logger_name='pw_watch_stdout_checker',
         )
 
@@ -229,6 +266,14 @@ class WatchApp(PluginMixin):
         """Set application focus to a specific container."""
         self.application.layout.focus(pane)
 
+    def focused_window(self):
+        """Return the currently focused window."""
+        return self.application.layout.current_window
+
+    def command_runner_is_open(self) -> bool:
+        # pylint: disable=no-self-use
+        return False
+
     def clear_ninja_log(self) -> None:
         self.ninja_log_view.log_store.clear_logs()
         self.ninja_log_view._restart_filtering()  # pylint: disable=protected-access
@@ -249,20 +294,23 @@ class WatchApp(PluginMixin):
         is_building = False
         if status:
             fragments = [status]
-            is_building = status[1] == 'Building'
+            is_building = status[1].endswith('Building')
         separator = ('', '  ')
+        self.status_bar_border_style = 'class:theme-fg-green'
 
         if is_building:
             percent = self.event_handler.current_build_percent
             percent *= 100
             fragments.append(separator)
             fragments.append(('ansicyan', '{:.0f}%'.format(percent)))
+            self.status_bar_border_style = 'class:theme-fg-yellow'
 
         if self.event_handler.current_build_errors > 0:
             fragments.append(separator)
             fragments.append(('', 'Errors:'))
             fragments.append(
                 ('ansired', str(self.event_handler.current_build_errors)))
+            self.status_bar_border_style = 'class:theme-fg-red'
 
         if is_building:
             fragments.append(separator)
@@ -276,7 +324,7 @@ class WatchApp(PluginMixin):
             result = [('', 'Loading...')]
         return result
 
-    def exit(self, exit_code: int) -> None:
+    def exit(self, exit_code: int = 0) -> None:
         log_file = self.external_logfile
 
         def _really_exit(future: asyncio.Future) -> NoReturn:

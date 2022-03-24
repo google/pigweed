@@ -38,6 +38,7 @@ Usage examples:
 import argparse
 from dataclasses import dataclass
 import errno
+from itertools import zip_longest
 import logging
 import os
 from pathlib import Path
@@ -108,6 +109,8 @@ _FAIL_MESSAGE = """
    ░ ░       ░   ▒    ▒ ░   ░ ░
                  ░  ░ ░       ░  ░
 """
+
+_FULLSCREEN_STATUS_COLUMN_WIDTH = 10
 
 
 # TODO(keir): Figure out a better strategy for exiting. The problem with the
@@ -292,8 +295,10 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self._clear_screen()
 
         if self.fullscreen_enabled:
-            msg = 'Watching for changes. Ctrl-C to exit; enter to rebuild'
-            self.result_message = [('', msg)]
+            self.create_result_message()
+            _LOG.info(
+                _COLOR.green(
+                    'Watching for changes. Ctrl-d to exit; enter to rebuild'))
         else:
             for line in pw_cli.branding.banner().splitlines():
                 _LOG.info(line)
@@ -327,6 +332,33 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                 tag = '(FAIL)'
 
             _LOG.log(level, '%s Finished build: %s %s', index, cmd, tag)
+            self.create_result_message()
+
+    def create_result_message(self):
+        if not self.fullscreen_enabled:
+            return
+
+        self.result_message = []
+        first_building_target_found = False
+        for (succeeded, command) in zip_longest(self.builds_succeeded,
+                                                self.build_commands):
+            if succeeded:
+                self.result_message.append(
+                    ('class:theme-fg-green',
+                     'OK'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
+            elif succeeded is None and not first_building_target_found:
+                first_building_target_found = True
+                self.result_message.append(
+                    ('class:theme-fg-yellow',
+                     'Building'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
+            elif first_building_target_found:
+                self.result_message.append(
+                    ('', ''.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
+            else:
+                self.result_message.append(
+                    ('class:theme-fg-red',
+                     'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
+            self.result_message.append(('', f'  {command}\n'))
 
     def _run_build(self, index: str, cmd: BuildCommand, env: dict) -> bool:
         # Make sure there is a build.ninja file for Ninja to use.
@@ -352,7 +384,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     def _execute_command(self, command: list, env: dict) -> bool:
         """Runs a command with a blank before/after for visual separation."""
         self.current_build_errors = 0
-        self.status_message = ('ansiyellow', 'Building')
+        self.status_message = (
+            'class:theme-fg-yellow',
+            'Building'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
         if self.fullscreen_enabled:
             return self._execute_command_watch_app(command, env)
         print()
@@ -432,26 +466,23 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     def on_complete(self, cancelled: bool = False) -> None:
         # First, use the standard logging facilities to report build status.
         if cancelled:
-            self.status_message = ('', 'Cancelled')
+            self.status_message = (
+                '', 'Cancelled'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
             _LOG.error('Finished; build was interrupted')
         elif all(self.builds_succeeded):
-            self.status_message = ('ansigreen', 'Succeeded')
+            self.status_message = (
+                'class:theme-fg-green',
+                'Succeeded'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
             _LOG.info('Finished; all successful')
         else:
-            self.status_message = ('ansired', 'Failed')
+            self.status_message = (
+                'class:theme-fg-red',
+                'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
             _LOG.info('Finished; some builds failed')
 
         # Show individual build results for fullscreen app
         if self.fullscreen_enabled:
-            self.result_message = []
-            for (succeeded, cmd) in zip(self.builds_succeeded,
-                                        self.build_commands):
-                if succeeded:
-                    self.result_message.append(
-                        ('class:theme-fg-green', 'OK  '))
-                else:
-                    self.result_message.append(('class:theme-fg-red', 'FAIL'))
-                self.result_message.append(('', f'  {cmd}\n'))
+            self.create_result_message()
         # For non-fullscreen pw watch
         else:
             # Show a more distinct colored banner.
