@@ -22,6 +22,7 @@ message RepeatedTest {
   repeated double doubles = 4;
   repeated Struct structs = 5;
   repeated fixed32 fixed32s = 6;
+  repeated bool bools = 7;
 };
 
 message Struct {

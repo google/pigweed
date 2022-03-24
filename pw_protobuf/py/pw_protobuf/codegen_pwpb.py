@@ -929,6 +929,15 @@ class BoolWriteMethod(WriteMethod):
         return 'WriteBool'
 
 
+class PackedBoolWriteMethod(PackedWriteMethod):
+    """Method which writes a packed list of bools."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('std::span<const bool>', 'values')]
+
+    def _encoder_fn(self) -> str:
+        return 'WritePackedBool'
+
+
 class BoolReadMethod(ReadMethod):
     """Method which reads a proto bool value."""
     def _result_type(self) -> str:
@@ -1061,7 +1070,9 @@ PROTO_FIELD_WRITE_METHODS: Dict[int, List] = {
     [Uint64WriteMethod, PackedUint64WriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64:
     [Fixed64WriteMethod, PackedFixed64WriteMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [BoolWriteMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [
+        BoolWriteMethod, PackedBoolWriteMethod
+    ],
     descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [BytesWriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [
         StringLenWriteMethod, StringWriteMethod

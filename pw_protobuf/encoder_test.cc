@@ -307,6 +307,26 @@ TEST(StreamEncoder, PackedVarintInsufficientSpace) {
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
 }
 
+TEST(StreamEncoder, PackedBool) {
+  std::byte encode_buffer[32];
+  MemoryEncoder encoder(encode_buffer);
+
+  // repeated bool values = 1;
+  constexpr bool values[] = {true, false, true, true, false};
+  encoder.WritePackedBool(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  constexpr uint8_t encoded_proto[] = {
+      0x0a, 0x05, 0x01, 0x00, 0x01, 0x01, 0x00};
+  //  key   size  v[0]  v[1]  v[2]  v[3]  v[4]
+
+  ASSERT_EQ(encoder.status(), OkStatus());
+  ConstByteSpan result(encoder);
+  EXPECT_EQ(result.size(), sizeof(encoded_proto));
+  EXPECT_EQ(std::memcmp(result.data(), encoded_proto, sizeof(encoded_proto)),
+            0);
+}
+
 TEST(StreamEncoder, PackedFixed) {
   std::byte encode_buffer[32];
   MemoryEncoder encoder(encode_buffer);

@@ -275,6 +275,19 @@ class StreamEncoder {
     return WriteUint32(field_number, static_cast<uint32_t>(value));
   }
 
+  // Writes a repeated bool using packed encoding.
+  //
+  // Precondition: Encoder has no active child encoder.
+  Status WritePackedBool(uint32_t field_number, std::span<const bool> values) {
+    static_assert(sizeof(bool) == sizeof(uint8_t),
+                  "bool must be same size as uint8_t");
+    return WritePackedVarints(
+        field_number,
+        std::span(reinterpret_cast<const uint8_t*>(values.data()),
+                  values.size()),
+        VarintEncodeType::kNormal);
+  }
+
   // Writes a proto fixed32 key-value pair.
   //
   // Precondition: Encoder has no active child encoder.
@@ -531,12 +544,13 @@ class StreamEncoder {
   Status WritePackedVarints(uint32_t field_number,
                             std::span<T> values,
                             VarintEncodeType encode_type) {
-    static_assert(std::is_same<T, const uint32_t>::value ||
+    static_assert(std::is_same<T, const uint8_t>::value ||
+                      std::is_same<T, const uint32_t>::value ||
                       std::is_same<T, const int32_t>::value ||
                       std::is_same<T, const uint64_t>::value ||
                       std::is_same<T, const int64_t>::value,
-                  "Packed varints must be of type uint32_t, int32_t, uint64_t, "
-                  "or int64_t");
+                  "Packed varints must be of type bool, uint32_t, int32_t, "
+                  "uint64_t, or int64_t");
 
     size_t payload_size = 0;
     for (T val : values) {

@@ -320,6 +320,29 @@ TEST(CodegenRepeated, PackedScalar) {
             0);
 }
 
+TEST(CodegenRepeated, PackedBool) {
+  std::byte encode_buffer[32];
+
+  stream::MemoryWriter writer(encode_buffer);
+  RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
+  constexpr bool values[] = {true, false, true, true, false};
+  repeated_test.WriteBools(std::span(values))
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // bools[], v={true, false, true, true, false}
+    0x3a, 0x05, 0x01, 0x00, 0x01, 0x01, 0x00,
+  };
+  // clang-format on
+
+  ConstByteSpan result = writer.WrittenData();
+  ASSERT_EQ(repeated_test.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
 TEST(CodegenRepeated, NonScalar) {
   std::byte encode_buffer[32];
 
