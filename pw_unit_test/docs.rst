@@ -43,6 +43,9 @@ the Google Test documentation for examples of to define unit test cases.
   To request a feature addition, please
   `let us know <mailto:pigweed@googlegroups.com>`_.
 
+  See `Using upstream Googletest and Googlemock` below for information
+  about using upstream Googletest instead.
+
 ------------------------
 Using the test framework
 ------------------------
@@ -387,3 +390,20 @@ this module.
 
   The size of the memory pool to use for test fixture instances. By default this
   is set to 16K.
+
+Using upstream Googletest and Googlemock
+========================================
+
+If you want to use the full upstream Googletest/Googlemock, you must do the
+following:
+
+* Set the GN var ``dir_pw_third_party_googletest`` to the location of the
+  googletest source. You can use ``pw package install googletest`` to fetch the
+  source if desired.
+* Set the GN var ``pw_unit_test_MAIN = "//third_party/googletest:gmock_main"``
+* Set the GN var ``pw_unit_test_PUBLIC_DEPS = [ "//third_party/googletest" ]``
+
+.. note::
+
+  Not all unit tests build properly with upstream Googletest yet. This is a
+  work in progress.
