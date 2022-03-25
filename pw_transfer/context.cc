@@ -80,7 +80,7 @@ void Context::InitiateTransferAsClient() {
   if (type() == TransferType::kReceive) {
     // A receiver begins a new transfer with a parameters chunk telling the
     // transmitter what to send.
-    UpdateAndSendTransferParameters(kRetransmit);
+    UpdateAndSendTransferParameters(TransmitAction::kBegin);
   } else {
     SendInitialTransmitChunk();
   }
@@ -118,22 +118,32 @@ void Context::SendInitialTransmitChunk() {
   // A transmitter begins a transfer by just sending its ID.
   internal::Chunk chunk = {};
   chunk.transfer_id = transfer_id_;
+  chunk.type = Chunk::Type::kTransferStart;
 
   EncodeAndSendChunk(chunk);
 }
 
 void Context::SendTransferParameters(TransmitAction action) {
-  const internal::Chunk parameters = {
+  internal::Chunk parameters = {
       .transfer_id = transfer_id_,
       .window_end_offset = window_end_offset_,
       .pending_bytes = pending_bytes_,
       .max_chunk_size_bytes = max_chunk_size_bytes_,
       .min_delay_microseconds = kDefaultChunkDelayMicroseconds,
       .offset = offset_,
-      .type = action == kRetransmit
-                  ? internal::Chunk::Type::kParametersRetransmit
-                  : internal::Chunk::Type::kParametersContinue,
   };
+
+  switch (action) {
+    case TransmitAction::kBegin:
+      parameters.type = internal::Chunk::Type::kTransferStart;
+      break;
+    case TransmitAction::kRetransmit:
+      parameters.type = internal::Chunk::Type::kParametersRetransmit;
+      break;
+    case TransmitAction::kExtend:
+      parameters.type = internal::Chunk::Type::kParametersContinue;
+      break;
+  }
 
   PW_LOG_DEBUG(
       "Transfer %u sending transfer parameters: "
@@ -287,7 +297,8 @@ void Context::HandleTransferParametersUpdate(const Chunk& chunk) {
 
   bool retransmit = true;
   if (chunk.type.has_value()) {
-    retransmit = chunk.type == Chunk::Type::kParametersRetransmit;
+    retransmit = chunk.type == Chunk::Type::kParametersRetransmit ||
+                 chunk.type == Chunk::Type::kTransferStart;
   }
 
   if (retransmit) {
@@ -359,6 +370,12 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
   transfer::Chunk::MemoryEncoder encoder{buffer};
   encoder.WriteTransferId(transfer_id_).IgnoreError();
   encoder.WriteOffset(offset_).IgnoreError();
+
+  // TODO(frolv): Type field presence is currently meaningful, so this type must
+  // be serialized. Once all users of transfer always set chunk types, the field
+  // can be made non-optional and this write can be removed as TRANSFER_DATA has
+  // the default proto value of 0.
+  encoder.WriteType(transfer::Chunk::Type::TRANSFER_DATA).IgnoreError();
 
   // Reserve space for the data proto field overhead and use the remainder of
   // the buffer for the chunk data.
@@ -473,7 +490,7 @@ void Context::HandleReceiveChunk(const Chunk& chunk) {
               static_cast<unsigned>(transfer_id_),
               static_cast<unsigned>(chunk.offset));
 
-          UpdateAndSendTransferParameters(kRetransmit);
+          UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
           if (transfer_state_ == TransferState::kCompleted) {
             SendFinalStatusChunk();
             return;
@@ -531,7 +548,7 @@ void Context::HandleReceivedData(const Chunk& chunk) {
     set_transfer_state(TransferState::kRecovery);
     SetTimeout(chunk_timeout_);
 
-    UpdateAndSendTransferParameters(kRetransmit);
+    UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
     return;
   }
 
@@ -598,7 +615,7 @@ void Context::HandleReceivedData(const Chunk& chunk) {
 
   if (pending_bytes_ == 0u) {
     // Received all pending data. Advance the transfer parameters.
-    UpdateAndSendTransferParameters(kRetransmit);
+    UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
     return;
   }
 
@@ -609,7 +626,7 @@ void Context::HandleReceivedData(const Chunk& chunk) {
                        window_size_ / max_parameters_->extend_window_divisor();
 
   if (extend_window) {
-    UpdateAndSendTransferParameters(kExtend);
+    UpdateAndSendTransferParameters(TransmitAction::kExtend);
     return;
   }
 }
@@ -620,6 +637,7 @@ void Context::SendFinalStatusChunk() {
   internal::Chunk chunk = {};
   chunk.transfer_id = transfer_id_;
   chunk.status = status_.code();
+  chunk.type = Chunk::Type::kTransferCompletion;
 
   PW_LOG_DEBUG("Sending final chunk for transfer %u with status %u",
                static_cast<unsigned>(transfer_id_),
@@ -699,7 +717,7 @@ void Context::Retry() {
         "Receive transfer %u timed out waiting for chunk; resending parameters",
         static_cast<unsigned>(transfer_id_));
 
-    SendTransferParameters(kRetransmit);
+    SendTransferParameters(TransmitAction::kRetransmit);
     return;
   }
 

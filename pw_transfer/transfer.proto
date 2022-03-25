@@ -140,17 +140,24 @@ message Chunk {
     // Chunk containing transfer data.
     TRANSFER_DATA = 0;
 
-    // First chunk of a transfer (only sent by the client). Currently unused.
+    // First chunk of a transfer (only sent by the client).
     TRANSFER_START = 1;
 
-    // Transfer parameters indicating that the sender should retransmit from the
-    // specified offset.
+    // Transfer parameters indicating that the transmitter should retransmit
+    // from the specified offset.
     PARAMETERS_RETRANSMIT = 2;
 
-    // Transfer parameters telling the sender to continue sending up to index
-    // `offset + pending_bytes` of data. If the sender is already beyond offset,
-    // it does not have to rewind.
+    // Transfer parameters telling the transmitter to continue sending up to
+    // index `offset + pending_bytes` of data. If the transmitter is already
+    // beyond `offset`, it does not have to rewind.
     PARAMETERS_CONTINUE = 3;
+
+    // Sender of the chunk is terminating the transfer.
+    TRANSFER_COMPLETION = 4;
+
+    // Acknowledge the completion of a transfer. Currently unused.
+    // TODO(konkers): Implement this behavior.
+    TRANSFER_COMPLETION_ACK = 5;
   };
 
   // The type of this chunk. This field should only be processed when present.

@@ -149,7 +149,14 @@ class Context {
     kRecovery,
   };
 
-  enum TransmitAction : bool { kExtend, kRetransmit };
+  enum class TransmitAction {
+    // Start of a new transfer.
+    kBegin,
+    // Extend the current window length.
+    kExtend,
+    // Retransmit from a specified offset.
+    kRetransmit,
+  };
 
   void set_transfer_state(TransferState state) { transfer_state_ = state; }
 

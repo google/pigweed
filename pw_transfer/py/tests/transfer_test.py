@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -462,9 +462,12 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(
             self._sent_chunks,
             [
-                Chunk(transfer_id=22),  # initial chunk
-                Chunk(transfer_id=22),  # retry 1
-                Chunk(transfer_id=22),  # retry 2
+                Chunk(transfer_id=22,
+                      type=Chunk.Type.TRANSFER_START),  # initial chunk
+                Chunk(transfer_id=22,
+                      type=Chunk.Type.TRANSFER_START),  # retry 1
+                Chunk(transfer_id=22,
+                      type=Chunk.Type.TRANSFER_START),  # retry 2
             ])
 
         exception = context.exception
@@ -489,13 +492,16 @@ class TransferManagerTest(unittest.TestCase):
         last_data_chunk = Chunk(transfer_id=22,
                                 data=b'56789',
                                 offset=5,
-                                remaining_bytes=0)
+                                remaining_bytes=0,
+                                type=Chunk.Type.TRANSFER_DATA)
 
         self.assertEqual(
             self._sent_chunks,
             [
-                Chunk(transfer_id=22),  # start transfer
-                Chunk(transfer_id=22, data=b'01234'),
+                Chunk(transfer_id=22, type=Chunk.Type.TRANSFER_START),
+                Chunk(transfer_id=22,
+                      data=b'01234',
+                      type=Chunk.Type.TRANSFER_DATA),
                 last_data_chunk,  # last chunk
                 last_data_chunk,  # retry 1
                 last_data_chunk,  # retry 2

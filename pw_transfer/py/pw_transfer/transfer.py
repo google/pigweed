@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -196,7 +196,10 @@ class Transfer(abc.ABC):
 
     def _send_error(self, error: Status) -> None:
         """Sends an error chunk to the server and finishes the transfer."""
-        self._send_chunk(Chunk(transfer_id=self.id, status=error.value))
+        self._send_chunk(
+            Chunk(transfer_id=self.id,
+                  status=error.value,
+                  type=Chunk.Type.TRANSFER_COMPLETION))
         self.finish(error)
 
 
@@ -236,7 +239,7 @@ class WriteTransfer(Transfer):
         return self._data
 
     def _initial_chunk(self) -> Chunk:
-        return Chunk(transfer_id=self.id)
+        return Chunk(transfer_id=self.id, type=Chunk.Type.TRANSFER_START)
 
     async def _handle_data_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
@@ -286,7 +289,8 @@ class WriteTransfer(Transfer):
 
         retransmit = True
         if chunk.HasField('type'):
-            retransmit = chunk.type == Chunk.Type.PARAMETERS_RETRANSMIT
+            retransmit = (chunk.type == Chunk.Type.PARAMETERS_RETRANSMIT
+                          or chunk.type == Chunk.Type.TRANSFER_START)
 
         if chunk.offset > len(self.data):
             # Bad offset; terminate the transfer.
@@ -339,7 +343,9 @@ class WriteTransfer(Transfer):
 
     def _next_chunk(self) -> Chunk:
         """Returns the next Chunk message to send in the data transfer."""
-        chunk = Chunk(transfer_id=self.id, offset=self._offset)
+        chunk = Chunk(transfer_id=self.id,
+                      offset=self._offset,
+                      type=Chunk.Type.TRANSFER_DATA)
         max_bytes_in_chunk = min(self._max_chunk_size,
                                  self._window_end_offset - self._offset)
 
@@ -400,7 +406,7 @@ class ReadTransfer(Transfer):
         return bytes(self._data)
 
     def _initial_chunk(self) -> Chunk:
-        return self._transfer_parameters()
+        return self._transfer_parameters(Chunk.Type.TRANSFER_START)
 
     async def _handle_data_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
@@ -413,7 +419,8 @@ class ReadTransfer(Transfer):
             # Initially, the transfer service only supports in-order transfers.
             # If data is received out of order, request that the server
             # retransmit from the previous offset.
-            self._send_chunk(self._transfer_parameters())
+            self._send_chunk(
+                self._transfer_parameters(Chunk.Type.PARAMETERS_RETRANSMIT))
             return
 
         self._data += chunk.data
@@ -424,7 +431,9 @@ class ReadTransfer(Transfer):
             if chunk.remaining_bytes == 0:
                 # No more data to read. Acknowledge receipt and finish.
                 self._send_chunk(
-                    Chunk(transfer_id=self.id, status=Status.OK.value))
+                    Chunk(transfer_id=self.id,
+                          status=Status.OK.value,
+                          type=Chunk.Type.TRANSFER_COMPLETION))
                 self.finish(Status.OK)
                 return
 
@@ -469,21 +478,21 @@ class ReadTransfer(Transfer):
         if self._pending_bytes == 0:
             # All pending data was received. Send out a new parameters chunk for
             # the next block.
-            self._send_chunk(self._transfer_parameters())
+            self._send_chunk(
+                self._transfer_parameters(Chunk.Type.PARAMETERS_RETRANSMIT))
         elif extend_window:
-            self._send_chunk(self._transfer_parameters(extend=True))
+            self._send_chunk(
+                self._transfer_parameters(Chunk.Type.PARAMETERS_CONTINUE))
 
     def _retry_after_timeout(self) -> None:
-        self._send_chunk(self._transfer_parameters())
+        self._send_chunk(
+            self._transfer_parameters(Chunk.Type.PARAMETERS_RETRANSMIT))
 
-    def _transfer_parameters(self, extend: bool = False) -> Chunk:
+    def _transfer_parameters(self, chunk_type: Any) -> Chunk:
         """Sends an updated transfer parameters chunk to the server."""
 
         self._pending_bytes = self._max_bytes_to_receive
         self._window_end_offset = self._offset + self._max_bytes_to_receive
-
-        chunk_type = (Chunk.Type.PARAMETERS_CONTINUE
-                      if extend else Chunk.Type.PARAMETERS_RETRANSMIT)
 
         chunk = Chunk(transfer_id=self.id,
                       pending_bytes=self._pending_bytes,
