@@ -511,7 +511,11 @@ void Context::HandleReceivedData(const Chunk& chunk) {
     // where it doesn't respect pending_bytes. Trying to recover from here
     // could potentially result in an infinite transfer loop.
     PW_LOG_ERROR(
-        "Received more data than what was requested; terminating transfer.");
+        "Transfer %u received more data than what was requested (%u received "
+        "for %u pending); terminating transfer.",
+        id_for_log(),
+        static_cast<unsigned>(chunk.data.size()),
+        static_cast<unsigned>(pending_bytes_));
     Finish(Status::Internal());
     return;
   }
