@@ -52,6 +52,19 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "synchronous_client_api",
+    hdrs = [
+        "public/pw_rpc/nanopb/synchronous_call.h",
+        "public/pw_rpc/nanopb/synchronous_call_result.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":client_api",
+        "//pw_sync:timed_thread_notification",
+    ],
+)
+
+pw_cc_library(
     name = "common",
     srcs = ["common.cc"],
     hdrs = [
@@ -258,5 +271,18 @@ pw_cc_test(
     srcs = ["stub_generation_test.cc"],
     deps = [
         "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "synchronos_call_test",
+    srcs = ["synchronous_call_test.cc"],
+    deps = [
+        ":synchronous_client_api",
+        ":test_method_context",
+        "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+        "//pw_work_queue",
+        "//pw_work_queue:stl_test_thread",
+        "//pw_work_queue:test_thread_header",
     ],
 )

@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_sync/backend.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -57,6 +58,18 @@ pw_source_set("client_api") {
     dir_pw_function,
   ]
   public = [ "public/pw_rpc/nanopb/client_reader_writer.h" ]
+}
+
+pw_source_set("synchronous_client_api") {
+  public_configs = [ ":public" ]
+  public_deps = [
+    ":client_api",
+    "$dir_pw_sync:timed_thread_notification",
+  ]
+  public = [
+    "public/pw_rpc/nanopb/synchronous_call.h",
+    "public/pw_rpc/nanopb/synchronous_call_result.h",
+  ]
 }
 
 pw_source_set("common") {
@@ -146,6 +159,7 @@ pw_test_group("tests") {
     ":server_reader_writer_test",
     ":serde_test",
     ":stub_generation_test",
+    ":synchronous_call_test",
   ]
 }
 
@@ -281,4 +295,18 @@ pw_test("stub_generation_test") {
   deps = [ "..:test_protos.nanopb_rpc" ]
   sources = [ "stub_generation_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_test("synchronous_call_test") {
+  deps = [
+    ":synchronous_client_api",
+    ":test_method_context",
+    "$dir_pw_work_queue:pw_work_queue",
+    "$dir_pw_work_queue:stl_test_thread",
+    "$dir_pw_work_queue:test_thread",
+    "..:test_protos.nanopb_rpc",
+  ]
+  sources = [ "synchronous_call_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != "" &&
+              pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != ""
 }

@@ -71,7 +71,7 @@ pw_cc_library(
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
-        "//pw_thread:test_thread_header",
+        ":test_thread_header",
         "//pw_thread:thread",
         "//pw_thread_stl:thread",
     ],
