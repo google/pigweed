@@ -25,6 +25,7 @@ from pw_package.packages import googletest  # pylint: disable=unused-import
 from pw_package.packages import mbedtls  # pylint: disable=unused-import
 from pw_package.packages import micro_ecc  # pylint: disable=unused-import
 from pw_package.packages import nanopb
+from pw_package.packages import pico_sdk  # pylint: disable=unused-import
 from pw_package.packages import protobuf  # pylint: disable=unused-import
 from pw_package.packages import stm32cube  # pylint: disable=unused-import
 
