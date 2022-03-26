@@ -70,6 +70,14 @@ config("reduced_size") {
     "-fdata-sections",
   ]
   cflags_cc = [ "-fno-rtti" ]
+
+  if (current_os == "mac" || current_os == "ios") {
+    # Delete unreferenced sections. Helpful with -ffunction-sections.
+    ldflags = [ "-Wl,-dead_strip" ]
+  } else {
+    # Delete unreferenced sections. Helpful with -ffunction-sections.
+    ldflags = [ "-Wl,--gc-sections" ]
+  }
 }
 
 config("strict_warnings") {

@@ -251,17 +251,11 @@ template("generate_toolchain") {
         _link_flags += [
           # Output a map file that shows symbols and their location.
           "-Wl,-map,$_link_mapfile",
-
-          # Delete unreferenced sections. Helpful with -ffunction-sections.
-          "-Wl,-dead_strip",
         ]
       } else {
         _link_flags += [
           # Output a map file that shows symbols and their location.
           "-Wl,-Map,$_link_mapfile",
-
-          # Delete unreferenced sections. Helpful with -ffunction-sections.
-          "-Wl,--gc-sections",
         ]
       }
 
