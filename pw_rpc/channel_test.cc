@@ -21,8 +21,6 @@
 namespace pw::rpc::internal {
 namespace {
 
-using std::byte;
-
 TEST(ChannelOutput, Name) {
   class NameTester : public ChannelOutput {
    public:
