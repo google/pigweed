@@ -83,7 +83,8 @@ We do not currently enable the `Clang Static Analyzers`_ because they suffer
 from false positives, and their findings are time-consuming to manually verify.
 
 clang-tidy can be run with ``ninja static_analysis`` or ``pw presubmit --step
-static_analysis``.
+static_analysis``. Note that as a static analysis tool, clang-tidy will not
+produce any runnable binaries: it simply analyzes the source files.
 
 .. _clang-tidy: https://clang.llvm.org/extra/clang-tidy/
 .. _Abseil: https://abseil.io/
@@ -112,6 +113,9 @@ The exact configurations we use for these sanitizers are in
 `pw_toolchain/host_clang/BUILD.gn <https://cs.opensource.google/pigweed/pigweed/+/main:pw_toolchain/host_clang/BUILD.gn>`_.
 You can see the current status of the sanitizer builds in the `Pigweed CI
 console`_, as ``pigweed-linux-san-*``.
+
+Unlike clang-tidy, the clang sanitizers are runtime instrumentation: the
+instrumented binary needs to be run for issues to be detected.
 
 .. _Github documentation: https://github.com/google/sanitizers
 .. _AddressSanitizer: https://clang.llvm.org/docs/AddressSanitizer.html
@@ -169,6 +173,8 @@ Clang sanitizers
 ================
 There are two ways to enable sanitizers for your build.
 
+GN args on debug toolchains
+---------------------------
 If you are already building your tests with one of the following toolchains (or
 a toolchain derived from one of them):
 
@@ -180,8 +186,24 @@ you can enable the clang sanitizers simply by setting the gn arg
 ``pw_toolchain_SANITIZERS`` to the desired subset of
 ``["address", "thread", "undefined"]``.
 
-Otherwise, you can build your tests with the appropriate toolchain from the
-following list (or a toolchain derived from one of them):
+Example
+^^^^^^^
+If your project defines a toolchain ``host_clang_debug`` that is derived from
+one of the above toolchains, and you'd like to run the ``pw_executable`` target
+``sample_binary`` defined in the ``BUILD.gn`` file in ``examples/sample`` with
+asan, you would run,
+
+.. code-block:: bash
+
+    gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
+    ninja -C out host_clang_debug/obj/example/sample/bin/sample_binary
+    out/host_clang_debug/obj/example/sample/bin/sample_binary
+
+Sanitizer toolchains
+--------------------
+Otherwise, instead of using ``gn args`` you can build your tests with the
+appropriate toolchain from the following list (or a toolchain derived from one
+of them):
 
 * ``pw_toolchain_host_clang.asan``
 * ``pw_toolchain_host_clang.ubsan``
