@@ -87,14 +87,14 @@ class Transfer(abc.ABC):
     messages in response.
     """
     def __init__(self,
-                 transfer_id: int,
+                 session_id: int,
                  send_chunk: Callable[[Chunk], None],
                  end_transfer: Callable[['Transfer'], None],
                  response_timeout_s: float,
                  initial_response_timeout_s: float,
                  max_retries: int,
                  progress_callback: ProgressCallback = None):
-        self.id = transfer_id
+        self.id = session_id
         self.status = Status.OK
         self.done = threading.Event()
 
@@ -197,7 +197,7 @@ class Transfer(abc.ABC):
     def _send_error(self, error: Status) -> None:
         """Sends an error chunk to the server and finishes the transfer."""
         self._send_chunk(
-            Chunk(transfer_id=self.id,
+            Chunk(session_id=self.id,
                   status=error.value,
                   type=Chunk.Type.TRANSFER_COMPLETION))
         self.finish(error)
@@ -207,7 +207,7 @@ class WriteTransfer(Transfer):
     """A client -> server write transfer."""
     def __init__(
         self,
-        transfer_id: int,
+        session_id: int,
         data: bytes,
         send_chunk: Callable[[Chunk], None],
         end_transfer: Callable[[Transfer], None],
@@ -216,7 +216,7 @@ class WriteTransfer(Transfer):
         max_retries: int,
         progress_callback: ProgressCallback = None,
     ):
-        super().__init__(transfer_id, send_chunk, end_transfer,
+        super().__init__(session_id, send_chunk, end_transfer,
                          response_timeout_s, initial_response_timeout_s,
                          max_retries, progress_callback)
         self._data = data
@@ -239,7 +239,11 @@ class WriteTransfer(Transfer):
         return self._data
 
     def _initial_chunk(self) -> Chunk:
-        return Chunk(transfer_id=self.id, type=Chunk.Type.TRANSFER_START)
+        # TODO(frolv): session_id should not be set here, but assigned by the
+        # server during an initial handshake.
+        return Chunk(session_id=self.id,
+                     resource_id=self.id,
+                     type=Chunk.Type.TRANSFER_START)
 
     async def _handle_data_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
@@ -343,7 +347,7 @@ class WriteTransfer(Transfer):
 
     def _next_chunk(self) -> Chunk:
         """Returns the next Chunk message to send in the data transfer."""
-        chunk = Chunk(transfer_id=self.id,
+        chunk = Chunk(session_id=self.id,
                       offset=self._offset,
                       type=Chunk.Type.TRANSFER_DATA)
         max_bytes_in_chunk = min(self._max_chunk_size,
@@ -377,7 +381,7 @@ class ReadTransfer(Transfer):
 
     def __init__(  # pylint: disable=too-many-arguments
             self,
-            transfer_id: int,
+            session_id: int,
             send_chunk: Callable[[Chunk], None],
             end_transfer: Callable[[Transfer], None],
             response_timeout_s: float,
@@ -387,7 +391,7 @@ class ReadTransfer(Transfer):
             max_chunk_size: int = 1024,
             chunk_delay_us: int = None,
             progress_callback: ProgressCallback = None):
-        super().__init__(transfer_id, send_chunk, end_transfer,
+        super().__init__(session_id, send_chunk, end_transfer,
                          response_timeout_s, initial_response_timeout_s,
                          max_retries, progress_callback)
         self._max_bytes_to_receive = max_bytes_to_receive
@@ -431,7 +435,7 @@ class ReadTransfer(Transfer):
             if chunk.remaining_bytes == 0:
                 # No more data to read. Acknowledge receipt and finish.
                 self._send_chunk(
-                    Chunk(transfer_id=self.id,
+                    Chunk(session_id=self.id,
                           status=Status.OK.value,
                           type=Chunk.Type.TRANSFER_COMPLETION))
                 self.finish(Status.OK)
@@ -494,7 +498,7 @@ class ReadTransfer(Transfer):
         self._pending_bytes = self._max_bytes_to_receive
         self._window_end_offset = self._offset + self._max_bytes_to_receive
 
-        chunk = Chunk(transfer_id=self.id,
+        chunk = Chunk(session_id=self.id,
                       pending_bytes=self._pending_bytes,
                       window_end_offset=self._window_end_offset,
                       max_chunk_size_bytes=self._max_chunk_size,

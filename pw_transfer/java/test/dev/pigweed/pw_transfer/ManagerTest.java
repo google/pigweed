@@ -459,12 +459,14 @@ public final class ManagerTest {
     ListenableFuture<Void> future = manager.write(2, TEST_DATA_SHORT.toByteArray());
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(2).setRemainingBytes(TEST_DATA_SHORT.size()).build());
+        .containsExactly(
+            newChunk(2).setResourceId(2).setRemainingBytes(TEST_DATA_SHORT.size()).build());
 
     client.receiveServerError(SERVICE, "Write", Status.FAILED_PRECONDITION);
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(2).setRemainingBytes(TEST_DATA_SHORT.size()).build());
+        .containsExactly(
+            newChunk(2).setResourceId(2).setRemainingBytes(TEST_DATA_SHORT.size()).build());
 
     receiveWriteChunks(newChunk(2).setOffset(0).setPendingBytes(1024).setMaxChunkSizeBytes(128),
         newChunk(2).setStatus(Status.OK.code()));
@@ -480,7 +482,8 @@ public final class ManagerTest {
       client.receiveServerError(SERVICE, "Write", Status.FAILED_PRECONDITION);
     }
 
-    Chunk initialChunk = newChunk(2).setRemainingBytes(TEST_DATA_SHORT.size()).build();
+    Chunk initialChunk =
+        newChunk(2).setResourceId(2).setRemainingBytes(TEST_DATA_SHORT.size()).build();
     assertThat(lastChunks())
         .containsExactlyElementsIn(Collections.nCopies(1 + MAX_RETRIES, initialChunk));
 
@@ -500,7 +503,8 @@ public final class ManagerTest {
 
     receiveWriteChunks(newChunk(2).setStatus(Status.OK.code()));
 
-    assertThat(lastChunks()).containsExactly(newChunk(2).setRemainingBytes(0).build());
+    assertThat(lastChunks())
+        .containsExactly(newChunk(2).setResourceId(2).setRemainingBytes(0).build());
 
     assertThat(future.get()).isNull(); // Ensure that no exceptions are thrown.
   }
@@ -510,7 +514,8 @@ public final class ManagerTest {
     ListenableFuture<Void> future = manager.write(ID, TEST_DATA_100B.toByteArray());
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
+        .containsExactly(
+            newChunk(ID).setResourceId(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
 
     receiveWriteChunks(newChunk(ID)
                            .setOffset(0)
@@ -547,7 +552,8 @@ public final class ManagerTest {
         manager.write(ID, TEST_DATA_100B.toByteArray(), progress -> {}, (chunk, maxSize) -> 30);
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
+        .containsExactly(
+            newChunk(ID).setResourceId(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
 
     receiveWriteChunks(newChunk(ID).setOffset(0).setPendingBytes(1024).setMaxChunkSizeBytes(100));
 
@@ -568,7 +574,8 @@ public final class ManagerTest {
         manager.write(ID, TEST_DATA_100B.toByteArray(), progress -> {}, (chunk, maxSize) -> 0);
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
+        .containsExactly(
+            newChunk(ID).setResourceId(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
 
     receiveWriteChunks(newChunk(ID).setOffset(0).setPendingBytes(1024).setMaxChunkSizeBytes(100));
 
@@ -583,7 +590,8 @@ public final class ManagerTest {
         manager.write(ID, TEST_DATA_100B.toByteArray(), progress -> {}, (chunk, maxSize) -> - 1);
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
+        .containsExactly(
+            newChunk(ID).setResourceId(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
 
     receiveWriteChunks(newChunk(ID).setOffset(0).setPendingBytes(1024).setMaxChunkSizeBytes(100));
 
@@ -597,7 +605,8 @@ public final class ManagerTest {
     ListenableFuture<Void> future = manager.write(ID, TEST_DATA_100B.toByteArray());
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
+        .containsExactly(
+            newChunk(ID).setResourceId(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
 
     receiveWriteChunks(newChunk(ID)
                            .setOffset(0)
@@ -639,7 +648,8 @@ public final class ManagerTest {
     ListenableFuture<Void> future = manager.write(ID, TEST_DATA_100B.toByteArray());
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
+        .containsExactly(
+            newChunk(ID).setResourceId(ID).setRemainingBytes(TEST_DATA_100B.size()).build());
 
     receiveWriteChunks(newChunk(ID)
                            .setOffset(0)
@@ -695,7 +705,8 @@ public final class ManagerTest {
     receiveWriteChunks(newChunk(ID).setOffset(100).setPendingBytes(40).setMaxChunkSizeBytes(25));
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_100B.size()).build(),
+        .containsExactly(
+            newChunk(ID).setResourceId(ID).setRemainingBytes(TEST_DATA_100B.size()).build(),
             newChunk(ID).setOffset(100).setRemainingBytes(0).build());
     assertThat(future.isDone()).isFalse();
   }
@@ -753,7 +764,8 @@ public final class ManagerTest {
     receiveWriteChunks(newChunk(ID).setOffset(101).setPendingBytes(40).setMaxChunkSizeBytes(25));
 
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_100B.size()).build(),
+        .containsExactly(
+            newChunk(ID).setResourceId(ID).setRemainingBytes(TEST_DATA_100B.size()).build(),
             newChunk(ID).setStatus(Status.OUT_OF_RANGE.code()).build());
 
     ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
@@ -817,9 +829,20 @@ public final class ManagerTest {
 
     // Client should have resent the last chunk (the initial chunk in this case) for each timeout.
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_SHORT.size()).build(), // initial
-            newChunk(ID).setRemainingBytes(TEST_DATA_SHORT.size()).build(), // retry 1
-            newChunk(ID).setRemainingBytes(TEST_DATA_SHORT.size()).build(), // retry 2
+        .containsExactly(newChunk(ID)
+                             .setResourceId(ID)
+                             .setRemainingBytes(TEST_DATA_SHORT.size())
+                             .build(), // initial
+            newChunk(ID)
+                .setResourceId(ID)
+                .setRemainingBytes(TEST_DATA_SHORT.size())
+                .build(), // retry
+                          // 1
+            newChunk(ID)
+                .setResourceId(ID)
+                .setRemainingBytes(TEST_DATA_SHORT.size())
+                .build(), // retry
+                          // 2
             newChunk(ID).setStatus(Status.DEADLINE_EXCEEDED.code()).build()); // abort
   }
 
@@ -836,7 +859,10 @@ public final class ManagerTest {
 
     Chunk data = newChunk(ID).setOffset(0).setData(TEST_DATA_SHORT).setRemainingBytes(0).build();
     assertThat(lastChunks())
-        .containsExactly(newChunk(ID).setRemainingBytes(TEST_DATA_SHORT.size()).build(), // initial
+        .containsExactly(newChunk(ID)
+                             .setResourceId(ID)
+                             .setRemainingBytes(TEST_DATA_SHORT.size())
+                             .build(), // initial
             data, // data chunk
             data, // retry 1
             data, // retry 2
@@ -854,8 +880,8 @@ public final class ManagerTest {
     return ByteString.copyFrom(bytes);
   }
 
-  private static Chunk.Builder newChunk(int transferId) {
-    return Chunk.newBuilder().setTransferId(transferId);
+  private static Chunk.Builder newChunk(int resourceId) {
+    return Chunk.newBuilder().setSessionId(resourceId);
   }
 
   private void receiveReadChunks(Chunk.Builder... chunks) {

@@ -67,22 +67,22 @@ class Client {
         has_read_stream_(false),
         has_write_stream_(false) {}
 
-  // Begins a new read transfer for the given transfer ID. The data read from
+  // Begins a new read transfer for the given resource ID. The data read from
   // the server is written to the provided writer. Returns OK if the transfer is
   // successfully started. When the transfer finishes (successfully or not), the
   // completion callback is invoked with the overall status.
   Status Read(
-      uint32_t transfer_id,
+      uint32_t resource_id,
       stream::Writer& output,
       CompletionFunc&& on_completion,
       chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout);
 
-  // Begins a new write transfer for the given transfer ID. Data from the
+  // Begins a new write transfer for the given resource ID. Data from the
   // provided reader is sent to the server. When the transfer finishes
   // (successfully or not), the completion callback is invoked with the overall
   // status.
   Status Write(
-      uint32_t transfer_id,
+      uint32_t resource_id,
       stream::Reader& input,
       CompletionFunc&& on_completion,
       chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout);

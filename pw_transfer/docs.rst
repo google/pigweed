@@ -19,14 +19,15 @@ RPC service.
 
 To know how to read data from or write data to device, a ``TransferHandler``
 interface is defined (``pw_transfer/public/pw_transfer/handler.h``). Transfer
-handlers wrap a stream reader and/or writer with initialization and completion
-code. Custom transfer handler implementations should derive from
-``ReadOnlyHandler``, ``WriteOnlyHandler``, or ``ReadWriteHandler`` as
-appropriate and override Prepare and Finalize methods if necessary.
+handlers represent a transferable resource, wrapping a stream reader and/or
+writer with initialization and completion code. Custom transfer handler
+implementations should derive from ``ReadOnlyHandler``, ``WriteOnlyHandler``,
+or ``ReadWriteHandler`` as appropriate and override Prepare and Finalize methods
+if necessary.
 
 A transfer handler should be implemented and instantiated for each unique data
 transfer to or from a device. These handlers are then registered with the
-transfer service using their transfer IDs.
+transfer service using their resource IDs.
 
 **Example**
 
@@ -39,8 +40,8 @@ transfer service using their transfer IDs.
   // Simple transfer handler which reads data from an in-memory buffer.
   class SimpleBufferReadHandler : public pw::transfer::ReadOnlyHandler {
    public:
-    SimpleReadTransfer(uint32_t transfer_id, pw::ConstByteSpan data)
-        : ReadOnlyHandler(transfer_id), reader_(data) {
+    SimpleReadTransfer(uint32_t resource_id, pw::ConstByteSpan data)
+        : ReadOnlyHandler(resource_id), reader_(data) {
       set_reader(reader_);
     }
 
@@ -63,10 +64,11 @@ transfer service using their transfer IDs.
   pw::transfer::TransferServiceBuffer<kMaxChunkSizeBytes> transfer_service(
       GetSystemWorkQueue(), kDefaultMaxBytesToReceive);
 
-  // Instantiate a handler for the data to be transferred.
-  constexpr uint32_t kBufferTransferId = 1;
+  // Instantiate a handler for the data to be transferred. The resource ID will
+  // be used by the transfer client and server to identify the handler.
+  constexpr uint32_t kBufferResourceId = 1;
   char buffer_to_transfer[256] = { /* ... */ };
-  SimpleBufferReadHandler buffer_handler(kBufferTransferId, buffer_to_transfer);
+  SimpleBufferReadHandler buffer_handler(kBufferResourceId, buffer_to_transfer);
 
   }  // namespace
 
@@ -123,7 +125,7 @@ Python
   transfer_manager = pw_transfer.Manager(transfer_service)
 
   try:
-    # Read transfer_id 3 from the server.
+    # Read the transfer resource with ID 3 from the server.
     data = transfer_manager.read(3)
   except pw_transfer.Error as err:
     print('Failed to read:', err.status)

@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -23,8 +23,8 @@ namespace pw::transfer {
 namespace internal {
 
 // The internal::Handler class is the base class for the transfer handler
-// classes. Transfer handlers connect a transfer ID to the functions that do the
-// actual reads and/or writes.
+// classes. Transfer handlers connect a transfer resource ID to the functions
+// that do the actual reads and/or writes.
 //
 // Handlers use a stream::Reader or stream::Writer to do the reads and writes.
 // They also provide optional Prepare and Finalize functions.
@@ -32,7 +32,7 @@ class Handler : public IntrusiveList<Handler>::Item {
  public:
   virtual ~Handler() = default;
 
-  constexpr uint32_t id() const { return transfer_id_; }
+  constexpr uint32_t id() const { return resource_id_; }
 
   // Called at the beginning of a read transfer. The stream::Reader must be
   // ready to read after a successful PrepareRead() call. Returning a non-OK
@@ -60,11 +60,11 @@ class Handler : public IntrusiveList<Handler>::Item {
   virtual Status FinalizeWrite(Status) { return OkStatus(); }
 
  protected:
-  constexpr Handler(uint32_t transfer_id, stream::Reader* reader)
-      : transfer_id_(transfer_id), reader_(reader) {}
+  constexpr Handler(uint32_t resource_id, stream::Reader* reader)
+      : resource_id_(resource_id), reader_(reader) {}
 
-  constexpr Handler(uint32_t transfer_id, stream::Writer* writer)
-      : transfer_id_(transfer_id), writer_(writer) {}
+  constexpr Handler(uint32_t resource_id, stream::Writer* writer)
+      : resource_id_(resource_id), writer_(writer) {}
 
   void set_reader(stream::Reader& reader) { reader_ = &reader; }
   void set_writer(stream::Writer& writer) { writer_ = &writer; }
@@ -84,7 +84,7 @@ class Handler : public IntrusiveList<Handler>::Item {
     return *reader_;
   }
 
-  uint32_t transfer_id_;
+  uint32_t resource_id_;
 
   // Use a union to support constexpr construction.
   union {
@@ -97,11 +97,11 @@ class Handler : public IntrusiveList<Handler>::Item {
 
 class ReadOnlyHandler : public internal::Handler {
  public:
-  constexpr ReadOnlyHandler(uint32_t transfer_id)
-      : internal::Handler(transfer_id, static_cast<stream::Reader*>(nullptr)) {}
+  constexpr ReadOnlyHandler(uint32_t resource_id)
+      : internal::Handler(resource_id, static_cast<stream::Reader*>(nullptr)) {}
 
-  constexpr ReadOnlyHandler(uint32_t transfer_id, stream::Reader& reader)
-      : internal::Handler(transfer_id, &reader) {}
+  constexpr ReadOnlyHandler(uint32_t resource_id, stream::Reader& reader)
+      : internal::Handler(resource_id, &reader) {}
 
   virtual ~ReadOnlyHandler() = default;
 
@@ -118,11 +118,11 @@ class ReadOnlyHandler : public internal::Handler {
 
 class WriteOnlyHandler : public internal::Handler {
  public:
-  constexpr WriteOnlyHandler(uint32_t transfer_id)
-      : internal::Handler(transfer_id, static_cast<stream::Writer*>(nullptr)) {}
+  constexpr WriteOnlyHandler(uint32_t resource_id)
+      : internal::Handler(resource_id, static_cast<stream::Writer*>(nullptr)) {}
 
-  constexpr WriteOnlyHandler(uint32_t transfer_id, stream::Writer& writer)
-      : internal::Handler(transfer_id, &writer) {}
+  constexpr WriteOnlyHandler(uint32_t resource_id, stream::Writer& writer)
+      : internal::Handler(resource_id, &writer) {}
 
   virtual ~WriteOnlyHandler() = default;
 
@@ -139,11 +139,11 @@ class WriteOnlyHandler : public internal::Handler {
 
 class ReadWriteHandler : public internal::Handler {
  public:
-  constexpr ReadWriteHandler(uint32_t transfer_id)
-      : internal::Handler(transfer_id, static_cast<stream::Reader*>(nullptr)) {}
-  constexpr ReadWriteHandler(uint32_t transfer_id,
+  constexpr ReadWriteHandler(uint32_t resource_id)
+      : internal::Handler(resource_id, static_cast<stream::Reader*>(nullptr)) {}
+  constexpr ReadWriteHandler(uint32_t resource_id,
                              stream::ReaderWriter& reader_writer)
-      : internal::Handler(transfer_id,
+      : internal::Handler(resource_id,
                           &static_cast<stream::Reader&>(reader_writer)) {}
 
   virtual ~ReadWriteHandler() = default;

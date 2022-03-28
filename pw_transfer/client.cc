@@ -20,7 +20,7 @@
 
 namespace pw::transfer {
 
-Status Client::Read(uint32_t transfer_id,
+Status Client::Read(uint32_t resource_id,
                     stream::Writer& output,
                     CompletionFunc&& on_completion,
                     chrono::SystemClock::duration timeout) {
@@ -40,9 +40,10 @@ Status Client::Read(uint32_t transfer_id,
     has_read_stream_ = true;
   }
 
+  // TODO(frolv): Only send the resource ID. The server should assign a session.
   transfer_thread_.StartClientTransfer(internal::TransferType::kReceive,
-                                       transfer_id,
-                                       transfer_id,
+                                       /*session_id=*/resource_id,
+                                       /*resource_id=*/resource_id,
                                        &output,
                                        max_parameters_,
                                        std::move(on_completion),
@@ -51,7 +52,7 @@ Status Client::Read(uint32_t transfer_id,
   return OkStatus();
 }
 
-Status Client::Write(uint32_t transfer_id,
+Status Client::Write(uint32_t resource_id,
                      stream::Reader& input,
                      CompletionFunc&& on_completion,
                      chrono::SystemClock::duration timeout) {
@@ -71,9 +72,10 @@ Status Client::Write(uint32_t transfer_id,
     has_write_stream_ = true;
   }
 
+  // TODO(frolv): Only send the resource ID. The server should assign a session.
   transfer_thread_.StartClientTransfer(internal::TransferType::kTransmit,
-                                       transfer_id,
-                                       transfer_id,
+                                       /*session_id=*/resource_id,
+                                       /*resource_id=*/resource_id,
                                        &input,
                                        max_parameters_,
                                        std::move(on_completion),

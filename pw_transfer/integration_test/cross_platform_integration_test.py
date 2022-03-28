@@ -57,11 +57,11 @@ class PwTransferIntegrationTest(unittest.TestCase):
             text=True,
             check=True)
 
-    def _start_server(self, transfer_id: int, f):
+    def _start_server(self, resource_id: int, f):
         self._server = subprocess.Popen(
             [self._SERVER_BINARY,
              str(SERVER_PORT),
-             str(transfer_id), f.name])
+             str(resource_id), f.name])
 
     def _start_proxy(self):
         self._proxy = subprocess.Popen([
@@ -82,11 +82,11 @@ class PwTransferIntegrationTest(unittest.TestCase):
         self._proxy.terminate()
         self._proxy.wait()
 
-    def _perform_write(self, transfer_id: int, payload: bytes) -> bytes:
+    def _perform_write(self, resource_id: int, payload: bytes) -> bytes:
         """Performs a pw_transfer write.
 
         Args:
-          transfer_id: The transfer ID to use.
+          resource_id: The transfer resource ID to use.
           payload: bytes to write
 
         Returns: Bytes the server has saved after receiving the payload.
@@ -98,11 +98,11 @@ class PwTransferIntegrationTest(unittest.TestCase):
 
             self._start_proxy()
             time.sleep(3)  # TODO: Instead parse proxy logs?
-            self._start_server(transfer_id, f_server_output)
+            self._start_server(resource_id, f_server_output)
             time.sleep(3)  # TODO: Instead parse server logs
 
             client_config = config_pb2.ClientConfig(
-                transfer_id=transfer_id,
+                resource_id=resource_id,
                 file=f_payload.name,
             )
             self._client_write(client_config)
@@ -114,9 +114,9 @@ class PwTransferIntegrationTest(unittest.TestCase):
             return f_server_output.read()
 
     def test_write(self):
-        transfer_id = 12
+        resource_id = 12
         payload = b"some data"
-        got = self._perform_write(transfer_id, payload)
+        got = self._perform_write(resource_id, payload)
         self.assertEqual(got, payload)
 
 

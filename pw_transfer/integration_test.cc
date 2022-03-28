@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -142,9 +142,9 @@ class LossyChannel : public rpc::integration_test::ChannelManipulator {
   Bernoulli rng_;
 };
 
-// Reads the file that represents the transfer with the specific ID.
-std::string GetContent(uint32_t transfer_id) {
-  std::ifstream stream(directory / std::to_string(transfer_id),
+// Reads the file that represents the transfer resource with the specific ID.
+std::string GetContent(uint32_t resource_id) {
+  std::ifstream stream(directory / std::to_string(resource_id),
                        std::ios::binary | std::ios::ate);
   std::string contents(stream.tellg(), '\0');
 
@@ -197,11 +197,12 @@ class TransferIntegration : public ::testing::Test {
     pw::rpc::integration_test::SetEgressChannelManipulator(nullptr);
   }
 
-  // Sets the content of a transfer ID and returns a MemoryReader for that data.
+  // Sets the content of a transfer resource and returns a MemoryReader for that
+  // data.
   template <typename T>
-  void SetContent(uint32_t transfer_id, const T& content) {
+  void SetContent(uint32_t resource_id, const T& content) {
     const ConstByteSpan data = AsByteSpan(content);
-    std::ofstream stream(directory / std::to_string(transfer_id),
+    std::ofstream stream(directory / std::to_string(resource_id),
                          std::ios::binary);
     PW_CHECK(
         stream.write(reinterpret_cast<const char*>(data.data()), data.size()));
@@ -233,10 +234,10 @@ class TransferIntegration : public ::testing::Test {
   }
 
   // Checks that a write transfer succeeded and that the written contents match.
-  void ExpectWriteData(uint32_t transfer_id, ConstByteSpan expected) {
+  void ExpectWriteData(uint32_t resource_id, ConstByteSpan expected) {
     ASSERT_EQ(WaitForCompletion(), OkStatus());
 
-    const std::string written = GetContent(transfer_id);
+    const std::string written = GetContent(resource_id);
     ASSERT_EQ(expected.size(), written.size());
 
     ConstByteSpan bytes = std::as_bytes(std::span(written));

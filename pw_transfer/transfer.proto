@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -45,7 +45,7 @@ message Chunk {
   //  Read ← ID of transfer
   // Write → ID of transfer
   // Write ← ID of transfer
-  uint32 transfer_id = 1;
+  uint32 session_id = 1;
 
   // Used by the receiver to indicate how many bytes it can accept. The
   // transmitter sends this much data, divided into chunks no larger than
@@ -115,10 +115,10 @@ message Chunk {
   //   OK: Transfer completed successfully.
   //   DATA_LOSS: Transfer data could not be read/written (e.g. corruption).
   //   INVALID_ARGUMENT: Received malformed chunk.
-  //   NOT_FOUND: The requested transfer ID is not registered (read/write).
+  //   NOT_FOUND: The requested resource ID is not registered (read/write).
   //   OUT_OF_RANGE: The requested offset is larger than the data (read/write).
   //   RESOURCE_EXHAUSTED: Concurrent transfer limit reached.
-  //   UNIMPLEMENTED: Transfer ID does not support requested operation (e.g.
+  //   UNIMPLEMENTED: Resource ID does not support requested operation (e.g.
   //       trying to write to a read-only transfer).
   //
   //  Read → Transfer complete.
@@ -172,4 +172,7 @@ message Chunk {
   // Write → Chunk type (data).
   // Write ← Chunk type (start/parameters).
   optional Type type = 10;
+
+  // Not currently used. Will inherit session_id's behavior in the future.
+  uint32 resource_id = 11;
 }

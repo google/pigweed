@@ -73,7 +73,7 @@ class WriteTransfer extends Transfer<Void> {
 
   @Override
   synchronized Chunk getInitialChunk() {
-    return newChunk().setRemainingBytes(data.length).build();
+    return newChunk().setResourceId(getId()).setRemainingBytes(data.length).build();
   }
 
   @Override

@@ -13,9 +13,9 @@
 // the License.
 
 // Simple RPC server with the transfer service registered. Reads HDLC frames
-// with RPC packets through a socket. This server has a single transfer ID that
+// with RPC packets through a socket. This server has a single resource ID that
 // is available, and data must be written to the server before data can be read
-// from the transfer ID.
+// from the resource ID.
 
 #include <cstddef>
 #include <cstdlib>
@@ -52,9 +52,9 @@ TransferService transfer_service(transfer_thread, kMaxReceiveSizeBytes);
 class FileTransferHandler final : public ReadWriteHandler {
  public:
   FileTransferHandler(TransferService& service,
-                      uint32_t transfer_id,
+                      uint32_t resource_id,
                       const char* path)
-      : ReadWriteHandler(transfer_id), service_(service), path_(path) {
+      : ReadWriteHandler(resource_id), service_(service), path_(path) {
     service_.RegisterHandler(*this);
   }
 
@@ -88,7 +88,7 @@ class FileTransferHandler final : public ReadWriteHandler {
       stream_;
 };
 
-void RunServer(int socket_port, uint32_t transfer_id, const char* filename) {
+void RunServer(int socket_port, uint32_t resource_id, const char* filename) {
   rpc::system_server::set_socket_port(socket_port);
 
   rpc::system_server::Init();
@@ -98,7 +98,7 @@ void RunServer(int socket_port, uint32_t transfer_id, const char* filename) {
 
   // It's fine to allocate this on the stack since this thread doesn't return
   // until this process is killed.
-  FileTransferHandler transfer_handler(transfer_service, transfer_id, filename);
+  FileTransferHandler transfer_handler(transfer_service, resource_id, filename);
 
   PW_LOG_INFO("Starting pw_rpc server");
   PW_CHECK_OK(rpc::system_server::Start());
@@ -112,18 +112,18 @@ void RunServer(int socket_port, uint32_t transfer_id, const char* filename) {
 
 int main(int argc, char* argv[]) {
   if (argc != 4) {
-    PW_LOG_ERROR("Usage: %s PORT TRANSFER_ID FILENAME", argv[0]);
+    PW_LOG_ERROR("Usage: %s PORT RESOURCE_ID FILENAME", argv[0]);
     return 1;
   }
 
   int port = std::atoi(argv[1]);
   PW_CHECK_UINT_GT(port, 0, "Invalid port!");
 
-  int transfer_id = std::atoi(argv[2]);
-  PW_CHECK_UINT_GT(transfer_id, 0, "Invalid transfer ID!");
+  int resource_id = std::atoi(argv[2]);
+  PW_CHECK_UINT_GT(resource_id, 0, "Invalid transfer resource ID!");
 
   char* filename = argv[3];
 
-  pw::transfer::RunServer(port, transfer_id, filename);
+  pw::transfer::RunServer(port, resource_id, filename);
   return 0;
 }

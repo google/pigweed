@@ -46,16 +46,16 @@ class TransferThread : public thread::ThreadCore {
         encode_buffer_(encode_buffer) {}
 
   void StartClientTransfer(TransferType type,
-                           uint32_t transfer_id,
-                           uint32_t handler_id,
+                           uint32_t session_id,
+                           uint32_t resource_id,
                            stream::Stream* stream,
                            const TransferParameters& max_parameters,
                            Function<void(Status)>&& on_completion,
                            chrono::SystemClock::duration timeout,
                            uint8_t max_retries) {
     StartTransfer(type,
-                  transfer_id,
-                  handler_id,
+                  session_id,
+                  resource_id,
                   stream,
                   max_parameters,
                   std::move(on_completion),
@@ -64,14 +64,14 @@ class TransferThread : public thread::ThreadCore {
   }
 
   void StartServerTransfer(TransferType type,
-                           uint32_t transfer_id,
-                           uint32_t handler_id,
+                           uint32_t session_id,
+                           uint32_t resource_id,
                            const TransferParameters& max_parameters,
                            chrono::SystemClock::duration timeout,
                            uint8_t max_retries) {
     StartTransfer(type,
-                  transfer_id,
-                  handler_id,
+                  session_id,
+                  resource_id,
                   /*stream=*/nullptr,
                   max_parameters,
                   /*on_completion=*/nullptr,
@@ -124,13 +124,13 @@ class TransferThread : public thread::ThreadCore {
   }
 
   // For testing only: simulates a timeout event for a client transfer.
-  void SimulateClientTimeout(uint32_t transfer_id) {
-    SimulateTimeout(EventType::kClientTimeout, transfer_id);
+  void SimulateClientTimeout(uint32_t session_id) {
+    SimulateTimeout(EventType::kClientTimeout, session_id);
   }
 
   // For testing only: simulates a timeout event for a server transfer.
-  void SimulateServerTimeout(uint32_t transfer_id) {
-    SimulateTimeout(EventType::kServerTimeout, transfer_id);
+  void SimulateServerTimeout(uint32_t session_id) {
+    SimulateTimeout(EventType::kServerTimeout, session_id);
   }
 
  private:
@@ -143,25 +143,25 @@ class TransferThread : public thread::ThreadCore {
   // Finds an active server or client transfer.
   template <typename T>
   static Context* FindActiveTransfer(const std::span<T>& transfers,
-                                     uint32_t transfer_id) {
-    auto transfer = std::find_if(
-        transfers.begin(), transfers.end(), [transfer_id](auto& c) {
-          return c.initialized() && c.transfer_id() == transfer_id;
+                                     uint32_t session_id) {
+    auto transfer =
+        std::find_if(transfers.begin(), transfers.end(), [session_id](auto& c) {
+          return c.initialized() && c.session_id() == session_id;
         });
     return transfer != transfers.end() ? &*transfer : nullptr;
   }
 
-  void SimulateTimeout(EventType type, uint32_t transfer_id);
+  void SimulateTimeout(EventType type, uint32_t session_id);
 
   // Finds an new server or client transfer.
   template <typename T>
   static Context* FindNewTransfer(const std::span<T>& transfers,
-                                  uint32_t transfer_id) {
+                                  uint32_t session_id) {
     Context* new_transfer = nullptr;
 
     for (Context& context : transfers) {
       if (context.active()) {
-        if (context.transfer_id() == transfer_id) {
+        if (context.session_id() == session_id) {
           // Restart an already active transfer.
           return &context;
         }
@@ -201,8 +201,8 @@ class TransferThread : public thread::ThreadCore {
   chrono::SystemClock::time_point GetNextTransferTimeout() const;
 
   void StartTransfer(TransferType type,
-                     uint32_t transfer_id,
-                     uint32_t handler_id,
+                     uint32_t session_id,
+                     uint32_t resource_id,
                      stream::Stream* stream,
                      const TransferParameters& max_parameters,
                      Function<void(Status)>&& on_completion,

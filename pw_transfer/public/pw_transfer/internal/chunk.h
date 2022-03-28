@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -45,7 +45,8 @@ struct Chunk {
   // and Write transfers.
   constexpr bool IsFinalTransmitChunk() const { return remaining_bytes == 0u; }
 
-  uint32_t transfer_id;
+  uint32_t session_id;
+  uint32_t resource_id;  // Currently unused.
   uint32_t window_end_offset;
   std::optional<uint32_t> pending_bytes;
   std::optional<uint32_t> max_chunk_size_bytes;
@@ -57,8 +58,8 @@ struct Chunk {
   std::optional<Type> type;
 };
 
-// Partially decodes a transfer chunk to find its transfer ID field.
-Result<uint32_t> ExtractTransferId(ConstByteSpan message);
+// Partially decodes a transfer chunk to find its session ID field.
+Result<uint32_t> ExtractSessionId(ConstByteSpan message);
 
 Status DecodeChunk(ConstByteSpan message, Chunk& chunk);
 Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer);

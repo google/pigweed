@@ -63,8 +63,8 @@ class TransferThread;
 
 struct NewTransferEvent {
   TransferType type;
-  uint32_t transfer_id;
-  uint32_t handler_id;
+  uint32_t session_id;
+  uint32_t resource_id;
   rpc::Writer* rpc_writer;
   const TransferParameters* max_parameters;
   chrono::SystemClock::duration timeout;
@@ -78,13 +78,13 @@ struct NewTransferEvent {
 };
 
 struct ChunkEvent {
-  uint32_t transfer_id;
+  uint32_t session_id;
   const std::byte* data;
   size_t size;
 };
 
 struct SendStatusChunkEvent {
-  uint32_t transfer_id;
+  uint32_t session_id;
   Status::Code status;
   TransferStream stream;
 };

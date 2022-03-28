@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -35,7 +35,7 @@ import {ProgressStats} from './transfer';
 
 const DEFAULT_TIMEOUT_S = 0.3;
 
-describe('Encoder', () => {
+describe('Transfer client', () => {
   const textEncoder = new TextEncoder();
   const textDecoder = new TextDecoder();
   let client: Client;
@@ -112,13 +112,13 @@ describe('Encoder', () => {
   }
 
   function buildChunk(
-    transferId: number,
+    sessionId: number,
     offset: number,
     data: string,
     remainingBytes: number
   ): Chunk {
     const chunk = new Chunk();
-    chunk.setTransferId(transferId);
+    chunk.setSessionId(sessionId);
     chunk.setOffset(offset);
     chunk.setData(textEncoder.encode(data));
     chunk.setRemainingBytes(remainingBytes);
@@ -230,7 +230,7 @@ describe('Encoder', () => {
 
     const chunk = new Chunk();
     chunk.setStatus(Status.NOT_FOUND);
-    chunk.setTransferId(31);
+    chunk.setSessionId(31);
     enqueueServerResponses(service.method('Read')!, [[chunk]]);
 
     await manager
@@ -263,13 +263,13 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk = new Chunk();
-    chunk.setTransferId(4);
+    chunk.setSessionId(4);
     chunk.setOffset(0);
     chunk.setPendingBytes(32);
     chunk.setMaxChunkSizeBytes(8);
 
     const completeChunk = new Chunk();
-    completeChunk.setTransferId(4);
+    completeChunk.setSessionId(4);
     completeChunk.setStatus(Status.OK);
 
     enqueueServerResponses(service.method('Write')!, [
@@ -286,13 +286,13 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk = new Chunk();
-    chunk.setTransferId(4);
+    chunk.setSessionId(4);
     chunk.setOffset(0);
     chunk.setPendingBytes(32);
     chunk.setMaxChunkSizeBytes(8);
 
     const completeChunk = new Chunk();
-    completeChunk.setTransferId(4);
+    completeChunk.setSessionId(4);
     completeChunk.setStatus(Status.OK);
 
     enqueueServerResponses(service.method('Write')!, [
@@ -311,19 +311,19 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk = new Chunk();
-    chunk.setTransferId(4);
+    chunk.setSessionId(4);
     chunk.setOffset(0);
     chunk.setPendingBytes(8);
     chunk.setMaxChunkSizeBytes(8);
 
     const chunk2 = new Chunk();
-    chunk2.setTransferId(4);
+    chunk2.setSessionId(4);
     chunk2.setOffset(8);
     chunk2.setPendingBytes(8);
     chunk2.setMaxChunkSizeBytes(8);
 
     const completeChunk = new Chunk();
-    completeChunk.setTransferId(4);
+    completeChunk.setSessionId(4);
     completeChunk.setStatus(Status.OK);
 
     enqueueServerResponses(service.method('Write')!, [
@@ -343,7 +343,7 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk = new Chunk();
-    chunk.setTransferId(4);
+    chunk.setSessionId(4);
     chunk.setOffset(0);
     chunk.setPendingBytes(8);
     chunk.setMaxChunkSizeBytes(4);
@@ -351,42 +351,42 @@ describe('Encoder', () => {
     chunk.setWindowEndOffset(8);
 
     const chunk2 = new Chunk();
-    chunk2.setTransferId(4);
+    chunk2.setSessionId(4);
     chunk2.setOffset(4);
     chunk2.setPendingBytes(8);
     chunk2.setType(Chunk.Type.PARAMETERS_CONTINUE);
     chunk2.setWindowEndOffset(12);
 
     const chunk3 = new Chunk();
-    chunk3.setTransferId(4);
+    chunk3.setSessionId(4);
     chunk3.setOffset(8);
     chunk3.setPendingBytes(8);
     chunk3.setType(Chunk.Type.PARAMETERS_CONTINUE);
     chunk3.setWindowEndOffset(16);
 
     const chunk4 = new Chunk();
-    chunk4.setTransferId(4);
+    chunk4.setSessionId(4);
     chunk4.setOffset(12);
     chunk4.setPendingBytes(8);
     chunk4.setType(Chunk.Type.PARAMETERS_CONTINUE);
     chunk4.setWindowEndOffset(20);
 
     const chunk5 = new Chunk();
-    chunk5.setTransferId(4);
+    chunk5.setSessionId(4);
     chunk5.setOffset(16);
     chunk5.setPendingBytes(8);
     chunk5.setType(Chunk.Type.PARAMETERS_CONTINUE);
     chunk5.setWindowEndOffset(24);
 
     const chunk6 = new Chunk();
-    chunk6.setTransferId(4);
+    chunk6.setSessionId(4);
     chunk6.setOffset(20);
     chunk6.setPendingBytes(8);
     chunk6.setType(Chunk.Type.PARAMETERS_CONTINUE);
     chunk6.setWindowEndOffset(28);
 
     const completeChunk = new Chunk();
-    completeChunk.setTransferId(4);
+    completeChunk.setSessionId(4);
     completeChunk.setStatus(Status.OK);
 
     enqueueServerResponses(service.method('Write')!, [
@@ -415,19 +415,19 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk = new Chunk();
-    chunk.setTransferId(4);
+    chunk.setSessionId(4);
     chunk.setOffset(0);
     chunk.setPendingBytes(8);
     chunk.setMaxChunkSizeBytes(8);
 
     const chunk2 = new Chunk();
-    chunk2.setTransferId(4);
+    chunk2.setSessionId(4);
     chunk2.setOffset(8);
     chunk2.setPendingBytes(8);
     chunk2.setMaxChunkSizeBytes(8);
 
     const completeChunk = new Chunk();
-    completeChunk.setTransferId(4);
+    completeChunk.setSessionId(4);
     completeChunk.setStatus(Status.OK);
 
     enqueueServerResponses(service.method('Write')!, [
@@ -461,31 +461,31 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk1 = new Chunk();
-    chunk1.setTransferId(4);
+    chunk1.setSessionId(4);
     chunk1.setOffset(0);
     chunk1.setPendingBytes(8);
     chunk1.setMaxChunkSizeBytes(8);
 
     const chunk2 = new Chunk();
-    chunk2.setTransferId(4);
+    chunk2.setSessionId(4);
     chunk2.setOffset(8);
     chunk2.setPendingBytes(8);
     chunk2.setMaxChunkSizeBytes(8);
 
     const chunk3 = new Chunk();
-    chunk3.setTransferId(4);
+    chunk3.setSessionId(4);
     chunk3.setOffset(4); // Rewind
     chunk3.setPendingBytes(8);
     chunk3.setMaxChunkSizeBytes(8);
 
     const chunk4 = new Chunk();
-    chunk4.setTransferId(4);
+    chunk4.setSessionId(4);
     chunk4.setOffset(12); // Rewind
     chunk4.setPendingBytes(16);
     chunk4.setMaxChunkSizeBytes(16);
 
     const completeChunk = new Chunk();
-    completeChunk.setTransferId(4);
+    completeChunk.setSessionId(4);
     completeChunk.setStatus(Status.OK);
 
     enqueueServerResponses(service.method('Write')!, [
@@ -508,19 +508,19 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk1 = new Chunk();
-    chunk1.setTransferId(4);
+    chunk1.setSessionId(4);
     chunk1.setOffset(0);
     chunk1.setPendingBytes(8);
     chunk1.setMaxChunkSizeBytes(8);
 
     const chunk2 = new Chunk();
-    chunk2.setTransferId(4);
+    chunk2.setSessionId(4);
     chunk2.setOffset(100); // larger offset than data
     chunk2.setPendingBytes(8);
     chunk2.setMaxChunkSizeBytes(8);
 
     const completeChunk = new Chunk();
-    completeChunk.setTransferId(4);
+    completeChunk.setSessionId(4);
     completeChunk.setStatus(Status.OK);
 
     enqueueServerResponses(service.method('Write')!, [
@@ -544,7 +544,7 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk = new Chunk();
-    chunk.setTransferId(21);
+    chunk.setSessionId(21);
     chunk.setStatus(Status.UNAVAILABLE);
 
     enqueueServerResponses(service.method('Write')!, [[chunk]]);
@@ -564,7 +564,7 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk = new Chunk();
-    chunk.setTransferId(21);
+    chunk.setSessionId(21);
     chunk.setStatus(Status.NOT_FOUND);
 
     enqueueServerError(service.method('Write')!, Status.NOT_FOUND);
@@ -599,7 +599,7 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S, 4, 2);
 
     const chunk = new Chunk();
-    chunk.setTransferId(22);
+    chunk.setSessionId(22);
     chunk.setPendingBytes(10);
     chunk.setMaxChunkSizeBytes(5);
 
@@ -612,14 +612,15 @@ describe('Encoder', () => {
       })
       .catch(error => {
         const expectedChunk1 = new Chunk();
-        expectedChunk1.setTransferId(22);
+        expectedChunk1.setSessionId(22);
+        expectedChunk1.setResourceId(22);
         expectedChunk1.setType(Chunk.Type.TRANSFER_START);
         const expectedChunk2 = new Chunk();
-        expectedChunk2.setTransferId(22);
+        expectedChunk2.setSessionId(22);
         expectedChunk2.setData(textEncoder.encode('01234'));
         expectedChunk2.setType(Chunk.Type.TRANSFER_DATA);
         const lastChunk = new Chunk();
-        lastChunk.setTransferId(22);
+        lastChunk.setSessionId(22);
         lastChunk.setData(textEncoder.encode('56789'));
         lastChunk.setOffset(5);
         lastChunk.setRemainingBytes(0);
@@ -644,7 +645,7 @@ describe('Encoder', () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
     const chunk = new Chunk();
-    chunk.setTransferId(23);
+    chunk.setSessionId(23);
     chunk.setPendingBytes(0);
 
     enqueueServerResponses(service.method('Write')!, [[chunk]]);

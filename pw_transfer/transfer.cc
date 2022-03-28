@@ -30,11 +30,12 @@ void TransferService::HandleChunk(ConstByteSpan message,
   }
 
   if (chunk.IsInitialChunk()) {
-    // TODO(frolv): Right now, transfer ID and handler ID are the same thing.
-    // The transfer ID should be made into a unique session ID instead.
+    // TODO(frolv): Right now, session ID and resource ID are the same thing.
+    // The session ID should be assigned by the server in response to the
+    // initial chunk
     thread_.StartServerTransfer(type,
-                                chunk.transfer_id,
-                                chunk.transfer_id,
+                                chunk.session_id,
+                                /*resource_id=*/chunk.session_id,
                                 max_parameters_,
                                 chunk_timeout_,
                                 max_retries_);

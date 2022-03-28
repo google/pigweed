@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -82,14 +82,14 @@ export class Manager {
    * @throws Throws an error when the transfer fails to complete.
    */
   async read(
-    transferId: number,
+    resourceId: number,
     progressCallback?: ProgressCallback
   ): Promise<Uint8Array> {
-    if (transferId in this.readTransfers) {
-      throw new Error(`Read transfer ${transferId} already exists`);
+    if (resourceId in this.readTransfers) {
+      throw new Error(`Read transfer for resource ${resourceId} already exists`);
     }
     const transfer = new ReadTransfer(
-      transferId,
+      resourceId,
       this.sendReadChunkCallback,
       this.defaultResponseTimeoutS,
       this.maxRetries,
@@ -121,16 +121,16 @@ export class Manager {
   /**
   Transmits (uploads) data to the server.
    *
-   * @param{number} transferId: ID of the write transfer
+   * @param{number} resourceId: ID of the resource to which to write.
    * @param{Uint8Array} data: Data to send to the server.
    */
   async write(
-    transferId: number,
+    resourceId: number,
     data: Uint8Array,
     progressCallback?: ProgressCallback
   ): Promise<void> {
     const transfer = new WriteTransfer(
-      transferId,
+      resourceId,
       data,
       this.sendWriteChunkCallback,
       this.defaultResponseTimeoutS,
@@ -250,10 +250,10 @@ export class Manager {
    * is invoked.
    */
   private async handleChunk(transfers: TransferDict, chunk: Chunk) {
-    const transfer = transfers[chunk.getTransferId()];
+    const transfer = transfers[chunk.getSessionId()];
     if (transfer === undefined) {
       console.error(
-        `TransferManager received chunk for unknown transfer ${chunk.getTransferId()}`
+        `TransferManager received chunk for unknown transfer ${chunk.getSessionId()}`
       );
       return;
     }

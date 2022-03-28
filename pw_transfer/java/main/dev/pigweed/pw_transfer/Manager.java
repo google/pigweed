@@ -102,30 +102,33 @@ public class Manager {
     this.shouldAbortCallback = shouldAbortCallback;
   }
 
-  /** Writes the provided data to the given transfer ID. */
-  public ListenableFuture<Void> write(int transferId, byte[] data) {
-    return write(transferId, data, transferProgress -> {});
+  /** Writes the provided data to the given transfer resource. */
+  public ListenableFuture<Void> write(int resourceId, byte[] data) {
+    return write(resourceId, data, transferProgress -> {});
   }
 
-  /** Writes the data to the transfer ID; calls the progress callback as data is sent. */
+  /**
+   * Writes data to the specified transfer resource, calling the progress
+   * callback as data is sent.
+   */
   public ListenableFuture<Void> write(
-      int transferId, byte[] data, Consumer<TransferProgress> progressCallback) {
-    return write(transferId, data, progressCallback, (chunk, maxSize) -> chunk.size());
+      int resourceId, byte[] data, Consumer<TransferProgress> progressCallback) {
+    return write(resourceId, data, progressCallback, (chunk, maxSize) -> chunk.size());
   }
   /**
-   * Writes the data to the transfer ID.
+   * Writes the data to the specified transfer resource.
    *
-   * @param transferId The transfer ID to which to write
+   * @param resourceId The ID of the resource to which to write
    * @param data the data to write
    * @param progressCallback called each time a packet is sent
    * @param chunkSizeAdjustment callback to optionally reduce the number of bytes to send
    */
-  public synchronized ListenableFuture<Void> write(int transferId,
+  public synchronized ListenableFuture<Void> write(int resourceId,
       byte[] data,
       Consumer<TransferProgress> progressCallback,
       ChunkSizeAdjuster chunkSizeAdjustment) {
     return startTransfer(writeTransfers,
-        new WriteTransfer(transferId,
+        new WriteTransfer(resourceId,
             this::sendWriteChunk,
             writeTransfers::remove,
             timer,
@@ -138,27 +141,29 @@ public class Manager {
             chunkSizeAdjustment));
   }
 
-  /** Reads the data with the given transfer ID. */
-  public ListenableFuture<byte[]> read(int transferId) {
-    return read(transferId, DEFAULT_READ_TRANSFER_PARAMETERS, (progressCallback) -> {});
+  /** Reads the data from the given transfer resource ID. */
+  public ListenableFuture<byte[]> read(int resourceId) {
+    return read(resourceId, DEFAULT_READ_TRANSFER_PARAMETERS, (progressCallback) -> {});
   }
 
-  /** Reads the data for this transfer ID; calls the progress callback when data is received. */
+  /** Reads the data for a transfer resource, calling the progress callback as data is received. */
   public ListenableFuture<byte[]> read(
-      int transferId, Consumer<TransferProgress> progressCallback) {
-    return read(transferId, DEFAULT_READ_TRANSFER_PARAMETERS, progressCallback);
+      int resourceId, Consumer<TransferProgress> progressCallback) {
+    return read(resourceId, DEFAULT_READ_TRANSFER_PARAMETERS, progressCallback);
   }
 
-  /** Reads the data for this transfer ID, using the specified transfer parameters. */
-  public ListenableFuture<byte[]> read(int transferId, TransferParameters parameters) {
-    return read(transferId, parameters, (progressCallback) -> {});
+  /** Reads the data for a transfer resource, using the specified transfer parameters. */
+  public ListenableFuture<byte[]> read(int resourceId, TransferParameters parameters) {
+    return read(resourceId, parameters, (progressCallback) -> {});
   }
 
-  /** Reads the data for this transfer ID, using the specified parameters and progress callback. */
+  /**
+   * Reads the data for a transfer resource, using the specified parameters and progress callback.
+   */
   public synchronized ListenableFuture<byte[]> read(
-      int transferId, TransferParameters parameters, Consumer<TransferProgress> progressCallback) {
+      int resourceId, TransferParameters parameters, Consumer<TransferProgress> progressCallback) {
     return startTransfer(readTransfers,
-        new ReadTransfer(transferId,
+        new ReadTransfer(resourceId,
             this::sendReadChunk,
             readTransfers::remove,
             timer,
@@ -173,8 +178,9 @@ public class Manager {
   private static <T> ListenableFuture<T> startTransfer(
       Map<Integer, Transfer<?>> transfers, Transfer<T> transfer) {
     if (transfers.containsKey(transfer.getId())) {
-      return Futures.immediateFailedFuture(new TransferError("Transfer ID " + transfer.getId()
-              + " is already in progress! Only one read/write transfer per ID is supported at a"
+      return Futures.immediateFailedFuture(new TransferError("Transfer for resource ID "
+              + transfer.getId()
+              + " is already in progress! Only one read/write transfer per resource is supported at a"
               + " time",
           Status.ALREADY_EXISTS));
     }
@@ -231,12 +237,13 @@ public class Manager {
 
     @Override
     public final void onNext(Chunk chunk) {
-      Transfer<?> transfer = transfers.get(chunk.getTransferId());
+      Transfer<?> transfer = transfers.get(chunk.getSessionId());
       if (transfer != null) {
-        logger.atFinest().log("Received chunk for transfer %d", chunk.getTransferId());
+        logger.atFinest().log("Received chunk for transfer %d", chunk.getSessionId());
         workDispatcher.accept(() -> transfer.handleChunk(chunk));
       } else {
-        logger.atWarning().log("Ignoring unrecognized transfer ID %d", chunk.getTransferId());
+        logger.atWarning().log(
+            "Ignoring unrecognized transfer session ID %d", chunk.getSessionId());
       }
     }
 

@@ -89,18 +89,18 @@ TEST_F(ReadTransfer, SingleChunk) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 3u);
+  EXPECT_EQ(c0.session_id, 3u);
   EXPECT_EQ(c0.offset, 0u);
   EXPECT_EQ(c0.pending_bytes.value(), 64u);
 
   context_.server().SendServerStream<Transfer::Read>(EncodeChunk(
-      {.transfer_id = 3u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
+      {.session_id = 3u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 3u);
+  EXPECT_EQ(c1.session_id, 3u);
   ASSERT_TRUE(c1.status.has_value());
   EXPECT_EQ(c1.status.value(), OkStatus());
 
@@ -127,19 +127,19 @@ TEST_F(ReadTransfer, MultiChunk) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 4u);
+  EXPECT_EQ(c0.session_id, 4u);
   EXPECT_EQ(c0.offset, 0u);
   EXPECT_EQ(c0.pending_bytes.value(), 64u);
 
   constexpr ConstByteSpan data(kData32);
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 4u, .offset = 0, .data = data.first(16)}));
+      EncodeChunk({.session_id = 4u, .offset = 0, .data = data.first(16)}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 1u);
 
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 4u,
+      EncodeChunk({.session_id = 4u,
                    .offset = 16,
                    .data = data.subspan(16),
                    .remaining_bytes = 0}));
@@ -148,7 +148,7 @@ TEST_F(ReadTransfer, MultiChunk) {
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 4u);
+  EXPECT_EQ(c1.session_id, 4u);
   ASSERT_TRUE(c1.status.has_value());
   EXPECT_EQ(c1.status.value(), OkStatus());
 
@@ -168,7 +168,7 @@ TEST_F(ReadTransfer, MultipleTransfers) {
   transfer_thread_.WaitUntilEventIsProcessed();
 
   context_.server().SendServerStream<Transfer::Read>(EncodeChunk(
-      {.transfer_id = 3u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
+      {.session_id = 3u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(transfer_status, OkStatus());
@@ -181,7 +181,7 @@ TEST_F(ReadTransfer, MultipleTransfers) {
   transfer_thread_.WaitUntilEventIsProcessed();
 
   context_.server().SendServerStream<Transfer::Read>(EncodeChunk(
-      {.transfer_id = 3u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
+      {.session_id = 3u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(transfer_status, OkStatus());
@@ -203,7 +203,7 @@ TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromConstructorArg) {
   ASSERT_EQ(payloads.size(), 1u);
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 5u);
+  EXPECT_EQ(c0.session_id, 5u);
   EXPECT_EQ(c0.offset, 0u);
   ASSERT_EQ(c0.pending_bytes.value(), 32u);
 }
@@ -219,7 +219,7 @@ TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromWriterLimit) {
   ASSERT_EQ(payloads.size(), 1u);
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 5u);
+  EXPECT_EQ(c0.session_id, 5u);
   EXPECT_EQ(c0.offset, 0u);
   ASSERT_EQ(c0.pending_bytes.value(), 16u);
 }
@@ -241,13 +241,13 @@ TEST_F(ReadTransferMaxBytes32, MultiParameters) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 6u);
+  EXPECT_EQ(c0.session_id, 6u);
   EXPECT_EQ(c0.offset, 0u);
   ASSERT_EQ(c0.pending_bytes.value(), 32u);
 
   constexpr ConstByteSpan data(kData64);
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 6u, .offset = 0, .data = data.first(32)}));
+      EncodeChunk({.session_id = 6u, .offset = 0, .data = data.first(32)}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 2u);
@@ -255,12 +255,12 @@ TEST_F(ReadTransferMaxBytes32, MultiParameters) {
 
   // Second parameters chunk.
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 6u);
+  EXPECT_EQ(c1.session_id, 6u);
   EXPECT_EQ(c1.offset, 32u);
   ASSERT_EQ(c1.pending_bytes.value(), 32u);
 
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 6u,
+      EncodeChunk({.session_id = 6u,
                    .offset = 32,
                    .data = data.subspan(32),
                    .remaining_bytes = 0}));
@@ -269,7 +269,7 @@ TEST_F(ReadTransferMaxBytes32, MultiParameters) {
   ASSERT_EQ(payloads.size(), 3u);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 6u);
+  EXPECT_EQ(c2.session_id, 6u);
   ASSERT_TRUE(c2.status.has_value());
   EXPECT_EQ(c2.status.value(), OkStatus());
 
@@ -294,13 +294,13 @@ TEST_F(ReadTransfer, UnexpectedOffset) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 7u);
+  EXPECT_EQ(c0.session_id, 7u);
   EXPECT_EQ(c0.offset, 0u);
   EXPECT_EQ(c0.pending_bytes.value(), 64u);
 
   constexpr ConstByteSpan data(kData32);
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 7u, .offset = 0, .data = data.first(16)}));
+      EncodeChunk({.session_id = 7u, .offset = 0, .data = data.first(16)}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 1u);
@@ -308,7 +308,7 @@ TEST_F(ReadTransfer, UnexpectedOffset) {
 
   // Send a chunk with an incorrect offset. The client should resend parameters.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 7u,
+      EncodeChunk({.session_id = 7u,
                    .offset = 8,  // wrong!
                    .data = data.subspan(16),
                    .remaining_bytes = 0}));
@@ -318,13 +318,13 @@ TEST_F(ReadTransfer, UnexpectedOffset) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 7u);
+  EXPECT_EQ(c1.session_id, 7u);
   EXPECT_EQ(c1.offset, 16u);
   EXPECT_EQ(c1.pending_bytes.value(), 48u);
 
   // Send the correct chunk, completing the transfer.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 7u,
+      EncodeChunk({.session_id = 7u,
                    .offset = 16,
                    .data = data.subspan(16),
                    .remaining_bytes = 0}));
@@ -333,7 +333,7 @@ TEST_F(ReadTransfer, UnexpectedOffset) {
   ASSERT_EQ(payloads.size(), 3u);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 7u);
+  EXPECT_EQ(c2.session_id, 7u);
   ASSERT_TRUE(c2.status.has_value());
   EXPECT_EQ(c2.status.value(), OkStatus());
 
@@ -359,7 +359,7 @@ TEST_F(ReadTransferMaxBytes32, TooMuchData) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 8u);
+  EXPECT_EQ(c0.session_id, 8u);
   EXPECT_EQ(c0.offset, 0u);
   ASSERT_EQ(c0.pending_bytes.value(), 32u);
 
@@ -367,21 +367,21 @@ TEST_F(ReadTransferMaxBytes32, TooMuchData) {
 
   // pending_bytes == 32
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 8u, .offset = 0, .data = data.first(16)}));
+      EncodeChunk({.session_id = 8u, .offset = 0, .data = data.first(16)}));
 
   // pending_bytes == 16
   context_.server().SendServerStream<Transfer::Read>(EncodeChunk(
-      {.transfer_id = 8u, .offset = 16, .data = data.subspan(16, 8)}));
+      {.session_id = 8u, .offset = 16, .data = data.subspan(16, 8)}));
 
   // pending_bytes == 8, send 16 instead.
   context_.server().SendServerStream<Transfer::Read>(EncodeChunk(
-      {.transfer_id = 8u, .offset = 24, .data = data.subspan(24, 16)}));
+      {.session_id = 8u, .offset = 24, .data = data.subspan(24, 16)}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 4u);
 
   Chunk c1 = DecodeChunk(payloads[3]);
-  EXPECT_EQ(c1.transfer_id, 8u);
+  EXPECT_EQ(c1.session_id, 8u);
   ASSERT_TRUE(c1.status.has_value());
   EXPECT_EQ(c1.status.value(), Status::Internal());
 
@@ -405,14 +405,14 @@ TEST_F(ReadTransfer, ServerError) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 9u);
+  EXPECT_EQ(c0.session_id, 9u);
   EXPECT_EQ(c0.offset, 0u);
   ASSERT_EQ(c0.pending_bytes.value(), 64u);
 
   // Server sends an error. Client should not respond and terminate the
   // transfer.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 9u, .status = Status::NotFound()}));
+      EncodeChunk({.session_id = 9u, .status = Status::NotFound()}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 1u);
@@ -436,7 +436,7 @@ TEST_F(ReadTransfer, OnlySendsParametersOnceAfterDrop) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 10u);
+  EXPECT_EQ(c0.session_id, 10u);
   EXPECT_EQ(c0.offset, 0u);
   ASSERT_EQ(c0.pending_bytes.value(), 64u);
 
@@ -444,12 +444,12 @@ TEST_F(ReadTransfer, OnlySendsParametersOnceAfterDrop) {
 
   // Send the first 8 bytes of the transfer.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 10u, .offset = 0, .data = data.first(8)}));
+      EncodeChunk({.session_id = 10u, .offset = 0, .data = data.first(8)}));
 
   // Skip offset 8, send the rest starting from 16.
   for (uint32_t offset = 16; offset < data.size(); offset += 8) {
     context_.server().SendServerStream<Transfer::Read>(
-        EncodeChunk({.transfer_id = 10u,
+        EncodeChunk({.session_id = 10u,
                      .offset = offset,
                      .data = data.subspan(offset, 8)}));
   }
@@ -460,13 +460,13 @@ TEST_F(ReadTransfer, OnlySendsParametersOnceAfterDrop) {
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 10u);
+  EXPECT_EQ(c1.session_id, 10u);
   EXPECT_EQ(c1.offset, 8u);
   ASSERT_EQ(c1.pending_bytes.value(), 56u);
 
   // Send the remaining data to complete the transfer.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 10u,
+      EncodeChunk({.session_id = 10u,
                    .offset = 8,
                    .data = data.subspan(8, 56),
                    .remaining_bytes = 0}));
@@ -475,7 +475,7 @@ TEST_F(ReadTransfer, OnlySendsParametersOnceAfterDrop) {
   ASSERT_EQ(payloads.size(), 3u);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 10u);
+  EXPECT_EQ(c2.session_id, 10u);
   ASSERT_TRUE(c2.status.has_value());
   EXPECT_EQ(c2.status.value(), OkStatus());
 
@@ -499,7 +499,7 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 11u);
+  EXPECT_EQ(c0.session_id, 11u);
   EXPECT_EQ(c0.offset, 0u);
   ASSERT_EQ(c0.pending_bytes.value(), 64u);
 
@@ -507,12 +507,12 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
 
   // Send the first 8 bytes of the transfer.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 11u, .offset = 0, .data = data.first(8)}));
+      EncodeChunk({.session_id = 11u, .offset = 0, .data = data.first(8)}));
 
   // Skip offset 8, send the rest starting from 16.
   for (uint32_t offset = 16; offset < data.size(); offset += 8) {
     context_.server().SendServerStream<Transfer::Read>(
-        EncodeChunk({.transfer_id = 11u,
+        EncodeChunk({.session_id = 11u,
                      .offset = offset,
                      .data = data.subspan(offset, 8)}));
   }
@@ -523,7 +523,7 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
   ASSERT_EQ(payloads.size(), 2u);
 
   const Chunk last_chunk = {
-      .transfer_id = 11u, .offset = 56, .data = data.subspan(56)};
+      .session_id = 11u, .offset = 56, .data = data.subspan(56)};
 
   // Re-send the final chunk of the block.
   context_.server().SendServerStream<Transfer::Read>(EncodeChunk(last_chunk));
@@ -532,7 +532,7 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
   // The original drop parameters should be re-sent.
   ASSERT_EQ(payloads.size(), 3u);
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 11u);
+  EXPECT_EQ(c2.session_id, 11u);
   EXPECT_EQ(c2.offset, 8u);
   ASSERT_EQ(c2.pending_bytes.value(), 56u);
 
@@ -542,13 +542,13 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
 
   ASSERT_EQ(payloads.size(), 4u);
   Chunk c3 = DecodeChunk(payloads[3]);
-  EXPECT_EQ(c3.transfer_id, 11u);
+  EXPECT_EQ(c3.session_id, 11u);
   EXPECT_EQ(c3.offset, 8u);
   ASSERT_EQ(c3.pending_bytes.value(), 56u);
 
   // Finish the transfer normally.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 11u,
+      EncodeChunk({.session_id = 11u,
                    .offset = 8,
                    .data = data.subspan(8, 56),
                    .remaining_bytes = 0}));
@@ -557,7 +557,7 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
   ASSERT_EQ(payloads.size(), 5u);
 
   Chunk c4 = DecodeChunk(payloads[4]);
-  EXPECT_EQ(c4.transfer_id, 11u);
+  EXPECT_EQ(c4.session_id, 11u);
   ASSERT_TRUE(c4.status.has_value());
   EXPECT_EQ(c4.status.value(), OkStatus());
 
@@ -587,7 +587,7 @@ TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 12u);
+  EXPECT_EQ(c0.session_id, 12u);
   EXPECT_EQ(c0.offset, 0u);
   EXPECT_EQ(c0.pending_bytes.value(), 64u);
 
@@ -597,7 +597,7 @@ TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c = DecodeChunk(payloads.back());
-  EXPECT_EQ(c.transfer_id, 12u);
+  EXPECT_EQ(c.session_id, 12u);
   EXPECT_EQ(c.offset, 0u);
   EXPECT_EQ(c.pending_bytes.value(), 64u);
 
@@ -605,17 +605,14 @@ TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   // Finish the transfer following the timeout.
-  context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 12u,
-                   .offset = 0,
-                   .data = kData32,
-                   .remaining_bytes = 0}));
+  context_.server().SendServerStream<Transfer::Read>(EncodeChunk(
+      {.session_id = 12u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 3u);
 
   Chunk c4 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c4.transfer_id, 12u);
+  EXPECT_EQ(c4.session_id, 12u);
   ASSERT_TRUE(c4.status.has_value());
   EXPECT_EQ(c4.status.value(), OkStatus());
 
@@ -641,7 +638,7 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 13u);
+  EXPECT_EQ(c0.session_id, 13u);
   EXPECT_EQ(c0.offset, 0u);
   EXPECT_EQ(c0.pending_bytes.value(), 64u);
 
@@ -649,7 +646,7 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
 
   // Send some data, but not everything.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 13u, .offset = 0, .data = data.first(16)}));
+      EncodeChunk({.session_id = 13u, .offset = 0, .data = data.first(16)}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 1u);
@@ -660,7 +657,7 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c = DecodeChunk(payloads.back());
-  EXPECT_EQ(c.transfer_id, 13u);
+  EXPECT_EQ(c.session_id, 13u);
   EXPECT_EQ(c.offset, 16u);
   EXPECT_EQ(c.pending_bytes.value(), 48u);
 
@@ -669,7 +666,7 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
 
   // Send the rest of the data, finishing the transfer.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 13u,
+      EncodeChunk({.session_id = 13u,
                    .offset = 16,
                    .data = data.subspan(16),
                    .remaining_bytes = 0}));
@@ -678,7 +675,7 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
   ASSERT_EQ(payloads.size(), 3u);
 
   Chunk c4 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c4.transfer_id, 13u);
+  EXPECT_EQ(c4.session_id, 13u);
   ASSERT_TRUE(c4.status.has_value());
   EXPECT_EQ(c4.status.value(), OkStatus());
 
@@ -704,7 +701,7 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 14u);
+  EXPECT_EQ(c0.session_id, 14u);
   EXPECT_EQ(c0.offset, 0u);
   EXPECT_EQ(c0.pending_bytes.value(), 64u);
 
@@ -715,7 +712,7 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
     ASSERT_EQ(payloads.size(), retry + 1);
 
     Chunk c = DecodeChunk(payloads.back());
-    EXPECT_EQ(c.transfer_id, 14u);
+    EXPECT_EQ(c.session_id, 14u);
     EXPECT_EQ(c.offset, 0u);
     EXPECT_EQ(c.pending_bytes.value(), 64u);
 
@@ -729,7 +726,7 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   ASSERT_EQ(payloads.size(), 5u);
 
   Chunk c4 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c4.transfer_id, 14u);
+  EXPECT_EQ(c4.session_id, 14u);
   ASSERT_TRUE(c4.status.has_value());
   EXPECT_EQ(c4.status.value(), Status::DeadlineExceeded());
 
@@ -762,7 +759,7 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 14u);
+  EXPECT_EQ(c0.session_id, 14u);
   EXPECT_EQ(c0.offset, 0u);
   EXPECT_EQ(c0.window_end_offset, 64u);
 
@@ -772,7 +769,7 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
     ASSERT_EQ(payloads.size(), retry + 1);
 
     Chunk c = DecodeChunk(payloads.back());
-    EXPECT_EQ(c.transfer_id, 14u);
+    EXPECT_EQ(c.session_id, 14u);
     EXPECT_EQ(c.offset, 0u);
     EXPECT_EQ(c.window_end_offset, 64u);
 
@@ -782,7 +779,7 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
 
   // Send some data.
   context_.server().SendServerStream<Transfer::Read>(
-      EncodeChunk({.transfer_id = 14u, .offset = 0, .data = data.first(16)}));
+      EncodeChunk({.session_id = 14u, .offset = 0, .data = data.first(16)}));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(payloads.size(), 3u);
 
@@ -794,7 +791,7 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
 
   Chunk c = DecodeChunk(payloads.back());
   EXPECT_FALSE(c.status.has_value());
-  EXPECT_EQ(c.transfer_id, 14u);
+  EXPECT_EQ(c.session_id, 14u);
   EXPECT_EQ(c.offset, 16u);
   EXPECT_EQ(c.window_end_offset, 64u);
 
@@ -803,7 +800,7 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
 
   c = DecodeChunk(payloads.back());
   EXPECT_FALSE(c.status.has_value());
-  EXPECT_EQ(c.transfer_id, 14u);
+  EXPECT_EQ(c.session_id, 14u);
   EXPECT_EQ(c.offset, 16u);
   EXPECT_EQ(c.window_end_offset, 64u);
 }
@@ -862,20 +859,21 @@ TEST_F(WriteTransfer, SingleChunk) {
             }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 3u);
+  EXPECT_EQ(c0.session_id, 3u);
+  EXPECT_EQ(c0.resource_id, 3u);
 
   // Send transfer parameters. Client should send a data chunk and the final
   // chunk.
   rpc::test::WaitForPackets(context_.output(), 2, [this] {
     context_.server().SendServerStream<Transfer::Write>(
-        EncodeChunk({.transfer_id = 3,
+        EncodeChunk({.session_id = 3,
                      .pending_bytes = 64,
                      .max_chunk_size_bytes = 32,
                      .offset = 0}));
@@ -884,12 +882,12 @@ TEST_F(WriteTransfer, SingleChunk) {
   ASSERT_EQ(payloads.size(), 3u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 3u);
+  EXPECT_EQ(c1.session_id, 3u);
   EXPECT_EQ(c1.offset, 0u);
   EXPECT_EQ(std::memcmp(c1.data.data(), kData32.data(), c1.data.size()), 0);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 3u);
+  EXPECT_EQ(c2.session_id, 3u);
   ASSERT_TRUE(c2.remaining_bytes.has_value());
   EXPECT_EQ(c2.remaining_bytes.value(), 0u);
 
@@ -897,7 +895,7 @@ TEST_F(WriteTransfer, SingleChunk) {
 
   // Send the final status chunk to complete the transfer.
   context_.server().SendServerStream<Transfer::Write>(
-      EncodeChunk({.transfer_id = 3, .status = OkStatus()}));
+      EncodeChunk({.session_id = 3, .status = OkStatus()}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(payloads.size(), 3u);
@@ -914,21 +912,22 @@ TEST_F(WriteTransfer, MultiChunk) {
             }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 4u);
+  EXPECT_EQ(c0.session_id, 4u);
+  EXPECT_EQ(c0.resource_id, 4u);
 
   // Send transfer parameters with a chunk size smaller than the data.
 
   // Client should send two data chunks and the final chunk.
   rpc::test::WaitForPackets(context_.output(), 3, [this] {
     context_.server().SendServerStream<Transfer::Write>(
-        EncodeChunk({.transfer_id = 4,
+        EncodeChunk({.session_id = 4,
                      .pending_bytes = 64,
                      .max_chunk_size_bytes = 16,
                      .offset = 0}));
@@ -937,19 +936,19 @@ TEST_F(WriteTransfer, MultiChunk) {
   ASSERT_EQ(payloads.size(), 4u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 4u);
+  EXPECT_EQ(c1.session_id, 4u);
   EXPECT_EQ(c1.offset, 0u);
   EXPECT_EQ(std::memcmp(c1.data.data(), kData32.data(), c1.data.size()), 0);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 4u);
+  EXPECT_EQ(c2.session_id, 4u);
   EXPECT_EQ(c2.offset, 16u);
   EXPECT_EQ(
       std::memcmp(c2.data.data(), kData32.data() + c2.offset, c2.data.size()),
       0);
 
   Chunk c3 = DecodeChunk(payloads[3]);
-  EXPECT_EQ(c3.transfer_id, 4u);
+  EXPECT_EQ(c3.session_id, 4u);
   ASSERT_TRUE(c3.remaining_bytes.has_value());
   EXPECT_EQ(c3.remaining_bytes.value(), 0u);
 
@@ -957,7 +956,7 @@ TEST_F(WriteTransfer, MultiChunk) {
 
   // Send the final status chunk to complete the transfer.
   context_.server().SendServerStream<Transfer::Write>(
-      EncodeChunk({.transfer_id = 4, .status = OkStatus()}));
+      EncodeChunk({.session_id = 4, .status = OkStatus()}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(payloads.size(), 4u);
@@ -974,20 +973,21 @@ TEST_F(WriteTransfer, OutOfOrder_SeekSupported) {
             }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 5u);
+  EXPECT_EQ(c0.session_id, 5u);
+  EXPECT_EQ(c0.resource_id, 5u);
 
   // Send transfer parameters with a nonzero offset, requesting a seek.
   // Client should send a data chunk and the final chunk.
   rpc::test::WaitForPackets(context_.output(), 2, [this] {
     context_.server().SendServerStream<Transfer::Write>(
-        EncodeChunk({.transfer_id = 5,
+        EncodeChunk({.session_id = 5,
                      .pending_bytes = 64,
                      .max_chunk_size_bytes = 32,
                      .offset = 16}));
@@ -996,14 +996,14 @@ TEST_F(WriteTransfer, OutOfOrder_SeekSupported) {
   ASSERT_EQ(payloads.size(), 3u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 5u);
+  EXPECT_EQ(c1.session_id, 5u);
   EXPECT_EQ(c1.offset, 16u);
   EXPECT_EQ(
       std::memcmp(c1.data.data(), kData32.data() + c1.offset, c1.data.size()),
       0);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 5u);
+  EXPECT_EQ(c2.session_id, 5u);
   ASSERT_TRUE(c2.remaining_bytes.has_value());
   EXPECT_EQ(c2.remaining_bytes.value(), 0u);
 
@@ -1011,7 +1011,7 @@ TEST_F(WriteTransfer, OutOfOrder_SeekSupported) {
 
   // Send the final status chunk to complete the transfer.
   context_.server().SendServerStream<Transfer::Write>(
-      EncodeChunk({.transfer_id = 5, .status = OkStatus()}));
+      EncodeChunk({.session_id = 5, .status = OkStatus()}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(payloads.size(), 3u);
@@ -1049,18 +1049,19 @@ TEST_F(WriteTransfer, OutOfOrder_SeekNotSupported) {
             }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 6u);
+  EXPECT_EQ(c0.session_id, 6u);
+  EXPECT_EQ(c0.resource_id, 6u);
 
   // Send transfer parameters with a nonzero offset, requesting a seek.
   context_.server().SendServerStream<Transfer::Write>(
-      EncodeChunk({.transfer_id = 6,
+      EncodeChunk({.session_id = 6,
                    .pending_bytes = 64,
                    .max_chunk_size_bytes = 32,
                    .offset = 16}));
@@ -1070,7 +1071,7 @@ TEST_F(WriteTransfer, OutOfOrder_SeekNotSupported) {
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 6u);
+  EXPECT_EQ(c1.session_id, 6u);
   ASSERT_TRUE(c1.status.has_value());
   EXPECT_EQ(c1.status.value(), Status::Unimplemented());
 
@@ -1087,18 +1088,19 @@ TEST_F(WriteTransfer, ServerError) {
             }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 7u);
+  EXPECT_EQ(c0.session_id, 7u);
+  EXPECT_EQ(c0.resource_id, 7u);
 
   // Send an error from the server.
   context_.server().SendServerStream<Transfer::Write>(
-      EncodeChunk({.transfer_id = 7, .status = Status::NotFound()}));
+      EncodeChunk({.session_id = 7, .status = Status::NotFound()}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // Client should not respond and terminate the transfer.
@@ -1116,25 +1118,26 @@ TEST_F(WriteTransfer, MalformedParametersChunk) {
             }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 8u);
+  EXPECT_EQ(c0.session_id, 8u);
+  EXPECT_EQ(c0.resource_id, 8u);
 
   // Send an invalid transfer parameters chunk without pending_bytes.
   context_.server().SendServerStream<Transfer::Write>(
-      EncodeChunk({.transfer_id = 8, .max_chunk_size_bytes = 32}));
+      EncodeChunk({.session_id = 8, .max_chunk_size_bytes = 32}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // Client should send a status chunk and end the transfer.
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 8u);
+  EXPECT_EQ(c1.session_id, 8u);
   ASSERT_TRUE(c1.status.has_value());
   EXPECT_EQ(c1.status.value(), Status::InvalidArgument());
 
@@ -1151,25 +1154,26 @@ TEST_F(WriteTransfer, AbortIfZeroBytesAreRequested) {
             }));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads[0]);
-  EXPECT_EQ(c0.transfer_id, 9u);
+  EXPECT_EQ(c0.session_id, 9u);
+  EXPECT_EQ(c0.resource_id, 9u);
 
   // Send an invalid transfer parameters chunk with 0 pending_bytes.
   context_.server().SendServerStream<Transfer::Write>(EncodeChunk(
-      {.transfer_id = 9, .pending_bytes = 0, .max_chunk_size_bytes = 32}));
+      {.session_id = 9, .pending_bytes = 0, .max_chunk_size_bytes = 32}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // Client should send a status chunk and end the transfer.
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 9u);
+  EXPECT_EQ(c1.session_id, 9u);
   ASSERT_TRUE(c1.status.has_value());
   EXPECT_EQ(c1.status.value(), Status::ResourceExhausted());
 
@@ -1188,14 +1192,15 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
                 kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 10u);
+  EXPECT_EQ(c0.session_id, 10u);
+  EXPECT_EQ(c0.resource_id, 10u);
 
   // Wait for the timeout to expire without doing anything. The client should
   // resend the initial transmit chunk.
@@ -1203,7 +1208,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
   ASSERT_EQ(payloads.size(), 2u);
 
   Chunk c = DecodeChunk(payloads.back());
-  EXPECT_EQ(c.transfer_id, 10u);
+  EXPECT_EQ(c.session_id, 10u);
 
   // Transfer has not yet completed.
   EXPECT_EQ(transfer_status, Status::Unknown());
@@ -1221,19 +1226,20 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
                 kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 11u);
+  EXPECT_EQ(c0.session_id, 11u);
+  EXPECT_EQ(c0.resource_id, 11u);
 
   // Send the first parameters chunk.
   rpc::test::WaitForPackets(context_.output(), 2, [this] {
     context_.server().SendServerStream<Transfer::Write>(
-        EncodeChunk({.transfer_id = 11,
+        EncodeChunk({.session_id = 11,
                      .pending_bytes = 16,
                      .max_chunk_size_bytes = 8,
                      .offset = 0}));
@@ -1243,13 +1249,13 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 11u);
+  EXPECT_EQ(c1.session_id, 11u);
   EXPECT_EQ(c1.offset, 0u);
   EXPECT_EQ(c1.data.size(), 8u);
   EXPECT_EQ(std::memcmp(c1.data.data(), kData32.data(), c1.data.size()), 0);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 11u);
+  EXPECT_EQ(c2.session_id, 11u);
   EXPECT_EQ(c2.offset, 8u);
   EXPECT_EQ(c2.data.size(), 8u);
   EXPECT_EQ(
@@ -1262,7 +1268,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
   ASSERT_EQ(payloads.size(), 4u);
 
   Chunk c3 = DecodeChunk(payloads[3]);
-  EXPECT_EQ(c3.transfer_id, c2.transfer_id);
+  EXPECT_EQ(c3.session_id, c2.session_id);
   EXPECT_EQ(c3.offset, c2.offset);
   EXPECT_EQ(c3.data.size(), c2.data.size());
   EXPECT_EQ(std::memcmp(c3.data.data(), c2.data.data(), c3.data.size()), 0);
@@ -1283,20 +1289,21 @@ TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
                 kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 12u);
+  EXPECT_EQ(c0.session_id, 12u);
+  EXPECT_EQ(c0.resource_id, 12u);
 
   // Send the first parameters chunk, requesting all the data. The client should
   // respond with one data chunk and a remaining_bytes = 0 chunk.
   rpc::test::WaitForPackets(context_.output(), 2, [this] {
     context_.server().SendServerStream<Transfer::Write>(
-        EncodeChunk({.transfer_id = 12,
+        EncodeChunk({.session_id = 12,
                      .pending_bytes = 64,
                      .max_chunk_size_bytes = 64,
                      .offset = 0}));
@@ -1306,13 +1313,13 @@ TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 12u);
+  EXPECT_EQ(c1.session_id, 12u);
   EXPECT_EQ(c1.offset, 0u);
   EXPECT_EQ(c1.data.size(), 32u);
   EXPECT_EQ(std::memcmp(c1.data.data(), kData32.data(), c1.data.size()), 0);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 12u);
+  EXPECT_EQ(c2.session_id, 12u);
   ASSERT_TRUE(c2.remaining_bytes.has_value());
   EXPECT_EQ(c2.remaining_bytes.value(), 0u);
 
@@ -1322,14 +1329,14 @@ TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
   ASSERT_EQ(payloads.size(), 4u);
 
   Chunk c3 = DecodeChunk(payloads[3]);
-  EXPECT_EQ(c3.transfer_id, c1.transfer_id);
+  EXPECT_EQ(c3.session_id, c1.session_id);
   EXPECT_EQ(c3.offset, c1.offset);
   EXPECT_EQ(c3.data.size(), c1.data.size());
   EXPECT_EQ(std::memcmp(c3.data.data(), c1.data.data(), c3.data.size()), 0);
 
   // The remaining_bytes = 0 chunk should be resent on the next parameters.
   context_.server().SendServerStream<Transfer::Write>(
-      EncodeChunk({.transfer_id = 12,
+      EncodeChunk({.session_id = 12,
                    .pending_bytes = 64,
                    .max_chunk_size_bytes = 64,
                    .offset = 32}));
@@ -1338,12 +1345,12 @@ TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
   ASSERT_EQ(payloads.size(), 5u);
 
   Chunk c4 = DecodeChunk(payloads[4]);
-  EXPECT_EQ(c4.transfer_id, 12u);
+  EXPECT_EQ(c4.session_id, 12u);
   ASSERT_TRUE(c4.remaining_bytes.has_value());
   EXPECT_EQ(c4.remaining_bytes.value(), 0u);
 
   context_.server().SendServerStream<Transfer::Write>(
-      EncodeChunk({.transfer_id = 12, .status = OkStatus()}));
+      EncodeChunk({.session_id = 12, .status = OkStatus()}));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(transfer_status, OkStatus());
@@ -1361,14 +1368,15 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
                 kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 13u);
+  EXPECT_EQ(c0.session_id, 13u);
+  EXPECT_EQ(c0.resource_id, 13u);
 
   for (unsigned retry = 1; retry <= kTestRetries; ++retry) {
     // Wait for the timeout to expire without doing anything. The client should
@@ -1377,7 +1385,7 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
     ASSERT_EQ(payloads.size(), retry + 1);
 
     Chunk c = DecodeChunk(payloads.back());
-    EXPECT_EQ(c.transfer_id, 13u);
+    EXPECT_EQ(c.session_id, 13u);
 
     // Transfer has not yet completed.
     EXPECT_EQ(transfer_status, Status::Unknown());
@@ -1389,7 +1397,7 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   ASSERT_EQ(payloads.size(), 5u);
 
   Chunk c4 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c4.transfer_id, 13u);
+  EXPECT_EQ(c4.session_id, 13u);
   ASSERT_TRUE(c4.status.has_value());
   EXPECT_EQ(c4.status.value(), Status::DeadlineExceeded());
 
@@ -1413,19 +1421,20 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
                 kTestTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  // The client begins by just sending the transfer ID.
+  // The client begins by sending the ID of the resource to transfer.
   rpc::PayloadsView payloads =
       context_.output().payloads<Transfer::Write>(context_.channel().id());
   ASSERT_EQ(payloads.size(), 1u);
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c0 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c0.transfer_id, 14u);
+  EXPECT_EQ(c0.session_id, 14u);
+  EXPECT_EQ(c0.resource_id, 14u);
 
   // Send the first parameters chunk.
   rpc::test::WaitForPackets(context_.output(), 2, [this] {
     context_.server().SendServerStream<Transfer::Write>(
-        EncodeChunk({.transfer_id = 14,
+        EncodeChunk({.session_id = 14,
                      .pending_bytes = 16,
                      .max_chunk_size_bytes = 8,
                      .offset = 0}));
@@ -1435,13 +1444,13 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   Chunk c1 = DecodeChunk(payloads[1]);
-  EXPECT_EQ(c1.transfer_id, 14u);
+  EXPECT_EQ(c1.session_id, 14u);
   EXPECT_EQ(c1.offset, 0u);
   EXPECT_EQ(c1.data.size(), 8u);
   EXPECT_EQ(std::memcmp(c1.data.data(), kData32.data(), c1.data.size()), 0);
 
   Chunk c2 = DecodeChunk(payloads[2]);
-  EXPECT_EQ(c2.transfer_id, 14u);
+  EXPECT_EQ(c2.session_id, 14u);
   EXPECT_EQ(c2.offset, 8u);
   EXPECT_EQ(c2.data.size(), 8u);
   EXPECT_EQ(
@@ -1454,7 +1463,7 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   ASSERT_EQ(payloads.size(), 4u);
 
   Chunk c3 = DecodeChunk(payloads[3]);
-  EXPECT_EQ(c3.transfer_id, 14u);
+  EXPECT_EQ(c3.session_id, 14u);
   ASSERT_TRUE(c3.status.has_value());
   EXPECT_EQ(c3.status.value(), Status::DeadlineExceeded());
 

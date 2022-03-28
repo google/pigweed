@@ -100,7 +100,7 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(
             _Method.READ,
-            ((Chunk(transfer_id=3, offset=0, data=b'abc',
+            ((Chunk(session_id=3, offset=0, data=b'abc',
                     remaining_bytes=0), ), ),
         )
 
@@ -117,8 +117,8 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.READ,
             ((
-                Chunk(transfer_id=3, offset=0, data=b'abc', remaining_bytes=3),
-                Chunk(transfer_id=3, offset=3, data=b'def', remaining_bytes=0),
+                Chunk(session_id=3, offset=0, data=b'abc', remaining_bytes=3),
+                Chunk(session_id=3, offset=3, data=b'def', remaining_bytes=0),
             ), ),
         )
 
@@ -135,8 +135,8 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.READ,
             ((
-                Chunk(transfer_id=3, offset=0, data=b'abc', remaining_bytes=3),
-                Chunk(transfer_id=3, offset=3, data=b'def', remaining_bytes=0),
+                Chunk(session_id=3, offset=0, data=b'abc', remaining_bytes=3),
+                Chunk(session_id=3, offset=3, data=b'def', remaining_bytes=0),
             ), ),
         )
 
@@ -161,26 +161,22 @@ class TransferManagerTest(unittest.TestCase):
             _Method.READ,
             (
                 (
-                    Chunk(transfer_id=3,
-                          offset=0,
-                          data=b'123',
-                          remaining_bytes=6),
+                    Chunk(
+                        session_id=3, offset=0, data=b'123',
+                        remaining_bytes=6),
 
                     # Incorrect offset; expecting 3.
-                    Chunk(transfer_id=3,
-                          offset=1,
-                          data=b'456',
-                          remaining_bytes=3),
+                    Chunk(
+                        session_id=3, offset=1, data=b'456',
+                        remaining_bytes=3),
                 ),
                 (
-                    Chunk(transfer_id=3,
-                          offset=3,
-                          data=b'456',
-                          remaining_bytes=3),
-                    Chunk(transfer_id=3,
-                          offset=6,
-                          data=b'789',
-                          remaining_bytes=0),
+                    Chunk(
+                        session_id=3, offset=3, data=b'456',
+                        remaining_bytes=3),
+                    Chunk(
+                        session_id=3, offset=6, data=b'789',
+                        remaining_bytes=0),
                 ),
             ))
 
@@ -201,7 +197,7 @@ class TransferManagerTest(unittest.TestCase):
             _Method.READ,
             (
                 (),  # Send nothing in response to the initial parameters.
-                (Chunk(transfer_id=3, offset=0, data=b'xyz',
+                (Chunk(session_id=3, offset=0, data=b'xyz',
                        remaining_bytes=0), ),
             ))
 
@@ -221,7 +217,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.read(27)
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 27)
+        self.assertEqual(exception.session_id, 27)
         self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
 
         # The client should have sent four transfer parameters requests: one
@@ -234,14 +230,14 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(
             _Method.READ,
-            ((Chunk(transfer_id=31, status=Status.NOT_FOUND.value), ), ),
+            ((Chunk(session_id=31, status=Status.NOT_FOUND.value), ), ),
         )
 
         with self.assertRaises(pw_transfer.Error) as context:
             manager.read(31)
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 31)
+        self.assertEqual(exception.session_id, 31)
         self.assertEqual(exception.status, Status.NOT_FOUND)
 
     def test_read_transfer_server_error(self) -> None:
@@ -254,7 +250,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.read(31)
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 31)
+        self.assertEqual(exception.session_id, 31)
         self.assertEqual(exception.status, Status.INTERNAL)
 
     def test_write_transfer_basic(self) -> None:
@@ -264,11 +260,11 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=0,
                        pending_bytes=32,
                        max_chunk_size_bytes=8), ),
-                (Chunk(transfer_id=4, status=Status.OK.value), ),
+                (Chunk(session_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -283,12 +279,12 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=0,
                        pending_bytes=32,
                        max_chunk_size_bytes=8), ),
                 (),
-                (Chunk(transfer_id=4, status=Status.OK.value), ),
+                (Chunk(session_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -305,15 +301,15 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=0,
                        pending_bytes=8,
                        max_chunk_size_bytes=8), ),
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=8,
                        pending_bytes=8,
                        max_chunk_size_bytes=8), ),
-                (Chunk(transfer_id=4, status=Status.OK.value), ),
+                (Chunk(session_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -330,15 +326,15 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=0,
                        pending_bytes=8,
                        max_chunk_size_bytes=8), ),
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=8,
                        pending_bytes=8,
                        max_chunk_size_bytes=8), ),
-                (Chunk(transfer_id=4, status=Status.OK.value), ),
+                (Chunk(session_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -363,27 +359,27 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=0,
                        pending_bytes=8,
                        max_chunk_size_bytes=8), ),
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=8,
                        pending_bytes=8,
                        max_chunk_size_bytes=8), ),
                 (
                     Chunk(
-                        transfer_id=4,
+                        session_id=4,
                         offset=4,  # rewind
                         pending_bytes=8,
                         max_chunk_size_bytes=8), ),
                 (
                     Chunk(
-                        transfer_id=4,
+                        session_id=4,
                         offset=12,
                         pending_bytes=16,  # update max size
                         max_chunk_size_bytes=16), ),
-                (Chunk(transfer_id=4, status=Status.OK.value), ),
+                (Chunk(session_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -401,17 +397,17 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (Chunk(transfer_id=4,
+                (Chunk(session_id=4,
                        offset=0,
                        pending_bytes=8,
                        max_chunk_size_bytes=8), ),
                 (
                     Chunk(
-                        transfer_id=4,
+                        session_id=4,
                         offset=100,  # larger offset than data
                         pending_bytes=8,
                         max_chunk_size_bytes=8), ),
-                (Chunk(transfer_id=4, status=Status.OK.value), ),
+                (Chunk(session_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -419,7 +415,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.write(4, b'small data')
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 4)
+        self.assertEqual(exception.session_id, 4)
         self.assertEqual(exception.status, Status.OUT_OF_RANGE)
 
     def test_write_transfer_error(self) -> None:
@@ -428,14 +424,14 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(
             _Method.WRITE,
-            ((Chunk(transfer_id=21, status=Status.UNAVAILABLE.value), ), ),
+            ((Chunk(session_id=21, status=Status.UNAVAILABLE.value), ), ),
         )
 
         with self.assertRaises(pw_transfer.Error) as context:
             manager.write(21, b'no write')
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 21)
+        self.assertEqual(exception.session_id, 21)
         self.assertEqual(exception.status, Status.UNAVAILABLE)
 
     def test_write_transfer_server_error(self) -> None:
@@ -448,7 +444,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.write(21, b'server error')
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 21)
+        self.assertEqual(exception.session_id, 21)
         self.assertEqual(exception.status, Status.INTERNAL)
 
     def test_write_transfer_timeout_after_initial_chunk(self) -> None:
@@ -462,16 +458,19 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(
             self._sent_chunks,
             [
-                Chunk(transfer_id=22,
+                Chunk(session_id=22,
+                      resource_id=22,
                       type=Chunk.Type.TRANSFER_START),  # initial chunk
-                Chunk(transfer_id=22,
+                Chunk(session_id=22,
+                      resource_id=22,
                       type=Chunk.Type.TRANSFER_START),  # retry 1
-                Chunk(transfer_id=22,
+                Chunk(session_id=22,
+                      resource_id=22,
                       type=Chunk.Type.TRANSFER_START),  # retry 2
             ])
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 22)
+        self.assertEqual(exception.session_id, 22)
         self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
 
     def test_write_transfer_timeout_after_intermediate_chunk(self) -> None:
@@ -483,13 +482,12 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(
             _Method.WRITE,
-            [[Chunk(transfer_id=22, pending_bytes=10, max_chunk_size_bytes=5)]
-             ])
+            [[Chunk(session_id=22, pending_bytes=10, max_chunk_size_bytes=5)]])
 
         with self.assertRaises(pw_transfer.Error) as context:
             manager.write(22, b'0123456789')
 
-        last_data_chunk = Chunk(transfer_id=22,
+        last_data_chunk = Chunk(session_id=22,
                                 data=b'56789',
                                 offset=5,
                                 remaining_bytes=0,
@@ -498,8 +496,10 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(
             self._sent_chunks,
             [
-                Chunk(transfer_id=22, type=Chunk.Type.TRANSFER_START),
-                Chunk(transfer_id=22,
+                Chunk(session_id=22,
+                      resource_id=22,
+                      type=Chunk.Type.TRANSFER_START),
+                Chunk(session_id=22,
                       data=b'01234',
                       type=Chunk.Type.TRANSFER_DATA),
                 last_data_chunk,  # last chunk
@@ -508,7 +508,7 @@ class TransferManagerTest(unittest.TestCase):
             ])
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 22)
+        self.assertEqual(exception.session_id, 22)
         self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
 
     def test_write_zero_pending_bytes_is_internal_error(self) -> None:
@@ -517,14 +517,14 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(
             _Method.WRITE,
-            ((Chunk(transfer_id=23, pending_bytes=0), ), ),
+            ((Chunk(session_id=23, pending_bytes=0), ), ),
         )
 
         with self.assertRaises(pw_transfer.Error) as context:
             manager.write(23, b'no write')
 
         exception = context.exception
-        self.assertEqual(exception.transfer_id, 23)
+        self.assertEqual(exception.session_id, 23)
         self.assertEqual(exception.status, Status.INTERNAL)
 
 

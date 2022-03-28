@@ -137,7 +137,7 @@ export abstract class Transfer {
   protected sendError(error: Status): void {
     const chunk = new Chunk();
     chunk.setStatus(error);
-    chunk.setTransferId(this.id);
+    chunk.setSessionId(this.id);
     chunk.setType(Chunk.Type.TRANSFER_COMPLETION);
     this.sendChunk(chunk);
     this.finish(error);
@@ -262,7 +262,7 @@ export class ReadTransfer extends Transfer {
     this.windowEndOffset = this.offset + this.maxBytesToReceive;
 
     const chunk = new Chunk();
-    chunk.setTransferId(this.id);
+    chunk.setSessionId(this.id);
     chunk.setPendingBytes(this.pendingBytes);
     chunk.setMaxChunkSizeBytes(this.maxChunkSize);
     chunk.setOffset(this.offset);
@@ -303,7 +303,7 @@ export class ReadTransfer extends Transfer {
       if (chunk.getRemainingBytes() === 0) {
         // No more data to read. Acknowledge receipt and finish.
         const endChunk = new Chunk();
-        endChunk.setTransferId(this.id);
+        endChunk.setSessionId(this.id);
         endChunk.setStatus(Status.OK);
         endChunk.setType(Chunk.Type.TRANSFER_COMPLETION);
         this.sendChunk(endChunk);
@@ -402,8 +402,11 @@ export class WriteTransfer extends Transfer {
   }
 
   protected get initialChunk(): Chunk {
+    // TODO(frolv): The session ID should not be set here but assigned by the
+    // server during an initial handshake.
     const chunk = new Chunk();
-    chunk.setTransferId(this.id);
+    chunk.setSessionId(this.id);
+    chunk.setResourceId(this.id);
     chunk.setType(Chunk.Type.TRANSFER_START);
     return chunk;
   }
@@ -513,7 +516,7 @@ export class WriteTransfer extends Transfer {
   /** Returns the next Chunk message to send in the data transfer. */
   private nextChunk(): Chunk {
     const chunk = new Chunk();
-    chunk.setTransferId(this.id);
+    chunk.setSessionId(this.id);
     chunk.setOffset(this.offset);
     chunk.setType(Chunk.Type.TRANSFER_DATA);
 

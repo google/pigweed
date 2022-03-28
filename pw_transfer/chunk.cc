@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -22,7 +22,7 @@ namespace pw::transfer::internal {
 
 namespace ProtoChunk = transfer::Chunk;
 
-Result<uint32_t> ExtractTransferId(ConstByteSpan message) {
+Result<uint32_t> ExtractSessionId(ConstByteSpan message) {
   protobuf::Decoder decoder(message);
 
   while (decoder.Next().ok()) {
@@ -30,10 +30,10 @@ Result<uint32_t> ExtractTransferId(ConstByteSpan message) {
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
 
     switch (field) {
-      case ProtoChunk::Fields::TRANSFER_ID: {
-        uint32_t transfer_id;
-        PW_TRY(decoder.ReadUint32(&transfer_id));
-        return transfer_id;
+      case ProtoChunk::Fields::SESSION_ID: {
+        uint32_t session_id;
+        PW_TRY(decoder.ReadUint32(&session_id));
+        return session_id;
       }
 
       default:
@@ -56,8 +56,8 @@ Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
 
     switch (field) {
-      case ProtoChunk::Fields::TRANSFER_ID:
-        PW_TRY(decoder.ReadUint32(&chunk.transfer_id));
+      case ProtoChunk::Fields::SESSION_ID:
+        PW_TRY(decoder.ReadUint32(&chunk.session_id));
         break;
 
       case ProtoChunk::Fields::PENDING_BYTES:
@@ -105,6 +105,13 @@ Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
         chunk.type = static_cast<Chunk::Type>(type);
         break;
       }
+
+      case ProtoChunk::Fields::RESOURCE_ID:
+        PW_TRY(decoder.ReadUint32(&value));
+        chunk.resource_id = value;
+        break;
+
+        // Silently ignore any unrecognized fields.
     }
   }
 
@@ -114,7 +121,7 @@ Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
 Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer) {
   ProtoChunk::MemoryEncoder encoder(buffer);
 
-  encoder.WriteTransferId(chunk.transfer_id).IgnoreError();
+  encoder.WriteSessionId(chunk.session_id).IgnoreError();
 
   if (chunk.window_end_offset != 0) {
     encoder.WriteWindowEndOffset(chunk.window_end_offset).IgnoreError();
@@ -147,6 +154,10 @@ Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer) {
   if (chunk.type.has_value()) {
     encoder.WriteType(static_cast<ProtoChunk::Type>(chunk.type.value()))
         .IgnoreError();
+  }
+
+  if (chunk.resource_id != 0) {
+    encoder.WriteResourceId(chunk.resource_id).IgnoreError();
   }
 
   PW_TRY(encoder.status());

@@ -17,8 +17,9 @@ package pw.transfer;
 
 // Configuration for the integration test client.
 message ClientConfig {
-  // Transfer ID to use.
-  uint32 transfer_id = 1;
+  // Transfer resource ID to use.
+  uint32 resource_id = 1;
+
   // Path to the file containing the data to write to the server.
   string file = 2;
 }

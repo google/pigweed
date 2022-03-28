@@ -122,7 +122,7 @@ abstract class Transfer<T> {
   /**
    * Creates a new read or write transfer.
    *
-   * @param id The pw_transfer ID.
+   * @param id The ID of the resource to transfer.
    * @param chunkSender Interface to use to send a chunk.
    * @param unregisterTransfer Callback that unregisters a completed transfer.
    * @param timer Timer to use to schedule transfer timeouts.
@@ -243,7 +243,8 @@ abstract class Transfer<T> {
   }
 
   final Chunk.Builder newChunk() {
-    return Chunk.newBuilder().setTransferId(getId());
+    // TODO(frolv): Properly set the session ID after it is configured by the server.
+    return Chunk.newBuilder().setSessionId(getId());
   }
 
   /** Sends a chunk. Returns true if sent, false if sending failed and the transfer was aborted. */

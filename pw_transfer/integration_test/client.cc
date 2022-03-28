@@ -15,7 +15,7 @@
 // Client binary for the cross-language integration test.
 //
 // Usage:
-//  bazel-bin/pw_transfer/integration_test_client 3300 <<< "transfer_id: 12
+//  bazel-bin/pw_transfer/integration_test_client 3300 <<< "resource_id: 12
 //  file: '/tmp/myfile.txt'"
 //
 // WORK IN PROGRESS, SEE b/228516801
@@ -55,7 +55,7 @@ struct WriteResult {
 };
 
 // Create a pw_transfer client, read data from path_to_data, and write it to the
-// client using the given transfer_id.
+// client using the given resource_id.
 pw::Status SendData(const pw::transfer::ClientConfig& config) {
   std::byte chunk_buffer[512];
   std::byte encode_buffer[512];
@@ -71,7 +71,7 @@ pw::Status SendData(const pw::transfer::ClientConfig& config) {
 
   WriteResult result;
 
-  client.Write(config.transfer_id(), input, [&result](Status status) {
+  client.Write(config.resource_id(), input, [&result](Status status) {
     result.status = status;
     result.completed.release();
   });

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -74,16 +74,16 @@ class IntegrationTestServer(unittest.TestCase):
             if hasattr(self, '_context'):
                 self._context.close()
 
-    def transfer_file_path(self, transfer_id: int) -> Path:
-        return self.directory / str(transfer_id)
+    def transfer_file_path(self, resource_id: int) -> Path:
+        return self.directory / str(resource_id)
 
-    def set_content(self, transfer_id: int, data: Union[bytes, str]) -> None:
-        self.transfer_file_path(transfer_id).write_bytes(
+    def set_content(self, resource_id: int, data: Union[bytes, str]) -> None:
+        self.transfer_file_path(resource_id).write_bytes(
             data.encode() if isinstance(data, str) else data)
         self._test_server.ReloadTransferFiles()
 
-    def get_content(self, transfer_id: int) -> bytes:
-        return self.transfer_file_path(transfer_id).read_bytes()
+    def get_content(self, resource_id: int) -> bytes:
+        return self.transfer_file_path(resource_id).read_bytes()
 
 
 class TransferServiceIntegrationTest(IntegrationTestServer):
