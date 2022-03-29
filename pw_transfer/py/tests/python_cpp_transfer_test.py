@@ -21,7 +21,7 @@ from typing import List, Tuple, Union
 import unittest
 
 from pw_hdlc import rpc
-from pw_rpc import testing
+from pw_rpc import testing, lossy_channel
 from pw_status import Status
 import pw_transfer
 from pw_transfer import transfer_pb2
@@ -44,13 +44,15 @@ class TransferServiceIntegrationTest(unittest.TestCase):
         self.directory = Path(self._tempdir.name)
 
         command = (*self.test_server_command, str(self.directory))
-        self._outgoing_filter = rpc.PacketFilter('outgoing RPC')
-        self._incoming_filter = rpc.PacketFilter('incoming RPC')
+        self._outgoing_filter = lossy_channel.ManualPacketFilter()
+        self._incoming_filter = lossy_channel.ManualPacketFilter()
         self._context = rpc.HdlcRpcLocalServerAndClient(
             command,
             self.port, [transfer_pb2, test_server_pb2],
-            outgoing_processor=self._outgoing_filter,
-            incoming_processor=self._incoming_filter)
+            outgoing_processor=lossy_channel.LossyChannel(
+                'outgoing RPC', self._outgoing_filter),
+            incoming_processor=lossy_channel.LossyChannel(
+                'incoming RPC', self._incoming_filter))
 
         service = self._context.client.channel(1).rpcs.pw.transfer.Transfer
         self.manager = pw_transfer.Manager(

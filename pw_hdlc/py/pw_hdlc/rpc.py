@@ -13,19 +13,17 @@
 # the License.
 """Utilities for using HDLC with pw_rpc."""
 
-import collections
 from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
 from queue import SimpleQueue
-import random
 import sys
 import threading
 import time
 import socket
 import subprocess
-from typing import (Any, BinaryIO, Callable, Deque, Dict, Iterable, List,
-                    NoReturn, Optional, Sequence, Tuple, Union)
+from typing import (Any, BinaryIO, Callable, Dict, Iterable, List, NoReturn,
+                    Optional, Sequence, Union)
 
 from pw_protobuf_compiler import python_protos
 import pw_rpc
@@ -240,60 +238,6 @@ class SocketSubprocess:
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.close()
-
-
-class PacketFilter(pw_rpc.ChannelManipulator):
-    """Determines if a packet should be kept or dropped for testing purposes."""
-    _Action = Callable[[int], Tuple[bool, bool]]
-    _KEEP = lambda _: (True, False)
-    _DROP = lambda _: (False, False)
-
-    def __init__(self, name: str) -> None:
-        super().__init__()
-        self.name = name
-        self.packet_count = 0
-        self._actions: Deque[PacketFilter._Action] = collections.deque()
-
-    def process_and_send(self, packet: bytes):
-        if self.keep_packet(packet):
-            self.send_packet(packet)
-
-    def reset(self) -> None:
-        self.packet_count = 0
-        self._actions.clear()
-
-    def keep(self, count: int) -> None:
-        """Keeps the next count packets."""
-        self._actions.extend(PacketFilter._KEEP for _ in range(count))
-
-    def drop(self, count: int) -> None:
-        """Drops the next count packets."""
-        self._actions.extend(PacketFilter._DROP for _ in range(count))
-
-    def drop_every(self, every: int) -> None:
-        """Drops every Nth packet forever."""
-        self._actions.append(lambda count: (count % every != 0, True))
-
-    def randomly_drop(self, one_in: int, gen: random.Random) -> None:
-        """Drops packets randomly forever."""
-        self._actions.append(lambda _: (gen.randrange(one_in) != 0, True))
-
-    def keep_packet(self, packet: bytes) -> bool:
-        """Returns whether the provided packet should be kept or dropped."""
-        self.packet_count += 1
-
-        if not self._actions:
-            return True
-
-        keep, repeat = self._actions[0](self.packet_count)
-
-        if not repeat:
-            self._actions.popleft()
-
-        if not keep:
-            _LOG.debug('Dropping %s packet %d for testing: %s', self.name,
-                       self.packet_count, packet)
-        return keep
 
 
 class HdlcRpcLocalServerAndClient:
