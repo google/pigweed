@@ -704,6 +704,7 @@ Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
     std::string_view target_name,
     protobuf::Uint64 expected_length,
     protobuf::Bytes expected_sha256) {
+#if PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION
   // The target payload is "personalized out". We we can't take a measurement
   // without backend help. For now we will check against the device manifest
   // which contains a cached measurement of the last software update.
@@ -757,6 +758,10 @@ Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
   }
 
   return OkStatus();
+#else
+  PW_LOG_ERROR("Target file %s not found in bundle", target_name);
+  return Status::Unauthenticated();
+#endif  // PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION
 }
 
 Status UpdateBundleAccessor::VerifyInBundleTargetPayload(

@@ -36,3 +36,10 @@
 #ifndef PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
 #define PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION (false)
 #endif  // PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
+
+// Whether to support bundle "personalization", which is a feature that
+// strips some or all target files that a device claims to already have from an
+// incoming bundle in order to improve performance.
+#ifndef PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION
+#define PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION (true)
+#endif  // PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION
