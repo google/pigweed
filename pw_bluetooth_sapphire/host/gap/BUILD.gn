@@ -30,6 +30,7 @@ static_library("gap") {
     "bredr_interrogator.h",
     "discovery_filter.cc",
     "discovery_filter.h",
+    "event_masks.h",
     "generic_access_client.cc",
     "generic_access_client.h",
     "identity_resolving_list.cc",

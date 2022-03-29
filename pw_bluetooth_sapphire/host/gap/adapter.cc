@@ -9,6 +9,7 @@
 
 #include "bredr_connection_manager.h"
 #include "bredr_discovery_manager.h"
+#include "event_masks.h"
 #include "low_energy_address_manager.h"
 #include "low_energy_advertising_manager.h"
 #include "low_energy_connection_manager.h"
@@ -281,16 +282,6 @@ class AdapterImpl final : public Adapter {
   // Assigns properties to |adapter_node_| using values discovered during other initialization
   // steps.
   void UpdateInspectProperties();
-
-  // Builds and returns the HCI event mask based on our supported host side
-  // features and controller capabilities. This is used to mask events that we
-  // do not know how to handle.
-  uint64_t BuildEventMask();
-
-  // Builds and returns the LE event mask based on our supported host side
-  // features and controller capabilities. This is used to mask LE events that
-  // we do not know how to handle.
-  uint64_t BuildLEEventMask();
 
   // Called by ShutDown() and during Initialize() in case of failure. This
   // synchronously cleans up the transports and resets initialization state.
@@ -1082,63 +1073,6 @@ void AdapterImpl::UpdateInspectProperties() {
   auto le_features =
       bt_lib_cpp_string::StringPrintf("0x%016lx", state_.low_energy_state().supported_features());
   inspect_properties_.le_features = adapter_node_.CreateString("le_features", le_features);
-}
-
-uint64_t AdapterImpl::BuildEventMask() {
-  uint64_t event_mask = 0;
-
-#define ENABLE_EVT(event) event_mask |= static_cast<uint64_t>(hci_spec::EventMask::event)
-
-  // Enable events that are needed for basic functionality. (alphabetic)
-  ENABLE_EVT(kAuthenticationCompleteEvent);
-  ENABLE_EVT(kConnectionCompleteEvent);
-  ENABLE_EVT(kConnectionRequestEvent);
-  ENABLE_EVT(kDataBufferOverflowEvent);
-  ENABLE_EVT(kDisconnectionCompleteEvent);
-  ENABLE_EVT(kEncryptionChangeEvent);
-  ENABLE_EVT(kEncryptionKeyRefreshCompleteEvent);
-  ENABLE_EVT(kExtendedInquiryResultEvent);
-  ENABLE_EVT(kHardwareErrorEvent);
-  ENABLE_EVT(kInquiryCompleteEvent);
-  ENABLE_EVT(kInquiryResultEvent);
-  ENABLE_EVT(kInquiryResultWithRSSIEvent);
-  ENABLE_EVT(kIOCapabilityRequestEvent);
-  ENABLE_EVT(kIOCapabilityResponseEvent);
-  ENABLE_EVT(kLEMetaEvent);
-  ENABLE_EVT(kLinkKeyRequestEvent);
-  ENABLE_EVT(kLinkKeyNotificationEvent);
-  ENABLE_EVT(kRemoteOOBDataRequestEvent);
-  ENABLE_EVT(kRemoteNameRequestCompleteEvent);
-  ENABLE_EVT(kReadRemoteSupportedFeaturesCompleteEvent);
-  ENABLE_EVT(kReadRemoteVersionInformationCompleteEvent);
-  ENABLE_EVT(kReadRemoteExtendedFeaturesCompleteEvent);
-  ENABLE_EVT(kRoleChangeEvent);
-  ENABLE_EVT(kSimplePairingCompleteEvent);
-  ENABLE_EVT(kSynchronousConnectionCompleteEvent);
-  ENABLE_EVT(kUserConfirmationRequestEvent);
-  ENABLE_EVT(kUserPasskeyRequestEvent);
-  ENABLE_EVT(kUserPasskeyNotificationEvent);
-
-#undef ENABLE_EVT
-
-  return event_mask;
-}
-
-uint64_t AdapterImpl::BuildLEEventMask() {
-  uint64_t event_mask = 0;
-
-#define ENABLE_EVT(event) event_mask |= static_cast<uint64_t>(hci_spec::LEEventMask::event)
-
-  ENABLE_EVT(kLEAdvertisingReport);
-  ENABLE_EVT(kLEConnectionComplete);
-  ENABLE_EVT(kLEConnectionUpdateComplete);
-  ENABLE_EVT(kLEExtendedAdvertisingSetTerminated);
-  ENABLE_EVT(kLELongTermKeyRequest);
-  ENABLE_EVT(kLEReadRemoteFeaturesComplete);
-
-#undef ENABLE_EVT
-
-  return event_mask;
 }
 
 void AdapterImpl::CleanUp() {
