@@ -13,6 +13,7 @@
 # the License.
 """Types representing the basic pw_rpc concepts: channel, service, method."""
 
+import abc
 from dataclasses import dataclass
 import enum
 from inspect import Parameter
@@ -35,6 +36,57 @@ class Channel:
 
     def __repr__(self) -> str:
         return f'Channel({self.id})'
+
+
+class ChannelManipulator(abc.ABC):
+    """A a pipe interface that may manipulate packets before they're sent.
+
+    ``ChannelManipulator``s allow application-specific packet handling to be
+    injected into the packet processing pipeline for an ingress or egress
+    channel-like pathway. This is particularly useful for integration testing
+    resilience to things like packet loss on a usually-reliable transport. RPC
+    server integrations (e.g. ``HdlcRpcLocalServerAndClient``) may provide an
+    opportunity to inject a ``ChannelManipulator`` for this use case.
+
+    A ``ChannelManipulator`` should not modify send_packet, as the consumer of a
+    ``ChannelManipulator`` will use ``send_packet`` to insert the provided
+    ``ChannelManipulator`` into a packet processing path.
+
+    For example:
+
+    .. code-block:: python
+
+      class PacketLogger(ChannelManipulator):
+          def process_and_send(self, packet: bytes) -> None:
+              _LOG.debug('Received packet with payload: %s', str(packet))
+              self.send_packet(packet)
+
+
+      packet_logger = PacketLogger()
+
+      # Configure actual send command.
+      packet_logger.send_packet = socket.sendall
+
+      # Route the output channel through the PacketLogger channel manipulator.
+      channels = tuple(Channel(_DEFAULT_CHANNEL, packet_logger))
+
+      # Create a RPC client.
+      client = HdlcRpcClient(socket.read, protos, channels, stdout)
+    """
+    def __init__(self):
+        self.send_packet: Callable[[bytes], Any] = lambda _: None
+
+    @abc.abstractmethod
+    def process_and_send(self, packet: bytes) -> None:
+        """Processes an incoming packet before optionally sending it.
+
+        Implementations of this method may send the processed packet, multiple
+        packets, or no packets at all via the registered `send_packet()`
+        handler.
+        """
+
+    def __call__(self, data: bytes) -> None:
+        self.process_and_send(data)
 
 
 @dataclass(frozen=True, eq=False)

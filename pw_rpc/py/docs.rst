@@ -23,6 +23,13 @@ pw_rpc.callback_client
     ClientStreamingCall,
     BidirectionalStreamingCall,
 
+pw_rpc.descriptors
+==================
+.. automodule:: pw_rpc.descriptors
+  :members:
+    Channel,
+    ChannelManipulator,
+
 pw_rpc.console_tools
 ====================
 .. automodule:: pw_rpc.console_tools

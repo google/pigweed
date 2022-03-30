@@ -14,4 +14,4 @@
 """Package for calling Pigweed RPCs from Python."""
 
 from pw_rpc.client import Client
-from pw_rpc.descriptors import Channel
+from pw_rpc.descriptors import Channel, ChannelManipulator
