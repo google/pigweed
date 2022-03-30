@@ -166,171 +166,34 @@ space to allocate to account for nested submessage encoding overhead.
   created the nested encoder will trigger a crash. To resume using the parent
   encoder, destroy the submessage encoder first.
 
+Repeated Fields
+===============
+Repeated fields can be encoded a value at a time by repeatedly calling
+`WriteInt32` etc., or as a packed field by calling e.g. `WritePackedInt32` with
+a `std::span<Type>` or `WriteRepeatedInt32` with a `pw::Vector<Type>` (see
+:ref:`module-pw_containers` for details).
+
 Error Handling
 ==============
 While individual write calls on a proto encoder return pw::Status objects, the
 encoder tracks all status returns and "latches" onto the first error
 encountered. This status can be accessed via ``StreamEncoder::status()``.
 
-Codegen
-=======
-pw_protobuf codegen integration is supported in GN, Bazel, and CMake.
-The codegen is just a light wrapper around the ``StreamEncoder``,
-``MemoryEncoder``, and ``StreamDecoder`` objects, providing named helper
-functions to write and read proto fields rather than requiring that field
-numbers are directly passed to an encoder.
+Proto map encoding utils
+========================
 
-Namespaced proto enums are also generated, and used as the arguments when
-writing enum fields of a proto message. When reading enum fields of a proto
-message, the enum value is validated and returned as the correct type, or
-``Status::DataLoss()`` if the decoded enum value was not given in the proto.
+Some additional helpers for encoding more complex but common protobuf
+submessages (e.g. map<string, bytes>) are provided in
+``pw_protobuf/map_utils.h``.
 
-All generated messages provide a ``Fields`` enum that can be used directly for
-out-of-band encoding, or with the ``pw::protobuf::Decoder``.
-
-This module's codegen is available through the ``*.pwpb`` sub-target of a
-``pw_proto_library`` in GN, CMake, and Bazel. See :ref:`pw_protobuf_compiler's
-documentation <module-pw_protobuf_compiler>` for more information on build
-system integration for pw_protobuf codegen.
-
-Example ``BUILD.gn``:
-
-.. Code:: none
-
-  import("//build_overrides/pigweed.gni")
-
-  import("$dir_pw_build/target_types.gni")
-  import("$dir_pw_protobuf_compiler/proto.gni")
-
-  # This target controls where the *.pwpb.h headers end up on the include path.
-  # In this example, it's at "pet_daycare_protos/client.pwpb.h".
-  pw_proto_library("pet_daycare_protos") {
-    sources = [
-      "pet_daycare_protos/client.proto",
-    ]
-  }
-
-  pw_source_set("example_client") {
-    sources = [ "example_client.cc" ]
-    deps = [
-      ":pet_daycare_protos.pwpb",
-      dir_pw_bytes,
-      dir_pw_stream,
-    ]
-  }
-
-  pw_source_set("example_server") {
-    sources = [ "example_server.cc" ]
-    deps = [
-      ":pet_daycare_protos.pwpb",
-      dir_pw_bytes,
-      dir_pw_stream,
-    ]
-  }
-
-Example ``pet_daycare_protos/client.proto``:
-
-.. Code:: none
-
-  syntax = "proto3";
-  // The proto package controls the namespacing of the codegen. If this package
-  // were fuzzy.friends, the namespace for codegen would be fuzzy::friends::*.
-  package fuzzy_friends;
-
-  message Pet {
-    string name = 1;
-    string pet_type = 2;
-  }
-
-  message Client {
-    repeated Pet pets = 1;
-  }
-
-Example ``example_client.cc``:
-
-.. Code:: cpp
-
-  #include "pet_daycare_protos/client.pwpb.h"
-  #include "pw_protobuf/encoder.h"
-  #include "pw_stream/sys_io_stream.h"
-  #include "pw_bytes/span.h"
-
-  pw::stream::SysIoWriter sys_io_writer;
-  std::byte submessage_scratch_buffer[64];
-  // The constructor is the same as a pw::protobuf::StreamEncoder.
-  fuzzy_friends::Client::StreamEncoder client(sys_io_writer,
-                                              submessage_scratch_buffer);
-  {
-    fuzzy_friends::Pet::StreamEncoder pet1 = client.GetPetsEncoder();
-    pet1.WriteName("Spot");
-    pet1.WritePetType("dog");
-  }
-
-  {
-    fuzzy_friends::Pet::StreamEncoder pet2 = client.GetPetsEncoder();
-    pet2.WriteName("Slippers");
-    pet2.WritePetType("rabbit");
-  }
-
-  if (!client.status().ok()) {
-    PW_LOG_INFO("Failed to encode proto; %s", client.status().str());
-  }
-
-Example ``example_server.cc``:
-
-.. Code:: cpp
-
-  #include "pet_daycare_protos/client.pwpb.h"
-  #include "pw_protobuf/stream_decoder.h"
-  #include "pw_stream/sys_io_stream.h"
-  #include "pw_bytes/span.h"
-
-  pw::stream::SysIoReader sys_io_reader;
-  // The constructor is the same as a pw::protobuf::StreamDecoder.
-  fuzzy_friends::Client::StreamDecoder client(sys_io_reader);
-  while (client.Next().ok()) {
-    switch (client.Field().value) {
-      case fuzzy_friends::Client::Fields::PET: {
-        std::array<char, 32> name{};
-        std::array<char, 32> pet_type{};
-
-        fuzzy_friends::Pet::StreamDecoder pet = client.GetPetsDecoder();
-        while (pet.Next().ok()) {
-          switch (pet.Field().value) {
-            case fuzzy_friends::Pet::NAME:
-              pet.ReadName(name);
-              break;
-            case fuzzy_friends::Pet::TYPE:
-              pet.ReadPetType(pet_type);
-              break;
-          }
-        }
-
-        break;
-      }
-    }
-  }
-
-  if (!client.status().ok()) {
-    PW_LOG_INFO("Failed to decode proto; %s", client.status().str());
-  }
-
-Repeated Fields
----------------
-Repeated fields can be encoded a value at a time by repeatedly calling
-`WriteInt32` etc., or as a packed field by calling e.g. `WritePackedInt32` with
-a `std::span<Type>` or `WriteRepeatedInt32` with a `pw::Vector<Type>` (see
-:ref:`module-pw_containers` for details).
-
-The codegen wrappers provide a `WriteFieldName` method with three signatures.
-One that encodes a single value at a time, one that encodes a packed field
-from a `std::span<Type>`, and one that encodes a packed field from a
-`pw::Vector<Type>`. All three return `Status`.
+.. Note::
+  The helper API are currently in-development and may not remain stable.
 
 --------
 Decoding
 --------
-``pw_protobuf`` provides two decoder implementations, which are described below.
+``pw_protobuf`` provides three decoder implementations, which are described
+below.
 
 Decoder
 =======
@@ -501,22 +364,6 @@ also provides method `ReadRepeatedInt32` etc. methods that accept a
 ``pw::Vector`` (see :ref:`module-pw_containers` for details). These methods
 correctly extend the vector for either encoding.
 
-The codegen wrappers provide a `ReadFieldName` method with three signatures.
-One that reads a single value at a time, returning a `Result<Type>`, one that
-reads a packed field into a `std::span<Type>` and returning a `StatusWithSize`,
-and one that supports all formats reading into a `pw::Vector<Type>` and
-returning `Status`.
-
-Proto map encoding utils
-========================
-
-Some additional helpers for encoding more complex but common protobuf
-submessages (e.g. map<string, bytes>) are provided in
-``pw_protobuf/map_utils.h``.
-
-.. Note::
-  The helper API are currently in-development and may not remain stable.
-
 Message
 =======
 
@@ -681,11 +528,172 @@ single fields directly.
 .. Note::
   The helper API are currently in-development and may not remain stable.
 
+-------
+Codegen
+-------
+
+pw_protobuf codegen integration is supported in GN, Bazel, and CMake.
+The codegen is a light wrapper around the ``StreamEncoder``, ``MemoryEncoder``,
+and ``StreamDecoder`` objects, providing named helper functions to write and
+read proto fields rather than requiring that field numbers are directly passed
+to an encoder.
+
+All generated messages provide a ``Fields`` enum that can be used directly for
+out-of-band encoding, or with the ``pw::protobuf::Decoder``.
+
+This module's codegen is available through the ``*.pwpb`` sub-target of a
+``pw_proto_library`` in GN, CMake, and Bazel. See :ref:`pw_protobuf_compiler's
+documentation <module-pw_protobuf_compiler>` for more information on build
+system integration for pw_protobuf codegen.
+
+Example ``BUILD.gn``:
+
+.. Code:: none
+
+  import("//build_overrides/pigweed.gni")
+
+  import("$dir_pw_build/target_types.gni")
+  import("$dir_pw_protobuf_compiler/proto.gni")
+
+  # This target controls where the *.pwpb.h headers end up on the include path.
+  # In this example, it's at "pet_daycare_protos/client.pwpb.h".
+  pw_proto_library("pet_daycare_protos") {
+    sources = [
+      "pet_daycare_protos/client.proto",
+    ]
+  }
+
+  pw_source_set("example_client") {
+    sources = [ "example_client.cc" ]
+    deps = [
+      ":pet_daycare_protos.pwpb",
+      dir_pw_bytes,
+      dir_pw_stream,
+    ]
+  }
+
+  pw_source_set("example_server") {
+    sources = [ "example_server.cc" ]
+    deps = [
+      ":pet_daycare_protos.pwpb",
+      dir_pw_bytes,
+      dir_pw_stream,
+    ]
+  }
+
+Example ``pet_daycare_protos/client.proto``:
+
+.. Code:: none
+
+  syntax = "proto3";
+  // The proto package controls the namespacing of the codegen. If this package
+  // were fuzzy.friends, the namespace for codegen would be fuzzy::friends::*.
+  package fuzzy_friends;
+
+  message Pet {
+    string name = 1;
+    string pet_type = 2;
+  }
+
+  message Client {
+    repeated Pet pets = 1;
+  }
+
+Example ``example_client.cc``:
+
+.. Code:: cpp
+
+  #include "pet_daycare_protos/client.pwpb.h"
+  #include "pw_protobuf/encoder.h"
+  #include "pw_stream/sys_io_stream.h"
+  #include "pw_bytes/span.h"
+
+  pw::stream::SysIoWriter sys_io_writer;
+  std::byte submessage_scratch_buffer[64];
+  // The constructor is the same as a pw::protobuf::StreamEncoder.
+  fuzzy_friends::Client::StreamEncoder client(sys_io_writer,
+                                              submessage_scratch_buffer);
+  {
+    fuzzy_friends::Pet::StreamEncoder pet1 = client.GetPetsEncoder();
+    pet1.WriteName("Spot");
+    pet1.WritePetType("dog");
+  }
+
+  {
+    fuzzy_friends::Pet::StreamEncoder pet2 = client.GetPetsEncoder();
+    pet2.WriteName("Slippers");
+    pet2.WritePetType("rabbit");
+  }
+
+  if (!client.status().ok()) {
+    PW_LOG_INFO("Failed to encode proto; %s", client.status().str());
+  }
+
+Example ``example_server.cc``:
+
+.. Code:: cpp
+
+  #include "pet_daycare_protos/client.pwpb.h"
+  #include "pw_protobuf/stream_decoder.h"
+  #include "pw_stream/sys_io_stream.h"
+  #include "pw_bytes/span.h"
+
+  pw::stream::SysIoReader sys_io_reader;
+  // The constructor is the same as a pw::protobuf::StreamDecoder.
+  fuzzy_friends::Client::StreamDecoder client(sys_io_reader);
+  while (client.Next().ok()) {
+    switch (client.Field().value) {
+      case fuzzy_friends::Client::Fields::PET: {
+        std::array<char, 32> name{};
+        std::array<char, 32> pet_type{};
+
+        fuzzy_friends::Pet::StreamDecoder pet = client.GetPetsDecoder();
+        while (pet.Next().ok()) {
+          switch (pet.Field().value) {
+            case fuzzy_friends::Pet::NAME:
+              pet.ReadName(name);
+              break;
+            case fuzzy_friends::Pet::TYPE:
+              pet.ReadPetType(pet_type);
+              break;
+          }
+        }
+
+        break;
+      }
+    }
+  }
+
+  if (!client.status().ok()) {
+    PW_LOG_INFO("Failed to decode proto; %s", client.status().str());
+  }
+
+Enums
+=====
+Namespaced proto enums are generated, and used as the arguments when writing
+enum fields of a proto message. When reading enum fields of a proto message,
+the enum value is validated and returned as the correct type, or
+``Status::DataLoss()`` if the decoded enum value was not given in the proto.
+
+Repeated Fields
+===============
+For encoding, the wrappers provide a `WriteFieldName` method with three
+signatures. One that encodes a single value at a time, one that encodes a packed
+field from a `std::span<Type>`, and one that encodes a packed field from a
+`pw::Vector<Type>`. All three return `Status`.
+
+For decoding, the wrappers provide a `ReadFieldName` method with three
+signatures. One that reads a single value at a time, returning a `Result<Type>`,
+one that reads a packed field into a `std::span<Type>` and returning a
+`StatusWithSize`, and one that supports all formats reading into a
+`pw::Vector<Type>` and returning `Status`.
+
+-----------
 Size report
-===========
+-----------
 
 Full size report
-----------------
+================
 
 This report demonstrates the size of using the entire decoder with all of its
 decode methods and a decode callback for a proto message containing each of the
@@ -695,7 +703,7 @@ protobuf field types.
 
 
 Incremental size report
------------------------
+=======================
 
 This report is generated using the full report as a base and adding some int32
 fields to the decode callback to demonstrate the incremental cost of decoding
