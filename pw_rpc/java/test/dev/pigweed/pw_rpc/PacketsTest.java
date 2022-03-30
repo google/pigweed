@@ -17,8 +17,8 @@ package dev.pigweed.pw_rpc;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.protobuf.ExtensionRegistryLite;
-import dev.pigweed.pw.rpc.internal.Packet.PacketType;
-import dev.pigweed.pw.rpc.internal.Packet.RpcPacket;
+import dev.pigweed.pw_rpc.internal.Packet.PacketType;
+import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

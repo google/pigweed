@@ -15,8 +15,8 @@
 package dev.pigweed.pw_rpc;
 
 import com.google.protobuf.MessageLite;
-import dev.pigweed.pw.rpc.internal.Packet.PacketType;
-import dev.pigweed.pw.rpc.internal.Packet.RpcPacket;
+import dev.pigweed.pw_rpc.internal.Packet.PacketType;
+import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 
 /** Encodes pw_rpc packets of various types. */
 /* package */ class Packets {

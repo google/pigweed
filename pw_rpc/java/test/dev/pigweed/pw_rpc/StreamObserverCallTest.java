@@ -20,10 +20,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import dev.pigweed.pw.rpc.internal.Packet.PacketType;
-import dev.pigweed.pw.rpc.internal.Packet.RpcPacket;
 import dev.pigweed.pw_rpc.StreamObserverCall.StreamResponseFuture;
 import dev.pigweed.pw_rpc.StreamObserverCall.UnaryResponseFuture;
+import dev.pigweed.pw_rpc.internal.Packet.PacketType;
+import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;

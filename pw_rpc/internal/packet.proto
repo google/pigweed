@@ -15,7 +15,7 @@ syntax = "proto3";
 
 package pw.rpc.internal;
 
-option java_package = "dev.pigweed.pw.rpc.internal";
+option java_package = "dev.pigweed.pw_rpc.internal";
 
 enum PacketType {
   // To simplify identifying the origin of a packet, client-to-server packets
