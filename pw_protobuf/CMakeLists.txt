@@ -170,6 +170,11 @@ pw_proto_library(pw_protobuf.common_protos
     pw_protobuf_protos/common.proto
 )
 
+pw_proto_library(pw_protobuf.codegen_protos
+  SOURCES
+    pw_protobuf_codegen_protos/options.proto
+)
+
 pw_proto_library(pw_protobuf.codegen_test_protos
   SOURCES
     pw_protobuf_test_protos/full_test.proto

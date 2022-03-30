@@ -69,6 +69,7 @@ def protoc_cc_args(args: argparse.Namespace) -> Tuple[str, ...]:
     return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
+        f'--custom_opt=-I{args.compile_dir.as_posix()}',
         '--custom_out',
         args.out_dir,
     )

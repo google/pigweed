@@ -25,10 +25,14 @@ pw_python_package("py") {
   sources = [
     "pw_protobuf/__init__.py",
     "pw_protobuf/codegen_pwpb.py",
+    "pw_protobuf/options.py",
     "pw_protobuf/output_file.py",
     "pw_protobuf/plugin.py",
     "pw_protobuf/proto_tree.py",
   ]
-  python_deps = [ "$dir_pw_cli/py" ]
+  python_deps = [
+    "$dir_pw_cli/py",
+    "..:codegen_protos.python",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

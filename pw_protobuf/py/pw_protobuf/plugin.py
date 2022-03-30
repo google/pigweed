@@ -19,10 +19,37 @@ protobuf messages in the pw_protobuf format.
 """
 
 import sys
+from argparse import ArgumentParser, Namespace
+from pathlib import Path
+from shlex import shlex
 
 from google.protobuf.compiler import plugin_pb2
 
-from pw_protobuf import codegen_pwpb
+from pw_protobuf import codegen_pwpb, options
+
+
+def parse_parameter_options(parameter: str) -> Namespace:
+    """Parse parameters specified with --custom_opt="""
+    parser = ArgumentParser()
+    parser.add_argument('-I',
+                        '--include-path',
+                        dest='include_paths',
+                        metavar='DIR',
+                        action='append',
+                        default=[],
+                        type=Path,
+                        help="Append DIR to options file search path")
+
+    # protoc passes the --custom_opt arguments in shell quoted form, separated
+    # by commas. Use shlex to split them, correctly handling quoted sections,
+    # with equivalent options to IFS=","
+    lex = shlex(parameter)
+    lex.whitespace_split = True
+    lex.whitespace = ','
+    lex.commenters = ''
+    args = list(lex)
+
+    return parser.parse_args(args)
 
 
 def process_proto_request(req: plugin_pb2.CodeGeneratorRequest,
@@ -36,8 +63,12 @@ def process_proto_request(req: plugin_pb2.CodeGeneratorRequest,
       req: A CodeGeneratorRequest for a proto compilation.
       res: A CodeGeneratorResponse to populate with the plugin's output.
     """
+    args = parse_parameter_options(req.parameter)
     for proto_file in req.proto_file:
-        output_files = codegen_pwpb.process_proto_file(proto_file)
+        proto_options = options.load_options(args.include_paths,
+                                             Path(proto_file.name))
+        output_files = codegen_pwpb.process_proto_file(proto_file,
+                                                       proto_options)
         for output_file in output_files:
             fd = res.file.add()
             fd.name = output_file.name()

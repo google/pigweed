@@ -175,6 +175,10 @@ pw_facade_test("varint_size_test") {
   sources = [ "varint_size_test.cc" ]
 }
 
+pw_proto_library("codegen_protos") {
+  sources = [ "pw_protobuf_codegen_protos/options.proto" ]
+}
+
 pw_proto_library("common_protos") {
   sources = [
     "pw_protobuf_protos/common.proto",

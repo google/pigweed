@@ -1511,14 +1511,14 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
         output.write_line(f'\n}}  // namespace {package.cpp_namespace()}')
 
 
-def process_proto_file(proto_file) -> Iterable[OutputFile]:
+def process_proto_file(proto_file, proto_options) -> Iterable[OutputFile]:
     """Generates code for a single .proto file."""
 
     # Two passes are made through the file. The first builds the tree of all
     # message/enum nodes, then the second creates the fields in each. This is
     # done as non-primitive fields need pointers to their types, which requires
     # the entire tree to have been parsed into memory.
-    _, package_root = build_node_tree(proto_file)
+    _, package_root = build_node_tree(proto_file, proto_options)
 
     output_filename = _proto_filename_to_generated_header(proto_file.name)
     output_file = OutputFile(output_filename)

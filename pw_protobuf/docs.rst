@@ -688,6 +688,42 @@ one that reads a packed field into a `std::span<Type>` and returning a
 `StatusWithSize`, and one that supports all formats reading into a
 `pw::Vector<Type>` and returning `Status`.
 
+Options
+=======
+Code generation can be configured using a separate ``.options`` file placed
+alongside the relevant ``.proto`` file.
+
+The format of this file is a series of fully qualified field names, or patterns,
+followed by one or more options. Lines starting with ``#`` or ``//`` are
+comments, and blank lines are ignored.
+
+Example:
+
+.. code-block:: none
+
+  // Set an option for a specific field.
+  fuzzy_friends.Client.visit_dates max_count:16
+
+  // Set options for multiple fields by wildcard matching.
+  fuzzy_friends.Pet.* max_length:32
+
+  // Set multiple options in one go.
+  fuzzy_friends.Dog.paws max_count:4 fixed_count:true
+
+Options files should be listed as ``inputs`` when defining ``pw_proto_library``,
+e.g.
+
+.. code-block:: none
+
+  pw_proto_library("pet_daycare_protos") {
+    sources = [
+      "pet_daycare_protos/client.proto",
+    ]
+    inputs = [
+      "pet_daycare_protos/client.options",
+    ]
+  }
+
 -----------
 Size report
 -----------

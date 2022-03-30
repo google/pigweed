@@ -23,6 +23,7 @@ filegroup(
     srcs = [
         "pw_protobuf/__init__.py",
         "pw_protobuf/codegen_pwpb.py",
+        "pw_protobuf/options.py",
         "pw_protobuf/output_file.py",
         "pw_protobuf/plugin.py",
         "pw_protobuf/proto_tree.py",
@@ -33,7 +34,10 @@ py_library(
     name = "plugin_library",
     srcs = [":pw_protobuf_common_sources"],
     imports = ["."],
-    deps = ["@com_google_protobuf//:protobuf_python"],
+    deps = [
+        "//pw_protobuf:codegen_protos_pb2",
+        "@com_google_protobuf//:protobuf_python",
+    ],
 )
 
 py_binary(
