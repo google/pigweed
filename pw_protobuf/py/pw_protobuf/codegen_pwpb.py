@@ -16,6 +16,7 @@
 import abc
 from datetime import datetime
 import enum
+from graphlib import CycleError, TopologicalSorter
 import os
 import sys
 from typing import Dict, Iterable, List, Tuple
@@ -1435,26 +1436,40 @@ def forward_declare(node: ProtoMessage, root: ProtoNode,
     output.write_line(f'}}  // namespace {namespace}')
 
 
-def generate_class_wrappers(package: ProtoNode, class_type: ClassType,
-                            output: OutputFile):
-    # Run through all messages in the file, generating a class for each.
-    for node in package:
-        if node.type() == ProtoNode.Type.MESSAGE:
-            output.write_line()
-            generate_class_for_message(cast(ProtoMessage, node), package,
-                                       output, class_type)
-
-    # Run a second pass through the classes, this time defining all of the
-    # methods which were previously only declared.
-    for node in package:
-        if node.type() == ProtoNode.Type.MESSAGE:
-            define_not_in_class_methods(cast(ProtoMessage, node), package,
-                                        output, class_type)
-
-
 def _proto_filename_to_generated_header(proto_file: str) -> str:
     """Returns the generated C++ header name for a .proto file."""
     return os.path.splitext(proto_file)[0] + PROTO_H_EXTENSION
+
+
+def dependency_sorted_messages(package: ProtoNode):
+    """Yields the messages in the package sorted after their dependencies."""
+
+    # Build the graph of dependencies between messages.
+    graph: Dict[ProtoMessage, List[ProtoMessage]] = {}
+    for node in package:
+        if node.type() == ProtoNode.Type.MESSAGE:
+            message = cast(ProtoMessage, node)
+            graph[message] = message.dependencies()
+
+    # Repeatedly prepare a topological sort of the dependency graph, removing
+    # a dependency each time a cycle is a detected, until we're left with a
+    # fully directed graph.
+    tsort: TopologicalSorter
+    while True:
+        tsort = TopologicalSorter(graph)
+        try:
+            tsort.prepare()
+            break
+        except CycleError as err:
+            dependency, message = err.args[1][0], err.args[1][1]
+            message.remove_dependency_cycle(dependency)
+            graph[message] = message.dependencies()
+
+    # Yield the messages from the sorted graph.
+    while tsort.is_active():
+        messages = tsort.get_ready()
+        yield from messages
+        tsort.done(*messages)
 
 
 def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
@@ -1502,10 +1517,29 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
             output.write_line()
             generate_function_for_enum(cast(ProtoEnum, node), package, output)
 
-    generate_class_wrappers(package, ClassType.STREAMING_ENCODER, output)
-    generate_class_wrappers(package, ClassType.MEMORY_ENCODER, output)
+    # Run through all messages, generating structs and classes for each.
+    messages = []
+    for message in dependency_sorted_messages(package):
+        output.write_line()
+        generate_class_for_message(message, package, output,
+                                   ClassType.STREAMING_ENCODER)
+        output.write_line()
+        generate_class_for_message(message, package, output,
+                                   ClassType.MEMORY_ENCODER)
+        output.write_line()
+        generate_class_for_message(message, package, output,
+                                   ClassType.STREAMING_DECODER)
+        messages.append(message)
 
-    generate_class_wrappers(package, ClassType.STREAMING_DECODER, output)
+    # Run a second pass through the messages, this time defining all of the
+    # methods which were previously only declared.
+    for message in messages:
+        define_not_in_class_methods(message, package, output,
+                                    ClassType.STREAMING_ENCODER)
+        define_not_in_class_methods(message, package, output,
+                                    ClassType.MEMORY_ENCODER)
+        define_not_in_class_methods(message, package, output,
+                                    ClassType.STREAMING_DECODER)
 
     if package.cpp_namespace():
         output.write_line(f'\n}}  // namespace {package.cpp_namespace()}')

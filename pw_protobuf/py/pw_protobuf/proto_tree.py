@@ -233,6 +233,8 @@ class ProtoMessage(ProtoNode):
     def __init__(self, name: str):
         super().__init__(name)
         self._fields: List['ProtoMessageField'] = []
+        self._dependencies: Optional[List['ProtoMessage']] = None
+        self._dependency_cycles: List['ProtoMessage'] = []
 
     def type(self) -> ProtoNode.Type:
         return ProtoNode.Type.MESSAGE
@@ -246,6 +248,30 @@ class ProtoMessage(ProtoNode):
     def _supports_child(self, child: ProtoNode) -> bool:
         return (child.type() == self.Type.ENUM
                 or child.type() == self.Type.MESSAGE)
+
+    def dependencies(self) -> List['ProtoMessage']:
+        if self._dependencies is None:
+            self._dependencies = []
+            for field in self._fields:
+                if (field.type() !=
+                        descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE):
+                    continue
+
+                type_node = field.type_node()
+                assert type_node is not None
+                if type_node.type() == ProtoNode.Type.MESSAGE:
+                    self._dependencies.append(cast(ProtoMessage, type_node))
+
+        return list(self._dependencies)
+
+    def dependency_cycles(self) -> List['ProtoMessage']:
+        return list(self._dependency_cycles)
+
+    def remove_dependency_cycle(self, dependency: 'ProtoMessage'):
+        assert self._dependencies is not None
+        assert dependency in self._dependencies
+        self._dependencies.remove(dependency)
+        self._dependency_cycles.append(dependency)
 
 
 class ProtoService(ProtoNode):
