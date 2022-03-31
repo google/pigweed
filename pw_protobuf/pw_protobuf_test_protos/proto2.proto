@@ -16,7 +16,7 @@ syntax = "proto2";
 package pw.protobuf.test;
 
 message Foo {
-  required uint32 int = 1;
+  required uint32 integer = 1;
   optional string str = 2;
   repeated Bar bar = 3;
   optional pb pb = 4;

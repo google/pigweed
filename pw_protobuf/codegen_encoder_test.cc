@@ -428,7 +428,7 @@ TEST(Codegen, Proto2) {
   std::byte encode_buffer[64];
 
   Foo::MemoryEncoder foo(encode_buffer);
-  foo.WriteInt(3).IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  foo.WriteInteger(3).IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   {
     constexpr std::byte data[] = {
