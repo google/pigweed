@@ -50,10 +50,6 @@ class AclDataChannel {
 
   static constexpr size_t kMaxAclPacketsPerChannel = 32;
 
-  static std::unique_ptr<AclDataChannel> Create(Transport* transport, zx::channel hci_acl_channel);
-
-  virtual ~AclDataChannel() = default;
-
   // Starts listening on the HCI ACL data channel and starts handling data flow
   // control. |bredr_buffer_info| represents the controller's data buffering
   // capacity for the BR/EDR transport and the |le_buffer_info| represents Low
@@ -67,17 +63,15 @@ class AclDataChannel {
   //
   // As this class is intended to support flow-control for both, this function
   // should be called based on what is reported by the controller.
-  virtual void Initialize(const DataBufferInfo& bredr_buffer_info,
-                          const DataBufferInfo& le_buffer_info) = 0;
+  static std::unique_ptr<AclDataChannel> Create(Transport* transport, zx::channel hci_acl_channel,
+                                                const DataBufferInfo& bredr_buffer_info,
+                                                const DataBufferInfo& le_buffer_info);
+
+  virtual ~AclDataChannel() = default;
 
   // Attach inspect node as a child node of |parent|.
   static constexpr const char* const kInspectNodeName = "acl_data_channel";
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
-
-  // Unregisters event handlers and cleans up.
-  // NOTE: Initialize() and ShutDown() MUST be called on the same thread. These
-  // methods are not thread-safe.
-  virtual void ShutDown() = 0;
 
   // Assigns a handler callback for received ACL data packets. |rx_callback| will shall take
   // ownership of each packet received from the controller.

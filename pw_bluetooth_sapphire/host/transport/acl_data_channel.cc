@@ -66,14 +66,12 @@ zx_status_t AclDataChannel::ReadAclDataPacketFromChannel(const zx::channel& chan
 
 class AclDataChannelImpl final : public AclDataChannel {
  public:
-  AclDataChannelImpl(Transport* transport, zx::channel hci_acl_channel);
+  AclDataChannelImpl(Transport* transport, zx::channel hci_acl_channel,
+                     const DataBufferInfo& bredr_buffer_info, const DataBufferInfo& le_buffer_info);
   ~AclDataChannelImpl() override;
 
   // AclDataChannel overrides
-  void Initialize(const DataBufferInfo& bredr_buffer_info,
-                  const DataBufferInfo& le_buffer_info) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
-  void ShutDown() override;
   void SetDataRxHandler(ACLPacketHandler rx_callback) override;
   bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                   PacketPriority priority) override;
@@ -201,6 +199,7 @@ class AclDataChannelImpl final : public AclDataChannel {
       write_send_metrics_task_{this};
 
   // Used to assert that certain public functions are only called on the creation thread.
+  // TODO(fxbug.dev/96671): Remove usage of fit::thread_checker.
   fit::thread_checker thread_checker_;
 
   // The Transport object that owns this instance.
@@ -212,14 +211,11 @@ class AclDataChannelImpl final : public AclDataChannel {
   // Wait object for |channel_|
   async::WaitMethod<AclDataChannelImpl, &AclDataChannelImpl::OnChannelReady> channel_wait_{this};
 
-  // True if this instance has been initialized through a call to Initialize().
-  std::atomic_bool is_initialized_;
-
   // The event handler ID for the Number Of Completed Packets event.
-  CommandChannel::EventHandlerId num_completed_packets_event_handler_id_;
+  CommandChannel::EventHandlerId num_completed_packets_event_handler_id_ = 0;
 
   // The event handler ID for the Data Buffer Overflow event.
-  CommandChannel::EventHandlerId data_buffer_overflow_event_handler_id_;
+  CommandChannel::EventHandlerId data_buffer_overflow_event_handler_id_ = 0;
 
   // The dispatcher used for posting tasks on the HCI transport I/O thread.
   async_dispatcher_t* io_dispatcher_;
@@ -303,18 +299,22 @@ class AclDataChannelImpl final : public AclDataChannel {
 };
 
 std::unique_ptr<AclDataChannel> AclDataChannel::Create(Transport* transport,
-                                                       zx::channel hci_acl_channel) {
-  return std::make_unique<AclDataChannelImpl>(transport, std::move(hci_acl_channel));
+                                                       zx::channel hci_acl_channel,
+                                                       const DataBufferInfo& bredr_buffer_info,
+                                                       const DataBufferInfo& le_buffer_info) {
+  return std::make_unique<AclDataChannelImpl>(transport, std::move(hci_acl_channel),
+                                              bredr_buffer_info, le_buffer_info);
 }
 
-AclDataChannelImpl::AclDataChannelImpl(Transport* transport, zx::channel hci_acl_channel)
+AclDataChannelImpl::AclDataChannelImpl(Transport* transport, zx::channel hci_acl_channel,
+                                       const DataBufferInfo& bredr_buffer_info,
+                                       const DataBufferInfo& le_buffer_info)
     : transport_(transport),
       channel_(std::move(hci_acl_channel)),
       channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
-      is_initialized_(false),
-      num_completed_packets_event_handler_id_(0u),
-      data_buffer_overflow_event_handler_id_(0u),
       io_dispatcher_(async_get_default_dispatcher()),
+      bredr_buffer_info_(bredr_buffer_info),
+      le_buffer_info_(le_buffer_info),
       send_monitor_(fit::nullable(io_dispatcher_),
                     // Buffer depth for ~3 minutes of audio assuming ~50 ACL fragments/s send rate
                     internal::RetireLog(/*min_depth=*/100, /*max_depth=*/1 << 13)) {
@@ -322,30 +322,12 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, zx::channel hci_acl
   // well.
   ZX_DEBUG_ASSERT(transport_);
   ZX_DEBUG_ASSERT(channel_.is_valid());
-}
 
-AclDataChannelImpl::~AclDataChannelImpl() {
-  // Do nothing. Since Transport is shared across threads, this can be called
-  // from any thread and calling ShutDown() would be unsafe.
-}
-
-void AclDataChannelImpl::Initialize(const DataBufferInfo& bredr_buffer_info,
-                                    const DataBufferInfo& le_buffer_info) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(!is_initialized_);
   ZX_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() || le_buffer_info.IsAvailable());
 
-  bredr_buffer_info_ = bredr_buffer_info;
-  le_buffer_info_ = le_buffer_info;
-
   zx_status_t wait_status = channel_wait_.Begin(async_get_default_dispatcher());
-  if (wait_status != ZX_OK) {
-    bt_log(ERROR, "hci", "failed channel setup %s", zx_status_get_string(wait_status));
-    channel_wait_.set_object(ZX_HANDLE_INVALID);
-    // TODO(jamuraa): return whether we successfully initialized?
-    return;
-  }
-  bt_log(DEBUG, "hci", "started I/O handler");
+  ZX_ASSERT_MSG(wait_status == ZX_OK, "failed channel setup %s", zx_status_get_string(wait_status));
 
   num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       hci_spec::kNumberOfCompletedPacketsEventCode,
@@ -357,13 +339,19 @@ void AclDataChannelImpl::Initialize(const DataBufferInfo& bredr_buffer_info,
       fit::bind_member<&AclDataChannelImpl::DataBufferOverflowCallback>(this));
   ZX_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
 
-  is_initialized_ = true;
-
   bt_log(INFO, "hci", "initialized");
 }
 
+AclDataChannelImpl::~AclDataChannelImpl() {
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
+
+  bt_log(INFO, "hci", "AclDataChannel shutting down");
+
+  transport_->command_channel()->RemoveEventHandler(num_completed_packets_event_handler_id_);
+  transport_->command_channel()->RemoveEventHandler(data_buffer_overflow_event_handler_id_);
+}
+
 void AclDataChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
-  ZX_ASSERT_MSG(is_initialized_, "Must be initialized before attaching to inspect tree");
   node_ = parent.CreateChild(std::move(name));
   send_queue_.SetProperty(node_.CreateUint("num_queued_packets", 0));
   num_overflow_packets_.AttachInspect(node_, "num_overflow_packets");
@@ -388,33 +376,6 @@ void AclDataChannelImpl::AttachInspect(inspect::Node& parent, std::string name) 
   }
 }
 
-void AclDataChannelImpl::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  if (!is_initialized_)
-    return;
-
-  bt_log(INFO, "hci", "shutting down");
-
-  write_send_metrics_task_.Cancel();
-  log_dropped_overflow_task_.Cancel();
-
-  bt_log(DEBUG, "hci", "removing I/O handler");
-  zx_status_t cancel_status = channel_wait_.Cancel();
-  if (cancel_status != ZX_OK) {
-    bt_log(WARN, "hci", "couldn't cancel wait on channel: %s", zx_status_get_string(cancel_status));
-  }
-
-  transport_->command_channel()->RemoveEventHandler(num_completed_packets_event_handler_id_);
-  transport_->command_channel()->RemoveEventHandler(data_buffer_overflow_event_handler_id_);
-
-  is_initialized_ = false;
-  send_queue_.Mutable()->clear();
-  io_dispatcher_ = nullptr;
-  num_completed_packets_event_handler_id_ = 0u;
-  data_buffer_overflow_event_handler_id_ = 0u;
-  SetDataRxHandler(nullptr);
-}
-
 void AclDataChannelImpl::SetDataRxHandler(ACLPacketHandler rx_callback) {
   rx_callback_ = std::move(rx_callback);
 }
@@ -429,11 +390,6 @@ bool AclDataChannelImpl::SendPacket(ACLDataPacketPtr data_packet, UniqueChannelI
 
 bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
                                      PacketPriority priority) {
-  if (!is_initialized_) {
-    bt_log(DEBUG, "hci", "cannot send packets while uninitialized");
-    return false;
-  }
-
   if (packets.is_empty()) {
     bt_log(DEBUG, "hci", "no packets to send!");
     return false;
@@ -659,10 +615,6 @@ size_t AclDataChannelImpl::GetBufferMtu(bt::LinkType ll_type) const {
 
 CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPacketsCallback(
     const EventPacket& event) {
-  if (!is_initialized_) {
-    return CommandChannel::EventCallbackResult::kContinue;
-  }
-
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kNumberOfCompletedPacketsEventCode);
 
@@ -814,9 +766,6 @@ AclDataChannelImpl::DataPacketQueue AclDataChannelImpl::TakePacketsToSend(
 }
 
 void AclDataChannelImpl::TrySendNextQueuedPackets() {
-  if (!is_initialized_)
-    return;
-
   // TODO(fxbug.dev/72582) - This logic is incorrect for a controller which uses a shared BrEdr &
   // LE buffer, as we will report the capacity twice, and possibly attempt to send up to double the
   // number of available packets, resulting in some being dropped.
@@ -919,10 +868,6 @@ void AclDataChannelImpl::OnChannelReady(async_dispatcher_t* dispatcher, async::W
   TRACE_DURATION("bluetooth", "AclDataChannelImpl::OnChannelReady");
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "channel error: %s", zx_status_get_string(status));
-    return;
-  }
-
-  if (!is_initialized_) {
     return;
   }
 

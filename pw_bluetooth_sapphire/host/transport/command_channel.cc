@@ -111,17 +111,6 @@ CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
   };
 }
 
-fpromise::result<std::unique_ptr<CommandChannel>> CommandChannel::Create(
-    Transport* transport, zx::channel hci_command_channel) {
-  std::unique_ptr<CommandChannel> channel = std::unique_ptr<CommandChannel>(
-      new CommandChannel(transport, std::move(hci_command_channel)));
-
-  if (!channel->is_initialized_) {
-    return fpromise::error();
-  }
-  return fpromise::ok(std::move(channel));
-}
-
 CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_channel)
     : transport_(transport),
       channel_(std::move(hci_command_channel)),
@@ -131,42 +120,12 @@ CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_cha
   ZX_ASSERT(channel_.is_valid());
 
   zx_status_t status = channel_wait_.Begin(async_get_default_dispatcher());
-  if (status != ZX_OK) {
-    bt_log(ERROR, "hci", "failed channel setup: %s", zx_status_get_string(status));
-    channel_wait_.set_object(ZX_HANDLE_INVALID);
-    return;
-  }
-  bt_log(INFO, "hci", "initialized");
+  ZX_ASSERT_MSG(status == ZX_OK, "channel wait failed: %s", zx_status_get_string(status));
 
-  is_initialized_ = true;
+  bt_log(INFO, "hci", "CommandChannel initialized");
 }
 
-void CommandChannel::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  if (!is_initialized_) {
-    return;
-  }
-
-  bt_log(INFO, "hci", "shutting down");
-  bt_log(DEBUG, "hci", "removing I/O handler");
-
-  // Prevent new command packets from being queued.
-  is_initialized_ = false;
-
-  // Stop listening for HCI events.
-  zx_status_t status = channel_wait_.Cancel();
-  if (status != ZX_OK) {
-    bt_log(WARN, "hci", "could not cancel wait on channel: %s", zx_status_get_string(status));
-  }
-
-  // Drop all queued commands and event handlers. Pending HCI commands will be resolved with an
-  // "UnspecifiedError" error code upon destruction.
-  send_queue_ = std::list<QueuedCommand>();
-  event_handler_id_map_.clear();
-  event_code_handlers_.clear();
-  le_meta_subevent_code_handlers_.clear();
-  pending_transactions_.clear();
-}
+CommandChannel::~CommandChannel() { bt_log(INFO, "hci", "CommandChannel destroyed"); }
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
     std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
@@ -203,11 +162,6 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     const hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
-  if (!is_initialized_) {
-    bt_log(DEBUG, "hci", "can't send commands while uninitialized");
-    return 0u;
-  }
-
   ZX_ASSERT(command_packet);
   ZX_ASSERT_MSG(
       (complete_event_code == hci_spec::kLEMetaEventCode) == le_meta_subevent_code.has_value(),
@@ -395,10 +349,6 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId handler_id) {
 }
 
 void CommandChannel::TrySendQueuedCommands() {
-  if (!is_initialized_) {
-    return;
-  }
-
   if (allowed_command_packets_ == 0) {
     bt_log(TRACE, "hci", "controller queue full, waiting");
     return;

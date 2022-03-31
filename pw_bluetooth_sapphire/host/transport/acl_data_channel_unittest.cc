@@ -1563,15 +1563,6 @@ TEST_F(ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts
   EXPECT_EQ(2u, packet_count);
 }
 
-TEST_F(ACLDataChannelDeathTest, AttachInspectBeforeInitializeCrashes) {
-  zx::channel acl_chan0, acl_chan1;
-  ASSERT_EQ(ZX_OK, zx::channel::create(0, &acl_chan0, &acl_chan1));
-  auto acl_data_channel = AclDataChannel::Create(transport(), std::move(acl_chan0));
-  inspect::Inspector inspector;
-  EXPECT_DEATH_IF_SUPPORTED(
-      acl_data_channel->AttachInspect(inspector.GetRoot(), AclDataChannel::kInspectNodeName), ".*");
-}
-
 TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;

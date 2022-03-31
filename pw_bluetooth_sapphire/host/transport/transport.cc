@@ -39,34 +39,15 @@ Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
   // We watch for handle errors and closures to perform the necessary clean up.
   WatchChannelClosed(channel, cmd_channel_wait_);
 
-  auto command_channel_result = CommandChannel::Create(this, std::move(channel));
-  if (command_channel_result.is_error()) {
-    return;
-  }
-  command_channel_ = command_channel_result.take_value();
+  command_channel_ = std::make_unique<CommandChannel>(this, std::move(channel));
   command_channel_->set_channel_timeout_cb(fit::bind_member<&Transport::OnChannelError>(this));
 }
 
 Transport::~Transport() {
   ZX_ASSERT(thread_checker_.is_thread_valid());
-
   bt_log(INFO, "hci", "transport shutting down");
 
-  sco_data_channel_.reset();
-
-  if (acl_data_channel_) {
-    acl_data_channel_->ShutDown();
-  }
-
-  // Command channel must be shut down last because the data channels unregister events on shut
-  // down or destruction.
-  if (command_channel_) {
-    command_channel_->ShutDown();
-  }
-
-  sco_channel_wait_.Cancel();
-  cmd_channel_wait_.Cancel();
-  acl_channel_wait_.Cancel();
+  ResetChannels();
 
   bt_log(INFO, "hci", "transport shut down complete");
 }
@@ -83,8 +64,8 @@ bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info
   // We watch for handle errors and closures to perform the necessary clean up.
   WatchChannelClosed(channel, acl_channel_wait_);
 
-  acl_data_channel_ = AclDataChannel::Create(this, std::move(channel));
-  acl_data_channel_->Initialize(bredr_buffer_info, le_buffer_info);
+  acl_data_channel_ =
+      AclDataChannel::Create(this, std::move(channel), bredr_buffer_info, le_buffer_info);
 
   return true;
 }
@@ -163,16 +144,26 @@ void Transport::NotifyClosedCallback() {
 void Transport::OnChannelError() {
   bt_log(ERROR, "hci", "channel error");
 
-  // TODO(fxbug.dev/52588): remove calls to ShutDown() here as Host will destroy Transport in closed
-  // callback
-  if (acl_data_channel_) {
-    acl_data_channel_->ShutDown();
-  }
-  if (command_channel_) {
-    command_channel_->ShutDown();
-  }
+  // TODO(fxbug.dev/52588): remove call to ResetChannels() here as Host will destroy Transport in
+  // closed callback
+  ResetChannels();
 
   NotifyClosedCallback();
+}
+
+void Transport::ResetChannels() {
+  // Waits must be canceled before channels are destroyed, invalidating the underlying channel
+  // object.
+  sco_channel_wait_.Cancel();
+  cmd_channel_wait_.Cancel();
+  acl_channel_wait_.Cancel();
+
+  acl_data_channel_.reset();
+  sco_data_channel_.reset();
+
+  // Command channel must be shut down last because the data channels unregister events on
+  // destruction.
+  command_channel_.reset();
 }
 
 }  // namespace bt::hci

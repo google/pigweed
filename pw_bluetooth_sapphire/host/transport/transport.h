@@ -108,6 +108,8 @@ class Transport final {
   // Callback called by CommandChannel or ACLDataChannel on errors.
   void OnChannelError();
 
+  void ResetChannels();
+
   // Used to assert that certain public functions are only called on the
   // creation thread.
   fit::thread_checker thread_checker_;

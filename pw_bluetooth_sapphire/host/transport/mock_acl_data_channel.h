@@ -38,10 +38,7 @@ class MockAclDataChannel final : public AclDataChannel {
   }
 
   // AclDataChannel overrides:
-  void Initialize(const DataBufferInfo& bredr_buffer_info,
-                  const DataBufferInfo& le_buffer_info) override {}
   void AttachInspect(inspect::Node& /*unused*/, std::string /*unused*/) override {}
-  void ShutDown() override {}
   void SetDataRxHandler(ACLPacketHandler rx_callback) override {}
   bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                   PacketPriority priority) override {

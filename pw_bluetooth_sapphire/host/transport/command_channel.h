@@ -44,13 +44,9 @@ class CommandChannel final {
   // driver.
   //
   // |transport| is the Transport instance that owns this CommandChannel.
-  static fpromise::result<std::unique_ptr<CommandChannel>> Create(Transport* transport,
-                                                                  zx::channel hci_command_channel);
+  CommandChannel(Transport* transport, zx::channel hci_command_channel);
 
-  // Unregisters event handlers and cleans up.
-  // TODO(fxbug.dev/667): Remove ShutDown and move logic to destructor. Let Transport destroy
-  // CommandChannel to initiate shut down.
-  void ShutDown();
+  ~CommandChannel();
 
   // Used to identify an individual HCI command<->event transaction.
   using TransactionId = size_t;
@@ -211,8 +207,6 @@ class CommandChannel final {
   fxl::WeakPtr<CommandChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  CommandChannel(Transport* transport, zx::channel hci_command_channel);
-
   TransactionId SendExclusiveCommandInternal(
       std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code,
@@ -380,9 +374,6 @@ class CommandChannel final {
 
   // Wait object for |channel_|
   async::WaitMethod<CommandChannel, &CommandChannel::OnChannelReady> channel_wait_{this};
-
-  // True if channel initialization succeeded and ShutDown() has not been called yet.
-  bool is_initialized_ = false;
 
   // The HCI command queue. This queue is not necessarily sent in order, but commands with the same
   // opcode or that wait on the same completion event code are sent first-in, first-out.
