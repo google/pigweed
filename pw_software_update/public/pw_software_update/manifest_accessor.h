@@ -15,7 +15,6 @@
 
 #include "pw_protobuf/message.h"
 #include "pw_result/result.h"
-#include "pw_software_update/config.h"
 #include "pw_stream/stream.h"
 
 namespace pw::software_update {
