@@ -14,6 +14,8 @@
 
 package dev.pigweed.pw_rpc;
 
+import javax.annotation.Nullable;
+
 /** Status object for RPC statuses. Must match gRPC's status codes. */
 public enum Status {
   OK(0),
@@ -56,6 +58,7 @@ public enum Status {
     return code == 0;
   }
 
+  @Nullable
   public static Status fromCode(int code) {
     return code >= 0 && code < values.length ? values[code] : null;
   }
