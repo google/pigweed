@@ -5,6 +5,7 @@
 #include "gatt.h"
 
 #include <lib/async/default.h>
+#include <lib/fit/defer.h>
 #include <zircon/assert.h>
 
 #include <unordered_map>
@@ -115,10 +116,43 @@ class Impl final : public GATT {
     auto iter = connections_.find(peer_id);
     if (iter == connections_.end()) {
       bt_log(TRACE, "gatt", "cannot notify disconnected peer: %s", bt_str(peer_id));
+      if (indicate_cb) {
+        indicate_cb(ToResult(HostError::kNotFound));
+      }
       return;
     }
     iter->second.server()->SendUpdate(service_id, chrc_id, BufferView(value.data(), value.size()),
                                       std::move(indicate_cb));
+  }
+
+  void UpdateConnectedPeers(IdType service_id, IdType chrc_id, ::std::vector<uint8_t> value,
+                            IndicationCallback indicate_cb) override {
+    att::ResultFunction<> shared_peer_results_cb(nullptr);
+    if (indicate_cb) {
+      // This notifies indicate_cb with success when destroyed (if indicate_cb has not been invoked)
+      auto deferred_success = fit::defer([outer_cb = indicate_cb.share()]() mutable {
+        if (outer_cb) {
+          outer_cb(fitx::ok());
+        }
+      });
+      // This captures, but doesn't use, deferred_success. Because this is later |share|d for each
+      // peer's SendUpdate callback, deferred_success is stored in this refcounted memory. If any of
+      // the SendUpdate callbacks fail, the outer callback is notified of failure. But if all of the
+      // callbacks succeed, shared_peer_results_cb's captures will be destroyed, and
+      // deferred_success will then notify indicate_cb of success.
+      shared_peer_results_cb = [deferred = std::move(deferred_success),
+                                outer_cb = std::move(indicate_cb)](att::Result<> res) mutable {
+        if (outer_cb && res.is_error()) {
+          outer_cb(res);
+        }
+      };
+    }
+    for (auto& iter : connections_) {
+      // The `shared_peer_results_cb.share()` *does* propagate indication vs. notification-ness
+      // correctly - `fit::function(nullptr).share` just creates another null fit::function.
+      iter.second.server()->SendUpdate(service_id, chrc_id, BufferView(value.data(), value.size()),
+                                       shared_peer_results_cb.share());
+    }
   }
 
   void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override {

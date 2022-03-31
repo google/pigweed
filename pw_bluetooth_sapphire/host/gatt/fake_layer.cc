@@ -94,6 +94,11 @@ void FakeLayer::SendUpdate(IdType service_id, IdType chrc_id, PeerId peer_id,
   // TODO: implement
 }
 
+void FakeLayer::UpdateConnectedPeers(IdType service_id, IdType chrc_id,
+                                     ::std::vector<uint8_t> value, IndicationCallback indicate_cb) {
+  // TODO: implement
+}
+
 void FakeLayer::SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) {
   if (set_persist_service_changed_ccc_cb_cb_) {
     set_persist_service_changed_ccc_cb_cb_();

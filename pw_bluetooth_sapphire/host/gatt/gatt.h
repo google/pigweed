@@ -111,10 +111,17 @@ class GATT {
   //   indication within the ATT timeout of 30s (v5.3, Vol. 3, Part F 3.3.3)).
   //
   // TODO(fxbug.dev/809): Revise this API to involve fewer lookups.
-  // TODO(fxbug.dev/657): Fix this to notify all registered peers when |peer_id| is
-  // empty.
   virtual void SendUpdate(IdType service_id, IdType chrc_id, PeerId peer_id,
                           ::std::vector<uint8_t> value, IndicationCallback indicate_cb) = 0;
+
+  // Like SendUpdate, but instead of updating a particular peer, sends a notification|indication to
+  // all connected peers that have configured notifications|indications.
+  // |indicate_cb|: If nullptr, notifications will be sent. Otherwise, indications will be sent, and
+  //   |indicate_cb| will be resolved after all of the indications are successfully confirmed, or
+  //   when any of the connected+configured-for-indications peers fail to confirm the indication
+  //   within the ATT timeout of 30s (v5.3, Vol. 3, Part F 3.3.3)).
+  virtual void UpdateConnectedPeers(IdType service_id, IdType chrc_id, ::std::vector<uint8_t> value,
+                                    IndicationCallback indicate_cb) = 0;
 
   // Sets a callback to run when certain local GATT database changes occur.  These changes are to
   // those database attributes which need to be persisted accross reconnects by bonded peers.  This
