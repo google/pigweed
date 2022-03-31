@@ -367,6 +367,11 @@ correctly extend the vector for either encoding.
 Message
 =======
 
+.. note::
+
+  ``pw::protobuf::Message`` is unrelated to the codegen ``struct Message``
+  used with ``StreamDecoder``.
+
 The module implements a message parsing class ``Message``, in
 ``pw_protobuf/message.h``, to faciliate proto message parsing and field access.
 The class provides interfaces for searching fields in a proto message and
@@ -533,18 +538,21 @@ Codegen
 -------
 
 pw_protobuf codegen integration is supported in GN, Bazel, and CMake.
-The codegen is a light wrapper around the ``StreamEncoder``, ``MemoryEncoder``,
-and ``StreamDecoder`` objects, providing named helper functions to write and
-read proto fields rather than requiring that field numbers are directly passed
-to an encoder.
-
-All generated messages provide a ``Fields`` enum that can be used directly for
-out-of-band encoding, or with the ``pw::protobuf::Decoder``.
 
 This module's codegen is available through the ``*.pwpb`` sub-target of a
 ``pw_proto_library`` in GN, CMake, and Bazel. See :ref:`pw_protobuf_compiler's
 documentation <module-pw_protobuf_compiler>` for more information on build
 system integration for pw_protobuf codegen.
+
+Wrappers
+========
+The codegen provides a light wrapper around the ``StreamEncoder``,
+``MemoryEncoder``, and ``StreamDecoder`` objects, providing named helper
+functions to write and read proto fields rather than requiring that field
+numbers are directly passed to an encoder or checked by the decoder.
+
+All generated messages provide a ``Fields`` enum that can be used directly for
+out-of-band encoding, or with the ``pw::protobuf::Decoder``.
 
 Example ``BUILD.gn``:
 
@@ -669,14 +677,14 @@ Example ``example_server.cc``:
   }
 
 Enums
-=====
+-----
 Namespaced proto enums are generated, and used as the arguments when writing
 enum fields of a proto message. When reading enum fields of a proto message,
 the enum value is validated and returned as the correct type, or
 ``Status::DataLoss()`` if the decoded enum value was not given in the proto.
 
 Repeated Fields
-===============
+---------------
 For encoding, the wrappers provide a `WriteFieldName` method with three
 signatures. One that encodes a single value at a time, one that encodes a packed
 field from a `std::span<Type>`, and one that encodes a packed field from a
@@ -687,6 +695,60 @@ signatures. One that reads a single value at a time, returning a `Result<Type>`,
 one that reads a packed field into a `std::span<Type>` and returning a
 `StatusWithSize`, and one that supports all formats reading into a
 `pw::Vector<Type>` and returning `Status`.
+
+Message Structure
+=================
+Decoding
+--------
+An entire protobuf message can be decoded into a structure of values using the
+`Read` method.
+
+.. code:: c++
+
+  #include "pet_daycare_protos/client.pwpb.h"
+  #include "pw_protobuf/stream_decoder.h"
+  #include "pw_stream/sys_io_stream.h"
+
+  pw::stream::SysIoReader sys_io_reader;
+  fuzzy_friends::Client::StreamDecoder client(sys_io_reader);
+  fuzzy_friends::Client::Message client_message{};
+
+  const auto status = client.Read(client_message);
+  if (!status().ok()) {
+    PW_LOG_INFO("Failed to decode proto; %s", status.str());
+  }
+
+  PW_LOG_INFO("Decoded proto about: %s", client_message.name);
+
+In the case of errors, including recognized fields, the decoding will stop and
+return with the cursor on the field that caused the error. It is valid to
+inspect the error and continue decoding by calling `Read` again on the same
+structure.
+
+Certain fields in the structure cannot be represented by simple data types, and
+instead are represented by a placeholder for a callback method. You must set
+the callback before calling `Read`, and may use any of the wrapper methods on
+the decoder within your implementation.
+
+This includes the `Read` method itself, for example decoding repeated nested
+messages:
+
+.. code:: c++
+
+    fuzzy_friends::Vaccination::Message vaccination{};
+    vaccination.booster.SetDecoder(
+        [](fuzzy_friends::Vaccination::StreamDecoder& decoder) {
+          PW_ASSERT(decoder.Field().value() ==
+              fuzzy_friends::Vaccination::Fields::BOOSTER);
+
+          fuzzy_friends::Booster::StreamDecoder booster_decoder =
+              decoder.GetBoosterDecoder();
+          fuzzy_friends::Booster::Message booster{};
+          // set any callbacks on booster here.
+          PW_TRY(booster_decoder.Read(booster));
+          // do things with booster
+          return OkStatus();
+        ));
 
 Options
 =======

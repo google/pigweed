@@ -31,6 +31,7 @@ pw_add_module_library(pw_protobuf
     public/pw_protobuf/decoder.h
     public/pw_protobuf/encoder.h
     public/pw_protobuf/find.h
+    public/pw_protobuf/internal/codegen.h
     public/pw_protobuf/internal/proto_integer_base.h
     public/pw_protobuf/map_utils.h
     public/pw_protobuf/message.h
@@ -43,6 +44,7 @@ pw_add_module_library(pw_protobuf
     pw_assert
     pw_bytes
     pw_containers.vector
+    pw_function
     pw_protobuf.config
     pw_polyfill.span
     pw_polyfill.cstddef
