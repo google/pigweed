@@ -234,6 +234,7 @@ pw_executable("integration_test") {
     ":client",
     ":test_server_proto.raw_rpc",
     "$dir_pw_rpc:integration_testing",
+    "$dir_pw_rpc/system_server",
     "$dir_pw_sync:binary_semaphore",
     "$dir_pw_thread:thread",
     dir_pw_assert,

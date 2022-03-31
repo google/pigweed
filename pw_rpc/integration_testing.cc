@@ -31,6 +31,14 @@ unit_test::LoggingEventHandler log_test_events;
 
 Client& client() { return context.client(); }
 
+void SetEgressChannelManipulator(ChannelManipulator* new_channel_manipulator) {
+  context.SetEgressChannelManipulator(new_channel_manipulator);
+}
+
+void SetIngressChannelManipulator(ChannelManipulator* new_channel_manipulator) {
+  context.SetIngressChannelManipulator(new_channel_manipulator);
+}
+
 Status InitializeClient(int argc, char* argv[], const char* usage_args) {
   unit_test::RegisterEventHandler(&log_test_events);
 

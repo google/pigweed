@@ -17,11 +17,11 @@
 
 namespace pw::rpc::system_server {
 
-// Initialization.
-void Init();
-
 // Get the reference of RPC Server instance.
 pw::rpc::Server& Server();
+
+// Initialization.
+void Init();
 
 // Start the server and processing packets. May not return.
 Status Start();

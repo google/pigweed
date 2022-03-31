@@ -26,7 +26,12 @@ config("public_includes") {
 pw_facade("system_server") {
   backend = pw_rpc_system_server_BACKEND
   public_configs = [ ":public_includes" ]
-  public_deps = [ "$dir_pw_rpc:server" ]
+  public_deps = [
+    "$dir_pw_rpc:server",
+    dir_pw_bytes,
+    dir_pw_function,
+    dir_pw_result,
+  ]
   public = [ "public/pw_rpc_system_server/rpc_server.h" ]
 }
 

@@ -32,7 +32,9 @@ class SocketClientContext {
  public:
   constexpr SocketClientContext()
       : channel_output_(stream_, hdlc::kDefaultRpcAddress, "socket"),
-        channel_(Channel::Create<kChannelId>(&channel_output_)),
+        channel_output_with_manipulator_(channel_output_),
+        channel_(
+            Channel::Create<kChannelId>(&channel_output_with_manipulator_)),
         client_(std::span(&channel_, 1)) {}
 
   Client& client() { return client_; }
@@ -45,14 +47,68 @@ class SocketClientContext {
     return OkStatus();
   }
 
+  void SetEgressChannelManipulator(
+      ChannelManipulator* new_channel_manipulator) {
+    channel_output_with_manipulator_.set_channel_manipulator(
+        new_channel_manipulator);
+  }
+
+  void SetIngressChannelManipulator(
+      ChannelManipulator* new_channel_manipulator) {
+    if (new_channel_manipulator != nullptr) {
+      new_channel_manipulator->set_send_packet([&](ConstByteSpan payload) {
+        return client_.ProcessPacket(payload);
+      });
+    }
+    ingress_channel_manipulator_ = new_channel_manipulator;
+  }
+
   // Calls Start for localhost.
   Status Start(uint16_t port) { return Start("localhost", port); }
 
  private:
   void ProcessPackets();
 
+  class ChannelOutputWithManipulator : public ChannelOutput {
+   public:
+    ChannelOutputWithManipulator(ChannelOutput& actual_output)
+        : ChannelOutput(actual_output.name()),
+          actual_output_(actual_output),
+          channel_manipulator_(nullptr) {}
+
+    void set_channel_manipulator(ChannelManipulator* new_channel_manipulator) {
+      if (new_channel_manipulator != nullptr) {
+        new_channel_manipulator->set_send_packet(
+            ChannelManipulator::SendCallback([&](
+                ConstByteSpan
+                    payload) __attribute__((no_thread_safety_analysis)) {
+              return actual_output_.Send(payload);
+            }));
+      }
+      channel_manipulator_ = new_channel_manipulator;
+    }
+
+    size_t MaximumTransmissionUnit() override {
+      return actual_output_.MaximumTransmissionUnit();
+    }
+    Status Send(std::span<const std::byte> buffer) override
+        PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
+      if (channel_manipulator_ != nullptr) {
+        return channel_manipulator_->ProcessAndSend(buffer);
+      }
+
+      return actual_output_.Send(buffer);
+    }
+
+   private:
+    ChannelOutput& actual_output_;
+    ChannelManipulator* channel_manipulator_;
+  };
+
   stream::SocketStream stream_;
   hdlc::RpcChannelOutput channel_output_;
+  ChannelOutputWithManipulator channel_output_with_manipulator_;
+  ChannelManipulator* ingress_channel_manipulator_;
   Channel channel_;
   Client client_;
 };
@@ -73,7 +129,12 @@ void SocketClientContext<kMaxTransmissionUnit>::ProcessPackets() {
     if (auto result = decoder.Process(*byte); result.ok()) {
       hdlc::Frame& frame = result.value();
       if (frame.address() == hdlc::kDefaultRpcAddress) {
-        PW_ASSERT(client_.ProcessPacket(frame.data()).ok());
+        if (ingress_channel_manipulator_ != nullptr) {
+          PW_ASSERT(
+              ingress_channel_manipulator_->ProcessAndSend(frame.data()).ok());
+        } else {
+          PW_ASSERT(client_.ProcessPacket(frame.data()).ok());
+        }
       }
     }
   }

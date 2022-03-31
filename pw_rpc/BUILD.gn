@@ -233,6 +233,7 @@ pw_source_set("integration_testing") {
     "$dir_pw_stream:socket_stream",
     "$dir_pw_unit_test:logging_event_handler",
     dir_pw_assert,
+    dir_pw_function,
     dir_pw_unit_test,
   ]
   deps = [ dir_pw_log ]

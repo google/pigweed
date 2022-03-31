@@ -16,14 +16,17 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_log/log.h"
 #include "pw_rpc/integration_testing.h"
+#include "pw_rpc_system_server/rpc_server.h"
 #include "pw_status/status.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread_stl/options.h"
@@ -42,6 +45,100 @@ constexpr auto kData8192 = bytes::Initialized<8192>([](size_t i) { return i; });
 constexpr auto kDataHdlcEscape = bytes::Initialized<8192>(0x7e);
 
 std::filesystem::path directory;
+
+class Bernoulli {
+ public:
+  Bernoulli(uint16_t seed) : state_(seed) {}
+  bool TrueWithProbability(uint32_t percent) {
+    // Note that this needs to be evaluated in uint32_t.
+    return Sample() * static_cast<uint32_t>(100) <
+           percent * std::numeric_limits<uint16_t>::max();
+  }
+
+ private:
+  uint16_t Sample() { return state_ = LfsrXorShift16(state_); }
+
+  static uint16_t LfsrXorShift16(uint16_t start_state) {
+    uint16_t state_ = start_state;
+    do {
+      state_ ^= state_ >> 7;
+      state_ ^= state_ << 9;
+      state_ ^= state_ >> 13;
+    } while (state_ == start_state);
+    return state_;
+  }
+
+  uint16_t state_;
+};
+
+// Applies aggression to a stream of packets: drops packets, reorders packets,
+// duplicates packets.
+class LossyChannel : public rpc::integration_test::ChannelManipulator {
+ public:
+  LossyChannel(uint16_t seed) : rng_(seed) {}
+  virtual ~LossyChannel() {}
+
+  // New packets are pushed into the queue. The modifier must copy the packet.
+  Status ProcessAndSend(ConstByteSpan packet) override {
+    queue_.push_back(std::vector<std::byte>(packet.begin(), packet.end()));
+    ApplyChaos();
+    Status status;
+
+    // Dump out queued packets until an error is encountered.
+    do {
+      status = Deque();
+    } while (status.ok());
+    return OkStatus();
+  }
+
+  Status Deque() {
+    if (queue_.empty()) {
+      return Status::ResourceExhausted();
+    }
+    // Potentially drop a packet.
+    // TODO(amontanez): Make this non-zero when tests can pass with this set.
+    if (rng_.TrueWithProbability(0)) {
+      return Status::ResourceExhausted();
+    }
+
+    // If packets are left, send it along.
+    if (queue_.empty()) {
+      return Status::ResourceExhausted();
+    }
+
+    std::vector<std::byte> packet = queue_.front();
+    queue_.pop_front();
+
+    return send_packet(ConstByteSpan(packet.data(), packet.size()));
+  }
+
+ private:
+  void ApplyChaos() {
+    if (rng_.TrueWithProbability(10)) {
+      SendReorderedPacket();
+    }
+    if (rng_.TrueWithProbability(10)) {
+      DuplicateTopPacket();
+    }
+    if (rng_.TrueWithProbability(10)) {
+      DropTopPacket();
+    }
+  }
+
+  void SendReorderedPacket() {
+    // TODO(amontanez): Implement.
+  }
+
+  void DuplicateTopPacket() {
+    // TODO(amontanez): Implement.
+  }
+
+  void DropTopPacket() {
+    // TODO(amontanez): Implement.
+  }
+  std::deque<std::vector<std::byte>> queue_;
+  Bernoulli rng_;
+};
 
 // Reads the file that represents the transfer with the specific ID.
 std::string GetContent(uint32_t transfer_id) {
@@ -82,14 +179,20 @@ class TransferIntegration : public ::testing::Test {
                 transfer_thread_,
                 256),
         test_server_client_(rpc::integration_test::client(),
-                            rpc::integration_test::kChannelId) {
+                            rpc::integration_test::kChannelId),
+        ingress_modifier_(0x98a4),
+        egress_modifier_(0x6d19) {
     ClearFiles();
+    pw::rpc::integration_test::SetIngressChannelManipulator(&ingress_modifier_);
+    pw::rpc::integration_test::SetEgressChannelManipulator(&egress_modifier_);
   }
 
   ~TransferIntegration() {
     ClearFiles();
     transfer_thread_.Terminate();
     system_thread_.join();
+    pw::rpc::integration_test::SetIngressChannelManipulator(nullptr);
+    pw::rpc::integration_test::SetEgressChannelManipulator(nullptr);
   }
 
   // Sets the content of a transfer ID and returns a MemoryReader for that data.
@@ -174,13 +277,14 @@ class TransferIntegration : public ::testing::Test {
   Client client_;
 
   pw_rpc::raw::TestServer::Client test_server_client_;
+  pw::transfer::LossyChannel ingress_modifier_;
+  pw::transfer::LossyChannel egress_modifier_;
   Status last_status_ = Status::Unknown();
   sync::BinarySemaphore completed_;
 };
 
 TEST_F(TransferIntegration, Read_UnknownId) {
   SetContent(123, "hello");
-
   ASSERT_EQ(OkStatus(), client().Read(456, read_buffer_, OnCompletion()));
 
   EXPECT_EQ(Status::NotFound(), WaitForCompletion());
