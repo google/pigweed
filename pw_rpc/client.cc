@@ -32,9 +32,7 @@ using internal::PacketType;
 }  // namespace
 
 Status Client::ProcessPacket(ConstByteSpan data) {
-  PW_TRY_ASSIGN(Result<Packet> result,
-                Endpoint::ProcessPacket(data, Packet::kClient));
-  Packet& packet = *result;
+  PW_TRY_ASSIGN(Packet packet, Endpoint::ProcessPacket(data, Packet::kClient));
 
   // Find an existing call for this RPC, if any.
   internal::rpc_lock().lock();

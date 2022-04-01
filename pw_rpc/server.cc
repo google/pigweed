@@ -34,9 +34,8 @@ using internal::PacketType;
 
 Status Server::ProcessPacket(ConstByteSpan packet_data,
                              ChannelOutput* interface) {
-  PW_TRY_ASSIGN(Result<Packet> result,
+  PW_TRY_ASSIGN(Packet packet,
                 Endpoint::ProcessPacket(packet_data, Packet::kServer));
-  Packet& packet = *result;
 
   internal::rpc_lock().lock();
   internal::ServerCall* const call =
