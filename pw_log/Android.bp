@@ -16,9 +16,6 @@ cc_library {
     name: "libpw_log",
     vendor_available: true,
     cpp_std: "c++2a",
-    srcs: [
-         "proto_utils.cc",
-    ],
     export_include_dirs: [
         "public",
     ],
