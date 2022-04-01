@@ -6,6 +6,7 @@
 
 #include <endian.h>
 #include <lib/async/default.h>
+#include <lib/fit/defer.h>
 #include <lib/trace/event.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
@@ -630,7 +631,7 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
                                     zx_status_t status, const zx_packet_signal_t* signal) {
   ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
-  TRACE_DURATION("bluetooth", "CommandChannel::OnChannelReady", "signal->count", signal->count);
+  TRACE_DURATION("bluetooth", "CommandChannel::OnChannelReady");
 
   if (status != ZX_OK) {
     bt_log(DEBUG, "hci", "channel error: %s", zx_status_get_string(status));
@@ -643,35 +644,35 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   // TODO(armansito): We could first try to read into a small buffer and retry if the syscall
   // returns ZX_ERR_BUFFER_TOO_SMALL. Not sure if the second syscall would be worth it but
   // investigate.
-  for (size_t count = 0; count < signal->count; count++) {
-    std::unique_ptr<EventPacket> packet =
-        EventPacket::New(slab_allocators::kLargeControlPayloadSize);
-    if (!packet) {
-      bt_log(ERROR, "hci", "failed to allocate event packet!");
-      return;
-    }
-
-    zx_status_t status = ReadEventPacketFromChannel(channel_, packet);
-    if (status == ZX_ERR_INVALID_ARGS) {
-      continue;
-    }
-
-    if (status != ZX_OK) {
-      return;
-    }
-
-    if (packet->event_code() == hci_spec::kCommandStatusEventCode ||
-        packet->event_code() == hci_spec::kCommandCompleteEventCode) {
-      UpdateTransaction(std::move(packet));
-      TrySendQueuedCommands();
-    } else {
-      NotifyEventHandler(std::move(packet));
-    }
+  std::unique_ptr<EventPacket> packet = EventPacket::New(slab_allocators::kLargeControlPayloadSize);
+  if (!packet) {
+    bt_log(ERROR, "hci", "failed to allocate event packet!");
+    return;
   }
 
-  status = wait->Begin(dispatcher);
+  // The wait needs to be restarted after every signal.
+  auto defer_wait = fit::defer([wait, dispatcher] {
+    zx_status_t status = wait->Begin(dispatcher);
+    if (status != ZX_OK) {
+      bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
+    }
+  });
+
+  status = ReadEventPacketFromChannel(channel_, packet);
+  if (status == ZX_ERR_INVALID_ARGS) {
+    return;
+  }
   if (status != ZX_OK) {
-    bt_log(DEBUG, "hci", "wait error: %s", zx_status_get_string(status));
+    defer_wait.cancel();
+    return;
+  }
+
+  if (packet->event_code() == hci_spec::kCommandStatusEventCode ||
+      packet->event_code() == hci_spec::kCommandCompleteEventCode) {
+    UpdateTransaction(std::move(packet));
+    TrySendQueuedCommands();
+  } else {
+    NotifyEventHandler(std::move(packet));
   }
 }
 

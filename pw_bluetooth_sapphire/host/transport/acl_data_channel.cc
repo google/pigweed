@@ -7,6 +7,7 @@
 #include <endian.h>
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
+#include <lib/fit/defer.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
@@ -874,33 +875,39 @@ void AclDataChannelImpl::OnChannelReady(async_dispatcher_t* dispatcher, async::W
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
-  for (size_t count = 0; count < signal->count; count++) {
-    TRACE_DURATION("bluetooth", "AclDataChannelImpl::OnChannelReady read packet");
-    if (!rx_callback_) {
-      continue;
+  // The wait needs to be restarted after every signal.
+  auto defer_wait = fit::defer([wait, dispatcher] {
+    zx_status_t status = wait->Begin(dispatcher);
+    if (status != ZX_OK) {
+      bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
     }
-    // Allocate a buffer for the event. Since we don't know the size beforehand
-    // we allocate the largest possible buffer.
-    auto packet = ACLDataPacket::New(slab_allocators::kLargeACLDataPayloadSize);
-    if (!packet) {
-      bt_log(ERROR, "hci", "failed to allocate buffer received ACL data packet!");
-      return;
-    }
-    zx_status_t status = ReadAclDataPacketFromChannel(channel_, packet);
-    if (status == ZX_ERR_INVALID_ARGS) {
-      continue;
-    } else if (status != ZX_OK) {
-      return;
-    }
-    {
-      TRACE_DURATION("bluetooth", "AclDataChannelImpl->rx_callback_");
-      rx_callback_(std::move(packet));
-    }
+  });
+
+  if (!rx_callback_) {
+    return;
   }
 
-  status = wait->Begin(dispatcher);
+  // Allocate a buffer for the event. Since we don't know the size beforehand
+  // we allocate the largest possible buffer.
+  auto packet = ACLDataPacket::New(slab_allocators::kLargeACLDataPayloadSize);
+  if (!packet) {
+    bt_log(ERROR, "hci", "failed to allocate buffer received ACL data packet!");
+    defer_wait.cancel();
+    return;
+  }
+
+  status = ReadAclDataPacketFromChannel(channel_, packet);
+  if (status == ZX_ERR_INVALID_ARGS) {
+    return;
+  }
   if (status != ZX_OK) {
-    bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
+    defer_wait.cancel();
+    return;
+  }
+
+  {
+    TRACE_DURATION("bluetooth", "AclDataChannelImpl->rx_callback_");
+    rx_callback_(std::move(packet));
   }
 }
 

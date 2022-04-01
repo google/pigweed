@@ -5,6 +5,7 @@
 #include "sco_data_channel.h"
 
 #include <lib/async/default.h>
+#include <lib/fit/defer.h>
 #include <zircon/status.h>
 
 #include <fbl/ref_counted.h>
@@ -192,31 +193,33 @@ void ScoDataChannelImpl::OnChannelReady(async_dispatcher_t* dispatcher, async::W
 
   ZX_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
-  for (size_t count = 0; count < signal->count; count++) {
-    fitx::result<zx_status_t, std::unique_ptr<ScoDataPacket>> result = ReadPacketFromChannel();
-    if (result.is_error()) {
-      // Ignore malformed packets.
-      bt_log(ERROR, "hci", "ignoring packet due to read error: %s",
-             zx_status_get_string(result.error_value()));
-      continue;
+  // The wait needs to be restarted after every signal.
+  auto defer_wait = fit::defer([wait, dispatcher] {
+    zx_status_t status = wait->Begin(dispatcher);
+    if (status != ZX_OK) {
+      bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
     }
-    auto conn_iter = connections_.find(letoh16(result.value()->connection_handle()));
-    if (conn_iter == connections_.end()) {
-      // Ignore inbound packets for connections that aren't registered. Unlike ACL, buffering data
-      // received before a connection is registered is unnecessary for SCO (it's realtime and
-      // not expected to be reliable).
-      bt_log(DEBUG, "hci", "ignoring inbound SCO packet for unregistered connection: %#.4x",
-             result.value()->connection_handle());
-      continue;
-    }
-    conn_iter->second.connection->ReceiveInboundPacket(std::move(result.value()));
+  });
+
+  fitx::result<zx_status_t, std::unique_ptr<ScoDataPacket>> result = ReadPacketFromChannel();
+  if (result.is_error()) {
+    // Ignore malformed packets.
+    bt_log(ERROR, "hci", "ignoring packet due to read error: %s",
+           zx_status_get_string(result.error_value()));
+    return;
   }
 
-  // The wait needs to be restarted after every signal.
-  status = wait->Begin(dispatcher);
-  if (status != ZX_OK) {
-    bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
+  auto conn_iter = connections_.find(letoh16(result.value()->connection_handle()));
+  if (conn_iter == connections_.end()) {
+    // Ignore inbound packets for connections that aren't registered. Unlike ACL, buffering data
+    // received before a connection is registered is unnecessary for SCO (it's realtime and
+    // not expected to be reliable).
+    bt_log(DEBUG, "hci", "ignoring inbound SCO packet for unregistered connection: %#.4x",
+           result.value()->connection_handle());
+    return;
   }
+
+  conn_iter->second.connection->ReceiveInboundPacket(std::move(result.value()));
 }
 
 fitx::result<zx_status_t, std::unique_ptr<ScoDataPacket>>
