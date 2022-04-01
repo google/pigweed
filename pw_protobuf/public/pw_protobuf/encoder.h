@@ -26,6 +26,7 @@
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
 #include "pw_protobuf/config.h"
+#include "pw_protobuf/internal/codegen.h"
 #include "pw_protobuf/wire_format.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
@@ -175,7 +176,7 @@ class StreamEncoder {
   // Precondition: Encoder has no active child encoder.
   Status WritePackedUint32(uint32_t field_number,
                            std::span<const uint32_t> values) {
-    return WritePackedVarints(field_number, values, VarintEncodeType::kNormal);
+    return WritePackedVarints(field_number, values, VarintType::kNormal);
   }
 
   // Writes a repeated uint32 using packed encoding.
@@ -185,7 +186,7 @@ class StreamEncoder {
                              const pw::Vector<uint32_t>& values) {
     return WritePackedVarints(field_number,
                               std::span(values.data(), values.size()),
-                              VarintEncodeType::kNormal);
+                              VarintType::kNormal);
   }
 
   // Writes a proto uint64 key-value pair.
@@ -200,7 +201,7 @@ class StreamEncoder {
   // Precondition: Encoder has no active child encoder.
   Status WritePackedUint64(uint64_t field_number,
                            std::span<const uint64_t> values) {
-    return WritePackedVarints(field_number, values, VarintEncodeType::kNormal);
+    return WritePackedVarints(field_number, values, VarintType::kNormal);
   }
 
   // Writes a repeated uint64 using packed encoding.
@@ -210,7 +211,7 @@ class StreamEncoder {
                              const pw::Vector<uint64_t>& values) {
     return WritePackedVarints(field_number,
                               std::span(values.data(), values.size()),
-                              VarintEncodeType::kNormal);
+                              VarintType::kNormal);
   }
 
   // Writes a proto int32 key-value pair.
@@ -229,7 +230,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint32_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kNormal);
+        VarintType::kNormal);
   }
 
   // Writes a repeated int32 using packed encoding.
@@ -241,7 +242,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint32_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kNormal);
+        VarintType::kNormal);
   }
 
   // Writes a proto int64 key-value pair.
@@ -260,7 +261,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint64_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kNormal);
+        VarintType::kNormal);
   }
 
   // Writes a repeated int64 using packed encoding.
@@ -272,7 +273,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint64_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kNormal);
+        VarintType::kNormal);
   }
 
   // Writes a proto sint32 key-value pair.
@@ -291,7 +292,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint32_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kZigZag);
+        VarintType::kZigZag);
   }
 
   // Writes a repeated sint32 using packed encoding.
@@ -303,7 +304,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint32_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kZigZag);
+        VarintType::kZigZag);
   }
 
   // Writes a proto sint64 key-value pair.
@@ -322,7 +323,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint64_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kZigZag);
+        VarintType::kZigZag);
   }
 
   // Writes a repeated sint64 using packed encoding.
@@ -334,7 +335,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint64_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kZigZag);
+        VarintType::kZigZag);
   }
 
   // Writes a proto bool key-value pair.
@@ -354,7 +355,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint8_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kNormal);
+        VarintType::kNormal);
   }
 
   // Writes a repeated bool using packed encoding.
@@ -369,7 +370,7 @@ class StreamEncoder {
         field_number,
         std::span(reinterpret_cast<const uint8_t*>(values.data()),
                   values.size()),
-        VarintEncodeType::kNormal);
+        VarintType::kNormal);
   }
 
   // Writes a proto fixed32 key-value pair.
@@ -639,13 +640,17 @@ class StreamEncoder {
     other.parent_ = nullptr;
   }
 
+  // Writes proto values to the stream from the structure contained within
+  // message, according to the description of fields in table.
+  //
+  // This is called by codegen subclass Write() functions that accept a typed
+  // struct Message reference, using the appropriate codegen MessageField table
+  // corresponding to that type.
+  Status Write(std::span<const std::byte> message,
+               std::span<const MessageField> table);
+
  private:
   friend class MemoryEncoder;
-
-  enum class VarintEncodeType {
-    kNormal,
-    kZigZag,
-  };
 
   constexpr StreamEncoder(StreamEncoder& parent, ByteSpan scratch_buffer)
       : status_(scratch_buffer.empty() ? Status::ResourceExhausted()
@@ -693,7 +698,7 @@ class StreamEncoder {
   template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
   Status WritePackedVarints(uint32_t field_number,
                             std::span<T> values,
-                            VarintEncodeType encode_type) {
+                            VarintType encode_type) {
     static_assert(std::is_same<T, const uint8_t>::value ||
                       std::is_same<T, const uint32_t>::value ||
                       std::is_same<T, const int32_t>::value ||
@@ -704,7 +709,7 @@ class StreamEncoder {
 
     size_t payload_size = 0;
     for (T val : values) {
-      if (encode_type == VarintEncodeType::kZigZag) {
+      if (encode_type == VarintType::kZigZag) {
         int64_t integer =
             static_cast<int64_t>(static_cast<std::make_signed_t<T>>(val));
         payload_size += varint::EncodedSize(varint::ZigZagEncode(integer));
@@ -724,7 +729,7 @@ class StreamEncoder {
     WriteVarint(payload_size)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     for (T value : values) {
-      if (encode_type == VarintEncodeType::kZigZag) {
+      if (encode_type == VarintType::kZigZag) {
         WriteZigzagVarint(static_cast<std::make_signed_t<T>>(value))
             .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       } else {

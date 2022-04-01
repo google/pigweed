@@ -133,6 +133,7 @@ pw_add_test(pw_protobuf.codegen_message_test
   DEPS
     pw_protobuf
     pw_protobuf.codegen_test_protos.pwpb
+    pw_string
   GROUPS
     modules
     pw_protobuf

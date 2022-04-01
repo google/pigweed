@@ -772,6 +772,82 @@ messages:
           return OkStatus();
         ));
 
+Encoding
+--------
+The same structure of values can be encoded into a protobuf message in a single
+call using the `Write` method on the `StreamEncoder` and `MemoryEncoder`
+wrappers.
+
+.. Code:: c++
+
+  #include "pw_protobuf/encoder.h"
+  #include "pw_stream/sys_io_stream.h"
+  #include "pw_bytes/span.h"
+
+  pw::stream::SysIoWriter sys_io_writer;
+  MyProto::StreamEncoder my_proto_encoder(sys_io_writer, pw::ByteSpan());
+  MyProto::Message message{};
+
+  message.timestamp = system::GetUnixEpoch();
+  message.nested.value = 42;
+  // If MyProto.repeated.max_count set in options.
+  message.repeated.push_back(10);
+  message.repeated.push_back(20);
+  message.repeated.push_back(30);
+
+  if (!my_proto_encoder.status().ok()) {
+    PW_LOG_INFO("Failed to encode proto; %s", my_proto_encoder.status().str());
+  }
+
+All fields of a message are written, including those initialized to their
+default values. If only a subset of fields are required, wrapped methods can be
+freely intermixed with calls to `Write()` for nested messages to construct the
+exact format you require with the minimum number of calls.
+
+.. Code:: c++
+
+  #include "pw_protobuf/encoder.h"
+  #include "pw_stream/sys_io_stream.h"
+  #include "pw_bytes/span.h"
+
+  pw::stream::SysIoWriter sys_io_writer;
+  MyProto::StreamEncoder my_proto_encoder(sys_io_writer, pw::ByteSpan());
+
+  // Always write timestamp.
+  my_proto_encoder.WriteTimestamp(system::GetUnixEpoch());
+
+  // Only write this field if not the default.
+  if (some_value > 0) {
+    my_proto_encoder.WriteSomeValue(some_value);
+  }
+
+  // Use Write() on nested messages.
+  MyProto::Nested::Message nested{};
+  nested.value = 42;
+
+  my_proto_encoder.GetNestedEncoder().Write(nested);
+
+  if (!my_proto_encoder.status().ok()) {
+    PW_LOG_INFO("Failed to encode proto; %s", my_proto_encoder.status().str());
+  }
+
+The same complex fields that require callbacks for decoding also require a
+callback for encoding. A common implementation would be to call wrapped `Write`
+methods, including `Write` itself.
+
+.. code:: c++
+
+    fuzzy_friends::Vaccination::Message vaccination{};
+    vaccination.booster.SetEncoder(
+        [](fuzzy_friends::Vaccination::StremEncoder& encoder) {
+          fuzzy_friends::Booster::StreamEncoder booster_encoder =
+              encoder.GetBoosterEncoder();
+          fuzzy_friends::Booster::Message booster{};
+          // set any callbacks on booster here.
+          return booster_encoder.Write(booster);
+        ));
+
+
 Options
 =======
 Code generation can be configured using a separate ``.options`` file placed

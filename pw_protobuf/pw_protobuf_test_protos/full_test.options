@@ -18,3 +18,7 @@ pw.protobuf.test.Pigweed.special_property use_callback:true
 
 pw.protobuf.test.Pigweed.device_info use_callback:true
 pw.protobuf.test.DeviceInfo.device_name max_size:32
+
+pw.protobuf.test.Pigweed.Protobuf.Compiler.file_name max_size:48
+
+pw.protobuf.test.KeyValuePair.* max_size:32

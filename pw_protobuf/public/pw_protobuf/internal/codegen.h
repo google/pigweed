@@ -167,12 +167,14 @@ union Callback {
   friend StreamEncoder;
 
   // Called by StreamEncoder to encode the structure member.
-  // Returns Unimplemented() if this has not been set by the caller.
+  // Returns OkStatus() if this has not been set by the caller, the default
+  // behavior of a field without an encoder is the same as default-initialized
+  // field.
   Status Encode(StreamEncoder& encoder) const {
     if (encode_) {
       return encode_(encoder);
     }
-    return Status::Unimplemented();
+    return OkStatus();
   }
 
   // Called by StreamDecoder to decode the structure member when the field

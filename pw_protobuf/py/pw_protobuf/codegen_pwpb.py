@@ -1687,7 +1687,7 @@ def generate_class_for_message(message: ProtoMessage, root: ProtoNode,
                     'return static_cast<Fields>(result.value());')
             output.write_line('}')
 
-        # Generate entry for message table read method.
+        # Generate entry for message table read or write methods.
         if class_type == ClassType.STREAMING_DECODER:
             output.write_line()
             output.write_line('::pw::Status Read(Message& message) {')
@@ -1696,6 +1696,15 @@ def generate_class_for_message(message: ProtoMessage, root: ProtoNode,
                     f'return {base_class}::Read('
                     'std::as_writable_bytes(std::span(&message, 1)), '
                     'kMessageFields);')
+            output.write_line('}')
+        elif class_type in (ClassType.STREAMING_ENCODER,
+                            ClassType.MEMORY_ENCODER):
+            output.write_line()
+            output.write_line('::pw::Status Write(const Message& message) {')
+            with output.indent():
+                output.write_line(
+                    f'return {base_class}::Write('
+                    'std::as_bytes(std::span(&message, 1)), kMessageFields);')
             output.write_line('}')
 
         # Generate methods for each of the message's fields.
