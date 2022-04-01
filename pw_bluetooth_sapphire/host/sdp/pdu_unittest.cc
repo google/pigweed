@@ -1007,21 +1007,23 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   EXPECT_NE(resp2.attributes(1).end(), it);
   EXPECT_EQ(DataElement::Type::kUnsignedInt, it->second.type());
 
-  const auto kInvalidItemsWrongOrder = CreateStaticByteBuffer(
+  // Note: see test below, some peers will send in the wrong order.
+  // We still will fail if the peer sends us two of the same type.
+  const auto kInvalidItemsDuplicateAttribute = CreateStaticByteBuffer(
       0x00, 0x14,  // AttributeListByteCount (20 bytes)
       // Wrapping Attribute List
       0x35, 0x12,  // Sequence uint8 18 bytes
       // Attribute List
       0x35, 0x10,                    // Sequence uint8 16 bytes
-      0x09, 0x00, 0x01,              // Handle: uint16_t (1 = kServiceClassIdList)
-      0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x0A, 0xB0, 0xBA, 0xCA, 0xFE,  // Element: uint32_t (0xB0BACAFE)
       0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
       0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
       0x00                           // No continuation state
   );
 
   ServiceSearchAttributeResponse resp3;
-  status = resp3.Parse(kInvalidItemsWrongOrder);
+  status = resp3.Parse(kInvalidItemsDuplicateAttribute);
 
   EXPECT_TRUE(status.is_error());
 
@@ -1076,6 +1078,76 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   }
   EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
+
+// Some peers will send the attributes in the wrong order.
+// As long as they are not duplicate attributes, we are flexible to this.
+TEST(PDUTest, ServiceSearchAttributeResponseParseContinuationWrongOrder) {
+
+  // Attributes can come in the wrong order.
+  const auto kItemsWrongOrder = CreateStaticByteBuffer(
+      0x00, 0x14,  // AttributeListByteCount (20 bytes)
+      // Wrapping Attribute List
+      0x35, 0x12,  // Sequence uint8 18 bytes
+      // Attribute List
+      0x35, 0x10,                    // Sequence uint8 16 bytes
+      0x09, 0x00, 0x01,              // Handle: uint16_t (1 = kServiceClassIdList)
+      0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
+      0x00                           // No continuation state
+  );
+
+  ServiceSearchAttributeResponse resp_simple;
+  auto status = resp_simple.Parse(kItemsWrongOrder);
+
+  EXPECT_EQ(fitx::ok(), status);
+
+  // Packets seen in real-world testing, a more complicated example.
+  const auto kFirstPacket = CreateStaticByteBuffer(
+      0x00, 0x77, // AttributeListsByteCount (119 bytes)
+      0x35, 0x7e, // Wrapping attribute list
+      0x35, 0x33, // Begin attribute list 1
+      0x09, 0x00, 0x01, // Attribute 0x01
+      0x35, 0x06, 0x19, 0x11, 0x0e, 0x19, 0x11, 0x0f,
+      0x09, 0x00, 0x04, // Attribute 0x04
+      0x35, 0x10, 0x35, 0x06, 0x19, 0x01, 0x00, 0x09, 0x00, 0x17, 0x35, 0x06,
+      0x19, 0x00, 0x17, 0x09, 0x01, 0x04,
+      0x09, 0x00, 0x09, // Attribute 0x09
+      0x35, 0x08, 0x35, 0x06, 0x19, 0x11,
+      0x0e, 0x09, 0x01, 0x05,
+      0x09, 0x03, 0x11, // Attribute 0x311
+      0x09, 0x00, 0x01,
+      0x35, 0x47, // Begin attribute list 2
+      0x09, 0x00, 0x01,
+      0x35, 0x03, 0x19, 0x11, 0x0c,
+      0x09, 0x00, 0x04,
+      0x35, 0x10, 0x35, 0x06, 0x19, 0x01, 0x00,
+      0x09, 0x00, 0x17, 0x35, 0x06, 0x19, 0x00, 0x17, 0x09, 0x01, 0x04,
+      0x09, 0x00, 0x0d,  // Attribute 0x0d here
+      0x35, 0x12, 0x35, 0x10, 0x35, 0x06, 0x19, 0x01, 0x00, 0x09, 0x00, 0x1b, 0x35, 0x06, 0x19, 0x00,
+      0x17, 0x09, 0x01, 0x04,
+      0x09, 0x00, 0x09,  // Attribute 0x09 here (continued in next packet)
+      0x35, 0x08, 0x35, 0x06, 0x19, 0x11, 0x0e,
+      0x01, 0x01 // Continutation state (yes, one byte, 0x01)
+  );
+
+  ServiceSearchAttributeResponse resp;
+  status = resp.Parse(kFirstPacket);
+  EXPECT_EQ(ToResult(HostError::kInProgress), status);
+
+  const auto kSecondPacket = CreateStaticByteBuffer(
+    0x00, 0x09, // AttributeListsByteCount (9 bytes)
+    // 9 bytes continuing the previous response
+    0x09, 0x01, 0x05,  // Continuation of previous 0x09 attribute
+    0x09, 0x03, 0x11, // Attribute 0x311
+    0x09, 0x00, 0x02,
+    0x00 // No continuation state.
+  );
+
+  status = resp.Parse(kSecondPacket);
+  EXPECT_EQ(fitx::ok(), status);
+}
+
 
 TEST(PDUTest, ServiceSearchAttributeResponseGetPDU) {
   ServiceSearchAttributeResponse resp;
@@ -1220,6 +1292,7 @@ TEST(PDUTest, ResponseOutOfRangeContinuation) {
 
   EXPECT_FALSE(buf);
 }
+
 
 }  // namespace
 }  // namespace bt::sdp

@@ -951,11 +951,13 @@ fitx::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& bu
       }
       bt_log(TRACE, "sdp", "adding %zu:%s = %s", list_idx, bt_str(*it), bt_str(*val));
       if (*id < last_id) {
-        attribute_lists_.clear();
-        bt_log(TRACE, "sdp", "attribute ids are in wrong order");
+        bt_log(INFO, "sdp", "attribute ids are in wrong order, ignoring for compat");
+      }
+      auto [_, inserted] = attribute_lists_.at(list_idx).emplace(*id, val->Clone());
+      if (!inserted) {
+        bt_log(WARN, "sdp", "attribute was duplicated in attribute response");
         return ToResult(HostError::kPacketMalformed);
       }
-      attribute_lists_.at(list_idx).emplace(*id, val->Clone());
       last_id = *id;
       idx += 2;
     }
