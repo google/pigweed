@@ -13,12 +13,6 @@
 // the License.
 #pragma once
 
-// The log level to use for this module. Logs below this level are omitted.
-#define PW_LOG_MODULE_NAME "PWSU"
-#ifndef PW_SOFTWARE_UPDATE_CONFIG_LOG_LEVEL
-#define PW_SOFTWARE_UPDATE_CONFIG_LOG_LEVEL PW_LOG_LEVEL_WARN
-#endif  // PW_SOFTWARE_UPDATE_CONFIG_LOG_LEVEL
-
 // The size of the buffer to create on stack for streaming manifest data from
 // the bundle reader.
 #define WRITE_MANIFEST_STREAM_PIPE_BUFFER_SIZE 8

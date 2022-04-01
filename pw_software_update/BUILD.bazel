@@ -52,6 +52,7 @@ pw_cc_library(
         "//pw_protobuf",
         "//pw_status",
         "//pw_stream",
+        "//pw_string",
     ],
 )
 

@@ -102,6 +102,7 @@ if (pw_crypto_SHA256_BACKEND != "" && pw_crypto_ECDSA_BACKEND != "") {
       ":config",
       ":protos.pwpb",
       dir_pw_log,
+      dir_pw_string,
     ]
     sources = [
       "manifest_accessor.cc",

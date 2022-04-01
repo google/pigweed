@@ -12,16 +12,17 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_software_update/config.h"
+#define PW_LOG_MODULE_NAME "PWSU"
+#define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
 
-#define PW_LOG_LEVEL PW_SOFTWARE_UPDATE_CONFIG_LOG_LEVEL
+#include "pw_software_update/bundled_update_service.h"
 
 #include <mutex>
 #include <string_view>
 
 #include "pw_log/log.h"
 #include "pw_result/result.h"
-#include "pw_software_update/bundled_update_service.h"
+#include "pw_software_update/config.h"
 #include "pw_software_update/manifest_accessor.h"
 #include "pw_software_update/update_bundle.pwpb.h"
 #include "pw_status/status.h"

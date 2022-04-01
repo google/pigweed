@@ -12,6 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_MODULE_NAME "PWSU"
+#define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
+
 #include "pw_software_update/update_bundle_accessor.h"
 
 #include <cstddef>
@@ -28,8 +31,7 @@
 #include "pw_software_update/update_bundle.pwpb.h"
 #include "pw_stream/interval_reader.h"
 #include "pw_stream/memory_stream.h"
-
-#define PW_LOG_LEVEL PW_SOFTWARE_UPDATE_CONFIG_LOG_LEVEL
+#include "pw_string/string_builder.h"
 
 namespace pw::software_update {
 namespace {
@@ -122,7 +124,7 @@ Status VerifyMetadataSignatures(protobuf::Bytes message,
     }
 
     if (!key_id_is_allowed) {
-      PW_LOG_DEBUG("Skipping a key id not listed in allowed key ids.");
+      PW_LOG_DEBUG("Skipping a key id not listed in allowed key ids");
       LogKeyId(key_id_buf);
       continue;
     }
@@ -164,11 +166,9 @@ Status VerifyMetadataSignatures(protobuf::Bytes message,
     return Status::NotFound();
   }
 
-  PW_LOG_DEBUG(
-      "Not enough number of signatures verified. Requires at least %u, "
-      "verified %u",
-      threshold.value(),
-      verified_count);
+  PW_LOG_ERROR("Insufficient signatures. Requires at least %u, verified %u",
+               threshold.value(),
+               verified_count);
   return Status::Unauthenticated();
 }
 
@@ -249,9 +249,13 @@ Result<std::string_view> ReadProtoString(protobuf::String str,
 }  // namespace
 
 Status UpdateBundleAccessor::OpenAndVerify() {
-  PW_TRY(DoOpen());
+  if (Status status = DoOpen(); !status.ok()) {
+    PW_LOG_ERROR("Failed to open staged bundle");
+    return status;
+  }
 
   if (Status status = DoVerify(); !status.ok()) {
+    PW_LOG_ERROR("Failed to verified staged bundle");
     Close();
     return status;
   }
@@ -359,7 +363,7 @@ Status UpdateBundleAccessor::DoOpen() {
 
 Status UpdateBundleAccessor::DoVerify() {
 #if PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
-  PW_LOG_WARN("Update bundle verification is disabled.");
+  PW_LOG_WARN("Bundle verification is compiled out.");
   bundle_verified_ = true;
   return OkStatus();
 #else   // PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
@@ -367,15 +371,24 @@ Status UpdateBundleAccessor::DoVerify() {
 
   // Verify and upgrade the on-device trust to the incoming root metadata if
   // one is included.
-  PW_TRY(UpgradeRoot());
+  if (Status status = UpgradeRoot(); !status.ok()) {
+    PW_LOG_ERROR("Failed to upgrade to Root in staged bundle");
+    return status;
+  }
 
   // TODO(pwbug/456): Verify the targets metadata against the current trusted
   // root.
-  PW_TRY(VerifyTargetsMetadata());
+  if (Status status = VerifyTargetsMetadata(); !status.ok()) {
+    PW_LOG_ERROR("Failed to verify Targets metadata");
+    return status;
+  }
 
   // TODO(pwbug/456): Investigate whether targets payload verification should
   // be performed here or deferred until a specific target is requested.
-  PW_TRY(VerifyTargetsPayloads());
+  if (Status status = VerifyTargetsPayloads(); !status.ok()) {
+    PW_LOG_ERROR("Failed to verify all manifested payloads");
+    return status;
+  }
 
   // TODO(pwbug/456): Invoke the backend to do downstream verification of the
   // bundle (e.g. compatibility and manifest completeness checks).
@@ -387,8 +400,10 @@ Status UpdateBundleAccessor::DoVerify() {
 
 protobuf::Message UpdateBundleAccessor::GetOnDeviceTrustedRoot() {
   Result<stream::SeekableReader*> res = backend_.GetRootMetadataReader();
-  PW_TRY(res.status());
-  PW_CHECK_NOTNULL(res.value());
+  if (!(res.ok() && res.value())) {
+    PW_LOG_ERROR("Failed to get on-device Root metadata");
+    return res.status();
+  }
   // Seek to the beginning so that ConservativeReadLimit() returns the correct
   // value.
   PW_TRY(res.value()->Seek(0, stream::Stream::Whence::kBeginning));
@@ -426,7 +441,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
 
   if (!new_root.status().ok()) {
     // Don't bother upgrading if not found or invalid.
-    PW_LOG_WARN("Incoming root metadata not found or invalid.");
+    PW_LOG_WARN("Incoming root metadata not found or invalid");
     return OkStatus();
   }
 
@@ -439,9 +454,8 @@ Status UpdateBundleAccessor::UpgradeRoot() {
   // Verify the signatures against the trusted root metadata.
   Result<bool> verify_res =
       VerifyRootMetadataSignatures(trusted_root_, new_root);
-  PW_TRY(verify_res.status());
-  if (!verify_res.value()) {
-    PW_LOG_INFO("Fail to verify signatures against the current root");
+  if (!(verify_res.status().ok() && verify_res.value())) {
+    PW_LOG_ERROR("Failed to verify incoming root against the current root");
     return Status::Unauthenticated();
   }
 
@@ -456,9 +470,8 @@ Status UpdateBundleAccessor::UpgradeRoot() {
 
   // Verify the signatures against the new root metadata.
   verify_res = VerifyRootMetadataSignatures(new_root, new_root);
-  PW_TRY(verify_res.status());
-  if (!verify_res.value()) {
-    PW_LOG_INFO("Fail to verify signatures against the new root");
+  if (!(verify_res.status().ok() && verify_res.value())) {
+    PW_LOG_ERROR("Fail to verify incoming root against itself");
     return Status::Unauthenticated();
   }
 
@@ -483,7 +496,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
   PW_TRY(new_root_version.status());
 
   if (trusted_root_version.value() > new_root_version.value()) {
-    PW_LOG_DEBUG("Root attempts to rollback from %u to %u.",
+    PW_LOG_ERROR("Root attempts to rollback from %u to %u",
                  trusted_root_version.value(),
                  new_root_version.value());
     return Status::Unauthenticated();
@@ -513,7 +526,8 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
 
   if (self_verifying && !trusted_root_.status().ok()) {
     PW_LOG_WARN(
-        "Targets metadata self-verification is noop due to unavailable Root.");
+        "Self-verification won't verify Targets metadata because there is no "
+        "root");
     return OkStatus();
   }
 
@@ -580,25 +594,27 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
                                key_mapping);
 
   if (self_verifying && sig_res.IsNotFound()) {
-    PW_LOG_WARN("Unsigned bundles ignored by self-verification.");
+    PW_LOG_WARN("Self-verification ignoring unsigned bundle");
     return OkStatus();
   }
 
-  PW_TRY(sig_res);
+  if (!sig_res.ok()) {
+    PW_LOG_ERROR("Targets Metadata failed signature verification");
+    return Status::Unauthenticated();
+  }
 
   // TODO(pwbug/456): Check targets metadtata content.
 
   if (self_verifying) {
     // Don't bother because it does not matter.
-    PW_LOG_WARN(
-        "Self verification does not do Targets metadata anti-rollback.");
+    PW_LOG_WARN("Self verification does not do Targets metadata anti-rollback");
     return OkStatus();
   }
 
   // Anti-rollback check.
   ManifestAccessor device_manifest = GetOnDeviceManifest();
   if (device_manifest.status().IsNotFound()) {
-    PW_LOG_WARN("Skipping OTA anti-rollback due to absent device manifest.");
+    PW_LOG_WARN("Skipping OTA anti-rollback due to absent device manifest");
     return OkStatus();
   }
 
@@ -612,7 +628,7 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
           software_update::TargetsMetadata::Fields::COMMON_METADATA));
   PW_TRY(new_version.status());
   if (current_version.value() > new_version.value()) {
-    PW_LOG_DEBUG("Targets attempt to rollback from %u to %u.",
+    PW_LOG_ERROR("Blocking Targets metadata rollback from %u to %u",
                  current_version.value(),
                  new_version.value());
     return Status::Unauthenticated();
@@ -646,7 +662,7 @@ Status UpdateBundleAccessor::VerifyTargetsPayloads() {
         target_file.AsUint64(static_cast<uint32_t>(TargetFile::Fields::LENGTH));
     PW_TRY(target_length.status());
     if (target_length.value() > PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE) {
-      PW_LOG_ERROR("Target payload too large. Maximum supported is %llu bytes.",
+      PW_LOG_ERROR("Target payload too big. Maximum is %llu bytes",
                    PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE);
       return Status::OutOfRange();
     }
@@ -668,8 +684,13 @@ Status UpdateBundleAccessor::VerifyTargetsPayloads() {
     }
     PW_TRY(target_sha256.status());
 
-    PW_TRY(VerifyTargetPayload(
-        bundle_manifest, target_name.value(), target_length, target_sha256));
+    if (Status status = VerifyTargetPayload(
+            bundle_manifest, target_name.value(), target_length, target_sha256);
+        !status.ok()) {
+      PW_LOG_ERROR("Target: %s failed verification",
+                   pw::MakeString(target_name.value()).c_str());
+      return status;
+    }
   }  // for each target file in manifest.
 
   return OkStatus();
@@ -686,6 +707,7 @@ Status UpdateBundleAccessor::VerifyTargetPayload(
       payloads_map[target_name].GetBytesReader();
 
   Status status;
+
   if (payload_reader.ok()) {
     status = VerifyInBundleTargetPayload(
         expected_length, expected_sha256, payload_reader);
@@ -712,7 +734,7 @@ Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
   if (!device_manifest.ok()) {
     PW_LOG_ERROR(
         "Can't verify personalized-out target because on-device manifest is "
-        "not found.");
+        "not found");
     return Status::Unauthenticated();
   }
 
@@ -720,7 +742,7 @@ Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
   if (!cached.ok()) {
     PW_LOG_ERROR(
         "Can't verify personalized-out target because it is not found from "
-        "on-device manifest.");
+        "on-device manifest");
     return Status::Unauthenticated();
   }
 
@@ -753,7 +775,7 @@ Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
   Result<bool> hash_equal = expected_sha256.Equal(sha256);
   PW_TRY(hash_equal.status());
   if (!hash_equal.value()) {
-    PW_LOG_ERROR("Personalized-out target has a bad hash.");
+    PW_LOG_ERROR("Personalized-out target has a bad hash");
     return Status::Unauthenticated();
   }
 
@@ -783,7 +805,7 @@ Status UpdateBundleAccessor::VerifyInBundleTargetPayload(
   Result<bool> hash_equal = expected_sha256.Equal(actual_sha256);
   PW_TRY(hash_equal.status());
   if (!hash_equal.value()) {
-    PW_LOG_ERROR("Wrong payload sha256 hash.");
+    PW_LOG_ERROR("Wrong payload sha256 hash");
     return Status::Unauthenticated();
   }
 
