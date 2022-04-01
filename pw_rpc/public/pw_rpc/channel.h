@@ -19,10 +19,16 @@
 #include <type_traits>
 
 #include "pw_assert/assert.h"
+#include "pw_bytes/span.h"
+#include "pw_result/result.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
+
+// Extracts the channel ID from a pw_rpc packet. Returns DATA_LOSS if the
+// packet is corrupt and the channel ID could not be found.
+Result<uint32_t> ExtractChannelId(ConstByteSpan packet);
 
 class ChannelOutput {
  public:

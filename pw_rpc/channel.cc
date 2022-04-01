@@ -18,19 +18,41 @@
 #include "pw_rpc/internal/channel.h"
 // clang-format on
 
+#include "pw_bytes/span.h"
 #include "pw_log/log.h"
+#include "pw_protobuf/decoder.h"
 #include "pw_rpc/internal/config.h"
 
-namespace pw::rpc::internal {
-
+namespace pw::rpc {
 namespace {
 
 // TODO(pwbug/615): Dynamically allocate this buffer if
 //     PW_RPC_DYNAMIC_ALLOCATION is enabled.
 std::array<std::byte, cfg::kEncodingBufferSizeBytes> encoding_buffer
-    PW_GUARDED_BY(rpc_lock());
+    PW_GUARDED_BY(internal::rpc_lock());
 
 }  // namespace
+
+Result<uint32_t> ExtractChannelId(ConstByteSpan packet) {
+  protobuf::Decoder decoder(packet);
+
+  while (decoder.Next().ok()) {
+    switch (static_cast<internal::RpcPacket::Fields>(decoder.FieldNumber())) {
+      case internal::RpcPacket::Fields::CHANNEL_ID: {
+        uint32_t channel_id;
+        PW_TRY(decoder.ReadUint32(&channel_id));
+        return channel_id;
+      }
+
+      default:
+        continue;
+    }
+  }
+
+  return Status::DataLoss();
+}
+
+namespace internal {
 
 ByteSpan GetPayloadBuffer() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
   return ByteSpan(encoding_buffer)
@@ -61,4 +83,5 @@ Status Channel::Send(const Packet& packet) {
   return OkStatus();
 }
 
-}  // namespace pw::rpc::internal
+}  // namespace internal
+}  // namespace pw::rpc

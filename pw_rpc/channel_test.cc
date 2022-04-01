@@ -14,6 +14,8 @@
 
 #include "pw_rpc/channel.h"
 
+#include <cstddef>
+
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/test_utils.h"
@@ -33,7 +35,7 @@ TEST(ChannelOutput, Name) {
 }
 
 constexpr Packet kTestPacket(
-    PacketType::RESPONSE, 1, 42, 100, 0, {}, Status::NotFound());
+    PacketType::RESPONSE, 23, 42, 100, 0, {}, Status::NotFound());
 const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 5 /* service */ +
                              5 /* method */ + 2 /* payload key */ +
                              2 /* status (if not OK) */;
@@ -52,6 +54,24 @@ TEST(Channel, Create_FromEnum) {
 
 TEST(Channel, TestPacket_ReservedSizeMatchesMinEncodedSizeBytes) {
   EXPECT_EQ(kReservedSize, kTestPacket.MinEncodedSizeBytes());
+}
+
+TEST(ExtractChannelId, ValidPacket) {
+  std::byte buffer[64] = {};
+  Result<ConstByteSpan> result = kTestPacket.Encode(buffer);
+  ASSERT_EQ(result.status(), OkStatus());
+
+  Result<uint32_t> channel_id = ExtractChannelId(*result);
+  ASSERT_EQ(channel_id.status(), OkStatus());
+  EXPECT_EQ(*channel_id, 23u);
+}
+
+TEST(ExtractChannelId, InvalidPacket) {
+  constexpr std::byte buffer[64] = {std::byte{1}, std::byte{2}};
+
+  Result<uint32_t> channel_id = ExtractChannelId(buffer);
+
+  EXPECT_EQ(channel_id.status(), Status::DataLoss());
 }
 
 }  // namespace
