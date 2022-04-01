@@ -61,9 +61,7 @@ from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
 from pw_log.proto import log_pb2
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system.device import Device
-from pw_tokenizer.database import LoadTokenDatabases
-from pw_tokenizer.detokenize import Detokenizer
-from pw_tokenizer import tokens
+from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
 
 _LOG = logging.getLogger('tools')
 _DEVICE_LOG = logging.getLogger('rpc_device')
@@ -105,7 +103,7 @@ def _parse_args():
     parser.add_argument("--token-databases",
                         metavar='elf_or_token_database',
                         nargs="+",
-                        action=LoadTokenDatabases,
+                        type=Path,
                         help="Path to tokenizer database csv file(s).")
     parser.add_argument('--config-file',
                         type=Path,
@@ -211,7 +209,7 @@ class SocketClientImpl:
 def console(device: str,
             baudrate: int,
             proto_globs: Collection[str],
-            token_databases: Collection[tokens.Database],
+            token_databases: Collection[Path],
             socket_addr: str,
             logfile: str,
             output: Any,
@@ -235,8 +233,8 @@ def console(device: str,
 
     detokenizer = None
     if token_databases:
-        detokenizer = Detokenizer(tokens.Database.merged(*token_databases),
-                                  show_errors=True)
+        detokenizer = AutoUpdatingDetokenizer(*token_databases)
+        detokenizer.show_errors = True
 
     if not proto_globs:
         proto_globs = ['**/*.proto']

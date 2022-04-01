@@ -44,8 +44,9 @@ import string
 import struct
 import sys
 import time
-from typing import (AnyStr, BinaryIO, Callable, Dict, List, Iterable, Iterator,
-                    Match, NamedTuple, Optional, Pattern, Tuple, Union)
+from typing import (AnyStr, BinaryIO, Callable, Dict, List, Iterable, IO,
+                    Iterator, Match, NamedTuple, Optional, Pattern, Tuple,
+                    Union)
 
 try:
     from pw_tokenizer import database, decode, encode, tokens
@@ -299,11 +300,14 @@ class Detokenizer:
         return decode_and_detokenize
 
 
+_PathOrFile = Union[IO, str, Path]
+
+
 class AutoUpdatingDetokenizer(Detokenizer):
     """Loads and updates a detokenizer from database paths."""
     class _DatabasePath:
         """Tracks the modified time of a path or file object."""
-        def __init__(self, path):
+        def __init__(self, path: _PathOrFile) -> None:
             self.path = path if isinstance(path, (str, Path)) else path.name
             self._modified_time: Optional[float] = self._last_modified_time()
 
@@ -329,7 +333,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
                 return database.load_token_database()
 
     def __init__(self,
-                 *paths_or_files,
+                 *paths_or_files: _PathOrFile,
                  min_poll_period_s: float = 1.0) -> None:
         self.paths = tuple(self._DatabasePath(path) for path in paths_or_files)
         self.min_poll_period_s = min_poll_period_s
