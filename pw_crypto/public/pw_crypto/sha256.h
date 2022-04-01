@@ -14,9 +14,6 @@
 
 #pragma once
 
-#define PW_LOG_MODULE_NAME "SHA256"
-#define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
-
 #include <cstdint>
 
 #include "pw_bytes/span.h"

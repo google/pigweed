@@ -11,6 +11,8 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#define PW_LOG_MODULE_NAME "SHA256-BSSL"
+#define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
 
 #include "pw_crypto/sha256.h"
 #include "pw_status/status.h"
