@@ -49,6 +49,7 @@ pw_python_package("py") {
     "pw_console/plugins/bandwidth_toolbar.py",
     "pw_console/plugins/calc_pane.py",
     "pw_console/plugins/clock_pane.py",
+    "pw_console/plugins/twenty48_pane.py",
     "pw_console/progress_bar/__init__.py",
     "pw_console/progress_bar/progress_bar_impl.py",
     "pw_console/progress_bar/progress_bar_state.py",

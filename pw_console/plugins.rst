@@ -89,7 +89,7 @@ of the window.
 Both input and output fields are prompt_toolkit `TextArea`_ objects which can
 have their own options like syntax highlighting.
 
-.. figure:: images/calculator_plugin.png
+.. figure:: images/calculator_plugin.svg
   :alt: Screenshot of the CalcPane plugin showing some math calculations.
 
   Screenshot of the ``CalcPane`` plugin showing some math calculations.
@@ -102,7 +102,7 @@ Clock
 The ClockPane is another WindowPane based plugin that displays a clock and some
 formatted text examples. It inherits from both WindowPane and PluginMixin.
 
-.. figure:: images/clock_plugin1.png
+.. figure:: images/clock_plugin1.svg
   :alt: ClockPane plugin screenshot showing the clock text.
 
   ``ClockPane`` plugin screenshot showing the clock text.
@@ -113,13 +113,33 @@ triggers UI re-draws. There are also two toolbar buttons to toggle view mode
 :kbd:`v` key or mouse clicking on the :guilabel:`View Mode` button will toggle
 the view to show some formatted text samples:
 
-.. figure:: images/clock_plugin2.png
+.. figure:: images/clock_plugin2.svg
   :alt: ClockPane plugin screenshot showing formatted text examples.
 
   ``ClockPane`` plugin screenshot showing formatted text examples.
 
 Like the CalcPane example the code is heavily commented to guide plugin authors
 through developmenp. See the :ref:`clock_pane_code` below for the full source.
+
+2048 Game
+=========
+This is a plugin that demonstrates more complex user interaction by playing a
+game of 2048.
+
+Similar to the ``ClockPane`` the ``Twenty48Pane`` class inherits from
+``WindowPane`` and ``PluginMixin``. Game keybindings are set within the
+``Twenty48Control`` class which is the ``FormattedTextControl`` widget that is
+in focus while playing.
+
+The ``Twenty48Game`` class is separate from the user interface and handles
+managing the game state as well as printing the game board. The
+``Twenty48Game.__pt_formatted_text__()`` function is responsible for drawing the
+game board using prompt_toolkit style and text tuples.
+
+.. figure:: images/2048_plugin1.svg
+  :alt: Twenty48Pane plugin screenshot showing the game board.
+
+  ``Twenty48Pane`` plugin screenshot showing the game board.
 
 --------
 Appendix
@@ -139,6 +159,15 @@ Code Listing: ``clock_pane.py``
 .. literalinclude:: ./py/pw_console/plugins/clock_pane.py
    :language: python
    :linenos:
+
+.. _twenty48_pane_code:
+
+Code Listing: ``twenty48_pane.py``
+==================================
+.. literalinclude:: ./py/pw_console/plugins/twenty48_pane.py
+   :language: python
+   :linenos:
+
 
 .. _WindowPane: https://cs.opensource.google/pigweed/pigweed/+/main:pw_console/py/pw_console/widgets/window_pane.py
 .. _WindowPaneToolbar: https://cs.opensource.google/pigweed/pigweed/+/main:pw_console/py/pw_console/widgets/window_pane_toolbar.py

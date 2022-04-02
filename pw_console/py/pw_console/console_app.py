@@ -54,12 +54,13 @@ from ptpython.key_bindings import (  # type: ignore
     load_python_bindings, load_sidebar_bindings,
 )
 
+from pw_console.command_runner import CommandRunner
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.help_window import HelpWindow
-from pw_console.command_runner import CommandRunner
 import pw_console.key_bindings
 from pw_console.log_pane import LogPane
 from pw_console.log_store import LogStore
+from pw_console.plugins.twenty48_pane import Twenty48Pane
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.python_logging import all_loggers
 from pw_console.quit_dialog import QuitDialog
@@ -211,6 +212,9 @@ class ConsoleApp:
         self.prefs_file_window.load_yaml_text(
             self.prefs.current_config_as_yaml())
 
+        self.game_2048 = Twenty48Pane(self, include_resize_handle=False)
+        self.game_2048.show_pane = False
+
         # Used for tracking which pane was in focus before showing help window.
         self.last_focused_pane = None
 
@@ -291,6 +295,11 @@ class ConsoleApp:
                 bottom=2,
                 # Callable to get width
                 width=self.keybind_help_window.content_width,
+            ),
+            Float(
+                content=self.game_2048,
+                top=3,
+                left=4,
             ),
             # Completion menu that can overlap other panes since it lives in
             # the top level Float container.
@@ -554,6 +563,13 @@ class ConsoleApp:
                         'Themes',
                         children=themes_submenu,
                     ),
+                    MenuItem('Games',
+                             children=[
+                                 MenuItem(
+                                     '2048',
+                                     handler=self.game_2048.open_dialog,
+                                 ),
+                             ]),
                     MenuItem('-'),
                     MenuItem('Exit', handler=self.exit_console),
                 ],
@@ -822,12 +838,12 @@ class ConsoleApp:
                     or self.keybind_help_window.show_window
                     or self.prefs_file_window.show_window
                     or self.user_guide_window.show_window
-                    or self.quit_dialog.show_dialog
+                    or self.quit_dialog.show_dialog or self.game_2048.show_pane
                     or self.command_runner.show_dialog)
         return (self.keybind_help_window.show_window
                 or self.prefs_file_window.show_window
                 or self.user_guide_window.show_window
-                or self.quit_dialog.show_dialog
+                or self.quit_dialog.show_dialog or self.game_2048.show_pane
                 or self.command_runner.show_dialog)
 
     def exit_console(self):

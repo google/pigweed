@@ -482,6 +482,7 @@ class CommandRunner:
         # Actions that change what is in focus should be run after closing the
         # command runner dialog.
         for command_text in [
+                '[File] > Games > ',
                 '[View] > Focus Next Window/Tab',
                 '[View] > Focus Prev Window/Tab',
                 # All help menu entries open popup windows.

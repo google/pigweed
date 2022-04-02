@@ -53,10 +53,11 @@ from pw_console.console_prefs import ConsolePrefs
 from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
 from pw_console.log_pane import LogPane
 from pw_console.plugin_mixin import PluginMixin
+from pw_console.plugins.twenty48_pane import Twenty48Pane
 from pw_console.quit_dialog import QuitDialog
+from pw_console.window_manager import WindowManager
 import pw_console.style
 import pw_console.widgets.border
-from pw_console.window_manager import WindowManager
 
 _NINJA_LOG = logging.getLogger('pw_watch_ninja_output')
 _LOG = logging.getLogger('pw_watch')
@@ -146,6 +147,10 @@ class WatchApp(PluginMixin):
 
         self.window_manager.add_pane(self.ninja_log_pane)
 
+        self.time_waster = Twenty48Pane(self)
+        self.time_waster.show_pane = False
+        self.window_manager.add_pane(self.time_waster)
+
         self.window_manager_container = (
             self.window_manager.create_root_container())
 
@@ -194,6 +199,13 @@ class WatchApp(PluginMixin):
         def _run_build(_event):
             "Rebuild."
             self.run_build()
+
+        @key_bindings.add('c-g', filter=self.input_box_not_focused())
+        def _pass_time(_event):
+            "Rebuild."
+            self.time_waster.show_pane = not self.time_waster.show_pane
+            self.refresh_layout()
+            self.window_manager.focus_first_visible_pane()
 
         register = self.prefs.register_keybinding
 
@@ -254,6 +266,9 @@ class WatchApp(PluginMixin):
 
         self.ninja_log_pane.log_view.move_selected_line_to_top()
 
+    def refresh_layout(self) -> None:
+        self.window_manager.update_root_container_body()
+
     def update_menu_items(self):
         """Required by the Window Manager Class."""
 
@@ -264,11 +279,24 @@ class WatchApp(PluginMixin):
 
     def focus_on_container(self, pane):
         """Set application focus to a specific container."""
-        self.application.layout.focus(pane)
+        # Try to focus on the given pane
+        try:
+            self.application.layout.focus(pane)
+        except ValueError:
+            # If the container can't be focused, focus on the first visible
+            # window pane.
+            self.window_manager.focus_first_visible_pane()
 
     def focused_window(self):
         """Return the currently focused window."""
         return self.application.layout.current_window
+
+    def focus_main_menu(self):
+        """Focus on the main menu.
+
+        Currently pw_watch has no main menu so focus on the first visible pane
+        instead."""
+        self.window_manager.focus_first_visible_pane()
 
     def command_runner_is_open(self) -> bool:
         # pylint: disable=no-self-use
