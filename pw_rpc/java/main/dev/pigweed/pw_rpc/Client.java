@@ -198,31 +198,42 @@ public class Client {
     StreamObserverCall<?, ?> call =
         packet.getType().equals(PacketType.SERVER_STREAM) ? rpcs.getPending(rpc) : rpcs.clear(rpc);
     if (call == null) {
-      logger.atInfo().log(
-          "Ignoring packet for RPC (%s) that isn't pending. Pending RPCs are: %s", rpc, rpcs);
+      logger.atFine().log(
+          "Ignoring packet for %s, which isn't pending. Pending RPCs are %s", rpc, rpcs);
       sendError(channel, packet, Status.FAILED_PRECONDITION);
       return true;
     }
 
     switch (packet.getType()) {
-      case SERVER_ERROR:
+      case SERVER_ERROR: {
         Status status = decodeStatus(packet);
-        logger.atWarning().log("RPC %s failed with error %s", rpc, status);
+        logger.atWarning().log("%s failed with error %s", rpc, status);
         call.onError(status);
         break;
-      case RESPONSE:
+      }
+      case RESPONSE: {
+        Status status = decodeStatus(packet);
         // Server streaming an unary RPCs include a payload with their response packet.
         if (!rpc.method().isServerStreaming()) {
+          logger.atFiner().log("%s completed with status %s and %d B payload",
+              rpc,
+              status,
+              packet.getPayload().size());
           call.onNext(packet.getPayload());
+        } else {
+          logger.atFiner().log("%s completed with status %s", rpc, status);
         }
-        call.onCompleted(decodeStatus(packet));
+        call.onCompleted(status);
         break;
+      }
       case SERVER_STREAM:
+        logger.atFiner().log(
+            "%s received server stream with %d B payload", rpc, packet.getPayload().size());
         call.onNext(packet.getPayload());
         break;
       default:
         logger.atWarning().log(
-            "Unexpected PacketType %d for RPC %s", packet.getType().getNumber(), rpc);
+            "%s received unexpected PacketType %d", rpc, packet.getType().getNumber());
     }
 
     return true;

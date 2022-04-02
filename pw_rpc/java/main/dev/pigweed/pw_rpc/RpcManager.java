@@ -37,7 +37,7 @@ public class RpcManager {
   public synchronized StreamObserverCall<?, ?> start(
       PendingRpc rpc, StreamObserverCall<?, ?> call, @Nullable MessageLite payload)
       throws ChannelOutputException {
-    logger.atFine().log("Start %s", rpc);
+    logger.atFine().log("%s starting", rpc);
     rpc.channel().send(Packets.request(rpc, payload));
     return pending.put(rpc, call);
   }
@@ -51,11 +51,11 @@ public class RpcManager {
   @Nullable
   public synchronized StreamObserverCall<?, ?> open(
       PendingRpc rpc, StreamObserverCall<?, ?> call, @Nullable MessageLite payload) {
-    logger.atFine().log("Open %s", rpc);
+    logger.atFine().log("%s opening", rpc);
     try {
       rpc.channel().send(Packets.request(rpc, payload));
     } catch (ChannelOutputException e) {
-      logger.atFine().withCause(e).log(
+      logger.atFiner().withCause(e).log(
           "Ignoring error opening %s; listening for unrequested responses", rpc);
     }
     return pending.put(rpc, call);
@@ -67,7 +67,7 @@ public class RpcManager {
       throws ChannelOutputException {
     StreamObserverCall<?, ?> call = pending.remove(rpc);
     if (call != null) {
-      logger.atFine().log("Cancel %s", rpc);
+      logger.atFine().log("%s was cancelled", rpc);
       rpc.channel().send(Packets.cancel(rpc));
     }
     return call;
@@ -88,6 +88,7 @@ public class RpcManager {
       throws ChannelOutputException {
     StreamObserverCall<?, ?> call = pending.get(rpc);
     if (call != null) {
+      logger.atFiner().log("%s client stream closed", rpc);
       rpc.channel().send(Packets.clientStreamEnd(rpc));
     }
     return call;
@@ -95,11 +96,7 @@ public class RpcManager {
 
   @Nullable
   public synchronized StreamObserverCall<?, ?> clear(PendingRpc rpc) {
-    StreamObserverCall<?, ?> call = pending.remove(rpc);
-    if (call != null) {
-      logger.atFine().log("Clear %s", rpc);
-    }
-    return call;
+    return pending.remove(rpc);
   }
 
   @Nullable
