@@ -373,8 +373,8 @@ Running local presubmits
 To speed up the review process, consider adding :ref:`module-pw_presubmit` as a
 git push hook using the following command:
 
-**Linux/macOS**
-
+Linux/macOS
+^^^^^^^^^^^
 .. code:: bash
 
   $ pw presubmit --install
@@ -397,6 +397,18 @@ example) you may push using this command:
 .. code:: bash
 
   $ git push origin HEAD:refs/for/main --no-verify
+
+Presubmit and branch management
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+When creating new feature branches, make sure to specify the upstream branch to
+track, e.g.
+
+.. code:: bash
+
+  $ git checkout -b myfeature origin/main
+
+When tracking an upstream branch, ``pw presubmit`` will only run checks on the
+modified files, rather than the entire repository.
 
 .. _Sphinx: https://www.sphinx-doc.org/
 
