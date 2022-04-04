@@ -263,7 +263,11 @@ def console(device: str,
 
     timestamp_decoder = None
     if socket_addr is None:
-        serial_device = serial_impl(device, baudrate, timeout=1)
+        serial_device = serial_impl(
+            device,
+            baudrate,
+            timeout=0,  # Non-blocking mode
+        )
         read = lambda: serial_device.read(8192)
         write = serial_device.write
 
