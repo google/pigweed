@@ -55,7 +55,7 @@ class Packet<hci_spec::ACLDataHeader> : public PacketBase<hci_spec::ACLDataHeade
 #endif
 
  protected:
-  Packet<hci_spec::ACLDataHeader>() = default;
+  using PacketBase<hci_spec::ACLDataHeader, ACLDataPacket>::PacketBase;
 
  private:
   // Writes the given header fields into the underlying buffer.

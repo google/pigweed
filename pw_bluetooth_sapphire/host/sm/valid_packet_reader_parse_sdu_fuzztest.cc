@@ -13,10 +13,8 @@ void fuzz(const uint8_t* data, size_t size) {
   DynamicByteBuffer buf(size);
   memcpy(buf.mutable_data(), data, size);
   ByteBufferPtr buf_ptr = std::make_unique<DynamicByteBuffer>(buf);
-  fpromise::result<ValidPacketReader, ErrorCode> result = ValidPacketReader::ParseSdu(buf_ptr);
-  if (result.is_ok()) {
-    ZX_ASSERT(result.value().is_valid());
-  }
+  [[maybe_unused]] fpromise::result<ValidPacketReader, ErrorCode> result =
+      ValidPacketReader::ParseSdu(buf_ptr);
 }
 
 }  // namespace bt::sm

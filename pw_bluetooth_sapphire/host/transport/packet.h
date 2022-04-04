@@ -82,8 +82,7 @@ namespace bt::hci {
 //         std::make_unique<FixedBufferPacket<MagicHeader, 255>>();
 //     packet->InitPancakes();
 //
-//   This pattern is used by the CommandPacket, EventPacket, and ACLDataPacket
-//   classes (see control_packets.h and acl_data_packet.h).
+//   This pattern is used by CommandPacket, EventPacket, ACLDataPacket, and ScoDataPacket
 //
 // THREAD-SAFETY:
 //
@@ -101,15 +100,7 @@ class PacketBase : public LinkedListable<T> {
   MutablePacketView<HeaderType>* mutable_view() { return &view_; }
 
  protected:
-  PacketBase() = default;
-
-  // Called by derived classes to initialize |view_| after initializing the
-  // corresponding buffer.
-  void init_view(const MutablePacketView<HeaderType>& view) {
-    ZX_DEBUG_ASSERT(!view_.is_valid());
-    ZX_DEBUG_ASSERT(view.is_valid());
-    view_ = view;
-  }
+  explicit PacketBase(const MutablePacketView<HeaderType>& view) : view_(view) {}
 
  private:
   MutablePacketView<HeaderType> view_;
@@ -122,7 +113,7 @@ class PacketBase : public LinkedListable<T> {
 template <typename HeaderType>
 class Packet : public PacketBase<HeaderType, Packet<HeaderType>> {
  protected:
-  Packet() = default;
+  using PacketBase<HeaderType, Packet<HeaderType>>::PacketBase;
 };
 
 }  // namespace bt::hci

@@ -41,7 +41,7 @@ class Packet<hci_spec::CommandHeader> : public PacketBase<hci_spec::CommandHeade
   }
 
  protected:
-  Packet<hci_spec::CommandHeader>() = default;
+  using PacketBase<hci_spec::CommandHeader, CommandPacket>::PacketBase;
 
  private:
   // Writes the given header fields into the underlying buffer.
@@ -131,7 +131,7 @@ class Packet<hci_spec::EventHeader> : public PacketBase<hci_spec::EventHeader, E
   void InitializeFromBuffer();
 
  protected:
-  Packet<hci_spec::EventHeader>() = default;
+  using PacketBase<hci_spec::EventHeader, EventPacket>::PacketBase;
 };
 
 }  // namespace bt::hci

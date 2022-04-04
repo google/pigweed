@@ -59,10 +59,6 @@ namespace bt {
 template <typename HeaderType>
 class PacketView {
  public:
-  // The default constructor initializes an empty packet view. This is to enable
-  // PacketView to be used by value in structures and stl containers.
-  PacketView() = default;
-
   // Initializes this Packet to operate over |buffer|. |payload_size| is the
   // size of the packet payload not including the packet header. A
   // |payload_size| value of 0 indicates that the packet contains no payload.
@@ -92,10 +88,6 @@ class PacketView {
     return *reinterpret_cast<const PayloadType*>(payload_data().data());
   }
 
-  // A PacketView that contains no backing buffer is considered invalid. A
-  // PacketView that was initialized with a buffer that is too small is invalid.
-  bool is_valid() const { return buffer_ && size_ >= sizeof(HeaderType); }
-
   // Adjusts the size of this PacketView to match the given |payload_size|. This
   // is useful when the exact packet size is not known during construction.
   //
@@ -105,7 +97,6 @@ class PacketView {
 
  protected:
   void set_size(size_t size) {
-    ZX_ASSERT(buffer_);
     ZX_ASSERT(buffer_->size() >= size);
     ZX_ASSERT(size >= sizeof(HeaderType));
     size_ = size;
@@ -114,15 +105,13 @@ class PacketView {
   const ByteBuffer* buffer() const { return buffer_; }
 
  private:
-  const ByteBuffer* buffer_ = nullptr;  // weak
-  size_t size_ = 0u;
+  const ByteBuffer* buffer_;
+  size_t size_;
 };
 
 template <typename HeaderType>
 class MutablePacketView : public PacketView<HeaderType> {
  public:
-  MutablePacketView() = default;
-
   explicit MutablePacketView(MutableByteBuffer* buffer, size_t payload_size = 0u)
       : PacketView<HeaderType>(buffer, payload_size) {}
 

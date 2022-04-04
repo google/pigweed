@@ -41,7 +41,7 @@ class Packet<hci_spec::SynchronousDataHeader>
   void InitializeFromBuffer();
 
  protected:
-  Packet<hci_spec::SynchronousDataHeader>() = default;
+  using PacketBase<hci_spec::SynchronousDataHeader, ScoDataPacket>::PacketBase;
 
  private:
   // Writes the given header fields into the underlying buffer.

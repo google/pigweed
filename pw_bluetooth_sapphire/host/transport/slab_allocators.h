@@ -97,22 +97,25 @@ constexpr size_t kNumMaxScoDataPackets = kMaxScoSlabSize / kMaxScoDataPacketSize
 
 namespace internal {
 
-// A FixedSizePacket provides fixed-size buffer storage for Packets and is the
-// basis for a slab-allocated Packet.
+template <size_t BufferSize>
+class FixedSizePacketStorage {
+ protected:
+  StaticByteBuffer<BufferSize> buffer_;
+};
+
+// A FixedSizePacket provides fixed-size buffer storage for Packets and is the basis for a
+// slab-allocated Packet. Multiple inheritance is required to initialize the underlying buffer
+// before PacketBase.
 template <typename HeaderType, size_t BufferSize>
-class FixedSizePacket : public Packet<HeaderType> {
+class FixedSizePacket : public FixedSizePacketStorage<BufferSize>, public Packet<HeaderType> {
  public:
-  explicit FixedSizePacket(size_t payload_size = 0u) : Packet<HeaderType>() {
-    ZX_ASSERT(BufferSize >= sizeof(HeaderType) + payload_size);
-    this->init_view(MutablePacketView<HeaderType>(&buffer_, payload_size));
-  }
+  explicit FixedSizePacket(size_t payload_size = 0u)
+      : Packet<HeaderType>(MutablePacketView<HeaderType>(&this->buffer_, payload_size)) {}
 
   ~FixedSizePacket() override = default;
 
- private:
-  StaticByteBuffer<BufferSize> buffer_;
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FixedSizePacket);
+  FixedSizePacket(const FixedSizePacket&) = delete;
+  FixedSizePacket& operator=(const FixedSizePacket&) = delete;
 };
 
 template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
