@@ -30,29 +30,22 @@ public final class Logger {
     private Throwable cause = null;
 
     private AndroidLogApi(Level level) {
-      switch (level) {
-        case Level.FINEST:
-        case Level.FINER:
-          this.level = Log.VERBOSE;
-          break;
-        case Level.FINE:
-        case Level.CONFIG:
-          this.level = Log.DEBUG;
-          break;
-        case Level.INFO:
-          this.level = Log.INFO;
-          break;
-        case Level.WARNING:
-          this.level = Log.WARN;
-          break;
-        case Level.SEVERE:
-          this.level = Log.ERROR;
-          break;
+      if (level == Level.FINEST || level == Level.FINER) {
+        this.level = Log.VERBOSE;
+      } else if (level == Level.FINE || level == Level.CONFIG) {
+        this.level = Log.DEBUG;
+      } else if (level == Level.WARNING) {
+        this.level = Log.WARN;
+      } else if (level == Level.SEVERE) {
+        this.level = Log.ERROR;
+      } else {
+        this.level = Log.INFO;
       }
     }
 
-    public AndroidLogApi withCause(Throwable casue) {
+    public AndroidLogApi withCause(Throwable cause) {
       this.cause = cause;
+      return this;
     }
 
     public void log(String message) {

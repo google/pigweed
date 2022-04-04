@@ -14,7 +14,6 @@
 
 java_library {
     name: "pw_rpc_java_client",
-    host_supported: true,
     srcs: ["java/main/dev/pigweed/pw_rpc/*.java"],
     visibility: ["//visibility:public"],
     static_libs: [

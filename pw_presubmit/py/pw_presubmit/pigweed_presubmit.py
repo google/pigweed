@@ -532,6 +532,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.json$',
     r'\.png$',
     r'\.svg$',
+    r'\.xml$',
     # Documentation
     r'\.md$',
     r'\.rst$',
