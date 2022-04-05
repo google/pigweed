@@ -47,6 +47,19 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "vector",
+    hdrs = [
+        "public/pw_string/vector.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":pw_string",
+        "//pw_containers:vector",
+        "//pw_status",
+    ],
+)
+
 pw_cc_test(
     name = "format_test",
     srcs = ["format_test.cc"],
@@ -90,6 +103,16 @@ pw_cc_test(
     srcs = ["util_test.cc"],
     deps = [
         ":pw_string",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "vector_test",
+    srcs = ["vector_test.cc"],
+    deps = [
+        ":vector",
+        "//pw_containers:vector",
         "//pw_unit_test",
     ],
 )

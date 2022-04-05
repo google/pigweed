@@ -83,6 +83,7 @@ buffer has a non-zero size.
 .. cpp:function:: StatusWithSize Copy(const std::string_view& source, std::span<char> dest)
 .. cpp:function:: StatusWithSize Copy(const char* source, std::span<char> dest)
 .. cpp:function:: StatusWithSize Copy(const char* source, char* dest, size_t num)
+.. cpp:function:: StatusWithSize Copy(const pw::Vector<char>& source, std::span<char> dest)
 
    Copies the source string to the dest, truncating if the full string does not
    fit. Always null terminates if dest.size() or num > 0.
@@ -92,6 +93,13 @@ buffer has a non-zero size.
 
    Precondition: The destination and source shall not overlap.
    Precondition: The source shall be a valid pointer.
+
+It also has variants that provide a destination of ``pw::Vector<char>``
+(see :ref:`module-pw_containers` for details) that do not store the null
+terminator in the vector.
+
+.. cpp:function:: StatusWithSize Copy(const std::string_view& source, pw::Vector<char>& dest)
+.. cpp:function:: StatusWithSize Copy(const char* source, pw::Vector<char>& dest)
 
 pw::StringBuilder
 =================

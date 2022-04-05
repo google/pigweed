@@ -26,6 +26,7 @@ pw_add_module_library(pw_string
     public
   PUBLIC_DEPS
     pw_assert
+    pw_containers.vector
     pw_polyfill.span
     pw_preprocessor
     pw_result
@@ -38,6 +39,17 @@ pw_add_module_library(pw_string
 if(Zephyr_FOUND AND CONFIG_PIGWEED_STRING)
   zephyr_link_libraries(pw_string)
 endif()
+
+pw_add_module_library(pw_string.vector
+  HEADERS
+    public/pw_string/vector.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.vector
+    pw_status
+    pw_string
+)
 
 pw_add_test(pw_string.format_test
   SOURCES
@@ -88,3 +100,15 @@ pw_add_test(pw_string.util_test
     modules
     pw_string
 )
+
+pw_add_test(pw_string.vector_test
+  SOURCES
+    vector_test.cc
+  DEPS
+    pw_containers.vector
+    pw_string.vector
+  GROUPS
+    modules
+    pw_string
+)
+
