@@ -53,7 +53,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
           ASSERT_TRUE(maybe_reader.is_ok())
               << "Sent invalid packet: "
               << ProtocolErrorTraits<sm::ErrorCode>::ToString(maybe_reader.error());
-          last_packet_ = maybe_reader.value();
+          last_packet_.emplace(maybe_reader.value());
           last_packet_internal_ = std::move(sent_packet);
         },
         async_get_default_dispatcher());
