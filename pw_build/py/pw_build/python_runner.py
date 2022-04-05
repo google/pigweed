@@ -87,7 +87,7 @@ def _parse_args() -> argparse.Namespace:
         '--lockfile',
         type=Path,
         required=True,
-        help=('Path to a pip lockfile. Any pip execution will aquire an '
+        help=('Path to a pip lockfile. Any pip execution will acquire an '
               'exclusive lock on it, any other module a shared lock.'))
     return parser.parse_args()
 

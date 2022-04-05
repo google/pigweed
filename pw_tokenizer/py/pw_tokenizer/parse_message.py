@@ -44,7 +44,7 @@ def attempt_to_decode(
         format_specs: Collection[str] = DEFAULT_FORMAT_SPECS,
         max_args: int = DEFAULT_MAX_ARGS,
         yield_failures: bool = False) -> Iterator[FormattedString]:
-    """Attemps to decode arguments using the provided format specifiers."""
+    """Attempts to decode arguments using the provided format specifiers."""
     format_strings = [(0, '')]  # (argument count, format string)
 
     # Each argument requires at least 1 byte.
@@ -79,7 +79,7 @@ class TokenizedMessage:
     def parse(cls, message: str, prefix: str = '$') -> 'TokenizedMessage':
         if not message.startswith(prefix):
             raise ValueError(
-                f'{message} does not start wtih {prefix!r} as expected')
+                f'{message} does not start with {prefix!r} as expected')
 
         binary = base64.b64decode(message[1:])
 
