@@ -18,7 +18,15 @@ import argparse
 import pathlib
 import sys
 
-from pw_stm32cube_build import find_files, gen_file_list, icf_to_ld, inject_init
+try:
+    from pw_stm32cube_build import (find_files, gen_file_list, icf_to_ld,
+                                    inject_init)
+except ImportError:
+    # Load from this directory if pw_stm32cube_build is not available.
+    import find_files  # type: ignore
+    import gen_file_list  # type: ignore
+    import icf_to_ld  # type: ignore
+    import inject_init  # type: ignore
 
 
 def _parse_args() -> argparse.Namespace:
