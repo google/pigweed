@@ -43,6 +43,8 @@ pw_cc_test(
     srcs = [
         "persistent_test.cc",
     ],
+    # The test contains intentional uninitialized memory access.
+    tags = ["nomsan"],
     deps = [
         ":pw_persistent_ram",
         "//pw_random",
