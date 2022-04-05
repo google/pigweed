@@ -30,7 +30,8 @@ namespace gap {
 // connection initiation procedures. The primary purpose of this class is to
 // defer updating the random device address if we believe that doing so is
 // disallowed by the controller. This is the case when scanning or legacy
-// advertising is enabled, according to Vol 2, Part E, 7.8.4.
+// advertising is enabled, according to the Core Spec v5.3, Vol 4, Part E,
+// 7.8.4.
 //
 // Procedures that need to know the value of the local address (both connection
 // and advertising procedures need to assign this to any resultant
