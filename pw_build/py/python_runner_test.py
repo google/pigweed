@@ -129,6 +129,9 @@ cflags_cc = -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register
 target_output_name = this_is_a_test
 
 build fake_toolchain/obj/fake_module/fake_test.fake_test.cc.o: fake_toolchain_cxx ../fake_module/fake_test.cc
+  source_file_dir = ../fake_module
+  source_file_name = fake_test.cc
+
 build fake_toolchain/obj/fake_module/fake_test.fake_test_c.c.o: fake_toolchain_cc ../fake_module/fake_test_c.c
 
 build fake_toolchain/obj/fake_module/test/fake_test.elf fake_toolchain/obj/fake_module/test/fake_test.map: fake_toolchain_link fake_toolchain/obj/fake_module/fake_test.fake_test.cc.o fake_toolchain/obj/fake_module/fake_test.fake_test_c.c.o
@@ -149,6 +152,9 @@ cflags_cc = -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register
 target_output_name = this_is_a_test
 
 build fake_toolchain/obj/fake_module/fake_source_set.file_a.cc.o: fake_toolchain_cxx ../fake_module/file_a.cc
+  source_file_dir = ../fake_module
+  source_file_name = file_a.cc
+
 build fake_toolchain/obj/fake_module/fake_source_set.file_b.c.o: fake_toolchain_cc ../fake_module/file_b.c
 
 build {path} fake_toolchain/obj/fake_module/fake_source_set.file_a.cc.o fake_toolchain/obj/fake_module/fake_source_set.file_b.c.o

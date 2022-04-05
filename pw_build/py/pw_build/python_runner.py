@@ -175,6 +175,8 @@ class _Artifact(NamedTuple):
 # Matches a non-phony build statement.
 _GN_NINJA_BUILD_STATEMENT = re.compile(r'^build (.+):[ \n](?!phony\b)')
 
+_OBJECTS_EXTENSIONS = ('.o', )
+
 # Extensions used for compilation artifacts.
 _MAIN_ARTIFACTS = '', '.elf', '.a', '.so', '.dylib', '.exe', '.lib', '.dll'
 
@@ -245,16 +247,16 @@ def _search_target_ninja(ninja_file: Path,
     _LOG.debug('Parsing target Ninja file %s for %s', ninja_file, target)
 
     with ninja_file.open() as fd:
-        for path, variables in _parse_build_artifacts(fd):
+        for path, _ in _parse_build_artifacts(fd):
             # Older GN used .stamp files when there is no build artifact.
             if path.suffix == '.stamp':
                 continue
 
-            if variables:
+            if str(path).endswith(_OBJECTS_EXTENSIONS):
+                objects.append(Path(path))
+            else:
                 assert not artifact, f'Multiple artifacts for {target}!'
                 artifact = Path(path)
-            else:
-                objects.append(Path(path))
 
     return artifact, objects
 
