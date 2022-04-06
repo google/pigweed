@@ -18,20 +18,20 @@
 
 namespace bt::sm {
 
-// v5.0, Vol 3, Part H, 3.2
+// Core Spec v5.3, Vol 3, Part H, 3.2
 constexpr uint16_t kNoSecureConnectionsMtu = 23;
 constexpr uint16_t kLeSecureConnectionsMtu = 65;
 
-// SMP Timeout in seconds (Vol 3, Part H, 3.4)
+// SMP Timeout in seconds (Core Spec v5.3, Vol 3, Part H, 3.4)
 constexpr zx::duration kPairingTimeout = zx::sec(30);
 
-// The supported encryption key sizes (Vol 3, Part H, 2.3.4).
+// The supported encryption key sizes (Core Spec v5.3, Vol 3, Part H, 2.3.4).
 constexpr uint8_t kMinEncryptionKeySize = 7;
 constexpr uint8_t kMaxEncryptionKeySize = 16;
 
-// These are the sample ltk and random from (Vol 6, Part C, 1), they are
-// declared so that SecurityManager can reject any peers using them and prevent
-// a mitm.
+// These are the sample ltk and random from (Core Spec v5.3, Vol 6, Part C, 1),
+// they are declared so that SecurityManager can reject any peers using them and
+// prevent a mitm.
 constexpr UInt128 kSpecSampleLtk = {0xBF, 0x01, 0xFB, 0x9D, 0x4E, 0xF3, 0xBC, 0x36,
                                     0xD8, 0x74, 0xF5, 0x39, 0x41, 0x38, 0x68, 0x4C};
 constexpr uint64_t kSpecSampleRandom = 0xABCDEF1234567890;
@@ -74,8 +74,8 @@ enum class OOBDataFlag : uint8_t {
   kPresent = 0x01,
 };
 
-// Possible values that can be assigned to the "AuthReq" bit field (Vol 3, Part
-// H, Figure 3.3).
+// Possible values that can be assigned to the "AuthReq" bit field (Core Spec
+// v5.3, Vol 3, Part H, Figure 3.3).
 enum AuthReq : uint8_t {
   // Indicates that bonding is requested.
   kBondingFlag = (1 << 0),
@@ -96,8 +96,8 @@ enum AuthReq : uint8_t {
 };
 using AuthReqField = uint8_t;
 
-// Possible values for the Key Distribution/Generation fields (Vol 3, Part H,
-// Figure 3.11)
+// Possible values for the Key Distribution/Generation fields (Core Spec v5.3,
+// Vol 3, Part H, Figure 3.11)
 enum KeyDistGen : uint8_t {
   // LE: Indicates that the LTK will be distributed using the "Encryption
   // Information" command in LE legacy pairing. Ignored in LE Secure
@@ -176,7 +176,7 @@ enum class ErrorCode : uint8_t {
 };
 
 // Possible keypress notification types used in the "Keypress Notification"
-// command (Vol 3, Part H, 3.5.8).
+// command (Core Spec v5.3, Vol 3, Part H, 3.5.8).
 enum class KeypressNotificationType : uint8_t {
   kStarted = 0,
   kDigitEntered = 1,
@@ -186,7 +186,7 @@ enum class KeypressNotificationType : uint8_t {
 };
 
 // Possible address types used in the "Identity Address Information" command
-// (Vol 3, Part H, 3.6.5).
+// (Core Spec v5.3, Vol 3, Part H, 3.6.5).
 enum class AddressType : uint8_t {
   kPublic = 0x00,
   kStaticRandom = 0x01,
@@ -196,7 +196,7 @@ enum class AddressType : uint8_t {
 constexpr Code kInvalidCode = 0x00;
 
 // ======================================
-// Pairing Request (Vol 3, Part H, 3.5.1)
+// Pairing Request (Core Spec v5.3, Vol 3, Part H, 3.5.1)
 constexpr Code kPairingRequest = 0x01;
 struct PairingRequestParams {
   // The local I/O capability.
@@ -205,7 +205,7 @@ struct PairingRequestParams {
   // Whether or not OOB authentication data is available.
   OOBDataFlag oob_data_flag;
 
-  // The requested security properties (Vol 3, Part H, 2.3.1).
+  // The requested security properties (Core Spec v5.3, Vol 3, Part H, 2.3.1).
   AuthReqField auth_req;
 
   // Maximum encryption key size supported. Valid values are 7-16.
@@ -219,32 +219,34 @@ struct PairingRequestParams {
 } __PACKED;
 
 // =======================================
-// Pairing Response (Vol 3, Part H, 3.5.2)
+// Pairing Response (Core Spec v5.3, Vol 3, Part H, 3.5.2)
 constexpr Code kPairingResponse = 0x02;
 using PairingResponseParams = PairingRequestParams;
 
 // ======================================
-// Pairing Confirm (Vol 3, Part H, 3.5.3)
+// Pairing Confirm (Core Spec v5.3, Vol 3, Part H, 3.5.3)
 constexpr Code kPairingConfirm = 0x03;
 using PairingConfirmValue = UInt128;
 
 // =====================================
-// Pairing Random (Vol 3, Part H, 3.5.4)
+// Pairing Random (Core Spec v5.3, Vol 3, Part H, 3.5.4)
 constexpr Code kPairingRandom = 0x04;
 using PairingRandomValue = UInt128;
 
 // =====================================
-// Pairing Failed (Vol 3, Part H, 3.5.5)
+// Pairing Failed (Core Spec v5.3, Vol 3, Part H, 3.5.5)
 constexpr Code kPairingFailed = 0x05;
 using PairingFailedParams = ErrorCode;
 
 // =============================================
-// Encryption Information (LE Legacy Pairing only; Vol 3, Part H, 3.6.2)
+// Encryption Information (LE Legacy Pairing only; Core Spec v5.3, Vol 3,
+// Part H, 3.6.2)
 constexpr Code kEncryptionInformation = 0x06;
 using EncryptionInformationParams = UInt128;
 
 // ====================================================================
-// Central Identification (LE Legacy Pairing only; Vol 3, Part H, 3.6.3)
+// Central Identification (LE Legacy Pairing only; Core Spec v5.3, Vol 3,
+// Part H, 3.6.3)
 constexpr Code kCentralIdentification = 0x07;
 struct CentralIdentificationParams {
   uint16_t ediv;
@@ -252,12 +254,12 @@ struct CentralIdentificationParams {
 } __PACKED;
 
 // ===========================================
-// Identity Information (Vol 3, Part H, 3.6.4)
+// Identity Information (Core Spec v5.3, Vol 3, Part H, 3.6.4)
 constexpr Code kIdentityInformation = 0x08;
 using IRK = UInt128;
 
 // ===================================================
-// Identity Address Information (Vol 3, Part H, 3.6.5)
+// Identity Address Information (Core Spec v5.3, Vol 3, Part H, 3.6.5)
 constexpr Code kIdentityAddressInformation = 0x09;
 struct IdentityAddressInformationParams {
   AddressType type;
@@ -265,18 +267,19 @@ struct IdentityAddressInformationParams {
 } __PACKED;
 
 // ==========================================
-// Signing Information (Vol 3, Part H, 3.6.6)
+// Signing Information (Core Spec v5.3, Vol 3, Part H, 3.6.6)
 constexpr Code kSigningInformation = 0x0A;
 using CSRK = UInt128;
 
 // =======================================
-// Security Request (Vol 3, Part H, 3.6.7)
+// Security Request (Core Spec v5.3, Vol 3, Part H, 3.6.7)
 constexpr Code kSecurityRequest = 0x0B;
 
 // See enum AuthReq for parameters.
 
 // ==================================================================
-// Pairing Public Key (Secure Connections only; Vol 3, Part H, 3.5.6)
+// Pairing Public Key (Secure Connections only; Core Spec v5.3, Vol 3, Part H,
+// 3.5.6)
 constexpr Code kPairingPublicKey = 0x0C;
 struct PairingPublicKeyParams {
   uint8_t x[32];
@@ -284,12 +287,13 @@ struct PairingPublicKeyParams {
 } __PACKED;
 
 // ======================================================================
-// Pairing DHKey Check (LE Secure Connections only; Vol 3, Part H, 3.5.7)
+// Pairing DHKey Check (LE Secure Connections only; Core Spec v5.3, Vol 3,
+// Part H, 3.5.7)
 constexpr Code kPairingDHKeyCheck = 0x0D;
 using PairingDHKeyCheckValueE = UInt128;
 
 // ============================================
-// Keypress Notification (Vol 3, Part H, 3.5.8)
+// Keypress Notification (Core Spec v5.3, Vol 3, Part H, 3.5.8)
 constexpr Code kKeypressNotification = 0x0E;
 
 // See enum KeypressNotificationType above for parameters.
