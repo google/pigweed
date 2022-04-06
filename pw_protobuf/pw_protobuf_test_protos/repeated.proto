@@ -24,9 +24,16 @@ message RepeatedTest {
   repeated fixed32 fixed32s = 6;
   repeated bool bools = 7;
   repeated uint64 uint64s = 8;
+  repeated Enum enums = 9;
 };
 
 message Struct {
   uint32 one = 1;
   uint32 two = 2;
+}
+
+enum Enum {
+  RED = 0;
+  AMBER = 1;
+  GREEN = 2;
 }

@@ -1479,6 +1479,35 @@ class EnumWriteMethod(WriteMethod):
         raise NotImplementedError()
 
 
+class PackedEnumWriteMethod(PackedWriteMethod):
+    """Method which writes a packed list of enum."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [('std::span<const {}>'.format(self._relative_type_namespace()),
+                 'values')]
+
+    def body(self) -> List[str]:
+        value_param = self.params()[0][1]
+        line = (f'return WritePackedUint32({self.field_cast()}, std::span('
+                f'reinterpret_cast<const uint32_t*>({value_param}.data()), '
+                f'{value_param}.size()));')
+        return [line]
+
+    def in_class_definition(self) -> bool:
+        return True
+
+    def _encoder_fn(self) -> str:
+        raise NotImplementedError()
+
+
+class PackedEnumWriteVectorMethod(PackedEnumWriteMethod):
+    """Method which writes a packed vector of enum."""
+    def params(self) -> List[Tuple[str, str]]:
+        return [
+            ('const ::pw::Vector<{}>&'.format(self._relative_type_namespace()),
+             'values')
+        ]
+
+
 class EnumReadMethod(ReadMethod):
     """Method which reads a proto enum value."""
     def _result_type(self):
@@ -1496,6 +1525,64 @@ class EnumReadMethod(ReadMethod):
         function_name = '::'.join(name_parts + [f'Get{enum_name}'])
 
         lines += [f'return {function_name}(value.value());']
+        return lines
+
+
+class PackedEnumReadMethod(PackedReadMethod):
+    """Method which reads packed enum values."""
+    def _result_type(self):
+        return self._relative_type_namespace()
+
+    def _decoder_body(self) -> List[str]:
+        value_param = self.params()[0][1]
+        lines: List[str] = []
+        lines += [
+            f'::pw::StatusWithSize sws = ReadPackedUint32('
+            f'std::span(reinterpret_cast<uint32_t*>({value_param}.data()), '
+            f'{value_param}.size()));'
+        ]
+
+        name_parts = self._relative_type_namespace().split('::')
+        enum_name = name_parts.pop()
+        function_name = '::'.join(name_parts + [f'Get{enum_name}'])
+
+        lines += ['::pw::Status status = sws.status();']
+        lines += ['for (size_t i = 0; i < sws.size(); ++i) {']
+        lines += [
+            f'  status.Update({function_name}('
+            f'static_cast<uint32_t>({value_param}[i])).status());'
+        ]
+        lines += ['}']
+
+        lines += ['return ::pw::StatusWithSize(status, sws.size());']
+        return lines
+
+
+class PackedEnumReadVectorMethod(PackedReadVectorMethod):
+    """Method which reads packed enum values."""
+    def _result_type(self):
+        return self._relative_type_namespace()
+
+    def _decoder_body(self) -> List[str]:
+        value_param = self.params()[0][1]
+        lines: List[str] = []
+        lines += [
+            f'::pw::Status status = ReadRepeatedUint32('
+            f'*reinterpret_cast<pw::Vector<uint32_t>*>(&{value_param}));'
+        ]
+
+        name_parts = self._relative_type_namespace().split('::')
+        enum_name = name_parts.pop()
+        function_name = '::'.join(name_parts + [f'Get{enum_name}'])
+
+        lines += [f'for (size_t i = 0; i < {value_param}.size(); ++i) {{']
+        lines += [
+            f'  status.Update({function_name}('
+            f'static_cast<uint32_t>({value_param}[i])).status());'
+        ]
+        lines += ['}']
+
+        lines += ['return status;']
         return lines
 
 
@@ -1562,7 +1649,8 @@ PROTO_FIELD_WRITE_METHODS: Dict[int, List] = {
     [StringLenWriteMethod, StringWriteMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE:
     [SubMessageEncoderMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumWriteMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM:
+    [EnumWriteMethod, PackedEnumWriteMethod, PackedEnumWriteVectorMethod],
 }
 
 PROTO_FIELD_READ_METHODS: Dict[int, List] = {
@@ -1606,7 +1694,9 @@ PROTO_FIELD_READ_METHODS: Dict[int, List] = {
     [StringReadMethod, BytesReaderMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE:
     [SubMessageDecoderMethod],
-    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumReadMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [
+        EnumReadMethod, PackedEnumReadMethod, PackedEnumReadVectorMethod
+    ],
 }
 
 PROTO_FIELD_PROPERTIES: Dict[int, List] = {

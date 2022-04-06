@@ -932,5 +932,57 @@ TEST(CodegenRepeated, NonScalar) {
   EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
 }
 
+TEST(CodegenRepeated, PackedEnum) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // enums[], v={RED, GREEN, AMBER, RED}
+    0x4a, 0x04, 0x00, 0x02, 0x01, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::ENUMS);
+  std::array<Enum, 4> enums{};
+  StatusWithSize sws = repeated_test.ReadEnums(enums);
+  EXPECT_EQ(sws.status(), OkStatus());
+  EXPECT_EQ(sws.size(), 4u);
+
+  EXPECT_EQ(enums[0], Enum::RED);
+  EXPECT_EQ(enums[1], Enum::GREEN);
+  EXPECT_EQ(enums[2], Enum::AMBER);
+  EXPECT_EQ(enums[3], Enum::RED);
+
+  EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
+}
+
+TEST(CodegenRepeated, PackedEnumVector) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // enums[], v={RED, GREEN, AMBER, RED}
+    0x4a, 0x04, 0x00, 0x02, 0x01, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  EXPECT_EQ(repeated_test.Next(), OkStatus());
+  EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::ENUMS);
+  pw::Vector<Enum, 4> enums{};
+  Status status = repeated_test.ReadEnums(enums);
+  EXPECT_EQ(status, OkStatus());
+  EXPECT_EQ(enums.size(), 4u);
+
+  EXPECT_EQ(enums[0], Enum::RED);
+  EXPECT_EQ(enums[1], Enum::GREEN);
+  EXPECT_EQ(enums[2], Enum::AMBER);
+  EXPECT_EQ(enums[3], Enum::RED);
+
+  EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
+}
+
 }  // namespace
 }  // namespace pw::protobuf

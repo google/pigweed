@@ -352,6 +352,28 @@ TEST(CodegenMessage, ReadPackedScalarFixedLengthExhausted) {
   ASSERT_EQ(status, Status::ResourceExhausted());
 }
 
+TEST(CodegenMessage, ReadPackedEnum) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // enums[], v={RED, GREEN, AMBER, RED}
+    0x4a, 0x04, 0x00, 0x02, 0x01, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  RepeatedTest::StreamDecoder repeated_test(reader);
+
+  RepeatedTest::Message message{};
+  const auto status = repeated_test.Read(message);
+  ASSERT_EQ(status, OkStatus());
+
+  ASSERT_EQ(message.enums.size(), 4u);
+  EXPECT_EQ(message.enums[0], Enum::RED);
+  EXPECT_EQ(message.enums[1], Enum::GREEN);
+  EXPECT_EQ(message.enums[2], Enum::AMBER);
+  EXPECT_EQ(message.enums[3], Enum::RED);
+}
+
 TEST(CodegenMessage, ReadStringExhausted) {
   // clang-format off
   constexpr uint8_t proto_data[] = {
@@ -986,6 +1008,40 @@ TEST(CodegenMessage, WritePackedScalarCallback) {
     // uint64s[]. v={0, 0, 0, 0} (default)
     0x42, 0x04, 0x00, 0x00, 0x00, 0x00
 
+  };
+  // clang-format on
+
+  ConstByteSpan result = writer.WrittenData();
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
+TEST(CodegenMessage, WritePackedEnum) {
+  RepeatedTest::Message message{};
+  message.enums.push_back(Enum::RED);
+  message.enums.push_back(Enum::GREEN);
+  message.enums.push_back(Enum::AMBER);
+  message.enums.push_back(Enum::RED);
+
+  std::byte encode_buffer[64];
+
+  stream::MemoryWriter writer(encode_buffer);
+  RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
+
+  const auto status = repeated_test.Write(message);
+  ASSERT_EQ(status, OkStatus());
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // doubles[], v={0, 0} (default)
+    0x22, 0x10,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // uint64s[]. v={0, 0, 0, 0} (default)
+    0x42, 0x04, 0x00, 0x00, 0x00, 0x00,
+    // enums[], v={RED, GREEN, AMBER, RED}
+    0x4a, 0x04, 0x00, 0x02, 0x01, 0x00,
   };
   // clang-format on
 

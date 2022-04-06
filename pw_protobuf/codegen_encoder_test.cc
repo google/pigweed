@@ -378,6 +378,51 @@ TEST(CodegenRepeated, PackedScalarVector) {
             0);
 }
 
+TEST(CodegenRepeated, PackedEnum) {
+  std::byte encode_buffer[32];
+
+  stream::MemoryWriter writer(encode_buffer);
+  RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
+  constexpr Enum values[] = {Enum::RED, Enum::GREEN, Enum::AMBER, Enum::RED};
+  ASSERT_EQ(repeated_test.WriteEnums(std::span(values)), OkStatus());
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // enums[], v={RED, GREEN, AMBER, RED}
+    0x4a, 0x04, 0x00, 0x02, 0x01, 0x00
+  };
+  // clang-format on
+
+  ConstByteSpan result = writer.WrittenData();
+  ASSERT_EQ(repeated_test.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
+TEST(CodegenRepeated, PackedEnumVector) {
+  std::byte encode_buffer[32];
+
+  stream::MemoryWriter writer(encode_buffer);
+  RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
+  const pw::Vector<Enum, 4> values = {
+      Enum::RED, Enum::GREEN, Enum::AMBER, Enum::RED};
+  ASSERT_EQ(repeated_test.WriteEnums(values), OkStatus());
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // enums[], v={RED, GREEN, AMBER, RED}
+    0x4a, 0x04, 0x00, 0x02, 0x01, 0x00
+  };
+  // clang-format on
+
+  ConstByteSpan result = writer.WrittenData();
+  ASSERT_EQ(repeated_test.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
 TEST(CodegenRepeated, NonScalar) {
   std::byte encode_buffer[32];
 
