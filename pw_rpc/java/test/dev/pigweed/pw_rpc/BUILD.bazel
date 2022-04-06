@@ -20,7 +20,10 @@ java_library(
     name = "test_client",
     testonly = True,
     srcs = ["TestClient.java"],
-    visibility = ["__pkg__"],
+    visibility = [
+        "__pkg__",
+        "//pw_transfer/java/test/dev/pigweed/pw_transfer:__pkg__",
+    ],
     deps = [
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",

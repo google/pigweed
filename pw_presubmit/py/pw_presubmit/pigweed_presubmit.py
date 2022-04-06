@@ -406,6 +406,7 @@ _MODULES_THAT_TEST_WITH_BAZEL = [
     '//pw_stream/...',
     '//pw_string/...',
     '//pw_thread_stl/...',
+    '//pw_transfer/...',
     '//pw_unit_test/...',
     '//pw_varint/...',
     '//:buildifier_test',

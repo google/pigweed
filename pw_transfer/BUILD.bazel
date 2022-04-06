@@ -218,6 +218,11 @@ js_proto_library(
     protos = [":transfer_proto"],
 )
 
+java_lite_proto_library(
+    name = "transfer_proto_java_lite",
+    deps = [":transfer_proto"],
+)
+
 proto_library(
     name = "test_server",
     srcs = [

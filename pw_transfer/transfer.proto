@@ -16,6 +16,9 @@ syntax = "proto3";
 
 package pw.transfer;
 
+option java_multiple_files = true;
+option java_package = "dev.pigweed.pw_transfer";
+
 // The transfer RPC service is used to send data between the client and server.
 service Transfer {
   // Transfer data from the server to the client; a "download" from the client's
