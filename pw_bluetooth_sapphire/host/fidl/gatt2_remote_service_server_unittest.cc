@@ -240,7 +240,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeReturnsError) {
         switch (read_count++) {
           case 0:
             callback(fitx::error(bt::gatt::Client::ReadByTypeError{
-                bt::ToResult(bt::HostError::kPacketMalformed).error_value(), std::nullopt}));
+                bt::Error(bt::HostError::kPacketMalformed), std::nullopt}));
             break;
           default:
             FAIL();

@@ -89,9 +89,8 @@ TEST(HelpersTest, HostErrorToFidl) {
 TEST(HelpersTest, GattErrorToFidl) {
   // Host errors
   EXPECT_EQ(fbg::Error::INVALID_RESPONSE,
-            GattErrorToFidl(bt::ToResult(bt::HostError::kPacketMalformed).error_value()));
-  EXPECT_EQ(fbg::Error::FAILURE,
-            GattErrorToFidl(bt::ToResult(bt::HostError::kTimedOut).error_value()));
+            GattErrorToFidl(bt::Error(bt::HostError::kPacketMalformed)));
+  EXPECT_EQ(fbg::Error::FAILURE, GattErrorToFidl(bt::Error(bt::HostError::kTimedOut)));
 
   // Protocol errors
   EXPECT_EQ(
@@ -115,11 +114,11 @@ TEST(HelpersTest, GattErrorToFidl) {
 TEST(HelpersTest, AttErrorToGattFidlError) {
   // Host errors
   EXPECT_EQ(fbg2::Error::INVALID_PDU,
-            AttErrorToGattFidlError(bt::ToResult(bt::HostError::kPacketMalformed).error_value()));
+            AttErrorToGattFidlError(bt::Error(bt::HostError::kPacketMalformed)));
   EXPECT_EQ(fbg2::Error::INVALID_PARAMETERS,
-            AttErrorToGattFidlError(bt::ToResult(bt::HostError::kInvalidParameters).error_value()));
+            AttErrorToGattFidlError(bt::Error(bt::HostError::kInvalidParameters)));
   EXPECT_EQ(fbg2::Error::UNLIKELY_ERROR,
-            AttErrorToGattFidlError(bt::ToResult(bt::HostError::kTimedOut).error_value()));
+            AttErrorToGattFidlError(bt::Error(bt::HostError::kTimedOut)));
 
   // Protocol errors
   EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHORIZATION,

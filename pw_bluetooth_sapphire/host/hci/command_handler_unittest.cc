@@ -24,7 +24,7 @@ struct TestEvent {
   uint8_t test_param;
   static fitx::result<bt::Error<>, TestEvent> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
-      return fitx::error(bt::Error<>(HostError::kPacketMalformed));
+      return fitx::error(bt::Error(HostError::kPacketMalformed));
     }
 
     return fitx::ok(TestEvent{.test_param = kTestEventParam});
@@ -48,7 +48,7 @@ struct TestCommandCompleteEvent {
 
   static fitx::result<bt::Error<>, TestCommandCompleteEvent> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
-      return fitx::error(bt::Error<>(HostError::kPacketMalformed));
+      return fitx::error(bt::Error(HostError::kPacketMalformed));
     }
 
     return fitx::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});

@@ -22,7 +22,9 @@ namespace bt {
 // operation, but to be used as the error type parameter of a generic result type like
 // fitx::result<Error<…>> or fitx::result<Error<…>, V>.
 //
-// As such, Errors can only be constructed indirectly through the ToResult function.
+// Errors can be directly constructed from HostErrors. ProtocolErrorCodes whose possible values all
+// represent errors can also be used to construct Errors. Otherwise, ProtocolErrorCodes like that
+// used by HCI must be converted using ToResult in order to capture success values.
 template <typename ProtocolErrorCode>
 class Error;
 

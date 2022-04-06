@@ -65,7 +65,7 @@ These files provide commonly-used functionality in SM. They easily could be (and
   * [`delegate.h`](/src/connectivity/bluetooth/core/bt-host/sm/delegate.h) - details the interface required by the `SecurityManager` constructor for SMP to interact with the rest of the BT stack.
   * [`ecdh_key.h`](/src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h) - utility C++ wrapper class for BoringSSL ECDH key functionality used in Secure Connections pairing.
   * [`packet.h`](/src/connectivity/bluetooth/core/bt-host/sm/packet.h) - SM-specific packet parsing and writing classes.
-  * [`status.h`](/src/connectivity/bluetooth/core/bt-host/sm/status.h) - SM-specific version of the `bt-host` [`Status`](/src/connectivity/bluetooth/core/bt-host/common/status.h) class.
+  * [`error.h`](/src/connectivity/bluetooth/core/bt-host/sm/error.h) - SM-specific version of the `bt-host` [`Error`](/src/connectivity/bluetooth/core/bt-host/common/error.h) class and associated type aliases.
   * [`smp.h`](/src/connectivity/bluetooth/core/bt-host/sm/smp.h) - definitions of Security Manager Protocol constants from the specification section (see Section 3 of the SM spec section).
   * [`types.h`](/src/connectivity/bluetooth/core/bt-host/sm/types.h) - definitions of structs and enums used in SM code that are not part of the SMP specification.
   * [`util.h`](/src/connectivity/bluetooth/core/bt-host/sm/util.h) - cryptographic primitives and other pure-function utilities used in the SMP stack.

@@ -77,10 +77,9 @@ fuchsia::bluetooth::Status ResultToFidlDeprecated(
   return fidl_status;
 }
 
-// Convert a bt::HostError to fuchsia.bluetooth.sys.Error. This function does only
-// deals with bt::HostError types and does not support Bluetooth protocol-specific errors; to
-// represent such errors use protocol-specific FIDL error types. An |error| value of
-// HostError::kNoError is not allowed.
+// Convert a bt::HostError to fuchsia.bluetooth.sys.Error. This function does only deals with
+// bt::HostError types and does not support Bluetooth protocol-specific errors; to represent such
+// errors use protocol-specific FIDL error types.
 fuchsia::bluetooth::sys::Error HostErrorToFidl(bt::HostError error);
 
 // Convert a bt::Error to fuchsia.bluetooth.sys.Error. This function does only deals with
