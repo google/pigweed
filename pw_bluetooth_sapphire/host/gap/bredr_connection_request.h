@@ -5,7 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_REQUEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_REQUEST_H_
 
+#include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
+#include <lib/zx/time.h>
 
 #include <list>
 
@@ -47,6 +49,9 @@ class BrEdrConnectionRequest final {
   BrEdrConnectionRequest(BrEdrConnectionRequest&&) = default;
   BrEdrConnectionRequest& operator=(BrEdrConnectionRequest&&) = default;
 
+  void RecordHciCreateConnectionAttempt();
+  bool ShouldRetry(hci::Error failure_mode);
+
   void AddCallback(OnComplete cb) { callbacks_.Mutable()->push_back(std::move(cb)); }
 
   // Notifies all elements in |callbacks| with |status| and the result of
@@ -83,6 +88,10 @@ class BrEdrConnectionRequest final {
   UintInspectable<std::list<OnComplete>> callbacks_;
   BoolInspectable<bool> has_incoming_;
   std::optional<hci_spec::ConnectionRole> role_change_;
+  // Used to determine whether an outbound connection request should be retried. If empty, no HCI
+  // Create Connection Requests associated with this object have been made, otherwise stores the
+  // time at which the first HCI request associated with this object was made.
+  IntInspectable<std::optional<zx::time>> first_create_connection_req_made_;
 
   inspect::StringProperty peer_id_property_;
   inspect::Node inspect_node_;

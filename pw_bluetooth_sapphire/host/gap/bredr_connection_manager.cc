@@ -780,6 +780,18 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
       TryCreateNextConnection();
       return;
     }
+    if (completes_outgoing_request && connection_requests_.size() == 1 &&
+        request.ShouldRetry(status.error_value())) {
+      bt_log(INFO, "gap-bredr",
+             "no pending connection requests to other peers, so %sretrying outbound connection",
+             request.HasIncoming() ? "waiting for inbound request completion before potentially "
+                                   : "");
+      // By not erasing |request| from |connection_requests_|, even if TryCreateNextConnection does
+      // not directly retry because there's an inbound request to the same peer, the retry will
+      // happen if the inbound request completes unusuccessfully.
+      TryCreateNextConnection();
+      return;
+    }
     request.NotifyCallbacks(status, [] { return nullptr; });
     connection_requests_.erase(req_iter);
   } else {
@@ -1172,10 +1184,12 @@ void BrEdrConnectionManager::InitiatePendingConnection(CreateConnectionParams pa
     if (self)
       self->OnRequestTimeout();
   };
+  BrEdrConnectionRequest& pending_gap_req = connection_requests_.find(params.peer_id)->second;
   pending_request_.emplace(params.peer_id, params.addr, on_timeout);
   pending_request_->CreateConnection(hci_->command_channel(), dispatcher_, params.clock_offset,
                                      params.page_scan_repetition_mode, request_timeout_,
                                      on_failure);
+  pending_gap_req.RecordHciCreateConnectionAttempt();
 }
 
 void BrEdrConnectionManager::OnRequestTimeout() {

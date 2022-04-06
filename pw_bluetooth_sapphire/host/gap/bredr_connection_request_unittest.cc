@@ -10,6 +10,8 @@
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gap {
 namespace {
@@ -18,6 +20,7 @@ using namespace inspect::testing;
 
 const DeviceAddress kTestAddr(DeviceAddress::Type::kBREDR, {1});
 const PeerId kPeerId;
+constexpr hci::Error RetryableError = ToResult(hci_spec::StatusCode::kPageTimeout).error_value();
 
 TEST(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   // A freshly created request is not yet incoming
@@ -65,9 +68,78 @@ TEST(BrEdrConnectionRequestTests, Inspect) {
   EXPECT_THAT(hierarchy.value(),
               ChildrenMatch(ElementsAre(NodeMatches(
                   AllOf(NameMatches("request_name"),
-                        PropertyList(UnorderedElementsAre(StringIs("peer_id", kPeerId.ToString()),
-                                                          UintIs("callbacks", 1u),
-                                                          BoolIs("has_incoming", true))))))));
+                        PropertyList(UnorderedElementsAre(
+                            StringIs("peer_id", kPeerId.ToString()), UintIs("callbacks", 1u),
+                            BoolIs("has_incoming", true),
+                            IntIs("first_create_connection_request_timestamp", -1))))))));
+}
+
+using TestingBase = gtest::TestLoopFixture;
+class BrEdrConnectionRequestLoopTest : public TestingBase {
+ protected:
+  using OnComplete = BrEdrConnectionRequest::OnComplete;
+
+  BrEdrConnectionRequestLoopTest()
+      : req_(kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}),
+             [this](hci::Result<> res, BrEdrConnection* conn) {
+               if (handler_) {
+                 handler_(res, conn);
+               }
+             }) {
+    // By default, an outbound ConnectionRequest with a complete handler that just logs the result.
+    handler_ = [](hci::Result<> res, auto /*ignore*/) {
+      bt_log(INFO, "gap-bredr-test", "outbound connection request complete: %s", bt_str(res));
+    };
+  }
+
+  // Used to reset the request to be inbound
+  void SetUpInbound() {
+    handler_ = nullptr;
+    req_ = BrEdrConnectionRequest(kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}));
+  }
+
+  void set_on_complete(BrEdrConnectionRequest::OnComplete handler) {
+    handler_ = std::move(handler);
+  }
+
+  BrEdrConnectionRequest& connection_req() { return req_; }
+
+ private:
+  BrEdrConnectionRequest req_;
+  OnComplete handler_;
+};
+using BrEdrConnectionRequestLoopDeathTest = BrEdrConnectionRequestLoopTest;
+
+TEST_F(BrEdrConnectionRequestLoopTest, RetryableErrorCodeShouldRetryAfterFirstCreateConnection) {
+  connection_req().RecordHciCreateConnectionAttempt();
+  RunLoopFor(zx::sec(1));
+  EXPECT_TRUE(connection_req().ShouldRetry(RetryableError));
+}
+
+TEST_F(BrEdrConnectionRequestLoopTest, ShouldntRetryBeforeFirstCreateConnection) {
+  EXPECT_FALSE(connection_req().ShouldRetry(RetryableError));
+}
+
+TEST_F(BrEdrConnectionRequestLoopTest, ShouldntRetryWithNonRetriableErrorCode) {
+  connection_req().RecordHciCreateConnectionAttempt();
+  RunLoopFor(zx::sec(1));
+  EXPECT_FALSE(connection_req().ShouldRetry(hci::Error(HostError::kCanceled)));
+}
+
+TEST_F(BrEdrConnectionRequestLoopTest, ShouldntRetryAfterThirtySeconds) {
+  connection_req().RecordHciCreateConnectionAttempt();
+  RunLoopFor(zx::sec(15));
+  // Should be OK to retry after 15 seconds
+  EXPECT_TRUE(connection_req().ShouldRetry(RetryableError));
+  connection_req().RecordHciCreateConnectionAttempt();
+
+  // Should still be OK to retry, even though we've already retried
+  RunLoopFor(zx::sec(14));
+  EXPECT_TRUE(connection_req().ShouldRetry(RetryableError));
+  connection_req().RecordHciCreateConnectionAttempt();
+
+  RunLoopFor(zx::sec(1));
+  EXPECT_FALSE(connection_req().ShouldRetry(RetryableError));
 }
 
 }  // namespace

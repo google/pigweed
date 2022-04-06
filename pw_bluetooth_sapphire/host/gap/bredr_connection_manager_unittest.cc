@@ -9,6 +9,7 @@
 
 #include <gmock/gmock.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -135,6 +136,9 @@ const auto kAcceptConnectionRequestRsp =
     COMMAND_STATUS_RSP(hci_spec::kAcceptConnectionRequest, hci_spec::StatusCode::kSuccess);
 
 const auto kConnectionComplete = testing::ConnectionCompletePacket(kTestDevAddr, kConnectionHandle);
+
+const auto kConnectionCompletePageTimeout = testing::ConnectionCompletePacket(
+    kTestDevAddr, kConnectionHandle, hci_spec::StatusCode::kPageTimeout);
 
 const auto kConnectionCompleteError =
     CreateStaticByteBuffer(hci_spec::kConnectionCompleteEventCode,
@@ -2797,6 +2801,135 @@ TEST_F(BrEdrConnectionManagerTest, ConnectToDualModePeerThatWasFirstLowEnergyOnl
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::kCentral);
+}
+
+// Tests the successful retry case. "don't retry for other error codes" is implicitly tested in
+// ConnectSinglePeerFailure - MockController would error if we unexpectedly retried.
+TEST_F(BrEdrConnectionManagerTest, SuccessfulHciRetriesAfterPageTimeout) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  // We send a first HCI Create Connection which will hang for 14s, and then respond on the test
+  // device with a ConnectionCompletePageTimeout event, which will cause a retry. The retry will
+  // also hang for 14s, then will receive another PageTimeout response, which will cause another
+  // retry, which will finally be permitted to succeed
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionComplete);
+  QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Result<> status = ToResult(HostError::kFailed);
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  // Cause the initial Create Connection to wait for 14s for Connection Complete
+  RunLoopFor(zx::sec(14));
+  ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
+  // Verify higher layers have not been notified of failure.
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
+  // Cause the first retry Create Connection to wait for 14s for Connection Complete - now 28s since
+  // the first Create Connection, bumping up on the retry window limit of 30s.
+  RunLoopFor(zx::sec(14));
+  // Cause a second retry.
+  ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
+  // Verify higher layers have not been notified of failure until the Connection Complete propagates
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
+  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::kCentral);
+}
+
+TEST_F(BrEdrConnectionManagerTest, DontRetryAfterWindowClosed) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  // We send a first HCI Create Connection which will hang for 15s, and then respond on the test
+  // device with a ConnectionCompletePageTimeout event, which will cause a retry. The retry will
+  // hang for 16s, then will receive another PageTimeout response. Because this will be 31s after
+  // the initial HCI Create Connection, the retry window will be closed and the Connect() will fail.
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+
+  // Initialize as success to verify that |callback| assigns error.
+  hci::Result<> status = fitx::ok();
+  auto callback = [&status](auto cb_status, auto cb_conn_ref) {
+    EXPECT_FALSE(cb_conn_ref);
+    status = cb_status;
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  RunLoopFor(zx::sec(15));
+  // Higher layers should not be notified yet.
+  EXPECT_EQ(fitx::ok(), status);
+  ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
+
+  // Create Connection will retry, and it hangs for 16s before ConnectionCompletePageTimeout
+  RunLoopFor(zx::sec(16));
+  ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
+  RunLoopUntilIdle();
+  // Create Connection will *not* be tried again as we are outside of the retry window.
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPageTimeout), status);
+}
+
+TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstFailsWithPageTimeoutAndDoesNotRetry) {
+  auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
+  auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, /*connectable=*/true);
+
+  // First peer's Create Connection Request will complete with a page timeout
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionCompletePageTimeout);
+
+  // Immediately enqueue successful connection request to peer_b, without any retry in between for
+  // the Connect() call to peer_a.
+  QueueSuccessfulCreateConnection(peer_b, kConnectionHandle2);
+  QueueSuccessfulInterrogation(peer_b->address(), kConnectionHandle2);
+  QueueDisconnection(kConnectionHandle2);
+
+  // Initialize as success to verify that |callback_a| assigns failure.
+  hci::Result<> status_a = fitx::ok();
+  auto callback_a = [&status_a](auto cb_status, auto cb_conn_ref) {
+    status_a = cb_status;
+    EXPECT_FALSE(cb_conn_ref);
+  };
+
+  // Initialize as error to verify that |callback_b| assigns success.
+  hci::Result<> status_b = ToResult(HostError::kFailed);
+  BrEdrConnection* connection = nullptr;
+  auto callback_b = [&status_b, &connection](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status_b = cb_status;
+    connection = std::move(cb_conn_ref);
+  };
+
+  // Launch one request, which will cause a Connection Complete: page timeout controller event.
+  EXPECT_TRUE(connmgr()->Connect(peer_a->identifier(), callback_a));
+  EXPECT_TRUE(IsInitializing(peer_a));
+
+  // Launch second inflight request (this will wait for the first)
+  EXPECT_TRUE(connmgr()->Connect(peer_b->identifier(), callback_b));
+  EXPECT_TRUE(IsInitializing(peer_b));
+
+  // Run the loop which should complete both requests
+  RunLoopUntilIdle();
+
+  // The Connect() request to peer_a should fail with the Page Timeout status code without retrying
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPageTimeout), status_a);
+  EXPECT_EQ(fitx::ok(), status_b);
+  EXPECT_TRUE(HasConnectionTo(peer_b, connection));
+  EXPECT_TRUE(IsNotConnected(peer_a));
+  EXPECT_FALSE(IsNotConnected(peer_b));
 }
 
 TEST_F(BrEdrConnectionManagerTest, DisconnectPendingConnections) {

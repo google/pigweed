@@ -4,13 +4,19 @@
 
 #include "bredr_connection_request.h"
 
+#include "lib/async/cpp/time.h"
+#include "lib/async/default.h"
+
 namespace bt::gap {
 
 namespace {
 
 const char* const kInspectHasIncomingPropertyName = "has_incoming";
 const char* const kInspectCallbacksPropertyName = "callbacks";
+const char* const kInspectFirstCreateConnectionReqMadeName =
+    "first_create_connection_request_timestamp";
 const char* const kInspectPeerIdPropertyName = "peer_id";
+constexpr zx::duration kRetryWindowAfterFirstCreateConn = zx::sec(30);
 
 }  // namespace
 
@@ -20,6 +26,8 @@ BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId
       address_(addr),
       callbacks_(/*convert=*/[](auto& c) { return c.size(); }),
       has_incoming_(false),
+      first_create_connection_req_made_(
+          std::nullopt, [](const std::optional<zx::time>& t) { return t ? t->get() : -1; }),
       peer_init_conn_token_(std::move(token)) {}
 
 BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
@@ -44,7 +52,21 @@ void BrEdrConnectionRequest::AttachInspect(inspect::Node& parent, std::string na
   inspect_node_ = parent.CreateChild(name);
   has_incoming_.AttachInspect(inspect_node_, kInspectHasIncomingPropertyName);
   callbacks_.AttachInspect(inspect_node_, kInspectCallbacksPropertyName);
+  first_create_connection_req_made_.AttachInspect(inspect_node_,
+                                                  kInspectFirstCreateConnectionReqMadeName);
   peer_id_property_ = inspect_node_.CreateString(kInspectPeerIdPropertyName, peer_id_.ToString());
 }
 
+void BrEdrConnectionRequest::RecordHciCreateConnectionAttempt() {
+  if (!first_create_connection_req_made_.value()) {
+    first_create_connection_req_made_.Set(async::Now(async_get_default_dispatcher()));
+  }
+}
+
+bool BrEdrConnectionRequest::ShouldRetry(hci::Error failure_mode) {
+  zx::time now = async::Now(async_get_default_dispatcher());
+  std::optional<zx::time> first_create_conn_req_made = first_create_connection_req_made_.value();
+  return failure_mode.is(hci_spec::kPageTimeout) && first_create_conn_req_made.has_value() &&
+         now - *first_create_conn_req_made < kRetryWindowAfterFirstCreateConn;
+}
 }  // namespace bt::gap
