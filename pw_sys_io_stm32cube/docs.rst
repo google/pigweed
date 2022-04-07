@@ -50,6 +50,11 @@ more details.
   The pin index to use for USART reception within the port set by
   ``PW_SYS_IO_STM32CUBE_GPIO_PORT``.
 
+.. c:macro:: PW_SYS_IO_STM32CUBE_GPIO_AF
+
+  The alternate function index to use for USART reception within the port set by
+  ``PW_SYS_IO_STM32CUBE_GPIO_PORT``.
+
 Module usage
 ============
 After building an executable that utilizes this backend, flash the

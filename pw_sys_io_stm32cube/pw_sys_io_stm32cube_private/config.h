@@ -38,3 +38,8 @@
 #ifndef PW_SYS_IO_STM32CUBE_GPIO_RX_PIN
 #define PW_SYS_IO_STM32CUBE_GPIO_RX_PIN 10
 #endif  // PW_SYS_IO_STM32CUBE_GPIO_RX_PIN
+
+// The Alternate Function to use for configuring USART pins.
+#ifndef PW_SYS_IO_STM32CUBE_GPIO_AF
+#define PW_SYS_IO_STM32CUBE_GPIO_AF 7
+#endif  // PW_SYS_IO_STM32CUBE_GPIO_AF
