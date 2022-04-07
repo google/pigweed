@@ -172,7 +172,7 @@ class Stream {
   //
   // Streams that support seeking from the beginning always support Tell().
   // Other streams may or may not support Tell().
-  size_t Tell() const { return DoTell(); }
+  size_t Tell() { return DoTell(); }
 
   // Liklely (not guaranteed) minimum bytes available to read at this time.
   // This number is advisory and not guaranteed to read full number of requested
@@ -250,7 +250,7 @@ class Stream {
 
   virtual Status DoSeek(ptrdiff_t offset, Whence origin) = 0;
 
-  virtual size_t DoTell() const { return kUnknownPosition; }
+  virtual size_t DoTell() { return kUnknownPosition; }
 
   virtual size_t ConservativeLimit(LimitType limit_type) const {
     if (limit_type == LimitType::kRead) {

@@ -704,7 +704,7 @@ Status BlobStore::BlobReader::Open(size_t offset) {
   return status;
 }
 
-size_t BlobStore::BlobReader::DoTell() const {
+size_t BlobStore::BlobReader::DoTell() {
   return open_ ? offset_ : kUnknownPosition;
 }
 

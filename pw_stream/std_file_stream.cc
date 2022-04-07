@@ -51,6 +51,11 @@ Status StdFileReader::DoSeek(ptrdiff_t offset, Whence origin) {
   return OkStatus();
 }
 
+size_t StdFileReader::DoTell() {
+  auto pos = static_cast<int>(stream_.tellg());
+  return pos < 0 ? kUnknownPosition : pos;
+}
+
 Status StdFileWriter::DoWrite(ConstByteSpan data) {
   if (stream_.eof()) {
     return Status::OutOfRange();
@@ -68,6 +73,11 @@ Status StdFileWriter::DoSeek(ptrdiff_t offset, Whence origin) {
     return Status::Unknown();
   }
   return OkStatus();
+}
+
+size_t StdFileWriter::DoTell() {
+  auto pos = static_cast<int>(stream_.tellp());
+  return pos < 0 ? kUnknownPosition : pos;
 }
 
 }  // namespace pw::stream

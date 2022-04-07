@@ -155,7 +155,7 @@ class FlashPartition {
    private:
     Status DoWrite(ConstByteSpan data) override;
 
-    size_t DoTell() const override { return position_; }
+    size_t DoTell() override { return position_; }
 
     size_t ConservativeLimit(LimitType type) const override {
       return type == LimitType::kWrite ? partition_.size_bytes() - position_
@@ -177,7 +177,7 @@ class FlashPartition {
    private:
     StatusWithSize DoRead(ByteSpan data) override;
 
-    size_t DoTell() const override { return position_; }
+    size_t DoTell() override { return position_; }
 
     Status DoSeek(ptrdiff_t offset, Whence origin) override {
       return CalculateSeek(offset, origin, partition_.size_bytes(), position_);

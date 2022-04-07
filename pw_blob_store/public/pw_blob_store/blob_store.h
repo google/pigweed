@@ -322,7 +322,7 @@ class BlobStore {
     // other than OK. See stream.h for additional details.
     size_t ConservativeLimit(LimitType limit) const override;
 
-    size_t DoTell() const override;
+    size_t DoTell() override;
 
     Status DoSeek(ptrdiff_t offset, Whence origin) override;
 
