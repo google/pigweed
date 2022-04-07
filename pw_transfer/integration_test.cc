@@ -75,7 +75,7 @@ class Bernoulli {
 // duplicates packets.
 class LossyChannel : public rpc::integration_test::ChannelManipulator {
  public:
-  LossyChannel(uint16_t seed) : rng_(seed) {}
+  LossyChannel(const char* name, uint16_t seed) : name_(name), rng_(seed) {}
   virtual ~LossyChannel() {}
 
   // New packets are pushed into the queue. The modifier must copy the packet.
@@ -96,8 +96,9 @@ class LossyChannel : public rpc::integration_test::ChannelManipulator {
       return Status::ResourceExhausted();
     }
     // Potentially drop a packet.
-    // TODO(amontanez): Make this non-zero when tests can pass with this set.
-    if (rng_.TrueWithProbability(0)) {
+    // TODO(amontanez): Try to get this working at 10%.
+    if (rng_.TrueWithProbability(2)) {
+      PW_LOG_DEBUG("Dropping packet on %s", name_);
       return Status::ResourceExhausted();
     }
 
@@ -136,6 +137,7 @@ class LossyChannel : public rpc::integration_test::ChannelManipulator {
   void DropTopPacket() {
     // TODO(amontanez): Implement.
   }
+  const char* name_;
   std::deque<std::vector<std::byte>> queue_;
   Bernoulli rng_;
 };
@@ -180,8 +182,8 @@ class TransferIntegration : public ::testing::Test {
                 256),
         test_server_client_(rpc::integration_test::client(),
                             rpc::integration_test::kChannelId),
-        ingress_modifier_(0x98a4),
-        egress_modifier_(0x6d19) {
+        ingress_modifier_("ingress", 0x98a4),
+        egress_modifier_("egress", 0x6d19) {
     ClearFiles();
     pw::rpc::integration_test::SetIngressChannelManipulator(&ingress_modifier_);
     pw::rpc::integration_test::SetEgressChannelManipulator(&egress_modifier_);

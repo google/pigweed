@@ -523,20 +523,6 @@ void Context::HandleReceiveChunk(const Chunk& chunk) {
 }
 
 void Context::HandleReceivedData(const Chunk& chunk) {
-  if (chunk.data.size() > pending_bytes_) {
-    // End the transfer, as this indicates a bug with the client implementation
-    // where it doesn't respect pending_bytes. Trying to recover from here
-    // could potentially result in an infinite transfer loop.
-    PW_LOG_ERROR(
-        "Transfer %u received more data than what was requested (%u received "
-        "for %u pending); terminating transfer.",
-        id_for_log(),
-        static_cast<unsigned>(chunk.data.size()),
-        static_cast<unsigned>(pending_bytes_));
-    Finish(Status::Internal());
-    return;
-  }
-
   if (chunk.offset != offset_) {
     // Bad offset; reset pending_bytes to send another parameters chunk.
     PW_LOG_DEBUG(
@@ -549,6 +535,20 @@ void Context::HandleReceivedData(const Chunk& chunk) {
     SetTimeout(chunk_timeout_);
 
     UpdateAndSendTransferParameters(TransmitAction::kRetransmit);
+    return;
+  }
+
+  if (chunk.data.size() > pending_bytes_) {
+    // End the transfer, as this indicates a bug with the client implementation
+    // where it doesn't respect pending_bytes. Trying to recover from here
+    // could potentially result in an infinite transfer loop.
+    PW_LOG_ERROR(
+        "Transfer %u received more data than what was requested (%u received "
+        "for %u pending); terminating transfer.",
+        id_for_log(),
+        static_cast<unsigned>(chunk.data.size()),
+        static_cast<unsigned>(pending_bytes_));
+    Finish(Status::Internal());
     return;
   }
 
