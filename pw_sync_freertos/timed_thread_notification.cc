@@ -14,6 +14,8 @@
 
 #include "pw_sync/timed_thread_notification.h"
 
+#include <algorithm>
+
 #include "FreeRTOS.h"
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
@@ -45,7 +47,8 @@ BaseType_t WaitForNotification(TickType_t xTicksToWait) {
 
 }  // namespace
 
-bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
+bool TimedThreadNotification::try_acquire_until(
+    const SystemClock::time_point deadline) {
   // Enforce the pw::sync::TImedThreadNotification IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
 
@@ -59,8 +62,8 @@ bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
   taskENTER_CRITICAL();
   {
     const bool notified = native_handle().notified;
-    // Don't block for negative or zero length durations.
-    if (notified || (timeout <= SystemClock::duration::zero())) {
+    // Don't block if we've already reached the specified deadline time.
+    if (notified || (SystemClock::now() >= deadline)) {
       native_handle().notified = false;
       taskEXIT_CRITICAL();
       return notified;
@@ -70,54 +73,36 @@ bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
   }
   taskEXIT_CRITICAL();
 
-  const bool notified = [&]() {
-    // In case the timeout is too long for us to express through the native
-    // FreeRTOS API, we repeatedly wait with shorter durations. Note that on a
-    // tick based kernel we cannot tell how far along we are on the current
-    // tick, ergo we add one whole tick to the final duration. However, this
-    // also means that the loop must ensure that timeout + 1 is less than the
-    // max timeout.
-    constexpr SystemClock::duration kMaxTimeoutMinusOne =
-        pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
-    // In case the timeout is too long for us to express through the native
-    // FreeRTOS API, we repeatedly wait with shorter durations.
-    while (timeout > kMaxTimeoutMinusOne) {
-      if (WaitForNotification(
-              static_cast<TickType_t>(kMaxTimeoutMinusOne.count())) == pdTRUE) {
-        return true;
-      }
-      timeout -= kMaxTimeoutMinusOne;
+  // xTaskNotifyWait may spuriously return pdFALSE due to vTaskSuspend &
+  // vTaskResume. Ergo, loop until we have been notified or the specified
+  // deadline time has been reached (whichever comes first).
+  for (SystemClock::time_point now = SystemClock::now(); now < deadline;
+       now = SystemClock::now()) {
+    // Note that this must be greater than zero, due to the condition above.
+    const SystemClock::duration timeout =
+        std::min(deadline - now, pw::chrono::freertos::kMaxTimeout);
+    if (WaitForNotification(static_cast<TickType_t>(timeout.count())) ==
+        pdTRUE) {
+      break;  // We were notified!
     }
-
-    // On a tick based kernel we cannot tell how far along we are on the current
-    // tick, ergo we add one whole tick to the final duration.
-    return WaitForNotification(static_cast<TickType_t>(timeout.count() + 1)) ==
-           pdTRUE;
-  }();
+  }
 
   taskENTER_CRITICAL();
-  if (notified) {
-    // Note that this may hide another notification, however this is considered
-    // a form of notification saturation just like as if this happened before
-    // acquire() was invoked.
-    native_handle().notified = false;
-    // The task handle and notification state were cleared by the notifier.
-  } else {
-    // Note that we do NOT want to clear the notified value so the next call
-    // can detect the notification which came after we timed out but before this
-    // critical section.
-    //
-    // However, we do need to clear the task handle if we weren't notified and
-    // the notification state in case we were notified to ensure we can block
-    // in the future.
-    native_handle().blocked_thread = nullptr;
+  // We need to clear the thread notification state in case we were
+  // notified after timing out but before entering this critical section.
 #ifdef configTASK_NOTIFICATION_ARRAY_ENTRIES
-    xTaskNotifyStateClearIndexed(
-        nullptr, pw::sync::freertos::config::kThreadNotificationIndex);
+  xTaskNotifyStateClearIndexed(
+      nullptr, pw::sync::freertos::config::kThreadNotificationIndex);
 #else   // !configTASK_NOTIFICATION_ARRAY_ENTRIES
-    xTaskNotifyStateClear(nullptr);
+  xTaskNotifyStateClear(nullptr);
 #endif  // configTASK_NOTIFICATION_ARRAY_ENTRIES
-  }
+  // Instead of determining whether we were notified above while blocking in
+  // the loop above, we instead read it in this subsequent critical section in
+  // order to also include notifications which arrived after we timed out but
+  // before we entered this critical section.
+  const bool notified = native_handle().notified;
+  native_handle().notified = false;
+  native_handle().blocked_thread = nullptr;
   taskEXIT_CRITICAL();
   return notified;
 }

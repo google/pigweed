@@ -62,13 +62,11 @@ void ThreadNotification::acquire() {
   native_type_.blocked_thread = xTaskGetCurrentTaskHandle();
   taskEXIT_CRITICAL();
 
-#if INCLUDE_vTaskSuspend == 1  // This means portMAX_DELAY is indefinite.
-  const BaseType_t result = WaitForNotification(portMAX_DELAY);
-  PW_DCHECK_UINT_EQ(result, pdTRUE);
-#else   // INCLUDE_vTaskSuspend != 1
+  // Even if INCLUDE_vTaskSuspend == 1 and ergo portMAX_DELAY means indefinite,
+  // vTaskSuspend() can abort xTaskNotifyWait() causing it to spuriously wake up
+  // after vTaskResume() returning pdFALSE as we were not actually notified.
   while (WaitForNotification(portMAX_DELAY) == pdFALSE) {
   }
-#endif  // INCLUDE_vTaskSuspend
 
   taskENTER_CRITICAL();
   // The task handle was cleared by the notifier.

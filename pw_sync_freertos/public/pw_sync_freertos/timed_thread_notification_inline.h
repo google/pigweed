@@ -18,11 +18,12 @@
 
 namespace pw::sync {
 
-inline bool TimedThreadNotification::try_acquire_until(
-    chrono::SystemClock::time_point deadline) {
-  // Note that if this deadline is in the future, it will get rounded up by
-  // one whole tick due to how try_lock_for is implemented.
-  return try_acquire_for(deadline - chrono::SystemClock::now());
+inline bool TimedThreadNotification::try_acquire_for(
+    chrono::SystemClock::duration timeout) {
+  // Because xTaskNotifyWait may spuriously return pdFALSE due to vTaskSuspend &
+  // vTaskResume, a deadline is used instead of a timeout just like FreeRTOS
+  // stream buffers.
+  return try_acquire_until(chrono::SystemClock::TimePointAfterAtLeast(timeout));
 }
 
 }  // namespace pw::sync

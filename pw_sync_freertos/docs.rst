@@ -124,6 +124,12 @@ notifications and clears the notification state before returning. This exact
 mechanism is used by FreeRTOS internally for their Stream and Message Buffer
 implementations.
 
+One other thing to note is that FreeRTOS has undocumented side effects between
+``vTaskSuspend`` and ``xTaskNotifyWait``. If a thread is suspended via
+``vTaskSuspend`` while blocked on ``xTaskNotifyWait``, the wait is aborted
+regardless of the timeout (even if the request was indefinite) and the thread
+is resumed whenever ``vTaskResume`` is invoked.
+
 BinarySemaphore
 ===============
 The FreeRTOS backend for the BinarySemaphore uses ``StaticSemaphore_t`` as the

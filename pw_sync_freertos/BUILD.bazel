@@ -284,3 +284,99 @@ pw_cc_library(
         "//pw_sync:interrupt_spin_lock_facade",
     ],
 )
+
+# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+#
+# You can instantiate this with your own implementation of
+# "//pw_thread:test_threads_header", see
+# ":thread_notification_test_with_static_threads" below as an example.
+# pw_cc_library(
+#     name = "thread_notification_test",
+#     srcs = [
+#         "thread_notification_test.cc",
+#     ],
+#     target_compatible_with = [
+#         "//pw_build/constraints/rtos:freertos",
+#     ],
+#     # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+#     # currently do not have Bazel support.
+#     deps = [
+#         "//pw_chrono:system_clock",
+#         "//pw_sync:thread_notification",
+#         "//pw_thread:sleep",
+#         "//pw_thread:test_threads_header",
+#         "//pw_thread:thread",
+#         "//pw_unit_test",
+#     ],
+# )
+# This is only used for the python tests.
+filegroup(
+    name = "thread_notification_test",
+    srcs = [
+        "thread_notification_test.cc",
+    ],
+)
+
+# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+# with:
+#    enable_if = pw_sync_THREAD_NOTIFICATION_BACKEND ==
+#                "$dir_pw_sync_freertos:thread_notification" &&
+#                pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+#                pw_thread_THREAD_BACKEND != "" && pw_thread_SLEEP_BACKEND != ""
+#
+# pw_cc_test(
+#     name = "thread_notification_test_with_static_threads",
+#     target_compatible_with = [
+#         "//pw_build/constraints/rtos:freertos",
+#     ],
+#     deps = [
+#         ":thread_notification_test",
+#         "//pw_thread_freertos:static_test_threads",
+#     ],
+# )
+
+# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+#
+# You can instantiate this with your own implementation of
+# "//pw_thread:test_threads_header", see
+# ":timed_thread_notification_test_with_static_threads" below as an example.
+#pw_cc_library(
+#    name = "timed_thread_notification_test",
+#    srcs = [
+#        "timed_thread_notification_test.cc",
+#    ],
+#    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+#    # currently do not have Bazel support.
+#    deps = [
+#        "//pw_chrono:system_clock",
+#        "//pw_sync:timed_thread_notification",
+#        "//pw_thread:sleep",
+#        "//pw_thread:test_threads_header",
+#        "//pw_thread:thread",
+#        "//pw_unit_test",
+#    ],
+#)
+filegroup(
+    name = "timed_thread_notification_test",
+    srcs = [
+        "timed_thread_notification_test.cc",
+    ],
+)
+
+# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+# with:
+#    enable_if = pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND ==
+#                "$dir_pw_sync_freertos:timed_thread_notification" &&
+#                pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+#                pw_thread_THREAD_BACKEND != "" && pw_thread_SLEEP_BACKEND != ""
+#
+# pw_cc_test(
+#     name = "timed_thread_notification_test_with_static_threads",
+#     target_compatible_with = [
+#         "//pw_build/constraints/rtos:freertos",
+#     ],
+#     deps = [
+#         ":timed_thread_notification_test",
+#         "//pw_thread_freertos:static_test_threads",
+#     ],
+# )
