@@ -165,6 +165,7 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
     build.gn_gen(
         ctx.root,
         ctx.output_dir,
+        pw_RUN_INTEGRATION_TESTS=False,
         dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
                                                'pw_crypto:sha256_mbedtls'),
@@ -179,6 +180,7 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.gn_gen(
         ctx.root,
         ctx.output_dir,
+        pw_RUN_INTEGRATION_TESTS=False,
         dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
                                                    'boringssl'),
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
@@ -195,6 +197,7 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
     build.gn_gen(
         ctx.root,
         ctx.output_dir,
+        pw_RUN_INTEGRATION_TESTS=False,
         dir_pw_third_party_micro_ecc='"{}"'.format(ctx.package_root /
                                                    'micro-ecc'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
