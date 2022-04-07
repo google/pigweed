@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATTRIBUTE_H_
 
 #include <lib/fit/function.h>
+#include <lib/fitx/result.h>
 #include <zircon/assert.h>
 
 #include <memory>
@@ -120,14 +121,15 @@ class Attribute final {
   // Handlers for reading and writing and attribute value asynchronously. A
   // handler must call the provided the |result_callback| to signal the end of
   // the operation.
-  using ReadResultCallback = fit::function<void(ErrorCode status, const ByteBuffer& value)>;
+  using ReadResultCallback =
+      fit::callback<void(fitx::result<ErrorCode> status, const ByteBuffer& value)>;
   using ReadHandler = fit::function<void(PeerId peer_id, Handle handle, uint16_t offset,
                                          ReadResultCallback result_callback)>;
   void set_read_handler(ReadHandler read_handler) { read_handler_ = std::move(read_handler); }
 
   // An "ATT Write Command" will trigger WriteHandler with
   // a null |result_callback|
-  using WriteResultCallback = fit::function<void(ErrorCode status)>;
+  using WriteResultCallback = fit::callback<void(fitx::result<ErrorCode> status)>;
   using WriteHandler =
       fit::function<void(PeerId peer_id, Handle handle, uint16_t offset, const ByteBuffer& value,
                          WriteResultCallback result_callback)>;

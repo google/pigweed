@@ -125,13 +125,15 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
           ZX_ASSERT(matching_chrc_value_handle != att::kInvalidHandle);
           DynamicByteBuffer new_ccc(sizeof(ccc_val));
           new_ccc.WriteObj(ccc_val);
-          auto write_status = att::ErrorCode::kReadNotPermitted;
-          EXPECT_TRUE(attr.WriteAsync(peer_id, /*offset=*/0, new_ccc,
-                                      [&](att::ErrorCode code) { write_status = code; }));
+          fitx::result<att::ErrorCode> write_status =
+              fitx::error(att::ErrorCode::kReadNotPermitted);
+          EXPECT_TRUE(
+              attr.WriteAsync(peer_id, /*offset=*/0, new_ccc,
+                              [&](fitx::result<att::ErrorCode> status) { write_status = status; }));
           // Not strictly necessary with the current WriteAsync implementation, but running the loop
           // here makes this more future-proof.
           test_loop().RunUntilIdle();
-          EXPECT_EQ(att::ErrorCode::kNoError, write_status);
+          EXPECT_EQ(fitx::ok(), write_status);
           modified_attrs.push_back(matching_chrc_value_handle);
         }
       }
@@ -975,12 +977,11 @@ TEST_F(ServerTest, ReadByTypeDynamicValueNoHandler) {
 TEST_F(ServerTest, ReadByTypeDynamicValue) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
-  attr->set_read_handler(
-      [attr](PeerId peer_id, auto handle, uint16_t offset, const auto& result_cb) {
-        EXPECT_EQ(attr->handle(), handle);
-        EXPECT_EQ(0u, offset);
-        result_cb(att::ErrorCode::kNoError, CreateStaticByteBuffer('f', 'o', 'r', 'k'));
-      });
+  attr->set_read_handler([attr](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
+    EXPECT_EQ(attr->handle(), handle);
+    EXPECT_EQ(0u, offset);
+    result_cb(fitx::ok(), CreateStaticByteBuffer('f', 'o', 'r', 'k'));
+  });
 
   // Add a second dynamic attribute, which should be omitted.
   attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
@@ -1015,8 +1016,8 @@ TEST_F(ServerTest, ReadByTypeDynamicValueError) {
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler([](PeerId peer_id, auto handle, uint16_t offset, const auto& result_cb) {
-    result_cb(att::ErrorCode::kUnlikelyError, BufferView());
+  attr->set_read_handler([](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
+    result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
   });
   grp->set_active(true);
 
@@ -1456,15 +1457,15 @@ TEST_F(ServerTest, WriteRequestError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
-  attr->set_write_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, const auto& result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+  attr->set_write_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& value, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(0u, offset);
+        EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
 
-    result_cb(att::ErrorCode::kUnlikelyError);
-  });
+        result_cb(fitx::error(att::ErrorCode::kUnlikelyError));
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1491,15 +1492,15 @@ TEST_F(ServerTest, WriteRequestSuccess) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
-  attr->set_write_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, const auto& result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+  attr->set_write_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& value, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(0u, offset);
+        EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
 
-    result_cb(att::ErrorCode::kNoError);
-  });
+        result_cb(fitx::ok());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1664,14 +1665,13 @@ TEST_F(ServerTest, ReadRequestError) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
-        EXPECT_EQ(attr->handle(), handle);
-        EXPECT_EQ(0u, offset);
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
+    EXPECT_EQ(0u, offset);
 
-        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
-      });
+    result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1716,15 +1716,14 @@ TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
 
-  attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
-        EXPECT_EQ(attr->handle(), handle);
-        EXPECT_EQ(22u, offset);
-        result_cb(att::ErrorCode::kNoError,
-                  CreateStaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o',
-                                         'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
-      });
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
+    EXPECT_EQ(22u, offset);
+    result_cb(fitx::ok(),
+              CreateStaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o',
+                                     'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1751,13 +1750,12 @@ TEST_F(ServerTest, ReadBlobDynamicRequestError) {
       't', 't', 'r', 'i', 'b', 'u', 't', 'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
-        EXPECT_EQ(attr->handle(), handle);
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
 
-        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
-      });
+    result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1861,13 +1859,12 @@ TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
       grp->AddAttribute(kTestType16, att::AccessRequirements(),
                         att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
                                                 /*authorization=*/false));
-  attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
-        EXPECT_EQ(attr->handle(), handle);
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
 
-        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
-      });
+    result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1895,13 +1892,12 @@ TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
-        EXPECT_EQ(attr->handle(), handle);
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
 
-        result_cb(att::ErrorCode::kInvalidOffset, BufferView());
-      });
+    result_cb(fitx::error(att::ErrorCode::kInvalidOffset), BufferView());
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1926,14 +1922,13 @@ TEST_F(ServerTest, ReadRequestSuccess) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
-        EXPECT_EQ(attr->handle(), handle);
-        EXPECT_EQ(0u, offset);
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
+    EXPECT_EQ(0u, offset);
 
-        result_cb(att::ErrorCode::kNoError, kTestValue);
-      });
+    result_cb(fitx::ok(), kTestValue);
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -2128,13 +2123,13 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
   attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, const auto& result_cb) {
+                              const auto& value, auto result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
     // Write the contents into |buffer|.
     buffer.Write(value, offset);
-    result_cb(att::ErrorCode::kNoError);
+    result_cb(fitx::ok());
   });
   grp->set_active(true);
 
@@ -2211,17 +2206,17 @@ TEST_F(ServerTest, ExecuteWriteError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
   attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, const auto& result_cb) {
+                              const auto& value, auto result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
     // Make the write to non-zero offsets fail (this corresponds to the second
     // partial write we prepare below.
     if (offset) {
-      result_cb(att::ErrorCode::kUnlikelyError);
+      result_cb(fitx::error(att::ErrorCode::kUnlikelyError));
     } else {
       buffer.Write(value);
-      result_cb(att::ErrorCode::kNoError);
+      result_cb(fitx::ok());
     }
   });
   grp->set_active(true);
@@ -2286,14 +2281,14 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
 
   int write_count = 0;
   attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, const auto& result_cb) {
+                              const auto& value, auto result_cb) {
     write_count++;
 
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
     EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('l', 'o', 'l'), value));
-    result_cb(att::ErrorCode::kNoError);
+    result_cb(fitx::ok());
   });
   grp->set_active(true);
 
@@ -2569,7 +2564,7 @@ class ServerTestSecurity : public ServerTest {
                                 auto responder) {
       write_count_++;
       if (responder) {
-        responder(att::ErrorCode::kNoError);
+        responder(fitx::ok());
       }
     };
 

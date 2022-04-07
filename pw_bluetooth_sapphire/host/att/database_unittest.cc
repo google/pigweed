@@ -534,11 +534,11 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
 
   void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue wq,
                          const sm::SecurityProperties& security = kNoSecurity) {
-    db_->ExecuteWriteQueue(peer_id, std::move(wq), security, [this](Handle h, ErrorCode e) {
-      callback_count_++;
-      ecode_ = e;
-      handle_in_error_ = h;
-    });
+    db_->ExecuteWriteQueue(peer_id, std::move(wq), security,
+                           [this](Database::WriteQueueResult result) {
+                             callback_count_++;
+                             result_.emplace(result);
+                           });
   }
 
   // Sets up an attribute grouping with 4 attributes.
@@ -561,16 +561,15 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
     grp->set_active(true);
   }
 
-  void ResolveNextPendingWrite(ErrorCode ecode) {
+  void ResolveNextPendingWrite(fitx::result<ErrorCode> status) {
     ASSERT_FALSE(pending_writes_.empty());
     auto pw = std::move(pending_writes_.front());
     pending_writes_.pop();
 
-    pw.result_callback(ecode);
+    pw.result_callback(status);
   }
 
-  ErrorCode ecode() const { return ecode_; }
-  Handle handle_in_error() const { return handle_in_error_; }
+  std::optional<Database::WriteQueueResult> result() const { return result_; }
   int callback_count() const { return callback_count_; }
 
   Handle group_decl_handle() const { return group_decl_handle_; }
@@ -600,8 +599,7 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
     pending_writes_.push(std::move(pw));
   }
 
-  ErrorCode ecode_ = ErrorCode::kNoError;
-  Handle handle_in_error_ = kInvalidHandle;
+  std::optional<Database::WriteQueueResult> result_;
   int callback_count_ = 0;
   fbl::RefPtr<Database> db_;
   std::queue<PendingWrite> pending_writes_;
@@ -620,8 +618,7 @@ constexpr PeerId kPeerId(1);
 TEST_F(DatabaseExecuteWriteQueueTest, EmptyQueueSucceedsImmediately) {
   ExecuteWriteQueue(kPeerId, {});
   EXPECT_EQ(1, callback_count());
-  EXPECT_EQ(ErrorCode::kNoError, ecode());
-  EXPECT_EQ(kInvalidHandle, handle_in_error());
+  EXPECT_EQ(fitx::ok(), result());
 }
 
 TEST_F(DatabaseExecuteWriteQueueTest, InvalidHandle) {
@@ -631,8 +628,8 @@ TEST_F(DatabaseExecuteWriteQueueTest, InvalidHandle) {
 
   ExecuteWriteQueue(kPeerId, std::move(wq));
   EXPECT_EQ(1, callback_count());
-  EXPECT_EQ(ErrorCode::kInvalidHandle, ecode());
-  EXPECT_EQ(kHandle, handle_in_error());
+  ASSERT_EQ(fitx::failed(), result());
+  EXPECT_EQ(std::tuple(kHandle, ErrorCode::kInvalidHandle), result()->error_value());
 }
 
 TEST_F(DatabaseExecuteWriteQueueTest, ValueLength) {
@@ -645,8 +642,9 @@ TEST_F(DatabaseExecuteWriteQueueTest, ValueLength) {
 
   ExecuteWriteQueue(kPeerId, std::move(wq));
   EXPECT_EQ(1, callback_count());
-  EXPECT_EQ(ErrorCode::kInvalidAttributeValueLength, ecode());
-  EXPECT_EQ(attr->handle(), handle_in_error());
+  ASSERT_EQ(fitx::failed(), result());
+  EXPECT_EQ(std::tuple(attr->handle(), ErrorCode::kInvalidAttributeValueLength),
+            result()->error_value());
 }
 
 TEST_F(DatabaseExecuteWriteQueueTest, WritingStaticValueNotPermitted) {
@@ -659,8 +657,8 @@ TEST_F(DatabaseExecuteWriteQueueTest, WritingStaticValueNotPermitted) {
 
   ExecuteWriteQueue(kPeerId, std::move(wq));
   EXPECT_EQ(1, callback_count());
-  EXPECT_EQ(ErrorCode::kWriteNotPermitted, ecode());
-  EXPECT_EQ(attr->handle(), handle_in_error());
+  ASSERT_EQ(fitx::failed(), result());
+  EXPECT_EQ(std::tuple(attr->handle(), ErrorCode::kWriteNotPermitted), result()->error_value());
 }
 
 TEST_F(DatabaseExecuteWriteQueueTest, SecurityChecks) {
@@ -677,8 +675,9 @@ TEST_F(DatabaseExecuteWriteQueueTest, SecurityChecks) {
 
   ExecuteWriteQueue(kPeerId, std::move(wq), kNoSecurity);
   EXPECT_EQ(1, callback_count());
-  EXPECT_EQ(ErrorCode::kInsufficientAuthentication, ecode());
-  EXPECT_EQ(attr->handle(), handle_in_error());
+  ASSERT_EQ(fitx::failed(), result());
+  EXPECT_EQ(std::tuple(attr->handle(), ErrorCode::kInsufficientAuthentication),
+            result()->error_value());
 
   wq = PrepareWriteQueue();
   wq.push(QueuedWrite(attr->handle(), 0, kTestValue1));
@@ -687,9 +686,9 @@ TEST_F(DatabaseExecuteWriteQueueTest, SecurityChecks) {
   ExecuteWriteQueue(
       kPeerId, std::move(wq),
       sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
-  ResolveNextPendingWrite(ErrorCode::kNoError);
+  ResolveNextPendingWrite(fitx::ok());
   EXPECT_EQ(2, callback_count());
-  EXPECT_EQ(ErrorCode::kNoError, ecode());
+  EXPECT_EQ(fitx::ok(), result());
 }
 
 // If an error is caught before delivering the request to the delegate then we
@@ -716,8 +715,9 @@ TEST_F(DatabaseExecuteWriteQueueTest, UndelegatedWriteErrorAborts) {
 
   // The database should have generated an error response.
   EXPECT_EQ(1, callback_count());
-  EXPECT_EQ(ErrorCode::kWriteNotPermitted, ecode());
-  EXPECT_EQ(group_decl_handle(), handle_in_error());
+  ASSERT_EQ(fitx::failed(), result());
+  EXPECT_EQ(std::tuple(group_decl_handle(), ErrorCode::kWriteNotPermitted),
+            result()->error_value());
 
   // Only the first write should have been delivered.
   ASSERT_EQ(1u, pending_writes().size());
@@ -726,7 +726,7 @@ TEST_F(DatabaseExecuteWriteQueueTest, UndelegatedWriteErrorAborts) {
   EXPECT_TRUE(ContainersEqual(kTestValue1, pending_writes().front().value));
 
   // Resolving the request should have no effect.
-  ResolveNextPendingWrite(ErrorCode::kUnlikelyError);
+  ResolveNextPendingWrite(fitx::error(ErrorCode::kUnlikelyError));
   EXPECT_EQ(1, callback_count());  // still 1
 }
 
@@ -758,7 +758,7 @@ TEST_F(DatabaseExecuteWriteQueueTest, ErrorInMultipleQueuedWrites) {
     EXPECT_EQ(0, next.offset);
     EXPECT_TRUE(ContainersEqual(kTestValue1, next.value));
 
-    ResolveNextPendingWrite(ErrorCode::kNoError);
+    ResolveNextPendingWrite(fitx::ok());
     EXPECT_EQ(0, callback_count());
   }
 
@@ -770,15 +770,15 @@ TEST_F(DatabaseExecuteWriteQueueTest, ErrorInMultipleQueuedWrites) {
     EXPECT_EQ(1, next.offset);
     EXPECT_TRUE(ContainersEqual(kTestValue2, next.value));
 
-    ResolveNextPendingWrite(ErrorCode::kUnlikelyError);
+    ResolveNextPendingWrite(fitx::error(ErrorCode::kUnlikelyError));
     EXPECT_EQ(1, callback_count());
-    EXPECT_EQ(ErrorCode::kUnlikelyError, ecode());
-    EXPECT_EQ(test_handle2(), handle_in_error());
+    ASSERT_EQ(fitx::failed(), result());
+    EXPECT_EQ(std::tuple(test_handle2(), ErrorCode::kUnlikelyError), result()->error_value());
   }
 
   // Resolving the remaining writes should have no effect.
-  ResolveNextPendingWrite(ErrorCode::kNoError);
-  ResolveNextPendingWrite(ErrorCode::kUnlikelyError);
+  ResolveNextPendingWrite(fitx::ok());
+  ResolveNextPendingWrite(fitx::error(ErrorCode::kUnlikelyError));
   EXPECT_EQ(1, callback_count());
 }
 
@@ -809,7 +809,7 @@ TEST_F(DatabaseExecuteWriteQueueTest, MultipleQueuedWritesSucceed) {
     EXPECT_EQ(0, next.offset);
     EXPECT_TRUE(ContainersEqual(kTestValue1, next.value));
 
-    ResolveNextPendingWrite(ErrorCode::kNoError);
+    ResolveNextPendingWrite(fitx::ok());
     EXPECT_EQ(0, callback_count());
   }
   {
@@ -819,7 +819,7 @@ TEST_F(DatabaseExecuteWriteQueueTest, MultipleQueuedWritesSucceed) {
     EXPECT_EQ(1, next.offset);
     EXPECT_TRUE(ContainersEqual(kTestValue2, next.value));
 
-    ResolveNextPendingWrite(ErrorCode::kNoError);
+    ResolveNextPendingWrite(fitx::ok());
     EXPECT_EQ(0, callback_count());
   }
   {
@@ -829,7 +829,7 @@ TEST_F(DatabaseExecuteWriteQueueTest, MultipleQueuedWritesSucceed) {
     EXPECT_EQ(2, next.offset);
     EXPECT_TRUE(ContainersEqual(kTestValue1, next.value));
 
-    ResolveNextPendingWrite(ErrorCode::kNoError);
+    ResolveNextPendingWrite(fitx::ok());
     EXPECT_EQ(0, callback_count());
   }
 
@@ -841,9 +841,9 @@ TEST_F(DatabaseExecuteWriteQueueTest, MultipleQueuedWritesSucceed) {
     EXPECT_EQ(3, next.offset);
     EXPECT_TRUE(ContainersEqual(kTestValue2, next.value));
 
-    ResolveNextPendingWrite(ErrorCode::kNoError);
+    ResolveNextPendingWrite(fitx::ok());
     EXPECT_EQ(1, callback_count());
-    EXPECT_EQ(ErrorCode::kNoError, ecode());
+    EXPECT_EQ(fitx::ok(), result());
   }
 }
 

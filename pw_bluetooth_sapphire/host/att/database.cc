@@ -4,10 +4,12 @@
 
 #include "database.h"
 
+#include <lib/fit/defer.h>
 #include <zircon/assert.h>
 
 #include <algorithm>
 
+#include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
@@ -223,63 +225,77 @@ const Attribute* Database::FindAttribute(Handle handle) {
 
 void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
                                  const sm::SecurityProperties& security, WriteCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
+  ZX_ASSERT(callback);
 
-  // Send a response without writing to any attributes if the queue is empty
-  // (see Vol 3, Part F, 3.4.6.3).
+  // When destroyed, invokes |callback| with success if it hasn't already been called
+  auto deferred_succcess = fit::defer([client_cb = callback.share()]() mutable {
+    if (client_cb) {
+      client_cb(fitx::ok());
+    }
+  });
+
+  // Signal success without writing to any attributes if the queue is empty (see Core Spec v5.3, Vol
+  // 3, Part F, 3.4.6.3).
   if (write_queue.empty()) {
-    callback(kInvalidHandle, ErrorCode::kNoError);
     return;
   }
 
-  // Continuation that keeps track of all outstanding write requests. |callback|
-  // is called once |count| reaches 0 or an error is received.
-  WriteCallback f = [cb = std::move(callback), count = write_queue.size()](
-                        Handle handle, ErrorCode ecode) mutable {
-    bt_log(DEBUG, "att", "execute write result - handle: %#.4x, error: %#.2hhx", handle, ecode);
-    if (!cb) {
-      bt_log(TRACE, "att", "ignore execute write result - already responded");
-      return;
-    }
-
-    ZX_DEBUG_ASSERT(count > 0);
-    count--;
-    if (count == 0 || ecode != ErrorCode::kNoError) {
-      auto f = std::move(cb);
-      f(handle, ecode);
-    }
-  };
+  // Continuation that keeps track of all outstanding write requests. This is shared between writes
+  // in the queue, causing the captured |deferred_success| to be destroyed only after all writes
+  // have completed. |callback| may be called earlier (and consumed) if any error is received.
+  fit::function<void(WriteQueueResult)> write_complete_fn =
+      [client_cb = std::move(callback),
+       d = std::move(deferred_succcess)](WriteQueueResult result) mutable {
+        if (result.is_ok()) {
+          return;
+        }
+        const auto& [handle, error] = result.error_value();
+        bt_log(DEBUG, "att", "execute write result - handle: %#.4x, error: %s", handle,
+               bt_str(ToResult(error).error_value()));
+        if (!client_cb) {
+          bt_log(TRACE, "att", "ignore execute write result - already responded");
+          return;
+        }
+        client_cb(result);
+      };
 
   while (!write_queue.empty()) {
     auto next = std::move(write_queue.front());
     write_queue.pop();
 
+    auto attr_write_cb = [handle = next.handle(), write_complete_fn = write_complete_fn.share()](
+                             fitx::result<ErrorCode> status) {
+      if (status.is_error()) {
+        write_complete_fn(fitx::error(std::tuple(handle, status.error_value())));
+      } else {
+        bt_log(DEBUG, "att", "execute write to handle %#.4x - success", handle);
+        write_complete_fn(fitx::ok());
+      }
+    };
+
     const auto* attr = FindAttribute(next.handle());
     if (!attr) {
-      // The attribute is no longer valid, so we can respond with an error and
-      // abort the rest of the queue.
-      f(next.handle(), ErrorCode::kInvalidHandle);
+      // The attribute is no longer valid, so we can respond with an error and abort the rest of the
+      // queue.
+      attr_write_cb(fitx::error(ErrorCode::kInvalidHandle));
       break;
     }
 
     if (next.value().size() > kMaxAttributeValueLength) {
-      f(next.handle(), ErrorCode::kInvalidAttributeValueLength);
+      attr_write_cb(fitx::error(ErrorCode::kInvalidAttributeValueLength));
       break;
     }
 
     ErrorCode ecode = CheckWritePermissions(attr->write_reqs(), security);
     if (ecode != ErrorCode::kNoError) {
-      f(next.handle(), ecode);
+      attr_write_cb(fitx::error(ecode));
       break;
     }
 
-    // TODO(armansito): Consider removing the boolean return value in favor of
-    // always reporting errors using the callback. That would simplify the
-    // pattern here.
-    if (!attr->WriteAsync(
-            peer_id, next.offset(), next.value(),
-            [handle = next.handle(), f = f.share()](ErrorCode ecode) { f(handle, ecode); })) {
-      f(next.handle(), ErrorCode::kWriteNotPermitted);
+    // TODO(fxbug.dev/97458): Consider removing the boolean return value in favor of always
+    // reporting errors using the callback. That would simplify the pattern here.
+    if (!attr->WriteAsync(peer_id, next.offset(), next.value(), std::move(attr_write_cb))) {
+      write_complete_fn(fitx::error(std::tuple(next.handle(), ErrorCode::kWriteNotPermitted)));
       break;
     }
   }

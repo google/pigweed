@@ -150,7 +150,6 @@ TEST(AttributeTest, ReadAsyncReadNoHandler) {
 
 TEST(AttributeTest, ReadAsync) {
   constexpr uint16_t kTestOffset = 5;
-  constexpr ErrorCode kTestStatus = ErrorCode::kNoError;
 
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr =
@@ -160,19 +159,19 @@ TEST(AttributeTest, ReadAsync) {
                          AccessRequirements());                        // write not allowed
 
   bool callback_called = false;
-  auto callback = [&](ErrorCode status, const auto& value) {
-    EXPECT_EQ(kTestStatus, status);
+  auto callback = [&](fitx::result<ErrorCode> status, const auto& value) {
+    EXPECT_EQ(fitx::ok(), status);
     EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('h', 'i'), value));
     callback_called = true;
   };
 
-  auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset, const auto& result_cb) {
+  auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset, auto result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(kTestOffset, offset);
     EXPECT_TRUE(result_cb);
 
-    result_cb(kTestStatus, CreateStaticByteBuffer('h', 'i'));
+    result_cb(fitx::ok(), CreateStaticByteBuffer('h', 'i'));
   };
 
   attr->set_read_handler(handler);
@@ -198,7 +197,6 @@ TEST(AttributeTest, WriteAsyncWriteNoHandler) {
 
 TEST(AttributeTest, WriteAsync) {
   constexpr uint16_t kTestOffset = 5;
-  constexpr ErrorCode kTestStatus = ErrorCode::kNoError;
 
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr =
@@ -208,20 +206,20 @@ TEST(AttributeTest, WriteAsync) {
                                             /*authorization=*/false));  // write no security
 
   bool callback_called = false;
-  auto callback = [&](ErrorCode status) {
-    EXPECT_EQ(kTestStatus, status);
+  auto callback = [&](fitx::result<ErrorCode> status) {
+    EXPECT_EQ(fitx::ok(), status);
     callback_called = true;
   };
 
   auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset, const auto& value,
-                     const auto& result_cb) {
+                     auto result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(kTestOffset, offset);
     EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('h', 'i'), value));
     EXPECT_TRUE(result_cb);
 
-    result_cb(kTestStatus);
+    result_cb(fitx::ok());
   };
 
   attr->set_write_handler(handler);

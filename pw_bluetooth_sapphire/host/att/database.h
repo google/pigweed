@@ -148,10 +148,8 @@ class Database final : public fbl::RefCounted<Database> {
   // to be done by the application that has set up the attribute. This function
   // does check for the validity of a given attribute handle and whether the
   // attribute supports writes.
-  //
-  // The Handle argument of |callback| is undefined if ErrorCode is
-  // ErrorCode::kNoError and should be ignored.
-  using WriteCallback = fit::function<void(Handle, ErrorCode)>;
+  using WriteQueueResult = fitx::result<std::tuple<Handle, ErrorCode>>;
+  using WriteCallback = fit::callback<void(WriteQueueResult)>;
   void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
                          const sm::SecurityProperties& security, WriteCallback callback);
 

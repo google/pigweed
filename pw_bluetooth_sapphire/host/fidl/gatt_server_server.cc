@@ -27,22 +27,22 @@ using fuchsia::bluetooth::gatt::ServiceInfo;
 namespace bthost {
 namespace {
 
-bt::att::ErrorCode GattErrorCodeFromFidl(GattErrorCode error_code, bool is_read) {
+fitx::result<bt::att::ErrorCode> GattStatusFromFidl(GattErrorCode error_code, bool is_read) {
   switch (error_code) {
     case GattErrorCode::NO_ERROR:
-      return bt::att::ErrorCode::kNoError;
+      return fitx::ok();
     case GattErrorCode::INVALID_OFFSET:
-      return bt::att::ErrorCode::kInvalidOffset;
+      return fitx::error(bt::att::ErrorCode::kInvalidOffset);
     case GattErrorCode::INVALID_VALUE_LENGTH:
-      return bt::att::ErrorCode::kInvalidAttributeValueLength;
+      return fitx::error(bt::att::ErrorCode::kInvalidAttributeValueLength);
     case GattErrorCode::NOT_PERMITTED:
       if (is_read)
-        return bt::att::ErrorCode::kReadNotPermitted;
-      return bt::att::ErrorCode::kWriteNotPermitted;
+        return fitx::error(bt::att::ErrorCode::kReadNotPermitted);
+      return fitx::error(bt::att::ErrorCode::kWriteNotPermitted);
     default:
       break;
   }
-  return bt::att::ErrorCode::kUnlikelyError;
+  return fitx::error(bt::att::ErrorCode::kUnlikelyError);
 }
 
 bt::att::AccessRequirements ParseSecurityRequirements(const SecurityRequirementsPtr& reqs) {
@@ -258,7 +258,7 @@ void GattServerServer::PublishService(ServiceInfo service_info,
     if (self) {
       self->OnReadRequest(svc_id, id, offset, std::move(responder));
     } else {
-      responder(bt::att::ErrorCode::kUnlikelyError, bt::BufferView());
+      responder(fitx::error(bt::att::ErrorCode::kUnlikelyError), bt::BufferView());
     }
   };
   auto write_handler = [self](bt::PeerId /*ignore*/, auto svc_id, auto id, auto offset,
@@ -266,7 +266,7 @@ void GattServerServer::PublishService(ServiceInfo service_info,
     if (self) {
       self->OnWriteRequest(svc_id, id, offset, value, std::move(responder));
     } else {
-      responder(bt::att::ErrorCode::kUnlikelyError);
+      responder(fitx::error(bt::att::ErrorCode::kUnlikelyError));
     }
   };
   auto ccc_callback = [self](auto svc_id, auto id, bt::gatt::PeerId peer_id, bool notify,
@@ -318,17 +318,17 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdTy
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
     bt_log(WARN, "fidl", "%s: unknown service id %lu", __FUNCTION__, service_id);
-    responder(bt::att::ErrorCode::kUnlikelyError, bt::BufferView());
+    responder(fitx::error(bt::att::ErrorCode::kUnlikelyError), bt::BufferView());
     return;
   }
 
   auto cb = [responder = std::move(responder)](fidl::VectorPtr<uint8_t> optional_value,
-                                               auto error_code) {
+                                               auto error_code) mutable {
     std::vector<uint8_t> value;
     if (optional_value.has_value()) {
       value = std::move(optional_value.value());
     }
-    responder(GattErrorCodeFromFidl(error_code, /*is_read=*/true),
+    responder(GattStatusFromFidl(error_code, /*is_read=*/true),
               bt::BufferView(value.data(), value.size()));
   };
 
@@ -343,7 +343,7 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdT
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
     bt_log(WARN, "fidl", "%s: unknown service id %lu", __FUNCTION__, service_id);
-    responder(bt::att::ErrorCode::kUnlikelyError);
+    responder(fitx::error(bt::att::ErrorCode::kUnlikelyError));
     return;
   }
 
@@ -356,8 +356,8 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdT
     return;
   }
 
-  auto cb = [responder = std::move(responder)](auto error_code) {
-    responder(GattErrorCodeFromFidl(error_code, /*is_read=*/false));
+  auto cb = [responder = std::move(responder)](auto error_code) mutable {
+    responder(GattStatusFromFidl(error_code, /*is_read=*/false));
   };
 
   delegate->OnWriteValue(id, offset, std::move(fidl_value), std::move(cb));

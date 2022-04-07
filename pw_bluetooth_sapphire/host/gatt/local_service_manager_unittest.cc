@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
@@ -470,14 +471,15 @@ TEST(LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(kChrcType16, attr->type());
 
-  att::ErrorCode ecode = att::ErrorCode::kNoError;
-  auto result_cb = [&ecode](auto code, const auto&) { ecode = code; };
+  fitx::result<att::ErrorCode> status = fitx::ok();
+  auto result_cb = [&status](auto cb_status, const auto&) { status = cb_status; };
 
   EXPECT_TRUE(attr->ReadAsync(kTestPeerId, 0, std::move(result_cb)));
 
   // The error should be handled internally and not reach |read_cb|.
   EXPECT_FALSE(called);
-  EXPECT_EQ(att::ErrorCode::kReadNotPermitted, ecode);
+  ASSERT_TRUE(status.is_error());
+  EXPECT_EQ(att::ErrorCode::kReadNotPermitted, status.error_value());
 }
 
 TEST(LocalServiceManagerTest, ReadCharacteristic) {
@@ -503,7 +505,7 @@ TEST(LocalServiceManagerTest, ReadCharacteristic) {
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kChrcId, id);
     EXPECT_EQ(kOffset, offset);
-    responder(att::ErrorCode::kNoError, kTestValue);
+    responder(fitx::ok(), kTestValue);
   };
 
   svc_id = RegisterService(&mgr, std::move(service), std::move(read_cb));
@@ -513,16 +515,16 @@ TEST(LocalServiceManagerTest, ReadCharacteristic) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(kChrcType16, attr->type());
 
-  att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
-  auto result_cb = [&ecode, &kTestValue](auto code, const auto& value) {
-    ecode = code;
+  fitx::result<att::ErrorCode> status = fitx::error(att::ErrorCode::kUnlikelyError);
+  auto result_cb = [&status, &kTestValue](auto cb_status, const auto& value) {
+    status = cb_status;
     EXPECT_TRUE(ContainersEqual(kTestValue, value));
   };
 
   EXPECT_TRUE(attr->ReadAsync(kTestPeerId, kOffset, std::move(result_cb)));
 
   EXPECT_TRUE(called);
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST(LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
@@ -575,14 +577,15 @@ TEST(LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(kChrcType16, attr->type());
 
-  att::ErrorCode ecode = att::ErrorCode::kNoError;
-  auto result_cb = [&ecode](auto code) { ecode = code; };
+  fitx::result<att::ErrorCode> status = fitx::ok();
+  auto result_cb = [&status](auto cb_status) { status = cb_status; };
 
   EXPECT_TRUE(attr->WriteAsync(kTestPeerId, 0, kTestValue, std::move(result_cb)));
 
   // The error should be handled internally and not reach |write_cb|.
   EXPECT_FALSE(called);
-  EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, ecode);
+  ASSERT_TRUE(status.is_error());
+  EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, status.error_value());
 }
 
 TEST(LocalServiceManagerTest, WriteCharacteristic) {
@@ -610,7 +613,7 @@ TEST(LocalServiceManagerTest, WriteCharacteristic) {
     EXPECT_EQ(kChrcId, id);
     EXPECT_EQ(kOffset, offset);
     EXPECT_TRUE(ContainersEqual(kTestValue, value));
-    responder(att::ErrorCode::kNoError);
+    responder(fitx::ok());
   };
 
   svc_id = RegisterService(&mgr, std::move(service), NopReadHandler, std::move(write_cb));
@@ -620,13 +623,13 @@ TEST(LocalServiceManagerTest, WriteCharacteristic) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(kChrcType16, attr->type());
 
-  att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
-  auto result_cb = [&ecode](auto code) { ecode = code; };
+  fitx::result<att::ErrorCode> status = fitx::error(att::ErrorCode::kUnlikelyError);
+  auto result_cb = [&status](auto cb_status) { status = cb_status; };
 
   EXPECT_TRUE(attr->WriteAsync(kTestPeerId, kOffset, kTestValue, std::move(result_cb)));
 
   EXPECT_TRUE(called);
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST(LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
@@ -681,13 +684,13 @@ TEST(LocalServiceManagerTest, ReadDescriptor) {
 
   bool called = false;
   IdType svc_id;
-  auto read_cb = [&](PeerId peer_id, auto cb_svc_id, auto id, auto offset, const auto& responder) {
+  auto read_cb = [&](PeerId peer_id, auto cb_svc_id, auto id, auto offset, auto responder) {
     called = true;
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kDescId, id);
     EXPECT_EQ(kOffset, offset);
-    responder(att::ErrorCode::kNoError, kTestValue);
+    responder(fitx::ok(), kTestValue);
   };
 
   svc_id = RegisterService(&mgr, std::move(service), std::move(read_cb));
@@ -697,16 +700,16 @@ TEST(LocalServiceManagerTest, ReadDescriptor) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(kDescType16, attr->type());
 
-  att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
-  auto result_cb = [&ecode, &kTestValue](auto code, const auto& value) {
-    ecode = code;
+  fitx::result<att::ErrorCode> status = fitx::error(att::ErrorCode::kUnlikelyError);
+  auto result_cb = [&status, &kTestValue](auto cb_status, const auto& value) {
+    status = cb_status;
     EXPECT_TRUE(ContainersEqual(kTestValue, value));
   };
 
   EXPECT_TRUE(attr->ReadAsync(kTestPeerId, kOffset, std::move(result_cb)));
 
   EXPECT_TRUE(called);
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST(LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
@@ -763,14 +766,14 @@ TEST(LocalServiceManagerTest, WriteDescriptor) {
   bool called = false;
   IdType svc_id;
   auto write_cb = [&](PeerId peer_id, auto cb_svc_id, auto id, auto offset, const auto& value,
-                      const auto& responder) {
+                      auto responder) {
     called = true;
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kDescId, id);
     EXPECT_EQ(kOffset, offset);
     EXPECT_TRUE(ContainersEqual(kTestValue, value));
-    responder(att::ErrorCode::kNoError);
+    responder(fitx::ok());
   };
 
   svc_id = RegisterService(&mgr, std::move(service), NopReadHandler, write_cb);
@@ -780,13 +783,13 @@ TEST(LocalServiceManagerTest, WriteDescriptor) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(kDescType16, attr->type());
 
-  att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
-  auto result_cb = [&ecode](auto code) { ecode = code; };
+  fitx::result<att::ErrorCode> status = fitx::error(att::ErrorCode::kUnlikelyError);
+  auto result_cb = [&status](auto cb_status) { status = cb_status; };
 
   EXPECT_TRUE(attr->WriteAsync(kTestPeerId, kOffset, kTestValue, result_cb));
 
   EXPECT_TRUE(called);
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST(LocalServiceManagerTest, ServiceChanged) {
@@ -896,14 +899,14 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
     EXPECT_EQ(last_service_count + 1u, mgr.database()->groupings().size());
   }
 
-  bool ReadCCC(const att::Attribute* attr, PeerId peer_id, att::ErrorCode* out_ecode,
+  bool ReadCcc(const att::Attribute* attr, PeerId peer_id, fitx::result<att::ErrorCode>* out_status,
                uint16_t* out_value) {
-    ZX_DEBUG_ASSERT(attr);
-    ZX_DEBUG_ASSERT(out_ecode);
-    ZX_DEBUG_ASSERT(out_value);
+    ZX_ASSERT(attr);
+    ZX_ASSERT(out_status);
+    ZX_ASSERT(out_value);
 
-    auto result_cb = [&out_ecode, &out_value](auto cb_code, const auto& value) {
-      *out_ecode = cb_code;
+    auto result_cb = [&out_status, &out_value](auto cb_status, const auto& value) {
+      *out_status = cb_status;
       EXPECT_EQ(2u, value.size());
 
       if (value.size() == 2u) {
@@ -914,12 +917,12 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
     return attr->ReadAsync(peer_id, 0u, result_cb);
   }
 
-  bool WriteCCC(const att::Attribute* attr, PeerId peer_id, uint16_t ccc_value,
-                att::ErrorCode* out_ecode) {
-    ZX_DEBUG_ASSERT(attr);
-    ZX_DEBUG_ASSERT(out_ecode);
+  bool WriteCcc(const att::Attribute* attr, PeerId peer_id, uint16_t ccc_value,
+                fitx::result<att::ErrorCode>* out_status) {
+    ZX_ASSERT(attr);
+    ZX_ASSERT(out_status);
 
-    auto result_cb = [&out_ecode](auto cb_code) { *out_ecode = cb_code; };
+    auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
     uint16_t value = htole16(ccc_value);
     return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);
   }
@@ -951,17 +954,17 @@ TEST_F(LocalClientCharacteristicConfigurationTest, IndicationNotSupported) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(types::kClientCharacteristicConfig, attr->type());
 
-  // Enabling indications should fail as the characteristic only supports
-  // notifications.
-  att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableInd, &ecode));
-  EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, ecode);
+  // Enabling indications should fail as the characteristic only supports notifications.
+  fitx::result<att::ErrorCode> status = fitx::ok();
+  EXPECT_TRUE(WriteCcc(attr, kTestPeerId, kEnableInd, &status));
+  ASSERT_TRUE(status.is_error());
+  EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, status.error_value());
 
   uint16_t ccc_value;
 
   // Notifications and indications for this device should remain disabled.
-  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(ReadCcc(attr, kTestPeerId, &status, &ccc_value));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(0x0000, ccc_value);
 }
 
@@ -975,17 +978,17 @@ TEST_F(LocalClientCharacteristicConfigurationTest, NotificationNotSupported) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(types::kClientCharacteristicConfig, attr->type());
 
-  // Enabling notifications should fail as the characteristic only supports
-  // indications.
-  att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
-  EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, ecode);
+  // Enabling notifications should fail as the characteristic only supports indications.
+  fitx::result<att::ErrorCode> status = fitx::ok();
+  EXPECT_TRUE(WriteCcc(attr, kTestPeerId, kEnableNot, &status));
+  ASSERT_TRUE(status.is_error());
+  EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, status.error_value());
 
   uint16_t ccc_value;
 
   // Notifications and indications for this device should remain disabled.
-  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(ReadCcc(attr, kTestPeerId, &status, &ccc_value));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(0x0000, ccc_value);
 }
 
@@ -1002,15 +1005,15 @@ TEST_F(LocalClientCharacteristicConfigurationTest, EnableNotify) {
   LocalServiceManager::ClientCharacteristicConfig config;
   EXPECT_FALSE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId, &config));
 
-  att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  fitx::result<att::ErrorCode> status = fitx::error(att::ErrorCode::kUnlikelyError);
+  EXPECT_TRUE(WriteCcc(attr, kTestPeerId, kEnableNot, &status));
+  EXPECT_EQ(fitx::ok(), status);
 
   uint16_t ccc_value;
 
   // Notifications should be enabled for kTestPeerId.
-  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(ReadCcc(attr, kTestPeerId, &status, &ccc_value));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(kEnableNot, ccc_value);
 
   EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId, &config));
@@ -1019,8 +1022,8 @@ TEST_F(LocalClientCharacteristicConfigurationTest, EnableNotify) {
   EXPECT_FALSE(config.indicate);
 
   // ..but not for kTestPeerId2.
-  EXPECT_TRUE(ReadCCC(attr, kTestPeerId2, &ecode, &ccc_value));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(ReadCcc(attr, kTestPeerId2, &status, &ccc_value));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(0x0000, ccc_value);
 
   // A set configurations now exists for |kChrcId| but kTestPeerId2 should
@@ -1038,8 +1041,8 @@ TEST_F(LocalClientCharacteristicConfigurationTest, EnableNotify) {
 
   // Enable notifications again. The write should succeed but the callback
   // should not get called as the value will remain unchanged.
-  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(WriteCcc(attr, kTestPeerId, kEnableNot, &status));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1, ccc_callback_count);
 }
 
@@ -1053,15 +1056,15 @@ TEST_F(LocalClientCharacteristicConfigurationTest, EnableIndicate) {
   ASSERT_TRUE(attr);
   EXPECT_EQ(types::kClientCharacteristicConfig, attr->type());
 
-  att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableInd, &ecode));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  fitx::result<att::ErrorCode> status = fitx::error(att::ErrorCode::kUnlikelyError);
+  EXPECT_TRUE(WriteCcc(attr, kTestPeerId, kEnableInd, &status));
+  EXPECT_EQ(fitx::ok(), status);
 
   uint16_t ccc_value;
 
   // Indications should be enabled for kTestPeerId.
-  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(ReadCcc(attr, kTestPeerId, &status, &ccc_value));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(kEnableInd, ccc_value);
 
   LocalServiceManager::ClientCharacteristicConfig config;
@@ -1071,8 +1074,8 @@ TEST_F(LocalClientCharacteristicConfigurationTest, EnableIndicate) {
   EXPECT_TRUE(config.indicate);
 
   // ..but not for kTestPeerId2.
-  EXPECT_TRUE(ReadCCC(attr, kTestPeerId2, &ecode, &ccc_value));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(ReadCcc(attr, kTestPeerId2, &status, &ccc_value));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(0x0000, ccc_value);
 
   // A set configurations now exists for |kChrcId| but kTestPeerId2 should
@@ -1090,8 +1093,8 @@ TEST_F(LocalClientCharacteristicConfigurationTest, EnableIndicate) {
 
   // Enable indications again. The write should succeed but the callback
   // should not get called as the value will remain unchanged.
-  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableInd, &ecode));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(WriteCcc(attr, kTestPeerId, kEnableInd, &status));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1, ccc_callback_count);
 }
 
@@ -1108,9 +1111,9 @@ TEST_F(LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
   LocalServiceManager::ClientCharacteristicConfig config;
   EXPECT_FALSE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId, &config));
 
-  att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  fitx::result<att::ErrorCode> status = fitx::error(att::ErrorCode::kUnlikelyError);
+  EXPECT_TRUE(WriteCcc(attr, kTestPeerId, kEnableNot, &status));
+  EXPECT_EQ(fitx::ok(), status);
 
   // The callback should have been notified.
   EXPECT_EQ(1, ccc_callback_count);
@@ -1122,8 +1125,8 @@ TEST_F(LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
 
   uint16_t ccc_value;
   // Reads should succeed but notifications should be disabled.
-  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
-  EXPECT_EQ(att::ErrorCode::kNoError, ecode);
+  EXPECT_TRUE(ReadCcc(attr, kTestPeerId, &status, &ccc_value));
+  EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(0x0000, ccc_value);
 
   // The callback should not have been called on client disconnect.

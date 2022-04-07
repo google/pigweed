@@ -9,6 +9,7 @@
 #include <zircon/assert.h>
 
 #include "gatt_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
@@ -416,12 +417,13 @@ class AttBasedServer final : public Server {
 
       att::Handle handle = results.front()->handle();
       auto self = weak_ptr_factory_.GetWeakPtr();
-      auto result_cb = [self, tid, handle, kMaxValueSize](att::ErrorCode ecode, const auto& value) {
+      auto result_cb = [self, tid, handle, kMaxValueSize](fitx::result<att::ErrorCode> status,
+                                                          const auto& value) {
         if (!self)
           return;
 
-        if (ecode != att::ErrorCode::kNoError) {
-          self->att_->ReplyWithError(tid, handle, ecode);
+        if (status.is_error()) {
+          self->att_->ReplyWithError(tid, handle, status.error_value());
           return;
         }
 
@@ -500,12 +502,12 @@ class AttBasedServer final : public Server {
     constexpr size_t kHeaderSize = sizeof(att::Header);
 
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto callback = [self, tid, handle](att::ErrorCode ecode, const auto& value) {
+    auto callback = [self, tid, handle](fitx::result<att::ErrorCode> status, const auto& value) {
       if (!self)
         return;
 
-      if (ecode != att::ErrorCode::kNoError) {
-        self->att_->ReplyWithError(tid, handle, ecode);
+      if (status.is_error()) {
+        self->att_->ReplyWithError(tid, handle, status.error_value());
         return;
       }
 
@@ -526,11 +528,11 @@ class AttBasedServer final : public Server {
         return;
       }
       size_t value_size = std::min(attr->value()->size(), self->att_->mtu() - kHeaderSize);
-      callback(att::ErrorCode::kNoError, attr->value()->view(offset, value_size));
+      callback(fitx::ok(), attr->value()->view(offset, value_size));
       return;
     }
 
-    // TODO(bwb): Add a timeout to this as per fxbug.dev/643
+    // TODO(fxbug.dev/636): Add a timeout to this
     if (!attr->ReadAsync(peer_id_, offset, callback)) {
       att_->ReplyWithError(tid, handle, att::ErrorCode::kReadNotPermitted);
     }
@@ -562,12 +564,12 @@ class AttBasedServer final : public Server {
     constexpr size_t kHeaderSize = sizeof(att::Header);
 
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto callback = [self, tid, handle](att::ErrorCode ecode, const auto& value) {
+    auto callback = [self, tid, handle](fitx::result<att::ErrorCode> status, const auto& value) {
       if (!self)
         return;
 
-      if (ecode != att::ErrorCode::kNoError) {
-        self->att_->ReplyWithError(tid, handle, ecode);
+      if (status.is_error()) {
+        self->att_->ReplyWithError(tid, handle, status.error_value());
         return;
       }
 
@@ -583,7 +585,7 @@ class AttBasedServer final : public Server {
 
     // Use the cached value if there is one.
     if (attr->value()) {
-      callback(att::ErrorCode::kNoError, *attr->value());
+      callback(fitx::ok(), *attr->value());
       return;
     }
 
@@ -664,12 +666,12 @@ class AttBasedServer final : public Server {
     }
 
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto result_cb = [self, tid, handle](att::ErrorCode error_code) {
+    auto result_cb = [self, tid, handle](fitx::result<att::ErrorCode> status) {
       if (!self)
         return;
 
-      if (error_code != att::ErrorCode::kNoError) {
-        self->att_->ReplyWithError(tid, handle, error_code);
+      if (status.is_error()) {
+        self->att_->ReplyWithError(tid, handle, status.error_value());
         return;
       }
 
@@ -749,11 +751,13 @@ class AttBasedServer final : public Server {
     }
 
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto result_cb = [self, tid](att::Handle handle, att::ErrorCode ecode) mutable {
+    auto result_cb = [self,
+                      tid](fitx::result<std::tuple<att::Handle, att::ErrorCode>> result) mutable {
       if (!self)
         return;
 
-      if (ecode != att::ErrorCode::kNoError) {
+      if (result.is_error()) {
+        auto [handle, ecode] = result.error_value();
         self->att_->ReplyWithError(tid, handle, ecode);
         return;
       }

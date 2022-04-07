@@ -22,12 +22,13 @@ constexpr uint16_t kEnableInd = 0x0002;
 
 class GenericAttributeServiceTest : public ::testing::Test {
  protected:
-  bool WriteServiceChangedCCC(PeerId peer_id, uint16_t ccc_value, att::ErrorCode* out_ecode) {
-    ZX_DEBUG_ASSERT(out_ecode);
+  bool WriteServiceChangedCcc(PeerId peer_id, uint16_t ccc_value,
+                              fitx::result<att::ErrorCode>* out_status) {
+    ZX_ASSERT(out_status);
 
     auto* attr = mgr.database()->FindAttribute(kCCCHandle);
-    ZX_DEBUG_ASSERT(attr);
-    auto result_cb = [&out_ecode](auto cb_code) { *out_ecode = cb_code; };
+    ZX_ASSERT(attr);
+    auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
     uint16_t value = htole16(ccc_value);
     return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);
   }
@@ -84,8 +85,8 @@ TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
   GenericAttributeService gatt_service(mgr.GetWeakPtr(), std::move(send_indication));
 
   // Enable Service Changed indications for the test client.
-  att::ErrorCode ecode;
-  WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
+  fitx::result<att::ErrorCode> status = fitx::ok();
+  WriteServiceChangedCcc(kTestPeerId, kEnableInd, &status);
   EXPECT_EQ(std::nullopt, indicated_svc_id);
 
   constexpr UUID kTestSvcType(uint32_t{0xdeadbeef});
@@ -144,8 +145,8 @@ TEST_F(GenericAttributeServiceTest, IndicateOnUnregister) {
   EXPECT_NE(kInvalidId, service_id);
 
   // Enable Service Changed indications for the test client.
-  att::ErrorCode ecode;
-  WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
+  fitx::result<att::ErrorCode> status = fitx::ok();
+  WriteServiceChangedCcc(kTestPeerId, kEnableInd, &status);
   EXPECT_EQ(std::nullopt, indicated_svc_id);
 
   mgr.UnregisterService(service_id);
@@ -173,8 +174,8 @@ TEST_F(GenericAttributeServiceTest, PersistIndicate) {
   EXPECT_EQ(persist_callback_count, 0);
 
   // Enable Service Changed indications for the test client.
-  att::ErrorCode ecode;
-  WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
+  fitx::result<att::ErrorCode> status = fitx::ok();
+  WriteServiceChangedCcc(kTestPeerId, kEnableInd, &status);
   EXPECT_EQ(persist_callback_count, 1);
 }
 }  // namespace
