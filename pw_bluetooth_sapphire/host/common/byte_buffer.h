@@ -321,15 +321,38 @@ class StaticByteBuffer : public MutableByteBuffer {
 
   // Variadic template constructor to initialize a StaticByteBuffer using a parameter pack e.g.:
   //
-  //   StaticByteBuffer<3> foo{0x00, 0x01, 0x02};
-  //   StaticByteBuffer<3> bar({0x00, 0x01, 0x02});
+  //   StaticByteBuffer foo(0x00, 0x01, 0x02);
+  //   StaticByteBuffer<3> foo(0x00, 0x01, 0x02);
   //
   // The class's |BufferSize| template parameter, if explicitly provided, will be checked against
   // the number of initialization elements provided.
+  //
+  // All types castable to uint8_t can be used without casting (including class enums) for brevity
+  // but care must be taken not to exceed uint8_t range limits.
+  //
+  //   StaticByteBuffer foo(-257);  // -257 has type int and will likely convert to uint8_t{0xff}
   template <typename... T>
-  explicit StaticByteBuffer(T... bytes) : buffer_{{static_cast<uint8_t>(bytes)...}} {
+  constexpr explicit StaticByteBuffer(T... bytes) : buffer_{{static_cast<uint8_t>(bytes)...}} {
     static_assert(BufferSize, "|BufferSize| must be non-zero");
     static_assert(BufferSize == sizeof...(T), "|BufferSize| must match initializer list count");
+
+    // Check that arguments are within byte range. Restrict checking to smaller inputs to limit
+    // compile time impact and because clang considers fold expressions "nested" (i.e. subject to a
+    // default 256 depth limit).
+    if constexpr (sizeof...(bytes) <= 256) {
+      constexpr auto is_byte_storable = [](auto value) {
+        if constexpr (sizeof(value) > sizeof(uint8_t)) {
+          // Should return true for negative values that fit into a byte, so it's important that the
+          // right-hand side stays unsigned to convert |byte| to unsigned per promotion rules.
+          return value <= std::numeric_limits<uint8_t>::max();
+        }
+        return true;
+      };
+
+      // This is a runtime assert because this class was written to work with non-constant values
+      // but most uses of StaticByteBuffer are in tests so this is an acceptable cost.
+      ZX_DEBUG_ASSERT((is_byte_storable(bytes) && ...));
+    }
   }
 
   // ByteBuffer overrides
