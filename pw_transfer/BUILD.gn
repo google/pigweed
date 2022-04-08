@@ -243,6 +243,20 @@ pw_executable("integration_test") {
   ]
 }
 
+pw_executable("integration_test_client") {
+  sources = [ "integration_test/client.cc" ]
+  deps = [
+    ":client",
+    "$dir_pw_rpc:integration_testing",
+    "$dir_pw_stream:std_file_stream",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_thread:thread",
+    dir_pw_assert,
+    dir_pw_log,
+    dir_pw_status,
+  ]
+}
+
 pw_python_action("cpp_client_integration_test") {
   script = "$dir_pw_rpc/py/pw_rpc/testing.py"
   args = [

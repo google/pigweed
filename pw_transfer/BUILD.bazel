@@ -196,6 +196,21 @@ pw_cc_binary(
     ],
 )
 
+pw_cc_binary(
+    name = "integration_test_client",
+    srcs = ["integration_test/client.cc"],
+    deps = [
+        ":client",
+        ":pw_transfer",
+        "//pw_log",
+        "//pw_rpc:integration_testing",
+        "//pw_status",
+        "//pw_stream:std_file_stream",
+        "//pw_sync:binary_semaphore",
+        "//pw_thread:thread",
+    ],
+)
+
 proto_library(
     name = "transfer_proto",
     srcs = [
