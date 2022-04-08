@@ -228,6 +228,20 @@ pw_executable("test_rpc_server") {
   ]
 }
 
+pw_executable("integration_test_server") {
+  sources = [ "integration_test/server.cc" ]
+  deps = [
+    ":pw_transfer",
+    "$dir_pw_assert",
+    "$dir_pw_rpc/system_server",
+    "$dir_pw_rpc/system_server:socket",
+    "$dir_pw_stream",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
+    dir_pw_log,
+  ]
+}
+
 pw_executable("integration_test") {
   sources = [ "integration_test.cc" ]
   deps = [
@@ -270,6 +284,7 @@ pw_python_action("cpp_client_integration_test") {
   ]
   deps = [
     ":integration_test",
+    ":integration_test_server",
     ":test_rpc_server",
   ]
 
