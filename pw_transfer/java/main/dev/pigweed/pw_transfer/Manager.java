@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -48,8 +49,10 @@ public class Manager {
   private final MethodClient writeMethod;
   private final Consumer<Runnable> workDispatcher;
   private final int transferTimeoutMillis;
+  private final int initialTransferTimeoutMillis;
   private final int maxRetries;
   private final Timer timer = new Timer("pw_transfer timer", /*isDaemon=*/true);
+  private final BooleanSupplier shouldAbortCallback;
 
   private final Map<Integer, Transfer<?>> readTransfers = new HashMap<>();
   private final Map<Integer, Transfer<?>> writeTransfers = new HashMap<>();
@@ -78,18 +81,25 @@ public class Manager {
    *     delay.
    * @param transferTimeoutMillis How long to wait for communication from the server. If the server
    *     delays longer than this, retry up to maxRetries times.
+   * @param initialTransferTimeoutMillis How long to wait for the initial communication from the
+   *     server. If the server delays longer than this, retry up to maxRetries times.
    * @param maxRetries How many times to retry if a communication times out.
+   * @param shouldAbortCallback BooleanSupplier that returns true if a transfer should be aborted.
    */
   public Manager(MethodClient readMethod,
       MethodClient writeMethod,
       Consumer<Runnable> workDispatcher,
       int transferTimeoutMillis,
-      int maxRetries) {
+      int initialTransferTimeoutMillis,
+      int maxRetries,
+      BooleanSupplier shouldAbortCallback) {
     this.readMethod = readMethod;
     this.writeMethod = writeMethod;
     this.workDispatcher = workDispatcher;
     this.transferTimeoutMillis = transferTimeoutMillis;
+    this.initialTransferTimeoutMillis = initialTransferTimeoutMillis;
     this.maxRetries = maxRetries;
+    this.shouldAbortCallback = shouldAbortCallback;
   }
 
   /** Writes the provided data to the given transfer ID. */
@@ -120,9 +130,11 @@ public class Manager {
             writeTransfers::remove,
             timer,
             transferTimeoutMillis,
+            initialTransferTimeoutMillis,
             maxRetries,
             data,
             progressCallback,
+            shouldAbortCallback,
             chunkSizeAdjustment));
   }
 
@@ -151,9 +163,11 @@ public class Manager {
             readTransfers::remove,
             timer,
             transferTimeoutMillis,
+            initialTransferTimeoutMillis,
             maxRetries,
             parameters,
-            progressCallback));
+            progressCallback,
+            shouldAbortCallback));
   }
 
   private static <T> ListenableFuture<T> startTransfer(

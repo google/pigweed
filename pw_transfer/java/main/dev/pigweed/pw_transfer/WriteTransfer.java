@@ -24,6 +24,7 @@ import dev.pigweed.pw_rpc.Status;
 import dev.pigweed.pw_transfer.Manager.ChunkSizeAdjuster;
 import java.util.Timer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 class WriteTransfer extends Transfer<Void> {
@@ -49,11 +50,21 @@ class WriteTransfer extends Transfer<Void> {
       Consumer<Integer> endTransfer,
       Timer timer,
       int timeoutMillis,
+      int initialTimeoutMillis,
       int maxRetries,
       byte[] data,
       Consumer<TransferProgress> progressCallback,
+      BooleanSupplier shouldAbortCallback,
       ChunkSizeAdjuster chunkSizeAdjustment) {
-    super(id, sendChunk, endTransfer, timer, timeoutMillis, maxRetries, progressCallback);
+    super(id,
+        sendChunk,
+        endTransfer,
+        timer,
+        timeoutMillis,
+        initialTimeoutMillis,
+        maxRetries,
+        progressCallback,
+        shouldAbortCallback);
     this.data = data;
     this.chunkSizeAdjustment = chunkSizeAdjustment;
 

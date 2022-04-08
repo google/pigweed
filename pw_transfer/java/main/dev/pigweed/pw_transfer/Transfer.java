@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /** Base class for tracking the state of a read or write transfer. */
@@ -50,6 +51,10 @@ abstract class Transfer<T> {
     }
 
     private synchronized void schedule() {
+      schedule(this.timeoutMillis);
+    }
+
+    private synchronized void schedule(int timeoutMillis) {
       // Cancel in case a previous instance of the timer is running. This could happen if a chunk
       // happened to arrive immediately after a transfer started, before the starting thread had a
       // chance to call schedule().
@@ -102,7 +107,10 @@ abstract class Transfer<T> {
   private final SettableFuture<T> future;
   private final Timeout timeout;
   private final int maxRetries;
+  private final int initialTimeoutMillis;
   private final Consumer<TransferProgress> progressCallback;
+  private final BooleanSupplier shouldAbortCallback;
+
   private Instant startTime;
   private boolean isCleanedUp = false;
 
@@ -119,15 +127,20 @@ abstract class Transfer<T> {
    * @param unregisterTransfer Callback that unregisters a completed transfer.
    * @param timer Timer to use to schedule transfer timeouts.
    * @param timeoutMillis Maximum time to wait for a chunk from the server.
+   * @param initialTimeoutMillis Maximum time to wait for a initial chunk from the server.
    * @param maxRetries Number of times to retry due to a timeout or RPC error.
+   * @param progressCallback Called each time a packet is sent.
+   * @param shouldAbortCallback BooleanSupplier that returns true if a transfer should be aborted.
    */
   Transfer(int id,
       ChunkSender chunkSender,
       Consumer<Integer> unregisterTransfer,
       Timer timer,
       int timeoutMillis,
+      int initialTimeoutMillis,
       int maxRetries,
-      Consumer<TransferProgress> progressCallback) {
+      Consumer<TransferProgress> progressCallback,
+      BooleanSupplier shouldAbortCallback) {
     this.id = id;
     this.chunkSender = chunkSender;
     this.unregisterTransfer = unregisterTransfer;
@@ -136,8 +149,10 @@ abstract class Transfer<T> {
     // Add listener to make sure we won't missing to handle the future cancellation
     future.addListener(this::handleCancellation, directExecutor());
     this.timeout = new Timeout(timer, timeoutMillis);
+    this.initialTimeoutMillis = initialTimeoutMillis;
     this.maxRetries = maxRetries;
     this.progressCallback = progressCallback;
+    this.shouldAbortCallback = shouldAbortCallback;
   }
 
   final int getId() {
@@ -151,7 +166,8 @@ abstract class Transfer<T> {
   final synchronized void start() {
     startTime = Instant.now();
     if (sendChunk(getInitialChunk())) {
-      timeout.schedule(); // Only start the timeout if sending the chunk succeeded
+      timeout.schedule(
+          initialTimeoutMillis); // Only start the timeout if sending the chunk succeeded
     }
   }
 
@@ -232,8 +248,8 @@ abstract class Transfer<T> {
 
   /** Sends a chunk. Returns true if sent, false if sending failed and the transfer was aborted. */
   final synchronized boolean sendChunk(Chunk chunk) {
-    if (shouldAbort()) {
-      logger.atWarning().log("Abort signal received");
+    if (shouldAbortCallback.getAsBoolean()) {
+      logger.atWarning().log("Abort signal received.");
       cleanUp(new TransferError(id, Status.ABORTED));
       return false;
     }
@@ -273,11 +289,6 @@ abstract class Transfer<T> {
     logger.atWarning().withCause(exception).log("Transfer %d terminated with exception", id);
     future.setException(exception);
     isCleanedUp = true;
-  }
-
-  private static boolean shouldAbort() {
-    // TODO(tonymd): Query platform if should abort.
-    return false;
   }
 
   /** Sends a status chunk to the server and finishes the transfer. */

@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 class ReadTransfer extends Transfer<byte[]> {
@@ -54,10 +55,20 @@ class ReadTransfer extends Transfer<byte[]> {
       Consumer<Integer> endTransfer,
       Timer timer,
       int timeoutMillis,
+      int initialTimeoutMillis,
       int maxRetries,
       TransferParameters transferParameters,
-      Consumer<TransferProgress> progressCallback) {
-    super(id, sendChunk, endTransfer, timer, timeoutMillis, maxRetries, progressCallback);
+      Consumer<TransferProgress> progressCallback,
+      BooleanSupplier shouldAbortCallback) {
+    super(id,
+        sendChunk,
+        endTransfer,
+        timer,
+        timeoutMillis,
+        initialTimeoutMillis,
+        maxRetries,
+        progressCallback,
+        shouldAbortCallback);
     this.parameters = transferParameters;
     this.pendingBytes = parameters.maxPendingBytes();
   }

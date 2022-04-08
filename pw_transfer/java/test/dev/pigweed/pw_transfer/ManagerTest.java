@@ -53,6 +53,7 @@ public final class ManagerTest {
   private static final int MAX_RETRIES = 2;
   private static final int ID = 123;
 
+  private boolean shouldAbortFlag = false;
   private TestClient client;
 
   Manager manager;
@@ -62,10 +63,10 @@ public final class ManagerTest {
 
   @Before
   public void setup() {
-    setPlatformEnabled();
+    setPlatformTransferEnabled();
     client = new TestClient(ImmutableList.of(TransferService.get()));
 
-    manager = createManager(60000); // Default to a long timeout that should never trigger.
+    manager = createManager(60000, 60000); // Default to a long timeout that should never trigger.
   }
 
   @Test
@@ -394,7 +395,7 @@ public final class ManagerTest {
 
   @Test
   public void read_timeout() {
-    manager = createManager(1); // Create a manager with a very short timeout.
+    manager = createManager(1, 1); // Create a manager with a very short timeout.
     ListenableFuture<byte[]> future = manager.read(ID, TRANSFER_PARAMETERS);
 
     // Call future.get() without sending any server-side packets.
@@ -439,20 +440,19 @@ public final class ManagerTest {
     assertThat(future.get()).isNull(); // Ensure that no exceptions are thrown.
   }
 
-  // TODO(tonymd): Turn this on after setPlatformDisabled() is implemented.
-  // @Test
-  // public void write_platformDisabled_aborted() {
-  //   ListenableFuture<Void> future = manager.write(2, TEST_DATA_SHORT.toByteArray());
-  //   assertThat(future.isDone()).isFalse();
-  //
-  //   setPlatformDisabled();
-  //   receiveWriteChunks(newChunk(2).setOffset(0).setPendingBytes(1024).setMaxChunkSizeBytes(128),
-  //       newChunk(2).setStatus(Status.OK.code()));
-  //
-  //   ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
-  //   assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
-  //   assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.ABORTED);
-  // }
+  @Test
+  public void write_platformTransferDisabled_aborted() {
+    ListenableFuture<Void> future = manager.write(2, TEST_DATA_SHORT.toByteArray());
+    assertThat(future.isDone()).isFalse();
+
+    setPlatformTransferDisabled();
+    receiveWriteChunks(newChunk(2).setOffset(0).setPendingBytes(1024).setMaxChunkSizeBytes(128),
+        newChunk(2).setStatus(Status.OK.code()));
+
+    ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
+    assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
+    assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.ABORTED);
+  }
 
   @Test
   public void write_failedPreconditionError_retries() throws Exception {
@@ -808,7 +808,7 @@ public final class ManagerTest {
 
   @Test
   public void write_timeoutAfterInitialChunk() {
-    manager = createManager(1); // Create a manager with a very short timeout.
+    manager = createManager(1, 1); // Create a manager with a very short timeout.
     ListenableFuture<Void> future = manager.write(ID, TEST_DATA_SHORT.toByteArray());
 
     // Call future.get() without sending any server-side packets.
@@ -825,7 +825,7 @@ public final class ManagerTest {
 
   @Test
   public void write_timeoutAfterIntermediateChunk() {
-    manager = createManager(1); // Create a manager with a very short timeout.
+    manager = createManager(1, 1); // Create a manager with a very short timeout.
 
     // Wait for two outgoing packets (Write RPC request and first chunk), then send the parameters.
     enqueueWriteChunks(2, newChunk(ID).setOffset(0).setPendingBytes(90).setMaxChunkSizeBytes(30));
@@ -875,19 +875,21 @@ public final class ManagerTest {
     return client.lastClientStreams(Chunk.class);
   }
 
-  private Manager createManager(int transferTimeoutMillis) {
+  private Manager createManager(int transferTimeoutMillis, int initialTransferTimeoutMillis) {
     return new Manager(client.client().method(CHANNEL_ID, SERVICE + "/Read"),
         client.client().method(CHANNEL_ID, SERVICE + "/Write"),
         Runnable::run, // Run the job immediately on the same thread
         transferTimeoutMillis,
-        MAX_RETRIES);
+        initialTransferTimeoutMillis,
+        MAX_RETRIES,
+        () -> this.shouldAbortFlag);
   }
 
-  private static void setPlatformDisabled() {
-    // TODO(tonymd): Signal the platform is disabled.
+  private void setPlatformTransferDisabled() {
+    this.shouldAbortFlag = true;
   }
 
-  private static void setPlatformEnabled() {
-    // TODO(tonymd): Signal the platform is enabled.
+  private void setPlatformTransferEnabled() {
+    this.shouldAbortFlag = false;
   }
 }
