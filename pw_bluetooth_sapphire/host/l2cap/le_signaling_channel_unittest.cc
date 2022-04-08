@@ -57,7 +57,7 @@ TEST_F(LESignalingChannelTest, IgnoreEmptyFrame) {
 TEST_F(LESignalingChannelTest, RejectMalformedTooLarge) {
   // Command Reject packet.
   // clang-format off
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       // Command header
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -66,7 +66,7 @@ TEST_F(LESignalingChannelTest, RejectMalformedTooLarge) {
 
   // Header-encoded length is less than the otherwise-valid Connection Parameter
   // Update packet's payload size.
-  auto cmd_with_oversize_payload = CreateStaticByteBuffer(
+  StaticByteBuffer cmd_with_oversize_payload(
       0x12, kTestCmdId, 0x07, 0x00,
 
       // Valid connection parameters
@@ -82,7 +82,7 @@ TEST_F(LESignalingChannelTest, RejectMalformedTooLarge) {
 TEST_F(LESignalingChannelTest, RejectMalformedTooSmall) {
   // Command Reject packet.
   // clang-format off
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       // Command header
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -91,7 +91,7 @@ TEST_F(LESignalingChannelTest, RejectMalformedTooSmall) {
 
   // Header-encoded length is more than the otherwise-valid Connection Parameter
   // Update packet's payload size.
-  auto cmd_with_undersize_payload = CreateStaticByteBuffer(
+  StaticByteBuffer cmd_with_undersize_payload(
       0x12, kTestCmdId, 0x09, 0x00,
 
       // Valid connection parameters
@@ -119,7 +119,7 @@ TEST_F(LESignalingChannelTest, DefaultMTU) {
 
   // Command Reject packet.
   // clang-format off
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       // Command header
       0x01, kTestCmdId, 0x04, 0x00,
 

@@ -20,10 +20,10 @@ TEST(ScoPacketTest, NewWithConnectionHandle) {
 }
 
 TEST(ScoPacketTest, ReadFromBufferWithStatusFlag) {
-  auto bytes = StaticByteBuffer(0x02,  // handle
-                                0x00,  // status flag: correctly received data
-                                0x01,  // data total length
-                                0x09   // payload
+  StaticByteBuffer bytes(0x02,  // handle
+                         0x00,  // status flag: correctly received data
+                         0x01,  // data total length
+                         0x09   // payload
   );
   std::unique_ptr<ScoDataPacket> packet = ScoDataPacket::New(/*payload_size=*/1);
   ASSERT_TRUE(packet);

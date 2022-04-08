@@ -29,22 +29,20 @@ using HCI_SequentialCommandRunnerTest = SequentialCommandRunnerTest;
 
 TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   // HCI command with custom opcode FFFF.
-  auto command_bytes = CreateStaticByteBuffer(0xFF, 0xFF, 0x00);
+  StaticByteBuffer command_bytes(0xFF, 0xFF, 0x00);
 
-  auto command_status_error_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandStatusEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             hci_spec::StatusCode::kHardwareFailure, 1, 0xFF, 0xFF);
+  StaticByteBuffer command_status_error_bytes(hci_spec::kCommandStatusEventCode,
+                                              0x04,  // parameter_total_size (4 byte payload)
+                                              hci_spec::StatusCode::kHardwareFailure, 1, 0xFF,
+                                              0xFF);
 
-  auto command_cmpl_error_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             1, 0xFF, 0xFF, hci_spec::StatusCode::kReserved0);
+  StaticByteBuffer command_cmpl_error_bytes(hci_spec::kCommandCompleteEventCode,
+                                            0x04,  // parameter_total_size (4 byte payload)
+                                            1, 0xFF, 0xFF, hci_spec::StatusCode::kReserved0);
 
-  auto command_cmpl_success_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             1, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
+  auto command_cmpl_success_bytes = StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                                                     0x04,  // parameter_total_size (4 byte payload)
+                                                     1, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
 
   // Here we perform multiple test sequences where we queue up several  commands
   // in each sequence. We expect each sequence to terminate differently after
@@ -183,17 +181,16 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 }
 
 TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
-  auto command_bytes = CreateStaticByteBuffer(0xFF, 0xFF, 0x00);
+  StaticByteBuffer command_bytes(0xFF, 0xFF, 0x00);
 
   auto command_cmpl_error_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             1, 0xFF, 0xFF, hci_spec::StatusCode::kHardwareFailure);
+      StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       1, 0xFF, 0xFF, hci_spec::StatusCode::kHardwareFailure);
 
-  auto command_cmpl_success_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             1, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
+  auto command_cmpl_success_bytes = StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                                                     0x04,  // parameter_total_size (4 byte payload)
+                                                     1, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
 
   // Sequence 1
   //   -> Command; <- success complete
@@ -317,42 +314,40 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
 TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   // Need to signal to the queue that we can run more than one command at once.
   auto command_status_queue_increase =
-      CreateStaticByteBuffer(hci_spec::kCommandStatusEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             hci_spec::StatusCode::kSuccess, 250, 0x00, 0x00);
+      StaticByteBuffer(hci_spec::kCommandStatusEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       hci_spec::StatusCode::kSuccess, 250, 0x00, 0x00);
   // HCI command with custom opcode FFFF.
-  auto command_bytes = CreateStaticByteBuffer(0xFF, 0xFF, 0x00);
+  StaticByteBuffer command_bytes(0xFF, 0xFF, 0x00);
   auto command_status_error_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandStatusEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             hci_spec::StatusCode::kHardwareFailure, 2, 0xFF, 0xFF);
+      StaticByteBuffer(hci_spec::kCommandStatusEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       hci_spec::StatusCode::kHardwareFailure, 2, 0xFF, 0xFF);
 
-  auto command_cmpl_error_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             2, 0xFF, 0xFF, hci_spec::StatusCode::kReserved0);
+  auto command_cmpl_error_bytes = StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                                                   0x04,  // parameter_total_size (4 byte payload)
+                                                   2, 0xFF, 0xFF, hci_spec::StatusCode::kReserved0);
 
-  auto command_cmpl_success_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             2, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
+  auto command_cmpl_success_bytes = StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                                                     0x04,  // parameter_total_size (4 byte payload)
+                                                     2, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
 
   // HCI command with custom opcode F00F.
-  auto command2_bytes = CreateStaticByteBuffer(0x0F, 0xF0, 0x00);
+  StaticByteBuffer command2_bytes(0x0F, 0xF0, 0x00);
   auto command2_status_error_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandStatusEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             hci_spec::StatusCode::kHardwareFailure, 2, 0x0F, 0xF0);
+      StaticByteBuffer(hci_spec::kCommandStatusEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       hci_spec::StatusCode::kHardwareFailure, 2, 0x0F, 0xF0);
 
   auto command2_cmpl_error_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             2, 0x0F, 0xF0, hci_spec::StatusCode::kReserved0);
+      StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       2, 0x0F, 0xF0, hci_spec::StatusCode::kReserved0);
 
   auto command2_cmpl_success_bytes =
-      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                             0x04,  // parameter_total_size (4 byte payload)
-                             2, 0x0F, 0xF0, hci_spec::StatusCode::kSuccess);
+      StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       2, 0x0F, 0xF0, hci_spec::StatusCode::kSuccess);
 
   test_device()->StartCmdChannel(test_cmd_chan());
   test_device()->StartAclChannel(test_acl_chan());

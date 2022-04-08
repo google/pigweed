@@ -14,7 +14,7 @@ namespace bt::hci::test {
 namespace {
 
 TEST(AdvertisingReportParserTest, EmptyReport) {
-  auto bytes = CreateStaticByteBuffer(0x3E, 0x02, 0x02, 0x00);
+  StaticByteBuffer bytes(0x3E, 0x02, 0x02, 0x00);
 
   auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
@@ -31,7 +31,7 @@ TEST(AdvertisingReportParserTest, EmptyReport) {
 TEST(AdvertisingReportParserTest, SingleReportMalformed) {
   // clang-format off
 
-  auto bytes = CreateStaticByteBuffer(
+  StaticByteBuffer bytes(
       0x3E, 0x0B, 0x02, 0x01,  // HCI event header and LE Meta Event params
       0x03, 0x02,              // event_type, address_type
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // address
@@ -57,7 +57,7 @@ TEST(AdvertisingReportParserTest, SingleReportMalformed) {
 TEST(AdvertisingReportParserTest, SingleReportNoData) {
   // clang-format off
 
-  auto bytes = CreateStaticByteBuffer(
+  StaticByteBuffer bytes(
       0x3E, 0x0C, 0x02, 0x01,  // HCI event header and LE Meta Event params
       0x03, 0x02,              // event_type, address_type
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // address
@@ -92,7 +92,7 @@ TEST(AdvertisingReportParserTest, SingleReportNoData) {
 TEST(AdvertisingReportParserTest, ReportsValidInvalid) {
   // clang-format off
 
-  auto bytes = CreateStaticByteBuffer(
+  StaticByteBuffer bytes(
       0x3E, 0x16, 0x02, 0x02,  // HCI event header and LE Meta Event params
       0x03, 0x02,              // event_type, address_type
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // address
@@ -133,7 +133,7 @@ TEST(AdvertisingReportParserTest, ReportsValidInvalid) {
 TEST(AdvertisingReportParserTest, ReportsAllValid) {
   // clang-format off
 
-  auto bytes = CreateStaticByteBuffer(
+  StaticByteBuffer bytes(
       0x3E, 0x28, 0x02, 0x03,              // HCI event header and LE Meta Event params
       0x03, 0x02,                          // event_type, address_type
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // address
@@ -199,7 +199,7 @@ TEST(AdvertisingReportParserTest, ReportsAllValid) {
 TEST(AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
   // clang-format off
 
-  auto bytes = CreateStaticByteBuffer(
+  StaticByteBuffer bytes(
       0x3E, 0x28, 0x02,  // HCI event header and LE Meta Event param
       0x01,              // Event count is 1, even though packet contains 3
       0x03, 0x02,        // event_type, address_type
@@ -248,7 +248,7 @@ TEST(AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
 TEST(AdvertisingReportParserTest, ReportCountGreaterThanPayloadSize) {
   // clang-format off
 
-  auto bytes = CreateStaticByteBuffer(
+  StaticByteBuffer bytes(
       0x3E, 0x0C, 0x02,  // HCI event header and LE Meta Event param
       0x02,              // Event count is 2, even though packet contains 1
       0x03, 0x02,        // event_type, address_type

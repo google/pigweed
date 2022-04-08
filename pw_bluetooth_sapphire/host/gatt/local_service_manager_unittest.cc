@@ -64,7 +64,7 @@ TEST(LocalServiceManagerTest, EmptyService) {
   EXPECT_EQ(0x0001, iter->start_handle());
   EXPECT_EQ(0x0001, iter->end_handle());
   EXPECT_EQ(types::kPrimaryService, iter->group_type());
-  EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer(0xad, 0xde), iter->decl_value()));
+  EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0xad, 0xde), iter->decl_value()));
 
   iter++;
 
@@ -74,10 +74,9 @@ TEST(LocalServiceManagerTest, EmptyService) {
   EXPECT_EQ(0x0002, iter->start_handle());
   EXPECT_EQ(0x0002, iter->end_handle());
   EXPECT_EQ(types::kSecondaryService, iter->group_type());
-  EXPECT_TRUE(
-      ContainersEqual(CreateStaticByteBuffer(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00,
-                                             0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde),
-                      iter->decl_value()));
+  EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00,
+                                               0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde),
+                              iter->decl_value()));
 }
 
 TEST(LocalServiceManagerTest, UnregisterService) {
@@ -133,7 +132,7 @@ TEST(LocalServiceManagerTest, RegisterCharacteristic) {
   EXPECT_TRUE(attrs[1].value());
 
   // clang-format off
-  const auto kDeclValue = CreateStaticByteBuffer(
+  const StaticByteBuffer kDeclValue(
       0x02,        // properties
       0x03, 0x00,  // value handle
       0xcd, 0xab   // UUID
@@ -184,12 +183,12 @@ TEST(LocalServiceManagerTest, RegisterCharacteristic32) {
   EXPECT_EQ(att::AccessRequirements(), attrs[1].write_reqs());
   EXPECT_TRUE(attrs[1].value());
 
-  const auto kDeclValue = CreateStaticByteBuffer(0x02,        // properties
-                                                 0x03, 0x00,  // value handle
+  const StaticByteBuffer kDeclValue(0x02,        // properties
+                                    0x03, 0x00,  // value handle
 
-                                                 // The 32-bit UUID will be stored as 128-bit
-                                                 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-                                                 0x00, 0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde);
+                                    // The 32-bit UUID will be stored as 128-bit
+                                    0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10,
+                                    0x00, 0x00, 0xef, 0xbe, 0xad, 0xde);
   EXPECT_TRUE(ContainersEqual(kDeclValue, *attrs[1].value()));
 
   // Characteristic value
@@ -236,12 +235,12 @@ TEST(LocalServiceManagerTest, RegisterCharacteristic128) {
   EXPECT_EQ(att::AccessRequirements(), attrs[1].write_reqs());
   EXPECT_TRUE(attrs[1].value());
 
-  const auto kDeclValue = CreateStaticByteBuffer(0x02,        // properties
-                                                 0x03, 0x00,  // value handle
+  const StaticByteBuffer kDeclValue(0x02,        // properties
+                                    0x03, 0x00,  // value handle
 
-                                                 // 128-bit UUID
-                                                 0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88,
-                                                 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00);
+                                    // 128-bit UUID
+                                    0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88, 0x77, 0x66,
+                                    0x55, 0x44, 0x33, 0x22, 0x11, 0x00);
   EXPECT_TRUE(ContainersEqual(kDeclValue, *attrs[1].value()));
 
   // Characteristic value
@@ -275,7 +274,7 @@ TEST(LocalServiceManagerTest, ExtPropSetSuccess) {
   ASSERT_EQ(4u, attrs.size());
   EXPECT_EQ(types::kCharacteristicExtProperties, attrs[3].type());
   EXPECT_TRUE(ContainersEqual(  // Reliable Write property
-      CreateStaticByteBuffer(0x01, 0x00), *attrs[3].value()));
+      StaticByteBuffer(0x01, 0x00), *attrs[3].value()));
 }
 
 // tests that the extended properties descriptor cannot be set externally
@@ -488,7 +487,7 @@ TEST(LocalServiceManagerTest, ReadCharacteristic) {
   constexpr IdType kChrcId = 5;
   constexpr uint16_t kOffset = 10;
 
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
 
   auto kReadReqs = AllowedNoSecurity();
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
@@ -594,7 +593,7 @@ TEST(LocalServiceManagerTest, WriteCharacteristic) {
   constexpr IdType kChrcId = 5;
   constexpr uint16_t kOffset = 10;
 
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
 
   const att::AccessRequirements kReadReqs, kUpdateReqs;
   auto kWriteReqs = AllowedNoSecurity();
@@ -671,7 +670,7 @@ TEST(LocalServiceManagerTest, ReadDescriptor) {
   constexpr IdType kDescId = 1;
   constexpr uint16_t kOffset = 10;
 
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
 
   auto kReadReqs = AllowedNoSecurity();
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
@@ -752,7 +751,7 @@ TEST(LocalServiceManagerTest, WriteDescriptor) {
   constexpr IdType kDescId = 1;
   constexpr uint16_t kOffset = 10;
 
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
 
   const att::AccessRequirements kReadReqs, kUpdateReqs;
   auto kWriteReqs = AllowedNoSecurity();

@@ -26,8 +26,8 @@ const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16,
                                          /*secure_connections=*/false);
 
 // Values with different lengths
-const auto kTestValue1 = CreateStaticByteBuffer('x', 'x');
-const auto kTestValue2 = CreateStaticByteBuffer('x', 'x', 'x');
+const StaticByteBuffer kTestValue1('x', 'x');
+const StaticByteBuffer kTestValue2('x', 'x', 'x');
 
 // Returns the handles of each attribute visited by advancing |iter| until the
 // end.

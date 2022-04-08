@@ -143,7 +143,7 @@ TEST_F(SecurityRequestPhaseTest, InboundSecurityRequestFails) {
 }
 
 TEST_F(SecurityRequestPhaseTest, DropsInvalidPacket) {
-  auto bad_packet = CreateStaticByteBuffer(0xFF);  // 0xFF is not a valid SMP header code
+  StaticByteBuffer bad_packet(0xFF);  // 0xFF is not a valid SMP header code
 
   bool message_sent = false;
   fake_chan()->SetSendCallback(

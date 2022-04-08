@@ -124,7 +124,7 @@ TEST_F(SignalingChannelTest, Reject) {
   constexpr uint8_t kTestId = 14;
 
   // Command Reject packet.
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       // Command header
       0x01, kTestId, 0x02, 0x00,
 
@@ -132,7 +132,7 @@ TEST_F(SignalingChannelTest, Reject) {
       0x00, 0x00);
 
   // A command that TestSignalingChannel does not support.
-  auto cmd = CreateStaticByteBuffer(
+  StaticByteBuffer cmd(
       // header
       kUnknownCommandCode, kTestId, 0x04, 0x00,
 
@@ -146,7 +146,7 @@ TEST_F(SignalingChannelTest, RejectCommandCodeZero) {
   constexpr uint8_t kTestId = 14;
 
   // Command Reject packet.
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       // Command header
       0x01, kTestId, 0x02, 0x00,
 
@@ -154,7 +154,7 @@ TEST_F(SignalingChannelTest, RejectCommandCodeZero) {
       0x00, 0x00);
 
   // A command that TestSignalingChannel does not support.
-  auto cmd = CreateStaticByteBuffer(
+  StaticByteBuffer cmd(
       // header
       0x00, kTestId, 0x04, 0x00,
 
@@ -167,7 +167,7 @@ TEST_F(SignalingChannelTest, RejectCommandCodeZero) {
 TEST_F(SignalingChannelTest, RejectNotUnderstoodWithResponder) {
   constexpr uint8_t kTestId = 14;
 
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       // Command header (Command Reject, ID, length)
       0x01, kTestId, 0x02, 0x00,
 
@@ -193,7 +193,7 @@ TEST_F(SignalingChannelTest, RejectInvalidCIdWithResponder) {
   constexpr uint16_t kLocalCId = 0xf00d;
   constexpr uint16_t kRemoteCId = 0xcafe;
 
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       // Command header (Command Reject, ID, length)
       0x01, kTestId, 0x06, 0x00,
 
@@ -222,7 +222,7 @@ TEST_F(SignalingChannelTest, InvalidMTU) {
   constexpr uint16_t kTooSmallMTU = 7;
 
   // Command Reject packet.
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       // Command header
       0x01, kTestId, 0x04, 0x00,
 
@@ -233,7 +233,7 @@ TEST_F(SignalingChannelTest, InvalidMTU) {
       static_cast<uint8_t>(kTooSmallMTU), 0x00);
 
   // A command that is one octet larger than the MTU.
-  auto cmd = CreateStaticByteBuffer(
+  StaticByteBuffer cmd(
       // header
       kCommandCode, kTestId, 0x04, 0x00,
 
@@ -248,7 +248,7 @@ TEST_F(SignalingChannelTest, HandlePacket) {
   constexpr uint8_t kTestId = 14;
 
   // A command that TestSignalingChannel supports.
-  auto cmd = CreateStaticByteBuffer(
+  StaticByteBuffer cmd(
       // header
       kCommandCode, kTestId, 0x04, 0x00,
 
@@ -293,7 +293,7 @@ TEST_F(SignalingChannelTest, ValidRequestCommandIds) {
 
 TEST_F(SignalingChannelTest, DoNotRejectUnsolicitedResponse) {
   constexpr CommandId kTestCmdId = 97;
-  auto cmd = CreateStaticByteBuffer(
+  StaticByteBuffer cmd(
       // Command header (Echo Response, length 1)
       0x09, kTestCmdId, 0x01, 0x00,
 
@@ -313,13 +313,13 @@ TEST_F(SignalingChannelTest, RejectRemoteResponseWithWrongType) {
   constexpr CommandId kReqId = 1;
 
   // Remote's response with the correct ID but wrong type of response.
-  const ByteBuffer& rsp_invalid_id = CreateStaticByteBuffer(
+  const StaticByteBuffer rsp_invalid_id(
       // Disconnection Response with plausible 4-byte payload.
       0x07, kReqId, 0x04, 0x00,
 
       // Payload
       0x0A, 0x00, 0x08, 0x00);
-  const ByteBuffer& req_data = CreateStaticByteBuffer('P', 'W', 'N');
+  const StaticByteBuffer req_data('P', 'W', 'N');
 
   bool tx_success = false;
   fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
@@ -333,7 +333,7 @@ TEST_F(SignalingChannelTest, RejectRemoteResponseWithWrongType) {
   RunLoopUntilIdle();
   EXPECT_TRUE(tx_success);
 
-  const ByteBuffer& reject_rsp = CreateStaticByteBuffer(
+  const StaticByteBuffer reject_rsp(
       // Command header (Command Rejected)
       0x01, kReqId, 0x02, 0x00,
 
@@ -371,7 +371,7 @@ TEST_F(SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
   };
   fake_chan()->SetSendCallback(std::move(check_header_id), dispatcher());
 
-  const ByteBuffer& req_data = CreateStaticByteBuffer('y', 'o', 'o', 'o', 'o', '\0');
+  const StaticByteBuffer req_data('y', 'o', 'o', 'o', 'o', '\0');
 
   for (int i = 0; i < kMaxCommandId; i++) {
     EXPECT_TRUE(sig()->SendRequest(kEchoRequest, req_data, kTestResponseHandler));
@@ -386,7 +386,7 @@ TEST_F(SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
 
   // Remote finally responds to a request, but not in order requests were sent.
   // This will free a command ID.
-  const ByteBuffer& echo_rsp = CreateStaticByteBuffer(
+  const StaticByteBuffer echo_rsp(
       // Echo response with no payload.
       0x09, kRspId, 0x00, 0x00);
   fake_chan()->Receive(echo_rsp);
@@ -430,7 +430,7 @@ TEST_F(SignalingChannelTest, ResponseHandlerThatDestroysSigDoesNotCrash) {
 // Ensure that the signaling channel plumbs a rejection command from remote to
 // the appropriate response handler.
 TEST_F(SignalingChannelTest, RemoteRejectionPassedToHandler) {
-  const ByteBuffer& reject_rsp = StaticByteBuffer(
+  const StaticByteBuffer reject_rsp(
       // Command header (Command Rejected)
       0x01, 0x01, 0x02, 0x00,
 
@@ -440,7 +440,7 @@ TEST_F(SignalingChannelTest, RemoteRejectionPassedToHandler) {
   bool tx_success = false;
   fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
 
-  const ByteBuffer& req_data = StaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
   bool rx_success = false;
   EXPECT_TRUE(sig()->SendRequest(
       kEchoRequest, req_data,
@@ -611,7 +611,7 @@ TEST_F(SignalingChannelTest, ExpectAdditionalResponseExtendsRtxTimeoutToErtxTime
 }
 
 TEST_F(SignalingChannelTest, RegisterRequestResponder) {
-  const ByteBuffer& remote_req = StaticByteBuffer(
+  const StaticByteBuffer remote_req(
       // Disconnection Request.
       0x06, 0x01, 0x04, 0x00,
 
@@ -657,7 +657,7 @@ TEST_F(SignalingChannelTest, DoNotRejectRemoteResponseInvalidId) {
   constexpr CommandId kIncorrectId = 2;
   // Remote's echo response that has a different ID to what will be in the
   // request header.
-  const ByteBuffer& rsp_invalid_id = CreateStaticByteBuffer(
+  const StaticByteBuffer rsp_invalid_id(
       // Echo response with 4-byte payload.
       0x09, kIncorrectId, 0x04, 0x00,
 

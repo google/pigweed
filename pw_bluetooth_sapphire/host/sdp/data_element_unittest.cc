@@ -19,7 +19,7 @@ TEST(DataElementTest, CreateIsNull) {
   EXPECT_TRUE(elem.Get<std::nullptr_t>());
   EXPECT_EQ(nullptr, *elem.Get<std::nullptr_t>());
 
-  auto expected = CreateStaticByteBuffer(0x00);
+  StaticByteBuffer expected(0x00);
   DynamicByteBuffer buf(1);
   EXPECT_EQ(1u, elem.Write(&buf));
   EXPECT_TRUE(ContainersEqual(expected, buf));
@@ -42,11 +42,10 @@ TEST(DataElementTest, SetAndGet) {
 }
 
 TEST(DataElementTest, Read) {
-  auto buf = CreateStaticByteBuffer(
-      0x25,  // Type (4: String) & Size (5: in an additional byte) = 0b00100 101
-      0x0B,  // Bytes
-      'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96,  // String
-      0xDE, 0xAD, 0xBE, 0xEF  // Extra data (shouldn't be parsed)
+  StaticByteBuffer buf(0x25,  // Type (4: String) & Size (5: in an additional byte) = 0b00100 101
+                       0x0B,  // Bytes
+                       'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96,  // String
+                       0xDE, 0xAD, 0xBE, 0xEF  // Extra data (shouldn't be parsed)
   );
 
   DataElement elem;
@@ -64,10 +63,9 @@ TEST(DataElementTest, Read) {
 }
 
 TEST(DataElementTest, ReadInvalidType) {
-  auto buf = CreateStaticByteBuffer(
-      0xFD,  // Type (Invalid) & Size (5: in an additional byte) = 0b11111 101
-      0x0B,  // Bytes
-      'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96  // String
+  StaticByteBuffer buf(0xFD,  // Type (Invalid) & Size (5: in an additional byte) = 0b11111 101
+                       0x0B,  // Bytes
+                       'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96  // String
   );
 
   DataElement elem;
@@ -75,8 +73,8 @@ TEST(DataElementTest, ReadInvalidType) {
 }
 
 TEST(DataElementTest, ReadUUID) {
-  auto buf = CreateStaticByteBuffer(0x19,  // Type (3: UUID) & Size (1: two bytes) = 0b00011 001
-                                    0x01, 0x00  // L2CAP
+  StaticByteBuffer buf(0x19,       // Type (3: UUID) & Size (1: two bytes) = 0b00011 001
+                       0x01, 0x00  // L2CAP
   );
 
   DataElement elem;
@@ -84,22 +82,22 @@ TEST(DataElementTest, ReadUUID) {
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
   EXPECT_EQ(UUID(uint16_t{0x0100}), *elem.Get<UUID>());
 
-  auto buf2 = CreateStaticByteBuffer(0x1A,  // Type (3: UUID) & Size (2: four bytes) = 0b00011 010
-                                     0x01, 0x02, 0x03, 0x04);
+  StaticByteBuffer buf2(0x1A,  // Type (3: UUID) & Size (2: four bytes) = 0b00011 010
+                        0x01, 0x02, 0x03, 0x04);
 
   EXPECT_EQ(5u, DataElement::Read(&elem, buf2));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
   EXPECT_EQ(UUID(uint32_t{0x01020304}), *elem.Get<UUID>());
 
-  auto buf3 = CreateStaticByteBuffer(0x1B,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 011
-                                     0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02,
-                                     0x03, 0x04, 0x01, 0x02, 0x03, 0x04);
+  StaticByteBuffer buf3(0x1B,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 011
+                        0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04,
+                        0x01, 0x02, 0x03, 0x04);
 
   EXPECT_EQ(0u, DataElement::Read(&elem, buf3));
 
-  auto buf4 = CreateStaticByteBuffer(0x1C,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 100
-                                     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
-                                     0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10);
+  StaticByteBuffer buf4(0x1C,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 100
+                        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
+                        0x0D, 0x0E, 0x0F, 0x10);
 
   EXPECT_EQ(17u, DataElement::Read(&elem, buf4));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
@@ -156,7 +154,7 @@ TEST(DataElementTest, Write) {
   DataElement attribute_lists_elem(std::move(attribute_list));
 
   // clang-format off
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       0x35, 0x29,  // Sequence uint8 41 bytes
       0x09,        // uint16_t type
       UpperBits(kServiceClassIdList), LowerBits(kServiceClassIdList),
@@ -199,7 +197,7 @@ TEST(DataElementTest, Write) {
 
 TEST(DataElementTest, ReadSequence) {
   // clang-format off
-  auto buf = CreateStaticByteBuffer(
+  StaticByteBuffer buf(
       0x35, 0x08, // Sequence with 1 byte length (8)
       0x09, 0x00, 0x01,  // uint16_t: 1
       0x0A, 0x00, 0x00, 0x00, 0x02   // uint32_t: 2
@@ -219,19 +217,18 @@ TEST(DataElementTest, ReadSequence) {
 }
 
 TEST(DataElementTest, ReadNestedSeqeunce) {
-  auto buf =
-      CreateStaticByteBuffer(0x35, 0x1C,                    // Sequence uint8 28 bytes
-                                                            // Sequence 0
-                             0x35, 0x08,                    // Sequence uint8 8 bytes
-                             0x09, 0x00, 0x00,              // Element: uint16_t (0)
-                             0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
-                             // Sequence 1
-                             0x35, 0x10,                    // Sequence uint8 16 bytes
-                             0x09, 0x00, 0x00,              // Element: uint16_t (0)
-                             0x0A, 0xFE, 0xDB, 0xAC, 0x01,  // Element: uint32_t (0xFEDBAC01)
-                             0x09, 0x00, 0x01,  // Handle: uint16_t (1 = kServiceClassIdList)
-                             0x35, 0x03, 0x19, 0x11, 0x01  // Element: Sequence (3) { UUID(0x1101) }
-      );
+  StaticByteBuffer buf(0x35, 0x1C,                    // Sequence uint8 28 bytes
+                                                      // Sequence 0
+                       0x35, 0x08,                    // Sequence uint8 8 bytes
+                       0x09, 0x00, 0x00,              // Element: uint16_t (0)
+                       0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
+                       // Sequence 1
+                       0x35, 0x10,                    // Sequence uint8 16 bytes
+                       0x09, 0x00, 0x00,              // Element: uint16_t (0)
+                       0x0A, 0xFE, 0xDB, 0xAC, 0x01,  // Element: uint32_t (0xFEDBAC01)
+                       0x09, 0x00, 0x01,              // Handle: uint16_t (1 = kServiceClassIdList)
+                       0x35, 0x03, 0x19, 0x11, 0x01   // Element: Sequence (3) { UUID(0x1101) }
+  );
 
   DataElement elem;
   EXPECT_EQ(buf.size(), DataElement::Read(&elem, buf));
@@ -309,12 +306,11 @@ TEST(DataElementTest, SetInvalidUrlStringIsNoOp) {
 }
 
 TEST(DataElementTest, ReadUrlFromBuffer) {
-  auto buf =
-      CreateStaticByteBuffer(0x45,  // Type (8: URL) & Size (5: in an additional byte) = 0b01000 101
-                             0x0B,  // 11 Bytes
-                             'F', 'u', 'c', 'h', 's', 'i', 'a', '.', 'd', 'e', 'v',  // URL String
-                             0xDE, 0xAD, 0xBE, 0xEF  // Extra data (shouldn't be parsed)
-      );
+  StaticByteBuffer buf(0x45,  // Type (8: URL) & Size (5: in an additional byte) = 0b01000 101
+                       0x0B,  // 11 Bytes
+                       'F', 'u', 'c', 'h', 's', 'i', 'a', '.', 'd', 'e', 'v',  // URL String
+                       0xDE, 0xAD, 0xBE, 0xEF  // Extra data (shouldn't be parsed)
+  );
 
   DataElement read_elem;
   EXPECT_EQ(13u, DataElement::Read(&read_elem, buf));
@@ -328,9 +324,9 @@ TEST(DataElementTest, WriteUrlToBuffer) {
   url_elem.SetUrl(std::string("Test.com"));
 
   auto expected =
-      CreateStaticByteBuffer(0x45,  // Type (8: URL) & Size (5: in an additional byte) = 0b01000 101
-                             0x08,  // 8 Bytes
-                             'T', 'e', 's', 't', '.', 'c', 'o', 'm'  // URL String
+      StaticByteBuffer(0x45,  // Type (8: URL) & Size (5: in an additional byte) = 0b01000 101
+                       0x08,  // 8 Bytes
+                       'T', 'e', 's', 't', '.', 'c', 'o', 'm'  // URL String
       );
 
   DynamicByteBuffer write_buf(10);

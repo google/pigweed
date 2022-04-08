@@ -43,13 +43,12 @@ TEST(PDUTest, ErrorResponse) {
   EXPECT_EQ(nullptr, response.GetPDU(0xF00F /* ignored */, 0xDEAD, kDefaultMaxSize /* ignored */,
                                      BufferView()));
 
-  auto kInvalidContState =
-      CreateStaticByteBuffer(0x01,        // opcode: kErrorResponse
-                             0xDE, 0xAD,  // transaction ID: 0xDEAD
-                             0x00, 0x02,  // parameter length: 2 bytes
-                             0x00, 0x05,  // ErrorCode: Invalid Continuation State
-                             0xFF, 0x00   // dummy extra bytes to cause an error
-      );
+  StaticByteBuffer kInvalidContState(0x01,        // opcode: kErrorResponse
+                                     0xDE, 0xAD,  // transaction ID: 0xDEAD
+                                     0x00, 0x02,  // parameter length: 2 bytes
+                                     0x00, 0x05,  // ErrorCode: Invalid Continuation State
+                                     0xFF, 0x00   // extra bytes to cause an error
+  );
 
   fitx::result<Error<>> status = response.Parse(kInvalidContState.view(sizeof(Header)));
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
@@ -68,7 +67,7 @@ TEST(PDUTest, ErrorResponse) {
 }
 
 TEST(PDUTest, ServiceSearchRequestParse) {
-  const auto kL2capSearch = CreateStaticByteBuffer(
+  const StaticByteBuffer kL2capSearch(
       // ServiceSearchPattern
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
@@ -82,7 +81,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
   EXPECT_TRUE(req.service_search_pattern().count(protocol::kL2CAP));
   EXPECT_EQ(16, req.max_service_record_count());
 
-  const auto kL2capSearchOne = CreateStaticByteBuffer(
+  const StaticByteBuffer kL2capSearchOne(
       // ServiceSearchPattern
       0x35, 0x06,        // Sequence uint8 6 bytes
       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
@@ -96,7 +95,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
   EXPECT_EQ(2u, req_one.service_search_pattern().size());
   EXPECT_EQ(1, req_one.max_service_record_count());
 
-  const auto kInvalidNoItems = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidNoItems(
       // ServiceSearchPattern
       0x35, 0x00,  // Sequence uint8 0 bytes
       0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
@@ -106,7 +105,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
   ServiceSearchRequest req2(kInvalidNoItems);
   EXPECT_FALSE(req2.valid());
 
-  const auto kInvalidTooManyItems = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidTooManyItems(
       // ServiceSearchPattern
       0x35, 0x27,        // Sequence uint8 27 bytes
       0x19, 0x30, 0x01,  // 13 UUIDs in the search
@@ -119,7 +118,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
   ServiceSearchRequest req3(kInvalidTooManyItems);
   EXPECT_FALSE(req3.valid());
 
-  const auto kInvalidMaxSizeZero = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidMaxSizeZero(
       // ServiceSearchPattern
       0x35, 0x06,        // Sequence uint8 6 bytes
       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
@@ -139,37 +138,35 @@ TEST(PDUTest, ServiceSearchRequestGetPDU) {
   req.set_max_service_record_count(64);
 
   // Order is not specified, so there are two valid PDUs representing this.
-  const auto kExpected =
-      CreateStaticByteBuffer(kServiceSearchRequest, 0x12, 0x34,  // Transaction ID
-                             0x00, 0x0B,                         // Parameter length (11 bytes)
-                             // ServiceSearchPattern
-                             0x35, 0x06,        // Sequence uint8 6 bytes
-                             0x19, 0x00, 0x07,  // UUID (ATT)
-                             0x19, 0x01, 0x00,  // UUID (L2CAP)
-                             0x00, 0x40,        // MaximumServiceRecordCount: 64
-                             0x00               // No continuation state
-      );
-  const auto kExpected2 =
-      CreateStaticByteBuffer(kServiceSearchRequest, 0x12, 0x34,  // Transaction ID
-                             0x00, 0x0B,                         // Parameter length (11 bytes)
-                             // ServiceSearchPattern
-                             0x35, 0x06,        // Sequence uint8 6 bytes
-                             0x19, 0x01, 0x00,  // UUID (L2CAP)
-                             0x19, 0x00, 0x07,  // UUID (ATT)
-                             0x00, 0x40,        // MaximumServiceRecordCount: 64
-                             0x00               // No continuation state
-      );
+  const StaticByteBuffer kExpected(kServiceSearchRequest, 0x12, 0x34,  // Transaction ID
+                                   0x00, 0x0B,  // Parameter length (11 bytes)
+                                   // ServiceSearchPattern
+                                   0x35, 0x06,        // Sequence uint8 6 bytes
+                                   0x19, 0x00, 0x07,  // UUID (ATT)
+                                   0x19, 0x01, 0x00,  // UUID (L2CAP)
+                                   0x00, 0x40,        // MaximumServiceRecordCount: 64
+                                   0x00               // No continuation state
+  );
+  const auto kExpected2 = StaticByteBuffer(kServiceSearchRequest, 0x12, 0x34,  // Transaction ID
+                                           0x00, 0x0B,  // Parameter length (11 bytes)
+                                           // ServiceSearchPattern
+                                           0x35, 0x06,        // Sequence uint8 6 bytes
+                                           0x19, 0x01, 0x00,  // UUID (L2CAP)
+                                           0x19, 0x00, 0x07,  // UUID (ATT)
+                                           0x00, 0x40,        // MaximumServiceRecordCount: 64
+                                           0x00               // No continuation state
+  );
 
   auto pdu = req.GetPDU(0x1234);
   EXPECT_TRUE(MatchesOneOf(kExpected, kExpected2, *pdu));
 }
 
 TEST(PDUTest, ServiceSearchResponseParse) {
-  const auto kValidResponse = CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
-                                                     0x00, 0x02,  // Current service record count: 2
-                                                     0x00, 0x00, 0x00, 0x01,  // Service Handle 1
-                                                     0x00, 0x00, 0x00, 0x02,  // Service Handle 2
-                                                     0x00  // No continuation state
+  const StaticByteBuffer kValidResponse(0x00, 0x02,              // Total service record count: 2
+                                        0x00, 0x02,              // Current service record count: 2
+                                        0x00, 0x00, 0x00, 0x01,  // Service Handle 1
+                                        0x00, 0x00, 0x00, 0x02,  // Service Handle 2
+                                        0x00                     // No continuation state
   );
 
   ServiceSearchResponse resp;
@@ -180,20 +177,19 @@ TEST(PDUTest, ServiceSearchResponseParse) {
   status = resp.Parse(kValidResponse);
   EXPECT_TRUE(status.is_error());
 
-  const auto kNotEnoughRecords =
-      CreateStaticByteBuffer(0x00, 0x02,              // Total service record count: 2
-                             0x00, 0x02,              // Current service record count: 2
-                             0x00, 0x00, 0x00, 0x01,  // Service Handle 1
-                             0x00                     // No continuation state
-      );
+  const auto kNotEnoughRecords = StaticByteBuffer(0x00, 0x02,  // Total service record count: 2
+                                                  0x00, 0x02,  // Current service record count: 2
+                                                  0x00, 0x00, 0x00, 0x01,  // Service Handle 1
+                                                  0x00                     // No continuation state
+  );
   // Doesn't contain the right # of records.
   ServiceSearchResponse resp2;
   status = resp2.Parse(kNotEnoughRecords);
   EXPECT_TRUE(status.is_error());
 
   // A Truncated packet doesn't parse either.
-  const auto kTruncated = CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
-                                                 0x00, 0x02   // Current service record count: 2
+  const StaticByteBuffer kTruncated(0x00, 0x02,  // Total service record count: 2
+                                    0x00, 0x02   // Current service record count: 2
   );
   ServiceSearchResponse resp3;
   status = resp3.Parse(kTruncated);
@@ -201,23 +197,23 @@ TEST(PDUTest, ServiceSearchResponseParse) {
 
   // Too many bytes for the number of records is also not allowed (with or without a continuation
   // state)
-  const auto kTooLong = CreateStaticByteBuffer(0x00, 0x01,  // Total service record count: 1
-                                               0x00, 0x01,  // Current service record count: 1
-                                               0x00, 0x00, 0x00, 0x01,  // Service Handle 1
-                                               0x00, 0x00, 0x00, 0x02,  // Service Handle 2
-                                               0x00                     // No continuation state
+  const StaticByteBuffer kTooLong(0x00, 0x01,              // Total service record count: 1
+                                  0x00, 0x01,              // Current service record count: 1
+                                  0x00, 0x00, 0x00, 0x01,  // Service Handle 1
+                                  0x00, 0x00, 0x00, 0x02,  // Service Handle 2
+                                  0x00                     // No continuation state
   );
   ServiceSearchResponse resp4;
   status = resp4.Parse(kTooLong);
   EXPECT_TRUE(status.is_error());
 
   const auto kTooLongWithContinuation =
-      CreateStaticByteBuffer(0x00, 0x04,              // Total service record count: 1
-                             0x00, 0x01,              // Current service record count: 1
-                             0x00, 0x00, 0x00, 0x01,  // Service Handle 1
-                             0x00, 0x00, 0x00, 0x02,  // Service Handle 2
-                             0x04,                    // Continuation state (len: 4)
-                             0xF0, 0x9F, 0x92, 0x96   // Continuation state
+      StaticByteBuffer(0x00, 0x04,              // Total service record count: 1
+                       0x00, 0x01,              // Current service record count: 1
+                       0x00, 0x00, 0x00, 0x01,  // Service Handle 1
+                       0x00, 0x00, 0x00, 0x02,  // Service Handle 2
+                       0x04,                    // Continuation state (len: 4)
+                       0xF0, 0x9F, 0x92, 0x96   // Continuation state
       );
   ServiceSearchResponse resp5;
   status = resp5.Parse(kTooLongWithContinuation);
@@ -229,12 +225,12 @@ TEST(PDUTest, ServiceSearchResponsePDU) {
   ServiceSearchResponse resp;
 
   // Empty results
-  const auto kExpectedEmpty = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
-                                                     0x01, 0x10,  // Transaction ID (0x0110)
-                                                     0x00, 0x05,  // Parameter length: 5 bytes
-                                                     0x00, 0x00,  // Total service record count: 0
-                                                     0x00, 0x00,  // Current service record count: 0
-                                                     0x00         // No continuation state
+  const StaticByteBuffer kExpectedEmpty(0x03,        // ServiceSearch Response PDU ID
+                                        0x01, 0x10,  // Transaction ID (0x0110)
+                                        0x00, 0x05,  // Parameter length: 5 bytes
+                                        0x00, 0x00,  // Total service record count: 0
+                                        0x00, 0x00,  // Current service record count: 0
+                                        0x00         // No continuation state
   );
 
   auto pdu = resp.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
@@ -242,52 +238,50 @@ TEST(PDUTest, ServiceSearchResponsePDU) {
 
   resp.set_service_record_handle_list(results);
 
-  const auto kExpected = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
-                                                0x01, 0x10,  // Transaction ID (0x0110)
-                                                0x00, 0x0d,  // Parameter length: 13 bytes
-                                                0x00, 0x02,  // Total service record count: 2
-                                                0x00, 0x02,  // Current service record count: 2
-                                                0x00, 0x00, 0x00, 0x01,  // Service record 1
-                                                0x00, 0x00, 0x00, 0x02,  // Service record 2
-                                                0x00                     // No continuation state
+  const StaticByteBuffer kExpected(0x03,                    // ServiceSearch Response PDU ID
+                                   0x01, 0x10,              // Transaction ID (0x0110)
+                                   0x00, 0x0d,              // Parameter length: 13 bytes
+                                   0x00, 0x02,              // Total service record count: 2
+                                   0x00, 0x02,              // Current service record count: 2
+                                   0x00, 0x00, 0x00, 0x01,  // Service record 1
+                                   0x00, 0x00, 0x00, 0x02,  // Service record 2
+                                   0x00                     // No continuation state
   );
 
   pdu = resp.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 
-  const auto kExpectedLimited =
-      CreateStaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
-                             0x01, 0x10,              // Transaction ID (0x0110)
-                             0x00, 0x09,              // Parameter length: 9
-                             0x00, 0x01,              // Total service record count: 1
-                             0x00, 0x01,              // Current service record count: 1
-                             0x00, 0x00, 0x00, 0x01,  // Service record 1
-                             0x00                     // No continuation state
-      );
+  const auto kExpectedLimited = StaticByteBuffer(0x03,        // ServiceSearchResponse PDU ID
+                                                 0x01, 0x10,  // Transaction ID (0x0110)
+                                                 0x00, 0x09,  // Parameter length: 9
+                                                 0x00, 0x01,  // Total service record count: 1
+                                                 0x00, 0x01,  // Current service record count: 1
+                                                 0x00, 0x00, 0x00, 0x01,  // Service record 1
+                                                 0x00                     // No continuation state
+  );
 
   pdu = resp.GetPDU(1, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedLimited, *pdu));
 
   resp.set_service_record_handle_list({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
-  const auto kExpectedLarge =
-      CreateStaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
-                             0x01, 0x10,              // Transaction ID (0x0110)
-                             0x00, 0x31,              // Parameter length: 49
-                             0x00, 0x0B,              // Total service record count: 11
-                             0x00, 0x0B,              // Current service record count: 11
-                             0x00, 0x00, 0x00, 0x01,  // Service record 1
-                             0x00, 0x00, 0x00, 0x02,  // Service record 2
-                             0x00, 0x00, 0x00, 0x03,  // Service record 3
-                             0x00, 0x00, 0x00, 0x04,  // Service record 4
-                             0x00, 0x00, 0x00, 0x05,  // Service record 5
-                             0x00, 0x00, 0x00, 0x06,  // Service record 6
-                             0x00, 0x00, 0x00, 0x07,  // Service record 7
-                             0x00, 0x00, 0x00, 0x08,  // Service record 8
-                             0x00, 0x00, 0x00, 0x09,  // Service record 9
-                             0x00, 0x00, 0x00, 0x0A,  // Service record 10
-                             0x00, 0x00, 0x00, 0x0B,  // Service record 11
-                             0x00                     // No continuation state.
-      );
+  const auto kExpectedLarge = StaticByteBuffer(0x03,        // ServiceSearchResponse PDU ID
+                                               0x01, 0x10,  // Transaction ID (0x0110)
+                                               0x00, 0x31,  // Parameter length: 49
+                                               0x00, 0x0B,  // Total service record count: 11
+                                               0x00, 0x0B,  // Current service record count: 11
+                                               0x00, 0x00, 0x00, 0x01,  // Service record 1
+                                               0x00, 0x00, 0x00, 0x02,  // Service record 2
+                                               0x00, 0x00, 0x00, 0x03,  // Service record 3
+                                               0x00, 0x00, 0x00, 0x04,  // Service record 4
+                                               0x00, 0x00, 0x00, 0x05,  // Service record 5
+                                               0x00, 0x00, 0x00, 0x06,  // Service record 6
+                                               0x00, 0x00, 0x00, 0x07,  // Service record 7
+                                               0x00, 0x00, 0x00, 0x08,  // Service record 8
+                                               0x00, 0x00, 0x00, 0x09,  // Service record 9
+                                               0x00, 0x00, 0x00, 0x0A,  // Service record 10
+                                               0x00, 0x00, 0x00, 0x0B,  // Service record 11
+                                               0x00                     // No continuation state.
+  );
 
   pdu = resp.GetPDU(0x00FF, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedLarge, *pdu));
@@ -298,12 +292,12 @@ TEST(PDUTest, ServiceSearchResponsePDU_MaxSize) {
   ServiceSearchResponse resp;
 
   // Empty results
-  const auto kExpectedEmpty = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
-                                                     0x01, 0x10,  // Transaction ID (0x0110)
-                                                     0x00, 0x05,  // Parameter length: 5 bytes
-                                                     0x00, 0x00,  // Total service record count: 0
-                                                     0x00, 0x00,  // Current service record count: 0
-                                                     0x00         // No continuation state
+  const StaticByteBuffer kExpectedEmpty(0x03,        // ServiceSearch Response PDU ID
+                                        0x01, 0x10,  // Transaction ID (0x0110)
+                                        0x00, 0x05,  // Parameter length: 5 bytes
+                                        0x00, 0x00,  // Total service record count: 0
+                                        0x00, 0x00,  // Current service record count: 0
+                                        0x00         // No continuation state
   );
 
   auto pdu = resp.GetPDU(0xFFFF, 0x0110, kMinMaxSize, BufferView());
@@ -311,66 +305,65 @@ TEST(PDUTest, ServiceSearchResponsePDU_MaxSize) {
 
   resp.set_service_record_handle_list(results);
 
-  const auto kExpected = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
-                                                0x01, 0x10,  // Transaction ID (0x0110)
-                                                0x00, 0x0d,  // Parameter length: 13 bytes
-                                                0x00, 0x02,  // Total service record count: 2
-                                                0x00, 0x02,  // Current service record count: 2
-                                                0x00, 0x00, 0x00, 0x01,  // Service record 1
-                                                0x00, 0x00, 0x00, 0x02,  // Service record 2
-                                                0x00                     // No continuation state
+  const StaticByteBuffer kExpected(0x03,                    // ServiceSearch Response PDU ID
+                                   0x01, 0x10,              // Transaction ID (0x0110)
+                                   0x00, 0x0d,              // Parameter length: 13 bytes
+                                   0x00, 0x02,              // Total service record count: 2
+                                   0x00, 0x02,              // Current service record count: 2
+                                   0x00, 0x00, 0x00, 0x01,  // Service record 1
+                                   0x00, 0x00, 0x00, 0x02,  // Service record 2
+                                   0x00                     // No continuation state
   );
 
   pdu = resp.GetPDU(0xFFFF, 0x0110, kMinMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 
-  const auto kExpectedLimited =
-      CreateStaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
-                             0x01, 0x10,              // Transaction ID (0x0110)
-                             0x00, 0x09,              // Parameter length: 9
-                             0x00, 0x01,              // Total service record count: 1
-                             0x00, 0x01,              // Current service record count: 1
-                             0x00, 0x00, 0x00, 0x01,  // Service record 1
-                             0x00                     // No continuation state
-      );
+  const auto kExpectedLimited = StaticByteBuffer(0x03,        // ServiceSearchResponse PDU ID
+                                                 0x01, 0x10,  // Transaction ID (0x0110)
+                                                 0x00, 0x09,  // Parameter length: 9
+                                                 0x00, 0x01,  // Total service record count: 1
+                                                 0x00, 0x01,  // Current service record count: 1
+                                                 0x00, 0x00, 0x00, 0x01,  // Service record 1
+                                                 0x00                     // No continuation state
+  );
 
   pdu = resp.GetPDU(1, 0x0110, kMinMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedLimited, *pdu));
 
   resp.set_service_record_handle_list({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
   const auto kExpectedContinuation =
-      CreateStaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
-                             0x01, 0x10,              // Transaction ID (0x0110)
-                             0x00, 0x2B,              // Parameter length: 42
-                             0x00, 0x0B,              // Total service record count: 11
-                             0x00, 0x09,              // Current service record count: 9
-                             0x00, 0x00, 0x00, 0x01,  // Service record 1
-                             0x00, 0x00, 0x00, 0x02,  // Service record 2
-                             0x00, 0x00, 0x00, 0x03,  // Service record 3
-                             0x00, 0x00, 0x00, 0x04,  // Service record 4
-                             0x00, 0x00, 0x00, 0x05,  // Service record 5
-                             0x00, 0x00, 0x00, 0x06,  // Service record 6
-                             0x00, 0x00, 0x00, 0x07,  // Service record 7
-                             0x00, 0x00, 0x00, 0x08,  // Service record 8
-                             0x00, 0x00, 0x00, 0x09,  // Service record 9
-                             0x02, 0x00, 0x09         // Continuation state.
+      StaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
+                       0x01, 0x10,              // Transaction ID (0x0110)
+                       0x00, 0x2B,              // Parameter length: 42
+                       0x00, 0x0B,              // Total service record count: 11
+                       0x00, 0x09,              // Current service record count: 9
+                       0x00, 0x00, 0x00, 0x01,  // Service record 1
+                       0x00, 0x00, 0x00, 0x02,  // Service record 2
+                       0x00, 0x00, 0x00, 0x03,  // Service record 3
+                       0x00, 0x00, 0x00, 0x04,  // Service record 4
+                       0x00, 0x00, 0x00, 0x05,  // Service record 5
+                       0x00, 0x00, 0x00, 0x06,  // Service record 6
+                       0x00, 0x00, 0x00, 0x07,  // Service record 7
+                       0x00, 0x00, 0x00, 0x08,  // Service record 8
+                       0x00, 0x00, 0x00, 0x09,  // Service record 9
+                       0x02, 0x00, 0x09         // Continuation state.
       );
 
   // The MTU size here should limit the number of service records returned to 9.
   pdu = resp.GetPDU(0x00FF, 0x0110, kMinMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedContinuation, *pdu));
 
-  const auto kExpectedRest = CreateStaticByteBuffer(0x03,        // ServiceSearchResponse PDU ID
-                                                    0x01, 0x10,  // Transaction ID (0x0110)
-                                                    0x00, 0x0D,  // Parameter length: 13
-                                                    0x00, 0x0B,  // Total service record count: 11
-                                                    0x00, 0x02,  // Current service record count: 2
-                                                    0x00, 0x00, 0x00, 0x0A,  // Service record 10
-                                                    0x00, 0x00, 0x00, 0x0B,  // Service record 11
-                                                    0x00  // No continuation state.
+  const StaticByteBuffer kExpectedRest(0x03,                    // ServiceSearchResponse PDU ID
+                                       0x01, 0x10,              // Transaction ID (0x0110)
+                                       0x00, 0x0D,              // Parameter length: 13
+                                       0x00, 0x0B,              // Total service record count: 11
+                                       0x00, 0x02,              // Current service record count: 2
+                                       0x00, 0x00, 0x00, 0x0A,  // Service record 10
+                                       0x00, 0x00, 0x00, 0x0B,  // Service record 11
+                                       0x00                     // No continuation state.
   );
 
-  pdu = resp.GetPDU(0x00FF, 0x0110, kMinMaxSize, CreateStaticByteBuffer(0x00, 0x09));
+  pdu = resp.GetPDU(0x00FF, 0x0110, kMinMaxSize, StaticByteBuffer(0x00, 0x09));
   EXPECT_TRUE(ContainersEqual(kExpectedRest, *pdu));
 }
 
@@ -471,7 +464,7 @@ TEST(PDUTest, ServiceAttriuteRequestAddRange) {
 }
 
 TEST(PDUTest, ServiceAttributeRequestParse) {
-  const auto kSDPAllAttributes = CreateStaticByteBuffer(
+  const StaticByteBuffer kSDPAllAttributes(
       0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
       0xF0, 0x0F,              // Maximum attribute byte count: (max = 61455)
       // Attribute ID List
@@ -489,17 +482,16 @@ TEST(PDUTest, ServiceAttributeRequestParse) {
   EXPECT_EQ(0xFFFF, req.attribute_ranges().front().end);
   EXPECT_EQ(61455, req.max_attribute_byte_count());
 
-  const auto kContinued =
-      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-                             0x00, 0x0F,              // Maximum attribute byte count: (max = 15)
-                             // Attribute ID List
-                             0x35, 0x06,             // Sequence uint8 3 bytes
-                             0x09,                   // uint16_t
-                             0x00, 0x01,             // Attribute ID: 1
-                             0x09,                   // uint16_t
-                             0x00, 0x02,             // Attribute ID: 2
-                             0x03, 0x12, 0x34, 0x56  // Continuation state
-      );
+  const auto kContinued = StaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                                           0x00, 0x0F,  // Maximum attribute byte count: (max = 15)
+                                           // Attribute ID List
+                                           0x35, 0x06,             // Sequence uint8 3 bytes
+                                           0x09,                   // uint16_t
+                                           0x00, 0x01,             // Attribute ID: 1
+                                           0x09,                   // uint16_t
+                                           0x00, 0x02,             // Attribute ID: 2
+                                           0x03, 0x12, 0x34, 0x56  // Continuation state
+  );
 
   ServiceAttributeRequest req_cont_state(kContinued);
 
@@ -516,14 +508,13 @@ TEST(PDUTest, ServiceAttributeRequestParse) {
 
   EXPECT_FALSE(req_short.valid());
 
-  const auto kInvalidMaxBytes =
-      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-                             0x00, 0x04,              // Maximum attribute byte count (4)
-                             // Attribute ID List
-                             0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x09, 0x00, 0x02,  // uint16_t (2)
-                             0x00               // No continuation state
-      );
+  const auto kInvalidMaxBytes = StaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                                                 0x00, 0x04,  // Maximum attribute byte count (4)
+                                                 // Attribute ID List
+                                                 0x35, 0x03,        // Sequence uint8 3 bytes
+                                                 0x09, 0x00, 0x02,  // uint16_t (2)
+                                                 0x00               // No continuation state
+  );
 
   ServiceAttributeRequest req_minmax(kInvalidMaxBytes);
 
@@ -531,13 +522,13 @@ TEST(PDUTest, ServiceAttributeRequestParse) {
 
   // Invalid order of the attributes.
   const auto kInvalidAttributeListOrder =
-      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-                             0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
-                             // Attribute ID List
-                             0x35, 0x06,        // Sequence uint8 6 bytes
-                             0x09, 0x00, 0x02,  // uint16_t (2)
-                             0x09, 0x00, 0x01,  // uint16_t (1)
-                             0x00               // No continuation state
+      StaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                       0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
+                       // Attribute ID List
+                       0x35, 0x06,        // Sequence uint8 6 bytes
+                       0x09, 0x00, 0x02,  // uint16_t (2)
+                       0x09, 0x00, 0x01,  // uint16_t (1)
+                       0x00               // No continuation state
       );
 
   ServiceAttributeRequest req_order(kInvalidAttributeListOrder);
@@ -546,13 +537,13 @@ TEST(PDUTest, ServiceAttributeRequestParse) {
 
   // AttributeID List has invalid items
   const auto kInvalidAttributeList =
-      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-                             0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
-                             // Attribute ID List
-                             0x35, 0x06,        // Sequence uint8 5 bytes
-                             0x09, 0x00, 0x02,  // uint16_t (2)
-                             0x19, 0x00, 0x01,  // UUID (0x0001)
-                             0x00               // No continuation state
+      StaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                       0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
+                       // Attribute ID List
+                       0x35, 0x06,        // Sequence uint8 5 bytes
+                       0x09, 0x00, 0x02,  // uint16_t (2)
+                       0x19, 0x00, 0x01,  // UUID (0x0001)
+                       0x00               // No continuation state
       );
 
   ServiceAttributeRequest req_baditems(kInvalidAttributeList);
@@ -560,12 +551,11 @@ TEST(PDUTest, ServiceAttributeRequestParse) {
   EXPECT_FALSE(req_baditems.valid());
 
   // AttributeID list is empty
-  const auto kInvalidNoItems =
-      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-                             0xFF, 0xFF,              // Maximum attribute byte count: max
-                             0x35, 0x00,              // Sequence uint8 no bytes
-                             0x00                     // No continuation state
-      );
+  const auto kInvalidNoItems = StaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                                                0xFF, 0xFF,  // Maximum attribute byte count: max
+                                                0x35, 0x00,  // Sequence uint8 no bytes
+                                                0x00         // No continuation state
+  );
 
   ServiceAttributeRequest req_noitems(kInvalidNoItems);
   EXPECT_FALSE(req_noitems.valid());
@@ -580,15 +570,15 @@ TEST(PDUTest, ServiceAttributeRequestGetPDU) {
   req.set_max_attribute_byte_count(32);
 
   const auto kExpected =
-      CreateStaticByteBuffer(kServiceAttributeRequest, 0x12, 0x34,  // transaction id
-                             0x00, 0x11,                            // Parameter Length (17 bytes)
-                             0xEF, 0xFE, 0xCA, 0xCE,  // ServiceRecordHandle (0xEFFECACE)
-                             0x00, 0x20,              // MaxAttributeByteCount (32)
-                             // Attribute ID list
-                             0x35, 0x08,                    // Sequence uint8 8 bytes
-                             0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
-                             0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
-                             0x00                           // No continuation state
+      StaticByteBuffer(kServiceAttributeRequest, 0x12, 0x34,  // transaction id
+                       0x00, 0x11,                            // Parameter Length (17 bytes)
+                       0xEF, 0xFE, 0xCA, 0xCE,                // ServiceRecordHandle (0xEFFECACE)
+                       0x00, 0x20,                            // MaxAttributeByteCount (32)
+                       // Attribute ID list
+                       0x35, 0x08,                    // Sequence uint8 8 bytes
+                       0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
+                       0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
+                       0x00                           // No continuation state
       );
 
   auto pdu = req.GetPDU(0x1234);
@@ -596,10 +586,10 @@ TEST(PDUTest, ServiceAttributeRequestGetPDU) {
 }
 
 TEST(PDUTest, ServiceAttributeResponseParse) {
-  const auto kValidResponseEmpty = CreateStaticByteBuffer(0x00, 0x02,  // AttributeListByteCount (2
-                                                                       // bytes) Attribute List
-                                                          0x35, 0x00,  // Sequence uint8 0 bytes
-                                                          0x00         // No continuation state
+  const StaticByteBuffer kValidResponseEmpty(0x00, 0x02,  // AttributeListByteCount (2
+                                                          // bytes) Attribute List
+                                             0x35, 0x00,  // Sequence uint8 0 bytes
+                                             0x00         // No continuation state
   );
 
   ServiceAttributeResponse resp;
@@ -607,7 +597,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
 
   EXPECT_EQ(fitx::ok(), status);
 
-  const auto kValidResponseItems = CreateStaticByteBuffer(
+  const StaticByteBuffer kValidResponseItems(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
       // Attribute List
       0x35, 0x10,                    // Sequence uint8 16 bytes
@@ -631,7 +621,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
   EXPECT_NE(resp2.attributes().end(), it);
   EXPECT_EQ(DataElement::Type::kSequence, it->second.type());
 
-  const auto kInvalidItemsWrongOrder = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidItemsWrongOrder(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
       // Attribute List
       0x35, 0x10,                    // Sequence uint8 16 bytes
@@ -647,7 +637,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
 
   EXPECT_TRUE(status.is_error());
 
-  const auto kInvalidHandleWrongType = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidHandleWrongType(
       0x00, 0x11,  // AttributeListByteCount (17 bytes)
       // Attribute List
       0x35, 0x0F,                    // Sequence uint8 15 bytes
@@ -663,15 +653,15 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
 
   EXPECT_TRUE(status.is_error());
 
-  const auto kInvalidByteCount = CreateStaticByteBuffer(
-      0x00, 0x12,  // AttributeListByteCount (18 bytes)
-      // Attribute List (only 17 bytes long)
-      0x35, 0x0F,                    // Sequence uint8 15 bytes
-      0x09, 0x00, 0x01,              // Handle: uint16_t (1)
-      0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
-      0x09, 0x00, 0x00,              // Handle: uint16_t (0)
-      0x25, 0x02, 'h', 'i',          // Element: String ('hi')
-      0x00                           // No continuation state
+  const StaticByteBuffer kInvalidByteCount(0x00, 0x12,        // AttributeListByteCount (18 bytes)
+                                                              // Attribute List (only 17 bytes long)
+                                           0x35, 0x0F,        // Sequence uint8 15 bytes
+                                           0x09, 0x00, 0x01,  // Handle: uint16_t (1)
+                                           0x35, 0x03, 0x19, 0x11,
+                                           0x01,  // Element: Sequence (3) { UUID(0x1101) }
+                                           0x09, 0x00, 0x00,      // Handle: uint16_t (0)
+                                           0x25, 0x02, 'h', 'i',  // Element: String ('hi')
+                                           0x00                   // No continuation state
   );
 
   ServiceAttributeResponse resp4;
@@ -681,10 +671,10 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
   // Sending too much data eventually fails.
   auto kContinuationPacket = DynamicByteBuffer(4096);
   // Put the correct byte count at the front: 4096 - 2 (byte count) - 5 (continuation size)
-  const auto kAttributeListByteCount = CreateStaticByteBuffer(0x0F, 0xF9);
+  const StaticByteBuffer kAttributeListByteCount(0x0F, 0xF9);
   kContinuationPacket.Write(kAttributeListByteCount, 0);
   // Put the correct continuation at the end.
-  const auto kContinuation = CreateStaticByteBuffer(0x04, 0xF0, 0x9F, 0x92, 0x96);
+  const StaticByteBuffer kContinuation(0x04, 0xF0, 0x9F, 0x92, 0x96);
   kContinuationPacket.Write(kContinuation, kContinuationPacket.size() - 5);
 
   ServiceAttributeResponse resp5;
@@ -711,7 +701,7 @@ TEST(PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
 
   const uint16_t kTransactionID = 0xfeed;
 
-  const auto kExpectedContinuation = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpectedContinuation(
       0x05,                                                  // ServiceAttributeResponse
       UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
       0x00, 0x2B,                                            // Param Length (43 bytes)
@@ -734,7 +724,7 @@ TEST(PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
   auto pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedContinuation, *pdu));
 
-  const auto kExpectedRemaining = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpectedRemaining(
       0x05,                                                  // ServiceSearchAttributeResponse
       UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
       0x00, 0x0e,                                            // Param Length (14 bytes)
@@ -747,12 +737,12 @@ TEST(PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
   );
 
   pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize,
-                    CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x24));
+                    StaticByteBuffer(0x00, 0x00, 0x00, 0x24));
   EXPECT_TRUE(ContainersEqual(kExpectedRemaining, *pdu));
 }
 
 TEST(PDUTest, ServiceSearchAttributeRequestParse) {
-  const auto kSDPL2CAPAllAttributes = CreateStaticByteBuffer(
+  const StaticByteBuffer kSDPL2CAPAllAttributes(
       // Service search pattern
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
@@ -774,18 +764,17 @@ TEST(PDUTest, ServiceSearchAttributeRequestParse) {
   EXPECT_EQ(0xFFFF, req.attribute_ranges().front().end);
   EXPECT_EQ(61455, req.max_attribute_byte_count());
 
-  const auto kContinued =
-      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0x00, 0x0F,        // Maximum attribute byte count: (max = 15)
-                             // Attribute ID List
-                             0x35, 0x06,             // Sequence uint8 6 bytes
-                             0x09,                   // uint16_t
-                             0x00, 0x01,             // Attribute ID: 1
-                             0x09,                   // uint16_t
-                             0x00, 0x02,             // Attribute ID: 2
-                             0x03, 0x12, 0x34, 0x56  // Continuation state
-      );
+  const auto kContinued = StaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
+                                           0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                           0x00, 0x0F,  // Maximum attribute byte count: (max = 15)
+                                           // Attribute ID List
+                                           0x35, 0x06,             // Sequence uint8 6 bytes
+                                           0x09,                   // uint16_t
+                                           0x00, 0x01,             // Attribute ID: 1
+                                           0x09,                   // uint16_t
+                                           0x00, 0x02,             // Attribute ID: 2
+                                           0x03, 0x12, 0x34, 0x56  // Continuation state
+  );
 
   ServiceSearchAttributeRequest req_cont_state(kContinued);
 
@@ -804,15 +793,14 @@ TEST(PDUTest, ServiceSearchAttributeRequestParse) {
 
   EXPECT_FALSE(req_short.valid());
 
-  const auto kInvalidMaxBytes =
-      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0x00, 0x04,        // Maximum attribute byte count (4)
-                             // Attribute ID List
-                             0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x09, 0x00, 0x02,  // uint16_t (2)
-                             0x00               // No continuation state
-      );
+  const auto kInvalidMaxBytes = StaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
+                                                 0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                                 0x00, 0x04,  // Maximum attribute byte count (4)
+                                                 // Attribute ID List
+                                                 0x35, 0x03,        // Sequence uint8 3 bytes
+                                                 0x09, 0x00, 0x02,  // uint16_t (2)
+                                                 0x00               // No continuation state
+  );
 
   ServiceSearchAttributeRequest req_minmax(kInvalidMaxBytes);
 
@@ -820,14 +808,14 @@ TEST(PDUTest, ServiceSearchAttributeRequestParse) {
 
   // Invalid order of the attributes.
   const auto kInvalidAttributeListOrder =
-      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0xFF, 0xFF,        // Maximum attribute byte count: (max = 65535)
-                             // Attribute ID List
-                             0x35, 0x06,        // Sequence uint8 6 bytes
-                             0x09, 0x00, 0x02,  // uint16_t (2)
-                             0x09, 0x00, 0x01,  // uint16_t (1)
-                             0x00               // No continuation state
+      StaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
+                       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                       0xFF, 0xFF,        // Maximum attribute byte count: (max = 65535)
+                       // Attribute ID List
+                       0x35, 0x06,        // Sequence uint8 6 bytes
+                       0x09, 0x00, 0x02,  // uint16_t (2)
+                       0x09, 0x00, 0x01,  // uint16_t (1)
+                       0x00               // No continuation state
       );
 
   ServiceSearchAttributeRequest req_order(kInvalidAttributeListOrder);
@@ -836,45 +824,44 @@ TEST(PDUTest, ServiceSearchAttributeRequestParse) {
 
   // AttributeID List has invalid items
   const auto kInvalidAttributeList =
-      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0xFF, 0xFF,        // Maximum attribute byte count: (max = 65535)
-                             // Attribute ID List
-                             0x35, 0x06,        // Sequence uint8 6 bytes
-                             0x09, 0x00, 0x02,  // uint16_t (2)
-                             0x19, 0x00, 0x01,  // UUID (0x0001)
-                             0x00               // No continuation state
+      StaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
+                       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                       0xFF, 0xFF,        // Maximum attribute byte count: (max = 65535)
+                       // Attribute ID List
+                       0x35, 0x06,        // Sequence uint8 6 bytes
+                       0x09, 0x00, 0x02,  // uint16_t (2)
+                       0x19, 0x00, 0x01,  // UUID (0x0001)
+                       0x00               // No continuation state
       );
 
   ServiceSearchAttributeRequest req_baditems(kInvalidAttributeList);
 
   EXPECT_FALSE(req_baditems.valid());
 
-  const auto kInvalidNoItems =
-      CreateStaticByteBuffer(0x35, 0x00,  // Sequence uint8 0 bytes
-                             0xF0, 0x0F,  // Maximum attribute byte count (61455)
-                             // Attribute ID List
-                             0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x09, 0x00, 0x02,  // uint16_t (2)
-                             0x00               // No continuation state
-      );
+  const auto kInvalidNoItems = StaticByteBuffer(0x35, 0x00,  // Sequence uint8 0 bytes
+                                                0xF0, 0x0F,  // Maximum attribute byte count (61455)
+                                                // Attribute ID List
+                                                0x35, 0x03,        // Sequence uint8 3 bytes
+                                                0x09, 0x00, 0x02,  // uint16_t (2)
+                                                0x00               // No continuation state
+  );
 
   ServiceSearchAttributeRequest req_noitems(kInvalidNoItems);
   EXPECT_FALSE(req_noitems.valid());
 
   const auto kInvalidNoAttributes =
-      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0xF0, 0x0F,        // Maximum attribute byte count (61455)
-                             // Attribute ID List
-                             0x35, 0x00,  // Sequence uint8 0 bytes
-                             0x00         // No continuation state
+      StaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
+                       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                       0xF0, 0x0F,        // Maximum attribute byte count (61455)
+                       // Attribute ID List
+                       0x35, 0x00,  // Sequence uint8 0 bytes
+                       0x00         // No continuation state
       );
 
   ServiceSearchAttributeRequest req_noattributes(kInvalidNoAttributes);
   EXPECT_FALSE(req_noattributes.valid());
 
-  const auto kInvalidTooManyItems = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidTooManyItems(
       // ServiceSearchPattern
       0x35, 0x27,        // Sequence uint8 27 bytes
       0x19, 0x30, 0x01,  // 13 UUIDs in the search
@@ -899,33 +886,33 @@ TEST(PDUTest, ServiceSearchAttributeRequestGetPDU) {
   req.set_max_attribute_byte_count(32);
 
   const auto kExpected =
-      CreateStaticByteBuffer(kServiceSearchAttributeRequest, 0x12, 0x34,  // transaction id
-                             0x00, 0x15,  // Parameter Length (21 bytes)
-                             // ServiceSearchPattern
-                             0x35, 0x06,        // Sequence uint8 6 bytes
-                             0x19, 0x00, 0x07,  // UUID (ATT)
-                             0x19, 0x01, 0x00,  // UUID (L2CAP)
-                             0x00, 0x20,        // MaxAttributeByteCount (32)
-                             // Attribute ID list
-                             0x35, 0x08,                    // Sequence uint8 8 bytes
-                             0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
-                             0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
-                             0x00                           // No continuation state
+      StaticByteBuffer(kServiceSearchAttributeRequest, 0x12, 0x34,  // transaction id
+                       0x00, 0x15,                                  // Parameter Length (21 bytes)
+                       // ServiceSearchPattern
+                       0x35, 0x06,        // Sequence uint8 6 bytes
+                       0x19, 0x00, 0x07,  // UUID (ATT)
+                       0x19, 0x01, 0x00,  // UUID (L2CAP)
+                       0x00, 0x20,        // MaxAttributeByteCount (32)
+                       // Attribute ID list
+                       0x35, 0x08,                    // Sequence uint8 8 bytes
+                       0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
+                       0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
+                       0x00                           // No continuation state
       );
 
   const auto kExpected2 =
-      CreateStaticByteBuffer(kServiceSearchAttributeRequest, 0x12, 0x34,  // transaction id
-                             0x00, 0x15,  // Parameter Length (21 bytes)
-                             // ServiceSearchPattern
-                             0x35, 0x06,        // Sequence uint8 6 bytes
-                             0x19, 0x01, 0x00,  // UUID (L2CAP)
-                             0x19, 0x00, 0x07,  // UUID (ATT)
-                             0x00, 0x20,        // MaxAttributeByteCount (32)
-                             // Attribute ID list
-                             0x35, 0x08,                    // Sequence uint8 8 bytes
-                             0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
-                             0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
-                             0x00                           // No continuation state
+      StaticByteBuffer(kServiceSearchAttributeRequest, 0x12, 0x34,  // transaction id
+                       0x00, 0x15,                                  // Parameter Length (21 bytes)
+                       // ServiceSearchPattern
+                       0x35, 0x06,        // Sequence uint8 6 bytes
+                       0x19, 0x01, 0x00,  // UUID (L2CAP)
+                       0x19, 0x00, 0x07,  // UUID (ATT)
+                       0x00, 0x20,        // MaxAttributeByteCount (32)
+                       // Attribute ID list
+                       0x35, 0x08,                    // Sequence uint8 8 bytes
+                       0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
+                       0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
+                       0x00                           // No continuation state
       );
 
   auto pdu = req.GetPDU(0x1234);
@@ -933,10 +920,10 @@ TEST(PDUTest, ServiceSearchAttributeRequestGetPDU) {
 }
 
 TEST(PDUTest, ServiceSearchAttributeResponseParse) {
-  const auto kValidResponseEmpty = CreateStaticByteBuffer(0x00, 0x02,  // AttributeListsByteCount (2
-                                                                       // bytes) Attribute List
-                                                          0x35, 0x00,  // Sequence uint8 0 bytes
-                                                          0x00         // No continuation state
+  const StaticByteBuffer kValidResponseEmpty(0x00, 0x02,  // AttributeListsByteCount (2
+                                                          // bytes) Attribute List
+                                             0x35, 0x00,  // Sequence uint8 0 bytes
+                                             0x00         // No continuation state
   );
 
   ServiceSearchAttributeResponse resp;
@@ -946,7 +933,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   EXPECT_TRUE(resp.complete());
   EXPECT_EQ(0u, resp.num_attribute_lists());
 
-  const auto kValidResponseItems = CreateStaticByteBuffer(
+  const StaticByteBuffer kValidResponseItems(
       0x00, 0x14,  // AttributeListsByteCount (20 bytes)
       // Wrapping Attribute List
       0x35, 0x12,  // Sequence uint8 18 bytes
@@ -973,7 +960,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   EXPECT_NE(resp.attributes(0).end(), it);
   EXPECT_EQ(DataElement::Type::kSequence, it->second.type());
 
-  const auto kValidResponseTwoLists = CreateStaticByteBuffer(
+  const StaticByteBuffer kValidResponseTwoLists(
       0x00, 0x1E,  // AttributeListsByteCount (30 bytes)
       // Wrapping Attribute List
       0x35, 0x1C,  // Sequence uint8 28 bytes
@@ -1009,7 +996,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
 
   // Note: see test below, some peers will send in the wrong order.
   // We still will fail if the peer sends us two of the same type.
-  const auto kInvalidItemsDuplicateAttribute = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidItemsDuplicateAttribute(
       0x00, 0x14,  // AttributeListByteCount (20 bytes)
       // Wrapping Attribute List
       0x35, 0x12,  // Sequence uint8 18 bytes
@@ -1027,7 +1014,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
 
   EXPECT_TRUE(status.is_error());
 
-  const auto kInvalidHandleWrongType = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidHandleWrongType(
       0x00, 0x13,  // AttributeListByteCount (19 bytes)
       // Wrapping Attribute List
       0x35, 0x11,  // Sequence uint8 17 bytes
@@ -1045,16 +1032,16 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
 
   EXPECT_TRUE(status.is_error());
 
-  const auto kInvalidByteCount = CreateStaticByteBuffer(
-      0x00, 0x12,  // AttributeListsByteCount (18 bytes)
-      0x35, 0x11,  // Sequence uint8 17 bytes
-      // Attribute List
-      0x35, 0x0F,                    // Sequence uint8 15 bytes
-      0x09, 0x00, 0x01,              // Handle: uint16_t (1)
-      0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
-      0x09, 0x00, 0x00,              // Handle: uint16_t (0)
-      0x25, 0x02, 'h', 'i',          // Element: String ('hi')
-      0x00                           // No continuation state
+  const StaticByteBuffer kInvalidByteCount(0x00, 0x12,  // AttributeListsByteCount (18 bytes)
+                                           0x35, 0x11,  // Sequence uint8 17 bytes
+                                           // Attribute List
+                                           0x35, 0x0F,        // Sequence uint8 15 bytes
+                                           0x09, 0x00, 0x01,  // Handle: uint16_t (1)
+                                           0x35, 0x03, 0x19, 0x11,
+                                           0x01,  // Element: Sequence (3) { UUID(0x1101) }
+                                           0x09, 0x00, 0x00,      // Handle: uint16_t (0)
+                                           0x25, 0x02, 'h', 'i',  // Element: String ('hi')
+                                           0x00                   // No continuation state
   );
 
   status = resp3.Parse(kInvalidByteCount);
@@ -1064,10 +1051,10 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   // Sending too much data eventually fails.
   auto kContinuationPacket = DynamicByteBuffer(4096);
   // Put the correct byte count at the front: 4096 - 2 (byte count) - 5 (continuation size)
-  const auto kAttributeListByteCount = CreateStaticByteBuffer(0x0F, 0xF9);
+  const StaticByteBuffer kAttributeListByteCount(0x0F, 0xF9);
   kContinuationPacket.Write(kAttributeListByteCount, 0);
   // Put the correct continuation at the end.
-  const auto kContinuation = CreateStaticByteBuffer(0x04, 0xF0, 0x9F, 0x92, 0x96);
+  const StaticByteBuffer kContinuation(0x04, 0xF0, 0x9F, 0x92, 0x96);
   kContinuationPacket.Write(kContinuation, kContinuationPacket.size() - 5);
 
   ServiceSearchAttributeResponse resp4;
@@ -1082,9 +1069,8 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
 // Some peers will send the attributes in the wrong order.
 // As long as they are not duplicate attributes, we are flexible to this.
 TEST(PDUTest, ServiceSearchAttributeResponseParseContinuationWrongOrder) {
-
   // Attributes can come in the wrong order.
-  const auto kItemsWrongOrder = CreateStaticByteBuffer(
+  const StaticByteBuffer kItemsWrongOrder(
       0x00, 0x14,  // AttributeListByteCount (20 bytes)
       // Wrapping Attribute List
       0x35, 0x12,  // Sequence uint8 18 bytes
@@ -1103,7 +1089,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParseContinuationWrongOrder) {
   EXPECT_EQ(fitx::ok(), status);
 
   // Packets seen in real-world testing, a more complicated example.
-  const auto kFirstPacket = CreateStaticByteBuffer(
+  const StaticByteBuffer kFirstPacket(
       0x00, 0x77, // AttributeListsByteCount (119 bytes)
       0x35, 0x7e, // Wrapping attribute list
       0x35, 0x33, // Begin attribute list 1
@@ -1135,19 +1121,17 @@ TEST(PDUTest, ServiceSearchAttributeResponseParseContinuationWrongOrder) {
   status = resp.Parse(kFirstPacket);
   EXPECT_EQ(ToResult(HostError::kInProgress), status);
 
-  const auto kSecondPacket = CreateStaticByteBuffer(
-    0x00, 0x09, // AttributeListsByteCount (9 bytes)
-    // 9 bytes continuing the previous response
-    0x09, 0x01, 0x05,  // Continuation of previous 0x09 attribute
-    0x09, 0x03, 0x11, // Attribute 0x311
-    0x09, 0x00, 0x02,
-    0x00 // No continuation state.
+  const StaticByteBuffer kSecondPacket(0x00, 0x09,  // AttributeListsByteCount (9 bytes)
+                                                    // 9 bytes continuing the previous response
+                                       0x09, 0x01, 0x05,  // Continuation of previous 0x09 attribute
+                                       0x09, 0x03, 0x11,  // Attribute 0x311
+                                       0x09, 0x00, 0x02,
+                                       0x00  // No continuation state.
   );
 
   status = resp.Parse(kSecondPacket);
   EXPECT_EQ(fitx::ok(), status);
 }
-
 
 TEST(PDUTest, ServiceSearchAttributeResponseGetPDU) {
   ServiceSearchAttributeResponse resp;
@@ -1162,24 +1146,24 @@ TEST(PDUTest, ServiceSearchAttributeResponseGetPDU) {
 
   const uint16_t kTransactionID = 0xfeed;
 
-  const auto kExpected = CreateStaticByteBuffer(
-      0x07,                                                  // ServiceSearchAttributeResponse
-      UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
-      0x00, 0x25,                                            // Param Length (37 bytes)
-      0x00, 0x22,                                            // AttributeListsByteCount (34 bytes)
-      // AttributeLists
-      0x35, 0x20,                    // Sequence uint8 32 bytes
-      0x35, 0x14,                    // Sequence uint8 20 bytes
-      0x09, 0x00, 0x00,              // uint16_t (handle) = kServiceRecordHandle
-      0x0A, 0x00, 0x00, 0x00, 0x00,  // uint32_t, 0
-      0x09, 0x40, 0x00,              // uint16_t (handle) = 0x4000
-      0x09, 0xfe, 0xed,              // uint16_t (0xfeed)
-      0x09, 0x40, 0x01,              // uint16_t (handle) = 0x4001
-      0x19, 0x00, 0x01,              // UUID (kSDP)
-      0x35, 0x08,                    // Sequence uint8 8 bytes
-      0x09, 0x00, 0x00,              // uint16_t (handle) = kServiceRecordHandle
-      0x0A, 0x10, 0x00, 0x20, 0x00,  // value: uint32_t (0x10002000)
-      0x00                           // Continutation state (none)
+  const StaticByteBuffer kExpected(0x07,  // ServiceSearchAttributeResponse
+                                   UpperBits(kTransactionID),
+                                   LowerBits(kTransactionID),  // Transaction ID
+                                   0x00, 0x25,                 // Param Length (37 bytes)
+                                   0x00, 0x22,                 // AttributeListsByteCount (34 bytes)
+                                   // AttributeLists
+                                   0x35, 0x20,        // Sequence uint8 32 bytes
+                                   0x35, 0x14,        // Sequence uint8 20 bytes
+                                   0x09, 0x00, 0x00,  // uint16_t (handle) = kServiceRecordHandle
+                                   0x0A, 0x00, 0x00, 0x00, 0x00,  // uint32_t, 0
+                                   0x09, 0x40, 0x00,              // uint16_t (handle) = 0x4000
+                                   0x09, 0xfe, 0xed,              // uint16_t (0xfeed)
+                                   0x09, 0x40, 0x01,              // uint16_t (handle) = 0x4001
+                                   0x19, 0x00, 0x01,              // UUID (kSDP)
+                                   0x35, 0x08,                    // Sequence uint8 8 bytes
+                                   0x09, 0x00, 0x00,  // uint16_t (handle) = kServiceRecordHandle
+                                   0x0A, 0x10, 0x00, 0x20, 0x00,  // value: uint32_t (0x10002000)
+                                   0x00                           // Continutation state (none)
   );
 
   auto pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kDefaultMaxSize, BufferView());
@@ -1204,7 +1188,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
 
   const uint16_t kTransactionID = 0xfeed;
 
-  const auto kExpectedContinuation = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpectedContinuation(
       0x07,                                                  // ServiceSearchAttributeResponse
       UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
       0x00, 0x2B,                                            // Param Length (43 bytes)
@@ -1228,7 +1212,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
   auto pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedContinuation, *pdu));
 
-  const auto kExpectedRemaining = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpectedRemaining(
       0x07,                                                  // ServiceSearchAttributeResponse
       UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
       0x00, 0x12,                                            // Param Length (18 bytes)
@@ -1242,7 +1226,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
   );
 
   pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize,
-                    CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x24));
+                    StaticByteBuffer(0x00, 0x00, 0x00, 0x24));
   EXPECT_TRUE(ContainersEqual(kExpectedRemaining, *pdu));
 }
 
@@ -1258,8 +1242,7 @@ TEST(PDUTest, ResponseOutOfRangeContinuation) {
   buf = rsp_search.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, service_search_cont);
   EXPECT_FALSE(buf);
   // Wrong size continuation state
-  buf =
-      rsp_search.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, CreateStaticByteBuffer(0x01, 0xFF, 0xFF));
+  buf = rsp_search.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, StaticByteBuffer(0x01, 0xFF, 0xFF));
   EXPECT_FALSE(buf);
 
   ServiceAttributeResponse rsp_attr;
@@ -1292,7 +1275,6 @@ TEST(PDUTest, ResponseOutOfRangeContinuation) {
 
   EXPECT_FALSE(buf);
 }
-
 
 }  // namespace
 }  // namespace bt::sdp

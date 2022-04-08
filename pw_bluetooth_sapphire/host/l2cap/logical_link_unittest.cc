@@ -74,10 +74,10 @@ TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
   bool activated = connectionless_chan->Activate([&](ByteBufferPtr) { rx_count++; }, []() {});
   ASSERT_TRUE(activated);
 
-  auto group_frame = CreateStaticByteBuffer(0x0A, 0x00,  // Length (PSM + info = 10)
-                                            0x02, 0x00,  // Connectionless data channel
-                                            0xF0, 0x0F,  // PSM
-                                            'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e'  // Info Payload
+  StaticByteBuffer group_frame(0x0A, 0x00,  // Length (PSM + info = 10)
+                               0x02, 0x00,  // Connectionless data channel
+                               0xF0, 0x0F,  // PSM
+                               'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e'  // Info Payload
   );
   auto packet = hci::ACLDataPacket::New(0x0001, hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
                                         hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast,

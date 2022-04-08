@@ -92,7 +92,7 @@ class CommandHandlerTest : public TestBase {
 
 TEST_F(CommandHandlerTest, OutboundDisconReqRspOk) {
   // Disconnect Request payload
-  auto expected_discon_req = StaticByteBuffer(
+  StaticByteBuffer expected_discon_req(
       // Destination CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -124,7 +124,7 @@ TEST_F(CommandHandlerTest, OutboundDisconReqRspOk) {
 
 TEST_F(CommandHandlerTest, OutboundDisconReqRej) {
   // Disconnect Request payload
-  auto expected_discon_req = StaticByteBuffer(
+  StaticByteBuffer expected_discon_req(
       // Destination CID (relative to requester)
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -132,7 +132,7 @@ TEST_F(CommandHandlerTest, OutboundDisconReqRej) {
       LowerBits(kLocalCId), UpperBits(kLocalCId));
 
   // Command Reject payload
-  auto rej_cid = StaticByteBuffer(
+  StaticByteBuffer rej_cid(
       // Reject Reason (invalid channel ID)
       LowerBits(static_cast<uint16_t>(RejectReason::kInvalidCID)),
       UpperBits(static_cast<uint16_t>(RejectReason::kInvalidCID)),

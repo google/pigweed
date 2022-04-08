@@ -39,7 +39,7 @@ TEST(PacketTest, CommandPacket) {
 
   // clang-format off
 
-  auto kExpected = StaticByteBuffer(
+  StaticByteBuffer kExpected(
       0xFF, 0x07,  // opcode
       0x01,        // parameter_total_size
       foo
@@ -56,7 +56,7 @@ TEST(PacketTest, EventPacket) {
   uint8_t foo = 0x7F;
 
   // clang-format off
-  auto bytes = StaticByteBuffer(
+ StaticByteBuffer bytes(
       0xFF,  // event code
       0x01,  // parameter_total_size
       foo   // foo
@@ -74,7 +74,7 @@ TEST(PacketTest, EventPacketReturnParams) {
   uint8_t return_parameter = 0x7F;
 
   // clang-format off
-  auto correct_size_bad_event_code = StaticByteBuffer(
+ StaticByteBuffer correct_size_bad_event_code(
       // Event header
       0xFF, 0x04,  // (event_code is not CommandComplete)
 
@@ -236,7 +236,7 @@ TEST(PacketTest, VendorEventParams) {
   uint8_t subevent_payload = 0x7F;
 
   // clang-format off
-  auto correct_size_bad_event_code = CreateStaticByteBuffer(
+  StaticByteBuffer correct_size_bad_event_code(
       // Event header
       0xFE, 0x02,  // (event_code is not hci_spec::kVendorDebugEventCode)
 
@@ -244,12 +244,12 @@ TEST(PacketTest, VendorEventParams) {
       0xFF,
 
       subevent_payload);
-  auto payload_too_small = CreateStaticByteBuffer(
+  StaticByteBuffer payload_too_small(
       0xFF, 0x01,
 
       // Subevent code
       0xFF);
-  auto valid = CreateStaticByteBuffer(
+  StaticByteBuffer valid(
       // Event header
       0xFF, 0x02,
 

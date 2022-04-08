@@ -154,7 +154,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   fake_client()->set_services({gatt_svc, svc1});
 
   // Send a notification that svc1 has been added.
-  auto svc_changed_range_buffer = StaticByteBuffer(
+  StaticByteBuffer svc_changed_range_buffer(
       LowerBits(kSvc1StartHandle), UpperBits(kSvc1StartHandle),  // start handle of affected range
       LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)       // end handle of affected range
   );
@@ -291,7 +291,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   client_1_weak->set_services({gatt_svc, svc_data_1});
 
   // Send a notification that service kSvcStartHandle1 has been added.
-  auto svc_changed_range_buffer = StaticByteBuffer(
+  StaticByteBuffer svc_changed_range_buffer(
       LowerBits(kSvcStartHandle1), UpperBits(kSvcStartHandle1),  // start handle of affected range
       LowerBits(kSvcEndHandle1), UpperBits(kSvcEndHandle1)       // end handle of affected range
   );

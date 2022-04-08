@@ -185,7 +185,7 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   // Makes some fake advertising data of a specific |packed_size|
   AdvertisingData CreateFakeAdvertisingData(size_t packed_size = kDefaultFakeAdSize) {
     AdvertisingData result;
-    auto buffer = CreateStaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
+    StaticByteBuffer buffer(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
     size_t bytes_left = packed_size;
     while (bytes_left > 0) {
       // Each field to take 10 bytes total, unless the next header (4 bytes)

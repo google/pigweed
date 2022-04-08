@@ -21,19 +21,19 @@ TEST(SupplementDataTest, ReaderEmptyData) {
 
 TEST(SupplementDataTest, ReaderMalformedData) {
   // TLV length exceeds the size of the payload
-  auto bytes0 = CreateStaticByteBuffer(0x01);
+  StaticByteBuffer bytes0(0x01);
   SupplementDataReader reader(bytes0);
   EXPECT_FALSE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
 
-  auto bytes = CreateStaticByteBuffer(0x05, 0x00, 0x00, 0x00, 0x00);
+  StaticByteBuffer bytes(0x05, 0x00, 0x00, 0x00, 0x00);
   reader = SupplementDataReader(bytes);
   EXPECT_FALSE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
 
   // TLV length is 0. This is not considered malformed. Data should be valid but
   // should not return more data.
-  bytes = CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00, 0x00);
+  bytes = StaticByteBuffer(0x00, 0x00, 0x00, 0x00, 0x00);
   reader = SupplementDataReader(bytes);
   EXPECT_TRUE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
@@ -41,14 +41,14 @@ TEST(SupplementDataTest, ReaderMalformedData) {
   // First field is valid, second field is not.
   DataType type;
   BufferView data;
-  bytes = CreateStaticByteBuffer(0x02, 0x00, 0x00, 0x02, 0x00);
+  bytes = StaticByteBuffer(0x02, 0x00, 0x00, 0x02, 0x00);
   reader = SupplementDataReader(bytes);
   EXPECT_FALSE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
   EXPECT_FALSE(reader.GetNextField(&type, &data));
 
   // First field is valid, second field has length 0.
-  bytes = CreateStaticByteBuffer(0x02, 0x00, 0x00, 0x00, 0x00);
+  bytes = StaticByteBuffer(0x02, 0x00, 0x00, 0x00, 0x00);
   reader = SupplementDataReader(bytes);
   EXPECT_TRUE(reader.is_valid());
   EXPECT_TRUE(reader.HasMoreData());
@@ -58,7 +58,7 @@ TEST(SupplementDataTest, ReaderMalformedData) {
 }
 
 TEST(SupplementDataTest, ReaderParseFields) {
-  auto bytes = CreateStaticByteBuffer(0x02, 0x01, 0x00, 0x05, 0x09, 'T', 'e', 's', 't');
+  StaticByteBuffer bytes(0x02, 0x01, 0x00, 0x05, 0x09, 'T', 'e', 's', 't');
   SupplementDataReader reader(bytes);
   EXPECT_TRUE(reader.is_valid());
   EXPECT_TRUE(reader.HasMoreData());
@@ -68,7 +68,7 @@ TEST(SupplementDataTest, ReaderParseFields) {
   EXPECT_TRUE(reader.GetNextField(&type, &data));
   EXPECT_EQ(DataType::kFlags, type);
   EXPECT_EQ(1u, data.size());
-  EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer(0x00), data));
+  EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x00), data));
 
   EXPECT_TRUE(reader.HasMoreData());
   EXPECT_TRUE(reader.GetNextField(&type, &data));

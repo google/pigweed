@@ -79,17 +79,16 @@ TEST(FakeSdpServerTest, SuccessfulSearch) {
   sdp::Server::RegistrationHandle a2dp_handle = sdp_server.server()->RegisterService(
       GetA2DPServiceRecord(), kChannelParams, NopConnectCallback);
   EXPECT_TRUE(a2dp_handle);
-  const StaticByteBuffer kL2capSearch =
-      CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
-                             0x10, 0x01,  // Transaction ID (0x1001)
-                             0x00, 0x08,  // Parameter length (8 bytes)
-                             // ServiceSearchPattern
-                             0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0xFF, 0xFF,        // MaximumServiceRecordCount: (none)
-                             0x00               // Contunuation State: none
-      );
-  const StaticByteBuffer kL2capSearchResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kL2capSearch(0x02,        // SDP_ServiceSearchRequest
+                                      0x10, 0x01,  // Transaction ID (0x1001)
+                                      0x00, 0x08,  // Parameter length (8 bytes)
+                                      // ServiceSearchPattern
+                                      0x35, 0x03,        // Sequence uint8 3 bytes
+                                      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                      0xFF, 0xFF,        // MaximumServiceRecordCount: (none)
+                                      0x00               // Contunuation State: none
+  );
+  const StaticByteBuffer kL2capSearchResponse(
       0x03,                             // SDP_ServicesearchResponse
       0x10, 0x01,                       // Transaction ID (0x1001)
       0x00, 0x0D,                       // Parameter length (13 bytes)
@@ -114,9 +113,9 @@ TEST(FakeSdpServerTest, ErrorIfTooSmall) {
   auto sdp_server = FakeSdpServer();
 
   // Expect an error response if the packet is too small
-  const auto kTooSmall = CreateStaticByteBuffer(0x01,        // SDP_ServiceSearchRequest
-                                                0x10, 0x01,  // Transaction ID (0x1001)
-                                                0x00, 0x09   // Parameter length (9 bytes)
+  const StaticByteBuffer kTooSmall(0x01,        // SDP_ServiceSearchRequest
+                                   0x10, 0x01,  // Transaction ID (0x1001)
+                                   0x00, 0x09   // Parameter length (9 bytes)
   );
   const auto kRspTooSmall = SdpErrorResponse(0x1001, sdp::ErrorCode::kInvalidSize);
   sdp_server.HandleSdu(channel.AsWeakPtr(), kTooSmall);

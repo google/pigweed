@@ -49,7 +49,7 @@ TEST_F(FakeL2capTest, RegisterHandler) {
   };
 
   fake_l2cap().RegisterHandler(l2cap::kSignalingChannelId, cb);
-  StaticByteBuffer sample_packet = StaticByteBuffer(
+  StaticByteBuffer sample_packet(
       // L2CAP B-Frame header for signaling channel packet.
       // Length 0x0001
       0x01, 0x00,
@@ -69,7 +69,7 @@ TEST_F(FakeL2capTest, CallHandlerMultipleTimes) {
   };
 
   fake_l2cap().RegisterHandler(l2cap::kSignalingChannelId, cb);
-  StaticByteBuffer sample_packet = StaticByteBuffer(
+  StaticByteBuffer sample_packet(
       // L2CAP B-Frame header for signaling channel packet.
       // Length 0x0001
       0x01, 0x00,
@@ -93,7 +93,7 @@ TEST_F(FakeL2capTest, CustomUnexpectedPacketHandler) {
   auto fake_l2cap_custom_handler =
       FakeL2cap(send_cb, unexpected_cb, l2cap::kLastACLDynamicChannelId);
 
-  StaticByteBuffer sample_packet = StaticByteBuffer(
+  StaticByteBuffer sample_packet(
       // L2CAP B-Frame header for signaling channel packet.
       // Length 0x0001
       0x01, 0x00,

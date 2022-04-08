@@ -18,23 +18,23 @@ TEST(FcsTest, EmptyBufferProducesInitialValue) {
 
 TEST(FcsTest, FcsOfSimpleValues) {
   // By inspection, the FCS has value zero if all inputs are 0.
-  EXPECT_EQ(0, ComputeFcs(CreateStaticByteBuffer(0).view()).fcs);
+  EXPECT_EQ(0, ComputeFcs(StaticByteBuffer(0).view()).fcs);
 
   // If only the "last" bit (i.e. MSb of the message) is set, then the FCS should equal the
   // generator polynomial because there's exactly one round of feedback.
-  EXPECT_EQ(0b1010'0000'0000'0001, ComputeFcs(CreateStaticByteBuffer(0b1000'0000).view()).fcs);
+  EXPECT_EQ(0b1010'0000'0000'0001, ComputeFcs(StaticByteBuffer(0b1000'0000).view()).fcs);
 }
 
 TEST(FcsTest, Example1) {
   // Core Spec v5.0, Vol 3, Part A, Section 3.3.5, Example 1.
-  const auto kExample1Data = CreateStaticByteBuffer(0x0E, 0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x01,
-                                                    0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09);
+  const StaticByteBuffer kExample1Data(0x0E, 0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x01, 0x02, 0x03,
+                                       0x04, 0x05, 0x06, 0x07, 0x08, 0x09);
   EXPECT_EQ(0x6138, ComputeFcs(kExample1Data.view()).fcs);
 }
 
 TEST(FcsTest, Example2) {
   // Core Spec v5.0, Vol 3, Part A, Section 3.3.5, Example 2.
-  const auto kExample2Data = CreateStaticByteBuffer(0x04, 0x00, 0x40, 0x00, 0x01, 0x01);
+  const StaticByteBuffer kExample2Data(0x04, 0x00, 0x40, 0x00, 0x01, 0x01);
   EXPECT_EQ(0x14D4, ComputeFcs(kExample2Data.view()).fcs);
 }
 

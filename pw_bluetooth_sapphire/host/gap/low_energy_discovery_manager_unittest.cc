@@ -157,7 +157,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   //   - Not discoverable;
   void AddFakePeers() {
     // Peer 0
-    const auto kAdvData0 = CreateStaticByteBuffer(
+    const StaticByteBuffer kAdvData0(
         // Flags
         0x02, 0x01, 0x02,
 
@@ -174,7 +174,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     test_device()->AddPeer(std::move(fake_peer));
 
     // Peer 1
-    const auto kAdvData1 = CreateStaticByteBuffer(
+    const StaticByteBuffer kAdvData1(
         // Flags
         0x02, 0x01, 0x01,
 
@@ -185,7 +185,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     test_device()->AddPeer(std::move(fake_peer));
 
     // Peer 2
-    const auto kAdvData2 = CreateStaticByteBuffer(
+    const StaticByteBuffer kAdvData2(
         // Flags
         0x02, 0x01, 0x02,
 
@@ -196,7 +196,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     test_device()->AddPeer(std::move(fake_peer));
 
     // Peer 3
-    const auto kAdvData3 = CreateStaticByteBuffer(
+    const StaticByteBuffer kAdvData3(
         // Flags
         0x02, 0x01, 0x00,
 

@@ -257,9 +257,9 @@ TEST_F(ScoDataChannelSingleConnectionTest, SendManyMsbcPackets) {
 TEST_F(ScoDataChannelSingleConnectionTest, ReceiveManyPackets) {
   for (uint8_t i = 0; i < 20; i++) {
     SCOPED_TRACE(i);
-    auto packet = StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
-                                   0x01,  // payload length
-                                   i      // payload
+    StaticByteBuffer packet(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+                            0x01,  // payload length
+                            i      // payload
     );
     test_device()->SendScoDataChannelPacket(packet);
     RunLoopUntilIdle();
@@ -293,18 +293,18 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   EXPECT_EQ(config_count, 1);
   EXPECT_EQ(reset_count, 0);
 
-  auto packet_0 = StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
-                                   0x01,  // payload length
-                                   0x00   // payload
+  StaticByteBuffer packet_0(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+                            0x01,  // payload length
+                            0x00   // payload
   );
   test_device()->SendScoDataChannelPacket(packet_0);
   RunLoopUntilIdle();
   ASSERT_EQ(connection_0.received_packets().size(), 1u);
   ASSERT_EQ(connection_1.received_packets().size(), 0u);
 
-  auto packet_1 = StaticByteBuffer(LowerBits(kConnectionHandle1), UpperBits(kConnectionHandle1),
-                                   0x01,  // payload length
-                                   0x01   // payload
+  StaticByteBuffer packet_1(LowerBits(kConnectionHandle1), UpperBits(kConnectionHandle1),
+                            0x01,  // payload length
+                            0x01   // payload
   );
   test_device()->SendScoDataChannelPacket(packet_1);
   RunLoopUntilIdle();
@@ -466,8 +466,7 @@ TEST_F(ScoDataChannelSingleConnectionTest,
 }
 
 TEST_F(ScoDataChannelSingleConnectionTest, ReceiveTooSmallPacket) {
-  auto invalid_packet =
-      StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0));
+  StaticByteBuffer invalid_packet(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0));
   test_device()->SendScoDataChannelPacket(invalid_packet);
   RunLoopUntilIdle();
   // Packet should be ignored.

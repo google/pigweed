@@ -111,10 +111,10 @@ TEST(UUIDTest, 128Bit) {
 }
 
 TEST(UUIDTest, CompareBytes) {
-  auto kUuid16Bytes = CreateStaticByteBuffer(0x0d, 0x18);
-  auto kUuid32Bytes = CreateStaticByteBuffer(0x0d, 0x18, 0x00, 0x00);
-  auto kUuid128Bytes = CreateStaticByteBuffer(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00,
-                                              0x10, 0x00, 0x00, 0x0d, 0x18, 0x00, 0x00);
+  StaticByteBuffer kUuid16Bytes(0x0d, 0x18);
+  StaticByteBuffer kUuid32Bytes(0x0d, 0x18, 0x00, 0x00);
+  StaticByteBuffer kUuid128Bytes(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00,
+                                 0x00, 0x0d, 0x18, 0x00, 0x00);
 
   constexpr UUID uuid(kId1As16);
   EXPECT_TRUE(uuid.CompareBytes(kUuid16Bytes));
@@ -196,13 +196,13 @@ TEST(UUIDTest, StringToUuid16) {
 }
 
 TEST(UUIDTest, FromBytes) {
-  auto kUuid16Bytes = CreateStaticByteBuffer(0x0d, 0x18);
-  auto kUuid32Bytes = CreateStaticByteBuffer(0x0d, 0x18, 0x00, 0x00);
-  auto kUuid128Bytes = CreateStaticByteBuffer(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00,
-                                              0x10, 0x00, 0x00, 0x0d, 0x18, 0x00, 0x00);
+  StaticByteBuffer kUuid16Bytes(0x0d, 0x18);
+  StaticByteBuffer kUuid32Bytes(0x0d, 0x18, 0x00, 0x00);
+  StaticByteBuffer kUuid128Bytes(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00,
+                                 0x00, 0x0d, 0x18, 0x00, 0x00);
 
-  auto kInvalid0 = CreateStaticByteBuffer(0x0d);
-  auto kInvalid1 = CreateStaticByteBuffer(0x0d, 0x18, 0x00);
+  StaticByteBuffer kInvalid0(0x0d);
+  StaticByteBuffer kInvalid1(0x0d, 0x18, 0x00);
   BufferView kInvalid2;
 
   UUID uuid;
@@ -255,7 +255,7 @@ TEST(UUIDTest, CompactSize) {
 }
 
 TEST(UUIDTest, ToBytes16) {
-  auto kUuid16Bytes = CreateStaticByteBuffer(0x0d, 0x18);
+  StaticByteBuffer kUuid16Bytes(0x0d, 0x18);
 
   UUID uuid(kId1As16);
   DynamicByteBuffer bytes(uuid.CompactSize());
@@ -270,7 +270,7 @@ TEST(UUIDTest, ToBytes16) {
 }
 
 TEST(UUIDTest, ToBytes32) {
-  auto kUuid32Bytes = CreateStaticByteBuffer(0xef, 0xbe, 0xad, 0xde);
+  StaticByteBuffer kUuid32Bytes(0xef, 0xbe, 0xad, 0xde);
 
   UUID uuid(kId2As32);
   DynamicByteBuffer bytes(uuid.CompactSize());
@@ -284,7 +284,7 @@ TEST(UUIDTest, ToBytes32) {
 }
 
 TEST(UUIDTest, CompactView16) {
-  auto kUuid16Bytes = CreateStaticByteBuffer(0x0d, 0x18);
+  StaticByteBuffer kUuid16Bytes(0x0d, 0x18);
 
   UUID uuid(kId1As16);
 
@@ -297,7 +297,7 @@ TEST(UUIDTest, CompactView16) {
 }
 
 TEST(UUIDTest, CompactView32) {
-  auto kUuid32Bytes = CreateStaticByteBuffer(0xef, 0xbe, 0xad, 0xde);
+  StaticByteBuffer kUuid32Bytes(0xef, 0xbe, 0xad, 0xde);
 
   UUID uuid(kId2As32);
 

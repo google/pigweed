@@ -26,9 +26,9 @@ using bt::testing::ReadInspect;
 constexpr uint16_t kManufacturer = 0x0001;
 constexpr uint16_t kSubversion = 0x0002;
 
-const auto kAdvData = StaticByteBuffer(0x05,  // Length
-                                       0x09,  // AD type: Complete Local Name
-                                       'T', 'e', 's', 't');
+const StaticByteBuffer kAdvData(0x05,  // Length
+                                0x09,  // AD type: Complete Local Name
+                                'T', 'e', 's', 't');
 const StaticByteBuffer kInvalidAdvData{
     // 32 bit service UUIDs are supposed to be 4 bytes, but the value in this TLV field is only 3
     // bytes long, hence the AdvertisingData is not valid.

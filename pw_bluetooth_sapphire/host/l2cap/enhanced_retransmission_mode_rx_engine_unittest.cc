@@ -28,18 +28,18 @@ void NoOpFailureCallback() {}
 
 TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduImmediatelyReturnsDataForUnsegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer payload(0, 0, 'h', 'e', 'l', 'l', 'o');
   const ByteBufferPtr sdu = Engine(NoOpTxCallback, NoOpFailureCallback)
                                 .ProcessPdu(Fragmenter(kTestHandle)
                                                 .BuildFrame(kTestChannelId, payload,
                                                             FrameCheckSequenceOption::kIncludeFcs));
   ASSERT_TRUE(sdu);
-  EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'), *sdu));
+  EXPECT_TRUE(ContainersEqual(StaticByteBuffer('h', 'e', 'l', 'l', 'o'), *sdu));
 }
 
 TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload = CreateStaticByteBuffer(0, 0);
+  const StaticByteBuffer payload(0, 0);
   const ByteBufferPtr sdu = Engine(NoOpTxCallback, NoOpFailureCallback)
                                 .ProcessPdu(Fragmenter(kTestHandle)
                                                 .BuildFrame(kTestChannelId, payload,
@@ -73,9 +73,9 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleIncompleteFcsFoo
 
 TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotGenerateSduForOutOfSequencePdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload = CreateStaticByteBuffer(  //
-      1 << 1,                                   // TxSeq = 1, R=0
-      0,                                        // SAR and ReqSeq
+  const StaticByteBuffer payload(  //
+      1 << 1,                      // TxSeq = 1, R=0
+      0,                           // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
   EXPECT_FALSE(Engine(NoOpTxCallback, NoOpFailureCallback)
                    .ProcessPdu(Fragmenter(kTestHandle)
@@ -88,9 +88,9 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduAdvancesSequenceNumberOnI
 
   // Send with sequence 0.
   {
-    const auto payload = CreateStaticByteBuffer(  //
-        0 << 1,                                   // TxSeq=0, R=0
-        0,                                        // SAR and ReqSeq
+    const StaticByteBuffer payload(  //
+        0 << 1,                      // TxSeq=0, R=0
+        0,                           // SAR and ReqSeq
         'h', 'e', 'l', 'l', 'o');
     ASSERT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle)
@@ -99,9 +99,9 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduAdvancesSequenceNumberOnI
 
   // Send with sequence 1.
   {
-    const auto payload = CreateStaticByteBuffer(  //
-        1 << 1,                                   // TxSeq=1, R=0
-        0,                                        // SAR and ReqSeq
+    const StaticByteBuffer payload(  //
+        1 << 1,                      // TxSeq=1, R=0
+        0,                           // SAR and ReqSeq
         'h', 'e', 'l', 'l', 'o');
     ASSERT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle)
@@ -110,9 +110,9 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduAdvancesSequenceNumberOnI
 
   // Send with sequence 2.
   {
-    const auto payload = CreateStaticByteBuffer(  //
-        2 << 1,                                   // TxSeq=2, R=0
-        0,                                        // SAR and ReqSeq
+    const StaticByteBuffer payload(  //
+        2 << 1,                      // TxSeq=2, R=0
+        0,                           // SAR and ReqSeq
         'h', 'e', 'l', 'l', 'o');
     EXPECT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle)
@@ -122,9 +122,9 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduAdvancesSequenceNumberOnI
 
 TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduRollsOverSequenceNumber) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
-  auto payload = CreateStaticByteBuffer(  //
-      0 << 1,                             // TxSeq=0, R=0
-      0,                                  // SAR and ReqSeq
+  StaticByteBuffer payload(  //
+      0 << 1,                // TxSeq=0, R=0
+      0,                     // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
   for (size_t i = 0; i < 64; ++i) {
     payload[0] = i << 1;  // Set TxSeq
@@ -145,17 +145,17 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduRollsOverSequenceNumber) 
 TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduDoesNotAdvanceSequenceNumberForOutOfSequencePdu) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
-  const auto out_of_seq = CreateStaticByteBuffer(  //
-      1 << 1,                                      // TxSeq=1, R=0
-      0,                                           // SAR and ReqSeq
+  const StaticByteBuffer out_of_seq(  //
+      1 << 1,                         // TxSeq=1, R=0
+      0,                              // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
   ASSERT_FALSE(rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, out_of_seq, FrameCheckSequenceOption::kIncludeFcs)));
 
-  const auto in_seq = CreateStaticByteBuffer(  //
-      0 << 1,                                  // TxSeq=0, R=0
-      0,                                       // SAR and ReqSeq
+  const StaticByteBuffer in_seq(  //
+      0 << 1,                     // TxSeq=0, R=0
+      0,                          // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
   EXPECT_TRUE(rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
@@ -171,7 +171,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduImmediatelyAcksUnsegmente
   };
 
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer payload(0, 0, 'h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(Engine(tx_callback, NoOpFailureCallback)
                   .ProcessPdu(Fragmenter(kTestHandle)
                                   .BuildFrame(kTestChannelId, payload,
@@ -196,7 +196,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduSendsCorrectReqSeqOnRollo
   Engine rx_engine(tx_callback, NoOpFailureCallback);
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   for (size_t i = 0; i < 64; ++i) {
-    const auto payload = CreateStaticByteBuffer(i << 1, 0, 'h', 'e', 'l', 'l', 'o');
+    const StaticByteBuffer payload(i << 1, 0, 'h', 'e', 'l', 'l', 'o');
     ASSERT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle)
             .BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kIncludeFcs)))
@@ -220,7 +220,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotAckOutOfSequenceFr
   };
 
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload = CreateStaticByteBuffer(1, 0, 'h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer payload(1, 0, 'h', 'e', 'l', 'l', 'o');
 
   // Per Core Spec, v5, Vol 3, Part A, Sec 8.4.7.1, receipt of an
   // out-of-sequence frame should cause us to transmit a Reject frame. We assume
@@ -245,7 +245,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverReadyPo
   Engine rx_engine(tx_callback, NoOpFailureCallback);
   // Send an I-frame to advance the receiver's sequence number.
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto info_frame = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer info_frame(0, 0, 'h', 'e', 'l', 'l', 'o');
   rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, info_frame, FrameCheckSequenceOption::kIncludeFcs));
@@ -253,8 +253,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverReadyPo
 
   // Now send a ReceiverReady poll request. See Core Spec, v5, Vol 3, Part A,
   // Table 3.2 and Table 3.5 for frame format.
-  const auto receiver_ready_poll_request =
-      CreateStaticByteBuffer(0b1 | kExtendedControlPBitMask, 0);
+  const StaticByteBuffer receiver_ready_poll_request(0b1 | kExtendedControlPBitMask, 0);
   auto local_sdu = rx_engine.ProcessPdu(Fragmenter(kTestHandle)
                                             .BuildFrame(kTestChannelId, receiver_ready_poll_request,
                                                         FrameCheckSequenceOption::kIncludeFcs));
@@ -284,7 +283,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumCallbac
 
   // Send an I-frame containing an acknowledgment up to the 3rd frame that we transmitted.
   // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for the first two bytes.
-  auto info_frame = StaticByteBuffer(0, 3, 'h', 'e', 'l', 'l', 'o');
+  StaticByteBuffer info_frame(0, 3, 'h', 'e', 'l', 'l', 'o');
   rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, info_frame, FrameCheckSequenceOption::kIncludeFcs));
@@ -308,7 +307,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumCallbac
 
   // Send an S-frame containing an acknowledgment up to the 4th frame that we transmitted. F is set.
   // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for the frame format.
-  auto receiver_ready = StaticByteBuffer(0b1 | kExtendedControlFBitMask, 4);
+  StaticByteBuffer receiver_ready(0b1 | kExtendedControlFBitMask, 4);
   auto local_sdu = rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
@@ -337,7 +336,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallback) {
 
   // Send an I-frame containing a sequence number for the first frame the receiver has sent.
   // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for the first two bytes.
-  auto info_frame = StaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
+  StaticByteBuffer info_frame(0, 0, 'h', 'e', 'l', 'l', 'o');
   rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, info_frame, FrameCheckSequenceOption::kIncludeFcs));

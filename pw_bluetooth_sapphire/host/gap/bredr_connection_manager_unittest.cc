@@ -59,18 +59,15 @@ const uint16_t PDU_MAX = 0xFFF;
 
 #define TEST_DEV_ADDR_BYTES_LE 0x01, 0x00, 0x00, 0x00, 0x00, 0x00
 
-// clang-format off
-
-const auto kReadScanEnable = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kReadScanEnable), UpperBits(hci_spec::kReadScanEnable),
-    0x00  // No parameters
+const StaticByteBuffer kReadScanEnable(LowerBits(hci_spec::kReadScanEnable),
+                                       UpperBits(hci_spec::kReadScanEnable),
+                                       0x00  // No parameters
 );
 
-#define READ_SCAN_ENABLE_RSP(scan_enable)                                    \
-  CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x05, 0xF0,         \
-                                 LowerBits(hci_spec::kReadScanEnable),            \
-                                 UpperBits(hci_spec::kReadScanEnable),            \
-                                 hci_spec::kSuccess, (scan_enable))
+#define READ_SCAN_ENABLE_RSP(scan_enable)                                                      \
+  StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x05, 0xF0,                            \
+                   LowerBits(hci_spec::kReadScanEnable), UpperBits(hci_spec::kReadScanEnable), \
+                   hci_spec::kSuccess, (scan_enable))
 
 const auto kReadScanEnableRspNone = READ_SCAN_ENABLE_RSP(0x00);
 const auto kReadScanEnableRspInquiry = READ_SCAN_ENABLE_RSP(0x01);
@@ -79,10 +76,9 @@ const auto kReadScanEnableRspBoth = READ_SCAN_ENABLE_RSP(0x03);
 
 #undef READ_SCAN_ENABLE_RSP
 
-#define WRITE_SCAN_ENABLE_CMD(scan_enable)                               \
-  CreateStaticByteBuffer(LowerBits(hci_spec::kWriteScanEnable),               \
-                                 UpperBits(hci_spec::kWriteScanEnable), 0x01, \
-                                 (scan_enable))
+#define WRITE_SCAN_ENABLE_CMD(scan_enable)                                                       \
+  StaticByteBuffer(LowerBits(hci_spec::kWriteScanEnable), UpperBits(hci_spec::kWriteScanEnable), \
+                   0x01, (scan_enable))
 
 const auto kWriteScanEnableNone = WRITE_SCAN_ENABLE_CMD(0x00);
 const auto kWriteScanEnableInq = WRITE_SCAN_ENABLE_CMD(0x01);
@@ -91,40 +87,32 @@ const auto kWriteScanEnableBoth = WRITE_SCAN_ENABLE_CMD(0x03);
 
 #undef WRITE_SCAN_ENABLE_CMD
 
-#define COMMAND_COMPLETE_RSP(opcode)                                         \
-  CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x04, 0xF0,         \
-                                 LowerBits((opcode)), UpperBits((opcode)),   \
-                                 hci_spec::kSuccess)
+#define COMMAND_COMPLETE_RSP(opcode)                                                     \
+  StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x04, 0xF0, LowerBits((opcode)), \
+                   UpperBits((opcode)), hci_spec::kSuccess)
 
 const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci_spec::kWriteScanEnable);
 
-const auto kWritePageScanActivity = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kWritePageScanActivity),
-    UpperBits(hci_spec::kWritePageScanActivity),
-    0x04,  // parameter_total_size (4 bytes)
-    0x00, 0x08,  // 1.28s interval (R1)
-    0x11, 0x00  // 10.625ms window (R1)
+const StaticByteBuffer kWritePageScanActivity(LowerBits(hci_spec::kWritePageScanActivity),
+                                              UpperBits(hci_spec::kWritePageScanActivity),
+                                              0x04,        // parameter_total_size (4 bytes)
+                                              0x00, 0x08,  // 1.28s interval (R1)
+                                              0x11, 0x00   // 10.625ms window (R1)
 );
 
-const auto kWritePageScanActivityRsp =
-    COMMAND_COMPLETE_RSP(hci_spec::kWritePageScanActivity);
+const auto kWritePageScanActivityRsp = COMMAND_COMPLETE_RSP(hci_spec::kWritePageScanActivity);
 
-const auto kWritePageScanType = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kWritePageScanType), UpperBits(hci_spec::kWritePageScanType),
-    0x01,  // parameter_total_size (1 byte)
-    0x01   // Interlaced scan
+const StaticByteBuffer kWritePageScanType(LowerBits(hci_spec::kWritePageScanType),
+                                          UpperBits(hci_spec::kWritePageScanType),
+                                          0x01,  // parameter_total_size (1 byte)
+                                          0x01   // Interlaced scan
 );
 
-const auto kWritePageScanTypeRsp =
-    COMMAND_COMPLETE_RSP(hci_spec::kWritePageScanType);
+const auto kWritePageScanTypeRsp = COMMAND_COMPLETE_RSP(hci_spec::kWritePageScanType);
 
-
-#define COMMAND_STATUS_RSP(opcode, statuscode)                       \
-  CreateStaticByteBuffer( hci_spec::kCommandStatusEventCode, 0x04,         \
-                                 (statuscode), 0xF0,                 \
-                                 LowerBits((opcode)), UpperBits((opcode)))
-
-// clang-format on
+#define COMMAND_STATUS_RSP(opcode, statuscode)                                  \
+  StaticByteBuffer(hci_spec::kCommandStatusEventCode, 0x04, (statuscode), 0xF0, \
+                   LowerBits((opcode)), UpperBits((opcode)))
 
 const auto kWritePageTimeoutRsp = COMMAND_COMPLETE_RSP(hci_spec::kWritePageTimeout);
 
@@ -140,27 +128,27 @@ const auto kConnectionComplete = testing::ConnectionCompletePacket(kTestDevAddr,
 const auto kConnectionCompletePageTimeout = testing::ConnectionCompletePacket(
     kTestDevAddr, kConnectionHandle, hci_spec::StatusCode::kPageTimeout);
 
-const auto kConnectionCompleteError =
-    CreateStaticByteBuffer(hci_spec::kConnectionCompleteEventCode,
-                           0x0B,  // parameter_total_size (11 byte payload)
-                           hci_spec::StatusCode::kConnectionFailedToBeEstablished,  // status
-                           0x00, 0x00,              // connection_handle
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           0x01,                    // link_type (ACL)
-                           0x00                     // encryption not enabled
-    );
+const StaticByteBuffer kConnectionCompleteError(
+    hci_spec::kConnectionCompleteEventCode,
+    0x0B,  // parameter_total_size (11 byte payload)
+    hci_spec::StatusCode::kConnectionFailedToBeEstablished,  // status
+    0x00, 0x00,                                              // connection_handle
+    TEST_DEV_ADDR_BYTES_LE,                                  // peer address
+    0x01,                                                    // link_type (ACL)
+    0x00                                                     // encryption not enabled
+);
 
-const auto kConnectionCompleteCanceled =
-    CreateStaticByteBuffer(hci_spec::kConnectionCompleteEventCode,
-                           0x0B,  // parameter_total_size (11 byte payload)
-                           hci_spec::StatusCode::kUnknownConnectionId,  // status
-                           0x00, 0x00,                                  // connection_handle
-                           TEST_DEV_ADDR_BYTES_LE,                      // peer address
-                           0x01,                                        // link_type (ACL)
-                           0x00                                         // encryption not enabled
-    );
+const StaticByteBuffer kConnectionCompleteCanceled(
+    hci_spec::kConnectionCompleteEventCode,
+    0x0B,                                        // parameter_total_size (11 byte payload)
+    hci_spec::StatusCode::kUnknownConnectionId,  // status
+    0x00, 0x00,                                  // connection_handle
+    TEST_DEV_ADDR_BYTES_LE,                      // peer address
+    0x01,                                        // link_type (ACL)
+    0x00                                         // encryption not enabled
+);
 
-const auto kCreateConnection = CreateStaticByteBuffer(
+const StaticByteBuffer kCreateConnection(
     LowerBits(hci_spec::kCreateConnection), UpperBits(hci_spec::kCreateConnection),
     0x0d,                                   // parameter_total_size (13 bytes)
     TEST_DEV_ADDR_BYTES_LE,                 // peer address
@@ -181,21 +169,21 @@ const auto kCreateConnectionRspError = COMMAND_STATUS_RSP(
 const auto kCreateConnectionRspAlready =
     COMMAND_STATUS_RSP(hci_spec::kCreateConnection, hci_spec::StatusCode::kConnectionAlreadyExists);
 
-const auto kCreateConnectionCancel = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kCreateConnectionCancel), UpperBits(hci_spec::kCreateConnectionCancel),
-    0x06,                   // parameter_total_size (6 bytes)
-    TEST_DEV_ADDR_BYTES_LE  // peer address
+const StaticByteBuffer kCreateConnectionCancel(LowerBits(hci_spec::kCreateConnectionCancel),
+                                               UpperBits(hci_spec::kCreateConnectionCancel),
+                                               0x06,  // parameter_total_size (6 bytes)
+                                               TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
 const auto kCreateConnectionCancelRsp = COMMAND_COMPLETE_RSP(hci_spec::kCreateConnectionCancel);
 
-const auto kRemoteNameRequest = CreateStaticByteBuffer(LowerBits(hci_spec::kRemoteNameRequest),
-                                                       UpperBits(hci_spec::kRemoteNameRequest),
-                                                       0x0a,  // parameter_total_size (10 bytes)
-                                                       TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                                       0x00,       // page_scan_repetition_mode (R0)
-                                                       0x00,       // reserved
-                                                       0x00, 0x00  // clock_offset
+const StaticByteBuffer kRemoteNameRequest(LowerBits(hci_spec::kRemoteNameRequest),
+                                          UpperBits(hci_spec::kRemoteNameRequest),
+                                          0x0a,  // parameter_total_size (10 bytes)
+                                          TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                          0x00,                    // page_scan_repetition_mode (R0)
+                                          0x00,                    // reserved
+                                          0x00, 0x00               // clock_offset
 );
 const auto kRemoteNameRequestRsp =
     COMMAND_STATUS_RSP(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::kSuccess);
@@ -207,87 +195,85 @@ const auto kRemoteNameRequestComplete = testing::RemoteNameRequestCompletePacket
     // remote name (Fuchsia💖)
     // Everything after the 0x00 should be ignored.
 );
-const auto kReadRemoteVersionInfo = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kReadRemoteVersionInfo), UpperBits(hci_spec::kReadRemoteVersionInfo),
-    0x02,       // Parameter_total_size (2 bytes)
-    0xAA, 0x0B  // connection_handle
+const StaticByteBuffer kReadRemoteVersionInfo(LowerBits(hci_spec::kReadRemoteVersionInfo),
+                                              UpperBits(hci_spec::kReadRemoteVersionInfo),
+                                              0x02,       // Parameter_total_size (2 bytes)
+                                              0xAA, 0x0B  // connection_handle
 );
 
 const auto kReadRemoteVersionInfoRsp =
     COMMAND_STATUS_RSP(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::kSuccess);
 
 const auto kRemoteVersionInfoComplete =
-    CreateStaticByteBuffer(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
-                           0x08,                            // parameter_total_size (8 bytes)
-                           hci_spec::StatusCode::kSuccess,  // status
-                           0xAA, 0x0B,                      // connection_handle
-                           hci_spec::HCIVersion::k4_2,      // lmp_version
-                           0xE0, 0x00,                      // manufacturer_name (Google)
-                           0xAD, 0xDE                       // lmp_subversion (anything)
+    StaticByteBuffer(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
+                     0x08,                            // parameter_total_size (8 bytes)
+                     hci_spec::StatusCode::kSuccess,  // status
+                     0xAA, 0x0B,                      // connection_handle
+                     hci_spec::HCIVersion::k4_2,      // lmp_version
+                     0xE0, 0x00,                      // manufacturer_name (Google)
+                     0xAD, 0xDE                       // lmp_subversion (anything)
     );
 
 const auto kReadRemoteSupportedFeatures =
-    CreateStaticByteBuffer(LowerBits(hci_spec::kReadRemoteSupportedFeatures),
-                           UpperBits(hci_spec::kReadRemoteSupportedFeatures),
-                           0x02,       // parameter_total_size (2 bytes)
-                           0xAA, 0x0B  // connection_handle
+    StaticByteBuffer(LowerBits(hci_spec::kReadRemoteSupportedFeatures),
+                     UpperBits(hci_spec::kReadRemoteSupportedFeatures),
+                     0x02,       // parameter_total_size (2 bytes)
+                     0xAA, 0x0B  // connection_handle
     );
 
 const auto kReadRemoteSupportedFeaturesRsp =
     COMMAND_STATUS_RSP(hci_spec::kReadRemoteSupportedFeatures, hci_spec::StatusCode::kSuccess);
 
 const auto kReadRemoteSupportedFeaturesComplete =
-    CreateStaticByteBuffer(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
-                           0x0B,                            // parameter_total_size (11 bytes)
-                           hci_spec::StatusCode::kSuccess,  // status
-                           0xAA, 0x0B,                      // connection_handle,
-                           0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x80
-                           // lmp_features
-                           // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
-                           // Role Switch, Hold Mode, Sniff Mode, LE Supported, Extended Features
+    StaticByteBuffer(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
+                     0x0B,                            // parameter_total_size (11 bytes)
+                     hci_spec::StatusCode::kSuccess,  // status
+                     0xAA, 0x0B,                      // connection_handle,
+                     0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x80
+                     // lmp_features
+                     // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
+                     // Role Switch, Hold Mode, Sniff Mode, LE Supported, Extended Features
     );
 
-const auto kReadRemoteExtended1 =
-    CreateStaticByteBuffer(LowerBits(hci_spec::kReadRemoteExtendedFeatures),
-                           UpperBits(hci_spec::kReadRemoteExtendedFeatures),
-                           0x03,        // parameter_total_size (3 bytes)
-                           0xAA, 0x0B,  // connection_handle
-                           0x01         // page_number (1)
-    );
+const auto kReadRemoteExtended1 = StaticByteBuffer(LowerBits(hci_spec::kReadRemoteExtendedFeatures),
+                                                   UpperBits(hci_spec::kReadRemoteExtendedFeatures),
+                                                   0x03,        // parameter_total_size (3 bytes)
+                                                   0xAA, 0x0B,  // connection_handle
+                                                   0x01         // page_number (1)
+);
 
 const auto kReadRemoteExtendedFeaturesRsp =
     COMMAND_STATUS_RSP(hci_spec::kReadRemoteExtendedFeatures, hci_spec::StatusCode::kSuccess);
 
 const auto kReadRemoteExtended1Complete =
-    CreateStaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-                           0x0D,                            // parameter_total_size (13 bytes)
-                           hci_spec::StatusCode::kSuccess,  // status
-                           0xAA, 0x0B,                      // connection_handle,
-                           0x01,                            // page_number
-                           0x03,                            // max_page_number (3 pages)
-                           0x0F, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
-                           // lmp_features
-                           // Set: Secure Simple Pairing (Host Support), LE Supported (Host),
-                           //  SimultaneousLEAndBREDR, Secure Connections (Host Support)
+    StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
+                     0x0D,                            // parameter_total_size (13 bytes)
+                     hci_spec::StatusCode::kSuccess,  // status
+                     0xAA, 0x0B,                      // connection_handle,
+                     0x01,                            // page_number
+                     0x03,                            // max_page_number (3 pages)
+                     0x0F, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
+                     // lmp_features
+                     // Set: Secure Simple Pairing (Host Support), LE Supported (Host),
+                     //  SimultaneousLEAndBREDR, Secure Connections (Host Support)
     );
 
-const auto kReadRemoteExtended2 =
-    CreateStaticByteBuffer(LowerBits(hci_spec::kReadRemoteExtendedFeatures),
-                           UpperBits(hci_spec::kReadRemoteExtendedFeatures),
-                           0x03,        // parameter_total_size (3 bytes)
-                           0xAA, 0x0B,  // connection_handle
-                           0x02         // page_number (2)
-    );
+const auto kReadRemoteExtended2 = StaticByteBuffer(LowerBits(hci_spec::kReadRemoteExtendedFeatures),
+                                                   UpperBits(hci_spec::kReadRemoteExtendedFeatures),
+                                                   0x03,        // parameter_total_size (3 bytes)
+                                                   0xAA, 0x0B,  // connection_handle
+                                                   0x02         // page_number (2)
+);
 
 const auto kReadRemoteExtended2Complete =
-    CreateStaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-                           0x0D,                            // parameter_total_size (13 bytes)
-                           hci_spec::StatusCode::kSuccess,  // status
-                           0xAA, 0x0B,                      // connection_handle,
-                           0x02,                            // page_number
-                           0x03,                            // max_page_number (3 pages)
-                           0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xFF, 0x00
-                           // lmp_features  - All the bits should be ignored.
+    StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
+                     0x0D,                            // parameter_total_size (13 bytes)
+                     hci_spec::StatusCode::kSuccess,  // status
+                     0xAA, 0x0B,                      // connection_handle,
+                     0x02,                            // page_number
+                     0x03,                            // max_page_number (3 pages)
+                     0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xFF, 0x00
+                     // lmp_features  - All the bits should be ignored.
     );
 
 const auto kDisconnect = testing::DisconnectPacket(kConnectionHandle);
@@ -303,127 +289,126 @@ const auto kAuthenticationRequested = testing::AuthenticationRequestedPacket(kCo
 const auto kAuthenticationRequestedStatus =
     COMMAND_STATUS_RSP(hci_spec::kAuthenticationRequested, hci_spec::StatusCode::kSuccess);
 
-const auto kAuthenticationComplete =
-    CreateStaticByteBuffer(hci_spec::kAuthenticationCompleteEventCode,
-                           0x03,                            // parameter_total_size (3 bytes)
-                           hci_spec::StatusCode::kSuccess,  // status
-                           0xAA, 0x0B                       // connection_handle
-    );
+const auto kAuthenticationComplete = StaticByteBuffer(hci_spec::kAuthenticationCompleteEventCode,
+                                                      0x03,  // parameter_total_size (3 bytes)
+                                                      hci_spec::StatusCode::kSuccess,  // status
+                                                      0xAA, 0x0B  // connection_handle
+);
 
 const auto kAuthenticationCompleteFailed =
-    CreateStaticByteBuffer(hci_spec::kAuthenticationCompleteEventCode,
-                           0x03,  // parameter_total_size (3 bytes)
-                           hci_spec::StatusCode::kPairingNotAllowed,  // status
-                           0xAA, 0x0B                                 // connection_handle
+    StaticByteBuffer(hci_spec::kAuthenticationCompleteEventCode,
+                     0x03,                                      // parameter_total_size (3 bytes)
+                     hci_spec::StatusCode::kPairingNotAllowed,  // status
+                     0xAA, 0x0B                                 // connection_handle
     );
 
-const auto kLinkKeyRequest = CreateStaticByteBuffer(hci_spec::kLinkKeyRequestEventCode,
-                                                    0x06,  // parameter_total_size (6 bytes)
-                                                    TEST_DEV_ADDR_BYTES_LE  // peer address
+const StaticByteBuffer kLinkKeyRequest(hci_spec::kLinkKeyRequestEventCode,
+                                       0x06,                   // parameter_total_size (6 bytes)
+                                       TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
 const auto kLinkKeyRequestNegativeReply =
-    CreateStaticByteBuffer(LowerBits(hci_spec::kLinkKeyRequestNegativeReply),
-                           UpperBits(hci_spec::kLinkKeyRequestNegativeReply),
-                           0x06,                   // parameter_total_size (6 bytes)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    StaticByteBuffer(LowerBits(hci_spec::kLinkKeyRequestNegativeReply),
+                     UpperBits(hci_spec::kLinkKeyRequestNegativeReply),
+                     0x06,                   // parameter_total_size (6 bytes)
+                     TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
 const auto kLinkKeyRequestNegativeReplyRsp =
-    CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
-                           LowerBits(hci_spec::kLinkKeyRequestNegativeReply),
-                           UpperBits(hci_spec::kLinkKeyRequestNegativeReply),
-                           hci_spec::kSuccess,     // status
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
+                     LowerBits(hci_spec::kLinkKeyRequestNegativeReply),
+                     UpperBits(hci_spec::kLinkKeyRequestNegativeReply),
+                     hci_spec::kSuccess,     // status
+                     TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
 auto MakeIoCapabilityResponse(IOCapability io_cap, AuthRequirements auth_req) {
-  return CreateStaticByteBuffer(hci_spec::kIOCapabilityResponseEventCode,
-                                0x09,                    // parameter_total_size (9 bytes)
-                                TEST_DEV_ADDR_BYTES_LE,  // address
-                                io_cap,
-                                0x00,  // OOB authentication data not present
-                                auth_req);
+  return StaticByteBuffer(hci_spec::kIOCapabilityResponseEventCode,
+                          0x09,                    // parameter_total_size (9 bytes)
+                          TEST_DEV_ADDR_BYTES_LE,  // address
+                          io_cap,
+                          0x00,  // OOB authentication data not present
+                          auth_req);
 }
 
-const auto kIoCapabilityRequest = CreateStaticByteBuffer(hci_spec::kIOCapabilityRequestEventCode,
-                                                         0x06,  // parameter_total_size (6 bytes)
-                                                         TEST_DEV_ADDR_BYTES_LE  // address
+const StaticByteBuffer kIoCapabilityRequest(hci_spec::kIOCapabilityRequestEventCode,
+                                            0x06,  // parameter_total_size (6 bytes)
+                                            TEST_DEV_ADDR_BYTES_LE  // address
 );
 
 auto MakeIoCapabilityRequestReply(IOCapability io_cap, AuthRequirements auth_req) {
-  return CreateStaticByteBuffer(LowerBits(hci_spec::kIOCapabilityRequestReply),
-                                UpperBits(hci_spec::kIOCapabilityRequestReply),
-                                0x09,                    // parameter_total_size (9 bytes)
-                                TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                io_cap,
-                                0x00,  // No OOB data present
-                                auth_req);
+  return StaticByteBuffer(LowerBits(hci_spec::kIOCapabilityRequestReply),
+                          UpperBits(hci_spec::kIOCapabilityRequestReply),
+                          0x09,                    // parameter_total_size (9 bytes)
+                          TEST_DEV_ADDR_BYTES_LE,  // peer address
+                          io_cap,
+                          0x00,  // No OOB data present
+                          auth_req);
 }
 
-const auto kIoCapabilityRequestReplyRsp = CreateStaticByteBuffer(
-    hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci_spec::kIOCapabilityRequestReply),
-    UpperBits(hci_spec::kIOCapabilityRequestReply),
-    hci_spec::kSuccess,     // status
-    TEST_DEV_ADDR_BYTES_LE  // peer address
+const StaticByteBuffer kIoCapabilityRequestReplyRsp(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
+                                                    LowerBits(hci_spec::kIOCapabilityRequestReply),
+                                                    UpperBits(hci_spec::kIOCapabilityRequestReply),
+                                                    hci_spec::kSuccess,     // status
+                                                    TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
 const auto kIoCapabilityRequestNegativeReply =
-    CreateStaticByteBuffer(LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                           UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                           0x07,                    // parameter_total_size (7 bytes)
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           hci_spec::StatusCode::kPairingNotAllowed);
+    StaticByteBuffer(LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),
+                     UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
+                     0x07,                    // parameter_total_size (7 bytes)
+                     TEST_DEV_ADDR_BYTES_LE,  // peer address
+                     hci_spec::StatusCode::kPairingNotAllowed);
 
 const auto kIoCapabilityRequestNegativeReplyRsp =
-    CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
-                           LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                           UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                           hci_spec::kSuccess,       // status
-                           TEST_DEV_ADDR_BYTES_LE);  // peer address
+    StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
+                     LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),
+                     UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
+                     hci_spec::kSuccess,       // status
+                     TEST_DEV_ADDR_BYTES_LE);  // peer address
 
 auto MakeUserConfirmationRequest(uint32_t passkey) {
   const auto passkey_bytes = ToBytes(kPasskey);
-  return CreateStaticByteBuffer(hci_spec::kUserConfirmationRequestEventCode,
-                                0x0A,                    // parameter_total_size (10 byte payload)
-                                TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
-                                0x00  // numeric value
+  return StaticByteBuffer(hci_spec::kUserConfirmationRequestEventCode,
+                          0x0A,                    // parameter_total_size (10 byte payload)
+                          TEST_DEV_ADDR_BYTES_LE,  // peer address
+                          passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                          0x00  // numeric value
   );
 }
 
 const auto kUserConfirmationRequestReply =
-    CreateStaticByteBuffer(LowerBits(hci_spec::kUserConfirmationRequestReply),
-                           UpperBits(hci_spec::kUserConfirmationRequestReply),
-                           0x06,                   // parameter_total_size (6 bytes)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    StaticByteBuffer(LowerBits(hci_spec::kUserConfirmationRequestReply),
+                     UpperBits(hci_spec::kUserConfirmationRequestReply),
+                     0x06,                   // parameter_total_size (6 bytes)
+                     TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
 const auto kUserConfirmationRequestReplyRsp =
     COMMAND_COMPLETE_RSP(hci_spec::kUserConfirmationRequestReply);
 
 const auto kUserConfirmationRequestNegativeReply =
-    CreateStaticByteBuffer(LowerBits(hci_spec::kUserConfirmationRequestNegativeReply),
-                           UpperBits(hci_spec::kUserConfirmationRequestNegativeReply),
-                           0x06,                   // parameter_total_size (6 bytes)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    StaticByteBuffer(LowerBits(hci_spec::kUserConfirmationRequestNegativeReply),
+                     UpperBits(hci_spec::kUserConfirmationRequestNegativeReply),
+                     0x06,                   // parameter_total_size (6 bytes)
+                     TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
 const auto kUserConfirmationRequestNegativeReplyRsp =
     COMMAND_COMPLETE_RSP(hci_spec::kUserConfirmationRequestNegativeReply);
 
 const auto kSimplePairingCompleteSuccess =
-    CreateStaticByteBuffer(hci_spec::kSimplePairingCompleteEventCode,
-                           0x07,                   // parameter_total_size (7 byte payload)
-                           0x00,                   // status (success)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    StaticByteBuffer(hci_spec::kSimplePairingCompleteEventCode,
+                     0x07,                   // parameter_total_size (7 byte payload)
+                     0x00,                   // status (success)
+                     TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
 const auto kSimplePairingCompleteError =
-    CreateStaticByteBuffer(hci_spec::kSimplePairingCompleteEventCode,
-                           0x07,                   // parameter_total_size (7 byte payload)
-                           0x05,                   // status (authentication failure)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    StaticByteBuffer(hci_spec::kSimplePairingCompleteEventCode,
+                     0x07,                   // parameter_total_size (7 byte payload)
+                     0x05,                   // status (authentication failure)
+                     TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
 DynamicByteBuffer MakeLinkKeyNotification(hci_spec::LinkKeyType key_type) {
@@ -439,96 +424,98 @@ DynamicByteBuffer MakeLinkKeyNotification(hci_spec::LinkKeyType key_type) {
 const auto kLinkKeyNotification =
     MakeLinkKeyNotification(hci_spec::LinkKeyType::kAuthenticatedCombination192);
 
-const auto kLinkKeyRequestReply = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kLinkKeyRequestReply), UpperBits(hci_spec::kLinkKeyRequestReply),
-    0x16,                    // parameter_total_size (22 bytes)
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7, 0x60, 0x06, 0x1e, 0xca, 0x1e, 0xca,
-    0xfe  // link key
+const StaticByteBuffer kLinkKeyRequestReply(LowerBits(hci_spec::kLinkKeyRequestReply),
+                                            UpperBits(hci_spec::kLinkKeyRequestReply),
+                                            0x16,  // parameter_total_size (22 bytes)
+                                            TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                            0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7,
+                                            0x60, 0x06, 0x1e, 0xca, 0x1e, 0xca,
+                                            0xfe  // link key
 );
 
-const auto kLinkKeyRequestReplyRsp = CreateStaticByteBuffer(
-    hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci_spec::kLinkKeyRequestReply),
-    UpperBits(hci_spec::kLinkKeyRequestReply),
-    hci_spec::kSuccess,     // status
-    TEST_DEV_ADDR_BYTES_LE  // peer address
+const StaticByteBuffer kLinkKeyRequestReplyRsp(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
+                                               LowerBits(hci_spec::kLinkKeyRequestReply),
+                                               UpperBits(hci_spec::kLinkKeyRequestReply),
+                                               hci_spec::kSuccess,     // status
+                                               TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
 const auto kLinkKeyNotificationChanged =
-    CreateStaticByteBuffer(hci_spec::kLinkKeyNotificationEventCode,
-                           0x17,                    // parameter_total_size (17 bytes)
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15, 0xea, 0x5e, 0xfe, 0xdb,
-                           0x1d, 0x0d, 0x0a, 0xd5,  // link key
-                           0x06                     // key type (Changed Combination Key)
+    StaticByteBuffer(hci_spec::kLinkKeyNotificationEventCode,
+                     0x17,                    // parameter_total_size (17 bytes)
+                     TEST_DEV_ADDR_BYTES_LE,  // peer address
+                     0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15, 0xea, 0x5e, 0xfe, 0xdb, 0x1d,
+                     0x0d, 0x0a, 0xd5,  // link key
+                     0x06               // key type (Changed Combination Key)
     );
 
-const auto kLinkKeyRequestReplyChanged = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kLinkKeyRequestReply), UpperBits(hci_spec::kLinkKeyRequestReply),
-    0x16,                    // parameter_total_size (22 bytes)
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15, 0xea, 0x5e, 0xfe, 0xdb, 0x1d, 0x0d, 0x0a,
-    0xd5  // link key
+const StaticByteBuffer kLinkKeyRequestReplyChanged(LowerBits(hci_spec::kLinkKeyRequestReply),
+                                                   UpperBits(hci_spec::kLinkKeyRequestReply),
+                                                   0x16,  // parameter_total_size (22 bytes)
+                                                   TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                                   0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15,
+                                                   0xea, 0x5e, 0xfe, 0xdb, 0x1d, 0x0d, 0x0a,
+                                                   0xd5  // link key
 );
 
-const auto kSetConnectionEncryption = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kSetConnectionEncryption), UpperBits(hci_spec::kSetConnectionEncryption),
-    0x03,        // parameter total size
-    0xAA, 0x0B,  // connection handle
-    0x01         // encryption enable
+const StaticByteBuffer kSetConnectionEncryption(LowerBits(hci_spec::kSetConnectionEncryption),
+                                                UpperBits(hci_spec::kSetConnectionEncryption),
+                                                0x03,        // parameter total size
+                                                0xAA, 0x0B,  // connection handle
+                                                0x01         // encryption enable
 );
 
 const auto kSetConnectionEncryptionRsp =
     COMMAND_STATUS_RSP(hci_spec::kSetConnectionEncryption, hci_spec::StatusCode::kSuccess);
 
-const auto kEncryptionChangeEvent = CreateStaticByteBuffer(hci_spec::kEncryptionChangeEventCode,
-                                                           4,           // parameter total size
-                                                           0x00,        // status
-                                                           0xAA, 0x0B,  // connection handle
-                                                           0x01         // encryption enabled
+const StaticByteBuffer kEncryptionChangeEvent(hci_spec::kEncryptionChangeEventCode,
+                                              4,           // parameter total size
+                                              0x00,        // status
+                                              0xAA, 0x0B,  // connection handle
+                                              0x01         // encryption enabled
 );
 
-const auto kReadEncryptionKeySize = CreateStaticByteBuffer(
-    LowerBits(hci_spec::kReadEncryptionKeySize), UpperBits(hci_spec::kReadEncryptionKeySize),
-    0x02,       // parameter size
-    0xAA, 0x0B  // connection handle
+const StaticByteBuffer kReadEncryptionKeySize(LowerBits(hci_spec::kReadEncryptionKeySize),
+                                              UpperBits(hci_spec::kReadEncryptionKeySize),
+                                              0x02,       // parameter size
+                                              0xAA, 0x0B  // connection handle
 );
 
-const auto kReadEncryptionKeySizeRsp = CreateStaticByteBuffer(
-    hci_spec::kCommandCompleteEventCode,
-    0x07,  // parameters total size
-    0xFF,  // num command packets allowed (255)
-    LowerBits(hci_spec::kReadEncryptionKeySize), UpperBits(hci_spec::kReadEncryptionKeySize),
-    hci_spec::kSuccess,  // status
-    0xAA, 0x0B,          // connection handle
-    0x10                 // encryption key size: 16
+const StaticByteBuffer kReadEncryptionKeySizeRsp(hci_spec::kCommandCompleteEventCode,
+                                                 0x07,  // parameters total size
+                                                 0xFF,  // num command packets allowed (255)
+                                                 LowerBits(hci_spec::kReadEncryptionKeySize),
+                                                 UpperBits(hci_spec::kReadEncryptionKeySize),
+                                                 hci_spec::kSuccess,  // status
+                                                 0xAA, 0x0B,          // connection handle
+                                                 0x10                 // encryption key size: 16
 );
 
 auto MakeUserPasskeyRequestReply(uint32_t passkey) {
   const auto passkey_bytes = ToBytes(kPasskey);
-  return CreateStaticByteBuffer(LowerBits(hci_spec::kUserPasskeyRequestReply),
-                                UpperBits(hci_spec::kUserPasskeyRequestReply),
-                                0x0A,                    // parameter_total_size (10 bytes)
-                                TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
-                                0x00  // numeric value
+  return StaticByteBuffer(LowerBits(hci_spec::kUserPasskeyRequestReply),
+                          UpperBits(hci_spec::kUserPasskeyRequestReply),
+                          0x0A,                    // parameter_total_size (10 bytes)
+                          TEST_DEV_ADDR_BYTES_LE,  // peer address
+                          passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                          0x00  // numeric value
   );
 }
 
-const auto kUserPasskeyRequestReplyRsp = CreateStaticByteBuffer(
-    hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci_spec::kUserPasskeyRequestReply),
-    UpperBits(hci_spec::kUserPasskeyRequestReply),
-    hci_spec::kSuccess,     // status
-    TEST_DEV_ADDR_BYTES_LE  // peer address
+const StaticByteBuffer kUserPasskeyRequestReplyRsp(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
+                                                   LowerBits(hci_spec::kUserPasskeyRequestReply),
+                                                   UpperBits(hci_spec::kUserPasskeyRequestReply),
+                                                   hci_spec::kSuccess,     // status
+                                                   TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
 auto MakeUserPasskeyNotification(uint32_t passkey) {
   const auto passkey_bytes = ToBytes(kPasskey);
-  return CreateStaticByteBuffer(hci_spec::kUserPasskeyNotificationEventCode,
-                                0x0A,                    // parameter_total_size (10 byte payload)
-                                TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
-                                0x00  // numeric value
+  return StaticByteBuffer(hci_spec::kUserPasskeyNotificationEventCode,
+                          0x0A,                    // parameter_total_size (10 byte payload)
+                          TEST_DEV_ADDR_BYTES_LE,  // peer address
+                          passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                          0x00  // numeric value
   );
 }
 
@@ -970,14 +957,14 @@ TEST_F(BrEdrConnectionManagerTest, RemoteDisconnect) {
 }
 
 const auto kRemoteNameRequestCompleteFailed =
-    CreateStaticByteBuffer(hci_spec::kRemoteNameRequestCompleteEventCode,
-                           0x01,  // parameter_total_size (1 bytes)
-                           hci_spec::StatusCode::kHardwareFailure);
+    StaticByteBuffer(hci_spec::kRemoteNameRequestCompleteEventCode,
+                     0x01,  // parameter_total_size (1 bytes)
+                     hci_spec::StatusCode::kHardwareFailure);
 
 const auto kReadRemoteSupportedFeaturesCompleteFailed =
-    CreateStaticByteBuffer(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
-                           0x01,  // parameter_total_size (1 bytes)
-                           hci_spec::StatusCode::kHardwareFailure);
+    StaticByteBuffer(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
+                     0x01,  // parameter_total_size (1 bytes)
+                     hci_spec::StatusCode::kHardwareFailure);
 
 // Test: if the interrogation fails, we disconnect.
 //  - Receiving extra responses after a command fails will not fail
@@ -1103,25 +1090,24 @@ TEST_F(BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUserRej
   RunLoopUntilIdle();
 }
 
-const auto kUserPasskeyRequest =
-    CreateStaticByteBuffer(hci_spec::kUserPasskeyRequestEventCode,
-                           0x06,                   // parameter_total_size (6 byte payload)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
+const auto kUserPasskeyRequest = StaticByteBuffer(hci_spec::kUserPasskeyRequestEventCode,
+                                                  0x06,  // parameter_total_size (6 byte payload)
+                                                  TEST_DEV_ADDR_BYTES_LE  // peer address
+);
 
 const auto kUserPasskeyRequestNegativeReply =
-    CreateStaticByteBuffer(LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                           UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                           0x06,                   // parameter_total_size (6 bytes)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    StaticByteBuffer(LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),
+                     UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),
+                     0x06,                   // parameter_total_size (6 bytes)
+                     TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
 const auto kUserPasskeyRequestNegativeReplyRsp =
-    CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
-                           LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                           UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                           hci_spec::kSuccess,     // status
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
+                     LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),
+                     UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),
+                     hci_spec::kSuccess,     // status
+                     TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
 // Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
@@ -1448,12 +1434,12 @@ TEST_F(BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
 }
 
 const auto kLinkKeyNotificationLegacy =
-    CreateStaticByteBuffer(hci_spec::kLinkKeyNotificationEventCode,
-                           0x17,                    // parameter_total_size (17 bytes)
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           0x41, 0x33, 0x7c, 0x0d, 0xef, 0xee, 0xda, 0xda, 0xba, 0xad, 0x0f, 0xf1,
-                           0xce, 0xc0, 0xff, 0xee,  // link key
-                           0x00                     // key type (Combination Key)
+    StaticByteBuffer(hci_spec::kLinkKeyNotificationEventCode,
+                     0x17,                    // parameter_total_size (17 bytes)
+                     TEST_DEV_ADDR_BYTES_LE,  // peer address
+                     0x41, 0x33, 0x7c, 0x0d, 0xef, 0xee, 0xda, 0xda, 0xba, 0xad, 0x0f, 0xf1, 0xce,
+                     0xc0, 0xff, 0xee,  // link key
+                     0x00               // key type (Combination Key)
     );
 
 // Test: don't bond or mark successfully connected if the link key resulted from legacy pairing
@@ -1658,7 +1644,7 @@ TEST_F(BrEdrConnectionManagerTest, ServiceSearch) {
   l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
     new_chan->SetSendCallback(
         [&sdp_request_tid](auto packet) {
-          const auto kSearchExpectedParams = CreateStaticByteBuffer(
+          const StaticByteBuffer kSearchExpectedParams(
               // ServiceSearchPattern
               0x35, 0x03,        // Sequence uint8 3 bytes
               0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -1747,7 +1733,7 @@ TEST_F(BrEdrConnectionManagerTest, SearchOnReconnect) {
   l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
     new_chan->SetSendCallback(
         [&sdp_request_tid](auto packet) {
-          const auto kSearchExpectedParams = CreateStaticByteBuffer(
+          const StaticByteBuffer kSearchExpectedParams(
               // ServiceSearchPattern
               0x35, 0x03,        // Sequence uint8 3 bytes
               0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -2414,7 +2400,7 @@ TEST_F(BrEdrConnectionManagerTest, AddServiceSearchAll) {
   l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
     new_chan->SetSendCallback(
         [&sdp_request_tid](auto packet) {
-          const auto kSearchExpectedParams = CreateStaticByteBuffer(
+          const StaticByteBuffer kSearchExpectedParams(
               // ServiceSearchPattern
               0x35, 0x03,        // Sequence uint8 3 bytes
               0x19, 0x11, 0x0B,  // UUID (kAudioSink)

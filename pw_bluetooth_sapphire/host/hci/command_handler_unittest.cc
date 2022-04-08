@@ -83,9 +83,9 @@ const TestCommand<DecodableCommandCompleteEvent> kTestCommandWithCommandComplete
 const TestCommand<UndecodableCommandCompleteEvent> kTestCommandWithUndecodableCommandCompleteEvent{
     .test_param = 1u};
 
-const auto kTestCommandPacket = StaticByteBuffer(LowerBits(kOpCode), UpperBits(kOpCode),
-                                                 0x01,  // param length
-                                                 kEncodedTestCommandParam);
+const StaticByteBuffer kTestCommandPacket(LowerBits(kOpCode), UpperBits(kOpCode),
+                                          0x01,  // param length
+                                          kEncodedTestCommandParam);
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 class CommandHandlerTest : public TestingBase {

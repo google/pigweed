@@ -63,7 +63,7 @@ TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
   constexpr uint16_t kIntervalMax = 1;
   constexpr uint16_t kPeripheralLatency = 2;
   constexpr uint16_t kTimeoutMult = 3;
-  auto param_update_req = StaticByteBuffer(
+  StaticByteBuffer param_update_req(
       // Interval Min
       LowerBits(kIntervalMin), UpperBits(kIntervalMin),
       // Interval Max
@@ -73,7 +73,7 @@ TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
       // Timeout Multiplier
       LowerBits(kTimeoutMult), UpperBits(kTimeoutMult));
 
-  auto param_update_rsp = StaticByteBuffer(
+  StaticByteBuffer param_update_rsp(
       LowerBits(static_cast<uint16_t>(ConnectionParameterUpdateResult::kRejected)),
       UpperBits(static_cast<uint16_t>(ConnectionParameterUpdateResult::kRejected)));
 
@@ -99,7 +99,7 @@ TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqRspOk) {
   constexpr uint16_t kIntervalMax = 1;
   constexpr uint16_t kPeripheralLatency = 2;
   constexpr uint16_t kTimeoutMult = 3;
-  auto param_update_req = StaticByteBuffer(
+  StaticByteBuffer param_update_req(
       // Interval Min
       LowerBits(kIntervalMin), UpperBits(kIntervalMin),
       // Interval Max

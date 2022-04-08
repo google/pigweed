@@ -27,12 +27,12 @@ constexpr PeerId kTestPeerId(1);
 constexpr UUID kTestType16(uint16_t{0xBEEF});
 constexpr UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
-const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
-const auto kTestValue2 = CreateStaticByteBuffer('b', 'a', 'r');
-const auto kTestValue3 = CreateStaticByteBuffer('b', 'a', 'z');
-const auto kTestValue4 = CreateStaticByteBuffer('l', 'o', 'l');
+const StaticByteBuffer kTestValue1('f', 'o', 'o');
+const StaticByteBuffer kTestValue2('b', 'a', 'r');
+const StaticByteBuffer kTestValue3('b', 'a', 'z');
+const StaticByteBuffer kTestValue4('l', 'o', 'l');
 
-const auto kTestValueLong = CreateStaticByteBuffer('l', 'o', 'n', 'g');
+const StaticByteBuffer kTestValueLong('l', 'o', 'n', 'g');
 
 inline att::AccessRequirements AllowedNoSecurity() {
   return att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
@@ -152,8 +152,8 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
 TEST_F(ServerTest, ExchangeMTURequestInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(0x02);
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(0x02);
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x02,        // request: exchange MTU
       0x00, 0x00,  // handle: 0
@@ -169,12 +169,12 @@ TEST_F(ServerTest, ExchangeMTURequestValueTooSmall) {
   constexpr uint16_t kClientMTU = 1;
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
     0x02,             // opcode: exchange MTU
     kClientMTU, 0x00  // client rx mtu: |kClientMTU|
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
     0x03,       // opcode: exchange MTU response
     0xF7, 0x00  // server rx mtu: |kServerMTU|
   );
@@ -193,12 +193,12 @@ TEST_F(ServerTest, ExchangeMTURequest) {
   constexpr uint16_t kClientMTU = 0x64;
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
     0x02,             // opcode: exchange MTU
     kClientMTU, 0x00  // client rx mtu: |kClientMTU|
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
     0x03,       // opcode: exchange MTU response
     0xF7, 0x00  // server rx mtu: |kServerMTU|
   );
@@ -214,8 +214,8 @@ TEST_F(ServerTest, ExchangeMTURequest) {
 TEST_F(ServerTest, FindInformationInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(0x04);
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(0x04);
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x00, 0x00,  // handle: 0
@@ -229,13 +229,13 @@ TEST_F(ServerTest, FindInformationInvalidPDU) {
 TEST_F(ServerTest, FindInformationInvalidHandle) {
   // Start handle is 0
   // clang-format off
-  const auto kInvalidStartHandle = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidStartHandle(
       0x04,        // opcode: find information
       0x00, 0x00,  // start: 0x0000
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected1(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x00, 0x00,  // handle: 0x0000 (start handle in request)
@@ -243,13 +243,13 @@ TEST_F(ServerTest, FindInformationInvalidHandle) {
   );
 
   // End handle is smaller than start handle
-  const auto kInvalidEndHandle = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidEndHandle(
       0x04,        // opcode: find information
       0x02, 0x00,  // start: 0x0002
       0x01, 0x00   // end: 0x0001
   );
 
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x02, 0x00,  // handle: 0x0002 (start handle in request)
@@ -263,13 +263,13 @@ TEST_F(ServerTest, FindInformationInvalidHandle) {
 
 TEST_F(ServerTest, FindInformationAttributeNotFound) {
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x04,        // opcode: find information request
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x01, 0x00,  // handle: 0x0001 (start handle in request)
@@ -287,13 +287,13 @@ TEST_F(ServerTest, FindInformation16) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x04,        // opcode: find information request
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit
       0x01, 0x00,  // handle: 0x0001
@@ -313,13 +313,13 @@ TEST_F(ServerTest, FindInformation128) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x04,        // opcode: find information request
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x05,        // opcode: find information response
       0x02,        // format: 128-bit
       0x01, 0x00,  // handle: 0x0001
@@ -343,7 +343,7 @@ TEST_F(ServerTest, FindByTypeValueSuccess) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0xFF, 0xFF,    // end: 0xFFFF
@@ -351,7 +351,7 @@ TEST_F(ServerTest, FindByTypeValueSuccess) {
       'f', 'o', 'o'  // value: foo
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x07,        // opcode: find by type value response
       0x01, 0x00,  // handle: 0x0001
       0x01, 0x00,  // group handle: 0x0001
@@ -368,7 +368,7 @@ TEST_F(ServerTest, FindByTypeValueFail) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0xFF, 0xFF,    // end: 0xFFFF
@@ -376,7 +376,7 @@ TEST_F(ServerTest, FindByTypeValueFail) {
       'n', 'o'       // value: no
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -389,7 +389,7 @@ TEST_F(ServerTest, FindByTypeValueFail) {
 
 TEST_F(ServerTest, FindByTypeValueEmptyDB) {
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0xFF, 0xFF,    // end: 0xFFFF
@@ -397,7 +397,7 @@ TEST_F(ServerTest, FindByTypeValueEmptyDB) {
       'n', 'o'       // value: no
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -410,7 +410,7 @@ TEST_F(ServerTest, FindByTypeValueEmptyDB) {
 
 TEST_F(ServerTest, FindByTypeValueInvalidHandle) {
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x06,          // opcode: find by type value request
       0x02, 0x00,    // start: 0x0002
       0x01, 0x00,    // end: 0x0001
@@ -418,7 +418,7 @@ TEST_F(ServerTest, FindByTypeValueInvalidHandle) {
       'n', 'o'       // value: no
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -434,9 +434,9 @@ TEST_F(ServerTest, FindByTypeValueInvalidPDUError) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(0x06);
+  const StaticByteBuffer kInvalidPDU(0x06);
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -452,14 +452,14 @@ TEST_F(ServerTest, FindByTypeValueZeroLengthValueError) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0xFF, 0xFF,    // end: 0xFFFF
       0x00, 0x28     // uuid: primary service group type
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -482,7 +482,7 @@ TEST_F(ServerTest, FindByTypeValueOutsideRangeError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0x02, 0x00,    // end: 0xFFFF
@@ -490,7 +490,7 @@ TEST_F(ServerTest, FindByTypeValueOutsideRangeError) {
       'f', 'o', 'o'  // value: foo
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -514,13 +514,13 @@ TEST_F(ServerTest, FindInfomationInactive) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x04,        // opcode: find information request
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit
       0x01, 0x00,  // handle: 0x0001
@@ -543,13 +543,13 @@ TEST_F(ServerTest, FindInfomationRange) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x04,        // opcode: find information request
       0x02, 0x00,  // start: 0x0002
       0x02, 0x00   // end: 0x0002
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit
       0x02, 0x00,  // handle: 0x0001
@@ -563,8 +563,8 @@ TEST_F(ServerTest, FindInfomationRange) {
 TEST_F(ServerTest, ReadByGroupTypeInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(0x10);
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(0x10);
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x00, 0x00,  // handle: 0
@@ -578,7 +578,7 @@ TEST_F(ServerTest, ReadByGroupTypeInvalidPDU) {
 TEST_F(ServerTest, ReadByGroupTypeUnsupportedGroupType) {
   // 16-bit UUID
   // clang-format off
-  const auto kUsing16BitType = CreateStaticByteBuffer(
+  const StaticByteBuffer kUsing16BitType(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
@@ -586,7 +586,7 @@ TEST_F(ServerTest, ReadByGroupTypeUnsupportedGroupType) {
   );
 
   // 128-bit UUID
-  const auto kUsing128BitType = CreateStaticByteBuffer(
+  const StaticByteBuffer kUsing128BitType(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
@@ -595,7 +595,7 @@ TEST_F(ServerTest, ReadByGroupTypeUnsupportedGroupType) {
       0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88,
       0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00);
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x01, 0x00,  // handle: 0x0001 (start handle in request)
@@ -610,14 +610,14 @@ TEST_F(ServerTest, ReadByGroupTypeUnsupportedGroupType) {
 TEST_F(ServerTest, ReadByGroupTypeInvalidHandle) {
   // Start handle is 0
   // clang-format off
-  const auto kInvalidStartHandle = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidStartHandle(
       0x10,        // opcode: read by group type
       0x00, 0x00,  // start: 0x0000
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected1(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x00, 0x00,  // handle: 0x0000 (start handle in request)
@@ -625,14 +625,14 @@ TEST_F(ServerTest, ReadByGroupTypeInvalidHandle) {
   );
 
   // End handle is smaller than start handle
-  const auto kInvalidEndHandle = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidEndHandle(
       0x10,        // opcode: read by group type
       0x02, 0x00,  // start: 0x0002
       0x01, 0x00,  // end: 0x0001
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x02, 0x00,  // handle: 0x0002 (start handle in request)
@@ -646,14 +646,14 @@ TEST_F(ServerTest, ReadByGroupTypeInvalidHandle) {
 
 TEST_F(ServerTest, ReadByGroupTypeAttributeNotFound) {
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x01, 0x00,  // handle: 0x0001 (start handle in request)
@@ -670,7 +670,7 @@ TEST_F(ServerTest, ReadByGroupTypeAttributeNotFound) {
 }
 
 TEST_F(ServerTest, ReadByGroupTypeSingle) {
-  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
   // Start: 1, end: 2
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
@@ -678,14 +678,14 @@ TEST_F(ServerTest, ReadByGroupTypeSingle) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x11,               // opcode: read by group type response
       0x08,               // length: 8 (strlen("test") + 4)
       0x01, 0x00,         // start: 0x0001
@@ -698,7 +698,7 @@ TEST_F(ServerTest, ReadByGroupTypeSingle) {
 }
 
 TEST_F(ServerTest, ReadByGroupTypeSingle128) {
-  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
   // Start: 1, end: 2
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
@@ -706,7 +706,7 @@ TEST_F(ServerTest, ReadByGroupTypeSingle128) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
@@ -715,7 +715,7 @@ TEST_F(ServerTest, ReadByGroupTypeSingle128) {
       0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
       0x00, 0x10, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00);
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x11,               // opcode: read by group type response
       0x08,               // length: 8 (strlen("test") + 4)
       0x01, 0x00,         // start: 0x0001
@@ -728,21 +728,21 @@ TEST_F(ServerTest, ReadByGroupTypeSingle128) {
 }
 
 TEST_F(ServerTest, ReadByGroupTypeSingleTruncated) {
-  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
   // Start: 1, end: 1
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x11,        // opcode: read by group type response
       0x06,        // length: 6 (strlen("te") + 4)
       0x01, 0x00,  // start: 0x0001
@@ -776,14 +776,14 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue4)->set_active(true);
 
   // clang-format off
-  const auto kRequest1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest1(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected1(
       0x11,           // opcode: read by group type response
       0x07,           // length: 7 (strlen("foo") + 4)
       0x01, 0x00,     // start: 0x0001
@@ -807,14 +807,14 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   // Search a narrower range. Only two groups should be returned even with room
   // in MTU.
   // clang-format off
-  const auto kRequest2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest2(
       0x10,        // opcode: read by group type
       0x02, 0x00,  // start: 0x0002
       0x04, 0x00,  // end: 0x0004
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x11,           // opcode: read by group type response
       0x07,           // length: 7 (strlen("foo") + 4)
       0x02, 0x00,     // start: 0x0002
@@ -830,7 +830,7 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
 
   // Make the second group inactive. It should get omitted.
   // clang-format off
-  const auto kExpected3 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected3(
       0x11,           // opcode: read by group type response
       0x07,           // length: 7 (strlen("foo") + 4)
       0x04, 0x00,     // start: 0x0004
@@ -854,14 +854,14 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest2(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x11,               // opcode: read by group type response
       0x08,               // length: 8 (strlen("long") + 4)
       0x01, 0x00,         // start: 0x0001
@@ -874,8 +874,8 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
 TEST_F(ServerTest, ReadByTypeInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(0x08);
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(0x08);
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x00, 0x00,  // handle: 0
@@ -889,14 +889,14 @@ TEST_F(ServerTest, ReadByTypeInvalidPDU) {
 TEST_F(ServerTest, ReadByTypeInvalidHandle) {
   // Start handle is 0
   // clang-format off
-  const auto kInvalidStartHandle = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidStartHandle(
       0x08,        // opcode: read by type
       0x00, 0x00,  // start: 0x0000
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected1(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x00, 0x00,  // handle: 0x0000 (start handle in request)
@@ -904,14 +904,14 @@ TEST_F(ServerTest, ReadByTypeInvalidHandle) {
   );
 
   // End handle is smaller than start handle
-  const auto kInvalidEndHandle = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidEndHandle(
       0x08,        // opcode: read by type
       0x02, 0x00,  // start: 0x0002
       0x01, 0x00,  // end: 0x0001
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (start handle in request)
@@ -925,14 +925,14 @@ TEST_F(ServerTest, ReadByTypeInvalidHandle) {
 
 TEST_F(ServerTest, ReadByTypeAttributeNotFound) {
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x01, 0x00,  // handle: 0x0001 (start handle in request)
@@ -949,21 +949,21 @@ TEST_F(ServerTest, ReadByTypeAttributeNotFound) {
 }
 
 TEST_F(ServerTest, ReadByTypeDynamicValueNoHandler) {
-  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -980,7 +980,7 @@ TEST_F(ServerTest, ReadByTypeDynamicValue) {
   attr->set_read_handler([attr](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    result_cb(fitx::ok(), CreateStaticByteBuffer('f', 'o', 'r', 'k'));
+    result_cb(fitx::ok(), StaticByteBuffer('f', 'o', 'r', 'k'));
   });
 
   // Add a second dynamic attribute, which should be omitted.
@@ -988,14 +988,14 @@ TEST_F(ServerTest, ReadByTypeDynamicValue) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x09,               // opcode: read by type response
       0x06,               // length: 6 (strlen("fork") + 2)
       0x02, 0x00,         // handle: 0x0002
@@ -1012,7 +1012,7 @@ TEST_F(ServerTest, ReadByTypeDynamicValue) {
 }
 
 TEST_F(ServerTest, ReadByTypeDynamicValueError) {
-  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
@@ -1022,14 +1022,14 @@ TEST_F(ServerTest, ReadByTypeDynamicValueError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -1041,8 +1041,8 @@ TEST_F(ServerTest, ReadByTypeDynamicValueError) {
 }
 
 TEST_F(ServerTest, ReadByTypeSingle) {
-  const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
-  const auto kTestValue2 = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kTestValue1('f', 'o', 'o');
+  const StaticByteBuffer kTestValue2('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements())
@@ -1050,14 +1050,14 @@ TEST_F(ServerTest, ReadByTypeSingle) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x09,               // opcode: read by type response
       0x06,               // length: 6 (strlen("test") + 2)
       0x02, 0x00,         // handle: 0x0002
@@ -1070,8 +1070,8 @@ TEST_F(ServerTest, ReadByTypeSingle) {
 }
 
 TEST_F(ServerTest, ReadByTypeSingle128) {
-  const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
-  const auto kTestValue2 = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kTestValue1('f', 'o', 'o');
+  const StaticByteBuffer kTestValue2('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   grp->AddAttribute(kTestType128, AllowedNoSecurity(), att::AccessRequirements())
@@ -1079,7 +1079,7 @@ TEST_F(ServerTest, ReadByTypeSingle128) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
@@ -1088,7 +1088,7 @@ TEST_F(ServerTest, ReadByTypeSingle128) {
       0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
       0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x09,               // opcode: read by type response
       0x06,               // length: 6 (strlen("test") + 2)
       0x02, 0x00,         // handle: 0x0002
@@ -1100,8 +1100,8 @@ TEST_F(ServerTest, ReadByTypeSingle128) {
 }
 
 TEST_F(ServerTest, ReadByTypeSingleTruncated) {
-  const auto kVeryLongValue =
-      CreateStaticByteBuffer('t', 'e', 's', 't', 'i', 'n', 'g', ' ', 'i', 's', ' ', 'f', 'u', 'n');
+  const StaticByteBuffer kVeryLongValue('t', 'e', 's', 't', 'i', 'n', 'g', ' ', 'i', 's', ' ', 'f',
+                                        'u', 'n');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements())
@@ -1109,14 +1109,14 @@ TEST_F(ServerTest, ReadByTypeSingleTruncated) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("tes") + 2)
       0x02, 0x00,    // handle: 0x0002
@@ -1143,13 +1143,13 @@ TEST_F(ServerTest, ReadByTypeMultipleExcludeFirstError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("foo") + 2)
       0x01, 0x00,    // handle: 0x0001
@@ -1182,14 +1182,14 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest1(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected1(
       0x09,           // opcode: read by type response
       0x05,           // length: 5 (strlen("foo") + 2)
       0x02, 0x00,     // handle: 0x0002
@@ -1207,7 +1207,7 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   att()->set_mtu(kExpected1.size() - 1);
 
   // clang-format off
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x09,           // opcode: read by type response
       0x05,           // length: 5 (strlen("foo") + 2)
       0x02, 0x00,     // handle: 0x0002
@@ -1221,14 +1221,14 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
 
   // Try a different range.
   // clang-format off
-  const auto kRequest2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest2(
       0x08,        // opcode: read by type
       0x03, 0x00,  // start: 0x0003
       0x05, 0x00,  // end: 0x0005
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected3 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected3(
       0x09,           // opcode: read by type response
       0x05,           // length: 5 (strlen("bar") + 2)
       0x03, 0x00,     // handle: 0x0003
@@ -1244,7 +1244,7 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   grp->set_active(false);
 
   // clang-format off
-  const auto kExpected4 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected4(
       0x09,           // opcode: read by type response
       0x05,           // length: 5 (strlen("bar") + 2)
       0x03, 0x00,     // handle: 0x0003
@@ -1273,37 +1273,37 @@ TEST_F(ServerTest, ReadByTypeMultipleVaryingLengths) {
   // sizes.
 
   // clang-format off
-  const auto kRequest1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest1(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected1(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("foo") + 2)
       0x01, 0x00,    // handle: 0x0001
       'f', 'o', 'o'  // value: "foo"
   );
-  const auto kRequest2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest2(
       0x08,        // opcode: read by type
       0x02, 0x00,  // start: 0x0002
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x09,               // opcode: read by type response
       0x06,               // length: 6 (strlen("long") + 2)
       0x02, 0x00,         // handle: 0x0002
       'l', 'o', 'n', 'g'  // value: "long"
   );
-  const auto kRequest3 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest3(
       0x08,        // opcode: read by type
       0x03, 0x00,  // start: 0x0003
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected3 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected3(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("foo") + 2)
       0x03, 0x00,    // handle: 0x0003
@@ -1327,13 +1327,13 @@ TEST_F(ServerTest, ReadByTypeMultipleExcludeFirstDynamic) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("foo") + 2)
       0x01, 0x00,    // handle: 0x0001
@@ -1347,8 +1347,8 @@ TEST_F(ServerTest, ReadByTypeMultipleExcludeFirstDynamic) {
 TEST_F(ServerTest, WriteRequestInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(0x12);
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(0x12);
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x00, 0x00,  // handle: 0
@@ -1361,14 +1361,14 @@ TEST_F(ServerTest, WriteRequestInvalidPDU) {
 
 TEST_F(ServerTest, WriteRequestInvalidHandle) {
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x12,        // opcode: write request
       0x01, 0x00,  // handle: 0x0001
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x01, 0x00,  // handle: 0x0001
@@ -1380,7 +1380,7 @@ TEST_F(ServerTest, WriteRequestInvalidHandle) {
 }
 
 TEST_F(ServerTest, WriteRequestSecurity) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // Requires encryption
@@ -1394,27 +1394,27 @@ TEST_F(ServerTest, WriteRequestSecurity) {
   //   2. 0x0002: writable but requires encryption
   //
   // clang-format off
-  const auto kRequest1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest1(
       0x12,        // opcode: write request
       0x01, 0x00,  // handle: 0x0001
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected1(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x01, 0x00,  // handle: 0x0001
       0x03         // error: write not permitted
   );
-  const auto kRequest2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest2(
       0x12,        // opcode: write request
       0x02, 0x00,  // handle: 0x0002
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x02, 0x00,  // handle: 0x0002
@@ -1427,21 +1427,21 @@ TEST_F(ServerTest, WriteRequestSecurity) {
 }
 
 TEST_F(ServerTest, WriteRequestNoHandler) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x12,        // opcode: write request
       0x02, 0x00,  // handle: 0x0002
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x02, 0x00,  // handle: 0x0002
@@ -1453,7 +1453,7 @@ TEST_F(ServerTest, WriteRequestNoHandler) {
 }
 
 TEST_F(ServerTest, WriteRequestError) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
@@ -1462,21 +1462,21 @@ TEST_F(ServerTest, WriteRequestError) {
         EXPECT_EQ(kTestPeerId, peer_id);
         EXPECT_EQ(attr->handle(), handle);
         EXPECT_EQ(0u, offset);
-        EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+        EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
 
         result_cb(fitx::error(att::ErrorCode::kUnlikelyError));
       });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x12,        // opcode: write request
       0x02, 0x00,  // handle: 0x0002
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x02, 0x00,  // handle: 0x0002
@@ -1488,7 +1488,7 @@ TEST_F(ServerTest, WriteRequestError) {
 }
 
 TEST_F(ServerTest, WriteRequestSuccess) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
@@ -1497,14 +1497,14 @@ TEST_F(ServerTest, WriteRequestSuccess) {
         EXPECT_EQ(kTestPeerId, peer_id);
         EXPECT_EQ(attr->handle(), handle);
         EXPECT_EQ(0u, offset);
-        EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+        EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
 
         result_cb(fitx::ok());
       });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x12,        // opcode: write request
       0x02, 0x00,  // handle: 0x0002
 
@@ -1513,7 +1513,7 @@ TEST_F(ServerTest, WriteRequestSuccess) {
   // clang-format on
 
   // opcode: write response
-  const auto kExpected = CreateStaticByteBuffer(0x13);
+  const StaticByteBuffer kExpected(0x13);
 
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
@@ -1522,7 +1522,7 @@ TEST_F(ServerTest, WriteRequestSuccess) {
 // Command (fxbug.dev/675)
 
 TEST_F(ServerTest, WriteCommandSuccess) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
@@ -1531,12 +1531,12 @@ TEST_F(ServerTest, WriteCommandSuccess) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kCmd = CreateStaticByteBuffer(
+  const StaticByteBuffer kCmd(
       0x52,        // opcode: write command
       0x02, 0x00,  // handle: 0x0002
       't', 'e', 's', 't');
@@ -1549,8 +1549,8 @@ TEST_F(ServerTest, WriteCommandSuccess) {
 TEST_F(ServerTest, ReadRequestInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(0x0A);
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(0x0A);
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x00, 0x00,  // handle: 0
@@ -1563,12 +1563,12 @@ TEST_F(ServerTest, ReadRequestInvalidPDU) {
 
 TEST_F(ServerTest, ReadRequestInvalidHandle) {
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0A,       // opcode: read request
       0x01, 0x00  // handle: 0x0001
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x01, 0x00,  // handle: 0x0001
@@ -1580,7 +1580,7 @@ TEST_F(ServerTest, ReadRequestInvalidHandle) {
 }
 
 TEST_F(ServerTest, ReadRequestSecurity) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // Requires encryption
@@ -1591,11 +1591,11 @@ TEST_F(ServerTest, ReadRequestSecurity) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x02, 0x00,  // handle: 0x0002
@@ -1607,27 +1607,27 @@ TEST_F(ServerTest, ReadRequestSecurity) {
 }
 
 TEST_F(ServerTest, ReadRequestCached) {
-  const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kDeclValue('d', 'e', 'c', 'l');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kDeclValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->SetValue(kTestValue);
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest1(
       0x0A,       // opcode: read request
       0x01, 0x00  // handle: 0x0001
   );
-  const auto kExpected1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected1(
       0x0B,               // opcode: read response
       'd', 'e', 'c', 'l'  // value: kDeclValue
   );
-  const auto kRequest2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest2(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
-  const auto kExpected2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected2(
       0x0B,          // opcode: read response
       'f', 'o', 'o'  // value: kTestValue
   );
@@ -1638,19 +1638,19 @@ TEST_F(ServerTest, ReadRequestCached) {
 }
 
 TEST_F(ServerTest, ReadRequestNoHandler) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x02, 0x00,  // handle: 0x0002
@@ -1662,7 +1662,7 @@ TEST_F(ServerTest, ReadRequestNoHandler) {
 }
 
 TEST_F(ServerTest, ReadRequestError) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
@@ -1675,12 +1675,12 @@ TEST_F(ServerTest, ReadRequestError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
 
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x02, 0x00,  // handle: 0x0002
@@ -1694,8 +1694,8 @@ TEST_F(ServerTest, ReadRequestError) {
 TEST_F(ServerTest, ReadBlobRequestInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(0x0C);
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(0x0C);
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0C,        // request: read blob request
       0x00, 0x00,  // handle: 0
@@ -1707,11 +1707,11 @@ TEST_F(ServerTest, ReadBlobRequestInvalidPDU) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
-  const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
-  const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
-      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
-      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kDeclValue('d', 'e', 'c', 'l');
+  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
+                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
+                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
+                                    't', 'r', 'i', 'b', 'u', 't', 'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
@@ -1720,19 +1720,18 @@ TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(22u, offset);
-    result_cb(fitx::ok(),
-              CreateStaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o',
-                                     'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
+    result_cb(fitx::ok(), StaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L',
+                                           'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0C,       // opcode: read blob request
       0x02, 0x00, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x0D,          // opcode: read blob response
       // Read Request response
       'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L',
@@ -1744,10 +1743,10 @@ TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
 }
 
 TEST_F(ServerTest, ReadBlobDynamicRequestError) {
-  const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
-      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
-      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
+                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
+                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
+                                    't', 'r', 'i', 'b', 'u', 't', 'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
@@ -1759,12 +1758,12 @@ TEST_F(ServerTest, ReadBlobDynamicRequestError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0C,       // opcode: read blob request
       0x02, 0x00, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
       );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0C,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -1776,21 +1775,21 @@ TEST_F(ServerTest, ReadBlobDynamicRequestError) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestStaticSuccess) {
-  const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
-      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
-      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
+                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
+                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
+                                    't', 'r', 'i', 'b', 'u', 't', 'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0C,       // opcode: read blob request
       0x01, 0x00, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x0D,          // opcode: read blob response
       // Read Request response
       'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L',
@@ -1802,18 +1801,18 @@ TEST_F(ServerTest, ReadBlobRequestStaticSuccess) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestStaticOverflowError) {
-  const auto kTestValue = CreateStaticByteBuffer('s', 'h', 'o', 'r', 't', 'e', 'r');
+  const StaticByteBuffer kTestValue('s', 'h', 'o', 'r', 't', 'e', 'r');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0C,       // opcode: read blob request
       0x01, 0x00, // handle: 0x0001
       0x16, 0x10  // offset: 0x1016
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,       // Error
       0x0C,       // opcode
       0x01, 0x00, // handle: 0x0001
@@ -1825,20 +1824,20 @@ TEST_F(ServerTest, ReadBlobRequestStaticOverflowError) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestInvalidHandleError) {
-  const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
-      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
-      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
+                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
+                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
+                                    't', 'r', 'i', 'b', 'u', 't', 'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0C,       // opcode: read blob request
       0x02, 0x30, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
       );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0C,        // request: read blob request
       0x02, 0x30,  // handle: 0x0001
@@ -1850,10 +1849,10 @@ TEST_F(ServerTest, ReadBlobRequestInvalidHandleError) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
-  const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
-      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
-      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
+                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
+                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
+                                    't', 'r', 'i', 'b', 'u', 't', 'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr =
       grp->AddAttribute(kTestType16, att::AccessRequirements(),
@@ -1868,12 +1867,12 @@ TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0C,       // opcode: read blob request
       0x02, 0x00, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
       );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0C,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -1885,10 +1884,10 @@ TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
-  const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
-      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
-      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
+                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
+                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
+                                    't', 'r', 'i', 'b', 'u', 't', 'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
@@ -1901,12 +1900,12 @@ TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0C,       // opcode: read blob request
       0x02, 0x00, // handle: 0x0002
       0x16, 0x40  // offset: 0x4016
       );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x0C,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -1918,8 +1917,8 @@ TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
 }
 
 TEST_F(ServerTest, ReadRequestSuccess) {
-  const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kDeclValue('d', 'e', 'c', 'l');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
@@ -1932,11 +1931,11 @@ TEST_F(ServerTest, ReadRequestSuccess) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x0B,          // opcode: read response
       'f', 'o', 'o'  // value: kTestValue
   );
@@ -1948,12 +1947,12 @@ TEST_F(ServerTest, ReadRequestSuccess) {
 TEST_F(ServerTest, PrepareWriteRequestInvalidPDU) {
   // Payload is one byte too short.
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(
       0x16,        // opcode: prepare write request
       0x01, 0x00,  // handle: 0x0001
       0x01         // offset (should be 2 bytes).
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x16,        // request: prepare write request
       0x00, 0x00,  // handle: 0
@@ -1966,13 +1965,13 @@ TEST_F(ServerTest, PrepareWriteRequestInvalidPDU) {
 
 TEST_F(ServerTest, PrepareWriteRequestInvalidHandle) {
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x16,              // opcode: prepare write request
       0x01, 0x00,         // handle: 0x0001
       0x00, 0x00,         // offset: 0
       't', 'e', 's', 't'  // value: "test"
   );
-  const auto kResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kResponse(
       0x01,        // opcode: error response
       0x16,        // request: prepare write request
       0x01, 0x00,  // handle: 0x0001
@@ -1984,7 +1983,7 @@ TEST_F(ServerTest, PrepareWriteRequestInvalidHandle) {
 }
 
 TEST_F(ServerTest, PrepareWriteRequestSucceeds) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // No security requirement
@@ -2001,13 +2000,13 @@ TEST_F(ServerTest, PrepareWriteRequestSucceeds) {
   ASSERT_EQ(0x0002, attr->handle());
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x16,              // opcode: prepare write request
       0x02, 0x00,         // handle: 0x0002
       0x00, 0x00,         // offset: 0
       't', 'e', 's', 't'  // value: "test"
   );
-  const auto kResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kResponse(
       0x17,              // opcode: prepare write response
       0x02, 0x00,         // handle: 0x0002
       0x00, 0x00,         // offset: 0
@@ -2022,7 +2021,7 @@ TEST_F(ServerTest, PrepareWriteRequestSucceeds) {
 }
 
 TEST_F(ServerTest, PrepareWriteRequestPrepareQueueFull) {
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // No security requirement
@@ -2035,19 +2034,19 @@ TEST_F(ServerTest, PrepareWriteRequestPrepareQueueFull) {
   ASSERT_EQ(0x0002, attr->handle());
 
   // clang-format off
-  const auto kRequest = CreateStaticByteBuffer(
+  const StaticByteBuffer kRequest(
       0x16,              // opcode: prepare write request
       0x02, 0x00,         // handle: 0x0002
       0x00, 0x00,         // offset: 0
       't', 'e', 's', 't'  // value: "test"
   );
-  const auto kSuccessResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kSuccessResponse(
       0x17,              // opcode: prepare write response
       0x02, 0x00,         // handle: 0x0002
       0x00, 0x00,         // offset: 0
       't', 'e', 's', 't'  // value: "test"
   );
-  const auto kErrorResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kErrorResponse(
       0x01,        // opcode: error response
       0x16,        // request: prepare write request
       0x02, 0x00,  // handle: 0x0002
@@ -2068,10 +2067,10 @@ TEST_F(ServerTest, PrepareWriteRequestPrepareQueueFull) {
 TEST_F(ServerTest, ExecuteWriteMalformedPayload) {
   // Payload is one byte too short.
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(
       0x18  // opcode: execute write request
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x18,        // request: execute write request
       0x00, 0x00,  // handle: 0
@@ -2085,11 +2084,11 @@ TEST_F(ServerTest, ExecuteWriteMalformedPayload) {
 TEST_F(ServerTest, ExecuteWriteInvalidFlag) {
   // Payload is one byte too short.
   // clang-format off
-  const auto kInvalidPDU = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidPDU(
       0x18,  // opcode: execute write request
       0xFF   // flag: invalid
   );
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,        // opcode: error response
       0x18,        // request: execute write request
       0x00, 0x00,  // handle: 0
@@ -2104,11 +2103,11 @@ TEST_F(ServerTest, ExecuteWriteInvalidFlag) {
 // success without writing to any attributes.
 TEST_F(ServerTest, ExecuteWriteQueueEmpty) {
   // clang-format off
-  const auto kExecute = CreateStaticByteBuffer(
+  const StaticByteBuffer kExecute(
     0x18,  // opcode: execute write request
     0x01   // flag: "write pending"
   );
-  const auto kExecuteResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kExecuteResponse(
     0x19  // opcode: execute write response
   );
   // clang-format on
@@ -2118,7 +2117,7 @@ TEST_F(ServerTest, ExecuteWriteQueueEmpty) {
 }
 
 TEST_F(ServerTest, ExecuteWriteSuccess) {
-  auto buffer = CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
+  StaticByteBuffer buffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
@@ -2135,25 +2134,25 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
 
   // Prepare two partial writes of the string "hello!".
   // clang-format off
-  const auto kPrepare1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepare1(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'h', 'e', 'l', 'l'  // value: "hell"
   );
-  const auto kPrepareResponse1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareResponse1(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'h', 'e', 'l', 'l'  // value: "hell"
   );
-  const auto kPrepare2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepare2(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x04, 0x00,         // offset: 4
     'o', '!'            // value: "o!"
   );
-  const auto kPrepareResponse2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareResponse2(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x04, 0x00,         // offset: 4
@@ -2162,13 +2161,13 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
 
   // Add an overlapping write that partial overwrites data from previous
   // payloads.
-  const auto kPrepare3 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepare3(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x02, 0x00,         // offset: 2
     'r', 'p', '?'       // value: "rp?"
   );
-  const auto kPrepareResponse3 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareResponse3(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x02, 0x00,         // offset: 2
@@ -2185,11 +2184,11 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
   EXPECT_EQ("xxxxxx", buffer.AsString());
 
   // clang-format off
-  const auto kExecute = CreateStaticByteBuffer(
+  const StaticByteBuffer kExecute(
     0x18,  // opcode: execute write request
     0x01   // flag: "write pending"
   );
-  const auto kExecuteResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kExecuteResponse(
     0x19  // opcode: execute write response
   );
   // clang-format on
@@ -2201,7 +2200,7 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
 
 // Tests that the rest of the queue is dropped if a prepared write fails.
 TEST_F(ServerTest, ExecuteWriteError) {
-  auto buffer = CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
+  StaticByteBuffer buffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
@@ -2223,25 +2222,25 @@ TEST_F(ServerTest, ExecuteWriteError) {
 
   // Prepare two partial writes of the string "hello!".
   // clang-format off
-  const auto kPrepare1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepare1(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'h', 'e', 'l', 'l'  // value: "hell"
   );
-  const auto kPrepareResponse1 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareResponse1(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'h', 'e', 'l', 'l'  // value: "hell"
   );
-  const auto kPrepare2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepare2(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x04, 0x00,         // offset: 4
     'o', '!'            // value: "o!"
   );
-  const auto kPrepareResponse2 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareResponse2(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x04, 0x00,         // offset: 4
@@ -2256,11 +2255,11 @@ TEST_F(ServerTest, ExecuteWriteError) {
   EXPECT_EQ("xxxxxx", buffer.AsString());
 
   // clang-format off
-  const auto kExecute = CreateStaticByteBuffer(
+  const StaticByteBuffer kExecute(
     0x18,  // opcode: execute write request
     0x01   // flag: "write pending"
   );
-  const auto kExecuteResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kExecuteResponse(
     0x01,        // opcode: error response
     0x18,        // request: execute write request
     0x02, 0x00,  // handle: 2 (the attribute in error)
@@ -2287,19 +2286,19 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('l', 'o', 'l'), value));
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer('l', 'o', 'l'), value));
     result_cb(fitx::ok());
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kPrepareToAbort = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareToAbort(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     't', 'e', 's', 't'  // value: "test"
   );
-  const auto kPrepareToAbortResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareToAbortResponse(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
@@ -2316,11 +2315,11 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
 
   // Abort the writes. They should get dropped.
   // clang-format off
-  const auto kAbort = CreateStaticByteBuffer(
+  const StaticByteBuffer kAbort(
     0x18,  // opcode: execute write request
     0x00   // flag: "cancel all"
   );
-  const auto kAbortResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kAbortResponse(
     0x19  // opcode: execute write response
   );
   // clang-format on
@@ -2330,23 +2329,23 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
   // Prepare and commit a new write request. This one should take effect without
   // involving the previously aborted writes.
   // clang-format off
-  const auto kPrepareToCommit = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareToCommit(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'l', 'o', 'l'       // value: "lol"
   );
-  const auto kPrepareToCommitResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kPrepareToCommitResponse(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'l', 'o', 'l'       // value: "lol"
   );
-  const auto kCommit = CreateStaticByteBuffer(
+  const StaticByteBuffer kCommit(
     0x18,  // opcode: execute write request
     0x01   // flag: "write pending"
   );
-  const auto kCommitResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kCommitResponse(
     0x19  // opcode: execute write response
   );
   // clang-format on
@@ -2410,7 +2409,7 @@ TEST_F(ServerTest, SendNotificationEmpty) {
 TEST_F(ServerTest, SendNotification) {
   SvcIdAndChrcHandle registered =
       RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType);
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
 
   // clang-format off
   const StaticByteBuffer kExpected{
@@ -2497,7 +2496,7 @@ TEST_F(ServerTest, SendIndicationEmpty) {
 TEST_F(ServerTest, SendIndication) {
   SvcIdAndChrcHandle registered =
       RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType);
-  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const StaticByteBuffer kTestValue('f', 'o', 'o');
 
   att::Result<> indicate_res = ToResult(HostError::kFailed);
   auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
@@ -2604,12 +2603,12 @@ class ServerTestSecurity : public ServerTest {
   // expecting back a security error. Expects a valid response if
   // |expected_ecode| is att::ErrorCode::kNoError.
   bool EmulateReadByTypeRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    const auto kReadByTypeRequestPdu =
-        StaticByteBuffer(0x08,  // opcode: read by type
-                         LowerBits(handle),
-                         UpperBits(handle),                     // start handle
-                         LowerBits(handle), UpperBits(handle),  // end handle
-                         0xEF, 0xBE);                           // type: 0xBEEF, i.e. kTestType16
+    const StaticByteBuffer kReadByTypeRequestPdu(0x08,  // opcode: read by type
+                                                 LowerBits(handle),
+                                                 UpperBits(handle),  // start handle
+                                                 LowerBits(handle),
+                                                 UpperBits(handle),  // end handle
+                                                 0xEF, 0xBE);  // type: 0xBEEF, i.e. kTestType16
     if (expected_ecode == att::ErrorCode::kNoError) {
       return ReceiveAndExpect(kReadByTypeRequestPdu,
                               StaticByteBuffer(0x09,  // opcode: read by type response
@@ -2623,10 +2622,9 @@ class ServerTestSecurity : public ServerTest {
   }
 
   bool EmulateReadBlobRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    const auto kReadBlobRequestPdu =
-        StaticByteBuffer(0x0C,                                  // opcode: read blob
-                         LowerBits(handle), UpperBits(handle),  // handle
-                         0x00, 0x00);                           // offset: 0
+    const StaticByteBuffer kReadBlobRequestPdu(0x0C,  // opcode: read blob
+                                               LowerBits(handle), UpperBits(handle),  // handle
+                                               0x00, 0x00);                           // offset: 0
     if (expected_ecode == att::ErrorCode::kNoError) {
       return ReceiveAndExpect(kReadBlobRequestPdu,
                               StaticByteBuffer(0x0D,          // opcode: read blob response
@@ -2638,8 +2636,8 @@ class ServerTestSecurity : public ServerTest {
   }
 
   bool EmulateReadRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    const auto kReadRequestPdu = StaticByteBuffer(0x0A,  // opcode: read request
-                                                  LowerBits(handle), UpperBits(handle));  // handle
+    const StaticByteBuffer kReadRequestPdu(0x0A,  // opcode: read request
+                                           LowerBits(handle), UpperBits(handle));  // handle
     if (expected_ecode == att::ErrorCode::kNoError) {
       return ReceiveAndExpect(kReadRequestPdu,
                               StaticByteBuffer(0x0B,          // opcode: read response
@@ -2651,9 +2649,9 @@ class ServerTestSecurity : public ServerTest {
   }
 
   bool EmulateWriteRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    const auto kWriteRequestPdu = StaticByteBuffer(0x12,  // opcode: write request
-                                                   LowerBits(handle), UpperBits(handle),  // handle
-                                                   't', 'e', 's', 't');  // value: "test"
+    const StaticByteBuffer kWriteRequestPdu(0x12,  // opcode: write request
+                                            LowerBits(handle), UpperBits(handle),  // handle
+                                            't', 'e', 's', 't');                   // value: "test"
     if (expected_ecode == att::ErrorCode::kNoError) {
       return ReceiveAndExpect(kWriteRequestPdu, StaticByteBuffer(0x13));  // write response
     } else {
@@ -2683,10 +2681,10 @@ class ServerTestSecurity : public ServerTest {
   // Emulates the receipt of a Write Command. The expected error code parameter
   // is unused since ATT commands do not have a response.
   bool EmulateWriteCommand(att::Handle handle, att::ErrorCode) {
-    fake_chan()->Receive(CreateStaticByteBuffer(0x52,  // opcode: write command
-                                                LowerBits(handle), UpperBits(handle),  // handle
-                                                't', 'e', 's', 't'  // value: "test"
-                                                ));
+    fake_chan()->Receive(StaticByteBuffer(0x52,  // opcode: write command
+                                          LowerBits(handle), UpperBits(handle),  // handle
+                                          't', 'e', 's', 't'                     // value: "test"
+                                          ));
     RunLoopUntilIdle();
     return true;
   }

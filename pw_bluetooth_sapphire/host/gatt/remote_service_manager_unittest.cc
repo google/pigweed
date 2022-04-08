@@ -28,9 +28,9 @@ constexpr UUID kTestUuid4(uint16_t{0xefef});
 
 // Buffers for descriptor responses.
 // ExtendedProperty::kReliableWrite enabled.
-const auto kExtendedPropValue = CreateStaticByteBuffer(0x01, 0x00);
-const auto kCCCNotifyValue = CreateStaticByteBuffer(0x01, 0x00);
-const auto kCCCIndicateValue = CreateStaticByteBuffer(0x02, 0x00);
+const StaticByteBuffer kExtendedPropValue(0x01, 0x00);
+const StaticByteBuffer kCCCNotifyValue(0x01, 0x00);
+const StaticByteBuffer kCCCIndicateValue(0x02, 0x00);
 
 // Constants used for initializing fake characteristic data.
 constexpr att::Handle kStart = 1;
@@ -1077,7 +1077,7 @@ TEST_F(RemoteServiceManagerTest, ReadCharSendsReadRequest) {
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
       {ReadableChrc()});
 
-  const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kValue('t', 'e', 's', 't');
 
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
@@ -1177,7 +1177,7 @@ TEST_F(RemoteServiceManagerTest, ReadLongSingleBlob) {
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
       {ReadableChrc()});
 
-  const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kValue('t', 'e', 's', 't');
 
   int request_count = 0;
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
@@ -1631,12 +1631,12 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeNotFou
   constexpr UUID kCharUuid(uint16_t{0xfefe});
 
   constexpr att::Handle kHandle0 = 2;
-  const auto kValue0 = StaticByteBuffer(0x00, 0x01, 0x02);
+  const StaticByteBuffer kValue0(0x00, 0x01, 0x02);
   const std::vector<Client::ReadByTypeValue> kValues0 = {
       {kHandle0, kValue0.view(), /*maybe_truncated=*/false}};
 
   constexpr att::Handle kHandle1 = 3;
-  const auto kValue1 = StaticByteBuffer(0x03, 0x04, 0x05);
+  const StaticByteBuffer kValue1(0x03, 0x04, 0x05);
   const std::vector<Client::ReadByTypeValue> kValues1 = {
       {kHandle1, kValue1.view(), /*maybe_truncated=*/true}};
 
@@ -1693,7 +1693,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEndHandl
   constexpr UUID kCharUuid(uint16_t{0xfefe});
 
   constexpr att::Handle kHandle = kEndHandle;
-  const auto kValue = StaticByteBuffer(0x00, 0x01, 0x02);
+  const StaticByteBuffer kValue(0x00, 0x01, 0x02);
   const std::vector<Client::ReadByTypeValue> kValues = {
       {kHandle, kValue.view(), /*maybe_truncated=*/false}};
 
@@ -2271,7 +2271,7 @@ TEST_F(RemoteServiceManagerTest, ReadDescSendsReadRequest) {
   DescriptorData desc(kDescrHandle, kTestUuid4);
   SetupCharacteristics(service, {{chr1, chr2}}, {{desc}});
 
-  const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+  const StaticByteBuffer kValue('t', 'e', 's', 't');
 
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDescrHandle, handle);
@@ -2660,7 +2660,7 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsError) {
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
   // Should enable notifications
-  const auto kExpectedValue = CreateStaticByteBuffer(0x01, 0x00);
+  const StaticByteBuffer kExpectedValue(0x01, 0x00);
 
   fake_client()->set_write_request_callback(
       [&](att::Handle handle, const auto& value, auto status_callback) {
@@ -2879,7 +2879,7 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
 TEST_F(RemoteServiceManagerTest, NotificationWithoutServices) {
   for (att::Handle i = 0; i < 10; ++i) {
     fake_client()->SendNotification(/*indicate=*/false, i,
-                                    CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'),
+                                    StaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'),
                                     /*maybe_truncated=*/false);
   }
   RunLoopUntilIdle();
@@ -3037,7 +3037,7 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsSingleHandler) {
   EnableNotifications(service, kDefaultCharacteristic, &status, &id);
 
   // Should disable notifications
-  const auto kExpectedValue = CreateStaticByteBuffer(0x00, 0x00);
+  const StaticByteBuffer kExpectedValue(0x00, 0x00);
 
   int ccc_write_count = 0;
   fake_client()->set_write_request_callback(
@@ -3068,7 +3068,7 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsDuringShutDown) {
   ASSERT_EQ(fitx::ok(), status);
 
   // Should disable notifications
-  const auto kExpectedValue = CreateStaticByteBuffer(0x00, 0x00);
+  const StaticByteBuffer kExpectedValue(0x00, 0x00);
 
   int ccc_write_count = 0;
   fake_client()->set_write_request_callback(
@@ -3717,12 +3717,12 @@ TEST_F(RemoteServiceManagerServiceChangedTest,
 TEST_F(RemoteServiceManagerServiceChangedTest, GattProfileServiceChanged) {
   EXPECT_EQ(1, service_changed_ccc_write_count());
 
-  auto svc_changed_range_buffer =
-      StaticByteBuffer(LowerBits(gatt_service().range_start),
-                       UpperBits(gatt_service().range_start),  // start handle of affected range
-                       LowerBits(gatt_service().range_end),
-                       UpperBits(gatt_service().range_end)  // end handle of affected range
-      );
+  StaticByteBuffer svc_changed_range_buffer(
+      LowerBits(gatt_service().range_start),
+      UpperBits(gatt_service().range_start),  // start handle of affected range
+      LowerBits(gatt_service().range_end),
+      UpperBits(gatt_service().range_end)  // end handle of affected range
+  );
   fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
                                   svc_changed_range_buffer, /*maybe_truncated=*/false);
   RunLoopUntilIdle();

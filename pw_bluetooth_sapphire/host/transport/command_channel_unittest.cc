@@ -57,12 +57,12 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
   // Set up expectations:
   // clang-format off
   // HCI_Reset
-  auto req = StaticByteBuffer(
+  StaticByteBuffer req(
       LowerBits(hci_spec::kReset), UpperBits(hci_spec::kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
       );
   // HCI_CommandComplete
-  auto rsp = StaticByteBuffer(
+ StaticByteBuffer rsp(
       hci_spec::kCommandCompleteEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       0x01,  // num_hci_command_packets (1 can be sent)
@@ -109,7 +109,7 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
   // Set up expectations:
   // clang-format off
   // HCI_Inquiry (general, unlimited, 1s)
-  auto req = StaticByteBuffer(
+ StaticByteBuffer req(
       LowerBits(hci_spec::kInquiry), UpperBits(hci_spec::kInquiry),  // HCI_Inquiry opcode
       0x05,                                      // parameter_total_size
       0x33, 0x8B, 0x9E,                          // General Inquiry
@@ -557,8 +557,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
 TEST_F(CommandChannelTest, EventHandlerBasic) {
   constexpr hci_spec::EventCode kTestEventCode0 = 0xFD;
   constexpr hci_spec::EventCode kTestEventCode1 = 0xFE;
-  auto cmd_status =
-      StaticByteBuffer(hci_spec::kCommandStatusEventCode, 0x04, 0x00, 0x01, 0x00, 0x00);
+  StaticByteBuffer cmd_status(hci_spec::kCommandStatusEventCode, 0x04, 0x00, 0x01, 0x00, 0x00);
   auto cmd_complete = StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x03, 0x01, 0x00, 0x00);
   auto event0 = StaticByteBuffer(kTestEventCode0, 0x00);
   auto event1 = StaticByteBuffer(kTestEventCode1, 0x00);
@@ -813,12 +812,12 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
 }
 
 // Read Remote Supported Features
-const auto kReadRemoteSupportedFeaturesCmd =
-    StaticByteBuffer(LowerBits(hci_spec::kReadRemoteSupportedFeatures),
-                     UpperBits(hci_spec::kReadRemoteSupportedFeatures),
-                     0x02,       // parameter_total_size
-                     0x01, 0x00  // connection_handle
-    );
+const StaticByteBuffer kReadRemoteSupportedFeaturesCmd(
+    LowerBits(hci_spec::kReadRemoteSupportedFeatures),
+    UpperBits(hci_spec::kReadRemoteSupportedFeatures),
+    0x02,       // parameter_total_size
+    0x01, 0x00  // connection_handle
+);
 
 // Command Status for Read Remote Supported Features
 const auto kReadRemoteSupportedFeaturesRsp =
@@ -1019,10 +1018,9 @@ TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
 TEST_F(CommandChannelTest, VendorEventHandler) {
   constexpr hci_spec::EventCode kTestSubeventCode0 = 0x10;
   constexpr hci_spec::EventCode kTestSubeventCode1 = 0x12;
-  auto vendor_event_bytes0 =
-      CreateStaticByteBuffer(hci_spec::kVendorDebugEventCode, 0x01, kTestSubeventCode0);
+  StaticByteBuffer vendor_event_bytes0(hci_spec::kVendorDebugEventCode, 0x01, kTestSubeventCode0);
   auto vendor_event_bytes1 =
-      CreateStaticByteBuffer(hci_spec::kVendorDebugEventCode, 0x01, kTestSubeventCode1);
+      StaticByteBuffer(hci_spec::kVendorDebugEventCode, 0x01, kTestSubeventCode1);
 
   int event_count0 = 0;
   auto event_cb0 = [&event_count0, kTestSubeventCode0](const EventPacket& event) {

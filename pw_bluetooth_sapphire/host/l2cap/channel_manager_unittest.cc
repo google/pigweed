@@ -60,7 +60,7 @@ struct PacketExpectation {
   ExpectOutboundPacket(bt::LinkType::kACL, (priority), (packet_buffer), __FILE__, __LINE__)
 
 auto MakeExtendedFeaturesInformationRequest(CommandId id, hci_spec::ConnectionHandle handle) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // ACL data header (handle, length: 10)
       LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
 
@@ -126,7 +126,7 @@ auto InboundConfigurationRequest(CommandId id, uint16_t mtu = kDefaultMTU,
 }
 
 auto InboundConfigurationResponse(CommandId id) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
 
@@ -139,7 +139,7 @@ auto InboundConfigurationResponse(CommandId id) {
 }
 
 auto InboundConnectionRequest(CommandId id) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -152,7 +152,7 @@ auto InboundConnectionRequest(CommandId id) {
 }
 
 auto OutboundConnectionRequest(CommandId id) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -219,7 +219,7 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
 }
 
 auto OutboundDisconnectionRequest(CommandId id) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -715,19 +715,19 @@ TEST_F(ChannelManagerTest, ReceiveData) {
   ASSERT_TRUE(smp_chan);
 
   // ATT channel
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x09, 0x00,
 
       // L2CAP B-frame
       0x05, 0x00, 0x04, 0x00, 'h', 'e', 'l', 'l', 'o'));
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x09, 0x00,
 
       // L2CAP B-frame (partial)
       0x0C, 0x00, 0x04, 0x00, 'h', 'o', 'w', ' ', 'a'));
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (continuing fragment)
       0x01, 0x10, 0x07, 0x00,
 
@@ -735,7 +735,7 @@ TEST_F(ChannelManagerTest, ReceiveData) {
       'r', 'e', ' ', 'y', 'o', 'u', '?'));
 
   // SMP channel
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
 
@@ -769,7 +769,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
 
   // ATT channel
   for (size_t i = 0u; i < kPacketCount; i++) {
-    ReceiveAclDataPacket(CreateStaticByteBuffer(
+    ReceiveAclDataPacket(StaticByteBuffer(
         // ACL data header (starting fragment)
         0x01, 0x00, 0x04, 0x00,
 
@@ -778,7 +778,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
   }
 
   // SMP channel
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
 
@@ -827,7 +827,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
 
   // ATT channel
   for (size_t i = 0u; i < kPacketCount; i++) {
-    ReceiveAclDataPacket(CreateStaticByteBuffer(
+    ReceiveAclDataPacket(StaticByteBuffer(
         // ACL data header (starting fragment)
         0x01, 0x00, 0x04, 0x00,
 
@@ -836,7 +836,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
   }
 
   // SMP channel
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
 
@@ -890,7 +890,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
 
   // ATT channel
   for (size_t i = 0u; i < kPacketCount; i++) {
-    ReceiveAclDataPacket(CreateStaticByteBuffer(
+    ReceiveAclDataPacket(StaticByteBuffer(
         // ACL data header (starting fragment)
         0x01, 0x00, 0x04, 0x00,
 
@@ -899,7 +899,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   }
 
   // SMP channel
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
 
@@ -948,14 +948,14 @@ TEST_F(ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchrono
                                           std::move(smp_rx_cb));
   ASSERT_TRUE(smp_chan);
 
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x08, 0x00,
 
       // L2CAP B-frame for SMP fixed channel (4-byte payload: U+1F928 in UTF-8)
       0x04, 0x00, 0x06, 0x00, 0xf0, 0x9f, 0xa4, 0xa8));
 
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x09, 0x00,
 
@@ -991,7 +991,7 @@ TEST_F(ChannelManagerTest, SendBasicSdu) {
   auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   ZX_DEBUG_ASSERT(att_chan);
 
-  EXPECT_LE_PACKET_OUT(CreateStaticByteBuffer(
+  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
                            // ACL data header (handle: 1, length 7)
                            0x01, 0x00, 0x08, 0x00,
 
@@ -1015,7 +1015,7 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
   RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   // Send fragmented Extended Features Information Request
-  EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
+  EXPECT_ACL_PACKET_OUT(StaticByteBuffer(
                             // ACL data header (handle: 2, length: 6)
                             0x02, 0x00, 0x06, 0x00,
 
@@ -1027,7 +1027,7 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
                             0x0A, NextCommandId()),
                         kHighPriority);
   EXPECT_ACL_PACKET_OUT(
-      CreateStaticByteBuffer(
+      StaticByteBuffer(
           // ACL data header (handle: 2, pbf: continuing fr., length: 4)
           0x02, 0x10, 0x04, 0x00,
 
@@ -1067,7 +1067,7 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
   ASSERT_TRUE(att_chan);
   ASSERT_TRUE(sm_chan);
 
-  EXPECT_LE_PACKET_OUT(CreateStaticByteBuffer(
+  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
                            // ACL data header (handle: 1, length: 5)
                            0x01, 0x00, 0x05, 0x00,
 
@@ -1075,7 +1075,7 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
                            0x05, 0x00, 0x04, 0x00, 'H'),
                        kLowPriority);
 
-  EXPECT_LE_PACKET_OUT(CreateStaticByteBuffer(
+  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
                            // ACL data header (handle: 1, pbf: continuing fr., length: 4)
                            0x01, 0x10, 0x04, 0x00,
 
@@ -1083,7 +1083,7 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
                            'e', 'l', 'l', 'o'),
                        kLowPriority);
 
-  EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
+  EXPECT_ACL_PACKET_OUT(StaticByteBuffer(
                             // ACL data header (handle: 2, length: 6)
                             0x02, 0x00, 0x06, 0x00,
 
@@ -1091,7 +1091,7 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
                             0x07, 0x00, 0x07, 0x00, 'G', 'o'),
                         kHighPriority);
 
-  EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
+  EXPECT_ACL_PACKET_OUT(StaticByteBuffer(
                             // ACL data header (handle: 2, pbf: continuing fr., length: 5)
                             0x02, 0x10, 0x05, 0x00,
 
@@ -1220,7 +1220,7 @@ TEST_F(ChannelManagerTest, LEConnectionParameterUpdateRequest) {
     conn_param_cb_called = true;
   };
 
-  EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
+  EXPECT_ACL_PACKET_OUT(StaticByteBuffer(
                             // ACL data header (handle: 0x0001, length: 10 bytes)
                             0x01, 0x00, 0x0a, 0x00,
 
@@ -1238,7 +1238,7 @@ TEST_F(ChannelManagerTest, LEConnectionParameterUpdateRequest) {
   RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, DoNothing, conn_param_cb);
 
   // clang-format off
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -1262,7 +1262,7 @@ TEST_F(ChannelManagerTest, LEConnectionParameterUpdateRequest) {
 }
 
 auto OutboundDisconnectionResponse(CommandId id) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1313,7 +1313,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   // Test SDU transmission.
   // SDU must have remote channel ID (unlike for fixed channels).
   EXPECT_ACL_PACKET_OUT(
-      CreateStaticByteBuffer(
+      StaticByteBuffer(
           // ACL data header (handle: 1, length 8)
           0x01, 0x00, 0x08, 0x00,
 
@@ -1359,7 +1359,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   EXPECT_EQ(1u, filter_cb_count);
 
   // clang-format off
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1416,7 +1416,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   EXPECT_FALSE(channel_closed);
 
   // Test SDU reception.
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
@@ -1450,7 +1450,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   acl_data_channel()->set_drop_queued_packets_cb(std::move(filter_cb));
 
   // clang-format off
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1466,7 +1466,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   // The preceding peer disconnection should have immediately destroyed the route to the channel.
   // L2CAP will process it and this following SDU back-to-back. The latter should be dropped.
   sdu_received = false;
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 5)
       0x01, 0x00, 0x05, 0x00,
 
@@ -1494,7 +1494,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   auto data_rx_cb = [](ByteBufferPtr sdu) { FAIL() << "Unexpected data reception"; };
 
   // Receive SDU for the channel about to be opened. It should be ignored.
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
@@ -1516,7 +1516,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   // The channel is connected but not configured, so no data should flow on the
   // channel. Test that this received data is also ignored.
   // clang-format off
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
@@ -1536,7 +1536,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionResponse(7), kHighPriority);
 
   // clang-format off
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1567,7 +1567,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb));
 
   // clang-format off
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -1610,7 +1610,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
 
   // clang-format off
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
 
@@ -1623,7 +1623,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
       LowerBits(kLocalId), UpperBits(kLocalId), 0x00, 0x00,
       0x02, 0x00));
 
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1681,7 +1681,7 @@ TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   // Test SDU transmission.
   // SDU must have remote channel ID (unlike for fixed channels).
   EXPECT_ACL_PACKET_OUT(
-      CreateStaticByteBuffer(
+      StaticByteBuffer(
           // ACL data header (handle: 1, length 7)
           0x01, 0x00, 0x08, 0x00,
 
@@ -1704,7 +1704,7 @@ TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // clang-format off
-  ReceiveAclDataPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1848,7 +1848,7 @@ TEST_F(ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChannelData
 
   // Packet sent on dynamic channel should be sent with low priority.
   EXPECT_ACL_PACKET_OUT(
-      CreateStaticByteBuffer(
+      StaticByteBuffer(
           // ACL data header (handle: 1, length 8)
           0x01, 0x00, 0x08, 0x00,
 
@@ -2077,7 +2077,7 @@ TEST_F(ChannelManagerTest,
   channel->Deactivate();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  auto kPacket = StaticByteBuffer(
+  StaticByteBuffer kPacket(
       // ACL data header (handle: 0x0001, length: 4 bytes)
       0x01, 0x00, 0x04, 0x00,
 
@@ -2099,7 +2099,7 @@ TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotSupport
 TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithInvalidResult) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   // Handler should check for result and not crash from reading mask or type.
-  auto kPacket = StaticByteBuffer(
+  StaticByteBuffer kPacket(
       // ACL data header (handle: |link_handle|, length: 12 bytes)
       LowerBits(kTestHandle1), UpperBits(kTestHandle1), 0x0c, 0x00,
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))

@@ -128,7 +128,7 @@ TEST(ServiceRecordTest, AddProtocolDescriptor) {
                                std::move(psm));
 
   // clang-format off
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       0x35, 0x08, // Data Element Sequence (8 bytes)
       0x35, 0x06, // Data Element Sequence (6 bytes)
       0x19, // UUID (16 bits)
@@ -152,7 +152,7 @@ TEST(ServiceRecordTest, AddProtocolDescriptor) {
   EXPECT_TRUE(record.HasAttribute(kProtocolDescriptorList));
 
   // clang-format off
-  auto expected_sdp = CreateStaticByteBuffer(
+  StaticByteBuffer expected_sdp(
       0x35, 0x0D, // Data Element Sequence (13 bytes)
       0x35, 0x06, // Data Element Sequence (6 bytes)
       0x19, // UUID (16 bits)
@@ -177,7 +177,7 @@ TEST(ServiceRecordTest, AddProtocolDescriptor) {
   EXPECT_TRUE(record.HasAttribute(kAdditionalProtocolDescriptorList));
 
   // clang-format off
-  auto expected_addl = CreateStaticByteBuffer(
+  StaticByteBuffer expected_addl(
       0x35, 0x07, // Data Element Sequence (AdditionalProtocolDescriptorLists)
       0x35, 0x05, // Data Element Sequence (ProtocolDescriptorList 1)
       0x35, 0x03, // Data Element Sequence Protocol List 1 Descriptor 0
@@ -207,7 +207,7 @@ TEST(ServiceRecordTest, AddProfile) {
   EXPECT_TRUE(record.HasAttribute(kBluetoothProfileDescriptorList));
 
   // clang-format off
-  auto expected = CreateStaticByteBuffer(
+  StaticByteBuffer expected(
       0x35, 0x08, // Data Element Sequence (8 bytes)
       0x35, 0x06, // Data Element Sequence (6 bytes)
       0x19, // UUID (16 bits)
@@ -227,7 +227,7 @@ TEST(ServiceRecordTest, AddProfile) {
   record.AddProfile(profile::kDialupNetworking, 4, 5);
 
   // clang-format off
-  auto expected_dun = CreateStaticByteBuffer(
+  StaticByteBuffer expected_dun(
       0x35, 0x10, // Data Element Sequence (16 bytes)
       0x35, 0x06, // Data Element Sequence (6 bytes)
       0x19, // UUID (16 bits)

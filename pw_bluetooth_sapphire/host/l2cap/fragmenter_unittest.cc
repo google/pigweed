@@ -54,7 +54,7 @@ TEST(FragmenterTest, OutboundFrameEmptyPayloadWithFcs) {
 }
 
 TEST(FragmenterTest, OutboundFrameExactFit) {
-  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer payload('T', 'e', 's', 't');
 
   StaticByteBuffer kExpectedFrame(
       // Basic L2CAP header
@@ -94,7 +94,7 @@ TEST(FragmenterTest, OutboundFrameExactFitWithFcs) {
 }
 
 TEST(FragmenterTest, OutboundFrameOffsetInHeader) {
-  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer payload('T', 'e', 's', 't');
 
   StaticByteBuffer kExpectedFrameChunk(
       // Basic L2CAP header (minus first byte)
@@ -115,7 +115,7 @@ TEST(FragmenterTest, OutboundFrameOffsetInHeader) {
 }
 
 TEST(FragmenterTest, OutboundFrameOffsetInPayload) {
-  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer payload('T', 'e', 's', 't');
 
   StaticByteBuffer kExpectedFrameChunk(
       // Payload
@@ -148,7 +148,7 @@ TEST(FragmenterTest, OutboundFrameOffsetInFcs) {
 
 // This isn't expected to happen from Fragmenter.
 TEST(FragmenterTest, OutboundFrameOutBufferBigger) {
-  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer payload('T', 'e', 's', 't');
 
   StaticByteBuffer kExpectedFrameChunk(
       // Basic L2CAP header (minus first two bytes)
@@ -172,7 +172,7 @@ TEST(FragmenterTest, OutboundFrameOutBufferBigger) {
 TEST(FragmenterTest, EmptyPayload) {
   BufferView payload;
 
-  auto expected_fragment = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment(
       // ACL data header
       0x01, 0x00, 0x04, 0x00,
 
@@ -191,9 +191,9 @@ TEST(FragmenterTest, EmptyPayload) {
 }
 
 TEST(FragmenterTest, SingleFragment) {
-  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer payload('T', 'e', 's', 't');
 
-  auto expected_fragment = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment(
       // ACL data header
       0x01, 0x00, 0x08, 0x00,
 
@@ -212,9 +212,9 @@ TEST(FragmenterTest, SingleFragment) {
 }
 
 TEST(FragmenterTest, SingleFragmentExactFit) {
-  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer payload('T', 'e', 's', 't');
 
-  auto expected_fragment = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment(
       // ACL data header
       0x01, 0x00, 0x08, 0x00,
 
@@ -234,16 +234,16 @@ TEST(FragmenterTest, SingleFragmentExactFit) {
 }
 
 TEST(FragmenterTest, TwoFragmentsOffByOne) {
-  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't', '!');
+  StaticByteBuffer payload('T', 'e', 's', 't', '!');
 
-  auto expected_fragment0 = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment0(
       // ACL data header
       0x01, 0x00, 0x08, 0x00,
 
       // Basic L2CAP header, contains the complete length but a partial payload
       0x05, 0x00, 0x01, 0x00, 'T', 'e', 's', 't');
 
-  auto expected_fragment1 = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment1(
       // ACL data header
       0x01, 0x10, 0x01, 0x00,
 
@@ -265,17 +265,17 @@ TEST(FragmenterTest, TwoFragmentsOffByOne) {
 }
 
 TEST(FragmenterTest, TwoFragmentsExact) {
-  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer payload('T', 'e', 's', 't');
   ZX_DEBUG_ASSERT_MSG(payload.size() % 2 == 0, "test payload size should be even");
 
-  auto expected_fragment0 = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment0(
       // ACL data header
       0x01, 0x00, 0x04, 0x00,
 
       // Basic L2CAP header, contains the complete length but a partial payload
       0x04, 0x00, 0x01, 0x00);
 
-  auto expected_fragment1 = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment1(
       // ACL data header
       0x01, 0x10, 0x04, 0x00,
 
@@ -304,28 +304,28 @@ TEST(FragmenterTest, ManyFragmentsOffByOne) {
   StaticByteBuffer<kFrameSize - sizeof(BasicHeader)> payload;
   payload.Fill('X');
 
-  auto expected_fragment0 = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment0(
       // ACL data header
       0x01, 0x00, 0x05, 0x00,
 
       // Basic L2CAP header contains the complete length but partial payload
       0x0C, 0x00, 0x01, 0x00, 'X');
 
-  auto expected_fragment1 = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment1(
       // ACL data header
       0x01, 0x10, 0x05, 0x00,
 
       // Continuing payload
       'X', 'X', 'X', 'X', 'X');
 
-  auto expected_fragment2 = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment2(
       // ACL data header
       0x01, 0x10, 0x05, 0x00,
 
       // Continuing payload
       'X', 'X', 'X', 'X', 'X');
 
-  auto expected_fragment3 = CreateStaticByteBuffer(
+  StaticByteBuffer expected_fragment3(
       // ACL data header
       0x01, 0x10, 0x01, 0x00,
 

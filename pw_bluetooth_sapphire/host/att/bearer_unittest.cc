@@ -257,7 +257,7 @@ TEST_F(BearerTest, ReceiveResponseWithoutRequest) {
   bool closed = false;
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestResponse));
+  fake_chan()->Receive(StaticByteBuffer(kTestResponse));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -267,7 +267,7 @@ TEST_F(BearerTest, ReceiveConfirmationWithoutIndication) {
   bool closed = false;
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  fake_chan()->Receive(CreateStaticByteBuffer(kConfirmation));
+  fake_chan()->Receive(StaticByteBuffer(kConfirmation));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -281,7 +281,7 @@ TEST_F(BearerTest, SendRequestWrongResponse) {
     EXPECT_EQ(kTestRequest, (*cb_packet)[0]);
 
     // Send back the wrong response.
-    fake_chan()->Receive(CreateStaticByteBuffer(kTestResponse2));
+    fake_chan()->Receive(StaticByteBuffer(kTestResponse2));
   };
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
@@ -305,7 +305,7 @@ TEST_F(BearerTest, SendRequestWrongResponse) {
 }
 
 TEST_F(BearerTest, SendRequestErrorResponseTooShort) {
-  auto malformed_error_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer malformed_error_rsp(
       // Opcode: error response
       kErrorResponse,
 
@@ -343,7 +343,7 @@ TEST_F(BearerTest, SendRequestErrorResponseTooShort) {
 }
 
 TEST_F(BearerTest, SendRequestErrorResponseTooLong) {
-  auto malformed_error_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer malformed_error_rsp(
       // Opcode: error response
       kErrorResponse,
 
@@ -381,7 +381,7 @@ TEST_F(BearerTest, SendRequestErrorResponseTooLong) {
 }
 
 TEST_F(BearerTest, SendRequestErrorResponseWrongOpCode) {
-  auto error_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer error_rsp(
       // Opcode: error response
       kErrorResponse,
 
@@ -424,7 +424,7 @@ TEST_F(BearerTest, SendRequestErrorResponseWrongOpCode) {
 }
 
 TEST_F(BearerTest, SendRequestErrorResponse) {
-  auto error_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer error_rsp(
       // Opcode: error response
       kErrorResponse,
 
@@ -465,7 +465,7 @@ TEST_F(BearerTest, SendRequestErrorResponse) {
 }
 
 TEST_F(BearerTest, SendRequestSuccess) {
-  auto response = CreateStaticByteBuffer(kTestResponse, 'T', 'e', 's', 't');
+  StaticByteBuffer response(kTestResponse, 'T', 'e', 's', 't');
 
   bool chan_cb_called = false;
   auto chan_cb = [this, &chan_cb_called, &response](auto cb_packet) {
@@ -520,18 +520,18 @@ TEST_F(BearerTest, CloseChannelAndDeleteBearerWhileRequestsArePending) {
 }
 
 TEST_F(BearerTest, SendManyRequests) {
-  auto response1 = CreateStaticByteBuffer(kTestResponse, 'f', 'o', 'o');
-  auto response2 = CreateStaticByteBuffer(kErrorResponse,
+  StaticByteBuffer response1(kTestResponse, 'f', 'o', 'o');
+  StaticByteBuffer response2(kErrorResponse,
 
-                                          // request opcode
-                                          kTestRequest2,
+                             // request opcode
+                             kTestRequest2,
 
-                                          // handle (0x0001)
-                                          0x01, 0x00,
+                             // handle (0x0001)
+                             0x01, 0x00,
 
-                                          // error code:
-                                          ErrorCode::kRequestNotSupported);
-  auto response3 = CreateStaticByteBuffer(kTestResponse3, 'b', 'a', 'r');
+                             // error code:
+                             ErrorCode::kRequestNotSupported);
+  StaticByteBuffer response3(kTestResponse3, 'b', 'a', 'r');
 
   auto chan_cb = [&, this](auto cb_packet) {
     OpCode opcode = (*cb_packet)[0];
@@ -597,7 +597,7 @@ TEST_F(BearerTest, SendManyRequests) {
 TEST_F(BearerTest, SendIndicationSuccess) {
   // Even though this is a malformed confirmation PDU it will not be rejected by
   // Bearer.
-  auto conf = CreateStaticByteBuffer(kConfirmation, 'T', 'e', 's', 't');
+  StaticByteBuffer conf(kConfirmation, 'T', 'e', 's', 't');
 
   bool chan_cb_called = false;
   auto chan_cb = [this, &chan_cb_called, &conf](auto cb_packet) {
@@ -703,7 +703,7 @@ TEST_F(BearerTest, UnregisterHandler) {
 }
 
 TEST_F(BearerTest, RemoteTransactionNoHandler) {
-  auto error_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer error_rsp(
       // opcode
       kErrorResponse,
 
@@ -722,7 +722,7 @@ TEST_F(BearerTest, RemoteTransactionNoHandler) {
     EXPECT_TRUE(ContainersEqual(error_rsp, *packet));
   };
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestRequest));
+  fake_chan()->Receive(StaticByteBuffer(kTestRequest));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(received_error_rsp);
@@ -738,7 +738,7 @@ TEST_F(BearerTest, RemoteTransactionSeqProtocolError) {
   };
 
   bearer()->RegisterHandler(kTestRequest, handler);
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestRequest));
+  fake_chan()->Receive(StaticByteBuffer(kTestRequest));
 
   RunLoopUntilIdle();
   ASSERT_EQ(1, request_count);
@@ -748,7 +748,7 @@ TEST_F(BearerTest, RemoteTransactionSeqProtocolError) {
   bool closed = false;
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestRequest));
+  fake_chan()->Receive(StaticByteBuffer(kTestRequest));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -766,7 +766,7 @@ TEST_F(BearerTest, RemoteIndicationSeqProtocolError) {
   };
 
   bearer()->RegisterHandler(kIndication, handler);
-  fake_chan()->Receive(CreateStaticByteBuffer(kIndication));
+  fake_chan()->Receive(StaticByteBuffer(kIndication));
 
   RunLoopUntilIdle();
   ASSERT_EQ(1, ind_count);
@@ -776,7 +776,7 @@ TEST_F(BearerTest, RemoteIndicationSeqProtocolError) {
   bool closed = false;
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  fake_chan()->Receive(CreateStaticByteBuffer(kIndication));
+  fake_chan()->Receive(StaticByteBuffer(kIndication));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -812,7 +812,7 @@ TEST_F(BearerTest, ReplyWrongOpCode) {
   };
 
   bearer()->RegisterHandler(kTestRequest, handler);
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestRequest));
+  fake_chan()->Receive(StaticByteBuffer(kTestRequest));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(handler_called);
@@ -832,7 +832,7 @@ TEST_F(BearerTest, ReplyToIndicationWrongOpCode) {
   };
 
   bearer()->RegisterHandler(kIndication, handler);
-  fake_chan()->Receive(CreateStaticByteBuffer(kIndication));
+  fake_chan()->Receive(StaticByteBuffer(kIndication));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(handler_called);
@@ -860,7 +860,7 @@ TEST_F(BearerTest, ReplyWithResponse) {
   };
 
   bearer()->RegisterHandler(kTestRequest, handler);
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestRequest));
+  fake_chan()->Receive(StaticByteBuffer(kTestRequest));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(handler_called);
@@ -894,7 +894,7 @@ TEST_F(BearerTest, IndicationConfirmation) {
   };
 
   bearer()->RegisterHandler(kIndication, handler);
-  fake_chan()->Receive(CreateStaticByteBuffer(kIndication));
+  fake_chan()->Receive(StaticByteBuffer(kIndication));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(handler_called);
@@ -924,7 +924,7 @@ TEST_F(BearerTest, IndicationReplyWithError) {
   };
 
   bearer()->RegisterHandler(kIndication, handler);
-  fake_chan()->Receive(CreateStaticByteBuffer(kIndication));
+  fake_chan()->Receive(StaticByteBuffer(kIndication));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(handler_called);
@@ -939,8 +939,7 @@ TEST_F(BearerTest, ReplyWithError) {
     response_sent = true;
 
     // The error response that we send below
-    auto expected =
-        CreateStaticByteBuffer(kErrorResponse, kTestRequest, 0x00, 0x00, ErrorCode::kUnlikelyError);
+    StaticByteBuffer expected(kErrorResponse, kTestRequest, 0x00, 0x00, ErrorCode::kUnlikelyError);
     EXPECT_TRUE(ContainersEqual(expected, *packet));
   };
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
@@ -956,7 +955,7 @@ TEST_F(BearerTest, ReplyWithError) {
   };
 
   bearer()->RegisterHandler(kTestRequest, handler);
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestRequest));
+  fake_chan()->Receive(StaticByteBuffer(kTestRequest));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(handler_called);
@@ -995,8 +994,8 @@ TEST_F(BearerTest, RequestAndIndication) {
   bearer()->RegisterHandler(kTestRequest, req_handler);
   bearer()->RegisterHandler(kIndication, ind_handler);
 
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestRequest));
-  fake_chan()->Receive(CreateStaticByteBuffer(kIndication));
+  fake_chan()->Receive(StaticByteBuffer(kTestRequest));
+  fake_chan()->Receive(StaticByteBuffer(kIndication));
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, req_count);
@@ -1029,8 +1028,8 @@ TEST_F(BearerTest, RemotePDUWithoutResponse) {
   };
   bearer()->RegisterHandler(kNotification, not_handler);
 
-  fake_chan()->Receive(CreateStaticByteBuffer(kTestCommand));
-  fake_chan()->Receive(CreateStaticByteBuffer(kNotification));
+  fake_chan()->Receive(StaticByteBuffer(kTestCommand));
+  fake_chan()->Receive(StaticByteBuffer(kNotification));
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, cmd_count);
@@ -1060,12 +1059,12 @@ class BearerTestSecurity : public BearerTest {
     fake_chan()->SetSendCallback(
         [this, ecode, handle](auto packet) {
           att_request_count_++;
-          fake_chan()->Receive(CreateStaticByteBuffer(kErrorResponse,  // opcode (Error Response)
-                                                      kTestRequest,    // request opcode
-                                                      LowerBits(handle),
-                                                      UpperBits(handle),  // handle
-                                                      ecode               // error code
-                                                      ));
+          fake_chan()->Receive(StaticByteBuffer(kErrorResponse,  // opcode (Error Response)
+                                                kTestRequest,    // request opcode
+                                                LowerBits(handle),
+                                                UpperBits(handle),  // handle
+                                                ecode               // error code
+                                                ));
         },
         dispatcher());
   }
@@ -1077,7 +1076,7 @@ class BearerTestSecurity : public BearerTest {
     fake_chan()->SetSendCallback(
         [this](auto packet) {
           att_request_count_++;
-          fake_chan()->Receive(CreateStaticByteBuffer(kTestResponse));
+          fake_chan()->Receive(StaticByteBuffer(kTestResponse));
         },
         dispatcher());
   }

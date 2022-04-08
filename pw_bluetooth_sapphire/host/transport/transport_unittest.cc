@@ -29,9 +29,9 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
 
   constexpr zx::duration kCommandTimeout = zx::sec(12);
 
-  auto req_reset = StaticByteBuffer(LowerBits(hci_spec::kReset),
-                                    UpperBits(hci_spec::kReset),  // HCI_Reset opcode
-                                    0x00                          // parameter_total_size
+  StaticByteBuffer req_reset(LowerBits(hci_spec::kReset),
+                             UpperBits(hci_spec::kReset),  // HCI_Reset opcode
+                             0x00                          // parameter_total_size
   );
 
   // Expect the HCI_Reset command but dont send a reply back to make the command

@@ -42,8 +42,8 @@ using namespace inspect::testing;
 
 // Limiting the de-scoped aliases here helps test cases be more specific about whether they're using
 // FIDL names or bt-host internal names.
-using bt::CreateStaticByteBuffer;
 using bt::LowerBits;
+using bt::StaticByteBuffer;
 using bt::UpperBits;
 using bt::l2cap::testing::FakeChannel;
 using bt::sm::AuthReq;
@@ -606,7 +606,7 @@ TEST_F(HostServerTest, WatchDiscoverableState) {
 }
 
 TEST_F(HostServerPairingTest, InitiatePairingLeDefault) {
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,  // code: "Pairing Request"
       0x04,  // IO cap.: KeyboardDisplay
       0x00,  // OOB: not present
@@ -643,7 +643,7 @@ TEST_F(HostServerPairingTest, InitiatePairingLeDefault) {
 }
 
 TEST_F(HostServerPairingTest, InitiatePairingLeEncrypted) {
-  const auto kExpected = CreateStaticByteBuffer(
+  const StaticByteBuffer kExpected(
       0x01,  // code: "Pairing Request"
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
@@ -678,13 +678,13 @@ TEST_F(HostServerPairingTest, InitiatePairingLeEncrypted) {
 }
 
 TEST_F(HostServerPairingTest, InitiatePairingNonBondableLe) {
-  const auto kExpected = CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
-                                                0x04,  // IO cap.: KeyboardDisplay
-                                                0x00,  // OOB: not present
-                                                AuthReq::kMITM | AuthReq::kSC | AuthReq::kCT2,
-                                                0x10,  // encr. key size: 16 (default max)
-                                                0x00,  // initiator keys: none
-                                                0x00   // responder keys: none
+  const StaticByteBuffer kExpected(0x01,  // code: "Pairing Request"
+                                   0x04,  // IO cap.: KeyboardDisplay
+                                   0x00,  // OOB: not present
+                                   AuthReq::kMITM | AuthReq::kSC | AuthReq::kCT2,
+                                   0x10,  // encr. key size: 16 (default max)
+                                   0x00,  // initiator keys: none
+                                   0x00   // responder keys: none
   );
 
   // IOCapabilities must be KeyboardDisplay to support default MITM pairing request.

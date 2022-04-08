@@ -127,10 +127,10 @@ TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
   EXPECT_EQ(2, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x09,              // Event header
-                                             0x02,                    // Number of handles
-                                             0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
-                                             0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
+  StaticByteBuffer event_buffer(0x13, 0x09,              // Event header
+                                0x02,                    // Number of handles
+                                0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+                                0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -218,10 +218,10 @@ TEST_F(ACLDataChannelTest, SendPacketLEBuffer) {
   EXPECT_EQ(0u, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x05,  // Event header
-                                             0x01,        // Number of handles
-                                             0x01, 0x00, 0x03,
-                                             0x00  // 3 packets on handle 0x0001
+  StaticByteBuffer event_buffer(0x13, 0x05,  // Event header
+                                0x01,        // Number of handles
+                                0x01, 0x00, 0x03,
+                                0x00  // 3 packets on handle 0x0001
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -291,10 +291,10 @@ TEST_F(ACLDataChannelTest, SendLEPacketBothBuffers) {
   EXPECT_EQ(2, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x09,              // Event header
-                                             0x02,                    // Number of handles
-                                             0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
-                                             0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
+  StaticByteBuffer event_buffer(0x13, 0x09,              // Event header
+                                0x02,                    // Number of handles
+                                0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+                                0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -364,10 +364,10 @@ TEST_F(ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   EXPECT_EQ(2, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x09,              // Event header
-                                             0x02,                    // Number of handles
-                                             0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
-                                             0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
+  StaticByteBuffer event_buffer(0x13, 0x09,              // Event header
+                                0x02,                    // Number of handles
+                                0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+                                0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -619,9 +619,9 @@ TEST_F(ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
   acl_data_channel()->UnregisterLink(kHandle2);
 
   // Notify the processed packet with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x05,             // Event header
-                                             0x01,                   // Number of handles
-                                             0x01, 0x00, 0x01, 0x00  // 1 packet on handle 0x0001
+  StaticByteBuffer event_buffer(0x13, 0x05,             // Event header
+                                0x01,                   // Number of handles
+                                0x01, 0x00, 0x01, 0x00  // 1 packet on handle 0x0001
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -662,9 +662,9 @@ TEST_F(ACLDataChannelTest, PacketsQueuedByFlowControlAreNotSentAfterUnregisterLi
   acl_data_channel()->UnregisterLink(kHandle1);
 
   // Notify the processed packet with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x05,             // Event header
-                                             0x01,                   // Number of handles
-                                             0x01, 0x00, 0x01, 0x00  // 1 packet on handle 0x0001
+  StaticByteBuffer event_buffer(0x13, 0x05,             // Event header
+                                0x01,                   // Number of handles
+                                0x01, 0x00, 0x01, 0x00  // 1 packet on handle 0x0001
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -685,7 +685,7 @@ TEST_F(ACLDataChannelTest,
   acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kLE);
 
   // Unique packet to send to re-registered link with same handle.
-  const auto kPacket = CreateStaticByteBuffer(
+  const StaticByteBuffer kPacket(
       // ACL data header (handle: 1, length 1)
       0x01, 0x00, 0x01, 0x00,
 
@@ -719,9 +719,9 @@ TEST_F(ACLDataChannelTest,
   acl_data_channel()->UnregisterLink(kHandle);
 
   // Notify the processed packet with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x05,             // Event header
-                                             0x01,                   // Number of handles
-                                             0x01, 0x00, 0x01, 0x00  // 1 packet on handle 0x0001
+  StaticByteBuffer event_buffer(0x13, 0x05,             // Event header
+                                0x01,                   // Number of handles
+                                0x01, 0x00, 0x01, 0x00  // 1 packet on handle 0x0001
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -804,17 +804,17 @@ TEST_F(ACLDataChannelTest, ReceiveData) {
   set_data_received_callback(std::move(data_rx_cb));
 
   // Malformed packet: smaller than the ACL header.
-  auto invalid0 = CreateStaticByteBuffer(0x01, 0x00, 0x00);
+  StaticByteBuffer invalid0(0x01, 0x00, 0x00);
 
   // Malformed packet: the payload size given in the header doesn't match the
   // actual payload size.
-  auto invalid1 = CreateStaticByteBuffer(0x01, 0x00, 0x02, 0x00, 0x00);
+  StaticByteBuffer invalid1(0x01, 0x00, 0x02, 0x00, 0x00);
 
   // Valid packet on handle 1.
-  auto valid0 = CreateStaticByteBuffer(0x01, 0x00, 0x01, 0x00, 0x00);
+  StaticByteBuffer valid0(0x01, 0x00, 0x01, 0x00, 0x00);
 
   // Valid packet on handle 2.
-  auto valid1 = CreateStaticByteBuffer(0x02, 0x00, 0x01, 0x00, 0x00);
+  StaticByteBuffer valid1(0x02, 0x00, 0x01, 0x00, 0x00);
 
   async::PostTask(dispatcher(), [&, this] {
     test_device()->SendACLDataChannelPacket(invalid0);
@@ -866,10 +866,10 @@ TEST_F(ACLDataChannelTest, HciEventReceivedAfterShutDown) {
   InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x09,              // Event header
-                                             0x02,                    // Number of handles
-                                             0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
-                                             0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
+  StaticByteBuffer event_buffer(0x13, 0x09,              // Event header
+                                0x02,                    // Number of handles
+                                0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+                                0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
   );
 
   // Shuts down ACLDataChannel and CommandChannel.
@@ -953,10 +953,10 @@ TEST_F(ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueu
   EXPECT_EQ(predicate_true_count, 3u);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x09,              // Event header
-                                             0x02,                    // Number of handles
-                                             0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
-                                             0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
+  StaticByteBuffer event_buffer(0x13, 0x09,              // Event header
+                                0x02,                    // Number of handles
+                                0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+                                0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -1029,9 +1029,9 @@ TEST_F(ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSe
   EXPECT_EQ(0u, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = CreateStaticByteBuffer(0x13, 0x05,             // Event header
-                                             0x01,                   // Number of handles
-                                             0x01, 0x00, 0x05, 0x00  // 5 packets on handle 0x0001
+  StaticByteBuffer event_buffer(0x13, 0x05,             // Event header
+                                0x01,                   // Number of handles
+                                0x01, 0x00, 0x05, 0x00  // 5 packets on handle 0x0001
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -1118,12 +1118,11 @@ TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
   EXPECT_EQ(0u, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer =
-      CreateStaticByteBuffer(0x13, 0x09,              // Event header
-                             0x01,                    // Number of handles
-                             0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
-                             0x02, 0x00, 0x05, 0x00   // (ignored, not indicated in handle count)
-      );
+  StaticByteBuffer event_buffer(0x13, 0x09,              // Event header
+                                0x01,                    // Number of handles
+                                0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+                                0x02, 0x00, 0x05, 0x00   // (ignored, not indicated in handle count)
+  );
 
   test_device()->SendCommandChannelPacket(event_buffer);
   RunLoopUntilIdle();
@@ -1132,10 +1131,10 @@ TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
   EXPECT_EQ(3u, handle0_packet_count);
   EXPECT_EQ(0u, handle1_packet_count);
 
-  auto short_buffer = CreateStaticByteBuffer(0x13, 0x05,             // Event header
-                                             0x02,                   // Number of handles
-                                             0x02, 0x00, 0x02, 0x00  // 2 packets on handle 0x0002
-                                             // (missing second handle, should be ignored)
+  StaticByteBuffer short_buffer(0x13, 0x05,             // Event header
+                                0x02,                   // Number of handles
+                                0x02, 0x00, 0x02, 0x00  // 2 packets on handle 0x0002
+                                // (missing second handle, should be ignored)
   );
 
   test_device()->SendCommandChannelPacket(short_buffer);

@@ -122,9 +122,9 @@ class ServerTest : public TestingBase {
 
 constexpr l2cap::ChannelId kSdpChannel = 0x0041;
 
-#define SDP_ERROR_RSP(t_id, code)                                            \
-  CreateStaticByteBuffer(0x01, UpperBits(t_id), LowerBits(t_id), 0x00, 0x02, \
-                         UpperBits(uint16_t(code)), LowerBits(uint16_t(code)));
+#define SDP_ERROR_RSP(t_id, code)                                                                 \
+  StaticByteBuffer(0x01, UpperBits(t_id), LowerBits(t_id), 0x00, 0x02, UpperBits(uint16_t(code)), \
+                   LowerBits(uint16_t(code)));
 
 // Test:
 //  - Accepts channels and holds channel open correctly.
@@ -139,17 +139,17 @@ TEST_F(ServerTest, BasicError) {
 
   const auto kRspErrSize = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
 
-  const auto kTooSmall = CreateStaticByteBuffer(0x01,        // SDP_ServiceSearchRequest
-                                                0x10, 0x01,  // Transaction ID (0x1001)
-                                                0x00, 0x09   // Parameter length (9 bytes)
+  const StaticByteBuffer kTooSmall(0x01,        // SDP_ServiceSearchRequest
+                                   0x10, 0x01,  // Transaction ID (0x1001)
+                                   0x00, 0x09   // Parameter length (9 bytes)
   );
 
   const auto kRspTooSmall = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
 
-  const auto kTooBig = CreateStaticByteBuffer(0x01,             // SDP_ServiceSearchRequest
-                                              0x20, 0x10,       // Transaction ID (0x2010)
-                                              0x00, 0x02,       // Parameter length (2 bytes)
-                                              0x01, 0x02, 0x03  // 3 bytes of parameters
+  const StaticByteBuffer kTooBig(0x01,             // SDP_ServiceSearchRequest
+                                 0x20, 0x10,       // Transaction ID (0x2010)
+                                 0x00, 0x02,       // Parameter length (2 bytes)
+                                 0x01, 0x02, 0x03  // 3 bytes of parameters
   );
 
   const auto kRspTooBig = SDP_ERROR_RSP(0x2010, ErrorCode::kInvalidSize);
@@ -484,14 +484,14 @@ TEST_F(ServerTest, ServiceSearchRequest) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
 
-  const auto kL2capSearch = CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
-                                                   0x10, 0x01,  // Transaction ID (0x1001)
-                                                   0x00, 0x08,  // Parameter length (8 bytes)
-                                                   // ServiceSearchPattern
-                                                   0x35, 0x03,        // Sequence uint8 3 bytes
-                                                   0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                                                   0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
-                                                   0x00         // Contunuation State: none
+  const StaticByteBuffer kL2capSearch(0x02,        // SDP_ServiceSearchRequest
+                                      0x10, 0x01,  // Transaction ID (0x1001)
+                                      0x00, 0x08,  // Parameter length (8 bytes)
+                                      // ServiceSearchPattern
+                                      0x35, 0x03,        // Sequence uint8 3 bytes
+                                      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                      0xFF, 0xFF,        // MaximumServiceRecordCount: (none)
+                                      0x00               // Contunuation State: none
   );
 
   ServiceSearchRequest search_req;
@@ -505,7 +505,7 @@ TEST_F(ServerTest, ServiceSearchRequest) {
 
   EXPECT_TRUE(ContainersEqual(kL2capSearch, *pdu));
 
-  const auto kL2capSearchResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kL2capSearchResponse(
       0x03,                            // SDP_ServicesearchResponse
       0x10, 0x01,                      // Transaction ID (0x1001)
       0x00, 0x0D,                      // Parameter length (13 bytes)
@@ -544,21 +544,20 @@ TEST_F(ServerTest, ServiceSearchRequest) {
   EXPECT_NE(handles.end(), std::find(handles.begin(), handles.end(), spp_handle));
   EXPECT_NE(handles.end(), std::find(handles.begin(), handles.end(), a2dp_handle));
 
-  const auto kInvalidNoItems =
-      CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
-                             0x10, 0xA1,  // Transaction ID (0x10A1)
-                             0x00, 0x05,  // Parameter length (5 bytes)
-                             // ServiceSearchPattern
-                             0x35, 0x00,  // Sequence uint8 0 bytes
-                             0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
-                             0x00         // Contunuation State: none
-      );
+  const StaticByteBuffer kInvalidNoItems(0x02,        // SDP_ServiceSearchRequest
+                                         0x10, 0xA1,  // Transaction ID (0x10A1)
+                                         0x00, 0x05,  // Parameter length (5 bytes)
+                                         // ServiceSearchPattern
+                                         0x35, 0x00,  // Sequence uint8 0 bytes
+                                         0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
+                                         0x00         // Contunuation State: none
+  );
 
   const auto kRspErrSyntax = SDP_ERROR_RSP(0x10A1, ErrorCode::kInvalidRequestSyntax);
 
   EXPECT_TRUE(ReceiveAndExpect(kInvalidNoItems, kRspErrSyntax));
 
-  const auto kInvalidTooManyItems = CreateStaticByteBuffer(
+  const StaticByteBuffer kInvalidTooManyItems(
       0x02,        // SDP_ServiceSearchRequest
       0x10, 0xA1,  // Transaction ID (0x10B1)
       0x00, 0x2C,  // Parameter length (44 bytes)
@@ -601,14 +600,14 @@ TEST_F(ServerTest, ServiceSearchRequestOneOfMany) {
     recv = true;
   };
 
-  const auto kL2capSearchOne = CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
-                                                      0x10, 0xC1,  // Transaction ID (0x10C1)
-                                                      0x00, 0x08,  // Parameter length (8 bytes)
-                                                      // ServiceSearchPattern
-                                                      0x35, 0x03,        // Sequence uint8 3 bytes
-                                                      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                                                      0x00, 0x01,  // MaximumServiceRecordCount: 1
-                                                      0x00         // Contunuation State: none
+  const StaticByteBuffer kL2capSearchOne(0x02,        // SDP_ServiceSearchRequest
+                                         0x10, 0xC1,  // Transaction ID (0x10C1)
+                                         0x00, 0x08,  // Parameter length (8 bytes)
+                                         // ServiceSearchPattern
+                                         0x35, 0x03,        // Sequence uint8 3 bytes
+                                         0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                         0x00, 0x01,        // MaximumServiceRecordCount: 1
+                                         0x00               // Contunuation State: none
   );
 
   handles.clear();
@@ -678,15 +677,15 @@ TEST_F(ServerTest, ServiceSearchContinuationState) {
       EXPECT_NE(0u, cont_size);
       // Make another request with the continutation data.
       size_t param_size = 8 + cont_size;
-      auto kContinuedRequestStart =
-          CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
-                                 0x10, 0xC1,  // Transaction ID (0x10C1)
-                                 UpperBits(param_size), LowerBits(param_size),  // Parameter length
-                                 // ServiceSearchPattern
-                                 0x35, 0x03,        // Sequence uint8 3 bytes
-                                 0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                                 0x00, 0xFF         // MaximumServiceRecordCount: 256
-          );
+      StaticByteBuffer kContinuedRequestStart(0x02,        // SDP_ServiceSearchRequest
+                                              0x10, 0xC1,  // Transaction ID (0x10C1)
+                                              UpperBits(param_size),
+                                              LowerBits(param_size),  // Parameter length
+                                              // ServiceSearchPattern
+                                              0x35, 0x03,        // Sequence uint8 3 bytes
+                                              0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                              0x00, 0xFF         // MaximumServiceRecordCount: 256
+      );
 
       DynamicByteBuffer req(kContinuedRequestStart.size() + sizeof(uint8_t) + cont_size);
 
@@ -698,14 +697,14 @@ TEST_F(ServerTest, ServiceSearchContinuationState) {
     }
   };
 
-  const auto kL2capSearch = CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
-                                                   0x10, 0xC1,  // Transaction ID (0x10C1)
-                                                   0x00, 0x08,  // Parameter length (8 bytes)
-                                                   // ServiceSearchPattern
-                                                   0x35, 0x03,        // Sequence uint8 3 bytes
-                                                   0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                                                   0x00, 0xFF,  // MaximumServiceRecordCount: 256
-                                                   0x00         // Contunuation State: none
+  const StaticByteBuffer kL2capSearch(0x02,        // SDP_ServiceSearchRequest
+                                      0x10, 0xC1,  // Transaction ID (0x10C1)
+                                      0x00, 0x08,  // Parameter length (8 bytes)
+                                      // ServiceSearchPattern
+                                      0x35, 0x03,        // Sequence uint8 3 bytes
+                                      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                      0x00, 0xFF,        // MaximumServiceRecordCount: 256
+                                      0x00               // Contunuation State: none
   );
 
   fake_chan()->SetSendCallback(send_cb, dispatcher());
@@ -737,19 +736,19 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
   RunLoopUntilIdle();
 
   const auto kRequestAttr =
-      CreateStaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
-                             0x10, 0x01,                  // Transaction ID (0x1001)
-                             0x00, 0x11,                  // Parameter length (17 bytes)
-                             UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
-                             0x00, 0x0A,  // MaximumAttributeByteCount (10 bytes max)
-                             // AttributeIDList
-                             0x35, 0x08,  // Sequence uint8 8 bytes
-                             0x09,        // uint16_t, single attribute
-                             0x00, 0x01,  // ServiceClassIDList
-                             0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
-                             0x30, 0x00,  // low end of range
-                             0xf0, 0x00,  // high end of range
-                             0x00         // Contunuation State: none
+      StaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
+                       0x10, 0x01,                  // Transaction ID (0x1001)
+                       0x00, 0x11,                  // Parameter length (17 bytes)
+                       UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
+                       0x00, 0x0A,                  // MaximumAttributeByteCount (10 bytes max)
+                       // AttributeIDList
+                       0x35, 0x08,  // Sequence uint8 8 bytes
+                       0x09,        // uint16_t, single attribute
+                       0x00, 0x01,  // ServiceClassIDList
+                       0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
+                       0x30, 0x00,  // low end of range
+                       0xf0, 0x00,  // high end of range
+                       0x00         // Contunuation State: none
       );
 
   size_t received = 0;
@@ -783,18 +782,18 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
       // Make another request with the continutation data.
       size_t param_size = 17 + cont_size;
       auto kContinuedRequestAttrStart =
-          CreateStaticByteBuffer(0x04,        // SDP_ServiceAttributeRequest
-                                 0x10, 0x01,  // Transaction ID (reused)
-                                 UpperBits(param_size), LowerBits(param_size),  // Parameter length
-                                 UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
-                                 0x00, 0x0A,  // MaximumAttributeByteCount (10 bytes max)
-                                 // AttributeIDList
-                                 0x35, 0x08,  // Sequence uint8 8 bytes
-                                 0x09,        // uint16_t, single attribute
-                                 0x00, 0x01,  // ServiceClassIDList
-                                 0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
-                                 0x30, 0x00,  // low end of range
-                                 0xf0, 0x00   // high end of range
+          StaticByteBuffer(0x04,        // SDP_ServiceAttributeRequest
+                           0x10, 0x01,  // Transaction ID (reused)
+                           UpperBits(param_size), LowerBits(param_size),  // Parameter length
+                           UINT32_AS_BE_BYTES(handle),                    // ServiceRecordHandle
+                           0x00, 0x0A,  // MaximumAttributeByteCount (10 bytes max)
+                           // AttributeIDList
+                           0x35, 0x08,  // Sequence uint8 8 bytes
+                           0x09,        // uint16_t, single attribute
+                           0x00, 0x01,  // ServiceClassIDList
+                           0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
+                           0x30, 0x00,  // low end of range
+                           0xf0, 0x00   // high end of range
           );
       DynamicByteBuffer req(kContinuedRequestAttrStart.size() + sizeof(uint8_t) + cont_size);
 
@@ -817,19 +816,19 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
   EXPECT_NE(attrs.end(), attrs.find(0xf000));
 
   const auto kInvalidRangeOrder =
-      CreateStaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
-                             0xE0, 0x01,                  // Transaction ID (0xE001)
-                             0x00, 0x11,                  // Parameter length (17 bytes)
-                             UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
-                             0x00, 0x0A,  // MaximumAttributeByteCount (10 bytes max)
-                             // AttributeIDList
-                             0x35, 0x08,  // Sequence uint8 8 bytes
-                             0x09,        // uint16_t, single attribute
-                             0x00, 0x01,  // ServiceClassIDList
-                             0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
-                             0xf0, 0x00,  // low end of range
-                             0x30, 0x00,  // high end of range
-                             0x00         // Contunuation State: none
+      StaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
+                       0xE0, 0x01,                  // Transaction ID (0xE001)
+                       0x00, 0x11,                  // Parameter length (17 bytes)
+                       UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
+                       0x00, 0x0A,                  // MaximumAttributeByteCount (10 bytes max)
+                       // AttributeIDList
+                       0x35, 0x08,  // Sequence uint8 8 bytes
+                       0x09,        // uint16_t, single attribute
+                       0x00, 0x01,  // ServiceClassIDList
+                       0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
+                       0xf0, 0x00,  // low end of range
+                       0x30, 0x00,  // high end of range
+                       0x00         // Contunuation State: none
       );
 
   const auto kRspErrSyntax = SDP_ERROR_RSP(0xE001, ErrorCode::kInvalidRequestSyntax);
@@ -837,16 +836,16 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidRangeOrder, kRspErrSyntax));
 
   const auto kInvalidMaxBytes =
-      CreateStaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
-                             0xE0, 0x02,                  // Transaction ID (0xE001)
-                             0x00, 0x0C,                  // Parameter length (12 bytes)
-                             UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
-                             0x00, 0x05,                  // MaximumAttributeByteCount (5 bytes max)
-                             // AttributeIDList
-                             0x35, 0x03,  // Sequence uint8 3 bytes
-                             0x09,        // uint16_t, single attribute
-                             0x00, 0x01,  // ServiceClassIDList
-                             0x00         // Contunuation State: none
+      StaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
+                       0xE0, 0x02,                  // Transaction ID (0xE001)
+                       0x00, 0x0C,                  // Parameter length (12 bytes)
+                       UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
+                       0x00, 0x05,                  // MaximumAttributeByteCount (5 bytes max)
+                       // AttributeIDList
+                       0x35, 0x03,  // Sequence uint8 3 bytes
+                       0x09,        // uint16_t, single attribute
+                       0x00, 0x01,  // ServiceClassIDList
+                       0x00         // Contunuation State: none
       );
 
   const auto kRspErrSyntax2 = SDP_ERROR_RSP(0xE002, ErrorCode::kInvalidRequestSyntax);
@@ -890,21 +889,21 @@ TEST_F(ServerTest, SearchAttributeRequest) {
   RunLoopUntilIdle();
 
   const auto kRequestAttr =
-      CreateStaticByteBuffer(0x06,        // SDP_ServiceAttritbuteRequest
-                             0x10, 0x01,  // Transaction ID (0x1001)
-                             0x00, 0x12,  // Parameter length (18 bytes)
-                             // ServiceSearchPattern
-                             0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0x00, 0x0A,        // MaximumAttributeByteCount (10 bytes max)
-                             // AttributeIDList
-                             0x35, 0x08,  // Sequence uint8 8 bytes
-                             0x09,        // uint16_t, single attribute
-                             0x00, 0x00,  // ServiceRecordHandle
-                             0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
-                             0x30, 0x00,  // low end of range
-                             0xf0, 0x00,  // high end of range
-                             0x00         // Contunuation State: none
+      StaticByteBuffer(0x06,        // SDP_ServiceAttritbuteRequest
+                       0x10, 0x01,  // Transaction ID (0x1001)
+                       0x00, 0x12,  // Parameter length (18 bytes)
+                       // ServiceSearchPattern
+                       0x35, 0x03,        // Sequence uint8 3 bytes
+                       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                       0x00, 0x0A,        // MaximumAttributeByteCount (10 bytes max)
+                       // AttributeIDList
+                       0x35, 0x08,  // Sequence uint8 8 bytes
+                       0x09,        // uint16_t, single attribute
+                       0x00, 0x00,  // ServiceRecordHandle
+                       0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
+                       0x30, 0x00,  // low end of range
+                       0xf0, 0x00,  // high end of range
+                       0x00         // Contunuation State: none
       );
 
   size_t received = 0;
@@ -938,19 +937,19 @@ TEST_F(ServerTest, SearchAttributeRequest) {
       // Make another request with the continutation data.
       size_t param_size = 18 + cont_size;
       auto kContinuedRequestAttrStart =
-          CreateStaticByteBuffer(0x06,  // SDP_ServiceAttributeRequest
-                                 0x10, static_cast<uint8_t>(received + 1),      // Transaction ID
-                                 UpperBits(param_size), LowerBits(param_size),  // Parameter length
-                                 0x35, 0x03,        // Sequence uint8 3 bytes
-                                 0x19, 0x01, 0x00,  // SearchPattern: L2CAP
-                                 0x00, 0x0A,        // MaximumAttributeByteCount (10 bytes max)
-                                 // AttributeIDList
-                                 0x35, 0x08,  // Sequence uint8 8 bytes
-                                 0x09,        // uint16_t, single attribute
-                                 0x00, 0x00,  // ServiceRecordHandle
-                                 0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
-                                 0x30, 0x00,  // low end of range
-                                 0xf0, 0x00   // high end of range
+          StaticByteBuffer(0x06,                                      // SDP_ServiceAttributeRequest
+                           0x10, static_cast<uint8_t>(received + 1),  // Transaction ID
+                           UpperBits(param_size), LowerBits(param_size),  // Parameter length
+                           0x35, 0x03,                                    // Sequence uint8 3 bytes
+                           0x19, 0x01, 0x00,                              // SearchPattern: L2CAP
+                           0x00, 0x0A,  // MaximumAttributeByteCount (10 bytes max)
+                           // AttributeIDList
+                           0x35, 0x08,  // Sequence uint8 8 bytes
+                           0x09,        // uint16_t, single attribute
+                           0x00, 0x00,  // ServiceRecordHandle
+                           0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
+                           0x30, 0x00,  // low end of range
+                           0xf0, 0x00   // high end of range
           );
       DynamicByteBuffer req(kContinuedRequestAttrStart.size() + sizeof(uint8_t) + cont_size);
 
@@ -983,19 +982,19 @@ TEST_F(ServerTest, SearchAttributeRequest) {
   }
 
   const auto kInvalidRangeOrder =
-      CreateStaticByteBuffer(0x06,                          // SDP_ServiceAttritbuteRequest
-                             0xE0, 0x01,                    // Transaction ID (0xE001)
-                             0x00, 0x12,                    // Parameter length (18 bytes)
-                             0x35, 0x03, 0x19, 0x01, 0x00,  // SearchPattern: L2CAP
-                             0x00, 0x0A,  // MaximumAttributeByteCount (10 bytes max)
-                             // AttributeIDList
-                             0x35, 0x08,  // Sequence uint8 8 bytes
-                             0x09,        // uint16_t, single attribute
-                             0x00, 0x01,  // ServiceClassIDList
-                             0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
-                             0xf0, 0x00,  // low end of range
-                             0x30, 0x00,  // high end of range
-                             0x00         // Contunuation State: none
+      StaticByteBuffer(0x06,                          // SDP_ServiceAttritbuteRequest
+                       0xE0, 0x01,                    // Transaction ID (0xE001)
+                       0x00, 0x12,                    // Parameter length (18 bytes)
+                       0x35, 0x03, 0x19, 0x01, 0x00,  // SearchPattern: L2CAP
+                       0x00, 0x0A,                    // MaximumAttributeByteCount (10 bytes max)
+                       // AttributeIDList
+                       0x35, 0x08,  // Sequence uint8 8 bytes
+                       0x09,        // uint16_t, single attribute
+                       0x00, 0x01,  // ServiceClassIDList
+                       0x0A,        // uint32_t, which is a range (0x3000 - 0xf000)
+                       0xf0, 0x00,  // low end of range
+                       0x30, 0x00,  // high end of range
+                       0x00         // Contunuation State: none
       );
 
   const auto kRspErrSyntax = SDP_ERROR_RSP(0xE001, ErrorCode::kInvalidRequestSyntax);
@@ -1003,16 +1002,16 @@ TEST_F(ServerTest, SearchAttributeRequest) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidRangeOrder, kRspErrSyntax));
 
   const auto kInvalidMaxBytes =
-      CreateStaticByteBuffer(0x04,                          // SDP_ServiceAttritbuteRequest
-                             0xE0, 0x02,                    // Transaction ID (0xE002)
-                             0x00, 0x0D,                    // Parameter length (13 bytes)
-                             0x35, 0x03, 0x19, 0x01, 0x00,  // SearchPattern: L2CAP
-                             0x00, 0x05,  // MaximumAttributeByteCount (5 bytes max)
-                             // AttributeIDList
-                             0x35, 0x03,  // Sequence uint8 3 bytes
-                             0x09,        // uint16_t, single attribute
-                             0x00, 0x01,  // ServiceClassIDList
-                             0x00         // Contunuation State: none
+      StaticByteBuffer(0x04,                          // SDP_ServiceAttritbuteRequest
+                       0xE0, 0x02,                    // Transaction ID (0xE002)
+                       0x00, 0x0D,                    // Parameter length (13 bytes)
+                       0x35, 0x03, 0x19, 0x01, 0x00,  // SearchPattern: L2CAP
+                       0x00, 0x05,                    // MaximumAttributeByteCount (5 bytes max)
+                       // AttributeIDList
+                       0x35, 0x03,  // Sequence uint8 3 bytes
+                       0x09,        // uint16_t, single attribute
+                       0x00, 0x01,  // ServiceClassIDList
+                       0x00         // Contunuation State: none
       );
 
   const auto kRspErrSyntax2 = SDP_ERROR_RSP(0xE002, ErrorCode::kInvalidRequestSyntax);
@@ -1070,20 +1069,19 @@ TEST_F(ServerTest, BrowseGroup) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
 
-  const auto kRequestAttr =
-      CreateStaticByteBuffer(0x06,        // SDP_ServiceAttritbuteRequest
-                             0x10, 0x01,  // Transaction ID (0x1001)
-                             0x00, 0x0D,  // Parameter length (12 bytes)
-                             // ServiceSearchPattern
-                             0x35, 0x03,        // Sequence uint8 3 bytes
-                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0xFF, 0xFF,        // MaximumAttributeByteCount (no max)
-                             // AttributeIDList
-                             0x35, 0x03,  // Sequence uint8 3 bytes
-                             0x09,        // uint16_t, single attribute
-                             0x00, 0x05,  // BrowseGroupList
-                             0x00         // Contunuation State: none
-      );
+  const auto kRequestAttr = StaticByteBuffer(0x06,        // SDP_ServiceAttritbuteRequest
+                                             0x10, 0x01,  // Transaction ID (0x1001)
+                                             0x00, 0x0D,  // Parameter length (12 bytes)
+                                             // ServiceSearchPattern
+                                             0x35, 0x03,        // Sequence uint8 3 bytes
+                                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                             0xFF, 0xFF,  // MaximumAttributeByteCount (no max)
+                                             // AttributeIDList
+                                             0x35, 0x03,  // Sequence uint8 3 bytes
+                                             0x09,        // uint16_t, single attribute
+                                             0x00, 0x05,  // BrowseGroupList
+                                             0x00         // Contunuation State: none
+  );
 
   ServiceSearchAttributeResponse rsp;
   auto send_cb = [&rsp](auto cb_packet) {
@@ -1242,9 +1240,9 @@ TEST_F(ServerTest, InspectHierarchyAfterUnregisterService) {
 // a corresponding l2cap::channel for both successful requests and errors.
 TEST_F(ServerTest, HandleRequestWithoutChannel) {
   const auto kRspErrSize = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
-  const auto kTooSmall = CreateStaticByteBuffer(0x01,        // SDP_ServiceSearchRequest
-                                                0x10, 0x01,  // Transaction ID (0x1001)
-                                                0x00, 0x09   // Parameter length (9 bytes)
+  const StaticByteBuffer kTooSmall(0x01,        // SDP_ServiceSearchRequest
+                                   0x10, 0x01,  // Transaction ID (0x1001)
+                                   0x00, 0x09   // Parameter length (9 bytes)
   );
   const auto kRspTooSmall = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
   auto too_small_rsp = server()->HandleRequest(
@@ -1253,16 +1251,16 @@ TEST_F(ServerTest, HandleRequestWithoutChannel) {
 
   RegistrationHandle spp_handle = AddSPP();
   RegistrationHandle a2dp_handle = AddA2DPSink();
-  const auto kL2capSearch = CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
-                                                   0x10, 0x01,  // Transaction ID (0x1001)
-                                                   0x00, 0x08,  // Parameter length (8 bytes)
-                                                   // ServiceSearchPattern
-                                                   0x35, 0x03,        // Sequence uint8 3 bytes
-                                                   0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                                                   0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
-                                                   0x00         // Contunuation State: none
+  const StaticByteBuffer kL2capSearch(0x02,        // SDP_ServiceSearchRequest
+                                      0x10, 0x01,  // Transaction ID (0x1001)
+                                      0x00, 0x08,  // Parameter length (8 bytes)
+                                      // ServiceSearchPattern
+                                      0x35, 0x03,        // Sequence uint8 3 bytes
+                                      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                      0xFF, 0xFF,        // MaximumServiceRecordCount: (none)
+                                      0x00               // Contunuation State: none
   );
-  const auto kL2capSearchResponse = CreateStaticByteBuffer(
+  const StaticByteBuffer kL2capSearchResponse(
       0x03,                             // SDP_ServicesearchResponse
       0x10, 0x01,                       // Transaction ID (0x1001)
       0x00, 0x0D,                       // Parameter length (13 bytes)

@@ -40,7 +40,7 @@ class BrEdrSignalingChannelTest : public testing::FakeChannelTest {
 };
 
 TEST_F(BrEdrSignalingChannelTest, RespondsToEchoRequest) {
-  auto cmd = CreateStaticByteBuffer(
+  StaticByteBuffer cmd(
       // Command header (Echo Request, length 1)
       0x08, kTestCmdId, 0x01, 0x00,
 
@@ -79,7 +79,7 @@ TEST_F(BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
 
   // Echo Request (see other test for command support), followed by an
   // incomplete command packet
-  auto cmd = CreateStaticByteBuffer(
+  StaticByteBuffer cmd(
       // Command header (length 3)
       0x08, kTestId0, 0x03, 0x00,
 
@@ -90,7 +90,7 @@ TEST_F(BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
       0x08, kTestId1, 0x01, 0x00);
 
   // Echo Response packet
-  auto rsp0 = CreateStaticByteBuffer(
+  StaticByteBuffer rsp0(
       // Command header (length 3)
       0x09, kTestId0, 0x03, 0x00,
 
@@ -98,7 +98,7 @@ TEST_F(BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
       'L', 'O', 'L');
 
   // Command Reject packet
-  auto rsp1 = CreateStaticByteBuffer(
+  StaticByteBuffer rsp1(
       // Command header
       0x01, kTestId1, 0x02, 0x00,
 
@@ -128,7 +128,7 @@ TEST_F(BrEdrSignalingChannelTest, HandleMultipleCommands) {
   constexpr uint8_t kTestId1 = 15;
   constexpr uint8_t kTestId2 = 16;
 
-  auto cmd = CreateStaticByteBuffer(
+  StaticByteBuffer cmd(
       // Command header (Echo Request)
       0x08, kTestId0, 0x04, 0x00,
 
@@ -147,21 +147,21 @@ TEST_F(BrEdrSignalingChannelTest, HandleMultipleCommands) {
       // Additional command fragment to be dropped
       0xFF, 0x00);
 
-  auto echo_rsp0 = CreateStaticByteBuffer(
+  StaticByteBuffer echo_rsp0(
       // Command header (Echo Response)
       0x09, kTestId0, 0x04, 0x00,
 
       // Payload data
       'L', 'O', 'L', 'Z');
 
-  auto reject_rsp1 = CreateStaticByteBuffer(
+  StaticByteBuffer reject_rsp1(
       // Command header (Command Rejected)
       0x01, kTestId1, 0x02, 0x00,
 
       // Reason (Command not understood)
       0x00, 0x00);
 
-  auto echo_rsp2 = CreateStaticByteBuffer(
+  StaticByteBuffer echo_rsp2(
       // Command header (Echo Response)
       0x09, kTestId2, 0x00, 0x00);
 
@@ -186,7 +186,7 @@ TEST_F(BrEdrSignalingChannelTest, HandleMultipleCommands) {
 }
 
 TEST_F(BrEdrSignalingChannelTest, SendAndReceiveEcho) {
-  const ByteBuffer& expected_req = CreateStaticByteBuffer(
+  const StaticByteBuffer expected_req(
       // Echo request with 3-byte payload.
       0x08, 0x01, 0x03, 0x00,
 
@@ -202,7 +202,7 @@ TEST_F(BrEdrSignalingChannelTest, SendAndReceiveEcho) {
       },
       dispatcher());
 
-  const ByteBuffer& expected_rsp = CreateStaticByteBuffer(
+  const StaticByteBuffer expected_rsp(
       // Echo response with 4-byte payload.
       0x09, 0x01, 0x04, 0x00,
 

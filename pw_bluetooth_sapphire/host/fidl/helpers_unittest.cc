@@ -383,12 +383,12 @@ TEST(HelpersTest, AdvertisingDataToFidlDeprecated) {
 
   const uint16_t id = 0x5678;
   const bt::UUID test_uuid = bt::UUID(id);
-  auto service_bytes = bt::CreateStaticByteBuffer(0x01, 0x02);
+  bt::StaticByteBuffer service_bytes(0x01, 0x02);
   EXPECT_TRUE(input.AddServiceUuid(test_uuid));
   EXPECT_TRUE(input.SetServiceData(test_uuid, service_bytes.view()));
 
   uint16_t company_id = 0x98;
-  auto manufacturer_bytes = bt::CreateStaticByteBuffer(0x04, 0x03);
+  bt::StaticByteBuffer manufacturer_bytes(0x04, 0x03);
   EXPECT_TRUE(input.SetManufacturerData(company_id, manufacturer_bytes.view()));
 
   auto uri = "http://fuchsia.cl";
@@ -446,12 +446,12 @@ TEST(HelpersTest, AdvertisingDataToFidl) {
 
   const uint16_t id = 0x5678;
   const bt::UUID test_uuid = bt::UUID(id);
-  auto service_bytes = bt::CreateStaticByteBuffer(0x01, 0x02);
+  bt::StaticByteBuffer service_bytes(0x01, 0x02);
   EXPECT_TRUE(input.AddServiceUuid(test_uuid));
   EXPECT_TRUE(input.SetServiceData(test_uuid, service_bytes.view()));
 
   uint16_t company_id = 0x98;
-  auto manufacturer_bytes = bt::CreateStaticByteBuffer(0x04, 0x03);
+  bt::StaticByteBuffer manufacturer_bytes(0x04, 0x03);
   EXPECT_TRUE(input.SetManufacturerData(company_id, manufacturer_bytes.view()));
 
   auto uri = "http://fuchsia.cl/461435";
@@ -563,10 +563,10 @@ TEST(HelpersTest, PeerToFidlOptionalFields) {
   const int8_t kRssi = 5;
   const int8_t kTxPower = 6;
   const auto kAdv =
-      bt::CreateStaticByteBuffer(0x02, 0x01, 0x01,               // Flags: General Discoverable
-                                 0x03, 0x19, 192, 0,             // Appearance: Watch
-                                 0x02, 0x0A, 0x06,               // Tx-Power: 5
-                                 0x05, 0x09, 't', 'e', 's', 't'  // Complete Local Name: "test"
+      bt::StaticByteBuffer(0x02, 0x01, 0x01,               // Flags: General Discoverable
+                           0x03, 0x19, 192, 0,             // Appearance: Watch
+                           0x02, 0x0A, 0x06,               // Tx-Power: 5
+                           0x05, 0x09, 't', 'e', 's', 't'  // Complete Local Name: "test"
       );
   const std::vector kBrEdrServices = {bt::UUID(uint16_t{0x110a}), bt::UUID(uint16_t{0x110b})};
 
@@ -717,17 +717,17 @@ TEST(HelpersTest, ServiceDefinitionToServiceRecord) {
   bt::DynamicByteBuffer protocol_block(protocol_val.WriteSize());
   protocol_val.Write(&protocol_block);
   auto expected_protocol_list =
-      bt::CreateStaticByteBuffer(0x35, 0x10,  // Data Element Sequence (10 bytes)
-                                 0x35, 0x06,  // Data Element Sequence (6 bytes)
-                                 0x19,        // UUID (16 bits)
-                                 0x01, 0x00,  // L2CAP Profile UUID
-                                 0x09,        // uint16_t
-                                 0x00, 0x01,  // PSM = SDP
-                                 0x35, 0x06,  // Data Element Sequence (6 bytes)
-                                 0x19,        // UUID
-                                 0x00, 0x19,  // AVTDP Profile UUID
-                                 0x09,        // uint16_t
-                                 0x01, 0x03   // PSM_AVDTP
+      bt::StaticByteBuffer(0x35, 0x10,  // Data Element Sequence (10 bytes)
+                           0x35, 0x06,  // Data Element Sequence (6 bytes)
+                           0x19,        // UUID (16 bits)
+                           0x01, 0x00,  // L2CAP Profile UUID
+                           0x09,        // uint16_t
+                           0x00, 0x01,  // PSM = SDP
+                           0x35, 0x06,  // Data Element Sequence (6 bytes)
+                           0x19,        // UUID
+                           0x00, 0x19,  // AVTDP Profile UUID
+                           0x09,        // uint16_t
+                           0x01, 0x03   // PSM_AVDTP
       );
   EXPECT_EQ(expected_protocol_list.size(), protocol_block.size());
   EXPECT_TRUE(ContainersEqual(expected_protocol_list, protocol_block));
@@ -738,14 +738,13 @@ TEST(HelpersTest, ServiceDefinitionToServiceRecord) {
       rec.value().GetAttribute(bt::sdp::kBluetoothProfileDescriptorList);
   bt::DynamicByteBuffer profile_block(profile_val.WriteSize());
   profile_val.Write(&profile_block);
-  auto expected_profile_list =
-      bt::CreateStaticByteBuffer(0x35, 0x08,  // Data Element Sequence (8 bytes)
-                                 0x35, 0x06,  // Data Element Sequence (6 bytes)
-                                 0x19,        // UUID
-                                 0x11, 0x0d,  // Advanced Audio Identifier
-                                 0x09,        // uint16_t
-                                 0x01, 0x03   // Major and minor version
-      );
+  auto expected_profile_list = bt::StaticByteBuffer(0x35, 0x08,  // Data Element Sequence (8 bytes)
+                                                    0x35, 0x06,  // Data Element Sequence (6 bytes)
+                                                    0x19,        // UUID
+                                                    0x11, 0x0d,  // Advanced Audio Identifier
+                                                    0x09,        // uint16_t
+                                                    0x01, 0x03   // Major and minor version
+  );
   EXPECT_EQ(expected_profile_list.size(), profile_block.size());
   EXPECT_TRUE(ContainersEqual(expected_profile_list, profile_block));
 

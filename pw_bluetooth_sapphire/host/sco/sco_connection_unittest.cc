@@ -194,7 +194,7 @@ TEST_F(HciScoConnectionTest, ReceiveTwoPackets) {
 
   EXPECT_FALSE(sco_conn()->Read());
 
-  auto packet_buffer_0 = StaticByteBuffer(
+  StaticByteBuffer packet_buffer_0(
       LowerBits(kConnectionHandle),
       UpperBits(kConnectionHandle) | 0x30,  // handle + packet status flag: kDataPartiallyLost
       0x01,                                 // payload length
@@ -207,12 +207,12 @@ TEST_F(HciScoConnectionTest, ReceiveTwoPackets) {
 
   ASSERT_EQ(packets.size(), 1u);
   EXPECT_FALSE(sco_conn()->Read());
-  auto payload_buffer_0 = StaticByteBuffer(0x00);
+  StaticByteBuffer payload_buffer_0(0x00);
   EXPECT_TRUE(ContainersEqual(packets[0]->view().payload_data(), payload_buffer_0));
   EXPECT_EQ(packets[0]->packet_status_flag(),
             hci_spec::SynchronousDataPacketStatusFlag::kDataPartiallyLost);
 
-  auto packet_buffer_1 = StaticByteBuffer(
+  StaticByteBuffer packet_buffer_1(
       LowerBits(kConnectionHandle),
       UpperBits(kConnectionHandle),  // handle + packet status flag: kCorrectlyReceived
       0x01,                          // payload length

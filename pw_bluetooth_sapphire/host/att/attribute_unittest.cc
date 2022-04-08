@@ -18,7 +18,7 @@ constexpr UUID kTestType2(uint16_t{0x0002});
 constexpr UUID kTestType3(uint16_t{0x0003});
 constexpr UUID kTestType4(uint16_t{0x0004});
 
-const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
+const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
 TEST(AttributeDeathTest, OverflowingMaxHandleOnAttributeGroupDies) {
   ASSERT_DEATH_IF_SUPPORTED(
@@ -161,7 +161,7 @@ TEST(AttributeTest, ReadAsync) {
   bool callback_called = false;
   auto callback = [&](fitx::result<ErrorCode> status, const auto& value) {
     EXPECT_EQ(fitx::ok(), status);
-    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('h', 'i'), value));
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer('h', 'i'), value));
     callback_called = true;
   };
 
@@ -171,7 +171,7 @@ TEST(AttributeTest, ReadAsync) {
     EXPECT_EQ(kTestOffset, offset);
     EXPECT_TRUE(result_cb);
 
-    result_cb(fitx::ok(), CreateStaticByteBuffer('h', 'i'));
+    result_cb(fitx::ok(), StaticByteBuffer('h', 'i'));
   };
 
   attr->set_read_handler(handler);
@@ -216,15 +216,14 @@ TEST(AttributeTest, WriteAsync) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(kTestOffset, offset);
-    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('h', 'i'), value));
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer('h', 'i'), value));
     EXPECT_TRUE(result_cb);
 
     result_cb(fitx::ok());
   };
 
   attr->set_write_handler(handler);
-  EXPECT_TRUE(
-      attr->WriteAsync(kTestPeerId, kTestOffset, CreateStaticByteBuffer('h', 'i'), callback));
+  EXPECT_TRUE(attr->WriteAsync(kTestPeerId, kTestOffset, StaticByteBuffer('h', 'i'), callback));
   EXPECT_TRUE(callback_called);
 }
 

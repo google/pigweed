@@ -179,7 +179,7 @@ TEST_F(SocketChannelRelayLifetimeTest, RelayActivationFailsIfChannelActivationFa
 
 TEST_F(SocketChannelRelayLifetimeTest, DestructionWithPendingSdusFromChannelDoesNotCrash) {
   ASSERT_TRUE(relay()->Activate());
-  channel()->Receive(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
+  channel()->Receive(StaticByteBuffer('h', 'e', 'l', 'l', 'o'));
   DestroyRelay();
   RunLoopUntilIdle();
 }
@@ -204,7 +204,7 @@ TEST_F(SocketChannelRelayLifetimeTest,
   ASSERT_TRUE(relay()->Activate());
   ASSERT_TRUE(StuffSocket());
 
-  channel()->Receive(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
+  channel()->Receive(StaticByteBuffer('h', 'e', 'l', 'l', 'o'));
   RunLoopUntilIdle();
   ASSERT_FALSE(was_deactivation_callback_invoked());
 
@@ -289,7 +289,7 @@ class SocketChannelRelayRxTest : public SocketChannelRelayDataPathTest {
 };
 
 TEST_F(SocketChannelRelayRxTest, MessageFromChannelIsCopiedToSocketSynchronously) {
-  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kExpectedMessage('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage);
   // The data should be copied synchronously, so the async loop should not be run here.
@@ -297,8 +297,8 @@ TEST_F(SocketChannelRelayRxTest, MessageFromChannelIsCopiedToSocketSynchronously
 }
 
 TEST_F(SocketChannelRelayRxTest, MultipleSdusFromChannelAreCopiedToSocketPreservingSduBoundaries) {
-  const auto kExpectedMessage1 = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
-  const auto kExpectedMessage2 = CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
+  const StaticByteBuffer kExpectedMessage1('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kExpectedMessage2('g', 'o', 'o', 'd', 'b', 'y', 'e');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage1);
   channel()->Receive(kExpectedMessage2);
@@ -312,7 +312,7 @@ TEST_F(SocketChannelRelayRxTest, SduFromChannelIsCopiedToSocketWhenSocketUnblock
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
-  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kExpectedMessage('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage);
   RunLoopUntilIdle();
@@ -326,8 +326,8 @@ TEST_F(SocketChannelRelayRxTest, CanQueueAndWriteMultipleSDUs) {
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
-  const auto kExpectedMessage1 = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
-  const auto kExpectedMessage2 = CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
+  const StaticByteBuffer kExpectedMessage1('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kExpectedMessage2('g', 'o', 'o', 'd', 'b', 'y', 'e');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage1);
   channel()->Receive(kExpectedMessage2);
@@ -402,9 +402,9 @@ TEST_F(SocketChannelRelayRxTest, CanQueueAndIncrementallyWriteMultipleSDUs) {
 }
 
 TEST_F(SocketChannelRelayRxTest, ZeroByteSDUsDropped) {
-  const auto kMessage1 = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kMessage1('h', 'e', 'l', 'l', 'o');
   DynamicByteBuffer kMessageZero(0);
-  const auto kMessage3 = CreateStaticByteBuffer('f', 'u', 'c', 'h', 's', 'i', 'a');
+  const StaticByteBuffer kMessage3('f', 'u', 'c', 'h', 's', 'i', 'a');
 
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kMessageZero);
@@ -424,9 +424,9 @@ TEST_F(SocketChannelRelayRxTest, OldestSDUIsDroppedOnOverflow) {
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
-  const auto kSentMessage1 = CreateStaticByteBuffer(1);
-  const auto kSentMessage2 = CreateStaticByteBuffer(2);
-  const auto kSentMessage3 = CreateStaticByteBuffer(3);
+  const StaticByteBuffer kSentMessage1(1);
+  const StaticByteBuffer kSentMessage2(2);
+  const StaticByteBuffer kSentMessage3(3);
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kSentMessage1);
   channel()->Receive(kSentMessage2);
@@ -441,8 +441,8 @@ TEST_F(SocketChannelRelayRxTest, OldestSDUIsDroppedOnOverflow) {
 }
 
 TEST_F(SocketChannelRelayRxTest, SdusReceivedBeforeChannelActivationAreCopiedToSocket) {
-  const auto kExpectedMessage1 = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
-  const auto kExpectedMessage2 = CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
+  const StaticByteBuffer kExpectedMessage1('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kExpectedMessage2('g', 'o', 'o', 'd', 'b', 'y', 'e');
   channel()->Receive(kExpectedMessage1);
   channel()->Receive(kExpectedMessage2);
   ASSERT_TRUE(relay()->Activate());
@@ -457,8 +457,8 @@ TEST_F(SocketChannelRelayRxTest, SdusPendingAtChannelClosureAreCopiedToSocket) {
   ASSERT_TRUE(StuffSocket());
   ASSERT_TRUE(relay()->Activate());
 
-  const auto kExpectedMessage1 = CreateStaticByteBuffer('h');
-  const auto kExpectedMessage2 = CreateStaticByteBuffer('i');
+  const StaticByteBuffer kExpectedMessage1('h');
+  const StaticByteBuffer kExpectedMessage2('i');
   channel()->Receive(kExpectedMessage1);
   channel()->Receive(kExpectedMessage2);
   RunLoopUntilIdle();
@@ -487,7 +487,7 @@ TEST_F(SocketChannelRelayRxTest,
   // SDU synchronously to the SocketChannelRelay. Asynchronous delivery could
   // compromise the test's validity, since that would allow OnSocketClosed() to
   // be invoked before OnChannelDataReceived().
-  channel()->Receive(CreateStaticByteBuffer(kGoodChar));
+  channel()->Receive(StaticByteBuffer(kGoodChar));
   CloseRemoteSocket();
   ASSERT_TRUE(relay()->Activate());
 }
@@ -498,7 +498,7 @@ TEST_F(SocketChannelRelayRxTest,
 
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
-  channel()->Receive(CreateStaticByteBuffer(kGoodChar));
+  channel()->Receive(StaticByteBuffer(kGoodChar));
   RunLoopUntilIdle();
 
   ASSERT_TRUE(DiscardFromSocket(n_junk_bytes));
@@ -512,7 +512,7 @@ TEST_F(SocketChannelRelayRxTest, NoDataFromChannelIsWrittenToSocketAfterDeactiva
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
-  channel()->Receive(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
+  channel()->Receive(StaticByteBuffer('h', 'e', 'l', 'l', 'o'));
   RunLoopUntilIdle();
 
   channel()->Close();  // Triggers relay deactivation.
@@ -532,7 +532,7 @@ TEST_F(SocketChannelRelayRxTest, NoDataFromChannelIsWrittenToSocketAfterDeactiva
 using SocketChannelRelayTxTest = SocketChannelRelayDataPathTest;
 
 TEST_F(SocketChannelRelayTxTest, SduFromSocketIsCopiedToChannel) {
-  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kExpectedMessage('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
 
   size_t n_bytes_written = 0;
@@ -551,7 +551,7 @@ TEST_F(SocketChannelRelayTxTest, SduFromSocketIsCopiedToChannel) {
 }
 
 TEST_F(SocketChannelRelayTxTest, MultipleSdusFromSocketAreCopiedToChannel) {
-  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kExpectedMessage('h', 'e', 'l', 'l', 'o');
   const size_t kNumMessages = 3;
   ASSERT_TRUE(relay()->Activate());
 
@@ -576,7 +576,7 @@ TEST_F(SocketChannelRelayTxTest, MultipleSdusFromSocketAreCopiedToChannel) {
 }
 
 TEST_F(SocketChannelRelayTxTest, MultipleSdusAreCopiedToChannelInOneRelayTask) {
-  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kExpectedMessage('h', 'e', 'l', 'l', 'o');
   const size_t kNumMessages = 3;
   ASSERT_TRUE(relay()->Activate());
 
@@ -619,7 +619,7 @@ TEST_F(SocketChannelRelayTxTest, OversizedSduIsDropped) {
 }
 
 TEST_F(SocketChannelRelayTxTest, ValidSduAfterOversizedSduIsIgnored) {
-  const auto kSentMsg = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer kSentMsg('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
 
   {

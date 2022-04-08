@@ -76,7 +76,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRej) {
   constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
 
   // Connection Request payload
-  auto expected_conn_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_conn_req(
       // PSM
       LowerBits(kPsm), UpperBits(kPsm),
 
@@ -84,7 +84,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRej) {
       LowerBits(kBadLocalCId), UpperBits(kBadLocalCId));
 
   // Command Reject payload
-  auto rej_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer rej_rsp(
       // Reject Reason (invalid channel ID)
       LowerBits(static_cast<uint16_t>(RejectReason::kInvalidCID)),
       UpperBits(static_cast<uint16_t>(RejectReason::kInvalidCID)),
@@ -116,7 +116,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejection) {
   constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
 
   // Connection Request payload
-  auto expected_conn_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_conn_req(
       // PSM
       LowerBits(kPsm), UpperBits(kPsm),
 
@@ -124,7 +124,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejection) {
       LowerBits(kBadLocalCId), UpperBits(kBadLocalCId));
 
   // Command Reject payload (the invalid channel IDs are missing)
-  auto rej_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer rej_rsp(
       // Reject Reason (invalid channel ID)
       LowerBits(static_cast<uint16_t>(RejectReason::kInvalidCID)),
       UpperBits(static_cast<uint16_t>(RejectReason::kInvalidCID)));
@@ -145,7 +145,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejection) {
 
 TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
   // Connection Request payload
-  auto expected_conn_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_conn_req(
       // PSM
       LowerBits(kPsm), UpperBits(kPsm),
 
@@ -153,7 +153,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
       LowerBits(kLocalCId), UpperBits(kLocalCId));
 
   // Connection Response payload
-  auto ok_conn_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer ok_conn_rsp(
       // Destination CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -186,7 +186,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
 
 TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
   // Connection Request payload
-  auto expected_conn_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_conn_req(
       // PSM
       LowerBits(kPsm), UpperBits(kPsm),
 
@@ -194,7 +194,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
       LowerBits(kLocalCId), UpperBits(kLocalCId));
 
   // Connection Response payload
-  auto pend_conn_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer pend_conn_rsp(
       // Destination CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -207,7 +207,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
       // Status (Authorization pending)
       0x02, 0x00);
 
-  auto ok_conn_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer ok_conn_rsp(
       // Destination CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -248,7 +248,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
 
 TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspTimeOut) {
   // Connection Request payload
-  auto expected_conn_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_conn_req(
       // PSM
       LowerBits(kPsm), UpperBits(kPsm),
 
@@ -277,12 +277,12 @@ TEST_F(BrEdrCommandHandlerTest, InboundInfoReqRspNotSupported) {
   cmd_handler()->ServeInformationRequest(std::move(cb));
 
   // Information Request payload
-  auto info_req = CreateStaticByteBuffer(
+  StaticByteBuffer info_req(
       // Type = Connectionless MTU
       0x01, 0x00);
 
   // Information Response payload
-  auto expected_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer expected_rsp(
       // Type = Connectionless MTU
       0x01, 0x00,
 
@@ -300,12 +300,12 @@ TEST_F(BrEdrCommandHandlerTest, InboundInfoReqRspConnlessMtu) {
   cmd_handler()->ServeInformationRequest(std::move(cb));
 
   // Information Request payload
-  auto info_req = CreateStaticByteBuffer(
+  StaticByteBuffer info_req(
       // Type = Connectionless MTU
       0x01, 0x00);
 
   // Information Response payload
-  auto expected_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer expected_rsp(
       // Type = Connectionless MTU
       0x01, 0x00,
 
@@ -326,12 +326,12 @@ TEST_F(BrEdrCommandHandlerTest, InboundInfoReqRspExtendedFeatures) {
   cmd_handler()->ServeInformationRequest(std::move(cb));
 
   // Information Request payload
-  auto info_req = CreateStaticByteBuffer(
+  StaticByteBuffer info_req(
       // Type = Features Mask
       0x02, 0x00);
 
   // Information Response payload
-  auto expected_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer expected_rsp(
       // Type = Features Mask
       0x02, 0x00,
 
@@ -352,12 +352,12 @@ TEST_F(BrEdrCommandHandlerTest, InboundInfoReqRspFixedChannels) {
   cmd_handler()->ServeInformationRequest(std::move(cb));
 
   // Information Request payload
-  auto info_req = CreateStaticByteBuffer(
+  StaticByteBuffer info_req(
       // Type = Fixed Channels
       0x03, 0x00);
 
   // Configuration Response payload
-  auto expected_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer expected_rsp(
       // Type = Fixed Channels
       0x03, 0x00,
 
@@ -385,7 +385,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConfigReqEmptyRspOkEmpty) {
   cmd_handler()->ServeConfigurationRequest(std::move(cb));
 
   // Configuration Request payload
-  auto config_req = CreateStaticByteBuffer(
+  StaticByteBuffer config_req(
       // Destination Channel ID
       LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -393,7 +393,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConfigReqEmptyRspOkEmpty) {
       0x06, 0x60);
 
   // Configuration Response payload
-  auto expected_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer expected_rsp(
       // Destination Channel ID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -408,7 +408,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConfigReqEmptyRspOkEmpty) {
 
 TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
   // Configuration Request payload
-  auto expected_config_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_config_req(
       // Destination CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -422,7 +422,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
   );
 
   // Configuration Response payload
-  auto pending_config_req = CreateStaticByteBuffer(
+  StaticByteBuffer pending_config_req(
       // Source CID
       LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -465,7 +465,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
 
 TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
   // Configuration Request payload
-  auto expected_config_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_config_req(
       // Destination CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -479,7 +479,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
   );
 
   // Disconnect Request payload
-  auto expected_discon_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_discon_req(
       // Destination CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -514,13 +514,13 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
 }
 TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
   // Information Request payload
-  auto expected_info_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_info_req(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
       UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
 
   // Information Response payload
-  auto ok_info_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer ok_info_rsp(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
       UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
@@ -553,13 +553,13 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
 
 TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspNotSupported) {
   // Information Request payload
-  auto expected_info_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_info_req(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
       UpperBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)));
 
   // Information Response payload
-  auto error_info_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer error_info_rsp(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
       UpperBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
@@ -588,13 +588,13 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspNotSupported) {
 
 TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspHeaderNotEnoughBytes) {
   // Information Request payload
-  auto expected_info_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_info_req(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
       UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
 
   // Information Response payload
-  auto malformed_info_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer malformed_info_rsp(
       // 1 of 4 bytes expected of an Information Response just to be able to parse it.
       LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
 
@@ -613,13 +613,13 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspHeaderNotEnoughBytes) {
 
 TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspPayloadNotEnoughBytes) {
   // Information Request payload
-  auto expected_info_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_info_req(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
       UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
 
   // Information Response payload
-  auto malformed_info_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer malformed_info_rsp(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
       UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
@@ -648,13 +648,13 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspPayloadNotEnoughBytes) {
 // requested.
 TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspWrongType) {
   // Information Request payload
-  auto expected_info_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_info_req(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
       UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
 
   // Information Response payload
-  auto mismatch_info_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer mismatch_info_rsp(
       // Information Type
       LowerBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
       UpperBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
@@ -688,12 +688,12 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspWrongType) {
 // Allow types of information besides those known to BrEdrCommandHandler.
 TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqUnknownType) {
   // Information Request payload
-  auto expected_info_req = CreateStaticByteBuffer(
+  StaticByteBuffer expected_info_req(
       // Information Type
       0x04, 0);
 
   // Information Response payload
-  auto ok_info_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer ok_info_rsp(
       // Information Type
       0x04, 0,
 
@@ -732,7 +732,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqRspPending) {
   cmd_handler()->ServeConnectionRequest(std::move(cb));
 
   // Connection Request payload
-  auto conn_req = CreateStaticByteBuffer(
+  StaticByteBuffer conn_req(
       // PSM
       LowerBits(kPsm), UpperBits(kPsm),
 
@@ -740,7 +740,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqRspPending) {
       LowerBits(kRemoteCId), UpperBits(kRemoteCId));
 
   // Connection Response payload
-  auto conn_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer conn_rsp(
       // Destination CID (relative to requester)
       LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -768,7 +768,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqBadPsm) {
   cmd_handler()->ServeConnectionRequest(std::move(cb));
 
   // Connection Request payload
-  auto conn_req = CreateStaticByteBuffer(
+  StaticByteBuffer conn_req(
       // PSM
       LowerBits(kBadPsm), UpperBits(kBadPsm),
 
@@ -776,7 +776,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqBadPsm) {
       LowerBits(kRemoteCId), UpperBits(kRemoteCId));
 
   // Connection Response payload
-  auto conn_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer conn_rsp(
       // Destination CID (relative to requester)
       LowerBits(kInvalidChannelId), UpperBits(kInvalidChannelId),
 
@@ -803,7 +803,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqNonDynamicSrcCId) {
   cmd_handler()->ServeConnectionRequest(std::move(cb));
 
   // Connection Request payload
-  auto conn_req = CreateStaticByteBuffer(
+  StaticByteBuffer conn_req(
       // PSM
       LowerBits(kPsm), UpperBits(kPsm),
 
@@ -811,7 +811,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqNonDynamicSrcCId) {
       LowerBits(kSMPChannelId), UpperBits(kSMPChannelId));
 
   // Connection Response payload
-  auto conn_rsp = CreateStaticByteBuffer(
+  StaticByteBuffer conn_rsp(
       // Destination CID (relative to requester)
       LowerBits(kInvalidChannelId), UpperBits(kInvalidChannelId),
 

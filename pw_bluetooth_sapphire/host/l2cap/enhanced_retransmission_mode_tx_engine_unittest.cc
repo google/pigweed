@@ -55,7 +55,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu)
   };
 
   constexpr size_t kMtu = 10;
-  const auto payload = CreateStaticByteBuffer(1);
+  const StaticByteBuffer payload(1);
   TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, kDefaultTxWindow, tx_callback,
            NoOpFailureCallback)
       .QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
@@ -63,9 +63,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu)
   ASSERT_TRUE(last_pdu);
 
   // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
-  const auto expected_pdu = CreateStaticByteBuffer(0,   // Final Bit, TxSeq, MustBeZeroBit
-                                                   0,   // SAR bits, ReqSeq
-                                                   1);  // Payload
+  const StaticByteBuffer expected_pdu(0,   // Final Bit, TxSeq, MustBeZeroBit
+                                      0,   // SAR bits, ReqSeq
+                                      1);  // Payload
   EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
 }
 
@@ -78,7 +78,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu)
   };
 
   constexpr size_t kMtu = 1;
-  const auto payload = CreateStaticByteBuffer(1);
+  const StaticByteBuffer payload(1);
   TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, kDefaultTxWindow, tx_callback,
            NoOpFailureCallback)
       .QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
@@ -86,9 +86,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu)
   ASSERT_TRUE(last_pdu);
 
   // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
-  const auto expected_pdu = CreateStaticByteBuffer(0,   // Final Bit, TxSeq, MustBeZeroBit
-                                                   0,   // SAR bits, ReqSeq
-                                                   1);  // Payload
+  const StaticByteBuffer expected_pdu(0,   // Final Bit, TxSeq, MustBeZeroBit
+                                      0,   // SAR bits, ReqSeq
+                                      1);  // Payload
   EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
 }
 
@@ -97,7 +97,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesOversizedSdu) {
   constexpr size_t kMtu = 1;
   TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, kDefaultTxWindow, NoOpTxCallback,
            NoOpFailureCallback)
-      .QueueSdu(std::make_unique<DynamicByteBuffer>(CreateStaticByteBuffer(1, 2)));
+      .QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer(1, 2)));
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesZeroByteSdu) {
@@ -107,7 +107,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesZeroByteSdu) {
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
-  const auto payload = CreateStaticByteBuffer(1);
+  const StaticByteBuffer payload(1);
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -115,9 +115,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
 
   {
     // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
-    const auto expected_pdu = CreateStaticByteBuffer(0,   // Final Bit, TxSeq, MustBeZeroBit
-                                                     0,   // SAR bits, ReqSeq
-                                                     1);  // Payload
+    const StaticByteBuffer expected_pdu(0,   // Final Bit, TxSeq, MustBeZeroBit
+                                        0,   // SAR bits, ReqSeq
+                                        1);  // Payload
 
     tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
     ASSERT_TRUE(last_pdu);
@@ -126,9 +126,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
 
   {
     // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
-    const auto expected_pdu = CreateStaticByteBuffer(1 << 1,  // Final Bit, TxSeq=1, MustBeZeroBit
-                                                     0,       // SAR bits, ReqSeq
-                                                     1);      // Payload
+    const StaticByteBuffer expected_pdu(1 << 1,  // Final Bit, TxSeq=1, MustBeZeroBit
+                                        0,       // SAR bits, ReqSeq
+                                        1);      // Payload
     tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
     ASSERT_TRUE(last_pdu);
     EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
@@ -136,9 +136,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
 
   {
     // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
-    const auto expected_pdu = CreateStaticByteBuffer(2 << 1,  // Final Bit, TxSeq=2, MustBeZeroBit
-                                                     0,       // SAR bits, ReqSeq
-                                                     1);      // Payload
+    const StaticByteBuffer expected_pdu(2 << 1,  // Final Bit, TxSeq=2, MustBeZeroBit
+                                        0,       // SAR bits, ReqSeq
+                                        1);      // Payload
     tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
     ASSERT_TRUE(last_pdu);
     EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
@@ -147,7 +147,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduRollsOverSequenceNumber) {
   constexpr size_t kTxWindow = 63;  // Max possible value
-  const auto payload = CreateStaticByteBuffer(1);
+  const StaticByteBuffer payload(1);
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kTxWindow, tx_callback,
@@ -160,10 +160,10 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduRollsOverSequenceNumber) 
   }
 
   // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
-  const auto expected_pdu =
-      CreateStaticByteBuffer(0,   // Final Bit, TxSeq (rolls over from 63 to 0), MustBeZeroBit
-                             0,   // SAR bits, ReqSeq
-                             1);  // Payload
+  const StaticByteBuffer expected_pdu(
+      0,   // Final Bit, TxSeq (rolls over from 63 to 0), MustBeZeroBit
+      0,   // SAR bits, ReqSeq
+      1);  // Payload
   last_pdu = nullptr;
   // Free up space for more transmissions. We need room for the 64th frame from
   // above (since the TxWindow is 63), and the new 0th frame. Hence we

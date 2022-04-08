@@ -208,7 +208,7 @@ TEST_F(L2capTest, InboundL2capSocket) {
 
   // Test basic channel<->socket interaction by verifying that an ACL packet
   // gets routed to the socket.
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
@@ -232,9 +232,9 @@ TEST_F(L2capTest, InboundL2capSocket) {
 
   // Test outbound data fragments using |kMaxDataPacketLength|.
   constexpr size_t kFirstFragmentPayloadSize = kMaxDataPacketLength - sizeof(l2cap::BasicHeader);
-  const auto kFirstFragment =
-      StaticByteBuffer<sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::BasicHeader) +
-                       kFirstFragmentPayloadSize>(
+  const StaticByteBuffer<sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::BasicHeader) +
+                         kFirstFragmentPayloadSize>
+      kFirstFragment(
           // ACL data header (handle: 1, length 64)
           0x01, 0x00, 0x40, 0x00,
 
@@ -248,8 +248,8 @@ TEST_F(L2capTest, InboundL2capSocket) {
           0x9f, 0x9a, 0x8c, 0xf0, 0x9f, 0x9a, 0x8e, 0xf0, 0x9f, 0x9a, 0x9d, 0xf0, 0x9f, 0x9a, 0x9e);
 
   constexpr size_t kSecondFragmentPayloadSize = sizeof(write_data) - 1 - kFirstFragmentPayloadSize;
-  const auto kSecondFragment =
-      StaticByteBuffer<sizeof(hci_spec::ACLDataHeader) + kSecondFragmentPayloadSize>(
+  const StaticByteBuffer<sizeof(hci_spec::ACLDataHeader) + kSecondFragmentPayloadSize>
+      kSecondFragment(
           // ACL data header (handle: 1, pbf: continuing fr., length: 20)
           0x01, 0x10, 0x14, 0x00,
 
@@ -352,7 +352,7 @@ TEST_F(L2capTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   // Queue up a data packet for the new channel before the channel configuration has been
   // processed.
   ASSERT_FALSE(chan);
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
@@ -403,7 +403,7 @@ TEST_F(L2capTest, OutboundL2capSocket) {
 
   // Test basic channel<->socket interaction by verifying that an ACL packet
   // gets routed to the socket.
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
@@ -480,7 +480,7 @@ TEST_F(L2capTest, ChannelCreationPrioritizedOverDynamicChannelData) {
       kLinkHandle, kConnectionCreationPacketCount + kChannelCreationPacketCount));
 
   // Dummy dynamic channel packet
-  const auto kPacket0 = CreateStaticByteBuffer(
+  const StaticByteBuffer kPacket0(
       // ACL data header (handle: 1, length 5)
       0x01, 0x00, 0x05, 0x00,
 

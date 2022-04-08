@@ -132,14 +132,14 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
   // clang-format off
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
-  auto req_bytes = CreateStaticByteBuffer(
+  StaticByteBuffer req_bytes(
       0x06, 0x04, 0x03, 0x01, 0x00, hci_spec::StatusCode::kRemoteUserTerminatedConnection);
 
   // Respond with Command Status and Disconnection Complete.
-  auto cmd_status_bytes = CreateStaticByteBuffer(
+  StaticByteBuffer cmd_status_bytes(
       hci_spec::kCommandStatusEventCode, 0x04, hci_spec::StatusCode::kSuccess, 1, 0x06, 0x04);
 
-  auto disc_cmpl_bytes = CreateStaticByteBuffer(
+  StaticByteBuffer disc_cmpl_bytes(
       hci_spec::kDisconnectionCompleteEventCode, 0x04,
       hci_spec::StatusCode::kSuccess, 0x01, 0x00, hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
 
@@ -347,14 +347,14 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
   // clang-format off
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
-  auto req_bytes = CreateStaticByteBuffer(
+  StaticByteBuffer req_bytes(
       0x06, 0x04, 0x03, 0x01, 0x00, hci_spec::StatusCode::kRemoteUserTerminatedConnection);
 
   // Respond with Command Status and Disconnection Complete.
-  auto cmd_status_bytes = CreateStaticByteBuffer(
+  StaticByteBuffer cmd_status_bytes(
       hci_spec::kCommandStatusEventCode, 0x04, hci_spec::StatusCode::kSuccess, 1, 0x06, 0x04);
 
-  auto disc_cmpl_bytes = CreateStaticByteBuffer(
+  StaticByteBuffer disc_cmpl_bytes(
       hci_spec::kDisconnectionCompleteEventCode, 0x04,
       hci_spec::StatusCode::kCommandDisallowed, 0x01, 0x00, hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
 
@@ -384,7 +384,7 @@ TEST_P(LinkTypeConnectionTest, StartEncryptionNoLinkKey) {
 // HCI Command Status event is received with an error status.
 TEST_F(ConnectionTest, LEStartEncryptionFailsAtStatus) {
   // clang-format off
-  auto kExpectedCommand = CreateStaticByteBuffer(
+  StaticByteBuffer kExpectedCommand(
     0x19, 0x20,  // HCI_LE_Start_Encryption
     28,          // parameter total size
     0x01, 0x00,  // connection handle: 1
@@ -392,7 +392,7 @@ TEST_F(ConnectionTest, LEStartEncryptionFailsAtStatus) {
     0xFF, 0x00,  // ediv: 255
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16  // LTK
   );
-  auto kErrorStatus = CreateStaticByteBuffer(
+  StaticByteBuffer kErrorStatus(
     0x0F,       // HCI Command Status event code
     4,          // parameter total size
     0x0C,       // "Command Disallowed" error
@@ -420,19 +420,18 @@ TEST_F(ConnectionTest, LEStartEncryptionFailsAtStatus) {
 }
 
 TEST_F(ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
-  auto kExpectedCommand =
-      CreateStaticByteBuffer(0x19, 0x20,  // HCI_LE_Start_Encryption
-                             28,          // parameter total size
-                             0x01, 0x00,  // connection handle: 1
-                             0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,        // rand: 1
-                             0xFF, 0x00,                                            // ediv: 255
-                             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16  // LTK
-      );
-  auto kStatus = CreateStaticByteBuffer(0x0F,       // HCI Command Status event code
-                                        4,          // parameter total size
-                                        0x00,       // success status
-                                        1,          // num_hci_command_packets
-                                        0x19, 0x20  // opcode: HCI_LE_Start_Encryption
+  StaticByteBuffer kExpectedCommand(0x19, 0x20,  // HCI_LE_Start_Encryption
+                                    28,          // parameter total size
+                                    0x01, 0x00,  // connection handle: 1
+                                    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // rand: 1
+                                    0xFF, 0x00,                                      // ediv: 255
+                                    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16  // LTK
+  );
+  StaticByteBuffer kStatus(0x0F,       // HCI Command Status event code
+                           4,          // parameter total size
+                           0x00,       // success status
+                           1,          // num_hci_command_packets
+                           0x19, 0x20  // opcode: HCI_LE_Start_Encryption
   );
 
   EXPECT_CMD_PACKET_OUT(test_device(), kExpectedCommand, &kStatus);
@@ -453,16 +452,16 @@ TEST_F(ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
 
 // HCI Command Status event is received with an error status.
 TEST_F(ConnectionTest, AclStartEncryptionFailsAtStatus) {
-  auto kExpectedCommand = CreateStaticByteBuffer(0x13, 0x04,  // HCI_Set_Connection_Encryption
-                                                 3,           // parameter total size
-                                                 0x01, 0x00,  // connection handle
-                                                 0x01         // encryption enable
+  StaticByteBuffer kExpectedCommand(0x13, 0x04,  // HCI_Set_Connection_Encryption
+                                    3,           // parameter total size
+                                    0x01, 0x00,  // connection handle
+                                    0x01         // encryption enable
   );
-  auto kErrorStatus = CreateStaticByteBuffer(0x0F,       // HCI Command Status event code
-                                             4,          // parameter total size
-                                             0x0C,       // "Command Disallowed" error
-                                             1,          // num_hci_command_packets
-                                             0x13, 0x04  // opcode: HCI_Set_Connection_Encryption
+  StaticByteBuffer kErrorStatus(0x0F,       // HCI Command Status event code
+                                4,          // parameter total size
+                                0x0C,       // "Command Disallowed" error
+                                1,          // num_hci_command_packets
+                                0x13, 0x04  // opcode: HCI_Set_Connection_Encryption
   );
 
   EXPECT_CMD_PACKET_OUT(test_device(), kExpectedCommand, &kErrorStatus);
@@ -484,16 +483,16 @@ TEST_F(ConnectionTest, AclStartEncryptionFailsAtStatus) {
 }
 
 TEST_F(ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
-  auto kExpectedCommand = CreateStaticByteBuffer(0x13, 0x04,  // HCI_Set_Connection_Encryption
-                                                 3,           // parameter total size
-                                                 0x01, 0x00,  // connection handle
-                                                 0x01         // encryption enable
+  StaticByteBuffer kExpectedCommand(0x13, 0x04,  // HCI_Set_Connection_Encryption
+                                    3,           // parameter total size
+                                    0x01, 0x00,  // connection handle
+                                    0x01         // encryption enable
   );
-  auto kStatus = CreateStaticByteBuffer(0x0F,       // HCI Command Status event code
-                                        4,          // parameter total size
-                                        0x00,       // success status
-                                        1,          // num_hci_command_packets
-                                        0x13, 0x04  // opcode: HCI_Set_Connection_Encryption
+  StaticByteBuffer kStatus(0x0F,       // HCI Command Status event code
+                           4,          // parameter total size
+                           0x00,       // success status
+                           1,          // num_hci_command_packets
+                           0x13, 0x04  // opcode: HCI_Set_Connection_Encryption
   );
 
   EXPECT_CMD_PACKET_OUT(test_device(), kExpectedCommand, &kStatus);
@@ -513,14 +512,14 @@ TEST_F(ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
 
 TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
   // clang-format off
-  auto kEncChangeMalformed = CreateStaticByteBuffer(
+  StaticByteBuffer kEncChangeMalformed(
     0x08,       // HCI Encryption Change event code
     3,          // parameter total size
     0x00,       // status
     0x01, 0x00  // connection handle: 1
     // Last byte missing
   );
-  auto kEncChangeWrongHandle = CreateStaticByteBuffer(
+  StaticByteBuffer kEncChangeWrongHandle(
     0x08,        // HCI Encryption Change event code
     4,           // parameter total size
     0x00,        // status
@@ -542,36 +541,35 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
-const auto kEncryptionChangeEventEnabled =
-    CreateStaticByteBuffer(0x08,        // HCI Encryption Change event code
-                           4,           // parameter total size
-                           0x00,        // status
-                           0x01, 0x00,  // connection handle: 1
-                           0x01         // encryption enabled
-    );
+const StaticByteBuffer kEncryptionChangeEventEnabled(0x08,  // HCI Encryption Change event code
+                                                     4,     // parameter total size
+                                                     0x00,  // status
+                                                     0x01, 0x00,  // connection handle: 1
+                                                     0x01         // encryption enabled
+);
 
 const auto kReadEncryptionKeySizeCommand =
-    CreateStaticByteBuffer(0x08, 0x14,  // opcode: HCI_ReadEncryptionKeySize
-                           0x02,        // parameter size
-                           0x01, 0x00   // connection handle: 0x0001
+    StaticByteBuffer(0x08, 0x14,  // opcode: HCI_ReadEncryptionKeySize
+                     0x02,        // parameter size
+                     0x01, 0x00   // connection handle: 0x0001
     );
 
-const auto kDisconnectCommand = CreateStaticByteBuffer(0x06, 0x04,  // opcode: HCI_Disconnect
-                                                       0x03,        // parameter total size
-                                                       0x01, 0x00,  // handle: 1
-                                                       0x05  // reason: authentication failure
+const StaticByteBuffer kDisconnectCommand(0x06, 0x04,  // opcode: HCI_Disconnect
+                                          0x03,        // parameter total size
+                                          0x01, 0x00,  // handle: 1
+                                          0x05         // reason: authentication failure
 );
 
 TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   // clang-format off
-  auto kEncryptionChangeEventDisabled = CreateStaticByteBuffer(
+  StaticByteBuffer kEncryptionChangeEventDisabled(
     0x08,        // HCI Encryption Change event code
     4,           // parameter total size
     0x00,        // status
     0x01, 0x00,  // connection handle: 1
     0x00         // encryption disabled
   );
-  auto kEncryptionChangeEventFailed = CreateStaticByteBuffer(
+  StaticByteBuffer kEncryptionChangeEventFailed(
     0x08,        // HCI Encryption Change event code
     4,           // parameter total size
     0x06,        // status: Pin or Key missing
@@ -579,7 +577,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
     0x00         // encryption disabled
   );
 
-  auto kKeySizeComplete = CreateStaticByteBuffer(
+  StaticByteBuffer kKeySizeComplete(
     0x0E,        // event code: Command Complete
     0x07,        // parameters total size
     0xFF,        // num command packets allowed (255)
@@ -655,15 +653,15 @@ TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
 }
 
 TEST_F(ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
-  auto kKeySizeComplete = CreateStaticByteBuffer(0x0E,        // event code: Command Complete
-                                                 0x07,        // parameters total size
-                                                 0xFF,        // num command packets allowed (255)
-                                                 0x08, 0x14,  // original opcode
+  StaticByteBuffer kKeySizeComplete(0x0E,        // event code: Command Complete
+                                    0x07,        // parameters total size
+                                    0xFF,        // num command packets allowed (255)
+                                    0x08, 0x14,  // original opcode
 
-                                                 // return parameters
-                                                 0x2F,        // status (insufficient security)
-                                                 0x01, 0x00,  // connection handle: 0x0001
-                                                 0x10         // encryption key size: 16
+                                    // return parameters
+                                    0x2F,        // status (insufficient security)
+                                    0x01, 0x00,  // connection handle: 0x0001
+                                    0x10         // encryption key size: 16
   );
 
   int callback_count = 0;
@@ -682,15 +680,15 @@ TEST_F(ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
 }
 
 TEST_F(ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
-  auto kKeySizeComplete = CreateStaticByteBuffer(0x0E,        // event code: Command Complete
-                                                 0x07,        // parameters total size
-                                                 0xFF,        // num command packets allowed (255)
-                                                 0x08, 0x14,  // original opcode
+  StaticByteBuffer kKeySizeComplete(0x0E,        // event code: Command Complete
+                                    0x07,        // parameters total size
+                                    0xFF,        // num command packets allowed (255)
+                                    0x08, 0x14,  // original opcode
 
-                                                 // return parameters
-                                                 0x00,        // status (success)
-                                                 0x01, 0x00,  // connection handle: 0x0001
-                                                 0x01         // encryption key size: 1
+                                    // return parameters
+                                    0x00,        // status (success)
+                                    0x01, 0x00,  // connection handle: 0x0001
+                                    0x01         // encryption key size: 1
   );
 
   int callback_count = 0;
@@ -710,13 +708,13 @@ TEST_F(ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
 
 TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   // clang-format off
-  auto kEncryptionKeyRefresh = CreateStaticByteBuffer(
+  StaticByteBuffer kEncryptionKeyRefresh(
     0x30,       // HCI Encryption Key Refresh Complete event
     3,          // parameter total size
     0x00,       // status
     0x01, 0x00  // connection handle: 1
   );
-  auto kEncryptionKeyRefreshFailed = CreateStaticByteBuffer(
+  StaticByteBuffer kEncryptionKeyRefreshFailed(
     0x30,       // HCI Encryption Key Refresh Complete event
     3,          // parameter total size
     0x06,       // status: Pin or Key missing
@@ -751,7 +749,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
 
 TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
   // clang-format off
-  auto kMalformed = CreateStaticByteBuffer(
+  StaticByteBuffer kMalformed(
     0x3E,        // LE Meta Event code
     12,          // parameter total size
     0x05,        // LE LTK Request subevent code
@@ -763,7 +761,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
     // ediv: (missing 1 byte)
     0x00
   );
-  auto kWrongHandle = CreateStaticByteBuffer(
+  StaticByteBuffer kWrongHandle(
     0x3E,        // LE Meta Event code
     13,          // parameter total size
     0x05,        // LE LTK Request subevent code
@@ -792,7 +790,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
 
 TEST_F(ConnectionTest, LELongTermKeyRequestNoKey) {
   // clang-format off
-  auto kEvent = CreateStaticByteBuffer(
+  StaticByteBuffer kEvent(
     0x3E,        // LE Meta Event code
     13,          // parameter total size
     0x05,        // LE LTK Request subevent code
@@ -804,7 +802,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestNoKey) {
     // ediv: 0
     0x00, 0x00
   );
-  auto kResponse = CreateStaticByteBuffer(
+  StaticByteBuffer kResponse(
     0x1B, 0x20,  // opcode: HCI_LE_Long_Term_Key_Request_Negative_Reply
     2,           // parameter total size
     0x01, 0x00   // connection handle: 1
@@ -822,7 +820,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestNoKey) {
 // There is a link key but EDiv and Rand values don't match.
 TEST_F(ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
   // clang-format off
-  auto kEvent = CreateStaticByteBuffer(
+  StaticByteBuffer kEvent(
     0x3E,        // LE Meta Event code
     13,          // parameter total size
     0x05,        // LE LTK Request subevent code
@@ -834,7 +832,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
     // ediv: 0
     0x00, 0x00
   );
-  auto kResponse = CreateStaticByteBuffer(
+  StaticByteBuffer kResponse(
     0x1B, 0x20,  // opcode: HCI_LE_Long_Term_Key_Request_Negative_Reply
     2,           // parameter total size
     0x01, 0x00   // connection handle: 1
@@ -852,7 +850,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
 
 TEST_F(ConnectionTest, LELongTermKeyRequestReply) {
   // clang-format off
-  auto kEvent = CreateStaticByteBuffer(
+  StaticByteBuffer kEvent(
     0x3E,        // LE Meta Event code
     13,          // parameter total size
     0x05,        // LE LTK Request subevent code
@@ -863,7 +861,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestReply) {
     // ediv: 0xBEEF
     0xEF, 0xBE
   );
-  auto kResponse = CreateStaticByteBuffer(
+  StaticByteBuffer kResponse(
     0x1A, 0x20,  // opcode: HCI_LE_Long_Term_Key_Request_Reply
     18,          // parameter total size
     0x01, 0x00,  // connection handle: 1

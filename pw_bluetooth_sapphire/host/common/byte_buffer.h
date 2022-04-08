@@ -378,18 +378,6 @@ class StaticByteBuffer : public MutableByteBuffer {
 template <typename... T>
 StaticByteBuffer(T... bytes) -> StaticByteBuffer<sizeof...(T)>;
 
-// Wrapper for the variadic template StaticByteBuffer constructor that deduces
-// the value of the |BufferSize| template parameter from the given input. This
-// way one can construct a StaticByteBuffer without hard-coding the size of the
-// buffer like so:
-//
-//   auto buffer = CreateStaticByteBuffer(0x01, 0x02, 0x03);
-//
-template <typename... T>
-StaticByteBuffer<sizeof...(T)> CreateStaticByteBuffer(T... bytes) {
-  return StaticByteBuffer<sizeof...(T)>{bytes...};
-}
-
 // A ByteBuffer with dynamic storage duration. The underlying buffer is
 // allocated using malloc. Instances of this class are move-only.
 class DynamicByteBuffer : public MutableByteBuffer {

@@ -253,8 +253,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
 
   // Receive an S-frame containing a poll request retransmission request for seq = 1. See Core Spec
   // v5.0, Vol 3, Part A, Section 3.3.2 S-Frame Enhanced Control Field.
-  auto selective_reject =
-      StaticByteBuffer(0b1 | kExtendedControlSrejFunctionMask | kExtendedControlPBitMask, 1);
+  StaticByteBuffer selective_reject(
+      0b1 | kExtendedControlSrejFunctionMask | kExtendedControlPBitMask, 1);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, selective_reject, FrameCheckSequenceOption::kIncludeFcs));
@@ -461,8 +461,8 @@ TEST_F(
           .BuildFrame(kTestChannelId, selective_reject, FrameCheckSequenceOption::kIncludeFcs));
 
   // Receive an S-frame containing a retransmission request for I-Frame 0 and a poll response.
-  auto selective_reject_f =
-      StaticByteBuffer(0b1 | kExtendedControlSrejFunctionMask | kExtendedControlFBitMask, 0);
+  StaticByteBuffer selective_reject_f(
+      0b1 | kExtendedControlSrejFunctionMask | kExtendedControlFBitMask, 0);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, selective_reject_f, FrameCheckSequenceOption::kIncludeFcs));

@@ -18,8 +18,8 @@ constexpr uint16_t kUuid0 = 0x180d;
 
 TEST(DiscoveryFilterTest, Flags) {
   const BufferView kEmptyData;
-  const auto kInvalidFlagsData = StaticByteBuffer(0x01, 0x01);
-  const auto kValidFlagsData = StaticByteBuffer(0x02, 0x01, 0b101);
+  const StaticByteBuffer kInvalidFlagsData(0x01, 0x01);
+  const StaticByteBuffer kValidFlagsData(0x02, 0x01, 0b101);
 
   DiscoveryFilter filter;
 
@@ -115,16 +115,16 @@ TEST(DiscoveryFilterTest, 16BitServiceUuids) {
   // Below, "Incomplete" refers to the "Incomplete Service UUIDs" field while
   // "Complete" refers to "Complete Service UUIDs".
 
-  const auto kIncompleteEmpty = StaticByteBuffer(0x01, DataType::kIncomplete16BitServiceUuids);
-  const auto kIncompleteNoMatch =
-      StaticByteBuffer(0x05, DataType::kIncomplete16BitServiceUuids, 0x01, 0x02, 0x03, 0x04);
+  const StaticByteBuffer kIncompleteEmpty(0x01, DataType::kIncomplete16BitServiceUuids);
+  const StaticByteBuffer kIncompleteNoMatch(0x05, DataType::kIncomplete16BitServiceUuids, 0x01,
+                                            0x02, 0x03, 0x04);
   const auto kIncompleteMatch0 = StaticByteBuffer(0x05, DataType::kIncomplete16BitServiceUuids,
                                                   0x01, 0x02, LowerBits(kUuid0), UpperBits(kUuid0));
   const auto kIncompleteMatch1 = StaticByteBuffer(0x05, DataType::kIncomplete16BitServiceUuids,
                                                   LowerBits(kUuid1), UpperBits(kUuid1), 0x03, 0x04);
   const auto kCompleteEmpty = StaticByteBuffer(0x01, DataType::kComplete16BitServiceUuids);
-  const auto kCompleteNoMatch =
-      StaticByteBuffer(0x05, DataType::kComplete16BitServiceUuids, 0x01, 0x02, 0x03, 0x04);
+  const StaticByteBuffer kCompleteNoMatch(0x05, DataType::kComplete16BitServiceUuids, 0x01, 0x02,
+                                          0x03, 0x04);
   const auto kCompleteMatch0 = StaticByteBuffer(0x05, DataType::kComplete16BitServiceUuids, 0x01,
                                                 0x02, LowerBits(kUuid0), UpperBits(kUuid0));
   const auto kCompleteMatch1 = StaticByteBuffer(0x05, DataType::kComplete16BitServiceUuids,

@@ -37,13 +37,13 @@ constexpr ChannelParameters kERTMChannelParams{ChannelMode::kEnhancedRetransmiss
 
 // Commands Reject
 
-const ByteBuffer& kRejNotUnderstood = CreateStaticByteBuffer(
+const StaticByteBuffer kRejNotUnderstood(
     // Reject Reason (Not Understood)
     0x00, 0x00);
 
 // Connection Requests
 
-const ByteBuffer& kConnReq = CreateStaticByteBuffer(
+const StaticByteBuffer kConnReq(
     // PSM
     LowerBits(kPsm), UpperBits(kPsm),
 
@@ -51,7 +51,7 @@ const ByteBuffer& kConnReq = CreateStaticByteBuffer(
     LowerBits(kLocalCId), UpperBits(kLocalCId));
 
 auto MakeConnectionRequest(ChannelId src_id, PSM psm) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // PSM
       LowerBits(psm), UpperBits(psm),
 
@@ -59,21 +59,21 @@ auto MakeConnectionRequest(ChannelId src_id, PSM psm) {
       LowerBits(src_id), UpperBits(src_id));
 }
 
-const ByteBuffer& kInboundConnReq = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundConnReq(
     // PSM
     LowerBits(kPsm), UpperBits(kPsm),
 
     // Source CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId));
 
-const ByteBuffer& kInboundInvalidPsmConnReq = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundInvalidPsmConnReq(
     // PSM
     LowerBits(kInvalidPsm), UpperBits(kInvalidPsm),
 
     // Source CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId));
 
-const ByteBuffer& kInboundBadCIdConnReq = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundBadCIdConnReq(
     // PSM
     LowerBits(kPsm), UpperBits(kPsm),
 
@@ -82,7 +82,7 @@ const ByteBuffer& kInboundBadCIdConnReq = CreateStaticByteBuffer(
 
 // Connection Responses
 
-const ByteBuffer& kPendingConnRsp = CreateStaticByteBuffer(
+const StaticByteBuffer kPendingConnRsp(
     // Destination CID
     0x00, 0x00,
 
@@ -95,7 +95,7 @@ const ByteBuffer& kPendingConnRsp = CreateStaticByteBuffer(
     // Status (Authorization Pending)
     0x02, 0x00);
 
-const ByteBuffer& kPendingConnRspWithId = CreateStaticByteBuffer(
+const StaticByteBuffer kPendingConnRspWithId(
     // Destination CID (Wrong endianness but valid)
     UpperBits(kRemoteCId), LowerBits(kRemoteCId),
 
@@ -109,7 +109,7 @@ const ByteBuffer& kPendingConnRspWithId = CreateStaticByteBuffer(
     0x02, 0x00);
 
 auto MakeConnectionResponseWithResultPending(ChannelId src_id, ChannelId dst_id) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // Destination CID
       LowerBits(dst_id), UpperBits(dst_id),
 
@@ -123,7 +123,7 @@ auto MakeConnectionResponseWithResultPending(ChannelId src_id, ChannelId dst_id)
       0x02, 0x00);
 }
 
-const ByteBuffer& kOkConnRsp = CreateStaticByteBuffer(
+const StaticByteBuffer kOkConnRsp(
     // Destination CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -137,7 +137,7 @@ const ByteBuffer& kOkConnRsp = CreateStaticByteBuffer(
     0x00, 0x00);
 
 auto MakeConnectionResponse(ChannelId src_id, ChannelId dst_id) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // Destination CID
       LowerBits(dst_id), UpperBits(dst_id),
 
@@ -151,7 +151,7 @@ auto MakeConnectionResponse(ChannelId src_id, ChannelId dst_id) {
       0x00, 0x00);
 }
 
-const ByteBuffer& kInvalidConnRsp = CreateStaticByteBuffer(
+const StaticByteBuffer kInvalidConnRsp(
     // Destination CID (Not a dynamic channel ID)
     LowerBits(kBadCId), UpperBits(kBadCId),
 
@@ -164,7 +164,7 @@ const ByteBuffer& kInvalidConnRsp = CreateStaticByteBuffer(
     // Status (No further information available)
     0x00, 0x00);
 
-const ByteBuffer& kRejectConnRsp = CreateStaticByteBuffer(
+const StaticByteBuffer kRejectConnRsp(
     // Destination CID (Invalid)
     LowerBits(kInvalidChannelId), UpperBits(kInvalidChannelId),
 
@@ -177,7 +177,7 @@ const ByteBuffer& kRejectConnRsp = CreateStaticByteBuffer(
     // Status (No further information available)
     0x00, 0x00);
 
-const ByteBuffer& kInboundOkConnRsp = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundOkConnRsp(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -190,7 +190,7 @@ const ByteBuffer& kInboundOkConnRsp = CreateStaticByteBuffer(
     // Status (No further information available)
     0x00, 0x00);
 
-const ByteBuffer& kOutboundSourceCIdAlreadyAllocatedConnRsp = CreateStaticByteBuffer(
+const StaticByteBuffer kOutboundSourceCIdAlreadyAllocatedConnRsp(
     // Destination CID (Invalid)
     0x00, 0x00,
 
@@ -203,7 +203,7 @@ const ByteBuffer& kOutboundSourceCIdAlreadyAllocatedConnRsp = CreateStaticByteBu
     // Status (No further information available)
     0x00, 0x00);
 
-const ByteBuffer& kInboundBadPsmConnRsp = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundBadPsmConnRsp(
     // Destination CID (Invalid)
     0x00, 0x00,
 
@@ -216,7 +216,7 @@ const ByteBuffer& kInboundBadPsmConnRsp = CreateStaticByteBuffer(
     // Status (No further information available)
     0x00, 0x00);
 
-const ByteBuffer& kInboundBadCIdConnRsp = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundBadCIdConnRsp(
     // Destination CID (Invalid)
     0x00, 0x00,
 
@@ -231,14 +231,14 @@ const ByteBuffer& kInboundBadCIdConnRsp = CreateStaticByteBuffer(
 
 // Disconnection Requests
 
-const ByteBuffer& kDisconReq = CreateStaticByteBuffer(
+const StaticByteBuffer kDisconReq(
     // Destination CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
     // Source CID
     LowerBits(kLocalCId), UpperBits(kLocalCId));
 
-const ByteBuffer& kInboundDisconReq = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundDisconReq(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -291,14 +291,14 @@ const ByteBuffer& kOutboundConfigReqWithErtm = MakeConfigReqWithMtuAndRfc(
     kRemoteCId, kMaxInboundPduPayloadSize, ChannelMode::kEnhancedRetransmission,
     kErtmMaxUnackedInboundFrames, kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
 
-const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundConfigReq(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
 
     // Flags
     0x00, 0x00);
 
-const ByteBuffer& kInboundConfigReq2 = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundConfigReq2(
     // Destination CID
     LowerBits(kLocalCId2), UpperBits(kLocalCId2),
 
@@ -311,7 +311,7 @@ constexpr uint8_t kErtmNFramesInTxWindow = 32;
 constexpr uint8_t kErtmMaxTransmissions = 8;
 constexpr uint16_t kMaxTxPduPayloadSize = 1024;
 
-const ByteBuffer& kInboundConfigReqWithERTM = CreateStaticByteBuffer(
+const StaticByteBuffer kInboundConfigReqWithERTM(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -327,7 +327,7 @@ const ByteBuffer& kInboundConfigReqWithERTM = CreateStaticByteBuffer(
 auto MakeEmptyConfigRsp(ChannelId src_id,
                         ConfigurationResult result = ConfigurationResult::kSuccess,
                         uint16_t flags = 0x0000) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // Source CID
       LowerBits(src_id), UpperBits(src_id),
 
@@ -354,7 +354,7 @@ const ByteBuffer& kInboundEmptyPendingConfigRsp =
 auto MakeConfigRspWithMtu(ChannelId source_cid, uint16_t mtu,
                           ConfigurationResult result = ConfigurationResult::kSuccess,
                           uint16_t flags = 0x0000) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // Source CID
       LowerBits(source_cid), UpperBits(source_cid),
 
@@ -373,7 +373,7 @@ const ByteBuffer& kOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kDefau
 auto MakeConfigRspWithRfc(ChannelId source_cid, ConfigurationResult result, ChannelMode mode,
                           uint8_t tx_window, uint8_t max_transmit, uint16_t retransmission_timeout,
                           uint16_t monitor_timeout, uint16_t mps) {
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // Source CID
       LowerBits(source_cid), UpperBits(source_cid),
 
@@ -431,7 +431,7 @@ const ByteBuffer& kOutboundOkConfigRspWithErtm = MakeConfigRspWithMtuAndRfc(
 
 auto MakeInfoReq(InformationType info_type) {
   const auto type = static_cast<uint16_t>(info_type);
-  return CreateStaticByteBuffer(LowerBits(type), UpperBits(type));
+  return StaticByteBuffer(LowerBits(type), UpperBits(type));
 }
 
 const ByteBuffer& kExtendedFeaturesInfoReq =
@@ -444,7 +444,7 @@ auto MakeExtendedFeaturesInfoRsp(InformationResult result = InformationResult::k
   const auto type = static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported);
   const auto res = static_cast<uint16_t>(result);
   const auto features_bytes = ToBytes(features);
-  return CreateStaticByteBuffer(
+  return StaticByteBuffer(
       // Type
       LowerBits(type), UpperBits(type),
 
@@ -1211,7 +1211,7 @@ TEST_F(BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
 
   // Disconnection Response hasn't been received yet so the second channel
   // should use a different channel ID.
-  const ByteBuffer& kSecondChannelConnReq = CreateStaticByteBuffer(
+  const StaticByteBuffer kSecondChannelConnReq(
       // PSM
       LowerBits(kPsm), UpperBits(kPsm),
 
@@ -1450,7 +1450,7 @@ TEST_F(BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  const ByteBuffer& kInboundConfigReqUnknownOption = CreateStaticByteBuffer(
+  const StaticByteBuffer kInboundConfigReqUnknownOption(
       // Destination CID
       LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -1460,7 +1460,7 @@ TEST_F(BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
       // Unknown Option: Type, Length, Data
       0x70, 0x01, 0x02);
 
-  const ByteBuffer& kOutboundConfigRspUnknownOption = CreateStaticByteBuffer(
+  const StaticByteBuffer kOutboundConfigRspUnknownOption(
       // Source CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -2469,14 +2469,14 @@ TEST_F(BrEdrDynamicChannelTest,
 
   constexpr uint8_t kUnknownOption0Type = 0x70;
   constexpr uint8_t kUnknownOption1Type = 0x71;
-  const auto kInboundConfigReq0 = StaticByteBuffer(
+  const StaticByteBuffer kInboundConfigReq0(
       // Destination CID
       LowerBits(kLocalCId), UpperBits(kLocalCId),
       // Flags (C = 1)
       0x01, 0x00,
       // Unknown Option
       kUnknownOption0Type, 0x01, 0x00);
-  const auto kInboundConfigReq1 = StaticByteBuffer(
+  const StaticByteBuffer kInboundConfigReq1(
       // Destination CID
       LowerBits(kLocalCId), UpperBits(kLocalCId),
       // Flags (C = 0)
@@ -2484,7 +2484,7 @@ TEST_F(BrEdrDynamicChannelTest,
       // Unknown Option
       kUnknownOption1Type, 0x01, 0x00);
 
-  const auto kOutboundUnknownOptionsConfigRsp = StaticByteBuffer(
+  const StaticByteBuffer kOutboundUnknownOptionsConfigRsp(
       // Source CID
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
       // Flags (C = 0)

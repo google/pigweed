@@ -17,7 +17,7 @@ namespace {
 
 template <typename... T>
 hci::ACLDataPacketPtr PacketFromBytes(T... data) {
-  auto bytes = CreateStaticByteBuffer(std::forward<T>(data)...);
+  StaticByteBuffer bytes(std::forward<T>(data)...);
   ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
   auto packet = hci::ACLDataPacket::New(bytes.size() - sizeof(hci_spec::ACLDataHeader));
@@ -139,7 +139,7 @@ TEST(PduTest, ReleaseFragments) {
   EXPECT_EQ(1u, count);
 
   // Check that the fragment we got out is identical to the one we fed in.
-  EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer(
+  EXPECT_TRUE(ContainersEqual(StaticByteBuffer(
                                   // ACL data header
                                   0x01, 0x00, 0x08, 0x00,
 

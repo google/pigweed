@@ -102,7 +102,7 @@ TEST_F(PairingChannelTest, SendMessageWorks) {
 // This checks that PairingChannel doesn't crash when receiving events without a handler set.
 TEST_F(PairingChannelTest, NoHandlerSetDataDropped) {
   ASSERT_TRUE(sm_chan());
-  const auto kSmPacket = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kPairingNotSupported);
+  const StaticByteBuffer kSmPacket(kPairingFailed, ErrorCode::kPairingNotSupported);
 
   fake_chan()->Receive(kSmPacket);
   RunLoopUntilIdle();
@@ -113,8 +113,8 @@ TEST_F(PairingChannelTest, NoHandlerSetDataDropped) {
 
 TEST_F(PairingChannelTest, SetHandlerReceivesData) {
   ASSERT_TRUE(sm_chan());
-  const auto kSmPacket1 = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kPairingNotSupported);
-  const auto kSmPacket2 = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kConfirmValueFailed);
+  const StaticByteBuffer kSmPacket1(kPairingFailed, ErrorCode::kPairingNotSupported);
+  const StaticByteBuffer kSmPacket2(kPairingFailed, ErrorCode::kConfirmValueFailed);
   FakeChannelHandler handler;
   sm_chan()->SetChannelHandler(handler.as_weak_handler());
   ASSERT_EQ(handler.last_rx_data(), nullptr);
@@ -139,8 +139,8 @@ TEST_F(PairingChannelTest, SetHandlerReceivesData) {
 
 TEST_F(PairingChannelTest, ChangeHandlerNewHandlerReceivesData) {
   ASSERT_TRUE(sm_chan());
-  const auto kSmPacket1 = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kPairingNotSupported);
-  const auto kSmPacket2 = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kConfirmValueFailed);
+  const StaticByteBuffer kSmPacket1(kPairingFailed, ErrorCode::kPairingNotSupported);
+  const StaticByteBuffer kSmPacket2(kPairingFailed, ErrorCode::kConfirmValueFailed);
   FakeChannelHandler handler;
   sm_chan()->SetChannelHandler(handler.as_weak_handler());
   ASSERT_EQ(handler.last_rx_data(), nullptr);

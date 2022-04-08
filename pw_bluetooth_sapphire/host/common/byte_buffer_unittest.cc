@@ -42,7 +42,7 @@ TEST(ByteBufferTest, StaticByteBuffer) {
   EXPECT_TRUE(ContainersEqual(kExpected, buffer_copy1));
 
   // Const ByteBuffer should still permit operator[] access.
-  const StaticByteBuffer<1> const_buff = CreateStaticByteBuffer(0x10);
+  const StaticByteBuffer const_buff(0x10);
   EXPECT_EQ(0x10, const_buff[0]);
 }
 
@@ -54,7 +54,7 @@ TEST(ByteBufferTest, StaticByteBufferVariadicConstructor) {
   buffer0[2] = 0x03;
 
   StaticByteBuffer<kBufferSize> buffer1{0x01, 0x02, 0x03};
-  auto buffer2 = CreateStaticByteBuffer(0x01, 0x02, 0x03);
+  StaticByteBuffer buffer2(0x01, 0x02, 0x03);
   StaticByteBuffer buffer3{0x01, 0x02, 0x03};
 
   EXPECT_TRUE(ContainersEqual(buffer0, buffer1));
@@ -174,7 +174,7 @@ TEST(ByteBufferTest, MutableBufferViewTest) {
 }
 
 TEST(ByteBufferDeathTest, Copy) {
-  auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer buffer('T', 'e', 's', 't');
   BufferView empty_buffer;
 
   // Create a large enough buffer.
@@ -224,7 +224,7 @@ TEST(ByteBufferDeathTest, Copy) {
 }
 
 TEST(ByteBufferTest, View) {
-  auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer buffer('T', 'e', 's', 't');
   BufferView empty_buffer;
 
   BufferView view = empty_buffer.view();
@@ -250,7 +250,7 @@ TEST(ByteBufferTest, View) {
 }
 
 TEST(ByteBufferTest, MutableView) {
-  auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer buffer('T', 'e', 's', 't');
   MutableBufferView empty_buffer;
 
   MutableBufferView view;
@@ -282,14 +282,14 @@ TEST(ByteBufferTest, MutableView) {
 }
 
 TEST(ByteBufferTest, ByteBufferEqualityFail) {
-  const auto kData0 = CreateStaticByteBuffer('T', 'e', 's', 't');
-  const auto kData1 = CreateStaticByteBuffer('F', 'o', 'o');
+  const StaticByteBuffer kData0('T', 'e', 's', 't');
+  const StaticByteBuffer kData1('F', 'o', 'o');
   EXPECT_FALSE(kData0 == kData1);
 }
 
 TEST(ByteBufferTest, ByteBufferEqualitySuccess) {
-  const auto kData0 = CreateStaticByteBuffer('T', 'e', 's', 't');
-  const auto kData1 = CreateStaticByteBuffer('T', 'e', 's', 't');
+  const StaticByteBuffer kData0('T', 'e', 's', 't');
+  const StaticByteBuffer kData1('T', 'e', 's', 't');
   EXPECT_TRUE(kData0 == kData1);
 }
 
@@ -504,13 +504,13 @@ TEST(ByteBufferTest, ByteBufferReadMemberOfUnalignedArrayType) {
 }
 
 TEST(ByteBufferTest, MutableByteBufferAsMutableFundamental) {
-  auto data = CreateStaticByteBuffer(10, 12);
+  StaticByteBuffer data(10, 12);
   ++data.AsMutable<uint8_t>();
   EXPECT_EQ(11, data[0]);
 }
 
 TEST(ByteBufferTest, MutableByteBufferAsMutableStruct) {
-  auto data = CreateStaticByteBuffer(10, 12);
+  StaticByteBuffer data(10, 12);
   struct point {
     uint8_t x;
     uint8_t y;
@@ -518,12 +518,12 @@ TEST(ByteBufferTest, MutableByteBufferAsMutableStruct) {
   ++data.AsMutable<point>().x;
   ++data.AsMutable<point>().y;
 
-  const auto expected_data = CreateStaticByteBuffer(11, 13);
+  const StaticByteBuffer expected_data(11, 13);
   EXPECT_EQ(expected_data, data);
 }
 
 TEST(ByteBufferTest, MutableByteBufferAsMutableArray) {
-  auto buf = CreateStaticByteBuffer(10, 12);
+  StaticByteBuffer buf(10, 12);
   auto array = buf.AsMutable<uint8_t[2]>();
   ++array[0];
   ++array[1];
@@ -533,17 +533,17 @@ TEST(ByteBufferTest, MutableByteBufferAsMutableArray) {
 }
 
 TEST(ByteBufferDeathTest, MutableByteBufferWrite) {
-  const auto kData0 = CreateStaticByteBuffer('T', 'e', 's', 't');
-  const auto kData1 = CreateStaticByteBuffer('F', 'o', 'o');
+  const StaticByteBuffer kData0('T', 'e', 's', 't');
+  const StaticByteBuffer kData1('F', 'o', 'o');
 
-  auto buffer = CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
+  StaticByteBuffer buffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
   EXPECT_EQ("XXXXXXXX", buffer.AsString());
 
   buffer.Write(kData0);
   EXPECT_EQ("TestXXXX", buffer.AsString());
 
   // Write from raw pointer.
-  buffer = CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
+  buffer = StaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
   buffer.Write(kData0.data(), kData0.size());
   EXPECT_EQ("TestXXXX", buffer.AsString());
 
@@ -556,7 +556,7 @@ TEST(ByteBufferDeathTest, MutableByteBufferWrite) {
   EXPECT_EQ("TFoFooXX", buffer.AsString());
 
   // Writing zero bytes should have no effect.
-  buffer = CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
+  buffer = StaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
   buffer.Write(kData1.data(), 0u);
   buffer.Write(/*data=*/nullptr, 0u);  // Passing nullptr is OK when size is 0
   EXPECT_EQ("XXXXXXXX", buffer.AsString());
@@ -574,7 +574,7 @@ TEST(ByteBufferDeathTest, MutableByteBufferWrite) {
 }
 
 TEST(ByteBufferTest, AsString) {
-  auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
+  StaticByteBuffer buffer('T', 'e', 's', 't');
   EXPECT_EQ("Test", buffer.AsString());
 }
 
@@ -591,7 +591,7 @@ TEST(ByteBufferTest, ToVectorEmpty) {
 }
 
 TEST(ByteBufferTest, ToVector) {
-  auto buffer = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  StaticByteBuffer buffer('h', 'e', 'l', 'l', 'o');
   std::vector<uint8_t> vec = buffer.ToVector();
   EXPECT_TRUE(ContainersEqual(vec, buffer));
 }

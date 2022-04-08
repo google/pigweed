@@ -12,7 +12,7 @@ namespace bt::sm {
 namespace {
 
 TEST(PacketTest, ParseValidPacket) {
-  auto kValidPacket = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kEncryptionKeySize);
+  StaticByteBuffer kValidPacket(kPairingFailed, ErrorCode::kEncryptionKeySize);
   ByteBufferPtr valid_packet_ptr = std::make_unique<DynamicByteBuffer>(kValidPacket);
   fpromise::result<ValidPacketReader, ErrorCode> maybe_reader =
       ValidPacketReader::ParseSdu(valid_packet_ptr);
@@ -33,8 +33,8 @@ TEST(PacketTest, EmptyPacketGivesError) {
 }
 
 TEST(PacketTest, UnknownSMPCodeGivesError) {
-  auto kUnknownCodePacket = CreateStaticByteBuffer(0xFF,  // Not a valid SMP packet header code.
-                                                   ErrorCode::kEncryptionKeySize);
+  StaticByteBuffer kUnknownCodePacket(0xFF,  // Not a valid SMP packet header code.
+                                      ErrorCode::kEncryptionKeySize);
   ByteBufferPtr unknown_code_packet_ptr = std::make_unique<DynamicByteBuffer>(kUnknownCodePacket);
   fpromise::result<ValidPacketReader, ErrorCode> maybe_reader =
       ValidPacketReader::ParseSdu(unknown_code_packet_ptr);
@@ -60,7 +60,7 @@ TEST(PacketTest, Mod256Equals0LengthPacketGivesCorrectError) {
 
 TEST(PacketTest, PayloadSizeDoesNotMatchHeaderGivesError) {
   // The PairingFailed code is expected to have a one byte error code as payload, not three bytes.
-  auto kMalformedPacket = CreateStaticByteBuffer(kPairingFailed, 0x01, 0x01, 0x01);
+  StaticByteBuffer kMalformedPacket(kPairingFailed, 0x01, 0x01, 0x01);
   ByteBufferPtr malformed_packet_ptr = std::make_unique<DynamicByteBuffer>(kMalformedPacket);
   fpromise::result<ValidPacketReader, ErrorCode> maybe_reader =
       ValidPacketReader::ParseSdu(malformed_packet_ptr);

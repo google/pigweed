@@ -39,7 +39,7 @@ void FakeGattServer::HandlePdu(hci_spec::ConnectionHandle conn, const ByteBuffer
   switch (opcode) {
     case att::kExchangeMTURequest:
       // Always reply back with the default ATT_MTU.
-      Send(conn, CreateStaticByteBuffer(att::kExchangeMTUResponse, att::kLEMinMTU, 0x00));
+      Send(conn, StaticByteBuffer(att::kExchangeMTUResponse, att::kLEMinMTU, 0x00));
       break;
     case att::kReadByGroupTypeRequest:
       HandleReadByGrpType(conn, pdu.view(sizeof(att::OpCode)));

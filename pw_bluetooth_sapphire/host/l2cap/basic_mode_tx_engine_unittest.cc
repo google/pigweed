@@ -23,7 +23,7 @@ TEST(BasicModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu) {
   };
 
   constexpr size_t kMtu = 10;
-  const auto payload = CreateStaticByteBuffer(1);
+  const StaticByteBuffer payload(1);
   BasicModeTxEngine(kTestChannelId, kMtu, tx_callback)
       .QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
   EXPECT_EQ(1u, n_pdus);
@@ -40,7 +40,7 @@ TEST(BasicModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu) {
   };
 
   constexpr size_t kMtu = 1;
-  const auto payload = CreateStaticByteBuffer(1);
+  const StaticByteBuffer payload(1);
   BasicModeTxEngine(kTestChannelId, kMtu, tx_callback)
       .QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
   EXPECT_EQ(1u, n_pdus);
@@ -54,7 +54,7 @@ TEST(BasicModeTxEngineTest, QueueSduDropsOversizedSdu) {
 
   constexpr size_t kMtu = 1;
   BasicModeTxEngine(kTestChannelId, kMtu, tx_callback)
-      .QueueSdu(std::make_unique<DynamicByteBuffer>(CreateStaticByteBuffer(1, 2)));
+      .QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer(1, 2)));
   EXPECT_EQ(0u, n_pdus);
 }
 

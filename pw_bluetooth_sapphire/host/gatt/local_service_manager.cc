@@ -351,8 +351,8 @@ class LocalServiceManager::ServiceData final {
                                   /*authorization=*/false),  // read (no security)
           att::AccessRequirements());                        // write (not allowed)
       ZX_DEBUG_ASSERT(decl_attr);
-      decl_attr->SetValue(CreateStaticByteBuffer((uint8_t)(ext_props & 0x00FF),
-                                                 (uint8_t)((ext_props & 0xFF00) >> 8)));
+      decl_attr->SetValue(
+          StaticByteBuffer((uint8_t)(ext_props & 0x00FF), (uint8_t)((ext_props & 0xFF00) >> 8)));
     }
 
     // TODO(armansito): Inject a SCC descriptor if the characteristic has the

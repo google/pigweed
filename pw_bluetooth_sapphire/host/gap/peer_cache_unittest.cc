@@ -54,9 +54,9 @@ const DeviceAddress kAddrLeAnon(DeviceAddress::Type::kLEAnonymous, {1, 2, 3, 4, 
 // this constant does not effect the test logic.
 const std::string kName = "TestName";
 
-const auto kAdvData = CreateStaticByteBuffer(0x05,  // Length
-                                             0x09,  // AD type: Complete Local Name
-                                             'T', 'e', 's', 't');
+const StaticByteBuffer kAdvData(0x05,  // Length
+                                0x09,  // AD type: Complete Local Name
+                                'T', 'e', 's', 't');
 const auto kEirData = kAdvData;
 
 const bt::sm::LTK kLTK;
@@ -168,9 +168,8 @@ TEST_F(PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemoved
 }
 
 TEST_F(PeerCacheTest, LookUp) {
-  auto kAdvData0 = CreateStaticByteBuffer(0x05, 0x09, 'T', 'e', 's', 't');
-  auto kAdvData1 =
-      CreateStaticByteBuffer(0x0C, 0x09, 'T', 'e', 's', 't', ' ', 'D', 'e', 'v', 'i', 'c', 'e');
+  StaticByteBuffer kAdvData0(0x05, 0x09, 'T', 'e', 's', 't');
+  StaticByteBuffer kAdvData1(0x0C, 0x09, 'T', 'e', 's', 't', ' ', 'D', 'e', 'v', 'i', 'c', 'e');
 
   // These should return false regardless of the input while the cache is empty.
   EXPECT_FALSE(cache()->FindByAddress(kAddrLePublic));

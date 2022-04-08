@@ -19,7 +19,7 @@ constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
 TEST(BasicModeRxEngineTest, ProcessPduReturnsSdu) {
-  const auto payload = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const StaticByteBuffer payload('h', 'e', 'l', 'l', 'o');
   const auto sdu = BasicModeRxEngine().ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs));
@@ -28,8 +28,8 @@ TEST(BasicModeRxEngineTest, ProcessPduReturnsSdu) {
 }
 
 TEST(BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
-  const auto byte_buf = CreateStaticByteBuffer(0x01, 0x00, 0x04, 0x00,  // ACL data header
-                                               0x00, 0x00, 0xFF, 0xFF   // Basic L2CAP header
+  const StaticByteBuffer byte_buf(0x01, 0x00, 0x04, 0x00,  // ACL data header
+                                  0x00, 0x00, 0xFF, 0xFF   // Basic L2CAP header
   );
   auto hci_packet = hci::ACLDataPacket::New(byte_buf.size() - sizeof(hci_spec::ACLDataHeader));
   hci_packet->mutable_view()->mutable_data().Write(byte_buf);

@@ -265,7 +265,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
   void ReceiveNonBondablePairingResponse() {
     // clang-format off
-    const auto kResponse = CreateStaticByteBuffer(
+    const StaticByteBuffer kResponse(
       0x02,  // code: Pairing Response
       0x00,  // IO cap.: DisplayOnly
       0x00,  // OOB: not present

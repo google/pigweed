@@ -73,7 +73,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
           return true;
         };
 
-    const auto kSearchExpectedParams = CreateStaticByteBuffer(
+    const StaticByteBuffer kSearchExpectedParams(
         // ServiceSearchPattern
         0x35, 0x03,        // Sequence uint8 3 bytes
         0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -155,7 +155,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
           return true;
         };
 
-    const auto kSearchExpectedParams = CreateStaticByteBuffer(
+    const StaticByteBuffer kSearchExpectedParams(
         // ServiceSearchPattern
         0x35, 0x03,        // Sequence uint8 3 bytes
         0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -232,7 +232,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
           return true;
         };
 
-    const auto kSearchExpectedParams = CreateStaticByteBuffer(
+    const StaticByteBuffer kSearchExpectedParams(
         // ServiceSearchPattern
         0x35, 0x03,        // Sequence uint8 3 bytes
         0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -320,7 +320,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
         return true;
       };
 
-  const auto kSearchExpectedParams = CreateStaticByteBuffer(
+  const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -390,7 +390,7 @@ TEST_F(ClientTest, NoResults) {
         return true;
       };
 
-  const auto kSearchExpectedParams = CreateStaticByteBuffer(
+  const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -453,7 +453,7 @@ TEST_F(ClientTest, Disconnected) {
         return true;
       };
 
-  const auto kSearchExpectedParams = CreateStaticByteBuffer(
+  const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -512,7 +512,7 @@ TEST_F(ClientTest, InvalidResponse) {
         return true;
       };
 
-  const auto kSearchExpectedParams = CreateStaticByteBuffer(
+  const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -549,9 +549,9 @@ TEST_F(ClientTest, InvalidResponse) {
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
 
-  // Remote end sends some unparseable stuff for the packet.
-  fake_chan()->Receive(CreateStaticByteBuffer(0x07, UpperBits(request_tid), LowerBits(request_tid),
-                                              0x00, 0x03, 0x05, 0x06, 0x07));
+  // Remote end sends some unparsable stuff for the packet.
+  fake_chan()->Receive(StaticByteBuffer(0x07, UpperBits(request_tid), LowerBits(request_tid), 0x00,
+                                        0x03, 0x05, 0x06, 0x07));
 
   RunLoopUntilIdle();
 
@@ -572,7 +572,7 @@ TEST_F(ClientTest, Timeout) {
         return true;
       };
 
-  const auto kSearchExpectedParams = CreateStaticByteBuffer(
+  const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x11, 0x0B,  // UUID (kAudioSink)
