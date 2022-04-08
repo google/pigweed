@@ -144,7 +144,11 @@ to provide equivalent binaries, which is some effort.
 Host platforms that we are likely to support in the future
 ..........................................................
 
-- **Mac on ARM (M1)** - This is currently supported through Rosetta.
+- **Mac on ARM (M1)** - This is currently experimentally supported through
+  Rosetta, and this support is enabled by default. The native ARM64 toolchain
+  is currently incomplete, but can be used instead (bypassing Rosetta) by
+  setting `PW_BOOSTRAP_USE_ROSETTA=false` your environment or in the bootstrap
+  script.
 - **Linux on ARM** - At time of writing (mid 2020), we do not support ARM-based
   host platforms.  However, we would like to support this eventually.
 - **Windows on WSL2 x86-64** - There are some minor issues preventing WSL2 on

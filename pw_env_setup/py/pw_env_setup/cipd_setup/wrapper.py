@@ -137,7 +137,8 @@ def platform_arch_normalized():
     platform_arch = '{}-{}'.format(platform_normalized(), arch_normalized())
 
     # Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
-    if platform_arch == 'mac-arm64':
+    if platform_arch == 'mac-arm64' and os.getenv(
+            'PW_BOOTSTRAP_USE_ROSETTA', 'false').lower() in ('true', 't', '1'):
         platform_arch = 'mac-amd64'
 
     return platform_arch

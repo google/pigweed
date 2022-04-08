@@ -61,6 +61,12 @@ export PW_ROOT
 PW_PROJECT_ROOT="$PW_ROOT"
 export PW_PROJECT_ROOT
 
+# Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
+# Unset if your project needs the currently-incomplete mac-arm64 toolchain
+if [ -z "$PW_BOOTSTRAP_USE_ROSETTA" ]; then
+  export PW_BOOTSTRAP_USE_ROSETTA=true
+fi
+
 . "$PW_ROOT/pw_env_setup/util.sh"
 
 pw_deactivate

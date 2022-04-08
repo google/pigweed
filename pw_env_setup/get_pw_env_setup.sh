@@ -47,7 +47,10 @@ if [ "$ARCH" = "x86_64" ]; then
 fi
 
 # Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
-if [[ "$OS" = "mac" ] && [ "$ARCH" = "arm64" ]]; then
+if [[ "$OS" = "mac" ] && \
+    [ "$ARCH" = "arm64" ] && \
+    [ -n "$PW_BOOTSTRAP_USE_ROSETTA" ]]
+then
   ARCH="amd64"
 fi
 

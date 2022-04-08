@@ -400,6 +400,11 @@ never need to set these.
   Python executable to be used, for example "python2" or "python3". Defaults to
   "python".
 
+``PW_BOOTSTRAP_USE_ROSETTA``
+  If set to ``true`` (the default), Pigweed will use the x86/64 toolchain via
+  Rosetta on ARM Macs. Otherwise, if set to ``false``, Pigweed will use the
+  native ARM64 toolchain (which is currently incomplete).
+
 ``PW_ENVIRONMENT_ROOT``
   Location to which packages are installed. Defaults to ``.environment`` folder
   within the checkout root.
