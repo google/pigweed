@@ -493,9 +493,10 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    att::ErrorCode ecode = att::CheckReadPermissions(attr->read_reqs(), att_->security());
-    if (ecode != att::ErrorCode::kNoError) {
-      att_->ReplyWithError(tid, handle, ecode);
+    fitx::result<att::ErrorCode> status =
+        att::CheckReadPermissions(attr->read_reqs(), att_->security());
+    if (status.is_error()) {
+      att_->ReplyWithError(tid, handle, status.error_value());
       return;
     }
 
@@ -555,9 +556,10 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    att::ErrorCode ecode = att::CheckReadPermissions(attr->read_reqs(), att_->security());
-    if (ecode != att::ErrorCode::kNoError) {
-      att_->ReplyWithError(tid, handle, ecode);
+    fitx::result<att::ErrorCode> status =
+        att::CheckReadPermissions(attr->read_reqs(), att_->security());
+    if (status.is_error()) {
+      att_->ReplyWithError(tid, handle, status.error_value());
       return;
     }
 
@@ -611,8 +613,9 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    att::ErrorCode ecode = att::CheckWritePermissions(attr->write_reqs(), att_->security());
-    if (ecode != att::ErrorCode::kNoError) {
+    fitx::result<att::ErrorCode> status =
+        att::CheckWritePermissions(attr->write_reqs(), att_->security());
+    if (status.is_error()) {
       return;
     }
 
@@ -647,9 +650,10 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    att::ErrorCode ecode = att::CheckWritePermissions(attr->write_reqs(), att_->security());
-    if (ecode != att::ErrorCode::kNoError) {
-      att_->ReplyWithError(tid, handle, ecode);
+    fitx::result<att::ErrorCode> status =
+        att::CheckWritePermissions(attr->write_reqs(), att_->security());
+    if (status.is_error()) {
+      att_->ReplyWithError(tid, handle, status.error_value());
       return;
     }
 
@@ -711,9 +715,10 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    att::ErrorCode ecode = att::CheckWritePermissions(attr->write_reqs(), att_->security());
-    if (ecode != att::ErrorCode::kNoError) {
-      att_->ReplyWithError(tid, handle, ecode);
+    fitx::result<att::ErrorCode> status =
+        att::CheckWritePermissions(attr->write_reqs(), att_->security());
+    if (status.is_error()) {
+      att_->ReplyWithError(tid, handle, status.error_value());
       return;
     }
 
@@ -806,13 +811,13 @@ class AttBasedServer final : public Server {
       const auto* attr = iter.get();
       ZX_DEBUG_ASSERT(attr);
 
-      att::ErrorCode security_result =
+      fitx::result<att::ErrorCode> security_result =
           att::CheckReadPermissions(attr->read_reqs(), att_->security());
-      if (security_result != att::ErrorCode::kNoError) {
+      if (security_result.is_error()) {
         // Return error only if this is the first result that matched. We simply
         // stop the search otherwise.
         if (results.empty()) {
-          return security_result;
+          return security_result.error_value();
         }
         break;
       }

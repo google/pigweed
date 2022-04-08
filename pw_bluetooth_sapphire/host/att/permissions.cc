@@ -7,7 +7,8 @@
 namespace bt::att {
 namespace {
 
-ErrorCode CheckSecurity(const AccessRequirements& reqs, const sm::SecurityProperties& security) {
+fitx::result<ErrorCode> CheckSecurity(const AccessRequirements& reqs,
+                                      const sm::SecurityProperties& security) {
   if (reqs.encryption_required() && security.level() < sm::SecurityLevel::kEncrypted) {
     // If the peer is bonded but the link is not encrypted the "Insufficient
     // Encryption" error should be sent. Our GAP layer always keeps the link
@@ -15,35 +16,35 @@ ErrorCode CheckSecurity(const AccessRequirements& reqs, const sm::SecurityProper
     // connection. We don't distinguish this from the un-paired state.
     // (NOTE: It is possible for the link to be authenticated without encryption
     // in LE Security Mode 2, which we do not support).
-    return ErrorCode::kInsufficientAuthentication;
+    return fitx::error(ErrorCode::kInsufficientAuthentication);
   }
 
   if ((reqs.authentication_required() || reqs.authorization_required()) &&
       security.level() < sm::SecurityLevel::kAuthenticated) {
-    return ErrorCode::kInsufficientAuthentication;
+    return fitx::error(ErrorCode::kInsufficientAuthentication);
   }
 
   if (reqs.encryption_required() && security.enc_key_size() < reqs.min_enc_key_size()) {
-    return ErrorCode::kInsufficientEncryptionKeySize;
+    return fitx::error(ErrorCode::kInsufficientEncryptionKeySize);
   }
 
-  return ErrorCode::kNoError;
+  return fitx::ok();
 }
 
 }  // namespace
 
-ErrorCode CheckReadPermissions(const AccessRequirements& reqs,
-                               const sm::SecurityProperties& security) {
+fitx::result<ErrorCode> CheckReadPermissions(const AccessRequirements& reqs,
+                                             const sm::SecurityProperties& security) {
   if (!reqs.allowed()) {
-    return ErrorCode::kReadNotPermitted;
+    return fitx::error(ErrorCode::kReadNotPermitted);
   }
   return CheckSecurity(reqs, security);
 }
 
-ErrorCode CheckWritePermissions(const AccessRequirements& reqs,
-                                const sm::SecurityProperties& security) {
+fitx::result<ErrorCode> CheckWritePermissions(const AccessRequirements& reqs,
+                                              const sm::SecurityProperties& security) {
   if (!reqs.allowed()) {
-    return ErrorCode::kWriteNotPermitted;
+    return fitx::error(ErrorCode::kWriteNotPermitted);
   }
   return CheckSecurity(reqs, security);
 }

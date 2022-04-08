@@ -286,9 +286,9 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
       break;
     }
 
-    ErrorCode ecode = CheckWritePermissions(attr->write_reqs(), security);
-    if (ecode != ErrorCode::kNoError) {
-      attr_write_cb(fitx::error(ecode));
+    fitx::result<ErrorCode> status = CheckWritePermissions(attr->write_reqs(), security);
+    if (status.is_error()) {
+      attr_write_cb(status);
       break;
     }
 

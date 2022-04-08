@@ -36,82 +36,88 @@ const sm::SecurityProperties kAuthenticatedWithMinKeySize(sm::SecurityLevel::kAu
                                                           /*secure_connections=*/false);
 
 TEST(PermissionsTest, ReadNotPermittedWhenDisallowed) {
-  EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kNoSecurity));
-  EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kEncrypted));
-  EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kReadNotPermitted,
+            CheckReadPermissions(kDisallowed, kNoSecurity).error_value());
+  EXPECT_EQ(ErrorCode::kReadNotPermitted,
+            CheckReadPermissions(kDisallowed, kEncrypted).error_value());
+  EXPECT_EQ(ErrorCode::kReadNotPermitted,
+            CheckReadPermissions(kDisallowed, kAuthenticated).error_value());
 }
 
 TEST(PermissionsTest, WriteNotPermittedWhenDisallowed) {
-  EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kNoSecurity));
-  EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kEncrypted));
-  EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kWriteNotPermitted,
+            CheckWritePermissions(kDisallowed, kNoSecurity).error_value());
+  EXPECT_EQ(ErrorCode::kWriteNotPermitted,
+            CheckWritePermissions(kDisallowed, kEncrypted).error_value());
+  EXPECT_EQ(ErrorCode::kWriteNotPermitted,
+            CheckWritePermissions(kDisallowed, kAuthenticated).error_value());
 }
 
 TEST(PermissionsTest, LinkNotSecure) {
-  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kNoSecurity));
-  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kNoSecurity));
+  EXPECT_EQ(fitx::ok(), CheckReadPermissions(kNoSecurityReq, kNoSecurity));
+  EXPECT_EQ(fitx::ok(), CheckWritePermissions(kNoSecurityReq, kNoSecurity));
 
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckReadPermissions(kEncryptionReq, kNoSecurity));
+            CheckReadPermissions(kEncryptionReq, kNoSecurity).error_value());
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckWritePermissions(kEncryptionReq, kNoSecurity));
+            CheckWritePermissions(kEncryptionReq, kNoSecurity).error_value());
 
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckReadPermissions(kAuthenticationReq, kNoSecurity));
+            CheckReadPermissions(kAuthenticationReq, kNoSecurity).error_value());
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckWritePermissions(kAuthenticationReq, kNoSecurity));
+            CheckWritePermissions(kAuthenticationReq, kNoSecurity).error_value());
 
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckReadPermissions(kAuthorizationReq, kNoSecurity));
+            CheckReadPermissions(kAuthorizationReq, kNoSecurity).error_value());
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckWritePermissions(kAuthorizationReq, kNoSecurity));
+            CheckWritePermissions(kAuthorizationReq, kNoSecurity).error_value());
 }
 
 TEST(PermissionsTest, LinkEncrypted) {
-  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kEncrypted));
-  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kEncrypted));
+  EXPECT_EQ(fitx::ok(), CheckReadPermissions(kNoSecurityReq, kEncrypted));
+  EXPECT_EQ(fitx::ok(), CheckWritePermissions(kNoSecurityReq, kEncrypted));
 
-  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kEncryptionReq, kEncrypted));
-  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kEncryptionReq, kEncrypted));
-
-  EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckReadPermissions(kAuthenticationReq, kEncrypted));
-  EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckWritePermissions(kAuthenticationReq, kEncrypted));
+  EXPECT_EQ(fitx::ok(), CheckReadPermissions(kEncryptionReq, kEncrypted));
+  EXPECT_EQ(fitx::ok(), CheckWritePermissions(kEncryptionReq, kEncrypted));
 
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckReadPermissions(kAuthorizationReq, kEncrypted));
+            CheckReadPermissions(kAuthenticationReq, kEncrypted).error_value());
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
-            CheckWritePermissions(kAuthorizationReq, kEncrypted));
+            CheckWritePermissions(kAuthenticationReq, kEncrypted).error_value());
 
-  EXPECT_EQ(ErrorCode::kNoError,
+  EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
+            CheckReadPermissions(kAuthorizationReq, kEncrypted).error_value());
+  EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
+            CheckWritePermissions(kAuthorizationReq, kEncrypted).error_value());
+
+  EXPECT_EQ(fitx::ok(),
             CheckReadPermissions(kEncryptionWithMinKeySizeReq, kEncryptedWithMinKeySize));
-  EXPECT_EQ(ErrorCode::kNoError,
+  EXPECT_EQ(fitx::ok(),
             CheckWritePermissions(kEncryptionWithMinKeySizeReq, kEncryptedWithMinKeySize));
 
   EXPECT_EQ(ErrorCode::kInsufficientEncryptionKeySize,
-            CheckReadPermissions(kEncryptionReq, kEncryptedWithMinKeySize));
+            CheckReadPermissions(kEncryptionReq, kEncryptedWithMinKeySize).error_value());
   EXPECT_EQ(ErrorCode::kInsufficientEncryptionKeySize,
-            CheckWritePermissions(kEncryptionReq, kEncryptedWithMinKeySize));
+            CheckWritePermissions(kEncryptionReq, kEncryptedWithMinKeySize).error_value());
 }
 
 TEST(PermissionsTest, LinkAuthenticated) {
-  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kAuthenticated));
-  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kAuthenticated));
+  EXPECT_EQ(fitx::ok(), CheckReadPermissions(kNoSecurityReq, kAuthenticated));
+  EXPECT_EQ(fitx::ok(), CheckWritePermissions(kNoSecurityReq, kAuthenticated));
 
-  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kEncryptionReq, kAuthenticated));
-  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kEncryptionReq, kAuthenticated));
+  EXPECT_EQ(fitx::ok(), CheckReadPermissions(kEncryptionReq, kAuthenticated));
+  EXPECT_EQ(fitx::ok(), CheckWritePermissions(kEncryptionReq, kAuthenticated));
 
-  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kAuthenticationReq, kAuthenticated));
-  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kAuthenticationReq, kAuthenticated));
+  EXPECT_EQ(fitx::ok(), CheckReadPermissions(kAuthenticationReq, kAuthenticated));
+  EXPECT_EQ(fitx::ok(), CheckWritePermissions(kAuthenticationReq, kAuthenticated));
 
-  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kAuthorizationReq, kAuthenticated));
-  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kAuthorizationReq, kAuthenticated));
+  EXPECT_EQ(fitx::ok(), CheckReadPermissions(kAuthorizationReq, kAuthenticated));
+  EXPECT_EQ(fitx::ok(), CheckWritePermissions(kAuthorizationReq, kAuthenticated));
 
   EXPECT_EQ(ErrorCode::kInsufficientEncryptionKeySize,
-            CheckReadPermissions(kEncryptionReq, kAuthenticatedWithMinKeySize));
+            CheckReadPermissions(kEncryptionReq, kAuthenticatedWithMinKeySize).error_value());
   EXPECT_EQ(ErrorCode::kInsufficientEncryptionKeySize,
-            CheckWritePermissions(kEncryptionReq, kAuthenticatedWithMinKeySize));
+            CheckWritePermissions(kEncryptionReq, kAuthenticatedWithMinKeySize).error_value());
 }
 
 }  // namespace
