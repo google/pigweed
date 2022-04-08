@@ -160,26 +160,25 @@ pw_cc_library(
     ],
 )
 
-# TODO(pwbug/507): Enable this library when logging_event_handler can be used.
-filegroup(
+pw_cc_library(
     name = "integration_testing",
     srcs = [
         "integration_testing.cc",
-        # ],
-        # hdrs = [
+    ],
+    hdrs = [
         "public/pw_rpc/integration_test_socket_client.h",
         "public/pw_rpc/integration_testing.h",
     ],
-    #deps = [
-    #    ":client",
-    #    "//pw_assert",
-    #    "//pw_hdlc:pw_rpc",
-    #    "//pw_hdlc:rpc_channel_output",
-    #    "//pw_log",
-    #    "//pw_stream:socket_stream",
-    #    "//pw_unit_test",
-    #    "//pw_unit_test:logging_event_handler",
-    #],
+    deps = [
+        ":pw_rpc",
+        "//pw_assert",
+        "//pw_hdlc:pw_rpc",
+        "//pw_hdlc:rpc_channel_output",
+        "//pw_log",
+        "//pw_stream:socket_stream",
+        "//pw_unit_test",
+        "//pw_unit_test:logging_event_handler",
+    ],
 )
 
 # TODO(pwbug/507): Add the client integration test to the build.
