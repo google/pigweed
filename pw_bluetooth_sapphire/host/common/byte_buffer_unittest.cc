@@ -46,7 +46,7 @@ TEST(ByteBufferTest, StaticByteBuffer) {
   EXPECT_EQ(0x10, const_buff[0]);
 }
 
-TEST(ByteBufferTest, StaticByteBufferVariadicConstructor) {
+TEST(ByteBufferTest, StaticByteBufferPackConstructor) {
   constexpr size_t kBufferSize = 3;
   StaticByteBuffer<kBufferSize> buffer0;
   buffer0[0] = 0x01;
@@ -61,6 +61,9 @@ TEST(ByteBufferTest, StaticByteBufferVariadicConstructor) {
   EXPECT_TRUE(ContainersEqual(buffer0, buffer2));
   EXPECT_TRUE(ContainersEqual(buffer1, buffer2));
   EXPECT_TRUE(ContainersEqual(buffer1, buffer3));
+
+  // The corresponding check is a ZX_DEBUG_ASSERT runtime check
+  EXPECT_DEBUG_DEATH(StaticByteBuffer(-257), "ASSERT");
 }
 
 TEST(ByteBufferTest, DynamicByteBuffer) {

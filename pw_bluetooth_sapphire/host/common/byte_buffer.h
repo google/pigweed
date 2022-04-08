@@ -342,9 +342,8 @@ class StaticByteBuffer : public MutableByteBuffer {
     if constexpr (sizeof...(bytes) <= 256) {
       constexpr auto is_byte_storable = [](auto value) {
         if constexpr (sizeof(value) > sizeof(uint8_t)) {
-          // Should return true for negative values that fit into a byte, so it's important that the
-          // right-hand side stays unsigned to convert |byte| to unsigned per promotion rules.
-          return value <= std::numeric_limits<uint8_t>::max();
+          return static_cast<std::make_unsigned_t<decltype(value)>>(value) <=
+                 std::numeric_limits<uint8_t>::max();
         }
         return true;
       };
