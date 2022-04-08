@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -61,6 +62,7 @@ pw_source_set("sys_io_stream") {
 pw_source_set("std_file_stream") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ ":pw_stream" ]
+  deps = [ "$dir_pw_assert" ]
   public = [ "public/pw_stream/std_file_stream.h" ]
   sources = [ "std_file_stream.cc" ]
 }
@@ -87,11 +89,27 @@ pw_test_group("tests") {
     ":seek_test",
     ":stream_test",
   ]
+
+  if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+      pw_toolchain_SCOPE.is_host_toolchain) {
+    tests += [ ":std_file_stream_test" ]
+  }
 }
 
 pw_test("memory_stream_test") {
   sources = [ "memory_stream_test.cc" ]
   deps = [ ":pw_stream" ]
+}
+
+pw_test("std_file_stream_test") {
+  sources = [ "std_file_stream_test.cc" ]
+  deps = [
+    ":std_file_stream",
+    "$dir_pw_bytes",
+    "$dir_pw_result",
+    "$dir_pw_status",
+    "$dir_pw_string",
+  ]
 }
 
 pw_test("seek_test") {
