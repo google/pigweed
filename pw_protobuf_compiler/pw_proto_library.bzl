@@ -88,6 +88,8 @@ def pw_proto_library(name = "", deps = [], nanopb_options = None):
     The pw_proto_library generates the following targets in this example:
 
     "benchmark_pw_proto.pwpb": C++ library exposing the "benchmark.pwpb.h" header.
+    "benchmark_pw_proto.pwpb_rpc": C++ library exposing the
+        "benchmark.rpc.pwpb.h" header.
     "benchmark_pw_proto.raw_rpc": C++ library exposing the "benchmark.raw_rpc.h"
         header.
     "benchmark_pw_proto.nanopb": C++ library exposing the "benchmark.pb.h"
@@ -108,9 +110,11 @@ def pw_proto_library(name = "", deps = [], nanopb_options = None):
             deps = deps,
         )
 
-        # The rpc.pb.h header depends on the generated nanopb code.
+        # The rpc.pb.h header depends on the generated nanopb or pwpb code.
         if info["include_nanopb_dep"]:
             lib_deps = info["deps"] + [":" + name + ".nanopb"]
+        elif info["include_pwpb_dep"]:
+            lib_deps = info["deps"] + [":" + name + ".pwpb"]
         else:
             lib_deps = info["deps"]
 
@@ -235,6 +239,18 @@ _pw_proto_library = rule(
     },
 )
 
+_pw_pwpb_rpc_proto_compiler_aspect = _proto_compiler_aspect("rpc.pwpb.h", "//pw_rpc/py:plugin_pwpb")
+
+_pw_pwpb_rpc_proto_library = rule(
+    implementation = _impl_pw_proto_library,
+    attrs = {
+        "deps": attr.label_list(
+            providers = [ProtoInfo],
+            aspects = [_pw_pwpb_rpc_proto_compiler_aspect],
+        ),
+    },
+)
+
 _pw_raw_rpc_proto_compiler_aspect = _proto_compiler_aspect("raw_rpc.pb.h", "//pw_rpc/py:plugin_raw")
 
 _pw_raw_rpc_proto_library = rule(
@@ -267,6 +283,18 @@ PIGWEED_PLUGIN = {
             "//pw_protobuf:pw_protobuf",
         ],
         "include_nanopb_dep": False,
+        "include_pwpb_dep": False,
+    },
+    "pwpb_rpc": {
+        "compiler": _pw_pwpb_rpc_proto_library,
+        "deps": [
+            "//pw_protobuf:pw_protobuf",
+            "//pw_rpc",
+            "//pw_rpc/raw:client_api",
+            "//pw_rpc/raw:server_api",
+        ],
+        "include_nanopb_dep": False,
+        "include_pwpb_dep": True,
     },
     "raw_rpc": {
         "compiler": _pw_raw_rpc_proto_library,
@@ -276,6 +304,7 @@ PIGWEED_PLUGIN = {
             "//pw_rpc/raw:server_api",
         ],
         "include_nanopb_dep": False,
+        "include_pwpb_dep": False,
     },
     "nanopb_rpc": {
         "compiler": _pw_nanopb_rpc_proto_library,
@@ -285,5 +314,6 @@ PIGWEED_PLUGIN = {
             "//pw_rpc/nanopb:server_api",
         ],
         "include_nanopb_dep": True,
+        "include_pwpb_dep": False,
     },
 }

@@ -261,6 +261,8 @@ pw_executable("client_integration_test") {
     dir_pw_unit_test,
   ]
 
+  deps += [ "pwpb:client_integration_test" ]
+
   if (dir_pw_third_party_nanopb != "") {
     deps += [ "nanopb:client_integration_test" ]
   }
@@ -321,6 +323,7 @@ pw_doc_group("docs") {
   ]
   group_deps = [
     "nanopb:docs",
+    "pwpb:docs",
     "py:docs",
     "ts:docs",
   ]
@@ -363,6 +366,7 @@ pw_test_group("tests") {
   ]
   group_deps = [
     "nanopb:tests",
+    "pwpb:tests",
     "raw:tests",
   ]
 }

@@ -43,8 +43,8 @@ Pigweed provides several client and server implementations of ``pw_rpc``.
     - ✅
     - ✅
   * - C++ (pw_protobuf)
-    - planned
-    - planned
+    - ✅
+    - ✅
   * - Java
     -
     - in development
@@ -166,10 +166,11 @@ This protocol buffer is declared in a ``BUILD.gn`` file as follows:
 
   If you need to distinguish between a default-valued field and a missing field,
   mark the field as ``optional``. The presence of the field can be detected
-  with a ``HasField(name)`` or ``has_<field>`` member, depending on the library.
+  with ``std::optional``, a ``HasField(name)``, or ``has_<field>`` member,
+  depending on the library.
 
-  Optional fields have some overhead --- default-valued fields are included in
-  the encoded proto, and, if using Nanopb, the proto structs have a
+  Optional fields have some overhead --- if using Nanopb, default-valued fields
+  are included in the encoded proto, and the proto structs have a
   ``has_<field>`` flag for each optional field. Use plain fields if field
   presence detection is not needed.
 
@@ -207,9 +208,9 @@ For example, the generated RPC header for ``"foo_bar/the_service.proto"`` is
 
 The generated header defines a base class for each RPC service declared in the
 ``.proto`` file. A service named ``TheService`` in package ``foo.bar`` would
-generate the following base class for Nanopb:
+generate the following base class for pw_protobuf:
 
-.. cpp:class:: template <typename Implementation> foo::bar::pw_rpc::nanopb::TheService::Service
+.. cpp:class:: template <typename Implementation> foo::bar::pw_rpc::pwpb::TheService::Service
 
 3. RPC service definition
 -------------------------
@@ -230,7 +231,7 @@ Services may mix and match protobuf implementations within one service.
 
      .. code-block:: sh
 
-       find out/ -name <proto_name>.rpc.pb.h
+       find out/ -name <proto_name>.rpc.pwpb.h
 
   #. Scroll to the bottom of the generated RPC header.
   #. Copy the stub class declaration to a header file.
@@ -239,32 +240,33 @@ Services may mix and match protobuf implementations within one service.
   #. List these files in a build target with a dependency on the
      ``pw_proto_library``.
 
-A Nanopb implementation of this service would be as follows:
+A pw_protobuf implementation of this service would be as follows:
 
 .. code-block:: cpp
 
-  #include "foo_bar/the_service.rpc.pb.h"
+  #include "foo_bar/the_service.rpc.pwpb.h"
 
   namespace foo::bar {
 
-  class TheService : public pw_rpc::nanopb::TheService::Service<TheService> {
+  class TheService : public pw_rpc::pwpb::TheService::Service<TheService> {
    public:
-    pw::Status MethodOne(const foo_bar_Request& request,
-                         foo_bar_Response& response) {
+    pw::Status MethodOne(const Request::Message& request,
+                         Response::Message& response) {
       // implementation
+      response.number = 123;
       return pw::OkStatus();
     }
 
-    void MethodTwo(const foo_bar_Request& request,
-                   ServerWriter<foo_bar_Response>& response) {
+    void MethodTwo(const Request::Message& request,
+                   ServerWriter<Response::Message>& response) {
       // implementation
-      response.Write(foo_bar_Response{.number = 123});
+      response.Write({.number = 123});
     }
   };
 
   }  // namespace foo::bar
 
-The Nanopb implementation would be declared in a ``BUILD.gn``:
+The pw_protobuf implementation would be declared in a ``BUILD.gn``:
 
 .. code-block:: python
 
@@ -275,13 +277,8 @@ The Nanopb implementation would be declared in a ``BUILD.gn``:
   pw_source_set("the_service") {
     public_configs = [ ":public" ]
     public = [ "public/foo_bar/service.h" ]
-    public_deps = [ ":the_service_proto.nanopb_rpc" ]
+    public_deps = [ ":the_service_proto.pwpb_rpc" ]
   }
-
-.. attention::
-
-  pw_rpc's generated classes will support using ``pw_protobuf`` or raw buffers
-  (no protobuf library) in the future.
 
 4. Register the service with a server
 -------------------------------------
@@ -401,6 +398,7 @@ Protobuf library APIs
 .. toctree::
   :maxdepth: 1
 
+  pwpb/docs
   nanopb/docs
 
 Testing a pw_rpc integration
@@ -413,14 +411,14 @@ working as intended by registering the provided ``EchoService``, defined in
   :language: protobuf
   :lines: 14-
 
-For example, in C++ with nanopb:
+For example, in C++ with pw_protobuf:
 
 .. code:: c++
 
   #include "pw_rpc/server.h"
 
   // Include the apporpriate header for your protobuf library.
-  #include "pw_rpc/echo_service_nanopb.h"
+  #include "pw_rpc/echo_service_pwpb.h"
 
   constexpr pw::rpc::Channel kChannels[] = { /* ... */ };
   static pw::rpc::Server server(kChannels);
@@ -836,7 +834,7 @@ Example
 ^^^^^^^
 .. code-block:: c++
 
-  #include "pw_rpc/echo_service_nanopb.h"
+  #include "pw_rpc/echo_service_pwpb.h"
 
   namespace {
   // Generated clients are namespaced with their proto library.
@@ -849,7 +847,7 @@ Example
 
   // Callback invoked when a response is received. This is called synchronously
   // from Client::ProcessPacket.
-  void EchoResponse(const pw_rpc_EchoMessage& response,
+  void EchoResponse(const EchoMessage::Message& response,
                     pw::Status status) {
     if (status.ok()) {
       PW_LOG_INFO("Received echo response: %s", response.msg);
@@ -865,7 +863,7 @@ Example
     // Create a client to call the EchoService.
     EchoClient echo_client(my_rpc_client, kDefaultChannelId);
 
-    pw_rpc_EchoMessage request = pw_rpc_EchoMessage_init_default;
+    EchoMessage::Message request{};
     pw::string::Copy(message, request.msg);
 
     // By assigning the returned ClientCall to the global echo_call, the RPC
@@ -927,11 +925,13 @@ what packets are sent by an RPC client in tests. Both raw and Nanopb interfaces
 are supported. Code that uses the raw API may be tested with the Nanopb test
 helpers, and vice versa.
 
-To test code that invokes RPCs, declare a ``RawClientTestContext`` or
-``NanopbClientTestContext``. These test context objects provide a
-preconfigured RPC client, channel, server fake, and buffer for encoding packets.
-These test classes are defined in ``pw_rpc/raw/client_testing.h`` and
-``pw_rpc/nanopb/client_testing.h``.
+To test code that invokes RPCs, declare a ``RawClientTestContext``,
+``PwpbClientTestContext``, or ``NanopbClientTestContext``. These test context
+objects provide a preconfigured RPC client, channel, server fake, and buffer for
+encoding packets.
+
+These test classes are defined in ``pw_rpc/raw/client_testing.h``,
+``pw_rpc/pwpb/client_testing.h``, or ``pw_rpc/nanopb/client_testing.h``.
 
 Use the context's ``client()`` and ``channel()`` to invoke RPCs. Use the
 context's ``server()`` to simulate responses. To verify that the client sent the

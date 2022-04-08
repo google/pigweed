@@ -38,6 +38,7 @@ pw_python_package("py") {
     "pw_rpc/client.py",
     "pw_rpc/codegen.py",
     "pw_rpc/codegen_nanopb.py",
+    "pw_rpc/codegen_pwpb.py",
     "pw_rpc/codegen_raw.py",
     "pw_rpc/console_tools/__init__.py",
     "pw_rpc/console_tools/console.py",
@@ -49,6 +50,7 @@ pw_python_package("py") {
     "pw_rpc/packets.py",
     "pw_rpc/plugin.py",
     "pw_rpc/plugin_nanopb.py",
+    "pw_rpc/plugin_pwpb.py",
     "pw_rpc/plugin_raw.py",
     "pw_rpc/testing.py",
   ]

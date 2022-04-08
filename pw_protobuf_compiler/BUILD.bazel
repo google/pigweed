@@ -18,10 +18,15 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(frolv): Figure out how to support nanopb codegen in Bazel.
+# TODO(frolv): Figure out how to support nanopb and pwpb codegen in Bazel.
 filegroup(
     name = "nanopb_test",
     srcs = ["nanopb_test.cc"],
+)
+
+filegroup(
+    name = "pwpb_test",
+    srcs = ["pwpb_test.cc"],
 )
 
 py_proto_library(

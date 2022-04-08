@@ -136,6 +136,38 @@ template("_pw_invoke_protoc") {
 # Generates pw_protobuf C++ code for proto files, creating a source_set of the
 # generated files. This is internal and should not be used outside of this file.
 # Use pw_proto_library instead.
+template("_pw_pwpb_rpc_proto_library") {
+  # Create a target which runs protoc configured with the pwpb_rpc plugin to
+  # generate the C++ proto RPC headers.
+  _pw_invoke_protoc(target_name) {
+    forward_variables_from(invoker, "*", _forwarded_vars)
+    language = "pwpb_rpc"
+    plugin = "$dir_pw_rpc/py/pw_rpc/plugin_pwpb.py"
+    python_deps = [ "$dir_pw_rpc/py" ]
+  }
+
+  # Create a library with the generated source files.
+  config("$target_name._include_path") {
+    include_dirs = [ "${invoker.base_out_dir}/pwpb_rpc" ]
+    visibility = [ ":*" ]
+  }
+
+  pw_source_set(target_name) {
+    forward_variables_from(invoker, _forwarded_vars)
+    public_configs = [ ":$target_name._include_path" ]
+    deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
+    public_deps = [
+                    ":${invoker.base_target}.pwpb",
+                    "$dir_pw_protobuf",
+                    "$dir_pw_rpc:server",
+                    "$dir_pw_rpc/pwpb:client_api",
+                    "$dir_pw_rpc/pwpb:server_api",
+                  ] + invoker.deps
+    public = invoker.outputs
+    check_includes = false
+  }
+}
+
 template("_pw_pwpb_proto_library") {
   _pw_invoke_protoc(target_name) {
     forward_variables_from(invoker, "*", _forwarded_vars)
@@ -532,6 +564,22 @@ template("pw_proto_library") {
 
   # Enumerate all of the protobuf generator targets.
 
+  _pw_pwpb_rpc_proto_library("$target_name.pwpb_rpc") {
+    forward_variables_from(invoker, _forwarded_vars)
+    forward_variables_from(_common, "*")
+
+    deps = []
+    foreach(dep, _deps) {
+      _base = get_label_info(dep, "label_no_toolchain")
+      deps += [ "$_base.pwpb_rpc(" + get_label_info(dep, "toolchain") + ")" ]
+    }
+
+    outputs = []
+    foreach(name, _source_names) {
+      outputs += [ "$base_out_dir/pwpb_rpc/$_prefix/${name}.rpc.pwpb.h" ]
+    }
+  }
+
   _pw_pwpb_proto_library("$target_name.pwpb") {
     forward_variables_from(invoker, _forwarded_vars)
     forward_variables_from(_common, "*")
@@ -652,6 +700,7 @@ template("pw_proto_library") {
   # All supported pw_protobuf generators.
   _protobuf_generators = [
     "pwpb",
+    "pwpb_rpc",
     "nanopb",
     "nanopb_rpc",
     "raw_rpc",

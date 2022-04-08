@@ -19,6 +19,7 @@ if(NOT "${dir_pw_third_party_nanopb}" STREQUAL "")
   add_subdirectory(nanopb)
 endif()
 
+add_subdirectory(pwpb)
 add_subdirectory(raw)
 add_subdirectory(system_server)
 

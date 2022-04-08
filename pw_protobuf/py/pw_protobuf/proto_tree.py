@@ -78,6 +78,14 @@ class ProtoNode(abc.ABC):
         path = '.'.join(self._attr_hierarchy(lambda node: node.name(), None))
         return path.lstrip('.')
 
+    def pwpb_struct(self) -> str:
+        """Name of the pw_protobuf struct for this proto."""
+        return '::' + self.cpp_namespace() + '::Message'
+
+    def pwpb_table(self) -> str:
+        """Name of the pw_protobuf table constant for this proto."""
+        return '::' + self.cpp_namespace() + '::kMessageFields'
+
     def nanopb_fields(self) -> str:
         """Name of the Nanopb variable that represents the proto fields."""
         return self._nanopb_name() + '_fields'

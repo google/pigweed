@@ -335,6 +335,17 @@ proto_plugin(
     visibility = ["//visibility:public"],
 )
 
+proto_plugin(
+    name = "pw_cc_plugin_pwpb_rpc",
+    outputs = [
+        "{protopath}.rpc.pwpb.h",
+    ],
+    protoc_plugin_name = "pwpb_rpc",
+    tool = "@pigweed//pw_rpc/py:plugin_pwpb",
+    use_built_in_shell_environment = True,
+    visibility = ["//visibility:public"],
+)
+
 proto_library(
     name = "echo_proto",
     srcs = [

@@ -149,7 +149,7 @@ static_assert(sizeof(MessageField) <= sizeof(size_t) * 4,
 // a field.
 template <typename StreamEncoder, typename StreamDecoder>
 union Callback {
-  Callback() : encode_() {}
+  constexpr Callback() : encode_() {}
   ~Callback() { encode_ = nullptr; }
 
   // Set the encoder callback.

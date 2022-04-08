@@ -65,11 +65,20 @@ def _argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def protoc_cc_args(args: argparse.Namespace) -> Tuple[str, ...]:
+def protoc_pwpb_args(args: argparse.Namespace) -> Tuple[str, ...]:
     return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
         f'--custom_opt=-I{args.compile_dir.as_posix()}',
+        '--custom_out',
+        args.out_dir,
+    )
+
+
+def protoc_pwpb_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
+    return _COMMON_FLAGS + (
+        '--plugin',
+        f'protoc-gen-custom={args.plugin_path}',
         '--custom_out',
         args.out_dir,
     )
@@ -128,12 +137,13 @@ _DefaultArgsFunction = Callable[[argparse.Namespace], Tuple[str, ...]]
 # Default additional protoc arguments for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
 DEFAULT_PROTOC_ARGS: Dict[str, _DefaultArgsFunction] = {
-    'pwpb': protoc_cc_args,
     'go': protoc_go_args,
     'nanopb': protoc_nanopb_args,
     'nanopb_rpc': protoc_nanopb_rpc_args,
-    'raw_rpc': protoc_raw_rpc_args,
+    'pwpb': protoc_pwpb_args,
+    'pwpb_rpc': protoc_pwpb_rpc_args,
     'python': protoc_python_args,
+    'raw_rpc': protoc_raw_rpc_args,
 }
 
 # Languages that protoc internally supports.

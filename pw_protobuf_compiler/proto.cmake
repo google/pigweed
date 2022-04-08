@@ -21,9 +21,9 @@ include_guard(GLOBAL)
 #
 # This function also creates libraries for generating pw_rpc code:
 #
+#   ${NAME}.pwpb_rpc - generates pw_protobuf pw_rpc code
 #   ${NAME}.nanopb_rpc - generates Nanopb pw_rpc code
 #   ${NAME}.raw_rpc - generates raw pw_rpc (no protobuf library) code
-#   ${NAME}.pwpb_rpc - (Not implemented) generates pw_protobuf pw_rpc code
 #
 # Args:
 #
@@ -104,6 +104,8 @@ function(pw_proto_library NAME)
 
   # Create a protobuf target for each supported protobuf library.
   _pw_pwpb_library(
+      "${NAME}" "${sources}" "${inputs}" "${arg_DEPS}" "${include_file}" "${out_dir}")
+  _pw_pwpb_rpc_library(
       "${NAME}" "${sources}" "${inputs}" "${arg_DEPS}" "${include_file}" "${out_dir}")
   _pw_raw_rpc_library(
       "${NAME}" "${sources}" "${inputs}" "${arg_DEPS}" "${include_file}" "${out_dir}")
@@ -199,6 +201,40 @@ function(_pw_pwpb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   )
   add_dependencies("${NAME}.pwpb" "${NAME}._generate.pwpb")
 endfunction(_pw_pwpb_library)
+
+# Internal function that creates a pwpb_rpc library.
+function(_pw_pwpb_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
+  # Determine the names of the output files.
+  list(TRANSFORM DEPS APPEND .pwpb_rpc)
+
+  _pw_generate_protos("${NAME}"
+      pwpb_rpc
+      "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin_pwpb.py"
+      ".rpc.pwpb.h"
+      "${INCLUDE_FILE}"
+      "${OUT_DIR}"
+      "${SOURCES}"
+      "${INPUTS}"
+      "${DEPS}"
+  )
+
+  # Create the library with the generated source files.
+  add_library("${NAME}.pwpb_rpc" INTERFACE)
+  target_include_directories("${NAME}.pwpb_rpc"
+    INTERFACE
+      "${OUT_DIR}/pwpb_rpc"
+  )
+  target_link_libraries("${NAME}.pwpb_rpc"
+    INTERFACE
+      "${NAME}.pwpb"
+      pw_build
+      pw_rpc.pwpb.client
+      pw_rpc.pwpb.method_union
+      pw_rpc.server
+      ${DEPS}
+  )
+  add_dependencies("${NAME}.pwpb_rpc" "${NAME}._generate.pwpb_rpc")
+endfunction(_pw_pwpb_rpc_library)
 
 # Internal function that creates a raw_rpc proto library.
 function(_pw_raw_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)

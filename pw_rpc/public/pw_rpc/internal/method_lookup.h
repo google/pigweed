@@ -35,6 +35,13 @@ class MethodLookup {
   }
 
   template <typename Service, uint32_t kMethodId>
+  static constexpr const auto& GetPwpbMethod() {
+    const auto& method = GetMethodUnion<Service, kMethodId>().pwpb_method();
+    static_assert(method.id() == kMethodId, "Incorrect method implementation");
+    return method;
+  }
+
+  template <typename Service, uint32_t kMethodId>
   static constexpr const auto& GetNanopbMethod() {
     const auto& method = GetMethodUnion<Service, kMethodId>().nanopb_method();
     static_assert(method.id() == kMethodId, "Incorrect method implementation");

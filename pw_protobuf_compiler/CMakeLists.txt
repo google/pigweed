@@ -15,6 +15,22 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
+pw_proto_library(pw_protobuf_compiler.pwpb_test_protos
+  SOURCES
+    pw_protobuf_compiler_pwpb_protos/pwpb_test.proto
+  INPUTS
+    pw_protobuf_compiler_pwpb_protos/pwpb_test.options
+)
+
+pw_add_test(pw_protobuf_compiler.pwpb_test
+  SOURCES
+    pwpb_test.cc
+  DEPS
+    pw_protobuf_compiler.pwpb_test_protos.pwpb
+  GROUPS
+    pw_protobuf_compiler
+)
+
 if(NOT "${dir_pw_third_party_nanopb}" STREQUAL "")
   pw_proto_library(pw_protobuf_compiler.nanopb_test_protos
     SOURCES

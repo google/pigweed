@@ -27,6 +27,7 @@ filegroup(
         "pw_rpc/callback_client/impl.py",
         "pw_rpc/codegen.py",
         "pw_rpc/codegen_nanopb.py",
+        "pw_rpc/codegen_pwpb.py",
         "pw_rpc/codegen_raw.py",
         "pw_rpc/console_tools/__init__.py",
         "pw_rpc/console_tools/console.py",
@@ -37,6 +38,7 @@ filegroup(
         "pw_rpc/packets.py",
         "pw_rpc/plugin.py",
         "pw_rpc/plugin_nanopb.py",
+        "pw_rpc/plugin_pwpb.py",
         "pw_rpc/plugin_raw.py",
     ],
 )
@@ -60,6 +62,20 @@ py_binary(
     srcs = [":pw_rpc_common_sources"],
     imports = ["."],
     main = "pw_rpc/plugin_nanopb.py",
+    python_version = "PY3",
+    deps = [
+        "//pw_protobuf/py:plugin_library",
+        "//pw_protobuf_compiler/py:pw_protobuf_compiler",
+        "//pw_status/py:pw_status",
+        "@com_google_protobuf//:protobuf_python",
+    ],
+)
+
+py_binary(
+    name = "plugin_pwpb",
+    srcs = [":pw_rpc_common_sources"],
+    imports = ["."],
+    main = "pw_rpc/plugin_pwpb.py",
     python_version = "PY3",
     deps = [
         "//pw_protobuf/py:plugin_library",

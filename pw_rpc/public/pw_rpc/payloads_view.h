@@ -124,6 +124,9 @@ class PayloadsView {
   template <typename>
   friend class NanopbPayloadsView;
 
+  template <typename>
+  friend class PwpbPayloadsView;
+
   template <auto kMethod>
   using MethodInfo = internal::MethodInfo<kMethod>;
 

@@ -19,12 +19,14 @@ import sys
 from google.protobuf.compiler import plugin_pb2
 
 from pw_rpc import codegen_nanopb
+from pw_rpc import codegen_pwpb
 from pw_rpc import codegen_raw
 
 
 class Codegen(enum.Enum):
     RAW = 0
     NANOPB = 1
+    PWPB = 2
 
 
 def process_proto_request(codegen: Codegen,
@@ -44,6 +46,8 @@ def process_proto_request(codegen: Codegen,
             output_files = codegen_raw.process_proto_file(proto_file)
         elif codegen is Codegen.NANOPB:
             output_files = codegen_nanopb.process_proto_file(proto_file)
+        elif codegen is Codegen.PWPB:
+            output_files = codegen_pwpb.process_proto_file(proto_file)
         else:
             raise NotImplementedError(f'Unknown codegen type {codegen}')
 

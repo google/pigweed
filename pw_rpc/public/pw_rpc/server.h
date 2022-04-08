@@ -92,6 +92,15 @@ class Server : public internal::Endpoint {
   template <typename>
   friend class NanopbUnaryResponder;
 
+  template <typename, typename>
+  friend class PwpbServerReaderWriter;
+  template <typename>
+  friend class PwpbServerWriter;
+  template <typename, typename>
+  friend class PwpbServerReader;
+  template <typename>
+  friend class PwpbUnaryResponder;
+
   // Creates a call context for a particular RPC. Unlike the CallContext
   // constructor, this function checks the type of RPC at compile time.
   template <auto kMethod,

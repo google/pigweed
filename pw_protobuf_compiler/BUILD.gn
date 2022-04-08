@@ -25,7 +25,10 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":nanopb_test" ]
+  tests = [
+    ":nanopb_test",
+    ":pwpb_test",
+  ]
 }
 
 pw_test("nanopb_test") {
@@ -40,6 +43,16 @@ pw_proto_library("nanopb_test_protos") {
   if (dir_pw_third_party_nanopb != "") {
     deps = [ "$dir_pw_third_party/nanopb:proto" ]
   }
+}
+
+pw_test("pwpb_test") {
+  deps = [ ":pwpb_test_protos.pwpb" ]
+  sources = [ "pwpb_test.cc" ]
+}
+
+pw_proto_library("pwpb_test_protos") {
+  sources = [ "pw_protobuf_compiler_pwpb_protos/pwpb_test.proto" ]
+  inputs = [ "pw_protobuf_compiler_pwpb_protos/pwpb_test.options" ]
 }
 
 pw_proto_library("test_protos") {
