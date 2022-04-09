@@ -330,12 +330,12 @@ class AttBasedServer final : public Server {
 
     size_t value_size;
     std::list<const att::Attribute*> results;
-    auto error_code =
+    fitx::result<att::ErrorCode> status =
         ReadByTypeHelper(start, end, group_type, /*group_type=*/true, att_->mtu() - kHeaderSize,
                          att::kMaxReadByGroupTypeValueLength, sizeof(att::AttributeGroupDataEntry),
                          &value_size, &results);
-    if (error_code != att::ErrorCode::kNoError) {
-      att_->ReplyWithError(tid, start, error_code);
+    if (status.is_error()) {
+      att_->ReplyWithError(tid, start, status.error_value());
       return;
     }
 
@@ -398,11 +398,11 @@ class AttBasedServer final : public Server {
 
     size_t value_size;
     std::list<const att::Attribute*> results;
-    auto error_code = ReadByTypeHelper(start, end, type, /*group_type=*/false,
-                                       att_->mtu() - kHeaderSize, att::kMaxReadByTypeValueLength,
-                                       sizeof(att::AttributeData), &value_size, &results);
-    if (error_code != att::ErrorCode::kNoError) {
-      att_->ReplyWithError(tid, start, error_code);
+    fitx::result<att::ErrorCode> status = ReadByTypeHelper(
+        start, end, type, /*group_type=*/false, att_->mtu() - kHeaderSize,
+        att::kMaxReadByTypeValueLength, sizeof(att::AttributeData), &value_size, &results);
+    if (status.is_error()) {
+      att_->ReplyWithError(tid, start, status.error_value());
       return;
     }
 
@@ -775,30 +775,29 @@ class AttBasedServer final : public Server {
                             std::move(result_cb));
   }
 
-  // Helper function to serve the Read By Type and Read By Group Type requests.
-  // This searches |db| for attributes with the given |type| and adds as many
-  // attributes as it can fit within the given |max_data_list_size|. The
-  // attribute value that should be included within each attribute data list
-  // entry is returned in |out_value_size|.
+  // Helper function to serve the Read By Type and Read By Group Type requests. This searches |db|
+  // for attributes with the given |type| and adds as many attributes as it can fit within the given
+  // |max_data_list_size|. The attribute value that should be included within each attribute data
+  // list entry is returned in |out_value_size|.
   //
-  // If the result is a dynamic attribute, |out_results| will contain at most
-  // one entry. |out_value_size| will point to an undefined value in that case.
+  // If the result is a dynamic attribute, |out_results| will contain at most one entry.
+  // |out_value_size| will point to an undefined value in that case.
   //
-  // Returns att::ErrorCode::kNoError on success. On error, returns an error
-  // code that can be used in a ATT Error Response.
-  att::ErrorCode ReadByTypeHelper(att::Handle start, att::Handle end, const UUID& type,
-                                  bool group_type, size_t max_data_list_size, size_t max_value_size,
-                                  size_t entry_prefix_size, size_t* out_value_size,
-                                  std::list<const att::Attribute*>* out_results) {
+  // On error, returns an error code that can be used in a ATT Error Response.
+  fitx::result<att::ErrorCode> ReadByTypeHelper(att::Handle start, att::Handle end,
+                                                const UUID& type, bool group_type,
+                                                size_t max_data_list_size, size_t max_value_size,
+                                                size_t entry_prefix_size, size_t* out_value_size,
+                                                std::list<const att::Attribute*>* out_results) {
     ZX_DEBUG_ASSERT(out_results);
     ZX_DEBUG_ASSERT(out_value_size);
 
     if (start == att::kInvalidHandle || start > end)
-      return att::ErrorCode::kInvalidHandle;
+      return fitx::error(att::ErrorCode::kInvalidHandle);
 
     auto iter = db()->GetIterator(start, end, &type, group_type);
     if (iter.AtEnd())
-      return att::ErrorCode::kAttributeNotFound;
+      return fitx::error(att::ErrorCode::kAttributeNotFound);
 
     // |value_size| is the size of the complete attribute value for each result
     // entry. |entry_size| = |value_size| + |entry_prefix_size|. We store these
@@ -814,10 +813,10 @@ class AttBasedServer final : public Server {
       fitx::result<att::ErrorCode> security_result =
           att::CheckReadPermissions(attr->read_reqs(), att_->security());
       if (security_result.is_error()) {
-        // Return error only if this is the first result that matched. We simply
-        // stop the search otherwise.
+        // Return error only if this is the first result that matched. We simply stop the search
+        // otherwise.
         if (results.empty()) {
-          return security_result.error_value();
+          return security_result;
         }
         break;
       }
@@ -853,10 +852,10 @@ class AttBasedServer final : public Server {
     }
 
     if (results.empty())
-      return att::ErrorCode::kAttributeNotFound;
+      return fitx::error(att::ErrorCode::kAttributeNotFound);
 
     *out_results = std::move(results);
-    return att::ErrorCode::kNoError;
+    return fitx::ok();
   }
 
   PeerId peer_id_;
