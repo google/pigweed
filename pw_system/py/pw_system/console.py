@@ -206,6 +206,7 @@ class SocketClientImpl:
         return self.socket.recv(num_bytes)
 
 
+#pylint: disable=too-many-arguments
 def console(device: str,
             baudrate: int,
             proto_globs: Collection[str],
@@ -215,7 +216,8 @@ def console(device: str,
             output: Any,
             serial_debug: bool = False,
             config_file: Optional[Path] = None,
-            verbose: bool = False) -> int:
+            verbose: bool = False,
+            compiled_protos: Optional[List[ModuleType]] = None) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
     if output is sys.stdout:
@@ -241,10 +243,14 @@ def console(device: str,
 
     protos: List[Union[ModuleType, Path]] = list(_expand_globs(proto_globs))
 
+    if compiled_protos is None:
+        compiled_protos = []
+
     # Append compiled log.proto library to avoid include errors when manually
     # provided, and shadowing errors due to ordering when the default global
     # search path is used.
-    protos.append(log_pb2)
+    compiled_protos.append(log_pb2)
+    protos.extend(compiled_protos)
 
     if not protos:
         _LOG.critical('No .proto files were found with %s',
@@ -298,6 +304,10 @@ def console(device: str,
 
 def main() -> int:
     return console(**vars(_parse_args()))
+
+
+def main_with_compiled_protos(compiled_protos):
+    return console(**vars(_parse_args()), compiled_protos=compiled_protos)
 
 
 if __name__ == '__main__':
