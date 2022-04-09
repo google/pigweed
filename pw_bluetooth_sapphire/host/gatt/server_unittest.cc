@@ -2599,17 +2599,16 @@ class ServerTestSecurity : public ServerTest {
     return Expect(MakeAttError(request, handle, ecode));
   }
 
-  // Helpers for emulating the receipt of an ATT read/write request PDU and
-  // expecting back a security error. Expects a valid response if
-  // |expected_ecode| is att::ErrorCode::kNoError.
-  bool EmulateReadByTypeRequest(att::Handle handle, att::ErrorCode expected_ecode) {
+  // Helpers for emulating the receipt of an ATT read/write request PDU and expecting back a
+  // security error. Expects a successful response if |expected_status| is fitx::ok().
+  bool EmulateReadByTypeRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadByTypeRequestPdu(0x08,  // opcode: read by type
                                                  LowerBits(handle),
                                                  UpperBits(handle),  // start handle
                                                  LowerBits(handle),
                                                  UpperBits(handle),  // end handle
                                                  0xEF, 0xBE);  // type: 0xBEEF, i.e. kTestType16
-    if (expected_ecode == att::ErrorCode::kNoError) {
+    if (expected_status.is_ok()) {
       return ReceiveAndExpect(kReadByTypeRequestPdu,
                               StaticByteBuffer(0x09,  // opcode: read by type response
                                                0x05,  // length: 5 (strlen("foo") + 2)
@@ -2617,56 +2616,61 @@ class ServerTestSecurity : public ServerTest {
                                                'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
                                                ));
     } else {
-      return ReceiveAndExpect(kReadByTypeRequestPdu, MakeAttError(0x08, handle, expected_ecode));
+      return ReceiveAndExpect(kReadByTypeRequestPdu,
+                              MakeAttError(0x08, handle, expected_status.error_value()));
     }
   }
 
-  bool EmulateReadBlobRequest(att::Handle handle, att::ErrorCode expected_ecode) {
+  bool EmulateReadBlobRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadBlobRequestPdu(0x0C,  // opcode: read blob
                                                LowerBits(handle), UpperBits(handle),  // handle
                                                0x00, 0x00);                           // offset: 0
-    if (expected_ecode == att::ErrorCode::kNoError) {
+    if (expected_status.is_ok()) {
       return ReceiveAndExpect(kReadBlobRequestPdu,
                               StaticByteBuffer(0x0D,          // opcode: read blob response
                                                'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
                                                ));
     } else {
-      return ReceiveAndExpect(kReadBlobRequestPdu, MakeAttError(0x0C, handle, expected_ecode));
+      return ReceiveAndExpect(kReadBlobRequestPdu,
+                              MakeAttError(0x0C, handle, expected_status.error_value()));
     }
   }
 
-  bool EmulateReadRequest(att::Handle handle, att::ErrorCode expected_ecode) {
+  bool EmulateReadRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadRequestPdu(0x0A,  // opcode: read request
                                            LowerBits(handle), UpperBits(handle));  // handle
-    if (expected_ecode == att::ErrorCode::kNoError) {
+    if (expected_status.is_ok()) {
       return ReceiveAndExpect(kReadRequestPdu,
                               StaticByteBuffer(0x0B,          // opcode: read response
                                                'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
                                                ));
     } else {
-      return ReceiveAndExpect(kReadRequestPdu, MakeAttError(0x0A, handle, expected_ecode));
+      return ReceiveAndExpect(kReadRequestPdu,
+                              MakeAttError(0x0A, handle, expected_status.error_value()));
     }
   }
 
-  bool EmulateWriteRequest(att::Handle handle, att::ErrorCode expected_ecode) {
+  bool EmulateWriteRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kWriteRequestPdu(0x12,  // opcode: write request
                                             LowerBits(handle), UpperBits(handle),  // handle
                                             't', 'e', 's', 't');                   // value: "test"
-    if (expected_ecode == att::ErrorCode::kNoError) {
+    if (expected_status.is_ok()) {
       return ReceiveAndExpect(kWriteRequestPdu, StaticByteBuffer(0x13));  // write response
     } else {
-      return ReceiveAndExpect(kWriteRequestPdu, MakeAttError(0x12, handle, expected_ecode));
+      return ReceiveAndExpect(kWriteRequestPdu,
+                              MakeAttError(0x12, handle, expected_status.error_value()));
     }
   }
 
-  bool EmulatePrepareWriteRequest(att::Handle handle, att::ErrorCode expected_ecode) {
+  bool EmulatePrepareWriteRequest(att::Handle handle,
+                                  fitx::result<att::ErrorCode> expected_status) {
     const auto kPrepareWriteRequestPdu =
         StaticByteBuffer(0x16,                                  // opcode: prepare write request
                          LowerBits(handle), UpperBits(handle),  // handle
                          0x00, 0x00,                            // offset: 0
                          't', 'e', 's', 't'                     // value: "test"
         );
-    if (expected_ecode == att::ErrorCode::kNoError) {
+    if (expected_status.is_ok()) {
       return ReceiveAndExpect(kPrepareWriteRequestPdu,
                               StaticByteBuffer(0x17,  // prepare write response
                                                LowerBits(handle), UpperBits(handle),  // handle
@@ -2674,13 +2678,14 @@ class ServerTestSecurity : public ServerTest {
                                                't', 'e', 's', 't'  // value: "test"
                                                ));
     } else {
-      return ReceiveAndExpect(kPrepareWriteRequestPdu, MakeAttError(0x16, handle, expected_ecode));
+      return ReceiveAndExpect(kPrepareWriteRequestPdu,
+                              MakeAttError(0x16, handle, expected_status.error_value()));
     }
   }
 
   // Emulates the receipt of a Write Command. The expected error code parameter
   // is unused since ATT commands do not have a response.
-  bool EmulateWriteCommand(att::Handle handle, att::ErrorCode) {
+  bool EmulateWriteCommand(att::Handle handle, fitx::result<att::ErrorCode>) {
     fake_chan()->Receive(StaticByteBuffer(0x52,  // opcode: write command
                                           LowerBits(handle), UpperBits(handle),  // handle
                                           't', 'e', 's', 't'                     // value: "test"
@@ -2689,41 +2694,39 @@ class ServerTestSecurity : public ServerTest {
     return true;
   }
 
-  template <bool (ServerTestSecurity::*EmulateMethod)(att::Handle, att::ErrorCode), bool IsWrite>
+  template <bool (ServerTestSecurity::*EmulateMethod)(att::Handle, fitx::result<att::ErrorCode>),
+            bool IsWrite>
   void RunTest() {
-    const att::ErrorCode kNotPermittedError =
-        IsWrite ? att::ErrorCode::kWriteNotPermitted : att::ErrorCode::kReadNotPermitted;
+    const fitx::error<att::ErrorCode> kNotPermittedError = fitx::error(
+        IsWrite ? att::ErrorCode::kWriteNotPermitted : att::ErrorCode::kReadNotPermitted);
 
     // No security.
-    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
+    EXPECT_TRUE(
+        (this->*EmulateMethod)(not_permitted_attr()->handle(), fitx::error(kNotPermittedError)));
     EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
-                                       att::ErrorCode::kInsufficientAuthentication));
+                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
     EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
-                                       att::ErrorCode::kInsufficientAuthentication));
+                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
     EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
-                                       att::ErrorCode::kInsufficientAuthentication));
+                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
 
     // Link encrypted.
     fake_chan()->set_security(
         sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
     EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
-    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
-                                       att::ErrorCode::kNoError));  // success
+    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(), fitx::ok()));
     EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
-                                       att::ErrorCode::kInsufficientAuthentication));
+                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
     EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
-                                       att::ErrorCode::kInsufficientAuthentication));
+                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
 
     // Link encrypted w/ MITM.
     fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16,
                                                      /*secure_connections=*/false));
     EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
-    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
-                                       att::ErrorCode::kNoError));  // success
-    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
-                                       att::ErrorCode::kNoError));  // success
-    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
-                                       att::ErrorCode::kNoError));  // success
+    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(), fitx::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(), fitx::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(), fitx::ok()));
   }
 
   void RunReadByTypeTest() { RunTest<&ServerTestSecurity::EmulateReadByTypeRequest, false>(); }

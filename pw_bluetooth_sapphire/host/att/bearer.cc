@@ -588,8 +588,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
   }
 
   bt_log(TRACE, "att",
-         "Received security error for transaction %#.2hhx; requesting upgrade "
-         "to level: %s",
+         "Received security error for transaction %#.2hhx; requesting upgrade to level: %s",
          error_code, sm::LevelToString(security_requirement));
   chan_->UpgradeSecurity(
       security_requirement,
