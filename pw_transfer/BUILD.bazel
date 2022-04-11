@@ -202,6 +202,21 @@ py_binary(
     srcs = ["integration_test/proxy.py"],
 )
 
+proto_library(
+    name = "config_proto",
+    srcs = ["integration_test/config.proto"],
+)
+
+cc_proto_library(
+    name = "config_cc_proto",
+    deps = [":config_proto"],
+)
+
+py_proto_library(
+    name = "config_pb2",
+    srcs = ["integration_test/config.proto"],
+)
+
 pw_cc_binary(
     name = "test_rpc_server",
     srcs = ["test_rpc_server.cc"],
@@ -221,6 +236,7 @@ pw_cc_binary(
     srcs = ["integration_test/client.cc"],
     deps = [
         ":client",
+        ":config_cc_proto",
         ":pw_transfer",
         "//pw_log",
         "//pw_rpc:integration_testing",
@@ -228,6 +244,7 @@ pw_cc_binary(
         "//pw_stream:std_file_stream",
         "//pw_sync:binary_semaphore",
         "//pw_thread:thread",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -241,7 +258,10 @@ py_test(
     ],
     # TODO(b/228516801): Make this part of the CI/CQ once it's reliable.
     tags = ["manual"],
-    deps = ["@rules_python//python/runfiles"],
+    deps = [
+        ":config_pb2",
+        "@rules_python//python/runfiles",
+    ],
 )
 
 proto_library(

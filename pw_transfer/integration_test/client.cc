@@ -14,11 +14,17 @@
 
 // Client binary for the cross-language integration test.
 //
+// Usage:
+//  bazel-bin/pw_transfer/integration_test_client 3300 <<< "transfer_id: 12
+//  file: '/tmp/myfile.txt'"
+//
 // WORK IN PROGRESS, SEE b/228516801
 #include "pw_transfer/client.h"
 
 #include <cstddef>
+#include <cstdio>
 
+#include "google/protobuf/text_format.h"
 #include "pw_log/log.h"
 #include "pw_rpc/integration_testing.h"
 #include "pw_status/status.h"
@@ -27,6 +33,7 @@
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
+#include "pw_transfer/integration_test/config.pb.h"
 #include "pw_transfer/transfer_thread.h"
 
 namespace pw::transfer {
@@ -49,7 +56,7 @@ struct WriteResult {
 
 // Create a pw_transfer client, read data from path_to_data, and write it to the
 // client using the given transfer_id.
-pw::Status SendData(uint32_t transfer_id, const char* path_to_data) {
+pw::Status SendData(const pw::transfer::ClientConfig& config) {
   std::byte chunk_buffer[512];
   std::byte encode_buffer[512];
   transfer::Thread<2, 2> transfer_thread(chunk_buffer, encode_buffer);
@@ -60,11 +67,11 @@ pw::Status SendData(uint32_t transfer_id, const char* path_to_data) {
                               transfer_thread,
                               /*max_bytes_to_receive=*/256);
 
-  pw::stream::StdFileReader input(path_to_data);
+  pw::stream::StdFileReader input(config.file().c_str());
 
   WriteResult result;
 
-  client.Write(transfer_id, input, [&result](Status status) {
+  client.Write(config.transfer_id(), input, [&result](Status status) {
     result.status = status;
     result.completed.release();
   });
@@ -86,24 +93,37 @@ pw::Status SendData(uint32_t transfer_id, const char* path_to_data) {
 }  // namespace pw::transfer
 
 int main(int argc, char* argv[]) {
-  if (!pw::rpc::integration_test::InitializeClient(
-           argc, argv, "PORT TRANSFER_ID PATH_TO_DATA")
-           .ok()) {
+  if (argc < 2) {
+    PW_LOG_INFO("Usage: %s PORT <<< config textproto", argv[0]);
     return 1;
   }
 
-  if (argc != 4) {
-    PW_LOG_INFO("Usage: %s PORT TRANSFER_ID PATH_TO_DATA", argv[0]);
+  const int port = std::atoi(argv[1]);
+
+  std::string config_string;
+  std::string line;
+  while (std::getline(std::cin, line)) {
+    config_string = config_string + line + '\n';
+  }
+  pw::transfer::ClientConfig config;
+
+  bool ok =
+      google::protobuf::TextFormat::ParseFromString(config_string, &config);
+  if (!ok) {
+    PW_LOG_INFO("Failed to parse config: %s", config_string.c_str());
+    PW_LOG_INFO("Usage: %s PORT <<< config textproto", argv[0]);
+    return 1;
+  } else {
+    PW_LOG_INFO("Loaded config:\n%s", config.DebugString().c_str());
+  }
+
+  if (!pw::rpc::integration_test::InitializeClient(port).ok()) {
     return 1;
   }
 
-  uint32_t transfer_id = static_cast<uint32_t>(std::atoi(argv[2]));
-  char* path_to_data = argv[3];
-
-  if (!pw::transfer::SendData(transfer_id, path_to_data).ok()) {
+  if (!pw::transfer::SendData(config).ok()) {
     PW_LOG_INFO("Failed to transfer!");
     return 1;
   }
-
   return 0;
 }

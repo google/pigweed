@@ -26,6 +26,7 @@ import tempfile
 import time
 import unittest
 
+from pigweed.pw_transfer.integration_test import config_pb2
 from rules_python.python.runfiles import runfiles
 
 SERVER_PORT = 3300
@@ -43,16 +44,17 @@ class PwTransferIntegrationTest(unittest.TestCase):
         cls._SERVER_BINARY = r.Rlocation(
             "pigweed/pw_transfer/integration_test_server")
 
-    def _client_write(self, transfer_id: int, f):
-        """Runs client to transfer contents of f to server.
+    def _client_write(self, config: config_pb2.ClientConfig):
+        """Runs client with the specified config.
 
         Blocks until the client exits, and raises an exception on non-zero
         return codes.
         """
+        print(f"Starting client with config {config}")
         subprocess.run(
-            [self._CLIENT_BINARY,
-             str(CLIENT_PORT),
-             str(transfer_id), f.name],
+            [self._CLIENT_BINARY, str(CLIENT_PORT)],
+            input=str(config),
+            text=True,
             check=True)
 
     def _start_server(self, transfer_id: int, f):
@@ -93,11 +95,17 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
             f_payload.write(payload)
             f_payload.flush()  # Ensure contents are there to read!
+
             self._start_proxy()
             time.sleep(3)  # TODO: Instead parse proxy logs?
             self._start_server(transfer_id, f_server_output)
             time.sleep(3)  # TODO: Instead parse server logs
-            self._client_write(transfer_id, f_payload)
+
+            client_config = config_pb2.ClientConfig(
+                transfer_id=transfer_id,
+                file=f_payload.name,
+            )
+            self._client_write(client_config)
 
             DEADLINE = 10  # seconds
             returncode = self._server.wait(DEADLINE)

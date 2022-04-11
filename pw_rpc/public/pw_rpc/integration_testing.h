@@ -92,4 +92,6 @@ Status InitializeClient(int argc,
                         char* argv[],
                         const char* usage_args = "PORT");
 
+Status InitializeClient(int port);
+
 }  // namespace pw::rpc::integration_test
