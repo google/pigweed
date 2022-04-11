@@ -19,8 +19,6 @@ constexpr OpCode kTestResponse3 = kFindByTypeValueResponse;
 
 constexpr OpCode kTestCommand = kWriteCommand;
 
-void NopCallback(const PacketReader& /*unused*/) {}
-void NopErrorCallback(Result<> /*unused*/, Handle /*unused*/) {}
 void NopHandler(Bearer::TransactionId /*unused*/, const PacketReader& /*unused*/) {}
 
 class BearerTest : public l2cap::testing::FakeChannelTest {
@@ -86,26 +84,39 @@ TEST_F(BearerTest, StartTransactionErrorClosed) {
   bearer()->ShutDown();
   ASSERT_FALSE(bearer()->is_open());
 
-  EXPECT_FALSE(bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, NopErrorCallback));
+  bool received_error = false;
+  Bearer::TransactionCallback cb = [&received_error](Bearer::TransactionResult result) {
+    if (result.is_error()) {
+      received_error = true;
+    }
+  };
+  bearer()->StartTransaction(NewBuffer(kTestRequest), std::move(cb));
+  EXPECT_TRUE(received_error);
 }
 
 TEST_F(BearerTest, StartTransactionInvalidPacket) {
+  auto cb = [](Bearer::TransactionResult) { FAIL(); };
+
   // Empty
-  EXPECT_FALSE(
-      bearer()->StartTransaction(std::make_unique<BufferView>(), NopCallback, NopErrorCallback));
+  EXPECT_DEATH_IF_SUPPORTED(bearer()->StartTransaction(std::make_unique<BufferView>(), cb),
+                            "bad length");
 
   // Exceeds MTU.
   bearer()->set_mtu(1);
-  EXPECT_FALSE(
-      bearer()->StartTransaction(NewBuffer(kTestRequest, 2), NopCallback, NopErrorCallback));
+  EXPECT_DEATH_IF_SUPPORTED(bearer()->StartTransaction(NewBuffer(kTestRequest, 2), cb),
+                            "bad length");
 }
 
 TEST_F(BearerTest, StartTransactionWrongMethodType) {
+  auto cb = [](Bearer::TransactionResult) { FAIL(); };
+
   // Command
-  EXPECT_FALSE(bearer()->StartTransaction(NewBuffer(kWriteCommand), NopCallback, NopErrorCallback));
+  EXPECT_DEATH_IF_SUPPORTED(bearer()->StartTransaction(NewBuffer(kWriteCommand), cb),
+                            "callback was provided");
 
   // Notification
-  EXPECT_FALSE(bearer()->StartTransaction(NewBuffer(kNotification), NopCallback, NopErrorCallback));
+  EXPECT_DEATH_IF_SUPPORTED(bearer()->StartTransaction(NewBuffer(kNotification), cb),
+                            "callback was provided");
 }
 
 TEST_F(BearerTest, RequestTimeout) {
@@ -115,15 +126,19 @@ TEST_F(BearerTest, RequestTimeout) {
   bool err_cb_called = false;
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
-    EXPECT_EQ(ToResult(HostError::kTimedOut), status);
+  auto cb = [&err_cb_called](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(HostError::kTimedOut), error);
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
   };
 
   ASSERT_FALSE(fake_att_chan()->link_error());
-  EXPECT_TRUE(bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, err_cb));
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
 
   RunLoopFor(kTransactionTimeout);
 
@@ -148,17 +163,19 @@ TEST_F(BearerTest, RequestTimeoutMany) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_count](Result<> status, Handle handle) {
-    EXPECT_EQ(ToResult(HostError::kTimedOut), status);
+  auto cb = [&err_cb_count](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(HostError::kTimedOut), error);
     EXPECT_EQ(0, handle);
 
     err_cb_count++;
   };
 
-  EXPECT_TRUE(
-      bearer()->StartTransaction(NewBuffer(kTestRequest, 'T', 'e', 's', 't'), NopCallback, err_cb));
-  EXPECT_TRUE(bearer()->StartTransaction(NewBuffer(kTestRequest2, 'T', 'e', 's', 't'), NopCallback,
-                                         err_cb));
+  bearer()->StartTransaction(NewBuffer(kTestRequest, 'T', 'e', 's', 't'), cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest2, 'T', 'e', 's', 't'), cb);
 
   RunLoopUntilIdle();
 
@@ -183,15 +200,18 @@ TEST_F(BearerTest, IndicationTimeout) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
-    EXPECT_EQ(ToResult(HostError::kTimedOut), status);
+  auto cb = [&err_cb_called](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(HostError::kTimedOut), error);
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
   };
 
-  EXPECT_TRUE(
-      bearer()->StartTransaction(NewBuffer(kIndication, 'T', 'e', 's', 't'), NopCallback, err_cb));
+  bearer()->StartTransaction(NewBuffer(kIndication, 'T', 'e', 's', 't'), cb);
 
   RunLoopFor(kTransactionTimeout);
 
@@ -218,15 +238,19 @@ TEST_F(BearerTest, IndicationTimeoutMany) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_count](Result<> status, Handle handle) {
-    EXPECT_EQ(ToResult(HostError::kTimedOut), status);
+  auto cb = [&err_cb_count](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(HostError::kTimedOut), error);
     EXPECT_EQ(0, handle);
 
     err_cb_count++;
   };
 
-  EXPECT_TRUE(bearer()->StartTransaction(NewBuffer(kIndication, kIndValue1), NopCallback, err_cb));
-  EXPECT_TRUE(bearer()->StartTransaction(NewBuffer(kIndication, kIndValue2), NopCallback, err_cb));
+  bearer()->StartTransaction(NewBuffer(kIndication, kIndValue1), cb);
+  bearer()->StartTransaction(NewBuffer(kIndication, kIndValue2), cb);
 
   RunLoopUntilIdle();
 
@@ -290,13 +314,17 @@ TEST_F(BearerTest, SendRequestWrongResponse) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
-    EXPECT_EQ(ToResult(HostError::kFailed), status);
+  auto cb = [&err_cb_called](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(HostError::kFailed), error);
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
   };
-  bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, err_cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -328,13 +356,17 @@ TEST_F(BearerTest, SendRequestErrorResponseTooShort) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
+  auto cb = [&err_cb_called](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(HostError::kFailed), error);
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(ToResult(HostError::kFailed), status);
 
     err_cb_called = true;
   };
-  bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, err_cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -366,13 +398,17 @@ TEST_F(BearerTest, SendRequestErrorResponseTooLong) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
+  auto cb = [&err_cb_called](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(HostError::kFailed), error);
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(ToResult(HostError::kFailed), status);
 
     err_cb_called = true;
   };
-  bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, err_cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -409,13 +445,17 @@ TEST_F(BearerTest, SendRequestErrorResponseWrongOpCode) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
+  auto cb = [&err_cb_called](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(HostError::kFailed), error);
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(ToResult(HostError::kFailed), status);
 
     err_cb_called = true;
   };
-  bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, err_cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -448,13 +488,17 @@ TEST_F(BearerTest, SendRequestErrorResponse) {
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
   bool err_cb_called = false;
-  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
-    EXPECT_EQ(ToResult(ErrorCode::kRequestNotSupported), status);
+  auto cb = [&err_cb_called](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(ToResult(ErrorCode::kRequestNotSupported).error_value(), error);
     EXPECT_EQ(0x0001, handle);
 
     err_cb_called = true;
   };
-  bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, err_cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(err_cb_called);
@@ -478,13 +522,16 @@ TEST_F(BearerTest, SendRequestSuccess) {
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
   bool cb_called = false;
-  auto cb = [&cb_called, &response](const auto& rsp_packet) {
+  auto cb = [&cb_called, &response](Bearer::TransactionResult result) {
     ASSERT_FALSE(cb_called);
+    if (result.is_error()) {
+      return;
+    }
 
     cb_called = true;
-    EXPECT_TRUE(ContainersEqual(response, rsp_packet.data()));
+    EXPECT_TRUE(ContainersEqual(response, result.value().data()));
   };
-  bearer()->StartTransaction(NewBuffer(kTestRequest), cb, NopErrorCallback);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(chan_cb_called);
@@ -502,36 +549,39 @@ TEST_F(BearerTest, CloseChannelAndDeleteBearerWhileRequestsArePending) {
   // below.
   constexpr size_t kExpectedCount = 3;
 
-  size_t cb_count = 0;
-  auto error_cb = [this, &cb_count](Result<> /*unused*/, Handle /*unused*/) {
-    cb_count++;
+  size_t cb_error_count = 0;
+  auto cb = [this, &cb_error_count](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    cb_error_count++;
 
     // Delete the bearer on the first callback. The remaining callbacks should
     // still run gracefully.
     DeleteBearer();
   };
 
-  bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, error_cb);
-  bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, error_cb);
-  bearer()->StartTransaction(NewBuffer(kTestRequest), NopCallback, error_cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
 
   fake_chan()->Close();
-  EXPECT_EQ(kExpectedCount, cb_count);
+  EXPECT_EQ(kExpectedCount, cb_error_count);
 }
 
 TEST_F(BearerTest, SendManyRequests) {
-  StaticByteBuffer response1(kTestResponse, 'f', 'o', 'o');
-  StaticByteBuffer response2(kErrorResponse,
+  const StaticByteBuffer response1(kTestResponse, 'f', 'o', 'o');
+  const StaticByteBuffer response2(kErrorResponse,
 
-                             // request opcode
-                             kTestRequest2,
+                                   // request opcode
+                                   kTestRequest2,
 
-                             // handle (0x0001)
-                             0x01, 0x00,
+                                   // handle (0x0001)
+                                   0x01, 0x00,
 
-                             // error code:
-                             ErrorCode::kRequestNotSupported);
-  StaticByteBuffer response3(kTestResponse3, 'b', 'a', 'r');
+                                   // error code:
+                                   ErrorCode::kRequestNotSupported);
+  const StaticByteBuffer response3(kTestResponse3, 'b', 'a', 'r');
 
   auto chan_cb = [&, this](auto cb_packet) {
     OpCode opcode = (*cb_packet)[0];
@@ -546,44 +596,46 @@ TEST_F(BearerTest, SendManyRequests) {
   };
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
-  unsigned int success_count = 0u;
-  unsigned int error_count = 0u;
+  bool called_1 = false, called_2 = false, called_3 = false;
 
-  auto error_cb = [&success_count, &error_count](Result<> status, Handle handle) {
-    // This should only be called for the second request (the first request
-    // should have already succeeded).
-    EXPECT_EQ(1u, success_count);
-    EXPECT_EQ(ToResult(ErrorCode::kRequestNotSupported), status);
+  // We expect each callback to be called in the order that we send the corresponding request.
+  auto callback1 = [&called_1, &called_2, &called_3, &response1](Bearer::TransactionResult result) {
+    EXPECT_FALSE(called_2);
+    EXPECT_FALSE(called_3);
+    called_1 = true;
+
+    // First request should've succeeded
+    ASSERT_EQ(fitx::ok(), result);
+    EXPECT_TRUE(ContainersEqual(response1, result.value().data()));
+  };
+  bearer()->StartTransaction(NewBuffer(kTestRequest), callback1);
+
+  auto callback2 = [&called_1, &called_2, &called_3](Bearer::TransactionResult result) {
+    EXPECT_TRUE(called_1);
+    EXPECT_FALSE(called_3);
+    called_2 = true;
+
+    // Second request should've failed
+    ASSERT_EQ(fitx::failed(), result);
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(ToResult(ErrorCode::kRequestNotSupported).error_value(), error);
     EXPECT_EQ(0x0001, handle);
-
-    error_count++;
   };
+  bearer()->StartTransaction(NewBuffer(kTestRequest2), callback2);
 
-  // We expect each callback to be called in the order that we send the
-  // corresponding request.
-  auto callback1 = [&success_count, &response1](const auto& rsp_packet) {
-    EXPECT_EQ(0u, success_count);
-    EXPECT_TRUE(ContainersEqual(response1, rsp_packet.data()));
-    success_count++;
-  };
-  bearer()->StartTransaction(NewBuffer(kTestRequest), callback1, error_cb);
+  auto callback3 = [&called_1, &called_2, &called_3, &response3](Bearer::TransactionResult result) {
+    EXPECT_TRUE(called_1);
+    EXPECT_TRUE(called_2);
+    called_3 = true;
 
-  auto callback2 = [](const auto& rsp_packet) {
-    ADD_FAILURE() << "Transaction should have ended in error!";
+    // Third request should've succeeded
+    ASSERT_EQ(fitx::ok(), result);
+    EXPECT_TRUE(ContainersEqual(response3, result.value().data()));
   };
-  bearer()->StartTransaction(NewBuffer(kTestRequest2), callback2, error_cb);
-
-  auto callback3 = [&success_count, &response3](const auto& rsp_packet) {
-    EXPECT_EQ(1u, success_count);
-    EXPECT_TRUE(ContainersEqual(response3, rsp_packet.data()));
-    success_count++;
-  };
-  bearer()->StartTransaction(NewBuffer(kTestRequest3), callback3, error_cb);
+  bearer()->StartTransaction(NewBuffer(kTestRequest3), callback3);
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(2u, success_count);
-  EXPECT_EQ(1u, error_count);
   EXPECT_TRUE(bearer()->is_open());
 }
 
@@ -610,13 +662,13 @@ TEST_F(BearerTest, SendIndicationSuccess) {
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
   bool cb_called = false;
-  auto cb = [&cb_called, &conf](const auto& packet) {
+  auto cb = [&cb_called, &conf](Bearer::TransactionResult result) {
     ASSERT_FALSE(cb_called);
 
     cb_called = true;
-    EXPECT_TRUE(ContainersEqual(conf, packet.data()));
+    EXPECT_TRUE(ContainersEqual(conf, result.value().data()));
   };
-  bearer()->StartTransaction(NewBuffer(kIndication), cb, NopErrorCallback);
+  bearer()->StartTransaction(NewBuffer(kIndication), cb);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(chan_cb_called);
@@ -635,17 +687,27 @@ TEST_F(BearerTest, SendWithoutResponseErrorClosed) {
 
 TEST_F(BearerTest, SendWithoutResponseInvalidPacket) {
   // Empty
-  EXPECT_FALSE(bearer()->SendWithoutResponse(std::make_unique<BufferView>()));
+  EXPECT_DEATH_IF_SUPPORTED(
+      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(std::make_unique<BufferView>()),
+      "bad length");
 
   // Exceeds MTU
   bearer()->set_mtu(1);
-  EXPECT_FALSE(bearer()->SendWithoutResponse(NewBuffer(kTestCommand, 2)));
+  EXPECT_DEATH_IF_SUPPORTED(
+      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(NewBuffer(kTestCommand, 2)),
+      "bad length");
 }
 
 TEST_F(BearerTest, SendWithoutResponseWrongMethodType) {
-  EXPECT_FALSE(bearer()->SendWithoutResponse(NewBuffer(kTestRequest)));
-  EXPECT_FALSE(bearer()->SendWithoutResponse(NewBuffer(kTestResponse)));
-  EXPECT_FALSE(bearer()->SendWithoutResponse(NewBuffer(kIndication)));
+  EXPECT_DEATH_IF_SUPPORTED(
+      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(NewBuffer(kTestRequest)),
+      "requires callback");
+  EXPECT_DEATH_IF_SUPPORTED(
+      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(NewBuffer(kTestResponse)),
+      "unsupported opcode");
+  EXPECT_DEATH_IF_SUPPORTED(
+      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(NewBuffer(kIndication)),
+      "requires callback");
 }
 
 TEST_F(BearerTest, SendWithoutResponseCorrectMethodType) {
@@ -909,7 +971,7 @@ TEST_F(BearerTest, IndicationConfirmation) {
 }
 
 TEST_F(BearerTest, ReplyWithErrorInvalidId) {
-  EXPECT_FALSE(bearer()->ReplyWithError(0, 0, ErrorCode::kNoError));
+  EXPECT_FALSE(bearer()->ReplyWithError(0, 0, ErrorCode::kUnlikelyError));
 }
 
 TEST_F(BearerTest, IndicationReplyWithError) {
@@ -1096,16 +1158,15 @@ class BearerTestSecurity : public BearerTest {
   }
 
   void SendRequest() {
-    bearer()->StartTransaction(
-        NewBuffer(kTestRequest),
-        [this](auto& /*unused*/) {
-          request_success_count_++;
-          last_request_status_ = fitx::ok();
-        },
-        [this](Result<> status, Handle /*unused*/) {
-          request_error_count_++;
-          last_request_status_ = status;
-        });
+    bearer()->StartTransaction(NewBuffer(kTestRequest), [this](auto result) {
+      if (result.is_ok()) {
+        request_success_count_++;
+        last_request_status_ = fitx::ok();
+      } else {
+        request_error_count_++;
+        last_request_status_ = fitx::error(result.error_value().first);
+      }
+    });
   }
 
   const Result<>& last_request_status() const { return last_request_status_; }

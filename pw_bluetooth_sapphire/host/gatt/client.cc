@@ -8,6 +8,7 @@
 #include <zircon/assert.h>
 
 #include "gatt_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
@@ -143,45 +144,47 @@ class Impl final : public Client {
     auto params = writer.mutable_payload<att::ExchangeMTURequestParams>();
     params->client_rx_mtu = htole16(att_->preferred_mtu());
 
-    auto rsp_cb = BindCallback([this, mtu_cb = mtu_cb.share()](const att::PacketReader& rsp) {
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kExchangeMTUResponse);
+    auto rsp_cb = [this, mtu_cb = std::move(mtu_cb)](att::Bearer::TransactionResult result) {
+      if (result.is_ok()) {
+        const att::PacketReader& rsp = result.value();
+        ZX_DEBUG_ASSERT(rsp.opcode() == att::kExchangeMTUResponse);
 
-      if (rsp.payload_size() != sizeof(att::ExchangeMTUResponseParams)) {
-        // Received a malformed response. Disconnect the link.
-        att_->ShutDown();
+        if (rsp.payload_size() != sizeof(att::ExchangeMTUResponseParams)) {
+          // Received a malformed response. Disconnect the link.
+          att_->ShutDown();
 
-        mtu_cb(ToResult(HostError::kPacketMalformed), 0);
+          mtu_cb(ToResult(HostError::kPacketMalformed), 0);
+          return;
+        }
+
+        const auto& rsp_params = rsp.payload<att::ExchangeMTUResponseParams>();
+        uint16_t server_mtu = le16toh(rsp_params.server_rx_mtu);
+
+        // If the minimum value is less than the default MTU, then go with the
+        // default MTU (Vol 3, Part F, 3.4.2.2).
+        uint16_t final_mtu = std::max(att::kLEMinMTU, std::min(server_mtu, att_->preferred_mtu()));
+        att_->set_mtu(final_mtu);
+
+        mtu_cb(fitx::ok(), final_mtu);
+        return;
+      }
+      const auto& [error, handle] = result.error_value();
+
+      // "If the Error Response is sent by the server with the Error Code
+      // set to Request Not Supported, [...] the default MTU shall be used
+      // (Vol 3, Part G, 4.3.1)"
+      if (error.is(att::ErrorCode::kRequestNotSupported)) {
+        bt_log(DEBUG, "gatt", "peer does not support MTU exchange: using default");
+        att_->set_mtu(att::kLEMinMTU);
+        mtu_cb(fitx::error(error), att::kLEMinMTU);
         return;
       }
 
-      const auto& rsp_params = rsp.payload<att::ExchangeMTUResponseParams>();
-      uint16_t server_mtu = le16toh(rsp_params.server_rx_mtu);
+      bt_log(DEBUG, "gatt", "MTU exchange failed: %s", bt_str(error));
+      mtu_cb(fitx::error(error), 0);
+    };
 
-      // If the minimum value is less than the default MTU, then go with the
-      // default MTU (Vol 3, Part F, 3.4.2.2).
-      uint16_t final_mtu = std::max(att::kLEMinMTU, std::min(server_mtu, att_->preferred_mtu()));
-      att_->set_mtu(final_mtu);
-
-      mtu_cb(fitx::ok(), final_mtu);
-    });
-
-    auto error_cb = BindErrorCallback(
-        [this, mtu_cb = mtu_cb.share()](att::Result<> status, att::Handle handle) {
-          // "If the Error Response is sent by the server with the Error Code
-          // set to Request Not Supported, [...] the default MTU shall be used
-          // (Vol 3, Part G, 4.3.1)"
-          if (status == ToResult(att::ErrorCode::kRequestNotSupported)) {
-            bt_log(DEBUG, "gatt", "peer does not support MTU exchange: using default");
-            att_->set_mtu(att::kLEMinMTU);
-            mtu_cb(status, att::kLEMinMTU);
-            return;
-          }
-
-          bt_log(DEBUG, "gatt", "MTU exchange failed: %s", bt_str(status));
-          mtu_cb(status, 0);
-        });
-
-    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
@@ -208,111 +211,113 @@ class Impl final : public Client {
     params->type = htole16(kind == ServiceKind::PRIMARY ? types::kPrimaryService16
                                                         : types::kSecondaryService16);
 
-    auto rsp_cb =
-        BindCallback([this, kind, range_start, range_end, svc_cb = std::move(svc_callback),
-                      res_cb = status_callback.share()](const att::PacketReader& rsp) mutable {
-          ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
-          TRACE_DURATION("bluetooth", "gatt::Client::DiscoverServicesInRange rsp_cb", "size",
-                         rsp.size());
+    auto rsp_cb = [this, kind, range_start, range_end, svc_cb = std::move(svc_callback),
+                   res_cb =
+                       std::move(status_callback)](att::Bearer::TransactionResult result) mutable {
+      if (result.is_error()) {
+        const att::Error& error = result.error_value().first;
 
-          if (rsp.payload_size() < sizeof(att::ReadByGroupTypeResponseParams)) {
-            // Received malformed response. Disconnect the link.
-            bt_log(DEBUG, "gatt", "received malformed Read By Group Type response");
-            att_->ShutDown();
-            res_cb(ToResult(HostError::kPacketMalformed));
-            return;
-          }
+        // An Error Response code of "Attribute Not Found" indicates the end of the procedure
+        // (v5.0, Vol 3, Part G, 4.4.1).
+        if (error.is(att::ErrorCode::kAttributeNotFound)) {
+          res_cb(fitx::ok());
+          return;
+        }
 
-          const auto& rsp_params = rsp.payload<att::ReadByGroupTypeResponseParams>();
-          uint8_t entry_length = rsp_params.length;
+        res_cb(fitx::error(error));
+        return;
+      }
 
-          // We expect the returned attribute value to be a 16-bit or 128-bit
-          // service UUID.
-          constexpr size_t kAttrDataSize16 =
-              sizeof(att::AttributeGroupDataEntry) + sizeof(att::AttributeType16);
-          constexpr size_t kAttrDataSize128 =
-              sizeof(att::AttributeGroupDataEntry) + sizeof(att::AttributeType128);
+      const att::PacketReader& rsp = result.value();
+      ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
+      TRACE_DURATION("bluetooth", "gatt::Client::DiscoverServicesInRange rsp_cb", "size",
+                     rsp.size());
 
-          if (entry_length != kAttrDataSize16 && entry_length != kAttrDataSize128) {
-            bt_log(DEBUG, "gatt", "invalid attribute data length");
-            att_->ShutDown();
-            res_cb(ToResult(HostError::kPacketMalformed));
-            return;
-          }
+      if (rsp.payload_size() < sizeof(att::ReadByGroupTypeResponseParams)) {
+        // Received malformed response. Disconnect the link.
+        bt_log(DEBUG, "gatt", "received malformed Read By Group Type response");
+        att_->ShutDown();
+        res_cb(ToResult(HostError::kPacketMalformed));
+        return;
+      }
 
-          BufferView attr_data_list(rsp_params.attribute_data_list, rsp.payload_size() - 1);
-          if (attr_data_list.size() % entry_length) {
-            bt_log(DEBUG, "gatt", "malformed attribute data list");
-            att_->ShutDown();
-            res_cb(ToResult(HostError::kPacketMalformed));
-            return;
-          }
+      const auto& rsp_params = rsp.payload<att::ReadByGroupTypeResponseParams>();
+      uint8_t entry_length = rsp_params.length;
 
-          std::optional<att::Handle> last_handle;
-          while (attr_data_list.size()) {
-            att::Handle start =
-                le16toh(attr_data_list.ReadMember<&att::AttributeGroupDataEntry::start_handle>());
-            att::Handle end = le16toh(
-                attr_data_list.ReadMember<&att::AttributeGroupDataEntry::group_end_handle>());
+      // We expect the returned attribute value to be a 16-bit or 128-bit service UUID.
+      constexpr size_t kAttrDataSize16 =
+          sizeof(att::AttributeGroupDataEntry) + sizeof(att::AttributeType16);
+      constexpr size_t kAttrDataSize128 =
+          sizeof(att::AttributeGroupDataEntry) + sizeof(att::AttributeType128);
 
-            if (end < start) {
-              bt_log(DEBUG, "gatt", "received malformed service range values");
-              res_cb(ToResult(HostError::kPacketMalformed));
-              return;
-            }
+      if (entry_length != kAttrDataSize16 && entry_length != kAttrDataSize128) {
+        bt_log(DEBUG, "gatt", "invalid attribute data length");
+        att_->ShutDown();
+        res_cb(ToResult(HostError::kPacketMalformed));
+        return;
+      }
 
-            if (start < range_start || start > range_end) {
-              bt_log(DEBUG, "gatt", "received service range values outside of requested range");
-              res_cb(ToResult(HostError::kPacketMalformed));
-              return;
-            }
+      BufferView attr_data_list(rsp_params.attribute_data_list, rsp.payload_size() - 1);
+      if (attr_data_list.size() % entry_length) {
+        bt_log(DEBUG, "gatt", "malformed attribute data list");
+        att_->ShutDown();
+        res_cb(ToResult(HostError::kPacketMalformed));
+        return;
+      }
 
-            // "The Attribute Data List is ordered sequentially based on the attribute handles."
-            // (Core Spec v5.3, Vol 3, Part F, Sec 3.4.4.10)
-            if (last_handle.has_value() && start <= last_handle.value()) {
-              bt_log(DEBUG, "gatt", "received services out of order");
-              res_cb(ToResult(HostError::kPacketMalformed));
-              return;
-            }
+      std::optional<att::Handle> last_handle;
+      while (attr_data_list.size()) {
+        att::Handle start =
+            le16toh(attr_data_list.ReadMember<&att::AttributeGroupDataEntry::start_handle>());
+        att::Handle end =
+            le16toh(attr_data_list.ReadMember<&att::AttributeGroupDataEntry::group_end_handle>());
 
-            // This must succeed as we have performed the appropriate checks above.
-            auto uuid_bytes = attr_data_list.view(offsetof(att::AttributeGroupDataEntry, value),
-                                                  entry_length - (2 * sizeof(att::Handle)));
-            UUID uuid(uuid_bytes);
+        if (end < start) {
+          bt_log(DEBUG, "gatt", "received malformed service range values");
+          res_cb(ToResult(HostError::kPacketMalformed));
+          return;
+        }
 
-            ServiceData service(kind, start, end, uuid);
-            last_handle = service.range_end;
+        if (start < range_start || start > range_end) {
+          bt_log(DEBUG, "gatt", "received service range values outside of requested range");
+          res_cb(ToResult(HostError::kPacketMalformed));
+          return;
+        }
 
-            // Notify the handler.
-            svc_cb(service);
+        // "The Attribute Data List is ordered sequentially based on the attribute handles."
+        // (Core Spec v5.3, Vol 3, Part F, Sec 3.4.4.10)
+        if (last_handle.has_value() && start <= last_handle.value()) {
+          bt_log(DEBUG, "gatt", "received services out of order");
+          res_cb(ToResult(HostError::kPacketMalformed));
+          return;
+        }
 
-            attr_data_list = attr_data_list.view(entry_length);
-          }
+        // This must succeed as we have performed the appropriate checks above.
+        auto uuid_bytes = attr_data_list.view(offsetof(att::AttributeGroupDataEntry, value),
+                                              entry_length - (2 * sizeof(att::Handle)));
+        UUID uuid(uuid_bytes);
 
-          // The procedure is over if we have reached the end of the handle range.
-          if (!last_handle.has_value() || last_handle.value() == range_end) {
-            res_cb(fitx::ok());
-            return;
-          }
+        ServiceData service(kind, start, end, uuid);
+        last_handle = service.range_end;
 
-          // Request the next batch.
-          DiscoverServicesInRange(kind, last_handle.value() + 1, range_end, std::move(svc_cb),
-                                  std::move(res_cb));
-        });
+        // Notify the handler.
+        svc_cb(service);
 
-    auto error_cb = BindErrorCallback(
-        [res_cb = status_callback.share()](att::Result<> status, att::Handle handle) {
-          // An Error Response code of "Attribute Not Found" indicates the end
-          // of the procedure (v5.0, Vol 3, Part G, 4.4.1).
-          if (status == ToResult(att::ErrorCode::kAttributeNotFound)) {
-            res_cb(fitx::ok());
-            return;
-          }
+        attr_data_list = attr_data_list.view(entry_length);
+      }
 
-          res_cb(status);
-        });
+      // The procedure is over if we have reached the end of the handle range.
+      if (!last_handle.has_value() || last_handle.value() == range_end) {
+        res_cb(fitx::ok());
+        return;
+      }
 
-    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+      // Request the next batch.
+      DiscoverServicesInRange(kind, last_handle.value() + 1, range_end, std::move(svc_cb),
+                              std::move(res_cb));
+    };
+
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_cb,
@@ -369,87 +374,89 @@ class Impl final : public Client {
     MutableBufferView value_view(params->value, uuid_size_bytes);
     uuid.ToBytes(&value_view, /* allow 32 bit UUIDs */ false);
 
-    auto rsp_cb =
-        BindCallback([this, kind, discovery_range_start = start, discovery_range_end = end,
-                      svc_cb = std::move(svc_callback), res_cb = status_callback.share(),
-                      uuid](const att::PacketReader& rsp) mutable {
-          ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
+    auto rsp_cb = [this, kind, discovery_range_start = start, discovery_range_end = end,
+                   svc_cb = std::move(svc_callback), res_cb = std::move(status_callback),
+                   uuid](att::Bearer::TransactionResult result) mutable {
+      if (result.is_error()) {
+        const att::Error& error = result.error_value().first;
 
-          size_t payload_size = rsp.payload_size();
-          if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
-            // Received malformed response. Disconnect the link.
-            bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu",
-                   payload_size);
-            att_->ShutDown();
-            res_cb(ToResult(HostError::kPacketMalformed));
-            return;
-          }
+        // An Error Response code of "Attribute Not Found" indicates the end of the procedure
+        // (v5.0, Vol 3, Part G, 4.4.2).
+        if (error.is(att::ErrorCode::kAttributeNotFound)) {
+          res_cb(fitx::ok());
+          return;
+        }
 
-          BufferView handle_list = rsp.payload_data();
+        res_cb(fitx::error(error));
+        return;
+      }
 
-          std::optional<att::Handle> last_handle;
-          while (handle_list.size()) {
-            const auto& entry = handle_list.To<att::HandlesInformationList>();
+      const att::PacketReader& rsp = result.value();
+      ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
 
-            att::Handle start = le16toh(entry.handle);
-            att::Handle end = le16toh(entry.group_end_handle);
+      size_t payload_size = rsp.payload_size();
+      if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
+        // Received malformed response. Disconnect the link.
+        bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu",
+               payload_size);
+        att_->ShutDown();
+        res_cb(ToResult(HostError::kPacketMalformed));
+        return;
+      }
 
-            if (end < start) {
-              bt_log(DEBUG, "gatt", "received malformed service range values");
-              res_cb(ToResult(HostError::kPacketMalformed));
-              return;
-            }
+      BufferView handle_list = rsp.payload_data();
 
-            if (start < discovery_range_start || start > discovery_range_end) {
-              bt_log(DEBUG, "gatt", "received service range values outside of requested range");
-              res_cb(ToResult(HostError::kPacketMalformed));
-              return;
-            }
+      std::optional<att::Handle> last_handle;
+      while (handle_list.size()) {
+        const auto& entry = handle_list.To<att::HandlesInformationList>();
 
-            // "The Handles Information List is ordered sequentially based on the found attribute
-            // handles." (Core Spec v5.3, Vol 3, Part F, Sec 3.4.3.4)
-            if (last_handle.has_value() && start <= last_handle.value()) {
-              bt_log(DEBUG, "gatt", "received services out of order");
-              res_cb(ToResult(HostError::kPacketMalformed));
-              return;
-            }
+        att::Handle start = le16toh(entry.handle);
+        att::Handle end = le16toh(entry.group_end_handle);
 
-            ServiceData service(kind, start, end, uuid);
+        if (end < start) {
+          bt_log(DEBUG, "gatt", "received malformed service range values");
+          res_cb(ToResult(HostError::kPacketMalformed));
+          return;
+        }
 
-            // Notify the handler.
-            svc_cb(service);
+        if (start < discovery_range_start || start > discovery_range_end) {
+          bt_log(DEBUG, "gatt", "received service range values outside of requested range");
+          res_cb(ToResult(HostError::kPacketMalformed));
+          return;
+        }
 
-            // HandlesInformationList is a single element of the list.
-            size_t entry_length = sizeof(att::HandlesInformationList);
-            handle_list = handle_list.view(entry_length);
+        // "The Handles Information List is ordered sequentially based on the found attribute
+        // handles." (Core Spec v5.3, Vol 3, Part F, Sec 3.4.3.4)
+        if (last_handle.has_value() && start <= last_handle.value()) {
+          bt_log(DEBUG, "gatt", "received services out of order");
+          res_cb(ToResult(HostError::kPacketMalformed));
+          return;
+        }
 
-            last_handle = service.range_end;
-          }
+        ServiceData service(kind, start, end, uuid);
 
-          // The procedure is over if we have reached the end of the handle range.
-          if (!last_handle.has_value() || last_handle.value() == discovery_range_end) {
-            res_cb(fitx::ok());
-            return;
-          }
+        // Notify the handler.
+        svc_cb(service);
 
-          // Request the next batch.
-          DiscoverServicesByUuidInRange(kind, last_handle.value() + 1, discovery_range_end,
-                                        std::move(svc_cb), std::move(res_cb), uuid);
-        });
+        // HandlesInformationList is a single element of the list.
+        size_t entry_length = sizeof(att::HandlesInformationList);
+        handle_list = handle_list.view(entry_length);
 
-    auto error_cb = BindErrorCallback(
-        [res_cb = status_callback.share()](att::Result<> status, att::Handle handle) {
-          // An Error Response code of "Attribute Not Found" indicates the end
-          // of the procedure (v5.0, Vol 3, Part G, 4.4.2).
-          if (status == ToResult(att::ErrorCode::kAttributeNotFound)) {
-            res_cb(fitx::ok());
-            return;
-          }
+        last_handle = service.range_end;
+      }
 
-          res_cb(status);
-        });
+      // The procedure is over if we have reached the end of the handle range.
+      if (!last_handle.has_value() || last_handle.value() == discovery_range_end) {
+        res_cb(fitx::ok());
+        return;
+      }
 
-    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+      // Request the next batch.
+      DiscoverServicesByUuidInRange(kind, last_handle.value() + 1, discovery_range_end,
+                                    std::move(svc_cb), std::move(res_cb), uuid);
+    };
+
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
@@ -565,9 +572,23 @@ class Impl final : public Client {
     params->start_handle = htole16(range_start);
     params->end_handle = htole16(range_end);
 
-    auto rsp_cb = BindCallback([this, range_start, range_end, desc_cb = std::move(desc_callback),
-                                res_cb =
-                                    status_callback.share()](const att::PacketReader& rsp) mutable {
+    auto rsp_cb = [this, range_start, range_end, desc_cb = std::move(desc_callback),
+                   res_cb =
+                       std::move(status_callback)](att::Bearer::TransactionResult result) mutable {
+      if (result.is_error()) {
+        const att::Error& error = result.error_value().first;
+
+        // An Error Response code of "Attribute Not Found" indicates the end of the procedure (v5.0,
+        // Vol 3, Part G, 4.7.1).
+        if (error.is(att::ErrorCode::kAttributeNotFound)) {
+          res_cb(fitx::ok());
+          return;
+        }
+
+        res_cb(fitx::error(error));
+        return;
+      }
+      const att::PacketReader& rsp = result.value();
       ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindInformationResponse);
       TRACE_DURATION("bluetooth", "gatt::Client::DiscoverDescriptors rsp_cb", "size", rsp.size());
 
@@ -582,23 +603,23 @@ class Impl final : public Client {
       BufferView entries = rsp.payload_data().view(sizeof(rsp_params.format));
 
       att::Handle last_handle;
-      bool result;
+      bool well_formed;
       switch (rsp_params.format) {
         case att::UUIDType::k16Bit:
-          result = ProcessDescriptorDiscoveryResponse<att::UUIDType::k16Bit>(
+          well_formed = ProcessDescriptorDiscoveryResponse<att::UUIDType::k16Bit>(
               range_start, range_end, entries, desc_cb.share(), &last_handle);
           break;
         case att::UUIDType::k128Bit:
-          result = ProcessDescriptorDiscoveryResponse<att::UUIDType::k128Bit>(
+          well_formed = ProcessDescriptorDiscoveryResponse<att::UUIDType::k128Bit>(
               range_start, range_end, entries, desc_cb.share(), &last_handle);
           break;
         default:
           bt_log(DEBUG, "gatt", "invalid information data format");
-          result = false;
+          well_formed = false;
           break;
       }
 
-      if (!result) {
+      if (!well_formed) {
         att_->ShutDown();
         res_cb(ToResult(HostError::kPacketMalformed));
         return;
@@ -612,21 +633,9 @@ class Impl final : public Client {
 
       // Request the next batch.
       DiscoverDescriptors(last_handle + 1, range_end, std::move(desc_cb), std::move(res_cb));
-    });
+    };
 
-    auto error_cb = BindErrorCallback(
-        [res_cb = status_callback.share()](att::Result<> status, att::Handle handle) {
-          // An Error Response code of "Attribute Not Found" indicates the end
-          // of the procedure (v5.0, Vol 3, Part G, 4.7.1).
-          if (status == ToResult(att::ErrorCode::kAttributeNotFound)) {
-            res_cb(fitx::ok());
-            return;
-          }
-
-          res_cb(status);
-        });
-
-    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void ReadRequest(att::Handle handle, ReadCallback callback) override {
@@ -640,22 +649,21 @@ class Impl final : public Client {
     auto params = writer.mutable_payload<att::ReadRequestParams>();
     params->handle = htole16(handle);
 
-    auto rsp_cb = BindCallback([this, callback = callback.share()](const att::PacketReader& rsp) {
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
-      bool maybe_truncated = (rsp.payload_size() != att::kMaxAttributeValueLength) &&
-                             (rsp.payload_size() == (mtu() - sizeof(rsp.opcode())));
-      callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
-    });
+    auto rsp_cb = [this, callback = std::move(callback)](att::Bearer::TransactionResult result) {
+      if (result.is_ok()) {
+        const att::PacketReader& rsp = result.value();
+        ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
+        bool maybe_truncated = (rsp.payload_size() != att::kMaxAttributeValueLength) &&
+                               (rsp.payload_size() == (mtu() - sizeof(rsp.opcode())));
+        callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
+        return;
+      }
+      const auto& [error, handle] = result.error_value();
+      bt_log(DEBUG, "gatt", "read request failed: %s, handle %#.4x", bt_str(error), handle);
+      callback(fitx::error(error), BufferView(), /*maybe_truncated=*/false);
+    };
 
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
-          bt_log(DEBUG, "gatt", "read request failed: %s, handle %#.4x", bt_str(status), handle);
-          callback(status, BufferView(), /*maybe_truncated=*/false);
-        });
-
-    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(ToResult(HostError::kPacketMalformed), BufferView(), /*maybe_truncated=*/false);
-    }
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
@@ -684,8 +692,18 @@ class Impl final : public Client {
       type.ToBytes(&type_view, /*allow_32bit=*/false);
     }
 
-    auto rsp_cb = BindCallback([this, callback = callback.share(), start_handle,
-                                end_handle](const att::PacketReader& rsp) {
+    auto rsp_cb = [this, callback = std::move(callback), start_handle,
+                   end_handle](att::Bearer::TransactionResult result) {
+      if (result.is_error()) {
+        const auto& [error, handle] = result.error_value();
+        bt_log(DEBUG, "gatt", "read by type request failed: %s, handle %#.4x", bt_str(error),
+               handle);
+        // Only some errors have handles.
+        std::optional<att::Handle> cb_handle = handle ? std::optional(handle) : std::nullopt;
+        callback(fitx::error(ReadByTypeError{error, cb_handle}));
+        return;
+      }
+      const att::PacketReader& rsp = result.value();
       ZX_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
         callback(fitx::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
@@ -731,8 +749,8 @@ class Impl final : public Client {
 
         auto value_view = pair_view.view(sizeof(att::Handle));
 
-        // The value may be truncated if it maxes out the length parameter or the MTU, whichever is
-        // smaller (Core Spec v5.2, Vol 3, Part F, Sec 3.4.4).
+        // The value may be truncated if it maxes out the length parameter or the MTU, whichever
+        // is smaller (Core Spec v5.2, Vol 3, Part F, Sec 3.4.4).
         const size_t mtu_max_value_size = mtu() - sizeof(att::kReadByTypeResponse) -
                                           sizeof(att::ReadByTypeResponseParams) -
                                           sizeof(att::Handle);
@@ -748,20 +766,9 @@ class Impl final : public Client {
       ZX_ASSERT(attr_list_view.size() == 0);
 
       callback(fitx::ok(std::move(attributes)));
-    });
+    };
 
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
-          bt_log(DEBUG, "gatt", "read by type request failed: %s, handle %#.4x", bt_str(status),
-                 handle);
-          // Only some errors have handles.
-          std::optional<att::Handle> cb_handle = handle ? std::optional(handle) : std::nullopt;
-          callback(fitx::error(ReadByTypeError{status.error_value(), cb_handle}));
-        });
-
-    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(fitx::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
-    }
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) override {
@@ -776,24 +783,23 @@ class Impl final : public Client {
     params->handle = htole16(handle);
     params->offset = htole16(offset);
 
-    auto rsp_cb =
-        BindCallback([this, offset, callback = callback.share()](const att::PacketReader& rsp) {
-          ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
-          bool maybe_truncated =
-              (static_cast<size_t>(offset) + rsp.payload_size() != att::kMaxAttributeValueLength) &&
-              (rsp.payload_data().size() == (mtu() - sizeof(att::OpCode)));
-          callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
-        });
+    auto rsp_cb = [this, offset,
+                   callback = std::move(callback)](att::Bearer::TransactionResult result) {
+      if (result.is_ok()) {
+        const att::PacketReader& rsp = result.value();
+        ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
+        bool maybe_truncated =
+            (static_cast<size_t>(offset) + rsp.payload_size() != att::kMaxAttributeValueLength) &&
+            (rsp.payload_data().size() == (mtu() - sizeof(att::OpCode)));
+        callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
+        return;
+      }
+      const auto& [error, handle] = result.error_value();
+      bt_log(DEBUG, "gatt", "read blob request failed: %s, handle: %#.4x", bt_str(error), handle);
+      callback(fitx::error(error), BufferView(), /*maybe_truncated=*/false);
+    };
 
-    auto error_cb = BindErrorCallback([callback = callback.share()](att::Result<> status,
-                                                                    att::Handle handle) {
-      bt_log(DEBUG, "gatt", "read blob request failed: %s, handle: %#.4x", bt_str(status), handle);
-      callback(status, BufferView(), /*maybe_truncated=*/false);
-    });
-
-    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(ToResult(HostError::kPacketMalformed), BufferView(), /*maybe_truncated=*/false);
-    }
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void WriteRequest(att::Handle handle, const ByteBuffer& value,
@@ -818,7 +824,14 @@ class Impl final : public Client {
     auto value_view = writer.mutable_payload_data().mutable_view(sizeof(att::Handle));
     value.Copy(&value_view);
 
-    auto rsp_cb = BindCallback([this, callback = callback.share()](const att::PacketReader& rsp) {
+    auto rsp_cb = [this, callback = std::move(callback)](att::Bearer::TransactionResult result) {
+      if (result.is_error()) {
+        const auto& [error, handle] = result.error_value();
+        bt_log(DEBUG, "gatt", "write request failed: %s, handle: %#.2x", bt_str(error), handle);
+        callback(fitx::error(error));
+        return;
+      }
+      const att::PacketReader& rsp = result.value();
       ZX_DEBUG_ASSERT(rsp.opcode() == att::kWriteResponse);
 
       if (rsp.payload_size()) {
@@ -828,17 +841,9 @@ class Impl final : public Client {
       }
 
       callback(fitx::ok());
-    });
+    };
 
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
-          bt_log(DEBUG, "gatt", "write request failed: %s, handle: %#.2x", bt_str(status), handle);
-          callback(status);
-        });
-
-    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(ToResult(HostError::kPacketMalformed));
-    }
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   // An internal object for storing the write queue, callback, and reliability mode
@@ -968,23 +973,22 @@ class Impl final : public Client {
     auto value_view = writer.mutable_payload_data().mutable_view(header_size);
     part_value.Copy(&value_view);
 
-    auto rsp_cb = BindCallback([callback = callback.share()](const att::PacketReader& rsp) {
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kPrepareWriteResponse);
-      callback(fitx::ok(), rsp.payload_data());
-    });
+    auto rsp_cb = [callback = std::move(callback)](att::Bearer::TransactionResult result) {
+      if (result.is_ok()) {
+        const att::PacketReader& rsp = result.value();
+        ZX_DEBUG_ASSERT(rsp.opcode() == att::kPrepareWriteResponse);
+        callback(fitx::ok(), rsp.payload_data());
+        return;
+      }
+      const auto& [error, handle] = result.error_value();
+      bt_log(DEBUG, "gatt",
+             "prepare write request failed: %s, handle:"
+             "%#.4x",
+             bt_str(error), handle);
+      callback(fitx::error(error), BufferView());
+    };
 
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
-          bt_log(DEBUG, "gatt",
-                 "prepare write request failed: %s, handle:"
-                 "%#.4x",
-                 bt_str(status), handle);
-          callback(status, BufferView());
-        });
-
-    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(ToResult(HostError::kPacketMalformed), BufferView());
-    }
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::ResultFunction<> callback) override {
@@ -1007,27 +1011,26 @@ class Impl final : public Client {
     auto params = writer.mutable_payload<att::ExecuteWriteRequestParams>();
     params->flags = flag;
 
-    auto rsp_cb = BindCallback([this, callback = callback.share()](const att::PacketReader& rsp) {
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kExecuteWriteResponse);
+    auto rsp_cb = [this, callback = std::move(callback)](att::Bearer::TransactionResult result) {
+      if (result.is_ok()) {
+        const att::PacketReader& rsp = result.value();
+        ZX_DEBUG_ASSERT(rsp.opcode() == att::kExecuteWriteResponse);
 
-      if (rsp.payload_size()) {
-        att_->ShutDown();
-        callback(ToResult(HostError::kPacketMalformed));
+        if (rsp.payload_size()) {
+          att_->ShutDown();
+          callback(ToResult(HostError::kPacketMalformed));
+          return;
+        }
+
+        callback(fitx::ok());
         return;
       }
+      const att::Error& error = result.error_value().first;
+      bt_log(DEBUG, "gatt", "execute write request failed: %s", bt_str(error));
+      callback(fitx::error(error));
+    };
 
-      callback(fitx::ok());
-    });
-
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
-          bt_log(DEBUG, "gatt", "execute write request failed: %s", bt_str(status));
-          callback(status);
-        });
-
-    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(ToResult(HostError::kPacketMalformed));
-    }
+    att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
   }
 
   void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value,
@@ -1052,7 +1055,7 @@ class Impl final : public Client {
     auto value_view = writer.mutable_payload_data().mutable_view(sizeof(att::Handle));
     value.Copy(&value_view);
 
-    att_->SendWithoutResponse(std::move(pdu));
+    [[maybe_unused]] bool _ = att_->SendWithoutResponse(std::move(pdu));
     callback(fitx::ok());
   }
 
@@ -1064,22 +1067,11 @@ class Impl final : public Client {
   // still alive.
   att::Bearer::TransactionCallback BindCallback(att::Bearer::TransactionCallback callback) {
     return
-        [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](const auto& rsp) {
+        [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](auto rsp) mutable {
           if (self) {
             callback(rsp);
           }
         };
-  }
-
-  // Wraps |callback| in a ErrorCallback that only runs if this Client is still
-  // alive.
-  att::Bearer::ErrorCallback BindErrorCallback(att::Bearer::ErrorCallback callback) {
-    return [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](
-               att::Result<> status, att::Handle handle) {
-      if (self) {
-        callback(status, handle);
-      }
-    };
   }
 
   fbl::RefPtr<att::Bearer> att_;

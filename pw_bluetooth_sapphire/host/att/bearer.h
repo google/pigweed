@@ -114,17 +114,16 @@ class Bearer final : public fbl::RefCounted<Bearer> {
   //
   // Returns false if |pdu| is empty, exceeds the current MTU, or does not
   // correspond to a request or indication.
-  using TransactionCallback = fit::function<void(const PacketReader& packet)>;
-  using ErrorCallback = fit::function<void(Result<>, Handle attr_in_error)>;
-  bool StartTransaction(ByteBufferPtr pdu, TransactionCallback callback,
-                        ErrorCallback error_callback);
+  using TransactionResult = fitx::result<std::pair<Error, Handle>, PacketReader>;
+  using TransactionCallback = fit::callback<void(TransactionResult)>;
+  void StartTransaction(ByteBufferPtr pdu, TransactionCallback callback);
 
   // Sends |pdu| without initiating a transaction. Used for command and
   // notification PDUs which do not have flow control.
   //
   // Returns false if the packet is malformed or does not correspond to a
   // command or notification.
-  bool SendWithoutResponse(ByteBufferPtr pdu);
+  [[nodiscard]] bool SendWithoutResponse(ByteBufferPtr pdu);
 
   // A Handler is a function that gets invoked when the Bearer receives a PDU
   // that is not tied to a locally initiated transaction (see
@@ -168,15 +167,11 @@ class Bearer final : public fbl::RefCounted<Bearer> {
 
   // Represents a locally initiated pending request or indication transaction.
   struct PendingTransaction : LinkedListable<PendingTransaction> {
-    PendingTransaction(OpCode opcode, TransactionCallback callback, ErrorCallback error_callback,
-                       ByteBufferPtr pdu);
+    PendingTransaction(OpCode opcode, TransactionCallback callback, ByteBufferPtr pdu);
 
     // Required fields
     OpCode opcode;
     TransactionCallback callback;
-
-    // Optional error callback
-    ErrorCallback error_callback;
 
     // Holds the pdu while the transaction is in the send queue.
     ByteBufferPtr pdu;
@@ -233,7 +228,7 @@ class Bearer final : public fbl::RefCounted<Bearer> {
     void Reset();
 
     // Invokes the error callbacks of all transactions with |status|.
-    void InvokeErrorAll(Result<> status);
+    void InvokeErrorAll(Error error);
 
    private:
     LinkedList<PendingTransaction> queue_;
@@ -241,7 +236,7 @@ class Bearer final : public fbl::RefCounted<Bearer> {
     async::Task timeout_task_;
   };
 
-  bool SendInternal(ByteBufferPtr pdu, TransactionCallback callback, ErrorCallback error_callback);
+  bool SendInternal(ByteBufferPtr pdu, TransactionCallback callback);
 
   // Shuts down the link.
   void ShutDownInternal(bool due_to_timeout);

@@ -102,19 +102,21 @@ class AttBasedServer final : public Server {
     writer.mutable_payload_data().Write(value, sizeof(att::AttributeData));
 
     if (!indicate_cb) {
-      att_->SendWithoutResponse(std::move(buffer));
+      [[maybe_unused]] bool _ = att_->SendWithoutResponse(std::move(buffer));
       return;
     }
-    auto success_cb = [indicate_cb = indicate_cb.share()](const auto&) mutable {
-      bt_log(DEBUG, "gatt", "got indication ACK");
-      indicate_cb(fitx::ok());
+    auto transaction_cb = [indicate_cb = std::move(indicate_cb)](
+                              att::Bearer::TransactionResult result) mutable {
+      if (result.is_ok()) {
+        bt_log(DEBUG, "gatt", "got indication ACK");
+        indicate_cb(fitx::ok());
+      } else {
+        const auto& [error, handle] = result.error_value();
+        bt_log(WARN, "gatt", "indication failed (error %s, handle: %#.4x)", bt_str(error), handle);
+        indicate_cb(fitx::error(error));
+      }
     };
-    auto failure_cb = [indicate_cb = std::move(indicate_cb)](att::Result<> result,
-                                                             att::Handle handle) mutable {
-      bt_log(WARN, "gatt", "indication failed (result %s, handle: %#.4x)", bt_str(result), handle);
-      indicate_cb(result);
-    };
-    att_->StartTransaction(std::move(buffer), std::move(success_cb), std::move(failure_cb));
+    att_->StartTransaction(std::move(buffer), std::move(transaction_cb));
   }
 
   void ShutDown() override { att_->ShutDown(); }

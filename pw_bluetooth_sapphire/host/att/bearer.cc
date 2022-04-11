@@ -5,10 +5,14 @@
 #include "bearer.h"
 
 #include <lib/async/default.h>
+#include <lib/fit/defer.h>
+
+#include <type_traits>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::att {
@@ -165,15 +169,13 @@ fbl::RefPtr<Bearer> Bearer::Create(fbl::RefPtr<l2cap::Channel> chan) {
 }
 
 Bearer::PendingTransaction::PendingTransaction(OpCode opcode, TransactionCallback callback,
-                                               ErrorCallback error_callback, ByteBufferPtr pdu)
+                                               ByteBufferPtr pdu)
     : opcode(opcode),
       callback(std::move(callback)),
-      error_callback(std::move(error_callback)),
       pdu(std::move(pdu)),
       security_retry_level(sm::SecurityLevel::kNoSecurity) {
-  ZX_DEBUG_ASSERT(this->callback);
-  ZX_DEBUG_ASSERT(this->error_callback);
-  ZX_DEBUG_ASSERT(this->pdu);
+  ZX_ASSERT(this->callback);
+  ZX_ASSERT(this->pdu);
 }
 
 Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id, OpCode opcode)
@@ -226,7 +228,7 @@ void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Ha
 
     bt_log(TRACE, "att", "Failed to start transaction: out of memory!");
     auto t = std::move(current_);
-    t->error_callback(ToResult(HostError::kOutOfMemory), kInvalidHandle);
+    t->callback(fitx::error(std::pair(Error(HostError::kOutOfMemory), kInvalidHandle)));
 
     // Process the next command until we can send OR we have drained the queue.
     current_ = queue_.pop_front();
@@ -239,14 +241,15 @@ void Bearer::TransactionQueue::Reset() {
   current_ = nullptr;
 }
 
-void Bearer::TransactionQueue::InvokeErrorAll(Result<> status) {
+void Bearer::TransactionQueue::InvokeErrorAll(Error error) {
   if (current_) {
-    current_->error_callback(status, kInvalidHandle);
+    current_->callback(fitx::error(std::pair(error, kInvalidHandle)));
   }
 
-  for (const auto& t : queue_) {
-    if (t.error_callback)
-      t.error_callback(status, kInvalidHandle);
+  for (auto& t : queue_) {
+    if (t.callback) {
+      t.callback(fitx::error(std::pair(error, kInvalidHandle)));
+    }
   }
 }
 
@@ -318,37 +321,40 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
 
   // Terminate all remaining procedures with an error. This is safe even if
   // the bearer got deleted by |closed_cb_|.
-  Result<> status = ToResult(due_to_timeout ? HostError::kTimedOut : HostError::kFailed);
-  req_queue.InvokeErrorAll(status);
-  ind_queue.InvokeErrorAll(status);
+  Error error(due_to_timeout ? HostError::kTimedOut : HostError::kFailed);
+  req_queue.InvokeErrorAll(error);
+  ind_queue.InvokeErrorAll(error);
 }
 
-bool Bearer::StartTransaction(ByteBufferPtr pdu, TransactionCallback callback,
-                              ErrorCallback error_callback) {
-  ZX_DEBUG_ASSERT(pdu);
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(error_callback);
+void Bearer::StartTransaction(ByteBufferPtr pdu, TransactionCallback callback) {
+  ZX_ASSERT(pdu);
+  ZX_ASSERT(callback);
 
-  return SendInternal(std::move(pdu), std::move(callback), std::move(error_callback));
+  [[maybe_unused]] bool _ = SendInternal(std::move(pdu), std::move(callback));
 }
 
 bool Bearer::SendWithoutResponse(ByteBufferPtr pdu) {
-  ZX_DEBUG_ASSERT(pdu);
-  return SendInternal(std::move(pdu), {}, {});
+  ZX_ASSERT(pdu);
+  return SendInternal(std::move(pdu), {});
 }
 
-bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
-                          ErrorCallback error_callback) {
+bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
+
+  auto _check_callback_empty = fit::defer([&callback]() {
+    // Ensure that callback was either never present or called/moved before SendInternal returns
+    ZX_ASSERT(!callback);
+  });
+
   if (!is_open()) {
     bt_log(TRACE, "att", "bearer closed; cannot send packet");
+    if (callback) {
+      callback(fitx::error(std::pair(Error(HostError::kLinkDisconnected), kInvalidHandle)));
+    }
     return false;
   }
 
-  if (!IsPacketValid(*pdu)) {
-    bt_log(DEBUG, "att", "packet has bad length!");
-    return false;
-  }
+  ZX_ASSERT_MSG(IsPacketValid(*pdu), "packet has bad length!");
 
   PacketReader reader(pdu.get());
   MethodType type = GetMethodType(reader.opcode());
@@ -358,10 +364,8 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
   switch (type) {
     case MethodType::kCommand:
     case MethodType::kNotification:
-      if (callback || error_callback) {
-        bt_log(DEBUG, "att", "method not a transaction!");
-        return false;
-      }
+      ZX_ASSERT_MSG(!callback, "opcode %#.2x has no response but callback was provided",
+                    reader.opcode());
 
       // Send the command. No flow control is necessary.
       chan_->Send(std::move(pdu));
@@ -374,17 +378,14 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
       tq = &indication_queue_;
       break;
     default:
-      bt_log(DEBUG, "att", "invalid opcode: %#.2x", reader.opcode());
-      return false;
+      ZX_PANIC("unsupported opcode: %#.2x", reader.opcode());
   }
 
-  if (!callback || !error_callback) {
-    bt_log(DEBUG, "att", "transaction requires callbacks!");
-    return false;
-  }
+  ZX_ASSERT_MSG(callback, "transaction with opcode %#.2x has response that requires callback!",
+                reader.opcode());
 
-  tq->Enqueue(std::make_unique<PendingTransaction>(reader.opcode(), std::move(callback),
-                                                   std::move(error_callback), std::move(pdu)));
+  tq->Enqueue(
+      std::make_unique<PendingTransaction>(reader.opcode(), std::move(callback), std::move(pdu)));
   TryStartNextTransaction(tq);
 
   return true;
@@ -534,22 +535,19 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
     return;
   }
 
-  bool report_error = false;
   OpCode target_opcode;
-  ErrorCode error_code = ErrorCode::kNoError;
-  Handle attr_in_error = kInvalidHandle;
+  std::optional<std::pair<Error, Handle>> error;
 
   if (packet.opcode() == kErrorResponse) {
     // We should never hit this branch for indications.
     ZX_DEBUG_ASSERT(tq->current()->opcode != kIndication);
 
     if (packet.payload_size() == sizeof(ErrorResponseParams)) {
-      report_error = true;
-
       const auto& payload = packet.payload<ErrorResponseParams>();
       target_opcode = payload.request_opcode;
-      error_code = payload.error_code;
-      attr_in_error = le16toh(payload.attribute_handle);
+      const ErrorCode error_code = payload.error_code;
+      const Handle attr_in_error = le16toh(payload.attribute_handle);
+      error.emplace(std::pair(ToResult(error_code).error_value(), attr_in_error));
     } else {
       bt_log(DEBUG, "att", "received malformed error response");
 
@@ -572,14 +570,16 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
   auto transaction = tq->ClearCurrent();
   ZX_DEBUG_ASSERT(transaction);
 
-  sm::SecurityLevel security_requirement = CheckSecurity(error_code, chan_->security());
+  const sm::SecurityLevel security_requirement =
+      error.has_value() ? CheckSecurity(error->first.protocol_error(), chan_->security())
+                        : sm::SecurityLevel::kNoSecurity;
   if (transaction->security_retry_level >= security_requirement ||
       security_requirement <= chan_->security().level()) {
     // Resolve the transaction.
-    if (!report_error) {
-      transaction->callback(packet);
-    } else if (transaction->error_callback) {
-      transaction->error_callback(ToResult(error_code), attr_in_error);
+    if (error.has_value()) {
+      transaction->callback(fitx::error(error.value()));
+    } else {
+      transaction->callback(fitx::ok(packet));
     }
 
     // Send out the next queued transaction
@@ -587,17 +587,18 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
     return;
   }
 
+  ZX_ASSERT(error.has_value());
   bt_log(TRACE, "att",
-         "Received security error for transaction %#.2hhx; requesting upgrade to level: %s",
-         error_code, sm::LevelToString(security_requirement));
+         "Received security error %s for transaction; requesting upgrade to level: %s",
+         bt_str(error->first), sm::LevelToString(security_requirement));
   chan_->UpgradeSecurity(
       security_requirement,
-      [self = weak_ptr_factory_.GetWeakPtr(), error_code, attr_in_error, security_requirement,
+      [self = weak_ptr_factory_.GetWeakPtr(), error = *std::move(error), security_requirement,
        t = std::move(transaction)](sm::Result<> status) mutable {
         // If the security upgrade failed or the bearer got destroyed, then
         // resolve the transaction with the original error.
         if (!self || status.is_error()) {
-          t->error_callback(ToResult(error_code), attr_in_error);
+          t->callback(fitx::error(std::move(error)));
           return;
         }
 
