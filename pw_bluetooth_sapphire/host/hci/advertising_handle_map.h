@@ -33,6 +33,10 @@ class AdvertisingHandleMap {
   // container.
   std::optional<hci_spec::AdvertisingHandle> MapHandle(const DeviceAddress& address);
 
+  // Convert a DeviceAddress to an AdvertisingHandle. The conversion may fail if there is no
+  // AdvertisingHandle currently mapping to the provided device address.
+  std::optional<hci_spec::AdvertisingHandle> GetHandle(const DeviceAddress& address) const;
+
   // Convert an AdvertisingHandle to a DeviceAddress. The conversion may fail if there is no
   // DeviceAddress currently mapping to the provided handle.
   std::optional<DeviceAddress> GetAddress(hci_spec::AdvertisingHandle handle) const;

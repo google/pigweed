@@ -29,6 +29,29 @@ TEST(AdvertisingHandleMapTest, Bidirectional) {
   EXPECT_EQ(address_b, handle_map.GetAddress(handle_b.value()));
 }
 
+TEST(AdvertisingHandleMapTest, GetHandleDoesntCreateMapping) {
+  AdvertisingHandleMap handle_map;
+  EXPECT_EQ(0u, handle_map.Size());
+  EXPECT_TRUE(handle_map.Empty());
+
+  DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
+  std::optional<hci_spec::AdvertisingHandle> handle = handle_map.GetHandle(address);
+  EXPECT_EQ(0u, handle_map.Size());
+  EXPECT_TRUE(handle_map.Empty());
+  EXPECT_FALSE(handle);
+
+  handle = handle_map.MapHandle(address);
+  EXPECT_EQ(1u, handle_map.Size());
+  EXPECT_FALSE(handle_map.Empty());
+  EXPECT_TRUE(handle);
+  EXPECT_EQ(0u, handle.value());
+
+  handle = handle_map.GetHandle(address);
+  EXPECT_EQ(1u, handle_map.Size());
+  EXPECT_FALSE(handle_map.Empty());
+  EXPECT_TRUE(handle);
+}
+
 TEST(AdvertisingHandleMapTest, MapHandleAlreadyExists) {
   AdvertisingHandleMap handle_map;
 
