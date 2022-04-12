@@ -276,6 +276,11 @@ pw_python_script("integration_test_proxy") {
   sources = [ "integration_test/proxy.py" ]
 }
 
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("cross_platform_integration_test") {
+  sources = [ "integration_test/cross_platform_integration_test.py" ]
+}
+
 pw_python_action("cpp_client_integration_test") {
   script = "$dir_pw_rpc/py/pw_rpc/testing.py"
   args = [

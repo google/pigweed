@@ -197,6 +197,11 @@ pw_cc_binary(
     ],
 )
 
+py_binary(
+    name = "proxy",
+    srcs = ["integration_test/proxy.py"],
+)
+
 pw_cc_binary(
     name = "test_rpc_server",
     srcs = ["test_rpc_server.cc"],
@@ -224,6 +229,19 @@ pw_cc_binary(
         "//pw_sync:binary_semaphore",
         "//pw_thread:thread",
     ],
+)
+
+py_test(
+    name = "cross_platform_integration_test",
+    srcs = ["integration_test/cross_platform_integration_test.py"],
+    data = [
+        ":integration_test_client",
+        ":integration_test_server",
+        ":proxy",
+    ],
+    # TODO(b/228516801): Make this part of the CI/CQ once it's reliable.
+    tags = ["manual"],
+    deps = ["@rules_python//python/runfiles"],
 )
 
 proto_library(
