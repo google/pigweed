@@ -12,7 +12,7 @@
 namespace bt::hci {
 namespace {
 
-TEST(AdvertisingHandleMap, Bidirectional) {
+TEST(AdvertisingHandleMapTest, Bidirectional) {
   AdvertisingHandleMap handle_map;
 
   DeviceAddress address_a = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
@@ -29,7 +29,7 @@ TEST(AdvertisingHandleMap, Bidirectional) {
   EXPECT_EQ(address_b, handle_map.GetAddress(handle_b.value()));
 }
 
-TEST(AdvertisingHandleMap, GetHandleAlreadyExists) {
+TEST(AdvertisingHandleMapTest, MapHandleAlreadyExists) {
   AdvertisingHandleMap handle_map;
 
   DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
@@ -43,7 +43,7 @@ TEST(AdvertisingHandleMap, GetHandleAlreadyExists) {
   EXPECT_EQ(expected, actual);
 }
 
-TEST(AdvertisingHandleMap, GetHandleMoreThanSupported) {
+TEST(AdvertisingHandleMapTest, MapHandleMoreThanSupported) {
   AdvertisingHandleMap handle_map;
 
   for (uint8_t i = 0; i < handle_map.capacity(); i++) {
@@ -61,7 +61,7 @@ TEST(AdvertisingHandleMap, GetHandleMoreThanSupported) {
   EXPECT_EQ(handle_map.capacity(), handle_map.Size());
 }
 
-TEST(AdvertisingHandleMap, GetHandleSupportHandleReallocation) {
+TEST(AdvertisingHandleMapTest, MapHandleSupportHandleReallocation) {
   AdvertisingHandleMap handle_map;
 
   for (uint8_t i = 0; i < handle_map.capacity(); i++) {
@@ -90,13 +90,13 @@ TEST(AdvertisingHandleMap, GetHandleSupportHandleReallocation) {
   ASSERT_NE(old_address, new_address);
 }
 
-TEST(AdvertisingHandleMap, GetAddressNonExistent) {
+TEST(AdvertisingHandleMapTest, GetAddressNonExistent) {
   AdvertisingHandleMap handle_map;
   std::optional<DeviceAddress> address = handle_map.GetAddress(0);
   EXPECT_FALSE(address);
 }
 
-TEST(AdvertisingHandleMap, RemoveHandle) {
+TEST(AdvertisingHandleMapTest, RemoveHandle) {
   AdvertisingHandleMap handle_map;
   EXPECT_TRUE(handle_map.Empty());
 
@@ -111,7 +111,7 @@ TEST(AdvertisingHandleMap, RemoveHandle) {
   EXPECT_TRUE(handle_map.Empty());
 }
 
-TEST(AdvertisingHandleMap, RemoveAddress) {
+TEST(AdvertisingHandleMapTest, RemoveAddress) {
   AdvertisingHandleMap handle_map;
   EXPECT_TRUE(handle_map.Empty());
 
@@ -125,7 +125,7 @@ TEST(AdvertisingHandleMap, RemoveAddress) {
   EXPECT_TRUE(handle_map.Empty());
 }
 
-TEST(AdvertisingHandleMap, RemoveHandleNonExistent) {
+TEST(AdvertisingHandleMapTest, RemoveHandleNonExistent) {
   AdvertisingHandleMap handle_map;
   DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
   std::optional<hci_spec::AdvertisingHandle> handle = handle_map.MapHandle(address);
@@ -140,7 +140,7 @@ TEST(AdvertisingHandleMap, RemoveHandleNonExistent) {
   EXPECT_TRUE(handle);
 }
 
-TEST(AdvertisingHandleMap, RemoveAddressNonExistent) {
+TEST(AdvertisingHandleMapTest, RemoveAddressNonExistent) {
   AdvertisingHandleMap handle_map;
   DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
   std::optional<hci_spec::AdvertisingHandle> handle = handle_map.MapHandle(address);
@@ -156,7 +156,7 @@ TEST(AdvertisingHandleMap, RemoveAddressNonExistent) {
   EXPECT_TRUE(handle);
 }
 
-TEST(AdvertisingHandleMap, Clear) {
+TEST(AdvertisingHandleMapTest, Clear) {
   AdvertisingHandleMap handle_map;
   std::optional<hci_spec::AdvertisingHandle> handle =
       handle_map.MapHandle(DeviceAddress(DeviceAddress::Type::kLEPublic, {0}));
