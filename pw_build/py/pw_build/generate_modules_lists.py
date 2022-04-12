@@ -217,10 +217,24 @@ def _main(root: Path, modules_list: Path, modules_gni_file: Path,
         if process.returncode != 0:
             errors.append(_FORMAT_FAILED_WARNING)
         elif modules_gni_file.read_bytes() != process.stdout:
+            # Make a diff of required changes
+            modules_gni_relpath = os.path.relpath(modules_gni_file, root)
+            diff = difflib.unified_diff(
+                modules_gni_file.read_text().splitlines(),
+                process.stdout.decode('utf-8', errors='replace').splitlines(),
+                fromfile=os.path.join('a', modules_gni_relpath),
+                tofile=os.path.join('b', modules_gni_relpath),
+                lineterm='',
+                n=1,
+            )
             errors.append(
                 _OUT_OF_DATE_WARNING.format(
                     out_dir=os.path.relpath(os.curdir, root),
                     file=os.path.relpath(modules_gni_file, root)))
+            errors.append('Expected Diff:\n')
+            errors.append('\n'.join(diff))
+            errors.append('\n')
+
     elif not warnings:  # Update the modules .gni file.
         with modules_gni_file.open('w', encoding='utf-8') as file:
             for line in _generate_modules_gni(root, prefix, modules):
