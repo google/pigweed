@@ -23,9 +23,10 @@ import abc
 import argparse
 import asyncio
 import logging
-from multiprocessing import log_to_stderr
 from pw_hdlc import decode
-from typing import (Any, Awaitable, Callable)
+import random
+import time
+from typing import (Any, Awaitable, Callable, Optional)
 
 _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
 
@@ -72,6 +73,32 @@ class HdlcPacketizer(Filter):
             await self.send_data(frame.raw_encoded)
 
 
+class DataDropper(Filter):
+    """A filter which drops some data.
+
+    DataDropper will drop data passed through ``process()`` at the
+    specified ``rate``.
+    """
+    def __init__(self,
+                 send_data: Callable[[bytes], Awaitable[None]],
+                 name: str,
+                 rate: float,
+                 seed: Optional[int] = None):
+        super().__init__(send_data)
+        self._rate = rate
+        self._name = name
+        if seed == None:
+            seed = time.time_ns()
+        self._rng = random.Random(seed)
+        _LOG.info(f'{name} DataDropper initialized with seed {seed}')
+
+    async def process(self, data: bytes) -> None:
+        if self._rng.uniform(0.0, 1.0) < self._rate:
+            _LOG.info(f'{self._name} dropped {len(data)} bytes of data')
+        else:
+            await self.send_data(data)
+
+
 async def _handle_simplex_connection(name: str, reader: asyncio.StreamReader,
                                      writer: asyncio.StreamWriter) -> None:
     """Handle a single direction of a bidirectional connection between
@@ -80,7 +107,7 @@ async def _handle_simplex_connection(name: str, reader: asyncio.StreamReader,
         writer.write(data)
         await writer.drain()
 
-    filter_stack = HdlcPacketizer(send)
+    filter_stack = HdlcPacketizer(DataDropper(send, name, 0.01))
 
     while True:
         # Arbitrarily chosen "page sized" read.
