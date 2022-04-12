@@ -107,13 +107,31 @@ TEST_CASES: Tuple[GroupOrTest[Tuple[bytes, List[Expectation]]], ...] = (
       Expected(1, b'\2', b'123')]),
     (_encode(0xff, 0, b'Yo')[:-1] * 3 + b'\x7e',
      [Expected(0xff, b'\0', b'Yo')] * 3),
-    'Ignore empty frames',
-    (b'\x7e\x7e', []),
-    (b'\x7e' * 10, []),
-    (b'\x7e\x7e' + _encode(1, 2, b'3') + b'\x7e' * 5,
-     [Expected(1, b'\2', b'3')]),
+    'Empty frames produce framing errors with raw data',
+    (b'\x7e\x7e', [ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR)]),
+    (b'\x7e' * 10, [
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+    ]),
+    (b'\x7e\x7e' + _encode(1, 2, b'3') + b'\x7e' * 5, [
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      Expected(1, b'\2', b'3'),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      # One flag byte remains in the decoding state machine.
+    ]),
     (b'\x7e' * 10 + _encode(1, 2, b':O') + b'\x7e' * 3 + _encode(3, 4, b':P'),
-     [Expected(1, b'\2', b':O'),
+     [ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      Expected(1, b'\2', b':O'),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
       Expected(3, b'\4', b':P')]),
     'Cannot escape flag',
     (b'\x7e\xAA\x7d\x7e\xab\x00Hello' + fcs(b'\xab\0Hello') + b'\x7e', [
@@ -175,14 +193,26 @@ TEST_CASES: Tuple[GroupOrTest[Tuple[bytes, List[Expectation]]], ...] = (
      [Expected.error(FrameStatus.FRAMING_ERROR),
       Expected(1, b'\2', b'3')]),
     'Invalid frame records raw data',
-    (b'Hello?~', [ExpectedRaw(b'Hello?', FrameStatus.FRAMING_ERROR)]),
-    (b'~~Hel\x7d\x7dlo~',
-     [ExpectedRaw(b'Hel\x7d\x7dlo', FrameStatus.FRAMING_ERROR)]),
-    (b'Hello?~~~~~', [ExpectedRaw(b'Hello?', FrameStatus.FRAMING_ERROR)]),
-    (b'~~~~Hello?~~~~~', [ExpectedRaw(b'Hello?', FrameStatus.FCS_MISMATCH)]),
+    (b'Hello?~', [ExpectedRaw(b'Hello?~', FrameStatus.FRAMING_ERROR)]),
+    (b'~~Hel\x7d\x7dlo~', [
+      Expected.error(FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'Hel\x7d\x7dlo~', FrameStatus.FRAMING_ERROR),
+    ]),
+    (b'Hello?~~~~~', [
+      ExpectedRaw(b'Hello?~', FrameStatus.FRAMING_ERROR),
+      Expected.error(FrameStatus.FRAMING_ERROR),
+      Expected.error(FrameStatus.FRAMING_ERROR),
+    ]),
+    (b'~~~~Hello?~~~~~', [
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'Hello?~', FrameStatus.FCS_MISMATCH),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+      ExpectedRaw(b'~~', FrameStatus.FRAMING_ERROR),
+    ]),
     (b'Hello?~~Goodbye~', [
-        ExpectedRaw(b'Hello?', FrameStatus.FRAMING_ERROR),
-        ExpectedRaw(b'Goodbye', FrameStatus.FCS_MISMATCH),
+        ExpectedRaw(b'Hello?~', FrameStatus.FRAMING_ERROR),
+        ExpectedRaw(b'~Goodbye~', FrameStatus.FCS_MISMATCH),
     ]),
 )  # yapf: disable
 # Formatting for the above tuple is very slow, so disable yapf.
@@ -270,10 +300,18 @@ _TS_FOOTER = """\
 """
 
 
+def _py_only_frame(frame: Frame) -> bool:
+    """Returns true for frames only returned by the Python library"""
+    return (frame.status is FrameStatus.FRAMING_ERROR
+            and frame.raw_encoded == b'~~')
+
+
 def _cpp_test(ctx: Context) -> Iterator[str]:
     """Generates a C++ test for the provided test data."""
     data, _ = ctx.test_case
-    frames = list(FrameDecoder().process(data))
+    frames = [
+        f for f in list(FrameDecoder().process(data)) if not _py_only_frame(f)
+    ]
     data_bytes = ''.join(rf'\x{byte:02x}' for byte in data)
 
     yield f'TEST(Decoder, {ctx.cc_name()}) {{'
@@ -331,6 +369,7 @@ def _define_py_test(ctx: Context) -> PyTest:
     data, expected_frames = ctx.test_case
 
     def test(self) -> None:
+        self.maxDiff = None
         # Decode in one call
         self.assertEqual(expected_frames,
                          list(FrameDecoder().process(data)),
@@ -355,7 +394,9 @@ def _ts_byte_array(data: bytes) -> str:
 def _ts_test(ctx: Context) -> Iterator[str]:
     """Generates a TS test for the provided test data."""
     data, _ = ctx.test_case
-    frames = list(FrameDecoder().process(data))
+    frames = [
+        f for f in list(FrameDecoder().process(data)) if not _py_only_frame(f)
+    ]
     data_bytes = _ts_byte_array(data)
 
     yield f'  it(\'{ctx.ts_name()}\', () => {{'

@@ -43,8 +43,9 @@ class Frame:
         """Parses fields from an HDLC frame.
 
         Arguments:
-            raw_encoded: The complete HDLC-encoded frame, excluding HDLC flag
-                characters.
+            raw_encoded: The complete HDLC-encoded frame, including any HDLC
+                flag bytes.  In the case of back to back frames, the
+                beginning flag byte may be omitted.
             raw_decoded: The complete decoded frame (address, control,
                 information, FCS).
             status: Whether parsing the frame succeeded.
@@ -81,7 +82,8 @@ class Frame:
             body = (f'address={self.address}, control={self.control!r}, '
                     f'data={self.data!r}')
         else:
-            body = str(self.status)
+            body = (f'raw_encoded={self.raw_encoded!r}, '
+                    f'status={str(self.status)}')
 
         return f'{type(self).__name__}({body})'
 
@@ -143,19 +145,18 @@ class FrameDecoder:
     def _process_byte(self, byte: int) -> Optional[Frame]:
         frame: Optional[Frame] = None
 
-        # Record every byte except the flag character.
-        if byte != protocol.FLAG:
-            self._raw_data.append(byte)
+        self._raw_data.append(byte)
 
         if self._state is _State.INTERFRAME:
             if byte == protocol.FLAG:
-                if self._raw_data:
+                if len(self._raw_data) != 1:
                     frame = self._finish_frame(FrameStatus.FRAMING_ERROR)
 
                 self._state = _State.FRAME
         elif self._state is _State.FRAME:
             if byte == protocol.FLAG:
-                if self._raw_data:
+                # On back to back frames, we may see a repeated FLAG byte.
+                if len(self._raw_data) > 1:
                     frame = self._finish_frame(_check_frame(
                         self._decoded_data))
 
