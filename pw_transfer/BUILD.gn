@@ -236,6 +236,7 @@ pw_executable("integration_test_server") {
     "$dir_pw_rpc/system_server",
     "$dir_pw_rpc/system_server:socket",
     "$dir_pw_stream",
+    "$dir_pw_stream:std_file_stream",
     "$dir_pw_thread:thread",
     "$dir_pw_thread_stl:thread",
     dir_pw_log,

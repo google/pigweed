@@ -18,14 +18,16 @@
 // from the transfer ID.
 
 #include <cstddef>
+#include <cstdlib>
 #include <string>
 #include <thread>
+#include <variant>
 
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_rpc_system_server/socket.h"
-#include "pw_stream/memory_stream.h"
+#include "pw_stream/std_file_stream.h"
 #include "pw_thread/detached_thread.h"
 #include "pw_thread_stl/options.h"
 #include "pw_transfer/transfer.h"
@@ -45,86 +47,48 @@ std::array<std::byte, kChunkSizeBytes> encode_buffer;
 transfer::Thread<4, 4> transfer_thread(chunk_buffer, encode_buffer);
 TransferService transfer_service(transfer_thread, kMaxReceiveSizeBytes);
 
-class DynamicallyAllocatedRamHandler final : public ReadWriteHandler {
+// TODO(tpudlik): This is copy-pasted from test_rpc_server.cc, break it out into
+// a shared library.
+class FileTransferHandler final : public ReadWriteHandler {
  public:
-  DynamicallyAllocatedRamHandler(TransferService& service,
-                                 uint32_t transfer_id,
-                                 size_t max_size)
-      : ReadWriteHandler(transfer_id),
-        max_size_(max_size),
-        size_(0),
-        writer_open_(false),
-        readers_open_(0),
-        service_(service),
-        buffer_(nullptr),
-        memory_reader_(ConstByteSpan()),
-        memory_writer_(ByteSpan()) {
-    buffer_ = new std::byte[max_size];
+  FileTransferHandler(TransferService& service,
+                      uint32_t transfer_id,
+                      const char* path)
+      : ReadWriteHandler(transfer_id), service_(service), path_(path) {
     service_.RegisterHandler(*this);
   }
 
-  ~DynamicallyAllocatedRamHandler() {
-    service_.UnregisterHandler(*this);
-    delete[] buffer_;
-  }
+  ~FileTransferHandler() { service_.UnregisterHandler(*this); }
 
   Status PrepareRead() final {
-    if (writer_open_) {
-      PW_LOG_ERROR("Failed to open for reading; writer still open");
-      return Status::Unavailable();
-    }
-    if (readers_open_ == 0) {
-      PW_LOG_DEBUG("Creating new MemoryReader");
-      memory_reader_ = MemoryReader(ByteSpan(buffer_, size_));
-      set_reader(memory_reader_);
-    }
-    readers_open_++;
-    PW_LOG_DEBUG("%d readers now open", static_cast<int>(readers_open_));
+    PW_LOG_DEBUG("Preparing read for file %s", path_.c_str());
+    set_reader(stream_.emplace<stream::StdFileReader>(path_.c_str()));
     return OkStatus();
   }
 
   void FinalizeRead(Status) final {
-    PW_CHECK_UINT_GT(readers_open_, 0);
-    readers_open_--;
-    PW_LOG_DEBUG("%d readers now open", static_cast<int>(readers_open_));
+    std::get<stream::StdFileReader>(stream_).Close();
   }
 
   Status PrepareWrite() final {
-    if (writer_open_) {
-      PW_LOG_ERROR("Failed to open for writing; writer still open");
-      return Status::Unavailable();
-    }
-    if (readers_open_ > 0) {
-      PW_LOG_ERROR("Failed to open for writing; %d readers still open",
-                   static_cast<int>(readers_open_));
-      return Status::Unavailable();
-    }
-
-    memory_writer_ = MemoryWriter(ByteSpan(buffer_, max_size_));
-    set_writer(memory_writer_);
-    writer_open_ = true;
+    PW_LOG_DEBUG("Preparing write for file %s", path_.c_str());
+    set_writer(stream_.emplace<stream::StdFileWriter>(path_.c_str()));
     return OkStatus();
   }
 
   Status FinalizeWrite(Status) final {
-    PW_CHECK(writer_open_);
-    size_ = memory_writer_.size();
-    writer_open_ = false;
+    std::get<stream::StdFileWriter>(stream_).Close();
     return OkStatus();
   }
 
  private:
-  const size_t max_size_;
-  size_t size_;
-  bool writer_open_;
-  size_t readers_open_;
   TransferService& service_;
-  std::byte* buffer_;
-  MemoryReader memory_reader_;
-  MemoryWriter memory_writer_;
+  std::string path_;
+  std::variant<std::monostate, stream::StdFileReader, stream::StdFileWriter>
+      stream_;
 };
 
-void RunServer(int socket_port, uint32_t transfer_id, size_t max_file_size) {
+void RunServer(int socket_port, uint32_t transfer_id, const char* filename) {
   rpc::system_server::set_socket_port(socket_port);
 
   rpc::system_server::Init();
@@ -134,8 +98,7 @@ void RunServer(int socket_port, uint32_t transfer_id, size_t max_file_size) {
 
   // It's fine to allocate this on the stack since this thread doesn't return
   // until this process is killed.
-  DynamicallyAllocatedRamHandler transfer_handler(
-      transfer_service, transfer_id, max_file_size);
+  FileTransferHandler transfer_handler(transfer_service, transfer_id, filename);
 
   PW_LOG_INFO("Starting pw_rpc server");
   PW_CHECK_OK(rpc::system_server::Start());
@@ -146,7 +109,7 @@ void RunServer(int socket_port, uint32_t transfer_id, size_t max_file_size) {
 
 int main(int argc, char* argv[]) {
   if (argc != 4) {
-    PW_LOG_ERROR("Usage: %s PORT TRANSFER_ID MAX_FILE_SIZE", argv[0]);
+    PW_LOG_ERROR("Usage: %s PORT TRANSFER_ID FILENAME", argv[0]);
     return 1;
   }
 
@@ -156,9 +119,8 @@ int main(int argc, char* argv[]) {
   int transfer_id = std::atoi(argv[2]);
   PW_CHECK_UINT_GT(transfer_id, 0, "Invalid transfer ID!");
 
-  long long max_file_size = std::atoll(argv[3]);
-  PW_CHECK_UINT_GT(max_file_size, 0, "Invalid maximum file size!");
+  char* filename = argv[3];
 
-  pw::transfer::RunServer(port, transfer_id, max_file_size);
+  pw::transfer::RunServer(port, transfer_id, filename);
   return 0;
 }
