@@ -56,18 +56,31 @@ async def _handle_connection(server_port: int,
     _LOG.info(f'New client connection from {client_addr}')
 
     # Open a new connection to the server for each client connection.
+    #
+    # TODO: catch exception and close client writer
     server_reader, server_writer = await asyncio.open_connection(
         'localhost', server_port)
     _LOG.info(f'New connection opened to server')
 
     # Instantiate two simplex handler one for each direction of the connection.
-    #
-    # TODO: server never closes connection.  We need to catch one of these closing
-    # then close the other side.
-    await asyncio.gather(
-        _handle_simplex_connection("client", client_reader, server_writer),
-        _handle_simplex_connection("server", server_reader, client_writer),
+    _, pending = await asyncio.wait(
+        [
+            asyncio.create_task(
+                _handle_simplex_connection("client", client_reader,
+                                           server_writer)),
+            asyncio.create_task(
+                _handle_simplex_connection("server", server_reader,
+                                           client_writer)),
+        ],
+        return_when=asyncio.FIRST_COMPLETED,
     )
+
+    # When one side terminates the connection, also terminate the other side
+    for task in pending:
+        task.cancel()
+
+    for stream in [client_writer, server_writer]:
+        stream.close()
 
 
 def _parse_args() -> argparse.Namespace:
