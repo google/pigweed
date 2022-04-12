@@ -19,21 +19,70 @@ of introducing various link failures into the connection between the client and
 server.
 """
 
+import abc
 import argparse
 import asyncio
 import logging
+from multiprocessing import log_to_stderr
+from pw_hdlc import decode
+from typing import (Any, Awaitable, Callable)
 
 _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
+
+
+class Filter(abc.ABC):
+    """An abstract interface for manipulating a stream of data.
+
+    ``Filter``s are used to implement various transforms to simulate real
+    world link properties.  Some examples include: data corruption,
+    packet loss, packet reordering, rate limiting, latency modeling.
+
+    A ``Filter`` implementation should implement the ``process`` method
+    and call ``self.send_data()`` when it has data to send.
+    """
+    def __init__(self, send_data: Callable[[bytes], Awaitable[None]]):
+        self.send_data = send_data
+        pass
+
+    @abc.abstractmethod
+    async def process(self, data: bytes) -> None:
+        """Processes incoming data.
+
+        Implementations of this method may send arbitrary data, or none, using
+        the ``self.send_data()`` handler.
+        """
+
+    async def __call__(self, data: bytes) -> None:
+        await self.process(data)
+
+
+class HdlcPacketizer(Filter):
+    """A filter which aggregates data into complete HDLC packets.
+
+    Since the proxy transport (SOCK_STREAM) has no framing and we want some
+    filters to operates on whole frames, this filter can be used so that
+    downstream filters see whole frames.
+    """
+    def __init__(self, send_data: Callable[[bytes], Awaitable[None]]):
+        super().__init__(send_data)
+        self.decoder = decode.FrameDecoder()
+
+    async def process(self, data: bytes) -> None:
+        for frame in self.decoder.process(data):
+            await self.send_data(frame.raw_encoded)
 
 
 async def _handle_simplex_connection(name: str, reader: asyncio.StreamReader,
                                      writer: asyncio.StreamWriter) -> None:
     """Handle a single direction of a bidirectional connection between
     server and client."""
+    async def send(data: bytes):
+        writer.write(data)
+        await writer.drain()
+
+    filter_stack = HdlcPacketizer(send)
 
     while True:
-        _LOG.debug(f'reading from {name}.')
-
         # Arbitrarily chosen "page sized" read.
         data = await reader.read(4096)
 
@@ -42,9 +91,7 @@ async def _handle_simplex_connection(name: str, reader: asyncio.StreamReader,
             _LOG.info(f'{name} connection closed.')
             return
 
-        _LOG.debug(f'Received {len(data)} bytes from {name}.')
-        writer.write(data)
-        await writer.drain()
+        await filter_stack.process(data)
 
 
 async def _handle_connection(server_port: int,
