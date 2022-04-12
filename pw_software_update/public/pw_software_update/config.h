@@ -37,3 +37,19 @@
 #ifndef PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION
 #define PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION (true)
 #endif  // PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION
+
+// Whether to support root metadata rotation.
+//
+// Root metadata rotation is recommended to mitigate potential signing key
+// vulnerabilities, e.g.:
+// 1. Voluntary refresh of any / all signing keys on a regular schedule -- trust
+//    has an expiration date.
+// 2. Revoke compromised keys.
+// 3. Recover from fast-forward attacks.
+//
+// See more rational at: https://theupdateframework.io/security/
+#ifndef PW_SOFTWARE_UPDATE_WITH_ROOT_ROTATION
+// WARNING: (false) case NOT covered by unit tests (nontrivial to add),
+// use at your own risk!
+#define PW_SOFTWARE_UPDATE_WITH_ROOT_ROTATION (true)
+#endif  // PW_SOFTWARE_UPDATE_WITH_ROOT_ROTATION

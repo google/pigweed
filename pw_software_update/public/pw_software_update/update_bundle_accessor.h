@@ -46,14 +46,18 @@ class UpdateBundleAccessor {
   // UpdateBundleAccessor
   // blob_store - The staged incoming software update bundle.
   // backend - Project-specific BundledUpdateBackend.
-  // disable_verification - Disable verification.
+  // self_verification - When set to true, perform a voluntary best effort
+  //     verification against available metadata in the incoming bundle itself.
+  //     Self verification does NOT use any on-device metadata, thus does not
+  //     guard against malicious attacks. Self-verification is primarily meant
+  //     to de-risk 0-day verification turn-on.
   constexpr UpdateBundleAccessor(blob_store::BlobStore& blob_store,
                                  BundledUpdateBackend& backend,
-                                 bool disable_verification = false)
+                                 bool self_verification = false)
       : blob_store_(blob_store),
         blob_store_reader_(blob_store_),
         backend_(backend),
-        disable_verification_(disable_verification) {}
+        self_verification_(self_verification) {}
 
   // Opens and verifies the software update bundle.
   //
@@ -124,7 +128,7 @@ class UpdateBundleAccessor {
   protobuf::Message bundle_;
   // The current, cached, trusted `SignedRootMetadata{}`.
   protobuf::Message trusted_root_;
-  bool disable_verification_;
+  bool self_verification_;
   bool bundle_verified_ = false;
 
   // Opens the bundle for read-only access and readies the parser.

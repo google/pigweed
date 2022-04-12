@@ -369,10 +369,25 @@ Status UpdateBundleAccessor::DoVerify() {
 #else   // PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
   bundle_verified_ = false;
 
+  if (self_verification_) {
+    // Use root metadata in staged bundle for self-verification. This root
+    // metadata is optional and used opportunistically in the rest of the
+    // verification flow.
+    trusted_root_ = bundle_.AsMessage(
+        static_cast<uint32_t>(UpdateBundle::Fields::ROOT_METADATA));
+  } else {
+    // A provisioned on-device root metadata is *required* for formal
+    // verification.
+    if (trusted_root_ = GetOnDeviceTrustedRoot(); !trusted_root_.ok()) {
+      PW_LOG_CRITICAL("Missing on-device trusted root");
+      return Status::Unauthenticated();
+    }
+  }
+
   // Verify and upgrade the on-device trust to the incoming root metadata if
   // one is included.
   if (Status status = UpgradeRoot(); !status.ok()) {
-    PW_LOG_ERROR("Failed to upgrade to Root in staged bundle");
+    PW_LOG_ERROR("Failed to rotate root metadata");
     return status;
   }
 
@@ -429,24 +444,15 @@ ManifestAccessor UpdateBundleAccessor::GetOnDeviceManifest() {
 }
 
 Status UpdateBundleAccessor::UpgradeRoot() {
+#if PW_SOFTWARE_UPDATE_WITH_ROOT_ROTATION
   protobuf::Message new_root = bundle_.AsMessage(
       static_cast<uint32_t>(UpdateBundle::Fields::ROOT_METADATA));
 
-  // Try self-verification even if verification is disabled by the caller. This
-  // minimizes surprises when the caller do decide to turn on verification.
-  bool self_verifying = disable_verification_;
-
-  // Choose and cache the root metadata to trust.
-  trusted_root_ = self_verifying ? new_root : GetOnDeviceTrustedRoot();
-
   if (!new_root.status().ok()) {
     // Don't bother upgrading if not found or invalid.
-    PW_LOG_WARN("Incoming root metadata not found or invalid");
+    PW_LOG_WARN("Skipping root metadata rotation: not found or invalid");
     return OkStatus();
   }
-
-  // A valid trust anchor is required onwards from here.
-  PW_TRY(trusted_root_.status());
 
   // TODO(pwbug/456): Check whether the bundle contains a root metadata that
   // is different from the on-device trusted root.
@@ -502,7 +508,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     return Status::Unauthenticated();
   }
 
-  if (!self_verifying) {
+  if (!self_verification_) {
     // Persist the root immediately after it is successfully verified. This is
     // to make sure the trust anchor is up-to-date in storage as soon as
     // we are confident. Although targets metadata and product-specific
@@ -511,7 +517,11 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     // compromise keys.
     stream::IntervalReader new_root_reader =
         new_root.ToBytes().GetBytesReader();
-    PW_TRY(backend_.SafelyPersistRootMetadata(new_root_reader));
+    if (Status status = backend_.SafelyPersistRootMetadata(new_root_reader);
+        !status.ok()) {
+      PW_LOG_ERROR("Failed to persist rotated root metadata");
+      return status;
+    }
   }
 
   // TODO(pwbug/456): Implement key change detection to determine whether
@@ -519,12 +529,14 @@ Status UpdateBundleAccessor::UpgradeRoot() {
   // if any of the targets keys has been rotated.
 
   return OkStatus();
+#else
+  // Root metadata rotation opted out.
+  return OkStatus();
+#endif  // PW_SOFTWARE_UPDATE_WITH_ROOT_ROTATION
 }
 
 Status UpdateBundleAccessor::VerifyTargetsMetadata() {
-  bool self_verifying = disable_verification_;
-
-  if (self_verifying && !trusted_root_.status().ok()) {
+  if (self_verification_ && !trusted_root_.status().ok()) {
     PW_LOG_WARN(
         "Self-verification won't verify Targets metadata because there is no "
         "root");
@@ -580,7 +592,7 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
       static_cast<uint32_t>(RootMetadata::Fields::KEYS));
   PW_TRY(key_mapping.status());
 
-  // Get the targest metadtata siganture requirement from the trusted root.
+  // Get the target metadtata signature requirement from the trusted root.
   protobuf::Message signature_requirement =
       trusted_root.AsMessage(static_cast<uint32_t>(
           RootMetadata::Fields::TARGETS_SIGNATURE_REQUIREMENT));
@@ -593,7 +605,7 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
                                signature_requirement,
                                key_mapping);
 
-  if (self_verifying && sig_res.IsNotFound()) {
+  if (self_verification_ && sig_res.IsNotFound()) {
     PW_LOG_WARN("Self-verification ignoring unsigned bundle");
     return OkStatus();
   }
@@ -605,9 +617,9 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
 
   // TODO(pwbug/456): Check targets metadtata content.
 
-  if (self_verifying) {
+  if (self_verification_) {
     // Don't bother because it does not matter.
-    PW_LOG_WARN("Self verification does not do Targets metadata anti-rollback");
+    PW_LOG_WARN("Self verification skips Targets metadata anti-rollback");
     return OkStatus();
   }
 
