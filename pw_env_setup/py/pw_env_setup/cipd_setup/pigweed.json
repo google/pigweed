@@ -64,6 +64,16 @@
       ]
     },
     {
+      "_comment": "Always get the amd64 version on Mac until there's an arm64 version",
+      "path": "infra/3pp/tools/protoc/mac-amd64",
+      "platforms": [
+        "mac-arm64"
+      ],
+      "tags": [
+        "version:2@3.17.3"
+      ]
+    },
+    {
       "path": "fuchsia/third_party/clang/${platform}",
       "platforms": [
         "linux-amd64",
