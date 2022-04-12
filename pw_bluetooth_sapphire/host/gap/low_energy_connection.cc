@@ -520,25 +520,42 @@ void LowEnergyConnection::OnGattServicesResult(att::Result<> status, gatt::Servi
   }
 
   gap_service_client_.emplace(peer_id(), services.front());
-
-  // TODO(fxbug.dev/65914): Read name and appearance characteristics.
   auto self = weak_ptr_factory_.GetWeakPtr();
+
+  gap_service_client_->ReadDeviceName([self](att::Result<std::string> result) {
+    if (!self || result.is_error()) {
+      return;
+    }
+
+    self->peer_->SetName(result.value());
+  });
+
+  gap_service_client_->ReadAppearance([self](att::Result<uint16_t> result) {
+    if (!self || result.is_error()) {
+      return;
+    }
+
+    self->peer_->SetAppearance(result.value());
+  });
+
   if (!peer_->le()->preferred_connection_parameters().has_value()) {
-    gap_service_client_->ReadPeripheralPreferredConnectionParameters([self](auto result) {
-      if (!self) {
-        return;
-      }
+    gap_service_client_->ReadPeripheralPreferredConnectionParameters(
+        [self](att::Result<hci_spec::LEPreferredConnectionParameters> result) {
+          if (!self) {
+            return;
+          }
 
-      if (result.is_error()) {
-        bt_log(INFO, "gap-le",
-               "error reading peripheral preferred connection parameters (status:  %s, peer: %s)",
-               bt_str(result.error()), bt_str(self->peer_id()));
-        return;
-      }
+          if (result.is_error()) {
+            bt_log(
+                INFO, "gap-le",
+                "error reading peripheral preferred connection parameters (status:  %s, peer: %s)",
+                ::bt::internal::ToString(result).c_str(), bt_str(self->peer_id()));
+            return;
+          }
 
-      auto params = result.value();
-      self->peer_->MutLe().SetPreferredConnectionParameters(params);
-    });
+          auto params = result.value();
+          self->peer_->MutLe().SetPreferredConnectionParameters(params);
+        });
   }
 }
 

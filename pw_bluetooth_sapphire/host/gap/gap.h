@@ -147,6 +147,8 @@ constexpr zx::duration kLEScanResponseTimeout = zx::sec(2);
 
 // GATT types used in the GAP service.
 constexpr UUID kGenericAccessService(uint16_t{0x1800});
+constexpr UUID kDeviceNameCharacteristic(uint16_t{0x2A00});
+constexpr UUID kAppearanceCharacteristic(uint16_t{0x2A01});
 constexpr UUID kPeripheralPreferredConnectionParametersCharacteristic(uint16_t{0x2A04});
 
 // The Peripheral Preferred Connection Parameters Characteristic is optionally included in the GAP

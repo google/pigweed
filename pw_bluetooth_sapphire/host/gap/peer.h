@@ -463,6 +463,9 @@ class Peer final {
   // calling the SetName() method.
   const std::optional<std::string>& name() const { return *name_; }
 
+  // Gets the appearance of the device, if it's known.
+  const std::optional<uint16_t>& appearance() const { return appearance_; }
+
   // Returns the set of features of this device.
   const hci_spec::LMPFeatureSet& features() const { return *lmp_features_; }
 
@@ -504,6 +507,9 @@ class Peer final {
   // Updates the name of this device. This will override the existing name (if
   // present) and notify listeners of the change.
   void SetName(const std::string& name);
+
+  // Updates the appearance of this device.
+  void SetAppearance(uint16_t appearance) { appearance_ = appearance; }
 
   // Sets the value of the LMP |features| for the given |page| number.
   void SetFeaturePage(size_t page, uint64_t features) {
@@ -603,6 +609,8 @@ class Peer final {
   bool identity_known_;
 
   StringInspectable<std::optional<std::string>> name_;
+  // TODO(fxbug.dev/95912): Coordinate this field with the appearance read from advertising data.
+  std::optional<uint16_t> appearance_;
   StringInspectable<std::optional<hci_spec::HCIVersion>> lmp_version_;
   StringInspectable<std::optional<uint16_t>> lmp_manufacturer_;
   std::optional<uint16_t> lmp_subversion_;

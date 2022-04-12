@@ -21,9 +21,17 @@ class GenericAccessClient {
   // The UUID of |generic_access_service| must be kGenericAccessService.
   GenericAccessClient(PeerId peer_id, fbl::RefPtr<gatt::RemoteService> generic_access_service);
 
+  // Discover and read the device name characteristic, if present.
+  using DeviceNameCallback = fit::callback<void(att::Result<std::string>)>;
+  void ReadDeviceName(DeviceNameCallback callback);
+
+  // Discover and read the appearance characteristic, if present.
+  using AppearanceCallback = fit::callback<void(att::Result<uint16_t>)>;
+  void ReadAppearance(AppearanceCallback callback);
+
   // Discover and read the peripheral preferred connections characteristic, if present.
-  using ConnectionParametersCallback = fit::callback<void(
-      fpromise::result<hci_spec::LEPreferredConnectionParameters, att::Result<>>)>;
+  using ConnectionParametersCallback =
+      fit::callback<void(att::Result<hci_spec::LEPreferredConnectionParameters>)>;
   void ReadPeripheralPreferredConnectionParameters(ConnectionParametersCallback callback);
 
  private:
