@@ -26,16 +26,16 @@
 namespace bt::hci_spec::vendor::android {
 
 // Bitmask values for A2DP supported codecs
-// clang-format off
 enum class A2dpCodecType : uint32_t {
+  // clang-format off
   kSbc    = (1 << 0),
   kAac    = (1 << 1),
   kAptx   = (1 << 2),
   kAptxhd = (1 << 3),
   kLdac   = (1 << 4),
   // Bits 5 - 31 are reserved
+  // clang-format on
 };
-// clang-format on
 
 // ============================================================================
 // LE Get Vendor Capabilities Command
@@ -91,13 +91,14 @@ struct LEGetVendorCapabilitiesReturnParams {
   // Privacy feature available in the BT spec version 4.2 and higher.
   GenericEnableParam le_address_generation_offloading_support;
 
-  // Bit masks for codec types supported (see A2dpCodecType)
+  // Bitmask: codec types supported (see A2dpCodecType for bitmask values)
   uint32_t a2dp_source_offload_capability_mask;
 
   // Supports reporting of Bluetooth Quality events
   GenericEnableParam bluetooth_quality_report_support;
 
-  // Supports dynamic audio buffer in the Bluetooth controller. See A2dpCodecType for bitmask.
+  // Bitmask: codec types supported in dynamic audio buffer within the Bluetooth controller (see
+  // A2dpCodecType for bitmask values)
   uint32_t dynamic_audio_buffer_support;
 } __PACKED;
 
@@ -109,8 +110,7 @@ struct LEGetVendorCapabilitiesReturnParams {
 // compatible Google feature spec.
 
 // The kLEMultiAdvt opcode is shared across all multiple advertising HCI commands. To differentiate
-// between multiple advertising commands, a subopcode field is included in the command payload.
-// Where noted, these subopcode fields must be set to a specific value.
+// between the multiple commands, a subopcode field is included in the command payload.
 constexpr OpCode kLEMultiAdvt = VendorOpCode(0x154);
 
 // ============================================================================
@@ -247,7 +247,6 @@ struct LEMultiAdvtEnableCommandParams {
   // Must always be set to kLEMultiAdvtEnableSubopcode
   uint8_t opcode;
 
-  // A value of 1 means enable. Any other value means disable.
   GenericEnableParam enable;
 
   // Handle used to identify an advertising set.
