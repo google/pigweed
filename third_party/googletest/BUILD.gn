@@ -38,6 +38,7 @@ if (dir_pw_third_party_googletest != "") {
     public_configs = [ ":includes" ]
     public = [
       "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-spi.h",
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest.h",
     ]
     sources = [
@@ -65,7 +66,6 @@ if (dir_pw_third_party_googletest != "") {
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-message.h",
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-param-test.h",
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-printers.h",
-      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-spi.h",
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-test-part.h",
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-typed-test.h",
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest_pred_impl.h",
