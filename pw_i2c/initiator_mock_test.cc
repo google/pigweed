@@ -93,7 +93,8 @@ TEST(Transaction, WriteRead) {
   std::array<std::byte, kExpectRead1.size()> read1;
   EXPECT_EQ(mocked_i2c.WriteReadFor(kAddress1, kExpectWrite1, read1, 2ms),
             OkStatus());
-  EXPECT_TRUE(std::equal(read1.begin(), read1.end(), kExpectRead1.begin()));
+  EXPECT_TRUE(std::equal(
+      read1.begin(), read1.end(), kExpectRead1.begin(), kExpectRead1.end()));
 
   std::array<std::byte, kExpectRead1.size()> read2;
   EXPECT_EQ(mocked_i2c.WriteReadFor(kAddress2, kExpectWrite2, read2, 2ms),
