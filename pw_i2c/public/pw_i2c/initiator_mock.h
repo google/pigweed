@@ -40,6 +40,17 @@ class Transaction {
         address_(device_address),
         timeout_(timeout) {}
 
+  // Alternate Transaction constructor for use in ProbeTransaction.
+  constexpr Transaction(
+      Status expected_return_value,
+      Address device_address,
+      std::optional<chrono::SystemClock::duration> timeout = std::nullopt)
+      : Transaction(expected_return_value,
+                    device_address,
+                    ConstByteSpan(),
+                    ignored_buffer_,
+                    timeout) {}
+
   // Gets the buffer that is virtually read.
   ConstByteSpan read_buffer() const { return read_buffer_; }
 
@@ -61,6 +72,7 @@ class Transaction {
   const Status return_value_;
   const ConstByteSpan read_buffer_;
   const ConstByteSpan write_buffer_;
+  static constexpr std::array<std::byte, 1> ignored_buffer_ = {};
   const Address address_;
   const std::optional<chrono::SystemClock::duration> timeout_;
 };
@@ -89,6 +101,15 @@ constexpr Transaction WriteTransaction(
                      write_buffer,
                      ConstByteSpan(),
                      timeout);
+}
+
+// ProbeTransaction is a helper that constructs a one-byte read transaction.
+// For use in testing Probe transactions with the Mock Initiator.
+constexpr Transaction ProbeTransaction(
+    Status expected_return_value,
+    Address device_address,
+    std::optional<chrono::SystemClock::duration> timeout = std::nullopt) {
+  return Transaction(expected_return_value, device_address, timeout);
 }
 
 // MockInitiator takes a series of read and/or write transactions and

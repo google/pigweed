@@ -104,5 +104,18 @@ TEST(Transaction, WriteRead) {
   EXPECT_EQ(mocked_i2c.Finalize(), OkStatus());
 }
 
+TEST(Transaction, Probe) {
+  static constexpr Address kAddress1 = Address::SevenBit<0x01>();
+
+  auto expected_transactions = MakeExpectedTransactionArray({
+      ProbeTransaction(OkStatus(), kAddress1, 2ms),
+  });
+
+  MockInitiator mock_initiator(expected_transactions);
+
+  EXPECT_EQ(mock_initiator.ProbeDeviceFor(kAddress1, 2ms), OkStatus());
+  EXPECT_EQ(mock_initiator.Finalize(), OkStatus());
+}
+
 }  // namespace
 }  // namespace pw::i2c
