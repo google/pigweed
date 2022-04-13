@@ -12,6 +12,8 @@ static_library("hci") {
     "advertising_handle_map.cc",
     "advertising_report_parser.cc",
     "advertising_report_parser.h",
+    "android_extended_low_energy_advertiser.cc",
+    "android_extended_low_energy_advertiser.h",
     "bredr_connection.cc",
     "bredr_connection.h",
     "bredr_connection_request.cc",
@@ -97,6 +99,7 @@ source_set("tests") {
     "legacy_low_energy_scanner_unittest.cc",
     "low_energy_advertiser_unittest.cc",
     "low_energy_connector_unittest.cc",
+    "low_energy_multiple_advertising_unittest.cc",
     "sequential_command_runner_unittest.cc",
     "util_unittest.cc",
   ]

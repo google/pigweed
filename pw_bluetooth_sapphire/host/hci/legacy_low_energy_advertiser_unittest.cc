@@ -68,14 +68,14 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
 
   LegacyLowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
-  ResultFunction<> GetSuccessCallback() {
+  ResultFunction<> MakeExpectSuccessCallback() {
     return [this](Result<> status) {
       last_status_ = status;
       EXPECT_EQ(fitx::ok(), status);
     };
   }
 
-  ResultFunction<> GetErrorCallback() {
+  ResultFunction<> MakeExpectErrorCallback() {
     return [this](Result<> status) {
       last_status_ = status;
       EXPECT_EQ(fitx::failed(), status);
@@ -150,7 +150,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
                              /*include_tx_power_level=*/false);
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
-                                 GetSuccessCallback());
+                                 MakeExpectSuccessCallback());
   RunLoopUntilIdle();
 
   EXPECT_TRUE(MoveLastStatus());
@@ -166,7 +166,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   uint16_t new_appearance = 0x6789;
   ad.SetAppearance(new_appearance);
   advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, nullptr,
-                                 GetErrorCallback());
+                                 MakeExpectErrorCallback());
   RunLoopUntilIdle();
 
   // Should still be using the random address.
@@ -188,7 +188,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
                              /*include_tx_power_level=*/true);
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
-                                 GetSuccessCallback());
+                                 MakeExpectSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
@@ -230,7 +230,8 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   // This call should override the previous call and succeed with the new parameters.
-  advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
+  advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr,
+                                 MakeExpectSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
@@ -267,7 +268,8 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingTxPowerRequestedThenNotR
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   // This call should override the previous call and succeed with the new parameters.
-  advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
+  advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr,
+                                 MakeExpectSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
@@ -299,7 +301,8 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartingWhileStartingTxPowerNotRequestedTh
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   // This call should override the previous call and succeed with the new parameters.
-  advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
+  advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr,
+                                 MakeExpectSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
@@ -332,7 +335,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   // Hold off on responding to the first TX Power Level Read command.
   test_device()->set_tx_power_level_read_response_flag(/*respond=*/false);
 
-  advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, GetErrorCallback());
+  advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, MakeExpectErrorCallback());
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   RunLoopUntilIdle();
@@ -342,7 +345,8 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   // Queue up the next StartAdvertising call.
   // This call should override the previous call's advertising parameters.
   test_device()->set_tx_power_level_read_response_flag(/*respond=*/true);
-  advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
+  advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr,
+                                 MakeExpectSuccessCallback());
 
   // Explicitly respond to the first TX Power Level read command.
   test_device()->OnLEReadAdvertisingChannelTxPower();
@@ -364,7 +368,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
                                           hci_spec::StatusCode::kHardwareFailure);
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
-                                 GetErrorCallback());
+                                 MakeExpectErrorCallback());
   RunLoopUntilIdle();
   auto status = MoveLastStatus();
   ASSERT_TRUE(status.has_value());
@@ -389,7 +393,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, AllowsRandomAddressChange) {
 
   // The random address cannot be changed while starting to advertise.
   advertiser()->StartAdvertising(kRandomAddress, GetExampleData(), scan_rsp, options, nullptr,
-                                 GetSuccessCallback());
+                                 MakeExpectSuccessCallback());
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
   EXPECT_FALSE(advertiser()->AllowsRandomAddressChange());
 
@@ -417,7 +421,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StopWhileStarting) {
                              /*include_tx_power_level=*/false);
 
   this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, nullptr,
-                                       GetErrorCallback());
+                                       MakeExpectErrorCallback());
   this->advertiser()->StopAdvertising(kPublicAddress);
 
   this->RunLoopUntilIdle();

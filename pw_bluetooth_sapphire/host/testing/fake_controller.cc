@@ -171,7 +171,7 @@ void FakeController::Settings::ApplyAndroidVendorExtensionDefaults() {
   // src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h and LEGetVendorCapabilities
   // for more information.
   android_extension_settings.max_advt_instances = 3;
-  android_extension_settings.total_scan_results_storage = 1024;
+  android_extension_settings.total_scan_results_storage = htole16(1024);
   android_extension_settings.version_supported_major = 0;
   android_extension_settings.version_supported_minor = 0;
 }

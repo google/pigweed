@@ -1,9 +1,9 @@
-// Copyright 2021 The Fuchsia Authors. All rights reserved.
+// Copyright 2022 The Fuchsia Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_EXTENDED_LOW_ENERGY_ADVERTISER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_EXTENDED_LOW_ENERGY_ADVERTISER_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ANDROID_EXTENDED_LOW_ENERGY_ADVERTISER_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ANDROID_EXTENDED_LOW_ENERGY_ADVERTISER_H_
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/advertising_handle_map.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"
@@ -13,32 +13,31 @@ namespace bt::hci {
 class Transport;
 class SequentialCommandRunner;
 
-class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
+// AndroidExtendedLowEnergyAdvertiser implements chip-based multiple adverting via Android's vendor
+// extensions. AndroidExtendedLowEnergyAdvertiser implements a LowEnergyAdvertiser but uses the
+// Android vendor HCI extension commands to interface with the controller instead of standard
+// Bluetooth Core Specification 5.0+. This enables power efficient multiple advertising for chipsets
+// using pre-5.0 versions of Bluetooth.
+//
+// For more information, see https://source.android.com/devices/bluetooth/hci_requirements
+class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  public:
-  explicit ExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci);
-  ~ExtendedLowEnergyAdvertiser() override;
+  // Create an AndroidExtendedLowEnergyAdvertiser. The maximum number of advertisements the
+  // controller can support (obtained via hci_spec::vendor::android::LEGetVendorCapabilities)
+  // should be passed to the constructor via the max_advertisements parameter.
+  explicit AndroidExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci,
+                                              uint8_t max_advertisements);
+  ~AndroidExtendedLowEnergyAdvertiser() override;
 
+  // LowEnergyAdvertiser overrides:
   bool AllowsRandomAddressChange() const override { return !IsAdvertising(); }
-
-  // TODO(fxbug.dev/81470): The maximum length of data that can be advertised. For backwards
-  // compatibility and because supporting it is a much larger project, we currently only support
-  // legacy PDUs. When using legacy PDUs, the maximum advertising data size is
-  // hci_spec::kMaxLEAdvertisingDataLength.
-  //
-  // TODO(fxbug.dev/77476): Extended advertising supports sending larger amounts of data, but they
-  // have to be fragmented across multiple commands to the controller. This is not yet supported in
-  // this implementation. We should support larger than kMaxLEExtendedAdvertisingDataLength
-  // advertising data with fragmentation.
   size_t GetSizeLimit() const override { return hci_spec::kMaxLEAdvertisingDataLength; }
 
   // Attempt to start advertising. See LowEnergyAdvertiser::StartAdvertising for full documentation.
   //
-  // According to the Bluetooth Spec, Volume 4, Part E, Section 7.8.58, "the number of advertising
-  // sets that can be supported is not fixed and the Controller can change it at any time. The
-  // memory used to store advertising sets can also be used for other purposes."
-  //
-  // This method may report an error if the controller cannot currently support another advertising
-  // set.
+  // The number of advertising sets that can be supported is not fixed and the Controller can change
+  // it at any time. This method may report an error if the controller cannot currently support
+  // another advertising set.
   void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
                         const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
                         ConnectionCallback connect_callback,
@@ -66,11 +65,6 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     hci_spec::LEConnectionParameters conn_params;
   };
 
-  struct StagedAdvertisingParameters {
-    bool include_tx_power_level = false;
-    int8_t selected_tx_power_level = 0;
-  };
-
   std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
                                                    hci_spec::GenericEnableParam enable) override;
 
@@ -85,40 +79,38 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   std::unique_ptr<CommandPacket> BuildUnsetAdvertisingData(const DeviceAddress& address) override;
 
   std::unique_ptr<CommandPacket> BuildSetScanResponse(const DeviceAddress& address,
-                                                      const AdvertisingData& data) override;
+                                                      const AdvertisingData& scan_rsp) override;
 
   std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) override;
 
   std::unique_ptr<CommandPacket> BuildRemoveAdvertisingSet(const DeviceAddress& address) override;
 
-  void OnSetAdvertisingParamsComplete(const EventPacket& event) override;
-
   void OnCurrentOperationComplete() override;
 
-  // Event handler for the HCI LE Advertising Set Terminated event
-  CommandChannel::EventCallbackResult OnAdvertisingSetTerminatedEvent(const EventPacket& event);
-  CommandChannel::EventHandlerId set_terminated_event_handler_id_;
+  // Event handler for the LE multi-advertising state change sub-event
+  CommandChannel::EventCallbackResult OnAdvertisingStateChangedSubevent(const EventPacket& event);
+  CommandChannel::EventHandlerId state_changed_event_handler_id_;
 
+  uint8_t max_advertisements_ = 0;
   AdvertisingHandleMap advertising_handle_map_;
   std::queue<fit::closure> op_queue_;
-  StagedAdvertisingParameters staged_advertising_parameters_;
 
-  // Core Spec Volume 4, Part E, Section 7.8.56: Incoming connections to LE Extended Advertising
-  // occur through two events: HCI_LE_Connection_Complete and HCI_LE_Advertising_Set_Terminated.
-  // The HCI_LE_Connection_Complete event provides the connection handle along with some other
+  // Incoming connections to Android LE Multiple Advertising occur through two events:
+  // HCI_LE_Connection_Complete and LE multi-advertising state change subevent. The
+  // HCI_LE_Connection_Complete event provides the connection handle along with some other
   // connection related parameters. Notably missing is the advertising handle, which we need to
-  // obtain the advertised device address. Until we receive the HCI_LE_Advertising_Set_Terminated
-  // event, we stage these parameters.
+  // obtain the advertised device address. Until we receive the LE multi-advertising state change
+  // subevent, we stage these parameters.
   std::unordered_map<hci_spec::ConnectionHandle, StagedConnectionParameters>
       staged_connections_map_;
 
   // Keep this as the last member to make sure that all weak pointers are invalidated before other
   // members get destroyed
-  fxl::WeakPtrFactory<ExtendedLowEnergyAdvertiser> weak_ptr_factory_;
+  fxl::WeakPtrFactory<AndroidExtendedLowEnergyAdvertiser> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiser);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AndroidExtendedLowEnergyAdvertiser);
 };
 
 }  // namespace bt::hci
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_EXTENDED_LOW_ENERGY_ADVERTISER_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ANDROID_EXTENDED_LOW_ENERGY_ADVERTISER_H_

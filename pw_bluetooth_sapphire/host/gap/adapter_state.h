@@ -11,6 +11,7 @@
 #include <cstdint>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/android_vendor_capabilities.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -67,6 +68,14 @@ class AdapterState final {
   // Returns Bluetooth Low Energy specific state information.
   const LowEnergyState& low_energy_state() const { return le_state_; }
 
+  // Returns the android vendor extensions capabilities that the controller supports.
+  //
+  // NOTE: callers must separately check that the controller actually supports android vendor
+  // extensions in the first place.
+  const AndroidVendorCapabilities& android_vendor_capabilities() const {
+    return android_vendor_capabilities_;
+  }
+
   // Returns the BR/EDR ACL data buffer capacity.
   const hci::DataBufferInfo& bredr_data_buffer_info() const { return bredr_data_buffer_info_; }
 
@@ -111,6 +120,9 @@ class AdapterState final {
 
   // BLE-specific state.
   LowEnergyState le_state_;
+
+  // Android vendor extensions capabilities
+  AndroidVendorCapabilities android_vendor_capabilities_;
 
   // Local name
   std::string local_name_;

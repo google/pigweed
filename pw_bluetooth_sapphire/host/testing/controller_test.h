@@ -217,7 +217,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
 
-  bt_vendor_features_t vendor_features_;
+  bt_vendor_features_t vendor_features_ = 0u;
   // If true, return a valid SCO channel from DeviceWrapper.
   bool sco_enabled_ = true;
   hci::DummyDeviceWrapper::EncodeCallback vendor_encode_cb_;

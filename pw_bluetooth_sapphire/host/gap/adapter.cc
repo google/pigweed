@@ -15,10 +15,12 @@
 #include "low_energy_connection_manager.h"
 #include "low_energy_discovery_manager.h"
 #include "peer.h"
+#include "src/connectivity/bluetooth/core/bt-host//hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/android_extended_low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/extended_low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_advertiser.h"
@@ -29,6 +31,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
+
+namespace hci_android = hci_spec::vendor::android;
 
 static constexpr const char* kInspectLowEnergyDiscoveryManagerNodeName =
     "low_energy_discovery_manager";
@@ -304,11 +308,20 @@ class AdapterImpl final : public Adapter {
   std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser() {
     constexpr hci_spec::LESupportedFeature feature =
         hci_spec::LESupportedFeature::kLEExtendedAdvertising;
-    if (state_.low_energy_state().IsFeatureSupported(feature)) {
+    if (state().low_energy_state().IsFeatureSupported(feature)) {
       bt_log(INFO, "gap", "controller supports extended advertising, using extended LE commands");
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
     }
 
+    if (state().vendor_features() & BT_VENDOR_FEATURES_ANDROID_VENDOR_EXTENSIONS) {
+      uint8_t max_advt = state().android_vendor_capabilities().max_simultaneous_advertisements();
+      bt_log(INFO, "gap",
+             "controller supports android vendor extensions, max simultaneous advertisements: %d",
+             max_advt);
+      return std::make_unique<hci::AndroidExtendedLowEnergyAdvertiser>(hci_, max_advt);
+    }
+
+    bt_log(INFO, "gap", "controller supports only legacy advertising, using legacy LE commands");
     return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
   }
 
@@ -563,6 +576,21 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
         auto params = cmd_complete.return_params<hci_spec::ReadBDADDRReturnParams>();
         state_.controller_address_ = params->bd_addr;
       });
+
+  if (state().vendor_features() & BT_VENDOR_FEATURES_ANDROID_VENDOR_EXTENSIONS) {
+    bt_log(INFO, "gap", "controller supports android hci extensions, querying exact feature set");
+    init_seq_runner_->QueueCommand(
+        hci::CommandPacket::New(hci_android::kLEGetVendorCapabilities),
+        [this](const hci::EventPacket& event) {
+          if (hci_is_error(event, WARN, "gap",
+                           "Failed to query android hci extension capabilities")) {
+            return;
+          }
+
+          auto params = event.return_params<hci_android::LEGetVendorCapabilitiesReturnParams>();
+          state_.android_vendor_capabilities_.Initialize(*params);
+        });
+  }
 
   init_seq_runner_->RunCommands(
       [callback = std::move(callback), this](hci::Result<> status) mutable {

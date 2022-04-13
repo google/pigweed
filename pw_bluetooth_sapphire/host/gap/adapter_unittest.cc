@@ -44,8 +44,9 @@ class AdapterTest : public TestingBase {
 
   void SetUp() override { SetUp(/*sco_enabled=*/true); }
 
-  void SetUp(bool sco_enabled) {
-    set_vendor_features(kVendorFeatures);
+  void SetUp(bool sco_enabled,
+             bt_vendor_features_t vendor_features = BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND) {
+    set_vendor_features(vendor_features);
     TestingBase::SetUp(sco_enabled);
 
     transport_closed_called_ = false;
@@ -158,6 +159,52 @@ TEST_F(AdapterTest, InitializeNoBREDR) {
   EXPECT_FALSE(adapter()->bredr());
   EXPECT_EQ(TechnologyType::kLowEnergy, adapter()->state().type());
   EXPECT_FALSE(transport_closed_called());
+}
+
+TEST_F(AdapterTest, InitializeQueriesAndroidExtensionsCapabilitiesIfSupported) {
+  TearDown();
+  SetUp(/*sco_enabled=*/true, /*vendor_features=*/BT_VENDOR_FEATURES_ANDROID_VENDOR_EXTENSIONS);
+
+  bool success;
+  int init_cb_count = 0;
+  auto init_cb = [&](bool cb_success) {
+    success = cb_success;
+    init_cb_count++;
+  };
+
+  FakeController::Settings settings;
+  settings.ApplyLEOnlyDefaults();
+  settings.ApplyAndroidVendorExtensionDefaults();
+  test_device()->set_settings(settings);
+
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_EQ(1, init_cb_count);
+  EXPECT_TRUE(adapter()->state().android_vendor_capabilities().IsInitialized());
+}
+
+TEST_F(AdapterTest, InitializeQueryAndroidExtensionsCapabilitiesFailureHandled) {
+  TearDown();
+  SetUp(/*sco_enabled=*/true, /*vendor_features=*/BT_VENDOR_FEATURES_ANDROID_VENDOR_EXTENSIONS);
+
+  bool success;
+  int init_cb_count = 0;
+  auto init_cb = [&](bool cb_success) {
+    success = cb_success;
+    init_cb_count++;
+  };
+
+  FakeController::Settings settings;
+  settings.ApplyLEOnlyDefaults();
+  settings.ApplyAndroidVendorExtensionDefaults();
+  test_device()->set_settings(settings);
+
+  test_device()->SetDefaultResponseStatus(hci_android::kLEGetVendorCapabilities,
+                                          hci_spec::StatusCode::kCommandDisallowed);
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_FALSE(success);
+  EXPECT_EQ(1, init_cb_count);
+  EXPECT_FALSE(adapter()->state().android_vendor_capabilities().IsInitialized());
 }
 
 TEST_F(AdapterTest, InitializeSuccess) {

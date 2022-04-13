@@ -108,8 +108,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Stops advertisement on all currently advertising addresses. Idempotent and asynchronous.
   virtual void StopAdvertising();
 
-  // Stops any advertisement currently active on |address|. Idempotent and asynchronous. Returns
-  // true if advertising will be stopped, false otherwise.
+  // Stops any advertisement currently active on |address|. Idempotent and asynchronous.
   virtual void StopAdvertising(const DeviceAddress& address) = 0;
 
   // Callback for an incoming LE connection. This function should be called in reaction to any

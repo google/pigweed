@@ -127,7 +127,7 @@ class DummyDeviceWrapper : public DeviceWrapper {
   using EncodeCallback =
       fit::function<fpromise::result<DynamicByteBuffer>(bt_vendor_command_t, bt_vendor_params_t)>;
   DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_data_channel,
-                     bt_vendor_features_t vendor_features = 0,
+                     bt_vendor_features_t vendor_features = 0u,
                      EncodeCallback vendor_encode_cb = nullptr);
   ~DummyDeviceWrapper() override = default;
 
@@ -160,7 +160,7 @@ class DummyDeviceWrapper : public DeviceWrapper {
   zx::channel cmd_channel_;
   zx::channel acl_data_channel_;
   zx::channel sco_channel_;
-  bt_vendor_features_t vendor_features_;
+  bt_vendor_features_t vendor_features_ = 0u;
   EncodeCallback vendor_encode_cb_;
   ConfigureScoCallback configure_sco_cb_ = nullptr;
   ResetScoCallback reset_sco_cb_ = nullptr;

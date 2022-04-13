@@ -18,6 +18,8 @@ static_library("gap") {
     "adapter.cc",
     "adapter.h",
     "adapter_state.h",
+    "android_vendor_capabilities.cc",
+    "android_vendor_capabilities.h",
     "bredr_connection.cc",
     "bredr_connection.h",
     "bredr_connection_manager.cc",
@@ -118,6 +120,7 @@ source_set("tests") {
 
   sources = [
     "adapter_unittest.cc",
+    "android_vendor_capabilities_unittest.cc",
     "bredr_connection_manager_unittest.cc",
     "bredr_connection_request_unittest.cc",
     "bredr_discovery_manager_unittest.cc",

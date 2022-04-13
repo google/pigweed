@@ -12,7 +12,7 @@ namespace bt::hci {
 ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci_ptr)
     : LowEnergyAdvertiser(std::move(hci_ptr)), weak_ptr_factory_(this) {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
+  set_terminated_event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingSetTerminatedSubeventCode, [self](const EventPacket& event_packet) {
         if (self) {
           return self->OnAdvertisingSetTerminatedEvent(event_packet);
@@ -23,7 +23,7 @@ ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport>
 }
 
 ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
-  hci()->command_channel()->RemoveEventHandler(event_handler_id_);
+  hci()->command_channel()->RemoveEventHandler(set_terminated_event_handler_id_);
   StopAdvertising();
 }
 
@@ -265,16 +265,6 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
                                                    AdvertisingOptions options,
                                                    ConnectionCallback connect_callback,
                                                    ResultFunction<> result_callback) {
-  fitx::result<HostError> result = CanStartAdvertising(address, data, scan_rsp, options);
-  if (result.is_error()) {
-    result_callback(ToResult(result.error_value()));
-    return;
-  }
-
-  if (IsAdvertising(address)) {
-    bt_log(DEBUG, "hci-le", "updating existing advertisement for %s", bt_str(address));
-  }
-
   // if there is an operation currently in progress, enqueue this operation and we will get to it
   // the next time we have a chance
   if (!hci_cmd_runner().IsReady()) {
@@ -294,6 +284,16 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
     });
 
     return;
+  }
+
+  fitx::result<HostError> result = CanStartAdvertising(address, data, scan_rsp, options);
+  if (result.is_error()) {
+    result_callback(ToResult(result.error_value()));
+    return;
+  }
+
+  if (IsAdvertising(address)) {
+    bt_log(DEBUG, "hci-le", "updating existing advertisement for %s", bt_str(address));
   }
 
   std::memset(&staged_advertising_parameters_, 0, sizeof(staged_advertising_parameters_));
@@ -345,7 +345,7 @@ void ExtendedLowEnergyAdvertiser::OnIncomingConnection(
   // only have a connection handle but don't know the locally advertised address that the
   // connection is for. Until we receive the HCI_LE_Advertising_Set_Terminated event, we stage
   // these parameters.
-  connection_handle_map_[handle] = {role, peer_address, conn_params};
+  staged_connections_map_[handle] = {role, peer_address, conn_params};
 }
 
 // The HCI_LE_Advertising_Set_Terminated event contains the mapping between connection handle and
@@ -367,9 +367,9 @@ CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSe
   ZX_ASSERT(params);
 
   hci_spec::ConnectionHandle connection_handle = params->connection_handle;
-  auto sp_node = connection_handle_map_.extract(connection_handle);
+  auto staged_parameters_node = staged_connections_map_.extract(connection_handle);
 
-  if (sp_node.empty()) {
+  if (staged_parameters_node.empty()) {
     bt_log(ERROR, "hci-le",
            "advertising set terminated event, staged params not available "
            "(handle: %d)",
@@ -389,7 +389,7 @@ CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSe
     local_address = opt_local_address.value();
   }
 
-  StagedConnectionParameters staged = sp_node.mapped();
+  StagedConnectionParameters staged = staged_parameters_node.mapped();
 
   CompleteIncomingConnection(connection_handle, staged.role, local_address, staged.peer_address,
                              staged.conn_params);
