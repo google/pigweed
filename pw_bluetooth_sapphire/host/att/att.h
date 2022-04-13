@@ -80,9 +80,6 @@ struct Header {
 } __PACKED;
 
 enum class ErrorCode : uint8_t {
-  // Internal default value
-  kNoError = 0x00,
-
   kInvalidHandle = 0x01,
   kReadNotPermitted = 0x02,
   kWriteNotPermitted = 0x03,

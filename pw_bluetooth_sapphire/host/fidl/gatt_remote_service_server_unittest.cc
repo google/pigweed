@@ -87,7 +87,7 @@ TEST_F(GattRemoteServiceServerTest, ReadByTypeSuccess) {
             break;
           case 1:
             callback(fitx::error(bt::gatt::Client::ReadByTypeError{
-                bt::ToResult(bt::att::ErrorCode::kAttributeNotFound).error_value(), start}));
+                bt::att::Error(bt::att::ErrorCode::kAttributeNotFound), start}));
             break;
           default:
             FAIL();
@@ -120,8 +120,7 @@ TEST_F(GattRemoteServiceServerTest, ReadByTypeResultWithError) {
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
         callback(fitx::error(bt::gatt::Client::ReadByTypeError{
-            bt::ToResult(bt::att::ErrorCode::kInsufficientAuthorization).error_value(),
-            kServiceEndHandle}));
+            bt::att::Error(bt::att::ErrorCode::kInsufficientAuthorization), kServiceEndHandle}));
       });
 
   std::optional<fbgatt::RemoteService_ReadByType_Result> fidl_result;

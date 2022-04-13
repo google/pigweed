@@ -9,8 +9,6 @@ namespace {
 
 std::string ErrorToString(att::ErrorCode ecode) {
   switch (ecode) {
-    case att::ErrorCode::kNoError:
-      return "success";
     case att::ErrorCode::kInvalidHandle:
       return "invalid handle";
     case att::ErrorCode::kReadNotPermitted:

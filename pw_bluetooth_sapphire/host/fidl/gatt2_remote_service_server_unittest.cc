@@ -168,7 +168,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeSuccess) {
             break;
           case 1:
             callback(fitx::error(bt::gatt::Client::ReadByTypeError{
-                bt::ToResult(bt::att::ErrorCode::kAttributeNotFound).error_value(), start}));
+                bt::att::Error(bt::att::ErrorCode::kAttributeNotFound), start}));
             break;
           default:
             FAIL();
@@ -210,8 +210,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeResultPermissionError) {
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
         callback(fitx::error(bt::gatt::Client::ReadByTypeError{
-            bt::ToResult(bt::att::ErrorCode::kInsufficientAuthorization).error_value(),
-            kServiceEndHandle}));
+            bt::att::Error(bt::att::ErrorCode::kInsufficientAuthorization), kServiceEndHandle}));
       });
 
   std::optional<fbg::RemoteService_ReadByType_Result> fidl_result;
@@ -291,7 +290,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
         const size_t max_value_count = static_cast<size_t>(ZX_CHANNEL_MAX_MSG_BYTES) / value.size();
         if (read_count == max_value_count) {
           callback(fitx::error(bt::gatt::Client::ReadByTypeError{
-              bt::ToResult(bt::att::ErrorCode::kAttributeNotFound).error_value(), start}));
+              bt::att::Error(bt::att::ErrorCode::kAttributeNotFound), start}));
           return;
         }
 

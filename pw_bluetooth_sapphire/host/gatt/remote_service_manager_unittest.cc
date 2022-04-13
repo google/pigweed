@@ -1654,8 +1654,8 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeNotFou
             break;
           case 2:
             EXPECT_EQ(kHandle1 + 1, start);
-            callback(fitx::error(Client::ReadByTypeError{
-                ToResult(att::ErrorCode::kAttributeNotFound).error_value(), start}));
+            callback(fitx::error(
+                Client::ReadByTypeError{att::Error(att::ErrorCode::kAttributeNotFound), start}));
             break;
           default:
             FAIL();
@@ -1737,8 +1737,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         if (read_count < errors.size()) {
           EXPECT_EQ(kStartHandle + read_count, start);
-          callback(fitx::error(
-              Client::ReadByTypeError{ToResult(errors[read_count++]).error_value(), start}));
+          callback(fitx::error(Client::ReadByTypeError{att::Error(errors[read_count++]), start}));
         } else {
           FAIL();
         }
@@ -1791,8 +1790,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
               callback(fitx::ok(kValues));
               break;
             case 1:
-              callback(
-                  fitx::error(Client::ReadByTypeError{ToResult(code).error_value(), std::nullopt}));
+              callback(fitx::error(Client::ReadByTypeError{att::Error(code), std::nullopt}));
               break;
             default:
               FAIL();
@@ -1823,8 +1821,8 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithMissingHandle) {
   fake_client()->set_read_by_type_request_callback(
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
-        callback(fitx::error(Client::ReadByTypeError{
-            ToResult(att::ErrorCode::kReadNotPermitted).error_value(), std::nullopt}));
+        callback(fitx::error(
+            Client::ReadByTypeError{att::Error(att::ErrorCode::kReadNotPermitted), std::nullopt}));
       });
 
   std::optional<att::Result<>> status;
@@ -1846,8 +1844,8 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithOutOfRangeHandle)
   fake_client()->set_read_by_type_request_callback(
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
-        callback(fitx::error(Client::ReadByTypeError{
-            ToResult(att::ErrorCode::kReadNotPermitted).error_value(), kEndHandle + 1}));
+        callback(fitx::error(Client::ReadByTypeError{att::Error(att::ErrorCode::kReadNotPermitted),
+                                                     kEndHandle + 1}));
       });
 
   std::optional<att::Result<>> status;
@@ -3147,8 +3145,8 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeErrorOnLastHandleDoesNotOverflowHandl
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
         EXPECT_EQ(kStartHandle, start);
-        callback(fitx::error(Client::ReadByTypeError{
-            ToResult(att::ErrorCode::kReadNotPermitted).error_value(), kEndHandle}));
+        callback(fitx::error(
+            Client::ReadByTypeError{att::Error(att::ErrorCode::kReadNotPermitted), kEndHandle}));
       });
 
   std::optional<att::Result<>> status;

@@ -3423,7 +3423,7 @@ TEST_F(ClientTest, ReadByTypeRequestError) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(error.has_value());
-  EXPECT_EQ(ToResult(att::ErrorCode::kAttributeNotFound).error_value(), *error);
+  EXPECT_EQ(att::Error(att::ErrorCode::kAttributeNotFound), *error);
   ASSERT_TRUE(handle.has_value());
   EXPECT_EQ(kStartHandle, handle.value());
   EXPECT_FALSE(fake_chan()->link_error());

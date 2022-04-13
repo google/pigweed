@@ -93,22 +93,18 @@ TEST(HelpersTest, GattErrorToFidl) {
   EXPECT_EQ(fbg::Error::FAILURE, GattErrorToFidl(bt::Error(bt::HostError::kTimedOut)));
 
   // Protocol errors
-  EXPECT_EQ(
-      fbg::Error::INSUFFICIENT_AUTHORIZATION,
-      GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kInsufficientAuthorization).error_value()));
-  EXPECT_EQ(
-      fbg::Error::INSUFFICIENT_AUTHENTICATION,
-      GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kInsufficientAuthentication).error_value()));
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_AUTHORIZATION,
+            GattErrorToFidl(bt::att::Error(bt::att::ErrorCode::kInsufficientAuthorization)));
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_AUTHENTICATION,
+            GattErrorToFidl(bt::att::Error(bt::att::ErrorCode::kInsufficientAuthentication)));
   EXPECT_EQ(fbg::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE,
-            GattErrorToFidl(
-                bt::ToResult(bt::att::ErrorCode::kInsufficientEncryptionKeySize).error_value()));
-  EXPECT_EQ(
-      fbg::Error::INSUFFICIENT_ENCRYPTION,
-      GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kInsufficientEncryption).error_value()));
+            GattErrorToFidl(bt::att::Error(bt::att::ErrorCode::kInsufficientEncryptionKeySize)));
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_ENCRYPTION,
+            GattErrorToFidl(bt::att::Error(bt::att::ErrorCode::kInsufficientEncryption)));
   EXPECT_EQ(fbg::Error::READ_NOT_PERMITTED,
-            GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kReadNotPermitted).error_value()));
+            GattErrorToFidl(bt::att::Error(bt::att::ErrorCode::kReadNotPermitted)));
   EXPECT_EQ(fbg::Error::FAILURE,
-            GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kUnlikelyError).error_value()));
+            GattErrorToFidl(bt::att::Error(bt::att::ErrorCode::kUnlikelyError)));
 }
 
 TEST(HelpersTest, AttErrorToGattFidlError) {
@@ -121,27 +117,23 @@ TEST(HelpersTest, AttErrorToGattFidlError) {
             AttErrorToGattFidlError(bt::Error(bt::HostError::kTimedOut)));
 
   // Protocol errors
-  EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHORIZATION,
-            AttErrorToGattFidlError(
-                bt::ToResult(bt::att::ErrorCode::kInsufficientAuthorization).error_value()));
-  EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHENTICATION,
-            AttErrorToGattFidlError(
-                bt::ToResult(bt::att::ErrorCode::kInsufficientAuthentication).error_value()));
-  EXPECT_EQ(fbg2::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE,
-            AttErrorToGattFidlError(
-                bt::ToResult(bt::att::ErrorCode::kInsufficientEncryptionKeySize).error_value()));
+  EXPECT_EQ(
+      fbg2::Error::INSUFFICIENT_AUTHORIZATION,
+      AttErrorToGattFidlError(bt::att::Error(bt::att::ErrorCode::kInsufficientAuthorization)));
+  EXPECT_EQ(
+      fbg2::Error::INSUFFICIENT_AUTHENTICATION,
+      AttErrorToGattFidlError(bt::att::Error(bt::att::ErrorCode::kInsufficientAuthentication)));
+  EXPECT_EQ(
+      fbg2::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE,
+      AttErrorToGattFidlError(bt::att::Error(bt::att::ErrorCode::kInsufficientEncryptionKeySize)));
   EXPECT_EQ(fbg2::Error::INSUFFICIENT_ENCRYPTION,
-            AttErrorToGattFidlError(
-                bt::ToResult(bt::att::ErrorCode::kInsufficientEncryption).error_value()));
-  EXPECT_EQ(
-      fbg2::Error::READ_NOT_PERMITTED,
-      AttErrorToGattFidlError(bt::ToResult(bt::att::ErrorCode::kReadNotPermitted).error_value()));
-  EXPECT_EQ(
-      fbg2::Error::INVALID_HANDLE,
-      AttErrorToGattFidlError(bt::ToResult(bt::att::ErrorCode::kInvalidHandle).error_value()));
-  EXPECT_EQ(
-      fbg2::Error::UNLIKELY_ERROR,
-      AttErrorToGattFidlError(bt::ToResult(bt::att::ErrorCode::kUnlikelyError).error_value()));
+            AttErrorToGattFidlError(bt::att::Error(bt::att::ErrorCode::kInsufficientEncryption)));
+  EXPECT_EQ(fbg2::Error::READ_NOT_PERMITTED,
+            AttErrorToGattFidlError(bt::att::Error(bt::att::ErrorCode::kReadNotPermitted)));
+  EXPECT_EQ(fbg2::Error::INVALID_HANDLE,
+            AttErrorToGattFidlError(bt::att::Error(bt::att::ErrorCode::kInvalidHandle)));
+  EXPECT_EQ(fbg2::Error::UNLIKELY_ERROR,
+            AttErrorToGattFidlError(bt::att::Error(bt::att::ErrorCode::kUnlikelyError)));
 }
 
 TEST(HelpersTest, AdvertisingIntervalFromFidl) {

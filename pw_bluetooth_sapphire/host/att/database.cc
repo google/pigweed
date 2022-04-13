@@ -251,7 +251,7 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
         }
         const auto& [handle, error] = result.error_value();
         bt_log(DEBUG, "att", "execute write result - handle: %#.4x, error: %s", handle,
-               bt_str(ToResult(error).error_value()));
+               bt_str(Error(error)));
         if (!client_cb) {
           bt_log(TRACE, "att", "ignore execute write result - already responded");
           return;

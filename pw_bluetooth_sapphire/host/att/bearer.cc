@@ -547,7 +547,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
       target_opcode = payload.request_opcode;
       const ErrorCode error_code = payload.error_code;
       const Handle attr_in_error = le16toh(payload.attribute_handle);
-      error.emplace(std::pair(ToResult(error_code).error_value(), attr_in_error));
+      error.emplace(std::pair(Error(error_code), attr_in_error));
     } else {
       bt_log(DEBUG, "att", "received malformed error response");
 

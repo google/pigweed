@@ -264,8 +264,8 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
           if (result.result.is_ok()) {
             fidl_result.set_value(result.result.value()->ToVector());
           } else {
-            fidl_result.set_error(fidl_helpers::GattErrorToFidl(
-                bt::ToResult(result.result.error_value()).error_value()));
+            fidl_result.set_error(
+                fidl_helpers::GattErrorToFidl(bt::att::Error(result.result.error_value())));
           }
           fidl_results.push_back(std::move(fidl_result));
         }

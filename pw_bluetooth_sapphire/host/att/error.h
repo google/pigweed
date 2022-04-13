@@ -30,9 +30,8 @@ template <>
 struct ProtocolErrorTraits<att::ErrorCode> {
   static std::string ToString(att::ErrorCode ecode);
 
-  static constexpr bool is_success(att::ErrorCode ecode) {
-    return ecode == att::ErrorCode::kNoError;
-  }
+  // is_success() not declared because ATT_ERROR_RSP does not encode a "success" value (Core Spec
+  // v5.3, Vol 3, Part F, Section 3.4.1.1, Table 3.4).
 };
 
 }  // namespace bt

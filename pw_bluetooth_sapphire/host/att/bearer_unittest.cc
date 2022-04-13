@@ -493,7 +493,7 @@ TEST_F(BearerTest, SendRequestErrorResponse) {
       return;
     }
     const auto& [error, handle] = result.error_value();
-    EXPECT_EQ(ToResult(ErrorCode::kRequestNotSupported).error_value(), error);
+    EXPECT_EQ(Error(ErrorCode::kRequestNotSupported), error);
     EXPECT_EQ(0x0001, handle);
 
     err_cb_called = true;
@@ -618,7 +618,7 @@ TEST_F(BearerTest, SendManyRequests) {
     // Second request should've failed
     ASSERT_EQ(fitx::failed(), result);
     const auto& [error, handle] = result.error_value();
-    EXPECT_EQ(ToResult(ErrorCode::kRequestNotSupported).error_value(), error);
+    EXPECT_EQ(Error(ErrorCode::kRequestNotSupported), error);
     EXPECT_EQ(0x0001, handle);
   };
   bearer()->StartTransaction(NewBuffer(kTestRequest2), callback2);
