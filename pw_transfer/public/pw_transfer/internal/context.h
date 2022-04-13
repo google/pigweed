@@ -266,6 +266,8 @@ class Context {
   // been exceeded.
   void Retry();
 
+  void LogTransferConfiguration();
+
   static constexpr uint8_t kFlagsType = 1 << 0;
   static constexpr uint8_t kFlagsDataSent = 1 << 1;
 

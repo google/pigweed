@@ -77,6 +77,7 @@ void Context::InitiateTransferAsClient() {
 
   SetTimeout(chunk_timeout_);
 
+  PW_LOG_INFO("Starting transfer %u", static_cast<unsigned>(id_for_log()));
   if (type() == TransferType::kReceive) {
     // A receiver begins a new transfer with a parameters chunk telling the
     // transmitter what to send.
@@ -84,6 +85,8 @@ void Context::InitiateTransferAsClient() {
   } else {
     SendInitialTransmitChunk();
   }
+
+  LogTransferConfiguration();
 
   // Don't send an error packet. If the transfer failed to start, then there's
   // nothing to tell the server about.
@@ -93,6 +96,7 @@ void Context::StartTransferAsServer(const NewTransferEvent& new_transfer) {
   PW_LOG_INFO("Starting transfer %u with handler %u",
               static_cast<unsigned>(new_transfer.transfer_id),
               static_cast<unsigned>(new_transfer.handler_id));
+  LogTransferConfiguration();
 
   if (const Status status = new_transfer.handler->Prepare(new_transfer.type);
       !status.ok()) {
@@ -799,6 +803,25 @@ uint32_t Context::MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
       "Increase max_chunk_size_bytes to support write transfers.");
 
   return max_size;
+}
+
+void Context::LogTransferConfiguration() {
+  PW_LOG_DEBUG(
+      "Local transfer timing configuration: "
+      "chunk_timeout=%ums, max_retries=%u, interchunk_delay=%uus",
+      static_cast<unsigned>(
+          std::chrono::ceil<std::chrono::milliseconds>(chunk_timeout_).count()),
+      static_cast<unsigned>(max_retries_),
+      static_cast<unsigned>(
+          std::chrono::ceil<std::chrono::microseconds>(interchunk_delay_)
+              .count()));
+
+  PW_LOG_DEBUG(
+      "Local transfer windowing configuration: "
+      "pending_bytes=%u, extend_window_divisor=%u, max_chunk_size_bytes=%u",
+      static_cast<unsigned>(max_parameters_->pending_bytes()),
+      static_cast<unsigned>(max_parameters_->extend_window_divisor()),
+      static_cast<unsigned>(max_parameters_->max_chunk_size_bytes()));
 }
 
 }  // namespace pw::transfer::internal
