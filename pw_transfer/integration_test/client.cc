@@ -73,6 +73,9 @@ pw::Status SendData(uint32_t transfer_id, const char* path_to_data) {
   // PW_CHECK(completed.try_acquire_for(3s));  How to get this syntax to work?
   result.completed.acquire();
 
+  // Force client to exit as a temporary work around for b/229142175.
+  _Exit(0);
+
   transfer_thread.Terminate();
   system_thread.join();
 

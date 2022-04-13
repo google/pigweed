@@ -102,6 +102,9 @@ void RunServer(int socket_port, uint32_t transfer_id, const char* filename) {
 
   PW_LOG_INFO("Starting pw_rpc server");
   PW_CHECK_OK(rpc::system_server::Start());
+
+  // Force server to exit as a temporary work around for b/229142175.
+  _Exit(0);
 }
 
 }  // namespace
