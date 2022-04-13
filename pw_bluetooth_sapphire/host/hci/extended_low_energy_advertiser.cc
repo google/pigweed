@@ -41,11 +41,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacket(
   payload->enable = enable;
   payload->number_of_sets = 1;
 
-  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
-  if (!handle) {
-    bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
-    return nullptr;
-  }
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
+  ZX_ASSERT(handle);
 
   // TODO(fxbug.dev/77614): advertising currently continues until disabled. We should provide
   // options to the user to advertise only a set amount of times. Duration can already be controlled
@@ -136,11 +133,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingD
   auto payload = packet->mutable_payload<hci_spec::LESetExtendedAdvertisingDataCommandParams>();
 
   // advertising handle
-  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
-  if (!handle) {
-    bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
-    return nullptr;
-  }
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
+  ZX_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
@@ -165,11 +159,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisin
   auto payload = packet->mutable_payload<hci_spec::LESetExtendedAdvertisingDataCommandParams>();
 
   // advertising handle
-  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
-  if (!handle) {
-    bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
-    return nullptr;
-  }
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
+  ZX_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
@@ -197,11 +188,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse
   auto payload = packet->mutable_payload<hci_spec::LESetExtendedScanResponseDataCommandParams>();
 
   // advertising handle
-  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
-  if (!handle) {
-    bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
-    return nullptr;
-  }
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
+  ZX_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
@@ -226,11 +214,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetScanRespon
   auto payload = packet->mutable_payload<hci_spec::LESetExtendedScanResponseDataCommandParams>();
 
   // advertising handle
-  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
-  if (!handle) {
-    bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
-    return nullptr;
-  }
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
+  ZX_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
@@ -248,11 +233,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisi
                                    sizeof(hci_spec::LERemoveAdvertisingSetCommandParams));
   auto payload = packet->mutable_payload<hci_spec::LERemoveAdvertisingSetCommandParams>();
 
-  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
-  if (!handle) {
-    bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
-    return nullptr;
-  }
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
+  ZX_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   return packet;
