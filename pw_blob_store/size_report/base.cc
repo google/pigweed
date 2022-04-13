@@ -51,7 +51,7 @@ int main() {
   PW_LOG_INFO("We care about optimizing: %d", *unoptimizable);
 
   void* result =
-      std::memset((void*)working_buffer, sizeof(working_buffer), 0x55);
+      std::memset((void*)working_buffer, 0x55, sizeof(working_buffer));
   is_set = (result != nullptr);
 
   {
