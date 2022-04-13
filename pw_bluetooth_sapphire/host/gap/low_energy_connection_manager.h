@@ -19,6 +19,7 @@
 #include "lib/fitx/result.h"
 #include "low_energy_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/windowed_inspect_numeric_property.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connector.h"
@@ -53,6 +54,13 @@ class LowEnergyConnectionManager;
 class PairingDelegate;
 class Peer;
 class PeerCache;
+
+enum class LowEnergyDisconnectReason : uint8_t {
+  // Explicit disconnect request
+  kApiRequest,
+  // An internal error was encountered
+  kError,
+};
 
 // LowEnergyConnectionManager is responsible for connecting and initializing new connections,
 // interrogating connections, intiating pairing, and disconnecting connections.
@@ -108,7 +116,8 @@ class LowEnergyConnectionManager final {
   // Disconnects any existing or pending LE connection to |peer_id|, invalidating all
   // active LowEnergyConnectionHandles. Returns false if the peer can not be
   // disconnected.
-  bool Disconnect(PeerId peer_id);
+  bool Disconnect(PeerId peer_id,
+                  LowEnergyDisconnectReason reason = LowEnergyDisconnectReason::kApiRequest);
 
   // Initializes a new connection over the given |link| and asynchronously returns a connection
   // reference.
@@ -319,6 +328,16 @@ class LowEnergyConnectionManager final {
     // Count of connection failures in the past 10 minutes.
     WindowedInspectIntProperty recent_connection_failures{
         kInspectRecentConnectionFailuresExpiryDuration};
+
+    UintMetricCounter outgoing_connection_success_count_;
+    UintMetricCounter outgoing_connection_failure_count_;
+    UintMetricCounter incoming_connection_success_count_;
+    UintMetricCounter incoming_connection_failure_count_;
+
+    UintMetricCounter disconnect_explicit_disconnect_count_;
+    UintMetricCounter disconnect_link_error_count_;
+    UintMetricCounter disconnect_zero_ref_count_;
+    UintMetricCounter disconnect_remote_disconnection_count_;
   };
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;

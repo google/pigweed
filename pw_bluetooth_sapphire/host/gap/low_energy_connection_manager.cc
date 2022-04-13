@@ -75,6 +75,16 @@ const char* kInspectConnectionNodePrefix = "connection_";
 const char* kInspectOutboundConnectorNodeName = "outbound_connector";
 const char* kInspectConnectionFailuresPropertyName = "recent_connection_failures";
 
+const char* kInspectOutgoingSuccessCountNodeName = "outgoing_connection_success_count";
+const char* kInspectOutgoingFailureCountNodeName = "outgoing_connection_failure_count";
+const char* kInspectIncomingSuccessCountNodeName = "incoming_connection_success_count";
+const char* kInspectIncomingFailureCountNodeName = "incoming_connection_failure_count";
+
+const char* kInspectDisconnectExplicitDisconnectNodeName = "disconnect_explicit_disconnect_count";
+const char* kInspectDisconnectLinkErrorNodeName = "disconnect_link_error_count";
+const char* kInspectDisconnectZeroRefNodeName = "disconnect_zero_ref_count";
+const char* kInspectDisconnectRemoteDisconnectionNodeName = "disconnect_remote_disconnection_count";
+
 }  // namespace
 
 LowEnergyConnectionManager::LowEnergyConnectionManager(
@@ -187,7 +197,7 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   TryCreateNextConnection();
 }
 
-bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
+bool LowEnergyConnectionManager::Disconnect(PeerId peer_id, LowEnergyDisconnectReason reason) {
   auto remote_connector_iter = remote_connectors_.find(peer_id);
   if (remote_connector_iter != remote_connectors_.end()) {
     // Result callback will clean up connector.
@@ -225,6 +235,13 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
 
   bt_log(INFO, "gap-le", "disconnecting (peer: %s, link: %s)", bt_str(conn->peer_id()),
          bt_str(*conn->link()));
+
+  if (reason == LowEnergyDisconnectReason::kApiRequest) {
+    inspect_properties_.disconnect_explicit_disconnect_count_.Add(1);
+  } else {
+    inspect_properties_.disconnect_link_error_count_.Add(1);
+  }
+
   CleanUpConnection(std::move(conn));
   return true;
 }
@@ -281,6 +298,24 @@ void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent, std::strin
   if (current_request_) {
     current_request_->connector->AttachInspect(inspect_node_, kInspectOutboundConnectorNodeName);
   }
+
+  inspect_properties_.outgoing_connection_success_count_.AttachInspect(
+      inspect_node_, kInspectOutgoingSuccessCountNodeName);
+  inspect_properties_.outgoing_connection_failure_count_.AttachInspect(
+      inspect_node_, kInspectOutgoingFailureCountNodeName);
+  inspect_properties_.incoming_connection_success_count_.AttachInspect(
+      inspect_node_, kInspectIncomingSuccessCountNodeName);
+  inspect_properties_.incoming_connection_failure_count_.AttachInspect(
+      inspect_node_, kInspectIncomingFailureCountNodeName);
+
+  inspect_properties_.disconnect_explicit_disconnect_count_.AttachInspect(
+      inspect_node_, kInspectDisconnectExplicitDisconnectNodeName);
+  inspect_properties_.disconnect_link_error_count_.AttachInspect(
+      inspect_node_, kInspectDisconnectLinkErrorNodeName);
+  inspect_properties_.disconnect_zero_ref_count_.AttachInspect(inspect_node_,
+                                                               kInspectDisconnectZeroRefNodeName);
+  inspect_properties_.disconnect_remote_disconnection_count_.AttachInspect(
+      inspect_node_, kInspectDisconnectRemoteDisconnectionNodeName);
 }
 
 void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
@@ -359,6 +394,7 @@ void LowEnergyConnectionManager::ReleaseReference(LowEnergyConnectionHandle* han
 
   bt_log(INFO, "gap-le", "all refs dropped on connection (link: %s, peer: %s)",
          bt_str(*conn->link()), bt_str(conn->peer_id()));
+  inspect_properties_.disconnect_zero_ref_count_.Add(1);
   CleanUpConnection(std::move(conn));
 }
 
@@ -409,9 +445,11 @@ void LowEnergyConnectionManager::OnLocalInitiatedConnectResult(
   current_request_.reset();
 
   if (result.is_error()) {
+    inspect_properties_.outgoing_connection_failure_count_.Add(1);
     bt_log(INFO, "gap-le", "failed to connect to peer (peer: %s, status: %s)",
            bt_str(request.peer_id()), bt_str(result));
   } else {
+    inspect_properties_.outgoing_connection_success_count_.Add(1);
     bt_log(INFO, "gap-le", "connection request successful (peer: %s)", bt_str(request.peer_id()));
   }
 
@@ -427,10 +465,12 @@ void LowEnergyConnectionManager::OnRemoteInitiatedConnectResult(
   internal::LowEnergyConnectionRequest request = std::move(remote_connector_node.mapped().request);
 
   if (result.is_error()) {
+    inspect_properties_.incoming_connection_failure_count_.Add(1);
     bt_log(INFO, "gap-le",
            "failed to complete remote initated connection with peer (peer: %s, status: %s)",
            bt_str(peer_id), bt_str(result));
   } else {
+    inspect_properties_.incoming_connection_success_count_.Add(1);
     bt_log(INFO, "gap-le", "remote initiated connection successful (peer: %s)", bt_str(peer_id));
   }
 
@@ -498,7 +538,8 @@ bool LowEnergyConnectionManager::InitializeConnection(
   connection->set_peer_disconnect_callback(std::bind(&LowEnergyConnectionManager::OnPeerDisconnect,
                                                      this, connection->link(),
                                                      std::placeholders::_1));
-  connection->set_error_callback([this, peer_id]() { Disconnect(peer_id); });
+  connection->set_error_callback(
+      [this, peer_id]() { Disconnect(peer_id, LowEnergyDisconnectReason::kError); });
 
   auto [conn_iter, inserted] = connections_.try_emplace(peer_id, std::move(connection));
   ZX_ASSERT(inserted);
@@ -563,6 +604,8 @@ void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connect
 
   bt_log(INFO, "gap-le", "peer disconnected (peer: %s, handle: %#.4x)", bt_str(conn->peer_id()),
          handle);
+
+  inspect_properties_.disconnect_remote_disconnection_count_.Add(1);
 
   CleanUpConnection(std::move(conn));
 }

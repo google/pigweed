@@ -10,6 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/bounded_inspect_list_node.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/expiring_set.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
@@ -48,6 +49,8 @@ enum class DisconnectReason : uint8_t {
   kPairingFailed,
   // An error was encountered on the ACL link
   kAclLinkError,
+  // Peer Disconnected
+  kPeerDisconnection,
 };
 
 // Manages all activity related to connections in the BR/EDR section of the
@@ -272,7 +275,8 @@ class BrEdrConnectionManager final {
   // link closed. Unregisters the connection from the data domain and marks the
   // peer's BR/EDR cache state as disconnected. Takes ownership of |conn| and
   // destroys it.
-  void CleanUpConnection(hci_spec::ConnectionHandle handle, BrEdrConnection conn);
+  void CleanUpConnection(hci_spec::ConnectionHandle handle, BrEdrConnection conn,
+                         DisconnectReason reason);
 
   // Helpers for sending commands on the command channel for this controller.
   // All callbacks will run on |dispatcher_|.
@@ -307,7 +311,7 @@ class BrEdrConnectionManager final {
                                      hci::ResultFunction<> cb);
 
   // Record a disconnection in Inspect's list of disconnections.
-  void RecordDisconnectInspect(const BrEdrConnection& conn);
+  void RecordDisconnectInspect(const BrEdrConnection& conn, DisconnectReason reason);
 
   using ConnectionMap = std::unordered_map<hci_spec::ConnectionHandle, BrEdrConnection>;
 
@@ -361,6 +365,26 @@ class BrEdrConnectionManager final {
     BoundedInspectListNode last_disconnected_list = BoundedInspectListNode(/*capacity=*/5);
     inspect::Node connections_node_;
     inspect::Node requests_node_;
+    struct DirectionalCounts {
+      inspect::Node node_;
+      UintMetricCounter connection_attempts_;
+      UintMetricCounter successful_connections_;
+      UintMetricCounter failed_connections_;
+    };
+
+    // These stats only represent HCI connections.
+    // Connections may be closed if we fail to initialize, interrogate, or pair
+    DirectionalCounts outgoing_;
+    DirectionalCounts incoming_;
+
+    // Successfully initialized connections
+    UintMetricCounter interrogation_complete_count_;
+
+    UintMetricCounter disconnect_local_api_request_count_;
+    UintMetricCounter disconnect_interrogation_failed_count_;
+    UintMetricCounter disconnect_pairing_failed_count_;
+    UintMetricCounter disconnect_acl_link_error_count_;
+    UintMetricCounter disconnect_peer_disconnection_count_;
   };
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;

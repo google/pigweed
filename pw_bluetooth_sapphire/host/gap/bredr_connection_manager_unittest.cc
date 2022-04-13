@@ -3794,10 +3794,29 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
                                    ChildrenMatch(ElementsAre(connection_matcher)));
   auto recent_conn_list_matcher =
       AllOf(NodeMatches(NameMatches("last_disconnected")), ChildrenMatch(::testing::IsEmpty()));
-  auto conn_mgr_matcher =
-      AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
-            ChildrenMatch(UnorderedElementsAre(empty_requests_matcher, connections_matcher,
-                                               recent_conn_list_matcher)));
+
+  auto incoming_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("incoming"),
+                              PropertyList(UnorderedElementsAre(
+                                  UintIs("connection_attempts", 1), UintIs("failed_connections", 0),
+                                  UintIs("successful_connections", 0))))));
+  auto outgoing_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("outgoing"),
+                              PropertyList(UnorderedElementsAre(
+                                  UintIs("connection_attempts", 0), UintIs("failed_connections", 0),
+                                  UintIs("successful_connections", 0))))));
+  auto conn_mgr_matcher = AllOf(
+      NodeMatches(AllOf(
+          NameMatches("bredr_connection_manager"),
+          PropertyList(UnorderedElementsAre(UintIs("disconnect_acl_link_error_count", 0),
+                                            UintIs("disconnect_interrogation_failed_count", 0),
+                                            UintIs("disconnect_local_api_request_count", 0),
+                                            UintIs("disconnect_pairing_failed_count", 0),
+                                            UintIs("disconnect_peer_disconnection_count", 0),
+                                            UintIs("interrogation_complete_count", 1))))),
+      ChildrenMatch(UnorderedElementsAre(empty_requests_matcher, connections_matcher,
+                                         recent_conn_list_matcher, incoming_matcher,
+                                         outgoing_matcher)));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_matcher)));
@@ -3807,6 +3826,12 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
   QueueDisconnection(kConnectionHandle);
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
   RunLoopUntilIdle();
+
+  auto incoming_matcher_after_disconnect =
+      AllOf(NodeMatches(AllOf(NameMatches("incoming"),
+                              PropertyList(UnorderedElementsAre(
+                                  UintIs("connection_attempts", 1), UintIs("failed_connections", 0),
+                                  UintIs("successful_connections", 0))))));
 
   auto requests_matcher =
       AllOf(NodeMatches(NameMatches("connection_requests")), ChildrenMatch(::testing::IsEmpty()));
@@ -3820,11 +3845,18 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
                           StringIs("peer_id", peer->identifier().ToString()),
                           UintIs("duration_s", 1u), IntIs("@time", zx::sec(1).to_nsecs()))))))));
 
-  auto conn_mgr_after_disconnect_matcher =
-      AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
-            ChildrenMatch(UnorderedElementsAre(empty_requests_matcher,
-                                               connections_after_disconnect_matcher,
-                                               recent_conn_list_after_disconnect_matcher)));
+  auto conn_mgr_after_disconnect_matcher = AllOf(
+      NodeMatches(AllOf(
+          NameMatches("bredr_connection_manager"),
+          PropertyList(UnorderedElementsAre(UintIs("disconnect_acl_link_error_count", 0),
+                                            UintIs("disconnect_interrogation_failed_count", 0),
+                                            UintIs("disconnect_local_api_request_count", 1),
+                                            UintIs("disconnect_pairing_failed_count", 0),
+                                            UintIs("disconnect_peer_disconnection_count", 0),
+                                            UintIs("interrogation_complete_count", 1))))),
+      ChildrenMatch(UnorderedElementsAre(
+          empty_requests_matcher, connections_after_disconnect_matcher, outgoing_matcher,
+          incoming_matcher_after_disconnect, recent_conn_list_after_disconnect_matcher)));
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_disconnect_matcher)));

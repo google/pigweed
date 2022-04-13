@@ -151,6 +151,14 @@ adapter:
             registered_psms:
                 (none)
     low_energy_connection_manager:
+        disconnect_explicit_disconnect_count
+        disconnect_link_error_count
+        disconnect_remote_disconnection_count
+        disconnect_zero_ref_count
+        incoming_connection_failure_count
+        incoming_connection_success_count
+        outgoing_connection_failure_count
+        outgoing_connection_success_count
         recent_connection_failures
         pending_requests:
             pending_request_0x0:
@@ -167,6 +175,20 @@ adapter:
                 peer_address
                 ref_count
     bredr_connection_manager:
+        disconnect_acl_link_error_count
+        disconnect_interrogation_failed_count
+        disconnect_local_api_request_count
+        disconnect_pairing_failed_count
+        disconnect_peer_disconnection_count
+        interrogation_complete_count
+        incoming:
+            connection_attempts
+            failed_connections
+            successful_connections
+        outgoing:
+            connection_attempts
+            failed_connections
+            successful_connections
         connection_requests:
             request_0x0:
                 peer_id

@@ -3456,8 +3456,13 @@ TEST_F(LowEnergyConnectionManagerTest, Inspect) {
   auto empty_connections_matcher =
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));
 
-  auto conn_mgr_property_matcher =
-      PropertyList(UnorderedElementsAre(IntIs("recent_connection_failures", 0)));
+  auto conn_mgr_property_matcher = PropertyList(UnorderedElementsAre(
+      UintIs("disconnect_explicit_disconnect_count", 0), UintIs("disconnect_link_error_count", 0),
+      UintIs("disconnect_remote_disconnection_count", 0), UintIs("disconnect_zero_ref_count", 0),
+      UintIs("incoming_connection_failure_count", 0),
+      UintIs("incoming_connection_success_count", 0),
+      UintIs("outgoing_connection_failure_count", 0),
+      UintIs("outgoing_connection_success_count", 0), IntIs("recent_connection_failures", 0)));
 
   auto conn_mgr_during_connecting_matcher = AllOf(
       NodeMatches(AllOf(NameMatches("low_energy_connection_manager"), conn_mgr_property_matcher)),
@@ -3482,8 +3487,16 @@ TEST_F(LowEnergyConnectionManagerTest, Inspect) {
   auto connections_matcher =
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(ElementsAre(conn_matcher)));
 
+  auto conn_mgr_property_matcher_after_connecting = PropertyList(UnorderedElementsAre(
+      UintIs("disconnect_explicit_disconnect_count", 0), UintIs("disconnect_link_error_count", 0),
+      UintIs("disconnect_remote_disconnection_count", 0), UintIs("disconnect_zero_ref_count", 0),
+      UintIs("incoming_connection_failure_count", 0),
+      UintIs("incoming_connection_success_count", 0),
+      UintIs("outgoing_connection_failure_count", 0),
+      UintIs("outgoing_connection_success_count", 1), IntIs("recent_connection_failures", 0)));
+
   auto conn_mgr_after_connecting_matcher =
-      AllOf(NodeMatches(conn_mgr_property_matcher),
+      AllOf(NodeMatches(conn_mgr_property_matcher_after_connecting),
             ChildrenMatch(UnorderedElementsAre(empty_requests_matcher, connections_matcher)));
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
@@ -3509,8 +3522,13 @@ TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   RunLoopUntilIdle();
 
-  auto conn_mgr_property_matcher =
-      PropertyList(UnorderedElementsAre(IntIs("recent_connection_failures", 1)));
+  auto conn_mgr_property_matcher = PropertyList(UnorderedElementsAre(
+      UintIs("disconnect_explicit_disconnect_count", 0), UintIs("disconnect_link_error_count", 0),
+      UintIs("disconnect_remote_disconnection_count", 0), UintIs("disconnect_zero_ref_count", 0),
+      UintIs("incoming_connection_failure_count", 0),
+      UintIs("incoming_connection_success_count", 0),
+      UintIs("outgoing_connection_failure_count", 1),
+      UintIs("outgoing_connection_success_count", 0), IntIs("recent_connection_failures", 1)));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(),
@@ -3524,8 +3542,13 @@ TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
 
   // Failures should revert to 0 after expiry duration.
   RunLoopFor(zx::nsec(1));
-  conn_mgr_property_matcher =
-      PropertyList(UnorderedElementsAre(IntIs("recent_connection_failures", 0)));
+  conn_mgr_property_matcher = PropertyList(UnorderedElementsAre(
+      UintIs("disconnect_explicit_disconnect_count", 0), UintIs("disconnect_link_error_count", 0),
+      UintIs("disconnect_remote_disconnection_count", 0), UintIs("disconnect_zero_ref_count", 0),
+      UintIs("incoming_connection_failure_count", 0),
+      UintIs("incoming_connection_success_count", 0),
+      UintIs("outgoing_connection_failure_count", 1),
+      UintIs("outgoing_connection_success_count", 0), IntIs("recent_connection_failures", 0)));
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(),
               ChildrenMatch(ElementsAre(NodeMatches(conn_mgr_property_matcher))));
