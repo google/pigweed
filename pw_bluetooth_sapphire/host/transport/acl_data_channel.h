@@ -71,7 +71,7 @@ class AclDataChannel {
 
   // Attach inspect node as a child node of |parent|.
   static constexpr const char* const kInspectNodeName = "acl_data_channel";
-  virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
+  virtual void AttachInspect(inspect::Node& parent, const std::string& name) = 0;
 
   // Assigns a handler callback for received ACL data packets. |rx_callback| will shall take
   // ownership of each packet received from the controller.

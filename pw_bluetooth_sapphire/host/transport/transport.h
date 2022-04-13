@@ -12,6 +12,7 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/thread_checker.h>
 #include <lib/fpromise/result.h>
+#include <lib/sys/inspect/cpp/component.h>
 
 #include <atomic>
 #include <memory>
@@ -62,9 +63,6 @@ class Transport final {
   // if an error occurs during initialization.
   bool InitializeScoDataChannel(const DataBufferInfo& buffer_info);
 
-  // Attach command and data channel inspect nodes as children of |parent| using default names
-  void AttachInspect(inspect::Node& parent);
-
   bt_vendor_features_t GetVendorFeatures();
 
   fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
@@ -88,6 +86,10 @@ class Transport final {
   // of the callback implementation to clean up this Transport instance by
   // calling ShutDown() and/or deleting it.
   void SetTransportClosedCallback(fit::closure callback);
+
+  // Attach hci transport inspect node as a child node of |parent|.
+  static constexpr const char* kInspectNodeName = "hci";
+  void AttachInspect(inspect::Node& parent, const std::string& name = kInspectNodeName);
 
   fxl::WeakPtr<Transport> WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
@@ -133,6 +135,9 @@ class Transport final {
 
   // Callback invoked when the transport is closed (due to a channel error).
   fit::closure closed_cb_;
+
+  // HCI inspect node.
+  inspect::Node hci_node_;
 
   fxl::WeakPtrFactory<Transport> weak_ptr_factory_;
 

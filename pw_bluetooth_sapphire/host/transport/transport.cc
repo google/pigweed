@@ -11,6 +11,7 @@
 
 #include "device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 namespace bt::hci {
 
@@ -67,6 +68,10 @@ bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info
   acl_data_channel_ =
       AclDataChannel::Create(this, std::move(channel), bredr_buffer_info, le_buffer_info);
 
+  if (hci_node_) {
+    acl_data_channel_->AttachInspect(hci_node_, AclDataChannel::kInspectNodeName);
+  }
+
   return true;
 }
 
@@ -89,11 +94,6 @@ bool Transport::InitializeScoDataChannel(const DataBufferInfo& buffer_info) {
   sco_data_channel_ =
       ScoDataChannel::Create(std::move(sco_result.value()), buffer_info, this, hci_device_.get());
   return true;
-}
-
-void Transport::AttachInspect(inspect::Node& parent) {
-  ZX_ASSERT(acl_data_channel_);
-  acl_data_channel_->AttachInspect(parent, AclDataChannel::kInspectNodeName);
 }
 
 bt_vendor_features_t Transport::GetVendorFeatures() { return hci_device_->GetVendorFeatures(); }
@@ -164,6 +164,19 @@ void Transport::ResetChannels() {
   // Command channel must be shut down last because the data channels unregister events on
   // destruction.
   command_channel_.reset();
+}
+
+void Transport::AttachInspect(inspect::Node& parent, const std::string& name) {
+  ZX_ASSERT(acl_data_channel_);
+  hci_node_ = parent.CreateChild(name);
+
+  if (command_channel_) {
+    command_channel_->AttachInspect(hci_node_);
+  }
+
+  if (acl_data_channel_) {
+    acl_data_channel_->AttachInspect(hci_node_, AclDataChannel::kInspectNodeName);
+  }
 }
 
 }  // namespace bt::hci

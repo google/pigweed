@@ -47,24 +47,29 @@ adapter:
     sco_max_data_length
     lmp_features
     le_features
-    acl_data_channel:
-        num_queue_packets
-        num_overflow_packets
-        num_recent_overflow_packets
-        bredr:
-            num_sent_packets
-        le:
-            num_sent_packets
-            independent_from_bredr
-        metrics:
-            send_latency:
-                50th_percentile_us
-                95th_percentile_us
-                99th_percentile_us
-            send_size:
-                10th_percentile_bytes
-                50th_percentile_bytes
-                90th_percentile_bytes
+    hci:
+        command_channel:
+            allowed_command_packets
+            next_event_handler_id
+            next_transaction_id
+        acl_data_channel:
+            num_queue_packets
+            num_overflow_packets
+            num_recent_overflow_packets
+            bredr:
+                num_sent_packets
+            le:
+                num_sent_packets
+                independent_from_bredr
+            metrics:
+                send_latency:
+                    50th_percentile_us
+                    95th_percentile_us
+                    99th_percentile_us
+                send_size:
+                    10th_percentile_bytes
+                    50th_percentile_bytes
+                    90th_percentile_bytes
     low_energy_discovery_manager:
         state
         paused

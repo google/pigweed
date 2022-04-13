@@ -72,7 +72,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   ~AclDataChannelImpl() override;
 
   // AclDataChannel overrides
-  void AttachInspect(inspect::Node& parent, std::string name) override;
+  void AttachInspect(inspect::Node& parent, const std::string& name) override;
   void SetDataRxHandler(ACLPacketHandler rx_callback) override;
   bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                   PacketPriority priority) override;
@@ -352,7 +352,7 @@ AclDataChannelImpl::~AclDataChannelImpl() {
   transport_->command_channel()->RemoveEventHandler(data_buffer_overflow_event_handler_id_);
 }
 
-void AclDataChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
+void AclDataChannelImpl::AttachInspect(inspect::Node& parent, const std::string& name) {
   node_ = parent.CreateChild(std::move(name));
   send_queue_.SetProperty(node_.CreateUint("num_queued_packets", 0));
   num_overflow_packets_.AttachInspect(node_, "num_overflow_packets");

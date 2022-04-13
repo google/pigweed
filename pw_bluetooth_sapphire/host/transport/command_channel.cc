@@ -113,9 +113,12 @@ CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
 }
 
 CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_channel)
-    : transport_(transport),
+    : next_transaction_id_(1u),
+      next_event_handler_id_(1u),
+      transport_(transport),
       channel_(std::move(hci_command_channel)),
       channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
+      allowed_command_packets_(1u),
       weak_ptr_factory_(this) {
   ZX_ASSERT(transport_);
   ZX_ASSERT(channel_.is_valid());
@@ -184,11 +187,12 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     }
   }
 
-  if (next_transaction_id_ == 0u) {
-    next_transaction_id_++;
+  if (next_transaction_id_.value() == 0u) {
+    next_transaction_id_.Set(1);
   }
 
-  TransactionId transaction_id = next_transaction_id_++;
+  TransactionId transaction_id = next_transaction_id_.value();
+  next_transaction_id_.Set(transaction_id + 1);
   std::unique_ptr<CommandChannel::TransactionData> data = std::make_unique<TransactionData>(
       transaction_id, command_packet->opcode(), complete_event_code, le_meta_subevent_code,
       std::move(exclusions), std::move(callback));
@@ -350,13 +354,14 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId handler_id) {
 }
 
 void CommandChannel::TrySendQueuedCommands() {
-  if (allowed_command_packets_ == 0) {
+  if (allowed_command_packets_.value() == 0) {
     bt_log(TRACE, "hci", "controller queue full, waiting");
     return;
   }
 
   // Walk the waiting and see if any are sendable.
-  for (auto it = send_queue_.begin(); allowed_command_packets_ > 0 && it != send_queue_.end();) {
+  for (auto it = send_queue_.begin();
+       allowed_command_packets_.value() > 0 && it != send_queue_.end();) {
     // Care must be taken not to dangle this reference if its owner QueuedCommand is destroyed.
     const TransactionData& data = *it->data;
 
@@ -406,7 +411,7 @@ void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
     bt_log(ERROR, "hci", "failed to send command: %s", zx_status_get_string(status));
     return;
   }
-  allowed_command_packets_--;
+  allowed_command_packets_.Set(allowed_command_packets_.value() - 1);
 
   std::unique_ptr<TransactionData>& transaction = cmd.data;
 
@@ -467,7 +472,8 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCo
   ZX_DEBUG_ASSERT(event_code);
   ZX_DEBUG_ASSERT(event_callback);
 
-  size_t handler_id = next_event_handler_id_++;
+  auto handler_id = next_event_handler_id_.value();
+  next_event_handler_id_.Set(handler_id + 1);
   EventHandlerData data;
   data.handler_id = handler_id;
   data.event_code = event_code;
@@ -499,15 +505,15 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     const hci_spec::CommandCompleteEventParams& params =
         event->params<hci_spec::CommandCompleteEventParams>();
     matching_opcode = le16toh(params.command_opcode);
-    allowed_command_packets_ = params.num_hci_command_packets;
+    allowed_command_packets_.Set(params.num_hci_command_packets);
   } else {  //  hci_spec::kCommandStatusEventCode
     const hci_spec::CommandStatusEventParams& params =
         event->params<hci_spec::CommandStatusEventParams>();
     matching_opcode = le16toh(params.command_opcode);
-    allowed_command_packets_ = params.num_hci_command_packets;
+    allowed_command_packets_.Set(params.num_hci_command_packets);
     unregister_async_handler = params.status != hci_spec::StatusCode::kSuccess;
   }
-  bt_log(TRACE, "hci", "allowed packets update: %zu", allowed_command_packets_);
+  bt_log(TRACE, "hci", "allowed packets update: %zu", allowed_command_packets_.value());
 
   if (matching_opcode == hci_spec::kNoOp) {
     return;
@@ -710,6 +716,13 @@ zx_status_t CommandChannel::ReadEventPacketFromChannel(const zx::channel& channe
 
   packet->InitializeFromBuffer();
   return ZX_OK;
+}
+
+void CommandChannel::AttachInspect(inspect::Node& parent, const std::string& name) {
+  command_channel_node_ = parent.CreateChild(name);
+  next_transaction_id_.AttachInspect(command_channel_node_, "next_transaction_id");
+  next_event_handler_id_.AttachInspect(command_channel_node_, "next_event_handler_id");
+  allowed_command_packets_.AttachInspect(command_channel_node_, "allowed_command_packets");
 }
 
 }  // namespace bt::hci

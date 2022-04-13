@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 
 #include <lib/async/cpp/task.h>
+#include <lib/inspect/testing/cpp/inspect.h>
 
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
@@ -18,6 +19,8 @@
 
 namespace bt::hci {
 namespace {
+
+using namespace inspect::testing;
 
 using bt::LowerBits;
 using bt::UpperBits;
@@ -42,6 +45,8 @@ class CommandChannelTest : public TestingBase {
  public:
   CommandChannelTest() = default;
   ~CommandChannelTest() override = default;
+
+  inspect::Inspector inspector_;
 };
 
 std::unique_ptr<CommandPacket> MakeReadRemoteSupportedFeatures(uint16_t connection_handle) {
@@ -1865,6 +1870,19 @@ TEST_F(
   id = cmd_channel()->AddLEMetaEventHandler(kSubeventCode + 1,
                                             [](auto&) { return EventCallbackResult::kContinue; });
   EXPECT_NE(0u, id);
+}
+
+TEST_F(CommandChannelTest, InspectHierarchy) {
+  cmd_channel()->AttachInspect(inspector_.GetRoot(), "command_channel");
+
+  auto command_channel_matcher = AllOf(
+      NodeMatches(AllOf(NameMatches("command_channel"),
+                        PropertyList(UnorderedElementsAre(UintIs("allowed_command_packets", 1),
+                                                          UintIs("next_event_handler_id", 1),
+                                                          UintIs("next_transaction_id", 1))))));
+
+  EXPECT_THAT(inspect::ReadFromVmo(inspector_.DuplicateVmo()).value(),
+              ChildrenMatch(ElementsAre(command_channel_matcher)));
 }
 
 }  // namespace

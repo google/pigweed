@@ -158,7 +158,8 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
     packet->mutable_payload<hci_spec::WriteInquiryModeCommandParams>()->inquiry_mode =
         desired_inquiry_mode_;
     hci_->command_channel()->SendCommand(
-        std::move(packet), [self, mode = desired_inquiry_mode_](auto, const auto& event) {
+        std::move(packet),
+        [self, mode = desired_inquiry_mode_](auto /*unused*/, const auto& event) {
           if (!self) {
             return;
           }
