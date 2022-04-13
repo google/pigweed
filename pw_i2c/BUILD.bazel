@@ -139,6 +139,7 @@ pw_cc_test(
     ],
     deps = [
         ":device",
+        ":initiator_mock",
         "//pw_unit_test",
     ],
 )

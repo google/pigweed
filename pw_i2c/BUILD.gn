@@ -111,7 +111,10 @@ pw_test("address_test") {
 pw_test("device_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "device_test.cc" ]
-  deps = [ ":device" ]
+  deps = [
+    ":device",
+    ":mock",
+  ]
 }
 
 pw_test("register_device_test") {
