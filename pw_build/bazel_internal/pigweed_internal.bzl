@@ -73,7 +73,7 @@ def add_defaults(kwargs):
 
     copts = PW_DEFAULT_COPTS + kwargs.get("copts", [])
     kwargs["copts"] = select({
-        "//pw_build:kythe": copts + KYTHE_COPTS,
+        "@pigweed//pw_build:kythe": copts + KYTHE_COPTS,
         "//conditions:default": copts,
     })
     kwargs["linkopts"] = kwargs.get("linkopts", []) + PW_DEFAULT_LINKOPTS
