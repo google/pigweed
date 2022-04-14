@@ -143,11 +143,12 @@ def parse_trace_event(buffer, db, last_time, ticks_per_second):
     return create_trace_event(token_string, timestamp_us, trace_id, data)
 
 
-def get_trace_events(databases, raw_trace_data, ticks_per_second):
+def get_trace_events(databases, raw_trace_data, ticks_per_second,
+                     time_offset: int):
     """Handles the decoding traces."""
 
     db = tokens.Database.merged(*databases)
-    last_timestamp = 0
+    last_timestamp = time_offset
     events = []
     idx = 0
 
@@ -183,10 +184,12 @@ def save_trace_file(trace_lines, file_name):
         output_file.write("{}]")
 
 
-def get_trace_events_from_file(databases, input_file_name, ticks_per_second):
+def get_trace_events_from_file(databases, input_file_name, ticks_per_second,
+                               time_offset: int):
     """Get trace events from a file."""
     raw_trace_data = get_trace_data_from_file(input_file_name)
-    return get_trace_events(databases, raw_trace_data, ticks_per_second)
+    return get_trace_events(databases, raw_trace_data, ticks_per_second,
+                            time_offset)
 
 
 def _parse_args():
@@ -216,13 +219,20 @@ def _parse_args():
         dest='ticks_per_second',
         default=1000,
         help=('The clock rate of the trace events (Default 1000).'))
+    parser.add_argument(
+        '--time_offset',
+        type=int,
+        dest='time_offset',
+        default=0,
+        help=('Time offset (us) of the trace events (Default 0).'))
 
     return parser.parse_args()
 
 
 def _main(args):
     events = get_trace_events_from_file(args.databases, args.input_file,
-                                        args.ticks_per_second)
+                                        args.ticks_per_second,
+                                        args.time_offset)
     json_lines = trace.generate_trace_json(events)
     save_trace_file(json_lines, args.output_file)
 

@@ -137,6 +137,12 @@ def _parse_args():
         dest='ticks_per_second',
         default=1000,
         help=('The clock rate of the trace events (Default 1000).'))
+    parser.add_argument(
+        '--time_offset',
+        type=int,
+        dest='time_offset',
+        default=0,
+        help=('Time offset (us) of the trace events (Default 0).'))
     return parser.parse_args()
 
 
@@ -147,7 +153,8 @@ def _main(args):
     client = get_hdlc_rpc_client(**vars(args))
     data = get_trace_data_from_device(client)
     events = trace_tokenized.get_trace_events([token_database], data,
-                                              args.ticks_per_second)
+                                              args.ticks_per_second,
+                                              args.time_offset)
     json_lines = trace.generate_trace_json(events)
     trace_tokenized.save_trace_file(json_lines, args.trace_output_file)
 
