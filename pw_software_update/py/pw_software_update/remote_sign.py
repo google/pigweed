@@ -219,7 +219,7 @@ class RemoteSignClient():
             signed_bundle_blob_name = f'{bundle.name}.signed'
 
         signing_request = {
-            'remote_signing_key_name': signing_key_name,
+            'remote_signing_key_names': [signing_key_name],
             'bundle_path': bundle_blob_name,
             'bundle_public_key_path': builder_public_key_blob_name,
             'output_bucket': self._output_bucket.name,
@@ -243,13 +243,16 @@ class RemoteSignClient():
         builder_public_key_blob.upload_from_filename(str(builder_public_key))
 
         bundle_blob.metadata = {
-            'signature': self._get_builder_signature(bundle, builder_key)
+            'signature':
+            self._get_builder_signature(bundle, builder_key).decode('ascii')
         }
         bundle_blob.upload_from_filename(str(bundle))
 
         encoded_json = bytes(json.dumps(signing_request), 'utf-8')
         request_blob.metadata = {
-            'signature': self._get_builder_signature(encoded_json, builder_key)
+            'signature':
+            self._get_builder_signature(encoded_json,
+                                        builder_key).decode('ascii')
         }
 
         # Despite its name, the upload_from_string() method can take either a
@@ -373,7 +376,7 @@ def main(  # pylint: disable=too-many-arguments
                                             signed_bundle_blob_name,
                                             timeout_s=timeout)
 
-    out.write_bytes(signed_bundle.SerializeToString())
+    out.write_bytes(signed_bundle.download_as_bytes())
 
 
 if __name__ == '__main__':
