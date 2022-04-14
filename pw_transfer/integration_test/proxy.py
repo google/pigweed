@@ -23,10 +23,15 @@ import abc
 import argparse
 import asyncio
 import logging
-from pw_hdlc import decode
 import random
+import sys
 import time
-from typing import (Any, Awaitable, Callable, Optional)
+from typing import (Any, Awaitable, Callable, List, Optional)
+
+from google.protobuf import text_format
+
+from pigweed.pw_transfer.integration_test import config_pb2
+from pw_hdlc import decode
 
 _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
 
@@ -99,7 +104,8 @@ class DataDropper(Filter):
             await self.send_data(data)
 
 
-async def _handle_simplex_connection(name: str, reader: asyncio.StreamReader,
+async def _handle_simplex_connection(name: str, filter_stack_config: List[
+    config_pb2.FilterConfig], reader: asyncio.StreamReader,
                                      writer: asyncio.StreamWriter) -> None:
     """Handle a single direction of a bidirectional connection between
     server and client."""
@@ -107,7 +113,19 @@ async def _handle_simplex_connection(name: str, reader: asyncio.StreamReader,
         writer.write(data)
         await writer.drain()
 
-    filter_stack = HdlcPacketizer(DataDropper(send, name, 0.01))
+    filter_stack = send
+
+    # Build the filter stack from the bottom up
+    for config in reversed(filter_stack_config):
+        filter_name = config.WhichOneof("filter")
+        if filter_name == "hdlc_packetizer":
+            filter_stack = HdlcPacketizer(filter_stack)
+        elif filter_name == "data_dropper":
+            data_dropper = config.data_dropper
+            filter_stack = DataDropper(filter_stack, name, data_dropper.rate,
+                                       data_dropper.seed)
+        else:
+            sys.exit(f'Unknown filter {filter_name}')
 
     while True:
         # Arbitrarily chosen "page sized" read.
@@ -121,7 +139,7 @@ async def _handle_simplex_connection(name: str, reader: asyncio.StreamReader,
         await filter_stack.process(data)
 
 
-async def _handle_connection(server_port: int,
+async def _handle_connection(server_port: int, config: config_pb2.ProxyConfig,
                              client_reader: asyncio.StreamReader,
                              client_writer: asyncio.StreamWriter) -> None:
     """Handle a connection between server and client."""
@@ -140,11 +158,13 @@ async def _handle_connection(server_port: int,
     _, pending = await asyncio.wait(
         [
             asyncio.create_task(
-                _handle_simplex_connection("client", client_reader,
-                                           server_writer)),
+                _handle_simplex_connection(
+                    "client", config.client_filter_stack, client_reader,
+                    server_writer)),
             asyncio.create_task(
-                _handle_simplex_connection("server", server_reader,
-                                           client_writer)),
+                _handle_simplex_connection(
+                    "server", config.server_filter_stack, server_reader,
+                    client_writer)),
         ],
         return_when=asyncio.FIRST_COMPLETED,
     )
@@ -195,10 +215,15 @@ def _init_logging(level: int) -> None:
 async def _main(server_port: int, client_port: int) -> None:
     _init_logging(logging.DEBUG)
 
+    # Load config from stdin using synchronous IO
+    text_config = sys.stdin.buffer.read()
+
+    config = text_format.Parse(text_config, config_pb2.ProxyConfig())
+
     # Instantiate the TCP server.
     server = await asyncio.start_server(
-        lambda reader, writer: _handle_connection(server_port, reader, writer),
-        'localhost', client_port)
+        lambda reader, writer: _handle_connection(
+            server_port, config, reader, writer), 'localhost', client_port)
 
     addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
     _LOG.info(f'Listening for client connection on {addrs}')

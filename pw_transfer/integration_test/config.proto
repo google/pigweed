@@ -43,3 +43,33 @@ message ServerConfig {
   uint32 transfer_service_retries = 6;
   uint32 extend_window_divisor = 7;
 }
+
+// Configuration for the HdlcPacketizer proxy filter.
+message HdlcPacketizerConfig {}
+
+// Configuration for the DataDropper proxy filter.
+message DataDropperConfig {
+  // Rate at which to drop data
+  float rate = 1;
+
+  // Seed to use for the rand number generator used for determining
+  // when data is dropped.
+  int64 seed = 2;
+}
+
+// Configuration for a single stage in the proxy filter stack.
+message FilterConfig {
+  oneof filter {
+    HdlcPacketizerConfig hdlc_packetizer = 1;
+    DataDropperConfig data_dropper = 2;
+  }
+}
+
+message ProxyConfig {
+  // Filters are listed in order of execution.  I.e. the first filter listed
+  // will get the received data first then pass it on the the second listed
+  // filter. That process repeats until the last filter send the data to the
+  // other side of the proxy.
+  repeated FilterConfig client_filter_stack = 1;
+  repeated FilterConfig server_filter_stack = 2;
+}

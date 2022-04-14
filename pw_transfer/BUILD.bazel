@@ -203,6 +203,9 @@ pw_cc_binary(
 py_binary(
     name = "proxy",
     srcs = ["integration_test/proxy.py"],
+    deps = [
+        ":config_pb2",
+    ],
 )
 
 proto_library(
