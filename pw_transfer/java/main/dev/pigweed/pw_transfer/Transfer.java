@@ -164,6 +164,12 @@ abstract class Transfer<T> {
   }
 
   final synchronized void start() {
+    logger.atConfig().log(
+        "Start transfer with time out parameters : default timeout %d ms, initial timeout %d ms, %d"
+            + " max retires.",
+        timeout.timeoutMillis,
+        initialTimeoutMillis,
+        maxRetries);
     startTime = Instant.now();
     if (sendChunk(getInitialChunk())) {
       timeout.schedule(

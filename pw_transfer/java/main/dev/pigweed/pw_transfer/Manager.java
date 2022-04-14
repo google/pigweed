@@ -225,6 +225,34 @@ public class Manager {
     return readStream;
   }
 
+  private static String chunkToString(Chunk chunk) {
+    StringBuilder str = new StringBuilder();
+    str.append("sessionId:").append(chunk.getSessionId()).append(" ");
+    str.append("windowEndOffset:").append(chunk.getWindowEndOffset()).append(" ");
+    str.append("offset:").append(chunk.getOffset()).append(" ");
+    // Don't include the actual data; it's too much.
+    str.append("len(data):").append(chunk.getData().size()).append(" ");
+    if (chunk.hasPendingBytes()) {
+      str.append("pendingBytes:").append(chunk.getPendingBytes()).append(" ");
+    }
+    if (chunk.hasMaxChunkSizeBytes()) {
+      str.append("maxChunkSizeBytes:").append(chunk.getMaxChunkSizeBytes()).append(" ");
+    }
+    if (chunk.hasMinDelayMicroseconds()) {
+      str.append("minDelayMicroseconds:").append(chunk.getMinDelayMicroseconds()).append(" ");
+    }
+    if (chunk.hasRemainingBytes()) {
+      str.append("remainingBytes:").append(chunk.getRemainingBytes()).append(" ");
+    }
+    if (chunk.hasStatus()) {
+      str.append("status:").append(chunk.getStatus()).append(" ");
+    }
+    if (chunk.hasType()) {
+      str.append("type:").append(chunk.getTypeValue()).append(" ");
+    }
+    return str.toString();
+  }
+
   /** Handles responses on the pw_transfer RPCs. */
   private abstract static class ChunkHandler implements StreamObserver<Chunk> {
     private final Map<Integer, Transfer<?>> transfers;
@@ -239,7 +267,7 @@ public class Manager {
     public final void onNext(Chunk chunk) {
       Transfer<?> transfer = transfers.get(chunk.getSessionId());
       if (transfer != null) {
-        logger.atFinest().log("Received chunk for transfer %d", chunk.getSessionId());
+        logger.atFinest().log("Received chunk: %s", chunkToString(chunk));
         workDispatcher.accept(() -> transfer.handleChunk(chunk));
       } else {
         logger.atWarning().log(
