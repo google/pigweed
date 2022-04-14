@@ -151,11 +151,15 @@ TEST(DataElementTest, Write) {
   attribute_list.push_back(DataElement(kBluetoothProfileDescriptorList));
   attribute_list.push_back((DataElement(std::move(profile_sequence_list))));
 
+  // A custom attribute that has a uint64_t in it.
+  attribute_list.emplace_back(DataElement(UUID(uint16_t(0xF00D))));
+  attribute_list.emplace_back(DataElement(uint64_t(0xB0BAC0DECAFEFACE)));
+
   DataElement attribute_lists_elem(std::move(attribute_list));
 
   // clang-format off
   StaticByteBuffer expected(
-      0x35, 0x29,  // Sequence uint8 41 bytes
+      0x35, 0x35,  // Sequence uint8 41 bytes
       0x09,        // uint16_t type
       UpperBits(kServiceClassIdList), LowerBits(kServiceClassIdList),
       0x35, 0x03,  // Sequence uint8 3 bytes
@@ -182,11 +186,15 @@ TEST(DataElementTest, Write) {
       0x19,        // Type: UUID (16 bits)
       0x11, 0x01,  // 0x1101 (SPP)
       0x09,        // Type: uint16_t
-      0x01, 0x02   // v1.2
+      0x01, 0x02,  // v1.2
+      0x19,        // Type: UUID (16 bits)
+      0xF0, 0x0D,  // Custom attribute ID,
+      0x0B,        // uint64_t type
+      0xB0, 0xBA, 0xC0, 0xDE, 0xCA, 0xFE, 0xFA, 0xCE // Data for uint64_t
   );
   // clang-format on
 
-  DynamicByteBuffer block(43);
+  DynamicByteBuffer block(55);
 
   size_t written = attribute_lists_elem.Write(&block);
 

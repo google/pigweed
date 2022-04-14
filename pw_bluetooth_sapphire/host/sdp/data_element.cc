@@ -563,7 +563,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
       } else if (size_ == Size::kFourBytes) {
         cursor.WriteObj(htobe32(static_cast<uint32_t>(uint_value_)));
         pos += sizeof(uint32_t);
-      } else if (size_ == Size::kFourBytes) {
+      } else if (size_ == Size::kEightBytes) {
         uint64_t val = htobe64(uint_value_);
         cursor.Write(reinterpret_cast<uint8_t*>(&val), sizeof(val));
         pos += sizeof(val);
@@ -581,7 +581,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
       } else if (size_ == Size::kFourBytes) {
         cursor.WriteObj(htobe32(static_cast<int32_t>(int_value_)));
         pos += sizeof(uint32_t);
-      } else if (size_ == Size::kFourBytes) {
+      } else if (size_ == Size::kEightBytes) {
         int64_t val = htobe64(static_cast<int64_t>(int_value_));
         cursor.Write(reinterpret_cast<uint8_t*>(&val), sizeof(val));
         pos += sizeof(val);
