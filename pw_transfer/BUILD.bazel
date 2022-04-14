@@ -220,6 +220,11 @@ py_proto_library(
     srcs = ["integration_test/config.proto"],
 )
 
+java_proto_library(
+    name = "config_java_proto",
+    deps = [":config_proto"],
+)
+
 pw_cc_binary(
     name = "test_rpc_server",
     srcs = ["test_rpc_server.cc"],
@@ -257,6 +262,7 @@ py_test(
     data = [
         ":integration_test_client",
         ":integration_test_server",
+        ":java_integration_test_client",
         ":proxy",
     ],
     # TODO(b/228516801): Make this part of the CI/CQ once it's reliable.
@@ -264,6 +270,22 @@ py_test(
     deps = [
         ":config_pb2",
         "@rules_python//python/runfiles",
+    ],
+)
+
+java_binary(
+    name = "java_integration_test_client",
+    srcs = ["integration_test/JavaClient.java"],
+    main_class = "JavaClient",
+    deps = [
+        ":config_java_proto",
+        "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
+        "//pw_log/java/main/dev/pigweed/pw_log",
+        "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
+        "//pw_transfer/java/main/dev/pigweed/pw_transfer:client",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_flogger_flogger_system_backend",
+        "@maven//:com_google_guava_guava",
     ],
 )
 

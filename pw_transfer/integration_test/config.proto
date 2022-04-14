@@ -15,6 +15,9 @@ syntax = "proto3";
 
 package pw.transfer;
 
+option java_package = "pw.transfer";
+option java_outer_classname = "ConfigProtos";
+
 // Configuration for the integration test client.
 message ClientConfig {
   // Transfer resource ID to use.

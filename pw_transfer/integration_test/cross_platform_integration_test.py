@@ -19,7 +19,7 @@ Usage:
    bazel run pw_transfer:cross_platform_integration_test
 
 """
-
+from parameterized import parameterized
 import pathlib
 import subprocess
 import tempfile
@@ -38,24 +38,30 @@ class PwTransferIntegrationTest(unittest.TestCase):
     def setUpClass(cls):
         # TODO(tpudlik): This is Bazel-only. Support gn, too.
         r = runfiles.Create()
-        cls._CLIENT_BINARY = r.Rlocation(
+        cls._JAVA_CLIENT_BINARY = r.Rlocation(
+            "pigweed/pw_transfer/java_integration_test_client")
+        cls._CPP_CLIENT_BINARY = r.Rlocation(
             "pigweed/pw_transfer/integration_test_client")
         cls._PROXY_BINARY = r.Rlocation("pigweed/pw_transfer/proxy")
         cls._SERVER_BINARY = r.Rlocation(
             "pigweed/pw_transfer/integration_test_server")
+        cls._CLIENT_BINARY = {
+            "cpp": cls._CPP_CLIENT_BINARY,
+            "java": cls._JAVA_CLIENT_BINARY,
+        }
 
-    def _client_write(self, config: config_pb2.ClientConfig):
+    def _client_write(self, client_type: str, config: config_pb2.ClientConfig):
         """Runs client with the specified config.
 
         Blocks until the client exits, and raises an exception on non-zero
         return codes.
         """
         print(f"Starting client with config {config}")
-        subprocess.run(
-            [self._CLIENT_BINARY, str(CLIENT_PORT)],
-            input=str(config),
-            text=True,
-            check=True)
+        subprocess.run([self._CLIENT_BINARY[client_type],
+                        str(CLIENT_PORT)],
+                       input=str(config),
+                       text=True,
+                       check=True)
 
     def _start_server(self, config: config_pb2.ServerConfig):
         self._server = subprocess.Popen(
@@ -84,6 +90,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
         self._proxy.wait()
 
     def _perform_write(self, server_config: config_pb2.ServerConfig,
+                       client_type: str,
                        client_config: config_pb2.ClientConfig,
                        payload) -> bytes:
         """Performs a pw_transfer write.
@@ -108,7 +115,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
             self._start_server(server_config)
             time.sleep(3)  # TODO: Instead parse server logs
 
-            self._client_write(client_config)
+            self._client_write(client_type, client_config)
 
             DEADLINE = 10  # seconds
             returncode = self._server.wait(DEADLINE)
@@ -116,7 +123,11 @@ class PwTransferIntegrationTest(unittest.TestCase):
 
             return f_server_output.read()
 
-    def test_write(self):
+    @parameterized.expand([
+        ("cpp"),
+        ("java"),
+    ])
+    def test_client_write(self, client_type):
         resource_id = 12
         payload = b"some data"
         server_config = config_pb2.ServerConfig(
@@ -128,7 +139,8 @@ class PwTransferIntegrationTest(unittest.TestCase):
             extend_window_divisor=32,
         )
         client_config = config_pb2.ClientConfig(resource_id=resource_id)
-        got = self._perform_write(server_config, client_config, payload)
+        got = self._perform_write(server_config, client_type, client_config,
+                                  payload)
         self.assertEqual(got, payload)
 
 
