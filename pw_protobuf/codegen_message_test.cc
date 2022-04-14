@@ -53,6 +53,8 @@ TEST(CodegenMessage, Read) {
     't', 'y', 'p', 'e', 'w', 'r', 'i', 't', 'e', 'r',
     // pigweed.bin
     0x40, 0x01,
+    // pigweed.bungle
+    0x70, 0x91, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01,
   };
   // clang-format on
 
@@ -75,6 +77,7 @@ TEST(CodegenMessage, Read) {
                         kExpectedErrorMessage.size()),
             0);
   EXPECT_EQ(message.bin, Pigweed::Protobuf::Binary::ZERO);
+  EXPECT_EQ(message.bungle, -111);
 }
 
 TEST(CodegenMessage, ReadNonPackedScalar) {
@@ -779,6 +782,7 @@ TEST(CodegenMessage, Write) {
   pw::string::Copy("not a typewriter", message.error_message).IgnoreError();
   message.pigweed.status = Bool::FILE_NOT_FOUND;
   message.bin = Pigweed::Protobuf::Binary::ZERO;
+  message.bungle = -111;
   message.proto.bin = Proto::Binary::OFF;
   message.proto.pigweed_pigweed_bin = Pigweed::Pigweed::Binary::ZERO;
   message.proto.pigweed_protobuf_bin = Pigweed::Protobuf::Binary::ZERO;
@@ -836,6 +840,8 @@ TEST(CodegenMessage, Write) {
     0x20, 0x01,
     // pigweed.bytes
     0x5a, 0x08, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+    // pigweed.bungle
+    0x70, 0x91, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01,
   };
   // clang-format on
 
@@ -891,6 +897,8 @@ TEST(CodegenMessage, WriteDefaults) {
     0x20, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.bungle (default)
+    0x70, 0x00,
   };
   // clang-format on
 
@@ -1111,7 +1119,9 @@ TEST(CodegenMessage, WriteStringCallback) {
     't', 'e', 'd', ' ', 'l', 'i', 'b', 'r', 'a', 'r', 'i', 'e', 's', '-', 'o',
     'r', ' ', 'a', 's', ' ', 'w', 'e', ' ', 'l', 'i', 'k', 'e', ' ', 't', 'o',
     ' ', 'c', 'a', 'l', 'l', ' ', 't', 'h', 'e', 'm', ',', ' ', 'm', 'o', 'd',
-    'u', 'l', 'e', 's'
+    'u', 'l', 'e', 's',
+    // pigweed.bungle (default)
+    0x70, 0x00,
   };
   // clang-format on
 
@@ -1174,6 +1184,8 @@ TEST(CodegenMessage, WriteForcedCallback) {
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.special_property
     0x68, 0x2a,
+    // pigweed.bungle (default)
+    0x70, 0x00,
   };
   // clang-format on
 
@@ -1365,6 +1377,8 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
     0x20, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.bungle (default)
+    0x70, 0x00,
   };
   // clang-format on
 

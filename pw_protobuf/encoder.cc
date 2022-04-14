@@ -384,6 +384,8 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
             if (field.varint_type() == VarintType::kZigZag) {
               value = varint::ZigZagEncode(
                   *reinterpret_cast<const int64_t*>(values.data()));
+            } else if (field.varint_type() == VarintType::kNormal) {
+              value = *reinterpret_cast<const int64_t*>(values.data());
             } else {
               value = *reinterpret_cast<const uint64_t*>(values.data());
             }
@@ -391,6 +393,8 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
             if (field.varint_type() == VarintType::kZigZag) {
               value = varint::ZigZagEncode(
                   *reinterpret_cast<const int32_t*>(values.data()));
+            } else if (field.varint_type() == VarintType::kNormal) {
+              value = *reinterpret_cast<const int32_t*>(values.data());
             } else {
               value = *reinterpret_cast<const uint32_t*>(values.data());
             }
