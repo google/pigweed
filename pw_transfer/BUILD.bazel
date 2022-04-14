@@ -186,6 +186,7 @@ pw_cc_binary(
     name = "integration_test_server",
     srcs = ["integration_test/server.cc"],
     deps = [
+        ":config_cc_proto",
         ":pw_transfer",
         "//pw_assert",
         "//pw_log",
@@ -194,6 +195,7 @@ pw_cc_binary(
         "//pw_stream:std_file_stream",
         "//pw_thread:thread",
         "//pw_thread_stl:thread_headers",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

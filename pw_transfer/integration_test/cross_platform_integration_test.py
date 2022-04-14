@@ -57,11 +57,12 @@ class PwTransferIntegrationTest(unittest.TestCase):
             text=True,
             check=True)
 
-    def _start_server(self, resource_id: int, f):
+    def _start_server(self, config: config_pb2.ServerConfig):
         self._server = subprocess.Popen(
-            [self._SERVER_BINARY,
-             str(SERVER_PORT),
-             str(resource_id), f.name])
+            [self._SERVER_BINARY, str(SERVER_PORT)], stdin=subprocess.PIPE)
+        self._server.stdin.write(str(config).encode('ascii'))
+        self._server.stdin.flush()
+        self._server.stdin.close()
 
     def _start_proxy(self):
         self._proxy = subprocess.Popen([
@@ -98,7 +99,12 @@ class PwTransferIntegrationTest(unittest.TestCase):
 
             self._start_proxy()
             time.sleep(3)  # TODO: Instead parse proxy logs?
-            self._start_server(resource_id, f_server_output)
+
+            server_config = config_pb2.ServerConfig(
+                resource_id=resource_id,
+                file=f_server_output.name,
+            )
+            self._start_server(server_config)
             time.sleep(3)  # TODO: Instead parse server logs
 
             client_config = config_pb2.ClientConfig(

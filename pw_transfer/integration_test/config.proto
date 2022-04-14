@@ -23,3 +23,12 @@ message ClientConfig {
   // Path to the file containing the data to write to the server.
   string file = 2;
 }
+
+// Configuration for the integration test server.
+message ServerConfig {
+  // Transfer ID to use.
+  uint32 resource_id = 1;
+  // Path to the file to which the server should write out data it receives from
+  // the client.
+  string file = 2;
+}

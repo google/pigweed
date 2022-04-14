@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
     PW_LOG_INFO("Usage: %s PORT <<< config textproto", argv[0]);
     return 1;
   } else {
-    PW_LOG_INFO("Loaded config:\n%s", config.DebugString().c_str());
+    PW_LOG_INFO("Client loaded config:\n%s", config.DebugString().c_str());
   }
 
   if (!pw::rpc::integration_test::InitializeClient(port).ok()) {
