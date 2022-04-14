@@ -794,6 +794,7 @@ OTHER_CHECKS = (
     gn_gcc_build,
     gn_pw_system_demo_build,
     renode_check,
+    static_analysis,
     stm32f429i,
 )
 
@@ -810,7 +811,6 @@ _LINTFORMAT = (
 
 LINTFORMAT = (
     _LINTFORMAT,
-    static_analysis,
     pw_presubmit.python_checks.check_python_versions,
     pw_presubmit.python_checks.gn_python_lint,
 )
