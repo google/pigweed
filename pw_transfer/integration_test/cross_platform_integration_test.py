@@ -21,6 +21,7 @@ Usage:
 """
 from parameterized import parameterized
 import pathlib
+import random
 import subprocess
 import tempfile
 import time
@@ -133,7 +134,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ("cpp"),
         ("java"),
     ])
-    def test_client_write(self, client_type):
+    def test_small_client_write(self, client_type):
         resource_id = 12
         payload = b"some data"
         server_config = config_pb2.ServerConfig(
@@ -157,6 +158,38 @@ class PwTransferIntegrationTest(unittest.TestCase):
                 { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
         ]""", config_pb2.ProxyConfig())
 
+        got = self._perform_write(server_config, client_type, client_config,
+                                  proxy_config, payload)
+        self.assertEqual(got, payload)
+
+    @parameterized.expand([
+        ("cpp"),
+        ("java"),
+    ])
+    def test_3mb_write(self, client_type):
+        resource_id = 12
+        server_config = config_pb2.ServerConfig(
+            resource_id=resource_id,
+            chunk_size_bytes=216,
+            pending_bytes=2 * 1024,
+            chunk_timeout_seconds=5,
+            transfer_service_retries=4,
+            extend_window_divisor=32,
+        )
+        client_config = config_pb2.ClientConfig(resource_id=resource_id)
+        proxy_config = text_format.Parse(
+            """
+            client_filter_stack: [
+                { hdlc_packetizer: {} },
+                { data_dropper: {rate: 0.01, seed: 1649963713563718435} }
+            ]
+
+            server_filter_stack: [
+                { hdlc_packetizer: {} },
+                { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
+        ]""", config_pb2.ProxyConfig())
+
+        payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
         got = self._perform_write(server_config, client_type, client_config,
                                   proxy_config, payload)
         self.assertEqual(got, payload)
