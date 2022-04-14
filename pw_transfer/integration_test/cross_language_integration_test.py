@@ -16,15 +16,20 @@
 
 Usage:
 
-   bazel run pw_transfer/integration_test:cross_platform_integration_test
+   bazel run pw_transfer/integration_test:cross_language_integration_test
 
 """
+
+import asyncio
+import logging
 from parameterized import parameterized
 import pathlib
 import random
 import subprocess
+import sys
 import tempfile
 import time
+from typing import List
 import unittest
 
 from google.protobuf import text_format
@@ -35,8 +40,144 @@ from rules_python.python.runfiles import runfiles
 SERVER_PORT = 3300
 CLIENT_PORT = 3301
 
+_LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
+_LOG.level = logging.DEBUG
+_LOG.addHandler(logging.StreamHandler(sys.stdout))
+
+
+class LogMonitor():
+    """Monitors lines read from the reader, and logs them."""
+    class Error(Exception):
+        """Raised if wait_for_line reaches EOF before expected line."""
+        pass
+
+    def __init__(self, prefix: str, reader: asyncio.StreamReader):
+        """Initializer.
+
+        Args:
+          prefix: Prepended to read lines before they are logged.
+          reader: StreamReader to read lines from.
+        """
+        self._prefix = prefix
+        self._reader = reader
+
+        # Queue of messages waiting to be monitored.
+        self._queue = asyncio.Queue()
+        # Relog any messages read from the reader, and enqueue them for
+        # monitoring.
+        self._relog_and_enqueue_task = asyncio.create_task(
+            self._relog_and_enqueue())
+
+    async def wait_for_line(self, msg: str):
+        """Wait for a line containing msg to be read from the reader."""
+        while True:
+            line = await self._queue.get()
+            if not line:
+                raise LogMonitor.Error(
+                    f"Reached EOF before getting line matching {msg}")
+            if msg in line.decode():
+                return
+
+    async def wait_for_eof(self):
+        """Wait for the reader to reach EOF, relogging any lines read."""
+        # Drain the queue, since we're not monitoring it any more.
+        drain_queue = asyncio.create_task(self._drain_queue())
+        await asyncio.gather(drain_queue, self._relog_and_enqueue_task)
+
+    async def _relog_and_enqueue(self):
+        """Reads lines from the reader, logs them, and puts them in queue."""
+        while True:
+            line = await self._reader.readline()
+            await self._queue.put(line)
+            if line:
+                _LOG.info(f"{self._prefix} {line.decode().rstrip()}")
+            else:
+                # EOF. Note, we still put the EOF in the queue, so that the
+                # queue reader can process it appropriately.
+                return
+
+    async def _drain_queue(self):
+        while True:
+            line = await self._queue.get()
+            if not line:
+                # EOF.
+                return
+
+
+class MonitoredSubprocess:
+    """A subprocess with monitored asynchronous communication."""
+    @staticmethod
+    async def create(cmd: List[str], prefix: str, stdinput: bytes):
+        """Starts the subprocess and writes stdinput to stdin.
+
+        This method returns once stdinput has been written to stdin. The
+        MonitoredSubprocess continues to log the process's stderr and stdout
+        (with the prefix) until it terminates.
+
+        Args:
+          cmd: Command line to execute.
+          prefix: Prepended to process logs.
+          stdinput: Written to stdin on process startup.
+        """
+        self = MonitoredSubprocess()
+        self._process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+
+        self._stderr_monitor = LogMonitor(f"{prefix} ERR:",
+                                          self._process.stderr)
+        self._stdout_monitor = LogMonitor(f"{prefix} OUT:",
+                                          self._process.stdout)
+
+        self._process.stdin.write(stdinput)
+        await self._process.stdin.drain()
+        self._process.stdin.close()
+        await self._process.stdin.wait_closed()
+        return self
+
+    async def wait_for_line(self, stream: str, msg: str, timeout: float):
+        """Wait for a line containing msg to be read on the stream."""
+        if stream == "stdout":
+            monitor = self._stdout_monitor
+        elif stream == "stderr":
+            monitor = self._stderr_monitor
+        else:
+            raise ValueError(
+                "Stream must be 'stdout' or 'stderr', got {stream}")
+
+        await asyncio.wait_for(monitor.wait_for_line(msg), timeout)
+
+    def returncode(self):
+        return self._process.returncode
+
+    def terminate(self):
+        """Terminate the process."""
+        self._process.terminate()
+
+    async def wait_for_termination(self, timeout: float):
+        """Wait for the process to terminate."""
+        await asyncio.wait_for(
+            asyncio.gather(self._process.wait(),
+                           self._stdout_monitor.wait_for_eof(),
+                           self._stderr_monitor.wait_for_eof()), timeout)
+
+    async def terminate_and_wait(self, timeout: float):
+        """Terminate the process and wait for it to exit."""
+        if self.returncode() is not None:
+            # Process already terminated
+            return
+        self.terminate()
+        await self.wait_for_termination(timeout)
+
 
 class PwTransferIntegrationTest(unittest.TestCase):
+    # Prefix for log messages coming from the harness (as opposed to the server,
+    # client, or proxy processes). Padded so that the length is the same as
+    # "SERVER OUT:".
+    _PREFIX = "HARNESS:   "
+
     @classmethod
     def setUpClass(cls):
         # TODO(tpudlik): This is Bazel-only. Support gn, too.
@@ -60,55 +201,52 @@ class PwTransferIntegrationTest(unittest.TestCase):
         Blocks until the client exits, and raises an exception on non-zero
         return codes.
         """
-        print(f"Starting client with config {config}")
+        _LOG.info(f"{self._PREFIX} Starting client with config\n{config}")
         subprocess.run([self._CLIENT_BINARY[client_type],
                         str(CLIENT_PORT)],
                        input=str(config),
                        text=True,
                        check=True)
 
-    def _start_server(self, config: config_pb2.ServerConfig):
-        self._server = subprocess.Popen(
-            [self._SERVER_BINARY, str(SERVER_PORT)], stdin=subprocess.PIPE)
-        self._server.stdin.write(str(config).encode('ascii'))
-        self._server.stdin.flush()
-        self._server.stdin.close()
+    async def _start_server(self, config: config_pb2.ServerConfig):
+        _LOG.info(f"{self._PREFIX} Starting server with config\n{config}")
+        self._server = await MonitoredSubprocess.create(
+            [self._SERVER_BINARY, str(SERVER_PORT)], "SERVER",
+            str(config).encode('ascii'))
 
-    def _start_proxy(self, config: config_pb2.ProxyConfig):
-        self._proxy = subprocess.Popen([
-            self._PROXY_BINARY, "--server-port",
-            str(SERVER_PORT), "--client-port",
-            str(CLIENT_PORT)
-        ],
-                                       stdin=subprocess.PIPE)
-        self._proxy.stdin.write(str(config).encode('ascii'))
-        self._proxy.stdin.flush()
-        self._proxy.stdin.close()
+    async def _start_proxy(self, config: config_pb2.ProxyConfig):
+        _LOG.info(f"{self._PREFIX} Starting proxy with config\n{config}")
+        self._proxy = await MonitoredSubprocess.create(
+            [
+                self._PROXY_BINARY, "--server-port",
+                str(SERVER_PORT), "--client-port",
+                str(CLIENT_PORT)
+            ],
+            # Extra space in "PROXY " so that it lines up with "SERVER".
+            "PROXY ",
+            str(config).encode('ascii'))
 
-    def tearDown(self):
-        """Magic unittest method, called after every test.
-
-        After each test, ensures we've cleaned up the server and proxy
-        processes.
-        """
-        super().tearDown()
-        self._server.terminate()
-        self._server.wait()
-        self._proxy.terminate()
-        self._proxy.wait()
-
-    def _perform_write(self, server_config: config_pb2.ServerConfig,
-                       client_type: str,
-                       client_config: config_pb2.ClientConfig,
-                       proxy_config: config_pb2.ProxyConfig, payload) -> bytes:
+    async def _perform_write(self, server_config: config_pb2.ServerConfig,
+                             client_type: str,
+                             client_config: config_pb2.ClientConfig,
+                             proxy_config: config_pb2.ProxyConfig,
+                             payload) -> bytes:
         """Performs a pw_transfer write.
 
         Args:
-          resource_id: The transfer resource ID to use.
+          server_config: Server configuration.
+          client_type: Either "cpp" or "java".
+          client_config: Client configuration.
+          proxy_config: Proxy configuration.
           payload: bytes to write
 
         Returns: Bytes the server has saved after receiving the payload.
         """
+        # Timeout for components (server, proxy) to come up or shut down after
+        # write is finished or a signal is sent. Approximately arbitrary. Should
+        # not be too long so that we catch bugs in the server that prevent it
+        # from shutting down.
+        TIMEOUT = 5  # seconds
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
             server_config.file = f_server_output.name
@@ -117,17 +255,31 @@ class PwTransferIntegrationTest(unittest.TestCase):
             f_payload.write(payload)
             f_payload.flush()  # Ensure contents are there to read!
 
-            self._start_proxy(proxy_config)
-            time.sleep(3)  # TODO: Instead parse proxy logs?
+            try:
+                await self._start_proxy(proxy_config)
+                await self._proxy.wait_for_line(
+                    "stderr", "Listening for client connection", TIMEOUT)
 
-            self._start_server(server_config)
-            time.sleep(3)  # TODO: Instead parse server logs
+                await self._start_server(server_config)
+                await self._server.wait_for_line(
+                    "stderr", "Starting pw_rpc server on port", TIMEOUT)
 
-            self._client_write(client_type, client_config)
+                self._client_write(client_type, client_config)
 
-            DEADLINE = 10  # seconds
-            returncode = self._server.wait(DEADLINE)
-            self.assertEqual(returncode, 0)
+                # Wait for the server to exit.
+                await self._server.wait_for_termination(TIMEOUT)
+                returncode = self._server.returncode()
+                self.assertEqual(returncode, 0)
+
+            finally:
+                # Stop the server, if still running. (Only expected if the
+                # wait_for above timed out.)
+                if self._server:
+                    await self._server.terminate_and_wait(TIMEOUT)
+                # Stop the proxy. Unlike the server, we expect it to still be
+                # running at this stage.
+                if self._proxy:
+                    await self._proxy.terminate_and_wait(TIMEOUT)
 
             return f_server_output.read()
 
@@ -164,8 +316,9 @@ class PwTransferIntegrationTest(unittest.TestCase):
                 { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
         ]""", config_pb2.ProxyConfig())
 
-        got = self._perform_write(server_config, client_type, client_config,
-                                  proxy_config, payload)
+        got = asyncio.run(
+            self._perform_write(server_config, client_type, client_config,
+                                proxy_config, payload))
         self.assertEqual(got, payload)
 
     @parameterized.expand([
@@ -203,8 +356,9 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ]""", config_pb2.ProxyConfig())
 
         payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
-        got = self._perform_write(server_config, client_type, client_config,
-                                  proxy_config, payload)
+        got = asyncio.run(
+            self._perform_write(server_config, client_type, client_config,
+                                proxy_config, payload))
         self.assertEqual(got, payload)
 
     @parameterized.expand([
@@ -242,8 +396,9 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ]""", config_pb2.ProxyConfig())
 
         payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
-        got = self._perform_write(server_config, client_type, client_config,
-                                  proxy_config, payload)
+        got = asyncio.run(
+            self._perform_write(server_config, client_type, client_config,
+                                proxy_config, payload))
         self.assertEqual(got, payload)
 
 
