@@ -44,19 +44,33 @@ def _parse_args() -> argparse.Namespace:
                         default=sys.stdout)
     parser.add_argument(
         '--utilization',
-        action=argparse.BooleanOptionalAction,
+        action='store_true',
+        dest='utilization',
         default=True,
-        help=(
-            'Generate the utilization custom_data_source based on sections ' +
-            'with "unused_space" in anywhere in their name'))
+        help=('Generate the utilization custom_data_source based on sections '
+              'with "unused_space" in anywhere in their name'),
+    )
+    parser.add_argument(
+        '--no-utilization',
+        action='store_false',
+        dest='utilization',
+    )
+
     parser.add_argument(
         '--memoryregions',
-        action=argparse.BooleanOptionalAction,
+        action='store_true',
         default=True,
-        help=('Generate the memoryregions custom_data_source based on ' +
-              'symbols defined in the linker script matching the following ' +
-              'pattern: ' +
-              '"pw::bloat::config::memory_region::NAME[0].{start,end}"'))
+        help=('Generate the memoryregions custom_data_source based on '
+              'symbols defined in the linker script matching the following '
+              'pattern: '
+              '"pw::bloat::config::memory_region::NAME[0].{start,end}"'),
+    )
+    parser.add_argument(
+        '--no-memoryregions',
+        action='store_false',
+        dest='memoryregions',
+    )
+
     parser.add_argument('-l',
                         '--loglevel',
                         type=pw_cli.argument_types.log_level,

@@ -16,7 +16,8 @@
 import abc
 from datetime import datetime
 import enum
-from graphlib import CycleError, TopologicalSorter
+# Type ignore here for graphlib-backport on Python 3.8
+from graphlib import CycleError, TopologicalSorter  # type: ignore
 import os
 import sys
 from typing import Dict, Iterable, List, Tuple
