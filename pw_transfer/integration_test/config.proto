@@ -31,4 +31,12 @@ message ServerConfig {
   // Path to the file to which the server should write out data it receives from
   // the client.
   string file = 2;
+  // Size of the chunk buffer used by the transfer thread, in bytes.
+  uint32 chunk_size_bytes = 3;
+  // Window size, in bytes.
+  uint32 pending_bytes = 4;
+  // TODO(tpudlik): google.protobuf.Duration?
+  uint32 chunk_timeout_seconds = 5;
+  uint32 transfer_service_retries = 6;
+  uint32 extend_window_divisor = 7;
 }

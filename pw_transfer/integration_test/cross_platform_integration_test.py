@@ -83,7 +83,9 @@ class PwTransferIntegrationTest(unittest.TestCase):
         self._proxy.terminate()
         self._proxy.wait()
 
-    def _perform_write(self, resource_id: int, payload: bytes) -> bytes:
+    def _perform_write(self, server_config: config_pb2.ServerConfig,
+                       client_config: config_pb2.ClientConfig,
+                       payload) -> bytes:
         """Performs a pw_transfer write.
 
         Args:
@@ -94,23 +96,18 @@ class PwTransferIntegrationTest(unittest.TestCase):
         """
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
+            server_config.file = f_server_output.name
+            client_config.file = f_payload.name
+
             f_payload.write(payload)
             f_payload.flush()  # Ensure contents are there to read!
 
             self._start_proxy()
             time.sleep(3)  # TODO: Instead parse proxy logs?
 
-            server_config = config_pb2.ServerConfig(
-                resource_id=resource_id,
-                file=f_server_output.name,
-            )
             self._start_server(server_config)
             time.sleep(3)  # TODO: Instead parse server logs
 
-            client_config = config_pb2.ClientConfig(
-                resource_id=resource_id,
-                file=f_payload.name,
-            )
             self._client_write(client_config)
 
             DEADLINE = 10  # seconds
@@ -122,7 +119,16 @@ class PwTransferIntegrationTest(unittest.TestCase):
     def test_write(self):
         resource_id = 12
         payload = b"some data"
-        got = self._perform_write(resource_id, payload)
+        server_config = config_pb2.ServerConfig(
+            resource_id=resource_id,
+            chunk_size_bytes=216,
+            pending_bytes=2 * 1024,
+            chunk_timeout_seconds=5,
+            transfer_service_retries=4,
+            extend_window_divisor=32,
+        )
+        client_config = config_pb2.ClientConfig(resource_id=resource_id)
+        got = self._perform_write(server_config, client_config, payload)
         self.assertEqual(got, payload)
 
 

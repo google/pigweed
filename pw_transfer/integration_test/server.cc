@@ -21,14 +21,17 @@
 //
 //   integration_test_server 3300 <<< "resource_id: 12 file: '/tmp/gotbytes'"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdlib>
 #include <string>
 #include <thread>
 #include <variant>
+#include <vector>
 
 #include "google/protobuf/text_format.h"
 #include "pw_assert/check.h"
+#include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_rpc_system_server/socket.h"
@@ -43,15 +46,6 @@ namespace {
 
 using stream::MemoryReader;
 using stream::MemoryWriter;
-
-// TODO(amontanez): These should be configurable.
-constexpr size_t kChunkSizeBytes = 256;
-constexpr size_t kMaxReceiveSizeBytes = 1024;
-
-std::array<std::byte, kChunkSizeBytes> chunk_buffer;
-std::array<std::byte, kChunkSizeBytes> encode_buffer;
-transfer::Thread<4, 4> transfer_thread(chunk_buffer, encode_buffer);
-TransferService transfer_service(transfer_thread, kMaxReceiveSizeBytes);
 
 // TODO(tpudlik): This is copy-pasted from test_rpc_server.cc, break it out into
 // a shared library.
@@ -95,6 +89,16 @@ class FileTransferHandler final : public ReadWriteHandler {
 };
 
 void RunServer(int socket_port, ServerConfig config) {
+  std::vector<std::byte> chunk_buffer(config.chunk_size_bytes());
+  std::vector<std::byte> encode_buffer(config.chunk_size_bytes());
+  transfer::Thread<4, 4> transfer_thread(chunk_buffer, encode_buffer);
+  TransferService transfer_service(
+      transfer_thread,
+      config.pending_bytes(),
+      std::chrono::seconds(config.chunk_timeout_seconds()),
+      config.transfer_service_retries(),
+      config.extend_window_divisor());
+
   rpc::system_server::set_socket_port(socket_port);
 
   rpc::system_server::Init();
