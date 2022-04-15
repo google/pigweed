@@ -172,7 +172,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ("cpp"),
         ("java"),
     ])
-    def test_3mb_write(self, client_type):
+    def test_3mb_write_dropped_data(self, client_type):
         resource_id = 12
         server_config = config_pb2.ServerConfig(
             resource_id=resource_id,
@@ -200,6 +200,45 @@ class PwTransferIntegrationTest(unittest.TestCase):
                 { rate_limiter: {rate: 50000} },
                 { hdlc_packetizer: {} },
                 { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
+        ]""", config_pb2.ProxyConfig())
+
+        payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
+        got = self._perform_write(server_config, client_type, client_config,
+                                  proxy_config, payload)
+        self.assertEqual(got, payload)
+
+    @parameterized.expand([
+        ("cpp"),
+        ("java"),
+    ])
+    def test_3mb_write_reordered_data(self, client_type):
+        resource_id = 12
+        server_config = config_pb2.ServerConfig(
+            resource_id=resource_id,
+            chunk_size_bytes=216,
+            pending_bytes=32 * 1024,
+            chunk_timeout_seconds=5,
+            transfer_service_retries=4,
+            extend_window_divisor=32,
+        )
+        client_config = config_pb2.ClientConfig(
+            resource_id=resource_id,
+            max_retries=5,
+            initial_chunk_timeout_ms=10000,
+            chunk_timeout_ms=4000,
+        )
+        proxy_config = text_format.Parse(
+            """
+            client_filter_stack: [
+                { rate_limiter: {rate: 50000} },
+                { hdlc_packetizer: {} },
+                { data_reorderer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
+            ]
+
+            server_filter_stack: [
+                { rate_limiter: {rate: 50000} },
+                { hdlc_packetizer: {} },
+                { data_reorderer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
         ]""", config_pb2.ProxyConfig())
 
         payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)

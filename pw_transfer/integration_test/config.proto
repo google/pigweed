@@ -81,12 +81,28 @@ message RateLimiterConfig {
   float rate = 1;
 }
 
+// Configuration for the DataTransposer proxy filter.
+message DataTransposerConfig {
+  // Rate at which to transpose data.  Probability of transposition
+  // between 0.0 and 1.0.
+  float rate = 1;
+
+  // Maximum time a chunk of data will be held for Transposition.  After this
+  // time has elapsed, the packet is sent in order.
+  float timeout = 2;
+
+  // Seed to use for the rand number generator used for determining
+  // when data is transposed.
+  int64 seed = 3;
+}
+
 // Configuration for a single stage in the proxy filter stack.
 message FilterConfig {
   oneof filter {
     HdlcPacketizerConfig hdlc_packetizer = 1;
     DataDropperConfig data_dropper = 2;
     RateLimiterConfig rate_limiter = 3;
+    DataTransposerConfig data_transposer = 4;
   }
 }
 

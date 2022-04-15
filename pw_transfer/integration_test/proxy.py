@@ -120,6 +120,64 @@ class RateLimiter(Filter):
         await self.send_data(data)
 
 
+class DataTransposer(Filter):
+    """A filter which occasionally transposes two chunks of data.
+
+    This filter transposes data at the specified rate.  It does this by
+    holding a chunk to transpose until another chunk arrives. The filter
+    will not hold a chunk longer than ``timeout`` seconds.
+    """
+    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
+                 name: str, rate: float, timeout: float, seed: int):
+        super().__init__(send_data)
+        self._name = name
+        self._rate = rate
+        self._timeout = timeout
+        self._data_queue = asyncio.Queue()
+        self._rng = random.Random(seed)
+        self._transpose_task = asyncio.create_task(self._transpose_handler())
+
+        _LOG.info(f'{name} DataTranspose initialized with seed {seed}')
+
+    def __del__(self):
+        _LOG.info(f'{self._name} cleaning up transpose task.')
+        self._transpose_task.cancel()
+
+    async def _transpose_handler(self):
+        """Async task that handles the packet transposition and timeouts"""
+        held_data: Optional[bytes] = None
+        while True:
+            # Only use timeout if we have data held for transposition
+            timeout = None if held_data is None else self._timeout
+            try:
+                data = await asyncio.wait_for(self._data_queue.get(),
+                                              timeout=timeout)
+
+                if held_data is not None:
+                    # If we have held data, send it out of order.
+                    await self.send_data(data)
+                    await self.send_data(held_data)
+                    held_data = None
+                else:
+                    # Otherwise decide if we should transpose the current data.
+                    if self._rng.uniform(0.0, 1.0) < self._rate:
+                        _LOG.info(
+                            f'{self._name} transposing {len(data)} bytes of data'
+                        )
+                        held_data = data
+                    else:
+                        await self.send_data(data)
+
+            except asyncio.TimeoutError:
+                _LOG.info(f'{self._name} sending data in order due to timeout')
+                await self.send_data(held_data)
+                held_data = None
+
+    async def process(self, data: bytes) -> None:
+        # Queue data for processing by the transpose task.
+        await self._data_queue.put(data)
+
+
 async def _handle_simplex_connection(name: str, filter_stack_config: List[
     config_pb2.FilterConfig], reader: asyncio.StreamReader,
                                      writer: asyncio.StreamWriter) -> None:
@@ -142,6 +200,10 @@ async def _handle_simplex_connection(name: str, filter_stack_config: List[
                                        data_dropper.seed)
         elif filter_name == "rate_limiter":
             filter_stack = RateLimiter(filter_stack, config.rate_limiter.rate)
+        elif filter_name == "data_transposer":
+            transposer = config.data_transposer
+            filter_stack = DataTransposer(filter_stack, name, transposer.rate,
+                                          transposer.timeout, transposer.seed)
         else:
             sys.exit(f'Unknown filter {filter_name}')
 

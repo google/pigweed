@@ -272,8 +272,14 @@ pw_executable("integration_test_client") {
   ]
 }
 
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
 pw_python_script("integration_test_proxy") {
   sources = [ "integration_test/proxy.py" ]
+}
+
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("integration_test_proxy_test") {
+  sources = [ "integration_test/proxy_test.py" ]
 }
 
 # TODO(b/228516801): Make this actually work; this is just a placeholder.

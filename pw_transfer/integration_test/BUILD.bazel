@@ -42,6 +42,18 @@ py_binary(
     ],
 )
 
+py_test(
+    name = "proxy_test",
+    srcs = [
+        "proxy.py",
+        "proxy_test.py",
+    ],
+    main = "proxy_test.py",
+    deps = [
+        ":config_pb2",
+    ],
+)
+
 proto_library(
     name = "config_proto",
     srcs = ["config.proto"],
