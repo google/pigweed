@@ -140,7 +140,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
         server_config = config_pb2.ServerConfig(
             resource_id=resource_id,
             chunk_size_bytes=216,
-            pending_bytes=2 * 1024,
+            pending_bytes=32 * 1024,
             chunk_timeout_seconds=5,
             transfer_service_retries=4,
             extend_window_divisor=32,
@@ -171,7 +171,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
         server_config = config_pb2.ServerConfig(
             resource_id=resource_id,
             chunk_size_bytes=216,
-            pending_bytes=2 * 1024,
+            pending_bytes=32 * 1024,
             chunk_timeout_seconds=5,
             transfer_service_retries=4,
             extend_window_divisor=32,
