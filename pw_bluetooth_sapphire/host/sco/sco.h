@@ -22,43 +22,56 @@ struct ParameterSet {
 
 constexpr ParameterSet kParameterSetMsbcT1{
     .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3) |
-                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot2Ev3),
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot2Ev5) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
     .transmit_receive_format = hci_spec::CodingFormat::kTransparent,
     .max_latency_ms = 8,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kQualityOptimized};
 
 constexpr ParameterSet kParameterSetMsbcT2{
-    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3),
+    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot2Ev5) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
     .transmit_receive_format = hci_spec::CodingFormat::kTransparent,
     .max_latency_ms = 13,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kQualityOptimized};
 
 constexpr ParameterSet kParameterSetCvsdS1{
-    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3) |
-                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot2Ev3),
+    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kHv1) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kHv2) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kHv3) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot2Ev5) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
     .transmit_receive_format = hci_spec::CodingFormat::kCvsd,
     .max_latency_ms = 7,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kPowerOptimized};
 
 constexpr ParameterSet kParameterSetCvsdS2{
-    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3),
+    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot2Ev5) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
     .transmit_receive_format = hci_spec::CodingFormat::kCvsd,
     .max_latency_ms = 7,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kPowerOptimized};
 
 constexpr ParameterSet kParameterSetCvsdS3{
-    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3),
+    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot2Ev5) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
     .transmit_receive_format = hci_spec::CodingFormat::kCvsd,
     .max_latency_ms = 10,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kPowerOptimized};
 
 constexpr ParameterSet kParameterSetCvsdS4{
-    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3),
+    .packet_types = static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kEv3) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot2Ev5) |
+                    static_cast<uint8_t>(hci_spec::ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
     .transmit_receive_format = hci_spec::CodingFormat::kCvsd,
     .max_latency_ms = 12,
