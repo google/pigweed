@@ -61,6 +61,16 @@ void Context::HandleEvent(const Event& event) {
       HandleTimeout();
       return;
 
+    case EventType::kClientEndTransfer:
+    case EventType::kServerEndTransfer:
+      if (active()) {
+        Finish(event.end_transfer.status);
+        if (event.end_transfer.send_status_chunk) {
+          SendFinalStatusChunk();
+        }
+      }
+      return;
+
     case EventType::kSendStatusChunk:
     case EventType::kSetTransferStream:
     case EventType::kAddTransferHandler:

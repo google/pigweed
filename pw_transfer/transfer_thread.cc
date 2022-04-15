@@ -183,6 +183,23 @@ void TransferThread::ProcessChunk(EventType type, ConstByteSpan chunk) {
   event_notification_.release();
 }
 
+void TransferThread::EndTransfer(EventType type,
+                                 uint32_t session_id,
+                                 Status status,
+                                 bool send_status_chunk) {
+  // Block until the last event has been processed.
+  next_event_ownership_.acquire();
+
+  next_event_.type = type;
+  next_event_.end_transfer = {
+      .session_id = session_id,
+      .status = status.code(),
+      .send_status_chunk = send_status_chunk,
+  };
+
+  event_notification_.release();
+}
+
 void TransferThread::SetClientStream(TransferStream type,
                                      rpc::RawClientReaderWriter& stream) {
   // Block until the last event has been processed.
@@ -279,14 +296,24 @@ Context* TransferThread::FindContextForEvent(
       return FindNewTransfer(client_transfers_, event.new_transfer.session_id);
     case EventType::kNewServerTransfer:
       return FindNewTransfer(server_transfers_, event.new_transfer.session_id);
+
     case EventType::kClientChunk:
       return FindActiveTransfer(client_transfers_, event.chunk.session_id);
     case EventType::kServerChunk:
       return FindActiveTransfer(server_transfers_, event.chunk.session_id);
+
     case EventType::kClientTimeout:  // Manually triggered client timeout
       return FindActiveTransfer(client_transfers_, event.chunk.session_id);
     case EventType::kServerTimeout:  // Manually triggered server timeout
       return FindActiveTransfer(server_transfers_, event.chunk.session_id);
+
+    case EventType::kClientEndTransfer:
+      return FindActiveTransfer(client_transfers_,
+                                event.end_transfer.session_id);
+    case EventType::kServerEndTransfer:
+      return FindActiveTransfer(server_transfers_,
+                                event.end_transfer.session_id);
+
     default:
       return nullptr;
   }

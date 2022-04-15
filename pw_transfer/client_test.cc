@@ -1470,6 +1470,41 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 }
 
+TEST_F(WriteTransfer, ManualCancel) {
+  stream::MemoryReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  ASSERT_EQ(OkStatus(),
+            client_.Write(
+                15,
+                reader,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // The client begins by sending the ID of the resource to transfer.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk chunk = DecodeChunk(payloads.back());
+  EXPECT_EQ(chunk.session_id, 15u);
+  EXPECT_EQ(chunk.resource_id, 15u);
+
+  client_.CancelTransfer(15);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Client should send a cancellation chunk to the server.
+  ASSERT_EQ(payloads.size(), 2u);
+  chunk = DecodeChunk(payloads.back());
+  EXPECT_EQ(chunk.session_id, 15u);
+  ASSERT_EQ(chunk.type, Chunk::Type::kTransferCompletion);
+  EXPECT_EQ(chunk.status.value(), Status::Cancelled());
+
+  EXPECT_EQ(transfer_status, Status::Cancelled());
+}
+
 PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace

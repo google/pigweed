@@ -41,6 +41,11 @@ enum class EventType {
   kClientTimeout,
   kServerTimeout,
 
+  // Terminates an ongoing transfer with a specified status, optionally sending
+  // a status chunk to the other end of the transfer.
+  kClientEndTransfer,
+  kServerEndTransfer,
+
   // Sends a status chunk to terminate a transfer. This does not call into the
   // transfer context's completion handler; it is for out-of-band termination.
   kSendStatusChunk,
@@ -83,6 +88,12 @@ struct ChunkEvent {
   size_t size;
 };
 
+struct EndTransferEvent {
+  uint32_t session_id;
+  Status::Code status;
+  bool send_status_chunk;
+};
+
 struct SendStatusChunkEvent {
   uint32_t session_id;
   Status::Code status;
@@ -95,6 +106,7 @@ struct Event {
   union {
     NewTransferEvent new_transfer;
     ChunkEvent chunk;
+    EndTransferEvent end_transfer;
     SendStatusChunkEvent send_status_chunk;
     TransferStream set_transfer_stream;
     Handler* add_transfer_handler;

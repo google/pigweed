@@ -87,6 +87,20 @@ class TransferThread : public thread::ThreadCore {
     ProcessChunk(EventType::kServerChunk, chunk);
   }
 
+  void EndClientTransfer(uint32_t session_id,
+                         Status status,
+                         bool send_status_chunk = false) {
+    EndTransfer(
+        EventType::kClientEndTransfer, session_id, status, send_status_chunk);
+  }
+
+  void EndServerTransfer(uint32_t session_id,
+                         Status status,
+                         bool send_status_chunk = false) {
+    EndTransfer(
+        EventType::kClientEndTransfer, session_id, status, send_status_chunk);
+  }
+
   void SetClientReadStream(rpc::RawClientReaderWriter& read_stream) {
     SetClientStream(TransferStream::kClientRead, read_stream);
   }
@@ -210,6 +224,11 @@ class TransferThread : public thread::ThreadCore {
                      uint8_t max_retries);
 
   void ProcessChunk(EventType type, ConstByteSpan chunk);
+
+  void EndTransfer(EventType type,
+                   uint32_t session_id,
+                   Status status,
+                   bool send_status_chunk);
 
   void SetClientStream(TransferStream type, rpc::RawClientReaderWriter& stream);
   void SetServerStream(TransferStream type, rpc::RawServerReaderWriter& stream);

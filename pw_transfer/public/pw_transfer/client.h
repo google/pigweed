@@ -87,6 +87,12 @@ class Client {
       CompletionFunc&& on_completion,
       chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout);
 
+  // Terminates an ongoing transfer for the specified resource ID.
+  //
+  // TODO(frolv): This should not take a resource_id, but a handle to an active
+  // transfer session.
+  void CancelTransfer(uint32_t resource_id);
+
   Status set_extend_window_divisor(uint32_t extend_window_divisor) {
     if (extend_window_divisor <= 1) {
       return Status::InvalidArgument();

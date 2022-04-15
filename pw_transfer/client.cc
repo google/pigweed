@@ -85,6 +85,11 @@ Status Client::Write(uint32_t resource_id,
   return OkStatus();
 }
 
+void Client::CancelTransfer(uint32_t resource_id) {
+  transfer_thread_.EndClientTransfer(
+      resource_id, Status::Cancelled(), /*send_status_chunk=*/true);
+}
+
 void Client::OnRpcError(Status status, internal::TransferType type) {
   bool is_write_error = type == internal::TransferType::kTransmit;
 
