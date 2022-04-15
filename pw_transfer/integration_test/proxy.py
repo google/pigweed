@@ -104,6 +104,22 @@ class DataDropper(Filter):
             await self.send_data(data)
 
 
+class RateLimiter(Filter):
+    """A filter which limits transmission rate.
+
+    This filter delays transmission of data by len(data)/rate.
+    """
+    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
+                 rate: float):
+        super().__init__(send_data)
+        self._rate = rate
+
+    async def process(self, data: bytes) -> None:
+        delay = len(data) / self._rate
+        await asyncio.sleep(delay)
+        await self.send_data(data)
+
+
 async def _handle_simplex_connection(name: str, filter_stack_config: List[
     config_pb2.FilterConfig], reader: asyncio.StreamReader,
                                      writer: asyncio.StreamWriter) -> None:
@@ -124,6 +140,8 @@ async def _handle_simplex_connection(name: str, filter_stack_config: List[
             data_dropper = config.data_dropper
             filter_stack = DataDropper(filter_stack, name, data_dropper.rate,
                                        data_dropper.seed)
+        elif filter_name == "rate_limiter":
+            filter_stack = RateLimiter(filter_stack, config.rate_limiter.rate)
         else:
             sys.exit(f'Unknown filter {filter_name}')
 

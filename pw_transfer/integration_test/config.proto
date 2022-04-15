@@ -57,11 +57,18 @@ message DataDropperConfig {
   int64 seed = 2;
 }
 
+// Configuration for the RateLimiter proxy filter.
+message RateLimiterConfig {
+  // Rate limit, in bytes/sec.
+  float rate = 1;
+}
+
 // Configuration for a single stage in the proxy filter stack.
 message FilterConfig {
   oneof filter {
     HdlcPacketizerConfig hdlc_packetizer = 1;
     DataDropperConfig data_dropper = 2;
+    RateLimiterConfig rate_limiter = 3;
   }
 }
 

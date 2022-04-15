@@ -180,11 +180,13 @@ class PwTransferIntegrationTest(unittest.TestCase):
         proxy_config = text_format.Parse(
             """
             client_filter_stack: [
+                { rate_limiter: {rate: 50000} },
                 { hdlc_packetizer: {} },
                 { data_dropper: {rate: 0.01, seed: 1649963713563718435} }
             ]
 
             server_filter_stack: [
+                { rate_limiter: {rate: 50000} },
                 { hdlc_packetizer: {} },
                 { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
         ]""", config_pb2.ProxyConfig())
