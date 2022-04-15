@@ -145,7 +145,12 @@ class PwTransferIntegrationTest(unittest.TestCase):
             transfer_service_retries=4,
             extend_window_divisor=32,
         )
-        client_config = config_pb2.ClientConfig(resource_id=resource_id)
+        client_config = config_pb2.ClientConfig(
+            resource_id=resource_id,
+            max_retries=5,
+            initial_chunk_timeout_ms=10000,
+            chunk_timeout_ms=4000,
+        )
         proxy_config = text_format.Parse(
             """
             client_filter_stack: [
@@ -176,7 +181,12 @@ class PwTransferIntegrationTest(unittest.TestCase):
             transfer_service_retries=4,
             extend_window_divisor=32,
         )
-        client_config = config_pb2.ClientConfig(resource_id=resource_id)
+        client_config = config_pb2.ClientConfig(
+            resource_id=resource_id,
+            max_retries=5,
+            initial_chunk_timeout_ms=10000,
+            chunk_timeout_ms=4000,
+        )
         proxy_config = text_format.Parse(
             """
             client_filter_stack: [

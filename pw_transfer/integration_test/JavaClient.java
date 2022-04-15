@@ -40,11 +40,6 @@ public class JavaClient {
   private static final String SERVICE = "pw.transfer.Transfer";
   private static final Logger logger = Logger.forClass(Client.class);
 
-  private static final TransferParameters TRANSFER_PARAMETERS =
-      TransferParameters.create(8192, 216, 0);
-  private static final int MAX_RETRIES = 5;
-  private static final int INITIAL_TIMEOUT_MS = 10000;
-  private static final int DEFAULT_TIMEOUT_MS = 4000;
   private static final int CHANNEL_ID = 1;
   private static final long RPC_HDLC_ADDRESS = 'R';
   private static final String HOSTNAME = "localhost";
@@ -130,7 +125,18 @@ public class JavaClient {
   public static ConfigProtos.ClientConfig ParseConfigFrom(InputStream reader) throws IOException {
     byte[] buffer = new byte[reader.available()];
     reader.read(buffer);
-    return TextFormat.parse(new String(buffer, "UTF8"), ConfigProtos.ClientConfig.class);
+    ConfigProtos.ClientConfig.Builder config_builder = ConfigProtos.ClientConfig.newBuilder();
+    TextFormat.merge(new String(buffer, "UTF8"), config_builder);
+    if (config_builder.getChunkTimeoutMs() == 0) {
+      throw new AssertionError("chunk_timeout_ms may not be 0");
+    }
+    if (config_builder.getInitialChunkTimeoutMs() == 0) {
+      throw new AssertionError("initial_chunk_timeout_ms may not be 0");
+    }
+    if (config_builder.getMaxRetries() == 0) {
+      throw new AssertionError("max_retries may not be 0");
+    }
+    return config_builder.build();
   }
 
   public static void main(String[] args) {
@@ -139,6 +145,7 @@ public class JavaClient {
       System.exit(1);
     }
 
+    // The port is provided directly as a commandline argument.
     int port = Integer.parseInt(args[0]);
 
     ConfigProtos.ClientConfig config = null;
@@ -191,9 +198,9 @@ public class JavaClient {
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Read"),
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Write"),
         workQueue::execute,
-        DEFAULT_TIMEOUT_MS,
-        INITIAL_TIMEOUT_MS,
-        MAX_RETRIES,
+        config.getChunkTimeoutMs(),
+        config.getInitialChunkTimeoutMs(),
+        config.getMaxRetries(),
         () -> false);
 
     try {

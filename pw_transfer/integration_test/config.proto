@@ -25,6 +25,24 @@ message ClientConfig {
 
   // Path to the file containing the data to write to the server.
   string file = 2;
+
+  // The maximum number of times a packet will attempt to be sent before the
+  // transfer aborts due to a lack of response.
+  uint32 max_retries = 3;
+
+  // The maximum time to wait for a response to the first packet sent to the
+  // pw_transfer server before attempting to retry. Extending this can help
+  // work around cases where transfer initialization takes a long time.
+  //
+  // Note: This parameter is only supported on Java transfer clients.
+  // TODO(tpudlik): google.protobuf.Duration?
+  uint32 initial_chunk_timeout_ms = 4;
+
+  // The maximum time to wait for a response to a sent packet before attempting
+  // to re-send the packet.
+  //
+  // TODO(tpudlik): google.protobuf.Duration?
+  uint32 chunk_timeout_ms = 5;
 }
 
 // Configuration for the integration test server.
