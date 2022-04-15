@@ -150,11 +150,9 @@ def update_config_with_packages(
         # Collect install_requires
         if pkg.config.has_option('options', 'install_requires'):
             existing_requires = config['options'].get('install_requires', '\n')
-            # Requires are delimited by newlines or semicolons.
-            # Split existing list on either one.
-            this_requires = re.split(r' *[\n;] *',
-                                     pkg.config['options']['install_requires'])
-            new_requires = existing_requires.splitlines() + this_requires
+
+            new_requires = existing_requires.splitlines()
+            new_requires += pkg.install_requires_entries()
             # Remove requires already included in this merged config.
             new_requires = [
                 line for line in new_requires

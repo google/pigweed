@@ -20,10 +20,28 @@ from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 from typing import Dict, List, Optional, Iterable
 
 import setuptools  # type: ignore
+
+# List of known environment markers supported by pip.
+# https://peps.python.org/pep-0508/#environment-markers
+_PY_REQUIRE_ENVIRONMENT_MARKER_NAMES = [
+    'os_name',
+    'sys_platform',
+    'platform_machine',
+    'platform_python_implementation',
+    'platform_release',
+    'platform_system',
+    'platform_version',
+    'python_version',
+    'python_full_version',
+    'implementation_name',
+    'implementation_version',
+    'extra',
+]
 
 
 @contextmanager
@@ -147,6 +165,36 @@ class PythonPackage:
     def setuptools_install(self) -> None:
         with change_working_dir(self.setup_dir):
             setuptools.setup(script_args=['install'])
+
+    def install_requires_entries(self) -> List[str]:
+        """Convert the install_requires entry into a list of strings."""
+        this_requires: List[str] = []
+        # If there's no setup.cfg, do nothing.
+        if not self.config:
+            return this_requires
+
+        # Requires are delimited by newlines or semicolons.
+        # Split existing list on either one.
+        for req in re.split(r' *[\n;] *',
+                            self.config['options']['install_requires']):
+            # Skip empty lines.
+            if not req:
+                continue
+            # Get the name part part of the dep, ignoring any spaces or
+            # other characters.
+            req_name_match = re.match(r'^(?P<name_part>[A-Za-z0-9_-]+)', req)
+            if not req_name_match:
+                continue
+            req_name = req_name_match.groupdict().get('name_part', '')
+            # Check if this is an environment marker.
+            if req_name in _PY_REQUIRE_ENVIRONMENT_MARKER_NAMES:
+                # Append this req as an environment marker for the previous
+                # requirement.
+                this_requires[-1] += f';{req}'
+                continue
+            # Normal pip requirement, save to this_requires.
+            this_requires.append(req)
+        return this_requires
 
 
 def load_packages(input_list_files: Iterable[Path]) -> List[PythonPackage]:
