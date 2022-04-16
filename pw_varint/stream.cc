@@ -42,12 +42,20 @@ StatusWithSize Read(stream::Reader& reader, uint64_t* output) {
 
   while (true) {
     if (count >= varint::kMaxVarint64SizeBytes) {
-      // Varint can't fit a uint64_t.
-      return StatusWithSize::OutOfRange();
+      // Varint can't fit a uint64_t, this likely means we're reading binary
+      // data that is not actually a varint.
+      return StatusWithSize::DataLoss();
     }
 
     std::byte b;
     if (auto result = reader.Read(std::span(&b, 1)); !result.ok()) {
+      if (count > 0 && result.status().IsOutOfRange()) {
+        // Status::OutOfRange on the first byte means we tried to read a varint
+        // when we reached the end of file. But after the first byte it means we
+        // failed to decode a varint we were in the middle of, and that's not
+        // a normal error condition.
+        return StatusWithSize(Status::DataLoss(), 0);
+      }
       return StatusWithSize(result.status(), 0);
     }
 

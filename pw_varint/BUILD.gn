@@ -57,6 +57,7 @@ pw_test("varint_test") {
 
 pw_test("stream_test") {
   deps = [
+    ":pw_varint",
     ":stream",
     dir_pw_stream,
   ]

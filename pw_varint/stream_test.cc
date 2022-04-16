@@ -22,6 +22,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_stream/memory_stream.h"
+#include "pw_varint/varint.h"
 
 namespace pw::varint {
 namespace {
@@ -238,6 +239,38 @@ TEST(VarintRead, Unsigned64_MultiByte) {
     EXPECT_TRUE(sws.ok());
     EXPECT_EQ(sws.size(), 10u);
     EXPECT_EQ(value, std::numeric_limits<uint64_t>::max());
+  }
+}
+
+TEST(VarintRead, Errors) {
+  uint64_t value = -1234;
+
+  {
+    std::array<std::byte, 0> buffer{};
+    stream::MemoryReader reader(buffer);
+    const auto sws = Read(reader, &value);
+    EXPECT_FALSE(sws.ok());
+    EXPECT_EQ(sws.status(), Status::OutOfRange());
+  }
+
+  {
+    const auto buffer = MakeBuffer("\xff\xff");
+    stream::MemoryReader reader(buffer);
+    const auto sws = Read(reader, &value);
+    EXPECT_FALSE(sws.ok());
+    EXPECT_EQ(sws.status(), Status::DataLoss());
+  }
+
+  {
+    std::array<std::byte, varint::kMaxVarint64SizeBytes + 1> buffer{};
+    for (auto& b : buffer) {
+      b = std::byte{0xff};
+    }
+
+    stream::MemoryReader reader(buffer);
+    const auto sws = Read(reader, &value);
+    EXPECT_FALSE(sws.ok());
+    EXPECT_EQ(sws.status(), Status::DataLoss());
   }
 }
 
