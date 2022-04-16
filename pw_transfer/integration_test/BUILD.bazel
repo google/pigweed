@@ -1,0 +1,132 @@
+# Copyright 2022 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("//pw_build:pigweed.bzl", "pw_cc_binary")
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+pw_cc_binary(
+    name = "server",
+    srcs = ["server.cc"],
+    deps = [
+        ":config_cc_proto",
+        "//pw_assert",
+        "//pw_chrono:system_clock",
+        "//pw_log",
+        "//pw_rpc/system_server",
+        "//pw_stream",
+        "//pw_stream:std_file_stream",
+        "//pw_thread:thread",
+        "//pw_thread_stl:thread_headers",
+        "//pw_transfer",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+py_binary(
+    name = "proxy",
+    srcs = ["proxy.py"],
+    deps = [
+        ":config_pb2",
+    ],
+)
+
+proto_library(
+    name = "config_proto",
+    srcs = ["config.proto"],
+)
+
+cc_proto_library(
+    name = "config_cc_proto",
+    deps = [":config_proto"],
+)
+
+py_proto_library(
+    name = "config_pb2",
+    srcs = ["config.proto"],
+)
+
+java_proto_library(
+    name = "config_java_proto",
+    deps = [":config_proto"],
+)
+
+pw_cc_binary(
+    name = "cpp_client",
+    srcs = ["client.cc"],
+    deps = [
+        ":config_cc_proto",
+        "//pw_log",
+        "//pw_rpc:integration_testing",
+        "//pw_status",
+        "//pw_stream:std_file_stream",
+        "//pw_sync:binary_semaphore",
+        "//pw_thread:thread",
+        "//pw_transfer",
+        "//pw_transfer:client",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+py_test(
+    name = "cross_language_integration_test",
+    srcs = ["cross_language_integration_test.py"],
+    data = [
+        ":cpp_client",
+        ":java_client",
+        ":proxy",
+        ":server",
+    ],
+    # This test is not run in CQ because it's too slow.
+    tags = ["manual"],
+    deps = [
+        ":config_pb2",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_test(
+    name = "cross_language_smoke_test",
+    srcs = [
+        "cross_language_integration_test.py",
+        "cross_language_smoke_test.py",
+    ],
+    data = [
+        ":cpp_client",
+        ":java_client",
+        ":proxy",
+        ":server",
+    ],
+    main = "cross_language_smoke_test.py",
+    deps = [
+        ":config_pb2",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+java_binary(
+    name = "java_client",
+    srcs = ["JavaClient.java"],
+    main_class = "JavaClient",
+    deps = [
+        ":config_java_proto",
+        "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
+        "//pw_log/java/main/dev/pigweed/pw_log",
+        "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
+        "//pw_transfer/java/main/dev/pigweed/pw_transfer:client",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_flogger_flogger_system_backend",
+        "@maven//:com_google_guava_guava",
+    ],
+)

@@ -12,11 +12,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Cross-platform test of pw_transfer.
+"""Cross-language test of pw_transfer.
 
 Usage:
 
-   bazel run pw_transfer:cross_platform_integration_test
+   bazel run pw_transfer/integration_test:cross_platform_integration_test
 
 """
 from parameterized import parameterized
@@ -42,12 +42,13 @@ class PwTransferIntegrationTest(unittest.TestCase):
         # TODO(tpudlik): This is Bazel-only. Support gn, too.
         r = runfiles.Create()
         cls._JAVA_CLIENT_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/java_integration_test_client")
+            "pigweed/pw_transfer/integration_test/java_client")
         cls._CPP_CLIENT_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test_client")
-        cls._PROXY_BINARY = r.Rlocation("pigweed/pw_transfer/proxy")
+            "pigweed/pw_transfer/integration_test/cpp_client")
+        cls._PROXY_BINARY = r.Rlocation(
+            "pigweed/pw_transfer/integration_test/proxy")
         cls._SERVER_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test_server")
+            "pigweed/pw_transfer/integration_test/server")
         cls._CLIENT_BINARY = {
             "cpp": cls._CPP_CLIENT_BINARY,
             "java": cls._JAVA_CLIENT_BINARY,

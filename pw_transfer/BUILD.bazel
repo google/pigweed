@@ -183,52 +183,6 @@ pw_cc_test(
 )
 
 pw_cc_binary(
-    name = "integration_test_server",
-    srcs = ["integration_test/server.cc"],
-    deps = [
-        ":config_cc_proto",
-        ":pw_transfer",
-        "//pw_assert",
-        "//pw_chrono:system_clock",
-        "//pw_log",
-        "//pw_rpc/system_server",
-        "//pw_stream",
-        "//pw_stream:std_file_stream",
-        "//pw_thread:thread",
-        "//pw_thread_stl:thread_headers",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-py_binary(
-    name = "proxy",
-    srcs = ["integration_test/proxy.py"],
-    deps = [
-        ":config_pb2",
-    ],
-)
-
-proto_library(
-    name = "config_proto",
-    srcs = ["integration_test/config.proto"],
-)
-
-cc_proto_library(
-    name = "config_cc_proto",
-    deps = [":config_proto"],
-)
-
-py_proto_library(
-    name = "config_pb2",
-    srcs = ["integration_test/config.proto"],
-)
-
-java_proto_library(
-    name = "config_java_proto",
-    deps = [":config_proto"],
-)
-
-pw_cc_binary(
     name = "test_rpc_server",
     srcs = ["test_rpc_server.cc"],
     deps = [
@@ -239,56 +193,6 @@ pw_cc_binary(
         "//pw_stream:std_file_stream",
         "//pw_thread:thread",
         "//pw_work_queue",
-    ],
-)
-
-pw_cc_binary(
-    name = "integration_test_client",
-    srcs = ["integration_test/client.cc"],
-    deps = [
-        ":client",
-        ":config_cc_proto",
-        ":pw_transfer",
-        "//pw_log",
-        "//pw_rpc:integration_testing",
-        "//pw_status",
-        "//pw_stream:std_file_stream",
-        "//pw_sync:binary_semaphore",
-        "//pw_thread:thread",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-py_test(
-    name = "cross_platform_integration_test",
-    srcs = ["integration_test/cross_platform_integration_test.py"],
-    data = [
-        ":integration_test_client",
-        ":integration_test_server",
-        ":java_integration_test_client",
-        ":proxy",
-    ],
-    # TODO(b/228516801): Make this part of the CI/CQ once it's reliable.
-    tags = ["manual"],
-    deps = [
-        ":config_pb2",
-        "@rules_python//python/runfiles",
-    ],
-)
-
-java_binary(
-    name = "java_integration_test_client",
-    srcs = ["integration_test/JavaClient.java"],
-    main_class = "JavaClient",
-    deps = [
-        ":config_java_proto",
-        "//pw_hdlc/java/main/dev/pigweed/pw_hdlc",
-        "//pw_log/java/main/dev/pigweed/pw_log",
-        "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
-        "//pw_transfer/java/main/dev/pigweed/pw_transfer:client",
-        "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_guava_guava",
     ],
 )
 
