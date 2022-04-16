@@ -1051,13 +1051,13 @@ TEST(CodegenMessage, ReadNestedForcedCallback) {
 TEST(CodegenMessage, ReadOptionalPresent) {
   // clang-format off
   constexpr uint8_t proto_data[] = {
-    // optional.always_present_fixed
-    0x0d, 0x2a, 0x00, 0x00, 0x00,
-    // optional.always_present_varint
-    0x10, 0x2a,
     // optional.sometimes_present_fixed
-    0x1d, 0x45, 0x00, 0x00, 0x00,
+    0x0d, 0x2a, 0x00, 0x00, 0x00,
     // optional.sometimes_present_varint
+    0x10, 0x2a,
+    // optional.explicitly_present_fixed
+    0x1d, 0x45, 0x00, 0x00, 0x00,
+    // optional.explicitly_present_varint
     0x20, 0x45,
     // optional.sometimes_empty_fixed
     0x2a, 0x04, 0x63, 0x00, 0x00, 0x00,
@@ -1073,12 +1073,12 @@ TEST(CodegenMessage, ReadOptionalPresent) {
   const auto status = optional_test.Read(message);
   ASSERT_EQ(status, OkStatus());
 
-  EXPECT_EQ(message.always_present_fixed, 0x2a);
-  EXPECT_EQ(message.always_present_varint, 0x2a);
-  EXPECT_TRUE(message.sometimes_present_fixed);
-  EXPECT_EQ(*message.sometimes_present_fixed, 0x45);
-  EXPECT_TRUE(message.sometimes_present_varint);
-  EXPECT_EQ(*message.sometimes_present_varint, 0x45);
+  EXPECT_EQ(message.sometimes_present_fixed, 0x2a);
+  EXPECT_EQ(message.sometimes_present_varint, 0x2a);
+  EXPECT_TRUE(message.explicitly_present_fixed);
+  EXPECT_EQ(*message.explicitly_present_fixed, 0x45);
+  EXPECT_TRUE(message.explicitly_present_varint);
+  EXPECT_EQ(*message.explicitly_present_varint, 0x45);
   EXPECT_FALSE(message.sometimes_empty_fixed.empty());
   EXPECT_EQ(message.sometimes_empty_fixed.size(), 1u);
   EXPECT_EQ(message.sometimes_empty_fixed[0], 0x63);
@@ -1097,12 +1097,60 @@ TEST(CodegenMessage, ReadOptionalNotPresent) {
   const auto status = optional_test.Read(message);
   ASSERT_EQ(status, OkStatus());
 
-  EXPECT_EQ(message.always_present_fixed, 0);
-  EXPECT_EQ(message.always_present_varint, 0);
-  EXPECT_FALSE(message.sometimes_present_fixed);
-  EXPECT_FALSE(message.sometimes_present_varint);
+  // Non-optional fields have their default value.
+  EXPECT_EQ(message.sometimes_present_fixed, 0);
+  EXPECT_EQ(message.sometimes_present_varint, 0);
   EXPECT_TRUE(message.sometimes_empty_fixed.empty());
   EXPECT_TRUE(message.sometimes_empty_varint.empty());
+
+  // Optional fields are explicitly not present.
+  EXPECT_FALSE(message.explicitly_present_fixed);
+  EXPECT_FALSE(message.explicitly_present_varint);
+}
+
+TEST(CodegenMessage, ReadOptionalPresentDefaults) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // optional.sometimes_present_fixed
+    0x0d, 0x00, 0x00, 0x00, 0x00,
+    // optional.sometimes_present_varint
+    0x10, 0x00,
+    // optional.explicitly_present_fixed
+    0x1d, 0x00, 0x00, 0x00, 0x00,
+    // optional.explicitly_present_varint
+    0x20, 0x00,
+    // optional.sometimes_empty_fixed
+    0x2a, 0x04, 0x00, 0x00, 0x00, 0x00,
+    // optional.sometimes_empty_varint
+    0x32, 0x01, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  OptionalTest::StreamDecoder optional_test(reader);
+
+  OptionalTest::Message message{};
+  const auto status = optional_test.Read(message);
+  ASSERT_EQ(status, OkStatus());
+
+  // Non-optional fields have their default value and aren't meaningfully
+  // different from missing.
+  EXPECT_EQ(message.sometimes_present_fixed, 0x00);
+  EXPECT_EQ(message.sometimes_present_varint, 0x00);
+
+  // Optional fields are explicitly present with a default value.
+  EXPECT_TRUE(message.explicitly_present_fixed);
+  EXPECT_EQ(*message.explicitly_present_fixed, 0x00);
+  EXPECT_TRUE(message.explicitly_present_varint);
+  EXPECT_EQ(*message.explicitly_present_varint, 0x00);
+
+  // Repeated fields with a default value are meaningfully non-empty.
+  EXPECT_FALSE(message.sometimes_empty_fixed.empty());
+  EXPECT_EQ(message.sometimes_empty_fixed.size(), 1u);
+  EXPECT_EQ(message.sometimes_empty_fixed[0], 0x00);
+  EXPECT_FALSE(message.sometimes_empty_varint.empty());
+  EXPECT_EQ(message.sometimes_empty_varint.size(), 1u);
+  EXPECT_EQ(message.sometimes_empty_varint[0], 0x00);
 }
 
 class BreakableDecoder : public KeyValuePair::StreamDecoder {
@@ -1200,21 +1248,15 @@ TEST(CodegenMessage, Write) {
     // pigweed.bin
     0x40, 0x01,
     // pigweed.proto
-    0x4a, 0x1b,
-    // pigweed.proto.bin
-    0x10, 0x00,
-    // pigweed.proto.pigweed_pigweed_bin
-    0x18, 0x00,
+    0x4a, 0x15,
     // pigweed.proto.pigweed_protobuf_bin
     0x20, 0x01,
     // pigweed.proto.meta
-    0x2a, 0x13,
+    0x2a, 0x11,
     // pigweed.proto.meta.file_name
     0x0a, 0x0b, '/', 'e', 't', 'c', '/', 'p', 'a', 's', 's', 'w', 'd',
     // pigweed.proto.meta.status
     0x10, 0x02,
-    // pigweed.proto.meta.protobuf_bin
-    0x18, 0x00,
     // pigweed.proto.meta.pigweed_bin
     0x20, 0x01,
     // pigweed.bytes
@@ -1244,40 +1286,14 @@ TEST(CodegenMessage, WriteDefaults) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.magic_number (default)
-    0x08, 0x00,
-    // pigweed.ziggy (default)
-    0x10, 0x00,
-    // pigweed.cycles (default)
-    0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.ratio (default)
-    0x25, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.pigweed (default)
-    0x3a, 0x02,
-    // pigweed.pigweed.status (default)
-    0x08, 0x00,
-    // pigweed.bin (default)
-    0x40, 0x00,
-    // pigweed.proto (default)
-    0x4a, 0x0e,
-    // pigweed.proto.bin (default)
-    0x10, 0x00,
-    // pigweed.proto.pigweed_pigweed_bin (default)
-    0x18, 0x00,
-    // pigweed.proto.pigweed_protobuf_bin (default)
-    0x20, 0x00,
-    // pigweed.proto.meta (default)
-    0x2a, 0x06,
-    // pigweed.proto.meta.status (default)
-    0x10, 0x00,
-    // pigweed.proto.meta.protobuf_bin (default)
-    0x18, 0x00,
-    // pigweed.proto.meta.pigweed_bin (default)
-    0x20, 0x00,
+    // pigweed.pigweed (empty)
+    0x3a, 0x00,
+    // pigweed.proto
+    0x4a, 0x02,
+    // pigweed.proto.meta (empty)
+    0x2a, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.bungle (default)
-    0x70, 0x00,
   };
   // clang-format on
 
@@ -1460,36 +1476,12 @@ TEST(CodegenMessage, WriteStringCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.magic_number (default)
-    0x08, 0x00,
-    // pigweed.ziggy (default)
-    0x10, 0x00,
-    // pigweed.cycles (default)
-    0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.ratio (default)
-    0x25, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.pigweed (default)
-    0x3a, 0x02,
-    // pigweed.pigweed.status (default)
-    0x08, 0x00,
-    // pigweed.bin (default)
-    0x40, 0x00,
+    // pigweed.pigweed (empty)
+    0x3a, 0x00,
     // pigweed.proto (default)
-    0x4a, 0x0e,
-    // pigweed.proto.bin (default)
-    0x10, 0x00,
-    // pigweed.proto.pigweed_pigweed_bin (default)
-    0x18, 0x00,
-    // pigweed.proto.pigweed_protobuf_bin (default)
-    0x20, 0x00,
-    // pigweed.proto.meta (default)
-    0x2a, 0x06,
-    // pigweed.proto.meta.status (default)
-    0x10, 0x00,
-    // pigweed.proto.meta.protobuf_bin (default)
-    0x18, 0x00,
-    // pigweed.proto.meta.pigweed_bin (default)
-    0x20, 0x00,
+    0x4a, 0x02,
+    // pigweed.proto.meta (empty)
+    0x2a, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.description
@@ -1500,8 +1492,6 @@ TEST(CodegenMessage, WriteStringCallback) {
     'r', ' ', 'a', 's', ' ', 'w', 'e', ' ', 'l', 'i', 'k', 'e', ' ', 't', 'o',
     ' ', 'c', 'a', 'l', 'l', ' ', 't', 'h', 'e', 'm', ',', ' ', 'm', 'o', 'd',
     'u', 'l', 'e', 's',
-    // pigweed.bungle (default)
-    0x70, 0x00,
   };
   // clang-format on
 
@@ -1530,42 +1520,16 @@ TEST(CodegenMessage, WriteForcedCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.magic_number (default)
-    0x08, 0x00,
-    // pigweed.ziggy (default)
-    0x10, 0x00,
-    // pigweed.cycles (default)
-    0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.ratio (default)
-    0x25, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.pigweed (default)
-    0x3a, 0x02,
-    // pigweed.pigweed.status (default)
-    0x08, 0x00,
-    // pigweed.bin (default)
-    0x40, 0x00,
+    // pigweed.pigweed (empty)
+    0x3a, 0x00,
     // pigweed.proto (default)
-    0x4a, 0x0e,
-    // pigweed.proto.bin (default)
-    0x10, 0x00,
-    // pigweed.proto.pigweed_pigweed_bin (default)
-    0x18, 0x00,
-    // pigweed.proto.pigweed_protobuf_bin (default)
-    0x20, 0x00,
-    // pigweed.proto.meta (default)
-    0x2a, 0x06,
-    // pigweed.proto.meta.status (default)
-    0x10, 0x00,
-    // pigweed.proto.meta.protobuf_bin (default)
-    0x18, 0x00,
-    // pigweed.proto.meta.pigweed_bin (default)
-    0x20, 0x00,
+    0x4a, 0x02,
+    // pigweed.proto.meta (empty)
+    0x2a, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.special_property
     0x68, 0x2a,
-    // pigweed.bungle (default)
-    0x70, 0x00,
   };
   // clang-format on
 
@@ -1592,17 +1556,13 @@ TEST(CodegenMessage, WriteNestedImported) {
   // clang-format off
   constexpr uint8_t expected_proto[] = {
     // period.start
-    0x0a, 0x08,
+    0x0a, 0x06,
     // period.start.seconds v=1517949900
     0x08, 0xcc, 0xa7, 0xe8, 0xd3, 0x05,
-    // period.start.nanoseconds v=0 (default)
-    0x10, 0x00,
     // period.end
-    0x12, 0x08,
+    0x12, 0x06,
     // period.end.seconds, v=1517950378
     0x08, 0xaa, 0xab, 0xe8, 0xd3, 0x05,
-    // period.end.nanoseconds, v=0 (default)
-    0x10, 0x00,
   };
   // clang-format on
 
@@ -1709,60 +1669,32 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.magic_number (default)
-    0x08, 0x00,
-    // pigweed.ziggy (default)
-    0x10, 0x00,
-    // pigweed.cycles (default)
-    0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.ratio (default)
-    0x25, 0x00, 0x00, 0x00, 0x00,
     // pigweed.device_info
-    0x32, 0x32,
+    0x32, 0x30,
     // pigweed.device_info.device_name
     0x0a, 0x05, 'p', 'i', 'x', 'e', 'l',
     // pigweed.device_info.device_id
     0x15, 0x08, 0x08, 0x08, 0x08,
-    // pigweed.device_info.status
-    0x18, 0x00,
-    // pigweed.proto.nested_pigweed.device_info.attributes[0]
+    // pigweed.device_info.attributes[0]
     0x22, 0x10,
-    // pigweed.proto.nested_pigweed.device_info.attributes[0].key
+    // pigweed.device_info.attributes[0].key
     0x0a, 0x07, 'v', 'e', 'r', 's', 'i', 'o', 'n',
-    // pigweed.proto.nested_pigweed.device_info.attributes[0].value
+    // pigweed.device_info.attributes[0].value
     0x12, 0x05, '5', '.', '3', '.', '1',
-    // pigweed.proto.nested_pigweed.device_info.attributes[1]
+    // pigweed.device_info.attributes[1]
     0x22, 0x10,
-    // pigweed.proto.nested_pigweed.device_info.attributes[1].key
+    // pigweed.device_info.attributes[1].key
     0x0a, 0x04, 'c', 'h', 'i', 'p',
-    // pigweed.proto.nested_pigweed.device_info.attributes[1].value
+    // pigweed.device_info.attributes[1].value
     0x12, 0x08, 'l', 'e', 'f', 't', '-', 's', 'o', 'c',
-    // pigweed.pigweed (default)
-    0x3a, 0x02,
-    // pigweed.pigweed.status (default)
-    0x08, 0x00,
-    // pigweed.bin (default)
-    0x40, 0x00,
+    // pigweed.pigweed (empty)
+    0x3a, 0x00,
     // pigweed.proto (default)
-    0x4a, 0x0e,
-    // pigweed.proto.bin (default)
-    0x10, 0x00,
-    // pigweed.proto.pigweed_pigweed_bin (default)
-    0x18, 0x00,
-    // pigweed.proto.pigweed_protobuf_bin (default)
-    0x20, 0x00,
-    // pigweed.proto.meta (default)
-    0x2a, 0x06,
-    // pigweed.proto.meta.status (default)
-    0x10, 0x00,
-    // pigweed.proto.meta.protobuf_bin (default)
-    0x18, 0x00,
-    // pigweed.proto.meta.pigweed_bin (default)
-    0x20, 0x00,
+    0x4a, 0x02,
+    // pigweed.proto.meta (empty)
+    0x2a, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    // pigweed.bungle (default)
-    0x70, 0x00,
   };
   // clang-format on
 
@@ -1789,10 +1721,10 @@ TEST(CodegenMessage, EnumAliases) {
 
 TEST(CodegenMessage, WriteOptionalPresent) {
   OptionalTest::Message message{};
-  message.always_present_fixed = 0x2a;
-  message.always_present_varint = 0x2a;
-  message.sometimes_present_fixed = 0x45;
-  message.sometimes_present_varint = 0x45;
+  message.sometimes_present_fixed = 0x2a;
+  message.sometimes_present_varint = 0x2a;
+  message.explicitly_present_fixed = 0x45;
+  message.explicitly_present_varint = 0x45;
   message.sometimes_empty_fixed.push_back(0x63);
   message.sometimes_empty_varint.push_back(0x63);
 
@@ -1806,13 +1738,13 @@ TEST(CodegenMessage, WriteOptionalPresent) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // optional.always_present_fixed
-    0x0d, 0x2a, 0x00, 0x00, 0x00,
-    // optional.always_present_varint
-    0x10, 0x2a,
     // optional.sometimes_present_fixed
-    0x1d, 0x45, 0x00, 0x00, 0x00,
+    0x0d, 0x2a, 0x00, 0x00, 0x00,
     // optional.sometimes_present_varint
+    0x10, 0x2a,
+    // optional.explicitly_present_fixed
+    0x1d, 0x45, 0x00, 0x00, 0x00,
+    // optional.explicitly_present_varint
     0x20, 0x45,
     // optional.sometimes_empty_fixed
     0x2a, 0x04, 0x63, 0x00, 0x00, 0x00,
@@ -1840,10 +1772,46 @@ TEST(CodegenMessage, WriteOptionalNotPresent) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // optional.always_present_fixed
-    0x0d, 0x00, 0x00, 0x00, 0x00,
-    // optional.always_present_varint
-    0x10, 0x00,
+  };
+  // clang-format on
+
+  ConstByteSpan result = writer.WrittenData();
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
+TEST(CodegenMessage, WriteOptionalPresentDefaults) {
+  OptionalTest::Message message{};
+  // Non-optional fields with a default value are not explicitly encoded, so
+  // aren't meaningfully different from one that's just ommitted.
+  message.sometimes_present_fixed = 0x00;
+  message.sometimes_present_varint = 0x00;
+  // Optional fields, even with a default value, are explicitly encoded.
+  message.explicitly_present_fixed = 0x00;
+  message.explicitly_present_varint = 0x00;
+  // Repeated fields with a default value are meaningfully non-empty.
+  message.sometimes_empty_fixed.push_back(0x00);
+  message.sometimes_empty_varint.push_back(0x00);
+
+  std::byte encode_buffer[512];
+
+  stream::MemoryWriter writer(encode_buffer);
+  OptionalTest::StreamEncoder optional_test(writer, ByteSpan());
+
+  const auto status = optional_test.Write(message);
+  ASSERT_EQ(status, OkStatus());
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // optional.explicitly_present_fixed
+    0x1d, 0x00, 0x00, 0x00, 0x00,
+    // optional.explicitly_present_varint
+    0x20, 0x00,
+    // optional.sometimes_empty_fixed
+    0x2a, 0x04, 0x00, 0x00, 0x00, 0x00,
+    // optional.sometimes_empty_varint
+    0x32, 0x01, 0x00,
   };
   // clang-format on
 

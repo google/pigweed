@@ -16,10 +16,10 @@ syntax = "proto3";
 package pw.protobuf.test;
 
 message OptionalTest {
-  sfixed32 always_present_fixed = 1;
-  int32 always_present_varint = 2;
-  optional sfixed32 sometimes_present_fixed = 3;
-  optional int32 sometimes_present_varint = 4;
+  sfixed32 sometimes_present_fixed = 1;
+  int32 sometimes_present_varint = 2;
+  optional sfixed32 explicitly_present_fixed = 3;
+  optional int32 explicitly_present_varint = 4;
   repeated sfixed32 sometimes_empty_fixed = 5;
   repeated int32 sometimes_empty_varint = 6;
 };

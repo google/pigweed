@@ -14,6 +14,7 @@
 
 #include "pw_protobuf/encoder.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <optional>
@@ -321,7 +322,11 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
         } else {
           PW_CHECK(values.size() == field.elem_size(),
                    "Mismatched message field type and size");
-          PW_TRY(WriteFixed(field.field_number(), values));
+          if (static_cast<size_t>(
+                  std::count(values.begin(), values.end(), std::byte{0})) <
+              values.size()) {
+            PW_TRY(WriteFixed(field.field_number(), values));
+          }
         }
         break;
       }
@@ -471,6 +476,9 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
             } else {
               value = *reinterpret_cast<const uint64_t*>(values.data());
             }
+            if (!value) {
+              continue;
+            }
           } else if (field.elem_size() == sizeof(uint32_t)) {
             if (field.varint_type() == VarintType::kZigZag) {
               value = varint::ZigZagEncode(
@@ -480,8 +488,14 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
             } else {
               value = *reinterpret_cast<const uint32_t*>(values.data());
             }
+            if (!value) {
+              continue;
+            }
           } else if (field.elem_size() == sizeof(bool)) {
             value = *reinterpret_cast<const bool*>(values.data());
+            if (!value) {
+              continue;
+            }
           }
           PW_TRY(WriteVarintField(field.field_number(), value));
         }

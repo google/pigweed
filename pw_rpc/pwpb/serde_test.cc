@@ -30,12 +30,9 @@ TEST(PwpbSerde, Encode) {
 
   StatusWithSize result = kTestRequest.Encode(kProto, buffer);
   EXPECT_EQ(OkStatus(), result.status());
-  EXPECT_EQ(result.size(), 4u);
+  EXPECT_EQ(result.size(), 2u);
   EXPECT_EQ(buffer[0], std::byte{1} << 3);
   EXPECT_EQ(buffer[1], std::byte{3});
-  // pw_protobuf encodes zero fields
-  EXPECT_EQ(buffer[2], std::byte{2} << 3);
-  EXPECT_EQ(buffer[3], std::byte{0});
 }
 
 TEST(PwpbSerde, Encode_TooSmall) {
