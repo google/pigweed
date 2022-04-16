@@ -220,8 +220,16 @@ Status StreamDecoder::ReadFieldKey() {
   if (current_field_.wire_type() == WireType::kDelimited) {
     // Read the length varint of length-delimited fields immediately to simplify
     // later processing of the field.
-    PW_TRY_ASSIGN(bytes_read, varint::Read(reader_, &varint));
-    position_ += bytes_read;
+    StatusWithSize sws = varint::Read(reader_, &varint);
+    if (sws.IsOutOfRange()) {
+      // Out of range indicates the end of the stream. As a value is expected
+      // here, report it as a data loss and terminate the decode operation.
+      return Status::DataLoss();
+    }
+    if (!sws.ok()) {
+      return sws.status();
+    }
+    position_ += sws.size();
 
     if (varint > std::numeric_limits<uint32_t>::max()) {
       return Status::DataLoss();

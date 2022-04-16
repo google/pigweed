@@ -226,6 +226,28 @@ TEST(StreamDecoder, Decode_BadData) {
   EXPECT_EQ(decoder.Next(), Status::DataLoss());
 }
 
+TEST(StreamDecoder, Decode_MissingDelimitedLength) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=int32, k=1, v=42
+    0x08, 0x2a,
+    // Submessage (bytes) key=8, length=... missing
+    0x32,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+  Result<int32_t> int32 = decoder.ReadInt32();
+  ASSERT_EQ(int32.status(), OkStatus());
+  EXPECT_EQ(int32.value(), 42);
+
+  EXPECT_EQ(decoder.Next(), Status::DataLoss());
+}
+
 TEST(Decoder, Decode_SkipsBadFieldNumbers) {
   // clang-format off
   constexpr uint8_t encoded_proto[] = {
