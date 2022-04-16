@@ -248,6 +248,53 @@ TEST(StreamDecoder, Decode_MissingDelimitedLength) {
   EXPECT_EQ(decoder.Next(), Status::DataLoss());
 }
 
+TEST(StreamDecoder, Decode_VarintTooBig) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=uint32, k=1, v=>uint32_t::max
+    0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f,
+    // type=int32, k=2, v=>int32_t::max
+    0x10, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f,
+    // type=int32, k=3, v<=int32_t::min
+    0x18, 0x80, 0x80, 0x80, 0x80, 0x80, 0xff, 0xff, 0xff, 0xff, 0x01,
+    // type=sint32, k=4, v=>int32_t::max
+    0x20, 0xfe, 0xff, 0xff, 0xff, 0xff, 0x0f,
+    // type=sint32, k=5, v<=int32_t::max
+    0x28, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+  Result<uint32_t> uint32 = decoder.ReadUint32();
+  ASSERT_EQ(uint32.status(), Status::FailedPrecondition());
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 2u);
+  Result<int32_t> int32 = decoder.ReadInt32();
+  ASSERT_EQ(int32.status(), Status::FailedPrecondition());
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 3u);
+  int32 = decoder.ReadInt32();
+  ASSERT_EQ(int32.status(), Status::FailedPrecondition());
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 4u);
+  Result<int32_t> sint32 = decoder.ReadSint32();
+  ASSERT_EQ(sint32.status(), Status::FailedPrecondition());
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 5u);
+  sint32 = decoder.ReadSint32();
+  ASSERT_EQ(sint32.status(), Status::FailedPrecondition());
+
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+}
+
 TEST(Decoder, Decode_SkipsBadFieldNumbers) {
   // clang-format off
   constexpr uint8_t encoded_proto[] = {

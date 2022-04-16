@@ -335,7 +335,7 @@ StatusWithSize StreamDecoder::ReadOneVarint(std::span<std::byte> out,
   } else if (out.size() == sizeof(uint32_t)) {
     if (decode_type == VarintType::kUnsigned) {
       if (value > std::numeric_limits<uint32_t>::max()) {
-        return StatusWithSize(Status::OutOfRange(), sws.size());
+        return StatusWithSize(Status::FailedPrecondition(), sws.size());
       }
       std::memcpy(out.data(), &value, out.size());
     } else {
@@ -344,7 +344,7 @@ StatusWithSize StreamDecoder::ReadOneVarint(std::span<std::byte> out,
                                        : static_cast<int64_t>(value);
       if (signed_value > std::numeric_limits<int32_t>::max() ||
           signed_value < std::numeric_limits<int32_t>::min()) {
-        return StatusWithSize(Status::OutOfRange(), sws.size());
+        return StatusWithSize(Status::FailedPrecondition(), sws.size());
       }
       std::memcpy(out.data(), &signed_value, out.size());
     }
