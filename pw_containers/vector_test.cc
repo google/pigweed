@@ -21,6 +21,8 @@
 namespace pw {
 namespace {
 
+using namespace std::literals::string_view_literals;
+
 // Since pw::Vector<T, N> downcasts to a pw::Vector<T, 0>, ensure that the
 // alignment doesn't change.
 static_assert(alignof(Vector<std::max_align_t, 0>) ==
@@ -156,6 +158,61 @@ TEST(Vector, Construct_InitializerList) {
   EXPECT_EQ(vector.size(), 2u);
   EXPECT_EQ(vector[0], 100);
   EXPECT_EQ(vector[1], 200);
+}
+
+struct Aggregate {
+  int integer;
+  Vector<char, 8> vector;
+};
+
+TEST(Vector, Construct_String) {
+  const auto vector = Vector<char, 8>{"Hello"};
+  EXPECT_EQ(5u, vector.size());
+  EXPECT_EQ("Hello"sv, std::string_view(vector.data(), vector.size()));
+}
+
+TEST(Vector, Construct_StringTruncates) {
+  const auto vector = Vector<char, 8>{"Hello from a long string"};
+  EXPECT_EQ(8u, vector.size());
+  EXPECT_EQ("Hello fr"sv, std::string_view(vector.data(), vector.size()));
+}
+
+TEST(Vector, Construct_AssignFromString) {
+  Vector<char, 8> vector = "Hello";
+  EXPECT_EQ(5u, vector.size());
+  EXPECT_EQ("Hello"sv, std::string_view(vector.data(), vector.size()));
+}
+
+TEST(Vector, Construct_AggregateString) {
+  Aggregate aggregate = {.integer = 42, .vector = "Hello"};
+  EXPECT_EQ(5u, aggregate.vector.size());
+  EXPECT_EQ("Hello"sv,
+            std::string_view(aggregate.vector.data(), aggregate.vector.size()));
+}
+
+TEST(Vector, Construct_StringView) {
+  const auto vector = Vector<char, 8>{"Hello"sv};
+  EXPECT_EQ(5u, vector.size());
+  EXPECT_EQ("Hello"sv, std::string_view(vector.data(), vector.size()));
+}
+
+TEST(Vector, Construct_StringViewTruncates) {
+  const auto vector = Vector<char, 8>{"Hello from a long string"sv};
+  EXPECT_EQ(8u, vector.size());
+  EXPECT_EQ("Hello fr"sv, std::string_view(vector.data(), vector.size()));
+}
+
+TEST(Vector, Construct_AssignFromStringView) {
+  Vector<char, 8> vector = "Hello"sv;
+  EXPECT_EQ(5u, vector.size());
+  EXPECT_EQ("Hello"sv, std::string_view(vector.data(), vector.size()));
+}
+
+TEST(Vector, Construct_AggregateStringView) {
+  Aggregate aggregate = {.integer = 42, .vector = "Hello"sv};
+  EXPECT_EQ(5u, aggregate.vector.size());
+  EXPECT_EQ("Hello"sv,
+            std::string_view(aggregate.vector.data(), aggregate.vector.size()));
 }
 
 TEST(Vector, Destruct_ZeroLength) {
@@ -429,6 +486,17 @@ TEST(Vector, Generic) {
     EXPECT_EQ(vector[i], value);
     i += 1;
   }
+}
+
+TEST(Vector, StringView) {
+  Vector<char, 8> vector{"Hello"sv};
+  EXPECT_EQ(vector.view().size(), vector.size());
+  EXPECT_EQ(vector.view().data(), vector.data());
+}
+
+TEST(Vector, StringViewConversion) {
+  Vector<char, 8> vector{"Hello"sv};
+  EXPECT_EQ(vector, "Hello"sv);
 }
 
 // Test that Vector<T> is trivially destructible when its type is.

@@ -18,6 +18,61 @@ size in a variable. This allows Vectors to be used without having to know
 their maximum size at compile time. It also keeps code size small since
 function implementations are shared for all maximum sizes.
 
+pw::Vector<char>
+----------------
+As a variable length type with a fixed-size buffer, ``Vector<char>`` makes a
+useful lightweight container for strings, avoiding the computation and bug-prone
+nature of null-termination, and overhead of ``pw::StringBuffer`` for long-term
+storage.
+
+To facilitate this use, ``Vector<char>`` may be initialized from a
+``const char*`` or  ``std::string_view``, and provides a ``view()`` method
+and conversion operator to obtain a ``std::string_view`` over the character
+data.
+
+.. code:: c++
+
+  // Initialize from string.
+  pw::Vector<char, 32> greeting = "Hello";
+
+.. code:: c++
+
+  // Initialize as part of an aggregate
+  struct Person {
+    pw::Vector<char, 32> name;
+    int age;
+  };
+
+  Person bob = {
+    .name = "Bob",
+    .age = 42;
+  };
+
+.. code:: c++
+
+  // Initialize using std::string_view conversion from pw::StringBuffer
+  pw::StringBuffer<150> buffer;
+  buffer << "Hello";
+  pw::Vector<char, 32> greeting = buffer;
+
+  // Or use conversion to std::string_view to add to a buffer.
+  buffer << " " << person.name;
+
+Since the internal array is not null-terminated, to use the string in code that
+expects that, :ref:`module-pw_string` provides a version of ``pw::string::Copy``
+that takes a vector as a source.
+
+.. code:: c++
+
+  #include "pw_containers/vector.h"
+  #include "pw_string/vector.h"
+
+  pw::Vector<char, 32> greeting = "Hello";
+  char c_str[33];
+
+  pw::string::Copy(greeting, c_str);
+  printf("%s\n", greeting);
+
 pw::IntrusiveList
 =================
 IntrusiveList provides an embedded-friendly singly-linked intrusive list
