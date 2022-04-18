@@ -26,6 +26,7 @@ from parameterized import parameterized
 import random
 import sys
 import tempfile
+import time
 from typing import List
 import unittest
 
@@ -256,11 +257,17 @@ class PwTransferIntegrationTest(unittest.TestCase):
                 await self._server.wait_for_line(
                     "stderr", "Starting pw_rpc server on port", TIMEOUT)
 
+                start = time.monotonic()
+
                 await self._start_client(client_type, client_config)
                 # No timeout: the client will only exit once the transfer
                 # completes, and this can take a long time for large payloads.
                 await self._client.wait_for_termination(None)
                 self.assertEqual(self._client.returncode(), 0)
+
+                duration = time.monotonic() - start
+                rate = len(payload) / duration
+                print(f'Client transfer rate: {rate} B/s')
 
                 # Wait for the server to exit.
                 await self._server.wait_for_termination(TIMEOUT)
