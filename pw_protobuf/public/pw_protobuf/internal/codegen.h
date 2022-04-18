@@ -162,6 +162,17 @@ union Callback {
     decode_ = std::move(decode);
   }
 
+  // Allow moving of callbacks by moving the member.
+  constexpr Callback(Callback&& other) = default;
+  constexpr Callback& operator=(Callback&& other) = default;
+
+  // Copying a callback does not copy the functions.
+  constexpr Callback(Callback&) : encode_() {}
+  constexpr Callback& operator=(const Callback&) {
+    encode_ = nullptr;
+    return *this;
+  }
+
  private:
   friend StreamDecoder;
   friend StreamEncoder;

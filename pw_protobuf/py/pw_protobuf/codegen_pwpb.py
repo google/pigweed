@@ -1929,6 +1929,7 @@ def generate_struct_for_message(message: ProtoMessage, root: ProtoNode,
 
     # Generate members for each of the message's fields.
     with output.indent():
+        cmp: List[str] = []
         for field in message.fields():
             for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
                 prop = property_class(field, message, root)
@@ -1937,6 +1938,20 @@ def generate_struct_for_message(message: ProtoMessage, root: ProtoNode,
 
                 (type_name, name) = prop.struct_member()
                 output.write_line(f'{type_name} {name};')
+
+                if not prop.use_callback():
+                    cmp.append(f'{name} == other.{name}')
+
+        # Equality operator
+        output.write_line()
+        output.write_line('bool operator==(const Message& other) const {')
+        with output.indent():
+            if len(cmp) > 0:
+                output.write_line(f'return {" && ".join(cmp)};')
+            else:
+                output.write_line('static_cast<void>(other);')
+                output.write_line('return true;')
+        output.write_line('}')
 
     output.write_line('};')
 

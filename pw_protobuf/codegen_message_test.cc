@@ -16,6 +16,7 @@
 #include <string_view>
 
 #include "gtest/gtest.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
@@ -36,6 +37,174 @@ namespace pw::protobuf {
 namespace {
 
 using namespace ::pw::protobuf::test;
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
+
+TEST(CodegenMessage, Equality) {
+  const Pigweed::Message one{
+      .magic_number = 0x49u,
+      .ziggy = -111,
+      .cycles = 0x40302010fecaaddeu,
+      .ratio = -1.42f,
+      .error_message = "not a typewriter",
+      .pigweed = {.status = Bool::FILE_NOT_FOUND},
+      .bin = Pigweed::Protobuf::Binary::ZERO,
+      .proto = {.bin = Proto::Binary::OFF,
+                .pigweed_pigweed_bin = Pigweed::Pigweed::Binary::ZERO,
+                .pigweed_protobuf_bin = Pigweed::Protobuf::Binary::ZERO,
+                .meta =
+                    {
+                        .file_name = "/etc/passwd",
+                        .status = Pigweed::Protobuf::Compiler::Status::FUBAR,
+                        .protobuf_bin = Pigweed::Protobuf::Binary::ONE,
+                        .pigweed_bin = Pigweed::Pigweed::Binary::ONE,
+                    }},
+      .data = {std::byte{0x10},
+               std::byte{0x20},
+               std::byte{0x30},
+               std::byte{0x40},
+               std::byte{0x50},
+               std::byte{0x60},
+               std::byte{0x70},
+               std::byte{0x80}},
+      .bungle = -111,
+  };
+
+  const Pigweed::Message two{
+      .magic_number = 0x49u,
+      .ziggy = -111,
+      .cycles = 0x40302010fecaaddeu,
+      .ratio = -1.42f,
+      .error_message = "not a typewriter",
+      .pigweed = {.status = Bool::FILE_NOT_FOUND},
+      .bin = Pigweed::Protobuf::Binary::ZERO,
+      .proto = {.bin = Proto::Binary::OFF,
+                .pigweed_pigweed_bin = Pigweed::Pigweed::Binary::ZERO,
+                .pigweed_protobuf_bin = Pigweed::Protobuf::Binary::ZERO,
+                .meta =
+                    {
+                        .file_name = "/etc/passwd",
+                        .status = Pigweed::Protobuf::Compiler::Status::FUBAR,
+                        .protobuf_bin = Pigweed::Protobuf::Binary::ONE,
+                        .pigweed_bin = Pigweed::Pigweed::Binary::ONE,
+                    }},
+      .data = {std::byte{0x10},
+               std::byte{0x20},
+               std::byte{0x30},
+               std::byte{0x40},
+               std::byte{0x50},
+               std::byte{0x60},
+               std::byte{0x70},
+               std::byte{0x80}},
+      .bungle = -111,
+  };
+
+  EXPECT_TRUE(one == two);
+}
+
+TEST(CodegenMessage, CopyEquality) {
+  Pigweed::Message one{
+      .magic_number = 0x49u,
+      .ziggy = -111,
+      .cycles = 0x40302010fecaaddeu,
+      .ratio = -1.42f,
+      .error_message = "not a typewriter",
+      .pigweed = {.status = Bool::FILE_NOT_FOUND},
+      .bin = Pigweed::Protobuf::Binary::ZERO,
+      .proto = {.bin = Proto::Binary::OFF,
+                .pigweed_pigweed_bin = Pigweed::Pigweed::Binary::ZERO,
+                .pigweed_protobuf_bin = Pigweed::Protobuf::Binary::ZERO,
+                .meta =
+                    {
+                        .file_name = "/etc/passwd",
+                        .status = Pigweed::Protobuf::Compiler::Status::FUBAR,
+                        .protobuf_bin = Pigweed::Protobuf::Binary::ONE,
+                        .pigweed_bin = Pigweed::Pigweed::Binary::ONE,
+                    }},
+      .data = {std::byte{0x10},
+               std::byte{0x20},
+               std::byte{0x30},
+               std::byte{0x40},
+               std::byte{0x50},
+               std::byte{0x60},
+               std::byte{0x70},
+               std::byte{0x80}},
+      .bungle = -111,
+  };
+  Pigweed::Message two = one;
+
+  EXPECT_TRUE(one == two);
+}
+
+TEST(CodegenMessage, EmptyEquality) {
+  const Pigweed::Message one{};
+  const Pigweed::Message two{};
+
+  EXPECT_TRUE(one == two);
+}
+
+TEST(CodegenMessage, Inequality) {
+  const Pigweed::Message one{
+      .magic_number = 0x49u,
+      .ziggy = -111,
+      .cycles = 0x40302010fecaaddeu,
+      .ratio = -1.42f,
+      .error_message = "not a typewriter",
+      .pigweed = {.status = Bool::FILE_NOT_FOUND},
+      .bin = Pigweed::Protobuf::Binary::ZERO,
+      .proto = {.bin = Proto::Binary::OFF,
+                .pigweed_pigweed_bin = Pigweed::Pigweed::Binary::ZERO,
+                .pigweed_protobuf_bin = Pigweed::Protobuf::Binary::ZERO,
+                .meta =
+                    {
+                        .file_name = "/etc/passwd",
+                        .status = Pigweed::Protobuf::Compiler::Status::FUBAR,
+                        .protobuf_bin = Pigweed::Protobuf::Binary::ONE,
+                        .pigweed_bin = Pigweed::Pigweed::Binary::ONE,
+                    }},
+      .data = {std::byte{0x10},
+               std::byte{0x20},
+               std::byte{0x30},
+               std::byte{0x40},
+               std::byte{0x50},
+               std::byte{0x60},
+               std::byte{0x70},
+               std::byte{0x80}},
+      .bungle = -111,
+  };
+
+  const Pigweed::Message two{
+      .magic_number = 0x43u,
+      .ziggy = 128,
+      .ratio = -1.42f,
+      .error_message = "not a typewriter",
+      .pigweed = {.status = Bool::TRUE},
+      .bin = Pigweed::Protobuf::Binary::ZERO,
+      .proto = {.bin = Proto::Binary::OFF,
+                .pigweed_pigweed_bin = Pigweed::Pigweed::Binary::ZERO,
+                .pigweed_protobuf_bin = Pigweed::Protobuf::Binary::ONE,
+                .meta =
+                    {
+                        .file_name = "/etc/passwd",
+                        .status = Pigweed::Protobuf::Compiler::Status::FUBAR,
+                        .protobuf_bin = Pigweed::Protobuf::Binary::ONE,
+                        .pigweed_bin = Pigweed::Pigweed::Binary::ONE,
+                    }},
+      .data = {std::byte{0x20},
+               std::byte{0x30},
+               std::byte{0x40},
+               std::byte{0x50},
+               std::byte{0x60},
+               std::byte{0x70},
+               std::byte{0x80},
+               std::byte{0x90}},
+  };
+
+  EXPECT_FALSE(one == two);
+}
+
+PW_MODIFY_DIAGNOSTICS_POP();
 
 TEST(CodegenMessage, Read) {
   // clang-format off
