@@ -187,12 +187,12 @@ def _proto_compiler_aspect(extension, protoc_plugin):
             "_protoc": attr.label(
                 default = Label("@com_google_protobuf//:protoc"),
                 executable = True,
-                cfg = "host",
+                cfg = "exec",
             ),
             "_protoc_plugin": attr.label(
                 default = Label(protoc_plugin),
                 executable = True,
-                cfg = "host",
+                cfg = "exec",
             ),
         },
         implementation = _proto_compiler_aspect_impl,
