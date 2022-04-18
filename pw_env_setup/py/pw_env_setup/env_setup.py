@@ -174,7 +174,8 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  virtualenv_root, strict, virtualenv_gn_out_dir, json_file,
                  project_root, config_file, use_existing_cipd,
-                 use_pinned_pip_packages, cipd_only, trust_cipd_hash):
+                 check_submodules, use_pinned_pip_packages, cipd_only,
+                 trust_cipd_hash):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -208,6 +209,8 @@ class EnvSetup(object):
         self._pw_packages = []
         self._root_variable = None
 
+        self._check_submodules = check_submodules
+
         self._json_file = json_file
         self._gni_file = None
 
@@ -216,7 +219,7 @@ class EnvSetup(object):
         if config_file:
             self._parse_config_file(config_file)
 
-        self._check_submodules()
+        self._check_submodule_presence()
 
         self._use_existing_cipd = use_existing_cipd
         self._virtualenv_gn_out_dir = virtualenv_gn_out_dir
@@ -306,11 +309,14 @@ class EnvSetup(object):
             raise ConfigFileError('unrecognized option in {}: "{}"'.format(
                 self._config_file_name, next(iter(config))))
 
-    def _check_submodules(self):
+    def _check_submodule_presence(self):
         unitialized = set()
 
         # Don't check submodule presence if using the Android Repo Tool.
         if os.path.isdir(os.path.join(self._project_root, '.repo')):
+            return
+
+        if not self._check_submodules:
             return
 
         cmd = ['git', 'submodule', 'status', '--recursive']
@@ -744,6 +750,13 @@ def parse(argv=None):
         '--cipd-only',
         help='Skip non-CIPD steps.',
         action='store_true',
+    )
+
+    parser.add_argument(
+        '--skip-submodule-check',
+        help='Skip checking for submodule presence.',
+        dest='check_submodules',
+        action='store_false',
     )
 
     args = parser.parse_args(argv)

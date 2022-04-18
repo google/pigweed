@@ -33,6 +33,7 @@ echo -n "Updating CIPD packages..."
   --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" \
   --quiet \
   --trust-cipd-hash \
+  --skip-submodule-check \
   --cipd-only
 
 echo "done."
