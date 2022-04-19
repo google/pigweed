@@ -33,6 +33,7 @@
 // low-level encoder.
 #include "pw_protobuf_test_protos/full_test.pwpb.h"
 #include "pw_protobuf_test_protos/importer.pwpb.h"
+#include "pw_protobuf_test_protos/optional.pwpb.h"
 #include "pw_protobuf_test_protos/repeated.pwpb.h"
 
 namespace pw::protobuf {
@@ -1047,6 +1048,63 @@ TEST(CodegenMessage, ReadNestedForcedCallback) {
   ASSERT_EQ(status, OkStatus());
 }
 
+TEST(CodegenMessage, ReadOptionalPresent) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // optional.always_present_fixed
+    0x0d, 0x2a, 0x00, 0x00, 0x00,
+    // optional.always_present_varint
+    0x10, 0x2a,
+    // optional.sometimes_present_fixed
+    0x1d, 0x45, 0x00, 0x00, 0x00,
+    // optional.sometimes_present_varint
+    0x20, 0x45,
+    // optional.sometimes_empty_fixed
+    0x2a, 0x04, 0x63, 0x00, 0x00, 0x00,
+    // optional.sometimes_empty_varint
+    0x32, 0x01, 0x63,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  OptionalTest::StreamDecoder optional_test(reader);
+
+  OptionalTest::Message message{};
+  const auto status = optional_test.Read(message);
+  ASSERT_EQ(status, OkStatus());
+
+  EXPECT_EQ(message.always_present_fixed, 0x2a);
+  EXPECT_EQ(message.always_present_varint, 0x2a);
+  EXPECT_TRUE(message.sometimes_present_fixed);
+  EXPECT_EQ(*message.sometimes_present_fixed, 0x45);
+  EXPECT_TRUE(message.sometimes_present_varint);
+  EXPECT_EQ(*message.sometimes_present_varint, 0x45);
+  EXPECT_FALSE(message.sometimes_empty_fixed.empty());
+  EXPECT_EQ(message.sometimes_empty_fixed.size(), 1u);
+  EXPECT_EQ(message.sometimes_empty_fixed[0], 0x63);
+  EXPECT_FALSE(message.sometimes_empty_varint.empty());
+  EXPECT_EQ(message.sometimes_empty_varint.size(), 1u);
+  EXPECT_EQ(message.sometimes_empty_varint[0], 0x63);
+}
+
+TEST(CodegenMessage, ReadOptionalNotPresent) {
+  constexpr std::array<std::byte, 0> proto_data{};
+
+  stream::MemoryReader reader(proto_data);
+  OptionalTest::StreamDecoder optional_test(reader);
+
+  OptionalTest::Message message{};
+  const auto status = optional_test.Read(message);
+  ASSERT_EQ(status, OkStatus());
+
+  EXPECT_EQ(message.always_present_fixed, 0);
+  EXPECT_EQ(message.always_present_varint, 0);
+  EXPECT_FALSE(message.sometimes_present_fixed);
+  EXPECT_FALSE(message.sometimes_present_varint);
+  EXPECT_TRUE(message.sometimes_empty_fixed.empty());
+  EXPECT_TRUE(message.sometimes_empty_varint.empty());
+}
+
 class BreakableDecoder : public KeyValuePair::StreamDecoder {
  public:
   constexpr BreakableDecoder(stream::Reader& reader) : StreamDecoder(reader) {}
@@ -1067,6 +1125,7 @@ TEST(CodegenMessage, DISABLED_ReadDoesNotOverrun) {
        WireType::kDelimited,
        sizeof(std::byte),
        static_cast<VarintType>(0),
+       false,
        false,
        false,
        false,
@@ -1728,6 +1787,72 @@ TEST(CodegenMessage, EnumAliases) {
   EXPECT_EQ(AlwaysBlue::kBlue, AlwaysBlue::BLUE);
 }
 
+TEST(CodegenMessage, WriteOptionalPresent) {
+  OptionalTest::Message message{};
+  message.always_present_fixed = 0x2a;
+  message.always_present_varint = 0x2a;
+  message.sometimes_present_fixed = 0x45;
+  message.sometimes_present_varint = 0x45;
+  message.sometimes_empty_fixed.push_back(0x63);
+  message.sometimes_empty_varint.push_back(0x63);
+
+  std::byte encode_buffer[512];
+
+  stream::MemoryWriter writer(encode_buffer);
+  OptionalTest::StreamEncoder optional_test(writer, ByteSpan());
+
+  const auto status = optional_test.Write(message);
+  ASSERT_EQ(status, OkStatus());
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // optional.always_present_fixed
+    0x0d, 0x2a, 0x00, 0x00, 0x00,
+    // optional.always_present_varint
+    0x10, 0x2a,
+    // optional.sometimes_present_fixed
+    0x1d, 0x45, 0x00, 0x00, 0x00,
+    // optional.sometimes_present_varint
+    0x20, 0x45,
+    // optional.sometimes_empty_fixed
+    0x2a, 0x04, 0x63, 0x00, 0x00, 0x00,
+    // optional.sometimes_empty_varint
+    0x32, 0x01, 0x63,
+  };
+  // clang-format on
+
+  ConstByteSpan result = writer.WrittenData();
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
+TEST(CodegenMessage, WriteOptionalNotPresent) {
+  OptionalTest::Message message{};
+
+  std::byte encode_buffer[512];
+
+  stream::MemoryWriter writer(encode_buffer);
+  OptionalTest::StreamEncoder optional_test(writer, ByteSpan());
+
+  const auto status = optional_test.Write(message);
+  ASSERT_EQ(status, OkStatus());
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // optional.always_present_fixed
+    0x0d, 0x00, 0x00, 0x00, 0x00,
+    // optional.always_present_varint
+    0x10, 0x00,
+  };
+  // clang-format on
+
+  ConstByteSpan result = writer.WrittenData();
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
 class BreakableEncoder : public KeyValuePair::MemoryEncoder {
  public:
   constexpr BreakableEncoder(ByteSpan buffer)
@@ -1749,6 +1874,7 @@ TEST(CodegenMessage, DISABLED_WriteDoesNotOverrun) {
        WireType::kDelimited,
        sizeof(std::byte),
        static_cast<VarintType>(0),
+       false,
        false,
        false,
        false,

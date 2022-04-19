@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <optional>
 #include <span>
 
 #include "pw_assert/check.h"
@@ -294,6 +295,29 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
                   field.elem_size()));
             }
           }
+        } else if (field.is_optional()) {
+          // The struct member for this field is a std::optional of a type
+          // corresponding to the field element size. Cast to the correct
+          // optional type so we're not performing type aliasing (except for
+          // unsigned vs signed which is explicitly allowed), and write from
+          // a temporary.
+          if (field.elem_size() == sizeof(uint64_t)) {
+            const auto* optional =
+                reinterpret_cast<const std::optional<uint64_t>*>(values.data());
+            if (optional->has_value()) {
+              uint64_t value = optional->value();
+              PW_TRY(WriteFixed(field.field_number(),
+                                std::as_bytes(std::span(&value, 1))));
+            }
+          } else if (field.elem_size() == sizeof(uint32_t)) {
+            const auto* optional =
+                reinterpret_cast<const std::optional<uint32_t>*>(values.data());
+            if (optional->has_value()) {
+              uint32_t value = optional->value();
+              PW_TRY(WriteFixed(field.field_number(),
+                                std::as_bytes(std::span(&value, 1))));
+            }
+          }
         } else {
           PW_CHECK(values.size() == field.elem_size(),
                    "Mismatched message field type and size");
@@ -373,6 +397,62 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
                                      field.varint_type()));
             }
           }
+        } else if (field.is_optional()) {
+          // The struct member for this field is a std::optional of a type
+          // corresponding to the field element size. Cast to the correct
+          // optional type so we're not performing type aliasing (except for
+          // unsigned vs signed which is explicitly allowed), and write from
+          // a temporary.
+          uint64_t value = 0;
+          if (field.elem_size() == sizeof(uint64_t)) {
+            if (field.varint_type() == VarintType::kUnsigned) {
+              const auto* optional =
+                  reinterpret_cast<const std::optional<uint64_t>*>(
+                      values.data());
+              if (!optional->has_value()) {
+                continue;
+              }
+              value = optional->value();
+            } else {
+              const auto* optional =
+                  reinterpret_cast<const std::optional<int64_t>*>(
+                      values.data());
+              if (!optional->has_value()) {
+                continue;
+              }
+              value = field.varint_type() == VarintType::kZigZag
+                          ? varint::ZigZagEncode(optional->value())
+                          : optional->value();
+            }
+          } else if (field.elem_size() == sizeof(uint32_t)) {
+            if (field.varint_type() == VarintType::kUnsigned) {
+              const auto* optional =
+                  reinterpret_cast<const std::optional<uint32_t>*>(
+                      values.data());
+              if (!optional->has_value()) {
+                continue;
+              }
+              value = optional->value();
+            } else {
+              const auto* optional =
+                  reinterpret_cast<const std::optional<int32_t>*>(
+                      values.data());
+              if (!optional->has_value()) {
+                continue;
+              }
+              value = field.varint_type() == VarintType::kZigZag
+                          ? varint::ZigZagEncode(optional->value())
+                          : optional->value();
+            }
+          } else if (field.elem_size() == sizeof(bool)) {
+            const auto* optional =
+                reinterpret_cast<const std::optional<bool>*>(values.data());
+            if (!optional->has_value()) {
+              continue;
+            }
+            value = optional->value();
+          }
+          PW_TRY(WriteVarintField(field.field_number(), value));
         } else {
           // The struct member for this field is a scalar of a type
           // corresponding to the field element size. Cast to the correct

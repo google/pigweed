@@ -63,18 +63,19 @@ class MessageField {
       VarintType varint_type,
       bool is_fixed_size,
       bool is_repeated,
+      bool is_optional,
       bool use_callback,
       size_t field_offset,
       size_t field_size,
       const std::span<const MessageField>* nested_message_fields)
       : field_number_(field_number),
-        field_info_(static_cast<unsigned int>(wire_type) << kWireTypeShift |
-                    elem_size << kElemSizeShift |
-                    static_cast<unsigned int>(varint_type) << kVarintTypeShift |
-                    is_fixed_size << kIsFixedSizeShift |
-                    is_repeated << kIsRepeatedShift |
-                    use_callback << kUseCallbackShift |
-                    field_size << kFieldSizeShift),
+        field_info_(
+            static_cast<unsigned int>(wire_type) << kWireTypeShift |
+            elem_size << kElemSizeShift |
+            static_cast<unsigned int>(varint_type) << kVarintTypeShift |
+            is_fixed_size << kIsFixedSizeShift |
+            is_repeated << kIsRepeatedShift | is_optional << kIsOptionalShift |
+            use_callback << kUseCallbackShift | field_size << kFieldSizeShift),
         field_offset_(field_offset),
         nested_message_fields_(nested_message_fields) {}
 
@@ -95,6 +96,9 @@ class MessageField {
   }
   constexpr bool is_repeated() const {
     return (field_info_ >> kIsRepeatedShift) & 1;
+  }
+  constexpr bool is_optional() const {
+    return (field_info_ >> kIsOptionalShift) & 1;
   }
   constexpr bool use_callback() const {
     return (field_info_ >> kUseCallbackShift) & 1;
@@ -120,7 +124,8 @@ class MessageField {
   //   use_callback   : 1
   //   -
   //   elem_size      : 4
-  //   [unused space] : 4
+  //   is_optional    : 1
+  //   [unused space] : 3
   //   -
   //   field_size     : 16
   static constexpr unsigned int kWireTypeShift = 29u;
@@ -132,6 +137,7 @@ class MessageField {
   static constexpr unsigned int kUseCallbackShift = 24u;
   static constexpr unsigned int kElemSizeShift = 20u;
   static constexpr unsigned int kElemSizeMask = (1u << 4) - 1;
+  static constexpr unsigned int kIsOptionalShift = 16u;
   static constexpr unsigned int kFieldSizeShift = 0u;
   static constexpr unsigned int kFieldSizeMask = kMaxFieldSize;
 

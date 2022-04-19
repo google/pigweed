@@ -355,6 +355,11 @@ class MessageProperty(ProtoMember):
         return options.use_callback or (self._field.is_repeated()
                                         and self.max_size() == 0)
 
+    def is_optional(self) -> bool:
+        """Returns whether the decoder should use std::optional."""
+        return (self._field.is_optional() and self.max_size() == 0
+                and self.wire_type() != 'kDelimited')
+
     def max_size(self) -> int:
         """Returns the maximum size of the field."""
         if self._field.is_repeated():
@@ -381,6 +386,11 @@ class MessageProperty(ProtoMember):
         if self.use_callback():
             return (f'{PROTOBUF_NAMESPACE}::Callback'
                     '<StreamEncoder, StreamDecoder>', self.name())
+
+        # Optional fields are wrapped in std::optional
+        if self.is_optional():
+            return ('std::optional<{}>'.format(self.type_name(from_root)),
+                    self.name())
 
         # Non-repeated fields have a member of just the type name.
         max_size = self.max_size()
@@ -418,6 +428,7 @@ class MessageProperty(ProtoMember):
             self._varint_type_table_entry(),
             'true' if self.fixed_size() else 'false',
             'true' if self._field.is_repeated() else 'false',
+            'true' if self.is_optional() else 'false',
             'true' if self.use_callback() else 'false',
             'offsetof(Message, {})'.format(self.name()),
             'sizeof(Message::{})'.format(self.name()),
@@ -2212,6 +2223,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <array>')
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
+    output.write_line('#include <optional>')
     output.write_line('#include <span>')
     output.write_line('#include <string_view>\n')
     output.write_line('#include "pw_assert/assert.h"')

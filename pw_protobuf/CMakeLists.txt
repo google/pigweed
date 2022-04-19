@@ -199,10 +199,12 @@ pw_proto_library(pw_protobuf.codegen_test_protos
     pw_protobuf_test_protos/imported.proto
     pw_protobuf_test_protos/importer.proto
     pw_protobuf_test_protos/non_pw_package.proto
+    pw_protobuf_test_protos/optional.proto
     pw_protobuf_test_protos/proto2.proto
     pw_protobuf_test_protos/repeated.proto
   INPUTS
     pw_protobuf_test_protos/full_test.options
+    pw_protobuf_test_protos/optional.options
     pw_protobuf_test_protos/repeated.options
   DEPS
     pw_protobuf.common_proto

@@ -19,6 +19,8 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <optional>
+#include <span>
 
 #include "pw_assert/assert.h"
 #include "pw_assert/check.h"
@@ -569,6 +571,27 @@ Status StreamDecoder::Read(std::span<std::byte> message,
             auto* vector = reinterpret_cast<pw::Vector<uint32_t>*>(out.data());
             PW_TRY(ReadRepeatedFixedField(*vector));
           }
+        } else if (field->is_optional()) {
+          // The struct member for this field is a std::optional of a type
+          // corresponding to the field element size. Cast to the correct
+          // optional type so we're not performing type aliasing (except for
+          // unsigned vs signed which is explicitly allowed), and assign through
+          // a temporary.
+          if (field->elem_size() == sizeof(uint64_t)) {
+            uint64_t value = 0;
+            PW_TRY(
+                ReadFixedField(std::as_writable_bytes(std::span(&value, 1))));
+            auto* optional =
+                reinterpret_cast<std::optional<uint64_t>*>(out.data());
+            *optional = value;
+          } else if (field->elem_size() == sizeof(uint32_t)) {
+            uint32_t value = 0;
+            PW_TRY(
+                ReadFixedField(std::as_writable_bytes(std::span(&value, 1))));
+            auto* optional =
+                reinterpret_cast<std::optional<uint32_t>*>(out.data());
+            *optional = value;
+          }
         } else {
           PW_CHECK(out.size() == field->elem_size(),
                    "Mismatched message field type and size");
@@ -602,6 +625,33 @@ Status StreamDecoder::Read(std::span<std::byte> message,
           } else if (field->elem_size() == sizeof(bool)) {
             auto* vector = reinterpret_cast<pw::Vector<bool>*>(out.data());
             PW_TRY(ReadRepeatedVarintField(*vector, field->varint_type()));
+          }
+        } else if (field->is_optional()) {
+          // The struct member for this field is a std::optional of a type
+          // corresponding to the field element size. Cast to the correct
+          // optional type so we're not performing type aliasing (except for
+          // unsigned vs signed which is explicitly allowed), and assign through
+          // a temporary.
+          if (field->elem_size() == sizeof(uint64_t)) {
+            uint64_t value = 0;
+            PW_TRY(ReadVarintField(std::as_writable_bytes(std::span(&value, 1)),
+                                   field->varint_type()));
+            auto* optional =
+                reinterpret_cast<std::optional<uint64_t>*>(out.data());
+            *optional = value;
+          } else if (field->elem_size() == sizeof(uint32_t)) {
+            uint32_t value = 0;
+            PW_TRY(ReadVarintField(std::as_writable_bytes(std::span(&value, 1)),
+                                   field->varint_type()));
+            auto* optional =
+                reinterpret_cast<std::optional<uint32_t>*>(out.data());
+            *optional = value;
+          } else if (field->elem_size() == sizeof(bool)) {
+            bool value = false;
+            PW_TRY(ReadVarintField(std::as_writable_bytes(std::span(&value, 1)),
+                                   field->varint_type()));
+            auto* optional = reinterpret_cast<std::optional<bool>*>(out.data());
+            *optional = value;
           }
         } else {
           PW_CHECK(out.size() == field->elem_size(),

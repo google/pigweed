@@ -335,12 +335,14 @@ class ProtoMessageField:
                  field_number: int,
                  field_type: int,
                  type_node: Optional[ProtoNode] = None,
+                 optional: bool = False,
                  repeated: bool = False,
                  field_options: Optional[Options] = None):
         self._field_name = symbol_name_mapping.fix_cc_identifier(field_name)
         self._number: int = field_number
         self._type: int = field_type
         self._type_node: Optional[ProtoNode] = type_node
+        self._optional: bool = optional
         self._repeated: bool = repeated
         self._options: Optional[Options] = field_options
 
@@ -358,6 +360,9 @@ class ProtoMessageField:
 
     def type_node(self) -> Optional[ProtoNode]:
         return self._type_node
+
+    def is_optional(self) -> bool:
+        return self._optional
 
     def is_repeated(self) -> bool:
         return self._repeated
@@ -485,6 +490,7 @@ def _add_message_fields(global_root: ProtoNode, package_root: ProtoNode,
         else:
             type_node = None
 
+        optional = field.proto3_optional
         repeated = \
             field.label == descriptor_pb2.FieldDescriptorProto.LABEL_REPEATED
         field_options = options.match_options(
@@ -492,7 +498,7 @@ def _add_message_fields(global_root: ProtoNode, package_root: ProtoNode,
             proto_options) if proto_options is not None else None
         message.add_field(
             ProtoMessageField(field.name, field.number, field.type, type_node,
-                              repeated, field_options))
+                              optional, repeated, field_options))
 
 
 def _add_service_methods(global_root: ProtoNode, package_root: ProtoNode,
