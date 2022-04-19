@@ -274,4 +274,30 @@ TEST(VarintRead, Errors) {
   }
 }
 
+TEST(VarintRead, SizeLimit) {
+  uint64_t value = -1234;
+
+  {
+    // buffer contains a valid varint, but we limit the read length to ensure
+    // that the final byte is not read, turning it into an error.
+    const auto buffer = MakeBuffer("\xff\xff\xff\xff\x0f");
+    stream::MemoryReader reader(buffer);
+    const auto sws = Read(reader, &value, 4);
+    EXPECT_FALSE(sws.ok());
+    EXPECT_EQ(sws.status(), Status::DataLoss());
+    EXPECT_EQ(reader.Tell(), 4u);
+  }
+
+  {
+    // If we tell varint::Read() to read zero bytes, it should always return
+    // OutOfRange() without moving the reader.
+    const auto buffer = MakeBuffer("\xff\xff\xff\xff\x0f");
+    stream::MemoryReader reader(buffer);
+    const auto sws = Read(reader, &value, 0);
+    EXPECT_FALSE(sws.ok());
+    EXPECT_EQ(sws.status(), Status::OutOfRange());
+    EXPECT_EQ(reader.Tell(), 0u);
+  }
+}
+
 }  // namespace pw::varint

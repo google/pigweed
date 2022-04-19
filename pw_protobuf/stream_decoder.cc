@@ -208,7 +208,8 @@ Status StreamDecoder::ReadFieldKey() {
   PW_DCHECK(field_consumed_);
 
   uint64_t varint = 0;
-  PW_TRY_ASSIGN(size_t bytes_read, varint::Read(reader_, &varint));
+  PW_TRY_ASSIGN(size_t bytes_read,
+                varint::Read(reader_, &varint, RemainingBytes()));
   position_ += bytes_read;
 
   if (!FieldKey::IsValidKey(varint)) {
@@ -220,7 +221,7 @@ Status StreamDecoder::ReadFieldKey() {
   if (current_field_.wire_type() == WireType::kDelimited) {
     // Read the length varint of length-delimited fields immediately to simplify
     // later processing of the field.
-    StatusWithSize sws = varint::Read(reader_, &varint);
+    StatusWithSize sws = varint::Read(reader_, &varint, RemainingBytes());
     if (sws.IsOutOfRange()) {
       // Out of range indicates the end of the stream. As a value is expected
       // here, report it as a data loss and terminate the decode operation.
@@ -260,7 +261,8 @@ Status StreamDecoder::SkipField() {
   switch (current_field_.wire_type()) {
     case WireType::kVarint: {
       // Consume the varint field; nothing more to skip afterward.
-      PW_TRY_ASSIGN(size_t bytes_read, varint::Read(reader_, &value));
+      PW_TRY_ASSIGN(size_t bytes_read,
+                    varint::Read(reader_, &value, RemainingBytes()));
       position_ += bytes_read;
       break;
     }
@@ -282,6 +284,11 @@ Status StreamDecoder::SkipField() {
     // DATA_LOSS since the proto is invalid (as opposed to OUT_OF_BOUNDS if we
     // just tried to seek beyond the end).
     if (reader_.ConservativeReadLimit() < bytes_to_skip) {
+      status_ = Status::DataLoss();
+      return status_;
+    }
+
+    if (RemainingBytes() < bytes_to_skip) {
       status_ = Status::DataLoss();
       return status_;
     }
@@ -310,7 +317,7 @@ Status StreamDecoder::ReadVarintField(std::span<std::byte> out,
 StatusWithSize StreamDecoder::ReadOneVarint(std::span<std::byte> out,
                                             VarintType decode_type) {
   uint64_t value;
-  StatusWithSize sws = varint::Read(reader_, &value);
+  StatusWithSize sws = varint::Read(reader_, &value, RemainingBytes());
   if (sws.IsOutOfRange()) {
     // Out of range indicates the end of the stream. As a value is expected
     // here, report it as a data loss and terminate the decode operation.
@@ -363,6 +370,11 @@ Status StreamDecoder::ReadFixedField(std::span<std::byte> out) {
   PW_TRY(CheckOkToRead(expected_wire_type));
 
   if (reader_.ConservativeReadLimit() < out.size()) {
+    status_ = Status::DataLoss();
+    return status_;
+  }
+
+  if (RemainingBytes() < out.size()) {
     status_ = Status::DataLoss();
     return status_;
   }

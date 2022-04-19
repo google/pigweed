@@ -578,6 +578,12 @@ class StreamDecoder {
 
   Status Advance(size_t end_position);
 
+  size_t RemainingBytes() {
+    return stream_bounds_.high < std::numeric_limits<size_t>::max()
+               ? stream_bounds_.high - position_
+               : std::numeric_limits<size_t>::max();
+  }
+
   void CloseBytesReader(BytesReader& reader);
   void CloseNestedDecoder(StreamDecoder& nested);
 

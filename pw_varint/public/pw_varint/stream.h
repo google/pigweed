@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 #include "pw_status/status_with_size.h"
 #include "pw_stream/stream.h"
@@ -26,9 +27,14 @@ namespace varint {
 //
 // Returns the number of bytes read from the stream if successful, OutOfRange
 // if the varint does not fit in a int64_t / uint64_t or if the input is
-// exhausted before the number terminates. Reads a maximum of 10 bytes.
-StatusWithSize Read(stream::Reader& reader, int64_t* output);
-StatusWithSize Read(stream::Reader& reader, uint64_t* output);
+// exhausted before the number terminates. Reads a maximum of 10 bytes or
+// max_size, whichever is smaller.
+StatusWithSize Read(stream::Reader& reader,
+                    int64_t* output,
+                    size_t max_size = std::numeric_limits<size_t>::max());
+StatusWithSize Read(stream::Reader& reader,
+                    uint64_t* output,
+                    size_t max_size = std::numeric_limits<size_t>::max());
 
 }  // namespace varint
 }  // namespace pw

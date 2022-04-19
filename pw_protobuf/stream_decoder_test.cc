@@ -558,6 +558,233 @@ TEST(StreamDecoder, Decode_Nested_InvalidField) {
   EXPECT_EQ(decoder.Next(), Status::DataLoss());
 }
 
+TEST(StreamDecoder, Decode_Nested_InvalidFieldKey) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // Submessage key=1, length=2
+    0x0a, 0x02,
+    // type=invalid...
+    0xff, 0xff,
+    // End submessage
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+    EXPECT_EQ(nested.Next(), Status::DataLoss());
+
+    // Make sure that the nested decoder didn't run off the end of the
+    // submessage.
+    ASSERT_EQ(reader.Tell(), 4u);
+  }
+}
+
+TEST(StreamDecoder, Decode_Nested_MissingDelimitedLength) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // Submessage key=1, length=1
+    0x0a, 0x01,
+    // Delimited field (bytes) key=1, length=missing...
+    0x0a,
+    // End submessage
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+    EXPECT_EQ(nested.Next(), Status::DataLoss());
+
+    // Make sure that the nested decoder didn't run off the end of the
+    // submessage.
+    ASSERT_EQ(reader.Tell(), 3u);
+  }
+}
+
+TEST(StreamDecoder, Decode_Nested_InvalidDelimitedLength) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // Submessage key=1, length=2
+    0x0a, 0x02,
+    // Delimited field (bytes) key=1, length=invalid...
+    0x0a, 0xff,
+    // End submessage
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+    EXPECT_EQ(nested.Next(), Status::DataLoss());
+
+    // Make sure that the nested decoder didn't run off the end of the
+    // submessage.
+    ASSERT_EQ(reader.Tell(), 4u);
+  }
+}
+
+TEST(StreamDecoder, Decode_Nested_InvalidVarint) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // Submessage key=1, length=2
+    0x0a, 0x02,
+    // type=uint32 key=1, value=invalid...
+    0x08, 0xff,
+    // End submessage
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+    EXPECT_EQ(nested.Next(), OkStatus());
+    ASSERT_EQ(*nested.FieldNumber(), 1u);
+
+    Result<uint32_t> uint32 = nested.ReadUint32();
+    EXPECT_EQ(uint32.status(), Status::DataLoss());
+
+    // Make sure that the nested decoder didn't run off the end of the
+    // submessage.
+    ASSERT_EQ(reader.Tell(), 4u);
+  }
+}
+
+TEST(StreamDecoder, Decode_Nested_SkipInvalidVarint) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // Submessage key=1, length=2
+    0x0a, 0x02,
+    // type=uint32 key=1, value=invalid...
+    0x08, 0xff,
+    // End submessage
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+    EXPECT_EQ(nested.Next(), OkStatus());
+    ASSERT_EQ(*nested.FieldNumber(), 1u);
+
+    // Skip without reading.
+    EXPECT_EQ(nested.Next(), Status::DataLoss());
+
+    // Make sure that the nested decoder didn't run off the end of the
+    // submessage.
+    ASSERT_EQ(reader.Tell(), 4u);
+  }
+}
+
+TEST(StreamDecoder, Decode_Nested_TruncatedFixed) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // Submessage key=1, length=2
+    0x0a, 0x03,
+    // type=fixed32 key=1, value=truncated...
+    0x0d, 0x42, 0x00,
+    // End submessage
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+    EXPECT_EQ(nested.Next(), OkStatus());
+    ASSERT_EQ(*nested.FieldNumber(), 1u);
+
+    Result<uint32_t> uint32 = nested.ReadFixed32();
+    EXPECT_EQ(uint32.status(), Status::DataLoss());
+
+    // Make sure that the nested decoder didn't run off the end of the
+    // submessage. Note that this will not read the data at all in this case.
+    ASSERT_EQ(reader.Tell(), 3u);
+  }
+}
+
+TEST(StreamDecoder, Decode_Nested_SkipTruncatedFixed) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // Submessage key=1, length=2
+    0x0a, 0x03,
+    // type=fixed32 key=1, value=truncated...
+    0x0d, 0x42, 0x00,
+    // End submessage
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+
+  {
+    StreamDecoder nested = decoder.GetNestedDecoder();
+    EXPECT_EQ(nested.Next(), OkStatus());
+    ASSERT_EQ(*nested.FieldNumber(), 1u);
+
+    // Skip without reading.
+    EXPECT_EQ(nested.Next(), Status::DataLoss());
+
+    // Make sure that the nested decoder didn't run off the end of the
+    // submessage. Note that this will be unable to skip the field without
+    // exceeding the range of the nested decoder, so it won't move the cursor.
+    ASSERT_EQ(reader.Tell(), 3u);
+  }
+}
+
 TEST(StreamDecoder, Decode_BytesReader) {
   // clang-format off
   constexpr uint8_t encoded_proto[] = {

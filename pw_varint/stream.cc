@@ -25,9 +25,9 @@
 namespace pw {
 namespace varint {
 
-StatusWithSize Read(stream::Reader& reader, int64_t* output) {
+StatusWithSize Read(stream::Reader& reader, int64_t* output, size_t max_size) {
   uint64_t value = 0;
-  StatusWithSize count = Read(reader, &value);
+  StatusWithSize count = Read(reader, &value, max_size);
   if (!count.ok()) {
     return count;
   }
@@ -36,7 +36,7 @@ StatusWithSize Read(stream::Reader& reader, int64_t* output) {
   return count;
 }
 
-StatusWithSize Read(stream::Reader& reader, uint64_t* output) {
+StatusWithSize Read(stream::Reader& reader, uint64_t* output, size_t max_size) {
   uint64_t value = 0;
   size_t count = 0;
 
@@ -45,6 +45,14 @@ StatusWithSize Read(stream::Reader& reader, uint64_t* output) {
       // Varint can't fit a uint64_t, this likely means we're reading binary
       // data that is not actually a varint.
       return StatusWithSize::DataLoss();
+    }
+
+    if (count >= max_size) {
+      // Varint didn't fit within the range given; return OutOfRange() if
+      // max_size was 0, but DataLoss if we were reading something we thought
+      // was going to be a varint.
+      return count > 0 ? StatusWithSize::DataLoss()
+                       : StatusWithSize::OutOfRange();
     }
 
     std::byte b;
