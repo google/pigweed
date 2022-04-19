@@ -172,10 +172,9 @@ class MissingSubmodulesError(Exception):
 class EnvSetup(object):
     """Run environment setup for Pigweed."""
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
-                 virtualenv_root, strict, virtualenv_gn_out_dir, json_file,
-                 project_root, config_file, use_existing_cipd,
-                 check_submodules, use_pinned_pip_packages, cipd_only,
-                 trust_cipd_hash):
+                 strict, virtualenv_gn_out_dir, json_file, project_root,
+                 config_file, use_existing_cipd, check_submodules,
+                 use_pinned_pip_packages, cipd_only, trust_cipd_hash):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -186,8 +185,7 @@ class EnvSetup(object):
         self._is_windows = os.name == 'nt'
         self._quiet = quiet
         self._install_dir = install_dir
-        self._virtualenv_root = (virtualenv_root
-                                 or os.path.join(install_dir, 'pigweed-venv'))
+        self._virtualenv_root = os.path.join(self._install_dir, 'pigweed-venv')
         self._strict = strict
         self._cipd_only = cipd_only
         self._trust_cipd_hash = trust_cipd_hash
@@ -717,13 +715,6 @@ def parse(argv=None):
         help=('Output directory to use when building and installing Python '
               'packages with GN; defaults to a unique path in the environment '
               'directory.'))
-
-    parser.add_argument(
-        '--virtualenv-root',
-        help=('Root of virtualenv directory. Default: '
-              '<install_dir>/pigweed-venv'),
-        default=None,
-    )
 
     parser.add_argument('--json-file', help=argparse.SUPPRESS, default=None)
 
