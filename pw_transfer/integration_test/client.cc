@@ -21,10 +21,13 @@
 // WORK IN PROGRESS, SEE b/228516801
 #include "pw_transfer/client.h"
 
+#include <sys/socket.h>
+
 #include <cstddef>
 #include <cstdio>
 
 #include "google/protobuf/text_format.h"
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc/integration_testing.h"
 #include "pw_status/status.h"
@@ -36,8 +39,22 @@
 #include "pw_transfer/integration_test/config.pb.h"
 #include "pw_transfer/transfer_thread.h"
 
-namespace pw::transfer {
+namespace pw::transfer::integration_test {
 namespace {
+
+// This is the maximum size of the socket send buffers. Ideally, this is set
+// to the lowest allowed value to minimize buffering between the proxy and
+// clients so rate limiting causes the client to block and wait for the
+// integration test proxy to drain rather than allowing OS buffers to backlog
+// large quantities of data.
+//
+// Note that the OS may chose to not strictly follow this requested buffer size.
+// Still, setting this value to be as small as possible does reduce bufer sizes
+// significantly enough to better reflect typical inter-device communication.
+//
+// For this to be effective, servers should also configure their sockets to a
+// smaller receive buffer size.
+constexpr int kMaxSocketSendBufferSize = 1;
 
 thread::Options& TransferThreadOptions() {
   static thread::stl::Options options;
@@ -90,7 +107,7 @@ pw::Status SendData(const pw::transfer::ClientConfig& config) {
 }
 
 }  // namespace
-}  // namespace pw::transfer
+}  // namespace pw::transfer::integration_test
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
@@ -121,7 +138,18 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  if (!pw::transfer::SendData(config).ok()) {
+  int retval = setsockopt(
+      pw::rpc::integration_test::GetClientSocketFd(),
+      SOL_SOCKET,
+      SO_SNDBUF,
+      &pw::transfer::integration_test::kMaxSocketSendBufferSize,
+      sizeof(pw::transfer::integration_test::kMaxSocketSendBufferSize));
+  PW_CHECK_INT_EQ(retval,
+                  0,
+                  "Failed to configure socket send buffer size with errno=%d",
+                  errno);
+
+  if (!pw::transfer::integration_test::SendData(config).ok()) {
     PW_LOG_INFO("Failed to transfer!");
     return 1;
   }

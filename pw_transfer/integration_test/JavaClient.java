@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,6 +44,21 @@ public class JavaClient {
   private static final int CHANNEL_ID = 1;
   private static final long RPC_HDLC_ADDRESS = 'R';
   private static final String HOSTNAME = "localhost";
+
+  // This is the maximum size of the socket send buffers. Ideally, this is set
+  // to the lowest allowed value to minimize buffering between the proxy and
+  // clients so rate limiting causes the client to block and wait for the
+  // integration test proxy to drain rather than allowing OS buffers to backlog
+  // large quantities of data.
+  //
+  // Note that the OS may chose to not strictly follow this requested buffer
+  // size. Still, setting this value to be as small as possible does reduce
+  // bufer sizes significantly enough to better reflect typical inter-device
+  // communication.
+  //
+  // For this to be effective, servers should also configure their sockets to a
+  // smaller receive buffer size.
+  private static final int MAX_SOCKET_SEND_BUFFER_SIZE = 1;
 
   private HdlcRpcChannelOutput channelOutput;
   private Client rpcClient;
@@ -176,7 +192,12 @@ public class JavaClient {
       logger.atSevere().log("Failed to connect to %s:%d", HOSTNAME, port);
       System.exit(1);
     }
-
+    try {
+      socket.setSendBufferSize(MAX_SOCKET_SEND_BUFFER_SIZE);
+    } catch (SocketException e) {
+      logger.atSevere().log("Invalid socket buffer size %d", MAX_SOCKET_SEND_BUFFER_SIZE);
+      System.exit(1);
+    }
     InputStream reader = null;
     OutputStream writer = null;
 

@@ -21,6 +21,8 @@
 //
 //   integration_test_server 3300 <<< "resource_id: 12 file: '/tmp/gotbytes'"
 
+#include <sys/socket.h>
+
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -46,6 +48,20 @@ namespace {
 
 using stream::MemoryReader;
 using stream::MemoryWriter;
+
+// This is the maximum size of the socket send buffers. Ideally, this is set
+// to the lowest allowed value to minimize buffering between the proxy and
+// clients so rate limiting causes the client to block and wait for the
+// integration test proxy to drain rather than allowing OS buffers to backlog
+// large quantities of data.
+//
+// Note that the OS may chose to not strictly follow this requested buffer size.
+// Still, setting this value to be as small as possible does reduce bufer sizes
+// significantly enough to better reflect typical inter-device communication.
+//
+// For this to be effective, servers should also configure their sockets to a
+// smaller receive buffer size.
+constexpr int kMaxSocketSendBufferSize = 1;
 
 // TODO(tpudlik): This is copy-pasted from test_rpc_server.cc, break it out into
 // a shared library.
@@ -105,6 +121,16 @@ void RunServer(int socket_port, ServerConfig config) {
   rpc::system_server::Server().RegisterService(transfer_service);
 
   thread::DetachedThread(thread::stl::Options(), transfer_thread);
+
+  int retval = setsockopt(rpc::system_server::GetServerSocketFd(),
+                          SOL_SOCKET,
+                          SO_SNDBUF,
+                          &kMaxSocketSendBufferSize,
+                          sizeof(kMaxSocketSendBufferSize));
+  PW_CHECK_INT_EQ(retval,
+                  0,
+                  "Failed to configure socket send buffer size with errno=%d",
+                  errno);
 
   // It's fine to allocate this on the stack since this thread doesn't return
   // until this process is killed.

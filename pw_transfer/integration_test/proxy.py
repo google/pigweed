@@ -24,6 +24,7 @@ import argparse
 import asyncio
 import logging
 import random
+import socket
 import sys
 import time
 from typing import (Any, Awaitable, Callable, List, Optional)
@@ -34,6 +35,20 @@ from pigweed.pw_transfer.integration_test import config_pb2
 from pw_hdlc import decode
 
 _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
+
+# This is the maximum size of the socket receive buffers. Ideally, this is set
+# to the lowest allowed value to minimize buffering between the proxy and
+# clients so rate limiting causes the client to block and wait for the
+# integration test proxy to drain rather than allowing OS buffers to backlog
+# large quantities of data.
+#
+# Note that the OS may chose to not strictly follow this requested buffer size.
+# Still, setting this value to be relatively small does reduce bufer sizes
+# significantly enough to better reflect typical inter-device communication.
+#
+# For this to be effective, clients should also configure their sockets to a
+# smaller send buffer size.
+_RECEIVE_BUFFER_SIZE = 2048
 
 
 class Filter(abc.ABC):
@@ -301,9 +316,15 @@ async def _main(server_port: int, client_port: int) -> None:
     config = text_format.Parse(text_config, config_pb2.ProxyConfig())
 
     # Instantiate the TCP server.
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF,
+                             _RECEIVE_BUFFER_SIZE)
+    server_socket.bind(('localhost', client_port))
     server = await asyncio.start_server(
-        lambda reader, writer: _handle_connection(
-            server_port, config, reader, writer), 'localhost', client_port)
+        lambda reader, writer: _handle_connection(server_port, config, reader,
+                                                  writer),
+        limit=_RECEIVE_BUFFER_SIZE,
+        sock=server_socket)
 
     addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
     _LOG.info(f'Listening for client connection on {addrs}')
