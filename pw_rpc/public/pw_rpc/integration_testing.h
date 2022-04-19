@@ -86,6 +86,10 @@ void SetIngressChannelManipulator(ChannelManipulator* new_channel_manipulator);
 // Returns the global RPC client for integration test use.
 Client& client();
 
+// The file descriptor for the socket associated with the client. This may be
+// used to configure socket options.
+int GetClientSocketFd();
+
 // Initializes logging and the global RPC client for integration testing. Starts
 // a background thread that processes incoming.
 Status InitializeClient(int argc,

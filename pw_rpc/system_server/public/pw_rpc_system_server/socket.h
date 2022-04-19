@@ -20,4 +20,8 @@ namespace pw::rpc::system_server {
 // Sets the port to use for pw::rpc::system_server backends that use sockets.
 void set_socket_port(uint16_t port);
 
+// The file descriptor for the socket associated with the server. This may be
+// used to configure socket options.
+int GetServerSocketFd();
+
 }  // namespace pw::rpc::system_server

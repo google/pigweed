@@ -43,6 +43,8 @@ void set_socket_port(uint16_t new_socket_port) {
   socket_port = new_socket_port;
 }
 
+int GetServerSocketFd() { return socket_stream.connection_fd(); }
+
 void Init() {
   log_basic::SetOutput([](std::string_view log) {
     std::fprintf(stderr, "%.*s\n", static_cast<int>(log.size()), log.data());

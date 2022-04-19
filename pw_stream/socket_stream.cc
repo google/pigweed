@@ -70,16 +70,16 @@ Status SocketStream::Serve(uint16_t port) {
 
   socklen_t len = sizeof(sockaddr_client_);
 
-  conn_fd_ =
+  connection_fd_ =
       accept(socket_fd_, reinterpret_cast<sockaddr*>(&sockaddr_client_), &len);
-  if (conn_fd_ < 0) {
+  if (connection_fd_ < 0) {
     return Status::Unknown();
   }
   return OkStatus();
 }
 
 Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
-  conn_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+  connection_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 
   sockaddr_in addr;
   addr.sin_family = AF_INET;
@@ -94,7 +94,9 @@ Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
     return Status::InvalidArgument();
   }
 
-  if (connect(conn_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+  if (connect(connection_fd_,
+              reinterpret_cast<sockaddr*>(&addr),
+              sizeof(addr)) < 0) {
     PW_LOG_ERROR(
         "Failed to connect to %s:%d: %s", host, port, std::strerror(errno));
     return Status::Unknown();
@@ -109,9 +111,9 @@ void SocketStream::Close() {
     socket_fd_ = kInvalidFd;
   }
 
-  if (conn_fd_ != kInvalidFd) {
-    close(conn_fd_);
-    conn_fd_ = kInvalidFd;
+  if (connection_fd_ != kInvalidFd) {
+    close(connection_fd_);
+    connection_fd_ = kInvalidFd;
   }
 }
 
@@ -119,7 +121,7 @@ Status SocketStream::DoWrite(std::span<const std::byte> data) {
   // Use MSG_NOSIGNAL to avoid getting a SIGPIPE signal when the remote
   // peer drops the connection.
   ssize_t bytes_sent =
-      send(conn_fd_, data.data(), data.size_bytes(), MSG_NOSIGNAL);
+      send(connection_fd_, data.data(), data.size_bytes(), MSG_NOSIGNAL);
 
   if (bytes_sent < 0 || static_cast<size_t>(bytes_sent) != data.size()) {
     if (errno == EPIPE) {
@@ -134,7 +136,7 @@ Status SocketStream::DoWrite(std::span<const std::byte> data) {
 }
 
 StatusWithSize SocketStream::DoRead(ByteSpan dest) {
-  ssize_t bytes_rcvd = recv(conn_fd_, dest.data(), dest.size_bytes(), 0);
+  ssize_t bytes_rcvd = recv(connection_fd_, dest.data(), dest.size_bytes(), 0);
   if (bytes_rcvd < 0) {
     return StatusWithSize::Unknown();
   }

@@ -415,6 +415,11 @@ Implementations
   ``StdFileReader`` wraps an ``std::ifstream`` with the :cpp:class:`Reader`
   interface.
 
+.. cpp:class:: SocketStream : public NonSeekableReaderWriter
+
+  ``SocketStream`` wraps posix-style sockets with the :cpp:class:`Reader` and
+  :cpp:class:`Writer` interfaces.
+
 ------------------
 Why use pw_stream?
 ------------------

@@ -47,6 +47,8 @@ class SocketClientContext {
     return OkStatus();
   }
 
+  int GetSocketFd() { return stream_.connection_fd(); }
+
   void SetEgressChannelManipulator(
       ChannelManipulator* new_channel_manipulator) {
     channel_output_with_manipulator_.set_channel_manipulator(

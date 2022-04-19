@@ -38,6 +38,13 @@ class SocketStream : public NonSeekableReaderWriter {
   // Close the socket stream and release all resources
   void Close();
 
+  // Exposes the file descriptor for the active connection. This is exposed to
+  // allow configuration and introspection of this socket's current
+  // configuration using setsockopt() and getsockopt().
+  //
+  // Returns -1 if there is no active connection.
+  int connection_fd() { return connection_fd_; }
+
  private:
   static constexpr int kInvalidFd = -1;
 
@@ -47,7 +54,7 @@ class SocketStream : public NonSeekableReaderWriter {
 
   uint16_t listen_port_ = 0;
   int socket_fd_ = kInvalidFd;
-  int conn_fd_ = kInvalidFd;
+  int connection_fd_ = kInvalidFd;
   struct sockaddr_in sockaddr_client_ = {};
 };
 
