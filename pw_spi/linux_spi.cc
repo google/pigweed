@@ -20,6 +20,8 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+#include <cstring>
+
 #include "pw_log/log.h"
 #include "pw_spi/chip_selector.h"
 #include "pw_spi/device.h"
