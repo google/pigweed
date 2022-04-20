@@ -1605,6 +1605,21 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
             0);
 }
 
+TEST(CodegenMessage, EnumAliases) {
+  // Unprefixed enum.
+  EXPECT_EQ(Bool::kTrue, Bool::TRUE);
+  EXPECT_EQ(Bool::kFalse, Bool::FALSE);
+  EXPECT_EQ(Bool::kFileNotFound, Bool::FILE_NOT_FOUND);
+
+  // Prefixed enum has the prefix removed.
+  EXPECT_EQ(Error::kNone, Error::ERROR_NONE);
+  EXPECT_EQ(Error::kNotFound, Error::ERROR_NOT_FOUND);
+  EXPECT_EQ(Error::kUnknown, Error::ERROR_UNKNOWN);
+
+  // Single-value enum.
+  EXPECT_EQ(AlwaysBlue::kBlue, AlwaysBlue::BLUE);
+}
+
 class BreakableEncoder : public KeyValuePair::MemoryEncoder {
  public:
   constexpr BreakableEncoder(ByteSpan buffer)

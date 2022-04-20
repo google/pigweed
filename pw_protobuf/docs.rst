@@ -65,7 +65,11 @@ This results in the following generated structure:
   enum class Customer::Status {
     NEW = 1,
     ACTIVE = 2,
-    INACTIVE = 3
+    INACTIVE = 3,
+
+    kNew = NEW,
+    kActive = ACTIVE,
+    kInactive = INACTIVE,
   };
 
   struct Customer::Message {
@@ -498,9 +502,44 @@ that can hold the set of values encoded by it, following these rules.
 
   .. code:: c++
 
+    enum class Award::Service {
+      BRONZE = 1,
+      SILVER = 2,
+      GOLD = 3,
+
+      kBronze = BRONZE,
+      kSilver = SILVER,
+      kGold = GOLD,
+    };
+
     struct Award::Message {
       Award::Service service;
     };
+
+  Aliases to the enum values are also included in the "constant" style to match
+  your preferred coding style. These aliases have any common prefix to the
+  enumeration values removed, such that:
+
+  .. code::
+
+    enum Activity {
+      ACTIVITY_CYCLING = 1;
+      ACTIVITY_RUNNING = 2;
+      ACTIVITY_SWIMMING = 3;
+    }
+
+  .. code:: c++
+
+    enum class Activity {
+      ACTIVITY_CYCLING = 1,
+      ACTIVITY_RUNNING = 2,
+      ACTIVITY_SWIMMING = 3,
+
+      kCycling = ACTIVITY_CYCLING,
+      kRunning = ACTIVITY_RUNNING,
+      kSwimming = ACTIVITY_SWIMMING,
+    };
+
 
 * Nested messages are represented by their own ``struct Message`` provided that
   a reference cycle does not exist.

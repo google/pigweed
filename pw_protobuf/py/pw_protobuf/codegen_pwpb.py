@@ -18,6 +18,7 @@ from datetime import datetime
 import enum
 # Type ignore here for graphlib-backport on Python 3.8
 from graphlib import CycleError, TopologicalSorter  # type: ignore
+from itertools import takewhile
 import os
 import sys
 from typing import Dict, Iterable, List, Tuple
@@ -1815,16 +1816,55 @@ def define_not_in_class_methods(message: ProtoMessage, root: ProtoNode,
             output.write_line('}')
 
 
+def _common_value_prefix(proto_enum: ProtoEnum) -> str:
+    """Calculate the common prefix of all enum values.
+
+    Given an enumeration:
+        enum Thing {
+            THING_ONE = 1;
+            THING_TWO = 2;
+            THING_THREE = 3;
+        }
+
+    If will return 'THING_', resulting in generated "style" aliases of
+    'kOne', 'kTwo', and 'kThree'.
+
+    The prefix is walked back to the last _, so that the enumeration:
+        enum Activity {
+            ACTIVITY_RUN = 1;
+            ACTIVITY_ROW = 2;
+        }
+
+    Returns 'ACTIVITY_' and not 'ACTIVITY_R'.
+    """
+    if len(proto_enum.values()) <= 1:
+        return ''
+
+    common_prefix = "".join(
+        ch[0]
+        for ch in takewhile(lambda ch: all(ch[0] == c for c in ch),
+                            zip(*[name for name, _ in proto_enum.values()])))
+    (left, under, _) = common_prefix.rpartition('_')
+    return left + under
+
+
 def generate_code_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
                            output: OutputFile) -> None:
     """Creates a C++ enum for a proto enum."""
     assert proto_enum.type() == ProtoNode.Type.ENUM
 
+    common_prefix = _common_value_prefix(proto_enum)
     output.write_line(f'enum class {proto_enum.cpp_namespace(root)} '
                       f': uint32_t {{')
     with output.indent():
         for name, number in proto_enum.values():
             output.write_line(f'{name} = {number},')
+
+            style_name = 'k' + ProtoMessageField.upper_camel_case(
+                name[len(common_prefix):])
+            if style_name != name:
+                output.write_line(f'{style_name} = {name},')
+
     output.write_line('};')
 
 
