@@ -42,7 +42,6 @@ source_set("common") {
     "slab_buffer.h",
     "supplement_data.cc",
     "supplement_data.h",
-    "task_domain.h",
     "test_helpers.cc",
     "test_helpers.h",
     "to_string.h",
@@ -91,7 +90,6 @@ source_set("tests") {
     "slab_allocator_traits_unittest.cc",
     "slab_allocator_unittest.cc",
     "supplement_data_unittest.cc",
-    "task_domain_unittest.cc",
     "uuid_unittest.cc",
     "windowed_inspect_numeric_property_unittest.cc",
   ]

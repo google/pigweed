@@ -151,4 +151,4 @@ class L2cap : public fbl::RefCounted<L2cap> {
 
 }  // namespace bt::l2cap
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_H_
+#endif // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_H_
