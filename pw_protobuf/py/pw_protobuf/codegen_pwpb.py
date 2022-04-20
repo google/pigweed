@@ -1521,11 +1521,7 @@ class EnumReadMethod(ReadMethod):
         lines += ['  return value.status();']
         lines += ['}']
 
-        name_parts = self._relative_type_namespace().split('::')
-        enum_name = name_parts.pop()
-        function_name = '::'.join(name_parts + [f'Get{enum_name}'])
-
-        lines += [f'return {function_name}(value.value());']
+        lines += [f'return static_cast<{self._result_type()}>(value.value());']
         return lines
 
 
@@ -1536,27 +1532,11 @@ class PackedEnumReadMethod(PackedReadMethod):
 
     def _decoder_body(self) -> List[str]:
         value_param = self.params()[0][1]
-        lines: List[str] = []
-        lines += [
-            f'::pw::StatusWithSize sws = ReadPackedUint32('
+        return [
+            f'return ReadPackedUint32('
             f'std::span(reinterpret_cast<uint32_t*>({value_param}.data()), '
             f'{value_param}.size()));'
         ]
-
-        name_parts = self._relative_type_namespace().split('::')
-        enum_name = name_parts.pop()
-        function_name = '::'.join(name_parts + [f'Get{enum_name}'])
-
-        lines += ['::pw::Status status = sws.status();']
-        lines += ['for (size_t i = 0; i < sws.size(); ++i) {']
-        lines += [
-            f'  status.Update({function_name}('
-            f'static_cast<uint32_t>({value_param}[i])).status());'
-        ]
-        lines += ['}']
-
-        lines += ['return ::pw::StatusWithSize(status, sws.size());']
-        return lines
 
 
 class PackedEnumReadVectorMethod(PackedReadVectorMethod):
@@ -1566,25 +1546,10 @@ class PackedEnumReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_body(self) -> List[str]:
         value_param = self.params()[0][1]
-        lines: List[str] = []
-        lines += [
-            f'::pw::Status status = ReadRepeatedUint32('
+        return [
+            f'return ReadRepeatedUint32('
             f'*reinterpret_cast<pw::Vector<uint32_t>*>(&{value_param}));'
         ]
-
-        name_parts = self._relative_type_namespace().split('::')
-        enum_name = name_parts.pop()
-        function_name = '::'.join(name_parts + [f'Get{enum_name}'])
-
-        lines += [f'for (size_t i = 0; i < {value_param}.size(); ++i) {{']
-        lines += [
-            f'  status.Update({function_name}('
-            f'static_cast<uint32_t>({value_param}[i])).status());'
-        ]
-        lines += ['}']
-
-        lines += ['return status;']
-        return lines
 
 
 class EnumProperty(MessageProperty):
@@ -1855,7 +1820,8 @@ def generate_code_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
     """Creates a C++ enum for a proto enum."""
     assert proto_enum.type() == ProtoNode.Type.ENUM
 
-    output.write_line(f'enum class {proto_enum.cpp_namespace(root)} {{')
+    output.write_line(f'enum class {proto_enum.cpp_namespace(root)} '
+                      f': uint32_t {{')
     with output.indent():
         for name, number in proto_enum.values():
             output.write_line(f'{name} = {number},')
@@ -1869,15 +1835,13 @@ def generate_function_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
 
     enum_name = proto_enum.cpp_namespace(root)
     output.write_line(
-        f'constexpr ::pw::Result<{enum_name}> Get{enum_name}(uint32_t value) {{'
-    )
+        f'constexpr bool IsValid{enum_name}({enum_name} value) {{')
     with output.indent():
         output.write_line('switch (value) {')
         with output.indent():
-            for name, number in proto_enum.values():
-                output.write_line(
-                    f'case {number}: return {enum_name}::{name};')
-            output.write_line('default: return ::pw::Status::DataLoss();')
+            for name, _ in proto_enum.values():
+                output.write_line(f'case {enum_name}::{name}: return true;')
+            output.write_line('default: return false;')
         output.write_line('}')
     output.write_line('}')
 

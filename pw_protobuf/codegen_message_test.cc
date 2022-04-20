@@ -540,6 +540,10 @@ TEST(CodegenMessage, ReadPackedEnum) {
   ASSERT_EQ(status, OkStatus());
 
   ASSERT_EQ(message.enums.size(), 4u);
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_TRUE(IsValidEnum(message.enums[i]));
+  }
+
   EXPECT_EQ(message.enums[0], Enum::RED);
   EXPECT_EQ(message.enums[1], Enum::GREEN);
   EXPECT_EQ(message.enums[2], Enum::AMBER);
