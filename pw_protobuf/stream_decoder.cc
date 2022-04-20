@@ -515,13 +515,15 @@ Status StreamDecoder::Read(std::span<std::byte> message,
   PW_TRY(status_);
 
   while (Next().ok()) {
-    // If the field is not found in the table, immediately return NotFound()
-    // without advancing the cursor to allow the caller to inspect the field.
+    // Find the field in the table,
     // TODO(pwbug/650): Finding the field can be made more efficient.
     const auto field =
         std::find(table.begin(), table.end(), current_field_.field_number());
     if (field == table.end()) {
-      return Status::NotFound();
+      // If the field is not found, skip to the next one.
+      // TODO(pwbug/659): Provide a way to allow the caller to inspect unknown
+      // fields, and serialize them back out later.
+      continue;
     }
 
     // Calculate the span of bytes corresponding to the structure field to
