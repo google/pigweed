@@ -276,5 +276,43 @@ TEST(ReadInOrder, BoundsChecking_TooSmall) {
   EXPECT_EQ(0, value);
 }
 
+TEST(ReadInOrder, PartialLittleEndian) {
+  constexpr auto buffer = Array<1, 2, 3, 4>();
+
+  EXPECT_EQ(0x00000000,
+            ReadInOrder<int32_t>(std::endian::little, buffer.data(), 0));
+  EXPECT_EQ(0x00000001,
+            ReadInOrder<int32_t>(std::endian::little, buffer.data(), 1));
+  EXPECT_EQ(0x00000201,
+            ReadInOrder<int32_t>(std::endian::little, buffer.data(), 2));
+  EXPECT_EQ(0x00030201,
+            ReadInOrder<int32_t>(std::endian::little, buffer.data(), 3));
+  EXPECT_EQ(0x04030201,
+            ReadInOrder<int32_t>(std::endian::little, buffer.data(), 4));
+  EXPECT_EQ(0x04030201,
+            ReadInOrder<int32_t>(std::endian::little, buffer.data(), 5));
+  EXPECT_EQ(0x04030201,
+            ReadInOrder<int32_t>(std::endian::little, buffer.data(), 100));
+}
+
+TEST(ReadInOrder, PartialBigEndian) {
+  constexpr auto buffer = Array<1, 2, 3, 4>();
+
+  EXPECT_EQ(0x00000000,
+            ReadInOrder<int32_t>(std::endian::big, buffer.data(), 0));
+  EXPECT_EQ(0x01000000,
+            ReadInOrder<int32_t>(std::endian::big, buffer.data(), 1));
+  EXPECT_EQ(0x01020000,
+            ReadInOrder<int32_t>(std::endian::big, buffer.data(), 2));
+  EXPECT_EQ(0x01020300,
+            ReadInOrder<int32_t>(std::endian::big, buffer.data(), 3));
+  EXPECT_EQ(0x01020304,
+            ReadInOrder<int32_t>(std::endian::big, buffer.data(), 4));
+  EXPECT_EQ(0x01020304,
+            ReadInOrder<int32_t>(std::endian::big, buffer.data(), 5));
+  EXPECT_EQ(0x01020304,
+            ReadInOrder<int32_t>(std::endian::big, buffer.data(), 100));
+}
+
 }  // namespace
 }  // namespace pw::bytes

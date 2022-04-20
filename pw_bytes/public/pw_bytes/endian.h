@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cstring>
@@ -147,6 +148,21 @@ template <typename T>
 T ReadInOrder(std::endian order, const void* buffer) {
   T value;
   std::memcpy(&value, buffer, sizeof(value));
+  return ConvertOrderFrom(order, value);
+}
+
+// Reads up to the smaller of max_bytes_to_read and sizeof(T) bytes from a
+// buffer with the specified endianness.
+//
+// The value is zero-initialized. If max_bytes_to_read is smaller than
+// sizeof(T), the upper bytes of the value are 0.
+//
+// The buffer **MUST** be at least as large as the smaller of max_bytes_to_read
+// and sizeof(T)!
+template <typename T>
+T ReadInOrder(std::endian order, const void* buffer, size_t max_bytes_to_read) {
+  T value = {};
+  std::memcpy(&value, buffer, std::min(sizeof(value), max_bytes_to_read));
   return ConvertOrderFrom(order, value);
 }
 
