@@ -536,6 +536,11 @@ Tokens are hashes, so tokens of any size have a collision risk. The fewer bits
 used for tokens, the more likely two strings are to hash to the same token. See
 `token collisions`_.
 
+Masked tokens without arguments may be encoded in fewer bytes. For example, the
+16-bit token ``0x1234`` may be encoded as two little-endian bytes (``34 12``)
+rather than four (``34 12 00 00``). The detokenizer tools zero-pad data smaller
+than four bytes. Tokens with arguments must always be encoded as four bytes.
+
 Token collisions
 ----------------
 Tokens are calculated with a hash function. It is possible for different

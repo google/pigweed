@@ -127,6 +127,14 @@ class DetokenizeTest(unittest.TestCase):
         self.assertEqual('no args', string)
         self.assertEqual('no args', str(result))
 
+    def test_detokenize_zero_extend_short_token_with_no_args(self):
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [tokens.TokenizedStringEntry(0xcdab,
+                                             'This token is 16 bits')]))
+        self.assertEqual(str(detok.detokenize(b'\xab\xcd')),
+                         'This token is 16 bits')
+
     def test_detokenize_missing_data_is_unsuccessful(self):
         detok = detokenize.Detokenizer(
             tokens.Database([
@@ -199,33 +207,39 @@ class DetokenizeTest(unittest.TestCase):
         detok = detokenize.Detokenizer(io.BytesIO(EMPTY_ELF), show_errors=True)
         self.assertIn('missing token', detok.detokenize(b'').error_message())
         self.assertIn('missing token', str(detok.detokenize(b'')))
-        self.assertIn('missing token', repr(detok.detokenize(b'123')))
-
-        self.assertIn('missing token', detok.detokenize(b'1').error_message())
-        self.assertIn('missing token', str(detok.detokenize(b'1')))
-        self.assertIn('missing token', repr(detok.detokenize(b'1')))
-
-        self.assertIn('missing token',
-                      detok.detokenize(b'123').error_message())
-        self.assertIn('missing token', str(detok.detokenize(b'123')))
-        self.assertIn('missing token', repr(detok.detokenize(b'123')))
 
     def test_missing_token(self):
         detok = detokenize.Detokenizer(io.BytesIO(EMPTY_ELF))
         self.assertIn('missing token', detok.detokenize(b'').error_message())
         self.assertEqual('$', str(detok.detokenize(b'')))
-        self.assertIn('missing token', repr(detok.detokenize(b'123')))
 
-        self.assertIn('missing token', detok.detokenize(b'1').error_message())
-        self.assertEqual('$' + base64.b64encode(b'1').decode(),
-                         str(detok.detokenize(b'1')))
-        self.assertIn('missing token', repr(detok.detokenize(b'1')))
+    def test_unknown_shorter_token_show_error(self):
+        detok = detokenize.Detokenizer(io.BytesIO(EMPTY_ELF), show_errors=True)
 
-        self.assertIn('missing token',
+        self.assertIn('unknown token', detok.detokenize(b'1').error_message())
+        self.assertIn('unknown token', str(detok.detokenize(b'1')))
+        self.assertIn('unknown token', repr(detok.detokenize(b'1')))
+
+        self.assertIn('unknown token',
                       detok.detokenize(b'123').error_message())
-        self.assertEqual('$' + base64.b64encode(b'123').decode(),
-                         str(detok.detokenize(b'123')))
-        self.assertIn('missing token', repr(detok.detokenize(b'123')))
+        self.assertIn('unknown token', str(detok.detokenize(b'123')))
+        self.assertIn('unknown token', repr(detok.detokenize(b'123')))
+
+    def test_unknown_shorter_token(self):
+        detok = detokenize.Detokenizer(io.BytesIO(EMPTY_ELF))
+
+        self.assertEqual('unknown token 00000001',
+                         detok.detokenize(b'\1').error_message())
+        self.assertEqual('$' + base64.b64encode(b'\1\0\0\0').decode(),
+                         str(detok.detokenize(b'\1')))
+        self.assertIn('unknown token 00000001', repr(detok.detokenize(b'\1')))
+
+        self.assertEqual('unknown token 00030201',
+                         detok.detokenize(b'\1\2\3').error_message())
+        self.assertEqual('$' + base64.b64encode(b'\1\2\3\0').decode(),
+                         str(detok.detokenize(b'\1\2\3')))
+        self.assertIn('unknown token 00030201',
+                      repr(detok.detokenize(b'\1\2\3')))
 
     def test_decode_from_elf_data(self):
         detok = detokenize.Detokenizer(io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))

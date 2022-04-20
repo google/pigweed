@@ -189,9 +189,16 @@ class Detokenizer:
 
     def detokenize(self, encoded_message: bytes) -> DetokenizedString:
         """Decodes and detokenizes a message as a DetokenizedString."""
-        if len(encoded_message) < ENCODED_TOKEN.size:
+        if not encoded_message:
             return DetokenizedString(None, (), encoded_message,
                                      self.show_errors)
+
+        # Pad messages smaller than ENCODED_TOKEN.size with zeroes to support
+        # tokens smaller than a uint32. Messages with arguments must always use
+        # a full 32-bit token.
+        missing_token_bytes = ENCODED_TOKEN.size - len(encoded_message)
+        if missing_token_bytes > 0:
+            encoded_message += b'\0' * missing_token_bytes
 
         token, = ENCODED_TOKEN.unpack_from(encoded_message)
         return DetokenizedString(token, self.lookup(token), encoded_message,

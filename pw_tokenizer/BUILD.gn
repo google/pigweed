@@ -149,7 +149,10 @@ pw_source_set("base64") {
 
 pw_source_set("decoder") {
   public_configs = [ ":public_include_path" ]
-  deps = [ dir_pw_varint ]
+  deps = [
+    dir_pw_bytes,
+    dir_pw_varint,
+  ]
   public = [
     "public/pw_tokenizer/detokenize.h",
     "public/pw_tokenizer/token_database.h",

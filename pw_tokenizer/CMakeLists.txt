@@ -97,6 +97,7 @@ pw_add_module_library(pw_tokenizer.decoder
     public/pw_tokenizer/internal/decode.h
     token_database.cc
   PRIVATE_DEPS
+    pw_bytes
     pw_varint
 )
 

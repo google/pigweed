@@ -55,6 +55,8 @@ class DetokenizedString {
   // Returns the strings that matched the token, with the best matches first.
   const std::vector<DecodedFormatString>& matches() const { return matches_; }
 
+  const uint32_t& token() const { return token_; }
+
   // Returns the detokenized string or an empty string if there were no matches.
   // If there are multiple possible results, the DetokenizedString returns the
   // first match.

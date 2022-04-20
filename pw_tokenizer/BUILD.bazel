@@ -112,6 +112,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_bytes",
         "//pw_span",
         "//pw_varint",
     ],

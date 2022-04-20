@@ -15,7 +15,10 @@
 #include "pw_tokenizer/detokenize.h"
 
 #include <algorithm>
+#include <bit>
+#include <cstring>
 
+#include "pw_bytes/endian.h"
 #include "pw_tokenizer/internal/decode.h"
 
 namespace pw::tokenizer {
@@ -106,12 +109,12 @@ Detokenizer::Detokenizer(const TokenDatabase& database) {
 DetokenizedString Detokenizer::Detokenize(
     const std::span<const uint8_t>& encoded) const {
   // The token is missing from the encoded data; there is nothing to do.
-  if (encoded.size() < sizeof(uint32_t)) {
+  if (encoded.empty()) {
     return DetokenizedString();
   }
 
-  const uint32_t token =
-      encoded[3] << 24 | encoded[2] << 16 | encoded[1] << 8 | encoded[0];
+  uint32_t token = bytes::ReadInOrder<uint32_t>(
+      std::endian::little, encoded.data(), encoded.size());
 
   const auto result = database_.find(token);
 

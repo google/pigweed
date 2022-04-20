@@ -57,10 +57,13 @@ TEST_F(Detokenize, NoFormatting) {
 TEST_F(Detokenize, BestString_MissingToken_IsEmpty) {
   EXPECT_FALSE(detok_.Detokenize("").ok());
   EXPECT_TRUE(detok_.Detokenize("", 0u).BestString().empty());
-  EXPECT_TRUE(detok_.Detokenize("\1", 1u).BestString().empty());
-  EXPECT_TRUE(detok_.Detokenize("\1\0"sv).BestString().empty());
-  EXPECT_TRUE(detok_.Detokenize("\1\0\0"sv).BestString().empty());
-  EXPECT_TRUE(detok_.Detokenize("\0\0\0"sv).BestString().empty());
+}
+
+TEST_F(Detokenize, BestString_ShorterToken_ZeroExtended) {
+  EXPECT_EQ(detok_.Detokenize("\x42", 1u).token(), 0x42u);
+  EXPECT_EQ(detok_.Detokenize("\1\0"sv).token(), 0x1u);
+  EXPECT_EQ(detok_.Detokenize("\1\0\3"sv).token(), 0x030001u);
+  EXPECT_EQ(detok_.Detokenize("\0\0\0"sv).token(), 0x0u);
 }
 
 TEST_F(Detokenize, BestString_UnknownToken_IsEmpty) {
@@ -75,18 +78,20 @@ TEST_F(Detokenize, BestStringWithErrors_MissingToken_ErrorMessage) {
   EXPECT_FALSE(detok_.Detokenize("").ok());
   EXPECT_EQ(detok_.Detokenize("", 0u).BestStringWithErrors(),
             ERR("missing token"));
-  EXPECT_EQ(detok_.Detokenize("\1", 1u).BestStringWithErrors(),
-            ERR("missing token"));
-  EXPECT_EQ(detok_.Detokenize("\1\0"sv).BestStringWithErrors(),
-            ERR("missing token"));
-  EXPECT_EQ(detok_.Detokenize("\1\0\0"sv).BestStringWithErrors(),
-            ERR("missing token"));
-  EXPECT_EQ(detok_.Detokenize("\0\0\0"sv).BestStringWithErrors(),
-            ERR("missing token"));
+}
+
+TEST_F(Detokenize, BestStringWithErrors_ShorterTokenMatchesStrings) {
+  EXPECT_EQ(detok_.Detokenize("\1", 1u).BestStringWithErrors(), "One");
+  EXPECT_EQ(detok_.Detokenize("\1\0"sv).BestStringWithErrors(), "One");
+  EXPECT_EQ(detok_.Detokenize("\1\0\0"sv).BestStringWithErrors(), "One");
 }
 
 TEST_F(Detokenize, BestStringWithErrors_UnknownToken_ErrorMessage) {
-  EXPECT_FALSE(detok_.Detokenize("\0\0\0\0"sv).ok());
+  ASSERT_FALSE(detok_.Detokenize("\0\0\0\0"sv).ok());
+  EXPECT_EQ(detok_.Detokenize("\0"sv).BestStringWithErrors(),
+            ERR("unknown token 00000000"));
+  EXPECT_EQ(detok_.Detokenize("\0\0\0"sv).BestStringWithErrors(),
+            ERR("unknown token 00000000"));
   EXPECT_EQ(detok_.Detokenize("\0\0\0\0"sv).BestStringWithErrors(),
             ERR("unknown token 00000000"));
   EXPECT_EQ(detok_.Detokenize("\2\0\0\0"sv).BestStringWithErrors(),
