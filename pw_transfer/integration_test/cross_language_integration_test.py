@@ -386,13 +386,13 @@ class PwTransferIntegrationTest(unittest.TestCase):
             client_filter_stack: [
                 { rate_limiter: {rate: 50000} },
                 { hdlc_packetizer: {} },
-                { data_reorderer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
+                { data_transposer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
             ]
 
             server_filter_stack: [
                 { rate_limiter: {rate: 50000} },
                 { hdlc_packetizer: {} },
-                { data_reorderer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
+                { data_transposer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
         ]""", config_pb2.ProxyConfig())
 
         payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
