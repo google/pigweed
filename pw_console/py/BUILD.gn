@@ -90,7 +90,6 @@ pw_python_package("py") {
   python_deps = [
     "$dir_pw_cli/py",
     "$dir_pw_log_tokenized/py",
-    "$dir_pw_tokenizer/py",
   ]
   inputs = [
     "pw_console/templates/keybind_list.jinja",

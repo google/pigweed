@@ -30,5 +30,8 @@ pw_python_package("py") {
   ]
   tests = [ "watch_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
-  python_deps = [ "$dir_pw_cli/py" ]
+  python_deps = [
+    "$dir_pw_cli/py",
+    "$dir_pw_console/py",
+  ]
 }

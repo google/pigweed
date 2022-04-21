@@ -17,11 +17,11 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from pw_cli import env
+
 from pw_build_info import build_id
 
 # Since build_id.cc depends on pw_preprocessor, we have to use the in-tree path.
-_MODULE_DIR = Path(env.pigweed_environment().PW_ROOT) / 'pw_build_info'
+_MODULE_DIR = Path(__file__).parent.parent.resolve()
 _MODULE_PY_DIR = Path(__file__).parent.resolve()
 
 _SHA1_BUILD_ID_LENGTH = 20

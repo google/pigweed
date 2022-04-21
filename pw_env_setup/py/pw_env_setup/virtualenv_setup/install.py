@@ -223,6 +223,7 @@ def install(  # pylint: disable=too-many-arguments
         '--upgrade',
         'pip',
         'setuptools',
+        'toml',  # Needed for pyproject.toml package installs.
         # Include wheel so pip installs can be done without build
         # isolation.
         'wheel')

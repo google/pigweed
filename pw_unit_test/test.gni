@@ -235,7 +235,10 @@ template("pw_test") {
       deps = [ ":$_test_target_name" ]
       inputs = [ pw_unit_test_AUTOMATIC_RUNNER ]
       module = "pw_unit_test.test_runner"
-      python_deps = [ "$dir_pw_unit_test/py" ]
+      python_deps = [
+        "$dir_pw_cli/py",
+        "$dir_pw_unit_test/py",
+      ]
       args = [
         "--runner",
         rebase_path(pw_unit_test_AUTOMATIC_RUNNER, root_build_dir),

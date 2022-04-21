@@ -35,10 +35,16 @@ pw_python_package("py") {
     "encode_test.py",
   ]
   python_deps = [
+    "$dir_pw_cli/py",
     "$dir_pw_console/py",
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_rpc/py",
+    "$dir_pw_tokenizer/py",
   ]
-  python_test_deps = [ "$dir_pw_build/py" ]
+  python_test_deps = [
+    "$dir_pw_build/py",
+    "$dir_pw_log:protos.python",
+    "$dir_pw_tokenizer/py:test_proto.python",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

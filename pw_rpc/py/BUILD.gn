@@ -67,7 +67,11 @@ pw_python_package("py") {
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_status/py",
   ]
-  python_test_deps = [ "$dir_pw_build/py" ]
+  python_test_deps = [
+    "$dir_pw_build/py",
+    "$dir_pw_log:protos.python",
+    "$dir_pw_tokenizer/py:test_proto.python",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
   proto_library = "..:protos"
 }
@@ -81,8 +85,11 @@ pw_python_script("python_client_cpp_server_test") {
   sources = [ "tests/python_client_cpp_server_test.py" ]
   python_deps = [
     ":py",
+    "$dir_pw_build/py",
     "$dir_pw_hdlc/py",
+    "$dir_pw_log:protos.python",
     "$dir_pw_status/py",
+    "$dir_pw_tokenizer/py:test_proto.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
 

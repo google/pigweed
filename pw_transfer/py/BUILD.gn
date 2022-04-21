@@ -44,9 +44,12 @@ pw_python_script("python_cpp_transfer_test") {
   sources = [ "tests/python_cpp_transfer_test.py" ]
   python_deps = [
     ":py",
+    "$dir_pw_build/py",
     "$dir_pw_hdlc/py",
+    "$dir_pw_log:protos.python",
     "$dir_pw_rpc/py",
     "$dir_pw_status/py",
+    "$dir_pw_tokenizer/py:test_proto.python",
     "..:test_server_proto.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"

@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,27 +11,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""pw_build_info"""
 
-import("//build_overrides/pigweed.gni")
+import setuptools  # type: ignore
 
-import("$dir_pw_build/python.gni")
-
-pw_python_package("py") {
-  setup = [
-    "pyproject.toml",
-    "setup.cfg",
-    "setup.py",
-  ]
-  sources = [
-    "pw_trace_tokenized/__init__.py",
-    "pw_trace_tokenized/get_trace.py",
-    "pw_trace_tokenized/trace_tokenized.py",
-  ]
-  python_deps = [
-    "$dir_pw_hdlc/py",
-    "$dir_pw_log:protos.python",
-    "$dir_pw_tokenizer/py",
-    "$dir_pw_trace/py",
-  ]
-  pylintrc = "$dir_pigweed/.pylintrc"
-}
+setuptools.setup()  # Package definition in setup.cfg

@@ -64,6 +64,11 @@ pw_python_package("py") {
   ]
   proto_library = "..:proto"
   pylintrc = "$dir_pigweed/.pylintrc"
+
+  python_deps = [
+    "$dir_pw_cli/py",
+    "$dir_pw_protobuf_compiler:test_protos.python",
+  ]
 }
 
 # This setup.py may be used to install pw_tokenizer without GN. It does not

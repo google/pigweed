@@ -17,20 +17,17 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/python.gni")
 
 pw_python_package("py") {
-  generate_setup = {
-    metadata = {
-      name = "pw_build_info"
-      version = "0.0.1"
-    }
-    options = {
-      install_requires = [ "pyelftools" ]
-    }
-  }
   inputs = [ "print_build_id.cc" ]
+  setup = [
+    "pyproject.toml",
+    "setup.cfg",
+    "setup.py",
+  ]
   sources = [
     "pw_build_info/__init__.py",
     "pw_build_info/build_id.py",
   ]
+  python_deps = [ "$dir_pw_cli/py" ]
 
   # This test will only ever work on Linux as it requires the ability to compile
   # AND run an ELF file.
