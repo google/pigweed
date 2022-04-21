@@ -38,7 +38,7 @@
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_rpc_system_server/socket.h"
 #include "pw_stream/std_file_stream.h"
-#include "pw_thread/detached_thread.h"
+#include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 #include "pw_transfer/integration_test/config.pb.h"
 #include "pw_transfer/transfer.h"
@@ -67,14 +67,10 @@ constexpr int kMaxSocketSendBufferSize = 1;
 // a shared library.
 class FileTransferHandler final : public ReadWriteHandler {
  public:
-  FileTransferHandler(TransferService& service,
-                      uint32_t resource_id,
-                      const char* path)
-      : ReadWriteHandler(resource_id), service_(service), path_(path) {
-    service_.RegisterHandler(*this);
-  }
+  FileTransferHandler(uint32_t resource_id, const char* path)
+      : ReadWriteHandler(resource_id), path_(path) {}
 
-  ~FileTransferHandler() { service_.UnregisterHandler(*this); }
+  ~FileTransferHandler() = default;
 
   Status PrepareRead() final {
     PW_LOG_DEBUG("Preparing read for file %s", path_.c_str());
@@ -98,7 +94,6 @@ class FileTransferHandler final : public ReadWriteHandler {
   }
 
  private:
-  TransferService& service_;
   std::string path_;
   std::variant<std::monostate, stream::StdFileReader, stream::StdFileWriter>
       stream_;
@@ -120,7 +115,9 @@ void RunServer(int socket_port, ServerConfig config) {
   rpc::system_server::Init();
   rpc::system_server::Server().RegisterService(transfer_service);
 
-  thread::DetachedThread(thread::stl::Options(), transfer_thread);
+  // Start transfer thread.
+  thread::Thread transfer_thread_handle =
+      thread::Thread(thread::stl::Options(), transfer_thread);
 
   int retval = setsockopt(rpc::system_server::GetServerSocketFd(),
                           SOL_SOCKET,
@@ -134,14 +131,20 @@ void RunServer(int socket_port, ServerConfig config) {
 
   // It's fine to allocate this on the stack since this thread doesn't return
   // until this process is killed.
-  FileTransferHandler transfer_handler(
-      transfer_service, config.resource_id(), config.file().c_str());
+  FileTransferHandler transfer_handler(config.resource_id(),
+                                       config.file().c_str());
+  transfer_service.RegisterHandler(transfer_handler);
 
   PW_LOG_INFO("Starting pw_rpc server");
   PW_CHECK_OK(rpc::system_server::Start());
 
-  // Force server to exit as a temporary work around for b/229142175.
-  _Exit(0);
+  // Unregister transfer handler before cleaning up the thread since doing so
+  // requires the transfer thread to be running.
+  transfer_service.UnregisterHandler(transfer_handler);
+
+  // End transfer thread.
+  transfer_thread.Terminate();
+  transfer_thread_handle.join();
 }
 
 }  // namespace
