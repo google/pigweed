@@ -321,3 +321,29 @@ Receiver flow
     signal_completion[Signal completion]-->done
 
     done([Transfer complete])
+
+
+-----------------
+Integration tests
+-----------------
+The ``pw_transfer`` module has a set of integration tests that verify the
+correctness of implementations in different languages.
+`Test source code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_transfer/integration_test/>`_.
+
+To run the tests on your machine, run
+
+.. code:: bash
+
+  $ bazel run pw_transfer/integration_test:cross_language_integration_test
+
+CI/CQ integration
+=================
+`Current status of the test in CI <https://ci.chromium.org/p/pigweed/builders/ci/pigweed-integration-transfer>`_.
+
+By default, these tests are not run in CQ (on presubmit) because they are too
+slow. However, you can request that the tests be run in presubmit on your
+change by adding to following line to the commit message footer:
+
+.. code::
+
+  Cq-Include-Trybots: luci.pigweed.try:pigweed-integration-transfer
