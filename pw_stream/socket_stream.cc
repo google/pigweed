@@ -116,9 +116,18 @@ void SocketStream::Close() {
 }
 
 Status SocketStream::DoWrite(std::span<const std::byte> data) {
-  ssize_t bytes_sent = send(conn_fd_, data.data(), data.size_bytes(), 0);
+  // Use MSG_NOSIGNAL to avoid getting a SIGPIPE signal when the remote
+  // peer drops the connection.
+  ssize_t bytes_sent =
+      send(conn_fd_, data.data(), data.size_bytes(), MSG_NOSIGNAL);
 
   if (bytes_sent < 0 || static_cast<size_t>(bytes_sent) != data.size()) {
+    if (errno == EPIPE) {
+      // An EPIPE indicates that the connection is close.  Return as successful
+      // zero length write to inform the caller.
+      return Status::OutOfRange();
+    }
+
     return Status::Unknown();
   }
   return OkStatus();
@@ -129,6 +138,10 @@ StatusWithSize SocketStream::DoRead(ByteSpan dest) {
   if (bytes_rcvd < 0) {
     return StatusWithSize::Unknown();
   }
+
+  // TODO(b/229988958): Return Status::OutOfRange() on connection closed
+  // (bytes_rcvd == 0) This is a breaking API change and needs to be
+  // managed with a soft transition
   return StatusWithSize(bytes_rcvd);
 }
 
