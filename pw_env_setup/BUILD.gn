@@ -94,6 +94,7 @@ pw_python_requirements("renode_requirements") {
   ]
 }
 
+# This target creates a Python source tree with some included bazel build files.
 pw_create_python_source_tree("build_pigweed_python_source_tree") {
   packages = _pigweed_python_deps
   include_tests = true
@@ -108,6 +109,8 @@ pw_create_python_source_tree("build_pigweed_python_source_tree") {
   ]
 }
 
+# This target is responsible for building the Python source uploaded to PyPI:
+# https://pypi.org/project/pigweed/
 pw_create_python_source_tree("pypi_pigweed_python_source_tree") {
   packages = _pigweed_python_deps
   generate_setup_cfg = {

@@ -24,7 +24,11 @@ import subprocess
 import tempfile
 from typing import Iterable
 
-from pw_build.python_package import PythonPackage, load_packages
+try:
+    from pw_build.python_package import PythonPackage, load_packages
+except ImportError:
+    # Load from python_package from this directory if pw_build is not available.
+    from python_package import PythonPackage, load_packages  # type: ignore
 
 
 def _parse_args():
@@ -84,7 +88,7 @@ def get_current_git_sha() -> str:
 
 
 def get_current_date() -> str:
-    return datetime.now().strftime('%Y%m%d%H%M')
+    return datetime.now().strftime('%Y%m%d%H%M%S')
 
 
 class UnexpectedConfigSection(Exception):
@@ -145,7 +149,9 @@ def update_config_with_packages(
     included_packages = [pkg.package_name for pkg in python_packages]
 
     for pkg in python_packages:
-        assert pkg.config
+        # Skip this package if no setup.cfg is defined.
+        if not pkg.config:
+            continue
 
         # Collect install_requires
         if pkg.config.has_option('options', 'install_requires'):

@@ -54,6 +54,17 @@ def change_working_dir(directory: Path):
         os.chdir(original_dir)
 
 
+class UnknownPythonPackageName(Exception):
+    """Exception thrown when a Python package_name cannot be determined."""
+
+
+class MissingSetupSources(Exception):
+    """Exception thrown when a Python package is missing setup source files.
+
+    For example: setup.cfg and pyproject.toml.i
+    """
+
+
 @dataclass
 class PythonPackage:
     """Class to hold a single Python package's metadata."""
@@ -62,7 +73,7 @@ class PythonPackage:
     setup_sources: List[Path]
     tests: List[Path]
     inputs: List[Path]
-    gn_target_name: Optional[str] = None
+    gn_target_name: str = ''
     generate_setup: Optional[Dict] = None
     config: Optional[configparser.ConfigParser] = None
 
@@ -85,8 +96,9 @@ class PythonPackage:
             self.config = self._load_config()
 
     @property
-    def setup_dir(self) -> Path:
-        assert len(self.setup_sources) > 0
+    def setup_dir(self) -> Optional[Path]:
+        if not self.setup_sources:
+            return None
         # Assuming all setup_source files live in the same parent directory.
         return self.setup_sources[0].parent
 
@@ -101,22 +113,53 @@ class PythonPackage:
         return setup_py[0]
 
     @property
-    def setup_cfg(self) -> Path:
+    def setup_cfg(self) -> Optional[Path]:
         setup_cfg = [
             setup_file for setup_file in self.setup_sources
             if str(setup_file).endswith('setup.cfg')
         ]
-        assert len(setup_cfg) == 1
+        if len(setup_cfg) < 1:
+            return None
         return setup_cfg[0]
 
     @property
     def package_name(self) -> str:
-        assert self.config
-        return self.config['metadata']['name']
+        if self.config:
+            return self.config['metadata']['name']
+        top_level_source_dir = self.top_level_source_dir
+        if top_level_source_dir:
+            return top_level_source_dir.name
+
+        actual_gn_target_name = self.gn_target_name.split(':')
+        if len(actual_gn_target_name) < 2:
+            raise UnknownPythonPackageName(
+                'Cannot determine the package_name for the Python '
+                f'library/package: {self}')
+
+        return actual_gn_target_name[-1]
 
     @property
     def package_dir(self) -> Path:
-        return self.setup_cfg.parent / self.package_name
+        if self.setup_cfg:
+            return self.setup_cfg.parent / self.package_name
+        root_source_dir = self.top_level_source_dir
+        if root_source_dir:
+            return root_source_dir
+        return self.sources[0].parent
+
+    @property
+    def top_level_source_dir(self) -> Optional[Path]:
+        source_dir_paths = sorted(set(
+            (len(sfile.parts), sfile.parent) for sfile in self.sources),
+                                  key=lambda s: s[1])
+        if not source_dir_paths:
+            return None
+
+        top_level_source_dir = source_dir_paths[0][1]
+        if not top_level_source_dir.is_dir():
+            return None
+
+        return top_level_source_dir
 
     def _load_config(self) -> Optional[configparser.ConfigParser]:
         config = configparser.ConfigParser()
@@ -127,9 +170,21 @@ class PythonPackage:
             return config
         return None
 
+    def copy_sources_to(self, destination: Path) -> None:
+        """Copy this PythonPackage source files to another path."""
+        new_destination = destination / self.package_dir.name
+        new_destination.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(self.package_dir, new_destination, dirs_exist_ok=True)
+
     def setuptools_build_with_base(self,
                                    build_base: Path,
                                    include_tests: bool = False) -> Path:
+        """Run setuptools build for this package."""
+        # If there is no setup_dir or setup_sources, just copy this packages
+        # source files.
+        if not self.setup_dir:
+            self.copy_sources_to(build_base)
+            return build_base
         # Create the lib install dir in case it doesn't exist.
         lib_dir_path = build_base / 'lib'
         lib_dir_path.mkdir(parents=True, exist_ok=True)
@@ -158,11 +213,24 @@ class PythonPackage:
 
         return lib_dir_path
 
-    def setuptools_develop(self) -> None:
+    def setuptools_develop(self, no_deps=False) -> None:
+        if not self.setup_dir:
+            raise MissingSetupSources(
+                'Cannot find setup source file root folder (the location of '
+                f'setup.cfg) for the Python library/package: {self}')
+
         with change_working_dir(self.setup_dir):
-            setuptools.setup(script_args=['develop'])
+            develop_args = ['develop']
+            if no_deps:
+                develop_args.append('--no-deps')
+            setuptools.setup(script_args=develop_args)
 
     def setuptools_install(self) -> None:
+        if not self.setup_dir:
+            raise MissingSetupSources(
+                'Cannot find setup source file root folder (the location of '
+                f'setup.cfg) for the Python library/package: {self}')
+
         with change_working_dir(self.setup_dir):
             setuptools.setup(script_args=['install'])
 
@@ -197,12 +265,14 @@ class PythonPackage:
         return this_requires
 
 
-def load_packages(input_list_files: Iterable[Path]) -> List[PythonPackage]:
+def load_packages(input_list_files: Iterable[Path],
+                  ignore_missing=False) -> List[PythonPackage]:
     """Load Python package metadata and configs."""
 
     packages = []
     for input_path in input_list_files:
-
+        if ignore_missing and not input_path.is_file():
+            continue
         with input_path.open() as input_file:
             # Each line contains the path to a json file.
             for json_file in input_file.readlines():

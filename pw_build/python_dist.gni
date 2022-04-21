@@ -154,9 +154,11 @@ template("pw_python_zip_with_setup") {
 #     format of each item in this list follows this convention:
 #       //some/nested/source_file > nested/destination_file
 template("pw_create_python_source_tree") {
+  _metadata_path_list_suffix =
+      "_pw_create_python_source_tree_metadata_path_list.txt"
   _output_dir = "${target_out_dir}/${target_name}/"
   _metadata_json_file_list =
-      "${target_gen_dir}/${target_name}_metadata_path_list.txt"
+      "${target_gen_dir}/${target_name}${_metadata_path_list_suffix}"
 
   # If generating a setup.cfg file a common base file must be provided.
   if (defined(invoker.generate_setup_cfg)) {
@@ -200,9 +202,14 @@ template("pw_create_python_source_tree") {
 
   _include_tests = defined(invoker.include_tests) && invoker.include_tests
 
+  _public_deps = []
+  if (defined(invoker.public_deps)) {
+    _public_deps += invoker.public_deps
+  }
+
   # Build a list of relative paths containing all the python
   # package_metadata.json files we depend on.
-  generated_file("${target_name}._metadata_path_list.txt") {
+  generated_file("${target_name}.${_metadata_path_list_suffix}") {
     data_keys = [ "pw_python_package_metadata_json" ]
     rebase = root_build_dir
     deps = invoker.packages
@@ -211,10 +218,12 @@ template("pw_create_python_source_tree") {
 
   # Run the python action on the metadata_path_list.txt file
   pw_python_action(target_name) {
-    deps =
-        invoker.packages + [ ":${invoker.target_name}._metadata_path_list.txt" ]
+    deps = invoker.packages +
+           [ ":${invoker.target_name}.${_metadata_path_list_suffix}" ]
+
     script = "$dir_pw_build/py/pw_build/create_python_tree.py"
     inputs = _extra_file_inputs
+    public_deps = _public_deps
 
     args = [
       "--tree-destination-dir",
@@ -253,5 +262,73 @@ template("pw_create_python_source_tree") {
     if (_include_tests) {
       args += [ "--include-tests" ]
     }
+  }
+
+  # Template to install a bundled Python package.
+  pw_python_action("$target_name.install") {
+    module = "pip"
+    public_deps = []
+    if (defined(invoker.public_deps)) {
+      public_deps += invoker.public_deps
+    }
+
+    args = [
+      "install",
+
+      # This speeds up pip installs. At this point in the gn build the
+      # virtualenv is already activated so build isolation isn't required.
+      # This requires that pip, setuptools, and wheel packages are
+      # installed.
+      "--no-build-isolation",
+    ]
+    public_deps += [ ":${invoker.target_name}" ]
+
+    inputs = pw_build_PIP_CONSTRAINTS
+    foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
+      args += [
+        "--constraint",
+        rebase_path(_constraints_file, root_build_dir),
+      ]
+    }
+    stamp = true
+    args += [ rebase_path(_output_dir, root_build_dir) ]
+  }
+
+  # Template to build a bundled Python package wheel.
+  pw_python_action("$target_name._build_wheel") {
+    metadata = {
+      pw_python_package_wheels = [ "$target_out_dir/$target_name" ]
+    }
+    module = "build"
+    args = [
+             rebase_path(_output_dir, root_build_dir),
+             "--wheel",
+             "--no-isolation",
+             "--outdir",
+           ] + rebase_path(metadata.pw_python_package_wheels, root_build_dir)
+
+    public_deps = []
+    if (defined(invoker.public_deps)) {
+      public_deps += invoker.public_deps
+    }
+    public_deps += [ ":${invoker.target_name}" ]
+
+    stamp = true
+  }
+  group("$target_name.wheel") {
+    public_deps = [ ":${invoker.target_name}._build_wheel" ]
+  }
+
+  # Stub target groups to match a pw_python_package. This lets $target_name be
+  # used as a python_dep in pw_python_group.
+  group("$target_name._run_pip_install") {
+  }
+  group("$target_name.lint") {
+  }
+  group("$target_name.lint.mypy") {
+  }
+  group("$target_name.lint.pylint") {
+  }
+  group("$target_name.tests") {
   }
 }
