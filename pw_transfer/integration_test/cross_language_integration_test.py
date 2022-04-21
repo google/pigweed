@@ -23,12 +23,9 @@ Usage:
 import asyncio
 import logging
 from parameterized import parameterized
-import pathlib
 import random
-import subprocess
 import sys
 import tempfile
-import time
 from typing import List
 import unittest
 
@@ -195,18 +192,13 @@ class PwTransferIntegrationTest(unittest.TestCase):
             "java": cls._JAVA_CLIENT_BINARY,
         }
 
-    def _client_write(self, client_type: str, config: config_pb2.ClientConfig):
-        """Runs client with the specified config.
-
-        Blocks until the client exits, and raises an exception on non-zero
-        return codes.
-        """
+    async def _start_client(self, client_type: str,
+                            config: config_pb2.ClientConfig):
         _LOG.info(f"{self._PREFIX} Starting client with config\n{config}")
-        subprocess.run([self._CLIENT_BINARY[client_type],
-                        str(CLIENT_PORT)],
-                       input=str(config),
-                       text=True,
-                       check=True)
+        self._client = await MonitoredSubprocess.create(
+            [self._CLIENT_BINARY[client_type],
+             str(CLIENT_PORT)], "CLIENT",
+            str(config).encode('ascii'))
 
     async def _start_server(self, config: config_pb2.ServerConfig):
         _LOG.info(f"{self._PREFIX} Starting server with config\n{config}")
@@ -264,12 +256,15 @@ class PwTransferIntegrationTest(unittest.TestCase):
                 await self._server.wait_for_line(
                     "stderr", "Starting pw_rpc server on port", TIMEOUT)
 
-                self._client_write(client_type, client_config)
+                await self._start_client(client_type, client_config)
+                # No timeout: the client will only exit once the transfer
+                # completes, and this can take a long time for large payloads.
+                await self._client.wait_for_termination(None)
+                self.assertEqual(self._client.returncode(), 0)
 
                 # Wait for the server to exit.
                 await self._server.wait_for_termination(TIMEOUT)
-                returncode = self._server.returncode()
-                self.assertEqual(returncode, 0)
+                self.assertEqual(self._server.returncode(), 0)
 
             finally:
                 # Stop the server, if still running. (Only expected if the
