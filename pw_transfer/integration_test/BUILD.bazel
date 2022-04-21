@@ -93,6 +93,9 @@ pw_cc_binary(
 
 py_test(
     name = "cross_language_integration_test",
+    # Actually 1 hour, see
+    # https://docs.bazel.build/versions/main/test-encyclopedia.html#role-of-the-test-runner
+    timeout = "eternal",
     srcs = ["cross_language_integration_test.py"],
     data = [
         ":cpp_client",

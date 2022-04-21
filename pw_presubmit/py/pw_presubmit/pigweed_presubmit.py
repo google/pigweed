@@ -433,6 +433,18 @@ def bazel_build(ctx: PresubmitContext) -> None:
     build.bazel(ctx, 'build', *_MODULES_THAT_BUILD_WITH_BAZEL)
 
 
+def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
+    """Runs the pw_transfer cross-language integration test only.
+
+    This test is not part of the regular bazel build because it's slow and
+    intended to run in CI only.
+    """
+    build.bazel(
+        ctx, 'test',
+        '//pw_transfer/integration_test:cross_language_integration_test',
+        '--test_output=errors')
+
+
 #
 # General presubmit checks
 #
@@ -793,6 +805,7 @@ OTHER_CHECKS = (
     gn_clang_build,
     gn_gcc_build,
     gn_pw_system_demo_build,
+    pw_transfer_integration_test,
     renode_check,
     static_analysis,
     stm32f429i,
