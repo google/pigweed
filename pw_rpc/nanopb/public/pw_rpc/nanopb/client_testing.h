@@ -98,6 +98,7 @@ class NanopbClientTestContext {
   Client& client() { return client_; }
 
   const auto& output() const { return channel_output_; }
+  auto& output() { return channel_output_; }
 
  private:
   static constexpr uint32_t kDefaultChannelId = 1;
