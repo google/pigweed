@@ -61,6 +61,25 @@ pw_source_set("device") {
   ]
 }
 
+pw_source_set("mock") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_spi/chip_selector_mock.h",
+    "public/pw_spi/initiator_mock.h",
+  ]
+  sources = [ "initiator_mock.cc" ]
+  public_deps = [
+    ":chip_selector",
+    ":initiator",
+    "$dir_pw_bytes",
+    "$dir_pw_containers:to_array",
+  ]
+  deps = [
+    "$dir_pw_assert",
+    "$dir_pw_unit_test",
+  ]
+}
+
 # Linux-specific spidev implementation.
 pw_source_set("linux_spi") {
   public_configs = [ ":public_include_path" ]
@@ -77,7 +96,10 @@ pw_source_set("linux_spi") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":spi_test" ]
+  tests = [
+    ":spi_test",
+    ":initiator_mock_test",
+  ]
 }
 
 pw_test("spi_test") {
@@ -86,6 +108,11 @@ pw_test("spi_test") {
     ":device",
     "$dir_pw_sync:mutex",
   ]
+}
+
+pw_test("initiator_mock_test") {
+  sources = [ "initiator_mock_test.cc" ]
+  deps = [ ":mock" ]
 }
 
 # Linux tests currently only work on a target with spidev support and a SPI endpoint
