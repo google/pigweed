@@ -1654,7 +1654,7 @@ TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   auto channel_cb = [&channel,
                      closed_cb = std::move(closed_cb)](fbl::RefPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
-    EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
+    EXPECT_TRUE(channel->Activate(NopRxCallback, std::move(closed_cb)));
   };
 
   EXPECT_FALSE(chanmgr()->RegisterService(kBadPsm0, ChannelParameters(), channel_cb));
