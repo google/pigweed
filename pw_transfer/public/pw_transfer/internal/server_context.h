@@ -32,6 +32,9 @@ class ServerContext final : public Context {
   // ClientContexts don't track it.
   void set_handler(Handler& handler) { handler_ = &handler; }
 
+  // Returns the pointer to the current handler.
+  const Handler* handler() { return handler_; }
+
  private:
   // Ends the transfer with the given status, calling the handler's Finalize
   // method. No chunks are sent.

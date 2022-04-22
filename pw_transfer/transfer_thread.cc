@@ -270,6 +270,19 @@ void TransferThread::HandleEvent(const internal::Event& event) {
       return;
 
     case EventType::kRemoveTransferHandler:
+      for (ServerContext& server_context : server_transfers_) {
+        if (server_context.handler() == event.remove_transfer_handler) {
+          server_context.HandleEvent({
+              .type = EventType::kServerEndTransfer,
+              .end_transfer =
+                  {
+                      .session_id = server_context.session_id(),
+                      .status = Status::Aborted().code(),
+                      .send_status_chunk = false,
+                  },
+          });
+        }
+      }
       handlers_.remove(*event.remove_transfer_handler);
       return;
 

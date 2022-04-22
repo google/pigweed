@@ -123,6 +123,9 @@ class TransferThread : public thread::ThreadCore {
 
   void RemoveTransferHandler(Handler& handler) {
     TransferHandlerEvent(EventType::kRemoveTransferHandler, handler);
+    // Ensure this function blocks until the transfer handler is fully cleaned
+    // up.
+    WaitUntilEventIsProcessed();
   }
 
   size_t max_chunk_size() const { return chunk_buffer_.size(); }
