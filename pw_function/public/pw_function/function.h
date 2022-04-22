@@ -58,6 +58,9 @@ class Function<Return(Args...)> {
   constexpr Function() = default;
   constexpr Function(std::nullptr_t) : Function() {}
 
+  Function(const Function&) = delete;
+  Function& operator=(const Function&) = delete;
+
   template <typename Callable>
   Function(Callable callable) {
     if (function_internal::IsNull(callable)) {
