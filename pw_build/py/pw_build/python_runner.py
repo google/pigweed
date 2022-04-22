@@ -32,6 +32,12 @@ import time
 from typing import Callable, Dict, Iterable, Iterator, List, NamedTuple
 from typing import Optional, Tuple
 
+try:
+    from pw_build.python_package import load_packages
+except ImportError:
+    # Load from python_package from this directory if pw_build is not available.
+    from python_package import load_packages  # type: ignore
+
 if sys.platform != 'win32':
     import fcntl  # pylint: disable=import-error
     # TODO(b/227670947): Support Windows.
@@ -79,6 +85,23 @@ def _parse_args() -> argparse.Namespace:
         help='Change to this working directory before running the subcommand',
     )
     parser.add_argument(
+        '--python-dep-list-files',
+        nargs='+',
+        type=Path,
+        help='Paths to text files containing lists of Python package metadata '
+        'json files.',
+    )
+    parser.add_argument(
+        '--python-interpreter',
+        type=Path,
+        help='Python interpreter to use for this action.',
+    )
+    parser.add_argument(
+        '--python-virtualenv',
+        type=Path,
+        help='Path to a virtualenv to use for this action.',
+    )
+    parser.add_argument(
         'original_cmd',
         nargs=argparse.REMAINDER,
         help='Python script with arguments to run',
@@ -86,7 +109,6 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--lockfile',
         type=Path,
-        required=True,
         help=('Path to a pip lockfile. Any pip execution will acquire an '
               'exclusive lock on it, any other module a shared lock.'))
     return parser.parse_args()
@@ -507,7 +529,11 @@ def acquire_lock(lockfile: Path, exclusive: bool):
         f"Failed to acquire lock {lockfile} in {_LOCK_ACQUISITION_TIMEOUT}")
 
 
-def main(  # pylint: disable=too-many-arguments
+class MissingPythonDependency(Exception):
+    """An error occurred while processing a Python dependency."""
+
+
+def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-locals
     gn_root: Path,
     current_path: Path,
     original_cmd: List[str],
@@ -515,12 +541,33 @@ def main(  # pylint: disable=too-many-arguments
     current_toolchain: str,
     module: Optional[str],
     env: Optional[List[str]],
+    python_dep_list_files: List[Path],
+    python_interpreter: Optional[Path],
+    python_virtualenv: Optional[Path],
     capture_output: bool,
     touch: Optional[Path],
     working_directory: Optional[Path],
-    lockfile: Path,
+    lockfile: Optional[Path],
 ) -> int:
     """Script entry point."""
+
+    python_paths_list = []
+    if python_dep_list_files:
+        py_packages = load_packages(
+            python_dep_list_files,
+            # If this python_action has no gn python_deps this file will be
+            # empty.
+            ignore_missing=True)
+
+        for pkg in py_packages:
+            top_level_source_dir = pkg.package_dir
+            if not top_level_source_dir:
+                raise MissingPythonDependency(
+                    'Unable to find top level source dir for the Python '
+                    f'package "{pkg}"')
+            python_paths_list.append(top_level_source_dir.parent.resolve())
+        # Sort the PYTHONPATH list, it will be in a different order each build.
+        python_paths_list = sorted(python_paths_list)
 
     if not original_cmd or original_cmd[0] != '--':
         _LOG.error('%s requires a command to run', sys.argv[0])
@@ -536,16 +583,62 @@ def main(  # pylint: disable=too-many-arguments
                     toolchain=tool)
 
     command = [sys.executable]
+    if python_interpreter is not None:
+        command = [str(root_build_dir / python_interpreter)]
 
     if module is not None:
         command += ['-m', module]
 
     run_args: dict = dict()
+    # Always inherit the environtment by default. If PYTHONPATH or VIRTUALENV is
+    # set below then the environment vars must be copied in or subprocess.run
+    # will run with only the new updated variables.
+    run_args['env'] = os.environ.copy()
 
     if env is not None:
         environment = os.environ.copy()
         environment.update((k, v) for k, v in (a.split('=', 1) for a in env))
         run_args['env'] = environment
+
+    script_command = original_cmd[0]
+    if script_command == '--':
+        script_command = original_cmd[1]
+
+    is_pip_command = (module == 'pip'
+                      or 'pip_install_python_deps.py' in script_command)
+
+    if python_paths_list and not is_pip_command:
+        existing_env = (run_args['env']
+                        if 'env' in run_args else os.environ.copy())
+
+        python_path_prepend = os.pathsep.join(
+            str(p) for p in set(python_paths_list))
+
+        # Append the existing PYTHONPATH to the new one.
+        new_python_path = os.pathsep.join(
+            path_str for path_str in
+            [python_path_prepend,
+             existing_env.get('PYTHONPATH', '')] if path_str)
+        new_env = {
+            'PYTHONPATH': new_python_path,
+            # mypy doesn't use PYTHONPATH for analyzing imports so module
+            # directories must be added to the MYPYPATH environment variable.
+            'MYPYPATH': new_python_path,
+        }
+        # print('PYTHONPATH')
+        # for ppath in python_paths_list:
+        #     print(str(ppath))
+
+        if python_virtualenv:
+            new_env['VIRTUAL_ENV'] = str(root_build_dir / python_virtualenv)
+            new_env['PATH'] = os.pathsep.join([
+                str(root_build_dir / python_virtualenv / 'bin'),
+                existing_env.get('PATH', '')
+            ])
+
+        if 'env' not in run_args:
+            run_args['env'] = {}
+        run_args['env'].update(new_env)
 
     if capture_output:
         # Combine stdout and stderr so that error messages are correctly
@@ -553,6 +646,7 @@ def main(  # pylint: disable=too-many-arguments
         run_args['stdout'] = subprocess.PIPE
         run_args['stderr'] = subprocess.STDOUT
 
+    # Build the command to run.
     try:
         for arg in original_cmd[1:]:
             command += expand_expressions(paths, arg)
@@ -563,11 +657,14 @@ def main(  # pylint: disable=too-many-arguments
     if working_directory:
         run_args['cwd'] = working_directory
 
-    try:
-        acquire_lock(lockfile, module == 'pip')
-    except LockAcquisitionTimeoutError as exception:
-        _LOG.error('%s', exception)
-        return 1
+    # TODO(pwbug/666): Deprecate the --lockfile option as part of the Python GN
+    # template refactor.
+    if lockfile:
+        try:
+            acquire_lock(lockfile, is_pip_command)
+        except LockAcquisitionTimeoutError as exception:
+            _LOG.error('%s', exception)
+            return 1
 
     _LOG.debug('RUN %s', ' '.join(shlex.quote(arg) for arg in command))
 

@@ -24,8 +24,6 @@ import re
 import shutil
 from typing import Dict, List, Optional, Iterable
 
-import setuptools  # type: ignore
-
 # List of known environment markers supported by pip.
 # https://peps.python.org/pep-0508/#environment-markers
 _PY_REQUIRE_ENVIRONMENT_MARKER_NAMES = [
@@ -175,64 +173,6 @@ class PythonPackage:
         new_destination = destination / self.package_dir.name
         new_destination.mkdir(parents=True, exist_ok=True)
         shutil.copytree(self.package_dir, new_destination, dirs_exist_ok=True)
-
-    def setuptools_build_with_base(self,
-                                   build_base: Path,
-                                   include_tests: bool = False) -> Path:
-        """Run setuptools build for this package."""
-        # If there is no setup_dir or setup_sources, just copy this packages
-        # source files.
-        if not self.setup_dir:
-            self.copy_sources_to(build_base)
-            return build_base
-        # Create the lib install dir in case it doesn't exist.
-        lib_dir_path = build_base / 'lib'
-        lib_dir_path.mkdir(parents=True, exist_ok=True)
-
-        starting_directory = Path.cwd()
-        # cd to the location of setup.py
-        with change_working_dir(self.setup_dir):
-            # Run build with temp build-base location
-            # Note: New files will be placed inside lib_dir_path
-            setuptools.setup(script_args=[
-                'build',
-                '--force',
-                '--build-base',
-                str(build_base),
-            ])
-
-            new_pkg_dir = lib_dir_path / self.package_name
-            # If tests should be included, copy them to the tests dir
-            if include_tests and self.tests:
-                test_dir_path = new_pkg_dir / 'tests'
-                test_dir_path.mkdir(parents=True, exist_ok=True)
-
-                for test_source_path in self.tests:
-                    shutil.copy(starting_directory / test_source_path,
-                                test_dir_path)
-
-        return lib_dir_path
-
-    def setuptools_develop(self, no_deps=False) -> None:
-        if not self.setup_dir:
-            raise MissingSetupSources(
-                'Cannot find setup source file root folder (the location of '
-                f'setup.cfg) for the Python library/package: {self}')
-
-        with change_working_dir(self.setup_dir):
-            develop_args = ['develop']
-            if no_deps:
-                develop_args.append('--no-deps')
-            setuptools.setup(script_args=develop_args)
-
-    def setuptools_install(self) -> None:
-        if not self.setup_dir:
-            raise MissingSetupSources(
-                'Cannot find setup source file root folder (the location of '
-                f'setup.cfg) for the Python library/package: {self}')
-
-        with change_working_dir(self.setup_dir):
-            setuptools.setup(script_args=['install'])
 
     def install_requires_entries(self) -> List[str]:
         """Convert the install_requires entry into a list of strings."""

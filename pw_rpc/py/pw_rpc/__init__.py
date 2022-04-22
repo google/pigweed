@@ -13,5 +13,10 @@
 # the License.
 """Package for calling Pigweed RPCs from Python."""
 
+# TODO(667): Remove this pkgutil snippet
+from pkgutil import extend_path
+
+__path__ = extend_path(__path__, __name__)  # type: ignore
+
 from pw_rpc.client import Client
 from pw_rpc.descriptors import Channel, ChannelManipulator

@@ -56,6 +56,7 @@ template("pw_update_bundle") {
       _persist_path = "${target_out_dir}/${target_name}/tuf_repo"
     }
     module = "pw_software_update.update_bundle"
+    python_deps = [ "$dir_pw_software_update/py" ]
     args = [
       "--out",
       rebase_path(_out_path),

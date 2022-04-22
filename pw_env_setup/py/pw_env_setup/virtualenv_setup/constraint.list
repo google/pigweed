@@ -69,6 +69,7 @@ requests==2.27.1
 robotframework==3.1
 rsa==4.8
 scan-build==2.0.19
+setuptools==62.1.0
 six==1.16.0
 snowballstemmer==2.2.0
 soupsieve==2.3.1
@@ -90,8 +91,8 @@ types-docutils==0.17.4
 types-futures==3.3.2
 types-protobuf==3.18.4
 types-Pygments==2.9.13
-types-PyYAML==6.0.3
-types-setuptools==57.4.7
+types-PyYAML==6.0.7
+types-setuptools==57.4.14
 types-six==1.16.9
 typing_extensions==4.0.1
 urllib3==1.26.8

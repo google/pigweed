@@ -139,6 +139,9 @@ class ConsolePrefs(YamlConfigLoaderMixin):
     def code_theme(self) -> str:
         return self._config.get('code_theme', '')
 
+    def set_code_theme(self, theme_name: str):
+        self._config['code_theme'] = theme_name
+
     @property
     def swap_light_and_dark(self) -> bool:
         return self._config.get('swap_light_and_dark', False)

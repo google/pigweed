@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/mirror_tree.gni")
 import("$dir_pw_build/python_action.gni")
+import("$dir_pw_build/python_gn_args.gni")
 import("$dir_pw_protobuf_compiler/toolchain.gni")
 
 declare_args() {
@@ -89,8 +90,15 @@ template("_pw_python_static_analysis_mypy") {
 
     deps = invoker.deps
 
-    foreach(dep, invoker.python_deps) {
-      deps += [ string_replace(dep, "(", ".lint.mypy(") ]
+    if (defined(invoker.python_deps)) {
+      python_deps = []
+      foreach(dep, invoker.python_deps) {
+        deps += [ string_replace(dep, "(", ".lint.mypy(") ]
+        python_deps += [ dep ]
+      }
+    }
+    if (defined(invoker.python_metadata_deps)) {
+      python_metadata_deps = invoker.python_metadata_deps
     }
   }
 }
@@ -123,8 +131,15 @@ template("_pw_python_static_analysis_pylint") {
 
     public_deps = invoker.deps
 
-    foreach(dep, invoker.python_deps) {
-      public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
+    if (defined(invoker.python_deps)) {
+      python_deps = []
+      foreach(dep, invoker.python_deps) {
+        public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
+        python_deps += [ dep ]
+      }
+    }
+    if (defined(invoker.python_metadata_deps)) {
+      python_metadata_deps = invoker.python_metadata_deps
     }
   }
 }
@@ -191,6 +206,20 @@ template("pw_python_package") {
   _is_package = !(defined(invoker._pw_standalone) && invoker._pw_standalone)
 
   _generate_package = false
+  if (_is_package) {
+    _pip_install_package = true
+
+    # Always run pip installs if not opting into the new Pigweed Python Build.
+    if (pw_build_USE_NEW_PYTHON_BUILD) {
+      _pip_install_package = false
+    }
+  }
+
+  _pydeplabel = get_label_info(":$target_name", "label_with_toolchain")
+
+  # If a package does not run static analysis or if it does but doesn't have
+  # any tests then this variable is not used.
+  not_needed([ "_pydeplabel" ])
 
   # Check the generate_setup and import_protos args to determine if this package
   # is generated.
@@ -461,7 +490,7 @@ template("pw_python_package") {
       }
     }
 
-    if (_is_package) {
+    if (_is_package && _pip_install_package) {
       # Install this Python package and its dependencies in the current Python
       # environment using pip.
       pw_python_action("$target_name._run_pip_install") {
@@ -589,8 +618,10 @@ template("pw_python_package") {
     if (_static_analysis != [] || _test_sources != []) {
       # All packages to install for either general use or test running.
       _test_install_deps = [ ":$target_name.install" ]
+
       foreach(dep, _python_test_deps + [ "$dir_pw_build:python_lint" ]) {
         _test_install_deps += [ string_replace(dep, "(", ".install(") ]
+        _test_install_deps += [ dep ]
       }
     }
 
@@ -602,7 +633,11 @@ template("pw_python_package") {
       target("_pw_python_static_analysis_$_tool", "$target_name.lint.$_tool") {
         sources = _all_py_files
         deps = _test_install_deps
-        python_deps = _python_deps
+        python_deps = _python_deps + _python_test_deps
+
+        if (_is_package) {
+          python_metadata_deps = [ _pydeplabel ]
+        }
 
         _optional_variables = [
           "mypy_ini",
@@ -694,6 +729,16 @@ template("pw_python_package") {
 
         stamp = true
 
+        # Make sure the python test deps are added to the PYTHONPATH.
+        python_metadata_deps = _test_install_deps
+
+        # If this is a test for a package, add it to PYTHONPATH as well. This is
+        # required if the test source file isn't in the same directory as the
+        # folder containing the package sources to allow local Python imports.
+        if (_is_package) {
+          python_metadata_deps += [ _pydeplabel ]
+        }
+
         deps = _test_install_deps
 
         foreach(dep, _python_test_deps) {
@@ -775,6 +820,8 @@ template("pw_python_script") {
     "sources",
     "tests",
     "python_deps",
+    "python_test_deps",
+    "python_metadata_deps",
     "other_deps",
     "inputs",
     "pylintrc",

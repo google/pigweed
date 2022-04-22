@@ -289,16 +289,14 @@ Arguments
        append_date_to_version = true
      }
 
-Using this template will create additional targets for installing and building a
-Python wheel. For example if you define ``pw_create_python_source_tree("awesome")``
-the 3 resulting targets that get created will be:
+Using this template will create an additional target for and building a Python
+wheel. For example if you define ``pw_create_python_source_tree("awesome")`` the
+resulting targets that get created will be:
 
 - ``awesome`` - This will create the merged package with all source files in
   place in the out directory under ``out/obj/awesome/``.
 - ``awesome.wheel`` - This builds a Python wheel from the above source files
   under ``out/obj/awesome._build_wheel/awesome*.whl``.
-- ``awesome.install`` - This pip installs the merged package into the user's
-  development environment.
 
 Example
 -------

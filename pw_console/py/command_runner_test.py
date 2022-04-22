@@ -35,10 +35,12 @@ from window_manager_test import target_list_and_pane, window_pane_titles
 
 
 def _create_console_app(log_pane_count=2):
-    console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
-                             prefs=ConsolePrefs(project_file=False,
-                                                project_user_file=False,
-                                                user_file=False))
+    prefs = ConsolePrefs(project_file=False,
+                         project_user_file=False,
+                         user_file=False)
+    prefs.set_code_theme('default')
+    console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT, prefs=prefs)
+
     console_app.prefs.reset_config()
 
     # Setup log panes

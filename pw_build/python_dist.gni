@@ -14,8 +14,10 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/error.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
+import("$dir_pw_build/python_gn_args.gni")
 import("$dir_pw_build/zip.gni")
 
 # Builds a directory containing a collection of Python wheels.
@@ -65,6 +67,7 @@ template("pw_python_wheels") {
     forward_variables_from(invoker, [ "public_deps" ])
     deps = _deps + [ ":$target_name._wheel_paths" ]
     module = "pw_build.collect_wheels"
+    python_deps = [ "$dir_pw_build/py" ]
 
     args = [
       "--prefix",
@@ -207,6 +210,44 @@ template("pw_create_python_source_tree") {
     _public_deps += invoker.public_deps
   }
 
+  # Set source files for the Python package metadata json file.
+  _sources = []
+  _setup_sources = [
+    "$_output_dir/pyproject.toml",
+    "$_output_dir/setup.cfg",
+  ]
+  _test_sources = []
+
+  # Create the Python package_metadata.json file so this can be used as a
+  # Python dependency.
+  _package_metadata_json_file =
+      "$target_gen_dir/$target_name/package_metadata.json"
+
+  # Get Python package metadata and write to disk as JSON.
+  _package_metadata = {
+    gn_target_name =
+        get_label_info(":${invoker.target_name}", "label_no_toolchain")
+
+    # Get package source files
+    sources = rebase_path(_sources, root_build_dir)
+
+    # Get setup.cfg, pyproject.toml, or setup.py file
+    setup_sources = rebase_path(_setup_sources, root_build_dir)
+
+    # Get test source files
+    tests = rebase_path(_test_sources, root_build_dir)
+
+    # Get package input files (package data)
+    inputs = []
+    if (defined(invoker.inputs)) {
+      inputs = rebase_path(invoker.inputs, root_build_dir)
+    }
+    inputs += rebase_path(_extra_file_inputs, root_build_dir)
+  }
+
+  # Finally, write out the json
+  write_file(_package_metadata_json_file, _package_metadata, "json")
+
   # Build a list of relative paths containing all the python
   # package_metadata.json files we depend on.
   generated_file("${target_name}.${_metadata_path_list_suffix}") {
@@ -218,12 +259,19 @@ template("pw_create_python_source_tree") {
 
   # Run the python action on the metadata_path_list.txt file
   pw_python_action(target_name) {
+    # Save the Python package metadata so this can be installed using
+    # pw_internal_pip_install.
+    metadata = {
+      pw_python_package_metadata_json = [ _package_metadata_json_file ]
+    }
+
     deps = invoker.packages +
            [ ":${invoker.target_name}.${_metadata_path_list_suffix}" ]
 
     script = "$dir_pw_build/py/pw_build/create_python_tree.py"
     inputs = _extra_file_inputs
     public_deps = _public_deps
+    _pw_internal_run_in_venv = false
 
     args = [
       "--tree-destination-dir",
@@ -264,42 +312,13 @@ template("pw_create_python_source_tree") {
     }
   }
 
-  # Template to install a bundled Python package.
-  pw_python_action("$target_name.install") {
-    module = "pip"
-    public_deps = []
-    if (defined(invoker.public_deps)) {
-      public_deps += invoker.public_deps
-    }
-
-    args = [
-      "install",
-
-      # This speeds up pip installs. At this point in the gn build the
-      # virtualenv is already activated so build isolation isn't required.
-      # This requires that pip, setuptools, and wheel packages are
-      # installed.
-      "--no-build-isolation",
-    ]
-    public_deps += [ ":${invoker.target_name}" ]
-
-    inputs = pw_build_PIP_CONSTRAINTS
-    foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
-      args += [
-        "--constraint",
-        rebase_path(_constraints_file, root_build_dir),
-      ]
-    }
-    stamp = true
-    args += [ rebase_path(_output_dir, root_build_dir) ]
-  }
-
   # Template to build a bundled Python package wheel.
   pw_python_action("$target_name._build_wheel") {
     metadata = {
       pw_python_package_wheels = [ "$target_out_dir/$target_name" ]
     }
     module = "build"
+    _pw_internal_run_in_venv = false
     args = [
              rebase_path(_output_dir, root_build_dir),
              "--wheel",
@@ -321,7 +340,132 @@ template("pw_create_python_source_tree") {
 
   # Stub target groups to match a pw_python_package. This lets $target_name be
   # used as a python_dep in pw_python_group.
+  group("$target_name.install") {
+  }
   group("$target_name._run_pip_install") {
+  }
+  group("$target_name.lint") {
+  }
+  group("$target_name.lint.mypy") {
+  }
+  group("$target_name.lint.pylint") {
+  }
+  group("$target_name.tests") {
+  }
+}
+
+# Runs pip install on a set of pw_python_packages. This will install
+# pw_python_packages into the user's developer environment.
+#
+# This is an experimental template.
+#
+# Args:
+#   packages: A list of pw_python_package targets to be pip installed.
+#     These will be installed one at a time.
+#
+#   editable: If true, --editable is passed to the pip install command.
+#
+#   force_reinstall: If true, --force-reinstall is passed to the pip install
+#     command.
+template("pw_internal_pip_install") {
+  if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
+    if (!pw_build_USE_NEW_PYTHON_BUILD) {
+      pw_error("$target_name") {
+        message_lines = [ "pw_internal_pip_install targets are not supported unless this gn arg is set pw_build_USE_NEW_PYTHON_BUILD=true." ]
+      }
+    } else {
+      pw_python_action("$target_name") {
+        script = "$dir_pw_build/py/pw_build/pip_install_python_deps.py"
+
+        assert(
+            defined(invoker.packages),
+            "packages = [ 'python_package' ] is required by pw_internal_pip_install")
+
+        public_deps = []
+        if (defined(invoker.public_deps)) {
+          public_deps += invoker.public_deps
+        }
+
+        python_deps = []
+        python_metadata_deps = []
+        if (defined(invoker.packages)) {
+          public_deps += invoker.packages
+          python_deps += invoker.packages
+          python_metadata_deps += invoker.packages
+        }
+
+        python_deps = []
+        if (defined(invoker.python_deps)) {
+          python_deps += invoker.python_deps
+        }
+
+        _pw_internal_run_in_venv = false
+        _forward_python_metadata_deps = true
+
+        _editable_install = false
+        if (defined(invoker.editable)) {
+          _editable_install = invoker.editable
+        }
+
+        _pkg_gn_labels = []
+        foreach(pkg, invoker.packages) {
+          _pkg_gn_labels += [ get_label_info(pkg, "label_no_toolchain") ]
+        }
+
+        args = [
+          "--gn-packages",
+          string_join(",", _pkg_gn_labels),
+        ]
+
+        if (_editable_install) {
+          args += [ "--editable-pip-install" ]
+        }
+
+        args += [
+          "install",
+          "--no-build-isolation",
+        ]
+
+        _force_reinstall = false
+        if (defined(invoker.force_reinstall)) {
+          _force_reinstall = true
+        }
+        if (_force_reinstall) {
+          args += [ "--force-reinstall" ]
+        }
+
+        inputs = pw_build_PIP_CONSTRAINTS
+        foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
+          args += [
+            "--constraint",
+            rebase_path(_constraints_file, root_build_dir),
+          ]
+        }
+
+        stamp = true
+
+        # Parallel pip installations don't work, so serialize pip invocations.
+        pool = "$dir_pw_build/pool:pip($default_toolchain)"
+      }
+    }
+  } else {
+    group("$target_name") {
+      deps = [ ":$target_name($pw_build_PYTHON_TOOLCHAIN)" ]
+    }
+    not_needed("*")
+    not_needed(invoker, "*")
+  }
+
+  # Stub target groups to match a pw_python_package. This lets $target_name be
+  # used as a python_dep in pw_python_group.
+  group("$target_name.install") {
+    public_deps = [ ":${invoker.target_name}" ]
+  }
+  group("$target_name._run_pip_install") {
+  }
+  group("$target_name.wheel") {
+  }
+  group("$target_name._build_wheel") {
   }
   group("$target_name.lint") {
   }

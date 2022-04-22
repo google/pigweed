@@ -24,11 +24,15 @@ import subprocess
 import tempfile
 from typing import Iterable
 
+import setuptools  # type: ignore
+
 try:
-    from pw_build.python_package import PythonPackage, load_packages
+    from pw_build.python_package import (PythonPackage, load_packages,
+                                         change_working_dir)
 except ImportError:
     # Load from python_package from this directory if pw_build is not available.
-    from python_package import PythonPackage, load_packages  # type: ignore
+    from python_package import (  # type: ignore
+        PythonPackage, load_packages, change_working_dir)
 
 
 def _parse_args():
@@ -203,6 +207,45 @@ def write_config(
     setup_cfg_file.write_text(comment_block_text + setup_cfg_text.getvalue())
 
 
+def setuptools_build_with_base(pkg: PythonPackage,
+                               build_base: Path,
+                               include_tests: bool = False) -> Path:
+    """Run setuptools build for this package."""
+
+    # If there is no setup_dir or setup_sources, just copy this packages
+    # source files.
+    if not pkg.setup_dir:
+        pkg.copy_sources_to(build_base)
+        return build_base
+    # Create the lib install dir in case it doesn't exist.
+    lib_dir_path = build_base / 'lib'
+    lib_dir_path.mkdir(parents=True, exist_ok=True)
+
+    starting_directory = Path.cwd()
+    # cd to the location of setup.py
+    with change_working_dir(pkg.setup_dir):
+        # Run build with temp build-base location
+        # Note: New files will be placed inside lib_dir_path
+        setuptools.setup(script_args=[
+            'build',
+            '--force',
+            '--build-base',
+            str(build_base),
+        ])
+
+        new_pkg_dir = lib_dir_path / pkg.package_name
+        # If tests should be included, copy them to the tests dir
+        if include_tests and pkg.tests:
+            test_dir_path = new_pkg_dir / 'tests'
+            test_dir_path.mkdir(parents=True, exist_ok=True)
+
+            for test_source_path in pkg.tests:
+                shutil.copy(starting_directory / test_source_path,
+                            test_dir_path)
+
+    return lib_dir_path
+
+
 def build_python_tree(python_packages: Iterable[PythonPackage],
                       tree_destination_dir: Path,
                       include_tests: bool = False) -> None:
@@ -219,8 +262,8 @@ def build_python_tree(python_packages: Iterable[PythonPackage],
         build_base = Path(build_base_name)
 
         for pkg in python_packages:
-            lib_dir_path = pkg.setuptools_build_with_base(
-                build_base, include_tests=include_tests)
+            lib_dir_path = setuptools_build_with_base(
+                pkg, build_base, include_tests=include_tests)
 
             # Move installed files from the temp build-base into
             # destination_path.

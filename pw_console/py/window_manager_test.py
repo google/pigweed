@@ -29,10 +29,11 @@ from pw_console.window_list import _WINDOW_HEIGHT_ADJUST, DisplayMode
 
 
 def _create_console_app(logger_count=2):
-    console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
-                             prefs=ConsolePrefs(project_file=False,
-                                                project_user_file=False,
-                                                user_file=False))
+    prefs = ConsolePrefs(project_file=False,
+                         project_user_file=False,
+                         user_file=False)
+    prefs.set_code_theme('default')
+    console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT, prefs=prefs)
     console_app.focus_on_container = MagicMock()
 
     loggers = {}

@@ -107,10 +107,21 @@ def _collect_all_files(
 
     # Make sure there are __init__.py and py.typed files for each subpackage.
     for pkg in subpackages:
-        for file in (pkg / name for name in ['__init__.py', 'py.typed']):
-            if not file.exists():
-                file.touch()
-            files.append(file)
+        pytyped = pkg / 'py.typed'
+        if not pytyped.exists():
+            pytyped.touch()
+        files.append(pytyped)
+
+        # Create an __init__.py file if it doesn't already exist.
+        initpy = pkg / '__init__.py'
+        if not initpy.exists():
+            # Use pkgutil.extend_path to treat this as a namespaced package.
+            # This allows imports with the same name to live in multiple
+            # separate PYTHONPATH locations.
+            initpy.write_text(
+                'from pkgutil import extend_path\n'
+                '__path__ = extend_path(__path__, __name__)  # type: ignore\n')
+        files.append(initpy)
 
     pkg_data: Dict[str, Set[str]] = defaultdict(set)
 

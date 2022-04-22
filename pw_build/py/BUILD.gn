@@ -38,6 +38,7 @@ pw_python_package("py") {
     "pw_build/host_tool.py",
     "pw_build/mirror_tree.py",
     "pw_build/nop.py",
+    "pw_build/pip_install_python_deps.py",
     "pw_build/python_package.py",
     "pw_build/python_runner.py",
     "pw_build/python_wheels.py",

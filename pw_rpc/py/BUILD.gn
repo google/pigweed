@@ -93,6 +93,7 @@ pw_python_script("python_client_cpp_server_test") {
     "$dir_pw_status/py",
     "$dir_pw_tokenizer/py:test_proto.python",
   ]
+
   pylintrc = "$dir_pigweed/.pylintrc"
 
   action = {

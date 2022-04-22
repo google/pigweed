@@ -30,22 +30,25 @@ class TestConsoleApp(unittest.TestCase):
     def test_instantiate(self) -> None:
         """Test init."""
         with create_app_session(output=FakeOutput()):
+            prefs = ConsolePrefs(project_file=False,
+                                 project_user_file=False,
+                                 user_file=False)
+            prefs.set_code_theme('default')
             console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
-                                     prefs=ConsolePrefs(
-                                         project_file=False,
-                                         project_user_file=False,
-                                         user_file=False))
+                                     prefs=prefs)
+
             self.assertIsNotNone(console_app)
 
     def test_multiple_loggers_in_one_pane(self) -> None:
         """Test window resizing."""
         # pylint: disable=protected-access
         with create_app_session(output=FakeOutput()):
+            prefs = ConsolePrefs(project_file=False,
+                                 project_user_file=False,
+                                 user_file=False)
+            prefs.set_code_theme('default')
             console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
-                                     prefs=ConsolePrefs(
-                                         project_file=False,
-                                         project_user_file=False,
-                                         user_file=False))
+                                     prefs=prefs)
 
             loggers = {
                 'Logs': [

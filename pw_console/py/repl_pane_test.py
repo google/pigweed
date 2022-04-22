@@ -114,10 +114,12 @@ if _PYTHON_3_8:
 
             with create_app_session(output=FakeOutput()):
                 # Setup Mocks
+                prefs = ConsolePrefs(project_file=False,
+                                     project_user_file=False,
+                                     user_file=False)
+                prefs.set_code_theme('default')
                 app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
-                                 prefs=ConsolePrefs(project_file=False,
-                                                    project_user_file=False,
-                                                    user_file=False))
+                                 prefs=prefs)
 
                 app.start_user_code_thread()
 
