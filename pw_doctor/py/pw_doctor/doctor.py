@@ -333,17 +333,21 @@ def cipd_versions(ctx: DoctorContext):
         # exist.
         if 'version_file' in package:
             path = install_path / package['version_file']
-            if not path.is_file():
-                ctx.error(f'no version file for {name} at {path}')
-                return
-
+            notify_method = ctx.error
         # Otherwise, follow a heuristic to find the file but don't require the
         # file to exist.
         else:
             path = install_path / '.versions' / f'{name}.cipd_version'
-            if not path.is_file():
-                ctx.debug(f'no version file for {name} at {path}')
-                return
+            notify_method = ctx.debug
+
+        # Check if a .exe cipd_version exists on Windows.
+        path_windows = install_path / '.versions' / f'{name}.exe.cipd_version'
+        if os.name == 'nt' and path_windows.is_file():
+            path = path_windows
+
+        if not path.is_file():
+            notify_method(f'no version file for {name} at {path}')
+            return
 
         with path.open() as ins:
             installed = json.load(ins)
