@@ -144,7 +144,7 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
     cb_count++;
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
-      EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
+      ASSERT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
       const auto params = event.params<hci_spec::CommandStatusEventParams>();
       EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
       EXPECT_EQ(hci_spec::kInquiry, params.command_opcode);
@@ -522,7 +522,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
     cb_count++;
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
-      EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
+      ASSERT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
       const auto params = event.params<hci_spec::CommandStatusEventParams>();
       EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
       EXPECT_EQ(hci_spec::kReset, params.command_opcode);

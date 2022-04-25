@@ -35,6 +35,7 @@ const DeviceAddress kTestAddr(DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0,
 const DeviceAddress kTestAddr2(DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
 const DeviceAddress kTestAddrBrEdr(DeviceAddress::Type::kBREDR, {3, 0, 0, 0, 0, 0});
 
+const hci::VendorFeaturesBits kVendorFeaturesBits = hci::VendorFeaturesBits::kSetAclPriorityCommand;
 const bt_vendor_features_t kVendorFeatures = BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND;
 
 class AdapterTest : public TestingBase {
@@ -44,8 +45,7 @@ class AdapterTest : public TestingBase {
 
   void SetUp() override { SetUp(/*sco_enabled=*/true); }
 
-  void SetUp(bool sco_enabled,
-             bt_vendor_features_t vendor_features = BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND) {
+  void SetUp(bool sco_enabled, bt_vendor_features_t vendor_features = kVendorFeatures) {
     set_vendor_features(vendor_features);
     TestingBase::SetUp(sco_enabled);
 
@@ -1023,7 +1023,7 @@ TEST_F(AdapterTest, VendorFeatures) {
   auto init_cb = [&](bool cb_success) { success = cb_success; };
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
-  EXPECT_EQ(adapter()->state().vendor_features(), kVendorFeatures);
+  EXPECT_EQ(adapter()->state().vendor_features(), kVendorFeaturesBits);
 }
 
 TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) {

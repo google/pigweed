@@ -14,7 +14,6 @@
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
-#include "transport.h"
 
 namespace bt::hci {
 
@@ -93,6 +92,7 @@ void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> even
   if (!callback_) {
     return;
   }
+  // TODO(fxbug.dev/97629): Remove this PostTask and call the callback synchronously.
   async::PostTask(
       async_get_default_dispatcher(),
       [event = std::move(event), callback = std::move(callback_),
@@ -112,19 +112,13 @@ CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
   };
 }
 
-CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_channel)
+CommandChannel::CommandChannel(HciWrapper* hci)
     : next_transaction_id_(1u),
       next_event_handler_id_(1u),
-      transport_(transport),
-      channel_(std::move(hci_command_channel)),
-      channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
+      hci_(hci),
       allowed_command_packets_(1u),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(transport_);
-  ZX_ASSERT(channel_.is_valid());
-
-  zx_status_t status = channel_wait_.Begin(async_get_default_dispatcher());
-  ZX_ASSERT_MSG(status == ZX_OK, "channel wait failed: %s", zx_status_get_string(status));
+  hci_->SetEventCallback(fit::bind_member<&CommandChannel::OnEvent>(this));
 
   bt_log(INFO, "hci", "CommandChannel initialized");
 }
@@ -402,9 +396,8 @@ void CommandChannel::TrySendQueuedCommands() {
 }
 
 void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
-  BufferView packet_bytes = cmd.packet->view().data();
-  zx_status_t status = channel_.write(/*flags=*/0, packet_bytes.data(), packet_bytes.size(),
-                                      /*handles=*/nullptr, /*num_handles=*/0);
+  zx_status_t status = hci_->SendCommand(std::move(cmd.packet));
+
   if (status < 0) {
     // TODO(armansito): We should notify the |status_callback| of the pending
     // command with a special error code in this case.
@@ -633,89 +626,14 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   }
 }
 
-void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                                    zx_status_t status, const zx_packet_signal_t* signal) {
-  ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
-
-  TRACE_DURATION("bluetooth", "CommandChannel::OnChannelReady");
-
-  if (status != ZX_OK) {
-    bt_log(DEBUG, "hci", "channel error: %s", zx_status_get_string(status));
-    return;
-  }
-
-  // Allocate a buffer for the event. Since we don't know the size beforehand we allocate the
-  // largest possible buffer.
-  //
-  // TODO(armansito): We could first try to read into a small buffer and retry if the syscall
-  // returns ZX_ERR_BUFFER_TOO_SMALL. Not sure if the second syscall would be worth it but
-  // investigate.
-  std::unique_ptr<EventPacket> packet = EventPacket::New(slab_allocators::kLargeControlPayloadSize);
-  if (!packet) {
-    bt_log(ERROR, "hci", "failed to allocate event packet!");
-    return;
-  }
-
-  // The wait needs to be restarted after every signal.
-  auto defer_wait = fit::defer([wait, dispatcher] {
-    zx_status_t status = wait->Begin(dispatcher);
-    if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
-    }
-  });
-
-  status = ReadEventPacketFromChannel(channel_, packet);
-  if (status == ZX_ERR_INVALID_ARGS) {
-    return;
-  }
-  if (status != ZX_OK) {
-    defer_wait.cancel();
-    return;
-  }
-
-  if (packet->event_code() == hci_spec::kCommandStatusEventCode ||
-      packet->event_code() == hci_spec::kCommandCompleteEventCode) {
-    UpdateTransaction(std::move(packet));
+void CommandChannel::OnEvent(std::unique_ptr<EventPacket> event) {
+  if (event->event_code() == hci_spec::kCommandStatusEventCode ||
+      event->event_code() == hci_spec::kCommandCompleteEventCode) {
+    UpdateTransaction(std::move(event));
     TrySendQueuedCommands();
   } else {
-    NotifyEventHandler(std::move(packet));
+    NotifyEventHandler(std::move(event));
   }
-}
-
-zx_status_t CommandChannel::ReadEventPacketFromChannel(const zx::channel& channel,
-                                                       const EventPacketPtr& packet) {
-  uint32_t read_size;
-  MutableBufferView packet_bytes = packet->mutable_view()->mutable_data();
-  zx_status_t read_status =
-      channel.read(/*flags=*/0u, packet_bytes.mutable_data(), /*handles=*/nullptr,
-                   packet_bytes.size(), /*num_handles=*/0, &read_size, /*actual_handles=*/nullptr);
-  if (read_status != ZX_OK) {
-    bt_log(DEBUG, "hci", "Failed to read event bytes: %s", zx_status_get_string(read_status));
-    // Clear the handler so that we stop receiving events from it.
-    // TODO(jamuraa): signal upper layers that we can't read the channel.
-    return ZX_ERR_IO;
-  }
-
-  if (read_size < sizeof(hci_spec::EventHeader)) {
-    bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
-           sizeof(hci_spec::EventHeader), read_size);
-    // TODO(armansito): Should this be fatal? Ignore for now.
-    return ZX_ERR_INVALID_ARGS;
-  }
-
-  // Compare the received payload size to what is in the header.
-  const size_t rx_payload_size = read_size - sizeof(hci_spec::EventHeader);
-  const size_t size_from_header = packet->view().header().parameter_total_size;
-  if (size_from_header != rx_payload_size) {
-    bt_log(ERROR, "hci",
-           "malformed packet - payload size from header (%zu) does not match"
-           " received payload size: %zu",
-           size_from_header, rx_payload_size);
-    return ZX_ERR_INVALID_ARGS;
-  }
-
-  packet->InitializeFromBuffer();
-  return ZX_OK;
 }
 
 void CommandChannel::AttachInspect(inspect::Node& parent, const std::string& name) {

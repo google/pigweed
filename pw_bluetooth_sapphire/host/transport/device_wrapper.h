@@ -141,6 +141,8 @@ class DummyDeviceWrapper : public DeviceWrapper {
   using ResetScoCallback = fit::function<void(bt_hci_reset_sco_callback, void*)>;
   void set_reset_sco_callback(ResetScoCallback cb) { reset_sco_cb_ = std::move(cb); }
 
+  void set_vendor_encode_callback(EncodeCallback cb) { vendor_encode_cb_ = std::move(cb); }
+
   // DeviceWrapper overrides. Since these methods simply forward the handles they were initialized
   // with, the internal handles will be moved and invalidated after the first call to these methods.
   // Subsequent calls will always return an invalid handle.

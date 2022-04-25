@@ -17,11 +17,13 @@ using TestingBase = ::gtest::TestLoopFixture;
 
 static zx_status_t hosttest_open_command_channel(void *ctx, zx_handle_t in);
 static zx_status_t hosttest_open_acl_data_channel(void *ctx, zx_handle_t in);
+static zx_status_t hosttest_open_sco_data_channel(void *ctx, zx_handle_t in);
 static zx_status_t hosttest_open_snoop_channel(void *ctx, zx_handle_t in);
 
 static bt_hci_protocol_ops_t hosttest_hci_protocol_ops = {
     .open_command_channel = hosttest_open_command_channel,
     .open_acl_data_channel = hosttest_open_acl_data_channel,
+    .open_sco_channel = hosttest_open_sco_data_channel,
     .open_snoop_channel = hosttest_open_snoop_channel,
 };
 
@@ -86,6 +88,11 @@ zx_status_t hosttest_open_command_channel(void *ctx, zx_handle_t in) {
 zx_status_t hosttest_open_acl_data_channel(void *ctx, zx_handle_t in) {
   HostTest *test = static_cast<HostTest *>(ctx);
   return test->OpenAclDataChannel(in);
+}
+
+zx_status_t hosttest_open_sco_data_channel(void *ctx, zx_handle_t in) {
+  zx_handle_close(in);
+  return ZX_ERR_NOT_SUPPORTED;
 }
 
 zx_status_t hosttest_open_snoop_channel(void *ctx, zx_handle_t in) {

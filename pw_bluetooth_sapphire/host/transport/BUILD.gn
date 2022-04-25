@@ -21,6 +21,8 @@ static_library("transport") {
     "error.cc",
     "error.h",
     "hci_defs.h",
+    "hci_wrapper.cc",
+    "hci_wrapper.h",
     "link_type.cc",
     "link_type.h",
     "packet.h",
@@ -79,6 +81,7 @@ source_set("tests") {
     "acl_data_channel_unittest.cc",
     "command_channel_unittest.cc",
     "device_wrapper_unittest.cc",
+    "hci_wrapper_unittest.cc",
     "packet_unittest.cc",
     "sco_data_channel_unittest.cc",
     "sco_data_packet_unittest.cc",
@@ -106,26 +109,11 @@ bt_gtest_package("bt-host-transport-tests") {
   deps = [ ":tests" ]
 }
 
-fuzzer("read_acl_data_packet_fuzzer") {
-  sources = [ "acl_data_channel_read_acl_data_packet_fuzztest.cc" ]
+fuzzer("hci_wrapper_rx_fuzzer") {
+  sources = [ "hci_wrapper_rx_fuzztest.cc" ]
   deps = [
     ":transport",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
+    "//zircon/system/ulib/async-testing",
   ]
-
-  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
-}
-
-fuzzer("read_command_event_packet_fuzzer") {
-  sources = [ "command_channel_read_event_packet_fuzztest.cc" ]
-  deps = [
-    ":transport",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-
-  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }

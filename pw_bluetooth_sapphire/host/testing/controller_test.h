@@ -56,8 +56,11 @@ class ControllerTest : public ::gtest::TestLoopFixture {
 
   void SetUp(bool sco_enabled) {
     sco_enabled_ = sco_enabled;
-    transport_ = hci::Transport::Create(ControllerTest<ControllerTestDoubleType>::SetUpTestDevice())
-                     .take_value();
+    std::unique_ptr<hci::DeviceWrapper> device =
+        ControllerTest<ControllerTestDoubleType>::SetUpTestDevice();
+    std::unique_ptr<hci::HciWrapper> hci_wrapper =
+        hci::HciWrapper::Create(std::move(device), dispatcher());
+    transport_ = hci::Transport::Create(std::move(hci_wrapper)).take_value();
   }
 
   void TearDown() override {
