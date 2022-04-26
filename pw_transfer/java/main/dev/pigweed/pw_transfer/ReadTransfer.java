@@ -153,12 +153,11 @@ class ReadTransfer extends Transfer<byte[]> {
 
     Chunk.Type type = extend ? Chunk.Type.PARAMETERS_CONTINUE : Chunk.Type.PARAMETERS_RETRANSMIT;
 
-    Chunk.Builder chunk = newChunk()
+    Chunk.Builder chunk = newChunk(type)
                               .setPendingBytes(pendingBytes)
                               .setMaxChunkSizeBytes(parameters.maxChunkSizeBytes())
                               .setOffset(offset)
-                              .setWindowEndOffset(windowEndOffset)
-                              .setType(type);
+                              .setWindowEndOffset(windowEndOffset);
     if (parameters.chunkDelayMicroseconds() > 0) {
       chunk.setMinDelayMicroseconds(parameters.chunkDelayMicroseconds());
     }

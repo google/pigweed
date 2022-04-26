@@ -248,9 +248,9 @@ abstract class Transfer<T> {
     return false;
   }
 
-  final Chunk.Builder newChunk() {
+  final Chunk.Builder newChunk(Chunk.Type type) {
     // TODO(frolv): Properly set the session ID after it is configured by the server.
-    return Chunk.newBuilder().setSessionId(getId());
+    return Chunk.newBuilder().setSessionId(getId()).setType(type);
   }
 
   /** Sends a chunk. Returns true if sent, false if sending failed and the transfer was aborted. */
@@ -309,7 +309,7 @@ abstract class Transfer<T> {
 
     // Only call finish() if the sendChunk was successful. If it wasn't, the exception would have
     // already terminated the transfer.
-    if (sendChunk(newChunk().setStatus(status.code()))) {
+    if (sendChunk(newChunk(Chunk.Type.TRANSFER_COMPLETION).setStatus(status.code()))) {
       cleanUp(status);
     }
   }

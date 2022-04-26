@@ -73,7 +73,10 @@ class WriteTransfer extends Transfer<Void> {
 
   @Override
   synchronized Chunk getInitialChunk() {
-    return newChunk().setResourceId(getId()).setRemainingBytes(data.length).build();
+    return newChunk(Chunk.Type.TRANSFER_START)
+        .setResourceId(getId())
+        .setRemainingBytes(data.length)
+        .build();
   }
 
   @Override
@@ -191,7 +194,7 @@ class WriteTransfer extends Transfer<Void> {
 
       chunkData = chunkData.substring(0, newChunkSize);
 
-      chunkToSend = buildChunk(chunkData);
+      chunkToSend = buildDataChunk(chunkData);
 
       // If there's a timeout, resending this will trigger a transfer parameters update.
       lastChunk = chunkToSend;
@@ -236,7 +239,9 @@ class WriteTransfer extends Transfer<Void> {
   private static boolean isRetransmit(Chunk chunk) {
     // Retransmit is the default behavior for older versions of the transfer protocol, which don't
     // have a type field.
-    return !chunk.hasType() || chunk.getType().equals(Chunk.Type.PARAMETERS_RETRANSMIT);
+    return !chunk.hasType()
+        || (chunk.getType().equals(Chunk.Type.PARAMETERS_RETRANSMIT)
+            || chunk.getType().equals(Chunk.Type.TRANSFER_START));
   }
 
   private static int getWindowEndOffset(Chunk chunk, int dataLength) {
@@ -248,8 +253,9 @@ class WriteTransfer extends Transfer<Void> {
     return min(chunk.getWindowEndOffset(), dataLength);
   }
 
-  private Chunk buildChunk(ByteString chunkData) {
-    Chunk.Builder chunk = newChunk().setOffset(sentOffset).setData(chunkData);
+  private Chunk buildDataChunk(ByteString chunkData) {
+    Chunk.Builder chunk =
+        newChunk(Chunk.Type.TRANSFER_DATA).setOffset(sentOffset).setData(chunkData);
 
     // If this is the last data chunk, setRemainingBytes to 0.
     if (sentOffset + chunkData.size() == data.length) {

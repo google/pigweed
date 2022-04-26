@@ -14,11 +14,10 @@
 
 package dev.pigweed.pw_rpc;
 
-import static java.util.Arrays.stream;
-
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
+import com.google.protobuf.MessageLiteOrBuilder;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import java.util.ArrayList;
@@ -86,17 +85,11 @@ public class TestClient {
   }
 
   /** Simulates receiving SERVER_STREAM packets from the server. */
-  public void receiveServerStream(String service, String method, MessageLite... payloads) {
+  public void receiveServerStream(String service, String method, MessageLiteOrBuilder... payloads) {
     RpcPacket base = startPacket(service, method, PacketType.SERVER_STREAM).build();
-    for (MessageLite payload : payloads) {
-      processPacket(RpcPacket.newBuilder(base).setPayload(payload.toByteString()));
+    for (MessageLiteOrBuilder payload : payloads) {
+      processPacket(RpcPacket.newBuilder(base).setPayload(getMessage(payload).toByteString()));
     }
-  }
-
-  public void receiveServerStream(String service, String method, MessageLite.Builder... builders) {
-    receiveServerStream(service,
-        method,
-        stream(builders).map(MessageLite.Builder::build).toArray(MessageLite[] ::new));
   }
 
   /**
@@ -106,7 +99,7 @@ public class TestClient {
    *     these stream packets. The minimum value (and the default) is 1.
    */
   public void enqueueServerStream(
-      String service, String method, int afterPackets, MessageLite... payloads) {
+      String service, String method, int afterPackets, MessageLiteOrBuilder... payloads) {
     if (afterPackets < 1) {
       throw new IllegalArgumentException("afterPackets must be at least 1");
     }
@@ -117,21 +110,10 @@ public class TestClient {
     receiveEnqueuedPacketsAfter = afterPackets;
 
     RpcPacket base = startPacket(service, method, PacketType.SERVER_STREAM).build();
-    for (MessageLite payload : payloads) {
-      enqueuedPackets.add(RpcPacket.newBuilder(base).setPayload(payload.toByteString()).build());
+    for (MessageLiteOrBuilder payload : payloads) {
+      enqueuedPackets.add(
+          RpcPacket.newBuilder(base).setPayload(getMessage(payload).toByteString()).build());
     }
-  }
-
-  public void enqueueServerStream(String service, String method, MessageLite... payloads) {
-    enqueueServerStream(service, method, 1, payloads);
-  }
-
-  public void enqueueServerStream(
-      String service, String method, int afterPackets, MessageLite.Builder... builders) {
-    enqueueServerStream(service,
-        method,
-        afterPackets,
-        stream(builders).map(MessageLite.Builder::build).toArray(MessageLite[] ::new));
   }
 
   /** Simulates receiving a SERVER_ERROR packet from the server. */
@@ -191,5 +173,15 @@ public class TestClient {
     } catch (InvalidProtocolBufferException e) {
       throw new AssertionError("Decoding sent packet payload failed", e);
     }
+  }
+
+  private MessageLite getMessage(MessageLiteOrBuilder messageOrBuilder) {
+    if (messageOrBuilder instanceof MessageLite.Builder) {
+      return ((MessageLite.Builder) messageOrBuilder).build();
+    }
+    if (messageOrBuilder instanceof MessageLite) {
+      return (MessageLite) messageOrBuilder;
+    }
+    throw new AssertionError("Unexpected MessageLiteOrBuilder class");
   }
 }
