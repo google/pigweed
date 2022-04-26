@@ -159,7 +159,7 @@ export function App() {
           <ToggleButton value="serial">Serial Debug</ToggleButton>
         </ToggleButtonGroup>
         {logViewer === 'log' ? (
-          <Log lines={logLines} />
+          <Log lines={logLines} frames={frames} />
         ) : (
           <SerialLog frames={frames} />
         )}

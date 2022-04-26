@@ -18,9 +18,12 @@ import {makeStyles, Paper, Box} from '@material-ui/core';
 import * as React from 'react';
 import {default as AnsiUp} from 'ansi_up';
 import * as Parser from 'html-react-parser';
+import {Frame} from '@pigweed/pw_hdlc';
+import {Detokenizer} from '@pigweed/pw_tokenizer';
 
 type Props = {
   lines: string[];
+  frames: Frame[];
 };
 
 const useStyles = makeStyles(() => ({
@@ -36,7 +39,9 @@ const useStyles = makeStyles(() => ({
 
 export function Log(props: Props) {
   const classes = useStyles();
-  const xtermRef = React.useRef(null);
+  const [detokenizer, setDetokenizer] = React.useState<Detokenizer | null>(
+    null
+  );
   const ansiUp = new AnsiUp();
 
   function row(text: string, index: number) {
@@ -48,5 +53,42 @@ export function Log(props: Props) {
     );
   }
 
-  return <div className={classes.root}>{props.lines.map(row)}</div>;
+  let decodedTokens: string[] = [];
+  if (detokenizer !== null) {
+    decodedTokens = props.frames.map(frame =>
+      (detokenizer as Detokenizer).detokenizeBase64(frame)
+    );
+  }
+
+  return (
+    <>
+      <p>
+        Upload a tokenizer DB:{' '}
+        <input
+          id="inp"
+          type="file"
+          onChange={async e => {
+            const tokenCsv = await readFile(e.target.files![0]);
+            setDetokenizer(new Detokenizer(String(tokenCsv)));
+          }}
+        />
+      </p>
+      <div className={classes.root}>
+        {decodedTokens.length > 0
+          ? decodedTokens.map(row)
+          : props.lines.map(row)}
+      </div>
+    </>
+  );
+}
+
+function readFile(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve('');
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      resolve(String(e.target!.result));
+    };
+    reader.readAsText(file);
+  });
 }

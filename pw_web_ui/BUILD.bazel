@@ -55,6 +55,7 @@ ts_project(
         "//pw_hdlc/ts:pw_hdlc",
         "//pw_rpc/ts:pw_rpc",
         "//pw_status/ts:pw_status",
+        "//pw_tokenizer/ts:pw_tokenizer",
         "@npm//:node_modules",
     ],  # can't use fine-grained deps
 )

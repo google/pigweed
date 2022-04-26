@@ -49,4 +49,5 @@ Following Pigweed modules are available as Typescript modules:
 
 - `pw_hdlc <https://pigweed.dev/pw_hdlc/#typescript>`_
 - `pw_rpc <https://pigweed.dev/pw_rpc/ts/>`_
+- `pw_tokenizer <https://pigweed.dev/pw_tokenizer/#typescript>`_
 - `pw_transfer <https://pigweed.dev/pw_transfer/#typescript>`_

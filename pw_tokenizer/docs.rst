@@ -8,6 +8,7 @@ pw_tokenizer
 :bdg-primary:`device`
 :bdg-secondary:`Python`
 :bdg-secondary:`C++`
+:bdg-secondary:`TypeScript`
 :bdg-success:`stable`
 
 Logging is critical, but developers are often forced to choose between
@@ -768,8 +769,8 @@ with the ``paths`` option.
 Detokenization
 ==============
 Detokenization is the process of expanding a token to the string it represents
-and decoding its arguments. This module provides Python and C++ detokenization
-libraries.
+and decoding its arguments. This module provides Python, C++ and TypeScript
+detokenization libraries.
 
 **Example: decoding tokenized logs**
 
@@ -879,6 +880,26 @@ this check can be done at compile time.
      }
      return Detokenizer(kDefaultDatabase);
    }
+
+
+TypeScript
+----------
+To detokenize in TypeScript, import ``Detokenizer`` from the ``pw_tokenizer``
+package, and instantiate it with a CSV token database.
+
+.. code-block:: typescript
+
+   import {Detokenizer} from "@pigweed/pw_tokenizer";
+   import {Frame} from '@pigweed/pw_hdlc';
+
+   const detokenizer = new Detokenizer(String(tokenCsv));
+
+   function processLog(frame: Frame){
+     const result = detokenizer.detokenize(frame);
+     console.log(result);
+   }
+
+For messages that are encoded in Base64, use ``Detokenizer::detokenizeBase64``.
 
 Protocol buffers
 ----------------
