@@ -49,15 +49,18 @@ void TransferThread::Run() {
 
   while (true) {
     if (event_notification_.try_acquire_until(GetNextTransferTimeout())) {
-      if (next_event_.type == EventType::kTerminate) {
-        return;
-      }
-
       HandleEvent(next_event_);
+
+      // Sample event type before we release ownership of next_event_.
+      bool is_terminating = next_event_.type == EventType::kTerminate;
 
       // Finished processing the event. Allow the next_event struct to be
       // overwritten.
       next_event_ownership_.release();
+
+      if (is_terminating) {
+        return;
+      }
     }
 
     // Regardless of whether an event was received or not, check for any
@@ -241,6 +244,40 @@ void TransferThread::TransferHandlerEvent(EventType type,
 
 void TransferThread::HandleEvent(const internal::Event& event) {
   switch (event.type) {
+    case EventType::kTerminate:
+      // Terminate server contexts.
+      for (ServerContext& server_context : server_transfers_) {
+        server_context.HandleEvent({
+            .type = EventType::kServerEndTransfer,
+            .end_transfer =
+                {
+                    .session_id = server_context.session_id(),
+                    .status = Status::Aborted().code(),
+                    .send_status_chunk = false,
+                },
+        });
+      }
+
+      // Terminate client contexts.
+      for (ClientContext& client_context : client_transfers_) {
+        client_context.HandleEvent({
+            .type = EventType::kClientEndTransfer,
+            .end_transfer =
+                {
+                    .session_id = client_context.session_id(),
+                    .status = Status::Aborted().code(),
+                    .send_status_chunk = false,
+                },
+        });
+      }
+
+      // Cancel/Finish streams.
+      client_read_stream_.Cancel().IgnoreError();
+      client_write_stream_.Cancel().IgnoreError();
+      server_read_stream_.Finish(Status::Aborted()).IgnoreError();
+      server_write_stream_.Finish(Status::Aborted()).IgnoreError();
+      return;
+
     case EventType::kSendStatusChunk:
       SendStatusChunk(event.send_status_chunk);
       break;

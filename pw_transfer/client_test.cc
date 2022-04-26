@@ -869,6 +869,10 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
   EXPECT_EQ(c.session_id(), 14u);
   EXPECT_EQ(c.offset(), 16u);
   EXPECT_EQ(c.window_end_offset(), 64u);
+
+  // Ensure we don't leave a dangling reference to transfer_status.
+  client_.CancelTransfer(14);
+  transfer_thread_.WaitUntilEventIsProcessed();
 }
 
 TEST_F(ReadTransfer, InitialPacketFails_OnCompletedCalledWithDataLoss) {
@@ -1268,6 +1272,10 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
 
   // Transfer has not yet completed.
   EXPECT_EQ(transfer_status, Status::Unknown());
+
+  // Ensure we don't leave a dangling reference to transfer_status.
+  client_.CancelTransfer(10);
+  transfer_thread_.WaitUntilEventIsProcessed();
 }
 
 TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
@@ -1337,6 +1345,10 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
 
   // Transfer has not yet completed.
   EXPECT_EQ(transfer_status, Status::Unknown());
+
+  // Ensure we don't leave a dangling reference to transfer_status.
+  client_.CancelTransfer(11);
+  transfer_thread_.WaitUntilEventIsProcessed();
 }
 
 TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
@@ -1477,6 +1489,10 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   // waiting for a bit.
   this_thread::sleep_for(kTestTimeout * 4);
   ASSERT_EQ(payloads.size(), 5u);
+
+  // Ensure we don't leave a dangling reference to transfer_status.
+  client_.CancelTransfer(13);
+  transfer_thread_.WaitUntilEventIsProcessed();
 }
 
 TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {

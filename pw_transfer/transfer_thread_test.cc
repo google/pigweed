@@ -115,6 +115,8 @@ TEST_F(TransferThreadTest, AddTransferHandler) {
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_TRUE(handler.prepare_read_called);
+
+  transfer_thread_.RemoveTransferHandler(handler);
 }
 
 TEST_F(TransferThreadTest, RemoveTransferHandler) {
@@ -141,6 +143,8 @@ TEST_F(TransferThreadTest, RemoveTransferHandler) {
   EXPECT_EQ(chunk.session_id(), 3u);
   ASSERT_TRUE(chunk.status().has_value());
   EXPECT_EQ(chunk.status().value(), Status::NotFound());
+
+  transfer_thread_.RemoveTransferHandler(handler);
 }
 
 TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
@@ -184,6 +188,8 @@ TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
       std::memcmp(
           chunk.payload().data(), kData.data() + 8, chunk.payload().size()),
       0);
+
+  transfer_thread_.RemoveTransferHandler(handler);
 }
 
 }  // namespace

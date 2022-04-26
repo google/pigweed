@@ -1202,6 +1202,8 @@ TEST_F(WriteTransfer, SetsWriterWindowEndOffset) {
   Chunk chunk = DecodeChunk(ctx_.responses().back());
   EXPECT_EQ(chunk.session_id(), 987u);
   EXPECT_EQ(chunk.window_end_offset(), 8u);
+
+  ctx_.service().UnregisterHandler(handler_);
 }
 
 TEST_F(WriteTransfer, UnexpectedOffset) {
