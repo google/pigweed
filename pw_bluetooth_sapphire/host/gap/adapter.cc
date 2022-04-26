@@ -313,7 +313,7 @@ class AdapterImpl final : public Adapter {
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
     }
 
-    if (state().IsVendorFeatureSupported(hci::VendorFeaturesBits::kAndroidVendorExtensions)) {
+    if (state().vendor_features() & BT_VENDOR_FEATURES_ANDROID_VENDOR_EXTENSIONS) {
       uint8_t max_advt = state().android_vendor_capabilities().max_simultaneous_advertisements();
       bt_log(INFO, "gap",
              "controller supports android vendor extensions, max simultaneous advertisements: %d",
@@ -577,7 +577,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
         state_.controller_address_ = params->bd_addr;
       });
 
-  if (state().IsVendorFeatureSupported(hci::VendorFeaturesBits::kAndroidVendorExtensions)) {
+  if (state().vendor_features() & BT_VENDOR_FEATURES_ANDROID_VENDOR_EXTENSIONS) {
     bt_log(INFO, "gap", "controller supports android hci extensions, querying exact feature set");
     init_seq_runner_->QueueCommand(
         hci::CommandPacket::New(hci_android::kLEGetVendorCapabilities),

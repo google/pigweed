@@ -705,8 +705,7 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
   auto sock = l2cap_socket_factory_.MakeSocketForChannel(channel);
   fidl_chan.set_socket(std::move(sock));
 
-  if (adapter()->state().IsVendorFeatureSupported(
-          bt::hci::VendorFeaturesBits::kSetAclPriorityCommand)) {
+  if (adapter()->state().vendor_features() & BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND) {
     fidl_chan.set_ext_direction(BindAudioDirectionExtServer(channel));
   }
 

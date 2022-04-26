@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_
 
+#include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <zircon/assert.h>
 
 #include <cstdint>
@@ -46,12 +47,7 @@ class AdapterState final {
   const hci_spec::LMPFeatureSet& features() const { return features_; }
 
   // Features reported by vendor driver.
-  hci::VendorFeaturesBits vendor_features() const { return vendor_features_; }
-
-  // Returns true if the indicated feature is supported by the vendor driver.
-  bool IsVendorFeatureSupported(hci::VendorFeaturesBits feature) const {
-    return feature & vendor_features_;
-  }
+  bt_vendor_features_t vendor_features() const { return vendor_features_; }
 
   // Helpers for querying LMP capabilities.
   inline bool IsBREDRSupported() const {
@@ -107,7 +103,7 @@ class AdapterState final {
   hci_spec::LMPFeatureSet features_;
 
   // Features reported by vendor driver.
-  hci::VendorFeaturesBits vendor_features_ = static_cast<hci::VendorFeaturesBits>(0);
+  bt_vendor_features_t vendor_features_ = 0u;
 
   // Bitmask list of HCI commands that the controller supports.
   uint8_t supported_commands_[64] = {0};

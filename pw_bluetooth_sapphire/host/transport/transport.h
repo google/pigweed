@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_TRANSPORT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_TRANSPORT_H_
 
+#include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
@@ -22,7 +23,6 @@
 #include "lib/inspect/cpp/vmo/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/hci_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -45,7 +45,8 @@ class Transport final {
   // NOTE: AclDataChannel and ScoDataChannel will be left uninitialized. They must be
   // initialized after available data buffer information has been obtained from
   // the controller (via HCI_Read_Buffer_Size and HCI_LE_Read_Buffer_Size).
-  static fpromise::result<std::unique_ptr<Transport>> Create(std::unique_ptr<HciWrapper> hci);
+  static fpromise::result<std::unique_ptr<Transport>> Create(
+      std::unique_ptr<DeviceWrapper> hci_device);
 
   // TODO(armansito): hci::Transport::~Transport() should send a shutdown message
   // to the bt-hci device, which would be responsible for sending HCI_Reset upon
@@ -62,7 +63,10 @@ class Transport final {
   // if an error occurs during initialization.
   bool InitializeScoDataChannel(const DataBufferInfo& buffer_info);
 
-  VendorFeaturesBits GetVendorFeatures();
+  bt_vendor_features_t GetVendorFeatures();
+
+  fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                          bt_vendor_params_t& params);
 
   // Returns a pointer to the HCI command and event flow control handler.
   CommandChannel* command_channel() const { return command_channel_.get(); }
@@ -90,7 +94,15 @@ class Transport final {
   fxl::WeakPtr<Transport> WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  explicit Transport(std::unique_ptr<HciWrapper> hci);
+  explicit Transport(std::unique_ptr<DeviceWrapper> hci_device);
+
+  // Channel closed callback.
+  void OnChannelClosed(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
+                       const zx_packet_signal_t* signal);
+  using Waiter = async::WaitMethod<Transport, &Transport::OnChannelClosed>;
+
+  // Sets up a wait to watch for |channel| to close and calls OnChannelClosed
+  void WatchChannelClosed(const zx::channel& channel, Waiter& wait);
 
   // Notifies the closed callback.
   void NotifyClosedCallback();
@@ -104,7 +116,13 @@ class Transport final {
   // creation thread.
   fit::thread_checker thread_checker_;
 
-  std::unique_ptr<HciWrapper> hci_;
+  // The Bluetooth HCI device file descriptor.
+  std::unique_ptr<DeviceWrapper> hci_device_;
+
+  // async::Waits for the channels
+  Waiter cmd_channel_wait_{this};
+  Waiter acl_channel_wait_{this};
+  Waiter sco_channel_wait_{this};
 
   // The ACL data flow control handler.
   std::unique_ptr<AclDataChannel> acl_data_channel_;

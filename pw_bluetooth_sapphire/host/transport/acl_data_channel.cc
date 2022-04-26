@@ -29,10 +29,46 @@
 
 namespace bt::hci {
 
+zx_status_t AclDataChannel::ReadAclDataPacketFromChannel(const zx::channel& channel,
+                                                         const ACLDataPacketPtr& packet) {
+  uint32_t read_size;
+  auto packet_bytes = packet->mutable_view()->mutable_data();
+  zx_status_t read_status =
+      channel.read(0u, packet_bytes.mutable_data(), /*handles=*/nullptr, packet_bytes.size(), 0,
+                   &read_size, /*actual_handles=*/nullptr);
+  if (read_status < 0) {
+    bt_log(DEBUG, "hci", "failed to read RX bytes: %s", zx_status_get_string(read_status));
+    // Clear the handler so that we stop receiving events from it.
+    // TODO(jamuraa): signal failure to the consumer so it can do something.
+    return ZX_ERR_IO;
+  }
+
+  if (read_size < sizeof(hci_spec::ACLDataHeader)) {
+    bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
+           sizeof(hci_spec::ACLDataHeader), read_size);
+    // TODO(jamuraa): signal stream error somehow
+    return ZX_ERR_INVALID_ARGS;
+  }
+
+  const size_t rx_payload_size = read_size - sizeof(hci_spec::ACLDataHeader);
+  const size_t size_from_header = le16toh(packet->view().header().data_total_length);
+  if (size_from_header != rx_payload_size) {
+    bt_log(ERROR, "hci",
+           "malformed packet - payload size from header (%zu) does not match"
+           " received payload size: %zu",
+           size_from_header, rx_payload_size);
+    // TODO(jamuraa): signal stream error somehow
+    return ZX_ERR_INVALID_ARGS;
+  }
+
+  packet->InitializeFromBuffer();
+  return ZX_OK;
+}
+
 class AclDataChannelImpl final : public AclDataChannel {
  public:
-  AclDataChannelImpl(Transport* transport, HciWrapper* hci, const DataBufferInfo& bredr_buffer_info,
-                     const DataBufferInfo& le_buffer_info);
+  AclDataChannelImpl(Transport* transport, zx::channel hci_acl_channel,
+                     const DataBufferInfo& bredr_buffer_info, const DataBufferInfo& le_buffer_info);
   ~AclDataChannelImpl() override;
 
   // AclDataChannel overrides
@@ -125,7 +161,9 @@ class AclDataChannelImpl final : public AclDataChannel {
   // Increments the total number of sent LE packets count by the given amount.
   void IncrementLETotalNumPackets(size_t count);
 
-  void OnRxPacket(std::unique_ptr<ACLDataPacket> packet);
+  // Read Ready Handler for |channel_|
+  void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
+                      const zx_packet_signal_t* signal);
 
   // Compute and write quantiles of send latency metrics to Inspect properties. Should only be
   // called by |write_send_metrics_task_|.
@@ -168,8 +206,11 @@ class AclDataChannelImpl final : public AclDataChannel {
   // The Transport object that owns this instance.
   Transport* transport_;  // weak;
 
-  // HciWrapper is owned by Transport and will outlive this object.
-  HciWrapper* hci_;
+  // The channel that we use to send/receive HCI ACL data packets.
+  zx::channel channel_;
+
+  // Wait object for |channel_|
+  async::WaitMethod<AclDataChannelImpl, &AclDataChannelImpl::OnChannelReady> channel_wait_{this};
 
   // The event handler ID for the Number Of Completed Packets event.
   CommandChannel::EventHandlerId num_completed_packets_event_handler_id_ = 0;
@@ -258,28 +299,36 @@ class AclDataChannelImpl final : public AclDataChannel {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AclDataChannelImpl);
 };
 
-std::unique_ptr<AclDataChannel> AclDataChannel::Create(Transport* transport, HciWrapper* hci,
+std::unique_ptr<AclDataChannel> AclDataChannel::Create(Transport* transport,
+                                                       zx::channel hci_acl_channel,
                                                        const DataBufferInfo& bredr_buffer_info,
                                                        const DataBufferInfo& le_buffer_info) {
-  return std::make_unique<AclDataChannelImpl>(transport, hci, bredr_buffer_info, le_buffer_info);
+  return std::make_unique<AclDataChannelImpl>(transport, std::move(hci_acl_channel),
+                                              bredr_buffer_info, le_buffer_info);
 }
 
-AclDataChannelImpl::AclDataChannelImpl(Transport* transport, HciWrapper* hci,
+AclDataChannelImpl::AclDataChannelImpl(Transport* transport, zx::channel hci_acl_channel,
                                        const DataBufferInfo& bredr_buffer_info,
                                        const DataBufferInfo& le_buffer_info)
     : transport_(transport),
-      hci_(hci),
+      channel_(std::move(hci_acl_channel)),
+      channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
       io_dispatcher_(async_get_default_dispatcher()),
       bredr_buffer_info_(bredr_buffer_info),
       le_buffer_info_(le_buffer_info),
       send_monitor_(fit::nullable(io_dispatcher_),
                     // Buffer depth for ~3 minutes of audio assuming ~50 ACL fragments/s send rate
                     internal::RetireLog(/*min_depth=*/100, /*max_depth=*/1 << 13)) {
+  // TODO(armansito): We'll need to pay attention to ZX_CHANNEL_WRITABLE as
+  // well.
   ZX_DEBUG_ASSERT(transport_);
-  ZX_ASSERT(hci_);
+  ZX_DEBUG_ASSERT(channel_.is_valid());
 
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() || le_buffer_info.IsAvailable());
+
+  zx_status_t wait_status = channel_wait_.Begin(async_get_default_dispatcher());
+  ZX_ASSERT_MSG(wait_status == ZX_OK, "failed channel setup %s", zx_status_get_string(wait_status));
 
   num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       hci_spec::kNumberOfCompletedPacketsEventCode,
@@ -329,9 +378,7 @@ void AclDataChannelImpl::AttachInspect(inspect::Node& parent, const std::string&
 }
 
 void AclDataChannelImpl::SetDataRxHandler(ACLPacketHandler rx_callback) {
-  ZX_ASSERT(rx_callback);
   rx_callback_ = std::move(rx_callback);
-  hci_->SetAclCallback(fit::bind_member<&AclDataChannelImpl::OnRxPacket>(this));
 }
 
 bool AclDataChannelImpl::SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
@@ -472,15 +519,23 @@ void AclDataChannelImpl::RequestAclPriority(
     fit::callback<void(fitx::result<fitx::failed>)> callback) {
   bt_log(TRACE, "hci", "sending ACL priority command");
 
-  fitx::result<zx_status_t, DynamicByteBuffer> encode_result =
-      hci_->EncodeSetAclPriorityCommand(handle, priority);
+  bt_vendor_set_acl_priority_params_t priority_params = {
+      .connection_handle = handle,
+      .priority = static_cast<bt_vendor_acl_priority_t>((priority == AclPriority::kNormal)
+                                                            ? BT_VENDOR_ACL_PRIORITY_NORMAL
+                                                            : BT_VENDOR_ACL_PRIORITY_HIGH),
+      .direction = static_cast<bt_vendor_acl_direction_t>((priority == AclPriority::kSource)
+                                                              ? BT_VENDOR_ACL_DIRECTION_SOURCE
+                                                              : BT_VENDOR_ACL_DIRECTION_SINK)};
+  bt_vendor_params_t cmd_params = {.set_acl_priority = priority_params};
+  auto encode_result =
+      transport_->EncodeVendorCommand(BT_VENDOR_COMMAND_SET_ACL_PRIORITY, cmd_params);
   if (encode_result.is_error()) {
     bt_log(TRACE, "hci", "encoding ACL priority command failed");
     callback(fitx::failed());
     return;
   }
-
-  DynamicByteBuffer encoded = std::move(encode_result.value());
+  auto encoded = encode_result.take_value();
   if (encoded.size() < sizeof(hci_spec::CommandHeader)) {
     bt_log(TRACE, "hci", "encoded ACL priority command too small (size: %zu)", encoded.size());
     callback(fitx::failed());
@@ -726,11 +781,12 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
   size_t bredr_packets_sent = 0;
   size_t le_packets_sent = 0;
   while (!to_send.empty()) {
-    QueuedDataPacket& packet = to_send.front();
-    const hci_spec::ConnectionHandle connection_handle = packet.packet->connection_handle();
+    const QueuedDataPacket& packet = to_send.front();
 
-    zx_status_t status = hci_->SendAclPacket(std::move(packet.packet));
-    if (status != ZX_OK) {
+    auto packet_bytes = packet.packet->view().data();
+    zx_status_t status =
+        channel_.write(0, packet_bytes.data(), packet_bytes.size(), /*handles=*/nullptr, 0);
+    if (status < 0) {
       bt_log(ERROR, "hci", "failed to send data packet to HCI driver (%s) - dropping packet",
              zx_status_get_string(status));
       to_send.pop_front();
@@ -743,9 +799,9 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
       ++le_packets_sent;
     }
 
-    auto iter = pending_links_.find(connection_handle);
+    auto iter = pending_links_.find(packet.packet->connection_handle());
     if (iter == pending_links_.end()) {
-      pending_links_[connection_handle] = PendingPacketData(packet.ll_type);
+      pending_links_[packet.packet->connection_handle()] = PendingPacketData(packet.ll_type);
     } else {
       iter->second.count++;
     }
@@ -808,8 +864,47 @@ void AclDataChannelImpl::IncrementLETotalNumPackets(size_t count) {
   *le_num_sent_packets_.Mutable() += count;
 }
 
-void AclDataChannelImpl::OnRxPacket(std::unique_ptr<ACLDataPacket> packet) {
-  ZX_ASSERT(rx_callback_);
+void AclDataChannelImpl::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
+                                        zx_status_t status, const zx_packet_signal_t* signal) {
+  TRACE_DURATION("bluetooth", "AclDataChannelImpl::OnChannelReady");
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "channel error: %s", zx_status_get_string(status));
+    return;
+  }
+
+  ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
+  ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
+
+  // The wait needs to be restarted after every signal.
+  auto defer_wait = fit::defer([wait, dispatcher] {
+    zx_status_t status = wait->Begin(dispatcher);
+    if (status != ZX_OK) {
+      bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
+    }
+  });
+
+  if (!rx_callback_) {
+    return;
+  }
+
+  // Allocate a buffer for the event. Since we don't know the size beforehand
+  // we allocate the largest possible buffer.
+  auto packet = ACLDataPacket::New(slab_allocators::kLargeACLDataPayloadSize);
+  if (!packet) {
+    bt_log(ERROR, "hci", "failed to allocate buffer received ACL data packet!");
+    defer_wait.cancel();
+    return;
+  }
+
+  status = ReadAclDataPacketFromChannel(channel_, packet);
+  if (status == ZX_ERR_INVALID_ARGS) {
+    return;
+  }
+  if (status != ZX_OK) {
+    defer_wait.cancel();
+    return;
+  }
+
   {
     TRACE_DURATION("bluetooth", "AclDataChannelImpl->rx_callback_");
     rx_callback_(std::move(packet));

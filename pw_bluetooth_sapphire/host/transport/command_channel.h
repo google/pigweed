@@ -30,7 +30,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/hci_wrapper.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
@@ -40,8 +39,14 @@ class Transport;
 // Represents the HCI Bluetooth command channel. Manages HCI command and event packet control flow.
 class CommandChannel final {
  public:
-  // Starts listening for HCI commands and starts handling commands and events.
-  explicit CommandChannel(HciWrapper* hci);
+  // Starts listening on the HCI command channel and starts handling commands and events.
+  //
+  // |hci_command_channel| is a Zircon channel construct that can receive Bluetooth HCI command and
+  // event packets, in which the remote end is implemented by the underlying Bluetooth HCI device
+  // driver.
+  //
+  // |transport| is the Transport instance that owns this CommandChannel.
+  CommandChannel(Transport* transport, zx::channel hci_command_channel);
 
   ~CommandChannel();
 
@@ -185,11 +190,21 @@ class CommandChannel final {
   // |id| could not be found.
   void RemoveEventHandler(EventHandlerId id);
 
+  // Returns the underlying channel handle.
+  const zx::channel& channel() const { return channel_; }
+
   // Set callback that will be called when a command times out after kCommandTimeout. This is
   // distinct from channel closure.
   void set_channel_timeout_cb(fit::closure timeout_cb) {
     channel_timeout_cb_ = std::move(timeout_cb);
   }
+
+  // Reads bytes from the channel and try to parse them as EventPacket.
+  // ZX_ERR_IO means error happens while reading from the channel.
+  // ZX_ERR_INVALID_ARGS means the packet is malformed.
+  // Otherwise, ZX_OK is returned.
+  static zx_status_t ReadEventPacketFromChannel(const zx::channel& channel,
+                                                const EventPacketPtr& packet);
 
   // Attach command_channel inspect node as a child node of |parent|.
   static constexpr const char* kInspectNodeName = "command_channel";
@@ -337,8 +352,9 @@ class CommandChannel final {
   // that have transactions pending as complete by removing them and calling their callbacks.
   void UpdateTransaction(std::unique_ptr<EventPacket> event);
 
-  // Event handler.
-  void OnEvent(std::unique_ptr<EventPacket> event);
+  // Read ready handler for |channel_|
+  void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
+                      const zx_packet_signal_t* signal);
 
   // Opcodes of commands that we have sent to the controller but not received a status update from.
   // New commands with these opcodes can't be sent because they are indistinguishable from ones we
@@ -354,11 +370,17 @@ class CommandChannel final {
   // Used to assert that certain public functions are only called on the creation thread.
   fit::thread_checker thread_checker_;
 
-  // The HCI we use to send/receive HCI commands/events.
-  HciWrapper* hci_;
+  // The Transport object that owns this CommandChannel.
+  Transport* transport_;  // weak
+
+  // The channel we use to send/receive HCI commands/events.
+  zx::channel channel_;
 
   // Callback called when a command times out.
   fit::closure channel_timeout_cb_;
+
+  // Wait object for |channel_|
+  async::WaitMethod<CommandChannel, &CommandChannel::OnChannelReady> channel_wait_{this};
 
   // The HCI command queue. This queue is not necessarily sent in order, but commands with the same
   // opcode or that wait on the same completion event code are sent first-in, first-out.
