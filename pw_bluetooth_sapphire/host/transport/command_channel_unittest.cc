@@ -1296,6 +1296,9 @@ TEST_F(CommandChannelTest, CommandTimeoutCallback) {
 
   EXPECT_EQ(1u, timeout_cb_count);
   EXPECT_EQ(0u, cmd_cb_count);
+
+  DeleteTransport();
+  EXPECT_EQ(2u, cmd_cb_count);
 }
 
 TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {

@@ -228,7 +228,8 @@ class CommandChannel final {
     // Starts the transaction timer, which will call timeout_cb if it's not completed in time.
     void Start(fit::closure timeout_cb, zx::duration timeout);
 
-    // Completes the transaction with |event|.
+    // Completes the transaction with |event|. For asynchronous commands, this should be called with
+    // the status event (the complete event is handled separately by the event handler).
     void Complete(std::unique_ptr<EventPacket> event);
 
     // Cancels the transaction timeout and erases the callback so it isn't called upon destruction.

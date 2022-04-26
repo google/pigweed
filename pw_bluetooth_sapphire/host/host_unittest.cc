@@ -102,7 +102,7 @@ zx_status_t hosttest_open_snoop_channel(void *ctx, zx_handle_t in) {
 
 namespace {
 
-TEST_F(HostTest, InitializeCallsErrorCallbackWhenTransportFails) {
+TEST_F(HostTest, InitializeFailsWhenCommandTimesOut) {
   inspect::Inspector inspector;
   auto bt_host_node = inspector.GetRoot().CreateChild("bt-host");
 
@@ -118,7 +118,9 @@ TEST_F(HostTest, InitializeCallsErrorCallbackWhenTransportFails) {
 
   RunLoopFor(kCommandTimeout);
 
-  EXPECT_TRUE(error_cb_called);
+  // Initialization will fail before the error callback would be called (the error callback is only
+  // called after successful initialization).
+  EXPECT_FALSE(error_cb_called);
   // Initialization also failed, since the adapter initialization is what was being done when the
   // timeout happened.
   EXPECT_TRUE(init_cb_result.has_value());

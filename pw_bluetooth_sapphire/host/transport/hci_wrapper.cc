@@ -93,8 +93,7 @@ class HciWrapperImpl final : public HciWrapper {
 
   zx_status_t OnChannelReadable(zx_status_t status, async::WaitBase* wait,
                                 MutableBufferView buffer_view, size_t header_size,
-                                zx::channel& channel, fit::function<uint16_t()> size_from_header,
-                                bool restart_wait = true);
+                                zx::channel& channel, fit::function<uint16_t()> size_from_header);
 
   void OnAclSignal(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
                    const zx_packet_signal_t* signal);
@@ -290,8 +289,7 @@ fitx::result<zx_status_t, DynamicByteBuffer> HciWrapperImpl::EncodeSetAclPriorit
 zx_status_t HciWrapperImpl::OnChannelReadable(zx_status_t status, async::WaitBase* wait,
                                               MutableBufferView buffer_view, size_t header_size,
                                               zx::channel& channel,
-                                              fit::function<uint16_t()> size_from_header,
-                                              bool restart_wait) {
+                                              fit::function<uint16_t()> size_from_header) {
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "channel error: %s", zx_status_get_string(status));
     return ZX_ERR_IO;
@@ -308,10 +306,7 @@ zx_status_t HciWrapperImpl::OnChannelReadable(zx_status_t status, async::WaitBas
   }
 
   // The wait needs to be restarted after every signal.
-  auto defer_wait = fit::defer([wait, this, restart_wait] {
-    if (!restart_wait) {
-      return;
-    }
+  auto defer_wait = fit::defer([wait, this] {
     zx_status_t status = wait->Begin(dispatcher_);
     if (status != ZX_OK) {
       bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
@@ -395,19 +390,9 @@ void HciWrapperImpl::OnCommandSignal(async_dispatcher_t* dispatcher, async::Wait
 
   auto size_from_header = [&packet] { return packet->view().header().parameter_total_size; };
 
-  // The channel wait must not be restarted until after the event_cb_ has had a chance to post tasks
-  // to the dispatcher (e.g. the status event callback) that should be ordered before the next
-  // event, or else events may be handled out of order.
-  // TODO(fxbug.dev/97629): Remove this after CommandChannel is fixed.
-  auto defer_wait = fit::defer([wait, this] {
-    zx_status_t status = wait->Begin(dispatcher_);
-    if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
-    }
-  });
-  const zx_status_t read_status = OnChannelReadable(
-      status, wait, packet->mutable_view()->mutable_data(), sizeof(hci_spec::EventHeader),
-      command_channel_, size_from_header, /*restart_wait=*/false);
+  const zx_status_t read_status =
+      OnChannelReadable(status, wait, packet->mutable_view()->mutable_data(),
+                        sizeof(hci_spec::EventHeader), command_channel_, size_from_header);
 
   if (read_status == ZX_ERR_IO_DATA_INTEGRITY) {
     // TODO(fxbug.dev/97362): Handle these types of errors by calling error_cb_.
@@ -416,7 +401,6 @@ void HciWrapperImpl::OnCommandSignal(async_dispatcher_t* dispatcher, async::Wait
   }
   if (read_status != ZX_OK) {
     bt_log(ERROR, "hci", "failed to read event packet");
-    defer_wait.cancel();
     OnError(read_status);
     return;
   }

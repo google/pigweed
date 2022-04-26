@@ -92,11 +92,14 @@ void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> even
   if (!callback_) {
     return;
   }
-  // TODO(fxbug.dev/97629): Remove this PostTask and call the callback synchronously.
-  async::PostTask(
-      async_get_default_dispatcher(),
-      [event = std::move(event), callback = std::move(callback_),
-       transaction_id = transaction_id_]() mutable { callback(transaction_id, *event); });
+
+  // Call callback_ synchronously to ensure that asynchronous status & complete events are not
+  // handled out of order if they are dispatched from the HCI API simultaneously.
+  callback_(transaction_id_, *event);
+
+  // Asynchronous commands will have an additional reference to callback_ in the event
+  // map. Clear this reference to ensure that destruction or unexpected command complete events or
+  // status events do not call this reference to callback_ twice.
   callback_ = nullptr;
 }
 
@@ -518,14 +521,14 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     return;
   }
 
-  std::unique_ptr<TransactionData>& pending = it->second;
-  ZX_DEBUG_ASSERT(pending->opcode() == matching_opcode);
-
-  pending->Complete(std::move(event));
+  std::unique_ptr<TransactionData>& transaction_ref = it->second;
+  ZX_DEBUG_ASSERT(transaction_ref->opcode() == matching_opcode);
 
   // If the command is synchronous or there's no handler to cleanup, we're done.
-  if (pending->handler_id() == 0u) {
+  if (transaction_ref->handler_id() == 0u) {
+    std::unique_ptr<TransactionData> transaction = std::move(it->second);
     pending_transactions_.erase(it);
+    transaction->Complete(std::move(event));
     return;
   }
 
@@ -538,8 +541,13 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   // If an asynchronous command failed, then remove its event handler.
   if (unregister_async_handler) {
     bt_log(TRACE, "hci", "async command failed; removing its handler");
-    RemoveEventHandlerInternal(pending->handler_id());
+    RemoveEventHandlerInternal(transaction_ref->handler_id());
+    std::unique_ptr<TransactionData> transaction = std::move(it->second);
     pending_transactions_.erase(it);
+    transaction->Complete(std::move(event));
+  } else {
+    // Send the status event to the async transaction.
+    transaction_ref->Complete(std::move(event));
   }
 }
 

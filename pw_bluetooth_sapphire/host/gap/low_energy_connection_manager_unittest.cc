@@ -2369,44 +2369,36 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
                                             conn_handle1 = std::move(result).value();
                                           });
 
-  size_t l2cap_conn_param_update_count = 0;
-  size_t hci_update_conn_param_count = 0;
+  size_t l2cap_conn_param_update_count0 = 0;
+  size_t l2cap_conn_param_update_count1 = 0;
+  size_t hci_update_conn_param_count0 = 0;
+  size_t hci_update_conn_param_count1 = 0;
 
   fake_l2cap()->set_connection_parameter_update_request_responder([&](auto handle, auto params) {
-    switch (l2cap_conn_param_update_count) {
-      case 0:
-        EXPECT_EQ(handle, conn_handle0->handle());
-        break;
-      case 1:
-        EXPECT_EQ(handle, conn_handle1->handle());
-        break;
-      default:
-        ADD_FAILURE();
+    if (handle == conn_handle0->handle()) {
+      l2cap_conn_param_update_count0++;
+      // connection update commands should be sent before l2cap requests
+      EXPECT_EQ(hci_update_conn_param_count0, 1u);
+    } else if (handle == conn_handle1->handle()) {
+      l2cap_conn_param_update_count1++;
+      EXPECT_EQ(hci_update_conn_param_count1, 1u);
+    } else {
+      ADD_FAILURE();
     }
-
-    // connection update commands should be sent before l2cap requests
-    EXPECT_EQ(2u, hci_update_conn_param_count);
-
-    l2cap_conn_param_update_count++;
     return true;
   });
 
   test_device()->set_le_connection_parameters_callback([&](auto address, auto params) {
-    switch (hci_update_conn_param_count) {
-      case 0:
-        EXPECT_EQ(address, kAddress0);
-        break;
-      case 1:
-        EXPECT_EQ(address, kAddress1);
-        break;
-      default:
-        ADD_FAILURE();
+    if (address == kAddress0) {
+      hci_update_conn_param_count0++;
+      // l2cap requests should not be sent until after failed HCI connection update commands
+      EXPECT_EQ(l2cap_conn_param_update_count0, 0u);
+    } else if (address == kAddress1) {
+      hci_update_conn_param_count1++;
+      EXPECT_EQ(l2cap_conn_param_update_count1, 0u);
+    } else {
+      ADD_FAILURE();
     }
-
-    // l2cap requests should not be sent until after failed HCI connection update commands
-    EXPECT_EQ(0u, l2cap_conn_param_update_count);
-
-    hci_update_conn_param_count++;
   });
 
   RunLoopFor(kLEConnectionPausePeripheral);
@@ -2415,15 +2407,18 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   ASSERT_TRUE(conn_handle1);
   EXPECT_TRUE(conn_handle1->active());
 
-  EXPECT_EQ(2u, hci_update_conn_param_count);
-  EXPECT_EQ(2u, l2cap_conn_param_update_count);
+  EXPECT_EQ(1u, hci_update_conn_param_count0);
+  EXPECT_EQ(1u, l2cap_conn_param_update_count0);
+  EXPECT_EQ(1u, hci_update_conn_param_count1);
+  EXPECT_EQ(1u, l2cap_conn_param_update_count1);
 
   // l2cap requests should not be sent on subsequent events
   test_device()->SendLEConnectionUpdateCompleteSubevent(
       conn_handle1->handle(), hci_spec::LEConnectionParameters(),
       hci_spec::StatusCode::kUnsupportedRemoteFeature);
   RunLoopUntilIdle();
-  EXPECT_EQ(2u, l2cap_conn_param_update_count);
+  EXPECT_EQ(1u, l2cap_conn_param_update_count0);
+  EXPECT_EQ(1u, l2cap_conn_param_update_count1);
 }
 
 // Based on PTS L2CAP/LE/CPU/BV-01-C. When run twice, the controller caches the LE Connection
