@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <sys/socket.h>
+
 #include <cstring>
 
 #include "gtest/gtest.h"
@@ -25,6 +27,10 @@ namespace rpc_test {
 namespace {
 
 constexpr int kIterations = 3;
+
+// This client configures a socket read timeout to allow the RPC dispatch thread
+// to exit gracefully.
+constexpr timeval kSocketReadTimeout = {.tv_sec = 1, .tv_usec = 0};
 
 using namespace std::chrono_literals;
 using pw::ByteSpan;
@@ -97,5 +103,22 @@ int main(int argc, char* argv[]) {
   if (!pw::rpc::integration_test::InitializeClient(argc, argv).ok()) {
     return 1;
   }
-  return RUN_ALL_TESTS();
+
+  // Set read timout on socket to allow
+  // pw::rpc::integration_test::TerminateClient() to complete.
+  int retval = setsockopt(pw::rpc::integration_test::GetClientSocketFd(),
+                          SOL_SOCKET,
+                          SO_RCVTIMEO,
+                          &rpc_test::kSocketReadTimeout,
+                          sizeof(rpc_test::kSocketReadTimeout));
+  PW_CHECK_INT_EQ(retval,
+                  0,
+                  "Failed to configure socket receive timeout with errno=%d",
+                  errno);
+
+  int test_retval = RUN_ALL_TESTS();
+
+  pw::rpc::integration_test::TerminateClient();
+
+  return test_retval;
 }

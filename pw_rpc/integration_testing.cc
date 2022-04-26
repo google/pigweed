@@ -53,6 +53,8 @@ Status InitializeClient(int port) {
   return context.Start(port);
 }
 
+void TerminateClient() { context.Terminate(); }
+
 Status InitializeClient(int argc, char* argv[], const char* usage_args) {
   if (argc < 2) {
     PW_LOG_INFO("Usage: %s %s", argv[0], usage_args);

@@ -98,4 +98,11 @@ Status InitializeClient(int argc,
 
 Status InitializeClient(int port);
 
+// Terminates the client, joining the RPC dispatch thread.
+//
+// WARNING: This may block forever if the socket is configured to block
+// indefinitely on reads. Configuring the client socket's `SO_RCVTIMEO` to a
+// nonzero timeout will allow the dispatch thread to always return.
+void TerminateClient();
+
 }  // namespace pw::rpc::integration_test

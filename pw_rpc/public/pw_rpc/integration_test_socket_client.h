@@ -13,7 +13,9 @@
 // the License.
 #pragma once
 
+#include <atomic>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <thread>
 
@@ -31,7 +33,8 @@ template <size_t kMaxTransmissionUnit>
 class SocketClientContext {
  public:
   constexpr SocketClientContext()
-      : channel_output_(stream_, hdlc::kDefaultRpcAddress, "socket"),
+      : rpc_dispatch_thread_handle_(std::nullopt),
+        channel_output_(stream_, hdlc::kDefaultRpcAddress, "socket"),
         channel_output_with_manipulator_(channel_output_),
         channel_(
             Channel::Create<kChannelId>(&channel_output_with_manipulator_)),
@@ -43,8 +46,20 @@ class SocketClientContext {
   // packets from the socket.
   Status Start(const char* host, uint16_t port) {
     PW_TRY(stream_.Connect(host, port));
-    std::thread{&SocketClientContext::ProcessPackets, this}.detach();
+    rpc_dispatch_thread_handle_.emplace(&SocketClientContext::ProcessPackets,
+                                        this);
     return OkStatus();
+  }
+
+  // Terminates the client, joining the RPC dispatch thread.
+  //
+  // WARNING: This may block forever if the socket is configured to block
+  // indefinitely on reads. Configuring the client socket's `SO_RCVTIMEO` to a
+  // nonzero timeout will allow the dispatch thread to always return.
+  void Terminate() {
+    PW_ASSERT(rpc_dispatch_thread_handle_.has_value());
+    should_terminate_.test_and_set();
+    rpc_dispatch_thread_handle_->join();
   }
 
   int GetSocketFd() { return stream_.connection_fd(); }
@@ -107,6 +122,8 @@ class SocketClientContext {
     ChannelManipulator* channel_manipulator_;
   };
 
+  std::atomic_flag should_terminate_ = ATOMIC_FLAG_INIT;
+  std::optional<std::thread> rpc_dispatch_thread_handle_;
   stream::SocketStream stream_;
   hdlc::RpcChannelOutput channel_output_;
   ChannelOutputWithManipulator channel_output_with_manipulator_;
@@ -123,6 +140,10 @@ void SocketClientContext<kMaxTransmissionUnit>::ProcessPackets() {
   while (true) {
     std::byte byte[1];
     Result<ByteSpan> read = stream_.Read(byte);
+
+    if (should_terminate_.test()) {
+      return;
+    }
 
     if (!read.ok() || read->size() == 0u) {
       continue;

@@ -56,6 +56,10 @@ namespace {
 // smaller receive buffer size.
 constexpr int kMaxSocketSendBufferSize = 1;
 
+// This client configures a socket read timeout to allow the RPC dispatch thread
+// to exit gracefully.
+constexpr timeval kSocketReadTimeout = {.tv_sec = 1, .tv_usec = 0};
+
 thread::Options& TransferThreadOptions() {
   static thread::stl::Options options;
   return options;
@@ -98,8 +102,12 @@ pw::Status SendData(const pw::transfer::ClientConfig& config) {
   result.completed.acquire();
 
   transfer_thread.Terminate();
+
   system_thread.join();
 
+  // The RPC thread must join before destroying transfer objects as the transfer
+  // service may still reference the transfer thread or transfer client objects.
+  pw::rpc::integration_test::TerminateClient();
   return result.status;
 }
 
@@ -144,6 +152,17 @@ int main(int argc, char* argv[]) {
   PW_CHECK_INT_EQ(retval,
                   0,
                   "Failed to configure socket send buffer size with errno=%d",
+                  errno);
+
+  retval =
+      setsockopt(pw::rpc::integration_test::GetClientSocketFd(),
+                 SOL_SOCKET,
+                 SO_RCVTIMEO,
+                 &pw::transfer::integration_test::kSocketReadTimeout,
+                 sizeof(pw::transfer::integration_test::kSocketReadTimeout));
+  PW_CHECK_INT_EQ(retval,
+                  0,
+                  "Failed to configure socket receive timeout with errno=%d",
                   errno);
 
   if (!pw::transfer::integration_test::SendData(config).ok()) {
