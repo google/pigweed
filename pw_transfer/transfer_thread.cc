@@ -162,7 +162,7 @@ void TransferThread::ProcessChunk(EventType type, ConstByteSpan chunk) {
   PW_CHECK(chunk.size() <= chunk_buffer_.size(),
            "Transfer received a larger chunk than it can handle.");
 
-  Result<uint32_t> session_id = ExtractSessionId(chunk);
+  Result<uint32_t> session_id = Chunk::ExtractSessionId(chunk);
   if (!session_id.ok()) {
     PW_LOG_ERROR("Received a malformed chunk without a session ID");
     return;
@@ -336,11 +336,9 @@ void TransferThread::SendStatusChunk(
     const internal::SendStatusChunkEvent& event) {
   rpc::Writer& destination = stream_for(event.stream);
 
-  internal::Chunk chunk = {};
-  chunk.session_id = event.session_id;
-  chunk.status = event.status;
-
-  Result<ConstByteSpan> result = internal::EncodeChunk(chunk, chunk_buffer_);
+  Result<ConstByteSpan> result =
+      Chunk::Final(ProtocolVersion::kLegacy, event.session_id, event.status)
+          .Encode(chunk_buffer_);
 
   if (!result.ok()) {
     PW_LOG_ERROR("Failed to encode final chunk for transfer %u",

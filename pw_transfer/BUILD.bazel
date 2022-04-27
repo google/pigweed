@@ -41,6 +41,7 @@ pw_cc_library(
         "public/pw_transfer/internal/client_context.h",
         "public/pw_transfer/internal/context.h",
         "public/pw_transfer/internal/event.h",
+        "public/pw_transfer/internal/protocol.h",
         "public/pw_transfer/internal/server_context.h",
         "rate_estimate.cc",
         "server_context.cc",

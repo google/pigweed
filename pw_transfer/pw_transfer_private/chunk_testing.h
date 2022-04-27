@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -21,16 +21,16 @@ namespace pw::transfer::test {
 
 Vector<std::byte, 64> EncodeChunk(const internal::Chunk& chunk) {
   Vector<std::byte, 64> buffer(64);
-  auto result = internal::EncodeChunk(chunk, buffer);
+  auto result = chunk.Encode(buffer);
   EXPECT_EQ(result.status(), OkStatus());
   buffer.resize(result.value().size());
   return buffer;
 }
 
 internal::Chunk DecodeChunk(ConstByteSpan buffer) {
-  internal::Chunk chunk = {};
-  EXPECT_EQ(internal::DecodeChunk(buffer, chunk), OkStatus());
-  return chunk;
+  auto result = internal::Chunk::Parse(buffer);
+  EXPECT_EQ(result.status(), OkStatus());
+  return *result;
 }
 
 }  // namespace pw::transfer::test

@@ -114,7 +114,6 @@ class Context {
         offset_(0),
         window_size_(0),
         window_end_offset_(0),
-        pending_bytes_(0),
         max_chunk_size_bytes_(std::numeric_limits<uint32_t>::max()),
         max_parameters_(nullptr),
         thread_(nullptr),
@@ -296,8 +295,6 @@ class Context {
   uint32_t offset_;
   uint32_t window_size_;
   uint32_t window_end_offset_;
-  // TODO(pwbug/584): Remove pending_bytes in favor of window_end_offset.
-  uint32_t pending_bytes_;
   uint32_t max_chunk_size_bytes_;
 
   const TransferParameters* max_parameters_;

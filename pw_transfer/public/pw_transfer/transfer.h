@@ -27,7 +27,7 @@
 namespace pw::transfer {
 namespace internal {
 
-struct Chunk;
+class Chunk;
 
 }  // namespace internal
 

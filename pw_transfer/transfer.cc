@@ -23,19 +23,19 @@ namespace pw::transfer {
 
 void TransferService::HandleChunk(ConstByteSpan message,
                                   internal::TransferType type) {
-  internal::Chunk chunk;
-  if (Status status = internal::DecodeChunk(message, chunk); !status.ok()) {
-    PW_LOG_ERROR("Failed to decode transfer chunk: %d", status.code());
+  Result<internal::Chunk> chunk = internal::Chunk::Parse(message);
+  if (!chunk.ok()) {
+    PW_LOG_ERROR("Failed to decode transfer chunk: %d", chunk.status().code());
     return;
   }
 
-  if (chunk.IsInitialChunk()) {
+  if (chunk->IsInitialChunk()) {
     // TODO(frolv): Right now, session ID and resource ID are the same thing.
     // The session ID should be assigned by the server in response to the
     // initial chunk
     thread_.StartServerTransfer(type,
-                                chunk.session_id,
-                                /*resource_id=*/chunk.session_id,
+                                chunk->session_id(),
+                                /*resource_id=*/chunk->session_id(),
                                 max_parameters_,
                                 chunk_timeout_,
                                 max_retries_);
