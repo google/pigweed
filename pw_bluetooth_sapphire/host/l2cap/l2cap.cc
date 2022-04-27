@@ -34,7 +34,6 @@ class Impl final : public L2cap {
 
   ~Impl() {
     bt_log(DEBUG, "l2cap", "shutting down");
-    acl_data_channel_->SetDataRxHandler(nullptr);
     channel_manager_ = nullptr;
   }
 

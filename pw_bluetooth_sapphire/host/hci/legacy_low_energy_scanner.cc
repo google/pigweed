@@ -71,7 +71,9 @@ LegacyLowEnergyScanner::LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_
 }
 
 LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {
-  transport()->command_channel()->RemoveEventHandler(event_handler_id_);
+  if (transport()->command_channel()) {
+    transport()->command_channel()->RemoveEventHandler(event_handler_id_);
+  }
 }
 
 bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options, ScanStatusCallback callback) {

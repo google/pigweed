@@ -63,7 +63,7 @@ class AclDataChannel {
   //
   // As this class is intended to support flow-control for both, this function
   // should be called based on what is reported by the controller.
-  static std::unique_ptr<AclDataChannel> Create(Transport* transport, zx::channel hci_acl_channel,
+  static std::unique_ptr<AclDataChannel> Create(Transport* transport, HciWrapper* hci,
                                                 const DataBufferInfo& bredr_buffer_info,
                                                 const DataBufferInfo& le_buffer_info);
 
@@ -152,13 +152,6 @@ class AclDataChannel {
   // This defaults to the BR/EDR buffers if the controller does not have a
   // dedicated LE buffer.
   virtual const DataBufferInfo& GetLeBufferInfo() const = 0;
-
-  // Reads bytes from the channel and try to parse them as ACLDataPacket.
-  // ZX_ERR_IO means error happens while reading from the channel.
-  // ZX_ERR_INVALID_ARGS means the packet is malformed.
-  // Otherwise, ZX_OK is returned.
-  static zx_status_t ReadAclDataPacketFromChannel(const zx::channel& channel,
-                                                  const ACLDataPacketPtr& packet);
 
   // Attempts to set the ACL |priority| of the connection indicated by |handle|. |callback| will be
   // called with the result of the request.

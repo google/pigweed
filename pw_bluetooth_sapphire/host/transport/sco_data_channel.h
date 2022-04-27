@@ -9,7 +9,9 @@
 
 #include <src/lib/fxl/memory/weak_ptr.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/data_buffer_info.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/hci_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_packet.h"
 
 namespace bt::hci {
@@ -50,10 +52,8 @@ class ScoDataChannel {
     virtual void OnHciError() = 0;
   };
 
-  static std::unique_ptr<ScoDataChannel> Create(zx::channel channel,
-                                                const DataBufferInfo& buffer_info,
-                                                Transport* transport,
-                                                DeviceWrapper* device_wrapper);
+  static std::unique_ptr<ScoDataChannel> Create(const DataBufferInfo& buffer_info,
+                                                CommandChannel* command_channel, HciWrapper* hci);
   virtual ~ScoDataChannel() = default;
 
   // Register a connection. The connection must have a data path of hci_spec::ScoDataPath::kHci.

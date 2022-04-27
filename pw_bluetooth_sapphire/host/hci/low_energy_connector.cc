@@ -46,7 +46,9 @@ LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci,
 }
 
 LowEnergyConnector::~LowEnergyConnector() {
-  hci_->command_channel()->RemoveEventHandler(event_handler_id_);
+  if (hci_->command_channel()) {
+    hci_->command_channel()->RemoveEventHandler(event_handler_id_);
+  }
   if (request_pending())
     Cancel();
 }

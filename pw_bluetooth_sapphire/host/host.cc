@@ -7,7 +7,7 @@
 #include "fidl/host_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/device_wrapper.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/hci_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 using namespace bt;
@@ -27,8 +27,9 @@ fbl::RefPtr<Host> Host::Create(const bt_hci_protocol_t& hci_proto,
 
 bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallback error_cb) {
   auto dev = std::make_unique<hci::DdkDeviceWrapper>(hci_proto_, vendor_proto_);
+  auto hci_wrapper = hci::HciWrapper::Create(std::move(dev), async_get_default_dispatcher());
 
-  auto hci_result = hci::Transport::Create(std::move(dev));
+  auto hci_result = hci::Transport::Create(std::move(hci_wrapper));
   if (hci_result.is_error()) {
     bt_log(ERROR, "bt-host", "failed to initialize HCI transport");
     return false;

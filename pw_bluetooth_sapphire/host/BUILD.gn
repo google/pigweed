@@ -102,8 +102,6 @@ fuzzers_package("fuzzers") {
     "common:advertising_data_fuzzer",
     "fidl:host_server_watch_peers_fuzzer",
     "gap:peer_cache_fuzzer",
-    "transport:read_acl_data_packet_fuzzer",
-    "transport:read_command_event_packet_fuzzer",
     "l2cap:l2cap_fuzzer",
     "l2cap:basic_mode_rx_engine_fuzzer",
     "l2cap:enhanced_retransmission_mode_engines_fuzzer",
@@ -113,6 +111,7 @@ fuzzers_package("fuzzers") {
     "sdp:data_element_fuzzer",
     "sdp:pdu_fuzzer",
     "sm:valid_packet_reader_fuzzer",
+    "transport:hci_wrapper_rx_fuzzer",
   ]
 }
 
