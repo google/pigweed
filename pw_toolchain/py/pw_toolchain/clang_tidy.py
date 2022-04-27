@@ -78,7 +78,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--skip-include-path',
         default=[],
-        nargs='*',
+        action='append',
+        type=str,
         help=('Exclude include paths ending in these paths from clang-tidy. '
               'These paths are switched from -I to -isystem so clang-tidy '
               'ignores them.'))
