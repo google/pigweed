@@ -1043,8 +1043,8 @@ TEST(CodegenMessage, Write) {
   message.proto.meta.pigweed_bin = Pigweed::Pigweed::Binary::ONE;
   std::memcpy(message.data.data(), pigweed_data, sizeof(pigweed_data));
 
-  std::byte encode_buffer[512];
-  std::byte temp_buffer[512];
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes];
+  std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   Pigweed::StreamEncoder pigweed(writer, temp_buffer);
@@ -1105,8 +1105,8 @@ TEST(CodegenMessage, Write) {
 TEST(CodegenMessage, WriteDefaults) {
   Pigweed::Message message{};
 
-  std::byte encode_buffer[512];
-  std::byte temp_buffer[512];
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes];
+  std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   Pigweed::StreamEncoder pigweed(writer, temp_buffer);
@@ -1166,7 +1166,7 @@ TEST(CodegenMessage, WritePackedScalar) {
     message.fixed32s.push_back(i * 16u);
   }
 
-  std::byte encode_buffer[64];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -1211,7 +1211,7 @@ TEST(CodegenMessage, WritePackedScalarFixedLength) {
   message.doubles[0] = 3.14159;
   message.doubles[1] = 2.71828;
 
-  std::byte encode_buffer[64];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -1243,7 +1243,8 @@ TEST(CodegenMessage, WritePackedScalarCallback) {
     return encoder.WriteSint32s(sint32s);
   });
 
-  std::byte encode_buffer[64];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes +
+                          varint::kMaxVarint32SizeBytes * 5];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -1283,7 +1284,7 @@ TEST(CodegenMessage, WritePackedEnum) {
   message.enums.push_back(Enum::AMBER);
   message.enums.push_back(Enum::RED);
 
-  std::byte encode_buffer[64];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -1320,8 +1321,8 @@ TEST(CodegenMessage, WriteStringCallback) {
         "libraries-or as we like to call them, modules");
   });
 
-  std::byte encode_buffer[512];
-  std::byte temp_buffer[512];
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes + 92];
+  std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   Pigweed::StreamEncoder pigweed(writer, temp_buffer);
@@ -1390,8 +1391,8 @@ TEST(CodegenMessage, WriteForcedCallback) {
     return encoder.WriteSpecialProperty(42u);
   });
 
-  std::byte encode_buffer[512];
-  std::byte temp_buffer[512];
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes];
+  std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   Pigweed::StreamEncoder pigweed(writer, temp_buffer);
@@ -1451,8 +1452,8 @@ TEST(CodegenMessage, WriteNestedImported) {
   message.start.seconds = 1517949900u;
   message.end.seconds = 1517950378u;
 
-  std::byte encode_buffer[32];
-  std::byte temp_buffer[32];
+  std::byte encode_buffer[Period::kMaxEncodedSizeBytes];
+  std::byte temp_buffer[Period::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   Period::StreamEncoder period(writer, temp_buffer);
@@ -1499,8 +1500,10 @@ TEST(CodegenMessage, WriteNestedRepeated) {
     return OkStatus();
   });
 
-  std::byte encode_buffer[64];
-  std::byte temp_buffer[64];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes +
+                          Struct::kMaxEncodedSizeBytes * 2];
+  std::byte temp_buffer[RepeatedTest::kScratchBufferSizeBytes +
+                        Struct::kMaxEncodedSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, temp_buffer);
@@ -1565,8 +1568,10 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
     return encoder.GetDeviceInfoEncoder().Write(device_info);
   });
 
-  std::byte encode_buffer[512];
-  std::byte temp_buffer[512];
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes +
+                          DeviceInfo::kMaxEncodedSizeBytes];
+  std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes +
+                        DeviceInfo::kMaxEncodedSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
   Pigweed::StreamEncoder pigweed(writer, temp_buffer);

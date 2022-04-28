@@ -112,6 +112,98 @@ The encoder and decoder code is generic and implemented in the core C++ module.
 A small overhead for each message type used in your code describes the structure
 to the generic encoder and decoders.
 
+Buffer Sizes
+------------
+Initializing a ``MemoryEncoder`` requires that you specify the size of the
+buffer to encode to. The code generation includes a ``kMaxEncodedSizeBytes``
+constant that represents the maximum encoded size of the protobuf message,
+excluding the contents of any field values which require a callback.
+
+.. code:: c++
+
+  #include "example_protos/customer.pwpb.h"
+
+  std::byte buffer[Customer::kMaxEncodedSizeBytes];
+  Customer::MemoryEncoder encoder(buffer);
+  const auto status = encoder.Write({
+    age = 22,
+    name = "Wolfgang Bjornson",
+    status = Customer::Status::ACTIVE
+  });
+
+  // Always check the encoder status or return values from Write calls.
+  if (!status.ok()) {
+    PW_LOG_INFO("Failed to encode proto; %s", encoder.status().str());
+  }
+
+In the above example, because the ``name`` field has a ``max_size`` specified
+in the accompanying options file, ``kMaxEncodedSizeBytes`` includes the maximum
+length of the value for that field.
+
+Where the maximum length of a field value is not known, indicated by the
+structure requiring a callback for that field, the constant includes
+all relevant overhead and only requires that you add the length of the field
+values.
+
+For example if a ``bytes`` field length is not specified in the options file,
+but is known to your code (``kMaxImageDataSize`` in this example being a
+constant in your own code), you can simply add it to the generated constant:
+
+.. code:: c++
+
+  #include "example_protos/store.pwpb.h"
+
+  const std::byte image_data[kMaxImageDataSize] = { ... };
+
+  Store::Message store{};
+  // Calling SetEncoder means we must always extend the buffer size.
+  store.image_data.SetEncoder([](Store::StreamEncoder& encoder) {
+    return encoder.WriteImageData(image_data);
+  });
+
+  std::byte buffer[Store::kMaxEncodedSizeBytes + kMaxImageDataSize];
+  Store::MemoryEncoder encoder(buffer);
+  const auto status = encoder.Write(store);
+
+  // Always check the encoder status or return values from Write calls.
+  if (!status.ok()) {
+    PW_LOG_INFO("Failed to encode proto; %s", encoder.status().str());
+  }
+
+Or when using a variable number of repeated submessages, where the maximum
+number is known to your code but not to the proto, you can add the constants
+from one message type to another:
+
+.. code:: c++
+
+  #include "example_protos/person.pwpb.h"
+
+  Person::Message grandchild{};
+  // Calling SetEncoder means we must always extend the buffer size.
+  grandchild.grandparent.SetEncoder([](Person::StreamEncoder& encoder) {
+    PW_TRY(encoder.GetGrandparentEncoder().Write(maternal_grandma));
+    PW_TRY(encoder.GetGrandparentEncoder().Write(maternal_grandpa));
+    PW_TRY(encoder.GetGrandparentEncoder().Write(paternal_grandma));
+    PW_TRY(encoder.GetGrandparentEncoder().Write(paternal_grandpa));
+    return pw::OkStatus();
+  });
+
+  std::byte buffer[Person::kMaxEncodedSizeBytes +
+                   Grandparent::kMaxEncodedSizeBytes * 4];
+  Person::MemoryEncoder encoder(buffer);
+  const auto status = encoder.Write(grandchild);
+
+  // Always check the encoder status or return values from Write calls.
+  if (!status.ok()) {
+    PW_LOG_INFO("Failed to encode proto; %s", encoder.status().str());
+  }
+
+.. warning::
+  Encoding to a buffer that is insufficiently large will return
+  ``Status::ResourceExhausted()`` from ``Write`` calls, and from the
+  encoder's ``status()`` call. Always check the status of calls or the encoder,
+  as in the case of error, the encoded data will be invalid.
+
 Per-Field Writers and Readers
 =============================
 The middle level API is based around typed methods to write and read each
@@ -835,11 +927,20 @@ submessage data is buffered to this scratch buffer until the submessage is
 finalized. Note that the contents of this scratch buffer is not necessarily
 valid proto data, so don't try to use it directly.
 
-MemoryEncoder objects use the final destination buffer rather than relying on a
-scratch buffer. Note that this means your destination buffer might need
-additional space for overhead incurred by nesting submessages. The
-``MaxScratchBufferSize()`` helper function can be useful in estimating how much
-space to allocate to account for nested submessage encoding overhead.
+The code generation includes a ``kScratchBufferSizeBytes`` constant that
+represents the size of the largest submessage and all necessary overhead,
+excluding the contents of any field values which require a callback.
+
+If a submessage field requires a callback, due to a dependency cycle, or a
+repeated field of unknown length, the size of the submessage cannot be included
+in the ``kScratchBufferSizeBytes`` constant. If you encode a submessage of this
+type (which you'll know you're doing because you set an encoder callback for it)
+simply add the appropriate structure's ``kMaxEncodedSizeBytes`` constant to the
+scratch buffer size to guarantee enough space.
+
+When calculating yourself, the ``MaxScratchBufferSize()`` helper function can
+also be useful in estimating how much space to allocate to account for nested
+submessage encoding overhead.
 
 .. code:: c++
 
@@ -851,7 +952,7 @@ space to allocate to account for nested submessage encoding overhead.
   pw::stream::SysIoWriter sys_io_writer;
   // The scratch buffer should be at least as big as the largest nested
   // submessage. It's a good idea to be a little generous.
-  std::byte submessage_scratch_buffer[64];
+  std::byte submessage_scratch_buffer[Owner::kScratchBufferSizeBytes];
 
   // Provide the scratch buffer to the proto encoder. The buffer's lifetime must
   // match the lifetime of the encoder.
@@ -875,6 +976,17 @@ space to allocate to account for nested submessage encoding overhead.
   if (!owner_encoder.status().ok()) {
     PW_LOG_INFO("Failed to encode proto; %s", owner_encoder.status().str());
   }
+
+MemoryEncoder objects use the final destination buffer rather than relying on a
+scratch buffer.  The ``kMaxEncodedSizeBytes`` constant takes into account the
+overhead required for nesting submessages. If you calculate the buffer size
+yourself, your destination buffer might need additional space.
+
+.. warning::
+  If the scratch buffer size is not sufficient, the encoding will fail with
+  ``Status::ResourceExhausted()``. Always check the results of ``Write`` calls
+  or the encoder status to ensure success, as otherwise the encoded data will
+  be invalid.
 
 Scalar Fields
 =============

@@ -21,7 +21,7 @@ from graphlib import CycleError, TopologicalSorter  # type: ignore
 from itertools import takewhile
 import os
 import sys
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 from typing import cast
 
 from google.protobuf import descriptor_pb2
@@ -425,6 +425,29 @@ class MessageProperty(ProtoMember):
             self.sub_table(),
         ]
 
+    @abc.abstractmethod
+    def _size_fn(self) -> str:
+        """Returns the name of the field size function."""
+
+    def _size_length(self) -> Optional[str]:  # pylint: disable=no-self-use
+        """Returns the length to add to the maximum encoded size."""
+        return None
+
+    def max_encoded_size(self) -> str:
+        """Returns a constant expression for field's maximum encoded size."""
+        size_call = '{}::{}({})'.format(PROTOBUF_NAMESPACE, self._size_fn(),
+                                        self.field_cast())
+
+        size_length: Optional[str] = self._size_length()
+        if size_length is None:
+            return size_call
+
+        return f'{size_call} + {size_length}'
+
+    def include_in_scratch_size(self) -> bool:  # pylint: disable=no-self-use
+        """Returns whether the field contributes to the scratch buffer size."""
+        return False
+
 
 #
 # The following code defines write and read methods for each of the
@@ -516,6 +539,23 @@ class SubMessageProperty(MessageProperty):
 
         return '&{}::kMessageFields'.format(self._relative_type_namespace())
 
+    def _size_fn(self) -> str:
+        # This uses the WithoutValue method to ensure that the maximum length
+        # of the delimited field size varint is used. This is because the nested
+        # message might include callbacks and be longer than we expect, and to
+        # account for scratch overhead when used with MemoryEncoder.
+        return 'SizeOfDelimitedFieldWithoutValue'
+
+    def _size_length(self) -> Optional[str]:
+        if self.use_callback():
+            return None
+
+        return '{}::kMaxEncodedSizeBytes'.format(
+            self._relative_type_namespace())
+
+    def include_in_scratch_size(self) -> bool:
+        return True
+
 
 class BytesReaderMethod(ReadMethod):
     """Method which returns a bytes reader."""
@@ -597,6 +637,9 @@ class DoubleProperty(MessageProperty):
     def wire_type(self) -> str:
         return 'kFixed64'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldDouble'
+
 
 class FloatWriteMethod(WriteMethod):
     """Method which writes a proto float value."""
@@ -659,6 +702,9 @@ class FloatProperty(MessageProperty):
 
     def wire_type(self) -> str:
         return 'kFixed32'
+
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldFloat'
 
 
 class Int32WriteMethod(WriteMethod):
@@ -726,6 +772,9 @@ class Int32Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kNormal'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldInt32'
+
 
 class Sint32WriteMethod(WriteMethod):
     """Method which writes a proto sint32 value."""
@@ -792,6 +841,9 @@ class Sint32Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kZigZag'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldSint32'
+
 
 class Sfixed32WriteMethod(WriteMethod):
     """Method which writes a proto sfixed32 value."""
@@ -854,6 +906,9 @@ class Sfixed32Property(MessageProperty):
 
     def wire_type(self) -> str:
         return 'kFixed32'
+
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldSfixed32'
 
 
 class Int64WriteMethod(WriteMethod):
@@ -921,6 +976,9 @@ class Int64Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kNormal'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldInt64'
+
 
 class Sint64WriteMethod(WriteMethod):
     """Method which writes a proto sint64 value."""
@@ -987,6 +1045,9 @@ class Sint64Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kZigZag'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldSint64'
+
 
 class Sfixed64WriteMethod(WriteMethod):
     """Method which writes a proto sfixed64 value."""
@@ -1049,6 +1110,9 @@ class Sfixed64Property(MessageProperty):
 
     def wire_type(self) -> str:
         return 'kFixed64'
+
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldSfixed64'
 
 
 class Uint32WriteMethod(WriteMethod):
@@ -1116,6 +1180,9 @@ class Uint32Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kUnsigned'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldUint32'
+
 
 class Fixed32WriteMethod(WriteMethod):
     """Method which writes a proto fixed32 value."""
@@ -1178,6 +1245,9 @@ class Fixed32Property(MessageProperty):
 
     def wire_type(self) -> str:
         return 'kFixed32'
+
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldFixed32'
 
 
 class Uint64WriteMethod(WriteMethod):
@@ -1245,6 +1315,9 @@ class Uint64Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kUnsigned'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldUint64'
+
 
 class Fixed64WriteMethod(WriteMethod):
     """Method which writes a proto fixed64 value."""
@@ -1308,6 +1381,9 @@ class Fixed64Property(MessageProperty):
     def wire_type(self) -> str:
         return 'kFixed64'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldFixed64'
+
 
 class BoolWriteMethod(WriteMethod):
     """Method which writes a proto bool value."""
@@ -1365,6 +1441,9 @@ class BoolProperty(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kUnsigned'
 
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldBool'
+
 
 class BytesWriteMethod(WriteMethod):
     """Method which writes a proto bytes value."""
@@ -1413,6 +1492,17 @@ class BytesProperty(MessageProperty):
 
     def wire_type(self) -> str:
         return 'kDelimited'
+
+    def _size_fn(self) -> str:
+        # This uses the WithoutValue method to ensure that the maximum length
+        # of the delimited field size varint is used. This accounts for scratch
+        # overhead when used with MemoryEncoder.
+        return 'SizeOfDelimitedFieldWithoutValue'
+
+    def _size_length(self) -> Optional[str]:
+        if self.use_callback():
+            return None
+        return f'{self.max_size()}'
 
 
 class StringLenWriteMethod(WriteMethod):
@@ -1466,6 +1556,17 @@ class StringProperty(MessageProperty):
 
     def wire_type(self) -> str:
         return 'kDelimited'
+
+    def _size_fn(self) -> str:
+        # This uses the WithoutValue method to ensure that the maximum length
+        # of the delimited field size varint is used. This accounts for scratch
+        # overhead when used with MemoryEncoder.
+        return 'SizeOfDelimitedFieldWithoutValue'
+
+    def _size_length(self) -> Optional[str]:
+        if self.use_callback():
+            return None
+        return f'{self.max_size()}'
 
 
 class EnumWriteMethod(WriteMethod):
@@ -1569,6 +1670,9 @@ class EnumProperty(MessageProperty):
 
     def varint_decode_type(self) -> str:
         return 'kUnsigned'
+
+    def _size_fn(self) -> str:
+        return 'SizeOfFieldEnum'
 
 
 # Mapping of protobuf field types to their method definitions.
@@ -2017,6 +2121,49 @@ def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
     output.write_line(f'}}  // namespace {namespace}')
 
 
+def generate_sizes_for_message(message: ProtoMessage, root: ProtoNode,
+                               output: OutputFile) -> None:
+    """Creates C++ constants for the encoded sizes of a protobuf message."""
+    assert message.type() == ProtoNode.Type.MESSAGE
+
+    namespace = message.cpp_namespace(root)
+    output.write_line(f'namespace {namespace} {{')
+
+    property_sizes: List[str] = []
+    scratch_sizes: List[str] = []
+    for field in message.fields():
+        for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
+            prop = property_class(field, message, root)
+            if not prop.should_appear():
+                continue
+
+            property_sizes.append(prop.max_encoded_size())
+            if prop.include_in_scratch_size():
+                scratch_sizes.append(prop.max_encoded_size())
+
+    output.write_line('inline constexpr size_t kMaxEncodedSizeBytes =')
+    with output.indent():
+        if len(property_sizes) == 0:
+            output.write_line('0;')
+        while len(property_sizes) > 0:
+            property_size = property_sizes.pop(0)
+            if len(property_sizes) > 0:
+                output.write_line(f'{property_size} +')
+            else:
+                output.write_line(f'{property_size};')
+
+    output.write_line()
+    output.write_line('inline constexpr size_t kScratchBufferSizeBytes = ' +
+                      ('std::max({' if len(scratch_sizes) > 0 else '0;'))
+    with output.indent():
+        for scratch_size in scratch_sizes:
+            output.write_line(f'{scratch_size},')
+    if len(scratch_sizes) > 0:
+        output.write_line('});')
+
+    output.write_line(f'}}  // namespace {namespace}')
+
+
 def _proto_filename_to_generated_header(proto_file: str) -> str:
     """Returns the generated C++ header name for a .proto file."""
     return os.path.splitext(proto_file)[0] + PROTO_H_EXTENSION
@@ -2063,6 +2210,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
                       f'generated by {PLUGIN_NAME} {PLUGIN_VERSION}')
     output.write_line(f'// on {datetime.now()}')
     output.write_line('#pragma once\n')
+    output.write_line('#include <algorithm>')
     output.write_line('#include <array>')
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
@@ -2073,6 +2221,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include "pw_preprocessor/compiler.h"')
     output.write_line('#include "pw_protobuf/encoder.h"')
     output.write_line('#include "pw_protobuf/internal/codegen.h"')
+    output.write_line('#include "pw_protobuf/serialized_size.h"')
     output.write_line('#include "pw_protobuf/stream_decoder.h"')
     output.write_line('#include "pw_result/result.h"')
     output.write_line('#include "pw_status/status.h"')
@@ -2108,6 +2257,8 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
         generate_struct_for_message(message, package, output)
         output.write_line()
         generate_table_for_message(message, package, output)
+        output.write_line()
+        generate_sizes_for_message(message, package, output)
         output.write_line()
         generate_class_for_message(message, package, output,
                                    ClassType.STREAMING_ENCODER)
