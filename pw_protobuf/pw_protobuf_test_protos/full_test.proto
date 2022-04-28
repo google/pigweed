@@ -142,3 +142,9 @@ message KeyValuePair {
   string key = 1;
   string value = 2;
 }
+
+// Corner cases of code generation.
+message CornerCases {
+  // Generates ReadUint32() and WriteUint32() that call the parent definition.
+  uint32 _uint32 = 1;
+}
