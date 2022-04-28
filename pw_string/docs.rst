@@ -101,6 +101,15 @@ terminator in the vector.
 .. cpp:function:: StatusWithSize Copy(const std::string_view& source, pw::Vector<char>& dest)
 .. cpp:function:: StatusWithSize Copy(const char* source, pw::Vector<char>& dest)
 
+
+pw::string::PrintableCopy
+=========================
+The ``pw::string::PrintableCopy`` function provides a safe printable copy of a
+string. It functions with the same safety of ``pw::string::Copy`` while also
+converting any non-printable characters to a ``.`` char.
+
+.. cpp:function:: StatusWithSize PrintableCopy(const std::string_view& source, std::span<char> dest)
+
 pw::StringBuilder
 =================
 ``pw::StringBuilder`` facilitates building formatted strings in a fixed-size

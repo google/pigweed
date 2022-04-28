@@ -141,5 +141,48 @@ TEST_F(CopyTest, NullTerminatorsInString) {
   EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
 }
 
+class PrintableCopyTest : public TestWithBuffer {};
+
+TEST_F(PrintableCopyTest, EmptyBuffer_WritesNothing) {
+  auto result = PrintableCopy("Hello", std::span(buffer_, 0));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ(kStartingString, buffer_);
+}
+
+TEST_F(PrintableCopyTest, TooSmall_Truncates) {
+  auto result = PrintableCopy("Hi!", std::span(buffer_, 3));
+  EXPECT_EQ(2u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ("Hi", buffer_);
+}
+
+TEST_F(PrintableCopyTest, ExactFit) {
+  auto result = PrintableCopy("Hi!", std::span(buffer_, 4));
+  EXPECT_EQ(3u, result.size());
+  EXPECT_TRUE(result.ok());
+  EXPECT_STREQ("Hi!", buffer_);
+}
+
+TEST_F(PrintableCopyTest, StartingString) {
+  memset(buffer_, '\0', sizeof(buffer_));
+  auto result = PrintableCopy(kStartingString, std::span(buffer_));
+  EXPECT_EQ(sizeof(kStartingString) - 1, result.size());
+  EXPECT_TRUE(result.ok());
+  EXPECT_STREQ(kStartingString, buffer_);
+}
+
+TEST_F(PrintableCopyTest, NullTerminatorsInString) {
+  ASSERT_EQ(4u, PrintableCopy("\0!\0\0"sv, std::span(buffer_, 5)).size());
+  EXPECT_STREQ(".!..", buffer_);
+}
+
+TEST_F(PrintableCopyTest, ControlCharsInString) {
+  ASSERT_EQ(14u,
+            PrintableCopy("\n!\t\n\x10\x7F\xFF\vabcd\b\r"sv, std::span(buffer_))
+                .size());
+  EXPECT_STREQ(".!......abcd..", buffer_);
+}
+
 }  // namespace
 }  // namespace pw::string
