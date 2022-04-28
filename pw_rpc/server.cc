@@ -74,6 +74,10 @@ Status Server::ProcessPacket(ConstByteSpan packet_data,
           .IgnoreError();
     }
     internal::rpc_lock().unlock();
+    PW_LOG_DEBUG("Received packet on channel %u for unknown RPC %08x/%08x",
+                 static_cast<unsigned>(packet.channel_id()),
+                 static_cast<unsigned>(packet.service_id()),
+                 static_cast<unsigned>(packet.method_id()));
     return OkStatus();  // OK since the packet was handled.
   }
 
@@ -142,6 +146,12 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
     channel.Send(Packet::ServerError(packet, Status::InvalidArgument()))
         .IgnoreError();  // Errors are logged in Channel::Send.
     internal::rpc_lock().unlock();
+    PW_LOG_DEBUG(
+        "Received client stream packet for %u:%08x/%08x, which doesn't have a "
+        "client stream",
+        static_cast<unsigned>(packet.channel_id()),
+        static_cast<unsigned>(packet.service_id()),
+        static_cast<unsigned>(packet.method_id()));
     return;
   }
 
@@ -149,6 +159,12 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
         .IgnoreError();  // Errors are logged in Channel::Send.
     internal::rpc_lock().unlock();
+    PW_LOG_DEBUG(
+        "Received client stream packet for %u:%08x/%08x, but its client stream "
+        "is closed",
+        static_cast<unsigned>(packet.channel_id()),
+        static_cast<unsigned>(packet.service_id()),
+        static_cast<unsigned>(packet.method_id()));
     return;
   }
 
