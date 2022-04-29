@@ -77,7 +77,7 @@ http_archive(
 # Used in modules: All cc targets.
 git_repository(
     name = "rules_cc_toolchain",
-    commit = "80b51ba81f14eebe06684efa25261f6dc46e9b29",
+    commit = "dd0ca09ea344fd705c71849aedaf2bc1428b9055",
     remote = "https://github.com/bazelembedded/rules_cc_toolchain.git",
 )
 
@@ -88,6 +88,15 @@ rules_cc_toolchain_deps()
 load("@rules_cc_toolchain//cc_toolchain:cc_toolchain.bzl", "register_cc_toolchains")
 
 register_cc_toolchains()
+
+# Sets up Bazels documentation generator.
+# Required by: rules_cc_toolchain.
+# Required by modules: All
+git_repository(
+    name = "io_bazel_stardoc",
+    commit = "2b801dc9b93f73812948ee4e505805511b0f55dc",
+    remote = "https://github.com/bazelbuild/stardoc.git",
+)
 
 # Set up Protobuf rules.
 # Required by: pigweed, com_github_bazelbuild_buildtools.
