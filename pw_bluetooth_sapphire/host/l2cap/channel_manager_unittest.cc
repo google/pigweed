@@ -279,8 +279,8 @@ class ChannelManagerTest : public TestingBase {
       LinkErrorCallback link_error_cb = DoNothing,
       LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
       SecurityUpgradeCallback suc = NopSecurityCallback) {
-    return chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(link_error_cb),
-                                 std::move(suc));
+    return chanmgr()->AddLEConnection(handle, role, std::move(link_error_cb), std::move(cpuc),
+                                      std::move(suc));
   }
 
   struct QueueRegisterACLRetVal {
@@ -309,7 +309,7 @@ class ChannelManagerTest : public TestingBase {
   void RegisterACL(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                    LinkErrorCallback link_error_cb = DoNothing,
                    SecurityUpgradeCallback suc = NopSecurityCallback) {
-    chanmgr()->RegisterACL(handle, role, std::move(link_error_cb), std::move(suc));
+    chanmgr()->AddACLConnection(handle, role, std::move(link_error_cb), std::move(suc));
   }
 
   void ReceiveL2capInformationResponses(CommandId extended_features_id,
@@ -347,7 +347,7 @@ class ChannelManagerTest : public TestingBase {
         activated_cb(std::move(chan));
       }
     };
-    chanmgr()->OpenChannel(conn_handle, psm, chan_params, std::move(open_cb));
+    chanmgr()->OpenL2capChannel(conn_handle, psm, chan_params, std::move(open_cb));
   }
 
   void SetUpOutboundChannelWithCallback(ChannelId local_id, ChannelId remote_id,
@@ -544,7 +544,7 @@ TEST_F(ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
   EXPECT_EQ(kTestHandle1, fixed_channels.att->link_handle());
 
   // This should notify the channel.
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
 
   RunLoopUntilIdle();
 
@@ -565,7 +565,7 @@ TEST_F(ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
   // Close the channel before unregistering the link. |closed_cb| should not get
   // called.
   fixed_channels.att->Deactivate();
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
 
   RunLoopUntilIdle();
 
@@ -591,7 +591,7 @@ TEST_F(ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   ASSERT_TRUE(fixed_channels.smp->Activate(NopRxCallback, smp_closed_cb));
 
   fixed_channels.smp->Deactivate();
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
 
   RunLoopUntilIdle();
 
@@ -623,7 +623,7 @@ TEST_F(ChannelManagerTest, SendingPacketsBeforeAndAfterCleanUp) {
   EXPECT_TRUE(chan->Send(NewBuffer('h', 'i')));
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
 
   // The L2CAP channel should have been notified of closure immediately.
   EXPECT_TRUE(closed_called);
@@ -687,7 +687,7 @@ TEST_F(ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang
 
   auto chan = chanmgr()->OpenFixedChannel(kTestHandle1, kSMPChannelId);
   chan->Activate(NopRxCallback, [chan] { chan->Deactivate(); });
-  chanmgr()->Unregister(kTestHandle1);  // Triggers ClosedCallback.
+  chanmgr()->RemoveConnection(kTestHandle1);  // Triggers ClosedCallback.
   RunLoopUntilIdle();
 }
 
@@ -928,7 +928,7 @@ TEST_F(ChannelManagerTest, ActivateChannelProcessesCallbacksSynchronously) {
   EXPECT_EQ(1, smp_rx_cb_count);
 
   // Link closure synchronously calls the ATT and SMP channel close callbacks.
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
   EXPECT_TRUE(att_closed_called);
   EXPECT_TRUE(smp_closed_called);
 }
@@ -937,7 +937,7 @@ TEST_F(ChannelManagerTest, SendOnClosedLink) {
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   ZX_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
 
   EXPECT_FALSE(fixed_channels.att->Send(NewBuffer('T', 'e', 's', 't')));
 }
@@ -1110,7 +1110,7 @@ TEST_F(ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
     link_error = true;
 
     // Simulate closing the link.
-    chanmgr()->Unregister(kTestHandle1);
+    chanmgr()->RemoveConnection(kTestHandle1);
   };
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral, link_error_cb);
 
@@ -1714,7 +1714,7 @@ TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
   RunLoopUntilIdle();
 
   // Assign a new security level.
@@ -1771,7 +1771,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   EXPECT_EQ(sm::SecurityLevel::kEncrypted, last_requested_level);
 
   // Close the link. Future security requests should have no effect.
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
   RunLoopUntilIdle();
 
   att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
@@ -2001,7 +2001,7 @@ TEST_F(ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
 TEST_F(ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsAndDoesNotCrash) {
   // Packet for unregistered handle should be queued.
   ReceiveAclDataPacket(testing::AclConnectionReq(1, kTestHandle1, kRemoteId, kTestPsm));
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
 
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   // Since pending connection request packet was cleared, no response should be sent.
@@ -2787,7 +2787,7 @@ TEST_F(ChannelManagerTest, InspectHierarchy) {
   EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(l2cap_node_matcher)));
 
   // inspector must outlive ChannelManager
-  chanmgr()->Unregister(kTestHandle1);
+  chanmgr()->RemoveConnection(kTestHandle1);
 }
 
 TEST_F(ChannelManagerTest,

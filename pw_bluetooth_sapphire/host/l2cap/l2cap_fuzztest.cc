@@ -6,7 +6,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -48,7 +48,8 @@ class DataFuzzTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = l2cap::L2cap::Create(transport()->acl_data_channel(), /*random_channel_ids=*/true);
+    domain_ = AdoptRef(
+        new l2cap::ChannelManager(transport()->acl_data_channel(), /*random_channel_ids=*/true));
 
     StartTestDevice();
   }

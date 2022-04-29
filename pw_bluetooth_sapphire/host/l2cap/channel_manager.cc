@@ -55,9 +55,10 @@ hci::ACLPacketHandler ChannelManager::MakeInboundDataHandler() {
   };
 }
 
-void ChannelManager::RegisterACL(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-                                 LinkErrorCallback link_error_cb,
-                                 SecurityUpgradeCallback security_cb) {
+void ChannelManager::AddACLConnection(hci_spec::ConnectionHandle handle,
+                                      hci_spec::ConnectionRole role,
+                                      LinkErrorCallback link_error_cb,
+                                      SecurityUpgradeCallback security_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register ACL link (handle: %#.4x)", handle);
 
@@ -66,9 +67,9 @@ void ChannelManager::RegisterACL(hci_spec::ConnectionHandle handle, hci_spec::Co
   ll->set_security_upgrade_callback(std::move(security_cb));
 }
 
-ChannelManager::LEFixedChannels ChannelManager::RegisterLE(
+ChannelManager::LEFixedChannels ChannelManager::AddLEConnection(
     hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-    LEConnectionParameterUpdateCallback conn_param_cb, LinkErrorCallback link_error_cb,
+    LinkErrorCallback link_error_cb, LEConnectionParameterUpdateCallback conn_param_cb,
     SecurityUpgradeCallback security_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register LE link (handle: %#.4x)", handle);
@@ -85,7 +86,7 @@ ChannelManager::LEFixedChannels ChannelManager::RegisterLE(
   return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
 }
 
-void ChannelManager::Unregister(hci_spec::ConnectionHandle handle) {
+void ChannelManager::RemoveConnection(hci_spec::ConnectionHandle handle) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   bt_log(DEBUG, "l2cap", "unregister link (handle: %#.4x)", handle);
@@ -131,8 +132,8 @@ fbl::RefPtr<Channel> ChannelManager::OpenFixedChannel(hci_spec::ConnectionHandle
   return iter->second->OpenFixedChannel(channel_id);
 }
 
-void ChannelManager::OpenChannel(hci_spec::ConnectionHandle handle, PSM psm,
-                                 ChannelParameters params, ChannelCallback cb) {
+void ChannelManager::OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm,
+                                      ChannelParameters params, ChannelCallback cb) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   auto iter = ll_map_.find(handle);
@@ -185,7 +186,7 @@ void ChannelManager::RequestConnectionParameterUpdate(
   iter->second->SendConnectionParameterUpdateRequest(params, std::move(request_cb));
 }
 
-void ChannelManager::AttachInspect(inspect::Node& parent, const char* name) {
+void ChannelManager::AttachInspect(inspect::Node& parent, std::string name) {
   if (!parent) {
     return;
   }

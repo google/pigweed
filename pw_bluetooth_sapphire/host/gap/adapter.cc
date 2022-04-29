@@ -901,7 +901,8 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
   if (!l2cap_) {
     // Initialize L2cap to make L2cap available for the next initialization step. The AclDataChannel
     // must be initialized before creating L2cap.
-    auto l2cap = l2cap::L2cap::Create(hci_->acl_data_channel(), /*random_channel_ids=*/true);
+    auto l2cap =
+        AdoptRef(new l2cap::ChannelManager(hci_->acl_data_channel(), /*random_channel_ids=*/true));
     if (!l2cap) {
       bt_log(ERROR, "gap", "Failed to initialize Data L2cap");
       CleanUp();

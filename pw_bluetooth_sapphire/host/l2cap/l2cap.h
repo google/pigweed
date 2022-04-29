@@ -12,7 +12,6 @@
 #include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
@@ -26,9 +25,6 @@ struct ChannelParameters;
 // Protocols implemented here are: L2CAP.
 class L2cap : public fbl::RefCounted<L2cap> {
  public:
-  // Constructs an uninitialized data domain that can be used in production.
-  static fbl::RefPtr<L2cap> Create(hci::AclDataChannel* acl_data_channel, bool random_channel_ids);
-
   // Attach L2cap's inspect node as a child of |parent| with the given |name|
   static constexpr const char* kInspectNodeName = "l2cap";
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
@@ -66,7 +62,10 @@ class L2cap : public fbl::RefCounted<L2cap> {
   // Returns the ATT and SMP fixed channels of this link.
   //
   // Has no effect if this L2cap is uninitialized or shut down.
-  using LEFixedChannels = ChannelManager::LEFixedChannels;
+  struct LEFixedChannels {
+    fbl::RefPtr<l2cap::Channel> att;
+    fbl::RefPtr<l2cap::Channel> smp;
+  };
   virtual LEFixedChannels AddLEConnection(
       hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
       l2cap::LinkErrorCallback link_error_callback,
