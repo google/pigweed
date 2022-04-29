@@ -115,6 +115,20 @@ pw_source_set("client_server") {
   sources = [ "client_server.cc" ]
 }
 
+pw_source_set("synchronous_client_api") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":client",
+    ":common",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_sync:timed_thread_notification",
+  ]
+  public = [
+    "public/pw_rpc/synchronous_call.h",
+    "public/pw_rpc/synchronous_call_result.h",
+  ]
+}
+
 # Classes shared by the server and client.
 pw_source_set("common") {
   public_configs = [ ":public_include_path" ]

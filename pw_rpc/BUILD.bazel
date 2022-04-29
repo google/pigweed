@@ -119,6 +119,20 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "synchronous_client_api",
+    hdrs = [
+        "public/pw_rpc/synchronous_call.h",
+        "public/pw_rpc/synchronous_call_result.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":pw_rpc",
+        "//pw_chrono:system_clock",
+        "//pw_sync:timed_thread_notification",
+    ],
+)
+
+pw_cc_library(
     name = "thread_testing",
     hdrs = ["public/pw_rpc/thread_testing.h"],
     includes = ["public"],

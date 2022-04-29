@@ -16,7 +16,7 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/method_info.h"
-#include "pw_rpc/nanopb/synchronous_call_result.h"
+#include "pw_rpc/synchronous_call_result.h"
 #include "pw_sync/timed_thread_notification.h"
 
 // Synchronous Call wrappers

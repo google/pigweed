@@ -76,6 +76,7 @@ pw_auto_add_module_tests(pw_rpc.nanopb
     pw_rpc.client
     pw_rpc.raw
     pw_rpc.server
+    pw_rpc.synchronous_client_api
     pw_rpc.nanopb.common
     pw_rpc.protos.nanopb_rpc
     pw_rpc.test_protos.nanopb_rpc

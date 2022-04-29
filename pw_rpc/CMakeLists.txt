@@ -64,6 +64,17 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_CLIENT_SERVER)
   zephyr_link_libraries(pw_rpc.client_server)
 endif()
 
+pw_add_module_library(pw_rpc.synchronous_client_api
+  HEADERS
+    public/pw_rpc/synchronous_call.h
+    public/pw_rpc/synchronous_call_result.h
+  PUBLIC_DEPS
+    pw_chono.system_clock
+    pw_rpc.client
+    pw_rpc.common
+    pw_sync.timed_thread_notification
+)
+
 pw_add_module_library(pw_rpc.common
   SOURCES
     channel.cc

@@ -58,6 +58,7 @@ pw_auto_add_module_tests(pw_rpc.pwpb
     pw_rpc.client
     pw_rpc.raw
     pw_rpc.server
+    pw_rpc.synchronous_client_api
     pw_rpc.pwpb.common
     pw_rpc.protos.pwpb_rpc
     pw_rpc.test_protos.pwpb_rpc

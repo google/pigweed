@@ -20,8 +20,8 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/nanopb/fake_channel_output.h"
-#include "pw_rpc_test_protos/test.rpc.pb.h"
+#include "pw_rpc/pwpb/fake_channel_output.h"
+#include "pw_rpc_test_protos/test.rpc.pwpb.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_thread/thread.h"
@@ -31,7 +31,7 @@
 namespace pw::rpc::test {
 namespace {
 
-using pw::rpc::test::pw_rpc::nanopb::TestService;
+using pw::rpc::test::pw_rpc::pwpb::TestService;
 using MethodInfo = internal::MethodInfo<TestService::TestUnaryRpc>;
 
 class SynchronousCallTest : public ::testing::Test {
@@ -50,7 +50,7 @@ class SynchronousCallTest : public ::testing::Test {
   }
 
  protected:
-  using FakeChannelOutput = NanopbFakeChannelOutput<2>;
+  using FakeChannelOutput = PwpbFakeChannelOutput<2>;
 
   void OnSend(std::span<const std::byte> buffer, Status status) {
     if (!status.ok()) {
@@ -68,7 +68,7 @@ class SynchronousCallTest : public ::testing::Test {
     std::array<std::byte, 32> payload_buffer;
 
     StatusWithSize size_status =
-        MethodInfo::serde().EncodeResponse(&response_, payload_buffer);
+        MethodInfo::serde().EncodeResponse(response_, payload_buffer);
     EXPECT_TRUE(size_status.ok());
 
     auto response =
@@ -77,7 +77,7 @@ class SynchronousCallTest : public ::testing::Test {
     EXPECT_TRUE(client_.ProcessPacket(response.Encode(buffer).value()).ok());
   }
 
-  void set_response(const pw_rpc_test_TestResponse& response,
+  void set_response(const TestResponse::Message& response,
                     Status response_status = OkStatus()) {
     response_ = response;
     response_status_ = response_status;
@@ -99,14 +99,14 @@ class SynchronousCallTest : public ::testing::Test {
   Client client_;
   thread::Thread work_thread_;
   work_queue::WorkQueueWithBuffer<1> work_queue_;
-  pw_rpc_test_TestResponse response_{};
+  TestResponse::Message response_{};
   Status response_status_ = OkStatus();
   internal::Packet request_packet_;
 };
 
 TEST_F(SynchronousCallTest, SynchronousCallSuccess) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
-  pw_rpc_test_TestResponse response{.value = 42, .repeated_field{}};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
+  TestResponse::Message response{.value = 42, .repeated_field{}};
 
   set_response(response, OkStatus());
 
@@ -117,8 +117,8 @@ TEST_F(SynchronousCallTest, SynchronousCallSuccess) {
 }
 
 TEST_F(SynchronousCallTest, SynchronousCallServerError) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
-  pw_rpc_test_TestResponse response{.value = 42, .repeated_field{}};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
+  TestResponse::Message response{.value = 42, .repeated_field{}};
 
   set_response(response, Status::Internal());
 
@@ -133,7 +133,7 @@ TEST_F(SynchronousCallTest, SynchronousCallServerError) {
 }
 
 TEST_F(SynchronousCallTest, SynchronousCallRpcError) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
 
   // Internally, if Channel receives a non-ok status from the
   // ChannelOutput::Send, it will always return Unknown.
@@ -146,7 +146,7 @@ TEST_F(SynchronousCallTest, SynchronousCallRpcError) {
 }
 
 TEST_F(SynchronousCallTest, SynchronousCallForTimeoutError) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
 
   auto result = SynchronousCallFor<TestService::TestUnaryRpc>(
       client(),
@@ -159,7 +159,7 @@ TEST_F(SynchronousCallTest, SynchronousCallForTimeoutError) {
 }
 
 TEST_F(SynchronousCallTest, SynchronousCallUntilTimeoutError) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
 
   auto result = SynchronousCallUntil<TestService::TestUnaryRpc>(
       client(), channel().id(), request, chrono::SystemClock::now());
@@ -169,8 +169,8 @@ TEST_F(SynchronousCallTest, SynchronousCallUntilTimeoutError) {
 }
 
 TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallSuccess) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
-  pw_rpc_test_TestResponse response{.value = 42, .repeated_field{}};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
+  TestResponse::Message response{.value = 42, .repeated_field{}};
 
   set_response(response, OkStatus());
 
@@ -181,8 +181,8 @@ TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallSuccess) {
 }
 
 TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallServerError) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
-  pw_rpc_test_TestResponse response{.value = 42, .repeated_field{}};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
+  TestResponse::Message response{.value = 42, .repeated_field{}};
 
   set_response(response, Status::Internal());
 
@@ -197,7 +197,7 @@ TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallServerError) {
 }
 
 TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallRpcError) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
 
   // Internally, if Channel receives a non-ok status from the
   // ChannelOutput::Send, it will always return Unknown.
@@ -210,7 +210,7 @@ TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallRpcError) {
 }
 
 TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallForTimeoutError) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
 
   auto result = SynchronousCallFor<TestService::TestUnaryRpc>(
       generated_client(),
@@ -222,7 +222,7 @@ TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallForTimeoutError) {
 }
 
 TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallUntilTimeoutError) {
-  pw_rpc_test_TestRequest request{.integer = 5, .status_code = 0};
+  TestRequest::Message request{.integer = 5, .status_code = 0};
 
   auto result = SynchronousCallUntil<TestService::TestUnaryRpc>(
       generated_client(), request, chrono::SystemClock::now());

@@ -60,18 +60,6 @@ pw_source_set("client_api") {
   public = [ "public/pw_rpc/nanopb/client_reader_writer.h" ]
 }
 
-pw_source_set("synchronous_client_api") {
-  public_configs = [ ":public" ]
-  public_deps = [
-    ":client_api",
-    "$dir_pw_sync:timed_thread_notification",
-  ]
-  public = [
-    "public/pw_rpc/nanopb/synchronous_call.h",
-    "public/pw_rpc/nanopb/synchronous_call_result.h",
-  ]
-}
-
 pw_source_set("common") {
   public_deps = [
     "..:common",
@@ -299,11 +287,11 @@ pw_test("stub_generation_test") {
 
 pw_test("synchronous_call_test") {
   deps = [
-    ":synchronous_client_api",
     ":test_method_context",
     "$dir_pw_work_queue:pw_work_queue",
     "$dir_pw_work_queue:stl_test_thread",
     "$dir_pw_work_queue:test_thread",
+    "..:synchronous_client_api",
     "..:test_protos.nanopb_rpc",
   ]
   sources = [ "synchronous_call_test.cc" ]
