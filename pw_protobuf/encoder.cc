@@ -241,7 +241,9 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
     // Calculate the span of bytes corresponding to the structure field to
     // read from.
     const auto values =
-        std::span(message.data() + field.field_offset(), field.field_size());
+        message.subspan(field.field_offset(), field.field_size());
+    PW_CHECK(values.begin() >= message.begin() &&
+             values.end() <= message.end());
 
     // If the field is using callbacks, interpret the input field accordingly
     // and allow the caller to provide custom handling.

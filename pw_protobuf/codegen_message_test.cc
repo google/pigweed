@@ -17,6 +17,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_protobuf/internal/codegen.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
@@ -943,6 +944,49 @@ TEST(CodegenMessage, ReadNestedForcedCallback) {
   ASSERT_EQ(status, OkStatus());
 }
 
+class BreakableDecoder : public KeyValuePair::StreamDecoder {
+ public:
+  constexpr BreakableDecoder(stream::Reader& reader) : StreamDecoder(reader) {}
+
+  Status Read(KeyValuePair::Message& message,
+              std::span<const MessageField> table) {
+    return ::pw::protobuf::StreamDecoder::Read(
+        std::as_writable_bytes(std::span(&message, 1)), table);
+  }
+};
+
+TEST(CodegenMessage, DISABLED_ReadDoesNotOverrun) {
+  // Deliberately construct a message table that attempts to violate the bounds
+  // of the structure. We're not testing that a developer can't do this, rather
+  // that the protobuf decoder can't be exploited in this way.
+  constexpr MessageField kMessageFields[] = {
+      {1,
+       WireType::kDelimited,
+       sizeof(std::byte),
+       static_cast<VarintType>(0),
+       false,
+       false,
+       false,
+       0,
+       sizeof(KeyValuePair::Message) * 2,
+       {}},
+  };
+
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // id=1, len=9,
+    0x0a, 0x08, 'd', 'o', 'n', 't', 'e', 'a', 't', 'm', 'e',
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  BreakableDecoder decoder(reader);
+
+  KeyValuePair::Message message{};
+  // ASSERT_CRASH
+  std::ignore = decoder.Read(message, kMessageFields);
+}
+
 TEST(CodegenMessage, Write) {
   constexpr uint8_t pigweed_data[] = {
       0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80};
@@ -1559,6 +1603,43 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
   EXPECT_EQ(result.size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
             0);
+}
+
+class BreakableEncoder : public KeyValuePair::MemoryEncoder {
+ public:
+  constexpr BreakableEncoder(ByteSpan buffer)
+      : KeyValuePair::MemoryEncoder(buffer) {}
+
+  Status Write(const KeyValuePair::Message& message,
+               std::span<const MessageField> table) {
+    return ::pw::protobuf::StreamEncoder::Write(
+        std::as_bytes(std::span(&message, 1)), table);
+  }
+};
+
+TEST(CodegenMessage, DISABLED_WriteDoesNotOverrun) {
+  // Deliberately construct a message table that attempts to violate the bounds
+  // of the structure. We're not testing that a developer can't do this, rather
+  // that the protobuf encoder can't be exploited in this way.
+  constexpr MessageField kMessageFields[] = {
+      {1,
+       WireType::kDelimited,
+       sizeof(std::byte),
+       static_cast<VarintType>(0),
+       false,
+       false,
+       false,
+       0,
+       sizeof(KeyValuePair::Message) * 2,
+       {}},
+  };
+
+  std::byte encode_buffer[64];
+
+  BreakableEncoder encoder(encode_buffer);
+  KeyValuePair::Message message{};
+  // ASSERT_CRASH
+  std::ignore = encoder.Write(message, kMessageFields);
 }
 
 // The following tests cover using the codegen struct Message and callbacks in

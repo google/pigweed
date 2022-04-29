@@ -529,7 +529,8 @@ Status StreamDecoder::Read(std::span<std::byte> message,
     // Calculate the span of bytes corresponding to the structure field to
     // output into.
     const auto out =
-        std::span(message.data() + field->field_offset(), field->field_size());
+        message.subspan(field->field_offset(), field->field_size());
+    PW_CHECK(out.begin() >= message.begin() && out.end() <= message.end());
 
     // If the field is using callbacks, interpret the output field accordingly
     // and allow the caller to provide custom handling.
