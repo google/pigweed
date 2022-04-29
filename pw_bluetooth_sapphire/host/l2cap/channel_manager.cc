@@ -24,18 +24,20 @@ constexpr const char* kInspectPsmPropertyName = "psm";
 
 }  // namespace
 
-ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
-                               hci::AclDataChannel* acl_data_channel, bool random_channel_ids)
-    : max_acl_payload_size_(max_acl_payload_size),
-      max_le_payload_size_(max_le_payload_size),
-      acl_data_channel_(acl_data_channel),
+ChannelManager::ChannelManager(hci::AclDataChannel* acl_data_channel, bool random_channel_ids)
+    : acl_data_channel_(acl_data_channel),
       random_channel_ids_(random_channel_ids),
       executor_(async_get_default_dispatcher()),
       weak_ptr_factory_(this) {
   ZX_ASSERT(acl_data_channel_);
+  max_acl_payload_size_ = acl_data_channel_->GetBufferInfo().max_data_length();
+  max_le_payload_size_ = acl_data_channel_->GetLeBufferInfo().max_data_length();
+  acl_data_channel_->SetDataRxHandler(MakeInboundDataHandler());
+  bt_log(DEBUG, "l2cap", "initialized");
 }
 
 ChannelManager::~ChannelManager() {
+  bt_log(DEBUG, "l2cap", "shutting down");
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   // Explicitly shut down all links to force associated L2CAP channels to
@@ -64,10 +66,10 @@ void ChannelManager::RegisterACL(hci_spec::ConnectionHandle handle, hci_spec::Co
   ll->set_security_upgrade_callback(std::move(security_cb));
 }
 
-void ChannelManager::RegisterLE(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-                                LEConnectionParameterUpdateCallback conn_param_cb,
-                                LinkErrorCallback link_error_cb,
-                                SecurityUpgradeCallback security_cb) {
+ChannelManager::LEFixedChannels ChannelManager::RegisterLE(
+    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+    LEConnectionParameterUpdateCallback conn_param_cb, LinkErrorCallback link_error_cb,
+    SecurityUpgradeCallback security_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register LE link (handle: %#.4x)", handle);
 
@@ -75,6 +77,12 @@ void ChannelManager::RegisterLE(hci_spec::ConnectionHandle handle, hci_spec::Con
   ll->set_error_callback(std::move(link_error_cb));
   ll->set_security_upgrade_callback(std::move(security_cb));
   ll->set_connection_parameter_update_callback(std::move(conn_param_cb));
+
+  fbl::RefPtr<Channel> att = OpenFixedChannel(handle, kATTChannelId);
+  fbl::RefPtr<Channel> smp = OpenFixedChannel(handle, kLESMPChannelId);
+  ZX_ASSERT(att);
+  ZX_ASSERT(smp);
+  return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
 }
 
 void ChannelManager::Unregister(hci_spec::ConnectionHandle handle) {
@@ -177,17 +185,19 @@ void ChannelManager::RequestConnectionParameterUpdate(
   iter->second->SendConnectionParameterUpdateRequest(params, std::move(request_cb));
 }
 
-void ChannelManager::AttachInspect(inspect::Node& parent) {
+void ChannelManager::AttachInspect(inspect::Node& parent, const char* name) {
   if (!parent) {
     return;
   }
 
-  services_node_ = parent.CreateChild(kInspectServicesNodeName);
+  node_ = parent.CreateChild(name);
+
+  services_node_ = node_.CreateChild(kInspectServicesNodeName);
   for (auto& [psm, service] : services_) {
     service.AttachInspect(services_node_);
   }
 
-  ll_node_ = parent.CreateChild(kInspectLogicalLinksNodeName);
+  ll_node_ = node_.CreateChild(kInspectLogicalLinksNodeName);
   for (auto& [_, ll] : ll_map_) {
     ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));
   }

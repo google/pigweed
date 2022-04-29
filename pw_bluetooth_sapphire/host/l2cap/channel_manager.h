@@ -61,13 +61,7 @@ class ChannelManager final {
   using LinkErrorCallback = fit::closure;
 
   // Creates L2CAP state for logical links and channels.
-  //
-  // |max_acl_payload_size| and |max_le_payload_size| are the "maximum size[s] of HCI ACL
-  // (excluding header) Data Packets... sent from the Host to the Controller" (Core v5.0 Vol 2,
-  // Part E, Section 4.1) used for fragmenting outbound data. Data that is fragmented will be
-  // passed contiguously as invocations of |acl_data_channel->SendPackets()|.
-  ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
-                 hci::AclDataChannel* acl_data_channel, bool random_channel_ids);
+  ChannelManager(hci::AclDataChannel* acl_data_channel, bool random_channel_ids);
   ~ChannelManager();
 
   // Returns a handler for data packets received from the Bluetooth controller bound to this object.
@@ -108,9 +102,15 @@ class ChannelManager final {
   //
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
-  void RegisterLE(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-                  LEConnectionParameterUpdateCallback conn_param_callback,
-                  LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback);
+  struct LEFixedChannels {
+    fbl::RefPtr<l2cap::Channel> att;
+    fbl::RefPtr<l2cap::Channel> smp;
+  };
+  [[nodiscard]] LEFixedChannels RegisterLE(hci_spec::ConnectionHandle handle,
+                                           hci_spec::ConnectionRole role,
+                                           LEConnectionParameterUpdateCallback conn_param_callback,
+                                           LinkErrorCallback link_error_callback,
+                                           SecurityUpgradeCallback security_callback);
 
   // Removes a connection. All incoming data packets on this link will be dropped. If the
   // connection was previously registered, all corresponding Channels will be closed.
@@ -157,8 +157,9 @@ class ChannelManager final {
                                         hci_spec::LEPreferredConnectionParameters params,
                                         ConnectionParameterUpdateRequestCallback request_cb);
 
-  // Attach ChannelManager's inspect nodes as children of |parent|.
-  void AttachInspect(inspect::Node& parent);
+  // Attach ChannelManager's inspect nodes as children of |parent|. |name| is the name of the
+  // ChannelManager node.
+  void AttachInspect(inspect::Node& parent, const char* name);
 
   // Returns a pointer to the internal LogicalLink with the corresponding link |handle|, or nullptr
   // if none exists.
@@ -183,9 +184,11 @@ class ChannelManager final {
   // unregistered services return null.
   std::optional<ServiceInfo> QueryService(hci_spec::ConnectionHandle handle, PSM psm);
 
-  // Maximum sizes for data packet payloads from host to controller.
-  const size_t max_acl_payload_size_;
-  const size_t max_le_payload_size_;
+  // The "maximum size[s] of HCI ACL (excluding header) Data Packets... sent from the Host to the
+  // Controller" (Core Spec v5.3 Vol 4, Part E, 4.1.2) for fragmenting outbound data. Fragmented
+  // data will be passed contiguously as invocations of |acl_data_channel->SendPackets()|.
+  size_t max_acl_payload_size_;
+  size_t max_le_payload_size_;
 
   hci::AclDataChannel* acl_data_channel_;
 
@@ -212,6 +215,7 @@ class ChannelManager final {
   using ServiceMap = std::unordered_map<PSM, ServiceData>;
   ServiceMap services_;
   inspect::Node services_node_;
+  inspect::Node node_;
 
   // Stored info on whether random channel ids are requested.
   bool random_channel_ids_;

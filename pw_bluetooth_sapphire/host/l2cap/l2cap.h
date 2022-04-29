@@ -12,6 +12,7 @@
 #include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
@@ -65,10 +66,7 @@ class L2cap : public fbl::RefCounted<L2cap> {
   // Returns the ATT and SMP fixed channels of this link.
   //
   // Has no effect if this L2cap is uninitialized or shut down.
-  struct LEFixedChannels {
-    fbl::RefPtr<l2cap::Channel> att;
-    fbl::RefPtr<l2cap::Channel> smp;
-  };
+  using LEFixedChannels = ChannelManager::LEFixedChannels;
   virtual LEFixedChannels AddLEConnection(
       hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
       l2cap::LinkErrorCallback link_error_callback,
@@ -130,7 +128,7 @@ class L2cap : public fbl::RefCounted<L2cap> {
   // Has no effect if this L2cap is uninitialized or shut down.
   //
   // TODO(xow): Dynamic PSMs may need their routing space (ACL or LE) identified
-  virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+  virtual bool RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                                l2cap::ChannelCallback callback) = 0;
 
   // Removes the handler for inbound channel requests for the previously-
@@ -151,4 +149,4 @@ class L2cap : public fbl::RefCounted<L2cap> {
 
 }  // namespace bt::l2cap
 
-#endif // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_H_

@@ -25,6 +25,7 @@ namespace {
 
 using TestingBase = ::gtest::TestLoopFixture;
 using namespace inspect::testing;
+using LEFixedChannels = ChannelManager::LEFixedChannels;
 
 constexpr hci_spec::ConnectionHandle kTestHandle1 = 0x0001;
 constexpr hci_spec::ConnectionHandle kTestHandle2 = 0x0002;
@@ -245,12 +246,17 @@ class ChannelManagerTest : public TestingBase {
   void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size) {
     TestingBase::SetUp();
 
+    acl_data_channel_.set_bredr_buffer_info(
+        hci::DataBufferInfo(max_acl_payload_size, /*max_num_packets=*/1));
+    acl_data_channel_.set_le_buffer_info(
+        hci::DataBufferInfo(max_le_payload_size, /*max_num_packets=*/1));
     acl_data_channel_.set_send_packets_cb(fit::bind_member<&ChannelManagerTest::SendPackets>(this));
 
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
-    chanmgr_ = std::make_unique<ChannelManager>(max_acl_payload_size, max_le_payload_size,
-                                                &acl_data_channel_, /*random_channel_ids=*/false);
-    packet_rx_handler_ = chanmgr()->MakeInboundDataHandler();
+    chanmgr_ = std::make_unique<ChannelManager>(&acl_data_channel_, /*random_channel_ids=*/false);
+    packet_rx_handler_ = [this](std::unique_ptr<hci::ACLDataPacket> packet) {
+      acl_data_channel_.ReceivePacket(std::move(packet));
+    };
 
     next_command_id_ = 1;
   }
@@ -268,11 +274,13 @@ class ChannelManagerTest : public TestingBase {
   }
 
   // Helper functions for registering logical links with default arguments.
-  void RegisterLE(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-                  LinkErrorCallback link_error_cb = DoNothing,
-                  LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
-                  SecurityUpgradeCallback suc = NopSecurityCallback) {
-    chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(link_error_cb), std::move(suc));
+  [[nodiscard]] ChannelManager::LEFixedChannels RegisterLE(
+      hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+      LinkErrorCallback link_error_cb = DoNothing,
+      LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
+      SecurityUpgradeCallback suc = NopSecurityCallback) {
+    return chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(link_error_cb),
+                                 std::move(suc));
   }
 
   struct QueueRegisterACLRetVal {
@@ -494,7 +502,7 @@ TEST_F(ChannelManagerTest, OpenFixedChannelErrorNoConn) {
   // This should fail as the ChannelManager has no entry for |kTestHandle1|.
   EXPECT_EQ(nullptr, ActivateNewFixedChannel(kATTChannelId));
 
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   // This should fail as the ChannelManager has no entry for |kTestHandle2|.
   EXPECT_EQ(nullptr, ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
@@ -502,7 +510,7 @@ TEST_F(ChannelManagerTest, OpenFixedChannelErrorNoConn) {
 
 TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
   // LE-U link
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   // ACL-U link
   QueueRegisterACL(kTestHandle2, hci_spec::ConnectionRole::kCentral);
@@ -516,26 +524,24 @@ TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
 }
 
 TEST_F(ChannelManagerTest, ActivateFailsAfterDeactivate) {
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  ASSERT_TRUE(chan);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
-  chan->Deactivate();
+  fixed_channels.att->Deactivate();
 
   // Activate should fail.
-  EXPECT_FALSE(chan->Activate(NopRxCallback, DoNothing));
+  EXPECT_FALSE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 }
 
 TEST_F(ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
   // LE-U link
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
 
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1, closed_cb);
-  ASSERT_TRUE(chan);
-  EXPECT_EQ(kTestHandle1, chan->link_handle());
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, closed_cb));
+  EXPECT_EQ(kTestHandle1, fixed_channels.att->link_handle());
 
   // This should notify the channel.
   chanmgr()->Unregister(kTestHandle1);
@@ -549,17 +555,16 @@ TEST_F(ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
 
 TEST_F(ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
   // LE-U link
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
 
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1, closed_cb);
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, closed_cb));
 
   // Close the channel before unregistering the link. |closed_cb| should not get
   // called.
-  chan->Deactivate();
+  fixed_channels.att->Deactivate();
   chanmgr()->Unregister(kTestHandle1);
 
   RunLoopUntilIdle();
@@ -568,29 +573,24 @@ TEST_F(ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
 }
 
 TEST_F(ChannelManagerTest, FixedChannelsUseBasicMode) {
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  ASSERT_TRUE(chan);
-  EXPECT_EQ(ChannelMode::kBasic, chan->mode());
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+  EXPECT_EQ(ChannelMode::kBasic, fixed_channels.att->mode());
 }
 
 TEST_F(ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   // LE-U link
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   bool att_closed = false;
   auto att_closed_cb = [&att_closed] { att_closed = true; };
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, att_closed_cb));
 
   bool smp_closed = false;
   auto smp_closed_cb = [&smp_closed] { smp_closed = true; };
+  ASSERT_TRUE(fixed_channels.smp->Activate(NopRxCallback, smp_closed_cb));
 
-  auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1, att_closed_cb);
-  ASSERT_TRUE(att_chan);
-
-  auto smp_chan = ActivateNewFixedChannel(kLESMPChannelId, kTestHandle1, smp_closed_cb);
-  ASSERT_TRUE(smp_chan);
-
-  smp_chan->Deactivate();
+  fixed_channels.smp->Deactivate();
   chanmgr()->Unregister(kTestHandle1);
 
   RunLoopUntilIdle();
@@ -601,12 +601,13 @@ TEST_F(ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
 
 TEST_F(ChannelManagerTest, SendingPacketsBeforeAndAfterCleanUp) {
   // LE-U link
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1, closed_cb);
+  auto chan = fixed_channels.att;
   ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan->Activate(NopRxCallback, closed_cb));
 
   EXPECT_LE_PACKET_OUT(StaticByteBuffer(
                            // ACL data header (handle: 1, length: 6)
@@ -636,12 +637,13 @@ TEST_F(ChannelManagerTest, SendingPacketsBeforeAndAfterCleanUp) {
 // Tests that destroying the ChannelManager cleanly shuts down all channels.
 TEST_F(ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
   // LE-U link
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1, closed_cb);
+  auto chan = fixed_channels.att;
   ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan->Activate(NopRxCallback, closed_cb));
 
   EXPECT_LE_PACKET_OUT(StaticByteBuffer(
                            // ACL data header (handle: 1, length: 6)
@@ -670,11 +672,10 @@ TEST_F(ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
 TEST_F(ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
   // Tests that the clean up task posted to the LogicalLink does not crash when
   // a dynamic registry is not present (which is the case for LE links).
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  ASSERT_TRUE(chan);
-
-  chan->Deactivate();
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ASSERT_TRUE(fixed_channels.att);
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+  fixed_channels.att->Deactivate();
 
   // Loop until the clean up task runs.
   RunLoopUntilIdle();
@@ -692,7 +693,9 @@ TEST_F(ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang
 
 TEST_F(ChannelManagerTest, ReceiveData) {
   // LE-U link
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ASSERT_TRUE(fixed_channels.att);
+  ASSERT_TRUE(fixed_channels.smp);
 
   // We use the ATT channel to control incoming packets and the SMP channel to
   // quit the message loop.
@@ -709,10 +712,8 @@ TEST_F(ChannelManagerTest, ReceiveData) {
     smp_cb_called = true;
   };
 
-  auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1, DoNothing, att_rx_cb);
-  auto smp_chan = ActivateNewFixedChannel(kLESMPChannelId, kTestHandle1, DoNothing, smp_rx_cb);
-  ASSERT_TRUE(att_chan);
-  ASSERT_TRUE(smp_chan);
+  ASSERT_TRUE(fixed_channels.att->Activate(att_rx_cb, DoNothing));
+  ASSERT_TRUE(fixed_channels.smp->Activate(smp_rx_cb, DoNothing));
 
   // ATT channel
   ReceiveAclDataPacket(StaticByteBuffer(
@@ -790,75 +791,41 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
   // Run the loop so all packets are received.
   RunLoopUntilIdle();
 
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-
-  att_chan = ActivateNewFixedChannel(
-      kATTChannelId, kTestHandle1, [] {}, att_rx_cb);
-  ZX_DEBUG_ASSERT(att_chan);
-
-  smp_chan = ActivateNewFixedChannel(
-      kLESMPChannelId, kTestHandle1, [] {}, smp_rx_cb);
-  ZX_DEBUG_ASSERT(smp_chan);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ASSERT_TRUE(fixed_channels.att->Activate(att_rx_cb, DoNothing));
+  ASSERT_TRUE(fixed_channels.smp->Activate(smp_rx_cb, DoNothing));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(smp_cb_called);
   EXPECT_EQ(kPacketCount, packet_count);
 }
 
-// Receive data after registering the link but before creating the channel.
-TEST_F(ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
+// Receive data after registering the link but before creating a fixed channel.
+TEST_F(ChannelManagerTest, ReceiveDataBeforeCreatingFixedChannel) {
   constexpr size_t kPacketCount = 10;
 
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  // Register an ACL connection because LE connections create fixed channels immediately.
+  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  RunLoopUntilIdle();
 
   StaticByteBuffer<255> buffer;
 
-  // We use the ATT channel to control incoming packets and the SMP channel to
-  // quit the message loop.
   size_t packet_count = 0;
-  auto att_rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
-
-  bool smp_cb_called = false;
-  auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
-    ZX_DEBUG_ASSERT(sdu);
-    EXPECT_EQ(0u, sdu->size());
-    smp_cb_called = true;
-  };
-
-  // ATT channel
+  auto rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
   for (size_t i = 0u; i < kPacketCount; i++) {
     ReceiveAclDataPacket(StaticByteBuffer(
         // ACL data header (starting fragment)
-        0x01, 0x00, 0x04, 0x00,
+        LowerBits(kTestHandle1), UpperBits(kTestHandle1), 0x04, 0x00,
 
-        // L2CAP B-frame
-        0x00, 0x00, 0x04, 0x00));
+        // L2CAP B-frame (empty)
+        0x00, 0x00, LowerBits(kSMPChannelId), UpperBits(kSMPChannelId)));
   }
-
-  // SMP channel
-  ReceiveAclDataPacket(StaticByteBuffer(
-      // ACL data header (starting fragment)
-      0x01, 0x00, 0x04, 0x00,
-
-      // L2CAP B-frame (empty)
-      0x00, 0x00, 0x06, 0x00));
-
-  fbl::RefPtr<Channel> att_chan, smp_chan;
-
   // Run the loop so all packets are received.
   RunLoopUntilIdle();
 
-  att_chan = ActivateNewFixedChannel(
-      kATTChannelId, kTestHandle1, [] {}, att_rx_cb);
-  ZX_DEBUG_ASSERT(att_chan);
-
-  smp_chan = ActivateNewFixedChannel(
-      kLESMPChannelId, kTestHandle1, [] {}, smp_rx_cb);
-  ZX_DEBUG_ASSERT(smp_chan);
+  auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1, DoNothing, std::move(rx_cb));
 
   RunLoopUntilIdle();
-
-  EXPECT_TRUE(smp_cb_called);
   EXPECT_EQ(kPacketCount, packet_count);
 }
 
@@ -867,12 +834,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
 TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   constexpr size_t kPacketCount = 10;
 
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  auto att_chan = chanmgr()->OpenFixedChannel(kTestHandle1, kATTChannelId);
-  ZX_DEBUG_ASSERT(att_chan);
-
-  auto smp_chan = chanmgr()->OpenFixedChannel(kTestHandle1, kLESMPChannelId);
-  ZX_DEBUG_ASSERT(smp_chan);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   StaticByteBuffer<255> buffer;
 
@@ -895,7 +857,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
         0x01, 0x00, 0x04, 0x00,
 
         // L2CAP B-frame
-        0x00, 0x00, 0x04, 0x00));
+        0x00, 0x00, LowerBits(kATTChannelId), UpperBits(kATTChannelId)));
   }
 
   // SMP channel
@@ -904,13 +866,13 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
       0x01, 0x00, 0x04, 0x00,
 
       // L2CAP B-frame (empty)
-      0x00, 0x00, 0x06, 0x00));
+      0x00, 0x00, LowerBits(kLESMPChannelId), UpperBits(kLESMPChannelId)));
 
   // Run the loop so all packets are received.
   RunLoopUntilIdle();
 
-  att_chan->Activate(att_rx_cb, DoNothing);
-  smp_chan->Activate(smp_rx_cb, DoNothing);
+  fixed_channels.att->Activate(att_rx_cb, DoNothing);
+  fixed_channels.smp->Activate(smp_rx_cb, DoNothing);
 
   RunLoopUntilIdle();
 
@@ -918,15 +880,13 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   EXPECT_EQ(kPacketCount, packet_count);
 }
 
-TEST_F(ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchronously) {
+TEST_F(ChannelManagerTest, ActivateChannelProcessesCallbacksSynchronously) {
   // LE-U link
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   int att_rx_cb_count = 0;
   int smp_rx_cb_count = 0;
 
-  auto att_chan = chanmgr()->OpenFixedChannel(kTestHandle1, kATTChannelId);
-  ASSERT_TRUE(att_chan);
   auto att_rx_cb = [&att_rx_cb_count](ByteBufferPtr sdu) {
     EXPECT_EQ("hello", sdu->AsString());
     att_rx_cb_count++;
@@ -934,8 +894,7 @@ TEST_F(ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchrono
   bool att_closed_called = false;
   auto att_closed_cb = [&att_closed_called] { att_closed_called = true; };
 
-  // Activate ATT to run on Data domain, requiring synchronous callback invocation.
-  ASSERT_TRUE(att_chan->Activate(std::move(att_rx_cb), std::move(att_closed_cb)));
+  ASSERT_TRUE(fixed_channels.att->Activate(std::move(att_rx_cb), std::move(att_closed_cb)));
 
   auto smp_rx_cb = [&smp_rx_cb_count](ByteBufferPtr sdu) {
     EXPECT_EQ("🤨", sdu->AsString());
@@ -944,9 +903,7 @@ TEST_F(ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchrono
   bool smp_closed_called = false;
   auto smp_closed_cb = [&smp_closed_called] { smp_closed_called = true; };
 
-  auto smp_chan = ActivateNewFixedChannel(kLESMPChannelId, kTestHandle1, std::move(smp_closed_cb),
-                                          std::move(smp_rx_cb));
-  ASSERT_TRUE(smp_chan);
+  ASSERT_TRUE(fixed_channels.smp->Activate(std::move(smp_rx_cb), std::move(smp_closed_cb)));
 
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
@@ -977,19 +934,17 @@ TEST_F(ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchrono
 }
 
 TEST_F(ChannelManagerTest, SendOnClosedLink) {
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  ZX_DEBUG_ASSERT(att_chan);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ZX_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   chanmgr()->Unregister(kTestHandle1);
 
-  EXPECT_FALSE(att_chan->Send(NewBuffer('T', 'e', 's', 't')));
+  EXPECT_FALSE(fixed_channels.att->Send(NewBuffer('T', 'e', 's', 't')));
 }
 
 TEST_F(ChannelManagerTest, SendBasicSdu) {
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  ZX_DEBUG_ASSERT(att_chan);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ZX_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   EXPECT_LE_PACKET_OUT(StaticByteBuffer(
                            // ACL data header (handle: 1, length 7)
@@ -999,20 +954,17 @@ TEST_F(ChannelManagerTest, SendBasicSdu) {
                            0x04, 0x00, 0x04, 0x00, 'T', 'e', 's', 't'),
                        kLowPriority);
 
-  EXPECT_TRUE(att_chan->Send(NewBuffer('T', 'e', 's', 't')));
-
+  EXPECT_TRUE(fixed_channels.att->Send(NewBuffer('T', 'e', 's', 't')));
   RunLoopUntilIdle();
 }
 
-// Tests that fragmentation of LE and BR/EDR packets use the corresponding buffer size.
-TEST_F(ChannelManagerTest, SendFragmentedSdus) {
-  constexpr size_t kMaxACLDataSize = 6;
+// Tests that fragmentation of BR/EDR packets uses the BR/EDR buffer size.
+TEST_F(ChannelManagerTest, SendBrEdrFragmentedSdus) {
+  constexpr size_t kMaxBrEdrDataSize = 6;
   constexpr size_t kMaxLEDataSize = 5;
 
   TearDown();
-  SetUp(kMaxACLDataSize, kMaxLEDataSize);
-
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  SetUp(kMaxBrEdrDataSize, kMaxLEDataSize);
 
   // Send fragmented Extended Features Information Request
   EXPECT_ACL_PACKET_OUT(StaticByteBuffer(
@@ -1060,28 +1012,8 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
           UpperBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported))),
       kHighPriority);
   RegisterACL(kTestHandle2, hci_spec::ConnectionRole::kCentral);
-
-  // We use the ATT fixed-channel for LE and the SM fixed-channel for ACL.
-  auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   auto sm_chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle2);
-  ASSERT_TRUE(att_chan);
   ASSERT_TRUE(sm_chan);
-
-  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
-                           // ACL data header (handle: 1, length: 5)
-                           0x01, 0x00, 0x05, 0x00,
-
-                           // L2CAP B-frame: (length: 5, channel-id: 4, partial payload)
-                           0x05, 0x00, 0x04, 0x00, 'H'),
-                       kLowPriority);
-
-  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
-                           // ACL data header (handle: 1, pbf: continuing fr., length: 4)
-                           0x01, 0x10, 0x04, 0x00,
-
-                           // Continuing payload
-                           'e', 'l', 'l', 'o'),
-                       kLowPriority);
 
   EXPECT_ACL_PACKET_OUT(StaticByteBuffer(
                             // ACL data header (handle: 2, length: 6)
@@ -1099,10 +1031,6 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
                             'o', 'd', 'b', 'y', 'e'),
                         kHighPriority);
 
-  // SDU of length 5 corresponds to a 9-octet B-frame which should be sent over a 5-byte and a 4-
-  // byte fragment.
-  EXPECT_TRUE(att_chan->Send(NewBuffer('H', 'e', 'l', 'l', 'o')));
-
   // SDU of length 7 corresponds to a 11-octet B-frame. Due to the BR/EDR buffer size, this should
   // be sent over a 6-byte then a 5-byte fragment.
   EXPECT_TRUE(sm_chan->Send(NewBuffer('G', 'o', 'o', 'd', 'b', 'y', 'e')));
@@ -1110,14 +1038,49 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
   RunLoopUntilIdle();
 }
 
+// Tests that fragmentation of LE packets uses the LE buffer size.
+TEST_F(ChannelManagerTest, SendFragmentedSdus) {
+  constexpr size_t kMaxBrEdrDataSize = 6;
+  constexpr size_t kMaxLEDataSize = 5;
+
+  TearDown();
+  SetUp(kMaxBrEdrDataSize, kMaxLEDataSize);
+
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+
+  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
+                           // ACL data header (handle: 1, length: 5)
+                           0x01, 0x00, 0x05, 0x00,
+
+                           // L2CAP B-frame: (length: 5, channel-id: 4, partial payload)
+                           0x05, 0x00, 0x04, 0x00, 'H'),
+                       kLowPriority);
+
+  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
+                           // ACL data header (handle: 1, pbf: continuing fr., length: 4)
+                           0x01, 0x10, 0x04, 0x00,
+
+                           // Continuing payload
+                           'e', 'l', 'l', 'o'),
+                       kLowPriority);
+
+  // SDU of length 5 corresponds to a 9-octet B-frame which should be sent over a 5-byte and a 4-
+  // byte fragment.
+  EXPECT_TRUE(fixed_channels.att->Send(NewBuffer('H', 'e', 'l', 'l', 'o')));
+
+  RunLoopUntilIdle();
+}
+
 TEST_F(ChannelManagerTest, LEChannelSignalLinkError) {
   bool link_error = false;
   auto link_error_cb = [&link_error] { link_error = true; };
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, link_error_cb);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, link_error_cb);
 
   // Activate a new Attribute channel to signal the error.
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  chan->SignalLinkError();
+  fixed_channels.att->Activate(NopRxCallback, DoNothing);
+  fixed_channels.att->SignalLinkError();
 
   RunLoopUntilIdle();
 
@@ -1235,7 +1198,8 @@ TEST_F(ChannelManagerTest, LEConnectionParameterUpdateRequest) {
                             0x00, 0x00),
                         kHighPriority);
 
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, DoNothing, conn_param_cb);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, DoNothing, conn_param_cb);
 
   // clang-format off
   ReceiveAclDataPacket(StaticByteBuffer(
@@ -1730,27 +1694,25 @@ TEST_F(ChannelManagerTest, LinkSecurityProperties) {
 
   // Register a link and open a channel. The security properties should be
   // accessible using the channel.
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  ASSERT_TRUE(chan);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   // The channel should start out at the lowest level of security.
-  EXPECT_EQ(sm::SecurityProperties(), chan->security());
+  EXPECT_EQ(sm::SecurityProperties(), fixed_channels.att->security());
 
   // Assign a new security level.
   chanmgr()->AssignLinkSecurityProperties(kTestHandle1, security);
 
   // Channel should return the new security level.
-  EXPECT_EQ(security, chan->security());
+  EXPECT_EQ(security, fixed_channels.att->security());
 }
 
 // Tests that assigning a new security level on a closed link does nothing.
 TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
   // Register a link and open a channel. The security properties should be
   // accessible using the channel.
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  ASSERT_TRUE(chan);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   chanmgr()->Unregister(kTestHandle1);
   RunLoopUntilIdle();
@@ -1760,7 +1722,7 @@ TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
   chanmgr()->AssignLinkSecurityProperties(kTestHandle1, security);
 
   // Channel should return the old security level.
-  EXPECT_EQ(sm::SecurityProperties(), chan->security());
+  EXPECT_EQ(sm::SecurityProperties(), fixed_channels.att->security());
 }
 
 TEST_F(ChannelManagerTest, UpgradeSecurity) {
@@ -1785,14 +1747,15 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
     callback(delivered_status);
   };
 
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, DoNothing, NopLeConnParamCallback,
-             std::move(security_handler));
-  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  ASSERT_TRUE(chan);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, DoNothing,
+                 NopLeConnParamCallback, std::move(security_handler));
+  fbl::RefPtr<l2cap::Channel> att = std::move(fixed_channels.att);
+  ASSERT_TRUE(att->Activate(NopRxCallback, DoNothing));
 
   // Requesting security at or below the current level should succeed without
   // doing anything.
-  chan->UpgradeSecurity(sm::SecurityLevel::kNoSecurity, status_callback, dispatcher());
+  att->UpgradeSecurity(sm::SecurityLevel::kNoSecurity, status_callback, dispatcher());
   RunLoopUntilIdle();
   EXPECT_EQ(0, security_request_count);
   EXPECT_EQ(1, security_status_count);
@@ -1800,7 +1763,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
 
   // Test reporting an error.
   delivered_status = ToResult(HostError::kNotSupported);
-  chan->UpgradeSecurity(sm::SecurityLevel::kEncrypted, status_callback, dispatcher());
+  att->UpgradeSecurity(sm::SecurityLevel::kEncrypted, status_callback, dispatcher());
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
@@ -1811,9 +1774,9 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   chanmgr()->Unregister(kTestHandle1);
   RunLoopUntilIdle();
 
-  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
-  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
-  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
+  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
+  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
+  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
@@ -2143,8 +2106,8 @@ TEST_F(ChannelManagerTest,
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, /*link_error_cb=*/DoNothing,
-             std::move(param_cb));
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral,
+                                              /*link_error_cb=*/DoNothing, std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 
@@ -2176,8 +2139,8 @@ TEST_F(ChannelManagerTest,
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kPeripheral, /*link_error_cb=*/DoNothing,
-             std::move(param_cb));
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kPeripheral,
+                                              /*link_error_cb=*/DoNothing, std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 
@@ -2202,8 +2165,8 @@ TEST_F(ChannelManagerTest,
 
   // Callback should not be called for request with invalid parameters.
   LEConnectionParameterUpdateCallback param_cb = [](auto /*params*/) { ADD_FAILURE(); };
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, /*link_error_cb=*/DoNothing,
-             std::move(param_cb));
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral,
+                                              /*link_error_cb=*/DoNothing, std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 
@@ -2251,7 +2214,7 @@ TEST_F(ChannelManagerTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
 
 TEST_F(ChannelManagerTest,
        RequestConnParamUpdateAsPeripheralAndReceiveAcceptedAndRejectedResponses) {
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kPeripheral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kPeripheral);
 
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
@@ -2301,7 +2264,7 @@ TEST_F(ChannelManagerTest,
 }
 
 TEST_F(ChannelManagerTest, ConnParamUpdateRequestRejected) {
-  RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kPeripheral);
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kPeripheral);
 
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
@@ -2771,7 +2734,7 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
 
 TEST_F(ChannelManagerTest, InspectHierarchy) {
   inspect::Inspector inspector;
-  chanmgr()->AttachInspect(inspector.GetRoot());
+  chanmgr()->AttachInspect(inspector.GetRoot(), "l2cap");
 
   chanmgr()->RegisterService(kSDP, kChannelParams, [](auto) {});
   auto services_matcher =
@@ -2816,8 +2779,12 @@ TEST_F(ChannelManagerTest, InspectHierarchy) {
                                 UintIs("flush_timeout_ms", zx::duration::infinite().to_msecs()))))),
           ChildrenMatch(ElementsAre(channels_matcher))))));
 
+  auto l2cap_node_matcher =
+      AllOf(NodeMatches(NameMatches("l2cap")),
+            ChildrenMatch(UnorderedElementsAre(link_matcher, services_matcher)));
+
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
-  EXPECT_THAT(hierarchy, ChildrenMatch(UnorderedElementsAre(link_matcher, services_matcher)));
+  EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(l2cap_node_matcher)));
 
   // inspector must outlive ChannelManager
   chanmgr()->Unregister(kTestHandle1);

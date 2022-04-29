@@ -63,7 +63,7 @@ class FakeL2cap final : public L2cap {
       ConnectionParameterUpdateRequestCallback request_cb) override;
   void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
                         ChannelCallback cb) override;
-  void RegisterService(PSM psm, ChannelParameters params,
+  bool RegisterService(PSM psm, ChannelParameters params,
                        ChannelCallback channel_callback) override;
   void UnregisterService(PSM psm) override;
 

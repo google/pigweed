@@ -155,10 +155,11 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM p
                   [cb = std::move(cb), chan = std::move(chan)]() { cb(std::move(chan)); });
 }
 
-void FakeL2cap::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+bool FakeL2cap::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                                 l2cap::ChannelCallback channel_callback) {
   ZX_DEBUG_ASSERT(registered_services_.count(psm) == 0);
   registered_services_.emplace(psm, ServiceInfo(params, std::move(channel_callback)));
+  return true;
 }
 
 void FakeL2cap::UnregisterService(l2cap::PSM psm) { registered_services_.erase(psm); }

@@ -15,6 +15,9 @@ class MockAclDataChannel final : public AclDataChannel {
   MockAclDataChannel() = default;
   ~MockAclDataChannel() override = default;
 
+  void set_bredr_buffer_info(DataBufferInfo info) { bredr_buffer_info_ = info; }
+  void set_le_buffer_info(DataBufferInfo info) { le_buffer_info_ = info; }
+
   using SendPacketsCallback = fit::function<bool(
       LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id, PacketPriority priority)>;
   void set_send_packets_cb(SendPacketsCallback cb) { send_packets_cb_ = std::move(cb); }
@@ -37,9 +40,17 @@ class MockAclDataChannel final : public AclDataChannel {
     flush_timeout_cb_ = std::move(callback);
   }
 
+  void ReceivePacket(std::unique_ptr<ACLDataPacket> packet) {
+    ZX_ASSERT(data_rx_handler_);
+    data_rx_handler_(std::move(packet));
+  }
+
   // AclDataChannel overrides:
   void AttachInspect(inspect::Node& /*unused*/, const std::string& /*unused*/) override {}
-  void SetDataRxHandler(ACLPacketHandler rx_callback) override { ZX_ASSERT(rx_callback); }
+  void SetDataRxHandler(ACLPacketHandler rx_callback) override {
+    ZX_ASSERT(rx_callback);
+    data_rx_handler_ = std::move(rx_callback);
+  }
   bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                   PacketPriority priority) override {
     return false;
@@ -79,6 +90,7 @@ class MockAclDataChannel final : public AclDataChannel {
   DataBufferInfo bredr_buffer_info_;
   DataBufferInfo le_buffer_info_;
 
+  ACLPacketHandler data_rx_handler_;
   SendPacketsCallback send_packets_cb_;
   DropQueuedPacketsCallback drop_queued_packets_cb_;
   RequestAclPriorityCallback request_acl_priority_cb_;
