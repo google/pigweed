@@ -666,13 +666,14 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
-  std::optional<bt_vendor_command_t> encode_vendor_command;
-  std::optional<bt_vendor_params_t> encode_vendor_command_params;
-  set_encode_vendor_command_cb([&](auto command, auto params) {
-    encode_vendor_command = command;
-    encode_vendor_command_params = params;
-    return fpromise::ok(DynamicByteBuffer(kEncodedCommand));
-  });
+  std::optional<hci_spec::ConnectionHandle> connection_handle_from_encode_cb;
+  std::optional<hci::AclPriority> priority_from_encode_cb;
+  set_encode_acl_priority_command_cb(
+      [&](hci_spec::ConnectionHandle connection, hci::AclPriority priority) {
+        connection_handle_from_encode_cb = connection;
+        priority_from_encode_cb = priority;
+        return fitx::ok(DynamicByteBuffer(kEncodedCommand));
+      });
 
   QueueAclConnection(kLinkHandle);
   RunLoopUntilIdle();
@@ -706,23 +707,15 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   RunLoopUntilIdle();
   EXPECT_EQ(request_cb_count, 1u);
   if (kPriority == hci::AclPriority::kNormal) {
-    EXPECT_FALSE(encode_vendor_command);
+    EXPECT_FALSE(connection_handle_from_encode_cb);
   } else {
-    ASSERT_TRUE(encode_vendor_command);
-    EXPECT_EQ(encode_vendor_command.value(), BT_VENDOR_COMMAND_SET_ACL_PRIORITY);
-    ASSERT_TRUE(encode_vendor_command_params);
-    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.connection_handle, kLinkHandle);
-    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.priority, BT_VENDOR_ACL_PRIORITY_HIGH);
-    if (kPriority == hci::AclPriority::kSink) {
-      EXPECT_EQ(encode_vendor_command_params->set_acl_priority.direction,
-                BT_VENDOR_ACL_DIRECTION_SINK);
-    } else {
-      EXPECT_EQ(encode_vendor_command_params->set_acl_priority.direction,
-                BT_VENDOR_ACL_DIRECTION_SOURCE);
-    }
+    ASSERT_TRUE(connection_handle_from_encode_cb);
+    EXPECT_EQ(connection_handle_from_encode_cb.value(), kLinkHandle);
+    ASSERT_TRUE(priority_from_encode_cb);
+    EXPECT_EQ(priority_from_encode_cb.value(), kPriority);
   }
-  encode_vendor_command.reset();
-  encode_vendor_command_params.reset();
+  connection_handle_from_encode_cb.reset();
+  priority_from_encode_cb.reset();
 
   if (kPriority != hci::AclPriority::kNormal && kExpectSuccess) {
     auto cmd_complete = CommandCompletePacket(op_code, hci_spec::StatusCode::kSuccess);
@@ -739,14 +732,12 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   if (kPriority != hci::AclPriority::kNormal && kExpectSuccess) {
-    ASSERT_TRUE(encode_vendor_command);
-    EXPECT_EQ(encode_vendor_command, BT_VENDOR_COMMAND_SET_ACL_PRIORITY);
-    ASSERT_TRUE(encode_vendor_command_params);
-    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.connection_handle, kLinkHandle);
-    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.priority,
-              BT_VENDOR_ACL_PRIORITY_NORMAL);
+    ASSERT_TRUE(connection_handle_from_encode_cb);
+    EXPECT_EQ(connection_handle_from_encode_cb.value(), kLinkHandle);
+    ASSERT_TRUE(priority_from_encode_cb);
+    EXPECT_EQ(priority_from_encode_cb.value(), hci::AclPriority::kNormal);
   } else {
-    EXPECT_FALSE(encode_vendor_command);
+    EXPECT_FALSE(connection_handle_from_encode_cb);
   }
 }
 

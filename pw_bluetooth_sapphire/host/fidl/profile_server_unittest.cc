@@ -565,7 +565,7 @@ TEST_F(ProfileServerTestConnectedPeer,
 class AclPrioritySupportedTest : public ProfileServerTestConnectedPeer {
  public:
   void SetUp() override {
-    set_vendor_features(BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND);
+    set_vendor_features(bt::hci::VendorFeaturesBits::kSetAclPriorityCommand);
     ProfileServerTestConnectedPeer::SetUp();
   }
 };

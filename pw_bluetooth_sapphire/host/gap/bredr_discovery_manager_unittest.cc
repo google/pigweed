@@ -59,10 +59,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
 
   void SetUp() override {
     TestingBase::SetUp();
-
-    test_device()->StartCmdChannel(test_cmd_chan());
-    test_device()->StartAclChannel(test_acl_chan());
-
+    StartTestDevice();
     NewDiscoveryManager(hci_spec::InquiryMode::kStandard);
   }
 
@@ -410,8 +407,6 @@ TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFat
         }(),
         ".*");
   }
-
-  test_device()->SendCommandChannelPacket(kInquiryComplete);
 }
 
 // Test: discovering() answers correctly
@@ -462,6 +457,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   EXPECT_FALSE(discovery_manager()->discovering());
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
+  RunLoopUntilIdle();
 }
 
 // Test: requesting a second discovery should start a session without sending

@@ -830,18 +830,6 @@ TEST_F(ACLDataChannelTest, ReceiveData) {
   EXPECT_EQ(0x0002, packet1_handle);
 }
 
-TEST_F(ACLDataChannelTest, TransportClosedCallback) {
-  InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
-
-  bool closed_cb_called = false;
-  auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
-  transport()->SetTransportClosedCallback(closed_cb);
-
-  async::PostTask(dispatcher(), [this] { test_device()->CloseACLDataChannel(); });
-  RunLoopUntilIdle();
-  EXPECT_TRUE(closed_cb_called);
-}
-
 TEST_F(ACLDataChannelTest, TransportClosedCallbackBothChannels) {
   InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
 
@@ -849,12 +837,7 @@ TEST_F(ACLDataChannelTest, TransportClosedCallbackBothChannels) {
   auto closed_cb = [&closed_cb_count] { closed_cb_count++; };
   transport()->SetTransportClosedCallback(closed_cb);
 
-  // We'll send closed events for both channels. The closed callback should get
-  // invoked only once.
-  async::PostTask(dispatcher(), [this] {
-    test_device()->CloseACLDataChannel();
-    test_device()->CloseCommandChannel();
-  });
+  async::PostTask(dispatcher(), [this] { test_device()->Stop(ZX_ERR_PEER_CLOSED); });
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, closed_cb_count);
@@ -1162,15 +1145,16 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
 
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
-  std::optional<bt_vendor_command_t> encode_vendor_command;
-  std::optional<bt_vendor_params_t> encode_vendor_command_params;
-  set_encode_vendor_command_cb([&](auto command, auto params) {
-    encode_vendor_command = command;
-    encode_vendor_command_params = params;
-    return fpromise::ok(DynamicByteBuffer(kEncodedCommand));
-  });
+  std::optional<hci_spec::ConnectionHandle> connection;
+  std::optional<hci::AclPriority> priority;
+  set_encode_acl_priority_command_cb(
+      [&](hci_spec::ConnectionHandle cb_connection, hci::AclPriority cb_priority) {
+        connection = cb_connection;
+        priority = cb_priority;
+        return fitx::ok(DynamicByteBuffer(kEncodedCommand));
+      });
 
-  auto cmd_complete = testing::CommandCompletePacket(
+  auto cmd_complete = bt::testing::CommandCompletePacket(
       op_code,
       kExpectSuccess ? hci_spec::StatusCode::kSuccess : hci_spec::StatusCode::kUnknownCommand);
   EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
@@ -1183,23 +1167,10 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(request_cb_count, 1u);
-  ASSERT_TRUE(encode_vendor_command);
-  EXPECT_EQ(encode_vendor_command.value(), BT_VENDOR_COMMAND_SET_ACL_PRIORITY);
-  ASSERT_TRUE(encode_vendor_command_params);
-  EXPECT_EQ(encode_vendor_command_params->set_acl_priority.connection_handle, kLinkHandle);
-  if (kPriority == hci::AclPriority::kNormal) {
-    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.priority,
-              BT_VENDOR_ACL_PRIORITY_NORMAL);
-  } else {
-    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.priority, BT_VENDOR_ACL_PRIORITY_HIGH);
-    if (kPriority == hci::AclPriority::kSink) {
-      EXPECT_EQ(encode_vendor_command_params->set_acl_priority.direction,
-                BT_VENDOR_ACL_DIRECTION_SINK);
-    } else {
-      EXPECT_EQ(encode_vendor_command_params->set_acl_priority.direction,
-                BT_VENDOR_ACL_DIRECTION_SOURCE);
-    }
-  }
+  ASSERT_TRUE(connection);
+  EXPECT_EQ(connection.value(), kLinkHandle);
+  ASSERT_TRUE(priority);
+  EXPECT_EQ(priority.value(), kPriority);
 }
 
 const std::array<std::pair<hci::AclPriority, bool>, 4> kPriorityParams = {
@@ -1213,7 +1184,7 @@ TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeFails) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
-  set_encode_vendor_command_cb([&](auto command, auto params) { return fpromise::error(); });
+  set_encode_acl_priority_command_cb([&](auto, auto) { return fitx::error(ZX_ERR_INTERNAL); });
 
   size_t request_cb_count = 0;
   acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {
@@ -1229,9 +1200,8 @@ TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
-  set_encode_vendor_command_cb([&](auto command, auto params) {
-    return fpromise::ok(DynamicByteBuffer(StaticByteBuffer(0x00)));
-  });
+  set_encode_acl_priority_command_cb(
+      [](auto, auto) { return fitx::ok(DynamicByteBuffer(StaticByteBuffer(0x00))); });
 
   size_t request_cb_count = 0;
   acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {
@@ -1252,9 +1222,10 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   auto result_cb = [&](auto status) { cb_status = status; };
 
   // Test command complete error
-  const auto kCommandCompleteError = testing::CommandCompletePacket(
+  const auto kCommandCompleteError = bt::testing::CommandCompletePacket(
       hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnknownConnectionId);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        bt::testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
                         &kCommandCompleteError);
   acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), kLinkHandle,
                                                     result_cb);
@@ -1272,9 +1243,10 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
 
   // Test infinite flush timeout (flush timeout of 0 should be sent).
-  const auto kCommandComplete = testing::CommandCompletePacket(
+  const auto kCommandComplete = bt::testing::CommandCompletePacket(
       hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        bt::testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
                         &kCommandComplete);
   acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), kLinkHandle,
                                                     result_cb);
@@ -1285,7 +1257,8 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
 
   // Test msec to parameter conversion (hci_spec::kMaxAutomaticFlushTimeoutDuration(1279) *
   // conversion_factor(1.6) = 2046).
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 2046),
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        bt::testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 2046),
                         &kCommandComplete);
   acl_data_channel()->SetBrEdrAutomaticFlushTimeout(hci_spec::kMaxAutomaticFlushTimeoutDuration,
                                                     kLinkHandle, result_cb);
@@ -1369,7 +1342,7 @@ TEST_F(ACLDataChannelTest,
                                                 AclDataChannel::PacketPriority::kLow));
   }
 
-  test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kHandle1, 2));
+  test_device()->SendCommandChannelPacket(bt::testing::NumberOfCompletedPacketsPacket(kHandle1, 2));
   RunLoopUntilIdle();
 
   EXPECT_EQ(2u, packet_count);
@@ -1445,7 +1418,7 @@ TEST_F(ACLDataChannelTest,
                                                AclDataChannel::PacketPriority::kLow));
   }
 
-  test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kHandle0, 2));
+  test_device()->SendCommandChannelPacket(bt::testing::NumberOfCompletedPacketsPacket(kHandle0, 2));
   RunLoopUntilIdle();
 
   EXPECT_EQ(2u, packet_count);
@@ -1515,7 +1488,7 @@ TEST_F(ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDif
                                                AclDataChannel::PacketPriority::kLow));
   }
 
-  test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kHandle0, 2));
+  test_device()->SendCommandChannelPacket(bt::testing::NumberOfCompletedPacketsPacket(kHandle0, 2));
   RunLoopUntilIdle();
 
   EXPECT_EQ(2u, packet_count);
@@ -1656,7 +1629,8 @@ TEST_F(ACLDataChannelTest, SendingPacketsUpdatesSendMetrics) {
     ASSERT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                AclDataChannel::PacketPriority::kLow));
     RunLoopFor(kSendLatency);
-    test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kHandle0, 1));
+    test_device()->SendCommandChannelPacket(
+        bt::testing::NumberOfCompletedPacketsPacket(kHandle0, 1));
     RunLoopUntilIdle();
   }
 

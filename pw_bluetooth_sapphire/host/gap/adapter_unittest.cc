@@ -36,7 +36,6 @@ const DeviceAddress kTestAddr2(DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0
 const DeviceAddress kTestAddrBrEdr(DeviceAddress::Type::kBREDR, {3, 0, 0, 0, 0, 0});
 
 const hci::VendorFeaturesBits kVendorFeaturesBits = hci::VendorFeaturesBits::kSetAclPriorityCommand;
-const bt_vendor_features_t kVendorFeatures = BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND;
 
 class AdapterTest : public TestingBase {
  public:
@@ -45,7 +44,7 @@ class AdapterTest : public TestingBase {
 
   void SetUp() override { SetUp(/*sco_enabled=*/true); }
 
-  void SetUp(bool sco_enabled, bt_vendor_features_t vendor_features = kVendorFeatures) {
+  void SetUp(bool sco_enabled, hci::VendorFeaturesBits vendor_features = kVendorFeaturesBits) {
     set_vendor_features(vendor_features);
     TestingBase::SetUp(sco_enabled);
 
@@ -55,8 +54,7 @@ class AdapterTest : public TestingBase {
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     adapter_ = Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(),
                                std::optional(std::move(l2cap)));
-    test_device()->StartCmdChannel(test_cmd_chan());
-    test_device()->StartAclChannel(test_acl_chan());
+    StartTestDevice();
   }
 
   void TearDown() override {
@@ -163,7 +161,8 @@ TEST_F(AdapterTest, InitializeNoBREDR) {
 
 TEST_F(AdapterTest, InitializeQueriesAndroidExtensionsCapabilitiesIfSupported) {
   TearDown();
-  SetUp(/*sco_enabled=*/true, /*vendor_features=*/BT_VENDOR_FEATURES_ANDROID_VENDOR_EXTENSIONS);
+  SetUp(/*sco_enabled=*/true,
+        /*vendor_features=*/hci::VendorFeaturesBits::kAndroidVendorExtensions);
 
   bool success;
   int init_cb_count = 0;
@@ -185,7 +184,8 @@ TEST_F(AdapterTest, InitializeQueriesAndroidExtensionsCapabilitiesIfSupported) {
 
 TEST_F(AdapterTest, InitializeQueryAndroidExtensionsCapabilitiesFailureHandled) {
   TearDown();
-  SetUp(/*sco_enabled=*/true, /*vendor_features=*/BT_VENDOR_FEATURES_ANDROID_VENDOR_EXTENSIONS);
+  SetUp(/*sco_enabled=*/true,
+        /*vendor_features=*/hci::VendorFeaturesBits::kAndroidVendorExtensions);
 
   bool success;
   int init_cb_count = 0;

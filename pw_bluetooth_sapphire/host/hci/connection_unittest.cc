@@ -111,7 +111,7 @@ TEST_F(ConnectionTest, Getters) {
   ASSERT_TRUE(connection->ltk().has_value());
   EXPECT_EQ(hci_spec::LinkKey(), connection->ltk().value());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(ConnectionTest, AclLinkKeyAndTypeAccessors) {
@@ -125,7 +125,7 @@ TEST_F(ConnectionTest, AclLinkKeyAndTypeAccessors) {
   ASSERT_TRUE(connection->ltk_type().has_value());
   EXPECT_EQ(kLinkKeyType, connection->ltk_type().value());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_P(LinkTypeConnectionTest, Disconnect) {
@@ -214,8 +214,9 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   EXPECT_EQ(handle0_packet_count, kBufferInfo.max_num_packets());
   EXPECT_EQ(handle1_packet_count, 0u);
 
-  const auto disconnect_status_rsp = testing::DisconnectStatusResponsePacket();
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle0), &disconnect_status_rsp);
+  const auto disconnect_status_rsp = bt::testing::DisconnectStatusResponsePacket();
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle0),
+                        &disconnect_status_rsp);
 
   conn0->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
   RunLoopUntilIdle();
@@ -225,7 +226,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
 
   // Disconnection Complete handler should clear controller packet counts, so packet for |kHandle1|
   // should be sent.
-  DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle0));
+  DynamicByteBuffer disconnection_complete(bt::testing::DisconnectionCompletePacket(kHandle0));
   test_device()->SendCommandChannelPacket(disconnection_complete);
   RunLoopUntilIdle();
 
@@ -237,7 +238,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
                          hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle1));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle1));
 }
 
 // In remote disconnection, Connection::Disconnect is not called. Instead,
@@ -300,7 +301,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
 
   // Disconnection Complete handler should clear controller packet counts, so packet for |kHandle1|
   // should be sent.
-  DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle0));
+  DynamicByteBuffer disconnection_complete(bt::testing::DisconnectionCompletePacket(kHandle0));
   test_device()->SendCommandChannelPacket(disconnection_complete);
   RunLoopUntilIdle();
 
@@ -316,14 +317,14 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   // have been sent.
   EXPECT_EQ(handle1_packet_count, 1u);
 
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle1));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle1));
 }
 
 TEST_F(ConnectionTest, StartEncryptionFailsAsLowEnergyPeripheral) {
   auto conn = NewLEConnection(hci_spec::ConnectionRole::kPeripheral);
   conn->set_ltk(hci_spec::LinkKey());
   EXPECT_FALSE(conn->StartEncryption());
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(ConnectionTest, StartEncryptionSucceedsAsLowEnergyCentral) {
@@ -331,8 +332,8 @@ TEST_F(ConnectionTest, StartEncryptionSucceedsAsLowEnergyCentral) {
   auto ltk = hci_spec::LinkKey();
   conn->set_ltk(ltk);
   EXPECT_TRUE(conn->StartEncryption());
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::LEStartEncryptionPacket(kTestHandle, ltk.rand(),
-                                                                        ltk.ediv(), ltk.value()));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::LEStartEncryptionPacket(
+                                           kTestHandle, ltk.rand(), ltk.ediv(), ltk.value()));
 }
 
 TEST_F(ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
@@ -340,7 +341,7 @@ TEST_F(ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
   conn->set_link_key(hci_spec::LinkKey(), kLinkKeyType);
   EXPECT_TRUE(conn->StartEncryption());
   EXPECT_CMD_PACKET_OUT(test_device(),
-                        testing::SetConnectionEncryption(kTestHandle, /*enable=*/true));
+                        bt::testing::SetConnectionEncryption(kTestHandle, /*enable=*/true));
 }
 
 TEST_P(LinkTypeConnectionTest, DisconnectError) {
@@ -378,7 +379,7 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 TEST_P(LinkTypeConnectionTest, StartEncryptionNoLinkKey) {
   auto conn = NewConnection();
   EXPECT_FALSE(conn->StartEncryption());
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 // HCI Command Status event is received with an error status.
@@ -416,7 +417,7 @@ TEST_F(ConnectionTest, LEStartEncryptionFailsAtStatus) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
@@ -447,7 +448,7 @@ TEST_F(ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
   // changed event.
   RunLoopUntilIdle();
   EXPECT_FALSE(callback);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 // HCI Command Status event is received with an error status.
@@ -479,7 +480,7 @@ TEST_F(ConnectionTest, AclStartEncryptionFailsAtStatus) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
@@ -507,7 +508,7 @@ TEST_F(ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
   // Callback shouldn't be called until the controller sends an encryption changed event.
   RunLoopUntilIdle();
   EXPECT_FALSE(callback);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
@@ -538,7 +539,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
 
   RunLoopUntilIdle();
   EXPECT_FALSE(callback);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 const StaticByteBuffer kEncryptionChangeEventEnabled(0x08,  // HCI Encryption Change event code
@@ -637,16 +638,16 @@ TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
 
   // Send the encryption change failure. The host should disconnect the link as a result.
   EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
-  test_device()->SendCommandChannelPacket(
-      testing::EncryptionChangeEventPacket(hci_spec::StatusCode::kConnectionTerminatedMICFailure,
-                                           kTestHandle, hci_spec::EncryptionStatus::kOff));
+  test_device()->SendCommandChannelPacket(bt::testing::EncryptionChangeEventPacket(
+      hci_spec::StatusCode::kConnectionTerminatedMICFailure, kTestHandle,
+      hci_spec::EncryptionStatus::kOff));
   RunLoopUntilIdle();
   EXPECT_FALSE(peer_disconnect_callback_received);
 
   // Send the disconnection complete resulting from the encryption failure (this usually does not
   // correspond to the Disconnect command sent by hci::Connection, which will cause a later
   // subsequent event).
-  test_device()->SendCommandChannelPacket(testing::DisconnectionCompletePacket(
+  test_device()->SendCommandChannelPacket(bt::testing::DisconnectionCompletePacket(
       kTestHandle, hci_spec::StatusCode::kConnectionTerminatedMICFailure));
   RunLoopUntilIdle();
   EXPECT_TRUE(peer_disconnect_callback_received);
@@ -785,7 +786,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
 
   // Test will fail if the connection sends a response without ignoring these
   // events.
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(ConnectionTest, LELongTermKeyRequestNoKey) {
@@ -887,7 +888,7 @@ TEST_F(ConnectionTest,
   // Should register connection with ACL Data Channel.
   auto conn0 = NewACLConnection(hci_spec::ConnectionRole::kCentral, kHandle);
 
-  testing::MockController::DataCallback data_cb = [](const ByteBuffer& packet) {};
+  bt::testing::MockController::DataCallback data_cb = [](const ByteBuffer& packet) {};
   size_t packet_count = 0;
   auto data_cb_wrapper = [&data_cb, &packet_count](const ByteBuffer& packet) {
     packet_count++;
@@ -922,10 +923,10 @@ TEST_F(ConnectionTest,
     EXPECT_EQ(packet[sizeof(hci_spec::ACLDataHeader)], payload1);
   };
 
-  const auto disconnect_status_rsp = testing::DisconnectStatusResponsePacket();
-  DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle));
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle), &disconnect_status_rsp,
-                        &disconnection_complete);
+  const auto disconnect_status_rsp = bt::testing::DisconnectStatusResponsePacket();
+  DynamicByteBuffer disconnection_complete(bt::testing::DisconnectionCompletePacket(kHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle),
+                        &disconnect_status_rsp, &disconnection_complete);
 
   // Disconnect |conn0| by destroying it. The received disconnection complete event will cause the
   // handler to unregister the link and clear pending packets.
@@ -949,8 +950,8 @@ TEST_F(ConnectionTest,
   EXPECT_EQ(packet_count, 2 * kBrEdrBufferInfo.max_num_packets());
 
   conn1.reset();
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle), &disconnect_status_rsp,
-                        &disconnection_complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle),
+                        &disconnect_status_rsp, &disconnection_complete);
   RunLoopUntilIdle();
 }
 
@@ -972,7 +973,7 @@ TEST_F(ConnectionTest, PeerDisconnectCallback) {
   RunLoopUntilIdle();
   EXPECT_EQ(0u, cb_count);
 
-  DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle));
+  DynamicByteBuffer disconnection_complete(bt::testing::DisconnectionCompletePacket(kHandle));
   test_device()->SendCommandChannelPacket(disconnection_complete);
   RunLoopUntilIdle();
 

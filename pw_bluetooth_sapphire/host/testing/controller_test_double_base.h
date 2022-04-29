@@ -14,6 +14,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_packet.h"
 
 namespace bt::testing {
 
@@ -25,16 +28,21 @@ class ControllerTestDoubleBase {
   ControllerTestDoubleBase();
   virtual ~ControllerTestDoubleBase();
 
-  // Closes all open bt-hci protocol channels.
-  void Stop();
+  // Sets a callback that will be called when an error is signaled with SignalError().
+  void set_error_callback(fit::callback<void(zx_status_t)> callback) {
+    error_cb_ = std::move(callback);
+  }
+
+  // Closes all open channels and signals |status| to the error callback.
+  void Stop(zx_status_t status = ZX_ERR_PEER_CLOSED);
 
   // Sends the given packet over this FakeController's command channel endpoint.
-  // Retuns the result of the write operation on the command channel.
+  // Returns the result of the write operation on the command channel.
   zx_status_t SendCommandChannelPacket(const ByteBuffer& packet);
 
   // Sends the given packet over this FakeController's ACL data channel
   // endpoint.
-  // Retuns the result of the write operation on the channel.
+  // Returns the result of the write operation on the channel.
   zx_status_t SendACLDataChannelPacket(const ByteBuffer& packet);
 
   // Sends the given packet over this ControllerTestDouble's SCO data channel
@@ -42,42 +50,42 @@ class ControllerTestDoubleBase {
   // Returns the result of the write operation on the channel.
   zx_status_t SendScoDataChannelPacket(const ByteBuffer& packet);
 
-  // Immediately closes the command channel endpoint.
-  void CloseCommandChannel();
-
-  // Immediately closes the ACL data channel endpoint.
-  void CloseACLDataChannel();
-
-  // Immediately closes the SCO data channel endpoint.
-  void CloseScoDataChannel();
+  // Sends the given packet over this FakeController's Snoop channel endpoint.
+  // Returns the result of the write operation on the channel.
+  void SendSnoopChannelPacket(const ByteBuffer& packet, bt_hci_snoop_type_t packet_type,
+                              bool is_received);
 
   // Immediately closes the Snoop channel endpoint.
   void CloseSnoopChannel();
 
-  // Starts listening for command/event packets on the given channel.
-  // Returns false if already listening on a command channel
-  bool StartCmdChannel(zx::channel chan);
+  // Starts listening for event packets with the given callback.
+  void StartCmdChannel(fit::function<void(std::unique_ptr<hci::EventPacket>)> packet_cb);
 
-  // Starts listening for acl packets on the given channel.
-  // Returns false if already listening on a acl channel
-  bool StartAclChannel(zx::channel chan);
+  // Starts listening for ACL packets with the given callback.
+  void StartAclChannel(fit::function<void(std::unique_ptr<hci::ACLDataPacket>)> packet_cb);
 
-  // Starts listening for SCO packets on the given channel.
-  // Returns false if already listening on a SCO channel
-  bool StartScoChannel(zx::channel chan);
+  // Starts listening for SCO packets with the given callback.
+  void StartScoChannel(fit::function<void(std::unique_ptr<hci::ScoDataPacket>)> packet_cb);
 
   // Starts listening for snoop packets on the given channel.
   // Returns false if already listening on a snoop channel
   bool StartSnoopChannel(zx::channel chan);
 
+  // Called by test fixtures to send packets:
+  void HandleCommandPacket(std::unique_ptr<hci::CommandPacket> packet);
+  void HandleACLPacket(std::unique_ptr<hci::ACLDataPacket> packet);
+  void HandleScoPacket(std::unique_ptr<hci::ScoDataPacket> packet);
+
  protected:
-  // Getters for our channel endpoints.
-  const zx::channel& command_channel() const { return cmd_channel_; }
-  const zx::channel& acl_data_channel() const { return acl_channel_; }
-  const zx::channel& sco_data_channel() const { return sco_channel_; }
+  void SignalError(zx_status_t status) {
+    if (error_cb_) {
+      error_cb_(status);
+    }
+  }
+
   const zx::channel& snoop_channel() const { return snoop_channel_; }
 
-  // Called when there is an incoming command packet.
+  // Called when there is an outgoing command packet.
   virtual void OnCommandPacketReceived(
       const PacketView<hci_spec::CommandHeader>& command_packet) = 0;
 
@@ -88,31 +96,14 @@ class ControllerTestDoubleBase {
   virtual void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) = 0;
 
  private:
-  // Read and handle packets received over the channels.
-  void HandleCommandPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                           zx_status_t wait_status, const zx_packet_signal_t* signal);
-  void HandleACLPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                       zx_status_t wait_status, const zx_packet_signal_t* signal);
-  void HandleScoPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                       zx_status_t wait_status, const zx_packet_signal_t* signal);
-
-  // Sends the given packet over this FakeController's Snoop channel
-  // endpoint.
-  // Retuns the result of the write operation on the channel.
-  void SendSnoopChannelPacket(const ByteBuffer& packet, bt_hci_snoop_type_t packet_type,
-                              bool is_received);
-
-  zx::channel cmd_channel_;
-  zx::channel acl_channel_;
-  zx::channel sco_channel_;
   zx::channel snoop_channel_;
 
-  async::WaitMethod<ControllerTestDoubleBase, &ControllerTestDoubleBase::HandleCommandPacket>
-      cmd_channel_wait_{this};
-  async::WaitMethod<ControllerTestDoubleBase, &ControllerTestDoubleBase::HandleACLPacket>
-      acl_channel_wait_{this};
-  async::WaitMethod<ControllerTestDoubleBase, &ControllerTestDoubleBase::HandleScoPacket>
-      sco_channel_wait_{this};
+  // Send inbound packets to the host stack:
+  fit::function<void(std::unique_ptr<hci::EventPacket>)> send_event_;
+  fit::function<void(std::unique_ptr<hci::ACLDataPacket>)> send_acl_packet_;
+  fit::function<void(std::unique_ptr<hci::ScoDataPacket>)> send_sco_packet_;
+
+  fit::callback<void(zx_status_t)> error_cb_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTestDoubleBase);
 };

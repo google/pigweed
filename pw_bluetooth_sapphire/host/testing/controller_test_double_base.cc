@@ -4,6 +4,7 @@
 
 #include "controller_test_double_base.h"
 
+#include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
 #include <zircon/device/bt-hci.h>
 #include <zircon/status.h>
@@ -23,56 +24,24 @@ ControllerTestDoubleBase::~ControllerTestDoubleBase() {
   // virtual methods of this class.
 }
 
-bool ControllerTestDoubleBase::StartCmdChannel(zx::channel chan) {
-  if (cmd_channel_.is_valid()) {
-    return false;
-  }
+void SignalError(zx_status_t status);
 
-  cmd_channel_ = std::move(chan);
-  cmd_channel_wait_.set_object(cmd_channel_.get());
-  cmd_channel_wait_.set_trigger(ZX_CHANNEL_READABLE | ZX_CHANNEL_PEER_CLOSED);
-  zx_status_t status = cmd_channel_wait_.Begin(async_get_default_dispatcher());
-  if (status != ZX_OK) {
-    cmd_channel_.reset();
-    bt_log(WARN, "fake-hci", "failed to start command channel: %s", zx_status_get_string(status));
-    return false;
-  }
-  return true;
+// Sets a callback that will be called when an error is signaled with SignalError().
+void SetErrorCallback(fit::callback<void(zx_status_t)> callback);
+
+void ControllerTestDoubleBase::StartCmdChannel(
+    fit::function<void(std::unique_ptr<hci::EventPacket>)> packet_cb) {
+  send_event_ = std::move(packet_cb);
 }
 
-bool ControllerTestDoubleBase::StartAclChannel(zx::channel chan) {
-  if (acl_channel_.is_valid()) {
-    return false;
-  }
-
-  acl_channel_ = std::move(chan);
-  acl_channel_wait_.set_object(acl_channel_.get());
-  acl_channel_wait_.set_trigger(ZX_CHANNEL_READABLE | ZX_CHANNEL_PEER_CLOSED);
-  zx_status_t status = acl_channel_wait_.Begin(async_get_default_dispatcher());
-  if (status != ZX_OK) {
-    acl_channel_.reset();
-    bt_log(WARN, "fake-hci", "failed to start ACL channel: %s", zx_status_get_string(status));
-    return false;
-  }
-  return true;
+void ControllerTestDoubleBase::StartAclChannel(
+    fit::function<void(std::unique_ptr<hci::ACLDataPacket>)> packet_cb) {
+  send_acl_packet_ = std::move(packet_cb);
 }
 
-bool ControllerTestDoubleBase::StartScoChannel(zx::channel chan) {
-  if (sco_channel_.is_valid()) {
-    bt_log(WARN, "fake-hci", "failed to start SCO channel because a channel is already registered");
-    return false;
-  }
-
-  sco_channel_ = std::move(chan);
-  sco_channel_wait_.set_object(sco_channel_.get());
-  sco_channel_wait_.set_trigger(ZX_CHANNEL_READABLE | ZX_CHANNEL_PEER_CLOSED);
-  zx_status_t status = sco_channel_wait_.Begin(async_get_default_dispatcher());
-  if (status != ZX_OK) {
-    sco_channel_.reset();
-    bt_log(WARN, "fake-hci", "failed to start SCO channel: %s", zx_status_get_string(status));
-    return false;
-  }
-  return true;
+void ControllerTestDoubleBase::StartScoChannel(
+    fit::function<void(std::unique_ptr<hci::ScoDataPacket>)> packet_cb) {
+  send_sco_packet_ = std::move(packet_cb);
 }
 
 bool ControllerTestDoubleBase::StartSnoopChannel(zx::channel chan) {
@@ -83,47 +52,84 @@ bool ControllerTestDoubleBase::StartSnoopChannel(zx::channel chan) {
   return true;
 }
 
-void ControllerTestDoubleBase::Stop() {
-  CloseCommandChannel();
-  CloseACLDataChannel();
+void ControllerTestDoubleBase::Stop(zx_status_t status) {
+  send_event_ = nullptr;
+  send_acl_packet_ = nullptr;
+  send_sco_packet_ = nullptr;
   CloseSnoopChannel();
+  SignalError(status);
 }
 
 zx_status_t ControllerTestDoubleBase::SendCommandChannelPacket(const ByteBuffer& packet) {
-  zx_status_t status = cmd_channel_.write(0, packet.data(), packet.size(), /*handles=*/nullptr, 0);
-  if (status != ZX_OK) {
-    bt_log(WARN, "fake-hci", "failed to write to control channel: %s",
-           zx_status_get_string(status));
-    return status;
+  if (!send_event_) {
+    return ZX_ERR_IO_REFUSED;
   }
 
+  if (packet.size() < sizeof(hci_spec::EventHeader)) {
+    return ZX_ERR_IO_INVALID;
+  }
+
+  std::unique_ptr<hci::EventPacket> event =
+      hci::EventPacket::New(packet.size() - sizeof(hci_spec::EventHeader));
+  event->mutable_view()->mutable_data().Write(packet);
+
+  if (event->view().header().parameter_total_size != event->view().payload_size()) {
+    return ZX_ERR_IO_INVALID;
+  }
+
+  event->InitializeFromBuffer();
+
+  send_event_(std::move(event));
   SendSnoopChannelPacket(packet, BT_HCI_SNOOP_TYPE_EVT, /*is_received=*/true);
 
   return ZX_OK;
 }
 
 zx_status_t ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer& packet) {
-  zx_status_t status = acl_channel_.write(0, packet.data(), packet.size(), /*handles=*/nullptr, 0);
-  if (status != ZX_OK) {
-    bt_log(WARN, "fake-hci", "failed to write to ACL data channel: %s",
-           zx_status_get_string(status));
-    return status;
+  if (!send_acl_packet_) {
+    return ZX_ERR_IO_REFUSED;
   }
 
+  if (packet.size() < sizeof(hci_spec::ACLDataHeader)) {
+    return ZX_ERR_IO_INVALID;
+  }
+
+  std::unique_ptr<hci::ACLDataPacket> acl_packet =
+      hci::ACLDataPacket::New(packet.size() - sizeof(hci_spec::ACLDataHeader));
+  acl_packet->mutable_view()->mutable_data().Write(packet);
+
+  if (acl_packet->view().header().data_total_length != acl_packet->view().payload_size()) {
+    return ZX_ERR_IO_INVALID;
+  }
+
+  acl_packet->InitializeFromBuffer();
+
+  send_acl_packet_(std::move(acl_packet));
   SendSnoopChannelPacket(packet, BT_HCI_SNOOP_TYPE_ACL, /*is_received=*/true);
 
   return ZX_OK;
 }
 
 zx_status_t ControllerTestDoubleBase::SendScoDataChannelPacket(const ByteBuffer& packet) {
-  zx_status_t status =
-      sco_channel_.write(0, packet.data(), packet.size(), /*handles=*/nullptr, /*num_handles=*/0);
-  if (status != ZX_OK) {
-    bt_log(WARN, "fake-hci", "failed to write to SCO data channel: %s",
-           zx_status_get_string(status));
-    return status;
+  if (!send_sco_packet_) {
+    return ZX_ERR_IO_REFUSED;
   }
 
+  if (packet.size() < sizeof(hci_spec::SynchronousDataHeader)) {
+    return ZX_ERR_IO_INVALID;
+  }
+
+  std::unique_ptr<hci::ScoDataPacket> sco_packet =
+      hci::ScoDataPacket::New(packet.size() - sizeof(hci_spec::SynchronousDataHeader));
+  sco_packet->mutable_view()->mutable_data().Write(packet);
+
+  if (sco_packet->view().header().data_total_length != sco_packet->view().payload_size()) {
+    return ZX_ERR_IO_INVALID;
+  }
+
+  sco_packet->InitializeFromBuffer();
+
+  send_sco_packet_(std::move(sco_packet));
   SendSnoopChannelPacket(packet, BT_HCI_SNOOP_TYPE_SCO, /*is_received=*/true);
 
   return ZX_OK;
@@ -148,132 +154,32 @@ void ControllerTestDoubleBase::SendSnoopChannelPacket(const ByteBuffer& packet,
   }
 }
 
-void ControllerTestDoubleBase::CloseCommandChannel() {
-  if (cmd_channel_.is_valid()) {
-    cmd_channel_wait_.Cancel();
-    cmd_channel_wait_.set_object(ZX_HANDLE_INVALID);
-    cmd_channel_.reset();
-  }
-}
-
-void ControllerTestDoubleBase::CloseACLDataChannel() {
-  if (acl_channel_.is_valid()) {
-    acl_channel_wait_.Cancel();
-    acl_channel_wait_.set_object(ZX_HANDLE_INVALID);
-    acl_channel_.reset();
-  }
-}
-
-void ControllerTestDoubleBase::CloseScoDataChannel() {
-  if (sco_channel_.is_valid()) {
-    sco_channel_wait_.Cancel();
-    sco_channel_wait_.set_object(ZX_HANDLE_INVALID);
-    sco_channel_.reset();
-  }
-}
-
 void ControllerTestDoubleBase::CloseSnoopChannel() {
   if (snoop_channel_.is_valid()) {
     snoop_channel_.reset();
   }
 }
 
-void ControllerTestDoubleBase::HandleCommandPacket(async_dispatcher_t* dispatcher,
-                                                   async::WaitBase* wait, zx_status_t wait_status,
-                                                   const zx_packet_signal_t* signal) {
-  StaticByteBuffer<hci_spec::kMaxCommandPacketPayloadSize> buffer;
-  uint32_t read_size;
-  zx_status_t status = cmd_channel_.read(0u, buffer.mutable_data(), /*handles=*/nullptr,
-                                         hci_spec::kMaxCommandPacketPayloadSize, 0, &read_size,
-                                         /*actual_handles=*/nullptr);
-  ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
-  if (status < 0) {
-    if (status == ZX_ERR_PEER_CLOSED) {
-      bt_log(INFO, "fake-hci", "command channel was closed");
-    } else {
-      bt_log(ERROR, "fake-hci", "failed to read on cmd channel: %s", zx_status_get_string(status));
-    }
-    CloseCommandChannel();
-    return;
-  }
-
-  if (read_size < sizeof(hci_spec::CommandHeader)) {
-    bt_log(ERROR, "fake-hci", "malformed command packet received");
-  } else {
-    MutableBufferView view(buffer.mutable_data(), read_size);
-    PacketView<hci_spec::CommandHeader> packet(&view, read_size - sizeof(hci_spec::CommandHeader));
-    SendSnoopChannelPacket(packet.data(), BT_HCI_SNOOP_TYPE_CMD, /*is_received=*/false);
-    OnCommandPacketReceived(packet);
-  }
-
-  status = wait->Begin(dispatcher);
-  if (status != ZX_OK) {
-    bt_log(ERROR, "fake-hci", "failed to wait on cmd channel: %s", zx_status_get_string(status));
-    CloseCommandChannel();
-  }
+void ControllerTestDoubleBase::HandleCommandPacket(std::unique_ptr<hci::CommandPacket> packet) {
+  // Post the packet to simulate the async channel operations in production.
+  async::PostTask(async_get_default_dispatcher(), [this, packet = std::move(packet)]() {
+    SendSnoopChannelPacket(packet->view().data(), BT_HCI_SNOOP_TYPE_CMD, /*is_received=*/false);
+    OnCommandPacketReceived(packet->view());
+  });
 }
 
-void ControllerTestDoubleBase::HandleACLPacket(async_dispatcher_t* dispatcher,
-                                               async::WaitBase* wait, zx_status_t wait_status,
-                                               const zx_packet_signal_t* signal) {
-  StaticByteBuffer<hci_spec::kMaxACLPayloadSize + sizeof(hci_spec::ACLDataHeader)> buffer;
-  uint32_t read_size;
-  zx_status_t status = acl_channel_.read(0u, buffer.mutable_data(), /*handles=*/nullptr,
-                                         buffer.size(), 0, &read_size, /*actual_handles=*/nullptr);
-  ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
-  if (status < 0) {
-    if (status == ZX_ERR_PEER_CLOSED) {
-      bt_log(INFO, "fake-hci", "ACL channel was closed");
-    } else {
-      bt_log(ERROR, "fake-hci", "failed to read on ACL channel: %s", zx_status_get_string(status));
-    }
-
-    CloseACLDataChannel();
-    return;
-  }
-
-  BufferView view(buffer.data(), read_size);
-  SendSnoopChannelPacket(view, BT_HCI_SNOOP_TYPE_ACL, /*is_received=*/false);
-  OnACLDataPacketReceived(view);
-
-  status = wait->Begin(dispatcher);
-  if (status != ZX_OK) {
-    bt_log(ERROR, "fake-hci", "failed to wait on ACL channel: %s", zx_status_get_string(status));
-    CloseACLDataChannel();
-  }
+void ControllerTestDoubleBase::HandleACLPacket(std::unique_ptr<hci::ACLDataPacket> packet) {
+  async::PostTask(async_get_default_dispatcher(), [this, packet = std::move(packet)]() {
+    SendSnoopChannelPacket(packet->view().data(), BT_HCI_SNOOP_TYPE_ACL, /*is_received=*/false);
+    OnACLDataPacketReceived(packet->view().data());
+  });
 }
 
-void ControllerTestDoubleBase::HandleScoPacket(async_dispatcher_t* dispatcher,
-                                               async::WaitBase* wait, zx_status_t wait_status,
-                                               const zx_packet_signal_t* signal) {
-  StaticByteBuffer<hci_spec::kMaxSynchronousDataPacketPayloadSize +
-                   sizeof(hci_spec::SynchronousDataHeader)>
-      buffer;
-  uint32_t read_size;
-  zx_status_t status =
-      sco_channel_.read(0u, buffer.mutable_data(), /*handles=*/nullptr, buffer.size(),
-                        /*num_handles=*/0, &read_size, /*actual_handles=*/nullptr);
-  ZX_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
-  if (status != ZX_OK) {
-    if (status == ZX_ERR_PEER_CLOSED) {
-      bt_log(INFO, "fake-hci", "SCO channel was closed");
-    } else {
-      bt_log(ERROR, "fake-hci", "failed to read on SCO channel: %s", zx_status_get_string(status));
-    }
-
-    CloseScoDataChannel();
-    return;
-  }
-
-  BufferView view(buffer.data(), read_size);
-  SendSnoopChannelPacket(view, BT_HCI_SNOOP_TYPE_SCO, /*is_received=*/false);
-  OnScoDataPacketReceived(view);
-
-  status = wait->Begin(dispatcher);
-  if (status != ZX_OK) {
-    bt_log(ERROR, "fake-hci", "failed to wait on SCO channel: %s", zx_status_get_string(status));
-    CloseScoDataChannel();
-  }
+void ControllerTestDoubleBase::HandleScoPacket(std::unique_ptr<hci::ScoDataPacket> packet) {
+  async::PostTask(async_get_default_dispatcher(), [this, packet = std::move(packet)]() {
+    SendSnoopChannelPacket(packet->view().data(), BT_HCI_SNOOP_TYPE_SCO, /*is_received=*/false);
+    OnScoDataPacketReceived(packet->view().data());
+  });
 }
 
 }  // namespace bt::testing

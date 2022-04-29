@@ -103,7 +103,8 @@ class CommandHandlerTest : public TestingBase {
 };
 
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
-  const auto kEventPacket = testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
+  const auto kEventPacket =
+      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<DecodableCommandCompleteEvent> event;
@@ -119,7 +120,7 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
 
 TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
   const auto kEventPacket =
-      testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kCommandDisallowed);
+      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kCommandDisallowed);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<hci::Error> error;
@@ -134,7 +135,8 @@ TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
 }
 
 TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
-  const auto kEventPacket = testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
+  const auto kEventPacket =
+      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<hci::Error> error;
@@ -151,7 +153,7 @@ TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
   const auto kTestEventPacket = MakeTestEventPacket();
   const auto kStatusEventPacket =
-      testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::kSuccess);
+      bt::testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket, &kTestEventPacket);
 
   std::optional<DecodableEvent> event;
@@ -198,7 +200,7 @@ TEST_F(CommandHandlerTest, AddEventHandlerDecodeError) {
 
 TEST_F(CommandHandlerTest, SendCommandFinishOnStatus) {
   const auto kStatusEventPacket =
-      testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::kSuccess);
+      bt::testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket);
 
   size_t cb_count = 0;

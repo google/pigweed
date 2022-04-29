@@ -69,6 +69,7 @@ source_set("testing") {
     "fake_sco_data_channel.cc",
     "fake_sco_data_channel.h",
     "mock_acl_data_channel.h",
+    "mock_hci_wrapper.h",
   ]
 
   public_deps = [ ":transport" ]

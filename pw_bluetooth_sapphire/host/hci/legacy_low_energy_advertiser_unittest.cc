@@ -56,8 +56,7 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
 
     advertiser_ = std::make_unique<LegacyLowEnergyAdvertiser>(transport()->WeakPtr());
 
-    test_device()->StartCmdChannel(test_cmd_chan());
-    test_device()->StartAclChannel(test_acl_chan());
+    StartTestDevice();
   }
 
   void TearDown() override {

@@ -24,6 +24,7 @@ source_set("testing") {
     "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/transport",
+    "//src/connectivity/bluetooth/core/bt-host/transport:testing",
     "//src/lib/testing/loop_fixture",
   ]
 }

@@ -9,7 +9,8 @@
 
 namespace bt::hci {
 namespace {
-using testing::FakeController;
+
+using bt::testing::FakeController;
 using TestingBase = bt::testing::ControllerTest<FakeController>;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using LEAdvertisingState = FakeController::LEAdvertisingState;
@@ -39,8 +40,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
 
     advertiser_ = std::make_unique<ExtendedLowEnergyAdvertiser>(transport()->WeakPtr());
 
-    this->test_device()->StartCmdChannel(test_cmd_chan());
-    this->test_device()->StartAclChannel(test_acl_chan());
+    StartTestDevice();
   }
 
   void TearDown() override {

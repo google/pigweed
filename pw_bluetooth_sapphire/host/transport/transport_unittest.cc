@@ -75,7 +75,7 @@ TEST_F(TransportDeathTest, AttachInspectBeforeInitializeACLDataChannelCrashes) {
   EXPECT_DEATH_IF_SUPPORTED(transport()->AttachInspect(inspector.GetRoot()), ".*");
 }
 
-TEST_F(TransportTest, ScoChannelClosed) {
+TEST_F(TransportTest, HciErrorClosesTransportWithSco) {
   StartTestDevice();
 
   size_t closed_cb_count = 0;
@@ -85,7 +85,7 @@ TEST_F(TransportTest, ScoChannelClosed) {
       DataBufferInfo(/*max_data_length=*/1, /*max_num_packets=*/1)));
   RunLoopUntilIdle();
 
-  test_device()->CloseScoDataChannel();
+  test_device()->Stop(ZX_ERR_PEER_CLOSED);
   RunLoopUntilIdle();
   EXPECT_EQ(closed_cb_count, 1u);
 }

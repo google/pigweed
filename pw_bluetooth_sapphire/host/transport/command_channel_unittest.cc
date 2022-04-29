@@ -1255,7 +1255,7 @@ TEST_F(CommandChannelTest, TransportClosedCallback) {
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
   transport()->SetTransportClosedCallback(closed_cb);
 
-  async::PostTask(dispatcher(), [this] { test_device()->CloseCommandChannel(); });
+  async::PostTask(dispatcher(), [this] { test_device()->Stop(); });
   RunLoopUntilIdle();
   EXPECT_TRUE(closed_cb_called);
 }
@@ -1483,13 +1483,6 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
                        hci_spec::StatusCode::kSuccess                       // Command succeeded
       );
 
-  EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
-  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
-  EXPECT_CMD_PACKET_OUT(test_device(), excl_two_cmd, &rsp_excl_two_status);
-  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
-  EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
-  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
-
   StartTestDevice();
 
   CommandChannel::TransactionId id1, id2, id3;
@@ -1572,40 +1565,40 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
     exclusive_cb_count++;
   };
 
-  auto packet = CommandPacket::New(kExclusiveOne);
-  id1 = cmd_channel()->SendExclusiveCommand(std::move(packet), exclusive_cb.share(),
+  EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
+  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
+  id1 = cmd_channel()->SendExclusiveCommand(CommandPacket::New(kExclusiveOne), exclusive_cb.share(),
                                             kExclOneCompleteEvent, {kExclusiveTwo});
-  packet = CommandPacket::New(kNonExclusive);
-  cmd_channel()->SendCommand(std::move(packet), nonexclusive_cb.share());
-
+  cmd_channel()->SendCommand(CommandPacket::New(kNonExclusive), nonexclusive_cb.share());
   RunLoopUntilIdle();
-
-  // Should have received the Status but not the result.
+  // Should have received the ExclusiveOne status but not the complete. ExclusiveTwo should be
+  // queued.
   EXPECT_EQ(1u, exclusive_cb_count);
-  // But the WriteLocalName should be fine.
+  // NonExclusive should be completed.
   EXPECT_EQ(1u, nonexclusive_cb_count);
 
-  // Sending the complete will finish the command and add the next command.
+  // Sending the ExclusiveOne complete will send the ExclusiveTwo command, queue another
+  // ExclusiveOne command, and send a NonExclusive command.
+  EXPECT_CMD_PACKET_OUT(test_device(), excl_two_cmd, &rsp_excl_two_status);
+  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
   test_device()->SendCommandChannelPacket(rsp_one_complete);
   RunLoopUntilIdle();
+  EXPECT_EQ(3u, exclusive_cb_count);     // +2: rsp_one_complete, rsp_excl_two_status
+  EXPECT_EQ(2u, nonexclusive_cb_count);  // +1: nonexclusive_complete
 
-  EXPECT_EQ(3u, exclusive_cb_count);
-  EXPECT_EQ(2u, nonexclusive_cb_count);
-
-  // Finish out the ExclusiveTwo
+  // Complete ExclusiveTwo and send a NonExclusive. The queued ExclusiveOne should be sent.
+  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
   test_device()->SendCommandChannelPacket(rsp_two_complete);
-  packet = CommandPacket::New(kNonExclusive);
-  cmd_channel()->SendCommand(std::move(packet), nonexclusive_cb.share());
+  cmd_channel()->SendCommand(CommandPacket::New(kNonExclusive), nonexclusive_cb.share());
   RunLoopUntilIdle();
+  EXPECT_EQ(5u, exclusive_cb_count);     // +2: rsp_two_complete, rsp_excl_one_status
+  EXPECT_EQ(3u, nonexclusive_cb_count);  // +1: nonexclusive_complete
 
-  EXPECT_EQ(5u, exclusive_cb_count);
-  EXPECT_EQ(3u, nonexclusive_cb_count);
-
-  // Finish the second kExclusiveOne
+  // Finish the second ExclusiveOne
   test_device()->SendCommandChannelPacket(rsp_one_complete);
   RunLoopUntilIdle();
-
-  EXPECT_EQ(6u, exclusive_cb_count);
+  EXPECT_EQ(6u, exclusive_cb_count);  // +1: rsp_one_complete
   EXPECT_EQ(3u, nonexclusive_cb_count);
 }
 

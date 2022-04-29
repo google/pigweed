@@ -74,8 +74,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
 
-  test_device()->StartCmdChannel(test_cmd_chan());
-  test_device()->StartAclChannel(test_acl_chan());
+  StartTestDevice();
 
   Result<> status = fitx::ok();
   int status_cb_called = 0;
@@ -206,8 +205,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_error_bytes);
 
-  test_device()->StartCmdChannel(test_cmd_chan());
-  test_device()->StartAclChannel(test_acl_chan());
+  StartTestDevice();
 
   Result<> status = fitx::ok();
   int status_cb_called = 0;
@@ -349,8 +347,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
                        0x04,  // parameter_total_size (4 byte payload)
                        2, 0x0F, 0xF0, hci_spec::StatusCode::kSuccess);
 
-  test_device()->StartCmdChannel(test_cmd_chan());
-  test_device()->StartAclChannel(test_acl_chan());
+  StartTestDevice();
   test_device()->SendCommandChannelPacket(command_status_queue_increase);
 
   // Parallel commands should all run before commands that require success.

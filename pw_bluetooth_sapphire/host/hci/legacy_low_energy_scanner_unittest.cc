@@ -15,9 +15,9 @@
 namespace bt::hci {
 namespace {
 
-using testing::FakeController;
-using testing::FakePeer;
-using TestingBase = testing::ControllerTest<FakeController>;
+using bt::testing::FakeController;
+using bt::testing::FakePeer;
+using TestingBase = bt::testing::ControllerTest<FakeController>;
 
 constexpr zx::duration kScanPeriod = zx::sec(10);
 constexpr zx::duration kScanResponseTimeout = zx::sec(2);
@@ -60,8 +60,7 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
                                                         transport()->WeakPtr(), dispatcher());
     scanner_->set_delegate(this);
 
-    test_device()->StartCmdChannel(test_cmd_chan());
-    test_device()->StartAclChannel(test_acl_chan());
+    StartTestDevice();
   }
 
   void TearDown() override {

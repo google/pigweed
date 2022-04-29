@@ -25,8 +25,8 @@
 namespace bt::hci {
 namespace {
 
-using testing::FakeController;
-using testing::FakePeer;
+using bt::testing::FakeController;
+using bt::testing::FakePeer;
 
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using TestingBase = bt::testing::ControllerTest<FakeController>;
@@ -76,8 +76,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
     advertiser_ = std::unique_ptr<T>(CreateAdvertiserInternal());
 
     test_device()->set_num_supported_advertising_sets(0xEF);
-    test_device()->StartCmdChannel(test_cmd_chan());
-    test_device()->StartAclChannel(test_acl_chan());
+    StartTestDevice();
   }
 
   void TearDown() override {
