@@ -68,8 +68,9 @@ template("pw_python_action") {
     # pip lockfile, prevents pip from running in parallel with other Python
     # actions.
     "--lockfile",
-    rebase_path("$root_out_dir/pip.lock", root_build_dir),
 
+    # Use a single lockfile for the entire out directory.
+    "pip.lock",
     "--default-toolchain=$default_toolchain",
     "--current-toolchain=$current_toolchain",
   ]

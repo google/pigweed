@@ -44,6 +44,7 @@ template("pw_host_tool") {
     script = "$dir_pw_build/py/pw_build/host_tool.py"
     args = _script_args
     deps = [ invoker.tool ]
+    python_deps = [ "$dir_pw_cli/py" ]
     stamp = true
   }
 }

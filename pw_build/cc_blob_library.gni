@@ -60,6 +60,7 @@ template("pw_cc_blob_library") {
                              "public_deps",
                            ])
     module = "pw_build.generate_cc_blob_library"
+    python_deps = [ "$dir_pw_build/py" ]
 
     _header = "${target_gen_dir}/public/" + invoker.out_header
     _source =
