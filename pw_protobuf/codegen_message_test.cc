@@ -205,6 +205,40 @@ TEST(CodegenMessage, Inequality) {
   EXPECT_FALSE(one == two);
 }
 
+TEST(CodegenMessage, ConstCopyable) {
+  const Pigweed::Message one{
+      .magic_number = 0x49u,
+      .ziggy = -111,
+      .cycles = 0x40302010fecaaddeu,
+      .ratio = -1.42f,
+      .error_message = "not a typewriter",
+      .pigweed = {.status = Bool::FILE_NOT_FOUND},
+      .bin = Pigweed::Protobuf::Binary::ZERO,
+      .proto = {.bin = Proto::Binary::OFF,
+                .pigweed_pigweed_bin = Pigweed::Pigweed::Binary::ZERO,
+                .pigweed_protobuf_bin = Pigweed::Protobuf::Binary::ZERO,
+                .meta =
+                    {
+                        .file_name = "/etc/passwd",
+                        .status = Pigweed::Protobuf::Compiler::Status::FUBAR,
+                        .protobuf_bin = Pigweed::Protobuf::Binary::ONE,
+                        .pigweed_bin = Pigweed::Pigweed::Binary::ONE,
+                    }},
+      .data = {std::byte{0x10},
+               std::byte{0x20},
+               std::byte{0x30},
+               std::byte{0x40},
+               std::byte{0x50},
+               std::byte{0x60},
+               std::byte{0x70},
+               std::byte{0x80}},
+      .bungle = -111,
+  };
+  Pigweed::Message two = one;
+
+  EXPECT_TRUE(one == two);
+}
+
 PW_MODIFY_DIAGNOSTICS_POP();
 
 TEST(CodegenMessage, Read) {
