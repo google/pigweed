@@ -125,7 +125,7 @@ Status SocketStream::DoWrite(std::span<const std::byte> data) {
 
   if (bytes_sent < 0 || static_cast<size_t>(bytes_sent) != data.size()) {
     if (errno == EPIPE) {
-      // An EPIPE indicates that the connection is close.  Return an OutOfRange
+      // An EPIPE indicates that the connection is closed.  Return an OutOfRange
       // error.
       return Status::OutOfRange();
     }
@@ -138,6 +138,13 @@ Status SocketStream::DoWrite(std::span<const std::byte> data) {
 StatusWithSize SocketStream::DoRead(ByteSpan dest) {
   ssize_t bytes_rcvd = recv(connection_fd_, dest.data(), dest.size_bytes(), 0);
   if (bytes_rcvd == 0) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      // Socket timed out when trying to read.
+      // This should only occur if SO_RCVTIMEO was configured to be nonzero, or
+      // if the socket was opened with the O_NONBLOCK flag to prevent any
+      // blocking when performing reads or writes.
+      return StatusWithSize::ResourceExhausted();
+    }
     // Remote peer has closed the connection.
     Close();
     return StatusWithSize::OutOfRange();
