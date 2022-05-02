@@ -128,6 +128,7 @@ Permitted Headers
    * ``<atomic>`` -- not all MCUs natively support atomic operations
    * ``<bitset>`` -- conversions to or from strings are disallowed
    * ``<functional>`` -- do **not** use ``std::function``
+   * ``<mutex>`` -- can use ``std::lock_guard``, prefer :ref:`module-pw_sync`
    * ``<new>`` -- for placement new
    * ``<numeric>`` -- be wary of code size with multiple template instantiations
 
@@ -137,7 +138,7 @@ Permitted Headers
    * Dynamic containers (``<list>``, ``<map>``, ``<set>``, ``<vector>``, etc.)
    * Streams (``<iostream>``, ``<ostream>``, ``<fstream>``, etc.)
    * ``<exception>``
-   * ``<future>``, ``<mutex>``, ``<thread>``
+   * ``<future>``, ``<thread>``
    * ``<memory>``
    * ``<regex>``
    * ``<scoped_allocator>``
