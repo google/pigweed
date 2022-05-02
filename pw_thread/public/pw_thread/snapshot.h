@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <optional>
 #include <string_view>
 
 #include "pw_bytes/span.h"
