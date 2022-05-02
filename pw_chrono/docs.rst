@@ -511,6 +511,17 @@ Example in C++
     }
   }
 
+Protobuf
+========
+Sometimes it's desirable to communicate high resolution time points and
+durations from one device to another. For this, ``pw_chrono`` provides protobuf
+representations of clock parameters (``pw.chrono.ClockParameters``) and time
+points (``pw.chrono.TimePoint``). These types are less succinct than simple
+single-purpose fields like ``ms_since_boot`` or ``unix_timestamp``, but allow
+timestamps to be communicated in terms of the tick rate of a device, potentially
+providing significantly higher resolution. Logging, tracing, and system state
+snapshots are use cases that benefit from this additional resolution.
+
 ---------------
 Software Timers
 ---------------

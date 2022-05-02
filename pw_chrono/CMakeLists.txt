@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_library(pw_chrono.epoch
   HEADERS
@@ -53,6 +54,13 @@ pw_add_module_library(pw_chrono.simulated_system_clock
   PUBLIC_DEPS
     pw_chrono.system_clock
     pw_sync.interrupt_spin_lock
+)
+
+pw_proto_library(pw_chrono.protos
+  SOURCES
+    chrono.proto
+  PREFIX
+    pw_chrono
 )
 
 # TODO(ewout): Renable this once we've resolved the backend variable definition

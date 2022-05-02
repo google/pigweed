@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -98,6 +99,11 @@ pw_test("system_timer_facade_test") {
     "$dir_pw_sync:thread_notification",
     pw_chrono_SYSTEM_TIMER_BACKEND,
   ]
+}
+
+pw_proto_library("protos") {
+  sources = [ "chrono.proto" ]
+  prefix = "pw_chrono"
 }
 
 pw_doc_group("docs") {
