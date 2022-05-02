@@ -40,14 +40,14 @@ class ServerTest : public TestingBase {
 
  protected:
   void SetUp() override {
-    l2cap_ = l2cap::testing::FakeL2cap::Create();
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
     l2cap_->set_channel_callback([this](auto fake_chan) {
       channel_ = std::move(fake_chan);
       set_fake_chan(channel_->AsWeakPtr());
     });
     l2cap_->AddACLConnection(kTestHandle1, hci_spec::ConnectionRole::kPeripheral, nullptr, nullptr);
     l2cap_->AddACLConnection(kTestHandle2, hci_spec::ConnectionRole::kPeripheral, nullptr, nullptr);
-    server_ = std::make_unique<Server>(l2cap_);
+    server_ = std::make_unique<Server>(l2cap_.get());
   }
 
   void TearDown() override {
@@ -58,7 +58,7 @@ class ServerTest : public TestingBase {
 
   Server* server() const { return server_.get(); }
 
-  fbl::RefPtr<l2cap::testing::FakeL2cap> l2cap() const { return l2cap_; }
+  l2cap::testing::FakeL2cap* l2cap() const { return l2cap_.get(); }
 
   RegistrationHandle AddSPP(sdp::Server::ConnectCallback cb = NopConnectCallback) {
     ServiceRecord record;
@@ -116,7 +116,7 @@ class ServerTest : public TestingBase {
 
  private:
   fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
-  fbl::RefPtr<l2cap::testing::FakeL2cap> l2cap_;
+  std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   std::unique_ptr<Server> server_;
 };
 

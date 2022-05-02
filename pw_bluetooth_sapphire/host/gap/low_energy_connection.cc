@@ -28,14 +28,13 @@ static const hci_spec::LEPreferredConnectionParameters kDefaultPreferredConnecti
 LowEnergyConnection::LowEnergyConnection(
     fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
-    ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-    fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-    fxl::WeakPtr<hci::Transport> transport)
+    ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::L2cap* l2cap,
+    fxl::WeakPtr<gatt::GATT> gatt, fxl::WeakPtr<hci::Transport> transport)
     : peer_(std::move(peer)),
       link_(std::move(link)),
       connection_options_(connection_options),
       conn_mgr_(std::move(conn_mgr)),
-      l2cap_(std::move(l2cap)),
+      l2cap_(l2cap),
       gatt_(std::move(gatt)),
       transport_(std::move(transport)),
       peer_disconnect_callback_(std::move(peer_disconnect_cb)),

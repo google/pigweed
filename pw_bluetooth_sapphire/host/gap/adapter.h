@@ -67,11 +67,11 @@ class Adapter {
  public:
   static constexpr const char* kMetricsInspectNodeName = "metrics";
 
-  // Optionally, a FakeL2cap  may be passed for testing purposes as |l2cap|. If nullopt is
+  // Optionally, a FakeL2cap  may be passed for testing purposes as |l2cap|. If nullptr is
   // passed, then the Adapter will create and initialize its own L2cap.
   static std::unique_ptr<Adapter> Create(fxl::WeakPtr<hci::Transport> hci,
                                          fxl::WeakPtr<gatt::GATT> gatt,
-                                         std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap);
+                                         std::unique_ptr<l2cap::L2cap> l2cap = nullptr);
   virtual ~Adapter() = default;
 
   // Returns a uniquely identifier for this adapter on the current system.

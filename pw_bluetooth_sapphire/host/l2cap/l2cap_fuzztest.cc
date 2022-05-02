@@ -48,14 +48,14 @@ class DataFuzzTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = AdoptRef(
-        new l2cap::ChannelManager(transport()->acl_data_channel(), /*random_channel_ids=*/true));
+    channel_manager_ = std::make_unique<l2cap::ChannelManager>(transport()->acl_data_channel(),
+                                                               /*random_channel_ids=*/true);
 
     StartTestDevice();
   }
 
   ~DataFuzzTest() override {
-    domain_ = nullptr;
+    channel_manager_ = nullptr;
     TestingBase::TearDown();
   }
 
@@ -114,27 +114,27 @@ class DataFuzzTest : public TestingBase {
   }
 
   void RegisterService() {
-    domain_->RegisterService(l2cap::kAVDTP, l2cap::ChannelParameters(),
-                             [this](fbl::RefPtr<l2cap::Channel> chan) {
-                               if (!chan) {
-                                 return;
-                               }
-                               chan->Activate(/*rx_callback=*/[](auto) {}, /*closed_callback=*/
-                                              [this, id = chan->id()] { channels_.erase(id); });
-                               channels_.emplace(chan->id(), std::move(chan));
-                             });
+    channel_manager_->RegisterService(
+        l2cap::kAVDTP, l2cap::ChannelParameters(), [this](fbl::RefPtr<l2cap::Channel> chan) {
+          if (!chan) {
+            return;
+          }
+          chan->Activate(/*rx_callback=*/[](auto) {}, /*closed_callback=*/
+                         [this, id = chan->id()] { channels_.erase(id); });
+          channels_.emplace(chan->id(), std::move(chan));
+        });
   }
 
   void ToggleConnection() {
     if (connection_) {
       acl_data_channel()->UnregisterLink(kHandle);
-      domain_->RemoveConnection(kHandle);
+      channel_manager_->RemoveConnection(kHandle);
       connection_ = false;
       return;
     }
 
     acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
-    domain_->AddACLConnection(
+    channel_manager_->AddACLConnection(
         kHandle, hci_spec::ConnectionRole::kCentral, /*link_error_callback=*/[] {},
         /*security_callback=*/[](auto, auto, auto) {});
     connection_ = true;
@@ -142,7 +142,7 @@ class DataFuzzTest : public TestingBase {
 
  private:
   FuzzedDataProvider data_;
-  fbl::RefPtr<l2cap::L2cap> domain_;
+  std::unique_ptr<l2cap::ChannelManager> channel_manager_;
   bool connection_;
   std::unordered_map<l2cap::ChannelId, fbl::RefPtr<l2cap::Channel>> channels_;
 };

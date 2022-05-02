@@ -67,7 +67,7 @@ enum class DisconnectReason : uint8_t {
 class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci, PeerCache* peer_cache,
-                         DeviceAddress local_address, fbl::RefPtr<l2cap::L2cap> l2cap,
+                         DeviceAddress local_address, l2cap::L2cap* l2cap,
                          bool use_interlaced_scan);
   ~BrEdrConnectionManager();
 
@@ -329,7 +329,7 @@ class BrEdrConnectionManager final {
 
   const DeviceAddress local_address_;
 
-  fbl::RefPtr<l2cap::L2cap> l2cap_;
+  l2cap::L2cap* l2cap_;
 
   // Interregator for new connections to pass.
   BrEdrInterrogator interrogator_;

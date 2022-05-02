@@ -17,7 +17,8 @@ class FakeChannel;
 // layers for unit testing.
 class FakeL2cap final : public L2cap {
  public:
-  inline static fbl::RefPtr<FakeL2cap> Create() { return fbl::AdoptRef(new FakeL2cap()); }
+  FakeL2cap() = default;
+  ~FakeL2cap() override;
 
   void AttachInspect(inspect::Node& parent, std::string name) override {}
 
@@ -85,8 +86,6 @@ class FakeL2cap final : public L2cap {
   }
 
  private:
-  friend class fbl::RefPtr<FakeL2cap>;
-
   // TODO(armansito): Consider moving the following logic into an internal fake
   // that is L2CAP-specific.
   struct ChannelData {
@@ -110,9 +109,6 @@ class FakeL2cap final : public L2cap {
     // LE-only callbacks
     LEConnectionParameterUpdateCallback le_conn_param_cb;
   };
-
-  FakeL2cap() = default;
-  ~FakeL2cap() override;
 
   LinkData* RegisterInternal(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                              bt::LinkType link_type, LinkErrorCallback link_error_callback);

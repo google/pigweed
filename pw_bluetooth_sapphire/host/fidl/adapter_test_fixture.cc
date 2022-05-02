@@ -12,9 +12,10 @@ using TestingBase = bt::testing::ControllerTest<FakeController>;
 void AdapterTestFixture::SetUp() {
   TestingBase::SetUp();
 
-  data_plane_ = bt::l2cap::testing::FakeL2cap::Create();
+  auto l2cap = std::make_unique<bt::l2cap::testing::FakeL2cap>();
+  l2cap_ = l2cap.get();
   gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
-  adapter_ = bt::gap::Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), data_plane_);
+  adapter_ = bt::gap::Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), std::move(l2cap));
 
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
@@ -34,11 +35,11 @@ void AdapterTestFixture::TearDown() {
   RunLoopUntilIdle();
 
   // Cleanly shut down the stack.
+  l2cap_ = nullptr;
   adapter_ = nullptr;
   RunLoopUntilIdle();
 
   gatt_ = nullptr;
-  data_plane_ = nullptr;
   TestingBase::TearDown();
 }
 

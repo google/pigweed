@@ -25,7 +25,7 @@ class LowEnergyConnector final {
       PeerId peer_id, LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
       zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
       fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
-      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, fbl::RefPtr<l2cap::L2cap> l2cap,
+      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::L2cap* l2cap,
       fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb);
 
   // Start interrogating peer using an already established |connection|. |cb| will be called with
@@ -33,8 +33,8 @@ class LowEnergyConnector final {
   static std::unique_ptr<LowEnergyConnector> CreateInboundConnector(
       PeerId peer_id, std::unique_ptr<hci::LowEnergyConnection> connection,
       LowEnergyConnectionOptions options, fxl::WeakPtr<hci::Transport> transport,
-      PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-      fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb);
+      PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::L2cap* l2cap,
+      fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb);
 
   // Instances should only be destroyed after the result callback is called (except for stack tear
   // down). Due to the asynchronous nature of cancelling the connection process, it is NOT safe to
@@ -67,9 +67,8 @@ class LowEnergyConnector final {
                      LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
                      zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport,
                      PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-                     fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
-                     fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                     ResultCallback cb);
+                     fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager, l2cap::L2cap* l2cap,
+                     fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb);
 
   static const char* StateToString(State);
 
@@ -115,7 +114,7 @@ class LowEnergyConnector final {
   PeerCache* peer_cache_;
 
   // Layer pointers to be passed to LowEnergyConnection.
-  fbl::RefPtr<l2cap::L2cap> l2cap_;
+  l2cap::L2cap* l2cap_;
   fxl::WeakPtr<gatt::GATT> gatt_;
 
   // True if this connector is connecting an outbound connection, false if it is connecting an

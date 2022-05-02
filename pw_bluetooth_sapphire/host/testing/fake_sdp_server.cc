@@ -10,7 +10,8 @@
 
 namespace bt::testing {
 
-FakeSdpServer::FakeSdpServer() : server_(sdp::Server(l2cap::testing::FakeL2cap::Create())) {}
+FakeSdpServer::FakeSdpServer()
+    : l2cap_(std::make_unique<l2cap::testing::FakeL2cap>()), server_(l2cap_.get()) {}
 
 void FakeSdpServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
   auto channel_cb = [this](fxl::WeakPtr<FakeDynamicChannel> channel) {

@@ -94,7 +94,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     test_device()->set_settings(settings);
 
     peer_cache_ = std::make_unique<PeerCache>();
-    l2cap_ = l2cap::testing::FakeL2cap::Create();
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
         transport()->WeakPtr(), &addr_delegate_, dispatcher(),
@@ -110,7 +110,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
         transport()->WeakPtr(), scanner_.get(), peer_cache_.get());
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
+        transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
         gatt_->AsWeakPtr(), discovery_manager_->GetWeakPtr(),
         fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()));
 
@@ -190,7 +190,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     }
   }
 
-  fbl::RefPtr<l2cap::testing::FakeL2cap> l2cap_;
+  std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
 
   hci::FakeLocalAddressDelegate addr_delegate_;
   std::unique_ptr<PeerCache> peer_cache_;

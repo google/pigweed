@@ -60,8 +60,8 @@ class L2capIntegrationTest : public TestingBase {
     InitializeACLDataChannel(bredr_buffer_info);
 
     // TODO(63074): Remove assumptions about channel ordering so we can turn random ids on.
-    l2cap_ =
-        AdoptRef(new ChannelManager(transport()->acl_data_channel(), /*random_channel_ids=*/false));
+    l2cap_ = std::make_unique<ChannelManager>(transport()->acl_data_channel(),
+                                              /*random_channel_ids=*/false);
 
     StartTestDevice();
 
@@ -175,7 +175,7 @@ class L2capIntegrationTest : public TestingBase {
   L2cap* l2cap() const { return l2cap_.get(); }
 
  private:
-  fbl::RefPtr<L2cap> l2cap_;
+  std::unique_ptr<l2cap::L2cap> l2cap_;
   l2cap::CommandId next_command_id_;
   std::unique_ptr<socket::SocketFactory<l2cap::Channel>> socket_factory_;
 

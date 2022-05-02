@@ -36,7 +36,7 @@ class BrEdrConnection final {
   using Request = BrEdrConnectionRequest;
   BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::BrEdrConnection> link,
                   fit::closure send_auth_request_cb, fit::callback<void()> disconnect_cb,
-                  fit::closure on_peer_disconnect_cb, fbl::RefPtr<l2cap::L2cap> l2cap,
+                  fit::closure on_peer_disconnect_cb, l2cap::L2cap* l2cap,
                   fxl::WeakPtr<hci::Transport> transport, std::optional<Request> request);
 
   ~BrEdrConnection();
@@ -93,7 +93,7 @@ class BrEdrConnection final {
   std::unique_ptr<hci::BrEdrConnection> link_;
   std::optional<Request> request_;
   std::unique_ptr<PairingState> pairing_state_;
-  fbl::RefPtr<l2cap::L2cap> domain_;
+  l2cap::L2cap* l2cap_;
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
   // Time this object was constructed.
   zx::time create_time_;

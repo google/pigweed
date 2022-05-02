@@ -582,7 +582,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
 
     peer_cache_ = std::make_unique<PeerCache>();
-    l2cap_ = l2cap::testing::FakeL2cap::Create();
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
 
     // Respond to BrEdrConnectionManager controller setup with success.
     EXPECT_CMD_PACKET_OUT(
@@ -591,7 +591,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
         &kWritePageTimeoutRsp);
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        transport()->WeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_, true);
+        transport()->WeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_.get(), true);
 
     StartTestDevice();
     RunLoopUntilIdle();
@@ -801,7 +801,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
  private:
   std::unique_ptr<BrEdrConnectionManager> connection_manager_;
   std::unique_ptr<PeerCache> peer_cache_;
-  fbl::RefPtr<l2cap::testing::FakeL2cap> l2cap_;
+  std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   int transaction_count_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManagerTest);

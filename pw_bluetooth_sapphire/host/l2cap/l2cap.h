@@ -23,8 +23,11 @@ struct ChannelParameters;
 // Represents the task domain that implements the host subsystem's data plane.
 // This domain runs on the thread it is created on, and is not thread-safe.
 // Protocols implemented here are: L2CAP.
-class L2cap : public fbl::RefCounted<L2cap> {
+class L2cap {
  public:
+  L2cap() = default;
+  virtual ~L2cap() = default;
+
   // Attach L2cap's inspect node as a child of |parent| with the given |name|
   static constexpr const char* kInspectNodeName = "l2cap";
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
@@ -136,14 +139,6 @@ class L2cap : public fbl::RefCounted<L2cap> {
   //
   // Has no effect if this L2cap is uninitialized or shut down.
   virtual void UnregisterService(l2cap::PSM psm) = 0;
-
- protected:
-  friend class fbl::RefPtr<L2cap>;
-  L2cap() = default;
-  virtual ~L2cap() = default;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2cap);
 };
 
 }  // namespace bt::l2cap

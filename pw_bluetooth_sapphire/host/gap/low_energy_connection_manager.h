@@ -84,7 +84,7 @@ class LowEnergyConnectionManager final {
   LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                              hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
-                             fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+                             l2cap::L2cap* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
                              fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
                              sm::SecurityManagerFactory sm_creator);
   ~LowEnergyConnectionManager();
@@ -280,10 +280,10 @@ class LowEnergyConnectionManager final {
   // connection parameters, etc). Expected to outlive this instance.
   PeerCache* peer_cache_;  // weak
 
-  // The reference to the data domain, used to interact with the L2CAP layer to
+  // The reference to L2CAP, used to interact with the L2CAP layer to
   // manage LE logical links, fixed channels, and LE-specific L2CAP signaling
   // events (e.g. connection parameter update).
-  fbl::RefPtr<l2cap::L2cap> l2cap_;
+  l2cap::L2cap* l2cap_;
 
   // The GATT layer reference, used to add and remove ATT data bearers and
   // service discovery.

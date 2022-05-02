@@ -37,6 +37,8 @@ class FakeSdpServer {
   sdp::Server* server() { return &server_; }
 
  private:
+  std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
+
   // The production SDP server associated with this FakeSdpServer,
   sdp::Server server_;
 

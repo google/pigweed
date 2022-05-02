@@ -49,7 +49,7 @@ class AdapterImpl final : public Adapter {
   // instance is created. The Adapter instance will use it for all of its
   // asynchronous tasks.
   explicit AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                       std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap);
+                       std::unique_ptr<l2cap::L2cap> l2cap);
   ~AdapterImpl() override;
 
   AdapterId identifier() const override { return identifier_; }
@@ -396,8 +396,9 @@ class AdapterImpl final : public Adapter {
   // devices.
   PeerCache peer_cache_;
 
-  // The data domain used by GAP to interact with L2CAP and RFCOMM layers.
-  fbl::RefPtr<l2cap::L2cap> l2cap_;
+  // L2CAP layer used by GAP. This must be destroyed after the following members because they raw
+  // pointers to this member.
+  std::unique_ptr<l2cap::L2cap> l2cap_;
 
   // The GATT profile. We use this reference to add and remove data bearers and
   // for service discovery.
@@ -435,13 +436,14 @@ class AdapterImpl final : public Adapter {
 };
 
 AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                         std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap)
+                         std::unique_ptr<l2cap::L2cap> l2cap)
     : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
       max_lmp_feature_page_index_(0),
       peer_cache_(),
+      l2cap_(std::move(l2cap)),
       gatt_(gatt),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
@@ -449,10 +451,6 @@ AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GA
   ZX_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
 
   init_seq_runner_ = std::make_unique<hci::SequentialCommandRunner>(dispatcher_, hci_);
-
-  if (l2cap.has_value()) {
-    l2cap_ = *l2cap;
-  }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   hci_->SetTransportClosedCallback([self] {
@@ -896,21 +894,14 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
 
   hci_->AttachInspect(adapter_node_);
 
-  // Create L2cap, if we haven't been provided one for testing. Doing so here lets us guarantee that
-  // AclDataChannel's lifetime is a superset of L2cap's lifetime.
+  // Create ChannelManager, if we haven't been provided one for testing. Doing so here lets us
+  // guarantee that AclDataChannel's lifetime is a superset of ChannelManager's lifetime.
   if (!l2cap_) {
-    // Initialize L2cap to make L2cap available for the next initialization step. The AclDataChannel
-    // must be initialized before creating L2cap.
-    auto l2cap =
-        AdoptRef(new l2cap::ChannelManager(hci_->acl_data_channel(), /*random_channel_ids=*/true));
-    if (!l2cap) {
-      bt_log(ERROR, "gap", "Failed to initialize Data L2cap");
-      CleanUp();
-      callback(false);
-      return;
-    }
-    l2cap->AttachInspect(adapter_node_, l2cap::L2cap::kInspectNodeName);
-    l2cap_ = l2cap;
+    // Initialize ChannelManager to make it available for the next initialization step. The
+    // AclDataChannel must be initialized before creating ChannelManager.
+    l2cap_ = std::make_unique<l2cap::ChannelManager>(hci_->acl_data_channel(),
+                                                     /*random_channel_ids=*/true);
+    l2cap_->AttachInspect(adapter_node_, l2cap::L2cap::kInspectNodeName);
   }
 
   // HCI_Set_Event_Mask
@@ -1014,7 +1005,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
       fit::bind_member<&AdapterImpl::OnLeAutoConnectRequest>(this));
 
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
-      hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, l2cap_, gatt_,
+      hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, l2cap_.get(), gatt_,
       le_discovery_manager_->GetWeakPtr(), sm::SecurityManager::Create);
   le_connection_manager_->AttachInspect(adapter_node_, kInspectLowEnergyConnectionManagerNodeName);
 
@@ -1027,7 +1018,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
     DeviceAddress local_bredr_address(DeviceAddress::Type::kBREDR, state_.controller_address());
 
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        hci_, &peer_cache_, local_bredr_address, l2cap_,
+        hci_, &peer_cache_, local_bredr_address, l2cap_.get(),
         state_.features().HasBit(0, hci_spec::LMPFeature::kInterlacedPageScan));
     bredr_connection_manager_->AttachInspect(adapter_node_, kInspectBrEdrConnectionManagerNodeName);
 
@@ -1041,7 +1032,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
     bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(hci_, mode, &peer_cache_);
     bredr_discovery_manager_->AttachInspect(adapter_node_, kInspectBrEdrDiscoveryManagerNodeName);
 
-    sdp_server_ = std::make_unique<sdp::Server>(l2cap_);
+    sdp_server_ = std::make_unique<sdp::Server>(l2cap_.get());
     sdp_server_->AttachInspect(adapter_node_);
 
     bredr_ = std::make_unique<BrEdrImpl>(this);
@@ -1191,8 +1182,8 @@ bool AdapterImpl::IsLeRandomAddressChangeAllowed() {
 
 std::unique_ptr<Adapter> Adapter::Create(fxl::WeakPtr<hci::Transport> hci,
                                          fxl::WeakPtr<gatt::GATT> gatt,
-                                         std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap) {
-  return std::make_unique<AdapterImpl>(hci, gatt, l2cap);
+                                         std::unique_ptr<l2cap::L2cap> l2cap) {
+  return std::make_unique<AdapterImpl>(hci, gatt, std::move(l2cap));
 }
 
 }  // namespace bt::gap

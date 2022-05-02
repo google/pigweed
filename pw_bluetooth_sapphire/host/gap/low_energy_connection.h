@@ -52,9 +52,8 @@ class LowEnergyConnection final : public sm::Delegate {
   LowEnergyConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
                       LowEnergyConnectionOptions connection_options,
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
-                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-                      fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                      fxl::WeakPtr<hci::Transport> transport);
+                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::L2cap* l2cap,
+                      fxl::WeakPtr<gatt::GATT> gatt, fxl::WeakPtr<hci::Transport> transport);
 
   // Notifies request callbacks and connection refs of the disconnection.
   ~LowEnergyConnection() override;
@@ -268,9 +267,8 @@ class LowEnergyConnection final : public sm::Delegate {
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
 
-  // Reference to the data plane is used to update the L2CAP layer to
-  // reflect the correct link security level.
-  fbl::RefPtr<l2cap::L2cap> l2cap_;
+  // Used to update the L2CAP layer to reflect the correct link security level.
+  l2cap::L2cap* l2cap_;
 
   // Reference to the GATT profile layer is used to initiate service discovery
   // and register the link.

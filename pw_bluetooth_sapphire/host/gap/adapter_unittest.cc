@@ -50,10 +50,9 @@ class AdapterTest : public TestingBase {
 
     transport_closed_called_ = false;
 
-    auto l2cap = l2cap::testing::FakeL2cap::Create();
+    auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>();
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
-    adapter_ = Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(),
-                               std::optional(std::move(l2cap)));
+    adapter_ = Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), std::move(l2cap));
     StartTestDevice();
   }
 
@@ -1088,7 +1087,7 @@ class AdapterConstructorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    l2cap_ = l2cap::testing::FakeL2cap::Create();
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
   }
 
@@ -1099,7 +1098,7 @@ class AdapterConstructorTest : public TestingBase {
   }
 
  protected:
-  fbl::RefPtr<l2cap::testing::FakeL2cap> l2cap_;
+  std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   std::unique_ptr<gatt::testing::FakeLayer> gatt_;
 };
 
@@ -1123,8 +1122,7 @@ TEST_F(AdapterConstructorTest, GattCallbacks) {
   EXPECT_EQ(set_persist_cb_count, 0);
   EXPECT_EQ(set_retrieve_cb_count, 0);
 
-  auto adapter =
-      Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), std::optional(std::move(l2cap_)));
+  auto adapter = Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), std::move(l2cap_));
 
   EXPECT_EQ(set_persist_cb_count, 1);
   EXPECT_EQ(set_retrieve_cb_count, 1);

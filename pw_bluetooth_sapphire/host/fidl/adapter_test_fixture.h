@@ -30,11 +30,11 @@ class AdapterTestFixture : public bt::testing::ControllerTest<bt::testing::FakeC
   fxl::WeakPtr<bt::gap::Adapter> adapter() const { return adapter_->AsWeakPtr(); }
   bt::gatt::testing::FakeLayer* gatt() const { return gatt_.get(); }
   std::unique_ptr<bt::gatt::testing::FakeLayer> take_gatt() { return std::move(gatt_); }
-  fbl::RefPtr<bt::l2cap::testing::FakeL2cap> l2cap() const { return data_plane_; }
+  bt::l2cap::testing::FakeL2cap* l2cap() const { return l2cap_; }
 
  private:
   std::unique_ptr<bt::gap::Adapter> adapter_;
-  fbl::RefPtr<bt::l2cap::testing::FakeL2cap> data_plane_;
+  bt::l2cap::testing::FakeL2cap* l2cap_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> gatt_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(AdapterTestFixture);

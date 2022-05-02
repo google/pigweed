@@ -14,11 +14,13 @@ const char* const kInspectPeerIdPropertyName = "peer_id";
 
 }
 
-BrEdrConnection::BrEdrConnection(
-    fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::BrEdrConnection> link,
-    fit::closure send_auth_request_cb, fit::callback<void()> disconnect_cb,
-    fit::closure on_peer_disconnect_cb, fbl::RefPtr<l2cap::L2cap> l2cap,
-    fxl::WeakPtr<hci::Transport> transport, std::optional<Request> request)
+BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer,
+                                 std::unique_ptr<hci::BrEdrConnection> link,
+                                 fit::closure send_auth_request_cb,
+                                 fit::callback<void()> disconnect_cb,
+                                 fit::closure on_peer_disconnect_cb, l2cap::L2cap* l2cap,
+                                 fxl::WeakPtr<hci::Transport> transport,
+                                 std::optional<Request> request)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
       link_(std::move(link)),
@@ -27,7 +29,7 @@ BrEdrConnection::BrEdrConnection(
           peer_, link_.get(), request_ && request_->AwaitingOutgoing(),
           std::move(send_auth_request_cb),
           fit::bind_member<&BrEdrConnection::OnPairingStateStatus>(this))),
-      domain_(std::move(l2cap)),
+      l2cap_(l2cap),
       sco_manager_(std::make_unique<sco::ScoConnectionManager>(
           peer_id_, link_->handle(), link_->peer_address(), link_->local_address(),
           std::move(transport))),
@@ -81,7 +83,7 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
   }
 
   bt_log(INFO, "gap-bredr", "opening l2cap channel on psm %#.4x", psm);
-  domain_->OpenL2capChannel(link().handle(), psm, params, std::move(cb));
+  l2cap_->OpenL2capChannel(link().handle(), psm, params, std::move(cb));
 }
 
 BrEdrConnection::ScoRequestHandle BrEdrConnection::OpenScoConnection(

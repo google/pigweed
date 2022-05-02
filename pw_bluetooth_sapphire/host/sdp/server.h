@@ -34,7 +34,7 @@ class Server final {
 
   // A new SDP server, which starts with just a ServiceDiscoveryService record.
   // Registers itself with |l2cap| when created.
-  explicit Server(fbl::RefPtr<l2cap::L2cap> l2cap);
+  explicit Server(l2cap::L2cap* l2cap);
   ~Server();
 
   // Attach SDP server inspect node as a child node of |parent|.
@@ -121,9 +121,8 @@ class Server final {
   // |conn|. Logs an error if channel not found.
   void Send(l2cap::Channel::UniqueId channel_id, ByteBufferPtr bytes);
 
-  // The data domain that owns the L2CAP layer.  Used to register callbacks for
-  // the channels of services registered.
-  fbl::RefPtr<l2cap::L2cap> l2cap_;
+  // Used to register callbacks for the channels of services registered.
+  l2cap::L2cap* l2cap_;
 
   struct InspectProperties {
     // Inspect hierarchy node representing the sdp server.
