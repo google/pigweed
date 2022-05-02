@@ -18,6 +18,7 @@ package pw.snapshot;
 option java_package = "pw.snapshot.proto";
 option java_outer_classname = "Snapshot";
 
+import "pw_chrono/chrono.proto";
 import "pw_cpu_exception_cortex_m_protos/cpu_state.proto";
 import "pw_log/proto/log.proto";
 import "pw_thread_protos/thread.proto";
@@ -81,9 +82,14 @@ message Snapshot {
   // pw_trace_tokenized buffer format for stored data.
   bytes trace_data = 21;
 
+  // Timestamps that mark when this snapshot occurred. This field is repeated
+  // to accommodate wall-clock time, time since boot, and/or the raw system
+  // clock value.
+  repeated pw.chrono.TimePoint timestamps = 22;
+
   // RESERVED FOR PIGWEED. Downstream projects may NOT write to these fields.
   // Encodes to two bytes of tag overhead.
-  reserved 22 to 1031;
+  reserved 23 to 1031;
 
   // RESERVED FOR USERS. Encodes to two or more bytes of tag overhead.
   reserved 1032 to max;

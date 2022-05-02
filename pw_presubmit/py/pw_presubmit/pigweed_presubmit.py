@@ -356,7 +356,6 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_persistent_ram',
     'pw_presubmit',
     'pw_ring_buffer',
-    'pw_snapshot',
     'pw_software_update',
     'pw_spi',
     'pw_stm32cube_build',

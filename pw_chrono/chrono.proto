@@ -89,3 +89,13 @@ message TimePoint {
   int64 timestamp = 1;                   // Required
   ClockParameters clock_parameters = 2;  // Required
 }
+
+// The time of a snapshot capture. Supports multiple timestamps to
+// cover multiple time bases or clocks (e.g. time since boot, time
+// from epoch, etc).
+//
+// This is an overlay proto for Snapshot, see more details here:
+// https://pigweed.dev/pw_snapshot/proto_format.html#module-specific-data
+message SnapshotTimestamps {
+  repeated TimePoint timestamps = 22;
+}

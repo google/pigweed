@@ -62,6 +62,7 @@ pw_proto_library("snapshot_proto") {
   sources = [ "pw_snapshot_protos/snapshot.proto" ]
   deps = [
     ":metadata_proto",
+    "$dir_pw_chrono:protos",
     "$dir_pw_cpu_exception_cortex_m:cpu_state_protos",
     "$dir_pw_log:protos",
     "$dir_pw_thread:protos",
