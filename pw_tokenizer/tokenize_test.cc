@@ -68,6 +68,28 @@ TEST(TokenizeString, ClassMember_MatchesHash) {
   EXPECT_EQ(Hash("???"), TokenizedWithinClass().kThisToken);
 }
 
+TEST(TokenizeString, WithinNonCapturingLambda) {
+  uint32_t non_capturing_lambda = [] {
+    return PW_TOKENIZE_STRING("Lambda!");
+  }();
+
+  EXPECT_EQ(Hash("Lambda!"), non_capturing_lambda);
+}
+
+TEST(TokenizeString, WithinCapturingLambda) {
+  bool executed_lambda = false;
+  uint32_t capturing_lambda = [&executed_lambda] {
+    if (executed_lambda) {
+      return PW_TOKENIZE_STRING("Never should be returned!");
+    }
+    executed_lambda = true;
+    return PW_TOKENIZE_STRING("Capturing lambda!");
+  }();
+
+  ASSERT_TRUE(executed_lambda);
+  EXPECT_EQ(Hash("Capturing lambda!"), capturing_lambda);
+}
+
 TEST(TokenizeString, Mask) {
   [[maybe_unused]] constexpr uint32_t token = PW_TOKENIZE_STRING("(O_o)");
   [[maybe_unused]] constexpr uint32_t masked_1 =
