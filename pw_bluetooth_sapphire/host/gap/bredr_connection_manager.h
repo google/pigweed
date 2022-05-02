@@ -20,7 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
@@ -67,7 +67,7 @@ enum class DisconnectReason : uint8_t {
 class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci, PeerCache* peer_cache,
-                         DeviceAddress local_address, l2cap::L2cap* l2cap,
+                         DeviceAddress local_address, l2cap::ChannelManager* l2cap,
                          bool use_interlaced_scan);
   ~BrEdrConnectionManager();
 
@@ -329,7 +329,7 @@ class BrEdrConnectionManager final {
 
   const DeviceAddress local_address_;
 
-  l2cap::L2cap* l2cap_;
+  l2cap::ChannelManager* l2cap_;
 
   // Interregator for new connections to pass.
   BrEdrInterrogator interrogator_;

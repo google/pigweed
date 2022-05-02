@@ -8,7 +8,8 @@
 #include <lib/async/default.h>
 #include <lib/async/time.h>
 
-#include "low_energy_connection_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap::internal {
 
@@ -28,8 +29,9 @@ static const hci_spec::LEPreferredConnectionParameters kDefaultPreferredConnecti
 LowEnergyConnection::LowEnergyConnection(
     fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
-    ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::L2cap* l2cap,
-    fxl::WeakPtr<gatt::GATT> gatt, fxl::WeakPtr<hci::Transport> transport)
+    ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+    fxl::WeakPtr<hci::Transport> transport)
     : peer_(std::move(peer)),
       link_(std::move(link)),
       connection_options_(connection_options),
@@ -133,7 +135,7 @@ void LowEnergyConnection::InitializeFixedChannels() {
     ZX_ASSERT(self->handle() == handle);
     self->OnSecurityRequest(level, std::move(cb));
   };
-  l2cap::L2cap::LEFixedChannels fixed_channels =
+  l2cap::ChannelManager::LEFixedChannels fixed_channels =
       l2cap_->AddLEConnection(link_->handle(), link_->role(), std::move(link_error_cb),
                               update_conn_params_cb, security_upgrade_cb);
 

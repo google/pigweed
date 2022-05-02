@@ -253,7 +253,7 @@ class ChannelManagerTest : public TestingBase {
     acl_data_channel_.set_send_packets_cb(fit::bind_member<&ChannelManagerTest::SendPackets>(this));
 
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
-    chanmgr_ = std::make_unique<ChannelManager>(&acl_data_channel_, /*random_channel_ids=*/false);
+    chanmgr_ = ChannelManager::Create(&acl_data_channel_, /*random_channel_ids=*/false);
     packet_rx_handler_ = [this](std::unique_ptr<hci::ACLDataPacket> packet) {
       acl_data_channel_.ReceivePacket(std::move(packet));
     };

@@ -6,19 +6,14 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 
 #include <lib/async/dispatcher.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
-#include <lib/trace/event.h>
 #include <zircon/compiler.h>
 
 #include <memory>
-#include <mutex>
 #include <unordered_map>
 
 #include <fbl/macros.h>
 
-#include "l2cap.h"
-#include "lib/async/cpp/executor.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -28,17 +23,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 
-namespace bt {
-
-namespace hci {
-class Transport;
-}  // namespace hci
-
-namespace l2cap {
-
-namespace internal {
-class LogicalLink;
-}  // namespace internal
+namespace bt::l2cap {
 
 // ChannelManager implements the "Channel Manager" control block of L2CAP. In
 // particular:
@@ -52,183 +37,130 @@ class LogicalLink;
 //     management bound to a single creation thread.
 //
 // There can be a single instance of ChannelManager for a HCI transport.
-//
-// THREAD-SAFETY:
-//
-// This object is not thread safe. Construction/destruction must happen on the
-// thread where this is used.
-class ChannelManager final : public L2cap {
+class ChannelManager {
  public:
-  using LinkErrorCallback = fit::closure;
-
-  // Creates L2CAP state for logical links and channels.
-  ChannelManager(hci::AclDataChannel* acl_data_channel, bool random_channel_ids);
-  ~ChannelManager() override;
-
-  // Returns a handler for data packets received from the Bluetooth controller bound to this object.
-  // It must be called from the creation thread, but it is safe to call past ChannelManager's
-  // lifetime.
-  hci::ACLPacketHandler MakeInboundDataHandler();
-
-  // Registers the ACL connection with the L2CAP layer. L2CAP channels can be
-  // opened on the logical link represented by |handle| after a call to this
-  // method.
-  //
-  // |link_error_callback| will be used to notify when a channel signals a link
-  // error.
-  //
-  // |security_callback| will be used to request an upgrade to the link security
-  // level. This can be triggered by dynamic L2CAP channel creation or by a
-  // service-level client via Channel::UpgradeSecurity().
-  //
-  // It is an error to register the same |handle| value more than once as either
-  // kind of channel without first unregistering it (asserted in debug builds).
-  void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-                        LinkErrorCallback link_error_callback,
-                        SecurityUpgradeCallback security_callback) override;
-
-  // Registers a LE connection with the L2CAP layer. L2CAP channels can be
-  // opened on the logical link represented by |handle| after a call to this
-  // method.
-  //
-  // |conn_param_callback| will be used to notify the caller if new connection
-  // parameters were accepted from the remote end of the link.
-  //
-  // |link_error_callback| will be used to notify when a channel signals a link
-  // error.
-  //
-  // |security_callback| will be used to request an upgrade to the link security
-  // level. This can be triggered by dynamic L2CAP channel creation or by a
-  // service-level client via Channel::UpgradeSecurity().
-  //
-  // It is an error to register the same |handle| value more than once as either
-  // kind of channel without first unregistering it (asserted in debug builds).
-  [[nodiscard]] LEFixedChannels AddLEConnection(
-      hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-      LinkErrorCallback link_error_callback,
-      LEConnectionParameterUpdateCallback conn_param_callback,
-      SecurityUpgradeCallback security_callback) override;
-
-  // Removes a connection. All incoming data packets on this link will be dropped. If the
-  // connection was previously registered, all corresponding Channels will be closed.
-  //
-  // NOTE: It is recommended that a link entry be removed AFTER the controller
-  // sends a HCI Disconnection Complete Event for the corresponding logical
-  // link. This is to prevent incorrectly buffering data if the controller has
-  // more packets to send after removing the link entry.
-  void RemoveConnection(hci_spec::ConnectionHandle handle) override;
-
-  // Assigns the security level of a logical link. Has no effect if |handle| has
-  // not been previously registered or the link is closed.
-  void AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
-                                    sm::SecurityProperties security) override;
-
-  // Opens the L2CAP fixed channel with |channel_id| over the logical link
-  // identified by |connection_handle| and starts routing packets. Returns
-  // nullptr if the channel is already open.
-  fbl::RefPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
-                                        ChannelId channel_id);
-
-  // Opens an out-bound connection-oriented L2CAP channel on the link specified by |handle| to the
-  // requested |psm| with the preferred parameters |params|.
-  // Returns a channel asynchronously via |callback|.
-  void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
-                        ChannelCallback cb) override;
-
-  // Register/Unregister a callback for incoming service connections.
-  // Incoming channels will be configured using using the preferred parameters |params|.
-  bool RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb) override;
-  void UnregisterService(PSM psm) override;
-
   // Information stored and returned for registered services that is needed to configure and forward
   // new channels for this service.
   using ServiceInfo = ServiceInfo<ChannelCallback>;
 
-  // Send a Connection Parameter Update Request on the LE signaling channel. When the Connection
-  // Parameter Update Response is received, |request_cb| will be called with the result, |accepted|.
-  //
-  // NOTE: The local Host must be an LE peripheral, and this request should only be sent if the
-  // peripheral or host does not support the Connection Parameters Request Link Layer Control
-  // Procedure (Core Spec v5.2, Vol 3, Part A, Sec 4.20).
-  void RequestConnectionParameterUpdate(
-      hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
-      ConnectionParameterUpdateRequestCallback request_cb) override;
+  struct LEFixedChannels {
+    fbl::RefPtr<l2cap::Channel> att;
+    fbl::RefPtr<l2cap::Channel> smp;
+  };
 
-  // Attach ChannelManager's inspect nodes as children of |parent|. |name| is the name of the
-  // ChannelManager node.
-  void AttachInspect(inspect::Node& parent, std::string name) override;
+  // Create a ChannelManager. FakeL2cap can be used instead in tests.
+  static std::unique_ptr<ChannelManager> Create(hci::AclDataChannel* acl_data_channel,
+                                                bool random_channel_ids);
+
+  virtual ~ChannelManager() = default;
+
+  // Attach ChannelManager's inspect node as a child of |parent| with the given |name|
+  static constexpr const char* kInspectNodeName = "l2cap";
+  virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
+
+  // Registers an ACL connection with the L2CAP layer. L2CAP channels can be opened on the logical
+  // link represented by |handle| after a call to this method. It is an error to register the same
+  // |handle| value more than once as either kind of channel without first unregistering it.
+  //
+  // |link_error_callback| will be used to notify when a channel signals a link error.
+  //
+  // |security_callback| will be used to request an upgrade to the link security level. This can be
+  // triggered by dynamic L2CAP channel creation or by a service-level client via
+  // Channel::UpgradeSecurity().
+  virtual void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+                                l2cap::LinkErrorCallback link_error_callback,
+                                l2cap::SecurityUpgradeCallback security_callback) = 0;
+
+  // Registers an LE connection with the L2CAP layer. L2CAP channels can be opened on the logical
+  // link represented by |handle| after a call to this method.  It is an error to register the same
+  // |handle| value more than once as either kind of channel without first unregistering it
+  // (asserted in debug builds).
+  //
+  // |conn_param_callback| will be used to notify the caller if new connection parameters were
+  // accepted from the remote end of the link.
+  //
+  // |link_error_callback| will be used to notify when a channel signals a link error.
+  //
+  // |security_callback| will be used to request an upgrade to the link security level. This can be
+  // triggered by dynamic L2CAP channel creation or by a service-level client via
+  // Channel::UpgradeSecurity().
+  //
+  // Returns the ATT and SMP fixed channels of this link.
+  [[nodiscard]] virtual LEFixedChannels AddLEConnection(
+      hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+      l2cap::LinkErrorCallback link_error_callback,
+      l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
+      l2cap::SecurityUpgradeCallback security_callback) = 0;
+
+  // Removes a previously registered connection. All corresponding Channels will be closed and all
+  // incoming data packets on this link will be dropped.
+  //
+  // NOTE: It is recommended that a link entry be removed AFTER the controller sends a HCI
+  // Disconnection Complete Event for the corresponding logical link. This is to prevent incorrectly
+  // buffering data if the controller has more packets to send after removing the link entry.
+  virtual void RemoveConnection(hci_spec::ConnectionHandle handle) = 0;
+
+  // Assigns the security level of a logical link. Has no effect if |handle| has not been previously
+  // registered or the link is closed.
+  virtual void AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
+                                            sm::SecurityProperties security) = 0;
+
+  // Send an LE Connection Parameter Update Request requesting |params| on the LE signaling channel
+  // of the LE connection represented by |handle|. This should only be used if the LE peripheral and
+  // LE central do not support the Connection Parameters Request Link Layer Control Procedure (Core
+  // Spec v5.2  Vol 3, Part A, Sec 4.20). This should only be called when the local host is an LE
+  // peripheral.
+  //
+  // |request_cb| will be called when a response (acceptance or rejection) is received.
+  virtual void RequestConnectionParameterUpdate(
+      hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
+      l2cap::ConnectionParameterUpdateRequestCallback request_cb) = 0;
+
+  // Opens the L2CAP fixed channel with |channel_id| over the logical link identified by
+  // |connection_handle| and starts routing packets.
+  //
+  // Returns nullptr if the channel is already open.
+  virtual fbl::RefPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
+                                                ChannelId channel_id) = 0;
+
+  // Open an outbound dynamic channel against a peer's Protocol/Service Multiplexing (PSM) code
+  // |psm| on a link identified by |handle| using the preferred channel parameters |params|. If the
+  // peer requires different higher priority parameters, the local device will accept those instead.
+  //
+  // |cb| will be called with the channel created to the remote, or nullptr if the channel creation
+  // resulted in an error.
+  virtual void OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
+                                l2cap::ChannelParameters params, l2cap::ChannelCallback cb) = 0;
+
+  // Registers a handler for peer-initiated dynamic channel requests that have the Protocol/Service
+  // Multiplexing (PSM) code |psm|. The local device will attempt to configure these channels using
+  // the preferred parameters |params|, but will accept different channel parameters required by the
+  // peer if they are higher priority.
+  //
+  // |cb| will be called with the channel created by each inbound connection request received.
+  // Handlers must be unregistered before they are replaced.
+  //
+  // Returns false if |psm| is invalid or already has a handler registered.
+  //
+  // Inbound connection requests with a PSM that has no registered handler will be rejected.
+  //
+  // TODO(fxbug.dev/99390): Dynamic PSMs may need their routing space (ACL or LE) identified
+  virtual bool RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                               l2cap::ChannelCallback callback) = 0;
+
+  // Removes the handler for inbound channel requests for the previously- registered service
+  // identified by |psm|. This only prevents new inbound channels from being opened but does not
+  // close already-open channels.
+  virtual void UnregisterService(l2cap::PSM psm) = 0;
 
   // Returns a pointer to the internal LogicalLink with the corresponding link |handle|, or nullptr
   // if none exists.
   // NOTE: This is intended ONLY for unit tests. Clients should use the other public methods to
   // interact with the link.
-  fxl::WeakPtr<internal::LogicalLink> LogicalLinkForTesting(hci_spec::ConnectionHandle handle);
-
- private:
-  // Called when an ACL data packet is received from the controller. This method
-  // is responsible for routing the packet to the corresponding LogicalLink.
-  void OnACLDataReceived(hci::ACLDataPacketPtr data_packet);
-
-  // Called by the various Register functions. Returns a pointer to the newly
-  // added link.
-  internal::LogicalLink* RegisterInternal(hci_spec::ConnectionHandle handle, bt::LinkType ll_type,
-                                          hci_spec::ConnectionRole role, size_t max_payload_size);
-
-  // If a service (identified by |psm|) requested has been registered, return a ServiceInfo object
-  // containing preferred channel parameters and a callback that passes an inbound channel to the
-  // registrant. The callback may be called repeatedly to pass multiple channels for |psm|, but
-  // should not be stored because the service may be unregistered at a later time. Calls for
-  // unregistered services return null.
-  std::optional<ServiceInfo> QueryService(hci_spec::ConnectionHandle handle, PSM psm);
-
-  // The "maximum size[s] of HCI ACL (excluding header) Data Packets... sent from the Host to the
-  // Controller" (Core Spec v5.3 Vol 4, Part E, 4.1.2) for fragmenting outbound data. Fragmented
-  // data will be passed contiguously as invocations of |acl_data_channel->SendPackets()|.
-  size_t max_acl_payload_size_;
-  size_t max_le_payload_size_;
-
-  hci::AclDataChannel* acl_data_channel_;
-
-  using LinkMap =
-      std::unordered_map<hci_spec::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
-  LinkMap ll_map_;
-  inspect::Node ll_node_;
-
-  // Stores packets received on a connection handle before a link for it has
-  // been created.
-  using PendingPacketMap =
-      std::unordered_map<hci_spec::ConnectionHandle, LinkedList<hci::ACLDataPacket>>;
-  PendingPacketMap pending_packets_;
-
-  // Store information required to create and forward channels for locally-
-  // hosted services.
-  struct ServiceData {
-    void AttachInspect(inspect::Node& parent);
-    ServiceInfo info;
-    PSM psm;
-    inspect::Node node;
-    inspect::StringProperty psm_property;
-  };
-  using ServiceMap = std::unordered_map<PSM, ServiceData>;
-  ServiceMap services_;
-  inspect::Node services_node_;
-  inspect::Node node_;
-
-  // Stored info on whether random channel ids are requested.
-  bool random_channel_ids_;
-
-  // TODO(fxbug.rev/63851): Find a better home for this. For now, we know that this only holds
-  // promises scheduled by LogicalLinks to destroy themselves, so this living here provides a
-  // minimal guarantee that the executor outlives the LogicalLinks.
-  async::Executor executor_;
-
-  fit::thread_checker thread_checker_;
-  fxl::WeakPtrFactory<ChannelManager> weak_ptr_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManager);
+  virtual fxl::WeakPtr<internal::LogicalLink> LogicalLinkForTesting(
+      hci_spec::ConnectionHandle handle) = 0;
 };
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_

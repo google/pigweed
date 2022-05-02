@@ -27,7 +27,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
@@ -84,7 +84,7 @@ class LowEnergyConnectionManager final {
   LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                              hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
-                             l2cap::L2cap* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+                             l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
                              fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
                              sm::SecurityManagerFactory sm_creator);
   ~LowEnergyConnectionManager();
@@ -283,7 +283,7 @@ class LowEnergyConnectionManager final {
   // The reference to L2CAP, used to interact with the L2CAP layer to
   // manage LE logical links, fixed channels, and LE-specific L2CAP signaling
   // events (e.g. connection parameter update).
-  l2cap::L2cap* l2cap_;
+  l2cap::ChannelManager* l2cap_;
 
   // The GATT layer reference, used to add and remove ATT data bearers and
   // service discovery.

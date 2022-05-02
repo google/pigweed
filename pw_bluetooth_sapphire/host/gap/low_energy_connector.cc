@@ -36,7 +36,7 @@ std::unique_ptr<LowEnergyConnector> LowEnergyConnector::CreateOutboundConnector(
     PeerId peer_id, LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
     zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
     fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
-    fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::L2cap* l2cap,
+    fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::ChannelManager* l2cap,
     fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb) {
   return std::unique_ptr<LowEnergyConnector>(new LowEnergyConnector(
       /*outbound=*/true, peer_id, /*connection=*/nullptr, options, connector, request_timeout,
@@ -46,8 +46,8 @@ std::unique_ptr<LowEnergyConnector> LowEnergyConnector::CreateOutboundConnector(
 std::unique_ptr<LowEnergyConnector> LowEnergyConnector::CreateInboundConnector(
     PeerId peer_id, std::unique_ptr<hci::LowEnergyConnection> connection,
     LowEnergyConnectionOptions options, fxl::WeakPtr<hci::Transport> transport,
-    PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::L2cap* l2cap,
-    fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb) {
+    PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb) {
   return std::unique_ptr<LowEnergyConnector>(new LowEnergyConnector(
       /*outbound=*/false, peer_id, std::move(connection), options, /*connector=*/nullptr,
       /*request_timeout=*/zx::duration(0), transport, peer_cache, conn_mgr,
@@ -59,7 +59,7 @@ LowEnergyConnector::LowEnergyConnector(
     LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
     zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
     fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-    fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager, l2cap::L2cap* l2cap,
+    fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager, l2cap::ChannelManager* l2cap,
     fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb)
     : state_(State::kIdle, /*convert=*/[](auto s) { return StateToString(s); }),
       peer_id_(peer_id),

@@ -127,7 +127,7 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
   return sdp;
 }
 
-Server::Server(l2cap::L2cap* l2cap)
+Server::Server(l2cap::ChannelManager* l2cap)
     : l2cap_(l2cap), next_handle_(kFirstUnreservedHandle), db_state_(0), weak_ptr_factory_(this) {
   ZX_ASSERT(l2cap_);
 

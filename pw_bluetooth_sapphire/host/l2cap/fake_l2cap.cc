@@ -91,7 +91,7 @@ void FakeL2cap::AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::Co
   RegisterInternal(handle, role, bt::LinkType::kACL, std::move(link_error_cb));
 }
 
-L2cap::LEFixedChannels FakeL2cap::AddLEConnection(
+ChannelManager::LEFixedChannels FakeL2cap::AddLEConnection(
     hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
     l2cap::LinkErrorCallback link_error_cb,
     l2cap::LEConnectionParameterUpdateCallback conn_param_cb,

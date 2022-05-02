@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -52,8 +52,9 @@ class LowEnergyConnection final : public sm::Delegate {
   LowEnergyConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
                       LowEnergyConnectionOptions connection_options,
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
-                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::L2cap* l2cap,
-                      fxl::WeakPtr<gatt::GATT> gatt, fxl::WeakPtr<hci::Transport> transport);
+                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+                      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+                      fxl::WeakPtr<hci::Transport> transport);
 
   // Notifies request callbacks and connection refs of the disconnection.
   ~LowEnergyConnection() override;
@@ -268,7 +269,7 @@ class LowEnergyConnection final : public sm::Delegate {
   inspect::Node inspect_node_;
 
   // Used to update the L2CAP layer to reflect the correct link security level.
-  l2cap::L2cap* l2cap_;
+  l2cap::ChannelManager* l2cap_;
 
   // Reference to the GATT profile layer is used to initiate service discovery
   // and register the link.

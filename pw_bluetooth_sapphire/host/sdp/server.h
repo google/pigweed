@@ -14,7 +14,7 @@
 
 #include <fbl/ref_ptr.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
@@ -34,7 +34,7 @@ class Server final {
 
   // A new SDP server, which starts with just a ServiceDiscoveryService record.
   // Registers itself with |l2cap| when created.
-  explicit Server(l2cap::L2cap* l2cap);
+  explicit Server(l2cap::ChannelManager* l2cap);
   ~Server();
 
   // Attach SDP server inspect node as a child node of |parent|.
@@ -122,7 +122,7 @@ class Server final {
   void Send(l2cap::Channel::UniqueId channel_id, ByteBufferPtr bytes);
 
   // Used to register callbacks for the channels of services registered.
-  l2cap::L2cap* l2cap_;
+  l2cap::ChannelManager* l2cap_;
 
   struct InspectProperties {
     // Inspect hierarchy node representing the sdp server.

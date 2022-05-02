@@ -27,7 +27,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -71,7 +71,7 @@ class Adapter {
   // passed, then the Adapter will create and initialize its own L2cap.
   static std::unique_ptr<Adapter> Create(fxl::WeakPtr<hci::Transport> hci,
                                          fxl::WeakPtr<gatt::GATT> gatt,
-                                         std::unique_ptr<l2cap::L2cap> l2cap = nullptr);
+                                         std::unique_ptr<l2cap::ChannelManager> l2cap = nullptr);
   virtual ~Adapter() = default;
 
   // Returns a uniquely identifier for this adapter on the current system.

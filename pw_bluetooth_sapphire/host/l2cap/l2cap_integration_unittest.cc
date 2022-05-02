@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-
 #include <lib/async/cpp/task.h>
 #include <lib/inspect/testing/cpp/inspect.h>
 
@@ -60,8 +58,8 @@ class L2capIntegrationTest : public TestingBase {
     InitializeACLDataChannel(bredr_buffer_info);
 
     // TODO(63074): Remove assumptions about channel ordering so we can turn random ids on.
-    l2cap_ = std::make_unique<ChannelManager>(transport()->acl_data_channel(),
-                                              /*random_channel_ids=*/false);
+    l2cap_ = ChannelManager::Create(transport()->acl_data_channel(),
+                                    /*random_channel_ids=*/false);
 
     StartTestDevice();
 
@@ -164,18 +162,18 @@ class L2capIntegrationTest : public TestingBase {
     return cmd_ids;
   }
 
-  L2cap::LEFixedChannels QueueLEConnection(hci_spec::ConnectionHandle handle,
-                                           hci_spec::ConnectionRole role) {
+  ChannelManager::LEFixedChannels QueueLEConnection(hci_spec::ConnectionHandle handle,
+                                                    hci_spec::ConnectionRole role) {
     acl_data_channel()->RegisterLink(handle, bt::LinkType::kLE);
     return l2cap()->AddLEConnection(
         handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
         /*security_callback=*/[](auto, auto, auto) {});
   }
 
-  L2cap* l2cap() const { return l2cap_.get(); }
+  ChannelManager* l2cap() const { return l2cap_.get(); }
 
  private:
-  std::unique_ptr<l2cap::L2cap> l2cap_;
+  std::unique_ptr<ChannelManager> l2cap_;
   l2cap::CommandId next_command_id_;
   std::unique_ptr<socket::SocketFactory<l2cap::Channel>> socket_factory_;
 
@@ -628,7 +626,7 @@ TEST_F(L2capIntegrationTest, RequestConnectionParameterUpdateAndReceiveResponse)
 
 TEST_F(L2capIntegrationTest, InspectHierarchy) {
   inspect::Inspector inspector;
-  l2cap()->AttachInspect(inspector.GetRoot(), L2cap::kInspectNodeName);
+  l2cap()->AttachInspect(inspector.GetRoot(), ChannelManager::kInspectNodeName);
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy);
   auto l2cap_matcher =

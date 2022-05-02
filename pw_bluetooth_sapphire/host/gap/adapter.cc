@@ -49,7 +49,7 @@ class AdapterImpl final : public Adapter {
   // instance is created. The Adapter instance will use it for all of its
   // asynchronous tasks.
   explicit AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                       std::unique_ptr<l2cap::L2cap> l2cap);
+                       std::unique_ptr<l2cap::ChannelManager> l2cap);
   ~AdapterImpl() override;
 
   AdapterId identifier() const override { return identifier_; }
@@ -398,7 +398,7 @@ class AdapterImpl final : public Adapter {
 
   // L2CAP layer used by GAP. This must be destroyed after the following members because they raw
   // pointers to this member.
-  std::unique_ptr<l2cap::L2cap> l2cap_;
+  std::unique_ptr<l2cap::ChannelManager> l2cap_;
 
   // The GATT profile. We use this reference to add and remove data bearers and
   // for service discovery.
@@ -436,7 +436,7 @@ class AdapterImpl final : public Adapter {
 };
 
 AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                         std::unique_ptr<l2cap::L2cap> l2cap)
+                         std::unique_ptr<l2cap::ChannelManager> l2cap)
     : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(std::move(hci)),
@@ -899,9 +899,9 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
   if (!l2cap_) {
     // Initialize ChannelManager to make it available for the next initialization step. The
     // AclDataChannel must be initialized before creating ChannelManager.
-    l2cap_ = std::make_unique<l2cap::ChannelManager>(hci_->acl_data_channel(),
-                                                     /*random_channel_ids=*/true);
-    l2cap_->AttachInspect(adapter_node_, l2cap::L2cap::kInspectNodeName);
+    l2cap_ = l2cap::ChannelManager::Create(hci_->acl_data_channel(),
+                                           /*random_channel_ids=*/true);
+    l2cap_->AttachInspect(adapter_node_, l2cap::ChannelManager::kInspectNodeName);
   }
 
   // HCI_Set_Event_Mask
@@ -1182,7 +1182,7 @@ bool AdapterImpl::IsLeRandomAddressChangeAllowed() {
 
 std::unique_ptr<Adapter> Adapter::Create(fxl::WeakPtr<hci::Transport> hci,
                                          fxl::WeakPtr<gatt::GATT> gatt,
-                                         std::unique_ptr<l2cap::L2cap> l2cap) {
+                                         std::unique_ptr<l2cap::ChannelManager> l2cap) {
   return std::make_unique<AdapterImpl>(hci, gatt, std::move(l2cap));
 }
 

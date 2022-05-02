@@ -6,16 +6,16 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_L2CAP_H_
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt::l2cap::testing {
 
 class FakeChannel;
 
-// This is a fake version of the L2cap class that can be injected into other
+// This is a fake version of the ChannelManager class that can be injected into other
 // layers for unit testing.
-class FakeL2cap final : public L2cap {
+class FakeL2cap final : public ChannelManager {
  public:
   FakeL2cap() = default;
   ~FakeL2cap() override;
@@ -62,11 +62,21 @@ class FakeL2cap final : public L2cap {
   void RequestConnectionParameterUpdate(
       hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
       ConnectionParameterUpdateRequestCallback request_cb) override;
+
+  fbl::RefPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
+                                        ChannelId channel_id) override {
+    return nullptr;
+  }
   void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
                         ChannelCallback cb) override;
   bool RegisterService(PSM psm, ChannelParameters params,
                        ChannelCallback channel_callback) override;
   void UnregisterService(PSM psm) override;
+
+  fxl::WeakPtr<internal::LogicalLink> LogicalLinkForTesting(
+      hci_spec::ConnectionHandle handle) override {
+    return nullptr;
+  }
 
   // Called when a new channel gets opened. Tests can use this to obtain a
   // reference to all channels.
@@ -130,7 +140,6 @@ class FakeL2cap final : public L2cap {
 
   ConnectionParameterUpdateRequestResponder connection_parameter_update_request_responder_;
 
-  using ServiceInfo = ServiceInfo<ChannelCallback>;
   std::unordered_map<PSM, ServiceInfo> registered_services_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2cap);

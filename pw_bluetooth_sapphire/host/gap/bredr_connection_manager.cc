@@ -135,7 +135,8 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
 
 BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                                                PeerCache* peer_cache, DeviceAddress local_address,
-                                               l2cap::L2cap* l2cap, bool use_interlaced_scan)
+                                               l2cap::ChannelManager* l2cap,
+                                               bool use_interlaced_scan)
     : hci_(std::move(hci)),
       cache_(peer_cache),
       local_address_(local_address),

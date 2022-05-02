@@ -48,8 +48,8 @@ class DataFuzzTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    channel_manager_ = std::make_unique<l2cap::ChannelManager>(transport()->acl_data_channel(),
-                                                               /*random_channel_ids=*/true);
+    channel_manager_ = l2cap::ChannelManager::Create(transport()->acl_data_channel(),
+                                                     /*random_channel_ids=*/true);
 
     StartTestDevice();
   }
