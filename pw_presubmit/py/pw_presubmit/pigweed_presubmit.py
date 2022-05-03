@@ -320,121 +320,104 @@ def cmake_gcc(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
 
 
-# TODO(pwbug/180): Slowly add modules here that work with bazel until all
-# modules are added. Then replace with //...
-_MODULES_THAT_BUILD_WITH_BAZEL = [
-    '//pw_allocator/...',
-    '//pw_analog/...',
-    '//pw_assert/...',
-    '//pw_assert_basic/...',
-    '//pw_assert_log/...',
-    '//pw_base64/...',
-    '//pw_bloat/...',
-    '//pw_build/...',
-    '//pw_checksum/...',
-    '//pw_chrono_embos/...',
-    '//pw_chrono_freertos/...',
-    '//pw_chrono_stl/...',
-    '//pw_chrono_threadx/...',
-    '//pw_cli/...',
-    '//pw_containers/...',
-    '//pw_cpu_exception/...',
-    '//pw_docgen/...',
-    '//pw_doctor/...',
-    '//pw_env_setup/...',
-    '//pw_fuzzer/...',
-    '//pw_hdlc/java/...',
-    '//pw_hex_dump/...',
-    '//pw_i2c/...',
-    '//pw_interrupt/...',
-    '//pw_interrupt_cortex_m/...',
-    '//pw_libc/...',
-    '//pw_log/...',
-    '//pw_log_basic/...',
-    '//pw_malloc/...',
-    '//pw_malloc_freelist/...',
-    '//pw_multisink/...',
-    '//pw_polyfill/...',
-    '//pw_preprocessor/...',
-    '//pw_protobuf/...',
-    '//pw_protobuf_compiler/...',
-    '//pw_random/...',
-    '//pw_result/...',
-    '//pw_rpc/...',
-    '//pw_span/...',
-    '//pw_status/...',
-    '//pw_stream/...',
-    '//pw_string/...',
-    '//pw_sync_baremetal/...',
-    '//pw_sync_embos/...',
-    '//pw_sync_freertos/...',
-    '//pw_sync_stl/...',
-    '//pw_sync_threadx/...',
-    '//pw_sys_io/...',
-    '//pw_sys_io_baremetal_lm3s6965evb/...',
-    '//pw_sys_io_baremetal_stm32f429/...',
-    '//pw_sys_io_stdio/...',
-    '//pw_thread/...',
-    '//pw_thread_stl/...',
-    '//pw_tokenizer/ts/...',
-    '//pw_tool/...',
-    '//pw_toolchain/...',
-    '//pw_transfer/...',
-    '//pw_unit_test/...',
-    '//pw_varint/...',
-    '//pw_web_ui/...',
-]
+# TODO(pwbug/180): Slowly remove modules from here that work with bazel until no
+# modules remain.
+_MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
+    'docker',
+    'pw_android_toolchain',
+    'pw_arduino_build',
+    'pw_assert_tokenized',
+    'pw_assert_zephyr',
+    'pw_blob_store',
+    'pw_boot',
+    'pw_build_info',
+    'pw_build_mcuxpresso',
+    'pw_bytes',
+    'pw_chrono_zephyr',
+    'pw_console',
+    'pw_cpu_exception_cortex_m',
+    'pw_crypto',
+    'pw_file',
+    'pw_function',
+    'pw_hdlc',
+    'pw_i2c_mcuxpresso',
+    'pw_interrupt_zephyr',
+    'pw_kvs',
+    'pw_log_android',
+    'pw_log_null',
+    'pw_log_rpc',
+    'pw_log_string',
+    'pw_log_tokenized',
+    'pw_log_zephyr',
+    'pw_metric',
+    'pw_minimal_cpp_stdlib',
+    'pw_module',
+    'pw_package',
+    'pw_persistent_ram',
+    'pw_presubmit',
+    'pw_ring_buffer',
+    'pw_snapshot',
+    'pw_software_update',
+    'pw_spi',
+    'pw_stm32cube_build',
+    'pw_sync',
+    'pw_sync_zephyr',
+    'pw_sys_io_arduino',
+    'pw_sys_io_mcuxpresso',
+    'pw_sys_io_stm32cube',
+    'pw_sys_io_zephyr',
+    'pw_system',
+    'pw_target_runner',
+    'pw_thread_embos',
+    'pw_thread_freertos',
+    'pw_thread_threadx',
+    'pw_tls_client',
+    'pw_tls_client_boringssl',
+    'pw_tls_client_mbedtls',
+    'pw_tokenizer',
+    'pw_trace',
+    'pw_trace_tokenized',
+    'pw_watch',
+    'pw_web_ui',
+    'pw_work_queue',
+)
 
-# TODO(pwbug/180): Slowly add modules here that work with bazel until all
-# modules are added. Then replace with //...
-_MODULES_THAT_TEST_WITH_BAZEL = [
-    '//pw_allocator/...',
-    '//pw_analog/...',
-    '//pw_assert/...',
-    '//pw_base64/...',
-    '//pw_checksum/...',
-    '//pw_cli/...',
-    '//pw_containers/...',
-    '//pw_hdlc/java/...',
-    '//pw_hex_dump/...',
-    '//pw_i2c/...',
-    '//pw_libc/...',
-    '//pw_log/...',
-    '//pw_multisink/...',
-    '//pw_polyfill/...',
-    '//pw_preprocessor/...',
-    '//pw_protobuf/...',
-    '//pw_protobuf_compiler/...',
-    '//pw_random/...',
-    '//pw_result/...',
-    '//pw_rpc/...',
-    '//pw_span/...',
-    '//pw_status/...',
-    '//pw_stream/...',
-    '//pw_string/...',
-    '//pw_thread/...',
-    '//pw_thread_stl/...',
-    '//pw_tokenizer/ts/...',
-    '//pw_transfer/...',
-    '//pw_unit_test/...',
-    '//pw_varint/...',
-    '//:buildifier_test',
-]
+# TODO(pwbug/180): Slowly remove modules from here that work with bazel until no
+# modules remain.
+_MODULES_THAT_DO_NOT_TEST_WITH_BAZEL = _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL + (
+    'pw_malloc_freelist', )
+
+
+def all_modules():
+    return Path(os.environ['PW_ROOT'],
+                'PIGWEED_MODULES').read_text().splitlines()
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
                         'BUILD'))
 def bazel_test(ctx: PresubmitContext) -> None:
     """Runs bazel test on each bazel compatible module"""
-    build.bazel(ctx, 'test', *_MODULES_THAT_TEST_WITH_BAZEL,
-                '--test_output=errors')
+    # TODO(b/231256840): Instead of relying on PIGWEED_MODULES it would be nicer
+    # to do something like `bazel build //... -//pw_boot -//pw_system`. This
+    # doesn't quite work; see bug.
+    modules = list()
+    for module in all_modules():
+        if module in _MODULES_THAT_DO_NOT_TEST_WITH_BAZEL:
+            continue
+        modules.append(f'//{module}/...:all')
+    build.bazel(ctx, 'test', *modules, '--test_output=errors')
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
                         'BUILD'))
 def bazel_build(ctx: PresubmitContext) -> None:
     """Runs Bazel build on each Bazel compatible module."""
-    build.bazel(ctx, 'build', *_MODULES_THAT_BUILD_WITH_BAZEL)
+    modules = list()
+    for module in all_modules():
+        if module in _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL:
+            continue
+        modules.append(f'//{module}/...:all')
+    build.bazel(ctx, 'build', *modules)
 
 
 def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
