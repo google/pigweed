@@ -290,8 +290,8 @@ PIGWEED_PLUGIN = {
         "deps": [
             "//pw_protobuf:pw_protobuf",
             "//pw_rpc",
-            "//pw_rpc/raw:client_api",
-            "//pw_rpc/raw:server_api",
+            "//pw_rpc/pwpb:client_api",
+            "//pw_rpc/pwpb:server_api",
         ],
         "include_nanopb_dep": False,
         "include_pwpb_dep": True,

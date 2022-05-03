@@ -70,6 +70,8 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":common",
+        ":server_api",
         "//pw_containers",
         "//pw_rpc:internal_test_utils",
     ],
