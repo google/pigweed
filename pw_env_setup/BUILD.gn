@@ -65,13 +65,11 @@ _pigweed_python_deps = [
 ]
 
 pw_python_group("python") {
-  python_deps = []
+  python_deps = _pigweed_python_deps
   if (pw_build_USE_NEW_PYTHON_BUILD) {
     # This target creates and installs Python package named 'pigweed' including
     # every package listed in _pigweed_python_deps.
     python_deps += [ ":pip_install_pigweed_package" ]
-  } else {
-    python_deps += _pigweed_python_deps
   }
   python_deps += [
     # Standalone scripts
