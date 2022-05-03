@@ -658,6 +658,33 @@ TEST(CodegenMessage, ReadStringCallback) {
   ASSERT_EQ(status, OkStatus());
 }
 
+TEST(CodegenMessage, ReadMultipleString) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // pigweed.error_message
+    0x2a, 0x10, 'n', 'o', 't', ' ', 'a', ' ',
+    't', 'y', 'p', 'e', 'w', 'r', 'i', 't', 'e', 'r',
+    // pigweed.error_message
+    0x02a, 0x07, 'o', 'n', ' ', 'f', 'i', 'r', 'e'
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  Pigweed::StreamDecoder pigweed(reader);
+
+  Pigweed::Message message{};
+  const auto status = pigweed.Read(message);
+  ASSERT_EQ(status, OkStatus());
+
+  constexpr std::string_view kExpectedErrorMessage{"on fire"};
+
+  EXPECT_EQ(message.error_message.size(), kExpectedErrorMessage.size());
+  EXPECT_EQ(std::memcmp(message.error_message.data(),
+                        kExpectedErrorMessage.data(),
+                        kExpectedErrorMessage.size()),
+            0);
+}
+
 TEST(CodegenMessage, ReadRepeatedStrings) {
   // clang-format off
   constexpr uint8_t proto_data[] = {

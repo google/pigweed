@@ -636,14 +636,13 @@ Status StreamDecoder::Read(std::span<std::byte> message,
           PW_CHECK(field->elem_size() == sizeof(std::byte),
                    "Mismatched message field type and size");
           auto* vector = reinterpret_cast<pw::Vector<std::byte>*>(out.data());
-          if (vector->full()) {
+          if (vector->capacity() < delimited_field_size_) {
             return Status::ResourceExhausted();
           }
-          const size_t old_size = vector->size();
           vector->resize(vector->capacity());
-          const auto sws = ReadDelimitedField(
-              std::span(vector->data(), vector->size()).subspan(old_size));
-          vector->resize(old_size + sws.size());
+          const auto sws =
+              ReadDelimitedField(std::span(vector->data(), vector->size()));
+          vector->resize(sws.size());
           PW_TRY(sws);
         }
         break;
