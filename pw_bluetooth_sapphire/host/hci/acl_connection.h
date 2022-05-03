@@ -54,6 +54,8 @@ class AclConnection : public Connection {
   ResultFunction<bool>& encryption_change_callback() { return encryption_change_callback_; }
 
  private:
+  // This method must be static since it may be invoked after the connection associated with it is
+  // destroyed.
   static void OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
                                       const fxl::WeakPtr<Transport>& hci);
 

@@ -16,6 +16,8 @@ class ScoConnection : public Connection {
   fxl::WeakPtr<ScoConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  // This method must be static since it may be invoked after the connection associated with it is
+  // destroyed.
   static void OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
                                       const fxl::WeakPtr<Transport>& hci);
 

@@ -77,14 +77,15 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
     self->conn_state_ = State::kDisconnected;
   }
 
-  // Notify subclasses before notifying clients so that subclasses have a chance to use |this|.
-  if (on_disconnection_complete) {
-    on_disconnection_complete();
-  }
-
   // Peer disconnect. Callback may destroy connection.
   if (self && self->peer_disconnect_callback_) {
     self->peer_disconnect_callback_(self.get(), params.reason);
+  }
+
+  // Notify subclasses after peer_disconnect_callback_ has had a chance to clean up higher-level
+  // connections.
+  if (on_disconnection_complete) {
+    on_disconnection_complete();
   }
 
   return CommandChannel::EventCallbackResult::kRemove;

@@ -4,6 +4,8 @@
 
 #include "sco_connection.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
+
 namespace bt::hci {
 
 ScoConnection::ScoConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
@@ -16,7 +18,11 @@ ScoConnection::ScoConnection(hci_spec::ConnectionHandle handle, const DeviceAddr
 
 void ScoConnection::OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
                                             const fxl::WeakPtr<Transport>& hci) {
-  // TODO(fxbug.dev/92293): Clear ScoDataChannel controller packet count.
+  // ScoDataChannel only exists if HCI SCO is supported by the controller.
+  if (hci->sco_data_channel()) {
+    // The packet count must be cleared after sco::ScoConnection unregisters the connection.
+    hci->sco_data_channel()->ClearControllerPacketCount(handle);
+  }
 }
 
 }  // namespace bt::hci
