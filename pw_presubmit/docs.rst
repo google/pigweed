@@ -156,6 +156,24 @@ pw_presubmit
 
 .. _example-script:
 
+
+Git hook
+--------
+You can run a presubmit program or step as a `git hook
+<https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks>`_ using
+``pw_presubmit.install_hook``.  This can be used to run certain presubmit
+checks before a change is pushed to a remote.
+
+We strongly recommend that you only run fast (< 15 seconds) and trivial checks
+as push hooks, and perform slower or more complex ones in CI. This is because,
+
+* Running slow checks in the push hook will force you to wait longer for
+  ``git push`` to complete, and
+* If your change fails one of the checks at this stage, it will not yet be
+  uploaded to the remote, so you'll have a harder time debugging any failures
+  (sharing the change with your colleagues, linking to it from an issue
+  tracker, etc).
+
 Example
 =======
 A simple example presubmit check script follows. This can be copied-and-pasted
