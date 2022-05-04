@@ -900,6 +900,7 @@ package, and instantiate it with a CSV token database.
    }
 
 For messages that are encoded in Base64, use ``Detokenizer::detokenizeBase64``.
+`detokenizeBase64` will also attempt to detokenize nested Base64 tokens.
 
 Protocol buffers
 ----------------

@@ -18,6 +18,7 @@ import {Frame} from '@pigweed/pw_hdlc';
 import {TokenDatabase} from './token_database';
 import {PrintfDecoder} from './printf_decoder';
 
+const MAX_RECURSIONS = 9;
 const BASE64CHARS = '[A-Za-z0-9+/-_]';
 const PATTERN = new RegExp(
   // Base64 tokenized strings start with the prefix character ($)
@@ -66,14 +67,32 @@ export class Detokenizer {
    * If the frame doesn't match any token from database, the frame will be
    * returned as string as-is.
    */
-  detokenizeBase64(tokenizedFrame: Frame): string {
-    const base64Frame = new TextDecoder().decode(tokenizedFrame.data);
-    return base64Frame.replace(PATTERN, base64Substring => {
+  detokenizeBase64(
+    tokenizedFrame: Frame,
+    maxRecursion: number = MAX_RECURSIONS
+  ): string {
+    const base64String = new TextDecoder().decode(tokenizedFrame.data);
+    return this.detokenizeBase64String(base64String, maxRecursion);
+  }
+
+  private detokenizeBase64String(
+    base64String: string,
+    recursions: number
+  ): string {
+    return base64String.replace(PATTERN, base64Substring => {
       const {token, args} = this.decodeBase64TokenFrame(base64Substring);
       const format = this.database.get(token);
       // Parse arguments if this is printf-style text.
       if (format) {
-        return new PrintfDecoder().decode(String(format), args);
+        const decodedOriginal = new PrintfDecoder().decode(
+          String(format),
+          args
+        );
+        // Detokenize nested Base64 tokens and their arguments.
+        if (recursions > 0) {
+          return this.detokenizeBase64String(decodedOriginal, recursions - 1);
+        }
+        return decodedOriginal;
       }
       return base64Substring;
     });
