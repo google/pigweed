@@ -955,6 +955,7 @@ fitx::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& bu
       }
       auto [_, inserted] = attribute_lists_.at(list_idx).emplace(*id, val->Clone());
       if (!inserted) {
+        attribute_lists_.clear();
         bt_log(WARN, "sdp", "attribute was duplicated in attribute response");
         return ToResult(HostError::kPacketMalformed);
       }
