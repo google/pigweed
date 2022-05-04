@@ -587,68 +587,6 @@ public final class ManagerTest {
   }
 
   @Test
-  public void write_adjustChunkSize() throws Exception {
-    ListenableFuture<Void> future = // Always request 30-byte chunks
-        manager.write(ID, TEST_DATA_100B.toByteArray(), progress -> {}, (chunk, maxSize) -> 30);
-
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, ID, TEST_DATA_100B.size()));
-
-    receiveWriteChunks(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
-                           .setOffset(0)
-                           .setPendingBytes(1024)
-                           .setMaxChunkSizeBytes(100));
-
-    assertThat(lastChunks())
-        .containsExactly(
-            newChunk(Chunk.Type.TRANSFER_DATA, ID).setOffset(0).setData(range(0, 30)).build(),
-            newChunk(Chunk.Type.TRANSFER_DATA, ID).setOffset(30).setData(range(30, 60)).build(),
-            newChunk(Chunk.Type.TRANSFER_DATA, ID).setOffset(60).setData(range(60, 90)).build(),
-            newChunk(Chunk.Type.TRANSFER_DATA, ID)
-                .setOffset(90)
-                .setData(range(90, 100))
-                .setRemainingBytes(0)
-                .build());
-
-    receiveWriteChunks(finalChunk(ID, Status.OK));
-
-    assertThat(future.get()).isNull(); // Ensure that no exceptions are thrown.
-  }
-
-  @Test
-  public void write_adjustChunkSize_zeroLengthAdjustment_abortsTransfer() {
-    ListenableFuture<Void> future = // Always request 0-byte chunks, which is invalid.
-        manager.write(ID, TEST_DATA_100B.toByteArray(), progress -> {}, (chunk, maxSize) -> 0);
-
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, ID, TEST_DATA_100B.size()));
-
-    receiveWriteChunks(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
-                           .setOffset(0)
-                           .setPendingBytes(1024)
-                           .setMaxChunkSizeBytes(100));
-
-    ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
-    assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
-    assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.INVALID_ARGUMENT);
-  }
-
-  @Test
-  public void write_adjustChunkSize_negativeAdjustment_abortsTransfer() {
-    ListenableFuture<Void> future = // Always request negative chunks, which is invalid.
-        manager.write(ID, TEST_DATA_100B.toByteArray(), progress -> {}, (chunk, maxSize) -> - 1);
-
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, ID, TEST_DATA_100B.size()));
-
-    receiveWriteChunks(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
-                           .setOffset(0)
-                           .setPendingBytes(1024)
-                           .setMaxChunkSizeBytes(100));
-
-    ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
-    assertThat(thrown).hasCauseThat().isInstanceOf(TransferError.class);
-    assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.INVALID_ARGUMENT);
-  }
-
-  @Test
   public void write_parametersContinue() throws Exception {
     ListenableFuture<Void> future = manager.write(ID, TEST_DATA_100B.toByteArray());
 

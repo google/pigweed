@@ -21,7 +21,6 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import com.google.protobuf.ByteString;
 import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.Status;
-import dev.pigweed.pw_transfer.Manager.ChunkSizeAdjuster;
 import java.util.Timer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -43,7 +42,6 @@ class WriteTransfer extends Transfer<Void> {
   private Chunk lastChunk;
 
   private final byte[] data;
-  private final ChunkSizeAdjuster chunkSizeAdjustment;
 
   protected WriteTransfer(int id,
       ChunkSender sendChunk,
@@ -54,8 +52,7 @@ class WriteTransfer extends Transfer<Void> {
       int maxRetries,
       byte[] data,
       Consumer<TransferProgress> progressCallback,
-      BooleanSupplier shouldAbortCallback,
-      ChunkSizeAdjuster chunkSizeAdjustment) {
+      BooleanSupplier shouldAbortCallback) {
     super(id,
         sendChunk,
         endTransfer,
@@ -66,8 +63,6 @@ class WriteTransfer extends Transfer<Void> {
         progressCallback,
         shouldAbortCallback);
     this.data = data;
-    this.chunkSizeAdjustment = chunkSizeAdjustment;
-
     this.lastChunk = getInitialChunk();
   }
 
@@ -172,27 +167,12 @@ class WriteTransfer extends Transfer<Void> {
       ByteString chunkData = ByteString.copyFrom(
           data, sentOffset, min(windowEndOffset - sentOffset, maxChunkSizeBytes));
 
-      // Apply the chunk size adjustment. The returned chunk size is capped at chunkData.size().
-      // Sending 0 bytes of an non-empty chunk is invalid and aborts the transfer.
-      final int newChunkSize = min(
-          chunkSizeAdjustment.getAdjustedChunkSize(chunkData, maxChunkSizeBytes), chunkData.size());
-      if ((!chunkData.isEmpty() && newChunkSize == 0) || newChunkSize < 0) {
-        logger.atWarning().log(
-            "Transfer %d: attempted to adjust %d B chunk to %d B; aborting transfer",
-            getId(),
-            chunkData.size(),
-            newChunkSize);
-        sendFinalChunk(Status.INVALID_ARGUMENT);
-        return true;
-      }
-      logger.atFiner().log(
-          "Transfer %d: sending %d B chunk (adjusted from %d B) with max size of %d",
+      logger.atFiner().log("Transfer %d: sending bytes %d-%d (%d B chunk, max size %d B)",
           getId(),
-          newChunkSize,
+          sentOffset,
+          sentOffset + chunkData.size() - 1,
           chunkData.size(),
           maxChunkSizeBytes);
-
-      chunkData = chunkData.substring(0, newChunkSize);
 
       chunkToSend = buildDataChunk(chunkData);
 

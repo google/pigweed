@@ -61,16 +61,6 @@ public class Manager {
   @Nullable private Call.ClientStreaming<Chunk> writeStream = null;
 
   /**
-   * Callback for adjusting the size of a pw_transfer write chunk.
-   *
-   * <p>If the adjusted size is 0 or negative, the transfer is aborted. If the adjusted size is
-   * larger than the chunk, the chunk size remains unchanged.
-   */
-  public interface ChunkSizeAdjuster {
-    int getAdjustedChunkSize(ByteString chunkData, int maxChunkSizeBytes);
-  }
-
-  /**
    * Creates a new Manager for sending and receiving data with pw_transfer.
    *
    * @param readMethod Method client for the pw.transfer.Transfer.Read method.
@@ -110,23 +100,13 @@ public class Manager {
   /**
    * Writes data to the specified transfer resource, calling the progress
    * callback as data is sent.
-   */
-  public ListenableFuture<Void> write(
-      int resourceId, byte[] data, Consumer<TransferProgress> progressCallback) {
-    return write(resourceId, data, progressCallback, (chunk, maxSize) -> chunk.size());
-  }
-  /**
-   * Writes the data to the specified transfer resource.
    *
    * @param resourceId The ID of the resource to which to write
    * @param data the data to write
    * @param progressCallback called each time a packet is sent
-   * @param chunkSizeAdjustment callback to optionally reduce the number of bytes to send
    */
-  public synchronized ListenableFuture<Void> write(int resourceId,
-      byte[] data,
-      Consumer<TransferProgress> progressCallback,
-      ChunkSizeAdjuster chunkSizeAdjustment) {
+  public synchronized ListenableFuture<Void> write(
+      int resourceId, byte[] data, Consumer<TransferProgress> progressCallback) {
     return startTransfer(writeTransfers,
         new WriteTransfer(resourceId,
             this::sendWriteChunk,
@@ -137,8 +117,7 @@ public class Manager {
             maxRetries,
             data,
             progressCallback,
-            shouldAbortCallback,
-            chunkSizeAdjustment));
+            shouldAbortCallback));
   }
 
   /** Reads the data from the given transfer resource ID. */
