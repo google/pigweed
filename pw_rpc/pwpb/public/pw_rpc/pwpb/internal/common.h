@@ -15,7 +15,7 @@
 
 #include <span>
 
-#include "pw_assert/check.h"
+#include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_protobuf/internal/codegen.h"
@@ -144,7 +144,7 @@ void PwpbSendInitialRequest(ClientCall& call,
                             PwpbSerde serde,
                             const Request& request)
     PW_UNLOCK_FUNCTION(rpc_lock()) {
-  PW_DCHECK(call.active_locked());
+  PW_ASSERT(call.active_locked());
 
   Result<ByteSpan> buffer = PwpbEncodeToPayloadBuffer(request, serde);
   if (buffer.ok()) {
@@ -174,7 +174,7 @@ Status PwpbSendFinalResponse(internal::ServerCall& call,
                              Status status,
                              PwpbSerde serde)
     PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-  PW_DCHECK(call.active_locked());
+  PW_ASSERT(call.active_locked());
 
   Result<ByteSpan> buffer = PwpbEncodeToPayloadBuffer(response, serde);
   if (!buffer.ok()) {
