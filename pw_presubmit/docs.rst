@@ -191,7 +191,7 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
   from pathlib import Path
   import re
   import sys
-  from typing import List, Pattern
+  from typing import List, Optional, Pattern
 
   try:
       import pw_cli.log
@@ -283,16 +283,34 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
   PROGRAMS = pw_presubmit.Programs(other=OTHER, quick=QUICK, full=FULL)
 
 
-  def run(install: bool, **presubmit_args) -> int:
+  #
+  # Allowlist of remote refs for presubmit. If the remote ref being pushed to
+  # matches any of these values (with regex matching), then the presubmits
+  # checks will be run before pushing.
+  #
+  PRE_PUSH_REMOTE_REF_ALLOWLIST = (
+      'refs/for/main',
+  )
+
+
+  def run(install: bool, remote_ref: Optional[str],  **presubmit_args) -> int:
       """Process the --install argument then invoke pw_presubmit."""
 
       # Install the presubmit Git pre-push hook, if requested.
       if install:
-          install_hook(__file__, 'pre-push', ['--base', 'HEAD~'],
+          # '$remote_ref' will be replaced by the actual value of the remote ref
+          # at runtime.
+          install_hook(__file__, 'pre-push',
+                       ['--base', 'HEAD~', '--remote-ref', '$remote_ref'],
                        git_repo.root())
           return 0
 
-      return cli.run(root=PROJECT_ROOT, **presubmit_args)
+      # Run the checks if either no remote_ref was passed, or if the remote ref
+      # matches anything in the allowlist.
+      if remote_ref is None or any(
+              re.search(pattern, remote_ref)
+              for pattern in PRE_PUSH_REMOTE_REF_ALLOWLIST):
+          return cli.run(root=PROJECT_ROOT, **presubmit_args)
 
 
   def main() -> int:
@@ -305,6 +323,16 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
           '--install',
           action='store_true',
           help='Install the presubmit as a Git pre-push hook and exit.')
+
+      # Define an optional flag to pass the remote ref into this script, if it
+      # is run as a pre-push hook. The destination variable in the parsed args
+      # will be `remote_ref`, as dashes are replaced with underscores to make
+      # valid variable names.
+      parser.add_argument(
+          '--remote-ref',
+          default=None,
+          nargs='?',  # Make optional.
+          help='Remote ref of the push command, for use by the pre-push hook.')
 
       return run(**vars(parser.parse_args()))
 

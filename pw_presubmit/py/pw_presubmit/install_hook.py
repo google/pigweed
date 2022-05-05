@@ -33,11 +33,42 @@ def git_repo_root(path: Union[Path, str]) -> Path:
                        stdout=subprocess.PIPE).stdout.strip().decode())
 
 
+def _stdin_args_for_hook(hook) -> Sequence[str]:
+    """Gives stdin arguments for each hook.
+
+    See https://git-scm.com/docs/githooks for more information.
+    """
+    if hook == 'pre-push':
+        return ('local_ref', 'local_object_name', 'remote_ref',
+                'remote_object_name')
+    if hook in ('pre-receive', 'post-receive', 'reference-transaction'):
+        return ('old_value', 'new_value', 'ref_name')
+    if hook == 'post-rewrite':
+        return ('old_object_name', 'new_object_name')
+    return ()
+
+
+def _replace_arg_in_hook(arg: str, unquoted_args: Sequence[str]) -> str:
+    if arg in unquoted_args:
+        return arg
+    return shlex.quote(arg)
+
+
 def install_hook(script,
                  hook: str,
                  args: Sequence[str] = (),
                  repository: Union[Path, str] = '.') -> None:
-    """Installs a simple Git hook that calls a script with arguments."""
+    """Installs a simple Git hook that calls a script with arguments.
+
+    Args:
+      script: Path to the script to run in the hook.
+      hook: Git hook to install, e.g. 'pre-push'.
+      args: Arguments to pass to `script` when it is run in the hook. These will
+        be sanitised with `shlex.quote`, except for any arguments are equal to
+        f'${stdin_arg}' for some `stdin_arg` which matches a standard-input
+        argument to the git hook.
+      repository: Repository to install the hook in.
+    """
     root = git_repo_root(repository).resolve()
     script = os.path.relpath(script, root)
 
@@ -52,7 +83,12 @@ def install_hook(script,
 
     hook_path.parent.mkdir(exist_ok=True)
 
-    command = ' '.join(shlex.quote(arg) for arg in (script, *args))
+    hook_stdin_args = _stdin_args_for_hook(hook)
+    read_stdin_command = 'read ' + ' '.join(hook_stdin_args)
+
+    unquoted_args = [f'${arg}' for arg in hook_stdin_args]
+    script_command = ' '.join(
+        _replace_arg_in_hook(arg, unquoted_args) for arg in (script, *args))
 
     with hook_path.open('w') as file:
         line = lambda *args: print(*args, file=file)
@@ -66,7 +102,10 @@ def install_hook(script,
         line('# submodule hook.')
         line('unset $(git rev-parse --local-env-vars)')
         line()
-        line(command)
+        line('# Read the stdin args for the hook, made available by git.')
+        line(read_stdin_command)
+        line()
+        line(script_command)
 
     hook_path.chmod(0o755)
     logging.info('Created %s hook for %s at %s', hook, script, hook_path)
