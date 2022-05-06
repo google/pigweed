@@ -98,7 +98,9 @@ pw_cc_test(
     srcs = ["std_file_stream_test.cc"],
     deps = [
         ":std_file_stream",
+        "//pw_assert",
         "//pw_bytes",
+        "//pw_random",
         "//pw_result",
         "//pw_status",
         "//pw_string",
