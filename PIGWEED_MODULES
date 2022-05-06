@@ -38,6 +38,7 @@ pw_env_setup
 pw_file
 pw_function
 pw_fuzzer
+pw_gpio
 pw_hdlc
 pw_hex_dump
 pw_i2c
