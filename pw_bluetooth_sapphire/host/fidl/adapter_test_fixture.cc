@@ -10,6 +10,12 @@ using bt::testing::FakeController;
 using TestingBase = bt::testing::ControllerTest<FakeController>;
 
 void AdapterTestFixture::SetUp() {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  SetUp(settings);
+}
+
+void AdapterTestFixture::SetUp(FakeController::Settings settings) {
   TestingBase::SetUp();
 
   auto l2cap = std::make_unique<bt::l2cap::testing::FakeL2cap>();
@@ -17,8 +23,6 @@ void AdapterTestFixture::SetUp() {
   gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
   adapter_ = bt::gap::Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), std::move(l2cap));
 
-  FakeController::Settings settings;
-  settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
   StartTestDevice();
 

@@ -53,9 +53,12 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
     void Write(std::vector<uint8_t> data, WriteCallback callback) override;
 
    private:
-    void Close();
+    void TryRead();
+    void Close(zx_status_t epitaph);
     fbl::RefPtr<bt::sco::ScoConnection> connection_;
     fit::callback<void()> on_closed_;
+    // Non-null when a read request is waiting for an inbound packet.
+    fit::callback<void(fuchsia::bluetooth::bredr::RxPacketStatus, std::vector<uint8_t>)> read_cb_;
   };
 
   struct ScoRequest : public fbl::RefCounted<ScoRequest> {

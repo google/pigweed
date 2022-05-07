@@ -1412,6 +1412,20 @@ bool IsFidlGattHandleValid(fuchsia::bluetooth::gatt2::Handle handle) {
   return true;
 }
 
+fuchsia::bluetooth::bredr::RxPacketStatus ScoPacketStatusToFidl(
+    bt::hci_spec::SynchronousDataPacketStatusFlag status) {
+  switch (status) {
+    case bt::hci_spec::SynchronousDataPacketStatusFlag::kCorrectlyReceived:
+      return fuchsia::bluetooth::bredr::RxPacketStatus::CORRECTLY_RECEIVED_DATA;
+    case bt::hci_spec::SynchronousDataPacketStatusFlag::kPossiblyInvalid:
+      return fuchsia::bluetooth::bredr::RxPacketStatus::POSSIBLY_INVALID_DATA;
+    case bt::hci_spec::SynchronousDataPacketStatusFlag::kNoDataReceived:
+      return fuchsia::bluetooth::bredr::RxPacketStatus::NO_DATA_RECEIVED;
+    case bt::hci_spec::SynchronousDataPacketStatusFlag::kDataPartiallyLost:
+      return fuchsia::bluetooth::bredr::RxPacketStatus::DATA_PARTIALLY_LOST;
+  }
+}
+
 }  // namespace bthost::fidl_helpers
 
 // static

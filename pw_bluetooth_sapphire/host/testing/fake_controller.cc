@@ -107,6 +107,7 @@ void FakeController::Settings::AddBREDRSupportedCommands() {
   SetBit(supported_commands + 8, hci_spec::SupportedCommand::kReadPageScanActivity);
   SetBit(supported_commands + 8, hci_spec::SupportedCommand::kWritePageScanActivity);
   SetBit(supported_commands + 9, hci_spec::SupportedCommand::kWriteClassOfDevice);
+  SetBit(supported_commands + 10, hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
   SetBit(supported_commands + 12, hci_spec::SupportedCommand::kReadInquiryMode);
   SetBit(supported_commands + 12, hci_spec::SupportedCommand::kWriteInquiryMode);
   SetBit(supported_commands + 13, hci_spec::SupportedCommand::kReadPageScanType);

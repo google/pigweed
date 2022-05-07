@@ -247,11 +247,10 @@ ProfileServer::ScoConnectionServer::ScoConnectionServer(
     fidl::InterfaceRequest<fuchsia::bluetooth::bredr::ScoConnection> request,
     fbl::RefPtr<bt::sco::ScoConnection> connection)
     : ServerBase(this, std::move(request)), connection_(std::move(connection)) {
-  binding()->set_error_handler([this](zx_status_t) { Close(); });
+  binding()->set_error_handler([this](zx_status_t) { Close(ZX_ERR_CANCELED); });
 }
 
 ProfileServer::ScoConnectionServer::~ScoConnectionServer() {
-  binding()->Close(ZX_ERR_PEER_CLOSED);
   if (connection_) {
     connection_->Deactivate();
   }
@@ -260,26 +259,49 @@ ProfileServer::ScoConnectionServer::~ScoConnectionServer() {
 void ProfileServer::ScoConnectionServer::Activate(fit::callback<void()> on_closed) {
   on_closed_ = std::move(on_closed);
 
-  auto rx_callback = []() {
-    // TODO(fxbug.dev/87453): Implement rx_callback
-  };
-  auto closed_cb = [this] { Close(); };
+  auto rx_callback = [this] { TryRead(); };
+  auto closed_cb = [this] { Close(ZX_ERR_PEER_CLOSED); };
   connection_->Activate(std::move(rx_callback), std::move(closed_cb));
 }
 
 void ProfileServer::ScoConnectionServer::Read(ReadCallback callback) {
-  // TODO(fxbug.dev/87453): Implement Read()
-  Close();
+  // TODO(fxbug.dev/87453): Close() if SCO is offloaded
+  if (read_cb_) {
+    bt_log(WARN, "fidl", "%s called when a read callback was already present", __func__);
+    Close(ZX_ERR_BAD_STATE);
+    return;
+  }
+  read_cb_ = std::move(callback);
+  TryRead();
 }
 
 void ProfileServer::ScoConnectionServer::Write(std::vector<uint8_t> data, WriteCallback callback) {
   // TODO(fxbug.dev/87453): Implement Write()
-  Close();
+  Close(ZX_ERR_NOT_SUPPORTED);
 }
 
-void ProfileServer::ScoConnectionServer::Close() {
+void ProfileServer::ScoConnectionServer::TryRead() {
+  if (!read_cb_) {
+    return;
+  }
+  std::unique_ptr<bt::hci::ScoDataPacket> packet = connection_->Read();
+  if (!packet) {
+    return;
+  }
+  std::vector<uint8_t> payload;
+  fuchsia::bluetooth::bredr::RxPacketStatus status =
+      fidl_helpers::ScoPacketStatusToFidl(packet->packet_status_flag());
+  if (packet->packet_status_flag() !=
+      bt::hci_spec::SynchronousDataPacketStatusFlag::kNoDataReceived) {
+    payload = packet->view().payload_data().ToVector();
+  }
+  read_cb_(status, std::move(payload));
+}
+
+void ProfileServer::ScoConnectionServer::Close(zx_status_t epitaph) {
   connection_->Deactivate();
   connection_.reset();
+  binding()->Close(epitaph);
   if (on_closed_) {
     on_closed_();
   }

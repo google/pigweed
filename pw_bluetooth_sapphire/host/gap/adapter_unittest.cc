@@ -1213,6 +1213,10 @@ TEST_F(AdapterTest, ScoDataChannelNotInitializedBecauseFlowControlNotSupported) 
   FakeController::Settings settings;
   settings.AddBREDRSupportedCommands();
   settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  constexpr size_t flow_control_command_byte = 10;
+  constexpr uint8_t disable_flow_control_mask =
+      ~static_cast<uint8_t>(hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
+  settings.supported_commands[flow_control_command_byte] &= disable_flow_control_mask;
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   // Ensure SCO buffers are available.

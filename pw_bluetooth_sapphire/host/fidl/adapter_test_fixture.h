@@ -25,6 +25,7 @@ class AdapterTestFixture : public bt::testing::ControllerTest<bt::testing::FakeC
 
  protected:
   void SetUp() override;
+  void SetUp(bt::testing::FakeController::Settings settings);
   void TearDown() override;
 
   fxl::WeakPtr<bt::gap::Adapter> adapter() const { return adapter_->AsWeakPtr(); }

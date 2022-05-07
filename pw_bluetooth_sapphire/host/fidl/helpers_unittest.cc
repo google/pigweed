@@ -1288,5 +1288,18 @@ TEST(HelpersTest, PeerIdFromString) {
   EXPECT_EQ(PeerIdFromString("ABCDEF"), std::optional(bt::PeerId(0xabcdef)));
 }
 
+TEST(HelpersTest, ScoPacketStatusToFidl) {
+  EXPECT_EQ(
+      ScoPacketStatusToFidl(bt::hci_spec::SynchronousDataPacketStatusFlag::kCorrectlyReceived),
+      fuchsia::bluetooth::bredr::RxPacketStatus::CORRECTLY_RECEIVED_DATA);
+  EXPECT_EQ(ScoPacketStatusToFidl(bt::hci_spec::SynchronousDataPacketStatusFlag::kPossiblyInvalid),
+            fuchsia::bluetooth::bredr::RxPacketStatus::POSSIBLY_INVALID_DATA);
+  EXPECT_EQ(ScoPacketStatusToFidl(bt::hci_spec::SynchronousDataPacketStatusFlag::kNoDataReceived),
+            fuchsia::bluetooth::bredr::RxPacketStatus::NO_DATA_RECEIVED);
+  EXPECT_EQ(
+      ScoPacketStatusToFidl(bt::hci_spec::SynchronousDataPacketStatusFlag::kDataPartiallyLost),
+      fuchsia::bluetooth::bredr::RxPacketStatus::DATA_PARTIALLY_LOST);
+}
+
 }  // namespace
 }  // namespace bthost::fidl_helpers
