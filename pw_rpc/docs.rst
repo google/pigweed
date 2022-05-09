@@ -1252,7 +1252,7 @@ minimal overhead, ``pw_rpc`` uses a single, global mutex (when
 
 Because ``pw_rpc`` uses a global mutex, it also uses a global buffer to encode
 outgoing packets. The size of the buffer is set with
-``PW_RPC_ENCODING_BUFFER_SIZE``, which defaults to 512 B.
+``PW_RPC_ENCODING_BUFFER_SIZE_BYTES``, which defaults to 512 B.
 
 Users of ``pw_rpc`` must implement the :cpp:class:`pw::rpc::ChannelOutput`
 interface.
