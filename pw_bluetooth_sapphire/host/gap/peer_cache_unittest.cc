@@ -586,6 +586,7 @@ TEST_F(PeerCacheTestBondingTest, AddLowEnergyBondedPeerSuccess) {
   EXPECT_EQ(kId, peer->identifier());
   EXPECT_EQ(kAddrLeRandom, peer->address());
   EXPECT_EQ(kName, peer->name());
+  EXPECT_EQ(Peer::NameSource::kUnknown, peer->name_source());
   EXPECT_TRUE(peer->identity_known());
   ASSERT_TRUE(peer->le());
   EXPECT_TRUE(peer->le()->bonded());
@@ -1006,6 +1007,7 @@ TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
   EXPECT_EQ(kId, peer->identifier());
   EXPECT_EQ(address, peer->address());
   EXPECT_EQ(kName, peer->name());
+  EXPECT_EQ(Peer::NameSource::kUnknown, peer->name_source());
   EXPECT_TRUE(peer->identity_known());
   EXPECT_TRUE(peer->bonded());
   ASSERT_TRUE(peer->le());
@@ -1078,6 +1080,7 @@ TEST_F(PeerCacheLowEnergyUpdateCallbackTest, SetAdvertisingDataTriggersUpdateCal
   EXPECT_TRUE(was_called());
   ASSERT_TRUE(peer()->name());
   EXPECT_EQ("Test", *peer()->name());
+  EXPECT_EQ(Peer::NameSource::kAdvertisingDataComplete, *peer()->name_source());
 }
 
 TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
@@ -1244,6 +1247,7 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
     EXPECT_EQ(DeviceClass::MajorClass(0x02), updated_peer.bredr()->device_class()->major_class());
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
     EXPECT_EQ(*updated_peer.name(), "Test");
+    EXPECT_EQ(*updated_peer.name_source(), Peer::NameSource::kInquiryResultComplete);
   });
   peer()->MutBrEdr().SetInquiryData(eirep());
 }
@@ -1299,18 +1303,18 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
   EXPECT_FALSE(was_called());
 }
 
-TEST_F(PeerCacheBrEdrUpdateCallbackTest, SetNameTriggersUpdateCallback) {
-  peer()->SetName("nombre");
+TEST_F(PeerCacheBrEdrUpdateCallbackTest, RegisterNameTriggersUpdateCallback) {
+  peer()->RegisterName("nombre");
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(PeerCacheBrEdrUpdateCallbackTest, SetNameDoesNotTriggerUpdateCallbackOnSameName) {
-  peer()->SetName("nombre");
+TEST_F(PeerCacheBrEdrUpdateCallbackTest, RegisterNameDoesNotTriggerUpdateCallbackOnSameName) {
+  peer()->RegisterName("nombre");
   ASSERT_TRUE(was_called());
 
   bool was_called_again = false;
   cache()->add_peer_updated_callback([&](const auto&) { was_called_again = true; });
-  peer()->SetName("nombre");
+  peer()->RegisterName("nombre");
   EXPECT_FALSE(was_called_again);
 }
 
@@ -1386,7 +1390,7 @@ TEST_F(PeerCacheExpirationTest, TemporaryLivesForSixtySecondsSinceLastSeen) {
   ASSERT_TRUE(IsDefaultPeerPresent());
 
   // Tickle peer, and verify it sticks around for another cache timeout.
-  GetDefaultPeer()->SetName("nombre");
+  GetDefaultPeer()->RegisterName("nombre");
   RunLoopFor(kCacheTimeout - zx::msec(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
@@ -1396,7 +1400,7 @@ TEST_F(PeerCacheExpirationTest, TemporaryDiesSixtySecondsAfterLastSeen) {
   ASSERT_TRUE(IsDefaultPeerPresent());
 
   // Tickle peer, and verify it expires after cache timeout.
-  GetDefaultPeer()->SetName("nombre");
+  GetDefaultPeer()->RegisterName("nombre");
   RunLoopFor(kCacheTimeout);
   EXPECT_FALSE(IsDefaultPeerPresent());
 }
@@ -1592,10 +1596,10 @@ TEST_F(PeerCacheExpirationTest,
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(PeerCacheExpirationTest, SetNameUpdatesExpiration) {
+TEST_F(PeerCacheExpirationTest, RegisterNameUpdatesExpiration) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
-  GetDefaultPeer()->SetName({});
+  GetDefaultPeer()->RegisterName({});
   RunLoopFor(zx::msec(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
 }

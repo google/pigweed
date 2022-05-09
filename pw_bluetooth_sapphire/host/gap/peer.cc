@@ -40,6 +40,28 @@ std::string Peer::ConnectionStateToString(Peer::ConnectionState state) {
   return "(unknown)";
 }
 
+std::string Peer::NameSourceToString(Peer::NameSource name_source) {
+  switch (name_source) {
+    case Peer::NameSource::kNameDiscoveryProcedure:
+      return "Name Discovery Procedure";
+    case Peer::NameSource::kAdvertisingDataComplete:
+      return "Advertising data (complete)";
+    case Peer::NameSource::kAdvertisingDataShortened:
+      return "Advertising data (shortened)";
+    case Peer::NameSource::kInquiryResultComplete:
+      return "Inquiry result (complete)";
+    case Peer::NameSource::kInquiryResultShortened:
+      return "Inquiry result (shortened)";
+    case Peer::NameSource::kGenericAccessService:
+      return "Generic Access Service";
+    case Peer::NameSource::kUnknown:
+      return "Unknown source";
+  }
+
+  ZX_PANIC("invalid peer name source %u", static_cast<unsigned int>(name_source));
+  return "(unknown)";
+}
+
 Peer::LowEnergyData::LowEnergyData(Peer* owner)
     : peer_(owner),
       bond_data_(std::nullopt,
@@ -102,9 +124,10 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data
     // Do not update the name of bonded peers because advertisements are unauthenticated.
     // TODO(fxbug.dev/85365): Populate more Peer fields with relevant fields from parsed_adv_data_.
     if (!peer_->bonded() && parsed_adv_data_->local_name().has_value()) {
-      // TODO(fxbug.dev/65914): SetName should be a no-op if a name was obtained via
-      // the name discovery procedure.
-      peer_->SetNameInternal(parsed_adv_data_->local_name().value());
+      peer_->RegisterNameInternal(parsed_adv_data_->local_name()->name,
+                                  parsed_adv_data_->local_name()->is_complete
+                                      ? Peer::NameSource::kAdvertisingDataComplete
+                                      : Peer::NameSource::kAdvertisingDataShortened);
     }
   }
 
@@ -385,7 +408,8 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
       // the name discovery procedure.
       // Do not update the name of bonded peers because inquiry results are unauthenticated.
       if (!peer_->bonded()) {
-        changed = peer_->SetNameInternal(data.ToString());
+        changed =
+            peer_->RegisterNameInternal(data.ToString(), Peer::NameSource::kInquiryResultComplete);
       }
     }
   }
@@ -433,7 +457,10 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
                   [](TechnologyType t) { return TechnologyTypeToString(t); }),
       address_(address, MakeToStringInspectConvertFunction()),
       identity_known_(false),
-      name_(std::nullopt, [](const std::optional<std::string>& v) { return v ? *v : ""; }),
+      name_(std::nullopt,
+            [](const std::optional<PeerName>& v) {
+              return v ? v->name + " [source: " + NameSourceToString(v->source) + "]" : "";
+            }),
       lmp_version_(std::nullopt,
                    [](const std::optional<hci_spec::HCIVersion>& v) {
                      return v ? hci_spec::HCIVersionToString(*v) : "";
@@ -521,12 +548,14 @@ std::string Peer::ToString() const {
                                          bt_str(*address_));
 }
 
-void Peer::SetName(const std::string& name) {
-  if (SetNameInternal(name)) {
+bool Peer::RegisterName(const std::string& name, Peer::NameSource source) {
+  if (RegisterNameInternal(name, source)) {
     UpdateExpiry();
     // TODO(fxbug.dev/61739): Update the bond when this happens
     UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
+    return true;
   }
+  return false;
 }
 
 void Peer::StoreBrEdrCrossTransportKey(sm::LTK ct_key) {
@@ -552,7 +581,7 @@ bool Peer::SetRssiInternal(int8_t rssi) {
   return false;
 }
 
-bool Peer::SetNameInternal(const std::string& name) {
+bool Peer::RegisterNameInternal(const std::string& name, Peer::NameSource source) {
   if (!bt_lib_cpp_string::IsStringUTF8(name)) {
     std::ostringstream oss;
     oss << std::hex << std::setfill('0');
@@ -564,8 +593,9 @@ bool Peer::SetNameInternal(const std::string& name) {
            bt_str(*this), oss.str().c_str());
     return false;
   }
-  if (!*name_ || name_.value() != name) {
-    name_.Set(name);
+  if (!name_->has_value() || source < (*name_)->source ||
+      (source == (*name_)->source && name != (*name_)->name)) {
+    name_.Set(Peer::PeerName{name, source});
     return true;
   }
   return false;

@@ -63,7 +63,7 @@ class PeerFuzzer final {
         &PeerFuzzer::BrEdrDataSetBondData,
         &PeerFuzzer::BrEdrDataClearBondData,
         &PeerFuzzer::BrEdrDataAddService,
-        &PeerFuzzer::SetName,
+        &PeerFuzzer::RegisterName,
         &PeerFuzzer::SetFeaturePage,
         &PeerFuzzer::set_last_page_number,
         &PeerFuzzer::set_version,
@@ -217,7 +217,7 @@ class PeerFuzzer final {
     peer_.MutBrEdr().AddService(uuid);
   }
 
-  void SetName() { peer_.SetName(fdp().ConsumeRandomLengthString()); }
+  void RegisterName() { peer_.RegisterName(fdp().ConsumeRandomLengthString()); }
 
   void SetFeaturePage() {
     peer_.SetFeaturePage(

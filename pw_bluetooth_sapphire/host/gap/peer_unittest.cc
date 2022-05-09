@@ -192,7 +192,7 @@ class PeerDeathTest : public PeerTest {};
 TEST_F(PeerTest, InspectHierarchy) {
   peer().set_version(hci_spec::HCIVersion::k5_0, kManufacturer, kSubversion);
 
-  peer().SetName("Sapphire💖");
+  peer().RegisterName("Sapphire💖", Peer::NameSource::kGenericAccessService);
 
   peer().MutLe();
   ASSERT_TRUE(peer().le().has_value());
@@ -228,7 +228,7 @@ TEST_F(PeerTest, InspectHierarchy) {
     NodeMatches(
       PropertyList(UnorderedElementsAre(
         StringIs(Peer::kInspectPeerIdName, peer().identifier().ToString()),
-        StringIs(Peer::kInspectPeerNameName, peer().name().value()),
+        StringIs(Peer::kInspectPeerNameName, peer().name().value() + " [source: " + Peer::NameSourceToString(Peer::NameSource::kGenericAccessService) + "]"),
         StringIs(Peer::kInspectTechnologyName, TechnologyTypeToString(peer().technology())),
         StringIs(Peer::kInspectAddressName, peer().address().ToString()),
         BoolIs(Peer::kInspectConnectableName, peer().connectable()),
@@ -323,14 +323,14 @@ TEST_F(PeerTest, BrEdrDataSetEirDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
   EXPECT_FALSE(peer().name().has_value());
 }
 
-TEST_F(PeerTest, SetNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
+TEST_F(PeerTest, RegisterNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
   ASSERT_FALSE(peer().name().has_value());
 
   bool listener_notified = false;
   set_notify_listeners_cb([&](auto&, Peer::NotifyListenersChange) { listener_notified = true; });
 
   const std::string kName = "Tes\xFF\x01";  // 0xFF should not appear in a valid UTF-8 string
-  peer().SetName(kName);
+  peer().RegisterName(kName);
   EXPECT_FALSE(listener_notified);
   EXPECT_FALSE(peer().name().has_value());
 }
@@ -463,7 +463,7 @@ TEST_F(PeerTest, SettingAddingBrEdrServiceUpdatesLastUpdated) {
   EXPECT_GE(notify_count, 1);
 }
 
-TEST_F(PeerTest, SettingNameUpdatesLastUpdated) {
+TEST_F(PeerTest, RegisteringNameUpdatesLastUpdated) {
   EXPECT_EQ(peer().last_updated(), zx::time(0));
 
   int notify_count = 0;
@@ -473,7 +473,7 @@ TEST_F(PeerTest, SettingNameUpdatesLastUpdated) {
   });
 
   RunLoopFor(zx::duration(2));
-  peer().SetName("name");
+  peer().RegisterName("name");
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
 }
@@ -704,6 +704,23 @@ TEST_F(PeerTest, MovingLowEnergyConnectionTokenWorksAsExpected) {
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
 }
 
+TEST_F(PeerTest, RegisterNamesWithVariousSources) {
+  ASSERT_FALSE(peer().name().has_value());
+  ASSERT_TRUE(peer().RegisterName("test", Peer::kAdvertisingDataComplete));
+
+  // Test that name with lower source priority does not replace stored name with higher priority.
+  ASSERT_FALSE(peer().RegisterName("test", Peer::kUnknown));
+
+  // Test that name with higher source priority replaces stored name with lower priority.
+  ASSERT_TRUE(peer().RegisterName("test", Peer::kGenericAccessService));
+
+  // Test that stored name is not replaced with an identical name from an identical source.
+  ASSERT_FALSE(peer().RegisterName("test", Peer::kGenericAccessService));
+
+  // Test that stored name is replaced by a different name from the same source.
+  ASSERT_TRUE(peer().RegisterName("different_name", Peer::kGenericAccessService));
+}
+
 TEST_F(PeerTest, SetValidAdvertisingData) {
   constexpr const char* kLocalName = "Test";
   StaticByteBuffer raw_data{
@@ -716,8 +733,23 @@ TEST_F(PeerTest, SetValidAdvertisingData) {
   // Setting an AdvertisingData with a local name field should update the peer's local name.
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(kLocalName, peer().name().value());
+  EXPECT_EQ(Peer::NameSource::kAdvertisingDataComplete, peer().name_source());
   EXPECT_EQ(0, InspectAdvertisingDataParseFailureCount());
   EXPECT_EQ("", InspectLastAdvertisingDataParseFailure());
+}
+
+TEST_F(PeerTest, SetShortenedLocalName) {
+  constexpr const char* kLocalName = "Test";
+  StaticByteBuffer raw_data{
+      // Length - Type - Value formatted Local name
+      0x05,          static_cast<uint8_t>(DataType::kShortenedLocalName),
+      kLocalName[0], kLocalName[1],
+      kLocalName[2], kLocalName[3],
+  };
+  peer().MutLe().SetAdvertisingData(/*rssi=*/32, raw_data, zx::time());
+  ASSERT_TRUE(peer().name().has_value());
+  EXPECT_EQ(kLocalName, peer().name().value());
+  EXPECT_EQ(Peer::NameSource::kAdvertisingDataShortened, peer().name_source());
 }
 
 TEST_F(PeerTest, SetInvalidAdvertisingData) {
@@ -982,7 +1014,7 @@ TEST_F(PeerTest, RegisterAndUnregisterTwoBrEdrInitializingConnections) {
 }
 
 TEST_F(PeerTest, SettingLeAdvertisingDataOfBondedPeerDoesNotUpdateName) {
-  peer().SetName("alice");
+  peer().RegisterName("alice");
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -998,7 +1030,7 @@ TEST_F(PeerTest, SettingLeAdvertisingDataOfBondedPeerDoesNotUpdateName) {
 }
 
 TEST_F(PeerTest, SettingInquiryDataOfBondedPeerDoesNotUpdateName) {
-  peer().SetName("alice");
+  peer().RegisterName("alice");
   peer().MutBrEdr().SetBondData(kLTK);
 
   const StaticByteBuffer kEirData(0x08,  // Length

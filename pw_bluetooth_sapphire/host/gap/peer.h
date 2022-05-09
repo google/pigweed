@@ -94,6 +94,23 @@ class Peer final {
     kSkipUntilNextConnection,
   };
 
+  // This device's name can be read from various sources: LE advertisements,
+  // Inquiry results, Name Discovery Procedure, the GAP service, or from a restored bond.
+  // When a name is read, it should be registered along with its source location.
+  // `RegisterName()` will update the device name attribute if the newly
+  // encountered name's source is of higher priority (lower enum value) than that
+  // of the existing name.
+  enum NameSource {
+    kGenericAccessService = /*highest priority*/ 0,
+    kNameDiscoveryProcedure = 1,
+    kInquiryResultComplete = 2,
+    kAdvertisingDataComplete = 3,
+    kInquiryResultShortened = 4,
+    kAdvertisingDataShortened = 5,
+    kUnknown = /*lowest priority*/ 6,
+  };
+  static std::string NameSourceToString(Peer::NameSource);
+
   static constexpr const char* kInspectPeerIdName = "peer_id";
   static constexpr const char* kInspectPeerNameName = "name";
   static constexpr const char* kInspectTechnologyName = "technology";
@@ -458,10 +475,15 @@ class Peer final {
   // hci_spec::kRSSIInvalid if the value is unknown.
   int8_t rssi() const { return rssi_; }
 
-  // Gets the user-friendly name of the device, if it's known. This can be
-  // assigned based on LE advertising data, BR/EDR inquiry data, or by directly
-  // calling the SetName() method.
-  const std::optional<std::string>& name() const { return *name_; }
+  // Gets the user-friendly name of the device, if it's known.
+  std::optional<std::string> name() const {
+    return name_->has_value() ? std::optional<std::string>{(*name_)->name} : std::nullopt;
+  }
+
+  // Gets the source from which this peer's name was read, if it's known.
+  std::optional<NameSource> name_source() const {
+    return name_->has_value() ? std::optional<NameSource>{(*name_)->source} : std::nullopt;
+  }
 
   // Gets the appearance of the device, if it's known.
   const std::optional<uint16_t>& appearance() const { return appearance_; }
@@ -504,9 +526,11 @@ class Peer final {
 
   // The following methods mutate Peer properties:
 
-  // Updates the name of this device. This will override the existing name (if
-  // present) and notify listeners of the change.
-  void SetName(const std::string& name);
+  // Updates the name of this device if no name is currently set or if the source
+  // of `name` has higher priority than that of the existing name. Returns true if
+  // a name change occurs.  If the name is updated and `notify_listeners` is false,
+  // then listeners will not be notified of an update to this peer.
+  bool RegisterName(const std::string& name, NameSource source = kUnknown);
 
   // Updates the appearance of this device.
   void SetAppearance(uint16_t appearance) { appearance_ = appearance; }
@@ -553,6 +577,11 @@ class Peer final {
   fxl::WeakPtr<Peer> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  struct PeerName {
+    std::string name;
+    NameSource source;
+  };
+
   // Assigns a new value for the address of this device. Called by LowEnergyData
   // when a new identity address is assigned.
   void set_address(const DeviceAddress& address) { address_.Set(address); }
@@ -564,7 +593,7 @@ class Peer final {
   // listeners.
   // TODO(armansito): Add similarly styled internal setters so that we can batch
   // more updates.
-  bool SetNameInternal(const std::string& name);
+  bool RegisterNameInternal(const std::string& name, NameSource source);
 
   // Marks this device as non-temporary. This operation may fail due to one of
   // the conditions described above the |temporary()| method.
@@ -608,7 +637,7 @@ class Peer final {
   StringInspectable<DeviceAddress> address_;
   bool identity_known_;
 
-  StringInspectable<std::optional<std::string>> name_;
+  StringInspectable<std::optional<PeerName>> name_;
   // TODO(fxbug.dev/95912): Coordinate this field with the appearance read from advertising data.
   std::optional<uint16_t> appearance_;
   StringInspectable<std::optional<hci_spec::HCIVersion>> lmp_version_;

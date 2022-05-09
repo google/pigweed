@@ -86,7 +86,8 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
       return;
     }
     const auto remote_name_end = std::find(params.remote_name, std::end(params.remote_name), '\0');
-    peer->SetName(std::string(params.remote_name, remote_name_end));
+    peer->RegisterName(std::string(params.remote_name, remote_name_end),
+                       Peer::NameSource::kNameDiscoveryProcedure);
   };
 
   bt_log(TRACE, "gap-bredr", "sending name request (peer id: %s)",

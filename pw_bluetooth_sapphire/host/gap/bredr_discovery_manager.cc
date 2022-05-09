@@ -442,7 +442,8 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
       return;
     }
     const auto remote_name_end = std::find(params.remote_name, std::end(params.remote_name), '\0');
-    peer->SetName(std::string(params.remote_name, remote_name_end));
+    peer->RegisterName(std::string(params.remote_name, remote_name_end),
+                       Peer::NameSource::kNameDiscoveryProcedure);
   };
 
   auto cmd_id = hci_->command_channel()->SendExclusiveCommand(

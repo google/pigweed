@@ -237,19 +237,20 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
         out_ad.SetTxPower(static_cast<int8_t>(field[0]));
         break;
       }
-      case DataType::kShortenedLocalName:
-        // If a name has been previously set (e.g. because the Complete Local
-        // Name was included in the scan response) then break. Otherwise we fall
-        // through.
-        if (out_ad.local_name()) {
-          break;
-        } else {
-          __FALLTHROUGH;
-        }
-      case DataType::kCompleteLocalName: {
-        if (!out_ad.SetLocalName(field.ToString())) {
+      case DataType::kShortenedLocalName: {
+        if (field.ToString().size() > kMaxNameLength) {
           return fitx::error(ParseError::kLocalNameTooLong);
         }
+
+        (void)out_ad.SetLocalName(field.ToString(), /*is_complete=*/false);
+        break;
+      }
+      case DataType::kCompleteLocalName: {
+        if (field.ToString().size() > kMaxNameLength) {
+          return fitx::error(ParseError::kLocalNameTooLong);
+        }
+
+        (void)out_ad.SetLocalName(field.ToString(), /*is_complete=*/true);
         break;
       }
       case DataType::kIncomplete16BitServiceUuids:
@@ -435,15 +436,20 @@ void AdvertisingData::SetTxPower(int8_t dbm) { tx_power_ = dbm; }
 
 std::optional<int8_t> AdvertisingData::tx_power() const { return tx_power_; }
 
-[[nodiscard]] bool AdvertisingData::SetLocalName(const std::string& name) {
-  if (name.size() > kMaxNameLength) {
+bool AdvertisingData::SetLocalName(const LocalName& local_name) {
+  if (local_name.name.size() > kMaxNameLength) {
     return false;
   }
-  local_name_ = name;
+  if (local_name_.has_value() && local_name_->is_complete && !local_name.is_complete) {
+    return false;
+  }
+  local_name_ = local_name;
   return true;
 }
 
-std::optional<std::string> AdvertisingData::local_name() const { return local_name_; }
+std::optional<AdvertisingData::LocalName> AdvertisingData::local_name() const {
+  return local_name_;
+}
 
 [[nodiscard]] bool AdvertisingData::AddUri(const std::string& uri) {
   if (EncodeUri(uri).size() > kMaxEncodedUriLength) {
@@ -480,7 +486,7 @@ size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
   }
 
   if (local_name_) {
-    len += 2 + local_name_->size();
+    len += 2 + local_name_->name.size();
   }
 
   for (const auto& manuf_pair : manufacturer_data_) {
@@ -535,11 +541,12 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
   }
 
   if (local_name_) {
-    ZX_ASSERT(local_name_->size() <= kMaxNameLength);
-    (*buffer)[pos++] = static_cast<uint8_t>(local_name_->size()) + 1;  // 1 for null char
+    ZX_ASSERT(local_name_->name.size() <= kMaxNameLength);
+    (*buffer)[pos++] = static_cast<uint8_t>(local_name_->name.size()) + 1;  // 1 for null char
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kCompleteLocalName);
-    buffer->Write(reinterpret_cast<const uint8_t*>(local_name_->c_str()), local_name_->size(), pos);
-    pos += local_name_->size();
+    buffer->Write(reinterpret_cast<const uint8_t*>(local_name_->name.c_str()),
+                  local_name_->name.size(), pos);
+    pos += local_name_->name.size();
   }
 
   for (const auto& manuf_pair : manufacturer_data_) {

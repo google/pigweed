@@ -1092,7 +1092,7 @@ TEST_F(HostServerTest, OnNewBondingData) {
   host_client_ptr().events().OnNewBondingData = [&](auto _data) { data = std::move(_data); };
 
   auto* peer = adapter()->peer_cache()->NewPeer(kBredrTestAddr, /*connectable=*/true);
-  peer->SetName(kTestName);
+  peer->RegisterName(kTestName);
   adapter()->peer_cache()->StoreLowEnergyBond(peer->identifier(),
                                               bt::sm::PairingData{.peer_ltk = {kTestLtk}});
   RunLoopUntilIdle();

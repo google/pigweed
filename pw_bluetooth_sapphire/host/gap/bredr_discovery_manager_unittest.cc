@@ -415,6 +415,7 @@ TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFat
 // Test: Inquiry Results that come in when there is discovery get reported up
 // correctly to the sessions
 // Test: Peers discovered are reported to the cache
+// Test: RemoteNameRequest is processed correctly
 // Test: Inquiry Results that come in when there's no discovery happening get
 // discarded.
 TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
@@ -443,6 +444,12 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 
   RunLoopUntilIdle();
+
+  // Confirm that post-inquiry peer name request is processed correctly.
+  Peer* peer = peer_cache()->FindByAddress(kDeviceAddress1);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ("Fuchsia💖", *peer->name());
+  EXPECT_EQ(Peer::NameSource::kNameDiscoveryProcedure, *peer->name_source());
 
   EXPECT_EQ(2u, peers_found);
 
@@ -1047,6 +1054,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   ASSERT_TRUE(peer2);
   ASSERT_TRUE(peer2->name());
   EXPECT_EQ("Fuchsia💖", *peer2->name());
+  EXPECT_EQ(Peer::NameSource::kInquiryResultComplete, *peer2->name_source());
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 

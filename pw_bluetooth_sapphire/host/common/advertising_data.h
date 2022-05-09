@@ -122,6 +122,17 @@ class AdvertisingData {
     kAppearanceMalformed,
   };
 
+  // Both complete and shortened forms of the local name can be advertised.
+  struct LocalName {
+    std::string name;
+    bool is_complete;
+
+    bool operator==(const LocalName& other) const {
+      return (name == other.name) && (is_complete == other.is_complete);
+    }
+    bool operator!=(const LocalName& other) const { return !(*this == other); }
+  };
+
   // Creates an empty advertising data.
   AdvertisingData() = default;
   ~AdvertisingData() = default;
@@ -185,11 +196,15 @@ class AdvertisingData {
   // Gets the TX power
   std::optional<int8_t> tx_power() const;
 
-  // Returns false if `name` is not set due to exceeding kMaxLocalName bytes, or true if it is set.
-  [[nodiscard]] bool SetLocalName(const std::string& name);
+  // Returns false if `name` is not set, which happens if `name` is shortened and a complete name is
+  // currently set, or if `name` exceeds kMaxLocalName bytes. Returns true if `name` is set.
+  [[nodiscard]] bool SetLocalName(const LocalName& local_name);
+  [[nodiscard]] bool SetLocalName(const std::string& name, bool is_complete = true) {
+    return SetLocalName(LocalName{name, is_complete});
+  }
 
   // Gets the local name
-  std::optional<std::string> local_name() const;
+  std::optional<LocalName> local_name() const;
 
   // Adds a URI to the set of URIs advertised.
   // Does nothing if |uri| is empty or, when encoded, exceeds kMaxEncodedUriLength.
@@ -253,7 +268,7 @@ class AdvertisingData {
       {UUIDElemSize::k128Bit, BoundedUuids(kMax128BitUuids)}};
   // TODO(armansito): Consider storing the payload in its serialized form and
   // have these point into the structure (see fxbug.dev/907).
-  std::optional<std::string> local_name_;
+  std::optional<LocalName> local_name_;
   std::optional<int8_t> tx_power_;
   std::optional<uint16_t> appearance_;
 

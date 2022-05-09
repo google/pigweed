@@ -82,7 +82,7 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   peer->set_identity_known(true);
 
   if (bd.name.has_value()) {
-    peer->SetName(bd.name.value());
+    peer->RegisterName(bd.name.value(), Peer::NameSource::kUnknown);
   }
 
   if (bond_le) {

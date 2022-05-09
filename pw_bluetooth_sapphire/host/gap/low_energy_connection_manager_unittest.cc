@@ -1738,6 +1738,7 @@ TEST_P(ReadDeviceNameParameterizedFixture, ReadDeviceNameParameterized) {
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_ref);
   ASSERT_TRUE(peer->name());
+  EXPECT_EQ(peer->name_source(), Peer::NameSource::kGenericAccessService);
   std::string device_name = peer->name().value();
   EXPECT_EQ(device_name, "abc");
 }
@@ -1786,6 +1787,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReadDeviceNameLong) {
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_ref);
   ASSERT_TRUE(peer->name());
+  EXPECT_EQ(peer->name_source(), Peer::NameSource::kGenericAccessService);
   std::string device_name = peer->name().value();
   EXPECT_EQ(device_name, std::string(att::kMaxAttributeValueLength, 'a'));
 }

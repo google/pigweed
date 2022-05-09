@@ -182,7 +182,7 @@ TEST(HelpersTest, AdvertisingDataFromFidlName) {
   ASSERT_TRUE(maybe_data.has_value());
   auto output = std::move(*maybe_data);
   EXPECT_TRUE(output.local_name());
-  EXPECT_EQ(kTestName, *output.local_name());
+  EXPECT_EQ(kTestName, output.local_name()->name);
 }
 
 TEST(HelpersTest, AdvertisingDataFromFidlAppearance) {
@@ -1230,7 +1230,7 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
   bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, [](auto&) { return false; },
                      kPeerId, kAddr,
                      /*connectable=*/true, &metrics);
-  peer.SetName("name");
+  peer.RegisterName("name");
   const int8_t kRssi = 1;
   auto adv_bytes = bt::StaticByteBuffer(
       // Uri: "https://abc.xyz"

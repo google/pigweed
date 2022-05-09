@@ -528,7 +528,7 @@ void LowEnergyConnection::OnGattServicesResult(att::Result<> status, gatt::Servi
       return;
     }
 
-    self->peer_->SetName(result.value());
+    self->peer_->RegisterName(result.value(), Peer::NameSource::kGenericAccessService);
   });
 
   gap_service_client_->ReadAppearance([self](att::Result<uint16_t> result) {

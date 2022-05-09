@@ -925,7 +925,7 @@ fble::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input) {
   fble::AdvertisingData output;
 
   if (input.local_name()) {
-    output.set_name(*input.local_name());
+    output.set_name(input.local_name()->name);
   }
   if (input.appearance()) {
     // TODO(fxbug.dev/66358): Remove this to allow for passing arbitrary appearance values to
@@ -935,7 +935,7 @@ fble::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input) {
       output.set_appearance(appearance.value());
     } else {
       bt_log(DEBUG, "fidl", "omitting unencodeable appearance %#.4x of peer %s", appearance_raw,
-             input.local_name().value_or("").c_str());
+             input.local_name().has_value() ? input.local_name()->name.c_str() : "");
     }
   }
   if (input.tx_power()) {
@@ -983,7 +983,7 @@ fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(const bt::Advert
   fble::AdvertisingDataDeprecated output;
 
   if (input.local_name()) {
-    output.name = *input.local_name();
+    output.name = input.local_name()->name;
   }
   if (input.appearance()) {
     output.appearance = std::make_unique<fbt::UInt16>();

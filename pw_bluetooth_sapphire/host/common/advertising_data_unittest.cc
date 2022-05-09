@@ -100,7 +100,7 @@ TEST(AdvertisingDataTest, ParseBlock) {
 
   EXPECT_EQ(3u, data->service_uuids().size());
   EXPECT_TRUE(data->local_name());
-  EXPECT_EQ("Test💖", *(data->local_name()));
+  EXPECT_EQ("Test💖", data->local_name()->name);
   EXPECT_TRUE(data->tx_power());
   EXPECT_EQ(-113, *(data->tx_power()));
 }
@@ -137,11 +137,35 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
     bytes.Write(name, /*pos=*/2);
     AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
     ASSERT_EQ(fitx::ok(), result);
-    EXPECT_EQ(result->local_name(), std::string(kMaxNameLength, 'a'));
+    EXPECT_EQ(result->local_name()->name, std::string(kMaxNameLength, 'a'));
+  }
+  // Repeat previous test with shortened name.
+  {
+    auto leading_bytes = StaticByteBuffer<2>{kMaxNameLength + 1, DataType::kShortenedLocalName};
+    auto bytes = DynamicByteBuffer(kMaxNameLength + 2);
+    bytes.Write(leading_bytes);
+    DynamicByteBuffer name(kMaxNameLength);
+    name.Fill('a');
+    bytes.Write(name, /*pos=*/2);
+    AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
+    ASSERT_EQ(fitx::ok(), result);
+    EXPECT_EQ(result->local_name()->name, std::string(kMaxNameLength, 'a'));
   }
   // A block with a name of kMaxNameLength+1 (==249) bytes should be rejected.
   {
     StaticByteBuffer<2> leading_bytes{kMaxNameLength + 2, DataType::kCompleteLocalName};
+    auto bytes = DynamicByteBuffer(kMaxNameLength + 3);
+    bytes.Write(leading_bytes);
+    DynamicByteBuffer name(kMaxNameLength + 1);
+    name.Fill('a');
+    bytes.Write(name, /*pos=*/2);
+    AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(AdvertisingData::ParseError::kLocalNameTooLong, result.error_value());
+  }
+  // Repeat previous test with shortened name.
+  {
+    auto leading_bytes = StaticByteBuffer<2>{kMaxNameLength + 2, DataType::kShortenedLocalName};
     auto bytes = DynamicByteBuffer(kMaxNameLength + 3);
     bytes.Write(leading_bytes);
     DynamicByteBuffer name(kMaxNameLength + 1);
@@ -384,7 +408,7 @@ TEST(AdvertisingDataTest, Move) {
   auto verify_advertising_data = [&](const AdvertisingData& dest, const char* type) {
     SCOPED_TRACE(type);
     // Dest should have the data we set.
-    EXPECT_EQ("test", dest.local_name().value());
+    EXPECT_EQ("test", dest.local_name()->name);
     EXPECT_EQ(tx_power, dest.tx_power().value());
     EXPECT_EQ(appearance, dest.appearance().value());
     EXPECT_EQ(std::unordered_set<std::string>({"http://fuchsia.cl", "https://ru.st"}), dest.uris());
@@ -618,13 +642,29 @@ TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
     std::string name_that_fits(kMaxNameLength, 'a');
     std::string too_long_name(kMaxNameLength + 1, 'b');
     EXPECT_TRUE(data.SetLocalName(name_that_fits));
-    EXPECT_EQ(name_that_fits, data.local_name());
+    EXPECT_EQ(name_that_fits, data.local_name()->name);
     EXPECT_FALSE(data.SetLocalName(too_long_name));
-    EXPECT_EQ(name_that_fits, data.local_name());
+    EXPECT_EQ(name_that_fits, data.local_name()->name);
   }
   // Write the data out to ensure no assertions are triggered
   DynamicByteBuffer block(data.CalculateBlockSize());
   EXPECT_TRUE(data.WriteBlock(&block, std::nullopt));
+}
+
+// Tests that setting a complete local name overwrites an existing shortened local name and that
+// setting a shortened local name has no effect if a complete local name is currently stored.
+TEST(AdvertisingDataTest, CompleteLocalNameFavored) {
+  AdvertisingData data;
+  std::string short_name = "short";
+  std::string complete_name = "complete";
+
+  EXPECT_TRUE(data.SetLocalName(short_name, /*is_complete=*/false));
+  EXPECT_EQ(short_name, data.local_name()->name);
+  EXPECT_TRUE(data.SetLocalName(complete_name, /*is_complete=*/true));
+  EXPECT_EQ(complete_name, data.local_name()->name);
+
+  EXPECT_FALSE(data.SetLocalName(short_name, /*is_complete=*/false));
+  EXPECT_EQ(complete_name, data.local_name()->name);
 }
 
 // Tests that even when the maximum number of distinct UUIDs for a certain size have been added to

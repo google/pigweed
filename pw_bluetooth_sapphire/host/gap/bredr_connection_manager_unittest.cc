@@ -907,6 +907,8 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  // Confirm remote name request during interrogation sets proper name source.
+  EXPECT_EQ(peer->name_source(), Peer::NameSource::kNameDiscoveryProcedure);
 
   // When we deallocate the connection manager during teardown, we should disconnect.
   QueueDisconnection(kConnectionHandle);
