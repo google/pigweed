@@ -104,6 +104,15 @@ Most Linux installations should work out of box, and not require any manual
 installation of prerequisites beyond basics like ``git`` and
 ``build-essential`` (or the equivalent for your distro).
 
+.. inclusive-language: disable
+
+To flash devices using OpenOCD, you may need to extend your system udev rules
+at ``/etc/udev/rules.d/``. The OpenOCD repository has a good
+`example udev rules file <https://github.com/openocd-org/openocd/blob/master/contrib/60-openocd.rules>`_
+that includes many popular hardware debuggers.
+
+.. inclusive-language: enable
+
 **macOS**
 
 To start using Pigweed on MacOS, you'll need to install XCode. Download it
