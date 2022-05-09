@@ -184,6 +184,8 @@ class PwTransferIntegrationTest(unittest.TestCase):
             "pigweed/pw_transfer/integration_test/java_client")
         cls._CPP_CLIENT_BINARY = r.Rlocation(
             "pigweed/pw_transfer/integration_test/cpp_client")
+        cls._PYTHON_CLIENT_BINARY = r.Rlocation(
+            "pigweed/pw_transfer/integration_test/python_client")
         cls._PROXY_BINARY = r.Rlocation(
             "pigweed/pw_transfer/integration_test/proxy")
         cls._SERVER_BINARY = r.Rlocation(
@@ -191,6 +193,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
         cls._CLIENT_BINARY = {
             "cpp": cls._CPP_CLIENT_BINARY,
             "java": cls._JAVA_CLIENT_BINARY,
+            "python": cls._PYTHON_CLIENT_BINARY,
         }
 
     async def _start_client(self, client_type: str,
@@ -228,7 +231,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
 
         Args:
           server_config: Server configuration.
-          client_type: Either "cpp" or "java".
+          client_type: Either "cpp", "java", or "python".
           client_config: Client configuration.
           proxy_config: Proxy configuration.
           payload: bytes to write
@@ -288,6 +291,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
     @parameterized.expand([
         ("cpp"),
         ("java"),
+        ("python"),
     ])
     def test_small_client_write(self, client_type):
         resource_id = 12
@@ -326,6 +330,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
     @parameterized.expand([
         ("cpp"),
         ("java"),
+        ("python"),
     ])
     def test_3mb_write_dropped_data(self, client_type):
         resource_id = 12
@@ -366,6 +371,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
     @parameterized.expand([
         ("cpp"),
         ("java"),
+        ("python"),
     ])
     def test_3mb_write_reordered_data(self, client_type):
         resource_id = 12

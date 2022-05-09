@@ -39,6 +39,7 @@ py_binary(
     srcs = ["proxy.py"],
     deps = [
         ":config_pb2",
+        "//pw_hdlc/py:pw_hdlc",
     ],
 )
 
@@ -101,6 +102,7 @@ py_test(
         ":cpp_client",
         ":java_client",
         ":proxy",
+        ":python_client",
         ":server",
     ],
     # This test is not run in CQ because it's too slow.
@@ -121,6 +123,7 @@ py_test(
         ":cpp_client",
         ":java_client",
         ":proxy",
+        ":python_client",
         ":server",
     ],
     main = "cross_language_smoke_test.py",
@@ -143,5 +146,17 @@ java_binary(
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_flogger_flogger_system_backend",
         "@maven//:com_google_guava_guava",
+    ],
+)
+
+py_binary(
+    name = "python_client",
+    srcs = ["python_client.py"],
+    deps = [
+        ":config_pb2",
+        "//pw_hdlc/py:pw_hdlc",
+        "//pw_rpc/py:pw_rpc",
+        "//pw_transfer:transfer_proto_pb2",
+        "//pw_transfer/py:pw_transfer",
     ],
 )

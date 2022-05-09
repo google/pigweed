@@ -31,6 +31,9 @@ def fast_test_cases():
     suite.addTest(
         cross_language_integration_test.PwTransferIntegrationTest(
             'test_small_client_write_1_java'))
+    suite.addTest(
+        cross_language_integration_test.PwTransferIntegrationTest(
+            'test_small_client_write_2_python'))
     return suite
 
 
