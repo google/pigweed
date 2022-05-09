@@ -465,15 +465,20 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
 class ProfileServerTestScoConnected : public ProfileServerTestConnectedPeer {
  public:
   void SetUp() override {
+    fidlbredr::ScoConnectionParameters params =
+        CreateScoConnectionParameters(fidlbredr::HfpParameterSet::CVSD_D0);
+    params.set_path(fidlbredr::DataPath::HOST);
+    SetUp(std::move(params));
+  }
+
+  void SetUp(fidlbredr::ScoConnectionParameters conn_params) {
     ProfileServerTestConnectedPeer::SetUp();
 
     set_configure_sco_cb([](auto, auto, auto, auto cb) { cb(ZX_OK); });
     set_reset_sco_cb([](auto cb) { cb(ZX_OK); });
 
     std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
-    auto params = CreateScoConnectionParameters(fidlbredr::HfpParameterSet::CVSD_D0);
-    params.set_path(fidlbredr::DataPath::HOST);
-    sco_params_list.emplace_back(std::move(params));
+    sco_params_list.emplace_back(std::move(conn_params));
 
     fidl::InterfaceHandle<fidlbredr::ScoConnectionReceiver> receiver_handle;
     FakeScoConnectionReceiver receiver(receiver_handle.NewRequest(), dispatcher());
@@ -513,6 +518,16 @@ class ProfileServerTestScoConnected : public ProfileServerTestConnectedPeer {
   fidl::InterfacePtr<fidlbredr::ScoConnection> sco_connection_;
   bt::hci_spec::ConnectionHandle sco_conn_handle_;
   std::optional<zx_status_t> sco_conn_error_;
+};
+
+class ProfileServerTestOffloadedScoConnected : public ProfileServerTestScoConnected {
+ public:
+  void SetUp() override {
+    fidlbredr::ScoConnectionParameters params =
+        CreateScoConnectionParameters(fidlbredr::HfpParameterSet::CVSD_D0);
+    params.set_path(fidlbredr::DataPath::OFFLOAD);
+    ProfileServerTestScoConnected::SetUp(std::move(params));
+  }
 };
 
 TEST_F(ProfileServerTestConnectedPeer, ConnectL2capChannelParameters) {
@@ -1374,6 +1389,22 @@ TEST_F(ProfileServerTestScoConnected, ScoConnectionReadWhileReadPendingClosesCon
   EXPECT_FALSE(sco_connection());
   ASSERT_TRUE(sco_conn_error());
   EXPECT_EQ(sco_conn_error().value(), ZX_ERR_BAD_STATE);
+}
+
+TEST_F(ProfileServerTestOffloadedScoConnected, ScoConnectionReadFails) {
+  std::optional<fuchsia::bluetooth::bredr::RxPacketStatus> packet_status;
+  std::optional<std::vector<uint8_t>> packet;
+  sco_connection()->Read([&](fidlbredr::RxPacketStatus status, std::vector<uint8_t> cb_packet) {
+    packet_status = status;
+    packet = std::move(cb_packet);
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(packet_status);
+  EXPECT_FALSE(packet);
+  EXPECT_FALSE(sco_connection());
+  ASSERT_TRUE(sco_conn_error());
+  EXPECT_EQ(sco_conn_error().value(), ZX_ERR_IO_NOT_PRESENT);
 }
 
 }  // namespace

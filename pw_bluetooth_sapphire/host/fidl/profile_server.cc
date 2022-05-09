@@ -265,7 +265,12 @@ void ProfileServer::ScoConnectionServer::Activate(fit::callback<void()> on_close
 }
 
 void ProfileServer::ScoConnectionServer::Read(ReadCallback callback) {
-  // TODO(fxbug.dev/87453): Close() if SCO is offloaded
+  if (connection_->parameters().input_data_path != bt::hci_spec::ScoDataPath::kHci) {
+    bt_log(WARN, "fidl", "%s called for an offloaded SCO connection", __func__);
+    Close(ZX_ERR_IO_NOT_PRESENT);
+    return;
+  }
+
   if (read_cb_) {
     bt_log(WARN, "fidl", "%s called when a read callback was already present", __func__);
     Close(ZX_ERR_BAD_STATE);
