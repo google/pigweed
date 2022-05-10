@@ -320,6 +320,8 @@ function(pw_add_module_library NAME)
     HEADERS
       ${arg_HEADERS}
     PUBLIC_DEPS
+      # TODO(pwbug/232141950): Apply compilation options that affect ABI
+      # globally in the CMake build instead of injecting them into libraries.
       pw_build
       ${arg_PUBLIC_DEPS}
     PRIVATE_DEPS
