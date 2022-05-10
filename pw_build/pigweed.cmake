@@ -24,7 +24,7 @@ endif()
 
 # Wrapper around cmake_parse_arguments that fails with an error if any arguments
 # remained unparsed.
-macro(_pw_parse_argv_strict function start_arg options one multi)
+macro(pw_parse_arguments_strict function start_arg options one multi)
   cmake_parse_arguments(PARSE_ARGV
       "${start_arg}" arg "${options}" "${one}" "${multi}"
   )
@@ -35,6 +35,12 @@ macro(_pw_parse_argv_strict function start_arg options one multi)
         "Valid arguments: ${_all_args}"
     )
   endif()
+endmacro()
+
+# TODO(ewout): Deprecate this once it's no longer in use.
+macro(_pw_parse_argv_strict function start_arg options one multi)
+  pw_parse_arguments_strict(
+      "${function}" "${start_arg}" "${options}" "${one}" "${multi}")
 endmacro()
 
 # Automatically creates a library and test targets for the files in a module.
@@ -68,7 +74,7 @@ endmacro()
 #   PRIVATE_DEPS - private target_link_libraries arguments
 #
 function(pw_auto_add_simple_module MODULE)
-  _pw_parse_argv_strict(pw_auto_add_simple_module 1
+  pw_parse_arguments_strict(pw_auto_add_simple_module 1
       ""
       "IMPLEMENTS_FACADE"
       "PUBLIC_DEPS;PRIVATE_DEPS;TEST_DEPS"
@@ -122,7 +128,7 @@ endfunction(pw_auto_add_simple_module)
 #  GROUPS - groups in addition to MODULE to which to add these tests
 #
 function(pw_auto_add_module_tests MODULE)
-  _pw_parse_argv_strict(pw_auto_add_module_tests 1
+  pw_parse_arguments_strict(pw_auto_add_module_tests 1
       ""
       ""
       "PRIVATE_DEPS;GROUPS"
@@ -187,7 +193,7 @@ function(pw_add_library NAME TYPE)
   set(option_args)
   set(one_value_args)
   _pw_library_multi_value_args(multi_value_args)
-  _pw_parse_argv_strict(
+  pw_parse_arguments_strict(
       pw_add_library "${num_positional_args}" "${option_args}"
       "${one_value_args}" "${multi_value_args}")
 
@@ -291,7 +297,7 @@ endfunction(pw_add_library)
 #
 function(pw_add_module_library NAME)
   _pw_library_multi_value_args(multi_value_args IMPLEMENTS_FACADES)
-  _pw_parse_argv_strict(pw_add_module_library 1 "" "" "${multi_value_args}")
+  pw_parse_arguments_strict(pw_add_module_library 1 "" "" "${multi_value_args}")
 
   # Check that the library's name is prefixed by the module name.
   get_filename_component(module "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
@@ -377,7 +383,7 @@ endfunction(pw_add_module_library)
 #
 function(pw_add_facade NAME)
   _pw_library_multi_value_args(list_args)
-  _pw_parse_argv_strict(pw_add_facade 1 "" "DEFAULT_BACKEND" "${list_args}")
+  pw_parse_arguments_strict(pw_add_facade 1 "" "DEFAULT_BACKEND" "${list_args}")
 
   # If no backend is set, a script that displays an error message is used
   # instead. If the facade is used in the build, it fails with this error.
@@ -450,7 +456,7 @@ set("pw_build_DEFAULT_MODULE_CONFIG" pw_build.empty CACHE STRING
 #
 #   NAME: name to use for the target which can be depended on for the config.
 function(pw_add_module_config NAME)
-  _pw_parse_argv_strict(pw_add_module_config 1 "" "" "")
+  pw_parse_arguments_strict(pw_add_module_config 1 "" "" "")
 
   # Declare the module configuration variable for this module.
   set("${NAME}" "${pw_build_DEFAULT_MODULE_CONFIG}"
@@ -465,7 +471,7 @@ endfunction(pw_add_module_config)
 #   pw_set_module_config(pw_build_DEFAULT_MODULE_CONFIG my_config)
 #   pw_set_module_config(pw_foo_CONFIG my_foo_config)
 function(pw_set_module_config NAME LIBRARY)
-  _pw_parse_argv_strict(pw_set_module_config 2 "" "" "")
+  pw_parse_arguments_strict(pw_set_module_config 2 "" "" "")
 
   # Update the module configuration variable.
   set("${NAME}" "${LIBRARY}" CACHE STRING "Config for ${NAME}" FORCE)
@@ -485,7 +491,7 @@ endfunction(pw_set_module_config)
 #       added to the 'default' and 'all' groups
 #
 function(pw_add_test NAME)
-  _pw_parse_argv_strict(pw_add_test 1 "" "" "SOURCES;DEPS;GROUPS")
+  pw_parse_arguments_strict(pw_add_test 1 "" "" "SOURCES;DEPS;GROUPS")
 
   add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
   target_link_libraries("${NAME}"

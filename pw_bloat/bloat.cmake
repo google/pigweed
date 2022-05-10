@@ -30,7 +30,7 @@ function(pw_bloaty_config NAME)
   set(option_args)
   set(one_value_args ELF_FILE OUTPUT)
   set(multi_value_args)
-  _pw_parse_argv_strict(pw_bloaty_config
+  pw_parse_arguments_strict(pw_bloaty_config
       1 "${option_args}" "${one_value_args}" "${multi_value_args}"
   )
 
