@@ -156,8 +156,8 @@ function(pw_auto_add_module_tests MODULE)
   endforeach()
 endfunction(pw_auto_add_module_tests)
 
-# Sets the provided variable to the common library arguments.
-macro(_pw_library_multi_value_args variable)
+# Sets the provided variable to the multi_value_keywords from pw_add_library.
+macro(_pw_add_library_multi_value_args variable)
   set("${variable}" SOURCES HEADERS
                     PUBLIC_DEPS PRIVATE_DEPS
                     PUBLIC_INCLUDES PRIVATE_INCLUDES
@@ -192,7 +192,7 @@ function(pw_add_library NAME TYPE)
   set(num_positional_args 2)
   set(option_args)
   set(one_value_args)
-  _pw_library_multi_value_args(multi_value_args)
+  _pw_add_library_multi_value_args(multi_value_args)
   pw_parse_arguments_strict(
       pw_add_library "${num_positional_args}" "${option_args}"
       "${one_value_args}" "${multi_value_args}")
@@ -296,7 +296,7 @@ endfunction(pw_add_library)
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 #
 function(pw_add_module_library NAME)
-  _pw_library_multi_value_args(multi_value_args IMPLEMENTS_FACADES)
+  _pw_add_library_multi_value_args(multi_value_args IMPLEMENTS_FACADES)
   pw_parse_arguments_strict(pw_add_module_library 1 "" "" "${multi_value_args}")
 
   # Check that the library's name is prefixed by the module name.
@@ -382,7 +382,7 @@ endfunction(pw_add_module_library)
 #  DEFAULT_BACKEND - which backend to use by default
 #
 function(pw_add_facade NAME)
-  _pw_library_multi_value_args(list_args)
+  _pw_add_library_multi_value_args(list_args)
   pw_parse_arguments_strict(pw_add_facade 1 "" "DEFAULT_BACKEND" "${list_args}")
 
   # If no backend is set, a script that displays an error message is used
