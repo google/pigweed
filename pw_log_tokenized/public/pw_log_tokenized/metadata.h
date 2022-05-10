@@ -57,24 +57,32 @@ class GenericMetadata {
     static_assert(flags < (1 << kFlagBits), "The flags are too large!");
     static_assert(module < (1 << kModuleBits), "The module is too large!");
 
-    return GenericMetadata(Level::Shift(log_level) | Module::Shift(module) |
-                           Flags::Shift(flags) | Line::Shift(line));
+    return GenericMetadata(BitsFromMetadata(log_level, module, flags, line));
   }
 
-  constexpr GenericMetadata(T value) : bits_(value) {}
+  // Only use this constructor for creating metadata from runtime values. This
+  // constructor is unable to warn at compilation when values will not fit in
+  // the specified bit field widths.
+  constexpr GenericMetadata(T log_level, T module, T flags, T line)
+      : value_(BitsFromMetadata(log_level, module, flags, line)) {}
+
+  constexpr GenericMetadata(T value) : value_(value) {}
 
   // The log level of this message.
-  constexpr T level() const { return Level::Get(bits_); }
+  constexpr T level() const { return Level::Get(value_); }
 
   // The line number of the log call. The first line in a file is 1. If the line
   // number is 0, it was too large to be stored.
-  constexpr T line_number() const { return Line::Get(bits_); }
+  constexpr T line_number() const { return Line::Get(value_); }
 
   // The flags provided to the log call.
-  constexpr T flags() const { return Flags::Get(bits_); }
+  constexpr T flags() const { return Flags::Get(value_); }
 
   // The 16 bit tokenized version of the module name (PW_LOG_MODULE_NAME).
-  constexpr T module() const { return Module::Get(bits_); }
+  constexpr T module() const { return Module::Get(value_); }
+
+  // The underlying packed metadata.
+  constexpr T value() const { return value_; }
 
  private:
   using Level = BitField<T, kLevelBits, 0>;
@@ -82,10 +90,15 @@ class GenericMetadata {
   using Flags = BitField<T, kFlagBits, kLevelBits + kLineBits>;
   using Module = BitField<T, kModuleBits, kLevelBits + kLineBits + kFlagBits>;
 
-  T bits_;
+  static constexpr T BitsFromMetadata(T log_level, T module, T flags, T line) {
+    return Level::Shift(log_level) | Module::Shift(module) |
+           Flags::Shift(flags) | Line::Shift(line);
+  }
+
+  T value_;
 
   static_assert(kLevelBits + kLineBits + kFlagBits + kModuleBits <=
-                sizeof(bits_) * 8);
+                sizeof(value_) * 8);
 };
 
 }  // namespace internal

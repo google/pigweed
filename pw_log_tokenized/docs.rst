@@ -128,6 +128,55 @@ bits allocated is excluded from the log metadata.
   Defaults to 16, which gives a ~1% probability of a collision with 37 module
   names.
 
+Creating and reading Metadata payloads
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A C++ class is provided to facilitate the creation and interpretation of packed
+log metadata payloads. The ``GenericMetadata`` class allows flags, log level,
+line number, and a module identifier to be packed into bit fields of
+configurable size. The ``Metadata`` class simplifies the bit field width
+templatization of ``GenericMetadata`` by pulling from this module's
+configuration options. In most cases, it's recommended to use ``Metadata`` to
+create or read metadata payloads.
+
+A ``Metadata`` object can be created from a ``pw_tokenizer_Payload`` allowing
+various peices of metadata to be read from the payload as seen below:
+
+.. code-block:: cpp
+
+  extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
+      pw_tokenizer_Payload payload,
+      const uint8_t message[],
+      size_t size_bytes) {
+    pw::log_tokenized::Metadata metadata = payload;
+    // Check the log level to see if this log is a crash.
+    if (metadata.level() == PW_LOG_LEVEL_FATAL) {
+      HandleCrash(metadata, pw::ConstByteSpan(
+          reinterpret_cast<const std::byte*>(message), size_bytes));
+      PW_UNREACHABLE;
+    }
+    // ...
+  }
+
+It's also possible to construct a ``pw_tokenizer_Payload`` using the
+``Metadata`` class:
+
+.. code-block:: cpp
+
+  // Logs an explicitly created string token.
+  void LogToken(uint32_t token, int level, int line_number, int module) {
+    const pw_tokenizer_Payload payload =
+        log_tokenized::Metadata(
+            level, module, PW_LOG_FLAGS, line_number)
+            .bits();
+    std::array<std::byte, sizeof(token)> token_buffer =
+        pw::bytes::CopyInOrder(std::endian::little, token);
+
+    pw_tokenizer_HandleEncodedMessageWithPayload(
+        payload,
+        reinterpret_cast<const uint8_t*>(token_buffer.data()),
+        token_buffer.size());
+  }
+
 Using a custom macro
 --------------------
 Applications may use their own macro instead of
