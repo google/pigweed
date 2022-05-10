@@ -165,9 +165,8 @@ endmacro()
 # Required Args:
 #
 #   <name> - The name of the library target to be created.
-#   <type> - The library type which must be OBJECT, STATIC, SHARED, or MODULE.
-#            Note that INTERFACE is not supported and is implicitly used if no
-#            sources are provided.
+#   <type> - The library type which must be INTERFACE, OBJECT, STATIC, SHARED,
+#            or MODULE.
 #
 # Optional Args:
 #
@@ -192,16 +191,22 @@ function(pw_add_library NAME TYPE)
       pw_add_library "${num_positional_args}" "${option_args}"
       "${one_value_args}" "${multi_value_args}")
 
+  add_library("${NAME}" "${TYPE}" EXCLUDE_FROM_ALL)
   # Instead of forking all of the code below or injecting an empty source file,
-  # conditionally select PUBLIC vs INTERFACE depending on whether there are
-  # sources to compile.
-  if(NOT "${arg_SOURCES}" STREQUAL "")
-    add_library("${NAME}" "${TYPE}" EXCLUDE_FROM_ALL)
-    set(public_or_interface PUBLIC)
-  else("${arg_SOURCES}" STREQUAL "")
-    add_library("${NAME}" INTERFACE EXCLUDE_FROM_ALL)
+  # conditionally select PUBLIC vs INTERFACE depending on the type.
+  if("${TYPE}" STREQUAL "INTERFACE")
     set(public_or_interface INTERFACE)
-  endif(NOT "${arg_SOURCES}" STREQUAL "")
+    if(NOT "${arg_SOURCES}" STREQUAL "")
+      message(
+        SEND_ERROR "${NAME} cannot have sources as it's an INTERFACE library")
+    endif(NOT "${arg_SOURCES}" STREQUAL "")
+  else()  # ${TYPE} != INTERFACE
+    set(public_or_interface PUBLIC)
+    if("${arg_SOURCES}" STREQUAL "")
+      message(
+        SEND_ERROR "${NAME} must have SOURCES as it's not an INTERFACE library")
+    endif("${arg_SOURCES}" STREQUAL "")
+  endif("${TYPE}" STREQUAL "INTERFACE")
 
   target_sources("${NAME}" PRIVATE ${arg_SOURCES} ${arg_HEADERS})
 
@@ -298,7 +303,18 @@ function(pw_add_module_library NAME)
     )
   endif()
 
-  pw_add_library(${NAME} STATIC
+  # Use STATIC libraries if sources are provided, else instantiate an INTERFACE
+  # library. Also conditionally select PUBLIC vs INTERFACE depending on this
+  # selection.
+  if(NOT "${arg_SOURCES}" STREQUAL "")
+    set(type STATIC)
+    set(public_or_interface PUBLIC)
+  else("${arg_SOURCES}" STREQUAL "")
+    set(type INTERFACE)
+    set(public_or_interface INTERFACE)
+  endif(NOT "${arg_SOURCES}" STREQUAL "")
+
+  pw_add_library(${NAME} ${type}
     SOURCES
       ${arg_SOURCES}
     HEADERS
@@ -326,14 +342,6 @@ function(pw_add_module_library NAME)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
-
-  # Conditionally select PUBLIC vs INTERFACE depending on whether there are
-  # sources to compile.
-  if(NOT "${arg_SOURCES}" STREQUAL "")
-    set(public_or_interface PUBLIC)
-  else("${arg_SOURCES}" STREQUAL "")
-    set(public_or_interface INTERFACE)
-  endif(NOT "${arg_SOURCES}" STREQUAL "")
 
   # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
   if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
