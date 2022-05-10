@@ -167,7 +167,7 @@ It's also possible to construct a ``pw_tokenizer_Payload`` using the
     const pw_tokenizer_Payload payload =
         log_tokenized::Metadata(
             level, module, PW_LOG_FLAGS, line_number)
-            .bits();
+            .value();
     std::array<std::byte, sizeof(token)> token_buffer =
         pw::bytes::CopyInOrder(std::endian::little, token);
 

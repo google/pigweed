@@ -14,13 +14,14 @@
 #pragma once
 
 #include "pw_assert_tokenized/handler.h"
+#include "pw_log_tokenized/config.h"
 #include "pw_tokenizer/tokenize.h"
 
-#define _PW_ASSERT_TOKENIZED_TO_HANDLER(str)                       \
-  do {                                                             \
-    const uint32_t token =                                         \
-        PW_TOKENIZE_STRING("Check failure in " __FILE__ ": " str); \
-    pw_assert_tokenized_HandleCheckFailure(token, __LINE__);       \
+#define _PW_ASSERT_TOKENIZED_TO_HANDLER(str)                    \
+  do {                                                          \
+    const uint32_t token = PW_TOKENIZE_STRING(                  \
+        PW_LOG_TOKENIZED_FORMAT_STRING("Check failure: " str)); \
+    pw_assert_tokenized_HandleCheckFailure(token, __LINE__);    \
   } while (0)
 
 #define PW_HANDLE_CRASH(...) _PW_ASSERT_TOKENIZED_TO_HANDLER(#__VA_ARGS__)

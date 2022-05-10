@@ -20,8 +20,11 @@
 #include "pw_assert/config.h"
 #include "pw_assert_tokenized/handler.h"
 #include "pw_base64/base64.h"
+#include "pw_bytes/endian.h"
 #include "pw_log/log.h"
+#include "pw_log_tokenized/config.h"
 #include "pw_log_tokenized/log_tokenized.h"
+#include "pw_log_tokenized/metadata.h"
 
 extern "C" void pw_assert_tokenized_HandleAssertFailure(
     uint32_t tokenized_file_name, int line_number) {
@@ -53,14 +56,21 @@ extern "C" void pw_assert_tokenized_HandleAssertFailure(
 
 extern "C" void pw_assert_tokenized_HandleCheckFailure(
     uint32_t tokenized_message, int line_number) {
-  // TODO(amontanez): There should be a less-hacky way to assemble this.
-  const uint32_t payload = _PW_LOG_TOKENIZED_LEVEL(PW_LOG_LEVEL_FATAL) |
-                           _PW_LOG_TOKENIZED_FLAGS(PW_LOG_FLAGS) |
-                           _PW_LOG_TOKENIZED_LINE(line_number);
-  uint8_t token_buffer[sizeof(tokenized_message)];
-  memcpy(token_buffer, &tokenized_message, sizeof(tokenized_message));
+  // If line_number is too large to fit in the packed payload, the Metadata
+  // class will properly set it to 0, which is the expected value for line
+  // number values that would cause the bit field to overflow.
+  // See https://pigweed.dev/pw_log_tokenized/#c.PW_LOG_TOKENIZED_LINE_BITS for
+  // more info.
+  const pw_tokenizer_Payload payload =
+      pw::log_tokenized::Metadata(
+          PW_LOG_LEVEL_FATAL, 0, PW_LOG_FLAGS, line_number)
+          .value();
+  std::array<std::byte, sizeof(tokenized_message)> token_buffer =
+      pw::bytes::CopyInOrder(std::endian::little, tokenized_message);
 
   pw_tokenizer_HandleEncodedMessageWithPayload(
-      payload, token_buffer, sizeof(token_buffer));
+      payload,
+      reinterpret_cast<const uint8_t*>(token_buffer.data()),
+      token_buffer.size());
   PW_UNREACHABLE;
 }

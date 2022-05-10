@@ -24,10 +24,10 @@ the reported tokens.
 * **PW_CHECK_\*()**: The ``PW_CHECK_*()`` macros work in contexts where
   tokenization is fully supported, so they are able to capture the CHECK
   statement expression and any provided string literal in addition to the file
-  name:
+  name in the pw_log_tokenized key/value format:
 
-    Check failure in pw_metric/size_report/base.cc: \*unoptimizable >= 0,
-    Ensure this CHECK logic stays.
+    "■msg♦Check failure: \*unoptimizable >= 0, Ensure this CHECK logic
+    stays■module♦KVS■file♦pw_kvs/size_report/base.cc"
 
   Evaluated values of ``PW_CHECK_*()`` statements are not captured, and any
   string formatting arguments are also not captured. This minimizes call-site
