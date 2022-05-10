@@ -1012,7 +1012,7 @@ TEST_F(WriteTransfer, ExtendWindow) {
   chunk = DecodeChunk(ctx_.responses().back());
   EXPECT_EQ(chunk.session_id(), 7u);
   EXPECT_EQ(chunk.window_end_offset(), 32u);
-  EXPECT_EQ(chunk.legacy_type(), Chunk::Type::kParametersContinue);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kParametersContinue);
 
   ctx_.SendClientStream<64>(
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
@@ -1068,7 +1068,7 @@ TEST_F(WriteTransfer, TransmitterReducesWindow) {
   EXPECT_EQ(chunk.session_id(), 7u);
   EXPECT_EQ(chunk.offset(), 12u);
   EXPECT_EQ(chunk.window_end_offset(), 32u);
-  EXPECT_EQ(chunk.legacy_type(), Chunk::Type::kParametersRetransmit);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kParametersRetransmit);
 }
 
 TEST_F(WriteTransfer, TransmitterExtendsWindow_TerminatesWithInvalid) {

@@ -881,7 +881,7 @@ public final class TransferClientTest {
   }
 
   private static Chunk.Builder newChunk(Chunk.Type type, int resourceId) {
-    return Chunk.newBuilder().setType(type).setSessionId(resourceId);
+    return Chunk.newBuilder().setType(type).setTransferId(resourceId);
   }
 
   private static Chunk initialWriteChunk(int sessionId, int resourceId, int size) {

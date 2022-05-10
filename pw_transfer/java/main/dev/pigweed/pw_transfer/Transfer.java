@@ -250,7 +250,7 @@ abstract class Transfer<T> {
 
   final Chunk.Builder newChunk(Chunk.Type type) {
     // TODO(frolv): Properly set the session ID after it is configured by the server.
-    return Chunk.newBuilder().setSessionId(getId()).setType(type);
+    return Chunk.newBuilder().setTransferId(getId()).setType(type);
   }
 
   /** Sends a chunk. Returns true if sent, false if sending failed and the transfer was aborted. */

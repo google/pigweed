@@ -86,7 +86,9 @@ export class Manager {
     progressCallback?: ProgressCallback
   ): Promise<Uint8Array> {
     if (resourceId in this.readTransfers) {
-      throw new Error(`Read transfer for resource ${resourceId} already exists`);
+      throw new Error(
+        `Read transfer for resource ${resourceId} already exists`
+      );
     }
     const transfer = new ReadTransfer(
       resourceId,
@@ -250,10 +252,10 @@ export class Manager {
    * is invoked.
    */
   private async handleChunk(transfers: TransferDict, chunk: Chunk) {
-    const transfer = transfers[chunk.getSessionId()];
+    const transfer = transfers[chunk.getTransferId()];
     if (transfer === undefined) {
       console.error(
-        `TransferManager received chunk for unknown transfer ${chunk.getSessionId()}`
+        `TransferManager received chunk for unknown transfer ${chunk.getTransferId()}`
       );
       return;
     }

@@ -202,7 +202,7 @@ class Transfer(abc.ABC):
         """Sends an error chunk to the server and finishes the transfer."""
         self._send_chunk(
             transfer_pb2.Chunk(
-                session_id=self.id,
+                transfer_id=self.id,
                 status=error.value,
                 type=transfer_pb2.Chunk.Type.TRANSFER_COMPLETION))
         self.finish(error)
@@ -246,7 +246,7 @@ class WriteTransfer(Transfer):
     def _initial_chunk(self) -> transfer_pb2.Chunk:
         # TODO(frolv): session_id should not be set here, but assigned by the
         # server during an initial handshake.
-        return transfer_pb2.Chunk(session_id=self.id,
+        return transfer_pb2.Chunk(transfer_id=self.id,
                                   resource_id=self.id,
                                   type=transfer_pb2.Chunk.Type.TRANSFER_START)
 
@@ -353,7 +353,7 @@ class WriteTransfer(Transfer):
 
     def _next_chunk(self) -> transfer_pb2.Chunk:
         """Returns the next Chunk message to send in the data transfer."""
-        chunk = transfer_pb2.Chunk(session_id=self.id,
+        chunk = transfer_pb2.Chunk(transfer_id=self.id,
                                    offset=self._offset,
                                    type=transfer_pb2.Chunk.Type.TRANSFER_DATA)
         max_bytes_in_chunk = min(self._max_chunk_size,
@@ -444,7 +444,7 @@ class ReadTransfer(Transfer):
                 # No more data to read. Acknowledge receipt and finish.
                 self._send_chunk(
                     transfer_pb2.Chunk(
-                        session_id=self.id,
+                        transfer_id=self.id,
                         status=Status.OK.value,
                         type=transfer_pb2.Chunk.Type.TRANSFER_COMPLETION))
                 self.finish(Status.OK)
@@ -510,7 +510,7 @@ class ReadTransfer(Transfer):
         self._pending_bytes = self._max_bytes_to_receive
         self._window_end_offset = self._offset + self._max_bytes_to_receive
 
-        chunk = transfer_pb2.Chunk(session_id=self.id,
+        chunk = transfer_pb2.Chunk(transfer_id=self.id,
                                    pending_bytes=self._pending_bytes,
                                    window_end_offset=self._window_end_offset,
                                    max_chunk_size_bytes=self._max_chunk_size,

@@ -205,7 +205,7 @@ public class TransferClient {
 
   private static String chunkToString(Chunk chunk) {
     StringBuilder str = new StringBuilder();
-    str.append("sessionId:").append(chunk.getSessionId()).append(" ");
+    str.append("sessionId:").append(chunk.getTransferId()).append(" ");
     str.append("windowEndOffset:").append(chunk.getWindowEndOffset()).append(" ");
     str.append("offset:").append(chunk.getOffset()).append(" ");
     // Don't include the actual data; it's too much.
@@ -243,13 +243,13 @@ public class TransferClient {
 
     @Override
     public final void onNext(Chunk chunk) {
-      Transfer<?> transfer = transfers.get(chunk.getSessionId());
+      Transfer<?> transfer = transfers.get(chunk.getTransferId());
       if (transfer != null) {
         logger.atFinest().log("Received chunk: %s", chunkToString(chunk));
         workDispatcher.accept(() -> transfer.handleChunk(chunk));
       } else {
         logger.atWarning().log(
-            "Ignoring unrecognized transfer session ID %d", chunk.getSessionId());
+            "Ignoring unrecognized transfer session ID %d", chunk.getTransferId());
       }
     }
 

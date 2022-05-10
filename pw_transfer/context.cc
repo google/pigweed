@@ -363,23 +363,16 @@ void Context::HandleTransferParametersUpdate(const Chunk& chunk) {
 }
 
 void Context::TransmitNextChunk(bool retransmit_requested) {
-  ByteSpan buffer = thread_->encode_buffer();
-
-  // Begin by doing a partial encode of all the metadata fields, leaving the
-  // buffer with usable space for the chunk data at the end.
-  transfer::Chunk::MemoryEncoder encoder{buffer};
-  encoder.WriteSessionId(session_id_).IgnoreError();
-  encoder.WriteOffset(offset_).IgnoreError();
-
-  // TODO(frolv): Type field presence is currently meaningful, so this type must
-  // be serialized. Once all users of transfer always set chunk types, the field
-  // can be made non-optional and this write can be removed as TRANSFER_DATA has
-  // the default proto value of 0.
-  encoder.WriteType(transfer::Chunk::Type::TRANSFER_DATA).IgnoreError();
+  Chunk chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData);
+  chunk.set_session_id(session_id_);
+  chunk.set_offset(offset_);
 
   // Reserve space for the data proto field overhead and use the remainder of
   // the buffer for the chunk data.
-  size_t reserved_size = encoder.size() + 1 /* data key */ + 5 /* data size */;
+  size_t reserved_size =
+      chunk.EncodedSize() + 1 /* data key */ + 5 /* data size */;
+
+  ByteSpan buffer = thread_->encode_buffer();
 
   ByteSpan data_buffer = buffer.subspan(reserved_size);
   size_t max_bytes_to_send =
@@ -392,7 +385,7 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
   Result<ByteSpan> data = reader().Read(data_buffer);
   if (data.status().IsOutOfRange()) {
     // No more data to read.
-    encoder.WriteRemainingBytes(0).IgnoreError();
+    chunk.set_remaining_bytes(0);
     window_end_offset_ = offset_;
 
     PW_LOG_DEBUG("Transfer %u sending final chunk with remaining_bytes=0",
@@ -420,7 +413,7 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
                  static_cast<unsigned>(offset_),
                  static_cast<unsigned>(data.value().size()));
 
-    encoder.WriteData(data.value()).IgnoreError();
+    chunk.set_payload(data.value());
     last_chunk_offset_ = offset_;
     offset_ += data.value().size();
   } else {
@@ -431,14 +424,15 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
     return;
   }
 
-  if (!encoder.status().ok()) {
+  Result<ConstByteSpan> encoded_chunk = chunk.Encode(buffer);
+  if (!encoded_chunk.ok()) {
     PW_LOG_ERROR("Transfer %u failed to encode transmit chunk",
                  static_cast<unsigned>(session_id_));
     Finish(Status::Internal());
     return;
   }
 
-  if (const Status status = rpc_writer_->Write(encoder); !status.ok()) {
+  if (const Status status = rpc_writer_->Write(*encoded_chunk); !status.ok()) {
     PW_LOG_ERROR("Transfer %u failed to send transmit chunk, status %u",
                  static_cast<unsigned>(session_id_),
                  status.code());

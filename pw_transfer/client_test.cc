@@ -90,7 +90,7 @@ TEST_F(ReadTransfer, SingleChunk) {
   EXPECT_EQ(c0.session_id(), 3u);
   EXPECT_EQ(c0.offset(), 0u);
   EXPECT_EQ(c0.window_end_offset(), 64u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   context_.server().SendServerStream<Transfer::Read>(
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
@@ -133,7 +133,7 @@ TEST_F(ReadTransfer, MultiChunk) {
   EXPECT_EQ(c0.session_id(), 4u);
   EXPECT_EQ(c0.offset(), 0u);
   EXPECT_EQ(c0.window_end_offset(), 64u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   constexpr ConstByteSpan data(kData32);
   context_.server().SendServerStream<Transfer::Read>(
@@ -222,7 +222,7 @@ TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromConstructorArg) {
   EXPECT_EQ(c0.session_id(), 5u);
   EXPECT_EQ(c0.offset(), 0u);
   EXPECT_EQ(c0.window_end_offset(), 32u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 }
 
 TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromWriterLimit) {
@@ -239,7 +239,7 @@ TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromWriterLimit) {
   EXPECT_EQ(c0.session_id(), 5u);
   EXPECT_EQ(c0.offset(), 0u);
   EXPECT_EQ(c0.window_end_offset(), 16u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 }
 
 TEST_F(ReadTransferMaxBytes32, MultiParameters) {
@@ -639,7 +639,7 @@ TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
   EXPECT_EQ(c0.session_id(), 12u);
   EXPECT_EQ(c0.offset(), 0u);
   EXPECT_EQ(c0.window_end_offset(), 64u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Wait for the timeout to expire without doing anything. The client should
   // resend its initial parameters chunk.
@@ -650,7 +650,7 @@ TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
   EXPECT_EQ(c.session_id(), 12u);
   EXPECT_EQ(c.offset(), 0u);
   EXPECT_EQ(c.window_end_offset(), 64u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Transfer has not yet completed.
   EXPECT_EQ(transfer_status, Status::Unknown());
@@ -696,7 +696,7 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
   EXPECT_EQ(c0.session_id(), 13u);
   EXPECT_EQ(c0.offset(), 0u);
   EXPECT_EQ(c0.window_end_offset(), 64u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   constexpr ConstByteSpan data(kData32);
 
@@ -719,7 +719,7 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
   EXPECT_EQ(c.session_id(), 13u);
   EXPECT_EQ(c.offset(), 16u);
   EXPECT_EQ(c.window_end_offset(), 64u);
-  EXPECT_EQ(c.legacy_type(), Chunk::Type::kParametersRetransmit);
+  EXPECT_EQ(c.type(), Chunk::Type::kParametersRetransmit);
 
   // Transfer has not yet completed.
   EXPECT_EQ(transfer_status, Status::Unknown());
@@ -765,7 +765,7 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   EXPECT_EQ(c0.session_id(), 14u);
   EXPECT_EQ(c0.offset(), 0u);
   EXPECT_EQ(c0.window_end_offset(), 64u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   for (unsigned retry = 1; retry <= kTestRetries; ++retry) {
     // Wait for the timeout to expire without doing anything. The client should
@@ -789,7 +789,7 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
 
   Chunk c4 = DecodeChunk(payloads.back());
   EXPECT_EQ(c4.session_id(), 14u);
-  EXPECT_EQ(c4.legacy_type(), Chunk::Type::kTransferCompletion);
+  EXPECT_EQ(c4.type(), Chunk::Type::kTransferCompletion);
   ASSERT_TRUE(c4.status().has_value());
   EXPECT_EQ(c4.status().value(), Status::DeadlineExceeded());
 
@@ -938,7 +938,7 @@ TEST_F(WriteTransfer, SingleChunk) {
   Chunk c0 = DecodeChunk(payloads[0]);
   EXPECT_EQ(c0.session_id(), 3u);
   EXPECT_EQ(c0.resource_id(), 3u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send transfer parameters. Client should send a data chunk and the final
   // chunk.
@@ -995,7 +995,7 @@ TEST_F(WriteTransfer, MultiChunk) {
   Chunk c0 = DecodeChunk(payloads[0]);
   EXPECT_EQ(c0.session_id(), 4u);
   EXPECT_EQ(c0.resource_id(), 4u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send transfer parameters with a chunk size smaller than the data.
 
@@ -1062,7 +1062,7 @@ TEST_F(WriteTransfer, OutOfOrder_SeekSupported) {
   Chunk c0 = DecodeChunk(payloads[0]);
   EXPECT_EQ(c0.session_id(), 5u);
   EXPECT_EQ(c0.resource_id(), 5u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send transfer parameters with a nonzero offset, requesting a seek.
   // Client should send a data chunk and the final chunk.
@@ -1142,7 +1142,7 @@ TEST_F(WriteTransfer, OutOfOrder_SeekNotSupported) {
   Chunk c0 = DecodeChunk(payloads[0]);
   EXPECT_EQ(c0.session_id(), 6u);
   EXPECT_EQ(c0.resource_id(), 6u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send transfer parameters with a nonzero offset, requesting a seek.
   context_.server().SendServerStream<Transfer::Write>(EncodeChunk(
@@ -1158,7 +1158,7 @@ TEST_F(WriteTransfer, OutOfOrder_SeekNotSupported) {
 
   Chunk c1 = DecodeChunk(payloads[1]);
   EXPECT_EQ(c1.session_id(), 6u);
-  EXPECT_EQ(c1.legacy_type(), Chunk::Type::kTransferCompletion);
+  EXPECT_EQ(c1.type(), Chunk::Type::kTransferCompletion);
   ASSERT_TRUE(c1.status().has_value());
   EXPECT_EQ(c1.status().value(), Status::Unimplemented());
 
@@ -1184,7 +1184,7 @@ TEST_F(WriteTransfer, ServerError) {
   Chunk c0 = DecodeChunk(payloads[0]);
   EXPECT_EQ(c0.session_id(), 7u);
   EXPECT_EQ(c0.resource_id(), 7u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send an error from the server.
   context_.server().SendServerStream<Transfer::Write>(EncodeChunk(
@@ -1215,7 +1215,7 @@ TEST_F(WriteTransfer, AbortIfZeroBytesAreRequested) {
   Chunk c0 = DecodeChunk(payloads[0]);
   EXPECT_EQ(c0.session_id(), 9u);
   EXPECT_EQ(c0.resource_id(), 9u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send an invalid transfer parameters chunk with 0 pending bytes.
   context_.server().SendServerStream<Transfer::Write>(EncodeChunk(
@@ -1258,7 +1258,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
   Chunk c0 = DecodeChunk(payloads.back());
   EXPECT_EQ(c0.session_id(), 10u);
   EXPECT_EQ(c0.resource_id(), 10u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Wait for the timeout to expire without doing anything. The client should
   // resend the initial transmit chunk.
@@ -1268,7 +1268,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
   Chunk c = DecodeChunk(payloads.back());
   EXPECT_EQ(c.session_id(), 10u);
   EXPECT_EQ(c.resource_id(), 10u);
-  EXPECT_EQ(c.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c.type(), Chunk::Type::kTransferStart);
 
   // Transfer has not yet completed.
   EXPECT_EQ(transfer_status, Status::Unknown());
@@ -1299,7 +1299,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
   Chunk c0 = DecodeChunk(payloads.back());
   EXPECT_EQ(c0.session_id(), 11u);
   EXPECT_EQ(c0.resource_id(), 11u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send the first parameters chunk.
   rpc::test::WaitForPackets(context_.output(), 2, [this] {
@@ -1372,7 +1372,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
   Chunk c0 = DecodeChunk(payloads.back());
   EXPECT_EQ(c0.session_id(), 12u);
   EXPECT_EQ(c0.resource_id(), 12u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send the first parameters chunk, requesting all the data. The client should
   // respond with one data chunk and a remaining_bytes = 0 chunk.
@@ -1456,7 +1456,7 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   Chunk c0 = DecodeChunk(payloads.back());
   EXPECT_EQ(c0.session_id(), 13u);
   EXPECT_EQ(c0.resource_id(), 13u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   for (unsigned retry = 1; retry <= kTestRetries; ++retry) {
     // Wait for the timeout to expire without doing anything. The client should
@@ -1467,7 +1467,7 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
     Chunk c = DecodeChunk(payloads.back());
     EXPECT_EQ(c.session_id(), 13u);
     EXPECT_EQ(c.resource_id(), 13u);
-    EXPECT_EQ(c.legacy_type(), Chunk::Type::kTransferStart);
+    EXPECT_EQ(c.type(), Chunk::Type::kTransferStart);
 
     // Transfer has not yet completed.
     EXPECT_EQ(transfer_status, Status::Unknown());
@@ -1516,7 +1516,7 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   Chunk c0 = DecodeChunk(payloads.back());
   EXPECT_EQ(c0.session_id(), 14u);
   EXPECT_EQ(c0.resource_id(), 14u);
-  EXPECT_EQ(c0.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(c0.type(), Chunk::Type::kTransferStart);
 
   // Send the first parameters chunk.
   rpc::test::WaitForPackets(context_.output(), 2, [this] {
@@ -1583,7 +1583,7 @@ TEST_F(WriteTransfer, ManualCancel) {
   Chunk chunk = DecodeChunk(payloads.back());
   EXPECT_EQ(chunk.session_id(), 15u);
   EXPECT_EQ(chunk.resource_id(), 15u);
-  EXPECT_EQ(chunk.legacy_type(), Chunk::Type::kTransferStart);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kTransferStart);
 
   client_.CancelTransfer(15);
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -1592,7 +1592,7 @@ TEST_F(WriteTransfer, ManualCancel) {
   ASSERT_EQ(payloads.size(), 2u);
   chunk = DecodeChunk(payloads.back());
   EXPECT_EQ(chunk.session_id(), 15u);
-  ASSERT_EQ(chunk.legacy_type(), Chunk::Type::kTransferCompletion);
+  ASSERT_EQ(chunk.type(), Chunk::Type::kTransferCompletion);
   EXPECT_EQ(chunk.status().value(), Status::Cancelled());
 
   EXPECT_EQ(transfer_status, Status::Cancelled());

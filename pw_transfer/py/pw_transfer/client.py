@@ -230,11 +230,11 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         """
 
         try:
-            transfer = transfers[chunk.session_id]
+            transfer = transfers[chunk.transfer_id]
         except KeyError:
             _LOG.error(
                 'TransferManager received chunk for unknown transfer %d',
-                chunk.session_id)
+                chunk.transfer_id)
             # TODO(frolv): What should be done here, if anything?
             return
 

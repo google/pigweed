@@ -41,11 +41,13 @@ message Chunk {
   // stable depending on the implementation. Sent in every request to identify
   // the transfer target.
   //
+  // LEGACY FIELD ONLY. Split into resource_id and session_id in transfer v2.
+  //
   //  Read → ID of transfer
   //  Read ← ID of transfer
   // Write → ID of transfer
   // Write ← ID of transfer
-  uint32 session_id = 1;
+  uint32 transfer_id = 1;
 
   // Used by the receiver to indicate how many bytes it can accept. The
   // transmitter sends this much data, divided into chunks no larger than
@@ -173,6 +175,23 @@ message Chunk {
   // Write ← Chunk type (start/parameters).
   optional Type type = 10;
 
-  // Not currently used. Will inherit session_id's behavior in the future.
-  uint32 resource_id = 11;
+  // Unique identifier for the source or destination of transfer data. May be
+  // stable or ephemeral depending on the implementation. Only sent during the
+  // initial handshake phase of a version 2 or higher transfer.
+  //
+  //  Read → ID of transferable resource
+  //  Read ← ID of transferable resource
+  // Write → ID of transferable resource
+  // Write ← ID of transferable resource
+  optional uint32 resource_id = 11;
+
+  // Unique identifier for a specific transfer session. Assigned by a transfer
+  // service during the initial handshake phase, and persists for the remainder
+  // of that transfer operation.
+  //
+  //  Read → ID of transfer session
+  //  Read ← ID of transfer session
+  // Write → ID of transfer session
+  // Write ← ID of transfer session
+  optional uint32 session_id = 12;
 }

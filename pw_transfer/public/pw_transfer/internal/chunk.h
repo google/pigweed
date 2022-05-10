@@ -23,7 +23,7 @@ namespace pw::transfer::internal {
 
 class Chunk {
  public:
-  enum Type {
+  enum class Type {
     kTransferData = 0,
     kTransferStart = 1,
     kParametersRetransmit = 2,
@@ -52,7 +52,13 @@ class Chunk {
         .set_status(status);
   }
 
+  // Encodes the chunk to the specified buffer, returning a span of the
+  // serialized data on success.
   Result<ConstByteSpan> Encode(ByteSpan buffer) const;
+
+  // Returns the size of the serialized chunk based on the fields currently set
+  // within the chunk object.
+  size_t EncodedSize() const;
 
   constexpr Chunk& set_session_id(uint32_t session_id) {
     session_id_ = session_id;
@@ -104,8 +110,14 @@ class Chunk {
 
   constexpr uint32_t session_id() const { return session_id_; }
 
-  constexpr uint32_t resource_id() const {
-    return resource_id_.has_value() ? resource_id_.value() : session_id_;
+  constexpr std::optional<uint32_t> resource_id() const {
+    if (is_legacy()) {
+      // In the legacy protocol, resource_id and session_id are the same (i.e.
+      // transfer_id).
+      return session_id_;
+    }
+
+    return resource_id_;
   }
 
   constexpr uint32_t window_end_offset() const { return window_end_offset_; }
@@ -129,11 +141,25 @@ class Chunk {
     return protocol_version_ == ProtocolVersion::kLegacy;
   }
 
-  // Legacy protocol chunks may not have a type, but newer versions always will.
-  constexpr std::optional<Type> legacy_type() const { return type_; }
   constexpr Type type() const {
-    PW_ASSERT(!is_legacy());
-    return type_.value();
+    // Legacy protocol chunks may not have a type, but newer versions always
+    // will. Try to deduce the type of a legacy chunk without one set.
+    if (!is_legacy() || type_.has_value()) {
+      return type_.value();
+    }
+
+    // The type-less legacy transfer protocol doesn't support handshakes or
+    // continuation parameters. Therefore, there are only three possible chunk
+    // types: start, data, and retransmit.
+    if (IsInitialChunk()) {
+      return Type::kTransferStart;
+    }
+
+    if (has_payload()) {
+      return Type::kTransferData;
+    }
+
+    return Type::kParametersRetransmit;
   }
 
   // Returns true if this parameters chunk is requesting that the transmitter
@@ -143,13 +169,13 @@ class Chunk {
       return true;
     }
 
-    return type_.value() == Chunk::Type::kParametersRetransmit ||
-           type_.value() == Chunk::Type::kTransferStart;
+    return type_.value() == Type::kParametersRetransmit ||
+           type_.value() == Type::kTransferStart;
   }
 
   constexpr bool IsInitialChunk() const {
     if (protocol_version_ >= ProtocolVersion::kVersionTwo) {
-      return type_ == kTransferStart;
+      return type_ == Type::kTransferStart;
     }
 
     // In legacy versions of the transfer protocol, the chunk type is not always
@@ -178,6 +204,18 @@ class Chunk {
         protocol_version_(version) {}
 
   constexpr Chunk() : Chunk(ProtocolVersion::kUnknown, std::nullopt) {}
+
+  // Returns true if this chunk should write legacy protocol fields to the
+  // serialized message.
+  //
+  // The first chunk of a transfer (type TRANSFER_START) is a special case: as
+  // we do not yet know what version of the protocol the other end is speaking,
+  // every legacy field must be encoded alongside newer ones to ensure that the
+  // chunk is processable. Following a response, the common protocol version
+  // will be determined and fields omitted as necessary.
+  constexpr bool ShouldEncodeLegacyFields() const {
+    return is_legacy() || type_ == Chunk::Type::kTransferStart;
+  }
 
   uint32_t session_id_;
   std::optional<uint32_t> resource_id_;

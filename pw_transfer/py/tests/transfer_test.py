@@ -105,7 +105,7 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.READ,
             ((transfer_pb2.Chunk(
-                session_id=3, offset=0, data=b'abc', remaining_bytes=0), ), ),
+                transfer_id=3, offset=0, data=b'abc', remaining_bytes=0), ), ),
         )
 
         data = manager.read(3)
@@ -122,9 +122,9 @@ class TransferManagerTest(unittest.TestCase):
             _Method.READ,
             ((
                 transfer_pb2.Chunk(
-                    session_id=3, offset=0, data=b'abc', remaining_bytes=3),
+                    transfer_id=3, offset=0, data=b'abc', remaining_bytes=3),
                 transfer_pb2.Chunk(
-                    session_id=3, offset=3, data=b'def', remaining_bytes=0),
+                    transfer_id=3, offset=3, data=b'def', remaining_bytes=0),
             ), ),
         )
 
@@ -142,9 +142,9 @@ class TransferManagerTest(unittest.TestCase):
             _Method.READ,
             ((
                 transfer_pb2.Chunk(
-                    session_id=3, offset=0, data=b'abc', remaining_bytes=3),
+                    transfer_id=3, offset=0, data=b'abc', remaining_bytes=3),
                 transfer_pb2.Chunk(
-                    session_id=3, offset=3, data=b'def', remaining_bytes=0),
+                    transfer_id=3, offset=3, data=b'def', remaining_bytes=0),
             ), ),
         )
 
@@ -169,22 +169,26 @@ class TransferManagerTest(unittest.TestCase):
             _Method.READ,
             (
                 (
-                    transfer_pb2.Chunk(
-                        session_id=3, offset=0, data=b'123',
-                        remaining_bytes=6),
+                    transfer_pb2.Chunk(transfer_id=3,
+                                       offset=0,
+                                       data=b'123',
+                                       remaining_bytes=6),
 
                     # Incorrect offset; expecting 3.
-                    transfer_pb2.Chunk(
-                        session_id=3, offset=1, data=b'456',
-                        remaining_bytes=3),
+                    transfer_pb2.Chunk(transfer_id=3,
+                                       offset=1,
+                                       data=b'456',
+                                       remaining_bytes=3),
                 ),
                 (
-                    transfer_pb2.Chunk(
-                        session_id=3, offset=3, data=b'456',
-                        remaining_bytes=3),
-                    transfer_pb2.Chunk(
-                        session_id=3, offset=6, data=b'789',
-                        remaining_bytes=0),
+                    transfer_pb2.Chunk(transfer_id=3,
+                                       offset=3,
+                                       data=b'456',
+                                       remaining_bytes=3),
+                    transfer_pb2.Chunk(transfer_id=3,
+                                       offset=6,
+                                       data=b'789',
+                                       remaining_bytes=0),
                 ),
             ))
 
@@ -206,7 +210,8 @@ class TransferManagerTest(unittest.TestCase):
             (
                 (),  # Send nothing in response to the initial parameters.
                 (transfer_pb2.Chunk(
-                    session_id=3, offset=0, data=b'xyz', remaining_bytes=0), ),
+                    transfer_id=3, offset=0, data=b'xyz',
+                    remaining_bytes=0), ),
             ))
 
         data = manager.read(3)
@@ -238,7 +243,7 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(
             _Method.READ,
-            ((transfer_pb2.Chunk(session_id=31,
+            ((transfer_pb2.Chunk(transfer_id=31,
                                  status=Status.NOT_FOUND.value), ), ),
         )
 
@@ -269,11 +274,11 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=0,
                                     pending_bytes=32,
                                     max_chunk_size_bytes=8), ),
-                (transfer_pb2.Chunk(session_id=4, status=Status.OK.value), ),
+                (transfer_pb2.Chunk(transfer_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -288,12 +293,12 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=0,
                                     pending_bytes=32,
                                     max_chunk_size_bytes=8), ),
                 (),
-                (transfer_pb2.Chunk(session_id=4, status=Status.OK.value), ),
+                (transfer_pb2.Chunk(transfer_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -310,15 +315,15 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=0,
                                     pending_bytes=8,
                                     max_chunk_size_bytes=8), ),
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=8,
                                     pending_bytes=8,
                                     max_chunk_size_bytes=8), ),
-                (transfer_pb2.Chunk(session_id=4, status=Status.OK.value), ),
+                (transfer_pb2.Chunk(transfer_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -335,15 +340,15 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=0,
                                     pending_bytes=8,
                                     max_chunk_size_bytes=8), ),
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=8,
                                     pending_bytes=8,
                                     max_chunk_size_bytes=8), ),
-                (transfer_pb2.Chunk(session_id=4, status=Status.OK.value), ),
+                (transfer_pb2.Chunk(transfer_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -368,27 +373,27 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=0,
                                     pending_bytes=8,
                                     max_chunk_size_bytes=8), ),
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=8,
                                     pending_bytes=8,
                                     max_chunk_size_bytes=8), ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=4,
+                        transfer_id=4,
                         offset=4,  # rewind
                         pending_bytes=8,
                         max_chunk_size_bytes=8), ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=4,
+                        transfer_id=4,
                         offset=12,
                         pending_bytes=16,  # update max size
                         max_chunk_size_bytes=16), ),
-                (transfer_pb2.Chunk(session_id=4, status=Status.OK.value), ),
+                (transfer_pb2.Chunk(transfer_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -406,17 +411,17 @@ class TransferManagerTest(unittest.TestCase):
         self._enqueue_server_responses(
             _Method.WRITE,
             (
-                (transfer_pb2.Chunk(session_id=4,
+                (transfer_pb2.Chunk(transfer_id=4,
                                     offset=0,
                                     pending_bytes=8,
                                     max_chunk_size_bytes=8), ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=4,
+                        transfer_id=4,
                         offset=100,  # larger offset than data
                         pending_bytes=8,
                         max_chunk_size_bytes=8), ),
-                (transfer_pb2.Chunk(session_id=4, status=Status.OK.value), ),
+                (transfer_pb2.Chunk(transfer_id=4, status=Status.OK.value), ),
             ),
         )
 
@@ -433,7 +438,7 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(
             _Method.WRITE,
-            ((transfer_pb2.Chunk(session_id=21,
+            ((transfer_pb2.Chunk(transfer_id=21,
                                  status=Status.UNAVAILABLE.value), ), ),
         )
 
@@ -468,16 +473,16 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(
             self._sent_chunks,
             [
-                transfer_pb2.Chunk(session_id=22,
+                transfer_pb2.Chunk(transfer_id=22,
                                    resource_id=22,
                                    type=transfer_pb2.Chunk.Type.TRANSFER_START
                                    ),  # initial chunk
                 transfer_pb2.Chunk(
-                    session_id=22,
+                    transfer_id=22,
                     resource_id=22,
                     type=transfer_pb2.Chunk.Type.TRANSFER_START),  # retry 1
                 transfer_pb2.Chunk(
-                    session_id=22,
+                    transfer_id=22,
                     resource_id=22,
                     type=transfer_pb2.Chunk.Type.TRANSFER_START),  # retry 2
             ])
@@ -495,14 +500,14 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(_Method.WRITE, [[
             transfer_pb2.Chunk(
-                session_id=22, pending_bytes=10, max_chunk_size_bytes=5)
+                transfer_id=22, pending_bytes=10, max_chunk_size_bytes=5)
         ]])
 
         with self.assertRaises(pw_transfer.Error) as context:
             manager.write(22, b'0123456789')
 
         last_data_chunk = transfer_pb2.Chunk(
-            session_id=22,
+            transfer_id=22,
             data=b'56789',
             offset=5,
             remaining_bytes=0,
@@ -512,10 +517,10 @@ class TransferManagerTest(unittest.TestCase):
             self._sent_chunks,
             [
                 transfer_pb2.Chunk(
-                    session_id=22,
+                    transfer_id=22,
                     resource_id=22,
                     type=transfer_pb2.Chunk.Type.TRANSFER_START),
-                transfer_pb2.Chunk(session_id=22,
+                transfer_pb2.Chunk(transfer_id=22,
                                    data=b'01234',
                                    type=transfer_pb2.Chunk.Type.TRANSFER_DATA),
                 last_data_chunk,  # last chunk
@@ -533,7 +538,7 @@ class TransferManagerTest(unittest.TestCase):
 
         self._enqueue_server_responses(
             _Method.WRITE,
-            ((transfer_pb2.Chunk(session_id=23, pending_bytes=0), ), ),
+            ((transfer_pb2.Chunk(transfer_id=23, pending_bytes=0), ), ),
         )
 
         with self.assertRaises(pw_transfer.Error) as context:
