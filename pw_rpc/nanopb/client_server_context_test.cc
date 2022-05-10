@@ -45,7 +45,7 @@ class TestService final : public GeneratedService::Service<TestService> {
 };
 
 TEST(NanopbClientServerTestContext, ReceivesUnaryRpcReponse) {
-  NanopbClientServerTestContext ctx;
+  NanopbClientServerTestContext<> ctx;
   TestService service;
   ctx.server().RegisterService(service);
 
@@ -71,7 +71,7 @@ TEST(NanopbClientServerTestContext, ReceivesUnaryRpcReponse) {
 }
 
 TEST(NanopbClientServerTestContext, ReceivesMultipleReponses) {
-  NanopbClientServerTestContext ctx;
+  NanopbClientServerTestContext<> ctx;
   TestService service;
   ctx.server().RegisterService(service);
 

@@ -28,8 +28,8 @@ namespace pw::rpc {
 namespace internal {
 
 // Forward declare for a friend statement.
-template <size_t, size_t, size_t>
-class WatchableChannelOutput;
+template <typename, size_t, size_t, size_t>
+class ForwardingChannelOutput;
 
 }  // namespace internal
 }  // namespace pw::rpc
@@ -171,8 +171,8 @@ class NanopbFakeChannelOutput final
  private:
   template <typename, auto, uint32_t, size_t, size_t>
   friend class internal::test::nanopb::NanopbInvocationContext;
-  template <size_t, size_t, size_t>
-  friend class internal::WatchableChannelOutput;
+  template <typename, size_t, size_t, size_t>
+  friend class internal::ForwardingChannelOutput;
 
   using Base =
       internal::test::FakeChannelOutputBuffer<kMaxPackets,

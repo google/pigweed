@@ -106,12 +106,16 @@ pw_source_set("client_testing") {
 pw_source_set("client_server_testing") {
   public = [ "public/pw_rpc/nanopb/client_server_testing.h" ]
   public_deps = [
-    ":client_testing",
-    "$dir_pw_bytes",
-    "$dir_pw_sync:binary_semaphore",
-    "$dir_pw_sync:mutex",
-    "$dir_pw_thread:thread_core",
-    "..:client_server",
+    ":test_method_context",
+    "..:client_server_testing",
+  ]
+}
+
+pw_source_set("client_server_testing_threaded") {
+  public = [ "public/pw_rpc/nanopb/client_server_testing_threaded.h" ]
+  public_deps = [
+    ":test_method_context",
+    "..:client_server_testing_threaded",
   ]
 }
 
@@ -187,11 +191,6 @@ pw_test("client_reader_writer_test") {
   enable_if = dir_pw_third_party_nanopb != ""
 }
 
-_stl_threading_and_nanopb_enabled =
-    pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
-    pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
-    dir_pw_third_party_nanopb != ""
-
 pw_test("client_server_context_test") {
   deps = [
     ":client_api",
@@ -199,16 +198,21 @@ pw_test("client_server_context_test") {
     "..:test_protos.nanopb_rpc",
   ]
   sources = [ "client_server_context_test.cc" ]
-  enable_if = _stl_threading_and_nanopb_enabled
+  enable_if = dir_pw_third_party_nanopb != ""
 }
 
-# requires threading.
+_stl_threading_and_nanopb_enabled =
+    pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
+    pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
+    dir_pw_third_party_nanopb != ""
+
 pw_test("client_server_context_threaded_test") {
   deps = [
     ":client_api",
-    ":client_server_testing",
+    ":client_server_testing_threaded",
     "$dir_pw_sync:binary_semaphore",
-    "$dir_pw_thread:thread",
+    "$dir_pw_thread:test_threads",
+    "$dir_pw_thread_stl:test_threads",
     "..:test_protos.nanopb_rpc",
   ]
   sources = [ "client_server_context_threaded_test.cc" ]

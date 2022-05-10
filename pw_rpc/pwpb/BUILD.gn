@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public") {
@@ -95,6 +96,22 @@ pw_source_set("client_testing") {
   ]
 }
 
+pw_source_set("client_server_testing") {
+  public = [ "public/pw_rpc/pwpb/client_server_testing.h" ]
+  public_deps = [
+    ":test_method_context",
+    "..:client_server_testing",
+  ]
+}
+
+pw_source_set("client_server_testing_threaded") {
+  public = [ "public/pw_rpc/pwpb/client_server_testing_threaded.h" ]
+  public_deps = [
+    ":test_method_context",
+    "..:client_server_testing_threaded",
+  ]
+}
+
 pw_source_set("internal_test_utils") {
   public = [ "pw_rpc_pwpb_private/internal_test_utils.h" ]
   public_deps = [
@@ -129,6 +146,8 @@ pw_test_group("tests") {
   tests = [
     ":client_call_test",
     ":client_reader_writer_test",
+    ":client_server_context_test",
+    ":client_server_context_threaded_test",
     ":codegen_test",
     ":echo_service_test",
     ":fake_channel_output_test",
@@ -161,6 +180,32 @@ pw_test("client_reader_writer_test") {
     "..:test_protos.pwpb_rpc",
   ]
   sources = [ "client_reader_writer_test.cc" ]
+}
+
+pw_test("client_server_context_test") {
+  deps = [
+    ":client_api",
+    ":client_server_testing",
+    "..:test_protos.pwpb_rpc",
+  ]
+  sources = [ "client_server_context_test.cc" ]
+}
+
+_stl_threading_enabled =
+    pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
+    pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != ""
+
+pw_test("client_server_context_threaded_test") {
+  deps = [
+    ":client_api",
+    ":client_server_testing_threaded",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_thread:test_threads",
+    "$dir_pw_thread_stl:test_threads",
+    "..:test_protos.pwpb_rpc",
+  ]
+  sources = [ "client_server_context_threaded_test.cc" ]
+  enable_if = _stl_threading_enabled
 }
 
 pw_test("codegen_test") {

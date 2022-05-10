@@ -32,8 +32,8 @@ namespace pw::rpc {
 namespace internal {
 
 // Forward declare for a friend statement.
-template <size_t, size_t, size_t>
-class WatchableChannelOutput;
+template <class, size_t, size_t, size_t>
+class ForwardingChannelOutput;
 
 }  // namespace internal
 }  // namespace pw::rpc
@@ -229,8 +229,8 @@ class FakeChannelOutput : public ChannelOutput {
 
  private:
   friend class rpc::FakeServer;
-  template <size_t, size_t, size_t>
-  friend class internal::WatchableChannelOutput;
+  template <class, size_t, size_t, size_t>
+  friend class internal::ForwardingChannelOutput;
 
   Status HandlePacket(ConstByteSpan buffer) PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void CopyPayloadToBuffer(Packet& packet) PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);

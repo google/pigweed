@@ -16,7 +16,7 @@
 #include <cinttypes>
 
 #include "pw_rpc/internal/client_server_testing.h"
-#include "pw_rpc/nanopb/fake_channel_output.h"
+#include "pw_rpc/pwpb/fake_channel_output.h"
 
 namespace pw::rpc {
 namespace internal {
@@ -24,9 +24,9 @@ namespace internal {
 template <size_t kOutputSize,
           size_t kMaxPackets,
           size_t kPayloadsBufferSizeBytes>
-class NanopbForwardingChannelOutput final
+class PwpbForwardingChannelOutput final
     : public ForwardingChannelOutput<
-          NanopbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>,
+          PwpbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>,
           kOutputSize,
           kMaxPackets,
           kPayloadsBufferSizeBytes> {
@@ -39,13 +39,13 @@ class NanopbForwardingChannelOutput final
   using Request = typename MethodInfo<kMethod>::Request;
 
   using Base = ForwardingChannelOutput<
-      NanopbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>,
+      PwpbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>,
       kOutputSize,
       kMaxPackets,
       kPayloadsBufferSizeBytes>;
 
  public:
-  constexpr NanopbForwardingChannelOutput() = default;
+  constexpr PwpbForwardingChannelOutput() = default;
 
   template <auto kMethod>
   Response<kMethod> response(uint32_t channel_id, uint32_t index) {
@@ -65,11 +65,11 @@ class NanopbForwardingChannelOutput final
 template <size_t kOutputSize = 128,
           size_t kMaxPackets = 16,
           size_t kPayloadsBufferSizeBytes = 128>
-class NanopbClientServerTestContext final
+class PwpbClientServerTestContext final
     : public internal::ClientServerTestContext<
-          internal::NanopbForwardingChannelOutput<kOutputSize,
-                                                  kMaxPackets,
-                                                  kPayloadsBufferSizeBytes>,
+          internal::PwpbForwardingChannelOutput<kOutputSize,
+                                                kMaxPackets,
+                                                kPayloadsBufferSizeBytes>,
           kOutputSize,
           kMaxPackets,
           kPayloadsBufferSizeBytes> {
@@ -82,15 +82,15 @@ class NanopbClientServerTestContext final
   using Request = typename MethodInfo<kMethod>::Request;
 
   using Base = internal::ClientServerTestContext<
-      internal::NanopbForwardingChannelOutput<kOutputSize,
-                                              kMaxPackets,
-                                              kPayloadsBufferSizeBytes>,
+      internal::PwpbForwardingChannelOutput<kOutputSize,
+                                            kMaxPackets,
+                                            kPayloadsBufferSizeBytes>,
       kOutputSize,
       kMaxPackets,
       kPayloadsBufferSizeBytes>;
 
  public:
-  NanopbClientServerTestContext() = default;
+  PwpbClientServerTestContext() = default;
 
   // Retrieve copy of request indexed by order of occurance
   template <auto kMethod>

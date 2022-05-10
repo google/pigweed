@@ -213,6 +213,33 @@ pw_source_set("fake_channel_output") {
   visibility = [ "./*" ]
 }
 
+pw_source_set("client_server_testing") {
+  public = [ "public/pw_rpc/internal/client_server_testing.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":client_server",
+    ":fake_channel_output",
+    "$dir_pw_bytes",
+    "$dir_pw_result",
+  ]
+  visibility = [ "./*" ]
+}
+
+pw_source_set("client_server_testing_threaded") {
+  public = [ "public/pw_rpc/internal/client_server_testing_threaded.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":client_server_testing",
+    "$dir_pw_bytes",
+    "$dir_pw_result",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_thread:thread",
+  ]
+  visibility = [ "./*" ]
+}
+
 pw_source_set("thread_testing") {
   public = [ "public/pw_rpc/thread_testing.h" ]
   public_deps = [

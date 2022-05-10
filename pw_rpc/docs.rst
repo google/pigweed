@@ -996,10 +996,10 @@ Testing
 Client unit testing in C++
 --------------------------
 ``pw_rpc`` supports invoking RPCs, simulating server responses, and checking
-what packets are sent by an RPC client in tests. Both raw and Nanopb interfaces
-are supported. Code that uses the raw API may be tested with the Nanopb test
-helpers, and vice versa. The Nanopb API also provides a test helper with a real
-client-server pair that supports testing of synchronously messaging.
+what packets are sent by an RPC client in tests. Raw, Nanopb and Pwpb interfaces
+are supported. Code that uses the raw API may be tested with the raw test
+helpers, and vice versa. The Nanopb and Pwpb APIs also provides a test helper
+with a real client-server pair that supports testing of asynchronous messaging.
 
 To test sychronous code that invokes RPCs, declare a ``RawClientTestContext``,
 ``PwpbClientTestContext``,  or ``NanopbClientTestContext``. These test context
@@ -1055,9 +1055,12 @@ the expected data was sent and then simulates a response from the server.
     EXPECT_TRUE(thing.SetToTrueWhenRpcCompletes());
   }
 
-To test client code that uses asynchronous responses or encapsulates multiple
-rpc calls to one or more services, declare a ``NanopbClientServerTestContext``.
-This test object is defined in ``pw_rpc/nanopb/client_server_testing.h``.
+To test client code that uses asynchronous responses, encapsulates multiple
+rpc calls to one or more services, or uses a custom service implemenation,
+declare a ``NanopbClientServerTestContextThreaded`` or
+``PwpbClientServerTestContextThreaded``. These test object are defined in
+``pw_rpc/nanopb/client_server_testing_threaded.h`` and
+``pw_rpc/pwpb/client_server_testing_threaded.h``.
 
 Use the context's ``server()`` to register a ``Service`` implementation, and
 ``client()`` and ``channel()`` to invoke RPCs. Create a ``Thread`` using the
@@ -1073,8 +1076,7 @@ response is received. It verifies that expected data was both sent and received.
 .. code-block:: cpp
 
   #include "my_library_protos/my_service.rpc.pb.h"
-  #include "pw_rpc/nanopb/client_server_testing.h"
-  #include "pw_thread/detached_thread.h"
+  #include "pw_rpc/nanopb/client_server_testing_threaded.h"
   #include "pw_thread_stl/options.h"
 
   class ClientUnderTest {
@@ -1098,15 +1100,66 @@ response is received. It verifies that expected data was both sent and received.
   };
 
   TEST(TestServiceTest, ReceivesUnaryRpcReponse) {
-    NanopbClientServerTestContext ctx;
+    NanopbClientServerTestContextThreaded<> ctx(pw::thread::stl::Options{});
     TestService service;
     ctx.server().RegisterService(service);
-    pw::thread::DetachedThread(pw::thread::stl::Options(), ctx);
     ClientUnderTest client(ctx.client(), ctx.channel().id());
 
     // Execute the code that invokes the MyService.TheMethod RPC.
     constexpr uint32_t value = 1;
     const auto result = client.BlockOnResponse(value);
+    const auto request = ctx.request<MyService::TheMethod>(0);
+    const auto response = ctx.resonse<MyService::TheMethod>(0);
+
+    // Verify content of messages
+    EXPECT_EQ(result, pw::OkStatus());
+    EXPECT_EQ(request.value, value);
+    EXPECT_EQ(response.value, value + 1);
+  }
+
+Synchronous versions of these test contexts also exist that may be used on
+non-threaded systems ``NanopbClientServerTestContext`` and
+``PwpbClientServerTestContext``. While these do not allow for asynchronous
+messaging they support the use of service implemenations and use a similar
+syntax. When these are used ``.ForwardNewPackets()`` should be called after each
+rpc call to trigger sending of queued messages.
+
+For example, the following tests a class that invokes an RPC that is responded
+to with a test service implemenation.
+
+.. code-block:: cpp
+
+  #include "my_library_protos/my_service.rpc.pb.h"
+  #include "pw_rpc/nanopb/client_server_testing.h"
+
+  class ClientUnderTest {
+   public:
+    ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
+
+    Status SendRpcCall(uint32_t value);
+  };
+
+
+  class TestService final : public MyService<TestService> {
+   public:
+    Status TheMethod(const pw_rpc_test_TheMethod& request,
+                        pw_rpc_test_TheMethod& response) {
+      response.value = request.integer + 1;
+      return pw::OkStatus();
+    }
+  };
+
+  TEST(TestServiceTest, ReceivesUnaryRpcReponse) {
+    NanopbClientServerTestContext<> ctx();
+    TestService service;
+    ctx.server().RegisterService(service);
+    ClientUnderTest client(ctx.client(), ctx.channel().id());
+
+    // Execute the code that invokes the MyService.TheMethod RPC.
+    constexpr uint32_t value = 1;
+    const auto result = client.SendRpcCall(value);
+    // Needed after ever RPC call to trigger forward of packets
+    ctx.ForwardNewPackets();
     const auto request = ctx.request<MyService::TheMethod>(0);
     const auto response = ctx.resonse<MyService::TheMethod>(0);
 

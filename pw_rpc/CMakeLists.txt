@@ -126,6 +126,25 @@ pw_add_module_library(pw_rpc.test_utils
 )
 target_include_directories(pw_rpc.test_utils PUBLIC .)
 
+pw_add_module_library(pw_rpc.client_server_testing
+  PUBLIC_DEPS
+    pw_bytes
+    pw_result
+    pw_rpc.client_server
+    pw_rpc.test_utils
+)
+
+pw_add_module_library(pw_rpc.client_server_testing_threaded
+  PUBLIC_DEPS
+    pw_bytes
+    pw_result
+    pw_rpc.client_server_testing
+    pw_sync.binary_semaphore
+    pw_sync.lock_annotations
+    pw_sync.mutex
+    pw_thread.thread
+)
+
 pw_proto_library(pw_rpc.protos
   SOURCES
     internal/packet.proto

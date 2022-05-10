@@ -17,6 +17,10 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -91,6 +95,30 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "client_server_testing",
+    hdrs = [
+        "public/pw_rpc/pwpb/client_server_testing.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":test_method_context",
+        "//pw_rpc:client_server_testing",
+    ],
+)
+
+pw_cc_library(
+    name = "client_server_testing_threaded",
+    hdrs = [
+        "public/pw_rpc/pwpb/client_server_testing_threaded.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":test_method_context",
+        "//pw_rpc:client_server_testing_threaded",
+    ],
+)
+
+pw_cc_library(
     name = "internal_test_utils",
     hdrs = ["pw_rpc_pwpb_private/internal_test_utils.h"],
     deps = ["//pw_rpc:internal_test_utils"],
@@ -139,6 +167,34 @@ pw_cc_test(
         ":client_api",
         ":client_testing",
         "//pw_rpc:pw_rpc_test_cc.pwpb_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "client_server_context_test",
+    srcs = [
+        "client_server_context_test.cc",
+    ],
+    deps = [
+        ":client_api",
+        ":client_server_testing",
+        "//pw_rpc:pw_rpc_test_cc.pwpb_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "client_server_context_threaded_test",
+    srcs = [
+        "client_server_context_threaded_test.cc",
+    ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":client_api",
+        ":client_server_testing_threaded",
+        "//pw_rpc:pw_rpc_test_cc.pwpb_rpc",
+        "//pw_sync:binary_semaphore",
+        "//pw_thread:test_threads_header",
+        "//pw_thread_stl:test_threads",
     ],
 )
 

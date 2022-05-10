@@ -102,13 +102,20 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":client_testing",
-        "//pw_bytes",
-        "//pw_rpc",
-        "//pw_rpc:client_server",
-        "//pw_sync:binary_semaphore",
-        "//pw_sync:mutex",
-        "//pw_thread:thread_core",
+        ":test_method_context",
+        "//pw_rpc:client_server_testing",
+    ],
+)
+
+pw_cc_library(
+    name = "client_server_testing_threaded",
+    hdrs = [
+        "public/pw_rpc/nanopb/client_server_testing_threaded.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":test_method_context",
+        "//pw_rpc:client_server_testing_threaded",
     ],
 )
 
@@ -184,10 +191,11 @@ pw_cc_test(
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":client_api",
-        ":client_server_testing",
+        ":client_server_testing_threaded",
         "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
         "//pw_sync:binary_semaphore",
-        "//pw_thread:thread",
+        "//pw_thread:test_threads_header",
+        "//pw_thread_stl:test_threads",
     ],
 )
 

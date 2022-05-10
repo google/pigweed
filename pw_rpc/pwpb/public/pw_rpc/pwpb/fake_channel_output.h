@@ -21,6 +21,16 @@
 #include "pw_rpc/pwpb/internal/method.h"
 
 namespace pw::rpc {
+namespace internal {
+
+// Forward declare for a friend statement.
+template <typename, size_t, size_t, size_t>
+class ForwardingChannelOutput;
+
+}  // namespace internal
+}  // namespace pw::rpc
+
+namespace pw::rpc {
 namespace internal::test::pwpb {
 
 // Forward declare for a friend statement.
@@ -166,6 +176,8 @@ class PwpbFakeChannelOutput final
  private:
   template <typename, auto, uint32_t, size_t, size_t>
   friend class internal::test::pwpb::PwpbInvocationContext;
+  template <typename, size_t, size_t, size_t>
+  friend class internal::ForwardingChannelOutput;
 
   using internal::test::FakeChannelOutput::last_packet;
 

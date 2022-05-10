@@ -15,7 +15,7 @@
 
 #include <cinttypes>
 
-#include "pw_rpc/internal/client_server_testing.h"
+#include "pw_rpc/internal/client_server_testing_threaded.h"
 #include "pw_rpc/nanopb/fake_channel_output.h"
 
 namespace pw::rpc {
@@ -24,8 +24,8 @@ namespace internal {
 template <size_t kOutputSize,
           size_t kMaxPackets,
           size_t kPayloadsBufferSizeBytes>
-class NanopbForwardingChannelOutput final
-    : public ForwardingChannelOutput<
+class NanopbWatchableChannelOutput final
+    : public WatchableChannelOutput<
           NanopbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>,
           kOutputSize,
           kMaxPackets,
@@ -38,23 +38,27 @@ class NanopbForwardingChannelOutput final
   template <auto kMethod>
   using Request = typename MethodInfo<kMethod>::Request;
 
-  using Base = ForwardingChannelOutput<
+  using Base = WatchableChannelOutput<
       NanopbFakeChannelOutput<kMaxPackets, kPayloadsBufferSizeBytes>,
       kOutputSize,
       kMaxPackets,
       kPayloadsBufferSizeBytes>;
 
  public:
-  constexpr NanopbForwardingChannelOutput() = default;
+  constexpr NanopbWatchableChannelOutput() = default;
 
   template <auto kMethod>
-  Response<kMethod> response(uint32_t channel_id, uint32_t index) {
+  Response<kMethod> response(uint32_t channel_id, uint32_t index)
+      PW_LOCKS_EXCLUDED(Base::mutex_) {
+    std::lock_guard lock(Base::mutex_);
     PW_ASSERT(Base::PacketCount() >= index);
     return Base::output_.template responses<kMethod>(channel_id)[index];
   }
 
   template <auto kMethod>
-  Request<kMethod> request(uint32_t channel_id, uint32_t index) {
+  Request<kMethod> request(uint32_t channel_id, uint32_t index)
+      PW_LOCKS_EXCLUDED(Base::mutex_) {
+    std::lock_guard lock(Base::mutex_);
     PW_ASSERT(Base::PacketCount() >= index);
     return Base::output_.template requests<kMethod>(channel_id)[index];
   }
@@ -65,11 +69,11 @@ class NanopbForwardingChannelOutput final
 template <size_t kOutputSize = 128,
           size_t kMaxPackets = 16,
           size_t kPayloadsBufferSizeBytes = 128>
-class NanopbClientServerTestContext final
-    : public internal::ClientServerTestContext<
-          internal::NanopbForwardingChannelOutput<kOutputSize,
-                                                  kMaxPackets,
-                                                  kPayloadsBufferSizeBytes>,
+class NanopbClientServerTestContextThreaded final
+    : public internal::ClientServerTestContextThreaded<
+          internal::NanopbWatchableChannelOutput<kOutputSize,
+                                                 kMaxPackets,
+                                                 kPayloadsBufferSizeBytes>,
           kOutputSize,
           kMaxPackets,
           kPayloadsBufferSizeBytes> {
@@ -81,16 +85,17 @@ class NanopbClientServerTestContext final
   template <auto kMethod>
   using Request = typename MethodInfo<kMethod>::Request;
 
-  using Base = internal::ClientServerTestContext<
-      internal::NanopbForwardingChannelOutput<kOutputSize,
-                                              kMaxPackets,
-                                              kPayloadsBufferSizeBytes>,
+  using Base = internal::ClientServerTestContextThreaded<
+      internal::NanopbWatchableChannelOutput<kOutputSize,
+                                             kMaxPackets,
+                                             kPayloadsBufferSizeBytes>,
       kOutputSize,
       kMaxPackets,
       kPayloadsBufferSizeBytes>;
 
  public:
-  NanopbClientServerTestContext() = default;
+  NanopbClientServerTestContextThreaded(const thread::Options& options)
+      : Base(options) {}
 
   // Retrieve copy of request indexed by order of occurance
   template <auto kMethod>

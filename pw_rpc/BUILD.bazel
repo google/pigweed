@@ -134,6 +134,33 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "client_server_testing",
+    hdrs = ["public/pw_rpc/internal/client_server_testing.h"],
+    includes = ["public"],
+    deps = [
+        ":client_server",
+        ":internal_test_utils",
+        "//pw_bytes",
+        "//pw_result",
+    ],
+)
+
+pw_cc_library(
+    name = "client_server_testing_threaded",
+    hdrs = ["public/pw_rpc/internal/client_server_testing_threaded.h"],
+    includes = ["public"],
+    deps = [
+        ":client_server_testing",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_sync:binary_semaphore",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_thread:thread",
+    ],
+)
+
+pw_cc_library(
     name = "thread_testing",
     hdrs = ["public/pw_rpc/thread_testing.h"],
     includes = ["public"],

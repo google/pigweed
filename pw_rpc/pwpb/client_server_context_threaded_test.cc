@@ -13,49 +13,51 @@
 // the License.
 
 #include "gtest/gtest.h"
-#include "pw_rpc/nanopb/client_server_testing_threaded.h"
-#include "pw_rpc_test_protos/test.rpc.pb.h"
+#include "pw_rpc/pwpb/client_server_testing_threaded.h"
+#include "pw_rpc_test_protos/test.rpc.pwpb.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/test_threads.h"
 
 namespace pw::rpc {
-namespace {
+namespace test {
 
-using GeneratedService = ::pw::rpc::test::pw_rpc::nanopb::TestService;
+using GeneratedService = ::pw::rpc::test::pw_rpc::pwpb::TestService;
 
 class TestService final : public GeneratedService::Service<TestService> {
  public:
-  Status TestUnaryRpc(const pw_rpc_test_TestRequest& request,
-                      pw_rpc_test_TestResponse& response) {
+  Status TestUnaryRpc(const TestRequest::Message& request,
+                      TestResponse::Message& response) {
     response.value = request.integer + 1;
     return static_cast<Status::Code>(request.status_code);
   }
 
-  void TestAnotherUnaryRpc(const pw_rpc_test_TestRequest&,
-                           NanopbUnaryResponder<pw_rpc_test_TestResponse>&) {}
+  void TestAnotherUnaryRpc(const TestRequest::Message&,
+                           PwpbUnaryResponder<TestResponse::Message>&) {}
 
-  static void TestServerStreamRpc(
-      const pw_rpc_test_TestRequest&,
-      ServerWriter<pw_rpc_test_TestStreamResponse>&) {}
+  static void TestServerStreamRpc(const TestRequest::Message&,
+                                  ServerWriter<TestStreamResponse::Message>&) {}
 
   void TestClientStreamRpc(
-      ServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>&) {}
+      ServerReader<TestRequest::Message, TestStreamResponse::Message>&) {}
 
   void TestBidirectionalStreamRpc(
-      ServerReaderWriter<pw_rpc_test_TestRequest,
-                         pw_rpc_test_TestStreamResponse>&) {}
+      ServerReaderWriter<TestRequest::Message, TestStreamResponse::Message>&) {}
 };
+
+}  // namespace test
+
+namespace {
 
 class RpcCaller {
  public:
   void BlockOnResponse(uint32_t i, Client& client, uint32_t channel_id) {
-    pw_rpc_test_TestRequest request{.integer = i,
-                                    .status_code = OkStatus().code()};
-    auto call = GeneratedService::TestUnaryRpc(
+    test::TestRequest::Message request{.integer = i,
+                                       .status_code = OkStatus().code()};
+    auto call = test::GeneratedService::TestUnaryRpc(
         client,
         channel_id,
         request,
-        [this](const pw_rpc_test_TestResponse&, Status) {
+        [this](const test::TestResponse::Message&, Status) {
           semaphore_.release();
         },
         [](Status) {});
@@ -67,10 +69,9 @@ class RpcCaller {
   pw::sync::BinarySemaphore semaphore_;
 };
 
-TEST(NanopbClientServerTestContextThreaded, ReceivesUnaryRpcReponseThreaded) {
-  NanopbClientServerTestContextThreaded<> ctx(
-      thread::test::TestOptionsThread0());
-  TestService service;
+TEST(PwpbClientServerTestContextThreaded, ReceivesUnaryRpcReponseThreaded) {
+  PwpbClientServerTestContextThreaded<> ctx(thread::test::TestOptionsThread0());
+  test::TestService service;
   ctx.server().RegisterService(service);
 
   RpcCaller caller;
@@ -78,18 +79,17 @@ TEST(NanopbClientServerTestContextThreaded, ReceivesUnaryRpcReponseThreaded) {
   caller.BlockOnResponse(value, ctx.client(), ctx.channel().id());
 
   const auto request =
-      ctx.request<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(0);
+      ctx.request<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
   const auto response =
-      ctx.response<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(0);
+      ctx.response<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
 
   EXPECT_EQ(value, request.integer);
   EXPECT_EQ(value + 1, response.value);
 }
 
-TEST(NanopbClientServerTestContextThreaded, ReceivesMultipleReponsesThreaded) {
-  NanopbClientServerTestContextThreaded<> ctx(
-      thread::test::TestOptionsThread0());
-  TestService service;
+TEST(PwpbClientServerTestContextThreaded, ReceivesMultipleReponsesThreaded) {
+  PwpbClientServerTestContextThreaded<> ctx(thread::test::TestOptionsThread0());
+  test::TestService service;
   ctx.server().RegisterService(service);
 
   RpcCaller caller;
@@ -99,13 +99,13 @@ TEST(NanopbClientServerTestContextThreaded, ReceivesMultipleReponsesThreaded) {
   caller.BlockOnResponse(value2, ctx.client(), ctx.channel().id());
 
   const auto request1 =
-      ctx.request<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(0);
+      ctx.request<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
   const auto request2 =
-      ctx.request<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(1);
+      ctx.request<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(1);
   const auto response1 =
-      ctx.response<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(0);
+      ctx.response<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
   const auto response2 =
-      ctx.response<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(1);
+      ctx.response<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(1);
 
   EXPECT_EQ(value1, request1.integer);
   EXPECT_EQ(value2, request2.integer);
