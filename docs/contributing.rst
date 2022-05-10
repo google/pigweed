@@ -16,35 +16,39 @@ to respect these guidelines.
 
 Pigweed contribution overview
 -----------------------------
-
-#. One-time contributor setup:
-
-  - Sign the `Contributor License Agreement <https://cla.developers.google.com/>`_.
-  - Verify that your Git user email (git config user.email) is either Google
-    Account email or an Alternate email for the Google account used to sign
-    the CLA (Manage Google account → Personal Info → email)
-  - Sign in to `Gerrit <https://pigweed-review.googlesource.com/>`_ to create
-    an account using the same Google account you used above.
-  - Obtain a login cookie from Gerrit's `new-password <https://pigweed-review.googlesource.com/new-password>`_ page
-  - Install the Gerrit commit hook to automatically add a ``Change-Id: ...``
-    line to your commit
-  - Install the Pigweed presubmit check hook with ``pw presubmit --install``
-
-#. Ensure all files include the correct copyright and license headers
-#. Include any necessary changes to the documentation
-#. Run :ref:`module-pw_presubmit` to detect style or compilation issues before
-   uploading
-#. Upload the change with ``git push origin HEAD:refs/for/main``
-#. Address any reviewer feedback by amending the commit (``git commit --amend``)
-#. Submit change to CI builders to merge. If you are not part of Pigweed's
-   core team, you can ask the reviewer to add the `+2 CQ` vote, which will
-   trigger a rebase and submit once the builders pass
-
 .. note::
 
   If you have any trouble with this flow, reach out in our `chat room
   <https://discord.gg/M9NSeTA>`_ or on the `mailing list
   <https://groups.google.com/forum/#!forum/pigweed>`_ for help.
+
+One-time contributor setup
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+#. Sign the `Contributor License Agreement <https://cla.developers.google.com/>`_.
+#. Verify that your Git user email (git config user.email) is either Google
+   Account email or an Alternate email for the Google account used to sign
+   the CLA (Manage Google account → Personal Info → email).
+#. Sign in to `Gerrit <https://pigweed-review.googlesource.com/>`_ to create
+   an account using the same Google account you used above.
+#. Obtain a login cookie from Gerrit's `new-password <https://pigweed-review.googlesource.com/new-password>`_ page
+#. Install the Gerrit commit hook to automatically add a ``Change-Id: ...``
+   line to your commit.
+#. Install the Pigweed presubmit check hook with ``pw presubmit --install``.
+
+Change submission process
+^^^^^^^^^^^^^^^^^^^^^^^^^
+#. Ensure all files include the correct copyright and license headers.
+#. Include any necessary changes to the documentation.
+#. Run :ref:`module-pw_presubmit` to detect style or compilation issues before
+   uploading.
+#. Upload the change with ``git push origin HEAD:refs/for/main``.
+#. Add ``gwsq-pigweed@pigweed.google.com.iam.gserviceaccount.com`` as a
+   reviewer. This will automatically choose an appropriate person to review the
+   change.
+#. Address any reviewer feedback by amending the commit (``git commit --amend``).
+#. Submit change to CI builders to merge. If you are not part of Pigweed's
+   core team, you can ask the reviewer to add the `+2 CQ` vote, which will
+   trigger a rebase and submit once the builders pass.
 
 Contributor License Agreement
 -----------------------------
@@ -265,6 +269,10 @@ development workflow <http://ceres-solver.org/contributing.html>`_. Consult the
 `Gerrit User Guide
 <https://gerrit-documentation.storage.googleapis.com/Documentation/2.12.3/intro-user.html>`_
 for more information on using Gerrit.
+
+You may add the special address
+``gwsq-pigweed@pigweed.google.com.iam.gserviceaccount.com`` as a reviewer to
+have Gerrit automatically choose an appropriate person to review your change.
 
 In the future we may support GitHub pull requests, but until that time we will
 close GitHub pull requests and ask that the changes be uploaded to Gerrit
