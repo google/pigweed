@@ -490,58 +490,64 @@ template("pw_python_package") {
       }
     }
 
-    if (_is_package && _pip_install_package) {
-      # Install this Python package and its dependencies in the current Python
-      # environment using pip.
-      pw_python_action("$target_name._run_pip_install") {
-        module = "pip"
-        public_deps = []
-        if (defined(invoker.public_deps)) {
-          public_deps += invoker.public_deps
-        }
+    if (_is_package) {
+      if (_pip_install_package) {
+        # Install this Python package and its dependencies in the current Python
+        # environment using pip.
+        pw_python_action("$target_name._run_pip_install") {
+          module = "pip"
+          public_deps = []
+          if (defined(invoker.public_deps)) {
+            public_deps += invoker.public_deps
+          }
 
-        args = [
-          "install",
+          args = [
+            "install",
 
-          # This speeds up pip installs. At this point in the gn build the
-          # virtualenv is already activated so build isolation isn't required.
-          # This requires that pip, setuptools, and wheel packages are
-          # installed.
-          "--no-build-isolation",
-        ]
-
-        inputs = pw_build_PIP_CONSTRAINTS
-        foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
-          args += [
-            "--constraint",
-            rebase_path(_constraints_file, root_build_dir),
+            # This speeds up pip installs. At this point in the gn build the
+            # virtualenv is already activated so build isolation isn't required.
+            # This requires that pip, setuptools, and wheel packages are
+            # installed.
+            "--no-build-isolation",
           ]
+
+          inputs = pw_build_PIP_CONSTRAINTS
+          foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
+            args += [
+              "--constraint",
+              rebase_path(_constraints_file, root_build_dir),
+            ]
+          }
+
+          # For generated packages, reinstall when any files change. For regular
+          # packages, only reinstall when setup.py changes.
+          if (_generate_package) {
+            public_deps += [ ":${invoker.target_name}" ]
+          } else {
+            inputs += invoker.setup
+
+            # Install with --editable since the complete package is in source.
+            args += [ "--editable" ]
+          }
+
+          args += [ rebase_path(_setup_dir, root_build_dir) ]
+
+          stamp = true
+
+          # Parallel pip installations don't work, so serialize pip invocations.
+          pool = "$dir_pw_build/pool:pip($default_toolchain)"
+
+          foreach(dep, _python_deps) {
+            # We need to add a suffix to the target name, but the label is
+            # formatted as "//path/to:target(toolchain)", so we can't just append
+            # ".subtarget". Instead, we replace the opening parenthesis of the
+            # toolchain with ".suffix(".
+            public_deps += [ string_replace(dep, "(", "._run_pip_install(") ]
+          }
         }
-
-        # For generated packages, reinstall when any files change. For regular
-        # packages, only reinstall when setup.py changes.
-        if (_generate_package) {
-          public_deps += [ ":${invoker.target_name}" ]
-        } else {
-          inputs += invoker.setup
-
-          # Install with --editable since the complete package is in source.
-          args += [ "--editable" ]
-        }
-
-        args += [ rebase_path(_setup_dir, root_build_dir) ]
-
-        stamp = true
-
-        # Parallel pip installations don't work, so serialize pip invocations.
-        pool = "$dir_pw_build/pool:pip($default_toolchain)"
-
-        foreach(dep, _python_deps) {
-          # We need to add a suffix to the target name, but the label is
-          # formatted as "//path/to:target(toolchain)", so we can't just append
-          # ".subtarget". Instead, we replace the opening parenthesis of the
-          # toolchain with ".suffix(".
-          public_deps += [ string_replace(dep, "(", "._run_pip_install(") ]
+      } else {
+        # Stubs for non-package targets.
+        group("$target_name._run_pip_install") {
         }
       }
 

@@ -259,6 +259,9 @@ template("pw_python_action") {
     _install_venv_3p_deps = false
   }
 
+  # If pw_build_USE_NEW_PYTHON_BUILD is false this variable is not needed.
+  not_needed([ "_install_venv_3p_deps" ])
+
   # Check that script or module is a present and not a no-op.
   _run_script_or_module = false
   if (defined(invoker.script) || defined(invoker.module)) {
@@ -280,8 +283,11 @@ template("pw_python_action") {
     inputs = _inputs
     outputs = _outputs
     deps = _deps
-    if (_install_venv_3p_deps && _run_script_or_module) {
-      deps += [ "$dir_pw_env_setup:install_3p_deps($default_toolchain)" ]
+
+    if (pw_build_USE_NEW_PYTHON_BUILD) {
+      if (_install_venv_3p_deps && _run_script_or_module) {
+        deps += [ "$dir_pw_env_setup:install_3p_deps($default_toolchain)" ]
+      }
     }
   }
 }
