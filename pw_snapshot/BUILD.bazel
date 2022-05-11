@@ -84,7 +84,7 @@ pw_cc_test(
         "cpp_compile_test.cc",
     ],
     deps = [
-        ":snapshot_proto_cc",
+        ":snapshot_proto_cc.pwpb",
         "//pw_unit_test",
     ],
 )
@@ -95,7 +95,7 @@ pw_cc_test(
         "uuid_test.cc",
     ],
     deps = [
-        ":metadata_proto_cc",
+        ":metadata_proto_cc.pwpb",
         ":uuid",
         "//pw_bytes",
         "//pw_protobuf",
