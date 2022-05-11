@@ -27,6 +27,7 @@ For more see http://go/pigweed-ci-cq-intro.
 """
 
 import argparse
+import json
 import logging
 from pathlib import Path
 import re
@@ -100,17 +101,24 @@ def clone(requires_dir: Path) -> None:
 
 
 def create_commit(requires_dir: Path, requirements) -> None:
+    """Create a commit in the local tree with the given requirements."""
     change_id = str(uuid.uuid4()).replace('-', '00')
     _LOG.debug('change_id %s', change_id)
-    path = requires_dir / change_id
+
+    reqs = []
+    for req in requirements:
+        gerrit_name, number = req.split(':', 1)
+        reqs.append({'gerrit_name': gerrit_name, 'number': number})
+
+    path = requires_dir / 'patches.json'
     _LOG.debug('path %s', path)
-    with open(path, 'w'):
-        pass
+    with open(path, 'w') as outs:
+        json.dump(reqs, outs)
 
     _run_command(['git', 'add', path], cwd=requires_dir)
 
     commit_message = [
-        f'{_DNS} {change_id[0:10]}',
+        f'{_DNS} {change_id[0:10]}\n\n',
         '',
         f'Change-Id: I{change_id}',
     ]
