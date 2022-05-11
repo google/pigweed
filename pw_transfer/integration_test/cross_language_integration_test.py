@@ -20,6 +20,7 @@ Usage:
 
 """
 
+import argparse
 import asyncio
 import logging
 from parameterized import parameterized
@@ -411,4 +412,27 @@ class PwTransferIntegrationTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--server-port',
+        type=int,
+        help=
+        'Port of the integration test server.  The proxy will forward connections to this port',
+    )
+    parser.add_argument(
+        '--client-port',
+        type=int,
+        help=
+        'Port on which to listen for connections from integration test client.',
+    )
+
+    (args, passthrough_args) = parser.parse_known_args()
+
+    if args.server_port:
+        SERVER_PORT = args.server_port
+
+    if args.client_port:
+        CLIENT_PORT = args.client_port
+
+    unittest_args = [sys.argv[0]] + passthrough_args
+    unittest.main(argv=unittest_args)
