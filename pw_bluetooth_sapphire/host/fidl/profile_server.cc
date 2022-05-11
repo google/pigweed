@@ -13,9 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
-using fuchsia::bluetooth::ErrorCode;
-using fuchsia::bluetooth::Status;
-
 namespace fidlbredr = fuchsia::bluetooth::bredr;
 using fidlbredr::DataElement;
 using fidlbredr::Profile;
@@ -71,6 +68,7 @@ fidlbredr::ChannelParameters ChannelInfoToFidlChannelParameters(
   return params;
 }
 
+// NOLINTNEXTLINE(misc-no-recursion)
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   auto elem = std::make_unique<fidlbredr::DataElement>();
   bt_log(TRACE, "fidl", "DataElementToFidl: %s", in->ToString().c_str());
@@ -170,7 +168,7 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::
     bt_log(DEBUG, "fidl", "first DataElement in sequence is not type kUUID (in: %s)", bt_str(*in));
     return nullptr;
   }
-  desc->protocol = fidlbredr::ProtocolIdentifier(*protocol_uuid->As16Bit());
+  desc->protocol = static_cast<fidlbredr::ProtocolIdentifier>(*protocol_uuid->As16Bit());
   const bt::sdp::DataElement* it;
   for (size_t idx = 1; (it = in->At(idx)); ++idx) {
     desc->params.push_back(std::move(*DataElementToFidl(it)));
@@ -197,7 +195,7 @@ ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
     : ServerBase(this, std::move(request)),
       advertised_total_(0),
       searches_total_(0),
-      adapter_(adapter),
+      adapter_(std::move(adapter)),
       weak_ptr_factory_(this) {}
 
 ProfileServer::~ProfileServer() {
@@ -316,8 +314,6 @@ void ProfileServer::Advertise(
     std::vector<fidlbredr::ServiceDefinition> definitions, fidlbredr::ChannelParameters parameters,
     fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver,
     AdvertiseCallback callback) {
-  // TODO: check that the service definition is valid for useful error messages
-
   std::vector<bt::sdp::ServiceRecord> registering;
 
   for (auto& definition : definitions) {
@@ -352,7 +348,7 @@ void ProfileServer::Advertise(
   auto receiverptr = receiver.Bind();
 
   receiverptr.set_error_handler(
-      [this, next](zx_status_t status) { OnConnectionReceiverError(next, status); });
+      [this, next](zx_status_t /*status*/) { OnConnectionReceiverError(next); });
 
   current_advertised_.try_emplace(next, std::move(receiverptr), registration_handle,
                                   std::move(callback));
@@ -412,10 +408,10 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
   fidlbredr::ChannelParameters parameters = std::move(*l2cap_params.mutable_parameters());
 
-  auto connected_cb = [self = weak_ptr_factory_.GetWeakPtr(), cb = callback.share(), id,
-                       func = __FUNCTION__](fbl::RefPtr<bt::l2cap::Channel> chan) {
+  auto connected_cb = [self = weak_ptr_factory_.GetWeakPtr(), cb = callback.share(),
+                       id](fbl::RefPtr<bt::l2cap::Channel> chan) {
     if (!chan) {
-      bt_log(INFO, "fidl", "%s: Channel socket is empty, returning failed. (peer: %s)", func,
+      bt_log(INFO, "fidl", "Connect: Channel socket is empty, returning failed. (peer: %s)",
              bt_str(id));
       cb(fpromise::error(fuchsia::bluetooth::ErrorCode::FAILED));
       return;
@@ -471,7 +467,7 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
 
   if (initiator) {
     auto callback = [self = weak_ptr_factory_.GetWeakPtr(),
-                     request](bt::sco::ScoConnectionManager::OpenConnectionResult result) {
+                     request](bt::sco::ScoConnectionManager::OpenConnectionResult result) mutable {
       // The connection may complete after this server is destroyed.
       if (!self) {
         // Prevent leaking connections.
@@ -483,11 +479,12 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
 
       // Convert result type.
       if (result.is_error()) {
-        self->OnScoConnectionResult(request, fpromise::error(result.error()));
+        self->OnScoConnectionResult(std::move(request), fpromise::error(result.error()));
         return;
       }
       self->OnScoConnectionResult(
-          request, fpromise::ok(std::make_pair(result.take_value(), /*parameter index=*/0u)));
+          std::move(request),
+          fpromise::ok(std::make_pair(result.take_value(), /*parameter index=*/0u)));
     };
 
     request->request_handle =
@@ -495,7 +492,7 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
     return;
   }
   auto callback = [self = weak_ptr_factory_.GetWeakPtr(),
-                   request](bt::sco::ScoConnectionManager::AcceptConnectionResult result) {
+                   request](bt::sco::ScoConnectionManager::AcceptConnectionResult result) mutable {
     // The connection may complete after this server is destroyed.
     if (!self) {
       // Prevent leaking connections.
@@ -505,7 +502,7 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
       return;
     }
 
-    self->OnScoConnectionResult(request, std::move(result));
+    self->OnScoConnectionResult(std::move(request), std::move(result));
   };
   request->request_handle =
       adapter()->bredr()->AcceptScoConnection(peer_id, params, std::move(callback));
@@ -541,7 +538,7 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Ch
   it->second.receiver->Connected(peer_id, std::move(fidl_chan), std::move(list));
 }
 
-void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status) {
+void ProfileServer::OnConnectionReceiverError(uint64_t ad_id) {
   bt_log(DEBUG, "fidl", "Connection receiver closed, ending advertisement %lu", ad_id);
 
   auto it = current_advertised_.find(ad_id);
@@ -617,7 +614,8 @@ void ProfileServer::OnServiceFound(
 }
 
 void ProfileServer::OnScoConnectionResult(
-    fbl::RefPtr<ScoRequest> request, bt::sco::ScoConnectionManager::AcceptConnectionResult result) {
+    fbl::RefPtr<ScoRequest> request,  // NOLINT(performance-unnecessary-value-param)
+    bt::sco::ScoConnectionManager::AcceptConnectionResult result) {
   auto receiver = std::move(request->receiver);
 
   if (result.is_error()) {
