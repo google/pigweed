@@ -171,19 +171,6 @@ public class JavaClient {
       logger.atSevere().log("Failed to parse config file from stdin");
       System.exit(1);
     }
-    int resourceId = config.getResourceId();
-    Path fileName = Paths.get(config.getFile());
-
-    if (Files.notExists(fileName)) {
-      logger.atSevere().log("Input file `%s` does not exist", fileName);
-    }
-    byte[] data = null;
-    try {
-      data = Files.readAllBytes(fileName);
-    } catch (IOException e) {
-      logger.atSevere().log("Failed to read input file `%s`", fileName);
-      System.exit(1);
-    }
 
     Socket socket = null;
     try {
@@ -224,11 +211,34 @@ public class JavaClient {
         config.getMaxRetries(),
         () -> false);
 
-    try {
-      transferManager.write(resourceId, data).get();
-    } catch (Exception e) {
-      logger.atSevere().log("Transfer failed");
-      System.exit(1);
+    for (ConfigProtos.TransferAction action : config.getTransferActionsList()) {
+      int resourceId = action.getResourceId();
+      Path fileName = Paths.get(action.getFilePath());
+
+      if (Files.notExists(fileName)) {
+        logger.atSevere().log("Input file `%s` does not exist", fileName);
+      }
+
+      // TODO(b/232804702): Add support for reading from the server.
+      if (action.getTransferType() != ConfigProtos.TransferAction.TransferType.WRITE_TO_SERVER) {
+        logger.atSevere().log("Only writing to the server is supported");
+        System.exit(1);
+      }
+
+      byte[] data = null;
+      try {
+        data = Files.readAllBytes(fileName);
+      } catch (IOException e) {
+        logger.atSevere().log("Failed to read input file `%s`", fileName);
+        System.exit(1);
+      }
+
+      try {
+        transferManager.write(resourceId, data).get();
+      } catch (Exception e) {
+        logger.atSevere().log("Transfer failed");
+        System.exit(1);
+      }
     }
 
     logger.atInfo().log("Transfer completed successfully");

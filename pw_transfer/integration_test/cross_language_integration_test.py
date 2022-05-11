@@ -171,6 +171,8 @@ class MonitoredSubprocess:
         await self.wait_for_termination(timeout)
 
 
+# TODO(b/232805936): Extend tests to use different resource IDs and do multiple
+# reads/writes.
 class PwTransferIntegrationTest(unittest.TestCase):
     # Prefix for log messages coming from the harness (as opposed to the server,
     # client, or proxy processes). Padded so that the length is the same as
@@ -226,8 +228,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
     async def _perform_write(self, server_config: config_pb2.ServerConfig,
                              client_type: str,
                              client_config: config_pb2.ClientConfig,
-                             proxy_config: config_pb2.ProxyConfig,
-                             payload) -> bytes:
+                             proxy_config: config_pb2.ProxyConfig) -> None:
         """Performs a pw_transfer write.
 
         Args:
@@ -235,59 +236,42 @@ class PwTransferIntegrationTest(unittest.TestCase):
           client_type: Either "cpp", "java", or "python".
           client_config: Client configuration.
           proxy_config: Proxy configuration.
-          payload: bytes to write
-
-        Returns: Bytes the server has saved after receiving the payload.
         """
         # Timeout for components (server, proxy) to come up or shut down after
         # write is finished or a signal is sent. Approximately arbitrary. Should
         # not be too long so that we catch bugs in the server that prevent it
         # from shutting down.
         TIMEOUT = 5  # seconds
-        with tempfile.NamedTemporaryFile(
-        ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
-            server_config.file = f_server_output.name
-            client_config.file = f_payload.name
+        try:
+            await self._start_proxy(proxy_config)
+            await self._proxy.wait_for_line("stderr",
+                                            "Listening for client connection",
+                                            TIMEOUT)
 
-            f_payload.write(payload)
-            f_payload.flush()  # Ensure contents are there to read!
+            await self._start_server(server_config)
+            await self._server.wait_for_line("stderr",
+                                             "Starting pw_rpc server on port",
+                                             TIMEOUT)
 
-            try:
-                await self._start_proxy(proxy_config)
-                await self._proxy.wait_for_line(
-                    "stderr", "Listening for client connection", TIMEOUT)
+            await self._start_client(client_type, client_config)
+            # No timeout: the client will only exit once the transfer
+            # completes, and this can take a long time for large payloads.
+            await self._client.wait_for_termination(None)
+            self.assertEqual(self._client.returncode(), 0)
 
-                await self._start_server(server_config)
-                await self._server.wait_for_line(
-                    "stderr", "Starting pw_rpc server on port", TIMEOUT)
+            # Wait for the server to exit.
+            await self._server.wait_for_termination(TIMEOUT)
+            self.assertEqual(self._server.returncode(), 0)
 
-                start = time.monotonic()
-
-                await self._start_client(client_type, client_config)
-                # No timeout: the client will only exit once the transfer
-                # completes, and this can take a long time for large payloads.
-                await self._client.wait_for_termination(None)
-                self.assertEqual(self._client.returncode(), 0)
-
-                duration = time.monotonic() - start
-                rate = len(payload) / duration
-                print(f'Client transfer rate: {rate} B/s')
-
-                # Wait for the server to exit.
-                await self._server.wait_for_termination(TIMEOUT)
-                self.assertEqual(self._server.returncode(), 0)
-
-            finally:
-                # Stop the server, if still running. (Only expected if the
-                # wait_for above timed out.)
-                if self._server:
-                    await self._server.terminate_and_wait(TIMEOUT)
-                # Stop the proxy. Unlike the server, we expect it to still be
-                # running at this stage.
-                if self._proxy:
-                    await self._proxy.terminate_and_wait(TIMEOUT)
-
-            return f_server_output.read()
+        finally:
+            # Stop the server, if still running. (Only expected if the
+            # wait_for above timed out.)
+            if self._server:
+                await self._server.terminate_and_wait(TIMEOUT)
+            # Stop the proxy. Unlike the server, we expect it to still be
+            # running at this stage.
+            if self._proxy:
+                await self._proxy.terminate_and_wait(TIMEOUT)
 
     @parameterized.expand([
         ("cpp"),
@@ -295,10 +279,8 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ("python"),
     ])
     def test_small_client_write(self, client_type):
-        resource_id = 12
         payload = b"some data"
         server_config = config_pb2.ServerConfig(
-            resource_id=resource_id,
             chunk_size_bytes=216,
             pending_bytes=32 * 1024,
             chunk_timeout_seconds=5,
@@ -306,7 +288,6 @@ class PwTransferIntegrationTest(unittest.TestCase):
             extend_window_divisor=32,
         )
         client_config = config_pb2.ClientConfig(
-            resource_id=resource_id,
             max_retries=5,
             initial_chunk_timeout_ms=10000,
             chunk_timeout_ms=4000,
@@ -323,10 +304,24 @@ class PwTransferIntegrationTest(unittest.TestCase):
                 { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
         ]""", config_pb2.ProxyConfig())
 
-        got = asyncio.run(
-            self._perform_write(server_config, client_type, client_config,
-                                proxy_config, payload))
-        self.assertEqual(got, payload)
+        resource_id = 12
+        with tempfile.NamedTemporaryFile(
+        ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
+            server_config.resources[resource_id].destination_paths.append(
+                f_server_output.name)
+            client_config.transfer_actions.append(
+                config_pb2.TransferAction(
+                    resource_id=resource_id,
+                    file_path=f_payload.name,
+                    transfer_type=config_pb2.TransferAction.TransferType.
+                    WRITE_TO_SERVER))
+
+            f_payload.write(payload)
+            f_payload.flush()  # Ensure contents are there to read!
+            asyncio.run(
+                self._perform_write(server_config, client_type, client_config,
+                                    proxy_config))
+            self.assertEqual(f_server_output.read(), payload)
 
     @parameterized.expand([
         ("cpp"),
@@ -334,9 +329,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ("python"),
     ])
     def test_3mb_write_dropped_data(self, client_type):
-        resource_id = 12
         server_config = config_pb2.ServerConfig(
-            resource_id=resource_id,
             chunk_size_bytes=216,
             pending_bytes=32 * 1024,
             chunk_timeout_seconds=5,
@@ -344,7 +337,6 @@ class PwTransferIntegrationTest(unittest.TestCase):
             extend_window_divisor=32,
         )
         client_config = config_pb2.ClientConfig(
-            resource_id=resource_id,
             max_retries=5,
             initial_chunk_timeout_ms=10000,
             chunk_timeout_ms=4000,
@@ -364,10 +356,25 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ]""", config_pb2.ProxyConfig())
 
         payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
-        got = asyncio.run(
-            self._perform_write(server_config, client_type, client_config,
-                                proxy_config, payload))
-        self.assertEqual(got, payload)
+
+        resource_id = 12
+        with tempfile.NamedTemporaryFile(
+        ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
+            server_config.resources[resource_id].destination_paths.append(
+                f_server_output.name)
+            client_config.transfer_actions.append(
+                config_pb2.TransferAction(
+                    resource_id=resource_id,
+                    file_path=f_payload.name,
+                    transfer_type=config_pb2.TransferAction.TransferType.
+                    WRITE_TO_SERVER))
+
+            f_payload.write(payload)
+            f_payload.flush()  # Ensure contents are there to read!
+            asyncio.run(
+                self._perform_write(server_config, client_type, client_config,
+                                    proxy_config))
+            self.assertEqual(f_server_output.read(), payload)
 
     @parameterized.expand([
         ("cpp"),
@@ -375,9 +382,7 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ("python"),
     ])
     def test_3mb_write_reordered_data(self, client_type):
-        resource_id = 12
         server_config = config_pb2.ServerConfig(
-            resource_id=resource_id,
             chunk_size_bytes=216,
             pending_bytes=32 * 1024,
             chunk_timeout_seconds=5,
@@ -385,7 +390,6 @@ class PwTransferIntegrationTest(unittest.TestCase):
             extend_window_divisor=32,
         )
         client_config = config_pb2.ClientConfig(
-            resource_id=resource_id,
             max_retries=5,
             initial_chunk_timeout_ms=10000,
             chunk_timeout_ms=4000,
@@ -405,10 +409,25 @@ class PwTransferIntegrationTest(unittest.TestCase):
         ]""", config_pb2.ProxyConfig())
 
         payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
-        got = asyncio.run(
-            self._perform_write(server_config, client_type, client_config,
-                                proxy_config, payload))
-        self.assertEqual(got, payload)
+
+        resource_id = 12
+        with tempfile.NamedTemporaryFile(
+        ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
+            server_config.resources[resource_id].destination_paths.append(
+                f_server_output.name)
+            client_config.transfer_actions.append(
+                config_pb2.TransferAction(
+                    resource_id=resource_id,
+                    file_path=f_payload.name,
+                    transfer_type=config_pb2.TransferAction.TransferType.
+                    WRITE_TO_SERVER))
+
+            f_payload.write(payload)
+            f_payload.flush()  # Ensure contents are there to read!
+            asyncio.run(
+                self._perform_write(server_config, client_type, client_config,
+                                    proxy_config))
+            self.assertEqual(f_server_output.read(), payload)
 
 
 if __name__ == '__main__':

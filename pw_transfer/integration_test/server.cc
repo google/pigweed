@@ -131,8 +131,15 @@ void RunServer(int socket_port, ServerConfig config) {
 
   // It's fine to allocate this on the stack since this thread doesn't return
   // until this process is killed.
-  FileTransferHandler transfer_handler(config.resource_id(),
-                                       config.file().c_str());
+  // TODO(b/232804025): Add a handler for each resource ID in transfer_sources
+  // and transfer_destinations.
+  google::protobuf::Map<google::protobuf::uint32,
+                        pw::transfer::ServerResourceLocations>::const_iterator
+      first_handler = config.resources().begin();
+  uint32_t resource_id = first_handler->first;
+  std::string file_path = *first_handler->second.destination_paths().begin();
+
+  FileTransferHandler transfer_handler(resource_id, file_path.c_str());
   transfer_service.RegisterHandler(transfer_handler);
 
   PW_LOG_INFO("Starting pw_rpc server");

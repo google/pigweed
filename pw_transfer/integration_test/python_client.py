@@ -51,13 +51,6 @@ def _main() -> int:
         _LOG.critical("Failed to parse config file from stdin: %s", e)
         return 1
 
-    try:
-        with open(config.file, 'rb') as f:
-            data = f.read()
-    except:
-        _LOG.critical("Failed to read input file '%s'", config.file)
-        return 1
-
     # Open a connection to the server.
     try:
         rpc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,11 +73,24 @@ def _main() -> int:
         initial_response_timeout_s=config.initial_chunk_timeout_ms / 1000,
         max_retries=config.max_retries,
     )
-    try:
-        transfer_manager.write(config.resource_id, data)
-    except:
-        _LOG.exception("Transfer failed")
-        return 1
+    for action in config.transfer_actions:
+        # TODO(b/232804652): Add support for reading from the server.
+        if action.transfer_type != config_pb2.TransferAction.TransferType.WRITE_TO_SERVER:
+            _LOG.critical("Only writing to the server is supported")
+            return 1
+
+        try:
+            with open(action.file_path, 'rb') as f:
+                data = f.read()
+        except:
+            _LOG.exception("Failed to read input file '%s'", action.file_path)
+            return 1
+
+        try:
+            transfer_manager.write(action.resource_id, data)
+        except:
+            _LOG.exception("Transfer failed")
+            return 1
 
     _LOG.info("Transfer completed successfully")
     return 0

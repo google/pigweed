@@ -75,9 +75,9 @@ struct WriteResult {
   sync::BinarySemaphore completed;
 };
 
-// Create a pw_transfer client, read data from path_to_data, and write it to the
+// Create a pw_transfer client, read data from file_path, and write it to the
 // client using the given resource_id.
-pw::Status SendData(const pw::transfer::ClientConfig& config) {
+pw::Status SendData(uint32_t resource_id, std::string file_path) {
   std::byte chunk_buffer[512];
   std::byte encode_buffer[512];
   transfer::Thread<2, 2> transfer_thread(chunk_buffer, encode_buffer);
@@ -88,11 +88,11 @@ pw::Status SendData(const pw::transfer::ClientConfig& config) {
                               transfer_thread,
                               /*max_bytes_to_receive=*/256);
 
-  pw::stream::StdFileReader input(config.file().c_str());
+  pw::stream::StdFileReader input(file_path.c_str());
 
   WriteResult result;
 
-  client.Write(config.resource_id(), input, [&result](Status status) {
+  client.Write(resource_id, input, [&result](Status status) {
     result.status = status;
     result.completed.release();
   });
@@ -165,9 +165,20 @@ int main(int argc, char* argv[]) {
                   "Failed to configure socket receive timeout with errno=%d",
                   errno);
 
-  if (!pw::transfer::integration_test::SendData(config).ok()) {
-    PW_LOG_INFO("Failed to transfer!");
-    return 1;
+  for (const pw::transfer::TransferAction& action : config.transfer_actions()) {
+    // TODO(b/232804443): Add support for reading from the server.
+    if (action.transfer_type() !=
+        pw::transfer::TransferAction::TransferType::
+            TransferAction_TransferType_WRITE_TO_SERVER) {
+      PW_LOG_INFO("Only writing to the server is supported");
+      return 1;
+    }
+    if (!pw::transfer::integration_test::SendData(action.resource_id(),
+                                                  action.file_path())
+             .ok()) {
+      PW_LOG_INFO("Failed to transfer!");
+      return 1;
+    }
   }
   return 0;
 }
