@@ -1407,5 +1407,70 @@ TEST_F(ProfileServerTestOffloadedScoConnected, ScoConnectionReadFails) {
   EXPECT_EQ(sco_conn_error().value(), ZX_ERR_IO_NOT_PRESENT);
 }
 
+TEST_F(ProfileServerTestScoConnected, ScoConnectionWriteTwice) {
+  bt::StaticByteBuffer payload_0(0x00);
+  bt::DynamicByteBuffer packet_buffer_0 = bt::testing::ScoDataPacket(
+      sco_handle(), bt::hci_spec::SynchronousDataPacketStatusFlag::kCorrectlyReceived,
+      payload_0.view());
+
+  bt::StaticByteBuffer payload_1(0x01);
+  bt::DynamicByteBuffer packet_buffer_1 = bt::testing::ScoDataPacket(
+      sco_handle(), bt::hci_spec::SynchronousDataPacketStatusFlag::kCorrectlyReceived,
+      payload_1.view());
+
+  int sco_cb_count = 0;
+  test_device()->SetScoDataCallback([&](const bt::ByteBuffer& buffer) {
+    if (sco_cb_count == 0) {
+      EXPECT_THAT(buffer, ::testing::ElementsAreArray(packet_buffer_0));
+    } else if (sco_cb_count == 1) {
+      EXPECT_THAT(buffer, ::testing::ElementsAreArray(packet_buffer_1));
+    } else {
+      ADD_FAILURE() << "Unexpected packet sent";
+    }
+    sco_cb_count++;
+  });
+  int write_cb_0_count = 0;
+  sco_connection()->Write(payload_0.ToVector(), [&] { write_cb_0_count++; });
+  RunLoopUntilIdle();
+  EXPECT_EQ(sco_cb_count, 1);
+  EXPECT_EQ(write_cb_0_count, 1);
+
+  int write_cb_1_count = 0;
+  sco_connection()->Write(payload_1.ToVector(), [&] { write_cb_1_count++; });
+  RunLoopUntilIdle();
+  EXPECT_EQ(sco_cb_count, 2);
+  EXPECT_EQ(write_cb_1_count, 1);
+
+  test_device()->ClearScoDataCallback();
+}
+
+TEST_F(ProfileServerTestScoConnected, ScoConnectionWriteTooLarge) {
+  bt::StaticByteBuffer<kSynchronousDataPacketLength + 1> payload_buffer;
+  payload_buffer.Fill(0x00);
+
+  int sco_cb_count = 0;
+  test_device()->SetScoDataCallback([&](const bt::ByteBuffer& buffer) { sco_cb_count++; });
+  int write_cb_count = 0;
+  sco_connection()->Write(payload_buffer.ToVector(), [&] { write_cb_count++; });
+  RunLoopUntilIdle();
+  EXPECT_EQ(sco_cb_count, 0);
+  EXPECT_EQ(write_cb_count, 0);
+  EXPECT_FALSE(sco_connection());
+  ASSERT_TRUE(sco_conn_error());
+  EXPECT_EQ(sco_conn_error().value(), ZX_ERR_IO);
+
+  test_device()->ClearScoDataCallback();
+}
+
+TEST_F(ProfileServerTestOffloadedScoConnected, ScoConnectionWriteFails) {
+  int write_cb_count = 0;
+  sco_connection()->Write(/*data=*/{0x00}, [&] { write_cb_count++; });
+  RunLoopUntilIdle();
+  EXPECT_EQ(write_cb_count, 0);
+  EXPECT_FALSE(sco_connection());
+  ASSERT_TRUE(sco_conn_error());
+  EXPECT_EQ(sco_conn_error().value(), ZX_ERR_IO_NOT_PRESENT);
+}
+
 }  // namespace
 }  // namespace bthost

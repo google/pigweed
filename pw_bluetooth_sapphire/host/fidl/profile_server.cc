@@ -279,8 +279,20 @@ void ProfileServer::ScoConnectionServer::Read(ReadCallback callback) {
 }
 
 void ProfileServer::ScoConnectionServer::Write(std::vector<uint8_t> data, WriteCallback callback) {
-  // TODO(fxbug.dev/87453): Implement Write()
-  Close(ZX_ERR_NOT_SUPPORTED);
+  if (connection_->parameters().output_data_path != bt::hci_spec::ScoDataPath::kHci) {
+    bt_log(WARN, "fidl", "%s called for a non-HCI SCO connection", __func__);
+    Close(ZX_ERR_IO_NOT_PRESENT);
+    return;
+  }
+
+  auto buffer = std::make_unique<bt::DynamicByteBuffer>(data.size());
+  buffer->Write(data.data(), data.size());
+  if (!connection_->Send(std::move(buffer))) {
+    bt_log(WARN, "fidl", "%s: failed to send SCO packet", __func__);
+    Close(ZX_ERR_IO);
+    return;
+  }
+  callback();
 }
 
 void ProfileServer::ScoConnectionServer::TryRead() {

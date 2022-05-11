@@ -99,6 +99,11 @@ DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(hci_spec::ConnectionHandle co
 
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout);
 
+DynamicByteBuffer ScoDataPacket(hci_spec::ConnectionHandle conn,
+                                hci_spec::SynchronousDataPacketStatusFlag flag,
+                                const BufferView& payload,
+                                std::optional<uint8_t> payload_length_override = std::nullopt);
+
 }  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_PACKETS_H_

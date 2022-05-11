@@ -34,6 +34,7 @@ class ByteBuffer {
  public:
   using const_iterator = const uint8_t*;
   using iterator = const_iterator;
+  using value_type = uint8_t;
 
   virtual ~ByteBuffer() = default;
 

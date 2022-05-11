@@ -295,6 +295,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   void SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher);
   void ClearDataCallback();
 
+  // Callback to invoke when a packet is received over the SCO data channel.
+  void SetScoDataCallback(DataCallback callback) { sco_data_callback_ = std::move(callback); }
+  void ClearScoDataCallback() { sco_data_callback_ = nullptr; }
+
   // Automatically send HCI Number of Completed Packets event for each packet received. Enabled by
   // default.
   void set_auto_completed_packets_event_enabled(bool enabled) {
@@ -748,8 +752,11 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   std::unordered_map<hci_spec::OpCode, fit::function<void(fit::closure)>> paused_opcode_listeners_;
 
   // Called when ACL data packets received.
-  DataCallback data_callback_ = nullptr;
+  DataCallback acl_data_callback_ = nullptr;
   async_dispatcher_t* data_dispatcher_ = nullptr;
+
+  // Called when SCO data packets received.
+  DataCallback sco_data_callback_ = nullptr;
 
   bool auto_completed_packets_event_enabled_ = true;
   bool auto_disconnection_complete_event_enabled_ = true;

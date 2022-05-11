@@ -2926,10 +2926,11 @@ void FakeController::HandleReceivedCommandPacket(
 }
 
 void FakeController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
-  if (data_callback_) {
+  if (acl_data_callback_) {
     DynamicByteBuffer packet_copy(acl_data_packet);
-    async::PostTask(data_dispatcher_, [packet_copy = std::move(packet_copy),
-                                       cb = data_callback_.share()]() mutable { cb(packet_copy); });
+    async::PostTask(data_dispatcher_,
+                    [packet_copy = std::move(packet_copy),
+                     cb = acl_data_callback_.share()]() mutable { cb(packet_copy); });
   }
 
   if (acl_data_packet.size() < sizeof(hci_spec::ACLDataHeader)) {
@@ -2952,23 +2953,42 @@ void FakeController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
 }
 
 void FakeController::OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) {
-  bt_log(WARN, "fake-hci", "SCO packet received (not supported by FakeController)");
+  if (sco_data_callback_) {
+    sco_data_callback_(sco_data_packet);
+  }
+
+  if (sco_data_packet.size() < sizeof(hci_spec::SynchronousDataHeader)) {
+    bt_log(WARN, "fake-hci", "malformed SCO packet!");
+    return;
+  }
+
+  const auto& header = sco_data_packet.To<hci_spec::SynchronousDataHeader>();
+  hci_spec::ConnectionHandle handle = le16toh(header.handle_and_flags) & 0x0FFFF;
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
+    bt_log(WARN, "fake-hci", "SCO data received for unknown handle!");
+    return;
+  }
+
+  if (auto_completed_packets_event_enabled_) {
+    SendNumberOfCompletedPacketsEvent(handle, 1);
+  }
 }
 
 void FakeController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(dispatcher);
-  ZX_DEBUG_ASSERT(!data_callback_);
+  ZX_DEBUG_ASSERT(!acl_data_callback_);
   ZX_DEBUG_ASSERT(!data_dispatcher_);
 
-  data_callback_ = std::move(callback);
+  acl_data_callback_ = std::move(callback);
   data_dispatcher_ = dispatcher;
 }
 
 void FakeController::ClearDataCallback() {
   // Leave dispatcher set (if already set) to preserve its write-once-ness (this catches bugs with
   // setting multiple data callbacks in class hierarchies).
-  data_callback_ = nullptr;
+  acl_data_callback_ = nullptr;
 }
 
 bool FakeController::LEAdvertisingState::IsDirectedAdvertising() const {

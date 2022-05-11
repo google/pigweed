@@ -440,4 +440,19 @@ DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout) {
       ));
 }
 
+DynamicByteBuffer ScoDataPacket(hci_spec::ConnectionHandle conn,
+                                hci_spec::SynchronousDataPacketStatusFlag flag,
+                                const BufferView& payload,
+                                std::optional<uint8_t> payload_length_override) {
+  // Flag is bits 4-5 in the higher octet of |handle_and_flags|, i.e. 0b00xx000000000000.
+  conn |= static_cast<uint8_t>(flag) << 12;
+  StaticByteBuffer header(LowerBits(conn), UpperBits(conn),
+                          payload_length_override ? *payload_length_override : payload.size());
+  DynamicByteBuffer out(header.size() + payload.size());
+  header.Copy(&out);
+  MutableBufferView payload_view = out.mutable_view(header.size());
+  payload.Copy(&payload_view);
+  return out;
+}
+
 }  // namespace bt::testing
