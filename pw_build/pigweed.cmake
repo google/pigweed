@@ -37,12 +37,6 @@ macro(pw_parse_arguments_strict function start_arg options one multi)
   endif()
 endmacro()
 
-# TODO(ewout): Deprecate this once it's no longer in use.
-macro(_pw_parse_argv_strict function start_arg options one multi)
-  pw_parse_arguments_strict(
-      "${function}" "${start_arg}" "${options}" "${one}" "${multi}")
-endmacro()
-
 # Automatically creates a library and test targets for the files in a module.
 # This function is only suitable for simple modules that meet the following
 # requirements:
