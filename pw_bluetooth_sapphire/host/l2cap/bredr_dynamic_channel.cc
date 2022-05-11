@@ -432,7 +432,7 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
   }
 
   if (state_ & kRemoteConfigReceived) {
-    // Disconnect if second configuraton request does not contain desired mode.
+    // Disconnect if second configuration request does not contain desired mode.
     const auto local_mode = local_config_.retransmission_flow_control_option()->mode();
     if (req_mode != local_mode) {
       bt_log(TRACE, "l2cap-bredr",
