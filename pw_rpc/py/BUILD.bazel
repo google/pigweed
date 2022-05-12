@@ -92,45 +92,77 @@ py_library(
         "pw_rpc/client.py",
         ":pw_rpc_common_sources",
     ],
-    # TODO(tonymd): Figure out the right way to handle generated protos
-    # data = [
-    #     # Copy packet_pb2.py
-    #     #   From: //pw_rpc/internal/packet_pb2.py
-    #     #   To:   //pw_rpc/py/pw_rpc/internal/packet_pb2.py
-    #     ":copy_packet_pb2",
-    # ],
     imports = ["."],
     deps = [
         "//pw_protobuf/py:pw_protobuf",
         "//pw_protobuf_compiler/py:pw_protobuf_compiler",
+        "//pw_rpc:internal_packet_proto_pb2",
         "//pw_status/py:pw_status",
     ],
 )
 
-# TODO(tonymd): Figure out the right way to handle generated protos
-# load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-# copy_file(
-#     name = "copy_packet_pb2",
-#     src = "//pw_rpc:internal_packet_proto_pb2",
-#     out = "pw_rpc/internal/packet_pb2.py",
-#     allow_symlink = True,
-# )
+py_test(
+    name = "callback_client_test",
+    size = "small",
+    srcs = [
+        "tests/callback_client_test.py",
+    ],
+    deps = [
+        ":pw_rpc",
+        "//pw_protobuf_compiler:pw_protobuf_compiler_protos",
+        "//pw_rpc:internal_packet_proto_pb2",
+        "//pw_status/py:pw_status",
+    ],
+)
 
-# TODO(tonymd): Figure out the right way to handle generated protos
-# py_test(
-#     name = "client_test",
-#     size = "small",
-#     srcs = [
-#         "tests/client_test.py",
-#     ],
-#     data = [
-#         # Copy packet_pb2.py
-#         #   From: //pw_rpc/internal/packet_pb2.py
-#         #   To:   //pw_rpc/py/pw_rpc/internal/packet_pb2.py
-#         ":copy_packet_pb2",
-#     ],
-#     deps = [
-#         ":pw_rpc",
-#         "//pw_rpc:internal_packet_proto_pb2",
-#     ],
-# )
+py_test(
+    name = "client_test",
+    size = "small",
+    srcs = [
+        "tests/client_test.py",
+    ],
+    deps = [
+        ":pw_rpc",
+        "//pw_rpc:internal_packet_proto_pb2",
+        "//pw_status/py:pw_status",
+    ],
+)
+
+py_test(
+    name = "descriptors_test",
+    size = "small",
+    srcs = [
+        "tests/descriptors_test.py",
+    ],
+    deps = [
+        ":pw_rpc",
+        "//pw_protobuf_compiler:pw_protobuf_compiler_protos",
+        "@com_google_protobuf//:protobuf_python",
+    ],
+)
+
+py_test(
+    name = "ids_test",
+    size = "small",
+    srcs = [
+        "tests/ids_test.py",
+    ],
+    deps = [
+        ":pw_rpc",
+        "//pw_build/py:pw_build",
+        "//pw_protobuf_compiler:pw_protobuf_compiler_protos",
+    ],
+)
+
+py_test(
+    name = "packets_test",
+    size = "small",
+    srcs = [
+        "tests/packets_test.py",
+    ],
+    deps = [
+        ":pw_rpc",
+        "//pw_rpc:internal_packet_proto_pb2",
+        "//pw_status/py:pw_status",
+    ],
+)
