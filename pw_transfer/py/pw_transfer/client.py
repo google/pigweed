@@ -23,7 +23,11 @@ from pw_status import Status
 
 from pw_transfer.transfer import (ProgressCallback, ReadTransfer, Transfer,
                                   WriteTransfer)
-from pw_transfer.transfer_pb2 import Chunk
+try:
+    from pw_transfer import transfer_pb2
+except ImportError:
+    # For the bazel build, which puts generated protos in a different location.
+    from pigweed.pw_transfer import transfer_pb2  # type: ignore
 
 _LOG = logging.getLogger(__package__)
 
@@ -156,11 +160,11 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         if not transfer.status.ok():
             raise Error(transfer.id, transfer.status)
 
-    def _send_read_chunk(self, chunk: Chunk) -> None:
+    def _send_read_chunk(self, chunk: transfer_pb2.Chunk) -> None:
         assert self._read_stream is not None
         self._read_stream.send(chunk)
 
-    def _send_write_chunk(self, chunk: Chunk) -> None:
+    def _send_write_chunk(self, chunk: transfer_pb2.Chunk) -> None:
         assert self._write_stream is not None
         self._write_stream.send(chunk)
 
@@ -216,7 +220,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._loop.stop()
 
     @staticmethod
-    async def _handle_chunk(transfers: _TransferDict, chunk: Chunk) -> None:
+    async def _handle_chunk(transfers: _TransferDict,
+                            chunk: transfer_pb2.Chunk) -> None:
         """Processes an incoming chunk from a stream.
 
         The chunk is dispatched to an active transfer based on its ID. If the

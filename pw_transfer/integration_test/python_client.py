@@ -21,8 +21,7 @@ import sys
 from google.protobuf import text_format
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
 import pw_transfer
-from pw_transfer import transfer_pb2
-
+from pigweed.pw_transfer import transfer_pb2
 from pigweed.pw_transfer.integration_test import config_pb2
 
 _LOG = logging.getLogger('pw_transfer_integration_test_python_client')

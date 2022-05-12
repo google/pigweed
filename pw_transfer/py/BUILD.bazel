@@ -12,8 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -25,9 +23,6 @@ py_library(
         "pw_transfer/client.py",
         "pw_transfer/transfer.py",
     ],
-    data = [
-        ":copy_transfer_pb2",
-    ],
     imports = ["."],
     deps = [
         "//pw_rpc/py:pw_rpc",
@@ -36,21 +31,11 @@ py_library(
     ],
 )
 
-copy_file(
-    name = "copy_transfer_pb2",
-    src = "//pw_transfer:transfer_proto_pb2",
-    out = "pw_transfer/transfer_pb2.py",
-    allow_symlink = True,
-)
-
 py_test(
     name = "transfer_test",
     size = "small",
     srcs = [
         "tests/transfer_test.py",
-    ],
-    data = [
-        ":copy_transfer_pb2",
     ],
     deps = [
         ":pw_transfer",
