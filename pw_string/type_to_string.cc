@@ -146,8 +146,6 @@ StatusWithSize IntToString(int64_t value, std::span<char> buffer) {
   return HandleExhaustedBuffer(buffer);
 }
 
-// TODO(hepler): Look into using the float overload of std::to_chars when it is
-//     available.
 StatusWithSize FloatAsIntToString(float value, std::span<char> buffer) {
   // If it's finite and fits in an int64_t, print it as a rounded integer.
   if (std::isfinite(value) &&

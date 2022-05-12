@@ -15,12 +15,26 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_string_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
+
 config("public_include_path") {
   include_dirs = [ "public" ]
+}
+
+pw_source_set("config") {
+  public = [ "public/pw_string/internal/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_string_CONFIG ]
 }
 
 group("pw_string") {
@@ -62,6 +76,8 @@ pw_source_set("to_string") {
   ]
   sources = [ "type_to_string.cc" ]
   public_deps = [
+    ":config",
+    ":format",
     ":util",
     dir_pw_status,
   ]
@@ -114,7 +130,10 @@ pw_test("string_builder_test") {
 }
 
 pw_test("to_string_test") {
-  deps = [ ":to_string" ]
+  deps = [
+    ":config",
+    ":pw_string",
+  ]
   sources = [ "to_string_test.cc" ]
 }
 

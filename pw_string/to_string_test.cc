@@ -22,6 +22,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_status/status.h"
+#include "pw_string/internal/config.h"
 #include "pw_string/type_to_string.h"
 
 namespace pw {
@@ -119,12 +120,23 @@ TEST(ToString, Integer_BufferTooSmall_WritesNullTerminator) {
 }
 
 TEST(ToString, Float) {
-  EXPECT_EQ(1u, ToString(0.0f, buffer).size());
-  EXPECT_STREQ("0", buffer);
-  EXPECT_EQ(3u, ToString(INFINITY, buffer).size());
-  EXPECT_STREQ("inf", buffer);
-  EXPECT_EQ(4u, ToString(-NAN, buffer).size());
-  EXPECT_STREQ("-NaN", buffer);
+  if (string::internal::config::kEnableDecimalFloatExpansion) {
+    EXPECT_EQ(5u, ToString(0.0f, buffer).size());
+    EXPECT_STREQ("0.000", buffer);
+    EXPECT_EQ(6u, ToString(33.444, buffer).size());
+    EXPECT_STREQ("33.444", buffer);
+    EXPECT_EQ(3u, ToString(INFINITY, buffer).size());
+    EXPECT_STREQ("inf", buffer);
+    EXPECT_EQ(3u, ToString(NAN, buffer).size());
+    EXPECT_STREQ("nan", buffer);
+  } else {
+    EXPECT_EQ(1u, ToString(0.0f, buffer).size());
+    EXPECT_STREQ("0", buffer);
+    EXPECT_EQ(3u, ToString(INFINITY, buffer).size());
+    EXPECT_STREQ("inf", buffer);
+    EXPECT_EQ(4u, ToString(-NAN, buffer).size());
+    EXPECT_STREQ("-NaN", buffer);
+  }
 }
 
 TEST(ToString, Pointer_NonNull_WritesValue) {

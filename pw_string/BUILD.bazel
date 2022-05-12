@@ -23,6 +23,12 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
+    name = "config",
+    hdrs = ["public/pw_string/internal/config.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "pw_string",
     deps = [
         ":builder",
@@ -67,6 +73,8 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config",
+        ":format",
         ":util",
         "//pw_status",
     ],
@@ -128,7 +136,10 @@ pw_cc_test(
 
 pw_cc_test(
     name = "to_string_test",
-    srcs = ["to_string_test.cc"],
+    srcs = [
+        "public/pw_string/internal/config.h",
+        "to_string_test.cc",
+    ],
     deps = [
         ":to_string",
         "//pw_status",

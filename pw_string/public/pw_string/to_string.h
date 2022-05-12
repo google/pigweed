@@ -58,6 +58,8 @@
 
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
+#include "pw_string/format.h"
+#include "pw_string/internal/config.h"
 #include "pw_string/type_to_string.h"
 
 namespace pw {
@@ -75,7 +77,13 @@ StatusWithSize ToString(const T& value, std::span<char> buffer) {
   } else if constexpr (std::is_enum_v<T>) {
     return string::IntToString(std::underlying_type_t<T>(value), buffer);
   } else if constexpr (std::is_floating_point_v<T>) {
-    return string::FloatAsIntToString(value, buffer);
+    if constexpr (string::internal::config::kEnableDecimalFloatExpansion) {
+      // TODO(hepler): Look into using the float overload of std::to_chars when
+      // it is available.
+      return string::Format(buffer, "%.3f", value);
+    } else {
+      return string::FloatAsIntToString(value, buffer);
+    }
   } else if constexpr (std::is_convertible_v<T, std::string_view>) {
     return string::CopyStringOrNull(value, buffer);
   } else if constexpr (std::is_pointer_v<std::remove_cv_t<T>> ||

@@ -14,6 +14,17 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_module_config(pw_string_CONFIG)
+
+pw_add_module_library(pw_string.config
+  HEADERS
+    public/pw_string/internal/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_string_CONFIG}
+)
+
 pw_add_module_library(pw_string
   PUBLIC_DEPS
     pw_string.builder
@@ -57,6 +68,8 @@ pw_add_module_library(pw_string.to_string
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_string.config
+    pw_string.format
     pw_string.util
     pw_status
   SOURCES
@@ -113,6 +126,7 @@ pw_add_test(pw_string.to_string_test
     to_string_test.cc
   DEPS
     pw_string
+    pw_string.config
   GROUPS
     modules
     pw_string

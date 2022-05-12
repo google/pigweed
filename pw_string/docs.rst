@@ -198,6 +198,23 @@ impact than a single ``snprintf`` call.
 
 .. include:: string_builder_size_report
 
+Module Configuration Options
+============================
+The following configuration options can be adjusted via compile-time
+configuration of this module.
+
+.. c:macro:: PW_STRING_ENABLE_DECIMAL_FLOAT_EXPANSION
+
+   Setting this to a non-zero value will result in the ``ToString`` function
+   outputting string representations of floating-point values with a decimal
+   expansion after the point, by using the ``Format`` function. The default
+   value of this configuration option is zero, which will result in floating
+   point values being rounded to the nearest integer in their string
+   representation.
+
+   Using a non-zero value for this configuration option may incur a code size
+   cost due to the dependency on ``Format``.
+
 -----------
 Future work
 -----------
