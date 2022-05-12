@@ -1178,7 +1178,7 @@ more details.
   Enable global synchronization for RPC calls. If this is set, a backend must
   be configured for pw_sync:mutex.
 
-  This is disabled by default.
+  This is enabled by default.
 
 .. c:macro:: PW_RPC_DYNAMIC_ALLOCATION
 
