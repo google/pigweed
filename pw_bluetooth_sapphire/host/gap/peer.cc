@@ -9,7 +9,6 @@
 #include <zircon/assert.h>
 
 #include <iomanip>
-#include <sstream>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
@@ -583,14 +582,7 @@ bool Peer::SetRssiInternal(int8_t rssi) {
 
 bool Peer::RegisterNameInternal(const std::string& name, Peer::NameSource source) {
   if (!bt_lib_cpp_string::IsStringUTF8(name)) {
-    std::ostringstream oss;
-    oss << std::hex << std::setfill('0');
-    for (auto c : name) {
-      // Cast to uchar so promotion doesn't sign-extend, then format as unsigned
-      oss << std::setw(2) << unsigned{static_cast<unsigned char>(c)};
-    }
-    bt_log(WARN, "gap", "%s: not setting name to string that is not valid UTF-8 (%s)",
-           bt_str(*this), oss.str().c_str());
+    bt_log(WARN, "gap", "%s: not setting name to string that is not valid UTF-8", bt_str(*this));
     return false;
   }
   if (!name_->has_value() || source < (*name_)->source ||
