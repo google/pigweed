@@ -293,13 +293,15 @@ function(pw_add_module_library NAME)
   _pw_add_library_multi_value_args(multi_value_args IMPLEMENTS_FACADES)
   pw_parse_arguments_strict(pw_add_module_library 1 "" "" "${multi_value_args}")
 
-  # Check that the library's name is prefixed by the module name.
-  get_filename_component(module "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
-
-  if(NOT "${NAME}" MATCHES "${module}(\\.[^\\.]+)?(\\.facade)?$")
+  # Check that the library's name is prefixed by the relative PW path with dot
+  # separators instead of forward slashes.
+  file(RELATIVE_PATH rel_path $ENV{PW_ROOT} ${CMAKE_CURRENT_SOURCE_DIR})
+  string(REPLACE "/" "." dot_rel_path ${rel_path})
+  if(NOT "${NAME}" MATCHES "${dot_rel_path}(\\.[^\\.]+)?(\\.facade)?$")
     message(FATAL_ERROR
         "Module libraries must match the module name or be in the form "
-        "'MODULE_NAME.LIBRARY_NAME'. The library '${NAME}' does not match."
+        "'PATH_TO.THE_TARGET.NAME'. The library '${NAME}' does not match. "
+        "Expected ${dot_rel_path}.LIBRARY_NAME"
     )
   endif()
 
