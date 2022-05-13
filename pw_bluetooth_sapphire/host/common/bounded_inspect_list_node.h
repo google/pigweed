@@ -25,11 +25,11 @@ namespace bt {
 //    list.AttachInspect(parent_node);
 //
 //    auto& item_0 = list.CreateItem();
-//    item_0.node.CreateInt("property_0", 0, &item_0.values);
+//    item_0.node.RecordInt("property_0", 0);
 //
 //    auto& item_1 = list.CreateItem();
-//    item_1.node.CreateInt("property_A", 1, &item_1.values);
-//    item_1.node.CreateInt("property_B", 2, &item_1.values);
+//    item_1.node.RecordInt("property_A", 1);
+//    item_1.node.RecordInt("property_B", 2);
 //
 // Inspect Tree:
 //     example_list:
@@ -43,9 +43,6 @@ class BoundedInspectListNode {
   struct Item {
     // The list child node with the index as it's name (0, 1, 2...).
     inspect::Node node;
-    // Properties and child nodes should be added to |values| to tie their lifetime to the life
-    // of the list item.
-    inspect::ValueList values;
   };
 
   explicit BoundedInspectListNode(size_t capacity) : capacity_(capacity) {

@@ -1454,12 +1454,11 @@ void BrEdrConnectionManager::RecordDisconnectInspect(const BrEdrConnection& conn
                                                      DisconnectReason reason) {
   // Add item to recent disconnections list.
   auto& inspect_item = inspect_properties_.last_disconnected_list.CreateItem();
-  inspect_item.node.CreateString(kInspectLastDisconnectedItemPeerPropertyName,
-                                 conn.peer_id().ToString(), &inspect_item.values);
-  inspect_item.node.CreateUint(kInspectLastDisconnectedItemDurationPropertyName,
-                               conn.duration().to_secs(), &inspect_item.values);
-  inspect_item.node.CreateInt(kInspectTimestampPropertyName, async::Now(dispatcher_).get(),
-                              &inspect_item.values);
+  inspect_item.node.RecordString(kInspectLastDisconnectedItemPeerPropertyName,
+                                 conn.peer_id().ToString());
+  inspect_item.node.RecordUint(kInspectLastDisconnectedItemDurationPropertyName,
+                               conn.duration().to_secs());
+  inspect_item.node.RecordInt(kInspectTimestampPropertyName, async::Now(dispatcher_).get());
 
   switch (reason) {
     case DisconnectReason::kApiRequest:

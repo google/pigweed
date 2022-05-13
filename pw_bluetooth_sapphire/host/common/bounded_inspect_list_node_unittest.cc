@@ -25,9 +25,9 @@ TEST(BoundedInspectListNodeTest, ListEviction) {
 
   list.AttachInspect(inspector.GetRoot(), "list_name");
   Item& item_0 = list.CreateItem();
-  item_0.node.CreateInt("item_0", 0, &item_0.values);
+  item_0.node.RecordInt("item_0", 0);
   Item& item_1 = list.CreateItem();
-  item_1.node.CreateInt("item_1", 1, &item_1.values);
+  item_1.node.RecordInt("item_1", 1);
 
   auto hierarchy = ::inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
@@ -45,7 +45,7 @@ TEST(BoundedInspectListNodeTest, ListEviction) {
 
   // Exceed capacity. item_0 should be evicted.
   Item& item_2 = list.CreateItem();
-  item_2.node.CreateInt("item_2", 2, &item_2.values);
+  item_2.node.RecordInt("item_2", 2);
 
   hierarchy = ::inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
