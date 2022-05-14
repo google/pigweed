@@ -192,6 +192,7 @@ function(pw_add_library NAME TYPE)
       "${one_value_args}" "${multi_value_args}")
 
   add_library("${NAME}" "${TYPE}" EXCLUDE_FROM_ALL)
+
   # Instead of forking all of the code below or injecting an empty source file,
   # conditionally select PUBLIC vs INTERFACE depending on the type.
   if("${TYPE}" STREQUAL "INTERFACE")
@@ -224,47 +225,61 @@ function(pw_add_library NAME TYPE)
     endif()
   endforeach()
 
-  if(NOT "${arg_PUBLIC_INCLUDES}" STREQUAL "")
-    target_include_directories(
+  # Public and private target_include_directories.
+  target_include_directories("${NAME}" PRIVATE ${arg_PRIVATE_INCLUDES})
+  target_include_directories(
         "${NAME}" ${public_or_interface} ${arg_PUBLIC_INCLUDES})
-  endif(NOT "${arg_PUBLIC_INCLUDES}" STREQUAL "")
 
-  if(NOT "${arg_PRIVATE_INCLUDES}" STREQUAL "")
-    target_include_directories("${NAME}" PRIVATE ${arg_PRIVATE_INCLUDES})
-  endif(NOT "${arg_PRIVATE_INCLUDES}" STREQUAL "")
-
-  target_link_libraries("${NAME}" ${public_or_interface} ${arg_PUBLIC_DEPS})
-
+  # Public and private target_link_libraries.
   if(NOT "${arg_SOURCES}" STREQUAL "")
     target_link_libraries("${NAME}" PRIVATE ${arg_PRIVATE_DEPS})
   endif(NOT "${arg_SOURCES}" STREQUAL "")
+  target_link_libraries("${NAME}" ${public_or_interface} ${arg_PUBLIC_DEPS})
 
+  # The target_compile_options are always added before target_link_libraries'
+  # target_compile_options. In order to support the enabling of warning
+  # compile options injected via arg_PRIVATE_DEPS (target_link_libraries
+  # dependencies) that are partially disabled via arg_PRIVATE_COMPILE_OPTIONS (
+  # target_compile_options), the defines, compile options, and link options are
+  # also added as target_link_libraries dependencies. This enables reasonable
+  # ordering between the enabling (target_link_libraries) and disabling (
+  # now also target_link_libraries) of compiler warnings.
+
+  # Add the NAME._config target_link_libraries dependency with the
+  # PRIVATE_DEFINES, PRIVATE_COMPILE_OPTIONS, and PRIVATE_LINK_OPTIONS.
+  if(NOT "${TYPE}" STREQUAL "INTERFACE")
+    target_link_libraries("${NAME}" PRIVATE "${NAME}._config")
+    add_library("${NAME}._config" INTERFACE EXCLUDE_FROM_ALL)
+    if(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
+      target_compile_definitions(
+          "${NAME}._config" INTERFACE ${arg_PRIVATE_DEFINES})
+    endif(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
+    if(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
+      target_compile_options(
+          "${NAME}._config" INTERFACE ${arg_PRIVATE_COMPILE_OPTIONS})
+    endif(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
+    if(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
+      target_link_options("${NAME}._config" INTERFACE ${arg_PRIVATE_LINK_OPTIONS})
+    endif(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
+  endif(NOT "${TYPE}" STREQUAL "INTERFACE")
+
+  # Add the NAME._public_config target_link_libraries dependency with the
+  # PUBLIC_DEFINES, PUBLIC_COMPILE_OPTIONS, and PUBLIC_LINK_OPTIONS.
+  add_library("${NAME}._public_config" INTERFACE EXCLUDE_FROM_ALL)
+  target_link_libraries(
+      "${NAME}" ${public_or_interface} "${NAME}._public_config")
   if(NOT "${arg_PUBLIC_DEFINES}" STREQUAL "")
     target_compile_definitions(
-        "${NAME}" ${public_or_interface} ${arg_PUBLIC_DEFINES})
+        "${NAME}._public_config" INTERFACE ${arg_PUBLIC_DEFINES})
   endif(NOT "${arg_PUBLIC_DEFINES}" STREQUAL "")
-
-  if(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
-    target_compile_definitions("${NAME}" PRIVATE ${arg_PRIVATE_DEFINES})
-  endif(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
-
   if(NOT "${arg_PUBLIC_COMPILE_OPTIONS}" STREQUAL "")
     target_compile_options(
-        "${NAME}" ${public_or_interface} ${arg_PUBLIC_COMPILE_OPTIONS})
+        "${NAME}._public_config" INTERFACE ${arg_PUBLIC_COMPILE_OPTIONS})
   endif(NOT "${arg_PUBLIC_COMPILE_OPTIONS}" STREQUAL "")
-
-  if(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
-    target_compile_options("${NAME}" PRIVATE ${arg_PRIVATE_COMPILE_OPTIONS})
-  endif(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
-
   if(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
     target_link_options(
-        "${NAME}" ${public_or_interface} ${arg_PUBLIC_LINK_OPTIONS})
+        "${NAME}._public_config" INTERFACE ${arg_PUBLIC_LINK_OPTIONS})
   endif(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
-
-  if(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
-    target_link_options("${NAME}" PRIVATE ${arg_PRIVATE_LINK_OPTIONS})
-  endif(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
 endfunction(pw_add_library)
 
 # Creates a pw module library.
