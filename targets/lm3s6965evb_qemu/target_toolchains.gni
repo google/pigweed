@@ -80,6 +80,14 @@ _clang_target_default_configs = [
   "$dir_pw_build:clang_thread_safety_warnings",
   "$dir_pw_build:extra_strict_warnings",
   "$dir_pw_toolchain/arm_clang:enable_float_printf",
+
+  # TODO(b/232587313): Disable lock annotations for this target because the
+  # clang toolchain currently relies on the standard library headers provided by
+  # arm-none-eabi-gcc, and thus do not have thread safety lock annotations on
+  # things like std::lock_guard. Thread safety checks will not work until
+  # the clang-based ARM toolchain uses a C++ standard library that has these
+  # annotations set up.
+  "$dir_pigweed/targets/lm3s6965evb_qemu:disable_lock_annotations",
 ]
 
 pw_target_toolchain_lm3s6965evb_qemu = {

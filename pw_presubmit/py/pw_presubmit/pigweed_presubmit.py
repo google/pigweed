@@ -113,8 +113,7 @@ def gn_full_qemu_check(ctx: PresubmitContext):
     build.ninja(
         ctx.output_dir,
         *_at_all_optimization_levels('qemu_gcc'),
-        # TODO(pwbug/321) Re-enable clang.
-        # *_at_all_optimization_levels('qemu_clang'),
+        *_at_all_optimization_levels('qemu_clang'),
     )
 
 
