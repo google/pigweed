@@ -33,8 +33,7 @@ CMake
 In order to use this you are expected to set the following variables from
 ``third_party/freertos/CMakeLists.txt``:
 
-#. Set the GN ``dir_pw_third_party_freertos`` to the path of the FreeRTOS
-   installation.
+#. Set ``dir_pw_third_party_freertos`` to the path of the FreeRTOS installation.
 #. Set ``pw_third_party_freertos_CONFIG`` to a library target which provides
    the FreeRTOS config header.
 #. Set ``pw_third_party_freertos_PORT`` to a library target which provides

@@ -3,10 +3,10 @@
 ============
 pw_unit_test
 ============
-``pw_unit_test`` unit testing library with a `Google Test`_-compatible API,
+``pw_unit_test`` unit testing library with a `GoogleTest`_-compatible API,
 built on top of embedded-friendly primitives.
 
-.. _Google Test: https://github.com/google/googletest/blob/HEAD/docs/primer.md
+.. _GoogleTest: https://github.com/google/googletest/blob/HEAD/docs/primer.md
 
 ``pw_unit_test`` is a portable library which can run on almost any system from
 bare metal to a full-fledged desktop OS. It does this by offloading the
@@ -26,12 +26,12 @@ Pigweed.
 ------------------
 Writing unit tests
 ------------------
-``pw_unit_test``'s interface is largely compatible with `Google Test`_. Refer to
-the Google Test documentation for examples of to define unit test cases.
+``pw_unit_test``'s interface is largely compatible with `GoogleTest`_. Refer to
+the GoogleTest documentation for examples of to define unit test cases.
 
 .. note::
 
-  Many of Google Test's more advanced features are not yet implemented. Missing
+  Many of GoogleTest's more advanced features are not yet implemented. Missing
   features include:
 
   * Any GoogleMock features (e.g. :c:macro:`EXPECT_THAT`)
@@ -43,8 +43,8 @@ the Google Test documentation for examples of to define unit test cases.
   To request a feature addition, please
   `let us know <mailto:pigweed@googlegroups.com>`_.
 
-  See `Using upstream Googletest and Googlemock` below for information
-  about using upstream Googletest instead.
+  See `Using upstream GoogleTest and GoogleMock` below for information
+  about using upstream GoogleTest instead.
 
 ------------------------
 Using the test framework
@@ -67,7 +67,7 @@ Predefined event handlers
 Pigweed provides some standard event handlers upstream to simplify the process
 of getting started using ``pw_unit_test``.
 
-* ``SimplePrintingEventHandler``: An event handler that writes Google Test-style
+* ``SimplePrintingEventHandler``: An event handler that writes GoogleTest-style
   output to a specified sink.
 
   .. code::
@@ -290,7 +290,7 @@ Build arguments
 .. option:: pw_unit_test_PUBLIC_DEPS <dependencies>
 
   Additional dependencies required by all unit test targets. (For example, if
-  using a different test library like Googletest.)
+  using a different test library like GoogleTest.)
 
   Type: list of strings (list of dependencies as GN paths)
   Usage: toolchain-controlled only
@@ -391,19 +391,8 @@ this module.
   The size of the memory pool to use for test fixture instances. By default this
   is set to 16K.
 
-Using upstream Googletest and Googlemock
+Using upstream GoogleTest and GoogleMock
 ========================================
 
-If you want to use the full upstream Googletest/Googlemock, you must do the
-following:
-
-* Set the GN var ``dir_pw_third_party_googletest`` to the location of the
-  googletest source. You can use ``pw package install googletest`` to fetch the
-  source if desired.
-* Set the GN var ``pw_unit_test_MAIN = "//third_party/googletest:gmock_main"``
-* Set the GN var ``pw_unit_test_PUBLIC_DEPS = [ "//third_party/googletest" ]``
-
-.. note::
-
-  Not all unit tests build properly with upstream Googletest yet. This is a
-  work in progress.
+If you want to use the full upstream GoogleTest/GoogleMock, see
+:ref:`Pigweed's support for it <module-pw_third_party_googletest>`.

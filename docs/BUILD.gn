@@ -77,6 +77,7 @@ group("third_party_docs") {
   deps = [
     "$dir_pigweed/third_party/boringssl:docs",
     "$dir_pigweed/third_party/freertos:docs",
+    "$dir_pigweed/third_party/googletest:docs",
     "$dir_pigweed/third_party/nanopb:docs",
     "$dir_pigweed/third_party/tinyusb:docs",
   ]

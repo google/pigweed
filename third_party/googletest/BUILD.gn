@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
 import("googletest.gni")
 
 # This file defines a GN source_set for an external installation of googletest.
@@ -63,4 +64,8 @@ if (dir_pw_third_party_googletest != "") {
 } else {
   group("googletest") {
   }
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }

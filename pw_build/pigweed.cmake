@@ -488,6 +488,14 @@ function(pw_set_module_config NAME LIBRARY)
   set("${NAME}" "${LIBRARY}" CACHE STRING "Config for ${NAME}" FORCE)
 endfunction(pw_set_module_config)
 
+set(pw_unit_test_MAIN pw_unit_test.main CACHE STRING
+    "Implementation of a main function for ``pw_test`` unit test binaries.")
+
+set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test CACHE STRING
+    "CMake target which implements GoogleTest, vy default pw_unit_test is \
+     used. You could, for example, point this at pw_third_party.googletest if \
+     using upstream GoogleTest directly on your host for GoogleMock.")
+
 # Declares a unit test. Creates two targets:
 #
 #  * <TEST_NAME> - the test executable
@@ -507,8 +515,8 @@ function(pw_add_test NAME)
   add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
   target_link_libraries("${NAME}"
     PRIVATE
-      pw_unit_test
-      pw_unit_test.main
+      ${pw_unit_test_GOOGLETEST_BACKEND}
+      ${pw_unit_test_MAIN}
       ${arg_DEPS}
   )
   # Tests require at least one source file.

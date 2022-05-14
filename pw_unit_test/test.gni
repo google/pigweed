@@ -44,7 +44,7 @@ declare_args() {
   pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT = ""
 
   # Additional dependencies required by all unit test targets. (For example, if
-  # using a different test library like Googletest.)
+  # using a different test library like GoogleTest.)
   #
   # Type: list of strings (list of dependencies as GN paths)
   # Usage: toolchain-controlled only

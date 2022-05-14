@@ -101,7 +101,7 @@
 // pw_unit_test framework entry point. Runs every registered test case and
 // dispatches the results through the event handler. Returns a status of zero
 // if all tests passed, or nonzero if there were any failures.
-// This is compatible with Googletest.
+// This is compatible with GoogleTest.
 //
 // In order to receive test output, an event handler must be registered before
 // this is called:
@@ -337,7 +337,7 @@ class Framework {
   // Overall result of the ongoing test run, which covers multiple tests.
   RunTestsSummary run_tests_summary_;
 
-  // Program exit status returned by RunAllTests for Googletest compatibility.
+  // Program exit status returned by RunAllTests for GoogleTest compatibility.
   int exit_status_;
 
   // Handler to which to dispatch test events.
@@ -538,7 +538,7 @@ inline void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
       #lhs " " #op " " #rhs,                                     \
       __LINE__)
 
-// Alias Test as ::testing::Test for Googletest compatibility.
+// Alias Test as ::testing::Test for GoogleTest compatibility.
 namespace testing {
 
 using Test = ::pw::unit_test::internal::Test;
