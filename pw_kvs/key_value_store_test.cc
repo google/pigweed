@@ -27,6 +27,7 @@
 #endif  // DUMP_KVS_STATE_TO_FILE
 
 #include "gtest/gtest.h"
+#include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_checksum/crc16_ccitt.h"
 #include "pw_kvs/crc16_checksum.h"
@@ -359,8 +360,8 @@ TEST(InMemoryKvs, CallingEraseTwice_NothingWrittenToFlash) {
 class LargeEmptyInitializedKvs : public ::testing::Test {
  protected:
   LargeEmptyInitializedKvs() : kvs_(&large_test_partition, default_format) {
-    ASSERT_EQ(OkStatus(), large_test_partition.Erase());
-    ASSERT_EQ(OkStatus(), kvs_.Init());
+    PW_CHECK_OK(large_test_partition.Erase());
+    PW_CHECK_OK(kvs_.Init());
   }
 
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;

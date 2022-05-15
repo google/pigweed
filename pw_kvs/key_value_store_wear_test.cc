@@ -105,7 +105,7 @@ TEST_F(WearTest, TwoPassFillWithLargeAndLarger) {
     // written.
     test_data[0]++;
 
-    printf("Add entry %zu\n", i);
+    PW_LOG_DEBUG("Add entry %zu\n", i);
     EXPECT_EQ(OkStatus(), kvs_.Put("big_key", test_data));
   }
 

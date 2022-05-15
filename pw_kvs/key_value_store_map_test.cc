@@ -34,6 +34,7 @@
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
+#include "pw_string/string_builder.h"
 
 namespace pw::kvs {
 namespace {

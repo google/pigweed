@@ -13,6 +13,7 @@
 // the License.
 
 #include "gtest/gtest.h"
+#include "pw_assert/check.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_partition_with_stats.h"
@@ -45,7 +46,7 @@ class EmptyInitializedKvs : public ::testing::Test {
       : kvs_(&test_partition, {.magic = 0x873a9b50, .checksum = &checksum}) {
     test_partition.Erase(0, test_partition.sector_count())
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    ASSERT_EQ(OkStatus(), kvs_.Init());
+    PW_CHECK_OK(kvs_.Init());
   }
 
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;

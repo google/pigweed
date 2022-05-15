@@ -456,7 +456,7 @@ TEST_F(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSmallerAlignment) {
   EXPECT_EQ(kTransactionId1 + 1, new_entry.transaction_id());
 }
 
-TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSameAlignment) {
+TEST(Entry, UpdateAndCopy_DifferentFormatSameAlignment) {
   // Use 32-bit alignment, the same as the original entry's alignment.
   FakeFlashMemoryBuffer<1024, 4> flash(kEntry1);
   FlashPartition partition(&flash, 0, 4, 32);
@@ -482,7 +482,7 @@ TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSameAlignment) {
   EXPECT_EQ(kTransactionId1 + 1, new_entry.transaction_id());
 }
 
-TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatLargerAlignment) {
+TEST(Entry, UpdateAndCopy_DifferentFormatLargerAlignment) {
   // Use 64-bit alignment, larger than the original entry's alignment.
   FakeFlashMemoryBuffer<1024, 4> flash(kEntry1);
   FlashPartition partition(&flash, 0, 4, 64);

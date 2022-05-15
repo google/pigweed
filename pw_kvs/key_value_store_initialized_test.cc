@@ -18,6 +18,7 @@
 #include <span>
 
 #include "gtest/gtest.h"
+#include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_checksum/crc16_ccitt.h"
 #include "pw_kvs/crc16_checksum.h"
@@ -84,7 +85,7 @@ class EmptyInitializedKvs : public ::testing::Test {
   EmptyInitializedKvs() : kvs_(&test_partition, default_format) {
     test_partition.Erase()
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    ASSERT_EQ(OkStatus(), kvs_.Init());
+    PW_CHECK_OK(kvs_.Init());
   }
 
   // Intention of this is to put and erase key-val to fill up sectors. It's a

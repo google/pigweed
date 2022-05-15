@@ -186,7 +186,7 @@ class ErrorWriter : public stream::NonSeekableWriter {
   Status DoWrite(ConstByteSpan) override { return Status::Unimplemented(); }
 };
 
-TEST(WriteUnnumberedFrame, WriterError) {
+TEST(WriteUIFrame, WriterError) {
   ErrorWriter writer;
   EXPECT_EQ(Status::Unimplemented(),
             WriteUIFrame(kAddress, bytes::Array<0x01>(), writer));

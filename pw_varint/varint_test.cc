@@ -38,9 +38,9 @@ size_t pw_varint_CallZigZagDecode(void* input,
 
 }  // extern "C"
 
-class Varint : public ::testing::Test {
+class VarintWithBuffer : public ::testing::Test {
  protected:
-  Varint() : buffer_ {
+  VarintWithBuffer() : buffer_ {
     std::byte{'a'}, std::byte{'b'}, std::byte{'c'}, std::byte{'d'},
         std::byte{'e'}, std::byte{'f'}, std::byte{'g'}, std::byte{'h'},
         std::byte{'i'}, std::byte {
@@ -51,7 +51,7 @@ class Varint : public ::testing::Test {
   std::byte buffer_[10];
 };
 
-TEST_F(Varint, EncodeSizeUnsigned32_SmallSingleByte) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned32_SmallSingleByte) {
   ASSERT_EQ(1u, Encode(UINT32_C(0), buffer_));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, Encode(UINT32_C(1), buffer_));
@@ -60,7 +60,7 @@ TEST_F(Varint, EncodeSizeUnsigned32_SmallSingleByte) {
   EXPECT_EQ(std::byte{2}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned32_SmallSingleByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned32_SmallSingleByte_C) {
   ASSERT_EQ(1u, pw_varint_CallEncode(UINT32_C(0), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, pw_varint_CallEncode(UINT32_C(1), buffer_, sizeof(buffer_)));
@@ -69,7 +69,7 @@ TEST_F(Varint, EncodeSizeUnsigned32_SmallSingleByte_C) {
   EXPECT_EQ(std::byte{2}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned32_LargeSingleByte) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned32_LargeSingleByte) {
   ASSERT_EQ(1u, Encode(UINT32_C(63), buffer_));
   EXPECT_EQ(std::byte{63}, buffer_[0]);
   ASSERT_EQ(1u, Encode(UINT32_C(64), buffer_));
@@ -80,7 +80,7 @@ TEST_F(Varint, EncodeSizeUnsigned32_LargeSingleByte) {
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned32_LargeSingleByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned32_LargeSingleByte_C) {
   ASSERT_EQ(1u, pw_varint_CallEncode(UINT32_C(63), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::byte{63}, buffer_[0]);
   ASSERT_EQ(1u, pw_varint_CallEncode(UINT32_C(64), buffer_, sizeof(buffer_)));
@@ -91,7 +91,7 @@ TEST_F(Varint, EncodeSizeUnsigned32_LargeSingleByte_C) {
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned32_MultiByte) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned32_MultiByte) {
   ASSERT_EQ(2u, Encode(UINT32_C(128), buffer_));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
   ASSERT_EQ(2u, Encode(UINT32_C(129), buffer_));
@@ -104,7 +104,7 @@ TEST_F(Varint, EncodeSizeUnsigned32_MultiByte) {
   EXPECT_EQ(std::memcmp("\xff\xff\xff\xff\x0f", buffer_, 5), 0);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned32_MultiByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned32_MultiByte_C) {
   ASSERT_EQ(2u, pw_varint_CallEncode(UINT32_C(128), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
   ASSERT_EQ(2u, pw_varint_CallEncode(UINT32_C(129), buffer_, sizeof(buffer_)));
@@ -123,7 +123,7 @@ TEST_F(Varint, EncodeSizeUnsigned32_MultiByte_C) {
   EXPECT_EQ(std::memcmp("\xff\xff\xff\xff\x0f", buffer_, 5), 0);
 }
 
-TEST_F(Varint, EncodeSizeSigned32_SmallSingleByte) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned32_SmallSingleByte) {
   ASSERT_EQ(1u, Encode(INT32_C(0), buffer_));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, Encode(INT32_C(-1), buffer_));
@@ -136,7 +136,7 @@ TEST_F(Varint, EncodeSizeSigned32_SmallSingleByte) {
   EXPECT_EQ(std::byte{4}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeSigned32_SmallSingleByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned32_SmallSingleByte_C) {
   ASSERT_EQ(1u,
             pw_varint_CallZigZagEncode(INT32_C(0), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
@@ -154,7 +154,7 @@ TEST_F(Varint, EncodeSizeSigned32_SmallSingleByte_C) {
   EXPECT_EQ(std::byte{4}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeSigned32_LargeSingleByte) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned32_LargeSingleByte) {
   ASSERT_EQ(1u, Encode(INT32_C(-63), buffer_));
   EXPECT_EQ(std::byte{125}, buffer_[0]);
   ASSERT_EQ(1u, Encode(INT32_C(63), buffer_));
@@ -163,7 +163,7 @@ TEST_F(Varint, EncodeSizeSigned32_LargeSingleByte) {
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeSigned32_LargeSingleByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned32_LargeSingleByte_C) {
   ASSERT_EQ(1u,
             pw_varint_CallZigZagEncode(INT32_C(-63), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::byte{125}, buffer_[0]);
@@ -175,7 +175,7 @@ TEST_F(Varint, EncodeSizeSigned32_LargeSingleByte_C) {
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeSigned32_MultiByte) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned32_MultiByte) {
   ASSERT_EQ(2u, Encode(INT32_C(64), buffer_));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
   ASSERT_EQ(2u, Encode(INT32_C(-65), buffer_));
@@ -190,7 +190,7 @@ TEST_F(Varint, EncodeSizeSigned32_MultiByte) {
   EXPECT_EQ(std::memcmp("\xfe\xff\xff\xff\x0f", buffer_, 5), 0);
 }
 
-TEST_F(Varint, EncodeSizeSigned32_MultiByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned32_MultiByte_C) {
   ASSERT_EQ(2u,
             pw_varint_CallZigZagEncode(INT32_C(64), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
@@ -212,7 +212,7 @@ TEST_F(Varint, EncodeSizeSigned32_MultiByte_C) {
   EXPECT_EQ(std::memcmp("\xfe\xff\xff\xff\x0f", buffer_, 5), 0);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned64_SmallSingleByte) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned64_SmallSingleByte) {
   ASSERT_EQ(1u, Encode(UINT64_C(0), buffer_));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, Encode(UINT64_C(1), buffer_));
@@ -221,7 +221,7 @@ TEST_F(Varint, EncodeSizeUnsigned64_SmallSingleByte) {
   EXPECT_EQ(std::byte{2}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned64_SmallSingleByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned64_SmallSingleByte_C) {
   ASSERT_EQ(1u, pw_varint_CallEncode(UINT64_C(0), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, pw_varint_CallEncode(UINT64_C(1), buffer_, sizeof(buffer_)));
@@ -230,7 +230,7 @@ TEST_F(Varint, EncodeSizeUnsigned64_SmallSingleByte_C) {
   EXPECT_EQ(std::byte{2}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned64_LargeSingleByte) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned64_LargeSingleByte) {
   ASSERT_EQ(1u, Encode(UINT64_C(63), buffer_));
   EXPECT_EQ(std::byte{63}, buffer_[0]);
   ASSERT_EQ(1u, Encode(UINT64_C(64), buffer_));
@@ -241,7 +241,7 @@ TEST_F(Varint, EncodeSizeUnsigned64_LargeSingleByte) {
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned64_LargeSingleByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned64_LargeSingleByte_C) {
   ASSERT_EQ(1u, pw_varint_CallEncode(UINT64_C(63), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::byte{63}, buffer_[0]);
   ASSERT_EQ(1u, pw_varint_CallEncode(UINT64_C(64), buffer_, sizeof(buffer_)));
@@ -252,7 +252,7 @@ TEST_F(Varint, EncodeSizeUnsigned64_LargeSingleByte_C) {
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned64_MultiByte) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned64_MultiByte) {
   ASSERT_EQ(2u, Encode(UINT64_C(128), buffer_));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
   ASSERT_EQ(2u, Encode(UINT64_C(129), buffer_));
@@ -273,7 +273,7 @@ TEST_F(Varint, EncodeSizeUnsigned64_MultiByte) {
       std::memcmp("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01", buffer_, 10), 0);
 }
 
-TEST_F(Varint, EncodeSizeUnsigned64_MultiByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeUnsigned64_MultiByte_C) {
   ASSERT_EQ(2u, pw_varint_CallEncode(UINT64_C(128), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
   ASSERT_EQ(2u, pw_varint_CallEncode(UINT64_C(129), buffer_, sizeof(buffer_)));
@@ -306,7 +306,7 @@ TEST_F(Varint, EncodeSizeUnsigned64_MultiByte_C) {
       std::memcmp("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01", buffer_, 10), 0);
 }
 
-TEST_F(Varint, EncodeSizeSigned64_SmallSingleByte) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned64_SmallSingleByte) {
   ASSERT_EQ(1u, Encode(INT64_C(0), buffer_));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, Encode(INT64_C(-1), buffer_));
@@ -319,7 +319,7 @@ TEST_F(Varint, EncodeSizeSigned64_SmallSingleByte) {
   EXPECT_EQ(std::byte{4}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeSigned64_SmallSingleByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned64_SmallSingleByte_C) {
   ASSERT_EQ(1u,
             pw_varint_CallZigZagEncode(INT64_C(0), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
@@ -337,7 +337,7 @@ TEST_F(Varint, EncodeSizeSigned64_SmallSingleByte_C) {
   EXPECT_EQ(std::byte{4}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeSigned64_LargeSingleByte) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned64_LargeSingleByte) {
   ASSERT_EQ(1u, Encode(INT64_C(-63), buffer_));
   EXPECT_EQ(std::byte{125}, buffer_[0]);
   ASSERT_EQ(1u, Encode(INT64_C(63), buffer_));
@@ -346,7 +346,7 @@ TEST_F(Varint, EncodeSizeSigned64_LargeSingleByte) {
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeSigned64_LargeSingleByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned64_LargeSingleByte_C) {
   ASSERT_EQ(1u,
             pw_varint_CallZigZagEncode(INT64_C(-63), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::byte{125}, buffer_[0]);
@@ -358,7 +358,7 @@ TEST_F(Varint, EncodeSizeSigned64_LargeSingleByte_C) {
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
-TEST_F(Varint, EncodeSizeSigned64_MultiByte) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned64_MultiByte) {
   ASSERT_EQ(2u, Encode(INT64_C(64), buffer_));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
   ASSERT_EQ(2u, Encode(INT64_C(-65), buffer_));
@@ -385,7 +385,7 @@ TEST_F(Varint, EncodeSizeSigned64_MultiByte) {
       std::memcmp("\xfe\xff\xff\xff\xff\xff\xff\xff\xff\x01", buffer_, 10), 0);
 }
 
-TEST_F(Varint, EncodeSizeSigned64_MultiByte_C) {
+TEST_F(VarintWithBuffer, EncodeSizeSigned64_MultiByte_C) {
   ASSERT_EQ(2u,
             pw_varint_CallZigZagEncode(INT64_C(64), buffer_, sizeof(buffer_)));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
@@ -427,7 +427,7 @@ TEST_F(Varint, EncodeSizeSigned64_MultiByte_C) {
 // tests. Set the increment to 1 to test every number (this is slow).
 constexpr int kIncrement = 100'000'009;
 
-TEST_F(Varint, EncodeDecodeSigned32) {
+TEST_F(VarintWithBuffer, EncodeDecodeSigned32) {
   int32_t i = std::numeric_limits<int32_t>::min();
   while (true) {
     size_t encoded = Encode(i, buffer_);
@@ -446,7 +446,7 @@ TEST_F(Varint, EncodeDecodeSigned32) {
   }
 }
 
-TEST_F(Varint, EncodeDecodeSigned32_C) {
+TEST_F(VarintWithBuffer, EncodeDecodeSigned32_C) {
   int32_t i = std::numeric_limits<int32_t>::min();
   while (true) {
     size_t encoded = pw_varint_CallZigZagEncode(i, buffer_, sizeof(buffer_));
@@ -466,7 +466,7 @@ TEST_F(Varint, EncodeDecodeSigned32_C) {
   }
 }
 
-TEST_F(Varint, EncodeDecodeUnsigned32) {
+TEST_F(VarintWithBuffer, EncodeDecodeUnsigned32) {
   uint32_t i = 0;
   while (true) {
     size_t encoded = Encode(i, buffer_);
@@ -485,7 +485,7 @@ TEST_F(Varint, EncodeDecodeUnsigned32) {
   }
 }
 
-TEST_F(Varint, EncodeDecodeUnsigned32_C) {
+TEST_F(VarintWithBuffer, EncodeDecodeUnsigned32_C) {
   uint32_t i = 0;
   while (true) {
     size_t encoded = pw_varint_CallEncode(i, buffer_, sizeof(buffer_));
@@ -777,7 +777,7 @@ TEST(Varint, ZigZagEncodeDecode) {
             std::numeric_limits<int64_t>::max());
 }
 
-TEST_F(Varint, EncodeWithOptions_SingleByte) {
+TEST_F(VarintWithBuffer, EncodeWithOptions_SingleByte) {
   ASSERT_EQ(Encode(0u, buffer_, Format::kZeroTerminatedLeastSignificant), 1u);
   EXPECT_EQ(buffer_[0], std::byte{0x00});
 
@@ -815,7 +815,7 @@ TEST_F(Varint, EncodeWithOptions_SingleByte) {
   EXPECT_EQ(buffer_[0], std::byte{0xff});
 }
 
-TEST_F(Varint, EncodeWithOptions_MultiByte) {
+TEST_F(VarintWithBuffer, EncodeWithOptions_MultiByte) {
   ASSERT_EQ(Encode(128u, buffer_, Format::kZeroTerminatedLeastSignificant), 2u);
   EXPECT_EQ(std::memcmp("\x01\x02", buffer_, 2), 0);
 

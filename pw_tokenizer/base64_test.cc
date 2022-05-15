@@ -143,7 +143,7 @@ TEST_F(PrefixedBase64, Decode_OutputTooSmall_WritesNothing) {
   EXPECT_EQ(byte{kUnset}, binary_[0]);
 }
 
-TEST(PrefixedBase64, DecodeInPlace) {
+TEST(PrefixedBase64DecodeInPlace, DecodeInPlace) {
   byte buffer[32];
 
   for (auto& [binary, base64] : kTestData) {
