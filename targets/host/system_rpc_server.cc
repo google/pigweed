@@ -74,13 +74,6 @@ Status Start() {
       continue;
     }
 
-    // Empty read indicates connection termianation
-    //
-    // TODO: remove check on empty once pwrev/90900 lands.
-    if (ret_val.value().empty()) {
-      return OkStatus();
-    }
-
     for (std::byte byte : ret_val.value()) {
       auto result = decoder.Process(byte);
       if (!result.ok()) {
