@@ -97,7 +97,12 @@ class EntryCache {
       ++metadata_.descriptor_;
       return *this;
     }
-    Iterator& operator++(int) { return operator++(); }
+
+    Iterator operator++(int) {
+      Iterator original = *this;
+      operator++();
+      return original;
+    }
 
     // Updates the internal EntryMetadata object.
     value_type& operator*() const {
