@@ -59,13 +59,11 @@ def _main() -> int:
         _LOG.critical("Failed to connect to server at %s:%d", HOSTNAME, port)
         return 1
 
-    # Initialize an RPC client over the socket.
+    # Initialize an RPC client over the socket and set up the pw_transfer manager.
     rpc_client = HdlcRpcClient(
         lambda: rpc_socket.recv(4096), [transfer_pb2],
         default_channels(lambda data: rpc_socket.sendall(data)),
         lambda data: _LOG.info("%s", str(data)))
-
-    # Set up the pw_transfer manager and write the data.
     transfer_service = rpc_client.rpcs().pw.transfer.Transfer
     transfer_manager = pw_transfer.Manager(
         transfer_service,
@@ -73,26 +71,42 @@ def _main() -> int:
         initial_response_timeout_s=config.initial_chunk_timeout_ms / 1000,
         max_retries=config.max_retries,
     )
+
+    # Perform the requested transfer actions.
     for action in config.transfer_actions:
-        # TODO(b/232804652): Add support for reading from the server.
-        if action.transfer_type != config_pb2.TransferAction.TransferType.WRITE_TO_SERVER:
-            _LOG.critical("Only writing to the server is supported")
+        if action.transfer_type == config_pb2.TransferAction.TransferType.WRITE_TO_SERVER:
+            try:
+                with open(action.file_path, 'rb') as f:
+                    data = f.read()
+            except:
+                _LOG.critical("Failed to read input file '%s'",
+                              action.file_path)
+                return 1
+
+            try:
+                transfer_manager.write(action.resource_id, data)
+            except:
+                _LOG.exception("Transfer (write to server) failed")
+                return 1
+        elif action.transfer_type == config_pb2.TransferAction.TransferType.READ_FROM_SERVER:
+            try:
+                data = transfer_manager.read(action.resource_id)
+            except:
+                _LOG.exception("Transfer (read from server) failed")
+                return 1
+
+            try:
+                with open(action.file_path, 'wb') as f:
+                    f.write(data)
+            except:
+                _LOG.critical("Failed to write output file '%s'",
+                              action.file_path)
+                return 1
+        else:
+            _LOG.critical("Unknown transfer type: %d", action.transfer_type)
             return 1
 
-        try:
-            with open(action.file_path, 'rb') as f:
-                data = f.read()
-        except:
-            _LOG.exception("Failed to read input file '%s'", action.file_path)
-            return 1
-
-        try:
-            transfer_manager.write(action.resource_id, data)
-        except:
-            _LOG.exception("Transfer failed")
-            return 1
-
-    _LOG.info("Transfer completed successfully")
+    _LOG.info("All transfers completed successfully")
     return 0
 
 
