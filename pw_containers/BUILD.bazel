@@ -25,10 +25,20 @@ licenses(["notice"])
 pw_cc_library(
     name = "pw_containers",
     deps = [
+        ":algorithm",
         ":flat_map",
         ":intrusive_list",
         ":vector",
     ],
+)
+
+pw_cc_library(
+    name = "algorithm",
+    hdrs = [
+        "public/pw_containers/algorithm.h",
+        "public/pw_containers/internal/algorithm_internal.h",
+    ],
+    includes = ["public"],
 )
 
 pw_cc_library(
@@ -79,6 +89,17 @@ pw_cc_library(
     name = "wrapped_iterator",
     hdrs = ["public/pw_containers/wrapped_iterator.h"],
     includes = ["public"],
+)
+
+pw_cc_test(
+    name = "algorithm_test",
+    srcs = ["algorithm_test.cc"],
+    deps = [
+        ":algorithm",
+        ":intrusive_list",
+        ":vector",
+        "//pw_polyfill:span",
+    ],
 )
 
 pw_cc_test(

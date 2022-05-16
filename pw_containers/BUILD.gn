@@ -24,9 +24,18 @@ config("public_include_path") {
 
 group("pw_containers") {
   public_deps = [
+    ":algorithm",
     ":flat_map",
     ":intrusive_list",
     ":vector",
+  ]
+}
+
+pw_source_set("algorithm") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_containers/algorithm.h",
+    "public/pw_containers/internal/algorithm_internal.h",
   ]
 }
 
@@ -68,12 +77,23 @@ pw_source_set("intrusive_list") {
 
 pw_test_group("tests") {
   tests = [
+    ":algorithm_test",
     ":filtered_view_test",
     ":flat_map_test",
     ":intrusive_list_test",
     ":to_array_test",
     ":vector_test",
     ":wrapped_iterator_test",
+  ]
+}
+
+pw_test("algorithm_test") {
+  sources = [ "algorithm_test.cc" ]
+  deps = [
+    ":algorithm",
+    ":intrusive_list",
+    ":vector",
+    "$dir_pw_polyfill:span",
   ]
 }
 
