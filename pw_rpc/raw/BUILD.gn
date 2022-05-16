@@ -119,6 +119,7 @@ pw_test("client_reader_writer_test") {
 pw_test("method_test") {
   deps = [
     ":server_api",
+    "$dir_pw_containers",
     "..:test_protos.pwpb",
     "..:test_protos.raw_rpc",
     "..:test_utils",

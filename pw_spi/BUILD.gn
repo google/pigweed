@@ -76,6 +76,7 @@ pw_source_set("mock") {
   ]
   deps = [
     "$dir_pw_assert",
+    "$dir_pw_containers",
     "$dir_pw_unit_test",
   ]
 }
@@ -112,7 +113,10 @@ pw_test("spi_test") {
 
 pw_test("initiator_mock_test") {
   sources = [ "initiator_mock_test.cc" ]
-  deps = [ ":mock" ]
+  deps = [
+    ":mock",
+    "$dir_pw_containers",
+  ]
 }
 
 # Linux tests currently only work on a target with spidev support and a SPI endpoint

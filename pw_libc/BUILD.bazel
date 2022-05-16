@@ -27,6 +27,7 @@ pw_cc_test(
         "memset_test.cc",
     ],
     deps = [
+        "//pw_containers",
         "//pw_unit_test",
     ],
 )

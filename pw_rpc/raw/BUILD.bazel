@@ -137,6 +137,7 @@ pw_cc_test(
     ],
     deps = [
         ":server_api",
+        "//pw_containers",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_cc.pwpb",

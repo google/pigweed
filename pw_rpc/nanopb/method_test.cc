@@ -17,6 +17,7 @@
 #include <array>
 
 #include "gtest/gtest.h"
+#include "pw_containers/algorithm.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method_impl_tester.h"
 #include "pw_rpc/internal/test_utils.h"
@@ -290,10 +291,7 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
   ASSERT_EQ(OkStatus(), encoded.status());
 
   ConstByteSpan sent_payload = context.output().last_packet().payload();
-  EXPECT_TRUE(std::equal(payload.begin(),
-                         payload.end(),
-                         sent_payload.begin(),
-                         sent_payload.end()));
+  EXPECT_TRUE(pw::containers::Equal(payload, sent_payload));
 }
 
 TEST(NanopbMethod, ServerWriter_WriteWhenClosed_ReturnsFailedPrecondition) {
@@ -379,10 +377,7 @@ TEST(NanopbMethod, ServerReaderWriter_WritesResponses) {
   ASSERT_EQ(OkStatus(), encoded.status());
 
   ConstByteSpan sent_payload = context.output().last_packet().payload();
-  EXPECT_TRUE(std::equal(payload.begin(),
-                         payload.end(),
-                         sent_payload.begin(),
-                         sent_payload.end()));
+  EXPECT_TRUE(pw::containers::Equal(payload, sent_payload));
 }
 
 TEST(NanopbMethod, ServerReaderWriter_HandlesRequests) {

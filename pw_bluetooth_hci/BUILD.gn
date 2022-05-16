@@ -67,6 +67,7 @@ pw_test("packet_test") {
   sources = [ "packet_test.cc" ]
   deps = [
     ":packet",
+    "$dir_pw_containers",
     dir_pw_bytes,
     dir_pw_status,
   ]

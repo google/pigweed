@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/byte_builder.h"
+#include "pw_containers/algorithm.h"
 #include "pw_i2c/initiator_mock.h"
 
 using namespace std::literals::chrono_literals;
@@ -40,8 +41,7 @@ TEST(Device, WriteReadForOk) {
 
   std::array<std::byte, kExpectRead1.size()> read1;
   EXPECT_EQ(device.WriteReadFor(kExpectWrite1, read1, 2ms), OkStatus());
-  EXPECT_TRUE(std::equal(
-      read1.begin(), read1.end(), kExpectRead1.begin(), kExpectRead1.end()));
+  EXPECT_TRUE(pw::containers::Equal(read1, kExpectRead1));
   EXPECT_EQ(initiator.Finalize(), OkStatus());
 }
 

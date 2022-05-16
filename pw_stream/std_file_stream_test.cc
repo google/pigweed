@@ -27,6 +27,7 @@
 #include "gtest/gtest.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
+#include "pw_containers/algorithm.h"
 #include "pw_random/xor_shift.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -154,10 +155,7 @@ TEST_F(StdFileStreamTest, SeekAtEnd) {
     ConstByteSpan expect_window =
         std::as_bytes(std::span(kTestData))
             .subspan(read_offset, result.value().size());
-    EXPECT_TRUE(std::equal(result.value().begin(),
-                           result.value().end(),
-                           expect_window.begin(),
-                           expect_window.end()));
+    EXPECT_TRUE(pw::containers::Equal(result.value(), expect_window));
     read_offset += result.value().size();
   }
   // After data has been read, do a final read to trigger EOF.

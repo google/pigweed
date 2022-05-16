@@ -16,6 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_containers/algorithm.h"
 #include "pw_rpc/raw/test_method_context.h"
 #include "pw_rpc/thread_testing.h"
 #include "pw_thread/thread.h"
@@ -282,8 +283,8 @@ TEST_F(ReadTransfer, OutOfOrder_SeekingSupported) {
     transfer_thread_.WaitUntilEventIsProcessed();
 
     Chunk chunk = DecodeChunk(ctx_.responses().back());
-    EXPECT_TRUE(std::equal(
-        &kData[0], &kData[16], chunk.payload().begin(), chunk.payload().end()));
+    EXPECT_TRUE(
+        pw::containers::Equal(std::span(kData).first(16), chunk.payload()));
 
     ctx_.SendClientStream(EncodeChunk(
         Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
@@ -294,8 +295,8 @@ TEST_F(ReadTransfer, OutOfOrder_SeekingSupported) {
     transfer_thread_.WaitUntilEventIsProcessed();
 
     chunk = DecodeChunk(ctx_.responses().back());
-    EXPECT_TRUE(std::equal(
-        &kData[2], &kData[10], chunk.payload().begin(), chunk.payload().end()));
+    EXPECT_TRUE(
+        pw::containers::Equal(std::span(kData).subspan(2, 8), chunk.payload()));
 
     ctx_.SendClientStream(EncodeChunk(
         Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
@@ -306,8 +307,8 @@ TEST_F(ReadTransfer, OutOfOrder_SeekingSupported) {
 
   ASSERT_EQ(ctx_.total_responses(), 4u);
   Chunk chunk = DecodeChunk(ctx_.responses()[2]);
-  EXPECT_TRUE(std::equal(
-      &kData[17], kData.end(), chunk.payload().begin(), chunk.payload().end()));
+  EXPECT_TRUE(pw::containers::Equal(std::span(&kData[17], kData.end()),
+                                    chunk.payload()));
 }
 
 TEST_F(ReadTransfer, OutOfOrder_SeekingNotSupported_EndsWithUnimplemented) {

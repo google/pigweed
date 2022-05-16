@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_containers/algorithm.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_rpc/internal/config.h"
@@ -262,10 +263,7 @@ TEST(RawMethod, ServerReaderWriter_WritesResponses) {
   ASSERT_EQ(OkStatus(), encoded.status());
 
   ConstByteSpan sent_payload = context.output().last_packet().payload();
-  EXPECT_TRUE(std::equal(kRequestBytes.begin(),
-                         kRequestBytes.end(),
-                         sent_payload.begin(),
-                         sent_payload.end()));
+  EXPECT_TRUE(pw::containers::Equal(kRequestBytes, sent_payload));
 }
 
 TEST(RawServerWriter, Write_SendsPayload) {

@@ -28,6 +28,7 @@ pw_test_group("tests") {
 
 pw_test("memset_test") {
   sources = [ "memset_test.cc" ]
+  deps = [ "$dir_pw_containers" ]
 }
 
 pw_doc_group("docs") {

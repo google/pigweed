@@ -145,6 +145,7 @@ pw_test("proto_utils_test") {
   deps = [
     ":proto_utils",
     ":pw_log.facade",
+    "$dir_pw_containers",
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_preprocessor",
     "$dir_pw_protobuf",

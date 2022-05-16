@@ -107,6 +107,7 @@ pw_test("std_file_stream_test") {
     ":std_file_stream",
     "$dir_pw_assert",
     "$dir_pw_bytes",
+    "$dir_pw_containers",
     "$dir_pw_random",
     "$dir_pw_result",
     "$dir_pw_status",

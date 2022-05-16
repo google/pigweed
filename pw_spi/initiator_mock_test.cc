@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_bytes/span.h"
+#include "pw_containers/algorithm.h"
 
 namespace pw::spi {
 namespace {
@@ -36,13 +37,11 @@ TEST(Transaction, Read) {
 
   std::array<std::byte, kExpectRead1.size()> read1;
   EXPECT_EQ(mocked_spi.WriteRead(ConstByteSpan(), read1), OkStatus());
-  EXPECT_TRUE(std::equal(
-      read1.begin(), read1.end(), kExpectRead1.begin(), kExpectRead1.end()));
+  EXPECT_TRUE(pw::containers::Equal(read1, kExpectRead1));
 
   std::array<std::byte, kExpectRead2.size()> read2;
   EXPECT_EQ(mocked_spi.WriteRead(ConstByteSpan(), read2), OkStatus());
-  EXPECT_TRUE(std::equal(
-      read2.begin(), read2.end(), kExpectRead2.begin(), kExpectRead2.end()));
+  EXPECT_TRUE(pw::containers::Equal(read2, kExpectRead2));
 
   EXPECT_EQ(mocked_spi.Finalize(), OkStatus());
 }
@@ -80,13 +79,11 @@ TEST(Transaction, WriteRead) {
 
   std::array<std::byte, kExpectRead1.size()> read1;
   EXPECT_EQ(mocked_spi.WriteRead(kExpectWrite1, read1), OkStatus());
-  EXPECT_TRUE(std::equal(
-      read1.begin(), read1.end(), kExpectRead1.begin(), kExpectRead1.end()));
+  EXPECT_TRUE(pw::containers::Equal(read1, kExpectRead1));
 
   std::array<std::byte, kExpectRead2.size()> read2;
   EXPECT_EQ(mocked_spi.WriteRead(kExpectWrite2, read2), OkStatus());
-  EXPECT_TRUE(std::equal(
-      read2.begin(), read2.end(), kExpectRead2.begin(), kExpectRead2.end()));
+  EXPECT_TRUE(pw::containers::Equal(read2, kExpectRead2));
 
   EXPECT_EQ(mocked_spi.Finalize(), OkStatus());
 }

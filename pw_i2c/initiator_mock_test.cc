@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_bytes/span.h"
+#include "pw_containers/algorithm.h"
 #include "pw_i2c/address.h"
 
 using namespace std::literals::chrono_literals;
@@ -43,13 +44,11 @@ TEST(Transaction, Read) {
 
   std::array<std::byte, kExpectRead1.size()> read1;
   EXPECT_EQ(mocked_i2c.ReadFor(kAddress1, read1, 2ms), OkStatus());
-  EXPECT_TRUE(std::equal(
-      read1.begin(), read1.end(), kExpectRead1.begin(), kExpectRead1.end()));
+  EXPECT_TRUE(pw::containers::Equal(read1, kExpectRead1));
 
   std::array<std::byte, kExpectRead2.size()> read2;
   EXPECT_EQ(mocked_i2c.ReadFor(kAddress2, read2, 2ms), OkStatus());
-  EXPECT_TRUE(std::equal(
-      read2.begin(), read2.end(), kExpectRead2.begin(), kExpectRead2.end()));
+  EXPECT_TRUE(pw::containers::Equal(read2, kExpectRead2));
 
   EXPECT_EQ(mocked_i2c.Finalize(), OkStatus());
 }
@@ -93,14 +92,12 @@ TEST(Transaction, WriteRead) {
   std::array<std::byte, kExpectRead1.size()> read1;
   EXPECT_EQ(mocked_i2c.WriteReadFor(kAddress1, kExpectWrite1, read1, 2ms),
             OkStatus());
-  EXPECT_TRUE(std::equal(
-      read1.begin(), read1.end(), kExpectRead1.begin(), kExpectRead1.end()));
+  EXPECT_TRUE(pw::containers::Equal(read1, kExpectRead1));
 
   std::array<std::byte, kExpectRead1.size()> read2;
   EXPECT_EQ(mocked_i2c.WriteReadFor(kAddress2, kExpectWrite2, read2, 2ms),
             OkStatus());
-  EXPECT_TRUE(std::equal(
-      read2.begin(), read2.end(), kExpectRead2.begin(), kExpectRead2.end()));
+  EXPECT_TRUE(pw::containers::Equal(read2, kExpectRead2));
 
   EXPECT_EQ(mocked_i2c.Finalize(), OkStatus());
 }

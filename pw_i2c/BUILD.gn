@@ -76,6 +76,7 @@ pw_source_set("mock") {
   public_deps = [
     ":initiator",
     "$dir_pw_bytes",
+    "$dir_pw_containers",
     "$dir_pw_containers:to_array",
   ]
   deps = [
@@ -114,6 +115,7 @@ pw_test("device_test") {
   deps = [
     ":device",
     ":mock",
+    "$dir_pw_containers",
   ]
 }
 
@@ -129,7 +131,10 @@ pw_test("register_device_test") {
 pw_test("initiator_mock_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "initiator_mock_test.cc" ]
-  deps = [ ":mock" ]
+  deps = [
+    ":mock",
+    "$dir_pw_containers",
+  ]
 }
 
 pw_doc_group("docs") {

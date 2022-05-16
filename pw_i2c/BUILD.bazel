@@ -103,6 +103,7 @@ pw_cc_library(
         ":address",
         ":initiator",
         "//pw_assert",
+        "//pw_containers",
         "//pw_containers:to_array",
         "//pw_unit_test",
     ],
@@ -128,6 +129,7 @@ pw_cc_test(
     deps = [
         ":initiator_mock",
         "//pw_bytes",
+        "//pw_containers",
         "//pw_unit_test",
     ],
 )
@@ -140,6 +142,7 @@ pw_cc_test(
     deps = [
         ":device",
         ":initiator_mock",
+        "//pw_containers",
         "//pw_unit_test",
     ],
 )

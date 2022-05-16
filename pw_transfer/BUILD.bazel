@@ -162,6 +162,7 @@ pw_cc_test(
     deps = [
         ":pw_transfer",
         ":test_helpers",
+        "//pw_containers",
         "//pw_rpc:thread_testing",
         "//pw_rpc/raw:test_method_context",
         "//pw_thread:thread",

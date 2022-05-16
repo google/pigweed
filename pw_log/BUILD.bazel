@@ -140,6 +140,7 @@ pw_cc_test(
         ":facade",
         ":log_proto_cc.pwpb",
         ":proto_utils",
+        "//pw_containers",
         "//pw_preprocessor",
         "//pw_protobuf",
         "//pw_protobuf:bytes_utils",

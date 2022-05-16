@@ -16,6 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/span.h"
+#include "pw_containers/algorithm.h"
 #include "pw_log/levels.h"
 #include "pw_log/proto/log.pwpb.h"
 #include "pw_protobuf/bytes_utils.h"
@@ -104,10 +105,7 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
   EXPECT_EQ(entry_decoder.FieldNumber(),
             static_cast<uint32_t>(log::LogEntry::Fields::MESSAGE));
   EXPECT_TRUE(entry_decoder.ReadString(&message).ok());
-  EXPECT_TRUE(std::equal(message.begin(),
-                         message.end(),
-                         expected_message.begin(),
-                         expected_message.end()));
+  EXPECT_TRUE(pw::containers::Equal(message, expected_message));
 
   uint32_t line_level;
   EXPECT_TRUE(entry_decoder.Next().ok());  // line_level
@@ -145,10 +143,7 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
     EXPECT_EQ(entry_decoder.FieldNumber(),
               static_cast<uint32_t>(log::LogEntry::Fields::MODULE));
     EXPECT_TRUE(entry_decoder.ReadString(&module_name).ok());
-    EXPECT_TRUE(std::equal(module_name.begin(),
-                           module_name.end(),
-                           expected_module.begin(),
-                           expected_module.end()));
+    EXPECT_TRUE(pw::containers::Equal(module_name, expected_module));
   }
 
   if (!expected_file_name.empty()) {
@@ -157,10 +152,7 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
     EXPECT_EQ(entry_decoder.FieldNumber(),
               static_cast<uint32_t>(log::LogEntry::Fields::FILE));
     EXPECT_TRUE(entry_decoder.ReadString(&file_name).ok());
-    EXPECT_TRUE(std::equal(file_name.begin(),
-                           file_name.end(),
-                           expected_file_name.begin(),
-                           expected_file_name.end()));
+    EXPECT_TRUE(pw::containers::Equal(file_name, expected_file_name));
   }
 
   if (!expected_thread_name.empty()) {
@@ -169,10 +161,7 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
     EXPECT_EQ(entry_decoder.FieldNumber(),
               static_cast<uint32_t>(log::LogEntry::Fields::THREAD));
     EXPECT_TRUE(entry_decoder.ReadString(&thread_name).ok());
-    EXPECT_TRUE(std::equal(thread_name.begin(),
-                           thread_name.end(),
-                           expected_thread_name.begin(),
-                           expected_thread_name.end()));
+    EXPECT_TRUE(pw::containers::Equal(thread_name, expected_thread_name));
   }
 }
 

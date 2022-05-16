@@ -16,6 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
+#include "pw_containers/algorithm.h"
 
 namespace pw::spi {
 
@@ -24,10 +25,7 @@ Status MockInitiator::WriteRead(ConstByteSpan tx_buffer, ByteSpan rx_buffer) {
 
   ConstByteSpan expected_tx_buffer =
       expected_transactions_[expected_transaction_index_].write_buffer();
-  EXPECT_TRUE(std::equal(expected_tx_buffer.begin(),
-                         expected_tx_buffer.end(),
-                         tx_buffer.begin(),
-                         tx_buffer.end()));
+  EXPECT_TRUE(pw::containers::Equal(expected_tx_buffer, tx_buffer));
 
   ConstByteSpan expected_rx_buffer =
       expected_transactions_[expected_transaction_index_].read_buffer();

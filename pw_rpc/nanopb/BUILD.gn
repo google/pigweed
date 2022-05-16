@@ -243,6 +243,7 @@ pw_test("method_test") {
     ":internal_test_utils",
     ":server_api",
     ":server_api",
+    "$dir_pw_containers",
     "..:test_protos.nanopb",
     "..:test_utils",
   ]

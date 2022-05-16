@@ -100,6 +100,7 @@ pw_cc_test(
         ":std_file_stream",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_containers",
         "//pw_random",
         "//pw_result",
         "//pw_status",

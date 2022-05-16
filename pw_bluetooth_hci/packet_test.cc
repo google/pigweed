@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_bytes/byte_builder.h"
+#include "pw_containers/algorithm.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth_hci {
@@ -72,10 +73,7 @@ TEST_F(PacketTest, CommandPacketHeaderOnlyEncodeAndDecode) {
       kExpectedEncodedPacket = bytes::MakeArray<const std::byte>(
           0b0000'0000, 0b1111'1100, 0b0000'0000);
   const ConstByteSpan& encoded_packet = encode_result.value();
-  EXPECT_TRUE(std::equal(kExpectedEncodedPacket.begin(),
-                         kExpectedEncodedPacket.end(),
-                         encoded_packet.begin(),
-                         encoded_packet.end()));
+  EXPECT_TRUE(pw::containers::Equal(kExpectedEncodedPacket, encoded_packet));
 
   // First, decode it from a perfectly sized span which we just encoded.
   std::optional<CommandPacket> possible_packet =
@@ -127,10 +125,7 @@ TEST_F(PacketTest, CommandPacketWithParametersEncodeAndDecode) {
       kExpectedEncodedPacket = bytes::MakeArray<const std::byte>(
           0b1010'1010, 0b1010'1010, 0b0000'0010, 1, 2);
   const ConstByteSpan& encoded_packet = encode_result.value();
-  EXPECT_TRUE(std::equal(kExpectedEncodedPacket.begin(),
-                         kExpectedEncodedPacket.end(),
-                         encoded_packet.begin(),
-                         encoded_packet.end()));
+  EXPECT_TRUE(pw::containers::Equal(kExpectedEncodedPacket, encoded_packet));
 
   // First, decode it from a perfectly sized span which we just encoded.
   std::optional<CommandPacket> possible_packet =
@@ -199,10 +194,7 @@ TEST_F(PacketTest, AsyncDataPacketHeaderOnlyEncodeAndDecode) {
       kExpectedEncodedPacket = bytes::MakeArray<const std::byte>(
           0b0000'0000, 0b1001'0000, 0b0000'0000, 0b0000'0000);
   const ConstByteSpan& encoded_packet = encode_result.value();
-  EXPECT_TRUE(std::equal(kExpectedEncodedPacket.begin(),
-                         kExpectedEncodedPacket.end(),
-                         encoded_packet.begin(),
-                         encoded_packet.end()));
+  EXPECT_TRUE(pw::containers::Equal(kExpectedEncodedPacket, encoded_packet));
 
   // First, decode it from a perfectly sized span which we just encoded.
   std::optional<AsyncDataPacket> possible_packet =
@@ -262,10 +254,7 @@ TEST_F(PacketTest, AsyncDataPacketWithDataEncodeAndDecode) {
       kExpectedEncodedPacket = bytes::MakeArray<const std::byte>(
           0b0000'0000, 0b1001'0000, 0b0000'0010, 0b0000'0000, 1, 2);
   const ConstByteSpan& encoded_packet = encode_result.value();
-  EXPECT_TRUE(std::equal(kExpectedEncodedPacket.begin(),
-                         kExpectedEncodedPacket.end(),
-                         encoded_packet.begin(),
-                         encoded_packet.end()));
+  EXPECT_TRUE(pw::containers::Equal(kExpectedEncodedPacket, encoded_packet));
 
   // First, decode it from a perfectly sized span which we just encoded.
   std::optional<AsyncDataPacket> possible_packet =
@@ -334,10 +323,7 @@ TEST_F(PacketTest, SyncDataPacketHeaderOnlyEncodeAndDecode) {
       kExpectedEncodedPacket = bytes::MakeArray<const std::byte>(
           0b0000'0000, 0b0011'0000, 0b0000'0000);
   const ConstByteSpan& encoded_packet = encode_result.value();
-  EXPECT_TRUE(std::equal(kExpectedEncodedPacket.begin(),
-                         kExpectedEncodedPacket.end(),
-                         encoded_packet.begin(),
-                         encoded_packet.end()));
+  EXPECT_TRUE(pw::containers::Equal(kExpectedEncodedPacket, encoded_packet));
 
   // First, decode it from a perfectly sized span which we just encoded.
   std::optional<SyncDataPacket> possible_packet =
@@ -391,10 +377,7 @@ TEST_F(PacketTest, SyncDataPacketWithDataEncodeAndDecode) {
       kExpectedEncodedPacket = bytes::MakeArray<const std::byte>(
           0b0000'0000, 0b0011'0000, 0b0000'0010, 1, 2);
   const ConstByteSpan& encoded_packet = encode_result.value();
-  EXPECT_TRUE(std::equal(kExpectedEncodedPacket.begin(),
-                         kExpectedEncodedPacket.end(),
-                         encoded_packet.begin(),
-                         encoded_packet.end()));
+  EXPECT_TRUE(pw::containers::Equal(kExpectedEncodedPacket, encoded_packet));
 
   // First, decode it from a perfectly sized span which we just encoded.
   std::optional<SyncDataPacket> possible_packet =
@@ -452,10 +435,7 @@ TEST_F(PacketTest, EventPacketHeaderOnlyEncodeAndDecode) {
       kExpectedEncodedPacket =
           bytes::MakeArray<const std::byte>(0b1111'11111, 0b0000'0000);
   const ConstByteSpan& encoded_packet = encode_result.value();
-  EXPECT_TRUE(std::equal(kExpectedEncodedPacket.begin(),
-                         kExpectedEncodedPacket.end(),
-                         encoded_packet.begin(),
-                         encoded_packet.end()));
+  EXPECT_TRUE(pw::containers::Equal(kExpectedEncodedPacket, encoded_packet));
 
   // First, decode it from a perfectly sized span which we just encoded.
   std::optional<EventPacket> possible_packet =
@@ -498,10 +478,7 @@ TEST_F(PacketTest, EventPacketWithParametersEncodeAndDecode) {
       kExpectedEncodedPacket =
           bytes::MakeArray<const std::byte>(0b1111'0000, 0b0000'0010, 1, 2);
   const ConstByteSpan& encoded_packet = encode_result.value();
-  EXPECT_TRUE(std::equal(kExpectedEncodedPacket.begin(),
-                         kExpectedEncodedPacket.end(),
-                         encoded_packet.begin(),
-                         encoded_packet.end()));
+  EXPECT_TRUE(pw::containers::Equal(kExpectedEncodedPacket, encoded_packet));
 
   // First, decode it from a perfectly sized span which we just encoded.
   std::optional<EventPacket> possible_packet =

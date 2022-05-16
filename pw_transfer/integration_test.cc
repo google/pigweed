@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
+#include "pw_containers/algorithm.h"
 #include "pw_log/log.h"
 #include "pw_rpc/integration_testing.h"
 #include "pw_rpc_system_server/rpc_server.h"
@@ -228,9 +229,8 @@ class TransferIntegration : public ::testing::Test {
     ASSERT_EQ(WaitForCompletion(), OkStatus());
     ASSERT_EQ(expected.size(), read_buffer_.size());
 
-    EXPECT_TRUE(std::equal(read_buffer_.begin(),
-                           read_buffer_.end(),
-                           std::as_bytes(std::span(expected)).begin()));
+    EXPECT_TRUE(pw::containers::Equal(read_buffer_,
+                                      std::as_bytes(std::span(expected))));
   }
 
   // Checks that a write transfer succeeded and that the written contents match.
@@ -241,7 +241,7 @@ class TransferIntegration : public ::testing::Test {
     ASSERT_EQ(expected.size(), written.size());
 
     ConstByteSpan bytes = std::as_bytes(std::span(written));
-    EXPECT_TRUE(std::equal(bytes.begin(), bytes.end(), expected.begin()));
+    EXPECT_TRUE(pw::containers::Equal(bytes, expected));
   }
 
   // Waits for the transfer to complete and returns the status.

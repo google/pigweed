@@ -25,6 +25,7 @@
 #include <numeric>
 
 #include "gtest/gtest.h"
+#include "pw_containers/algorithm.h"
 
 namespace pw {
 namespace {
@@ -51,8 +52,7 @@ TEST(Memset, EmptyCase) {
 
   // Destination buffer untouched.
   constexpr std::array<char, 5> kExpected{'h', 'e', 'l', 'l', 'o'};
-  EXPECT_TRUE(
-      std::equal(arr.begin(), arr.end(), kExpected.begin(), kExpected.end()));
+  EXPECT_TRUE(pw::containers::Equal(arr, kExpected));
 }
 
 TEST(Memset, OneCharacter) {
@@ -64,8 +64,7 @@ TEST(Memset, OneCharacter) {
 
   // Ensure the destination buffer is untouched.
   constexpr std::array<char, 5> kExpected{0, 'e', 'l', 'l', 'o'};
-  EXPECT_TRUE(
-      std::equal(arr.begin(), arr.end(), kExpected.begin(), kExpected.end()));
+  EXPECT_TRUE(pw::containers::Equal(arr, kExpected));
 }
 
 // Now do a detailed case with more values. Span both word sizes and alignments
