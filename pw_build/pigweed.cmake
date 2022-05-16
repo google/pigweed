@@ -13,6 +13,8 @@
 # the License.
 include_guard(GLOBAL)
 
+cmake_minimum_required(VERSION 3.16)
+
 # The PW_ROOT environment variable should be set in bootstrap. If it is not set,
 # set it to the root of the Pigweed repository.
 if("$ENV{PW_ROOT}" STREQUAL "")
@@ -567,3 +569,44 @@ function(pw_add_test_to_groups TEST_NAME)
     add_dependencies("pw_run_tests.${group}" "${TEST_NAME}.run")
   endforeach()
 endfunction(pw_add_test_to_groups)
+
+# Adds compiler options to all targets built by CMake. Flags may be added any
+# time after this function is defined. The effect is global; all targets added
+# before or after a pw_add_global_compile_options call will be built with the
+# flags, regardless of where the files are located.
+#
+# pw_add_global_compile_options takes one optional named argument:
+#
+#   LANGUAGES: Which languages (ASM, C, CXX) to apply the options to. Flags
+#       apply to all languages by default.
+#
+# All other arguments are interpreted as compiler options.
+function(pw_add_global_compile_options)
+  cmake_parse_arguments(PARSE_ARGV 0 args "" "" "LANGUAGES")
+
+  set(supported_build_languages ASM C CXX)
+
+  if(NOT args_LANGUAGES)
+    set(args_LANGUAGES ${supported_build_languages})
+  endif()
+
+  # Check the selected language.
+  foreach(lang IN LISTS args_LANGUAGES)
+    if(NOT "${lang}" IN_LIST supported_build_languages)
+      message(FATAL_ERROR "'${lang}' is not a supported language. "
+              "Supported languages: ${supported_build_languages}")
+    endif()
+  endforeach()
+
+  # Enumerate which flags variables to set.
+  foreach(lang IN LISTS args_LANGUAGES)
+    list(APPEND cmake_flags_variables "CMAKE_${lang}_FLAGS")
+  endforeach()
+
+  # Set each flag for each specified flags variable.
+  foreach(variable IN LISTS cmake_flags_variables)
+    foreach(flag IN LISTS args_UNPARSED_ARGUMENTS)
+      set(${variable} "${${variable}} ${flag}" CACHE INTERNAL "" FORCE)
+    endforeach()
+  endforeach()
+endfunction(pw_add_global_compile_options)

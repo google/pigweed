@@ -21,6 +21,7 @@ pw_add_module_library(targets.host.system_rpc_server
     system_rpc_server.cc
   PRIVATE_DEPS
     pw_hdlc
+    pw_log
     pw_rpc.server
     pw_stream.socket_stream
 )

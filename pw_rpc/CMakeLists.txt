@@ -109,6 +109,8 @@ pw_add_module_library(pw_rpc.test_utils
     pw_bytes
     pw_rpc.client
     pw_rpc.server
+  PRIVATE_DEPS
+    pw_log
 )
 target_include_directories(pw_rpc.test_utils PUBLIC .)
 

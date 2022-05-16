@@ -725,8 +725,10 @@ CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
   automatically declare the library and its tests. This has been deprecated,
   please use ``pw_add_module_library`` instead.
 * ``pw_add_test`` -- Declare a test target.
-* ``pw_auto_add_module_tests`` -- Create test targets for all tests in a module.
-  This has been deprecated, please use ``pw_add_test`` instead.
+* ``pw_add_global_compile_options`` -- Applies compilation options to all
+  targets in the build. This should only be used to add essential compilation
+  options, such as those that affect the ABI. Use ``pw_add_library`` or
+  ``target_compile_options`` to apply other compile options.
 
 See ``pw_build/pigweed.cmake`` for the complete documentation of these
 functions.
