@@ -38,9 +38,7 @@
 // to be used by the function and `T` indicates the applicable element type.
 //
 // This was forked from
-// inclusive-language: disable
-// https://cs.opensource.google/abseil/abseil-cpp/+/master:absl/algorithm/algorithm.h;drc=12bc53e0318d80569270a5b26ccbc62b52022b89
-// inclusive-language: enable
+// https://cs.opensource.google/abseil/abseil-cpp/+/main:absl/algorithm/algorithm.h;drc=12bc53e0318d80569270a5b26ccbc62b52022b89
 #pragma once
 
 #include <algorithm>

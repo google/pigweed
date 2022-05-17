@@ -13,9 +13,7 @@
 // the License.
 //
 // These tests were forked from
-// inclusive-language: disable
-// https://cs.opensource.google/abseil/abseil-cpp/+/master:absl/algorithm/algorithm_test.cc;drc=38b704384cd2f17590b3922b97744be0b43622c9
-// inclusive-language: enable
+// https://cs.opensource.google/abseil/abseil-cpp/+/main:absl/algorithm/algorithm_test.cc;drc=38b704384cd2f17590b3922b97744be0b43622c9
 // However they were modified to work with containers available in Pigweed
 // without dynamic allocations, i.e. no std::vector, std::map, std::list, etc.
 #include "pw_containers/algorithm.h"
