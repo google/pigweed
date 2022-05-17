@@ -175,12 +175,10 @@ class StreamObserverCall<RequestT extends MessageLite, ResponseT extends Message
 
   /** Invokes the specified RPC, ignoring errors that occur when the RPC is invoked. */
   static <RequestT extends MessageLite, ResponseT extends MessageLite>
-      StreamObserverCall<RequestT, ResponseT> open(RpcManager rpcs,
-          PendingRpc rpc,
-          StreamObserver<ResponseT> observer,
-          @Nullable MessageLite request) {
+      StreamObserverCall<RequestT, ResponseT> open(
+          RpcManager rpcs, PendingRpc rpc, StreamObserver<ResponseT> observer) {
     StreamObserverCall<RequestT, ResponseT> call = new StreamObserverCall<>(rpcs, rpc, observer);
-    rpcs.open(rpc, call, request);
+    rpcs.open(rpc, call);
     return call;
   }
 

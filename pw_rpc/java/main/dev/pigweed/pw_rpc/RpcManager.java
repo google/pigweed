@@ -43,21 +43,14 @@ public class RpcManager {
   }
 
   /**
-   * Invokes an RPC, but ignores errors and keeps the RPC active if the invocation fails.
+   * Listens to responses to an RPC without sending a request.
    *
    * <p>The RPC remains open until it is closed by the server (either with a response or error
    * packet) or cancelled.
    */
   @Nullable
-  public synchronized StreamObserverCall<?, ?> open(
-      PendingRpc rpc, StreamObserverCall<?, ?> call, @Nullable MessageLite payload) {
+  public synchronized StreamObserverCall<?, ?> open(PendingRpc rpc, StreamObserverCall<?, ?> call) {
     logger.atFine().log("%s opening", rpc);
-    try {
-      rpc.channel().send(Packets.request(rpc, payload));
-    } catch (ChannelOutputException e) {
-      logger.atFiner().withCause(e).log(
-          "Ignoring error opening %s; listening for unrequested responses", rpc);
-    }
     return pending.put(rpc, call);
   }
 

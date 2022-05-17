@@ -110,8 +110,7 @@ public final class StreamObserverMethodClientTest {
 
   @Test
   public void openServerStreaming_startsRpc() {
-    Call call = serverStreamingMethodClient.openServerStreaming(
-        SomeMessage.getDefaultInstance(), defaultObserver);
+    Call call = serverStreamingMethodClient.openServerStreaming(defaultObserver);
     assertThat(rpcManager.getPending(SERVER_STREAMING_RPC)).isSameInstanceAs(call);
   }
 

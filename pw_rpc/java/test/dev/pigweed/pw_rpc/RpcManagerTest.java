@@ -19,6 +19,7 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.google.protobuf.MessageLite;
@@ -27,7 +28,6 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
@@ -131,19 +131,10 @@ public final class RpcManagerTest {
   }
 
   @Test
-  public void open_sendingFails_rpcIsPending() throws Exception {
-    doThrow(new ChannelOutputException()).when(mockOutput).send(any());
-
-    assertThat(manager.open(rpc, call, REQUEST_PAYLOAD)).isNull();
-
-    verify(mockOutput).send(REQUEST);
-    assertThat(manager.getPending(rpc)).isSameInstanceAs(call);
-  }
-
-  @Test
-  public void open_success_rpcIsPending() {
-    assertThat(manager.open(rpc, call, REQUEST_PAYLOAD)).isNull();
+  public void open_rpcIsPending() {
+    assertThat(manager.open(rpc, call)).isNull();
 
     assertThat(manager.getPending(rpc)).isSameInstanceAs(call);
+    verifyNoInteractions(mockOutput);
   }
 }

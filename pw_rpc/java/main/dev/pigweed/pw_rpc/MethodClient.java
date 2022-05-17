@@ -70,15 +70,23 @@ public class MethodClient {
   }
 
   /**
-   * Starts a unary RPC, ignoring any errors that occur when opening. This can be used to start
-   * listening to responses to an RPC before the RPC server is available.
+   * Creates a call object for a unary RPC without starting the RPC on the server. This can be used
+   * to start listening to responses to an RPC before the RPC server is available.
    *
    * <p>The RPC remains open until it is completed by the server with a response or error packet or
    * cancelled.
    */
-  public Call openUnary(MessageLite request, StreamObserver<? extends MessageLite> observer) {
+  public Call openUnary(StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.UNARY);
-    return StreamObserverCall.open(rpcs(), rpc(), observer, request);
+    return StreamObserverCall.open(rpcs(), rpc(), observer);
+  }
+
+  /**
+   * @deprecated The request argument is deprecated and unused. Use the single-argument version.
+   */
+  public Call openUnary(MessageLite unusedRequest, StreamObserver<? extends MessageLite> observer) {
+    checkCallType(Method.Type.UNARY);
+    return StreamObserverCall.open(rpcs(), rpc(), observer);
   }
 
   /** Invokes a server streaming RPC. Uses the default StreamObserver for RPC events. */
@@ -101,16 +109,15 @@ public class MethodClient {
   }
 
   /**
-   * Starts a server streaming RPC, ignoring any errors that occur when opening. This can be used to
-   * start listening to responses to an RPC before the RPC server is available.
+   * Creates a call object for a server streaming RPC without starting the RPC on the server. This
+   * can be used to start listening to responses to an RPC before the RPC server is available.
    *
    * <p>The RPC remains open until it is completed by the server with a response or error packet or
    * cancelled.
    */
-  public Call openServerStreaming(
-      MessageLite request, StreamObserver<? extends MessageLite> observer) {
+  public Call openServerStreaming(StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.SERVER_STREAMING);
-    return StreamObserverCall.open(rpcs(), rpc(), observer, request);
+    return StreamObserverCall.open(rpcs(), rpc(), observer);
   }
 
   /** Invokes a client streaming RPC. Uses the default StreamObserver for RPC events. */
@@ -134,8 +141,8 @@ public class MethodClient {
   }
 
   /**
-   * Starts a client streaming RPC, ignoring any errors that occur when opening. This can be used to
-   * start listening to responses to an RPC before the RPC server is available.
+   * Creates a call object for a client streaming RPC without starting the RPC on the server. This
+   * can be used to start listening to responses to an RPC before the RPC server is available.
    *
    * <p>The RPC remains open until it is completed by the server with a response or error packet or
    * cancelled.
@@ -143,7 +150,7 @@ public class MethodClient {
   public <RequestT extends MessageLite> Call.ClientStreaming<RequestT> openClientStreaming(
       StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.CLIENT_STREAMING);
-    return StreamObserverCall.open(rpcs(), rpc(), observer, null);
+    return StreamObserverCall.open(rpcs(), rpc(), observer);
   }
 
   /** Invokes a bidirectional streaming RPC. Uses the default StreamObserver for RPC events. */
@@ -168,8 +175,8 @@ public class MethodClient {
   }
 
   /**
-   * Starts a bidirectional streaming RPC, ignoring any errors that occur when opening. This can be
-   * used to start listening to responses to an RPC before the RPC server is available.
+   * Creates a call object for a bidirectional streaming RPC without starting the RPC on the server.
+   * This can be used to start listening to responses to an RPC before the RPC server is available.
    *
    * <p>The RPC remains open until it is completed by the server with a response or error packet or
    * cancelled.
@@ -177,7 +184,7 @@ public class MethodClient {
   public <RequestT extends MessageLite> Call.ClientStreaming<RequestT> openBidirectionalStreaming(
       StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.BIDIRECTIONAL_STREAMING);
-    return StreamObserverCall.open(rpcs(), rpc(), observer, null);
+    return StreamObserverCall.open(rpcs(), rpc(), observer);
   }
 
   @SuppressWarnings("unchecked")
