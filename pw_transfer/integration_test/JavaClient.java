@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import pw.transfer.ConfigProtos;
@@ -155,6 +156,42 @@ public class JavaClient {
     return config_builder.build();
   }
 
+  public static void ReadFromServer(int resourceId, Path fileName, TransferClient client) {
+    byte[] data;
+    try {
+      data = client.read(resourceId).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new AssertionError("Read from server failed", e);
+    }
+
+    try {
+      Files.write(fileName, data);
+    } catch (IOException e) {
+      logger.atSevere().log("Failed to write to output file `%s`", fileName);
+      throw new AssertionError("Failed to write output file from server", e);
+    }
+  }
+
+  public static void WriteToServer(int resourceId, Path fileName, TransferClient client) {
+    if (Files.notExists(fileName)) {
+      logger.atSevere().log("Input file `%s` does not exist", fileName);
+    }
+
+    byte[] data;
+    try {
+      data = Files.readAllBytes(fileName);
+    } catch (IOException e) {
+      logger.atSevere().log("Failed to read input file `%s`", fileName);
+      throw new AssertionError("Failed to read input file on write to server", e);
+    }
+
+    try {
+      client.write(resourceId, data).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new AssertionError("Write to server failed", e);
+    }
+  }
+
   public static void main(String[] args) {
     if (args.length != 1) {
       logger.atSevere().log("Usage: PORT");
@@ -164,36 +201,34 @@ public class JavaClient {
     // The port is provided directly as a commandline argument.
     int port = Integer.parseInt(args[0]);
 
-    ConfigProtos.ClientConfig config = null;
+    ConfigProtos.ClientConfig config;
     try {
       config = ParseConfigFrom(System.in);
-    } catch (Exception e) {
-      logger.atSevere().log("Failed to parse config file from stdin");
-      System.exit(1);
+    } catch (IOException e) {
+      throw new AssertionError("Failed to parse config file from stdin", e);
     }
 
-    Socket socket = null;
+    Socket socket;
     try {
       socket = new Socket(HOSTNAME, port);
-    } catch (Exception e) {
+    } catch (IOException e) {
       logger.atSevere().log("Failed to connect to %s:%d", HOSTNAME, port);
-      System.exit(1);
+      throw new AssertionError("Failed to connect to server/proxy port", e);
     }
     try {
       socket.setSendBufferSize(MAX_SOCKET_SEND_BUFFER_SIZE);
     } catch (SocketException e) {
       logger.atSevere().log("Invalid socket buffer size %d", MAX_SOCKET_SEND_BUFFER_SIZE);
-      System.exit(1);
+      throw new AssertionError("Invalid socket buffer size", e);
     }
-    InputStream reader = null;
-    OutputStream writer = null;
+    InputStream reader;
+    OutputStream writer;
 
     try {
       writer = socket.getOutputStream();
       reader = socket.getInputStream();
-    } catch (Exception e) {
-      logger.atSevere().log("Failed to open socket streams");
-      System.exit(1);
+    } catch (IOException e) {
+      throw new AssertionError("Failed to open socket streams", e);
     }
 
     JavaClient hdlc_rpc_client = new JavaClient(writer, reader);
@@ -202,7 +237,7 @@ public class JavaClient {
 
     hdlc_rpc_client.startClient();
 
-    TransferClient transferManager = new TransferClient(
+    TransferClient client = new TransferClient(
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Read"),
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Write"),
         workQueue::execute,
@@ -215,29 +250,13 @@ public class JavaClient {
       int resourceId = action.getResourceId();
       Path fileName = Paths.get(action.getFilePath());
 
-      if (Files.notExists(fileName)) {
-        logger.atSevere().log("Input file `%s` does not exist", fileName);
-      }
-
-      // TODO(b/232804702): Add support for reading from the server.
-      if (action.getTransferType() != ConfigProtos.TransferAction.TransferType.WRITE_TO_SERVER) {
-        logger.atSevere().log("Only writing to the server is supported");
-        System.exit(1);
-      }
-
-      byte[] data = null;
-      try {
-        data = Files.readAllBytes(fileName);
-      } catch (IOException e) {
-        logger.atSevere().log("Failed to read input file `%s`", fileName);
-        System.exit(1);
-      }
-
-      try {
-        transferManager.write(resourceId, data).get();
-      } catch (Exception e) {
-        logger.atSevere().log("Transfer failed");
-        System.exit(1);
+      if (action.getTransferType() == ConfigProtos.TransferAction.TransferType.WRITE_TO_SERVER) {
+        WriteToServer(resourceId, fileName, client);
+      } else if (action.getTransferType()
+          == ConfigProtos.TransferAction.TransferType.READ_FROM_SERVER) {
+        ReadFromServer(resourceId, fileName, client);
+      } else {
+        throw new AssertionError("Unknown transfer action type");
       }
     }
 
