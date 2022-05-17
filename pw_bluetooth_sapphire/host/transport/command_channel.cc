@@ -201,12 +201,7 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   }
 
   send_queue_.push_back(std::move(command));
-
-  async::PostTask(async_get_default_dispatcher(), [self = AsWeakPtr()]() {
-    if (self) {
-      self->TrySendQueuedCommands();
-    }
-  });
+  TrySendQueuedCommands();
 
   return transaction_id;
 }

@@ -63,6 +63,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
  protected:
   void SetUp() override {
     TestingBase::SetUp();
+    StartTestDevice();
 
     // ACL data channel needs to be present for production hci::Connection objects.
     TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(),
@@ -76,7 +77,6 @@ class LowEnergyAdvertiserTest : public TestingBase {
     advertiser_ = std::unique_ptr<T>(CreateAdvertiserInternal());
 
     test_device()->set_num_supported_advertising_sets(0xEF);
-    StartTestDevice();
   }
 
   void TearDown() override {
@@ -333,6 +333,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
   ASSERT_EQ(2u, adv_states.size());
   EXPECT_FALSE(adv_states[0]);
   EXPECT_TRUE(adv_states[1]);
+
+  this->test_device()->set_advertising_state_callback(nullptr);
 }
 
 // An incoming connection when not advertising should get disconnected.
@@ -565,6 +567,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStopping) {
   EXPECT_TRUE(was_disabled);
   EXPECT_TRUE(enabled);
   EXPECT_TRUE(this->GetControllerAdvertisingState().enabled);
+
+  this->test_device()->set_advertising_state_callback(nullptr);
 }
 
 TYPED_TEST(LowEnergyAdvertiserTest, StopWhileStarting) {

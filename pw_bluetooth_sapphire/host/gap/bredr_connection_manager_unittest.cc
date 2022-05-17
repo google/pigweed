@@ -580,6 +580,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
+    StartTestDevice();
 
     peer_cache_ = std::make_unique<PeerCache>();
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
@@ -593,7 +594,6 @@ class BrEdrConnectionManagerTest : public TestingBase {
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         transport()->WeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_.get(), true);
 
-    StartTestDevice();
     RunLoopUntilIdle();
 
     test_device()->SetTransactionCallback([this] { transaction_count_++; },
