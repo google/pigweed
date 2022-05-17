@@ -26,8 +26,12 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
+#include <deque>
+#include <map>
+#include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -67,14 +71,26 @@ constexpr int kMaxSocketSendBufferSize = 1;
 // a shared library.
 class FileTransferHandler final : public ReadWriteHandler {
  public:
-  FileTransferHandler(uint32_t resource_id, const char* path)
-      : ReadWriteHandler(resource_id), path_(path) {}
+  FileTransferHandler(uint32_t resource_id,
+                      std::deque<std::string>&& sources,
+                      std::deque<std::string>&& destinations)
+      : ReadWriteHandler(resource_id),
+        sources_(sources),
+        destinations_(destinations) {}
 
   ~FileTransferHandler() = default;
 
   Status PrepareRead() final {
-    PW_LOG_DEBUG("Preparing read for file %s", path_.c_str());
-    set_reader(stream_.emplace<stream::StdFileReader>(path_.c_str()));
+    if (sources_.empty()) {
+      PW_LOG_ERROR("Source paths exhausted");
+      return Status::ResourceExhausted();
+    }
+
+    auto path = sources_.front();
+    PW_LOG_DEBUG("Preparing read for file %s", path.c_str());
+    set_reader(stream_.emplace<stream::StdFileReader>(path.c_str()));
+
+    sources_.pop_front();
     return OkStatus();
   }
 
@@ -83,8 +99,16 @@ class FileTransferHandler final : public ReadWriteHandler {
   }
 
   Status PrepareWrite() final {
-    PW_LOG_DEBUG("Preparing write for file %s", path_.c_str());
-    set_writer(stream_.emplace<stream::StdFileWriter>(path_.c_str()));
+    if (destinations_.empty()) {
+      PW_LOG_ERROR("Destination paths exhausted");
+      return Status::ResourceExhausted();
+    }
+
+    auto path = destinations_.front();
+    PW_LOG_DEBUG("Preparing write for file %s", path.c_str());
+    set_writer(stream_.emplace<stream::StdFileWriter>(path.c_str()));
+
+    destinations_.pop_front();
     return OkStatus();
   }
 
@@ -94,7 +118,8 @@ class FileTransferHandler final : public ReadWriteHandler {
   }
 
  private:
-  std::string path_;
+  std::deque<std::string> sources_;
+  std::deque<std::string> destinations_;
   std::variant<std::monostate, stream::StdFileReader, stream::StdFileWriter>
       stream_;
 };
@@ -129,25 +154,31 @@ void RunServer(int socket_port, ServerConfig config) {
                   "Failed to configure socket send buffer size with errno=%d",
                   errno);
 
-  // It's fine to allocate this on the stack since this thread doesn't return
-  // until this process is killed.
-  // TODO(b/232804025): Add a handler for each resource ID in transfer_sources
-  // and transfer_destinations.
-  google::protobuf::Map<google::protobuf::uint32,
-                        pw::transfer::ServerResourceLocations>::const_iterator
-      first_handler = config.resources().begin();
-  uint32_t resource_id = first_handler->first;
-  std::string file_path = *first_handler->second.destination_paths().begin();
+  std::vector<std::unique_ptr<FileTransferHandler>> handlers;
+  for (const auto& resource : config.resources()) {
+    uint32_t id = resource.first;
 
-  FileTransferHandler transfer_handler(resource_id, file_path.c_str());
-  transfer_service.RegisterHandler(transfer_handler);
+    std::deque<std::string> source_paths(resource.second.source_paths().begin(),
+                                         resource.second.source_paths().end());
+    std::deque<std::string> destination_paths(
+        resource.second.destination_paths().begin(),
+        resource.second.destination_paths().end());
+
+    auto handler = std::make_unique<FileTransferHandler>(
+        id, std::move(source_paths), std::move(destination_paths));
+
+    transfer_service.RegisterHandler(*handler);
+    handlers.push_back(std::move(handler));
+  }
 
   PW_LOG_INFO("Starting pw_rpc server");
   PW_CHECK_OK(rpc::system_server::Start());
 
   // Unregister transfer handler before cleaning up the thread since doing so
   // requires the transfer thread to be running.
-  transfer_service.UnregisterHandler(transfer_handler);
+  for (auto& handler : handlers) {
+    transfer_service.UnregisterHandler(*handler);
+  }
 
   // End transfer thread.
   transfer_thread.Terminate();
