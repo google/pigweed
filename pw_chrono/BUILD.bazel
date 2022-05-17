@@ -102,8 +102,6 @@ proto_library(
     srcs = [
         "chrono.proto",
     ],
-    import_prefix = "pw_chrono",
-    strip_import_prefix = "//pw_chrono",
 )
 
 pw_proto_library(
