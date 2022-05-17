@@ -70,14 +70,13 @@ thread::Options& TransferThreadOptions() {
 // We need to bundle the status and semaphore together because a pw_function
 // callback can at most capture the reference to one variable (and we need to
 // both set the status and release the semaphore).
-struct WriteResult {
+struct TransferResult {
   Status status = Status::Unknown();
   sync::BinarySemaphore completed;
 };
 
-// Create a pw_transfer client, read data from file_path, and write it to the
-// client using the given resource_id.
-pw::Status SendData(uint32_t resource_id, std::string file_path) {
+// Create a pw_transfer client and perform the transfer actions.
+pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
   std::byte chunk_buffer[512];
   std::byte encode_buffer[512];
   transfer::Thread<2, 2> transfer_thread(chunk_buffer, encode_buffer);
@@ -88,18 +87,45 @@ pw::Status SendData(uint32_t resource_id, std::string file_path) {
                               transfer_thread,
                               /*max_bytes_to_receive=*/256);
 
-  pw::stream::StdFileReader input(file_path.c_str());
+  Status status = pw::OkStatus();
+  for (const pw::transfer::TransferAction& action : config.transfer_actions()) {
+    TransferResult result;
+    if (action.transfer_type() ==
+        pw::transfer::TransferAction::TransferType::
+            TransferAction_TransferType_WRITE_TO_SERVER) {
+      pw::stream::StdFileReader input(action.file_path().c_str());
+      client.Write(action.resource_id(), input, [&result](Status status) {
+        result.status = status;
+        result.completed.release();
+      });
+      // Wait for the transfer to complete. We need to do this here so that the
+      // StdFileReader doesn't go out of scope.
+      result.completed.acquire();
 
-  WriteResult result;
+    } else if (action.transfer_type() ==
+               pw::transfer::TransferAction::TransferType::
+                   TransferAction_TransferType_READ_FROM_SERVER) {
+      pw::stream::StdFileWriter output(action.file_path().c_str());
+      client.Read(action.resource_id(), output, [&result](Status status) {
+        result.status = status;
+        result.completed.release();
+      });
+      // Wait for the transfer to complete.
+      result.completed.acquire();
+    } else {
+      PW_LOG_ERROR("Unrecognized transfer action type %d",
+                   action.transfer_type());
+      status = pw::Status::InvalidArgument();
+      break;
+    }
 
-  client.Write(resource_id, input, [&result](Status status) {
-    result.status = status;
-    result.completed.release();
-  });
-
-  // Waits for the transfer to complete and returns the status.
-  // PW_CHECK(completed.try_acquire_for(3s));  How to get this syntax to work?
-  result.completed.acquire();
+    if (!result.status.ok()) {
+      PW_LOG_ERROR("Failed to perform action:\n%s",
+                   action.DebugString().c_str());
+      status = result.status;
+      break;
+    }
+  }
 
   transfer_thread.Terminate();
 
@@ -108,7 +134,7 @@ pw::Status SendData(uint32_t resource_id, std::string file_path) {
   // The RPC thread must join before destroying transfer objects as the transfer
   // service may still reference the transfer thread or transfer client objects.
   pw::rpc::integration_test::TerminateClient();
-  return result.status;
+  return status;
 }
 
 }  // namespace
@@ -165,20 +191,9 @@ int main(int argc, char* argv[]) {
                   "Failed to configure socket receive timeout with errno=%d",
                   errno);
 
-  for (const pw::transfer::TransferAction& action : config.transfer_actions()) {
-    // TODO(b/232804443): Add support for reading from the server.
-    if (action.transfer_type() !=
-        pw::transfer::TransferAction::TransferType::
-            TransferAction_TransferType_WRITE_TO_SERVER) {
-      PW_LOG_INFO("Only writing to the server is supported");
-      return 1;
-    }
-    if (!pw::transfer::integration_test::SendData(action.resource_id(),
-                                                  action.file_path())
-             .ok()) {
-      PW_LOG_INFO("Failed to transfer!");
-      return 1;
-    }
+  if (!pw::transfer::integration_test::PerformTransferActions(config).ok()) {
+    PW_LOG_INFO("Failed to transfer!");
+    return 1;
   }
   return 0;
 }
