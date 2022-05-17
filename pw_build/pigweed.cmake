@@ -492,7 +492,7 @@ set(pw_unit_test_MAIN pw_unit_test.main CACHE STRING
     "Implementation of a main function for ``pw_test`` unit test binaries.")
 
 set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test CACHE STRING
-    "CMake target which implements GoogleTest, vy default pw_unit_test is \
+    "CMake target which implements GoogleTest, by default pw_unit_test is \
      used. You could, for example, point this at pw_third_party.googletest if \
      using upstream GoogleTest directly on your host for GoogleMock.")
 
