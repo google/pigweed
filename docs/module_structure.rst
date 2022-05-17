@@ -166,9 +166,9 @@ For example, the ``pw_unit_test`` module provides a header override for
     public_overrides/gtest/gtest.h
 
     public/pw_unit_test
-    public/pw_unit_test/framework.h
     public/pw_unit_test/simple_printing_event_handler.h
     public/pw_unit_test/event_handler.h
+    public/pw_unit_test/internal/framework.h
 
 Note that the overrides are in a separate directory ``public_overrides``.
 

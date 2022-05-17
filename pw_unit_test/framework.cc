@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_unit_test/framework.h"
+#include "pw_unit_test/internal/framework.h"
 
 #include <algorithm>
 #include <cstring>

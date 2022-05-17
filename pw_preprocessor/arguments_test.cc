@@ -19,7 +19,7 @@
 
 #include <tuple>
 
-#include "pw_unit_test/framework.h"
+#include "gtest/gtest.h"
 
 namespace pw {
 namespace {

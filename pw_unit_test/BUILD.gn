@@ -64,10 +64,13 @@ pw_source_set("pw_unit_test") {
   ]
   public = [
     "public/pw_unit_test/event_handler.h",
-    "public/pw_unit_test/framework.h",
     "public_overrides/gtest/gtest.h",
   ]
-  sources = [ "framework.cc" ]
+  sources = [
+    "framework.cc",
+    "public/pw_unit_test/internal/framework.h",
+  ]
+  friend = [ ":*" ]
 }
 
 # Library providing an event handler which outputs human-readable text.

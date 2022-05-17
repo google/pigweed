@@ -43,12 +43,12 @@ declare_args() {
   # Timeout is in seconds. Defaults to empty which means no timeout.
   pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT = ""
 
-  # Additional dependencies required by all unit test targets. (For example, if
-  # using a different test library like GoogleTest.)
+  # Dependencies required by all unit test targets. Defaults to pw_unit_test.
+  # May be changed to use a different test library like GoogleTest.
   #
   # Type: list of strings (list of dependencies as GN paths)
   # Usage: toolchain-controlled only
-  pw_unit_test_PUBLIC_DEPS = []
+  pw_unit_test_PUBLIC_DEPS = [ dir_pw_unit_test ]
 
   # Implementation of a main function for ``pw_test`` unit test binaries.
   #
@@ -181,7 +181,7 @@ template("pw_test") {
     if (!defined(public_deps)) {
       public_deps = []
     }
-    public_deps += pw_unit_test_PUBLIC_DEPS + [ dir_pw_unit_test ]
+    public_deps += pw_unit_test_PUBLIC_DEPS
   }
 
   _pw_disableable_target(_test_target_name) {

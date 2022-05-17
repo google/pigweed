@@ -15,8 +15,8 @@
 #include <span>
 #include <string_view>
 
+#include "gtest/gtest.h"
 #include "pw_sys_io/sys_io.h"
-#include "pw_unit_test/framework.h"
 #include "pw_unit_test/simple_printing_event_handler.h"
 
 int main() {

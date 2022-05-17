@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "gtest/gtest.h"
 #include "pico/stdlib.h"
-#include "pw_unit_test/framework.h"
 #include "pw_unit_test/logging_event_handler.h"
 
 int main() {

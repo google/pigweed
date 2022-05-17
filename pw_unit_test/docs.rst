@@ -105,7 +105,7 @@ framework, register an event handler, and call the ``RUN_ALL_TESTS`` macro.
 
 .. code:: cpp
 
-  #include "pw_unit_test/framework.h"
+  #include "gtest/gtest.h"
   #include "pw_unit_test/simple_printing_event_handler.h"
 
   void WriteString(const std::string_view& string, bool newline) {
@@ -289,8 +289,8 @@ Build arguments
 
 .. option:: pw_unit_test_PUBLIC_DEPS <dependencies>
 
-  Additional dependencies required by all unit test targets. (For example, if
-  using a different test library like GoogleTest.)
+  Dependencies required by all unit test targets. Defaults to pw_unit_test.
+  May be changed to use a different test library like GoogleTest.
 
   Type: list of strings (list of dependencies as GN paths)
   Usage: toolchain-controlled only

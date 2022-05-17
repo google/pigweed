@@ -37,10 +37,10 @@ pw_cc_library(
     name = "pw_unit_test",
     srcs = [
         "framework.cc",
+        "public/pw_unit_test/internal/framework.h",
     ],
     hdrs = [
         "public/pw_unit_test/event_handler.h",
-        "public/pw_unit_test/framework.h",
         "public_overrides/gtest/gtest.h",
     ],
     includes = [
