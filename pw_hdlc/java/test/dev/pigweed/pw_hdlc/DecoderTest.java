@@ -19,7 +19,6 @@ import static com.google.common.truth.Truth.assertThat;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 public class DecoderTest {
   private final ArrayList<Frame> frames = new ArrayList<>();

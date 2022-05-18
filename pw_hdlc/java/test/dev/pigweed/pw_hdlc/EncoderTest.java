@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 public class EncoderTest {
   private static final int OUTPUT_SIZE = 1024;
@@ -299,12 +298,12 @@ public class EncoderTest {
   private static class ExpectedValueBuilder {
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(OUTPUT_SIZE);
 
-    public ExpectedValueBuilder writeFlag() throws IOException {
+    public ExpectedValueBuilder writeFlag() {
       outputStream.write(Protocol.FLAG);
       return this;
     }
 
-    public ExpectedValueBuilder write(byte b) throws IOException {
+    public ExpectedValueBuilder write(byte b) {
       outputStream.write(b);
       return this;
     }
@@ -314,7 +313,7 @@ public class EncoderTest {
       return this;
     }
 
-    public ExpectedValueBuilder writeCrc(int crc) throws IOException {
+    public ExpectedValueBuilder writeCrc(int crc) {
       outputStream.write(0xFF & crc);
       outputStream.write(0xFF & (crc >> 8));
       outputStream.write(0xFF & (crc >> 16));
