@@ -161,6 +161,7 @@ pw_cc_test(
     srcs = ["framework_test.cc"],
     deps = [
         ":pw_unit_test",
+        "//pw_assert",
     ],
 )
 

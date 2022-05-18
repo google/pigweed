@@ -16,6 +16,8 @@
 
 #include <cstring>
 
+#include "pw_assert/check.h"
+
 namespace pw {
 namespace {
 
@@ -180,9 +182,9 @@ TEST_F(PigweedTestFixture, YupTheNumberIs35) {
 
 class Expectations : public ::testing::Test {
  protected:
-  Expectations() : cool_number_(3) { ASSERT_EQ(cool_number_, 3); }
+  Expectations() : cool_number_(3) { PW_CHECK_INT_EQ(cool_number_, 3); }
 
-  ~Expectations() { ASSERT_EQ(cool_number_, 14159); }
+  ~Expectations() { PW_CHECK_INT_EQ(cool_number_, 14159); }
 
   int cool_number_;
 };

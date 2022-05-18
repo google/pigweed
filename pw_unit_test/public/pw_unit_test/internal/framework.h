@@ -500,11 +500,11 @@ inline void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
                                                                            \
   void class_name::PigweedTestBody()
 
-#define _PW_TEST_ASSERT(expectation) \
-  do {                               \
-    if (!(expectation)) {            \
-      return;                        \
-    }                                \
+#define _PW_TEST_ASSERT(expectation)                                           \
+  do {                                                                         \
+    if (!(expectation)) {                                                      \
+      return static_cast<void>(0); /* Prevent using ASSERT in constructors. */ \
+    }                                                                          \
   } while (0)
 
 #define _PW_TEST_BOOL(expr, value)                               \

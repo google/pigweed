@@ -362,7 +362,7 @@ class BidiMethod : public BasicServer {
                                          service_42_,
                                          service_42_.method(100),
                                          0)) {
-    ASSERT_TRUE(responder_.active());
+    PW_CHECK(responder_.active());
   }
 
   internal::test::FakeServerReaderWriter responder_;
@@ -502,7 +502,7 @@ class ServerStreamingMethod : public BasicServer {
               service_42_.method(100),
               0),
         responder_(call_) {
-    ASSERT_TRUE(responder_.active());
+    PW_CHECK(responder_.active());
   }
 
   internal::CallContext call_;

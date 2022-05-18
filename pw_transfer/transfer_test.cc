@@ -15,6 +15,7 @@
 #include "pw_transfer/transfer.h"
 
 #include "gtest/gtest.h"
+#include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_containers/algorithm.h"
 #include "pw_rpc/raw/test_method_context.h"
@@ -117,8 +118,8 @@ class ReadTransfer : public ::testing::Test {
         system_thread_(TransferThreadOptions(), transfer_thread_) {
     ctx_.service().RegisterHandler(handler_);
 
-    ASSERT_FALSE(handler_.prepare_read_called);
-    ASSERT_FALSE(handler_.finalize_read_called);
+    PW_CHECK(!handler_.prepare_read_called);
+    PW_CHECK(!handler_.finalize_read_called);
 
     ctx_.call();  // Open the read stream
     transfer_thread_.WaitUntilEventIsProcessed();
@@ -738,8 +739,8 @@ class WriteTransfer : public ::testing::Test {
              std::chrono::minutes(1)) {
     ctx_.service().RegisterHandler(handler_);
 
-    ASSERT_FALSE(handler_.prepare_write_called);
-    ASSERT_FALSE(handler_.finalize_write_called);
+    PW_CHECK(!handler_.prepare_write_called);
+    PW_CHECK(!handler_.finalize_write_called);
 
     ctx_.call();  // Open the write stream
     transfer_thread_.WaitUntilEventIsProcessed();

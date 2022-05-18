@@ -169,6 +169,7 @@ pw_test("transfer_test") {
     ":proto.pwpb",
     ":pw_transfer",
     ":test_helpers",
+    "$dir_pw_assert",
     "$dir_pw_containers",
     "$dir_pw_rpc:thread_testing",
     "$dir_pw_rpc/raw:test_method_context",
