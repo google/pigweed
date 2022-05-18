@@ -4,97 +4,58 @@
 pw_software_update
 -------------------
 
-Building blocks for secure, end-to-end software delivery, over anything.
+This module provides the building blocks for trusted software update systems.
 
 .. attention:: 🚧 This documentation is **under construction**. 🚧
 
-Overview
-========
+Goals
+=====
 
-**Software update** is any channel that enables a product *vendor* to deliver
+**Software update** is any system that enables a product *vendor* to deliver
 some kind of *improvement* to a product *consumer*, in good faith.
 
-To that definition, a decent software update solution should holistically
-address the following needs.
+To that definition, a software update system should design toward the following
+goals.
 
 1. The product receives feature, performance, stability, UX improvements with
    minimum intervention from both the vendor and consumer. The product just
-   automatically gets increasingly useful.
+   automatically gets **increasingly more useful**.
 
-2. The product to receive timely security patches in response to newly
-   discovered vulnerabilities and expiring trust material etc. The product just
-   automatically heals itself.
+2. The product receives timely security patches in response to newly discovered
+   vulnerabilities and/or expiring trust material etc. The product is
+   **self-healing**.
 
-3. The product vendor and consumer to nourish and maintain **mutual trust** over
-   the supported lifetime of a product. The product vendor being able to
-   remotely influence a product's behavior is a fantastic but dangerous power.
-   Insider attacks can happen by mistake, willingly, or when compelled. They
-   are unpreventable and naturally draws distrust from both consumer and
-   regulatory agencies.
+3. All software updates **require consumer approval**. The product vendor being
+   able to remotely modify a product's behavior is both fantastic and dangerous.
+   The system must mitigate insider attacks that may happen by mistake,
+   willingly, or when compelled. The product vendor should strive to help the
+   consumer make an informed decision over whether or not, when, and how to
+   check / install what updates, to the extent feasible and as required by local
+   regulations.
 
-4. To **liberate** product development workflows rather than impede them.
-   Security-heavy systems tend to compete with consumer-facing features
-   for attention and resources from a product development team and thus
-   perceived as "necessary evil". That is a misconception. With careful design,
-   security features can actually liberate many workflows by taking care of
-   the security and privacy concerns.
+4. Software updates **liberate engineering workflows**. While security-heavy
+   systems tend to compete with consumer-facing features for attention and
+   resources and thus perceived as "necessary evil", it is often a
+   misconception. With careful design, security features can preserve and
+   enlarge flexibility in affected workflows. No law, no freedom.
 
-The following sections dive deeper into the frameworks governing the design
-of the `pw_software_update` module to further clarify how it systematically
-addresses the aforementioned requirements.
-
-
-Threats
--------
-
-..
-   TODO(alizhang): Explain the threats we mitigate and those we don't.
-
-Security
---------
-
-..
-   TODO(alizhang): Explain how trust is created, delivered, and nurtured
-   throughout the lifetime of a product. Discuss how software update fit into
-   the "Verified Boot" security model.
-
-Experience
-----------
-
-..
-   TODO(alizhang): Explain how to design software update to liberate
-   development, release engineering, hardware ops, factory, metrics, and
-   product launching workflows.
+System overview
+===============
 
 Getting started
 ===============
 
-..
-   TODO(alizhang): Tutorials, codelabs, representative examples.
+Developer guides
+================
 
-Reference
-=========
+POUF(Protocol, Operations, Usage and Format)
+--------------------------------------------
 
-Bundle format
--------------
-
-Manifesting
------------
-
-Key management
+Update serving
 --------------
 
-Signing
--------
+Update consumption
+------------------
 
-Building
---------
-
-Testing
--------
-
-Device provisioning
--------------------
-
-Device verification flow
-------------------------
+Requesting a security review
+----------------------------
