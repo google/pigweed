@@ -26,6 +26,35 @@ static const hci_spec::LEPreferredConnectionParameters kDefaultPreferredConnecti
 
 }  // namespace
 
+std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
+    fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
+    LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
+    ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+    fxl::WeakPtr<hci::Transport> transport) {
+  // Catch any errors/disconnects during connection initialization so that they are reported by
+  // returning a nullptr. This is less error-prone than calling the user's callbacks during
+  // initialization.
+  bool error = false;
+  auto peer_disconnect_cb_temp = [&error](auto) { error = true; };
+  auto error_cb_temp = [&error] { error = true; };
+  std::unique_ptr<LowEnergyConnection> connection(new LowEnergyConnection(
+      std::move(peer), std::move(link), connection_options, std::move(peer_disconnect_cb_temp),
+      std::move(error_cb_temp), std::move(conn_mgr), l2cap, std::move(gatt), std::move(transport)));
+
+  // This looks strange, but it is possible for InitializeFixedChannels() to trigger an error and
+  // still return true, so |error| can change between the first and last check.
+  if (error || !connection->InitializeFixedChannels() || error) {
+    return nullptr;
+  }
+
+  // Now it is safe to set the user's callbacks, as no more errors/disconnects can be signaled
+  // before returning.
+  connection->set_peer_disconnect_callback(std::move(peer_disconnect_cb));
+  connection->set_error_callback(std::move(error_cb));
+  return connection;
+}
+
 LowEnergyConnection::LowEnergyConnection(
     fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
@@ -56,7 +85,6 @@ LowEnergyConnection::LowEnergyConnection(
 
   RegisterEventHandlers();
   StartConnectionPauseTimeout();
-  InitializeFixedChannels();
 }
 
 LowEnergyConnection::~LowEnergyConnection() {
@@ -110,7 +138,7 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
 
 // Registers this connection with L2CAP and initializes the fixed channel
 // protocols.
-void LowEnergyConnection::InitializeFixedChannels() {
+[[nodiscard]] bool LowEnergyConnection::InitializeFixedChannels() {
   auto self = GetWeakPtr();
   // Ensure error_callback_ is only called once if link_error_cb is called multiple times.
   auto link_error_cb = [self]() {
@@ -139,8 +167,8 @@ void LowEnergyConnection::InitializeFixedChannels() {
       l2cap_->AddLEConnection(link_->handle(), link_->role(), std::move(link_error_cb),
                               update_conn_params_cb, security_upgrade_cb);
 
-  OnL2capFixedChannelsOpened(std::move(fixed_channels.att), std::move(fixed_channels.smp),
-                             connection_options_);
+  return OnL2capFixedChannelsOpened(std::move(fixed_channels.att), std::move(fixed_channels.smp),
+                                    connection_options_);
 }
 
 // Used to respond to protocol/service requests for increased security.
@@ -237,15 +265,9 @@ void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
                                            kLEConnectionPauseCentral);
 }
 
-void LowEnergyConnection::OnL2capFixedChannelsOpened(
+bool LowEnergyConnection::OnL2capFixedChannelsOpened(
     fbl::RefPtr<l2cap::Channel> att, fbl::RefPtr<l2cap::Channel> smp,
     LowEnergyConnectionOptions connection_options) {
-  if (!att || !smp) {
-    bt_log(INFO, "gap-le", "link was closed before opening fixed channels (peer: %s)",
-           bt_str(peer_id()));
-    return;
-  }
-
   bt_log(DEBUG, "gap-le", "ATT and SMP fixed channels open (peer: %s)", bt_str(peer_id()));
 
   // Obtain existing pairing data, if any.
@@ -280,7 +302,7 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
     sm_->AssignLongTermKey(*ltk);
   }
 
-  InitializeGatt(std::move(att), connection_options.service_uuid);
+  return InitializeGatt(std::move(att), connection_options.service_uuid);
 }
 
 void LowEnergyConnection::OnNewLEConnectionParams(
@@ -474,17 +496,14 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
   }
 }
 
-void LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att_channel,
+bool LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att_channel,
                                          std::optional<UUID> service_uuid) {
   fbl::RefPtr<att::Bearer> att_bearer = att::Bearer::Create(att_channel);
   if (!att_bearer) {
     // This can happen if the link closes before the Bearer activates the
     // channel.
     bt_log(WARN, "gatt", "failed to initialize ATT bearer");
-    // Post task to prevent calling error callback in constructor.
-    async::PostTask(async_get_default_dispatcher(),
-                    [att_channel] { att_channel->SignalLinkError(); });
-    return;
+    return false;
   }
   std::unique_ptr<gatt::Client> gatt_client = gatt::Client::Create(att_bearer);
   auto server_factory = [att_bearer](PeerId peer_id,
@@ -506,6 +525,8 @@ void LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att_channel
       self->OnGattServicesResult(status, std::move(services));
     }
   });
+
+  return true;
 }
 
 void LowEnergyConnection::OnGattServicesResult(att::Result<> status, gatt::ServiceList services) {

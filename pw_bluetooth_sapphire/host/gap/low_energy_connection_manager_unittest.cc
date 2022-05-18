@@ -1538,7 +1538,6 @@ TEST_F(LowEnergyConnectionManagerTest, ATTChannelActivateFails) {
 
   RunLoopUntilIdle();
   ASSERT_TRUE(att_chan);
-  EXPECT_TRUE(att_chan->link_error());
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(HostError::kFailed, result->error_value());
   EXPECT_TRUE(connected_peers().empty());

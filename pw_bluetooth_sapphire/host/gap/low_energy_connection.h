@@ -42,19 +42,21 @@ class LowEnergyConnection final : public sm::Delegate {
  public:
   // |peer| is the peer that this connection is connected to.
   // |link| is the underlying LE HCI connection that this connection corresponds to.
-  // |peer_disconnect_cb| will be called when the peer disconnects.
+  // |peer_disconnect_cb| will be called when the peer disconnects. It will not be called before
+  // this method returns.
   // |error_cb| will be called when a fatal connection error occurs and the connection should be
-  // closed (e.g. when L2CAP reports an error).
+  // closed (e.g. when L2CAP reports an error). It will not be called before this method returns.
   // |conn_mgr| is the LowEnergyConnectionManager that owns this connection.
   // |l2cap|, |gatt|, and |transport| are pointers to the interfaces of the corresponding layers.
+  // Returns nullptr if connection initialization fails.
   using PeerDisconnectCallback = fit::callback<void(hci_spec::StatusCode)>;
   using ErrorCallback = fit::callback<void()>;
-  LowEnergyConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
-                      LowEnergyConnectionOptions connection_options,
-                      PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
-                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-                      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                      fxl::WeakPtr<hci::Transport> transport);
+  static std::unique_ptr<LowEnergyConnection> Create(
+      fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
+      LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
+      ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+      fxl::WeakPtr<hci::Transport> transport);
 
   // Notifies request callbacks and connection refs of the disconnection.
   ~LowEnergyConnection() override;
@@ -130,9 +132,16 @@ class LowEnergyConnection final : public sm::Delegate {
   fxl::WeakPtr<LowEnergyConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  LowEnergyConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
+                      LowEnergyConnectionOptions connection_options,
+                      PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
+                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+                      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+                      fxl::WeakPtr<hci::Transport> transport);
+
   // Registers this connection with L2CAP and initializes the fixed channel
-  // protocols.
-  void InitializeFixedChannels();
+  // protocols. Return true on success, false on failure.
+  [[nodiscard]] bool InitializeFixedChannels();
 
   // Register handlers for HCI events that correspond to this connection.
   void RegisterEventHandlers();
@@ -149,10 +158,12 @@ class LowEnergyConnection final : public sm::Delegate {
   // Should be called as soon as connection is established.
   void StartConnectionPauseCentralTimeout();
 
+  // Initializes SecurityManager and GATT.
   // Called by the L2CAP layer once the link has been registered and the fixed
-  // channels have been opened.
-  void OnL2capFixedChannelsOpened(fbl::RefPtr<l2cap::Channel> att, fbl::RefPtr<l2cap::Channel> smp,
-                                  LowEnergyConnectionOptions connection_options);
+  // channels have been opened. Returns false if GATT initialization fails.
+  [[nodiscard]] bool OnL2capFixedChannelsOpened(fbl::RefPtr<l2cap::Channel> att,
+                                                fbl::RefPtr<l2cap::Channel> smp,
+                                                LowEnergyConnectionOptions connection_options);
 
   // Called when the preferred connection parameters have been received for a LE
   // peripheral. This can happen in the form of:
@@ -231,8 +242,9 @@ class LowEnergyConnection final : public sm::Delegate {
   void MaybeUpdateConnectionParameters();
 
   // Registers the peer with GATT and initiates service discovery. If |service_uuid| is specified,
-  // only discover the indicated service and the GAP service.
-  void InitializeGatt(fbl::RefPtr<l2cap::Channel> att, std::optional<UUID> service_uuid);
+  // only discover the indicated service and the GAP service. Returns true on success, false on
+  // failure.
+  bool InitializeGatt(fbl::RefPtr<l2cap::Channel> att, std::optional<UUID> service_uuid);
 
   // Called when service discovery completes. |services| will only include services with the GAP
   // UUID (there should only be one, but this is not guaranteed).

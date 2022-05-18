@@ -314,13 +314,15 @@ bool LowEnergyConnector::InitializeConnection(std::unique_ptr<hci::LowEnergyConn
 
   Peer* peer = peer_cache_->FindById(peer_id_);
   ZX_ASSERT(peer);
-  auto connection = std::make_unique<LowEnergyConnection>(
-      peer->GetWeakPtr(), std::move(link), options_, peer_disconnect_cb, error_cb,
-      le_connection_manager_, l2cap_, gatt_, transport_);
-  if (*state_ == State::kFailed) {
+  auto connection =
+      LowEnergyConnection::Create(peer->GetWeakPtr(), std::move(link), options_, peer_disconnect_cb,
+                                  error_cb, le_connection_manager_, l2cap_, gatt_, transport_);
+  if (!connection) {
     bt_log(WARN, "gap-le", "connection initialization failed (peer: %s)", bt_str(peer_id_));
+    NotifyFailure();
     return false;
   }
+
   connection_ = std::move(connection);
   return true;
 }
