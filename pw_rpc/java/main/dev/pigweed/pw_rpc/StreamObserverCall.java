@@ -76,7 +76,7 @@ class StreamObserverCall<RequestT extends MessageLite, ResponseT extends Message
     }
 
     @Override
-    public void cancel() throws ChannelOutputException {
+    public void cancel() {
       cancel(true);
     }
 

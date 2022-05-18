@@ -190,7 +190,7 @@ public final class StreamObserverCallTest {
   }
 
   @Test
-  public void unaryFuture_serverError_setsException() throws Exception {
+  public void unaryFuture_serverError_setsException() {
     UnaryResponseFuture<SomeMessage, AnotherMessage> call =
         new UnaryResponseFuture<>(rpcManager, rpc, SomeMessage.getDefaultInstance());
 
@@ -207,7 +207,7 @@ public final class StreamObserverCallTest {
   }
 
   @Test
-  public void unaryFuture_noMessage_setsException() throws Exception {
+  public void unaryFuture_noMessage_setsException() {
     UnaryResponseFuture<SomeMessage, AnotherMessage> call =
         new UnaryResponseFuture<>(rpcManager, rpc, SomeMessage.getDefaultInstance());
 
@@ -219,7 +219,7 @@ public final class StreamObserverCallTest {
   }
 
   @Test
-  public void unaryFuture_multipleResponses_setsException() throws Exception {
+  public void unaryFuture_multipleResponses_setsException() {
     UnaryResponseFuture<SomeMessage, AnotherMessage> call =
         new UnaryResponseFuture<>(rpcManager, rpc, SomeMessage.getDefaultInstance());
 
@@ -251,7 +251,7 @@ public final class StreamObserverCallTest {
   }
 
   @Test
-  public void bidirectionalStreamingfuture_serverError_setsException() throws Exception {
+  public void bidirectionalStreamingfuture_serverError_setsException() {
     StreamResponseFuture<SomeMessage, AnotherMessage> call =
         new StreamResponseFuture<>(rpcManager, rpc, (msg) -> {}, null);
 
