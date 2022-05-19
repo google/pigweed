@@ -42,6 +42,7 @@ from types import ModuleType
 from typing import (
     Any,
     Collection,
+    Dict,
     Iterable,
     Iterator,
     List,
@@ -57,15 +58,18 @@ import pw_console.python_logging
 from pw_console import PwConsoleEmbed
 from pw_console.pyserial_wrapper import SerialWithLogging
 from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
-
+from pw_console.log_store import LogStore
 from pw_log.proto import log_pb2
 from pw_rpc.console_tools.console import flattened_rpc_completions
-from pw_system.device import Device
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
 from pw_unit_test_proto import unit_test_pb2
 
+from pw_system.device import Device
+
 _LOG = logging.getLogger('tools')
 _DEVICE_LOG = logging.getLogger('rpc_device')
+_SERIAL_DEBUG = logging.getLogger('pw_console.serial_debug_logger')
+_ROOT_LOG = logging.getLogger()
 
 PW_RPC_MAX_PACKET_SIZE = 256
 SOCKET_SERVER = 'localhost'
@@ -125,9 +129,15 @@ def _expand_globs(globs: Iterable[str]) -> Iterator[Path]:
             yield Path(file)
 
 
-def _start_ipython_terminal(device: Device,
-                            serial_debug: bool = False,
-                            config_file_path: Optional[Path] = None) -> None:
+def _start_ipython_terminal(
+    device: Device,
+    device_log_store: LogStore,
+    root_log_store: LogStore,
+    serial_debug_log_store: LogStore,
+    log_file: str,
+    serial_debug: bool = False,
+    config_file_path: Optional[Path] = None,
+) -> None:
     """Starts an interactive IPython terminal with preset variables."""
     local_variables = dict(
         client=device.client,
@@ -155,14 +165,12 @@ def _start_ipython_terminal(device: Device,
     client_info = device.info()
     completions = flattened_rpc_completions([client_info])
 
-    log_windows = {
-        'Device Logs': [_DEVICE_LOG],
-        'Host Logs': [logging.getLogger()],
+    log_windows: Dict[str, Union[List[logging.Logger], LogStore]] = {
+        'Device Logs': device_log_store,
+        'Host Logs': root_log_store,
     }
     if serial_debug:
-        log_windows['Serial Debug'] = [
-            logging.getLogger('pw_console.serial_debug_logger')
-        ]
+        log_windows['Serial Debug'] = serial_debug_log_store
 
     interactive_console = PwConsoleEmbed(
         global_vars=local_variables,
@@ -177,10 +185,11 @@ def _start_ipython_terminal(device: Device,
         interactive_console.add_bottom_toolbar(BandwidthToolbar())
 
     # Setup Python logger propagation
-    interactive_console.setup_python_logging()
-
-    # Don't send device logs to the root logger.
-    _DEVICE_LOG.propagate = False
+    interactive_console.setup_python_logging(
+        # Send any unhandled log messages to the external file.
+        last_resort_filename=log_file,
+        # Don't change propagation for these loggers.
+        loggers_with_no_propagation=[_DEVICE_LOG])
 
     interactive_console.embed()
 
@@ -223,6 +232,20 @@ def console(device: str,
     if output is sys.stdout:
         output = sys.stdout.buffer
 
+    # Don't send device logs to the root logger.
+    _DEVICE_LOG.propagate = False
+    # Create pw_console LogStore handlers. These are the data source for log
+    # messages to be displayed in the UI.
+    device_log_store = LogStore()
+    root_log_store = LogStore()
+    serial_debug_log_store = LogStore()
+    # Attach the LogStores as handlers for each log window we want to show.
+    # This should be done before device initialization to capture early
+    # messages.
+    _DEVICE_LOG.addHandler(device_log_store)
+    _ROOT_LOG.addHandler(root_log_store)
+    _SERIAL_DEBUG.addHandler(serial_debug_log_store)
+
     if not logfile:
         # Create a temp logfile to prevent logs from appearing over stdout. This
         # would corrupt the prompt toolkit UI.
@@ -230,8 +253,10 @@ def console(device: str,
 
     log_level = logging.DEBUG if verbose else logging.INFO
     pw_cli.log.install(log_level, True, False, logfile)
-    _DEVICE_LOG.setLevel(log_level)
     _LOG.setLevel(log_level)
+    _DEVICE_LOG.setLevel(log_level)
+    _ROOT_LOG.setLevel(log_level)
+    _SERIAL_DEBUG.setLevel(log_level)
 
     detokenizer = None
     if token_databases:
@@ -299,7 +324,9 @@ def console(device: str,
                            timestamp_decoder=timestamp_decoder,
                            rpc_timeout_s=5)
 
-    _start_ipython_terminal(device_client, serial_debug, config_file)
+    _start_ipython_terminal(device_client, device_log_store, root_log_store,
+                            serial_debug_log_store, logfile, serial_debug,
+                            config_file)
     return 0
 
 
