@@ -78,7 +78,7 @@ _FAKE_DEVICE_LOG = logging.getLogger(FAKE_DEVICE_LOGGER_NAME)
 # Don't send fake_device logs to the root Python logger.
 _FAKE_DEVICE_LOG.propagate = False
 
-MAX_FPS = 15
+MAX_FPS = 30
 MIN_REDRAW_INTERVAL = (60.0 / MAX_FPS) / 60.0
 
 

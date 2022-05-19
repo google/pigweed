@@ -143,6 +143,9 @@ class LogView:
         # Cache of formatted text tuples used in the last UI render.
         self._line_fragment_cache: List[StyleAndTextTuples] = []
 
+        # Check if any logs are already in the log_store and update the view.
+        self.new_logs_arrived()
+
     def view_mode_changed(self) -> None:
         self._reset_log_screen_on_next_render = True
 
