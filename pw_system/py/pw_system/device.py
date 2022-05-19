@@ -21,12 +21,12 @@ from typing import Any, Callable, List, Union, Optional
 
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
 import pw_log_tokenized
-
 from pw_log.proto import log_pb2
 from pw_rpc import callback_client, console_tools
 from pw_status import Status
 from pw_tokenizer.detokenize import Detokenizer
 from pw_tokenizer.proto import decode_optionally_tokenized
+import pw_unit_test.rpc
 
 # Internal log for troubleshooting this tool (the console).
 _LOG = logging.getLogger('tools')
@@ -78,6 +78,10 @@ class Device:
     def rpcs(self) -> Any:
         """Returns an object for accessing services on the specified channel."""
         return next(iter(self.client.client.channels())).rpcs
+
+    def run_tests(self, timeout_s: Optional[float] = 5) -> bool:
+        """Runs the unit tests on this device."""
+        return pw_unit_test.rpc.run_tests(self.rpcs, timeout_s=timeout_s)
 
     def listen_to_log_stream(self):
         """Opens a log RPC for the device's unrequested log stream.

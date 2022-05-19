@@ -13,11 +13,19 @@
 // the License.
 
 #include "pw_log/log.h"
+#include "pw_system/rpc_server.h"
 #include "pw_thread/sleep.h"
+#include "pw_unit_test/unit_test_service.h"
+
 namespace pw::system {
+
+pw::unit_test::UnitTestService unit_test_service;
 
 // This will run once after pw::system::Init() completes. This callback must
 // return or it will block the work queue.
-void UserAppInit() { PW_LOG_INFO("Pigweed is fun!"); }
+void UserAppInit() {
+  PW_LOG_INFO("Pigweed is fun!");
+  GetRpcServer().RegisterService(unit_test_service);
+}
 
 }  // namespace pw::system

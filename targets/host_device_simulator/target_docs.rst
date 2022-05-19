@@ -39,3 +39,19 @@ run with the following commands:
 
 To communicate with the launched process, use
 ``pw-system-console -s localhost:33000 --proto-globs pw_rpc/echo.proto``.
+
+In the bottom-most pane labeled ``Python Repl``, you'll now be able to send RPC
+commands to the simulated device process. For example, you can send an RPC
+message that will be echoed back:
+
+.. code:: sh
+
+  >>> device.rpcs.pw.rpc.EchoService.Echo(msg='Hello, world!')
+  (Status.OK, pw.rpc.EchoMessage(msg='Hello, world!'))
+
+Or run unit tests included on the simulated device:
+
+.. code:: sh
+
+  >>> device.run_tests()
+  True

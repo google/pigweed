@@ -107,6 +107,7 @@ pw_facade("rpc_server") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
+    "$dir_pw_rpc:server",
     "$dir_pw_thread:thread_core",
   ]
 }
@@ -217,6 +218,11 @@ pw_executable("system_example") {
     ":pw_system",
     "$dir_pw_log",
     "$dir_pw_thread:sleep",
+    "$dir_pw_unit_test:rpc_service",
+
+    # Adds a test that the test server can run.
+    "$dir_pw_status:status_test.lib",
+    "$dir_pw_string:string_builder_test.lib",
   ]
 }
 

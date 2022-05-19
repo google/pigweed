@@ -16,6 +16,7 @@
 
 #include <cstdint>
 
+#include "pw_rpc/server.h"
 #include "pw_system/config.h"
 #include "pw_thread/thread_core.h"
 

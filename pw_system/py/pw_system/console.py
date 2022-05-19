@@ -62,6 +62,7 @@ from pw_log.proto import log_pb2
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system.device import Device
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
+from pw_unit_test_proto import unit_test_pb2
 
 _LOG = logging.getLogger('tools')
 _DEVICE_LOG = logging.getLogger('rpc_device')
@@ -171,7 +172,6 @@ def _start_ipython_terminal(device: Device,
         help_text=__doc__,
         config_file_path=config_file_path,
     )
-    interactive_console.hide_windows('Host Logs')
     interactive_console.add_sentence_completer(completions)
     if serial_debug:
         interactive_console.add_bottom_toolbar(BandwidthToolbar())
@@ -250,6 +250,7 @@ def console(device: str,
     # provided, and shadowing errors due to ordering when the default global
     # search path is used.
     compiled_protos.append(log_pb2)
+    compiled_protos.append(unit_test_pb2)
     protos.extend(compiled_protos)
 
     if not protos:
