@@ -79,9 +79,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
         id, max_tx_sdu_size(), fit::bind_member<&ChannelImpl::SendFrame>(this));
   } else {
     // Must capture |link| and not |link_| to avoid having to take |mutex_|.
-    auto connection_failure_cb = [this, link] {
-      ZX_ASSERT(thread_checker_.is_thread_valid());
-
+    auto connection_failure_cb = [link] {
       if (link) {
         // |link| is expected to ignore this call if it has been closed.
         link->SignalError();

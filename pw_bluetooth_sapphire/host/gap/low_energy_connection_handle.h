@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_HANDLE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_HANDLE_H_
 
-#include <lib/fit/thread_checker.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"

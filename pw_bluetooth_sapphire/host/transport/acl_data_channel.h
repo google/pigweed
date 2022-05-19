@@ -8,7 +8,6 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
 

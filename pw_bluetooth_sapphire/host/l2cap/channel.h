@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/zx/socket.h>
 #include <zircon/compiler.h>
@@ -323,8 +322,6 @@ class ChannelImpl : public Channel {
     inspect::StringProperty remote_id;
   };
   InspectProperties inspect_;
-
-  fit::thread_checker thread_checker_;
 
   fxl::WeakPtrFactory<ChannelImpl> weak_ptr_factory_;
 

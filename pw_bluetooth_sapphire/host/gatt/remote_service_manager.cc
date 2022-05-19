@@ -50,8 +50,6 @@ RemoteServiceManager::RemoteServiceManager(std::unique_ptr<Client> client,
 }
 
 RemoteServiceManager::~RemoteServiceManager() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   client_->SetNotificationHandler({});
   ClearServices();
 
@@ -67,8 +65,6 @@ RemoteServiceManager::~RemoteServiceManager() {
 }
 
 void RemoteServiceManager::Initialize(att::ResultFunction<> cb, std::vector<UUID> services) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   auto init_cb = [self, user_init_cb = std::move(cb)](att::Result<> status) mutable {
@@ -428,8 +424,6 @@ void RemoteServiceManager::ClearServices() {
 
 void RemoteServiceManager::OnNotification(bool /*indication*/, att::Handle value_handle,
                                           const ByteBuffer& value, bool maybe_truncated) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   if (services_.empty()) {
     bt_log(DEBUG, "gatt", "ignoring notification from unknown service");
     return;

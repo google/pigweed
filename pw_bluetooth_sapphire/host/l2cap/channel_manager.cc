@@ -5,7 +5,6 @@
 #include "channel_manager.h"
 
 #include <lib/async/default.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/trace/event.h>
 #include <zircon/assert.h>
 
@@ -125,7 +124,6 @@ class ChannelManagerImpl final : public ChannelManager {
   // minimal guarantee that the executor outlives the LogicalLinks.
   async::Executor executor_;
 
-  fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<ChannelManagerImpl> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerImpl);
@@ -146,7 +144,6 @@ ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
 
 ChannelManagerImpl::~ChannelManagerImpl() {
   bt_log(DEBUG, "l2cap", "shutting down");
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   // Explicitly shut down all links to force associated L2CAP channels to
   // release their strong references.
@@ -167,7 +164,6 @@ void ChannelManagerImpl::AddACLConnection(hci_spec::ConnectionHandle handle,
                                           hci_spec::ConnectionRole role,
                                           LinkErrorCallback link_error_cb,
                                           SecurityUpgradeCallback security_cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register ACL link (handle: %#.4x)", handle);
 
   auto* ll = RegisterInternal(handle, bt::LinkType::kACL, role, max_acl_payload_size_);
@@ -179,7 +175,6 @@ ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(
     hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
     LinkErrorCallback link_error_cb, LEConnectionParameterUpdateCallback conn_param_cb,
     SecurityUpgradeCallback security_cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register LE link (handle: %#.4x)", handle);
 
   auto* ll = RegisterInternal(handle, bt::LinkType::kLE, role, max_le_payload_size_);
@@ -195,8 +190,6 @@ ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(
 }
 
 void ChannelManagerImpl::RemoveConnection(hci_spec::ConnectionHandle handle) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   bt_log(DEBUG, "l2cap", "unregister link (handle: %#.4x)", handle);
 
   pending_packets_.erase(handle);
@@ -214,8 +207,6 @@ void ChannelManagerImpl::RemoveConnection(hci_spec::ConnectionHandle handle) {
 
 void ChannelManagerImpl::AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
                                                       sm::SecurityProperties security) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   bt_log(DEBUG, "l2cap", "received new security properties (handle: %#.4x)", handle);
 
   auto iter = ll_map_.find(handle);
@@ -229,8 +220,6 @@ void ChannelManagerImpl::AssignLinkSecurityProperties(hci_spec::ConnectionHandle
 
 fbl::RefPtr<Channel> ChannelManagerImpl::OpenFixedChannel(hci_spec::ConnectionHandle handle,
                                                           ChannelId channel_id) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
     bt_log(ERROR, "l2cap", "cannot open fixed channel on unknown connection handle: %#.4x", handle);
@@ -242,8 +231,6 @@ fbl::RefPtr<Channel> ChannelManagerImpl::OpenFixedChannel(hci_spec::ConnectionHa
 
 void ChannelManagerImpl::OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm,
                                           ChannelParameters params, ChannelCallback cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
     bt_log(ERROR, "l2cap", "Cannot open channel on unknown connection handle: %#.4x", handle);
@@ -255,8 +242,6 @@ void ChannelManagerImpl::OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM
 }
 
 bool ChannelManagerImpl::RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   // v5.0 Vol 3, Part A, Sec 4.2: PSMs shall be odd and the least significant
   // bit of the most significant byte shall be zero
   if (((psm & 0x0001) != 0x0001) || ((psm & 0x0100) != 0x0000)) {
@@ -274,17 +259,11 @@ bool ChannelManagerImpl::RegisterService(PSM psm, ChannelParameters params, Chan
   return true;
 }
 
-void ChannelManagerImpl::UnregisterService(PSM psm) {
-  FX_DCHECK(thread_checker_.is_thread_valid());
-
-  services_.erase(psm);
-}
+void ChannelManagerImpl::UnregisterService(PSM psm) { services_.erase(psm); }
 
 void ChannelManagerImpl::RequestConnectionParameterUpdate(
     hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
     ConnectionParameterUpdateRequestCallback request_cb) {
-  ZX_ASSERT(thread_checker_.is_thread_valid());
-
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
     bt_log(DEBUG, "l2cap", "ignoring Connection Parameter Update request on unknown link");
@@ -324,8 +303,6 @@ fxl::WeakPtr<internal::LogicalLink> ChannelManagerImpl::LogicalLinkForTesting(
 // Called when an ACL data packet is received from the controller. This method
 // is responsible for routing the packet to the corresponding LogicalLink.
 void ChannelManagerImpl::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   auto handle = packet->connection_handle();
   TRACE_DURATION("bluetooth", "ChannelManagerImpl::OnDataReceived", "handle", handle);
 
@@ -357,7 +334,6 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(hci_spec::Connection
                                                             bt::LinkType ll_type,
                                                             hci_spec::ConnectionRole role,
                                                             size_t max_payload_size) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   TRACE_DURATION("bluetooth", "ChannelManagerImpl::RegisterInternal", "handle", handle);
 
   // TODO(armansito): Return nullptr instead of asserting. Callers shouldn't

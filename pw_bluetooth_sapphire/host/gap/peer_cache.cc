@@ -32,7 +32,6 @@ DeviceAddress GetAliasAddress(const DeviceAddress& address) {
 }  // namespace
 
 Peer* PeerCache::NewPeer(const DeviceAddress& address, bool connectable) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   auto* const peer = InsertPeerRecord(RandomPeerId(), address, connectable);
   if (peer) {
     UpdateExpiry(*peer);
@@ -42,7 +41,6 @@ Peer* PeerCache::NewPeer(const DeviceAddress& address, bool connectable) {
 }
 
 void PeerCache::ForEach(PeerCallback f) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(f);
   for (const auto& iter : peers_) {
     f(*iter.second.peer());
@@ -50,7 +48,6 @@ void PeerCache::ForEach(PeerCallback f) {
 }
 
 bool PeerCache::AddBondedPeer(BondingData bd) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(bd.address.type() != DeviceAddress::Type::kLEAnonymous);
 
   const bool bond_le =
@@ -183,7 +180,6 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
 }
 
 bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link_key) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(address.type() == DeviceAddress::Type::kBREDR);
   auto* peer = FindByAddress(address);
   if (!peer) {
@@ -256,14 +252,11 @@ bool PeerCache::RemoveDisconnectedPeer(PeerId peer_id) {
 }
 
 Peer* PeerCache::FindById(PeerId peer_id) const {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   auto iter = peers_.find(peer_id);
   return iter != peers_.end() ? iter->second.peer() : nullptr;
 }
 
 Peer* PeerCache::FindByAddress(const DeviceAddress& in_address) const {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   std::optional<DeviceAddress> address;
   if (in_address.IsResolvablePrivate()) {
     address = le_resolving_list_.Resolve(in_address);

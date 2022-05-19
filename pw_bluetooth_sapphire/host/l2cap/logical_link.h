@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/fpromise/promise.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
@@ -315,8 +314,6 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   InspectProperties inspect_properties_;
 
   fpromise::executor* const executor_;
-
-  fit::thread_checker thread_checker_;
 
   fxl::WeakPtrFactory<LogicalLink> weak_ptr_factory_;
 

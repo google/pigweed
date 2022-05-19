@@ -7,7 +7,6 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
-#include <lib/fit/thread_checker.h>
 
 #include <memory>
 #include <unordered_map>
@@ -114,7 +113,6 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   // received. This is accumulated during a discovery procedure and always
   // cleared at the end of the scan period.
   std::unordered_map<DeviceAddress, std::unique_ptr<PendingScanResult>> pending_results_;
-  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScanner);
 };

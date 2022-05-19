@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 
-#include <lib/fit/thread_checker.h>
-
 #include <memory>
 #include <unordered_map>
 
@@ -104,7 +102,7 @@ class SignalingChannelInterface {
 class SignalingChannel : public SignalingChannelInterface {
  public:
   SignalingChannel(fbl::RefPtr<Channel> chan, hci_spec::ConnectionRole role);
-  ~SignalingChannel() override;
+  ~SignalingChannel() override = default;
 
   // SignalingChannelInterface overrides
   bool SendRequest(CommandCode req_code, const ByteBuffer& payload, ResponseHandler cb) override;
@@ -161,7 +159,6 @@ class SignalingChannel : public SignalingChannelInterface {
 
   // Returns true if called on this SignalingChannel's creation thread. Mainly
   // intended for debug assertions.
-  bool is_thread_valid() const { return thread_checker_.is_thread_valid(); }
 
   // Returns the logical link that signaling channel is operating on.
   hci_spec::ConnectionRole role() const { return role_; }
@@ -246,9 +243,6 @@ class SignalingChannel : public SignalingChannelInterface {
 
   // Retransmit the request corresponding to |pending_command| and reset the RTX timer.
   void RetransmitPendingCommand(PendingCommand& pending_command);
-
-  // Destroy all other members prior to this so they can use this for checking.
-  fit::thread_checker thread_checker_;
 
   bool is_open_;
   l2cap::ScopedChannel chan_;

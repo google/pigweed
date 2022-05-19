@@ -54,10 +54,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
 BrEdrDiscoverySession::BrEdrDiscoverySession(fxl::WeakPtr<BrEdrDiscoveryManager> manager)
     : manager_(std::move(manager)) {}
 
-BrEdrDiscoverySession::~BrEdrDiscoverySession() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  manager_->RemoveDiscoverySession(this);
-}
+BrEdrDiscoverySession::~BrEdrDiscoverySession() { manager_->RemoveDiscoverySession(this); }
 
 void BrEdrDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
   if (peer_found_callback_) {
@@ -74,10 +71,7 @@ void BrEdrDiscoverySession::NotifyError() const {
 BrEdrDiscoverableSession::BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryManager> manager)
     : manager_(std::move(manager)) {}
 
-BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  manager_->RemoveDiscoverableSession(this);
-}
+BrEdrDiscoverableSession::~BrEdrDiscoverableSession() { manager_->RemoveDiscoverableSession(this); }
 
 BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
                                              hci_spec::InquiryMode mode, PeerCache* peer_cache)
@@ -117,7 +111,6 @@ BrEdrDiscoveryManager::~BrEdrDiscoveryManager() {
 }
 
 void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
 
   bt_log(INFO, "gap-bredr", "RequestDiscovery");
@@ -455,7 +448,6 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
 }
 
 void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
 
   auto self = weak_ptr_factory_.GetWeakPtr();

@@ -9,7 +9,6 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/fpromise/result.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
@@ -350,9 +349,6 @@ class CommandChannel final {
 
   // EventHandlerId counter.
   UintInspectable<size_t> next_event_handler_id_;
-
-  // Used to assert that certain public functions are only called on the creation thread.
-  fit::thread_checker thread_checker_;
 
   // The HCI we use to send/receive HCI commands/events.
   HciWrapper* hci_;

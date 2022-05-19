@@ -7,7 +7,6 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
-#include <lib/fit/thread_checker.h>
 
 #include <memory>
 
@@ -185,8 +184,6 @@ class LowEnergyConnector : public LocalAddressClient {
   // TODO(fxbug.dev/63123): Remove this temporary fix once we determine the root cause for
   // authentication failures.
   bool use_local_identity_address_ = false;
-
-  fit::thread_checker thread_checker_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

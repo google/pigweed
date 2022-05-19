@@ -43,10 +43,7 @@ class RemoteServiceManager final {
   // Adds a handler to be notified when services are removed, added, or modified.
   // NOTE: `removed` services should be handled first because they may share handles with `added`
   // services.
-  void set_service_watcher(RemoteServiceWatcher watcher) {
-    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-    svc_watcher_ = std::move(watcher);
-  }
+  void set_service_watcher(RemoteServiceWatcher watcher) { svc_watcher_ = std::move(watcher); }
 
   // Initiates the Exchange MTU procedure followed by service discovery.
   // |callback| is called to notify the result of the procedure.
@@ -183,7 +180,6 @@ class RemoteServiceManager final {
   // service changes have been processed.
   std::vector<fit::callback<void()>> service_changes_complete_callbacks_;
 
-  fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<RemoteServiceManager> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManager);

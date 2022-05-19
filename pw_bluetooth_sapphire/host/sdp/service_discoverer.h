@@ -98,8 +98,6 @@ class ServiceDiscoverer final {
   // Clients that searches are still being performed on, based on the remote
   // peer id.
   std::unordered_map<PeerId, DiscoverySession> sessions_;
-
-  fit::thread_checker thread_checker_;
 };
 
 }  // namespace bt::sdp

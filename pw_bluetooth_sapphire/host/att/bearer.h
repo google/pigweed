@@ -7,7 +7,6 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 #include <zircon/assert.h>
 
 #include <map>
@@ -84,10 +83,7 @@ class Bearer final : public fbl::RefCounted<Bearer> {
 
   // Sets a callback to be invoked invoked when the underlying channel has
   // closed. |callback| should disconnect the underlying logical link.
-  void set_closed_callback(fit::closure callback) {
-    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-    closed_cb_ = std::move(callback);
-  }
+  void set_closed_callback(fit::closure callback) { closed_cb_ = std::move(callback); }
 
   // Closes the channel. This should be called when a protocol transaction
   // warrants the link to be disconnected. Notifies any callback set via
@@ -307,7 +303,6 @@ class Bearer final : public fbl::RefCounted<Bearer> {
   RemoteTransaction remote_request_;
   RemoteTransaction remote_indication_;
 
-  fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<Bearer> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Bearer);

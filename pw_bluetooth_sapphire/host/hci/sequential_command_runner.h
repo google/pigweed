@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SEQUENTIAL_COMMAND_RUNNER_H_
 
 #include <lib/async/dispatcher.h>
-#include <lib/fit/thread_checker.h>
 
 #include <queue>
 
@@ -142,8 +141,6 @@ class SequentialCommandRunner final {
 
   // Number of commands sent to the controller we are waiting to finish.
   size_t running_commands_;
-
-  fit::thread_checker thread_checker_;
 
   fxl::WeakPtrFactory<SequentialCommandRunner> weak_ptr_factory_;
 

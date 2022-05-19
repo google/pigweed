@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONNECTION_H_
 
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 #include <zircon/assert.h>
 
 #include <fbl/macros.h>

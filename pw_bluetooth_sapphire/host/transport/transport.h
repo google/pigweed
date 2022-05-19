@@ -9,7 +9,6 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/fpromise/result.h>
 #include <lib/sys/inspect/cpp/component.h>
 
@@ -99,10 +98,6 @@ class Transport final {
   void OnChannelError();
 
   void ResetChannels();
-
-  // Used to assert that certain public functions are only called on the
-  // creation thread.
-  fit::thread_checker thread_checker_;
 
   std::unique_ptr<HciWrapper> hci_;
 

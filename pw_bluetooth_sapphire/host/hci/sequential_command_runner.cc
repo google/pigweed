@@ -19,17 +19,13 @@ SequentialCommandRunner::SequentialCommandRunner(async_dispatcher_t* dispatcher,
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(transport_);
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 }
 
-SequentialCommandRunner::~SequentialCommandRunner() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-}
+SequentialCommandRunner::~SequentialCommandRunner() {}
 
 void SequentialCommandRunner::QueueCommand(std::unique_ptr<CommandPacket> command_packet,
                                            CommandCompleteCallback callback, bool wait) {
   ZX_DEBUG_ASSERT(!status_callback_);
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <= command_packet->view().size());
 
   command_queue_.emplace(QueuedCommand{std::move(command_packet), std::move(callback), wait});
@@ -39,7 +35,6 @@ void SequentialCommandRunner::RunCommands(ResultFunction<> status_callback) {
   ZX_DEBUG_ASSERT(!status_callback_);
   ZX_DEBUG_ASSERT(status_callback);
   ZX_DEBUG_ASSERT(!command_queue_.empty());
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   status_callback_ = std::move(status_callback);
   sequence_number_++;
@@ -47,10 +42,7 @@ void SequentialCommandRunner::RunCommands(ResultFunction<> status_callback) {
   TryRunNextQueuedCommand();
 }
 
-bool SequentialCommandRunner::IsReady() const {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  return !status_callback_;
-}
+bool SequentialCommandRunner::IsReady() const { return !status_callback_; }
 
 void SequentialCommandRunner::Cancel() {
   ZX_DEBUG_ASSERT(status_callback_);
@@ -58,10 +50,7 @@ void SequentialCommandRunner::Cancel() {
   Reset();
 }
 
-bool SequentialCommandRunner::HasQueuedCommands() const {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  return !command_queue_.empty();
-}
+bool SequentialCommandRunner::HasQueuedCommands() const { return !command_queue_.empty(); }
 
 void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
   ZX_DEBUG_ASSERT(status_callback_);

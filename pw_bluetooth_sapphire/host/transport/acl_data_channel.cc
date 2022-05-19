@@ -161,10 +161,6 @@ class AclDataChannelImpl final : public AclDataChannel {
   async::TaskClosureMethod<AclDataChannelImpl, &AclDataChannelImpl::WriteSendMetrics>
       write_send_metrics_task_{this};
 
-  // Used to assert that certain public functions are only called on the creation thread.
-  // TODO(fxbug.dev/96671): Remove usage of fit::thread_checker.
-  fit::thread_checker thread_checker_;
-
   // The Transport object that owns this instance.
   Transport* transport_;  // weak;
 
@@ -278,7 +274,6 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, HciWrapper* hci,
   ZX_DEBUG_ASSERT(transport_);
   ZX_ASSERT(hci_);
 
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() || le_buffer_info.IsAvailable());
 
   num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
@@ -295,7 +290,6 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, HciWrapper* hci,
 }
 
 AclDataChannelImpl::~AclDataChannelImpl() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   bt_log(INFO, "hci", "AclDataChannel shutting down");
 

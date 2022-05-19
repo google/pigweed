@@ -272,8 +272,6 @@ Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan)
 }
 
 Bearer::~Bearer() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   chan_ = nullptr;
 
   request_queue_.Reset();
@@ -281,8 +279,6 @@ Bearer::~Bearer() {
 }
 
 bool Bearer::Activate() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   return chan_->Activate(fit::bind_member<&Bearer::OnRxBFrame>(this),
                          fit::bind_member<&Bearer::OnChannelClosed>(this));
 }
@@ -293,8 +289,6 @@ void Bearer::ShutDown() {
 }
 
 void Bearer::ShutDownInternal(bool due_to_timeout) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   // Prevent this method from being run twice (e.g. by SignalLinkError() below).
   if (shut_down_) {
     return;
@@ -339,8 +333,6 @@ bool Bearer::SendWithoutResponse(ByteBufferPtr pdu) {
 }
 
 bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   auto _check_callback_empty = fit::defer([&callback]() {
     // Ensure that callback was either never present or called/moved before SendInternal returns
     ZX_ASSERT(!callback);
@@ -415,7 +407,6 @@ Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
 }
 
 void Bearer::UnregisterHandler(HandlerId id) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(id != kInvalidHandlerId);
 
   auto iter = handler_id_map_.find(id);
@@ -429,7 +420,6 @@ void Bearer::UnregisterHandler(HandlerId id) {
 }
 
 bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(pdu);
 
   if (tid == kInvalidTransactionId)
@@ -469,8 +459,6 @@ bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
 }
 
 bool Bearer::ReplyWithError(TransactionId id, Handle handle, ErrorCode error_code) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   RemoteTransaction* pending = FindRemoteTransaction(id);
   if (!pending)
     return false;
@@ -510,8 +498,6 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
 
 void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
                                ErrorCode error_code) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   auto buffer = NewSlabBuffer(sizeof(Header) + sizeof(ErrorResponseParams));
   ZX_ASSERT(buffer);
 
@@ -525,7 +511,6 @@ void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
 }
 
 void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& packet) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(is_open());
   ZX_DEBUG_ASSERT(tq);
 
@@ -602,8 +587,6 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
           return;
         }
 
-        ZX_DEBUG_ASSERT(self->thread_checker_.is_thread_valid());
-
         // TODO(armansito): Notify the upper layer to re-initiate service
         // discovery and other necessary procedures (see Vol 3, Part C,
         // 10.3.2).
@@ -646,7 +629,6 @@ Bearer::TransactionId Bearer::NextRemoteTransactionId() {
 
 void Bearer::HandleBeginTransaction(RemoteTransaction* currently_pending,
                                     const PacketReader& packet) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(currently_pending);
 
   if (currently_pending->has_value()) {
@@ -669,8 +651,6 @@ void Bearer::HandleBeginTransaction(RemoteTransaction* currently_pending,
 }
 
 Bearer::RemoteTransaction* Bearer::FindRemoteTransaction(TransactionId id) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   if (remote_request_ && remote_request_->id == id) {
     return &remote_request_;
   }
@@ -684,8 +664,6 @@ Bearer::RemoteTransaction* Bearer::FindRemoteTransaction(TransactionId id) {
 }
 
 void Bearer::HandlePDUWithoutResponse(const PacketReader& packet) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   auto iter = handlers_.find(packet.opcode());
   if (iter == handlers_.end()) {
     bt_log(DEBUG, "att", "dropping unhandled packet (opcode: %#.2x)", packet.opcode());
@@ -696,8 +674,6 @@ void Bearer::HandlePDUWithoutResponse(const PacketReader& packet) {
 }
 
 void Bearer::OnChannelClosed() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
   // This will deactivate the channel and notify |closed_cb_|.
   ShutDown();
 }
@@ -705,7 +681,6 @@ void Bearer::OnChannelClosed() {
 void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
   ZX_DEBUG_ASSERT(is_open());
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   TRACE_DURATION("bluetooth", "att::Bearer::OnRxBFrame", "length", sdu->size());
 

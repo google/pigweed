@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SOCKET_SOCKET_FACTORY_H_
 
 #include <lib/async/dispatcher.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/zx/socket.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
@@ -62,8 +61,6 @@ class SocketFactory final {
   using RelayT = SocketChannelRelay<ChannelT>;
   using ChannelIdT = typename ChannelT::UniqueId;
 
-  const fit::thread_checker thread_checker_;
-
   // TODO(fxbug.dev/671): Figure out what we need to do handle the possibility that a
   // channel id is recycled. (See comment in LogicalLink::HandleRxPacket.)
   std::unordered_map<ChannelIdT, std::unique_ptr<RelayT>> channel_to_relay_;
@@ -78,12 +75,10 @@ SocketFactory<ChannelT>::SocketFactory() : weak_ptr_factory_(this) {}
 
 template <typename ChannelT>
 SocketFactory<ChannelT>::~SocketFactory() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 }
 
 template <typename ChannelT>
 zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fbl::RefPtr<ChannelT> channel) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (!channel) {
     return zx::socket();

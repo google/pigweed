@@ -39,7 +39,6 @@ Transport::Transport(std::unique_ptr<HciWrapper> hci)
 }
 
 Transport::~Transport() {
-  ZX_ASSERT(thread_checker_.is_thread_valid());
   bt_log(INFO, "hci", "transport shutting down");
 
   ResetChannels();

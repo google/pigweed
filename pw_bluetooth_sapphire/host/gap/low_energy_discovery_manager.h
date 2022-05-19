@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/defer.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 
 #include <memory>
@@ -168,7 +167,6 @@ class LowEnergyDiscoverySession final {
   fit::closure error_callback_;
   PeerFoundCallback peer_found_callback_;
   DiscoveryFilter filter_;
-  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoverySession);
 };
@@ -337,8 +335,6 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // The scanner that performs the HCI procedures. |scanner_| must out-live this
   // discovery manager.
   hci::LowEnergyScanner* scanner_;  // weak
-
-  fit::thread_checker thread_checker_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

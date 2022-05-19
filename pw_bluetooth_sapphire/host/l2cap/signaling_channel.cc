@@ -37,8 +37,6 @@ SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan, hci_spec::Connecti
       });
 }
 
-SignalingChannel::~SignalingChannel() { ZX_DEBUG_ASSERT(is_thread_valid()); }
-
 bool SignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& payload,
                                    ResponseHandler cb) {
   ZX_ASSERT(cb);
@@ -124,7 +122,6 @@ void SignalingChannel::ResponderImpl::RejectInvalidChannelId(ChannelId local_cid
 }
 
 bool SignalingChannel::SendPacket(CommandCode code, uint8_t identifier, const ByteBuffer& data) {
-  ZX_DEBUG_ASSERT(is_thread_valid());
   return Send(BuildPacket(code, identifier, data));
 }
 
@@ -206,7 +203,6 @@ void SignalingChannel::OnResponseTimeout(CommandId id, bool retransmit) {
 }
 
 bool SignalingChannel::Send(ByteBufferPtr packet) {
-  ZX_DEBUG_ASSERT(is_thread_valid());
   ZX_DEBUG_ASSERT(packet);
   ZX_DEBUG_ASSERT(packet->size() >= sizeof(CommandHeader));
 
@@ -267,15 +263,12 @@ CommandId SignalingChannel::GetNextCommandId() {
 }
 
 void SignalingChannel::OnChannelClosed() {
-  ZX_DEBUG_ASSERT(is_thread_valid());
   ZX_DEBUG_ASSERT(is_open());
 
   is_open_ = false;
 }
 
 void SignalingChannel::OnRxBFrame(ByteBufferPtr sdu) {
-  ZX_DEBUG_ASSERT(is_thread_valid());
-
   if (!is_open())
     return;
 

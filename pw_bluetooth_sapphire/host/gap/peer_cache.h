@@ -7,7 +7,6 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 
 #include <unordered_map>
@@ -132,7 +131,6 @@ class PeerCache final {
 
   // When set, |callback| will be invoked whenever a peer is removed.
   void set_peer_removed_callback(PeerIdCallback callback) {
-    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     peer_removed_callback_ = std::move(callback);
   }
 
@@ -140,7 +138,6 @@ class PeerCache final {
   // data of a peer is updated and should be persisted. The caller must ensure
   // that |callback| outlives |this|.
   void set_peer_bonded_callback(PeerCallback callback) {
-    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     peer_bonded_callback_ = std::move(callback);
   }
 
@@ -237,8 +234,6 @@ class PeerCache final {
   inspect::Node node_;
 
   PeerMetrics peer_metrics_;
-
-  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PeerCache);
 };

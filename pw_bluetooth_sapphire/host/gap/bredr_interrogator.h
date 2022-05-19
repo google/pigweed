@@ -8,7 +8,6 @@
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 
 #include <memory>
 

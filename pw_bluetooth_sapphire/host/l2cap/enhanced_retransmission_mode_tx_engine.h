@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 
-#include <lib/fit/thread_checker.h>
-
 #include <list>
 
 #include "lib/async/cpp/task.h"
@@ -243,8 +241,6 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   std::list<PendingPdu> pending_pdus_;
   async::TaskClosure receiver_ready_poll_task_;
   async::TaskClosure monitor_task_;
-
-  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeTxEngine);
 };
