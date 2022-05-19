@@ -20,7 +20,6 @@ import com.google.protobuf.ExtensionRegistryLite;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 public final class PacketsTest {
   private static final Service SERVICE =

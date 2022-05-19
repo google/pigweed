@@ -17,7 +17,6 @@ package dev.pigweed.pw_rpc;
 import static com.google.common.truth.Truth.assertThat;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 public final class IdsTest {
   @Test
