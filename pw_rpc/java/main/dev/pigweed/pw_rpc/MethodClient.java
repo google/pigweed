@@ -84,6 +84,7 @@ public class MethodClient {
   /**
    * @deprecated The request argument is deprecated and unused. Use the single-argument version.
    */
+  @Deprecated
   public Call openUnary(MessageLite unusedRequest, StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.UNARY);
     return StreamObserverCall.open(rpcs(), rpc(), observer);
