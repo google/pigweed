@@ -17,10 +17,10 @@
 licenses(["notice"])
 
 java_test(
-    name = "ManagerTest",
+    name = "TransferClientTest",
     size = "small",
-    srcs = ["ManagerTest.java"],
-    test_class = "dev.pigweed.pw_transfer.ManagerTest",
+    srcs = ["TransferClientTest.java"],
+    test_class = "dev.pigweed.pw_transfer.TransferClientTest",
     visibility = ["//visibility:public"],
     deps = [
         "//pw_log/java/main/dev/pigweed/pw_log",
@@ -38,8 +38,8 @@ java_test(
 )
 
 test_suite(
-    name = "transfer",
+    name = "pw_transfer",
     tests = [
-        ":ManagerTest",
+        ":TransferClientTest",
     ],
 )

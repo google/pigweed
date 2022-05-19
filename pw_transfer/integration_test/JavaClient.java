@@ -21,7 +21,7 @@ import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.Channel;
 import dev.pigweed.pw_rpc.ChannelOutputException;
 import dev.pigweed.pw_rpc.Client;
-import dev.pigweed.pw_transfer.Manager;
+import dev.pigweed.pw_transfer.TransferClient;
 import dev.pigweed.pw_transfer.TransferParameters;
 import dev.pigweed.pw_transfer.TransferService;
 import java.io.IOException;
@@ -202,7 +202,7 @@ public class JavaClient {
 
     hdlc_rpc_client.startClient();
 
-    Manager transferManager = new Manager(
+    TransferClient transferManager = new TransferClient(
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Read"),
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Write"),
         workQueue::execute,

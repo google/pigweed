@@ -18,9 +18,9 @@
 java_library(
     name = "client",
     srcs = [
-        "Manager.java",
         "ReadTransfer.java",
         "Transfer.java",
+        "TransferClient.java",
         "TransferError.java",
         "TransferParameters.java",
         "TransferProgress.java",

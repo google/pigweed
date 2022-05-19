@@ -38,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-public final class ManagerTest {
+public final class TransferClientTest {
   @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
   private static final int CHANNEL_ID = 1;
@@ -55,7 +55,7 @@ public final class ManagerTest {
   private boolean shouldAbortFlag = false;
   private TestClient client;
 
-  Manager manager;
+  TransferClient manager;
 
   @Mock private Consumer<TransferProgress> progressCallback;
   @Captor private ArgumentCaptor<TransferProgress> progress;
@@ -912,8 +912,9 @@ public final class ManagerTest {
     return client.lastClientStreams(Chunk.class);
   }
 
-  private Manager createManager(int transferTimeoutMillis, int initialTransferTimeoutMillis) {
-    return new Manager(client.client().method(CHANNEL_ID, SERVICE + "/Read"),
+  private TransferClient createManager(
+      int transferTimeoutMillis, int initialTransferTimeoutMillis) {
+    return new TransferClient(client.client().method(CHANNEL_ID, SERVICE + "/Read"),
         client.client().method(CHANNEL_ID, SERVICE + "/Write"),
         Runnable::run, // Run the job immediately on the same thread
         transferTimeoutMillis,

@@ -36,11 +36,11 @@ import javax.annotation.Nullable;
 /**
  * Manages ongoing pw_transfer data transfers.
  *
- * <p>Use Manager to send data to and receive data from a pw_transfer service running on a pw_rpc
- * server.
+ * <p>Use TransferClient to send data to and receive data from a pw_transfer service running on a
+ * pw_rpc server.
  */
-public class Manager {
-  private static final Logger logger = Logger.forClass(Manager.class);
+public class TransferClient {
+  private static final Logger logger = Logger.forClass(TransferClient.class);
 
   public static final TransferParameters DEFAULT_READ_TRANSFER_PARAMETERS =
       TransferParameters.create(8192, 1024, 0);
@@ -61,7 +61,7 @@ public class Manager {
   @Nullable private Call.ClientStreaming<Chunk> writeStream = null;
 
   /**
-   * Creates a new Manager for sending and receiving data with pw_transfer.
+   * Creates a new TransferClient for sending and receiving data with pw_transfer.
    *
    * @param readMethod Method client for the pw.transfer.Transfer.Read method.
    * @param writeMethod Method client for the pw.transfer.Transfer.Write method.
@@ -76,7 +76,7 @@ public class Manager {
    * @param maxRetries How many times to retry if a communication times out.
    * @param shouldAbortCallback BooleanSupplier that returns true if a transfer should be aborted.
    */
-  public Manager(MethodClient readMethod,
+  public TransferClient(MethodClient readMethod,
       MethodClient writeMethod,
       Consumer<Runnable> workDispatcher,
       int transferTimeoutMillis,
