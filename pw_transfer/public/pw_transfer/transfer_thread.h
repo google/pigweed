@@ -98,7 +98,7 @@ class TransferThread : public thread::ThreadCore {
                          Status status,
                          bool send_status_chunk = false) {
     EndTransfer(
-        EventType::kClientEndTransfer, session_id, status, send_status_chunk);
+        EventType::kServerEndTransfer, session_id, status, send_status_chunk);
   }
 
   void SetClientReadStream(rpc::RawClientReaderWriter& read_stream) {
