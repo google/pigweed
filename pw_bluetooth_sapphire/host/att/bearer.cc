@@ -598,8 +598,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
         t->security_retry_level = security_requirement;
         self->request_queue_.Enqueue(std::move(t));
         self->TryStartNextTransaction(&self->request_queue_);
-      },
-      async_get_default_dispatcher());
+      });
 
   // Move on to the next queued transaction.
   TryStartNextTransaction(tq);

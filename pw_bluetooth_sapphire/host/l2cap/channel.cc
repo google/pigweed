@@ -172,17 +172,15 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
   return tx_engine_->QueueSdu(std::move(sdu));
 }
 
-void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
-                                  async_dispatcher_t* dispatcher) {
+void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
   ZX_ASSERT(callback);
-  ZX_ASSERT(dispatcher);
 
   if (!link_ || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring security request on inactive channel");
     return;
   }
 
-  link_->UpgradeSecurity(level, std::move(callback), dispatcher);
+  link_->UpgradeSecurity(level, std::move(callback));
 }
 
 void ChannelImpl::RequestAclPriority(hci::AclPriority priority,

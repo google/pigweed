@@ -111,11 +111,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Requests a security upgrade using the registered security upgrade callback.
   // Invokes the |callback| argument with the result of the operation.
-  // |callback| will be run by the requested |dispatcher|.
   //
   // Has no effect if the link is closed.
-  void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
-                       async_dispatcher_t* dispatcher);
+  void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback);
 
   // Assigns the security level of this link and resolves pending security
   // upgrade requests. Has no effect if the link is closed.

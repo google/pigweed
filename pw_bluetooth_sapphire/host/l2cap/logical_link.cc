@@ -236,28 +236,22 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
   iter->second->HandleRxPdu(std::move(*result.pdu));
 }
 
-void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
-                                  async_dispatcher_t* dispatcher) {
+void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
   ZX_DEBUG_ASSERT(security_callback_);
-  ZX_DEBUG_ASSERT(dispatcher);
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignoring security request on closed link");
     return;
   }
 
-  auto status_cb = [dispatcher, f = std::move(callback)](sm::Result<> status) mutable {
-    async::PostTask(dispatcher, [f = std::move(f), status] { f(status); });
-  };
-
   // Report success If the link already has the expected security level.
   if (level <= security().level()) {
-    status_cb(fitx::ok());
+    callback(fitx::ok());
     return;
   }
 
   bt_log(DEBUG, "l2cap", "Security upgrade requested (level = %s)", sm::LevelToString(level));
-  security_callback_(handle_, level, std::move(status_cb));
+  security_callback_(handle_, level, std::move(callback));
 }
 
 void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& security) {

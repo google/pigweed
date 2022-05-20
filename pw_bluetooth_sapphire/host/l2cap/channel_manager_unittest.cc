@@ -1755,7 +1755,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
 
   // Requesting security at or below the current level should succeed without
   // doing anything.
-  att->UpgradeSecurity(sm::SecurityLevel::kNoSecurity, status_callback, dispatcher());
+  att->UpgradeSecurity(sm::SecurityLevel::kNoSecurity, status_callback);
   RunLoopUntilIdle();
   EXPECT_EQ(0, security_request_count);
   EXPECT_EQ(1, security_status_count);
@@ -1763,7 +1763,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
 
   // Test reporting an error.
   delivered_status = ToResult(HostError::kNotSupported);
-  att->UpgradeSecurity(sm::SecurityLevel::kEncrypted, status_callback, dispatcher());
+  att->UpgradeSecurity(sm::SecurityLevel::kEncrypted, status_callback);
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
@@ -1774,9 +1774,9 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   chanmgr()->RemoveConnection(kTestHandle1);
   RunLoopUntilIdle();
 
-  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
-  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
-  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
+  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
+  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
+  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);

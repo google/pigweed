@@ -110,15 +110,10 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
   return true;
 }
 
-void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback,
-                                  async_dispatcher_t* dispatcher) {
-  ZX_ASSERT(dispatcher);
-  auto result_cb = [cb = std::move(callback), dispatcher](auto status) mutable {
-    async::PostTask(dispatcher, [cb = std::move(cb), status] { cb(status); });
-  };
+void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
   ZX_ASSERT(security_dispatcher_);
   async::PostTask(security_dispatcher_,
-                  [cb = std::move(result_cb), f = security_cb_.share(), handle = handle_,
+                  [cb = std::move(callback), f = security_cb_.share(), handle = handle_,
                    level]() mutable { f(handle, level, std::move(cb)); });
 }
 
