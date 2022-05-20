@@ -70,7 +70,7 @@ class MultiSink {
     // drop count in parallel.
     //
     // If the read operation was successful or returned OutOfRange (i.e. no
-    // entries to read) then the `drop_count_out` is set to the number of
+    // entries to read) then the `drain_drop_count_out` is set to the number of
     // entries that were dropped since the last call to PopEntry due to
     // advancing the drain, and `ingress_drop_count_out` is set to the number of
     // logs that were dropped before being added to the MultiSink. Otherwise,
@@ -133,8 +133,8 @@ class MultiSink {
     // RESOURCE_EXHAUSTED - The provided buffer was not large enough to store
     // the next available entry, which was discarded.
     Result<ConstByteSpan> PopEntry(ByteSpan buffer,
-                                   uint32_t& drop_count_out,
-                                   uint32_t& ingress_drop_count)
+                                   uint32_t& drain_drop_count_out,
+                                   uint32_t& ingress_drop_count_out)
         PW_LOCKS_EXCLUDED(multisink_->lock_);
     // Overload that combines drop counts.
     // TODO(cachinchilla): remove when downstream projects migrated to new API.
@@ -180,8 +180,8 @@ class MultiSink {
     // count, without moving the drain forward, except if there is a
     // RESOURCE_EXHAUSTED error when peeking, in which case the drain is
     // automatically advanced.
-    // The `drop_count_out` follows the same logic as `PopEntry`. The user must
-    // call `PopEntry` once the data in peek was used successfully.
+    // The `drain_drop_count_out` follows the same logic as `PopEntry`. The user
+    // must call `PopEntry` once the data in peek was used successfully.
     //
     // Precondition: the buffer data must not be corrupt, otherwise there will
     // be a crash.
@@ -193,8 +193,8 @@ class MultiSink {
     // RESOURCE_EXHAUSTED - The provided buffer was not large enough to store
     // the next available entry, which was discarded.
     Result<PeekedEntry> PeekEntry(ByteSpan buffer,
-                                  uint32_t& drop_count_out,
-                                  uint32_t& ingress_drop_count)
+                                  uint32_t& drain_drop_count_out,
+                                  uint32_t& ingress_drop_count_out)
         PW_LOCKS_EXCLUDED(multisink_->lock_);
 
     // Drains are not copyable or movable.
@@ -397,8 +397,8 @@ class MultiSink {
   //
   // Returns:
   // OK - An entry was successfully read from the multisink. The
-  // `drop_count_out` is set to the difference between the current sequence ID
-  // and the last handled ID.
+  // `drain_drop_count_out` is set to the difference between the current
+  // sequence ID and the last handled ID.
   // FAILED_PRECONDITION - The drain is not attached to
   // a multisink.
   // RESOURCE_EXHAUSTED - The provided buffer was not large enough to store
@@ -406,7 +406,7 @@ class MultiSink {
   Result<ConstByteSpan> PeekOrPopEntry(Drain& drain,
                                        ByteSpan buffer,
                                        Request request,
-                                       uint32_t& drop_count_out,
+                                       uint32_t& drain_drop_count_out,
                                        uint32_t& ingress_drop_count_out,
                                        uint32_t& entry_sequence_id_out)
       PW_LOCKS_EXCLUDED(lock_);
