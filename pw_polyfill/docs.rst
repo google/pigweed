@@ -50,15 +50,26 @@ Header              Feature                           Level of support          
 ----------------------------------------------------
 Adapt code to compile with different versions of C++
 ----------------------------------------------------
- ``pw_polyfill`` provides features for adapting to different C++ standards when
- ``pw_polyfill:overrides``'s automatic backporting is insufficient:
+``pw_polyfill`` provides features for adapting to different C++ standards when
+``pw_polyfill:overrides``'s automatic backporting is insufficient.
 
-  - ``pw_polyfill/standard.h`` -- provides a macro for checking the C++ standard
-  - ``pw_polyfill/language_feature_macros.h`` -- provides macros for adapting
-    code to work with or without newer language features
+C++ standard macro
+==================
+``pw_polyfill/standard.h`` provides a macro for checking if a C++ standard is
+supported.
+
+.. c:macro:: PW_CXX_STANDARD_IS_SUPPORTED(standard)
+
+   Evaluates true if the provided C++ standard (98, 11, 14, 17, 20) is supported
+   by the compiler. This is a simpler, cleaner alternative to checking the value
+   of the ``__cplusplus`` macro.
+
 
 Language feature macros
 =======================
+``pw_polyfill/language_feature_macros.h`` provides macros for adapting code to
+work with or without newer language features
+
 ======================  ================================  ========================================  ==========================
 Macro                   Feature                           Description                               Feature test macro
 ======================  ================================  ========================================  ==========================

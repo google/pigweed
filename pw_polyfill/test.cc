@@ -40,6 +40,12 @@ static_assert(PW_CXX_STANDARD_IS_SUPPORTED(17), "C++17 must be not supported");
 static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(17), "C++17 must be supported");
 #endif  // __cplusplus >= 201703L
 
+#if __cplusplus >= 202002L
+static_assert(PW_CXX_STANDARD_IS_SUPPORTED(20), "C++20 must be supported");
+#else
+static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(20), "C++20 must not be supported");
+#endif  // __cplusplus >= 202002L
+
 TEST(Bit, Endian) {
   if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
     EXPECT_EQ(std::endian::native, std::endian::big);
