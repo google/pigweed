@@ -26,13 +26,11 @@ class Impl final : public Client {
  private:
   void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
                                const std::unordered_set<AttributeId>& req_attributes,
-                               SearchResultFunction result_cb,
-                               async_dispatcher_t* cb_dispatcher) override;
+                               SearchResultFunction result_cb) override;
 
   // Information about a transaction that hasn't finished yet.
   struct Transaction {
-    Transaction(TransactionId id, ServiceSearchAttributeRequest req, SearchResultFunction cb,
-                async_dispatcher_t* disp);
+    Transaction(TransactionId id, ServiceSearchAttributeRequest req, SearchResultFunction cb);
     // The TransactionId used for this request.  This will be reused until the
     // transaction is complete.
     TransactionId id;
@@ -40,8 +38,6 @@ class Impl final : public Client {
     ServiceSearchAttributeRequest request;
     // Callback for results.
     SearchResultFunction callback;
-    // The dispatcher that |callback| is executed on.
-    async_dispatcher_t* dispatcher;
     // The response, built from responses from the remote server.
     ServiceSearchAttributeResponse response;
   };
@@ -103,8 +99,11 @@ Impl::Impl(fbl::RefPtr<l2cap::Channel> channel)
 Impl::~Impl() { CancelAll(HostError::kCanceled); }
 
 void Impl::CancelAll(HostError reason) {
-  while (!pending_.empty()) {
-    Cancel(pending_.begin()->first, reason);
+  // Avoid using |this| in case callbacks destroy this object.
+  auto pending = std::move(pending_);
+  pending_.clear();
+  for (auto& it : pending) {
+    it.second.callback(ToResult(reason).take_error());
   }
 }
 
@@ -117,6 +116,7 @@ void Impl::TrySendNextTransaction() {
   if (!channel_) {
     bt_log(INFO, "sdp", "Failed to send %zu requests: link closed", pending_.size());
     CancelAll(HostError::kLinkDisconnected);
+    return;
   }
 
   if (pending_.empty()) {
@@ -143,8 +143,7 @@ void Impl::TrySendNextTransaction() {
 
 void Impl::ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
                                    const std::unordered_set<AttributeId>& req_attributes,
-                                   SearchResultFunction result_cb,
-                                   async_dispatcher_t* cb_dispatcher) {
+                                   SearchResultFunction result_cb) {
   ServiceSearchAttributeRequest req;
   req.set_search_pattern(std::move(search_pattern));
   if (req_attributes.empty()) {
@@ -156,8 +155,7 @@ void Impl::ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
   }
   TransactionId next = GetNextId();
 
-  auto [iter, placed] =
-      pending_.try_emplace(next, next, std::move(req), std::move(result_cb), cb_dispatcher);
+  auto [iter, placed] = pending_.try_emplace(next, next, std::move(req), std::move(result_cb));
   ZX_DEBUG_ASSERT_MSG(placed, "Should not have repeat transaction ID %u", next);
 
   TrySendNextTransaction();
@@ -172,31 +170,44 @@ void Impl::Finish(TransactionId id) {
     return;
   }
   ZX_DEBUG_ASSERT_MSG(state.response.complete(), "Finished without complete response");
-  async::PostTask(state.dispatcher,
-                  [cb = std::move(state.callback), response = std::move(state.response)] {
-                    size_t count = response.num_attribute_lists();
-                    for (size_t idx = 0; idx < count; idx++) {
-                      if (!cb(fitx::ok(std::cref(response.attributes(idx))))) {
-                        return;
-                      }
-                    }
-                    cb(fitx::error(Error(HostError::kNotFound)));
-                  });
+
+  auto self = weak_ptr_factory_.GetWeakPtr();
+
+  size_t count = state.response.num_attribute_lists();
+  for (size_t idx = 0; idx <= count; idx++) {
+    if (idx == count) {
+      state.callback(fitx::error(Error(HostError::kNotFound)));
+      break;
+    }
+    if (!state.callback(fitx::ok(std::cref(state.response.attributes(idx))))) {
+      break;
+    }
+  }
+
+  // Callbacks may have destroyed this object.
+  if (!self) {
+    return;
+  }
+
   TrySendNextTransaction();
 }
 
 Impl::Transaction::Transaction(TransactionId id, ServiceSearchAttributeRequest req,
-                               SearchResultFunction cb, async_dispatcher_t* disp)
-    : id(id), request(std::move(req)), callback(std::move(cb)), dispatcher(disp) {}
+                               SearchResultFunction cb)
+    : id(id), request(std::move(req)), callback(std::move(cb)) {}
 
 void Impl::Cancel(TransactionId id, HostError reason) {
   auto node = pending_.extract(id);
   if (!node) {
     return;
   }
-  async::PostTask(node.mapped().dispatcher, [callback = std::move(node.mapped().callback), reason] {
-    callback(ToResult(reason).take_error());
-  });
+
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  node.mapped().callback(ToResult(reason).take_error());
+  if (!self) {
+    return;
+  }
+
   TrySendNextTransaction();
 }
 
@@ -242,9 +253,7 @@ void Impl::OnRxFrame(ByteBufferPtr data) {
 void Impl::OnChannelClosed() {
   bt_log(INFO, "sdp", "client channel closed");
   channel_ = nullptr;
-  while (!pending_.empty()) {
-    Cancel(pending_.begin()->first, HostError::kLinkDisconnected);
-  }
+  CancelAll(HostError::kLinkDisconnected);
 }
 
 TransactionId Impl::GetNextId() {

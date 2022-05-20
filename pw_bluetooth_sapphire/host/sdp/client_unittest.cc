@@ -106,8 +106,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
     //  - Bluetooth Profile Descriptor List
     client->ServiceSearchAttributes(
         {profile::kAudioSink},
-        {kServiceClassIdList, kProtocolDescriptorList, kBluetoothProfileDescriptorList}, result_cb,
-        dispatcher());
+        {kServiceClassIdList, kProtocolDescriptorList, kBluetoothProfileDescriptorList}, result_cb);
     RunLoopUntilIdle();
     EXPECT_TRUE(success);
 
@@ -182,8 +181,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
-    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb,
-                                    dispatcher());
+    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     RunLoopUntilIdle();
     EXPECT_TRUE(success);
 
@@ -200,8 +198,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
     // Twice
     success = false;
-    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb,
-                                    dispatcher());
+    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     RunLoopUntilIdle();
     EXPECT_TRUE(success);
 
@@ -259,11 +256,9 @@ TEST_F(ClientTest, TwoQueriesQueued) {
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
-    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb,
-                                    dispatcher());
+    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     // Twice (without waiting)
-    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb,
-                                    dispatcher());
+    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     RunLoopUntilIdle();
     // Only one request should have been sent.
     EXPECT_EQ(1u, sent_packets);
@@ -367,8 +362,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb,
-                                  dispatcher());
+                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
   RunLoopUntilIdle();
   EXPECT_EQ(3u, cb_count);
   EXPECT_EQ(4u, requests_made);
@@ -421,8 +415,7 @@ TEST_F(ClientTest, NoResults) {
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb,
-                                  dispatcher());
+                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(success);
 
@@ -482,8 +475,7 @@ TEST_F(ClientTest, Disconnected) {
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb,
-                                  dispatcher());
+                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
@@ -543,8 +535,7 @@ TEST_F(ClientTest, InvalidResponse) {
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb,
-                                  dispatcher());
+                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
@@ -601,14 +592,72 @@ TEST_F(ClientTest, Timeout) {
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb,
-                                  dispatcher());
+                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
 
   // Wait until the timeout happens
   RunLoopFor(zx::msec(kTimeoutMs + 1));
+
+  EXPECT_EQ(1u, cb_count);
+}
+
+TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
+  constexpr uint32_t kTimeoutMs = 10000;
+  auto client = Client::Create(channel());
+
+  size_t cb_count = 0;
+  auto result_cb =
+      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+              attrs_result) {
+        cb_count++;
+        EXPECT_TRUE(attrs_result.is_error());
+        client.reset();
+        return true;
+      };
+
+  bool requested = false;
+  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, dispatcher());
+
+  client->ServiceSearchAttributes({profile::kAudioSink},
+                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(requested);
+  EXPECT_EQ(0u, cb_count);
+
+  // Wait until the timeout happens
+  RunLoopFor(zx::msec(kTimeoutMs + 1));
+
+  EXPECT_EQ(1u, cb_count);
+}
+
+TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
+  auto client = Client::Create(channel());
+
+  size_t cb_count = 0;
+  auto result_cb =
+      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+              attrs_result) {
+        cb_count++;
+        EXPECT_EQ(Error(HostError::kLinkDisconnected), attrs_result);
+        client.reset();
+        return true;
+      };
+
+  bool requested = false;
+  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, dispatcher());
+
+  client->ServiceSearchAttributes({profile::kAudioSink},
+                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(requested);
+  EXPECT_EQ(0u, cb_count);
+
+  // Remote end closes the channel.
+  fake_chan()->Close();
+
+  RunLoopUntilIdle();
 
   EXPECT_EQ(1u, cb_count);
 }

@@ -29,19 +29,17 @@ class FakeClient : public Client {
 
   virtual void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
                                        const std::unordered_set<AttributeId> &req_attributes,
-                                       SearchResultFunction result_cb,
-                                       async_dispatcher_t *cb_dispatcher) override {
+                                       SearchResultFunction result_cb) override {
     if (!service_search_attributes_cb_) {
       FAIL() << "ServiceSearchAttributes with no callback set";
     }
 
     service_search_attributes_cb_(std::move(search_pattern), std::move(req_attributes),
-                                  std::move(result_cb), cb_dispatcher);
+                                  std::move(result_cb));
   }
 
-  using ServiceSearchAttributesCallback =
-      fit::function<void(std::unordered_set<UUID>, std::unordered_set<AttributeId>,
-                         SearchResultFunction, async_dispatcher_t *)>;
+  using ServiceSearchAttributesCallback = fit::function<void(
+      std::unordered_set<UUID>, std::unordered_set<AttributeId>, SearchResultFunction)>;
   void SetServiceSearchAttributesCallback(ServiceSearchAttributesCallback callback) {
     service_search_attributes_cb_ = std::move(callback);
   }
@@ -108,10 +106,10 @@ TEST_F(ServiceDiscovererTest, NoResults) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  client->SetServiceSearchAttributesCallback([&searches](auto pattern, auto attributes,
-                                                         auto callback, auto *cb_dispatcher) {
+  client->SetServiceSearchAttributesCallback([dispatcher = dispatcher(), &searches](
+                                                 auto pattern, auto attributes, auto callback) {
     searches.emplace_back(std::move(pattern));
-    async::PostTask(cb_dispatcher,
+    async::PostTask(dispatcher,
                     [cb = std::move(callback)]() { cb(fitx::error(Error(HostError::kNotFound))); });
   });
 
@@ -119,6 +117,32 @@ TEST_F(ServiceDiscovererTest, NoResults) {
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
+  EXPECT_EQ(1u, searches.size());
+  ASSERT_EQ(0u, cb_count);
+  ASSERT_EQ(1u, clients_destroyed());
+}
+
+TEST_F(ServiceDiscovererTest, SynchronousErrorResult) {
+  ServiceDiscoverer discoverer;
+
+  size_t cb_count = 0;
+  auto result_cb = [&cb_count](auto, const auto &) { cb_count++; };
+  ServiceDiscoverer::SearchId id = discoverer.AddSearch(
+      profile::kSerialPort, {kServiceId, kProtocolDescriptorList, kBluetoothProfileDescriptorList},
+      std::move(result_cb));
+  ASSERT_NE(ServiceDiscoverer::kInvalidSearchId, id);
+  EXPECT_EQ(1u, discoverer.search_count());
+
+  auto client = GetFakeClient();
+  std::vector<std::unordered_set<UUID>> searches;
+  client->SetServiceSearchAttributesCallback(
+      [&searches](auto pattern, auto attributes, auto callback) {
+        searches.emplace_back(std::move(pattern));
+        callback(fitx::error(Error(HostError::kLinkDisconnected)));
+      });
+
+  discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
+  RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_EQ(1u, searches.size());
   ASSERT_EQ(0u, cb_count);
   ASSERT_EQ(1u, clients_destroyed());
@@ -157,10 +181,10 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  client->SetServiceSearchAttributesCallback([&searches](auto pattern, auto attributes,
-                                                         auto callback, auto *cb_dispatcher) {
+  client->SetServiceSearchAttributesCallback([this, &searches](auto pattern, auto attributes,
+                                                               auto callback) {
     searches.emplace_back(std::move(pattern));
-    async::PostTask(cb_dispatcher,
+    async::PostTask(dispatcher(),
                     [cb = std::move(callback)]() { cb(fitx::error(Error(HostError::kNotFound))); });
   });
 
@@ -177,7 +201,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
   searches.clear();
 
   client->SetServiceSearchAttributesCallback(
-      [&searches](auto pattern, auto attributes, auto callback, auto *cb_dispatcher) {
+      [cb_dispatcher = dispatcher(), &searches](auto pattern, auto attributes, auto callback) {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
@@ -229,7 +253,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
   client = GetFakeClient();
 
   client->SetServiceSearchAttributesCallback(
-      [&searches](auto pattern, auto attributes, auto callback, auto *cb_dispatcher) {
+      [cb_dispatcher = dispatcher(), &searches](auto pattern, auto attributes, auto callback) {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kAudioSink)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
@@ -283,7 +307,7 @@ TEST_F(ServiceDiscovererTest, Disconnected) {
   std::vector<std::unordered_set<UUID>> searches;
 
   client->SetServiceSearchAttributesCallback(
-      [&searches](auto pattern, auto attributes, auto callback, auto *cb_dispatcher) {
+      [cb_dispatcher = dispatcher(), &searches](auto pattern, auto attributes, auto callback) {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
@@ -339,7 +363,7 @@ TEST_F(ServiceDiscovererTest, UnregisterInProgress) {
   std::vector<std::unordered_set<UUID>> searches;
 
   client->SetServiceSearchAttributesCallback(
-      [&searches](auto pattern, auto attributes, auto callback, auto *cb_dispatcher) {
+      [cb_dispatcher = dispatcher(), &searches](auto pattern, auto attributes, auto callback) {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kAudioSink)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {

@@ -44,8 +44,7 @@ class Client {
       fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>)>;
   virtual void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
                                        const std::unordered_set<AttributeId>& req_attributes,
-                                       SearchResultFunction result_cb,
-                                       async_dispatcher_t* cb_dispatcher) = 0;
+                                       SearchResultFunction result_cb) = 0;
 };
 
 }  // namespace bt::sdp

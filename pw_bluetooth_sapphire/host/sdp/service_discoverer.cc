@@ -50,9 +50,10 @@ bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id, std::unique_ptr<Cl
   }
   DiscoverySession session;
   session.client = std::move(client);
-  for (auto& it : searches_) {
+  auto [session_iter, _] = sessions_.emplace(peer_id, std::move(session));
+  for (auto& [search_id, search] : searches_) {
     Client::SearchResultFunction result_cb =
-        [this, peer_id, search_id = it.first](
+        [this, peer_id, search_id = search_id](
             fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
                 attributes_result) {
           auto it = searches_.find(search_id);
@@ -63,12 +64,10 @@ bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id, std::unique_ptr<Cl
           it->second.callback(peer_id, attributes_result.value());
           return true;
         };
-    session.client->ServiceSearchAttributes({it.second.uuid}, it.second.attributes,
-                                            std::move(result_cb), async_get_default_dispatcher());
-
-    session.active.emplace(it.first);
+    session_iter->second.active.emplace(search_id);
+    session_iter->second.client->ServiceSearchAttributes({search.uuid}, search.attributes,
+                                                         std::move(result_cb));
   }
-  sessions_.emplace(peer_id, std::move(session));
   return true;
 }
 
