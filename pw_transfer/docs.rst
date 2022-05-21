@@ -336,6 +336,17 @@ To run the tests on your machine, run
 
   $ bazel run pw_transfer/integration_test:cross_language_integration_test
 
+The integration tests permit injection of client/server/proxy binaries to use
+when running the tests. This allows manual testing of older versions of
+pw_transfer against newer versions.
+
+.. code:: bash
+
+  # Test a newer version of pw_transfer against an old C++ client that was
+  # backed up to another directory.
+  $ bazel run pw_transfer/integration_test:cross_language_integration_test -- \
+      --cpp-client ../old_pw_transfer_version/cpp_client
+
 CI/CQ integration
 =================
 `Current status of the test in CI <https://ci.chromium.org/p/pigweed/builders/ci/pigweed-integration-transfer>`_.

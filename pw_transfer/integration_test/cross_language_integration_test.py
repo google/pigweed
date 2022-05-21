@@ -18,12 +18,23 @@ Usage:
 
    bazel run pw_transfer/integration_test:cross_language_integration_test
 
+Command-line arguments must be provided after a double-dash:
+
+   bazel run pw_transfer/integration_test:cross_language_integration_test -- \
+       --server-port 3304
+
+Which tests to run can be specified as command-line arguments:
+
+  bazel run pw_transfer/integration_test:cross_language_integration_test -- \
+      PwTransferIntegrationTest.test_small_client_write_1_java
+
 """
 
 import argparse
 import asyncio
 import logging
 from parameterized import parameterized
+import pathlib
 import random
 import sys
 import tempfile
@@ -35,9 +46,6 @@ from google.protobuf import text_format
 
 from pigweed.pw_transfer.integration_test import config_pb2
 from rules_python.python.runfiles import runfiles
-
-SERVER_PORT = 3300
-CLIENT_PORT = 3301
 
 _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
 _LOG.level = logging.DEBUG
@@ -179,24 +187,41 @@ class PwTransferIntegrationTest(unittest.TestCase):
     # "SERVER OUT:".
     _PREFIX = "HARNESS:   "
 
+    SERVER_PORT = 3300
+    CLIENT_PORT = 3301
+    JAVA_CLIENT_BINARY = None
+    CPP_CLIENT_BINARY = None
+    PYTHON_CLIENT_BINARY = None
+    PROXY_BINARY = None
+    SERVER_BINARY = None
+
     @classmethod
     def setUpClass(cls):
         # TODO(tpudlik): This is Bazel-only. Support gn, too.
         r = runfiles.Create()
-        cls._JAVA_CLIENT_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/java_client")
-        cls._CPP_CLIENT_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/cpp_client")
-        cls._PYTHON_CLIENT_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/python_client")
-        cls._PROXY_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/proxy")
-        cls._SERVER_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/server")
+
+        # For each binary used by this test, get the binaries produced by the
+        # build system if an override has not been specified.
+        if cls.JAVA_CLIENT_BINARY is None:
+            cls.JAVA_CLIENT_BINARY = r.Rlocation(
+                "pigweed/pw_transfer/integration_test/java_client")
+        if cls.CPP_CLIENT_BINARY is None:
+            cls.CPP_CLIENT_BINARY = r.Rlocation(
+                "pigweed/pw_transfer/integration_test/cpp_client")
+        if cls.PYTHON_CLIENT_BINARY is None:
+            cls.PYTHON_CLIENT_BINARY = r.Rlocation(
+                "pigweed/pw_transfer/integration_test/python_client")
+        if cls.PROXY_BINARY is None:
+            cls.PROXY_BINARY = r.Rlocation(
+                "pigweed/pw_transfer/integration_test/proxy")
+        if cls.SERVER_BINARY is None:
+            cls.SERVER_BINARY = r.Rlocation(
+                "pigweed/pw_transfer/integration_test/server")
+
         cls._CLIENT_BINARY = {
-            "cpp": cls._CPP_CLIENT_BINARY,
-            "java": cls._JAVA_CLIENT_BINARY,
-            "python": cls._PYTHON_CLIENT_BINARY,
+            "cpp": cls.CPP_CLIENT_BINARY,
+            "java": cls.JAVA_CLIENT_BINARY,
+            "python": cls.PYTHON_CLIENT_BINARY,
         }
 
     async def _start_client(self, client_type: str,
@@ -204,22 +229,22 @@ class PwTransferIntegrationTest(unittest.TestCase):
         _LOG.info(f"{self._PREFIX} Starting client with config\n{config}")
         self._client = await MonitoredSubprocess.create(
             [self._CLIENT_BINARY[client_type],
-             str(CLIENT_PORT)], "CLIENT",
+             str(self.CLIENT_PORT)], "CLIENT",
             str(config).encode('ascii'))
 
     async def _start_server(self, config: config_pb2.ServerConfig):
         _LOG.info(f"{self._PREFIX} Starting server with config\n{config}")
         self._server = await MonitoredSubprocess.create(
-            [self._SERVER_BINARY, str(SERVER_PORT)], "SERVER",
+            [self.SERVER_BINARY, str(self.SERVER_PORT)], "SERVER",
             str(config).encode('ascii'))
 
     async def _start_proxy(self, config: config_pb2.ProxyConfig):
         _LOG.info(f"{self._PREFIX} Starting proxy with config\n{config}")
         self._proxy = await MonitoredSubprocess.create(
             [
-                self._PROXY_BINARY, "--server-port",
-                str(SERVER_PORT), "--client-port",
-                str(CLIENT_PORT)
+                self.PROXY_BINARY, "--server-port",
+                str(self.SERVER_PORT), "--client-port",
+                str(self.CLIENT_PORT)
             ],
             # Extra space in "PROXY " so that it lines up with "SERVER".
             "PROXY ",
@@ -444,14 +469,51 @@ if __name__ == '__main__':
         help=
         'Port on which to listen for connections from integration test client.',
     )
+    parser.add_argument(
+        '--java-client',
+        type=pathlib.Path,
+        default=None,
+        help='Path to the Java transfer client to use in tests',
+    )
+    parser.add_argument(
+        '--cpp-client',
+        type=pathlib.Path,
+        default=None,
+        help='Path to the C++ transfer client to use in tests',
+    )
+    parser.add_argument(
+        '--python-client',
+        type=pathlib.Path,
+        default=None,
+        help='Path to the Python transfer client to use in tests',
+    )
+    parser.add_argument(
+        '--server',
+        type=pathlib.Path,
+        default=None,
+        help='Path to the transfer server to use in tests',
+    )
+    parser.add_argument(
+        '--proxy',
+        type=pathlib.Path,
+        default=None,
+        help=('Path to the proxy binary to use in tests to allow interception '
+              'of client/server data'),
+    )
 
     (args, passthrough_args) = parser.parse_known_args()
 
     if args.server_port:
-        SERVER_PORT = args.server_port
+        PwTransferIntegrationTest.SERVER_PORT = args.server_port
 
     if args.client_port:
-        CLIENT_PORT = args.client_port
+        PwTransferIntegrationTest.CLIENT_PORT = args.client_port
+
+    PwTransferIntegrationTest.JAVA_CLIENT_BINARY = args.java_client
+    PwTransferIntegrationTest.CPP_CLIENT_BINARY = args.cpp_client
+    PwTransferIntegrationTest.PYTHON_CLIENT_BINARY = args.python_client
+    PwTransferIntegrationTest.SERVER_BINARY = args.server
+    PwTransferIntegrationTest.PROXY_BINARY = args.proxy
 
     unittest_args = [sys.argv[0]] + passthrough_args
     unittest.main(argv=unittest_args)
