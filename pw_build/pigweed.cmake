@@ -284,6 +284,45 @@ function(pw_add_library NAME TYPE)
   endif(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
 endfunction(pw_add_library)
 
+# Checks that the library's name is prefixed by the relative path with dot
+# separators instead of forward slashes. Ignores paths not under the root
+# directory.
+#
+# Optional Args:
+#
+#   REMAP_PREFIXES - support remapping a prefix for checks
+#
+function(_pw_check_name_is_relative_to_root NAME ROOT)
+  pw_parse_arguments_strict(_pw_check_name_is_relative_to_root
+      2 "" "" "REMAP_PREFIXES")
+
+  file(RELATIVE_PATH rel_path "${ROOT}" "${CMAKE_CURRENT_SOURCE_DIR}")
+  if("${rel_path}" MATCHES "^\\.\\.")
+    return()  # Ignore paths not under ROOT
+  endif()
+
+  list(LENGTH arg_REMAP_PREFIXES remap_arg_count)
+  if("${remap_arg_count}" EQUAL 2)
+    list(GET arg_REMAP_PREFIXES 0 from_prefix)
+    list(GET arg_REMAP_PREFIXES 1 to_prefix)
+    string(REGEX REPLACE "^${from_prefix}" "${to_prefix}" rel_path "${rel_path}")
+  elseif(NOT "${remap_arg_count}" EQUAL 0)
+    message(FATAL_ERROR
+        "If REMAP_PREFIXES is specified, exactly two arguments must be given.")
+  endif()
+
+  if(NOT "${rel_path}" MATCHES "^\\.\\..*")
+    string(REPLACE "/" "." dot_rel_path "${rel_path}")
+    if(NOT "${NAME}" MATCHES "^${dot_rel_path}(\\.[^\\.]+)?(\\.facade)?$")
+      message(FATAL_ERROR
+          "Module libraries under ${ROOT} must match the module name or be in "
+          "the form 'PATH_TO.THE_TARGET.NAME'. The library '${NAME}' does not "
+          "match. Expected ${dot_rel_path}.LIBRARY_NAME"
+      )
+    endif()
+  endif()
+endfunction(_pw_check_name_is_relative_to_root)
+
 # Creates a pw module library.
 #
 # Required Args:
@@ -310,17 +349,10 @@ function(pw_add_module_library NAME)
   _pw_add_library_multi_value_args(multi_value_args IMPLEMENTS_FACADES)
   pw_parse_arguments_strict(pw_add_module_library 1 "" "" "${multi_value_args}")
 
-  # Check that the library's name is prefixed by the relative PW path with dot
-  # separators instead of forward slashes.
-  file(RELATIVE_PATH rel_path $ENV{PW_ROOT} ${CMAKE_CURRENT_SOURCE_DIR})
-  string(REPLACE "/" "." dot_rel_path ${rel_path})
-  if(NOT "${NAME}" MATCHES "${dot_rel_path}(\\.[^\\.]+)?(\\.facade)?$")
-    message(FATAL_ERROR
-        "Module libraries must match the module name or be in the form "
-        "'PATH_TO.THE_TARGET.NAME'. The library '${NAME}' does not match. "
-        "Expected ${dot_rel_path}.LIBRARY_NAME"
-    )
-  endif()
+  _pw_check_name_is_relative_to_root("${NAME}" "$ENV{PW_ROOT}"
+    REMAP_PREFIXES
+      third_party pw_third_party
+  )
 
   # Use STATIC libraries if sources are provided, else instantiate an INTERFACE
   # library. Also conditionally select PUBLIC vs INTERFACE depending on this
