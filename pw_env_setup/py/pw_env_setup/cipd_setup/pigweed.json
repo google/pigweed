@@ -36,7 +36,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:3.23.20220514-gde57770"
+        "version:3.23.20220521-gc97fd9f"
       ],
       "version_file": ".versions/cmake.cipd_version"
     },
