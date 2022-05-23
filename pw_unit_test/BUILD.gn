@@ -76,6 +76,7 @@ pw_source_set("light") {
     dir_pw_preprocessor,
     dir_pw_string,
   ]
+  deps = [ dir_pw_assert ]
   public = [ "public_overrides/gtest/gtest.h" ]
   sources = [
     "framework.cc",

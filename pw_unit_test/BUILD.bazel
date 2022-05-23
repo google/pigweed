@@ -52,6 +52,7 @@ pw_cc_library(
     deps = [
         ":config",
         ":event_handler",
+        "//pw_assert",
         "//pw_polyfill",
         "//pw_preprocessor",
         "//pw_span",

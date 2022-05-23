@@ -17,6 +17,8 @@
 #include <algorithm>
 #include <cstring>
 
+#include "pw_assert/check.h"
+
 namespace pw {
 namespace unit_test {
 
@@ -116,6 +118,12 @@ void Framework::CurrentTestExpectSimple(const char* expression,
                                         const char* evaluated_expression,
                                         int line,
                                         bool success) {
+  PW_CHECK_NOTNULL(
+      current_test_,
+      "EXPECT/ASSERT was called when no test was running! EXPECT/ASSERT cannot "
+      "be used from static constructors/destructors or before or after "
+      "RUN_ALL_TESTS().");
+
   if (!success) {
     current_result_ = TestResult::kFailure;
     exit_status_ = 1;
