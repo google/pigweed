@@ -47,7 +47,6 @@ class ReadTransfer extends Transfer<byte[]> {
   private long remainingTransferSize = UNKNOWN_TRANSFER_SIZE;
 
   private int offset = 0;
-  private int pendingBytes;
   private int windowEndOffset;
 
   ReadTransfer(int resourceId,
@@ -66,7 +65,7 @@ class ReadTransfer extends Transfer<byte[]> {
         progressCallback,
         shouldAbortCallback);
     this.parameters = transferParameters;
-    this.pendingBytes = parameters.maxPendingBytes();
+    this.windowEndOffset = parameters.maxPendingBytes();
   }
 
   @Override
@@ -106,7 +105,6 @@ class ReadTransfer extends Transfer<byte[]> {
       totalDataSize += chunk.getData().size();
 
       offset += chunk.getData().size();
-      pendingBytes -= chunk.getData().size();
 
       if (chunk.hasRemainingBytes()) {
         if (chunk.getRemainingBytes() == 0) {
@@ -132,7 +130,7 @@ class ReadTransfer extends Transfer<byte[]> {
       boolean extendWindow =
           remainingWindowSize <= parameters.maxPendingBytes() / EXTEND_WINDOW_DIVISOR;
 
-      if (pendingBytes == 0) {
+      if (remainingWindowSize == 0) {
         logger.atFiner().log(
             "Transfer %d received all pending bytes; sending transfer parameters update",
             getSessionId());
@@ -154,14 +152,12 @@ class ReadTransfer extends Transfer<byte[]> {
   }
 
   private Chunk.Builder prepareTransferParameters(boolean extend) {
-    // TODO(frolv): Remove the pendingBytes field.
-    pendingBytes = parameters.maxPendingBytes();
     windowEndOffset = offset + parameters.maxPendingBytes();
 
     Chunk.Type type = extend ? Chunk.Type.PARAMETERS_CONTINUE : Chunk.Type.PARAMETERS_RETRANSMIT;
 
     Chunk.Builder chunk = newChunk(type)
-                              .setPendingBytes(pendingBytes)
+                              .setPendingBytes(parameters.maxPendingBytes())
                               .setMaxChunkSizeBytes(parameters.maxChunkSizeBytes())
                               .setOffset(offset)
                               .setWindowEndOffset(windowEndOffset);
