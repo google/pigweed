@@ -146,3 +146,9 @@ being foundational infrastructure.
       ]
     }
   }
+
+
+Metrics
+=======
+The log backend is tracking metrics to illustrate how to use pw_metric and
+retrieve them using `Device.get_and_log_metrics()`.

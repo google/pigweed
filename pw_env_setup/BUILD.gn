@@ -40,6 +40,7 @@ _pigweed_python_deps = [
   "$dir_pw_hdlc/py",
   "$dir_pw_log:protos.python",
   "$dir_pw_log_tokenized/py",
+  "$dir_pw_metric/py",
   "$dir_pw_module/py",
   "$dir_pw_package/py",
   "$dir_pw_presubmit/py",

@@ -738,6 +738,13 @@ metrics. This does not include the RPC service.
   impact**. We are investigating why GCC is inserting large global static
   constructors per group, when all the logic should be reused across objects.
 
+-------------
+Metric Parser
+-------------
+The metric_parser Python Module requests the system metrics via RPC, then parses the
+response while detokenizing the group and metrics names, and returns the metrics
+in a dictionary organized by group and value.
+
 ----------------
 Design tradeoffs
 ----------------
