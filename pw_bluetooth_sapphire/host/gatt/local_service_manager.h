@@ -8,7 +8,6 @@
 #include <unordered_map>
 
 #include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
@@ -103,14 +102,14 @@ class LocalServiceManager final {
     service_changed_callback_ = std::move(callback);
   }
 
-  inline fbl::RefPtr<att::Database> database() const { return db_; }
+  inline fxl::WeakPtr<att::Database> database() { return db_->GetWeakPtr(); }
 
   inline fxl::WeakPtr<LocalServiceManager> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   class ServiceData;
 
-  fbl::RefPtr<att::Database> db_;
+  std::unique_ptr<att::Database> db_;
   IdType next_service_id_;
 
   // Mapping from service instance ids to ServiceData.

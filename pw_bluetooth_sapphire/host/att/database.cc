@@ -131,7 +131,7 @@ void Database::Iterator::Advance() {
 }
 
 Database::Database(Handle range_start, Handle range_end)
-    : range_start_(range_start), range_end_(range_end) {
+    : range_start_(range_start), range_end_(range_end), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(range_start_ < range_end_);
   ZX_DEBUG_ASSERT(range_start_ >= kHandleMin);
   ZX_DEBUG_ASSERT(range_end_ <= kHandleMax);

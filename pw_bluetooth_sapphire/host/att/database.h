@@ -9,8 +9,6 @@
 #include <memory>
 
 #include <fbl/macros.h>
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
@@ -18,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::att {
 
@@ -28,12 +27,7 @@ namespace bt::att {
 // referenced handle ranges are distinct. While this class is primarily intended
 // to be used as a local ATT server database, it could also be used to represent
 // a remote attribute cache.
-//
-// THREAD-SAFETY:
-//
-// This class is not thread-safe. The constructor/destructor and all public
-// methods must be called on the same thread.
-class Database final : public fbl::RefCounted<Database> {
+class Database final {
   using GroupingList = std::list<AttributeGrouping>;
 
  public:
@@ -85,11 +79,9 @@ class Database final : public fbl::RefCounted<Database> {
   //
   // Note: This is to make it easy for the GATT layer to group service
   // declarations with 16-bit UUIDs and 128-bit UUIDs separately as recommended
-  // by the GATT specification (see Vol 3, Part G, 3.1). By default
-  inline static fbl::RefPtr<Database> Create(Handle range_start = kHandleMin,
-                                             Handle range_end = kHandleMax) {
-    return fbl::AdoptRef(new Database(range_start, range_end));
-  }
+  // by the GATT specification (see Vol 3, Part G, 3.1).
+  explicit Database(Handle range_start = kHandleMin, Handle range_end = kHandleMax);
+  ~Database() = default;
 
   // Returns an iterator that covers the handle range defined by |start| and
   // |end| (inclusive). If |groups_only| is true, then the returned iterator
@@ -153,12 +145,9 @@ class Database final : public fbl::RefCounted<Database> {
   void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
                          const sm::SecurityProperties& security, WriteCallback callback);
 
+  fxl::WeakPtr<Database> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
  private:
-  friend class ::fbl::RefPtr<Database>;
-
-  Database(Handle range_start, Handle range_end);
-  ~Database() = default;
-
   Handle range_start_;
   Handle range_end_;
 
@@ -170,6 +159,8 @@ class Database final : public fbl::RefCounted<Database> {
   // LinkedList (aka fbl::DoublyLinkedList). This is only marginally
   // less space efficient.
   GroupingList groupings_;
+
+  fxl::WeakPtrFactory<Database> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Database);
 };

@@ -10,7 +10,6 @@
 
 #include "client.h"
 #include "server.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 

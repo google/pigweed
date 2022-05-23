@@ -69,7 +69,7 @@ class AttBasedServer final : public Server {
 
  private:
   // Convenience "alias"
-  inline fbl::RefPtr<att::Database> db() { return local_services_->database(); }
+  inline fxl::WeakPtr<att::Database> db() { return local_services_->database(); }
 
   // Server overrides:
   void SendUpdate(IdType service_id, IdType chrc_id, BufferView value,

@@ -43,14 +43,14 @@ std::vector<Handle> IterHandles(Database::Iterator* iter) {
 
 TEST(DatabaseTest, NewGroupingWhileEmptyError) {
   constexpr size_t kTooLarge = kTestRangeEnd - kTestRangeStart + 1;
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   EXPECT_FALSE(db->NewGrouping(kTestType1, kTooLarge, kTestValue1));
 }
 
 TEST(DatabaseTest, NewGroupingWhileEmptyFill) {
   constexpr size_t kExact = kTestRangeEnd - kTestRangeStart;
 
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto* grp = db->NewGrouping(kTestType1, kExact, kTestValue1);
   ASSERT_TRUE(grp);
   EXPECT_EQ(kTestType1, grp->group_type());
@@ -65,7 +65,7 @@ TEST(DatabaseTest, NewGroupingWhileEmptyFill) {
 // database.
 TEST(DatabaseTest, NewGroupingMultipleInsertions) {
   // [__________]
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
 
   // Insert to empty db
   // [XXX_______] (insert X)
@@ -146,17 +146,17 @@ TEST(DatabaseTest, NewGroupingMultipleInsertions) {
 }
 
 TEST(DatabaseTest, RemoveWhileEmpty) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   EXPECT_FALSE(db->RemoveGrouping(kTestRangeStart));
 }
 
 TEST(DatabaseTest, FindAttributeInvalidHandle) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   EXPECT_EQ(nullptr, db->FindAttribute(kInvalidHandle));
 }
 
 TEST(DatabaseTest, FindAttributeGroupingNotFound) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
 
   // Create the following layout:
   //
@@ -176,19 +176,19 @@ TEST(DatabaseTest, FindAttributeGroupingNotFound) {
 }
 
 TEST(DatabaseTest, FindAttributeIncompleteGrouping) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto* grp = db->NewGrouping(kTestType1, 1, kTestValue1);
   EXPECT_EQ(nullptr, db->FindAttribute(grp->start_handle()));
 }
 
 TEST(DatabaseTest, FindAttributeInactiveGrouping) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto* grp = db->NewGrouping(kTestType1, 0, kTestValue1);
   EXPECT_EQ(nullptr, db->FindAttribute(grp->start_handle()));
 }
 
 TEST(DatabaseTest, FindAttributeOnePerGrouping) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto* grp1 = db->NewGrouping(kTestType1, 0, kTestValue1);
   grp1->set_active(true);
   auto* grp2 = db->NewGrouping(kTestType1, 0, kTestValue1);
@@ -199,7 +199,7 @@ TEST(DatabaseTest, FindAttributeOnePerGrouping) {
 }
 
 TEST(DatabaseTest, FindAttributeIndexIntoGrouping) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
 
   auto* grp = db->NewGrouping(kTestType1, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
@@ -209,7 +209,7 @@ TEST(DatabaseTest, FindAttributeIndexIntoGrouping) {
 }
 
 TEST(DatabaseTest, IteratorEmpty) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd);
   EXPECT_TRUE(iter.AtEnd());
   EXPECT_FALSE(iter.get());
@@ -220,7 +220,7 @@ TEST(DatabaseTest, IteratorEmpty) {
 }
 
 TEST(DatabaseTest, IteratorGroupOnlySingleInactive) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   db->NewGrouping(kTestType1, 0, kTestValue1);
 
   // |grp| is not active
@@ -231,7 +231,7 @@ TEST(DatabaseTest, IteratorGroupOnlySingleInactive) {
 }
 
 TEST(DatabaseTest, IteratorGroupOnlySingle) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto grp = db->NewGrouping(kTestType1, 0, kTestValue1);
   grp->set_active(true);
 
@@ -250,7 +250,7 @@ TEST(DatabaseTest, IteratorGroupOnlySingle) {
 }
 
 TEST(DatabaseTest, IteratorGroupOnlyMultiple) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto grp1 = db->NewGrouping(kTestType1, 0, kTestValue1);
   auto grp2 = db->NewGrouping(kTestType1, 0, kTestValue1);
   auto grp3 = db->NewGrouping(kTestType1, 0, kTestValue1);
@@ -284,7 +284,7 @@ TEST(DatabaseTest, IteratorGroupOnlyMultiple) {
 }
 
 TEST(DatabaseTest, IteratorGroupOnlySingleWithFilter) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
 
   auto grp = db->NewGrouping(kTestType1, 0, kTestValue1);
   grp->set_active(true);
@@ -302,7 +302,7 @@ TEST(DatabaseTest, IteratorGroupOnlySingleWithFilter) {
 }
 
 TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
 
   auto grp1 = db->NewGrouping(kTestType1, 1, kTestValue1);  // match
   grp1->AddAttribute(kTestType1);                           // match but skipped - not group decl.
@@ -352,7 +352,7 @@ TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
 }
 
 TEST(DatabaseTest, IteratorSingleInactive) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto grp = db->NewGrouping(kTestType1, 1, kTestValue1);
 
   auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd);
@@ -367,7 +367,7 @@ TEST(DatabaseTest, IteratorSingleInactive) {
 }
 
 TEST(DatabaseTest, IteratorSingle) {
-  auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
+  auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
   auto grp = db->NewGrouping(kTestType1, 0, kTestValue1);
   grp->set_active(true);
 
@@ -393,7 +393,7 @@ class DatabaseIteratorManyTest : public ::testing::Test {
   static constexpr size_t kActiveAttrCount = 8;
 
   void SetUp() override {
-    db_ = Database::Create(kTestRangeStart, kTestRangeEnd);
+    db_ = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
 
     auto grp1 = db()->NewGrouping(kTestType1, 3, kTestValue1);  // 1
     grp1->AddAttribute(kTestType2);                             // 2
@@ -413,10 +413,10 @@ class DatabaseIteratorManyTest : public ::testing::Test {
     grp4->set_active(true);
   }
 
-  Database* db() const { return db_.get(); }
+  fxl::WeakPtr<Database> db() const { return db_->GetWeakPtr(); }
 
  private:
-  fbl::RefPtr<Database> db_;
+  std::unique_ptr<Database> db_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(DatabaseIteratorManyTest);
 };
@@ -530,7 +530,7 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
     Attribute::WriteResultCallback result_callback;
   };
 
-  void SetUp() override { db_ = Database::Create(kTestRangeStart, kTestRangeEnd); }
+  void SetUp() override { db_ = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd); }
 
   void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue wq,
                          const sm::SecurityProperties& security = kNoSecurity) {
@@ -584,7 +584,7 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
 
   const std::queue<PendingWrite>& pending_writes() const { return pending_writes_; }
 
-  Database* db() { return db_.get(); }
+  fxl::WeakPtr<Database> db() { return db_->GetWeakPtr(); }
 
  private:
   void WriteHandler(PeerId peer_id, Handle handle, uint16_t offset, const ByteBuffer& value,
@@ -601,7 +601,7 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
 
   std::optional<Database::WriteQueueResult> result_;
   int callback_count_ = 0;
-  fbl::RefPtr<Database> db_;
+  std::unique_ptr<Database> db_;
   std::queue<PendingWrite> pending_writes_;
 
   // Handles of the test attributes.

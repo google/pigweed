@@ -462,7 +462,7 @@ class LocalServiceManager::ServiceData final {
 };
 
 LocalServiceManager::LocalServiceManager()
-    : db_(att::Database::Create()), next_service_id_(1ull), weak_ptr_factory_(this) {
+    : db_(std::make_unique<att::Database>()), next_service_id_(1ull), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(db_);
 }
 

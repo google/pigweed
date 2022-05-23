@@ -10,7 +10,6 @@
 #include <memory>
 
 #include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service_manager.h"
@@ -23,7 +22,6 @@ class Channel;
 
 namespace att {
 class Bearer;
-class Database;
 }  // namespace att
 
 namespace gatt {
