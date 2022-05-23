@@ -45,6 +45,7 @@ StatusWithSize Format(std::span<char> buffer, const char* format, ...);
 // Writes a printf-style formatted string with va_list-packed arguments to the
 // provided buffer, similarly to std::vsnprintf. The return value is the same as
 // above.
+PW_PRINTF_FORMAT(2, 0)
 StatusWithSize FormatVaList(std::span<char> buffer,
                             const char* format,
                             va_list args);

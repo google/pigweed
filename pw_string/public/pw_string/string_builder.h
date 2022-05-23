@@ -226,6 +226,7 @@ class StringBuilder {
   // truncated and the status is set to RESOURCE_EXHAUSTED.
   //
   // Internally, calls string::Format, which calls std::vsnprintf.
+  PW_PRINTF_FORMAT(2, 0)
   StringBuilder& FormatVaList(const char* format, va_list args);
 
   // Sets the StringBuilder's size. This function only truncates; if
