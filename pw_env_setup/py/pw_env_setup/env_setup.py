@@ -261,6 +261,12 @@ class EnvSetup(object):
 
         self._root_variable = config.pop('root_variable', None)
 
+        rosetta = config.pop('rosetta', 'allow')
+        if rosetta not in ('never', 'allow', 'force'):
+            raise ValueError(rosetta)
+        self._rosetta = rosetta in ('allow', 'force')
+        self._env.set('_PW_ROSETTA', str(int(self._rosetta)))
+
         if 'json_file' in config:
             self._json_file = config.pop('json_file')
 
@@ -528,7 +534,11 @@ Then use `set +x` to go back to normal.
 
         else:
             try:
-                cipd_client = cipd_wrapper.init(install_dir, silent=True)
+                cipd_client = cipd_wrapper.init(
+                    install_dir,
+                    silent=True,
+                    rosetta=self._rosetta,
+                )
             except cipd_wrapper.UnsupportedPlatform as exc:
                 return result_func(('    {!r}'.format(exc), ))(
                     _Result.Status.SKIPPED,
@@ -547,6 +557,7 @@ Then use `set +x` to go back to normal.
                                   package_files=package_files,
                                   cache_dir=self._cipd_cache_dir,
                                   env_vars=self._env,
+                                  rosetta=self._rosetta,
                                   spin=spin,
                                   trust_hash=self._trust_cipd_hash):
             return result(_Result.Status.FAILED)

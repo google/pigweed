@@ -289,6 +289,11 @@ here.
   the environment, for reading by tools that don't inherit an environment from
   a sourced ``bootstrap.sh``.
 
+``rosetta``
+  Whether to use Rosetta to use amd64 packages on arm64 Macs. Accepted values
+  are  ``never``, ``allow``, and ``force``. For now, ``allow`` means ``force``.
+  At some point in the future ``allow`` will be changed to mean ``never``.
+
 An example of a config file is below.
 
 .. code-block:: json
@@ -313,7 +318,8 @@ An example of a config file is below.
       "optional/submodule/two"
     ],
     "gni_file": "tools/environment.gni",
-    "json_file": "tools/environment.json"
+    "json_file": "tools/environment.json",
+    "rosetta": "allow"
   }
 
 In case the CIPD packages need to be referenced from other scripts, variables
@@ -399,11 +405,6 @@ never need to set these.
 ``PW_BOOTSTRAP_PYTHON``
   Python executable to be used, for example "python2" or "python3". Defaults to
   "python".
-
-``PW_BOOTSTRAP_USE_ROSETTA``
-  If set to ``true`` (the default), Pigweed will use the x86/64 toolchain via
-  Rosetta on ARM Macs. Otherwise, if set to ``false``, Pigweed will use the
-  native ARM64 toolchain (which is currently incomplete).
 
 ``PW_ENVIRONMENT_ROOT``
   Location to which packages are installed. Defaults to ``.environment`` folder

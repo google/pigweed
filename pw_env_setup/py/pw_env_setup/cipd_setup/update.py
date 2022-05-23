@@ -118,7 +118,13 @@ def check_auth(cipd, package_files, spin):
     return True
 
 
-def platform():
+def platform(rosetta=None):
+    """Return the CIPD platform string of the current system."""
+    # If running inside a bootstrapped environment we can use the env var.
+    # Otherwise, require rosetta be set.
+    if rosetta is None:
+        rosetta = os.environ['_PW_ROSETTA']
+
     osname = {
         'darwin': 'mac',
         'linux': 'linux',
@@ -137,8 +143,7 @@ def platform():
     platform_arch = '{}-{}'.format(osname, arch).lower()
 
     # Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
-    if platform_arch == 'mac-arm64' and os.getenv(
-            'PW_BOOTSTRAP_USE_ROSETTA', 'false').lower() in ('true', 't', '1'):
+    if platform_arch == 'mac-arm64' and rosetta:
         return 'mac-amd64'
 
     return platform_arch
@@ -179,7 +184,7 @@ def all_package_files(env_vars, package_files):
     return result
 
 
-def write_ensure_file(package_files, ensure_file):
+def write_ensure_file(package_files, ensure_file, platform):  # pylint: disable=redefined-outer-name
     packages = []
 
     for package_file in package_files:
@@ -201,7 +206,7 @@ def write_ensure_file(package_files, ensure_file):
         for pkg in packages:
             # If this is a new-style package manifest platform handling must
             # be done here instead of by the cipd executable.
-            if 'platforms' in pkg and platform() not in pkg['platforms']:
+            if 'platforms' in pkg and platform not in pkg['platforms']:
                 continue
 
             outs.write('@Subdir {}\n'.format(pkg.get('subdir', '')))
@@ -223,11 +228,12 @@ def package_installation_path(root_install_dir, package_file):
                         package_file_name(package_file))
 
 
-def update(
+def update(  # pylint: disable=too-many-locals
     cipd,
     package_files,
     root_install_dir,
     cache_dir,
+    rosetta=False,
     env_vars=None,
     spin=None,
     trust_hash=False,
@@ -259,8 +265,10 @@ def update(
     if not pw_root:
         pw_root = os.environ['PW_ROOT']
 
+    plat = platform(rosetta)
+
     ensure_file = os.path.join(root_install_dir, 'packages.ensure')
-    write_ensure_file(package_files, ensure_file)
+    write_ensure_file(package_files, ensure_file, plat)
 
     install_dir = os.path.join(root_install_dir, 'packages')
 
@@ -328,7 +336,7 @@ def update(
             for bin_dir in (
                     file_install_dir,
                     os.path.join(file_install_dir, 'bin'),
-                    os.path.join(file_install_dir, platform(), 'bin'),
+                    os.path.join(file_install_dir, plat, 'bin'),
             ):
                 if os.path.isdir(bin_dir):
                     env_vars.prepend('PATH', bin_dir)
