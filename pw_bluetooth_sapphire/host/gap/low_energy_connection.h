@@ -287,6 +287,11 @@ class LowEnergyConnection final : public sm::Delegate {
   // and register the link.
   fxl::WeakPtr<gatt::GATT> gatt_;
 
+  // The ATT Bearer is owned by LowEnergyConnection but weak pointers are passed to the GATT layer.
+  // As such, this connection must be unregistered from the GATT layer before the Bearer is
+  // destroyed. Created during initialization, but if initialization fails this may be nullptr.
+  std::unique_ptr<att::Bearer> att_bearer_;
+
   // SMP pairing manager.
   std::unique_ptr<sm::SecurityManager> sm_;
 

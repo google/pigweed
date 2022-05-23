@@ -14,8 +14,6 @@
 #include <unordered_map>
 
 #include <fbl/macros.h>
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
@@ -44,11 +42,13 @@ namespace bt::att {
 //
 // This class is intended to be created, accessed, and destroyed on the same
 // thread. All callbacks will be invoked on a Bearer's creation thread.
-class Bearer final : public fbl::RefCounted<Bearer> {
+class Bearer final {
  public:
   // Creates a new ATT Bearer. Returns nullptr if |chan| cannot be activated.
   // This can happen if the link is closed.
-  static fbl::RefPtr<Bearer> Create(fbl::RefPtr<l2cap::Channel> chan);
+  static std::unique_ptr<Bearer> Create(fbl::RefPtr<l2cap::Channel> chan);
+
+  ~Bearer();
 
   // Returns true if the underlying channel is open.
   bool is_open() const { return static_cast<bool>(chan_); }
@@ -152,11 +152,10 @@ class Bearer final : public fbl::RefCounted<Bearer> {
   // Ends a request transaction with an error response.
   bool ReplyWithError(TransactionId id, Handle handle, ErrorCode error_code);
 
- private:
-  friend class ::fbl::RefPtr<Bearer>;
+  fxl::WeakPtr<Bearer> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
+ private:
   explicit Bearer(fbl::RefPtr<l2cap::Channel> chan);
-  ~Bearer();
 
   // Returns false if activation fails. This is called by the factory method.
   bool Activate();

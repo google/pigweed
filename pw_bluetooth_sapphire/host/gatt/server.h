@@ -38,10 +38,10 @@ class Server {
   // Constructs a new Server bearer.
   // |peer_id| is the unique system identifier for the peer device.
   // |local_services| will be used to resolve inbound/outbound transactions.
-  // |bearer| is the ATT data bearer that this Server operates on.
+  // |bearer| is the ATT data bearer that this Server operates on. It must outlive this Server.
   static std::unique_ptr<Server> Create(PeerId peer_id,
                                         fxl::WeakPtr<LocalServiceManager> local_services,
-                                        fbl::RefPtr<att::Bearer> bearer);
+                                        fxl::WeakPtr<att::Bearer> bearer);
   // Servers can be constructed without production att::Bearers (e.g. for testing), so the
   // FactoryFunction type reflects that.
   using FactoryFunction =

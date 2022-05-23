@@ -163,9 +163,9 @@ OpCode MatchingTransactionCode(OpCode transaction_end_code) {
 }  // namespace
 
 // static
-fbl::RefPtr<Bearer> Bearer::Create(fbl::RefPtr<l2cap::Channel> chan) {
-  auto bearer = fbl::AdoptRef(new Bearer(std::move(chan)));
-  return bearer->Activate() ? bearer : nullptr;
+std::unique_ptr<Bearer> Bearer::Create(fbl::RefPtr<l2cap::Channel> chan) {
+  std::unique_ptr<Bearer> bearer(new Bearer(std::move(chan)));
+  return bearer->Activate() ? std::move(bearer) : nullptr;
 }
 
 Bearer::PendingTransaction::PendingTransaction(OpCode opcode, TransactionCallback callback,

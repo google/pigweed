@@ -53,7 +53,7 @@ class ClientTest : public l2cap::testing::FakeChannelTest {
     ChannelOptions options(l2cap::kATTChannelId);
     fake_chan_ = CreateFakeChannel(options);
     att_ = att::Bearer::Create(fake_chan_);
-    client_ = Client::Create(att_);
+    client_ = Client::Create(att_->GetWeakPtr());
   }
 
   void TearDown() override {
@@ -86,7 +86,7 @@ class ClientTest : public l2cap::testing::FakeChannelTest {
 
  private:
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
-  fbl::RefPtr<att::Bearer> att_;
+  std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Client> client_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ClientTest);

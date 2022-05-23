@@ -42,7 +42,7 @@ class BearerTest : public l2cap::testing::FakeChannelTest {
 
  private:
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_att_chan_;
-  fbl::RefPtr<Bearer> bearer_;
+  std::unique_ptr<Bearer> bearer_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BearerTest);
 };

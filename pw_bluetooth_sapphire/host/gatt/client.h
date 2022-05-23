@@ -20,16 +20,10 @@ namespace bt::gatt {
 // Implements GATT client-role procedures. A client operates over a single ATT
 // data bearer. Client objects are solely used to map GATT procedures to ATT
 // protocol methods and do not maintain service state.
-//
-// THREAD SAFETY:
-//
-// Client is not thread safe. It must be created, used, and destroyed on the
-// same thread. All asynchronous callbacks are run on the thread that the data
-// bearer is bound to.
 class Client {
  public:
-  // Constructs a new Client bearer.
-  static std::unique_ptr<Client> Create(fbl::RefPtr<att::Bearer> bearer);
+  // Constructs a new Client. |bearer| must outlive this object.
+  static std::unique_ptr<Client> Create(fxl::WeakPtr<att::Bearer> bearer);
 
   virtual ~Client() = default;
 

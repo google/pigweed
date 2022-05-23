@@ -498,18 +498,22 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
 
 bool LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att_channel,
                                          std::optional<UUID> service_uuid) {
-  fbl::RefPtr<att::Bearer> att_bearer = att::Bearer::Create(att_channel);
-  if (!att_bearer) {
+  att_bearer_ = att::Bearer::Create(std::move(att_channel));
+  if (!att_bearer_) {
     // This can happen if the link closes before the Bearer activates the
     // channel.
     bt_log(WARN, "gatt", "failed to initialize ATT bearer");
     return false;
   }
-  std::unique_ptr<gatt::Client> gatt_client = gatt::Client::Create(att_bearer);
-  auto server_factory = [att_bearer](PeerId peer_id,
-                                     fxl::WeakPtr<gatt::LocalServiceManager> local_services) {
-    return gatt::Server::Create(peer_id, std::move(local_services), att_bearer);
+
+  // The att::Bearer object is owned by LowEnergyConnection, so it outlives the gatt::Server and
+  // Client objects. As such, they can safely take WeakPtrs to the Bearer.
+  auto server_factory = [att_bearer = att_bearer_->GetWeakPtr()](
+                            PeerId peer_id,
+                            fxl::WeakPtr<gatt::LocalServiceManager> local_services) mutable {
+    return gatt::Server::Create(peer_id, std::move(local_services), std::move(att_bearer));
   };
+  std::unique_ptr<gatt::Client> gatt_client = gatt::Client::Create(att_bearer_->GetWeakPtr());
   gatt_->AddConnection(peer_id(), std::move(gatt_client), std::move(server_factory));
 
   std::vector<UUID> service_uuids;
