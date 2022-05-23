@@ -25,8 +25,6 @@
 namespace pw::rpc::internal {
 namespace {
 
-using std::byte;
-
 template <typename Implementation>
 class FakeGeneratedService : public Service {
  public:
