@@ -35,25 +35,34 @@ pw_cc_library(
 
 pw_cc_library(
     name = "pw_unit_test",
+    deps = ["@pigweed_config//:pw_unit_test_googletest_backend"],
+)
+
+pw_cc_library(
+    name = "light",
     srcs = [
         "framework.cc",
         "public/pw_unit_test/internal/framework.h",
     ],
-    hdrs = [
-        "public/pw_unit_test/event_handler.h",
-        "public_overrides/gtest/gtest.h",
-    ],
+    hdrs = ["public_overrides/gtest/gtest.h"],
     includes = [
         "public",
         "public_overrides",
     ],
     deps = [
         ":config",
+        ":event_handler",
         "//pw_polyfill",
         "//pw_preprocessor",
         "//pw_span",
         "//pw_string",
     ],
+)
+
+pw_cc_library(
+    name = "event_handler",
+    hdrs = ["public/pw_unit_test/event_handler.h"],
+    includes = ["public"],
 )
 
 pw_cc_library(
@@ -66,8 +75,8 @@ pw_cc_library(
         "public",
     ],
     deps = [
+        ":event_handler",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -83,8 +92,8 @@ pw_cc_library(
         "public",
     ],
     deps = [
+        ":event_handler",
         "//pw_log",
-        "//pw_unit_test",
     ],
 )
 

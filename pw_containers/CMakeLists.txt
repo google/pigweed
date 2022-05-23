@@ -38,6 +38,8 @@ pw_add_module_library(pw_containers.filtered_view
     public/pw_containers/filtered_view.h
   PUBLIC_INCLUDES
     public
+  PUBLIC_DEPS
+    pw_assert
 )
 
 pw_add_module_library(pw_containers.flat_map
@@ -61,6 +63,7 @@ pw_add_module_library(pw_containers.vector
     public
   PUBLIC_DEPS
     pw_assert
+    pw_polyfill
 )
 
 pw_add_module_library(pw_containers.wrapped_iterator

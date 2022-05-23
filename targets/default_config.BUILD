@@ -130,6 +130,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_unit_test_googletest_backend",
+    build_setting_default = "@pigweed//pw_unit_test:light",
+)
+
+label_flag(
     name = "target_rtos",
     build_setting_default = "@pigweed//pw_build/constraints/rtos:none",
 )

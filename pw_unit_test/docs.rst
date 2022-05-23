@@ -3,31 +3,35 @@
 ============
 pw_unit_test
 ============
-``pw_unit_test`` unit testing library with a `GoogleTest`_-compatible API,
-built on top of embedded-friendly primitives.
+``pw_unit_test`` provides a `GoogleTest`_-compatible unit testing API for
+Pigweed. The default implementation is the embedded-friendly
+``pw_unit_test:light`` backend. Upstream GoogleTest may be used as well (see
+`Using upstream GoogleTest`_).
 
-.. _GoogleTest: https://github.com/google/googletest/blob/HEAD/docs/primer.md
-
-``pw_unit_test`` is a portable library which can run on almost any system from
-bare metal to a full-fledged desktop OS. It does this by offloading the
-responsibility of test reporting and output to the underlying system,
-communicating its results through a common interface. Unit tests can be written
-once and run under many different environments, empowering developers to write
-robust, high quality code.
-
-``pw_unit_test`` is still under development and lacks many features expected in
-a complete testing framework; nevertheless, it is already used heavily within
-Pigweed.
+.. _GoogleTest: https://github.com/google/googletest
 
 .. note::
 
   This documentation is currently incomplete.
 
-------------------
-Writing unit tests
-------------------
-``pw_unit_test``'s interface is largely compatible with `GoogleTest`_. Refer to
-the GoogleTest documentation for examples of to define unit test cases.
+-------------------------------------------
+pw_unit_test:light: GoogleTest for Embedded
+-------------------------------------------
+``pw_unit_test:light`` implements a subset of `GoogleTest`_ with lightweight,
+embedded-friendly primitives. It is also highly portable and can run on almost
+any system from bare metal to a full-fledged desktop OS. It does this by
+offloading the responsibility of test reporting and output to the underlying
+system, communicating its results through a common interface. Unit tests can be
+written once and run under many different environments, empowering developers to
+write robust, high quality code.
+
+``pw_unit_test:light`` usage is the same as GoogleTest;
+refer to the `GoogleTest documentation <https://google.github.io/googletest/>`_
+for examples of how to define unit test cases.
+
+``pw_unit_test:light`` is still under development and lacks many features
+expected in a complete testing framework; nevertheless, it is already used
+heavily within Pigweed.
 
 .. note::
 
@@ -43,19 +47,15 @@ the GoogleTest documentation for examples of to define unit test cases.
   To request a feature addition, please
   `let us know <mailto:pigweed@googlegroups.com>`_.
 
-  See `Using upstream GoogleTest and GoogleMock` below for information
+  See `Using upstream GoogleTest`_ below for information
   about using upstream GoogleTest instead.
-
-------------------------
-Using the test framework
-------------------------
 
 The EventHandler interface
 ==========================
 The ``EventHandler`` class in ``public/pw_unit_test/event_handler.h`` defines
-the interface through which ``pw_unit_test`` communicates the results of its
-test runs. A platform using ``pw_unit_test`` must register an event handler with
-the unit testing framework to receive test output.
+the interface through which ``pw_unit_test:light`` communicates the results of
+its test runs. A platform using the ``pw_unit_test:light`` backend must register
+an event handler with the unit testing framework to receive test output.
 
 As the framework runs tests, it calls the event handler's callback functions to
 notify the system of various test events. The system can then choose to perform
@@ -65,12 +65,10 @@ the developer.
 Predefined event handlers
 -------------------------
 Pigweed provides some standard event handlers upstream to simplify the process
-of getting started using ``pw_unit_test``.
+of getting started using ``pw_unit_test``. All event handlers provide for
+GoogleTest-style output.
 
-* ``SimplePrintingEventHandler``: An event handler that writes GoogleTest-style
-  output to a specified sink.
-
-  .. code::
+  .. code-block::
 
     [==========] Running all tests.
     [ RUN      ] Status.Default
@@ -92,34 +90,10 @@ of getting started using ``pw_unit_test``.
     [==========] Done running all tests.
     [  PASSED  ] 8 test(s).
 
-
+* ``SimplePrintingEventHandler``: An event handler that writes GoogleTest-style
+  output to a specified sink.
 * ``LoggingEventHandler``: An event handler which uses the ``pw_log`` module to
   output test results, to integrate with the system's existing logging setup.
-
-.. _running-tests:
-
-Running tests
-=============
-To run unit tests, link the tests into a single binary with the unit testing
-framework, register an event handler, and call the ``RUN_ALL_TESTS`` macro.
-
-.. code:: cpp
-
-  #include "gtest/gtest.h"
-  #include "pw_unit_test/simple_printing_event_handler.h"
-
-  void WriteString(const std::string_view& string, bool newline) {
-    printf("%s", string.data());
-    if (newline) {
-      printf("\n");
-    }
-  }
-
-  int main() {
-    pw::unit_test::SimplePrintingEventHandler handler(WriteString);
-    pw::unit_test::RegisterEventHandler(&handler);
-    return RUN_ALL_TESTS();
-  }
 
 Test filtering
 ==============
@@ -133,6 +107,39 @@ Currently, only a test suite filter is supported. This is set by calling
 .. note::
   Test filtering is only supported in C++17.
 
+.. _running-tests:
+
+-------------
+Running tests
+-------------
+To run unit tests, link the tests into a single binary with the unit testing
+framework, configure the backend if needed, and call the ``RUN_ALL_TESTS``
+macro.
+
+The following example shows how to write a main function that runs
+``pw_unit_test`` with the ``light`` backend.
+
+.. code-block:: cpp
+
+  #include "gtest/gtest.h"
+
+  // pw_unit_test:light requires an event handler to be configured.
+  #include "pw_unit_test/simple_printing_event_handler.h"
+
+  void WriteString(const std::string_view& string, bool newline) {
+    printf("%s", string.data());
+    if (newline) {
+      printf("\n");
+    }
+  }
+
+  int main() {
+    // Since we are using pw_unit_test:light, set up an event handler.
+    pw::unit_test::SimplePrintingEventHandler handler(WriteString);
+    pw::unit_test::RegisterEventHandler(&handler);
+    return RUN_ALL_TESTS();
+  }
+
 Build system integration
 ========================
 ``pw_unit_test`` integrates directly into Pigweed's GN build system. To define
@@ -140,7 +147,7 @@ simple unit tests, set the ``pw_unit_test_MAIN`` build variable to a target
 which configures the test framework as described in the :ref:`running-tests`
 section, and use the ``pw_test`` template to register your test code.
 
-.. code::
+.. code-block::
 
   import("$dir_pw_unit_test/test.gni")
 
@@ -158,7 +165,6 @@ The ``pw_unit_test`` module provides a few optional libraries to simplify setup:
    plain text using pw_log (ensure your target has set a ``pw_log`` backend).
  - ``logging_main``: Implements a ``main()`` function that simply runs tests
    using the ``logging_event_handler``.
-
 
 pw_test template
 ----------------
@@ -254,6 +260,21 @@ the facade layer.
 
 Build arguments
 ---------------
+.. option:: pw_unit_test_GOOGLETEST_BACKEND <source_set>
+
+  The GoogleTest implementation to use for Pigweed unit tests. This library
+  provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test:light,
+  which implements a subset of GoogleTest.
+
+  Type: string (GN path to a source set)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_MAIN <source_set>
+
+  Implementation of a main function for ``pw_test`` unit test binaries.
+
+  Type: string (GN path to a source set)
+  Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER <executable>
 
@@ -285,21 +306,6 @@ Build arguments
   in seconds. Defaults to empty which means no timeout.
 
   Type: string (number of seconds to wait before killing test runner)
-  Usage: toolchain-controlled only
-
-.. option:: pw_unit_test_PUBLIC_DEPS <dependencies>
-
-  Dependencies required by all unit test targets. Defaults to pw_unit_test.
-  May be changed to use a different test library like GoogleTest.
-
-  Type: list of strings (list of dependencies as GN paths)
-  Usage: toolchain-controlled only
-
-.. option:: pw_unit_test_MAIN <source_set>
-
-  Implementation of a main function for ``pw_test`` unit test binaries.
-
-  Type: string (GN path to a source set)
   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_POOL_DEPTH <pool_depth>
@@ -391,8 +397,9 @@ this module.
   The size of the memory pool to use for test fixture instances. By default this
   is set to 16K.
 
-Using upstream GoogleTest and GoogleMock
-========================================
-
-If you want to use the full upstream GoogleTest/GoogleMock, see
-:ref:`Pigweed's support for it <module-pw_third_party_googletest>`.
+Using upstream GoogleTest
+=========================
+Upstream `GoogleTest`_ may be used as the backend for ``pw_unit_test``. A clone
+of the GoogleTest repository is required. See the
+:ref:`third_party/googletest documentation <module-pw_third_party_googletest>`
+for details.

@@ -166,6 +166,11 @@ StatusWithSize UnknownTypeToString(const T& value, std::span<char> buffer) {
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 namespace unit_test {
+
+// Sets the event handler for a test run. Must be called before RUN_ALL_TESTS()
+// to receive test output.
+void RegisterEventHandler(EventHandler* event_handler);
+
 namespace internal {
 
 class Test;

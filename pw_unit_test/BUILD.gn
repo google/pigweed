@@ -53,30 +53,45 @@ pw_source_set("config") {
   visibility = [ ":*" ]
 }
 
-# pw_unit_test core library.
+# pw_unit_test facade. This provides a GoogleTest-compatible test framework.
 pw_source_set("pw_unit_test") {
+  if (pw_unit_test_PUBLIC_DEPS == []) {
+    # TODO(b/233073669): For now, use pw_unit_test_GOOGLETEST_BACKEND only if
+    #     pw_unit_test_PUBLIC_DEPS is not set. Remove pw_unit_test_PUBLIC_DEPS
+    #     when projects have migrated. There is an assert in test.gni that
+    #     ensures both variables are not set.
+    public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
+  } else {
+    public_deps = pw_unit_test_PUBLIC_DEPS
+  }
+}
+
+# Lightweight unit test backend that implements a subset of GoogleTest.
+pw_source_set("light") {
   public_configs = [ ":default_config" ]
   public_deps = [
     ":config",
+    ":event_handler",
     dir_pw_polyfill,
     dir_pw_preprocessor,
     dir_pw_string,
   ]
-  public = [
-    "public/pw_unit_test/event_handler.h",
-    "public_overrides/gtest/gtest.h",
-  ]
+  public = [ "public_overrides/gtest/gtest.h" ]
   sources = [
     "framework.cc",
     "public/pw_unit_test/internal/framework.h",
   ]
-  friend = [ ":*" ]
+}
+
+pw_source_set("event_handler") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_unit_test/event_handler.h" ]
 }
 
 # Library providing an event handler which outputs human-readable text.
 pw_source_set("simple_printing_event_handler") {
   public_deps = [
-    ":pw_unit_test",
+    ":event_handler",
     "$dir_pw_preprocessor",
   ]
   public = [ "public/pw_unit_test/simple_printing_event_handler.h" ]
@@ -87,8 +102,8 @@ pw_source_set("simple_printing_event_handler") {
 # framework. Unit test files can link against this library to build runnable
 # unit test executables.
 pw_source_set("simple_printing_main") {
-  public_deps = [ ":pw_unit_test" ]
   deps = [
+    ":pw_unit_test",
     ":simple_printing_event_handler",
     "$dir_pw_sys_io",
   ]
@@ -98,7 +113,7 @@ pw_source_set("simple_printing_main") {
 # Library providing an event handler which logs using pw_log.
 pw_source_set("logging_event_handler") {
   public_deps = [
-    ":pw_unit_test",
+    ":event_handler",
     "$dir_pw_log",
     "$dir_pw_preprocessor",
   ]
@@ -107,9 +122,9 @@ pw_source_set("logging_event_handler") {
 }
 
 pw_source_set("logging_main") {
-  public_deps = [ ":pw_unit_test" ]
   deps = [
     ":logging_event_handler",
+    ":pw_unit_test",
     "$dir_pw_sys_io",
   ]
   sources = [ "logging_main.cc" ]

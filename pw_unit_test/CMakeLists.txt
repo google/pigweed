@@ -24,7 +24,13 @@ pw_add_module_library(pw_unit_test.config
     public/pw_unit_test/config.h
 )
 
-pw_add_module_library(pw_unit_test
+add_library(pw_unit_test INTERFACE)
+target_link_libraries(pw_unit_test
+  INTERFACE
+    "${pw_unit_test_GOOGLETEST_BACKEND}"
+)
+
+pw_add_module_library(pw_unit_test.light
   SOURCES
     framework.cc
   PUBLIC_DEPS
@@ -32,10 +38,9 @@ pw_add_module_library(pw_unit_test
     pw_preprocessor
     pw_string
     pw_unit_test.config
+  PUBLIC_INCLUDES
+    public_overrides  # pw_unit_test overrides the gtest/gtest.h header.
 )
-
-# pw_unit_test overrides the gtest/gtest.h header.
-target_include_directories(pw_unit_test PUBLIC public_overrides)
 
 pw_add_module_library(pw_unit_test.main
   SOURCES

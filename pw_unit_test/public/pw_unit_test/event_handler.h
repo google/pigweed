@@ -123,9 +123,5 @@ class EventHandler {
                               const TestExpectation& expectation) = 0;
 };
 
-// Sets the event handler for a test run. Must be called before RUN_ALL_TESTS()
-// to receive test output.
-void RegisterEventHandler(EventHandler* event_handler);
-
 }  // namespace unit_test
 }  // namespace pw

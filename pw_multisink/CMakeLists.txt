@@ -85,6 +85,7 @@ pw_add_module_library(pw_multisink.multisink_threaded_test
   PRIVATE_DEPS
     pw_multisink
     pw_multisink.test_thread
+    pw_string
     pw_thread.thread
     pw_thread.yield
     pw_unit_test

@@ -525,10 +525,10 @@ endfunction(pw_set_module_config)
 set(pw_unit_test_MAIN pw_unit_test.main CACHE STRING
     "Implementation of a main function for ``pw_test`` unit test binaries.")
 
-set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test CACHE STRING
-    "CMake target which implements GoogleTest, by default pw_unit_test is \
-     used. You could, for example, point this at pw_third_party.googletest if \
-     using upstream GoogleTest directly on your host for GoogleMock.")
+set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test.light CACHE STRING
+    "CMake target which implements GoogleTest, by default pw_unit_test.light \
+     is used. You could, for example, point this at pw_third_party.googletest \
+     if using upstream GoogleTest directly on your host for GoogleMock.")
 
 # Declares a unit test. Creates two targets:
 #
@@ -549,7 +549,7 @@ function(pw_add_test NAME)
   add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
   target_link_libraries("${NAME}"
     PRIVATE
-      ${pw_unit_test_GOOGLETEST_BACKEND}
+      pw_unit_test
       ${pw_unit_test_MAIN}
       ${arg_DEPS}
   )

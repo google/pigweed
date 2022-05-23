@@ -18,6 +18,21 @@ import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 
 declare_args() {
+  # The GoogleTest implementation to use for Pigweed unit tests. This library
+  # provides "gtest/gtest.h" and related headers. Defaults to
+  # pw_unit_test:light, which implements a subset of GoogleTest.
+  #
+  # Type: string (GN path to a source set)
+  # Usage: toolchain-controlled only
+  pw_unit_test_GOOGLETEST_BACKEND = "$dir_pw_unit_test:light"
+
+  # Implementation of a main function for ``pw_test`` unit test binaries. Must
+  # be set to an appropriate target for the pw_unit_test backend.
+  #
+  # Type: string (GN path to a source set)
+  # Usage: toolchain-controlled only
+  pw_unit_test_MAIN = "$dir_pw_unit_test:simple_printing_main"
+
   # Path to a test runner to automatically run unit tests after they are built.
   #
   # If set, a ``pw_test`` target's ``<target_name>.run`` action will invoke the
@@ -43,19 +58,6 @@ declare_args() {
   # Timeout is in seconds. Defaults to empty which means no timeout.
   pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT = ""
 
-  # Dependencies required by all unit test targets. Defaults to pw_unit_test.
-  # May be changed to use a different test library like GoogleTest.
-  #
-  # Type: list of strings (list of dependencies as GN paths)
-  # Usage: toolchain-controlled only
-  pw_unit_test_PUBLIC_DEPS = [ dir_pw_unit_test ]
-
-  # Implementation of a main function for ``pw_test`` unit test binaries.
-  #
-  # Type: string (GN path to a source set)
-  # Usage: toolchain-controlled only
-  pw_unit_test_MAIN = "$dir_pw_unit_test:simple_printing_main"
-
   # The maximum number of unit tests that may be run concurrently for the
   # current toolchain. Setting this to 0 disables usage of a pool, allowing
   # unlimited parallelization.
@@ -79,6 +81,23 @@ declare_args() {
   # Usage: toolchain-controlled only
   pw_unit_test_POOL_TOOLCHAIN = ""
 }
+
+# Define this in a separate block so it can refer to
+# pw_unit_test_GOOGLETEST_BACKEND.
+declare_args() {
+  # Deprecated! Do not use. Set pw_unit_test_GOOGLETEST_BACKEND instead.
+  #
+  # Type: list of strings (list of dependencies as GN paths)
+  pw_unit_test_PUBLIC_DEPS = []
+}
+
+assert(pw_unit_test_PUBLIC_DEPS == [] ||
+           pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light",
+       "Both pw_unit_test_PUBLIC_DEPS ($pw_unit_test_PUBLIC_DEPS) and " +
+           "pw_unit_test_GOOGLETEST_BACKEND " +
+           "($pw_unit_test_GOOGLETEST_BACKEND) are set. " +
+           "pw_unit_test_PUBLIC_DEPS is deprecated; only set " +
+           "pw_unit_test_GOOGLETEST_BACKEND.")
 
 # Defines a target if enable_if is true. Otherwise, it defines that target as
 # <target_name>.DISABLED and creates an empty <target_name> group. This can be
@@ -133,24 +152,25 @@ template("_pw_disableable_target") {
   }
 }
 
-# Creates a library and an executable target for a unit test.
+# Creates a library and an executable target for a unit test with pw_unit_test.
 #
 # <target_name>.lib contains the provided test sources as a library, which can
 # then be linked into a test executable.
 # <target_name> is a standalone executable which contains only the test sources
 # specified in the pw_unit_test_template.
 #
-# If the pw_unit_test_AUTOMATIC_RUNNER variable is set, this template also creates a
-# "${test_name}.run" target which runs the unit test executable after building
-# it.
+# If the pw_unit_test_AUTOMATIC_RUNNER variable is set, this template also
+# creates a "${test_name}.run" target which runs the unit test executable after
+# building it.
 #
 # Args:
-#   - enable_if: (optional) Conditionally enables or disables this test. The test
-#         target and *.run target do nothing when the test is disabled. The
+#   - enable_if: (optional) Conditionally enables or disables this test. The
+#         test target and *.run target do nothing when the test is disabled. The
 #         disabled test can still be built and run with the
 #         <target_name>.DISABLED and <target_name>.DISABLED.run targets.
 #         Defaults to true (enable_if).
 #   - All of the regular "executable" target args are accepted.
+#
 template("pw_test") {
   # This is required in order to reference the pw_test template's target name
   # within the test_metadata of the metadata group below. The group() definition
@@ -181,7 +201,7 @@ template("pw_test") {
     if (!defined(public_deps)) {
       public_deps = []
     }
-    public_deps += pw_unit_test_PUBLIC_DEPS
+    public_deps += [ dir_pw_unit_test ]
   }
 
   _pw_disableable_target(_test_target_name) {
