@@ -238,7 +238,7 @@ be used as a reference when sizing external buffers for ``Function`` objects.
 Design
 ======
 ``pw::Function`` is based largely on
-`fbl::Function <https://cs.opensource.google/fuchsia/fuchsia/+/main:zircon/system/ulib/fbl/include/fbl/function.h>`_
+`fbl::Function <https://cs.opensource.google/fuchsia/fuchsia/+/main:zircon/system/ulib/fbl/include/fbl/function.h;drc=eb7f31a1264b2443e9d3108b359969253e251c07>`_
 from Fuchsia with some changes to make it more suitable for embedded
 development.
 
