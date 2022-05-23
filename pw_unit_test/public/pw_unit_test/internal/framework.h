@@ -24,6 +24,7 @@
 #include <span>
 
 #include "pw_polyfill/standard.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 #include "pw_unit_test/config.h"
 #include "pw_unit_test/event_handler.h"
@@ -34,16 +35,18 @@
 #include "pw_string/string_builder.h"
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
-#define PW_TEST(test_suite_name, test_name) \
+#define GTEST_TEST(test_suite_name, test_name)                           \
+  _PW_TEST_SUITE_NAMES_MUST_BE_UNIQUE(void /* TEST */, test_suite_name); \
   _PW_TEST(test_suite_name, test_name, ::pw::unit_test::internal::Test)
 
 // TEST() is a pretty generic macro name which could conflict with other code.
-// If GTEST_DONT_DEFINE_TEST is set, don't alias PW_TEST to TEST.
+// If GTEST_DONT_DEFINE_TEST is set, don't alias GTEST_TEST to TEST.
 #if !(defined(GTEST_DONT_DEFINE_TEST) && GTEST_DONT_DEFINE_TEST)
-#define TEST PW_TEST
+#define TEST(test_suite_name, test_name) GTEST_TEST(test_suite_name, test_name)
 #endif  // !GTEST_DONT_DEFINE_TEST
 
-#define TEST_F(test_fixture, test_name) \
+#define TEST_F(test_fixture, test_name)                                \
+  _PW_TEST_SUITE_NAMES_MUST_BE_UNIQUE(int /* TEST_F */, test_fixture); \
   _PW_TEST(test_fixture, test_name, test_fixture)
 
 #define EXPECT_TRUE(expr) static_cast<void>(_PW_TEST_BOOL(expr, true))
@@ -537,6 +540,21 @@ inline void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
       #op,                                                       \
       #lhs " " #op " " #rhs,                                     \
       __LINE__)
+
+// Checks that test suite names between TEST and TEST_F declarations are unique.
+// This works by declaring a function named for the test suite. The function
+// takes no arguments but is declared with different return types in the TEST
+// and TEST_F macros. If a TEST and TEST_F use the same test suite name, the
+// function declarations conflict, resulting in a compilation error.
+//
+// This catches most conflicts, but a runtime check is ultimately needed since
+// tests may be declared in different translation units.
+#define _PW_TEST_SUITE_NAMES_MUST_BE_UNIQUE(return_type, test_suite)           \
+  PW_MODIFY_DIAGNOSTICS_PUSH();                                                \
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wredundant-decls");                          \
+  extern "C" return_type /* use extern "C" to escape namespacing */            \
+      PwUnitTestSuiteNamesMustBeUniqueBetweenTESTandTEST_F_##test_suite(void); \
+  PW_MODIFY_DIAGNOSTICS_POP()
 
 // Alias Test as ::testing::Test for GoogleTest compatibility.
 namespace testing {
