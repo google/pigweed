@@ -322,5 +322,5 @@ by creating a light wrapper around
 
   def process_my_snapshots(serialized_snapshot: bytes) -> str:
       """Runs the snapshot processor with a custom callback."""
-      return pw_snaphsot.processor.process_snapshots(
+      return pw_snapshot.processor.process_snapshots(
           serialized_snapshot, user_processing_callback=_process_hw_failures)
