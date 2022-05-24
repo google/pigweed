@@ -61,6 +61,9 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_CONSOLE_CONFIG_FILE')
     parser.add_var('PW_ENVIRONMENT_NO_ERROR_ON_UNRECOGNIZED')
 
+    # TODO(b/231998579) Remove after a week or two.
+    parser.add_var('PW_BOOTSTRAP_USE_ROSETTA')
+
     return parser
 
 
