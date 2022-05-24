@@ -31,13 +31,24 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
+config("disable_global_mutex_config") {
+  defines = [ "PW_RPC_USE_GLOBAL_MUTEX=0" ]
+  visibility = [ ":*" ]
+}
+
+# Set pw_rpc_CONFIG to this to disable the global mutex. If additional options
+# are needed, a config target that sets those can depend on this.
+group("disable_global_mutex") {
+  public_configs = [ ":disable_global_mutex_config" ]
+}
+
 config("global_mutex_config") {
   defines = [ "PW_RPC_USE_GLOBAL_MUTEX=1" ]
   visibility = [ ":*" ]
 }
 
-# Set pw_rpc_CONFIG to this to enable the global mutex. If additional options
-# are needed, a config target that sets those can depend on this.
+# Set pw_rpc_CONFIG to this to always enable the global mutex. The mutex is
+# enabled by default, so this is a no-op.
 group("use_global_mutex") {
   public_configs = [ ":global_mutex_config" ]
 }
