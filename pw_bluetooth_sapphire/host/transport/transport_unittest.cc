@@ -41,15 +41,8 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
 
   size_t cb_count = 0;
   CommandChannel::TransactionId id1, id2;
-  auto cb = [&cb_count, &id1, &id2](CommandChannel::TransactionId callback_id,
-                                    const EventPacket& event) {
+  auto cb = [&cb_count](CommandChannel::TransactionId callback_id, const EventPacket& event) {
     cb_count++;
-    EXPECT_TRUE(callback_id == id1 || callback_id == id2);
-    EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
-
-    const auto params = event.params<hci_spec::CommandStatusEventParams>();
-    EXPECT_EQ(hci_spec::StatusCode::kUnspecifiedError, params.status);
-    EXPECT_EQ(hci_spec::kReset, params.command_opcode);
   };
 
   auto packet = CommandPacket::New(hci_spec::kReset);
@@ -66,7 +59,7 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
   EXPECT_EQ(0u, closed_cb_count);
 
   RunLoopFor(kCommandTimeout);
-  EXPECT_EQ(2u, cb_count);
+  EXPECT_EQ(0u, cb_count);
   EXPECT_EQ(1u, closed_cb_count);
 }
 

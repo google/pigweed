@@ -55,28 +55,9 @@ CommandChannel::TransactionData::TransactionData(
 }
 
 CommandChannel::TransactionData::~TransactionData() {
-  if (!callback_) {
-    return;
+  if (callback_) {
+    bt_log(DEBUG, "hci", "destroying unfinished transaction: %zu", transaction_id_);
   }
-
-  bt_log(DEBUG, "hci", "sending kUnspecifiedError for unfinished transaction %zu", transaction_id_);
-  std::unique_ptr<EventPacket> event = EventPacket::New(sizeof(hci_spec::CommandStatusEventParams));
-  // Init buffer to prevent stale data in buffer.
-  event->mutable_view()->mutable_data().SetToZeros();
-
-  hci_spec::EventHeader* header = event->mutable_view()->mutable_header();
-  hci_spec::CommandStatusEventParams* params =
-      event->mutable_view()->mutable_payload<hci_spec::CommandStatusEventParams>();
-
-  // TODO(armansito): Instead of lying about receiving a Command Status event,
-  // report this error in a different way. This can be highly misleading during
-  // debugging.
-  header->event_code = hci_spec::kCommandStatusEventCode;
-  header->parameter_total_size = sizeof(hci_spec::CommandStatusEventParams);
-  params->status = hci_spec::kUnspecifiedError;
-  params->command_opcode = opcode_;
-
-  Complete(std::move(event));
 }
 
 void CommandChannel::TransactionData::Start(fit::closure timeout_cb, zx::duration timeout) {

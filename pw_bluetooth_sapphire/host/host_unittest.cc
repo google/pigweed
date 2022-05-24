@@ -35,7 +35,9 @@ class HostTest : public TestingBase {
   void SetUp() override { host_ = Host::Create(hci_proto(), std::nullopt); }
 
   void TearDown() override {
-    host_->ShutDown();
+    if (host_) {
+      host_->ShutDown();
+    }
     host_ = nullptr;
     TestingBase::TearDown();
   }
@@ -60,6 +62,8 @@ class HostTest : public TestingBase {
 
  protected:
   Host *host() const { return host_.get(); }
+
+  void DestroyHost() { host_ = nullptr; }
 
  private:
   fbl::RefPtr<Host> host_;
@@ -115,16 +119,14 @@ TEST_F(HostTest, InitializeFailsWhenCommandTimesOut) {
   // Any command sent to the command channel will time out, so run the loop until it does, and the
   // transport should signal failure, which should call our error callback.
   constexpr zx::duration kCommandTimeout = zx::sec(12);
-
   RunLoopFor(kCommandTimeout);
+  EXPECT_TRUE(error_cb_called);
+  EXPECT_FALSE(init_cb_result.has_value());
 
-  // Initialization will fail before the error callback would be called (the error callback is only
-  // called after successful initialization).
-  EXPECT_FALSE(error_cb_called);
-  // Initialization also failed, since the adapter initialization is what was being done when the
-  // timeout happened.
-  EXPECT_TRUE(init_cb_result.has_value());
+  host()->ShutDown();
+  ASSERT_TRUE(init_cb_result.has_value());
   EXPECT_FALSE(init_cb_result.value());
+  DestroyHost();
 }
 
 }  // namespace
