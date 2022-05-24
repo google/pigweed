@@ -346,16 +346,15 @@ Status UpdateBundleAccessor::PersistManifest() {
 
 Status UpdateBundleAccessor::Close() {
   bundle_verified_ = false;
-  return blob_store_reader_.IsOpen() ? blob_store_reader_.Close() : OkStatus();
+  return update_reader_.IsOpen() ? update_reader_.Close() : OkStatus();
 }
 
 Status UpdateBundleAccessor::DoOpen() {
-  PW_TRY(blob_store_.Init());
-  PW_TRY(blob_store_reader_.Open());
-  bundle_ = protobuf::Message(blob_store_reader_,
-                              blob_store_reader_.ConservativeReadLimit());
+  PW_TRY(update_reader_.Open());
+  bundle_ = protobuf::Message(update_reader_.reader(),
+                              update_reader_.reader().ConservativeReadLimit());
   if (!bundle_.ok()) {
-    blob_store_reader_.Close();
+    update_reader_.Close();
     return bundle_.status();
   }
   return OkStatus();
