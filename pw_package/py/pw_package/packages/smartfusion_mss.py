@@ -26,7 +26,7 @@ class SmartfusionMss(pw_package.git_repo.GitRepo):
         super().__init__(*args,
                          name='smartfusion_mss',
                          url='https://github.com/seank/smartfusion_mss',
-                         commit='9f47db73d3df786eab04d082645da5e735e63d28',
+                         commit='bb22f26cc3a54df15bb901dc6c95662727158fed',
                          **kwargs)
 
     def info(self, path: pathlib.Path) -> Sequence[str]:

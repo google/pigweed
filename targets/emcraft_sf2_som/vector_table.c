@@ -44,6 +44,7 @@ typedef void (*InterruptHandler)(void);
 void SVC_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
+void sf2_SocInit(void);
 
 PW_KEEP_IN_SECTION(".vector_table")
 const InterruptHandler vector_table[] = {
@@ -55,7 +56,7 @@ const InterruptHandler vector_table[] = {
 
     // Reset handler, dictates how to handle reset interrupt. This is the
     // address that the Program Counter (PC) is initialized to at boot.
-    [1] = pw_boot_Entry,
+    [1] = sf2_SocInit,
 
     // NMI handler.
     [2] = DefaultFaultHandler,

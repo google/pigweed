@@ -42,6 +42,8 @@ std::array<char, configMAX_TASK_NAME_LEN> temp_thread_name_buffer;
 
 }  // namespace
 
+extern "C" void Reset_Handler(void);
+
 // Functions needed when configGENERATE_RUN_TIME_STATS is on.
 extern "C" void configureTimerForRunTimeStats(void) {}
 extern "C" unsigned long getRunTimeCounterValue(void) { return 10 /* FIXME */; }
@@ -181,6 +183,13 @@ extern "C" void pw_boot_PreMainInit() {
   pw::system::Init();
   vTaskStartScheduler();
   PW_UNREACHABLE;
+}
+
+extern "C" void sf2_SocInit() {
+#if SF2_MSS_NO_BOOTLOADER
+  Reset_Handler();
+#endif
+  pw_boot_Entry();
 }
 
 // This `main()` stub prevents another main function from being linked since

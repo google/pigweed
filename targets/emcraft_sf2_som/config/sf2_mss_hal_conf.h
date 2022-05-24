@@ -14,8 +14,10 @@
 
 #pragma once
 
+#include "../drivers_config/sys_config/sys_config.h"
+
 #if (MSS_SYS_MDDR_CONFIG_BY_CORTEX == 1)
-#error "Please turn off DDR initialization! See the comment in this file above."
+#error "Please turn off DDR initialization! See the comment in BUILD.gn file."
 #endif
 
 #define HAL_GPIO_MODULE_ENABLED

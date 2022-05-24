@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
@@ -28,7 +29,73 @@ config("pw_malloc_active") {
   }
 }
 
+config("emcraft_ddr_init") {
+  # Emcraft's DDR config must be manually set by a custom init function. This
+  # conflicts with the built-in MSS init function. I have not looked into this
+  # myself to see if it's absoutely needed or not.
+  defines = [ "MSS_SYS_MDDR_CONFIG_BY_CORTEX=0" ]
+}
+
 if (current_toolchain != default_toolchain) {
+  pw_linker_script("mddr_debug_linker_script") {
+    defines = [
+      "PW_BOOT_CODE_BEGIN=0x00000200",  # After vector table.
+
+      # TODO(skeys) Bootloader is capable of loading 16M of uncompressed code
+      # from SPI flash to external RAM. For now use the allocated eNVM flash
+      # (256K - Bootloader - InSystemProgrammer = 192K)
+      "PW_BOOT_CODE_SIZE=0x30000",
+
+      # TODO(pwbug/219): Currently "pw_tokenizer/detokenize_test" requires at
+      # least 6K bytes in heap when using pw_malloc_freelist. The heap size
+      # required for tests should be investigated.
+      "PW_BOOT_HEAP_SIZE=4M",
+
+      # With external RAM remapped, we use the entire internal ram for the
+      # stack (64K).
+      "PW_BOOT_MIN_STACK_SIZE=64K",
+
+      # Using external DDR RAM, we just need to make sure we go past our ROM
+      # sections.
+      "PW_BOOT_RAM_BEGIN=0xA1000000",
+
+      # We assume that the bootloader loaded all 16M of text.
+      "PW_BOOT_RAM_SIZE=48M",
+      "PW_BOOT_VECTOR_TABLE_BEGIN=0x00000000",
+      "PW_BOOT_VECTOR_TABLE_SIZE=512",
+    ]
+    linker_script = "emcraft_sf2_som_mddr_debug.ld"
+  }
+  pw_linker_script("mddr_production_linker_script") {
+    defines = [
+      "PW_BOOT_FLASH_BEGIN=0x00000200",  # After vector table.
+
+      # TODO(skeys) Bootloader is capable of loading 16M of uncompressed code
+      # from SPI flash to external RAM. For now use the allocated eNVM flash
+      # (256K - Bootloader - InSystemProgrammer = 192K)
+      "PW_BOOT_FLASH_SIZE=0x30000",
+
+      # TODO(pwbug/219): Currently "pw_tokenizer/detokenize_test" requires at
+      # least 6K bytes in heap when using pw_malloc_freelist. The heap size
+      # required for tests should be investigated.
+      "PW_BOOT_HEAP_SIZE=4M",
+
+      # With external RAM remapped, we use the entire internal ram for the
+      # stack (64K).
+      "PW_BOOT_MIN_STACK_SIZE=1024K",
+
+      # Using external DDR RAM, we just need to make sure we go past our ROM
+      # sections.
+      "PW_BOOT_RAM_BEGIN=0xA1000000",
+
+      # We assume that the bootloader loaded all 16M of text.
+      "PW_BOOT_RAM_SIZE=48M",
+      "PW_BOOT_VECTOR_TABLE_BEGIN=0x00000000",
+      "PW_BOOT_VECTOR_TABLE_SIZE=512",
+    ]
+    linker_script = "$dir_pw_boot_cortex_m/basic_cortex_m.ld"
+  }
+
   pw_source_set("pre_init") {
     configs = [ ":pw_malloc_active" ]
     deps = [
@@ -49,6 +116,7 @@ if (current_toolchain != default_toolchain) {
 
   config("config_includes") {
     include_dirs = [ "config" ]
+    configs = [ ":emcraft_ddr_init" ]
   }
 
   pw_source_set("sf2_mss_hal_config") {
@@ -81,33 +149,8 @@ pw_system_target("emcraft_sf2_som") {
     pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
     pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
 
-    # Non-debug build for use with the boot loader.
-    pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
-      "PW_BOOT_FLASH_BEGIN=0x00000200",  # After vector table.
-
-      # TODO(skeys) Bootloader is capable of loading 16M of uncompressed code
-      # from SPI flash to external RAM. For now use the allocated eNVM flash
-      # (256K - Bootloader - InSystemProgrammer = 192K)
-      "PW_BOOT_FLASH_SIZE=0x30000",
-
-      # TODO(pwbug/219): Currently "pw_tokenizer/detokenize_test" requires at
-      # least 6K bytes in heap when using pw_malloc_freelist. The heap size
-      # required for tests should be investigated.
-      "PW_BOOT_HEAP_SIZE=4M",
-
-      # With external RAM remapped, we use the entire internal ram for the
-      # stack (64K).
-      "PW_BOOT_MIN_STACK_SIZE=1024K",
-
-      # Using external DDR RAM, we just need to make sure we go past our ROM
-      # sections.
-      "PW_BOOT_RAM_BEGIN=0xA1000000",
-
-      # We assume that the bootloader loaded all 16M of text.
-      "PW_BOOT_RAM_SIZE=48M",
-      "PW_BOOT_VECTOR_TABLE_BEGIN=0x00000000",
-      "PW_BOOT_VECTOR_TABLE_SIZE=512",
-    ]
+    pw_boot_cortex_m_LINKER_SCRIPT =
+        "//targets/emcraft_sf2_som:mddr_production_linker_script"
   }
 }
 
@@ -127,20 +170,11 @@ pw_system_target("emcraft_sf2_som_debug") {
     pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
     pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
 
-    pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
-      "PW_BOOT_FLASH_BEGIN=0x00000200",
-      "PW_BOOT_FLASH_SIZE=200K",
-
-      # TODO(pwbug/219): Currently "pw_tokenizer/detokenize_test" requires at
-      # least 6K bytes in heap when using pw_malloc_freelist. The heap size
-      # required for tests should be investigated.
-      "PW_BOOT_HEAP_SIZE=7K",
-      "PW_BOOT_MIN_STACK_SIZE=1K",
-      "PW_BOOT_RAM_BEGIN=0x20000000",
-      "PW_BOOT_RAM_SIZE=64K",
-      "PW_BOOT_VECTOR_TABLE_BEGIN=0x00000000",
-      "PW_BOOT_VECTOR_TABLE_SIZE=512",
-    ]
+    # Override the default pw_boot_cortex_m linker script and set the memory
+    # regions for the target.
+    pw_boot_cortex_m_LINKER_SCRIPT =
+        "//targets/emcraft_sf2_som:mddr_debug_linker_script"
+    pw_third_party_smartfusion_mss_CONFIG = "debug"
   }
 }
 
