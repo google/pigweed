@@ -16,7 +16,6 @@ package dev.pigweed.pw_transfer;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.protobuf.ByteString;
 import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.Call;
 import dev.pigweed.pw_rpc.ChannelOutputException;
