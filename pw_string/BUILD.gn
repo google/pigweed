@@ -23,26 +23,58 @@ config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
-pw_source_set("pw_string") {
+group("pw_string") {
+  public_deps = [
+    ":builder",
+    ":format",
+    ":to_string",
+  ]
+}
+
+pw_source_set("builder") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_string/string_builder.h" ]
+  sources = [ "string_builder.cc" ]
+  public_deps = [
+    ":format",
+    ":to_string",
+    ":util",
+    dir_pw_preprocessor,
+    dir_pw_status,
+  ]
+}
+
+pw_source_set("format") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_string/format.h" ]
+  sources = [ "format.cc" ]
+  public_deps = [
+    dir_pw_preprocessor,
+    dir_pw_status,
+  ]
+}
+
+pw_source_set("to_string") {
   public_configs = [ ":public_include_path" ]
   public = [
-    "public/pw_string/format.h",
-    "public/pw_string/internal/length.h",
-    "public/pw_string/string_builder.h",
     "public/pw_string/to_string.h",
     "public/pw_string/type_to_string.h",
-    "public/pw_string/util.h",
   ]
-  sources = [
-    "format.cc",
-    "string_builder.cc",
-    "type_to_string.cc",
-  ]
+  sources = [ "type_to_string.cc" ]
   public_deps = [
-    "$dir_pw_assert",
-    "$dir_pw_preprocessor",
-    "$dir_pw_result",
-    "$dir_pw_status",
+    ":util",
+    dir_pw_status,
+  ]
+}
+
+pw_source_set("util") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_string/util.h" ]
+  sources = [ "public/pw_string/internal/length.h" ]
+  public_deps = [
+    dir_pw_assert,
+    dir_pw_result,
+    dir_pw_status,
   ]
 }
 
@@ -72,27 +104,27 @@ pw_test_group("tests") {
 }
 
 pw_test("format_test") {
-  deps = [ ":pw_string" ]
+  deps = [ ":format" ]
   sources = [ "format_test.cc" ]
 }
 
 pw_test("string_builder_test") {
-  deps = [ ":pw_string" ]
+  deps = [ ":builder" ]
   sources = [ "string_builder_test.cc" ]
 }
 
 pw_test("to_string_test") {
-  deps = [ ":pw_string" ]
+  deps = [ ":to_string" ]
   sources = [ "to_string_test.cc" ]
 }
 
 pw_test("type_to_string_test") {
-  deps = [ ":pw_string" ]
+  deps = [ ":to_string" ]
   sources = [ "type_to_string_test.cc" ]
 }
 
 pw_test("util_test") {
-  deps = [ ":pw_string" ]
+  deps = [ ":util" ]
   sources = [ "util_test.cc" ]
 }
 

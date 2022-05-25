@@ -57,6 +57,7 @@
 #include <type_traits>
 
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 #include "pw_string/type_to_string.h"
 
 namespace pw {

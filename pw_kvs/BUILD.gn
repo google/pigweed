@@ -67,7 +67,6 @@ pw_source_set("pw_kvs") {
     dir_pw_containers,
     dir_pw_status,
     dir_pw_stream,
-    dir_pw_string,
   ]
   deps = [
     ":config",
@@ -299,6 +298,7 @@ pw_source_set("key_value_store_initialized_test") {
     ":crc16",
     ":flash_test_partition",
     ":pw_kvs",
+    "$dir_pw_string:builder",
     dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_log,
@@ -324,6 +324,7 @@ pw_source_set("test_key_value_store_test") {
   deps = [
     ":pw_kvs",
     ":test_key_value_store",
+    "$dir_pw_string:builder",
     "$dir_pw_sync:borrow",
     dir_pw_unit_test,
   ]
@@ -566,6 +567,7 @@ pw_test("key_value_store_map_test") {
     ":fake_flash",
     ":pw_kvs",
     ":test_partition",
+    "$dir_pw_string:builder",
     dir_pw_checksum,
   ]
   sources = [ "key_value_store_map_test.cc" ]

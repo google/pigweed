@@ -38,7 +38,6 @@ pw_auto_add_simple_module(pw_kvs
     pw_log
     pw_random
     pw_stream
-    pw_string
 )
 
 target_compile_definitions(

@@ -15,30 +15,67 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_library(pw_string
+  PUBLIC_DEPS
+    pw_string.builder
+    pw_string.format
+    pw_string.to_string
+    pw_string.util
+)
+
+pw_add_module_library(pw_string.builder
+  HEADERS
+    public/pw_string/string_builder.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_string.format
+    pw_string.to_string
+    pw_string.util
+    pw_preprocessor
+    pw_status
+  SOURCES
+    string_builder.cc
+)
+
+pw_add_module_library(pw_string.format
   HEADERS
     public/pw_string/format.h
-    public/pw_string/internal/length.h
-    public/pw_string/string_builder.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_preprocessor
+    pw_span
+    pw_status
+  SOURCES
+    format.cc
+)
+
+pw_add_module_library(pw_string.to_string
+  HEADERS
     public/pw_string/to_string.h
     public/pw_string/type_to_string.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_string.util
+    pw_status
+  SOURCES
+    type_to_string.cc
+)
+
+pw_add_module_library(pw_string.util
+  HEADERS
     public/pw_string/util.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_assert
-    pw_containers.vector
-    pw_polyfill.span
-    pw_preprocessor
     pw_result
+    pw_span
     pw_status
   SOURCES
-    format.cc
-    string_builder.cc
-    type_to_string.cc
+    public/pw_string/internal/length.h
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_STRING)
-  zephyr_link_libraries(pw_string)
-endif()
 
 pw_add_module_library(pw_string.vector
   HEADERS
@@ -112,3 +149,6 @@ pw_add_test(pw_string.vector_test
     pw_string
 )
 
+if(Zephyr_FOUND AND CONFIG_PIGWEED_STRING)
+  zephyr_link_libraries(pw_string)
+endif()
