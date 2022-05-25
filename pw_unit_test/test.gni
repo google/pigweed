@@ -276,12 +276,6 @@ template("pw_test") {
       }
       stamp = true
     }
-
-    # TODO(frolv): Alias for the deprecated _run target. Remove when projects
-    # are migrated.
-    group(_test_to_run + "_run") {
-      public_deps = [ ":$_test_to_run.run" ]
-    }
   } else {
     group(_test_target_name + ".run") {
     }
@@ -381,11 +375,6 @@ template("pw_test_group") {
           deps += [ "$_dep_target.run($_dep_toolchain)" ]
         }
       }
-
-      # TODO(frolv): Remove this deprecated alias.
-      group(_group_target + "_run") {
-        deps = [ ":$_group_target.run" ]
-      }
     }
   } else {  # _group_is_enabled
     # Create empty groups for the tests to avoid pulling in any dependencies.
@@ -396,10 +385,6 @@ template("pw_test_group") {
 
     if (pw_unit_test_AUTOMATIC_RUNNER != "") {
       group(_group_target + ".run") {
-      }
-
-      # TODO(frolv): Remove this deprecated alias.
-      group(_group_target + "_run") {
       }
     }
 
