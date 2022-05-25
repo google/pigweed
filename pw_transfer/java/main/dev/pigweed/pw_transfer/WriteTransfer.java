@@ -68,10 +68,7 @@ class WriteTransfer extends Transfer<Void> {
 
   @Override
   synchronized Chunk getInitialChunk() {
-    return newChunk(Chunk.Type.TRANSFER_START)
-        .setResourceId(getId())
-        .setRemainingBytes(data.length)
-        .build();
+    return newChunk(Chunk.Type.START).setResourceId(getId()).setRemainingBytes(data.length).build();
   }
 
   @Override
@@ -221,7 +218,7 @@ class WriteTransfer extends Transfer<Void> {
     // have a type field.
     return !chunk.hasType()
         || (chunk.getType().equals(Chunk.Type.PARAMETERS_RETRANSMIT)
-            || chunk.getType().equals(Chunk.Type.TRANSFER_START));
+            || chunk.getType().equals(Chunk.Type.START));
   }
 
   private static int getWindowEndOffset(Chunk chunk, int dataLength) {
@@ -234,8 +231,7 @@ class WriteTransfer extends Transfer<Void> {
   }
 
   private Chunk buildDataChunk(ByteString chunkData) {
-    Chunk.Builder chunk =
-        newChunk(Chunk.Type.TRANSFER_DATA).setOffset(sentOffset).setData(chunkData);
+    Chunk.Builder chunk = newChunk(Chunk.Type.DATA).setOffset(sentOffset).setData(chunkData);
 
     // If this is the last data chunk, setRemainingBytes to 0.
     if (sentOffset + chunkData.size() == data.length) {

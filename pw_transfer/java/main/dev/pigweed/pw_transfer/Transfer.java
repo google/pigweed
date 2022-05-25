@@ -309,7 +309,7 @@ abstract class Transfer<T> {
 
     // Only call finish() if the sendChunk was successful. If it wasn't, the exception would have
     // already terminated the transfer.
-    if (sendChunk(newChunk(Chunk.Type.TRANSFER_COMPLETION).setStatus(status.code()))) {
+    if (sendChunk(newChunk(Chunk.Type.COMPLETION).setStatus(status.code()))) {
       cleanUp(status);
     }
   }

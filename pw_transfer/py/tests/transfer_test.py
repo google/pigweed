@@ -473,18 +473,18 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(
             self._sent_chunks,
             [
-                transfer_pb2.Chunk(transfer_id=22,
-                                   resource_id=22,
-                                   type=transfer_pb2.Chunk.Type.TRANSFER_START
-                                   ),  # initial chunk
                 transfer_pb2.Chunk(
                     transfer_id=22,
                     resource_id=22,
-                    type=transfer_pb2.Chunk.Type.TRANSFER_START),  # retry 1
+                    type=transfer_pb2.Chunk.Type.START),  # initial chunk
                 transfer_pb2.Chunk(
                     transfer_id=22,
                     resource_id=22,
-                    type=transfer_pb2.Chunk.Type.TRANSFER_START),  # retry 2
+                    type=transfer_pb2.Chunk.Type.START),  # retry 1
+                transfer_pb2.Chunk(
+                    transfer_id=22,
+                    resource_id=22,
+                    type=transfer_pb2.Chunk.Type.START),  # retry 2
             ])
 
         exception = context.exception
@@ -506,23 +506,21 @@ class TransferManagerTest(unittest.TestCase):
         with self.assertRaises(pw_transfer.Error) as context:
             manager.write(22, b'0123456789')
 
-        last_data_chunk = transfer_pb2.Chunk(
-            transfer_id=22,
-            data=b'56789',
-            offset=5,
-            remaining_bytes=0,
-            type=transfer_pb2.Chunk.Type.TRANSFER_DATA)
+        last_data_chunk = transfer_pb2.Chunk(transfer_id=22,
+                                             data=b'56789',
+                                             offset=5,
+                                             remaining_bytes=0,
+                                             type=transfer_pb2.Chunk.Type.DATA)
 
         self.assertEqual(
             self._sent_chunks,
             [
-                transfer_pb2.Chunk(
-                    transfer_id=22,
-                    resource_id=22,
-                    type=transfer_pb2.Chunk.Type.TRANSFER_START),
+                transfer_pb2.Chunk(transfer_id=22,
+                                   resource_id=22,
+                                   type=transfer_pb2.Chunk.Type.START),
                 transfer_pb2.Chunk(transfer_id=22,
                                    data=b'01234',
-                                   type=transfer_pb2.Chunk.Type.TRANSFER_DATA),
+                                   type=transfer_pb2.Chunk.Type.DATA),
                 last_data_chunk,  # last chunk
                 last_data_chunk,  # retry 1
                 last_data_chunk,  # retry 2

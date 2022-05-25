@@ -614,17 +614,17 @@ describe('Transfer client', () => {
         const expectedChunk1 = new Chunk();
         expectedChunk1.setTransferId(22);
         expectedChunk1.setResourceId(22);
-        expectedChunk1.setType(Chunk.Type.TRANSFER_START);
+        expectedChunk1.setType(Chunk.Type.START);
         const expectedChunk2 = new Chunk();
         expectedChunk2.setTransferId(22);
         expectedChunk2.setData(textEncoder.encode('01234'));
-        expectedChunk2.setType(Chunk.Type.TRANSFER_DATA);
+        expectedChunk2.setType(Chunk.Type.DATA);
         const lastChunk = new Chunk();
         lastChunk.setTransferId(22);
         lastChunk.setData(textEncoder.encode('56789'));
         lastChunk.setOffset(5);
         lastChunk.setRemainingBytes(0);
-        lastChunk.setType(Chunk.Type.TRANSFER_DATA);
+        lastChunk.setType(Chunk.Type.DATA);
 
         const expectedChunks = [
           expectedChunk1,

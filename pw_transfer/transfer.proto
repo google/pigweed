@@ -143,10 +143,10 @@ message Chunk {
 
   enum Type {
     // Chunk containing transfer data.
-    TRANSFER_DATA = 0;
+    DATA = 0;
 
     // First chunk of a transfer (only sent by the client).
-    TRANSFER_START = 1;
+    START = 1;
 
     // Transfer parameters indicating that the transmitter should retransmit
     // from the specified offset.
@@ -158,11 +158,21 @@ message Chunk {
     PARAMETERS_CONTINUE = 3;
 
     // Sender of the chunk is terminating the transfer.
-    TRANSFER_COMPLETION = 4;
+    COMPLETION = 4;
 
     // Acknowledge the completion of a transfer. Currently unused.
     // TODO(konkers): Implement this behavior.
-    TRANSFER_COMPLETION_ACK = 5;
+    COMPLETION_ACK = 5;
+
+    // Acknowledges a transfer start request, assigning a session ID for the
+    // transfer and optionally negotiating the protocol version. Sent from
+    // server to client.
+    START_ACK = 6;
+
+    // Confirmation of a START_ACK's assigned session ID and negotiated
+    // parameters, sent by the client to the server. Initiates the data transfer
+    // proper.
+    START_ACK_CONFIRMATION = 7;
   };
 
   // The type of this chunk. This field should only be processed when present.
