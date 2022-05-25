@@ -166,6 +166,35 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "static_library_support",
+    srcs = ["static_library_support.cc"],
+    hdrs = ["public/pw_unit_test/static_library_support.h"],
+    includes = ["public"],
+    deps = [":light"],  # This library only works with the light backend
+)
+
+pw_cc_library(
+    name = "tests_in_archive",
+    srcs = [
+        "static_library_archived_tests.cc",
+        "static_library_missing_archived_tests.cc",
+    ],
+    linkstatic = True,
+    visibility = ["//visibility:private"],
+    deps = [":pw_unit_test"],
+)
+
+pw_cc_test(
+    name = "static_library_support_test",
+    srcs = ["static_library_support_test.cc"],
+    deps = [
+        ":static_library_support",
+        ":tests_in_archive",
+        "//pw_assert",
+    ],
+)
+
 pw_cc_test(
     name = "framework_test",
     srcs = ["framework_test.cc"],

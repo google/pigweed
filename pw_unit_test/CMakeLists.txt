@@ -42,6 +42,15 @@ pw_add_module_library(pw_unit_test.light
     public_overrides  # pw_unit_test overrides the gtest/gtest.h header.
 )
 
+pw_add_module_library(pw_unit_test.static_library_support
+  HEADERS
+    public/pw_unit_test/static_library_support.h
+  SOURCES
+    static_library_support.cc
+  PUBLIC_DEPS
+    pw_unit_test.light
+)
+
 pw_add_module_library(pw_unit_test.main
   SOURCES
     simple_printing_main.cc

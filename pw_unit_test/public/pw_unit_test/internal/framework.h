@@ -496,15 +496,17 @@ inline void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
   class class_name final : public parent_class {                           \
    private:                                                                \
     void PigweedTestBody() override;                                       \
-                                                                           \
-    static ::pw::unit_test::internal::TestInfo test_info_;                 \
   };                                                                       \
                                                                            \
-  ::pw::unit_test::internal::TestInfo class_name::test_info_(              \
+  extern "C" {                                                             \
+                                                                           \
+  ::pw::unit_test::internal::TestInfo _pw_unit_test_Info_##suite##_##name( \
       #suite,                                                              \
       #name,                                                               \
       __FILE__,                                                            \
       ::pw::unit_test::internal::Framework::CreateAndRunTest<class_name>); \
+                                                                           \
+  } /* extern "C" */                                                       \
                                                                            \
   void class_name::PigweedTestBody()
 

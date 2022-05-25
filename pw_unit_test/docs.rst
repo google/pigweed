@@ -107,6 +107,27 @@ Currently, only a test suite filter is supported. This is set by calling
 .. note::
   Test filtering is only supported in C++17.
 
+Tests in static libraries
+=========================
+The linker usually ignores tests linked through a static library (``.a`` file).
+This is because test registration relies on the test instance's static
+constructor adding itself to a global list of tests. When linking against a
+static library, static constructors in an object file will be ignored unless at
+least one entity in that object file is linked.
+
+Pigweed's ``pw_unit_test`` implementation provides the
+:c:macro:`PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST` macro to support running tests
+in a static library.
+
+.. c:macro:: PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST(test_suite_name, test_name)
+
+  Ensures tests in a static library are linked and executed. Provide the test
+  suite name and test name for one test in the file linked into a static
+  library. Any test in the file may be used, but it is recommended to use the
+  first for consistency. The test must be in a static library that is a
+  dependency of this target. Referring to a test that does not exist causes a
+  linker error.
+
 .. _running-tests:
 
 -------------
