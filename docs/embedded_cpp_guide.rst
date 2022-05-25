@@ -173,3 +173,18 @@ must be silenced. This is done in one of the following ways:
      In C, silencing warnings on unused functions may require compiler-specific
      attributes (``__attribute__((unused))``). Avoid this by removing the
      functions or compiling with C++ and using ``[[maybe_unused]]``.
+
+Dealing with ``nodiscard`` return values
+----------------------------------------
+There are rare circumstances where a ``nodiscard`` return value from a function
+call needs to be discarded.  For ``pw::Status`` value ``.IgnoreError()`` can be
+appended to the the function call.  For other instances, ``std::ignore`` can be
+used.
+
+.. code-block:: cpp
+
+  // <tuple> defines std::ignore.
+  #include <tuple>
+
+  DoThingWithStatus().IgnoreError();
+  std::ignore = DoThingWithReturnValue();
