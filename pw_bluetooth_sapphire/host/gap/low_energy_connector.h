@@ -152,8 +152,8 @@ class LowEnergyConnector final {
   std::unique_ptr<LowEnergyDiscoverySession> discovery_session_;
 
   // Sends HCI commands that request version and feature support information from peer
-  // controllers.
-  LowEnergyInterrogator interrogator_;
+  // controllers. Initialized only during interrogation.
+  std::optional<LowEnergyInterrogator> interrogator_;
 
   fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager_;
 

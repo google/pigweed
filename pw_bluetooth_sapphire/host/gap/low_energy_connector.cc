@@ -72,7 +72,6 @@ LowEnergyConnector::LowEnergyConnector(
       result_cb_(std::move(cb)),
       hci_connector_(connector),
       connection_attempt_(0),
-      interrogator_(peer_cache_, transport),
       discovery_manager_(std::move(discovery_manager)),
       transport_(transport),
       le_connection_manager_(conn_mgr),
@@ -122,8 +121,6 @@ LowEnergyConnector::~LowEnergyConnector() {
     // gap::internal::LowEnergyConnector is created.
     hci_connector_->Cancel();
   }
-
-  interrogator_.Cancel(peer_id_);
 }
 
 void LowEnergyConnector::Cancel() {
@@ -146,7 +143,7 @@ void LowEnergyConnector::Cancel() {
       break;
     case State::kInterrogating:
       // The interrogator will call the result callback with a cancelled result.
-      interrogator_.Cancel(peer_id_);
+      interrogator_->Cancel();
       break;
     case State::kPauseBeforeConnectionRetry:
       request_create_connection_task_.Cancel();
@@ -333,8 +330,10 @@ void LowEnergyConnector::StartInterrogation() {
   ZX_ASSERT(connection_);
 
   state_.Set(State::kInterrogating);
-  interrogator_.Start(peer_id_, connection_->handle(),
-                      fit::bind_member<&LowEnergyConnector::OnInterrogationComplete>(this));
+  auto peer = peer_cache_->FindById(peer_id_);
+  ZX_ASSERT(peer);
+  interrogator_.emplace(peer->GetWeakPtr(), connection_->handle(), transport_);
+  interrogator_->Start(fit::bind_member<&LowEnergyConnector::OnInterrogationComplete>(this));
 }
 
 void LowEnergyConnector::OnInterrogationComplete(hci::Result<> status) {

@@ -663,5 +663,36 @@ TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallb
   EXPECT_EQ(0, status_cb_called);
 }
 
+TEST_F(SequentialCommandRunnerTest,
+       SequentialCommandRunnerDestroyedInCancelStatusCallbackDoesNotCrash) {
+  StartTestDevice();
+  std::optional<SequentialCommandRunner> cmd_runner;
+  cmd_runner.emplace(dispatcher(), transport()->WeakPtr());
+
+  Result<> status = fitx::ok();
+  int status_cb_called = 0;
+  auto status_cb = [&](Result<> cb_status) {
+    status = cb_status;
+    status_cb_called++;
+    cmd_runner.reset();
+  };
+
+  int cb_called = 0;
+  auto cb = [&](const EventPacket& event) { cb_called++; };
+
+  auto command = bt::testing::EmptyCommandPacket(kTestOpCode);
+  cmd_runner->QueueCommand(CommandPacket::New(kTestOpCode), cb);
+  EXPECT_CMD_PACKET_OUT(test_device(), command);
+  cmd_runner->RunCommands(status_cb);
+  EXPECT_FALSE(cmd_runner->IsReady());
+  cmd_runner->Cancel();
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(cmd_runner);
+  EXPECT_EQ(0, cb_called);
+  EXPECT_EQ(1, status_cb_called);
+  EXPECT_EQ(ToResult(HostError::kCanceled), status);
+}
+
 }  // namespace
 }  // namespace bt::hci
