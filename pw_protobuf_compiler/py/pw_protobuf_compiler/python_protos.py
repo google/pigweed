@@ -25,6 +25,8 @@ from types import ModuleType
 from typing import (Dict, Generic, Iterable, Iterator, List, NamedTuple, Set,
                     Tuple, TypeVar, Union)
 
+from yapf.yapflib import yapf_api  # type: ignore[import]
+
 _LOG = logging.getLogger(__name__)
 
 PathOrStr = Union[Path, str]
@@ -394,6 +396,20 @@ def _proto_repr(message) -> Iterator[str]:
             yield f'{field.name}={_field_repr(field, value)}'
 
 
-def proto_repr(message) -> str:
-    """Creates a repr-like string for a protobuf."""
-    return f'{message.DESCRIPTOR.full_name}({", ".join(_proto_repr(message))})'
+def proto_repr(message, *, wrap: bool = True) -> str:
+    """Creates a repr-like string for a protobuf.
+
+    In an interactive console that imports proto objects into the namespace, the
+    output of proto_repr() can be used as Python source to create a proto
+    object.
+
+    Args:
+      message: The protobuf message to format
+      wrap: If true, the output is line wrapped according to PEP8 using YAPF.
+    """
+    raw = f'{message.DESCRIPTOR.full_name}({", ".join(_proto_repr(message))})'
+
+    if wrap:
+        return yapf_api.FormatCode(raw, style_config='PEP8')[0].rstrip()
+
+    return raw
