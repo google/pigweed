@@ -24,11 +24,31 @@ SequentialCommandRunner::SequentialCommandRunner(async_dispatcher_t* dispatcher,
 SequentialCommandRunner::~SequentialCommandRunner() {}
 
 void SequentialCommandRunner::QueueCommand(std::unique_ptr<CommandPacket> command_packet,
-                                           CommandCompleteCallback callback, bool wait) {
+                                           CommandCompleteCallback callback, bool wait,
+                                           hci_spec::EventCode complete_event_code,
+                                           std::unordered_set<hci_spec::OpCode> exclusions) {
   ZX_DEBUG_ASSERT(!status_callback_);
   ZX_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <= command_packet->view().size());
 
-  command_queue_.emplace(QueuedCommand{std::move(command_packet), std::move(callback), wait});
+  command_queue_.emplace(QueuedCommand{.packet = std::move(command_packet),
+                                       .complete_event_code = complete_event_code,
+                                       .is_le_async_command = false,
+                                       .callback = std::move(callback),
+                                       .wait = wait,
+                                       .exclusions = std::move(exclusions)});
+}
+
+void SequentialCommandRunner::QueueLeAsyncCommand(std::unique_ptr<CommandPacket> command_packet,
+                                                  hci_spec::EventCode le_meta_subevent_code,
+                                                  CommandCompleteCallback callback, bool wait) {
+  ZX_DEBUG_ASSERT(!status_callback_);
+
+  command_queue_.emplace(QueuedCommand{.packet = std::move(command_packet),
+                                       .complete_event_code = le_meta_subevent_code,
+                                       .is_le_async_command = true,
+                                       .callback = std::move(callback),
+                                       .wait = wait,
+                                       .exclusions = {}});
 }
 
 void SequentialCommandRunner::RunCommands(ResultFunction<> status_callback) {
@@ -70,16 +90,14 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
   command_queue_.pop();
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto command_callback = [self, cmd_cb = std::move(next.callback), seq_no = sequence_number_](
-                              auto, const EventPacket& event_packet) {
+  auto command_callback = [self, cmd_cb = std::move(next.callback),
+                           complete_event_code = next.complete_event_code,
+                           seq_no = sequence_number_](auto, const EventPacket& event_packet) {
     auto status = event_packet.ToResult();
-    if (status.is_ok() && event_packet.event_code() == hci_spec::kCommandStatusEventCode) {
+    if (status.is_ok() && event_packet.event_code() == hci_spec::kCommandStatusEventCode &&
+        complete_event_code != hci_spec::kCommandStatusEventCode) {
       return;
     }
-
-    // TODO(fxbug.dev/641): Allow async commands to be queued.
-    ZX_DEBUG_ASSERT(status.is_error() ||
-                    event_packet.event_code() == hci_spec::kCommandCompleteEventCode);
 
     if (cmd_cb) {
       cmd_cb(event_packet);
@@ -96,12 +114,23 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
   };
 
   running_commands_++;
-  if (!transport_->command_channel()->SendCommand(std::move(next.packet),
-                                                  std::move(command_callback))) {
+  if (!SendQueuedCommand(std::move(next), std::move(command_callback))) {
     NotifyStatusAndReset(ToResult(HostError::kFailed));
   } else {
     TryRunNextQueuedCommand();
   }
+}
+
+bool SequentialCommandRunner::SendQueuedCommand(QueuedCommand command,
+                                                CommandChannel::CommandCallback callback) {
+  if (command.is_le_async_command) {
+    return transport_->command_channel()->SendLeAsyncCommand(
+        std::move(command.packet), std::move(callback), command.complete_event_code);
+  }
+
+  return transport_->command_channel()->SendExclusiveCommand(
+      std::move(command.packet), std::move(callback), command.complete_event_code,
+      std::move(command.exclusions));
 }
 
 void SequentialCommandRunner::Reset() {

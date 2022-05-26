@@ -5,9 +5,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt::hci {
 namespace {
@@ -426,6 +428,173 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
   EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), status);
+}
+
+TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
+  auto command = bt::testing::EmptyCommandPacket(kTestOpCode);
+  auto command0_status_event =
+      bt::testing::CommandStatusPacket(kTestOpCode, hci_spec::StatusCode::kSuccess);
+
+  auto command1 = bt::testing::EmptyCommandPacket(kTestOpCode2);
+  auto command1_cmpl_event =
+      bt::testing::CommandCompletePacket(kTestOpCode2, hci_spec::StatusCode::kSuccess);
+
+  StartTestDevice();
+
+  Result<> status = fitx::ok();
+  int status_cb_called = 0;
+  auto status_cb = [&](Result<> cb_status) {
+    status = cb_status;
+    status_cb_called++;
+  };
+
+  int cb_called = 0;
+  auto cb = [&](const EventPacket& event) { cb_called++; };
+
+  SequentialCommandRunner cmd_runner(dispatcher(), transport()->WeakPtr());
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, /*wait=*/false,
+                          hci_spec::kCommandStatusEventCode);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_cmpl_event);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, /*wait=*/true);
+
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_TRUE(cmd_runner.HasQueuedCommands());
+
+  cmd_runner.RunCommands(status_cb);
+  EXPECT_FALSE(cmd_runner.IsReady());
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+  EXPECT_EQ(2, cb_called);
+  EXPECT_EQ(1, status_cb_called);
+  EXPECT_EQ(fitx::ok(), status);
+}
+
+TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
+  auto command = bt::testing::EmptyCommandPacket(hci_spec::kRemoteNameRequest);
+  auto command0_status_event = bt::testing::CommandStatusPacket(hci_spec::kRemoteNameRequest,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command0_cmpl_event = bt::testing::RemoteNameRequestCompletePacket(DeviceAddress());
+
+  auto command1 = bt::testing::EmptyCommandPacket(hci_spec::kLEReadRemoteFeatures);
+  auto command1_status_event = bt::testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command1_cmpl_event = bt::testing::LEReadRemoteFeaturesCompletePacket(
+      /*conn=*/0x0000, hci_spec::LESupportedFeatures{0});
+
+  auto command2 = bt::testing::EmptyCommandPacket(hci_spec::kReadRemoteVersionInfo);
+  auto command2_status_event = bt::testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command2_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
+
+  StartTestDevice();
+
+  Result<> status = fitx::ok();
+  int status_cb_called = 0;
+  auto status_cb = [&](Result<> cb_status) {
+    status = cb_status;
+    status_cb_called++;
+  };
+
+  int cb_called = 0;
+  auto cb = [&](const EventPacket& event) { cb_called++; };
+
+  SequentialCommandRunner cmd_runner(dispatcher(), transport()->WeakPtr());
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
+  cmd_runner.QueueCommand(CommandPacket::New(hci_spec::kRemoteNameRequest), cb, /*wait=*/false,
+                          hci_spec::kRemoteNameRequestCompleteEventCode);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event);
+  cmd_runner.QueueLeAsyncCommand(CommandPacket::New(hci_spec::kLEReadRemoteFeatures),
+                                 hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode, cb,
+                                 /*wait=*/false);
+
+  cmd_runner.QueueCommand(CommandPacket::New(hci_spec::kReadRemoteVersionInfo), cb, /*wait=*/true,
+                          hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_TRUE(cmd_runner.HasQueuedCommands());
+
+  cmd_runner.RunCommands(status_cb);
+  EXPECT_FALSE(cmd_runner.IsReady());
+
+  RunLoopUntilIdle();
+  // Command 2 should wait on command 0 & command 1 complete events.
+  EXPECT_FALSE(cmd_runner.IsReady());
+  EXPECT_TRUE(cmd_runner.HasQueuedCommands());
+  // Completing the commands out of order shouldn't matter.
+  test_device()->SendCommandChannelPacket(command1_cmpl_event);
+  test_device()->SendCommandChannelPacket(command0_cmpl_event);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command2, &command2_status_event, &command2_cmpl_event);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+  EXPECT_EQ(3, cb_called);
+  EXPECT_EQ(1, status_cb_called);
+  EXPECT_EQ(fitx::ok(), status);
+}
+
+TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
+  auto command = bt::testing::EmptyCommandPacket(hci_spec::kRemoteNameRequest);
+  auto command0_status_event = bt::testing::CommandStatusPacket(hci_spec::kRemoteNameRequest,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command0_cmpl_event = bt::testing::RemoteNameRequestCompletePacket(DeviceAddress());
+
+  auto command1 = bt::testing::EmptyCommandPacket(hci_spec::kReadRemoteVersionInfo);
+  auto command1_status_event = bt::testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command1_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
+
+  StartTestDevice();
+
+  Result<> status = fitx::ok();
+  int status_cb_called = 0;
+  auto status_cb = [&](Result<> cb_status) {
+    status = cb_status;
+    status_cb_called++;
+  };
+
+  int cb_called = 0;
+  auto cb = [&](const EventPacket& event) { cb_called++; };
+
+  SequentialCommandRunner cmd_runner(dispatcher(), transport()->WeakPtr());
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
+  cmd_runner.QueueCommand(CommandPacket::New(hci_spec::kRemoteNameRequest), cb, /*wait=*/false,
+                          hci_spec::kRemoteNameRequestCompleteEventCode);
+
+  // Even though command 1 is not waiting on command 0, it should remain queued due to the exclusion
+  // list.
+  cmd_runner.QueueCommand(CommandPacket::New(hci_spec::kReadRemoteVersionInfo), cb, /*wait=*/false,
+                          hci_spec::kReadRemoteVersionInfoCompleteEventCode,
+                          /*exclusions=*/{hci_spec::kRemoteNameRequest});
+
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_TRUE(cmd_runner.HasQueuedCommands());
+
+  cmd_runner.RunCommands(status_cb);
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(cmd_runner.IsReady());
+  // Command 1 is "sent" but queued in CommandChannel.
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+  // Completing command 0 should send command 1.
+  test_device()->SendCommandChannelPacket(command0_cmpl_event);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event, &command1_cmpl_event);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_EQ(2, cb_called);
+  EXPECT_EQ(1, status_cb_called);
+  EXPECT_EQ(fitx::ok(), status);
 }
 
 }  // namespace

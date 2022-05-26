@@ -18,6 +18,8 @@ namespace bt::testing {
 // This allows easily defining expected packets to be sent or received for
 // given transactions such as connection establishment or discovery
 
+DynamicByteBuffer EmptyCommandPacket(hci_spec::OpCode opcode);
+
 DynamicByteBuffer CommandCompletePacket(hci_spec::OpCode opcode, hci_spec::StatusCode);
 
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);

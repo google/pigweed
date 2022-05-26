@@ -47,6 +47,10 @@ StaticByteBuffer( hci_spec::kCommandStatusEventCode, 0x04,         \
                                 LowerBits((opcode)), UpperBits((opcode)))
 // clang-format on
 
+DynamicByteBuffer EmptyCommandPacket(hci_spec::OpCode opcode) {
+  return DynamicByteBuffer(StaticByteBuffer(LowerBits(opcode), UpperBits(opcode), /*length=*/0));
+}
+
 DynamicByteBuffer CommandCompletePacket(hci_spec::OpCode opcode, hci_spec::StatusCode status) {
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                                             0x04,  // size

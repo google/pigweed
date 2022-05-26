@@ -26,9 +26,6 @@ class Transport;
 // error status is reported back to the caller. Already sent commands will
 // continue and report their statuses back to their individual callbacks.
 //
-// Only commands that terminate with the HCI_Command_Complete event are
-// currently supported.
-//
 // Commands are always sent in the order that they are queued.  If any command
 // fails, unsent commands are abandoned.
 //
@@ -49,10 +46,6 @@ class Transport;
 // and c's callbacks are run.  If all three succeeded, then d and e will run
 // simultaneously, and when both complete, the whole sequence is complete and
 // RunCommands will report success.
-//
-// This class is not thread-safe. The dispatcher that is provided during
-// initialization must be bound to the thread on which the instance of
-// SequentialCommandRunner is being constructed.
 class SequentialCommandRunner final {
  public:
   SequentialCommandRunner(async_dispatcher_t* dispatcher, fxl::WeakPtr<Transport> transport);
@@ -63,11 +56,20 @@ class SequentialCommandRunner final {
   // command.
   // If |wait| is true, then all previously queued commands must complete
   // successfully before this command is sent.
+  // |exclusions| will be passed to CommandChannel::SendExclusiveCommand().
   //
   // Cannot be called once RunCommands() has been called.
   using CommandCompleteCallback = fit::function<void(const EventPacket& event)>;
   void QueueCommand(std::unique_ptr<CommandPacket> command_packet,
-                    CommandCompleteCallback callback = {}, bool wait = true);
+                    CommandCompleteCallback callback = {}, bool wait = true,
+                    hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode,
+                    std::unordered_set<hci_spec::OpCode> exclusions = {});
+
+  // Same as QueueCommand(), except the command completes on the LE Meta Event with subevent code
+  // |le_meta_subevent_code|.
+  void QueueLeAsyncCommand(std::unique_ptr<CommandPacket> command_packet,
+                           hci_spec::EventCode le_meta_subevent_code,
+                           CommandCompleteCallback callback = {}, bool wait = true);
 
   // Runs all the queued commands. Once this is called no new commands can be
   // queued. This method will return before queued commands have been run.
@@ -106,6 +108,15 @@ class SequentialCommandRunner final {
   bool HasQueuedCommands() const;
 
  private:
+  struct QueuedCommand {
+    std::unique_ptr<CommandPacket> packet;
+    hci_spec::EventCode complete_event_code;
+    bool is_le_async_command;
+    CommandCompleteCallback callback;
+    bool wait;
+    std::unordered_set<hci_spec::OpCode> exclusions;
+  };
+
   // Try to run the next queued command.
   // |status| is the result of the most recently completed command.
   // Aborts the sequence with |status| if it did not succeed.
@@ -113,17 +124,15 @@ class SequentialCommandRunner final {
   // Runs the next queued command if it doesn't wait for the previous commands.
   // Runs the next queued command if no commands are running.
   void TryRunNextQueuedCommand(Result<> status = fitx::ok());
+
+  // Returns true on success, false on failure.
+  bool SendQueuedCommand(QueuedCommand command, CommandChannel::CommandCallback callback);
+
   void Reset();
   void NotifyStatusAndReset(Result<> status);
 
   async_dispatcher_t* dispatcher_;
   fxl::WeakPtr<Transport> transport_;
-
-  struct QueuedCommand {
-    std::unique_ptr<CommandPacket> packet;
-    CommandCompleteCallback callback;
-    bool wait;
-  };
 
   std::queue<QueuedCommand> command_queue_;
 
