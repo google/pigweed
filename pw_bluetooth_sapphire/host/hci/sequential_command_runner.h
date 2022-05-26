@@ -24,7 +24,7 @@ class Transport;
 // When a command fails due to an error status (in a HCI_Command_Status or
 // HCI_Command_Complete event), the rest of the sequence is abandoned and an
 // error status is reported back to the caller. Already sent commands will
-// continue and report their statuses back to their individual callbacks.
+// continue but not report their statuses to the caller.
 //
 // Commands are always sent in the order that they are queued.  If any command
 // fails, unsent commands are abandoned.
@@ -91,9 +91,9 @@ class SequentialCommandRunner final {
   // Cancels a running sequence. RunCommands() must have been called before a
   // sequence can be cancelled. Once a sequence is cancelled, the state of the
   // SequentialCommandRunner will be reset (i.e. IsReady() will return true).
-  // The result of any running HCI command will still be reported to the
-  // corresponding command callback.
-  // and the result callback will be called with HostError::kCanceled.
+  // The result of any running HCI command will not be reported to the
+  // corresponding command callback and the result callback will be called
+  // with HostError::kCanceled.
   //
   // Depending on the sequence of HCI commands that were previously processed,
   // the controller will be in an undefined state. The caller is responsible for

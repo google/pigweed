@@ -64,11 +64,7 @@ void SequentialCommandRunner::RunCommands(ResultFunction<> status_callback) {
 
 bool SequentialCommandRunner::IsReady() const { return !status_callback_; }
 
-void SequentialCommandRunner::Cancel() {
-  ZX_DEBUG_ASSERT(status_callback_);
-  status_callback_(ToResult(HostError::kCanceled));
-  Reset();
-}
+void SequentialCommandRunner::Cancel() { NotifyStatusAndReset(ToResult(HostError::kCanceled)); }
 
 bool SequentialCommandRunner::HasQueuedCommands() const { return !command_queue_.empty(); }
 
@@ -94,6 +90,18 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
                            complete_event_code = next.complete_event_code,
                            seq_no = sequence_number_](auto, const EventPacket& event_packet) {
     auto status = event_packet.ToResult();
+
+    if (self && seq_no != self->sequence_number_) {
+      bt_log(TRACE, "hci", "Ignoring event for previous sequence (event code: %#.2x, status: %s)",
+             event_packet.event_code(), bt_str(status));
+    }
+
+    // The sequence could have failed or been canceled, and a new sequence could have started.
+    // This check prevents calling cmd_cb if the corresponding sequence is no longer running.
+    if (!self || !self->status_callback_ || seq_no != self->sequence_number_) {
+      return;
+    }
+
     if (status.is_ok() && event_packet.event_code() == hci_spec::kCommandStatusEventCode &&
         complete_event_code != hci_spec::kCommandStatusEventCode) {
       return;
@@ -101,13 +109,14 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
 
     if (cmd_cb) {
       cmd_cb(event_packet);
+
+      // The callback could have destroyed, canceled, or restarted the command runner.  While this
+      // check looks redundant to the above check, the state could have changed in cmd_cb.
+      if (!self || !self->status_callback_ || seq_no != self->sequence_number_) {
+        return;
+      }
     }
 
-    // The sequence could have been cancelled (and a new sequence could have
-    // also started). Make sure here that we are in the correct sequence.
-    if (!self || !self->status_callback_ || seq_no != self->sequence_number_) {
-      return;
-    }
     ZX_DEBUG_ASSERT(self->running_commands_ > 0);
     self->running_commands_--;
     self->TryRunNextQueuedCommand(status);

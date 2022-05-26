@@ -222,26 +222,22 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   // Sequence 1: Sequence will be cancelled after the first command.
   SequentialCommandRunner cmd_runner(dispatcher(), transport()->WeakPtr());
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
-                          cb);  // <-- Should not run
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_TRUE(cmd_runner.HasQueuedCommands());
 
-  // Call RunCommands() and right away post a task to cancel the sequence. The
+  // Call RunCommands() and cancel the sequence immediately. The
   // first command will go out but no successive packets should be sent.
-  // status callbacks should be invoked
-  // the command callback for the first command should run but no others.
+  // The status callback should be invoked
+  // No command callbacks should be called.
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
   cmd_runner.Cancel();
 
-  // Since |status_cb| is expected to not get called (which would normally quit
-  // the message loop) - we run until we reach a steady-state waiting.
   RunLoopUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
-
-  EXPECT_EQ(1, cb_called);
+  EXPECT_EQ(0, cb_called);
   EXPECT_EQ(1, status_cb_called);
   EXPECT_EQ(ToResult(HostError::kCanceled), status);
   cb_called = 0;
@@ -272,6 +268,9 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_EQ(0, cb_called);
   EXPECT_EQ(1, status_cb_called);
   EXPECT_EQ(ToResult(HostError::kCanceled), status);
+  cb_called = 0;
+  status_cb_called = 0;
+  status = fitx::ok();
 
   // Sequence 3: Sequence will be cancelled after first command and immediately
   // followed by a second command which will fail. This tests canceling a
@@ -281,11 +280,11 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
     EXPECT_TRUE(cmd_runner.IsReady());
     EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
-    EXPECT_EQ(2, status_cb_called);
+    EXPECT_EQ(1, status_cb_called);
     EXPECT_EQ(ToResult(HostError::kCanceled), status);
 
-    // Queue multiple commands (only one will execute since MockController
-    // will send back an error status.
+    // Queue multiple commands (only one will execute since MockController will send back an error
+    // status).
     cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
     cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
                             cb);  // <-- Should not run
@@ -307,7 +306,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   // The cb queued from inside the first callback should have been called.
   EXPECT_EQ(1, cb_called);
   // The result callback should have been called with the failure result.
-  EXPECT_EQ(3, status_cb_called);
+  EXPECT_EQ(2, status_cb_called);
   EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), status);
 }
 
@@ -409,23 +408,35 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, );
   EXPECT_CMD_PACKET_OUT(test_device(), command2_bytes, );
 
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, /*wait=*/false);
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, /*wait=*/false);
+  int cb_0_called = 0;
+  auto cb_0 = [&](const auto&) { cb_0_called++; };
+  int cb_1_called = 0;
+  auto cb_1 = [&](const auto&) { cb_1_called++; };
+  int cb_2_called = 0;
+  auto cb_2 = [&](const auto&) { cb_2_called++; };
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb_0, /*wait=*/false);
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb_1, /*wait=*/false);
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
-                          cb);  // shouldn't run
+                          cb_2);  // shouldn't run
 
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
 
   RunLoopUntilIdle();
   // The first two commands should have been sent but no responses are back yet.
-  EXPECT_EQ(0, cb_called);
+  EXPECT_EQ(0, cb_0_called);
+  EXPECT_EQ(0, cb_1_called);
+  EXPECT_EQ(0, cb_2_called);
 
   test_device()->SendCommandChannelPacket(command_status_error_bytes);
   test_device()->SendCommandChannelPacket(command2_cmpl_success_bytes);
   RunLoopUntilIdle();
 
-  EXPECT_EQ(2, cb_called);
+  // Only the first command's callback should be called, as further callbacks will be canceled due
+  // to the error status.
+  EXPECT_EQ(1, cb_0_called);
+  EXPECT_EQ(0, cb_1_called);
+  EXPECT_EQ(0, cb_2_called);
   EXPECT_EQ(1, status_cb_called);
   EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), status);
 }
@@ -595,6 +606,61 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
   EXPECT_EQ(fitx::ok(), status);
+}
+
+TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallbackCalled) {
+  auto command = bt::testing::EmptyCommandPacket(hci_spec::kRemoteNameRequest);
+  auto command0_status_event = bt::testing::CommandStatusPacket(hci_spec::kRemoteNameRequest,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command0_cmpl_event = bt::testing::RemoteNameRequestCompletePacket(DeviceAddress());
+
+  auto command1 = bt::testing::EmptyCommandPacket(hci_spec::kLEReadRemoteFeatures);
+  auto command1_status_event = bt::testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command1_cmpl_event = bt::testing::LEReadRemoteFeaturesCompletePacket(
+      /*conn=*/0x0000, hci_spec::LESupportedFeatures{0});
+
+  std::optional<SequentialCommandRunner> cmd_runner;
+  cmd_runner.emplace(dispatcher(), transport()->WeakPtr());
+
+  StartTestDevice();
+
+  Result<> status = fitx::ok();
+  int status_cb_called = 0;
+  auto status_cb = [&](Result<> cb_status) {
+    status = cb_status;
+    status_cb_called++;
+  };
+
+  int cb_called = 0;
+  auto cb = [&](const EventPacket& event) {
+    if (cb_called == 0) {
+      cmd_runner.reset();
+    }
+    cb_called++;
+  };
+
+  EXPECT_FALSE(cmd_runner->HasQueuedCommands());
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event, &command0_cmpl_event);
+  cmd_runner->QueueCommand(CommandPacket::New(hci_spec::kRemoteNameRequest), cb, /*wait=*/false,
+                           hci_spec::kRemoteNameRequestCompleteEventCode);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event);
+  cmd_runner->QueueLeAsyncCommand(CommandPacket::New(hci_spec::kLEReadRemoteFeatures),
+                                  hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode, cb,
+                                  /*wait=*/false);
+
+  EXPECT_TRUE(cmd_runner->IsReady());
+  EXPECT_TRUE(cmd_runner->HasQueuedCommands());
+
+  cmd_runner->RunCommands(status_cb);
+  EXPECT_FALSE(cmd_runner->IsReady());
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(cmd_runner.has_value());
+  EXPECT_EQ(1, cb_called);
+  EXPECT_EQ(0, status_cb_called);
 }
 
 }  // namespace
