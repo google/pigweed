@@ -267,7 +267,7 @@ message Message {
   oneof oneof_test {
     string oneof_1 = 15;
     int32 oneof_2 = 16;
-    float oneof_3 = 17;
+    Nested oneof_3 = 17;
   }
 
   map<string, Nested> mapping = 18;
@@ -363,8 +363,11 @@ class TestProtoRepr(unittest.TestCase):
                          "pw.test3.Message(oneof_1='test')")
         self.assertEqual(proto_repr(self.message(oneof_2=123)),
                          "pw.test3.Message(oneof_2=123)")
-        self.assertEqual(proto_repr(self.message(oneof_3=123)),
-                         "pw.test3.Message(oneof_3=123.0)")
+        self.assertEqual(
+            proto_repr(
+                self.message(oneof_3=self.nested(an_enum=self.enum.ONE))),
+            'pw.test3.Message('
+            'oneof_3=pw.test3.Nested(an_enum=pw.test3.Enum.ONE))')
 
         msg = self.message(oneof_1='test')
         msg.oneof_2 = 99
