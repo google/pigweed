@@ -38,6 +38,9 @@ _host_common = {
   # Configure backend for logging facade.
   pw_log_BACKEND = "$dir_pw_log_basic"
 
+  # Enable decimal expansion when converting floats to string.
+  pw_string_CONFIG = "$dir_pw_string:enable_decimal_float_expansion"
+
   # Configure backends for pw_sync's facades.
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = "$dir_pw_sync_stl:interrupt_spin_lock"
   pw_sync_BINARY_SEMAPHORE_BACKEND = "$dir_pw_sync_stl:binary_semaphore_backend"
