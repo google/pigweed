@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "pw_polyfill/standard.h"
 
 // Pigweed: gMock matchers are not yet supported.
 #if 0
@@ -57,6 +58,8 @@ constexpr bool constexpr_equal(InputIterator1 first1,
 }
 
 }  // namespace
+
+#ifdef __cpp_deduction_guides
 
 TEST(SpanTest, DeductionGuides_MutableArray) {
   char array[] = {'a', 'b', 'c', 'd', '\0'};
@@ -120,6 +123,8 @@ TEST(SpanTest, DeductionGuides_MutableContainerWithMutableElements) {
   EXPECT_STREQ("Hallo", the_span.data());
 }
 
+#endif  // __cpp_deduction_guides
+
 class MutableStringView {
  public:
   using element_type = char;
@@ -144,6 +149,8 @@ class MutableStringView {
  private:
   span<char> data_;
 };
+
+#ifdef __cpp_deduction_guides
 
 TEST(SpanTest, DeductionGuides_ConstContainerWithMutableElements) {
   char data[] = "54321";
@@ -205,6 +212,8 @@ TEST(SpanTest, DeductionGuides_FromConstReference) {
 
   EXPECT_EQ(string, the_span.data());
 }
+
+#endif  // __cpp_deduction_guides
 
 TEST(SpanTest, DefaultConstructor) {
   span<int> dynamic_span;
@@ -424,6 +433,8 @@ TEST(SpanTest, ConstructFromStdArray) {
     EXPECT_EQ(array[i], static_span[i]);
 }
 
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+
 TEST(SpanTest, ConstructFromInitializerList) {
   std::initializer_list<int> il = {1, 1, 2, 3, 5, 8};
 
@@ -466,6 +477,8 @@ TEST(SpanTest, ConstructFromStdString) {
   for (size_t i = 0; i < static_span.size(); ++i)
     EXPECT_EQ(str[i], static_span[i]);
 }
+
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 TEST(SpanTest, ConstructFromConstContainer) {
   const std::vector<int> vector = {1, 1, 2, 3, 5, 8};

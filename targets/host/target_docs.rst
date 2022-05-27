@@ -47,6 +47,14 @@ upstream toolchains are defined in ``//targets/host/pigweed_internal`` and are
 prefixed with ``pw_strict_``. The upstream toolchains may not be used by
 downstream projects.
 
+Toolchains for other C++ standards
+==================================
+Pigweed code requires C++17. A few modules, such as ``pw_tokenizer``, work with
+C++14. To facilitate testing these modules with C++14, Pigweed uses the
+``pw_strict_host_clang_debug_cpp14`` toolchain. This toolchain is only permitted
+for use in upstream pigweed, but downstream users may create a similar toolchain
+if needed.
+
 --------
 Building
 --------

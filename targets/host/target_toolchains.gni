@@ -375,4 +375,23 @@ pw_internal_host_toolchains = [
       default_configs += _gcc_default_configs
     }
   },
+  {
+    name = "pw_strict_host_clang_debug_cpp14"
+    _toolchain_base = pw_toolchain_host_clang.debug
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+
+      remove_default_configs = [ "$dir_pw_build:cpp17" ]
+      default_configs += _clang_default_configs
+      default_configs += [ "$dir_pw_build:cpp14" ]
+
+      pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_backend"
+      pw_log_BACKEND = "$dir_pw_log_null"
+      pw_unit_test_MAIN = "$dir_pw_unit_test:printf_main"
+    }
+  },
 ]

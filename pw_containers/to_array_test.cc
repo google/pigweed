@@ -16,7 +16,8 @@
 
 #include "gtest/gtest.h"
 
-namespace pw::containers {
+namespace pw {
+namespace containers {
 namespace {
 
 TEST(Array, ToArray_StringLiteral) {
@@ -26,7 +27,7 @@ TEST(Array, ToArray_StringLiteral) {
 
 TEST(Array, ToArray_Inline) {
   constexpr std::array<int, 3> kArray = to_array({1, 2, 3});
-  static_assert(kArray.size() == 3);
+  static_assert(kArray.size() == 3, "Size should be 3 as initialized");
   EXPECT_EQ(kArray[0], 1);
 }
 
@@ -56,4 +57,5 @@ TEST(Array, ToArray_MoveOnly) {
 }
 
 }  // namespace
-}  // namespace pw::containers
+}  // namespace containers
+}  // namespace pw

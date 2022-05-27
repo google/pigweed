@@ -14,8 +14,9 @@
 
 #include "pw_tokenizer/hash.h"
 
-namespace pw {
-namespace tokenizer {
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+
+namespace pw::tokenizer {
 
 extern "C" uint32_t pw_tokenizer_65599FixedLengthHash(const char* string,
                                                       size_t string_length,
@@ -24,5 +25,6 @@ extern "C" uint32_t pw_tokenizer_65599FixedLengthHash(const char* string,
       std::string_view(string, string_length), hash_length);
 }
 
-}  // namespace tokenizer
-}  // namespace pw
+}  // namespace pw::tokenizer
+
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)

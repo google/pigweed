@@ -99,12 +99,23 @@ def gn_quick_build_check(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
-def gn_full_build_check(ctx: PresubmitContext):
+def gn_full_build_check(ctx: PresubmitContext) -> None:
+    build_targets = [
+        *_at_all_optimization_levels('stm32f429i'),
+        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+        'python.tests',
+        'python.lint',
+        'docs',
+        'fuzzers',
+        'pw_env_setup:build_pigweed_python_source_tree',
+    ]
+
+    # TODO(b/234645359): Re-enable on Windows when cpp14_compatibility builds.
+    if sys.platform != 'win32':
+        build_targets.append('cpp14_compatibility')
+
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'),
-                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
-                'python.tests', 'python.lint', 'docs', 'fuzzers',
-                'pw_env_setup:build_pigweed_python_source_tree')
+    build.ninja(ctx.output_dir, *build_targets)
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)

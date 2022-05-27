@@ -16,12 +16,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
+#include "pw_polyfill/standard.h"
+#include "pw_preprocessor/util.h"
+
+// The hash implementation uses std::string_view. Use the C implementation when
+// compiling with older C++ standards.
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 #include <string_view>
 
 #include "pw_preprocessor/compiler.h"
-#include "pw_preprocessor/util.h"
 #include "pw_tokenizer/config.h"
 
 namespace pw::tokenizer {
@@ -104,7 +108,7 @@ constexpr uint32_t PwTokenizer65599FixedLengthHash(
 
 }  // namespace pw::tokenizer
 
-#endif  // __cplusplus
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 // C version of the fixed-length hash. Can be used to calculate hashes
 // equivalent to the hashing macros at runtime in C.

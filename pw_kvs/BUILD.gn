@@ -62,6 +62,7 @@ pw_source_set("pw_kvs") {
     "sectors.cc",
   ]
   public_deps = [
+    "$dir_pw_string:util",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_containers,
@@ -483,6 +484,7 @@ pw_test("key_value_store_test") {
     ":crc16",
     ":fake_flash",
     ":pw_kvs",
+    "$dir_pw_string:builder",
     dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_log,

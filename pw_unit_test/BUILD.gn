@@ -78,9 +78,18 @@ pw_source_set("light") {
     ":event_handler",
     dir_pw_polyfill,
     dir_pw_preprocessor,
-    dir_pw_string,
   ]
+
+  # If C++17 is supported, depend on StringBuilder.
+  # TODO(pwbug/196): C++ standard should be a target trait.
+  if (current_toolchain != get_label_info(
+          "$dir_pigweed/targets/host/pigweed_internal:pw_strict_host_clang_debug_cpp14",
+          "label_no_toolchain")) {
+    public_deps += [ "$dir_pw_string:builder" ]
+  }
+
   deps = [ dir_pw_assert ]
+
   public = [ "public_overrides/gtest/gtest.h" ]
   sources = [
     "framework.cc",

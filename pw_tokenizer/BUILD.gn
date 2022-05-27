@@ -75,6 +75,7 @@ pw_source_set("pw_tokenizer") {
   public_deps = [
     ":config",
     "$dir_pw_containers:to_array",
+    dir_pw_polyfill,
     dir_pw_preprocessor,
   ]
   deps = [ dir_pw_varint ]
@@ -197,8 +198,7 @@ pw_test_group("tests") {
     ":detokenize_test",
     ":global_handlers_test",
     ":hash_test",
-    ":simple_tokenize_test_cpp14",
-    ":simple_tokenize_test_cpp17",
+    ":simple_tokenize_test",
     ":token_database_fuzzer",
     ":token_database_test",
     ":tokenize_test",
@@ -272,47 +272,13 @@ pw_test("hash_test") {
   deps = [ ":pw_tokenizer" ]
 }
 
-# Fully test C++14 compatibility by compiling all sources as C++14.
-_simple_tokenize_test_sources = [
-  "$dir_pw_containers/public/pw_containers/to_array.h",
-  "$dir_pw_varint/public/pw_varint/varint.h",
-  "$dir_pw_varint/varint.cc",
-  "encode_args.cc",
-  "public/pw_tokenizer/config.h",
-  "public/pw_tokenizer/encode_args.h",
-  "public/pw_tokenizer/hash.h",
-  "public/pw_tokenizer/internal/argument_types.h",
-  "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
-  "public/pw_tokenizer/internal/argument_types_macro_8_byte.h",
-  "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h",
-  "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
-  "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
-  "public/pw_tokenizer/internal/tokenize_string.h",
-  "public/pw_tokenizer/tokenize.h",
-  "public/pw_tokenizer/tokenize_to_global_handler.h",
-  "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h",
-  "simple_tokenize_test.cc",
-  "tokenize.cc",
-  "tokenize_to_global_handler.cc",
-  "tokenize_to_global_handler_with_payload.cc",
-]
-_simple_tokenize_test_configs = [
-  ":public_include_path",
-  "$dir_pw_varint:default_config",
-  "$dir_pw_containers:public_include_path",
-]
-
-pw_test("simple_tokenize_test_cpp14") {
-  remove_configs = [ "$dir_pw_build:cpp17" ]
-  configs = [ "$dir_pw_build:cpp14" ] + _simple_tokenize_test_configs
-  sources = _simple_tokenize_test_sources
-  deps = [ dir_pw_preprocessor ]
-}
-
-pw_test("simple_tokenize_test_cpp17") {
-  configs = _simple_tokenize_test_configs
-  sources = _simple_tokenize_test_sources
-  deps = [ dir_pw_preprocessor ]
+pw_test("simple_tokenize_test") {
+  sources = [ "simple_tokenize_test.cc" ]
+  deps = [
+    ":global_handler",
+    ":global_handler_with_payload",
+    ":pw_tokenizer",
+  ]
 }
 
 pw_test("token_database_test") {
