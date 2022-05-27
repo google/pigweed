@@ -780,6 +780,11 @@ Available Assert Backends
   the functionality. There are (a) tests for the facade macro processing logic,
   using a fake assert backend; and (b) compile tests to verify that the
   selected backend compiles with all supported assert constructions and types.
+- ``pw_assert:print_and_abort_backend`` - **Stable** - Uses the ``printf`` and
+  ``abort`` standard library functions to implement the assert facade. Prints
+  the assert expression, evaluated arguments if any, file/line, function name,
+  and user message, then aborts. Only suitable for targets that support these
+  standard library functions. Compatible with C++14.
 - ``pw_assert_basic`` - **Stable** - The assert basic module is a simple assert
   handler that displays the failed assert line and the values of captured
   arguments. Output is directed to ``pw_sys_io``. This module is a great

@@ -220,7 +220,6 @@ constexpr T ConvertToType(const U& value) {
                                      arg_b_str,              \
                                      arg_b_val,              \
                                      type_fmt,               \
-                                     message,                \
                                      ...)                    \
   PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(arg_a_str,         \
                                           arg_a_val,         \
@@ -228,19 +227,17 @@ constexpr T ConvertToType(const U& value) {
                                           arg_b_str,         \
                                           arg_b_val,         \
                                           type_fmt,          \
-                                          message,           \
                                           __VA_ARGS__)
 #else
-#define _PW_CHECK_BINARY_ARG_HANDLER(arg_a_str,         \
-                                     arg_a_val,         \
-                                     comparison_op_str, \
-                                     arg_b_str,         \
-                                     arg_b_val,         \
-                                     type_fmt,          \
-                                     message,           \
-                                     ...)               \
-  PW_HANDLE_ASSERT_FAILURE(                             \
-      arg_a_str " " comparison_op_str " " arg_b_str, message, __VA_ARGS__)
+#define _PW_CHECK_BINARY_ARG_HANDLER(arg_a_str,                           \
+                                     arg_a_val,                           \
+                                     comparison_op_str,                   \
+                                     arg_b_str,                           \
+                                     arg_b_val,                           \
+                                     type_fmt,                            \
+                                     ...)                                 \
+  PW_HANDLE_ASSERT_FAILURE(arg_a_str " " comparison_op_str " " arg_b_str, \
+                           __VA_ARGS__)
 #endif  // PW_ASSERT_CAPTURE_VALUES
 
 // Custom implementation for FLOAT_NEAR which is implemented through two
