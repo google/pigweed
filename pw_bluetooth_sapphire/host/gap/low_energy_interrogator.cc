@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_interrogator.h"
 
-#include <lib/async/default.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
@@ -19,7 +17,7 @@ LowEnergyInterrogator::LowEnergyInterrogator(fxl::WeakPtr<Peer> peer,
       peer_(std::move(peer)),
       peer_id_(peer_->identifier()),
       handle_(handle),
-      cmd_runner_(async_get_default_dispatcher(), hci_),
+      cmd_runner_(hci_),
       weak_ptr_factory_(this) {}
 
 void LowEnergyInterrogator::Start(ResultCallback callback) {

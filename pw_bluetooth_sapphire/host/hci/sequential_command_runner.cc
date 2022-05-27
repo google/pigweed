@@ -10,14 +10,11 @@
 
 namespace bt::hci {
 
-SequentialCommandRunner::SequentialCommandRunner(async_dispatcher_t* dispatcher,
-                                                 fxl::WeakPtr<Transport> transport)
-    : dispatcher_(dispatcher),
-      transport_(std::move(transport)),
+SequentialCommandRunner::SequentialCommandRunner(fxl::WeakPtr<Transport> transport)
+    : transport_(std::move(transport)),
       sequence_number_(0u),
       running_commands_(0u),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(transport_);
 }
 

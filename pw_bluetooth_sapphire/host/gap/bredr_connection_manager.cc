@@ -152,7 +152,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
   ZX_DEBUG_ASSERT(l2cap_);
   ZX_DEBUG_ASSERT(dispatcher_);
 
-  hci_cmd_runner_ = std::make_unique<hci::SequentialCommandRunner>(dispatcher_, hci_);
+  hci_cmd_runner_ = std::make_unique<hci::SequentialCommandRunner>(hci_);
 
   // Register event handlers
   AddEventHandler(hci_spec::kAuthenticationCompleteEventCode,

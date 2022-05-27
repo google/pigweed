@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_INTERROGATOR_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_INTERROGATOR_H_
 
-#include <lib/async/cpp/task.h>
-#include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
 #include <memory>

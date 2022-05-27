@@ -4,15 +4,12 @@
 
 #include "low_energy_advertiser.h"
 
-#include "lib/async/default.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 
 namespace bt::hci {
 
 LowEnergyAdvertiser::LowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
-    : hci_(std::move(hci)),
-      hci_cmd_runner_(
-          std::make_unique<SequentialCommandRunner>(async_get_default_dispatcher(), hci_)) {}
+    : hci_(std::move(hci)), hci_cmd_runner_(std::make_unique<SequentialCommandRunner>(hci_)) {}
 
 fitx::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
     const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,

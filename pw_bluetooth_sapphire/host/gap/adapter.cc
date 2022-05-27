@@ -447,7 +447,7 @@ AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GA
   ZX_DEBUG_ASSERT(gatt_);
   ZX_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
 
-  init_seq_runner_ = std::make_unique<hci::SequentialCommandRunner>(dispatcher_, hci_);
+  init_seq_runner_ = std::make_unique<hci::SequentialCommandRunner>(hci_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   hci_->SetTransportClosedCallback([self] {

@@ -48,7 +48,7 @@ class Transport;
 // RunCommands will report success.
 class SequentialCommandRunner final {
  public:
-  SequentialCommandRunner(async_dispatcher_t* dispatcher, fxl::WeakPtr<Transport> transport);
+  explicit SequentialCommandRunner(fxl::WeakPtr<Transport> transport);
   ~SequentialCommandRunner() = default;
 
   // Adds a HCI command packet to the queue.
@@ -131,7 +131,6 @@ class SequentialCommandRunner final {
   void Reset();
   void NotifyStatusAndReset(Result<> status);
 
-  async_dispatcher_t* dispatcher_;
   fxl::WeakPtr<Transport> transport_;
 
   std::queue<QueuedCommand> command_queue_;

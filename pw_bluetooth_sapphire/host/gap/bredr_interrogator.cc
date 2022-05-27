@@ -4,7 +4,6 @@
 
 #include "bredr_interrogator.h"
 
-#include <lib/async/default.h>
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -19,7 +18,7 @@ BrEdrInterrogator::BrEdrInterrogator(fxl::WeakPtr<Peer> peer, hci_spec::Connecti
       peer_(std::move(peer)),
       peer_id_(peer_->identifier()),
       handle_(handle),
-      cmd_runner_(async_get_default_dispatcher(), hci_),
+      cmd_runner_(hci_),
       weak_ptr_factory_(this) {
   ZX_ASSERT(peer_);
 }

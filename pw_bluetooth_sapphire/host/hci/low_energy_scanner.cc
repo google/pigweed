@@ -27,7 +27,7 @@ LowEnergyScanner::LowEnergyScanner(fxl::WeakPtr<Transport> hci, async_dispatcher
   ZX_DEBUG_ASSERT(transport_);
   ZX_DEBUG_ASSERT(dispatcher_);
 
-  hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(dispatcher_, transport_);
+  hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(transport_);
 }
 
 }  // namespace bt::hci
