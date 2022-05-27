@@ -694,5 +694,71 @@ TEST_F(SequentialCommandRunnerTest,
   EXPECT_EQ(ToResult(HostError::kCanceled), status);
 }
 
+TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
+  auto command = bt::testing::EmptyCommandPacket(hci_spec::kRemoteNameRequest);
+  auto command0_status_event = bt::testing::CommandStatusPacket(hci_spec::kRemoteNameRequest,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command0_cmpl_event = bt::testing::RemoteNameRequestCompletePacket(DeviceAddress());
+
+  auto command1 = bt::testing::EmptyCommandPacket(hci_spec::kLEReadRemoteFeatures);
+  auto command1_status_event = bt::testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command1_cmpl_event = bt::testing::LEReadRemoteFeaturesCompletePacket(
+      /*conn=*/0x0000, hci_spec::LESupportedFeatures{0});
+
+  auto command2 = bt::testing::EmptyCommandPacket(hci_spec::kReadRemoteVersionInfo);
+  auto command2_status_event = bt::testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
+                                                                hci_spec::StatusCode::kSuccess);
+  auto command2_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
+
+  StartTestDevice();
+
+  SequentialCommandRunner cmd_runner(dispatcher(), transport()->WeakPtr());
+
+  Result<> status = fitx::ok();
+  int status_cb_called = 0;
+  auto status_cb = [&](Result<> cb_status) {
+    status = cb_status;
+    status_cb_called++;
+  };
+
+  int cb_called = 0;
+  auto cb = [&](const EventPacket& event) { cb_called++; };
+
+  int name_cb_called = 0;
+  auto name_request_callback = [&](const EventPacket& event) {
+    name_cb_called++;
+
+    EXPECT_FALSE(cmd_runner.IsReady());
+    EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+
+    EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event, &command1_cmpl_event);
+    cmd_runner.QueueLeAsyncCommand(CommandPacket::New(hci_spec::kLEReadRemoteFeatures),
+                                   hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode, cb,
+                                   /*wait=*/false);
+
+    EXPECT_CMD_PACKET_OUT(test_device(), command2, &command2_status_event, &command2_cmpl_event);
+    cmd_runner.QueueCommand(CommandPacket::New(hci_spec::kReadRemoteVersionInfo), cb,
+                            /*wait=*/false, hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+  };
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event, &command0_cmpl_event);
+  cmd_runner.QueueCommand(CommandPacket::New(hci_spec::kRemoteNameRequest), name_request_callback,
+                          /*wait=*/false, hci_spec::kRemoteNameRequestCompleteEventCode);
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_TRUE(cmd_runner.HasQueuedCommands());
+
+  cmd_runner.RunCommands(status_cb);
+  EXPECT_FALSE(cmd_runner.IsReady());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+  EXPECT_EQ(1, name_cb_called);
+  EXPECT_EQ(2, cb_called);
+  EXPECT_EQ(1, status_cb_called);
+  EXPECT_EQ(fitx::ok(), status);
+}
+
 }  // namespace
 }  // namespace bt::hci

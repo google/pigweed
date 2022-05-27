@@ -21,13 +21,10 @@ SequentialCommandRunner::SequentialCommandRunner(async_dispatcher_t* dispatcher,
   ZX_DEBUG_ASSERT(transport_);
 }
 
-SequentialCommandRunner::~SequentialCommandRunner() {}
-
 void SequentialCommandRunner::QueueCommand(std::unique_ptr<CommandPacket> command_packet,
                                            CommandCompleteCallback callback, bool wait,
                                            hci_spec::EventCode complete_event_code,
                                            std::unordered_set<hci_spec::OpCode> exclusions) {
-  ZX_DEBUG_ASSERT(!status_callback_);
   ZX_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <= command_packet->view().size());
 
   command_queue_.emplace(QueuedCommand{.packet = std::move(command_packet),
@@ -36,19 +33,25 @@ void SequentialCommandRunner::QueueCommand(std::unique_ptr<CommandPacket> comman
                                        .callback = std::move(callback),
                                        .wait = wait,
                                        .exclusions = std::move(exclusions)});
+
+  if (status_callback_) {
+    TryRunNextQueuedCommand();
+  }
 }
 
 void SequentialCommandRunner::QueueLeAsyncCommand(std::unique_ptr<CommandPacket> command_packet,
                                                   hci_spec::EventCode le_meta_subevent_code,
                                                   CommandCompleteCallback callback, bool wait) {
-  ZX_DEBUG_ASSERT(!status_callback_);
-
   command_queue_.emplace(QueuedCommand{.packet = std::move(command_packet),
                                        .complete_event_code = le_meta_subevent_code,
                                        .is_le_async_command = true,
                                        .callback = std::move(callback),
                                        .wait = wait,
                                        .exclusions = {}});
+
+  if (status_callback_) {
+    TryRunNextQueuedCommand();
+  }
 }
 
 void SequentialCommandRunner::RunCommands(ResultFunction<> status_callback) {

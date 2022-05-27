@@ -49,7 +49,7 @@ class Transport;
 class SequentialCommandRunner final {
  public:
   SequentialCommandRunner(async_dispatcher_t* dispatcher, fxl::WeakPtr<Transport> transport);
-  ~SequentialCommandRunner();
+  ~SequentialCommandRunner() = default;
 
   // Adds a HCI command packet to the queue.
   // If |callback| is provided, it will run with the event that completes the
@@ -57,8 +57,6 @@ class SequentialCommandRunner final {
   // If |wait| is true, then all previously queued commands must complete
   // successfully before this command is sent.
   // |exclusions| will be passed to CommandChannel::SendExclusiveCommand().
-  //
-  // Cannot be called once RunCommands() has been called.
   using CommandCompleteCallback = fit::function<void(const EventPacket& event)>;
   void QueueCommand(std::unique_ptr<CommandPacket> command_packet,
                     CommandCompleteCallback callback = {}, bool wait = true,
@@ -71,20 +69,22 @@ class SequentialCommandRunner final {
                            hci_spec::EventCode le_meta_subevent_code,
                            CommandCompleteCallback callback = {}, bool wait = true);
 
-  // Runs all the queued commands. Once this is called no new commands can be
-  // queued. This method will return before queued commands have been run.
-  // |status_callback| is called with the status of the last command run,
-  // or kSuccess if all commands returned HCI_Command_Complete.
+  // Runs all the queued commands. This method will return before queued
+  // commands have been run. |status_callback| is called with the status of the
+  // last command run, or kSuccess if all commands returned HCI_Command_Complete.
   //
   // Once RunCommands() has been called this instance will not be ready for
   // re-use until |status_callback| gets run. At that point new commands can be
   // queued and run (see IsReady()).
   //
+  // Commands can continue to be queued while commands are being run, including
+  // from inside of command callbacks.
+  //
   // RunCommands() will always send at least one HCI command to CommandChannel
   // if any are queued, which can not be prevented by a call to Cancel().
   void RunCommands(ResultFunction<> status_callback);
 
-  // Returns true if commands can be queued and run on this instance. This
+  // Returns true if commands are not running on this instance. This
   // returns false if RunCommands() is currently in progress.
   bool IsReady() const;
 
