@@ -127,6 +127,13 @@ config("cpp17") {
   ]
 }
 
+config("cpp20") {
+  cflags_cc = [
+    "-std=c++20",
+    "-Wno-register",
+  ]
+}
+
 # Removes system-dependent prefixes from macros like __FILE__ and debug symbols.
 config("relative_paths") {
   _transformations = [

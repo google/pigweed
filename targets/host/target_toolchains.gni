@@ -394,4 +394,19 @@ pw_internal_host_toolchains = [
       pw_unit_test_MAIN = "$dir_pw_unit_test:printf_main"
     }
   },
+  {
+    name = "pw_strict_host_clang_size_optimized_cpp20"
+    _toolchain_base = pw_toolchain_host_clang.size_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+
+      remove_default_configs = [ "$dir_pw_build:cpp17" ]
+      default_configs += _clang_default_configs
+      default_configs += [ "$dir_pw_build:cpp20" ]
+    }
+  },
 ]

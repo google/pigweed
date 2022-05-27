@@ -110,9 +110,10 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
         'pw_env_setup:build_pigweed_python_source_tree',
     ]
 
-    # TODO(b/234645359): Re-enable on Windows when cpp14_compatibility builds.
+    # TODO(b/234645359): Re-enable on Windows when compatibility tests build.
     if sys.platform != 'win32':
         build_targets.append('cpp14_compatibility')
+        build_targets.append('cpp20_compatibility')
 
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *build_targets)
