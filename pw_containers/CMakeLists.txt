@@ -49,6 +49,13 @@ pw_add_module_library(pw_containers.flat_map
     public
 )
 
+pw_add_module_library(pw_containers.iterator
+  HEADERS
+    public/pw_containers/iterator.h
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_module_library(pw_containers.to_array
   HEADERS
     public/pw_containers/to_array.h

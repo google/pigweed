@@ -50,8 +50,8 @@ TEST(Entry, Size_RoundsUpToAlignment) {
     const size_t align = AlignUp(alignment_bytes, Entry::kMinAlignmentBytes);
 
     for (size_t value : {size_t(0), align - 1, align, align + 1, 2 * align}) {
-      Entry entry =
-          Entry::Valid(partition, 0, kFormat, "k", {nullptr, value}, 0);
+      Entry entry = Entry::Valid(
+          partition, 0, kFormat, "k", {static_cast<byte*>(nullptr), value}, 0);
 
       ASSERT_EQ(AlignUp(sizeof(EntryHeader) + 1 /* key */ + value, align),
                 entry.size());

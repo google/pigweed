@@ -35,6 +35,7 @@ pw_source_set("pw_bytes") {
   ]
   sources = [ "byte_builder.cc" ]
   public_deps = [
+    "$dir_pw_containers:iterator",
     dir_pw_preprocessor,
     dir_pw_status,
   ]

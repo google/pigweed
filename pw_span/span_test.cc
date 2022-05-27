@@ -217,7 +217,7 @@ TEST(SpanTest, DefaultConstructor) {
 }
 
 TEST(SpanTest, ConstructFromDataAndSize) {
-  constexpr span<int> empty_span(nullptr, 0);
+  constexpr span<int> empty_span(static_cast<int*>(nullptr), 0);
   EXPECT_TRUE(empty_span.empty());
   EXPECT_EQ(nullptr, empty_span.data());
 
@@ -239,7 +239,8 @@ TEST(SpanTest, ConstructFromDataAndSize) {
 }
 
 TEST(SpanTest, ConstructFromPointerPair) {
-  constexpr span<int> empty_span(nullptr, nullptr);
+  constexpr span<int> empty_span(static_cast<int*>(nullptr),
+                                 static_cast<int*>(nullptr));
   EXPECT_TRUE(empty_span.empty());
   EXPECT_EQ(nullptr, empty_span.data());
 
@@ -1601,9 +1602,11 @@ TEST(SpanTest, Sort) {
 TEST(SpanTest, SpanExtentConversions) {
   // Statically checks that various conversions between spans of dynamic and
   // static extent are possible or not.
-  static_assert(
-      !std::is_constructible<span<int, 0>, span<int>>::value,
-      "Error: static span should not be constructible from dynamic span");
+
+  // This test fails with the real C++20 std::span, so skip it.
+  // static_assert(
+  //     !std::is_constructible<span<int, 0>, span<int>>::value,
+  //     "Error: static span should not be constructible from dynamic span");
 
   static_assert(!std::is_constructible<span<int, 2>, span<int, 1>>::value,
                 "Error: static span should not be constructible from static "

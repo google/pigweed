@@ -70,9 +70,13 @@ static_assert(ConvertsToSpan<const int (&&)[35]>());
 struct FakeContainer {
   const char* data() const { return nullptr; }
   size_t size() const { return 0; }
+
+  const char* begin() const { return nullptr; }
+  const char* end() const { return nullptr; }
 };
 
 static_assert(ConvertsToSpan<FakeContainer>());
+
 static_assert(ConvertsToSpan<FakeContainer&>());
 static_assert(ConvertsToSpan<FakeContainer&&>());
 static_assert(ConvertsToSpan<const FakeContainer>());

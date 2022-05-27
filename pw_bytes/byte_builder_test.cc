@@ -862,5 +862,16 @@ TEST(ByteBuffer, Iterator_ReadValues_8Bytes) {
   EXPECT_EQ(it.ReadUint64(), uint64_t(0x000001E8A7A0D569));
   EXPECT_EQ(it.ReadInt64(std::endian::big), int64_t(0xFFFFFE17585F2A97));
 }
+
+TEST(ByteBuffer, ConvertsToSpan) {
+  ByteBuffer<16> bb;
+  bb.push_back(std::byte{210});
+
+  std::span<const std::byte> byte_span(bb);
+  EXPECT_EQ(byte_span.data(), bb.data());
+  EXPECT_EQ(byte_span.size(), bb.size());
+  EXPECT_EQ(byte_span[0], std::byte{210});
+}
+
 }  // namespace
 }  // namespace pw

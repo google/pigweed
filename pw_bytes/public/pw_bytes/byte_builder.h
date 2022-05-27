@@ -21,6 +21,7 @@
 
 #include "pw_bytes/endian.h"
 #include "pw_bytes/span.h"
+#include "pw_containers/iterator.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -43,11 +44,13 @@ class ByteBuilder {
    public:
     using difference_type = ptrdiff_t;
     using value_type = std::byte;
-    using pointer = std::byte*;
-    using reference = std::byte&;
-    using iterator_category = std::random_access_iterator_tag;
+    using element_type = const std::byte;
+    using pointer = const std::byte*;
+    using reference = const std::byte&;
+    using iterator_category = containers::contiguous_iterator_tag;
 
-    explicit constexpr iterator(const std::byte* byte_ptr) : byte_(byte_ptr) {}
+    explicit constexpr iterator(const std::byte* byte_ptr = nullptr)
+        : byte_(byte_ptr) {}
 
     constexpr iterator& operator++() {
       byte_ += 1;
@@ -71,20 +74,26 @@ class ByteBuilder {
       return previous;
     }
 
-    constexpr iterator operator+=(int n) {
+    constexpr iterator& operator+=(int n) {
       byte_ += n;
       return *this;
     }
 
     constexpr iterator operator+(int n) const { return iterator(byte_ + n); }
 
-    constexpr iterator operator-=(int n) { return operator+=(-n); }
+    constexpr iterator& operator-=(int n) { return operator+=(-n); }
 
     constexpr iterator operator-(int n) const { return iterator(byte_ - n); }
 
-    constexpr ptrdiff_t operator-(const iterator& rhs) const {
+    constexpr difference_type operator-(const iterator& rhs) const {
       return byte_ - rhs.byte_;
     }
+
+    constexpr reference operator*() const { return *byte_; }
+
+    constexpr pointer operator->() const { return byte_; }
+
+    constexpr reference operator[](int index) const { return byte_[index]; }
 
     constexpr bool operator==(const iterator& rhs) const {
       return byte_ == rhs.byte_;
@@ -108,12 +117,6 @@ class ByteBuilder {
 
     constexpr bool operator>=(const iterator& rhs) const {
       return !operator<(rhs);
-    }
-
-    constexpr const std::byte& operator*() const { return *byte_; }
-
-    constexpr const std::byte& operator[](int index) const {
-      return byte_[index];
     }
 
     // The Peek methods will retreive ordered (Little/Big Endian) values
@@ -409,5 +412,9 @@ class ByteBuffer : public ByteBuilder {
 
   std::array<std::byte, kSizeBytes> buffer_;
 };
+
+constexpr ByteBuilder::iterator operator+(int n, ByteBuilder::iterator it) {
+  return it + n;
+}
 
 }  // namespace pw

@@ -824,6 +824,9 @@ class MemoryEncoder : public StreamEncoder {
   const std::byte* data() const { return memory_writer_.data(); }
   size_t size() const { return memory_writer_.bytes_written(); }
 
+  const std::byte* begin() const { return data(); }
+  const std::byte* end() const { return data() + size(); }
+
  protected:
   // This is needed by codegen.
   MemoryEncoder(MemoryEncoder&& other) = default;

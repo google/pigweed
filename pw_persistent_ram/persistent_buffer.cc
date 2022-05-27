@@ -35,7 +35,7 @@ Status PersistentBufferWriter::DoWrite(ConstByteSpan data) {
   // Only checksum newly written data.
   checksum_ = checksum::Crc16Ccitt::Calculate(
       ByteSpan(buffer_.data() + size_, data.size_bytes()), checksum_);
-  size_ += data.size_bytes();
+  size_ = size_ + data.size_bytes();  // += on a volatile is deprecated in C++20
 
   return OkStatus();
 }

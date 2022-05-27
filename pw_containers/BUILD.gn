@@ -49,6 +49,12 @@ pw_source_set("flat_map") {
   public = [ "public/pw_containers/flat_map.h" ]
 }
 
+pw_source_set("iterator") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ dir_pw_polyfill ]
+  public = [ "public/pw_containers/iterator.h" ]
+}
+
 pw_source_set("to_array") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/to_array.h" ]

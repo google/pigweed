@@ -36,6 +36,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_containers:iterator",
         "//pw_polyfill",
         "//pw_polyfill:bit",
         "//pw_polyfill:cstddef",

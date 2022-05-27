@@ -19,6 +19,7 @@
 #include <string_view>
 
 #include "pw_assert/assert.h"
+#include "pw_polyfill/language_feature_macros.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"

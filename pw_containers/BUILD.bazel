@@ -55,6 +55,12 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "iterator",
+    hdrs = ["public/pw_containers/iterator.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "vector",
     hdrs = [
         "public/pw_containers/vector.h",

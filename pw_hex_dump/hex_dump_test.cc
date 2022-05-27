@@ -421,7 +421,8 @@ TEST(BadBuffer, NullPtrDest) {
 TEST(BadBuffer, NullPtrSrc) {
   char buffer[24] = {static_cast<char>(0)};
   FormattedHexDumper dumper(buffer);
-  EXPECT_EQ(dumper.BeginDump(ByteSpan(nullptr, 64)), Status::InvalidArgument());
+  EXPECT_EQ(dumper.BeginDump(ByteSpan(static_cast<std::byte*>(nullptr), 64)),
+            Status::InvalidArgument());
   // Don't actually dump nullptr in this test as it could cause a crash.
 }
 

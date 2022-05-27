@@ -21,7 +21,32 @@
 namespace pw {
 namespace kvs {
 
-struct EntryFormat;
+// The EntryFormat defines properties of KVS entries that use a particular magic
+// number.
+struct EntryFormat {
+  // Magic is a unique constant identifier for entries.
+  //
+  // Upon reading from an address in flash, the magic number facilitiates
+  // quickly differentiating between:
+  //
+  // - Reading erased data - typically 0xFF - from flash.
+  // - Reading corrupted data
+  // - Reading a valid entry
+  //
+  // When selecting a magic for your particular KVS, pick a random 32 bit
+  // integer rather than a human readable 4 bytes. This decreases the
+  // probability of a collision with a real string when scanning in the case of
+  // corruption. To generate such a number:
+  /*
+       $ python3 -c 'import random; print(hex(random.randint(0,2**32)))'
+       0xaf741757
+  */
+  uint32_t magic;
+
+  // The checksum algorithm is used to calculate checksums for KVS entries. If
+  // it is null, no checksum is used.
+  ChecksumAlgorithm* checksum;
+};
 
 namespace internal {
 
@@ -77,33 +102,5 @@ class EntryFormats {
 };
 
 }  // namespace internal
-
-// The EntryFormat defines properties of KVS entries that use a particular magic
-// number.
-struct EntryFormat {
-  // Magic is a unique constant identifier for entries.
-  //
-  // Upon reading from an address in flash, the magic number facilitiates
-  // quickly differentiating between:
-  //
-  // - Reading erased data - typically 0xFF - from flash.
-  // - Reading corrupted data
-  // - Reading a valid entry
-  //
-  // When selecting a magic for your particular KVS, pick a random 32 bit
-  // integer rather than a human readable 4 bytes. This decreases the
-  // probability of a collision with a real string when scanning in the case of
-  // corruption. To generate such a number:
-  /*
-       $ python3 -c 'import random; print(hex(random.randint(0,2**32)))'
-       0xaf741757
-  */
-  uint32_t magic;
-
-  // The checksum algorithm is used to calculate checksums for KVS entries. If
-  // it is null, no checksum is used.
-  ChecksumAlgorithm* checksum;
-};
-
 }  // namespace kvs
 }  // namespace pw

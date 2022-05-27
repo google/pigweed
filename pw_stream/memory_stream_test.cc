@@ -254,7 +254,7 @@ TEST(MemoryReader, EmptySpanRead) {
   std::array<std::byte, kTempBufferSize> source;
 
   // Use a span with nullptr and zero length;
-  ByteSpan dest(nullptr, 0);
+  ByteSpan dest;
   EXPECT_EQ(dest.size_bytes(), 0u);
 
   MemoryReader memory_reader(source);
