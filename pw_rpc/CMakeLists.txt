@@ -23,6 +23,17 @@ add_subdirectory(pwpb)
 add_subdirectory(raw)
 add_subdirectory(system_server)
 
+pw_add_module_config(pw_rpc_CONFIG)
+
+pw_add_module_library(pw_rpc.config
+  HEADERS
+    public/pw_rpc/internal/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_rpc_CONFIG}
+)
+
 pw_add_module_library(pw_rpc.server
   SOURCES
     call.cc
@@ -85,10 +96,11 @@ pw_add_module_library(pw_rpc.common
     pw_bytes
     pw_containers
     pw_function
+    pw_rpc.config
+    pw_rpc.protos.pwpb
     pw_span
     pw_status
     pw_sync.lock_annotations
-    pw_rpc.protos.pwpb
   PRIVATE_DEPS
     pw_log
 )
@@ -127,6 +139,13 @@ pw_proto_library(pw_rpc.protos
 pw_proto_library(pw_rpc.test_protos
   SOURCES
     pw_rpc_test_protos/test.proto
+)
+
+# Set pw_rpc_CONFIG to this to disable the global mutex.
+add_library(pw_rpc.disable_global_mutex_config INTERFACE)
+target_compile_definitions(pw_rpc.disable_global_mutex_config
+  INTERFACE
+    PW_RPC_USE_GLOBAL_MUTEX=0
 )
 
 pw_auto_add_module_tests(pw_rpc
