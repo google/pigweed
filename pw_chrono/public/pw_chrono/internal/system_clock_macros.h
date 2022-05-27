@@ -14,7 +14,7 @@
 #pragma once
 
 #define _PW_SYSTEM_CLOCK_DURATION(num_ticks) \
-  ((pw_chrono_SystemClock_Duration){.ticks = (num_ticks)})
+  (pw_chrono_SystemClock_Duration{.ticks = (num_ticks)})
 
 // clang-format off
 
