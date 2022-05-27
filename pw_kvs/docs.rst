@@ -157,9 +157,10 @@ always free sector is rotated as part of the KVS wear leveling.
 Full Maintenance does garbage collection of all sectors except those that have
 current valid KV entries.
 
-Heavy Maintenance does garbage collection of all sectors. Use strong caution
-when doing Heavy Maintenance as it can, compared to Full Maintenance, result
-in a significant amount of moving valid entries,
+Heavy Maintenance does garbage collection of all sectors, including removing
+entries for deleted keys. Use strong caution when doing Heavy Maintenance as it
+can, compared to Full Maintenance, result in a significant amount of moving
+valid entries,
 
 Garbage collection can be performed by request of higher level software or
 automatically as needed to make space available to write new entries.

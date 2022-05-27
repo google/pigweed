@@ -19,6 +19,7 @@
 
 #include <cinttypes>
 
+#include "pw_assert/check.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/internal/hash.h"
@@ -123,6 +124,32 @@ EntryMetadata EntryCache::AddNew(const KeyDescriptor& descriptor,
   Address* first_address = ResetAddresses(descriptors_.size(), address);
   descriptors_.push_back(descriptor);
   return EntryMetadata(descriptors_.back(), std::span(first_address, 1));
+}
+
+// Removes an existing entry from the cache
+EntryCache::iterator EntryCache::RemoveEntry(iterator& entry_it) {
+  PW_DCHECK_PTR_EQ(entry_it.entry_cache_, this);
+
+  const unsigned int index_to_remove =
+      entry_it.metadata_.descriptor_ - &descriptors_.front();
+  const KeyDescriptor last_desc = descriptors_[descriptors_.size() - 1];
+
+  // Since order is not important, this copies the last descriptor into the
+  // deleted descriptor's space and then pops the last entry.
+  Address* addresses_at_end = first_address(descriptors_.size() - 1);
+
+  if (index_to_remove < descriptors_.size() - 1) {
+    Address* addresses_to_remove = first_address(index_to_remove);
+    for (unsigned int i = 0; i < redundancy_; i++) {
+      addresses_to_remove[i] = addresses_at_end[i];
+    }
+    descriptors_[index_to_remove] = last_desc;
+  }
+
+  // Erase the last entry since it was copied over the entry being deleted.
+  descriptors_.pop_back();
+
+  return {this, descriptors_.data() + index_to_remove};
 }
 
 // TODO: This method is the trigger of the O(valid_entries * all_entries) time

@@ -305,6 +305,11 @@ class KeyValueStore {
   // Returns the number of valid entries in the KeyValueStore.
   size_t size() const { return entry_cache_.present_entries(); }
 
+  // Returns the number of valid entries and deleted entries yet to be collected
+  size_t total_entries_with_deleted() const {
+    return entry_cache_.total_entries();
+  }
+
   size_t max_size() const { return entry_cache_.max_entries(); }
 
   size_t empty() const { return size() == 0u; }
@@ -382,6 +387,14 @@ class KeyValueStore {
   Status ScanForEntry(const SectorDescriptor& sector,
                       Address start_address,
                       Address* next_entry_address);
+
+  // Remove deleted keys from the entry cache, including freeing sector bytes
+  // used by those keys. This must only be done directly after a full garbage
+  // collection, otherwise the current deleted entry could be garbage
+  // collected before the older stale entry producing a window for an
+  // invalid/corrupted KVS state if there was a power-fault, crash or other
+  // interruption.
+  Status RemoveDeletedKeyEntries();
 
   Status PutBytes(Key key, std::span<const std::byte> value);
 

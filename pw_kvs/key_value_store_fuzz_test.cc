@@ -80,7 +80,8 @@ TEST(KvsFuzz, FuzzTest) {
       // Rewrite a single key many times, can fill up a sector
       ASSERT_EQ(OkStatus(), kvs_.Put("some_data", j));
     }
-    // Delete and re-add everything
+
+    // Delete and re-add everything except "some_data"
     ASSERT_EQ(OkStatus(), kvs_.Delete(key1));
     ASSERT_EQ(OkStatus(), kvs_.Put(key1, std::span(buf1, size1)));
     ASSERT_EQ(OkStatus(), kvs_.Delete(key2));
@@ -105,4 +106,98 @@ TEST(KvsFuzz, FuzzTest) {
   }
 }
 
+TEST(KvsFuzz, FuzzTestWithGC) {
+  FlashPartition& test_partition = FlashTestPartition();
+  ASSERT_EQ(OkStatus(), test_partition.Erase());
+
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_(&test_partition,
+                                                           default_format);
+
+  ASSERT_EQ(OkStatus(), kvs_.Init());
+
+  if (test_partition.sector_size_bytes() < 4 * 1024 ||
+      test_partition.sector_count() < 4) {
+    PW_LOG_INFO("Sectors too small, skipping test.");
+    return;  // TODO: Test could be generalized
+  }
+  const char* key1 = "Buf1";
+  const char* key2 = "Buf2";
+  const size_t kLargestBufSize = 3 * 1024;
+  static byte buf1[kLargestBufSize];
+  static byte buf2[kLargestBufSize];
+  std::memset(buf1, 1, sizeof(buf1));
+  std::memset(buf2, 2, sizeof(buf2));
+
+  // Start with things in KVS
+  ASSERT_EQ(OkStatus(), kvs_.Put(key1, buf1));
+  ASSERT_EQ(OkStatus(), kvs_.Put(key2, buf2));
+  for (size_t j = 0; j < keys.size(); j++) {
+    ASSERT_EQ(OkStatus(), kvs_.Put(keys[j], j));
+  }
+
+  for (size_t i = 0; i < 100; i++) {
+    // Vary two sizes
+    size_t size1 = (kLargestBufSize) / (i + 1);
+    size_t size2 = (kLargestBufSize) / (100 - i);
+    for (size_t j = 0; j < 50; j++) {
+      // Rewrite a single key many times, can fill up a sector
+      ASSERT_EQ(OkStatus(), kvs_.Put("some_data", j));
+    }
+
+    // Delete and re-add everything except "some_data".
+    ASSERT_EQ(OkStatus(), kvs_.Delete(key1));
+    ASSERT_EQ(OkStatus(), kvs_.Put(key1, std::span(buf1, size1)));
+    ASSERT_EQ(OkStatus(), kvs_.Delete(key2));
+
+    // Throw some heavy maintenance in the middle to trigger some GC before
+    // moving forward.
+    EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
+
+    // check for expected stats
+    KeyValueStore::StorageStats stats = kvs_.GetStorageStats();
+    EXPECT_GT(stats.sector_erase_count, 1u);
+    EXPECT_EQ(stats.reclaimable_bytes, 0u);
+
+    // Write out rotating keyvalue, read it, and delete kMaxEntries * 4.
+    // This tests whether garbage collection is working on write.
+    for (size_t j = 0; j < kMaxEntries * 4; j++) {
+      size_t readj;
+      StringBuffer<6> keyVal;
+      keyVal << j;
+      ASSERT_EQ(OkStatus(), kvs_.Put(keyVal.c_str(), j));
+      ASSERT_EQ(OkStatus(), kvs_.Get(keyVal.c_str(), &readj));
+      ASSERT_EQ(j, readj);
+      ASSERT_EQ(OkStatus(), kvs_.Delete(keyVal.c_str()));
+      ASSERT_EQ(Status::NotFound(), kvs_.Get(keyVal.c_str(), &readj));
+    }
+
+    // The KVS should contain key1, "some_data", and all of keys[].
+    ASSERT_EQ(kvs_.size(), 2u + keys.size());
+
+    ASSERT_EQ(OkStatus(), kvs_.Put(key2, std::span(buf2, size2)));
+    for (size_t j = 0; j < keys.size(); j++) {
+      ASSERT_EQ(OkStatus(), kvs_.Delete(keys[j]));
+      ASSERT_EQ(OkStatus(), kvs_.Put(keys[j], j));
+    }
+
+    // Do some more heavy maintenance, ensure we have the right number
+    // of keys.
+    EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
+    // The KVS should contain key1, key2, "some_data", and all of keys[].
+    ASSERT_EQ(kvs_.size(), 3u + keys.size());
+
+    // Re-enable and verify (final check on store).
+    ASSERT_EQ(OkStatus(), kvs_.Init());
+    static byte buf[4 * 1024];
+    ASSERT_EQ(OkStatus(), kvs_.Get(key1, std::span(buf, size1)).status());
+    ASSERT_EQ(std::memcmp(buf, buf1, size1), 0);
+    ASSERT_EQ(OkStatus(), kvs_.Get(key2, std::span(buf, size2)).status());
+    ASSERT_EQ(std::memcmp(buf2, buf2, size2), 0);
+    for (size_t j = 0; j < keys.size(); j++) {
+      size_t ret = 1000;
+      ASSERT_EQ(OkStatus(), kvs_.Get(keys[j], &ret));
+      ASSERT_EQ(ret, j);
+    }
+  }
+}
 }  // namespace pw::kvs

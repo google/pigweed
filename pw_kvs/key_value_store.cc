@@ -400,6 +400,36 @@ Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
   return Status::NotFound();
 }
 
+Status KeyValueStore::RemoveDeletedKeyEntries() {
+  for (internal::EntryCache::iterator it = entry_cache_.begin();
+       it != entry_cache_.end();
+       ++it) {
+    EntryMetadata& entry_metadata = *it;
+
+    // The iterator we are given back from RemoveEntry could also be deleted,
+    // so loop until we find one that isn't deleted.
+    while (entry_metadata.state() == EntryState::kDeleted) {
+      // Read the original entry to get the size for sector accounting purposes.
+      Entry entry;
+      PW_TRY(ReadEntry(entry_metadata, entry));
+
+      for (Address address : entry_metadata.addresses()) {
+        sectors_.FromAddress(address).RemoveValidBytes(entry.size());
+      }
+
+      it = entry_cache_.RemoveEntry(it);
+
+      if (it == entry_cache_.end()) {
+        return OkStatus();  // new iterator is the end, bail
+      }
+
+      entry_metadata = *it;  // set entry_metadata to check for deletion again
+    }
+  }
+
+  return OkStatus();
+}
+
 StatusWithSize KeyValueStore::Get(Key key,
                                   std::span<byte> value_buffer,
                                   size_t offset_bytes) const {
@@ -634,6 +664,17 @@ Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
 
 Status KeyValueStore::WriteEntryForNewKey(Key key,
                                           std::span<const byte> value) {
+  // If we are trying to ensure that all possible writes are successful, and the
+  // cache is full, attempt heavy maintenance now.
+  if (options_.gc_on_write == GargbageCollectOnWrite::kAsManySectorsNeeded &&
+      entry_cache_.full()) {
+    Status maintenance_status = HeavyMaintenance();
+    if (!maintenance_status.ok()) {
+      WRN("KVS Maintenance failed for write: %s", maintenance_status.str());
+      return maintenance_status;
+    }
+  }
+
   if (entry_cache_.full()) {
     WRN("KVS full: trying to store a new entry, but can't. Have %u entries",
         unsigned(entry_cache_.total_entries()));
@@ -878,13 +919,15 @@ Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
   INF("Beginning full maintenance");
   CheckForErrors();
 
+  // Step 1: Repair errors
   if (error_detected_) {
     PW_TRY(Repair());
   }
+
+  // Step 2: Make sure all the entries are on the primary format.
   StatusWithSize update_status = UpdateEntriesToPrimaryFormat();
   Status overall_status = update_status.status();
 
-  // Make sure all the entries are on the primary format.
   if (!overall_status.ok()) {
     ERR("Failed to update all entries to the primary format");
   }
@@ -901,26 +944,50 @@ Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
   bool heavy = (maintenance_type == MaintenanceType::kHeavy);
   bool force_gc = heavy || over_usage_threshold || (update_status.size() > 0);
 
-  // TODO: look in to making an iterator method for cycling through sectors
-  // starting from last_new_sector_.
-  Status gc_status;
-  for (size_t j = 0; j < sectors_.size(); j++) {
-    sector += 1;
-    if (sector == sectors_.end()) {
-      sector = sectors_.begin();
-    }
+  auto do_garbage_collect_pass = [&]() {
+    // TODO: look in to making an iterator method for cycling through
+    // sectors starting from last_new_sector_.
+    Status gc_status;
+    for (size_t j = 0; j < sectors_.size(); j++) {
+      sector += 1;
+      if (sector == sectors_.end()) {
+        sector = sectors_.begin();
+      }
 
-    if (sector->RecoverableBytes(partition_.sector_size_bytes()) > 0 &&
-        (force_gc || sector->valid_bytes() == 0)) {
-      gc_status = GarbageCollectSector(*sector, {});
-      if (!gc_status.ok()) {
-        ERR("Failed to garbage collect all sectors");
-        break;
+      if (sector->RecoverableBytes(partition_.sector_size_bytes()) > 0 &&
+          (force_gc || sector->valid_bytes() == 0)) {
+        gc_status = GarbageCollectSector(*sector, {});
+        if (!gc_status.ok()) {
+          ERR("Failed to garbage collect all sectors");
+          break;
+        }
       }
     }
-  }
-  if (overall_status.ok()) {
-    overall_status = gc_status;
+    if (overall_status.ok()) {
+      overall_status = gc_status;
+    }
+  };
+
+  // Step 3: Do full garbage collect pass for all sectors. This will erase all
+  // old/state entries from flash and leave only current/valid entries.
+  do_garbage_collect_pass();
+
+  // Step 4: (if heavy maintenance) garbage collect all the deleted keys.
+  if (heavy) {
+    // Remove deleted keys from the entry cache, including freeing sector bytes
+    // used by those keys. This must only be done directly after a full garbage
+    // collection, otherwise the current deleted entry could be garbage
+    // collected before the older stale entry producing a window for an
+    // invalid/corrupted KVS state if there was a power-fault, crash or other
+    // interruption.
+    Status rdk_status = RemoveDeletedKeyEntries();
+    overall_status.Update(rdk_status);
+
+    // Do another garbage collect pass that will fully remove the deleted keys
+    // from flash. Garbage collect will only touch sectors that have something
+    // to garbage collect, which in this case is only sectors containing deleted
+    // keys.
+    do_garbage_collect_pass();
   }
 
   if (overall_status.ok()) {

@@ -413,6 +413,57 @@ TEST_F(LargeEmptyInitializedKvs, FullMaintenance) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
 }
 
+TEST_F(LargeEmptyInitializedKvs, KeyDeletionMaintenance) {
+  const uint8_t kValue1 = 0xDA;
+  const uint8_t kValue2 = 0x12;
+  uint8_t val = 0;
+
+  // Write and delete a key. The key should be gone, but the size should be 1.
+  ASSERT_EQ(OkStatus(), kvs_.Put(keys[0], kValue1));
+  ASSERT_EQ(kvs_.size(), 1u);
+  ASSERT_EQ(OkStatus(), kvs_.Delete(keys[0]));
+
+  // Ensure the key is indeed gone and the size is 1 before continuing.
+  ASSERT_EQ(kvs_.Get(keys[0], &val), Status::NotFound());
+  ASSERT_EQ(kvs_.size(), 0u);
+  ASSERT_EQ(kvs_.total_entries_with_deleted(), 1u);
+
+  KeyValueStore::StorageStats stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.sector_erase_count, 0u);
+  EXPECT_GT(stats.reclaimable_bytes, 0u);
+
+  // Do aggressive FullMaintenance, which should GC the sector with valid data,
+  // resulting in no reclaimable bytes and an erased sector.
+  EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
+  stats = kvs_.GetStorageStats();
+  EXPECT_GT(stats.sector_erase_count, 1u);
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
+  ASSERT_EQ(kvs_.size(), 0u);
+  ASSERT_EQ(kvs_.total_entries_with_deleted(), 0u);
+
+  // Do it again but with 2 keys and keep one.
+  ASSERT_EQ(OkStatus(), kvs_.Put(keys[0], kValue1));
+  ASSERT_EQ(OkStatus(), kvs_.Put(keys[1], kValue2));
+  ASSERT_EQ(kvs_.size(), 2u);
+  ASSERT_EQ(OkStatus(), kvs_.Delete(keys[0]));
+
+  // Ensure the key is indeed gone and the size is 1 before continuing.
+  ASSERT_EQ(kvs_.Get(keys[0], &val), Status::NotFound());
+  ASSERT_EQ(kvs_.size(), 1u);
+  ASSERT_EQ(kvs_.total_entries_with_deleted(), 2u);
+
+  // Do aggressive FullMaintenance, which should GC the sector with valid data,
+  // resulting in no reclaimable bytes and an erased sector.
+  EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
+  stats = kvs_.GetStorageStats();
+  ASSERT_EQ(kvs_.size(), 1u);
+  ASSERT_EQ(kvs_.total_entries_with_deleted(), 1u);
+
+  // Read back the second key to make sure it is still valid.
+  ASSERT_EQ(kvs_.Get(keys[1], &val), OkStatus());
+  ASSERT_EQ(val, kValue2);
+}
+
 TEST(InMemoryKvs, Put_MaxValueSize) {
   // Create and erase the fake flash.
   Flash flash;
