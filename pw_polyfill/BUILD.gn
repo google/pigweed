@@ -43,10 +43,7 @@ config("overrides_config") {
 group("overrides") {
   public_deps = [
     ":bit",
-    ":cstddef",
-    ":iterator",
     ":span",
-    ":type_traits",
   ]
 }
 
@@ -123,7 +120,12 @@ pw_test_group("tests") {
 }
 
 pw_test("test") {
-  deps = [ ":pw_polyfill" ]
+  deps = [
+    ":cstddef",
+    ":iterator",
+    ":pw_polyfill",
+    ":type_traits",
+  ]
   sources = [ "test.cc" ]
 }
 

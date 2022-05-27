@@ -58,10 +58,7 @@ pw_cc_library(
     name = "overrides",
     deps = [
         ":bit",
-        ":cstddef",
-        ":iterator",
         ":span",
-        ":type_traits",
     ],
 )
 

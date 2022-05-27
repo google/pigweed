@@ -30,10 +30,7 @@ endif()
 pw_add_module_library(pw_polyfill.overrides
   PUBLIC_DEPS
     pw_polyfill.bit
-    pw_polyfill.cstddef
-    pw_polyfill.iterator
     pw_polyfill.span
-    pw_polyfill.type_traits
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL_OVERRIDES)
   zephyr_link_libraries(pw_polyfill.overrides)

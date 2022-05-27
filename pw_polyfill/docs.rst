@@ -23,29 +23,31 @@ provided by the standard header, so ``pw_polyfill`` is safe to use when
 compiling with any standard C++14 or newer.
 
 The wrapper headers are in ``public_overrides``. These are provided through the
-``"$dir_pw_polyfill"`` libraries, which the GN build adds as a
-dependency for all targets:
+following libraries:
 
-* ``$dir_pw_polyfill:bit``
-* ``$dir_pw_polyfill:cstddef``
-* ``$dir_pw_polyfill:iterator``
-* ``$dir_pw_polyfill:span``
-* ``$dir_pw_polyfill:type_traits``
+* ``pw_polyfill:bit``
+* ``pw_polyfill:cstddef``
+* ``pw_polyfill:iterator``
+* ``pw_polyfill:span``
+* ``pw_polyfill:type_traits``
 
-To apply overrides in Bazel or CMake, depend on the targets you need such as
-``//pw_polyfill:span`` or ``pw_polyfill.span`` as an example.
+The GN build automatically adds dependencies on the ``<bit>`` and ``<span>``
+headers. To apply other overrides, add dependencies as needed. In Bazel or
+CMake, overrides are not applied automatically, so depend on the targets you
+need such as ``//pw_polyfill:span`` or ``pw_polyfill.span``.
 
 Backported features
 ===================
-==================  ================================  ===============================  ========================================
-Header              Feature                           Level of support                 Feature test macro
-==================  ================================  ===============================  ========================================
-<bit>               std::endian                       full                             __cpp_lib_endian
-<cstdlib>           std::byte                         full                             __cpp_lib_byte
-<iterator>          std::data, std::size              full                             __cpp_lib_nonmember_container_access
-<type_traits>       std::bool_constant                full                             __cpp_lib_bool_constant
-<type_traits>       std::negation, etc.               full                             __cpp_lib_logical_traits
-==================  ================================  ===============================  ========================================
+==================  ================================  ================  ======================================== =============
+Header              Feature                           Level of support  Feature test macro                       Implicit dep?
+==================  ================================  ================  ======================================== =============
+<bit>               std::endian                       full              __cpp_lib_endian                         GN
+<cstdlib>           std::byte                         full              __cpp_lib_byte                           ❌
+<iterator>          std::data, std::size              full              __cpp_lib_nonmember_container_access     ❌
+<span>              std::span                         no std::ranges    __cpp_lib_span                           GN
+<type_traits>       std::bool_constant                full              __cpp_lib_bool_constant                  ❌
+<type_traits>       std::negation, etc.               full              __cpp_lib_logical_traits                 ❌
+==================  ================================  ================  ======================================== =============
 
 ----------------------------------------------------
 Adapt code to compile with different versions of C++
