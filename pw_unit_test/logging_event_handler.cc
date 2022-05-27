@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -14,33 +14,36 @@
 
 #include "pw_unit_test/logging_event_handler.h"
 
-//#include <cstdarg>
-//#include <cstdio>
-//#include <string_view>
 #include <cstdint>
 
 #include "pw_log/log.h"
+#include "pw_unit_test/googletest_style_event_handler.h"
 
 namespace pw::unit_test {
 
 void LoggingEventHandler::RunAllTestsStart() {
-  PW_LOG_INFO("[==========] Running all tests.");
+  PW_LOG_INFO(GoogleTestStyleEventHandler::kRunAllTestsStart);
 }
 
 void LoggingEventHandler::RunAllTestsEnd(
     const RunTestsSummary& run_tests_summary) {
-  PW_LOG_INFO("[==========] Done running all tests.");
-  PW_LOG_INFO("[  PASSED  ] %d test(s).", run_tests_summary.passed_tests);
+  PW_LOG_INFO(GoogleTestStyleEventHandler::kRunAllTestsEnd);
+  PW_LOG_INFO(GoogleTestStyleEventHandler::kPassedSummary,
+              run_tests_summary.passed_tests);
   if (run_tests_summary.skipped_tests) {
-    PW_LOG_WARN("[  SKIPPED ] %d test(s).", run_tests_summary.skipped_tests);
+    PW_LOG_WARN(GoogleTestStyleEventHandler::kSkippedSummary,
+                run_tests_summary.skipped_tests);
   }
   if (run_tests_summary.failed_tests) {
-    PW_LOG_ERROR("[  FAILED  ] %d test(s).", run_tests_summary.failed_tests);
+    PW_LOG_ERROR(GoogleTestStyleEventHandler::kFailedSummary,
+                 run_tests_summary.failed_tests);
   }
 }
 
 void LoggingEventHandler::TestCaseStart(const TestCase& test_case) {
-  PW_LOG_INFO("[ RUN      ] %s.%s", test_case.suite_name, test_case.test_name);
+  PW_LOG_INFO(GoogleTestStyleEventHandler::kCaseStart,
+              test_case.suite_name,
+              test_case.test_name);
 }
 
 void LoggingEventHandler::TestCaseEnd(const TestCase& test_case,
@@ -48,16 +51,19 @@ void LoggingEventHandler::TestCaseEnd(const TestCase& test_case,
   // Use a switch with no default to detect changes in the test result enum.
   switch (result) {
     case TestResult::kSuccess:
-      PW_LOG_INFO(
-          "[       OK ] %s.%s", test_case.suite_name, test_case.test_name);
+      PW_LOG_INFO(GoogleTestStyleEventHandler::kCaseOk,
+                  test_case.suite_name,
+                  test_case.test_name);
       break;
     case TestResult::kFailure:
-      PW_LOG_ERROR(
-          "[  FAILED  ] %s.%s", test_case.suite_name, test_case.test_name);
+      PW_LOG_ERROR(GoogleTestStyleEventHandler::kCaseFailed,
+                   test_case.suite_name,
+                   test_case.test_name);
       break;
     case TestResult::kSkipped:
-      PW_LOG_WARN(
-          "[  SKIPPED ] %s.%s", test_case.suite_name, test_case.test_name);
+      PW_LOG_WARN(GoogleTestStyleEventHandler::kCaseSkipped,
+                  test_case.suite_name,
+                  test_case.test_name);
       break;
   }
 }

@@ -65,8 +65,9 @@ the developer.
 Predefined event handlers
 -------------------------
 Pigweed provides some standard event handlers upstream to simplify the process
-of getting started using ``pw_unit_test``. All event handlers provide for
-GoogleTest-style output.
+of getting started using ``pw_unit_test:light``. All event handlers provide for
+GoogleTest-style output using the shared
+:cpp:class:`pw::unit_test::GoogleTestStyleEventHandler` base.
 
   .. code-block::
 
@@ -90,10 +91,28 @@ GoogleTest-style output.
     [==========] Done running all tests.
     [  PASSED  ] 8 test(s).
 
-* ``SimplePrintingEventHandler``: An event handler that writes GoogleTest-style
-  output to a specified sink.
-* ``LoggingEventHandler``: An event handler which uses the ``pw_log`` module to
-  output test results, to integrate with the system's existing logging setup.
+.. cpp:namespace-push:: pw::unit_test
+
+.. cpp:class:: GoogleTestStyleEventHandler
+
+   Provides GoogleTest-style output for ``pw_unit_test:light`` events. Must be
+   extended to define how to output the results.
+
+.. cpp:class:: SimplePrintingEventHandler : public GoogleTestStyleEventHandler
+
+  An event handler that writes GoogleTest-style output to a specified sink.
+
+.. cpp:class:: LoggingEventHandler : public GoogleTestStyleEventHandler
+
+  An event handler which uses the ``pw_log`` module to output test results, to
+  integrate with the system's existing logging setup.
+
+.. cpp:class:: PrintfEventHandler : public GoogleTestStyleEventHandler
+
+  A C++14-compatible event handler that uses ``std::printf`` to output test
+  results.
+
+.. cpp:namespace-pop::
 
 Test filtering
 ==============

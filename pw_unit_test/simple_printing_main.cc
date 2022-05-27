@@ -23,9 +23,9 @@ int main() {
   pw::unit_test::SimplePrintingEventHandler handler(
       [](const std::string_view& s, bool append_newline) {
         if (append_newline) {
-          pw::sys_io::WriteLine(s);
+          pw::sys_io::WriteLine(s).IgnoreError();
         } else {
-          pw::sys_io::WriteBytes(std::as_bytes(std::span(s)));
+          pw::sys_io::WriteBytes(std::as_bytes(std::span(s))).IgnoreError();
         }
       });
 

@@ -51,13 +51,28 @@ pw_add_module_library(pw_unit_test.static_library_support
     pw_unit_test.light
 )
 
-pw_add_module_library(pw_unit_test.main
+pw_add_module_library(pw_unit_test.event_handler
+  HEADERS
+    public/pw_unit_test/event_handler.h
+)
+
+pw_add_module_library(pw_unit_test.googletest_style_event_handler
+  PUBLIC_DEPS
+    pw_unit_test.event_handler
+    pw_preprocessor
+  HEADERS
+    public/pw_unit_test/googletest_style_event_handler.h
+  SOURCES
+    googletest_style_event_handler.cc
+)
+
+pw_add_module_library(pw_unit_test.simple_printing_main
   SOURCES
     simple_printing_main.cc
     simple_printing_event_handler.cc
-  PUBLIC_DEPS
-    pw_unit_test
   PRIVATE_DEPS
+    pw_unit_test
+    pw_unit_test.googletest_style_event_handler
     pw_preprocessor
     pw_string
     pw_sys_io

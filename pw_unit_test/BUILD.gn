@@ -93,10 +93,20 @@ pw_source_set("event_handler") {
   public = [ "public/pw_unit_test/event_handler.h" ]
 }
 
+# Unit test event handler that provides GoogleTest-style output.
+pw_source_set("googletest_style_event_handler") {
+  public_deps = [
+    ":event_handler",
+    dir_pw_preprocessor,
+  ]
+  public = [ "public/pw_unit_test/googletest_style_event_handler.h" ]
+  sources = [ "googletest_style_event_handler.cc" ]
+}
+
 # Library providing an event handler which outputs human-readable text.
 pw_source_set("simple_printing_event_handler") {
   public_deps = [
-    ":event_handler",
+    ":googletest_style_event_handler",
     "$dir_pw_preprocessor",
   ]
   public = [ "public/pw_unit_test/simple_printing_event_handler.h" ]
@@ -115,12 +125,27 @@ pw_source_set("simple_printing_main") {
   sources = [ "simple_printing_main.cc" ]
 }
 
+pw_source_set("printf_event_handler") {
+  public_deps = [
+    ":googletest_style_event_handler",
+    dir_pw_preprocessor,
+  ]
+  public = [ "public/pw_unit_test/printf_event_handler.h" ]
+}
+
+pw_source_set("printf_main") {
+  deps = [
+    ":printf_event_handler",
+    ":pw_unit_test",
+  ]
+  sources = [ "printf_main.cc" ]
+}
+
 # Library providing an event handler which logs using pw_log.
 pw_source_set("logging_event_handler") {
   public_deps = [
-    ":event_handler",
-    "$dir_pw_log",
-    "$dir_pw_preprocessor",
+    ":googletest_style_event_handler",
+    dir_pw_log,
   ]
   public = [ "public/pw_unit_test/logging_event_handler.h" ]
   sources = [ "logging_event_handler.cc" ]

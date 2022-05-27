@@ -34,7 +34,7 @@ def pw_cc_library(**kwargs):
 
 def pw_cc_test(**kwargs):
     kwargs["deps"] = kwargs.get("deps", []) + \
-                     ["@pigweed//pw_unit_test:main"]
+                     ["@pigweed//pw_unit_test:simple_printing_main"]
 
     # TODO(pwbug/440): Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into

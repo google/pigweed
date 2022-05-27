@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,21 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_unit_test/simple_printing_event_handler.h"
+#include "gtest/gtest.h"
+#include "pw_unit_test/printf_event_handler.h"
 
-#include <cstdarg>
-#include <cstdio>
-
-namespace pw::unit_test {
-
-void SimplePrintingEventHandler::WriteLine(const char* format, ...) {
-  va_list args;
-
-  va_start(args, format);
-  std::vsnprintf(buffer_, sizeof(buffer_), format, args);
-  va_end(args);
-
-  write_(buffer_, true);
+int main() {
+  pw::unit_test::PrintfEventHandler handler;
+  pw::unit_test::RegisterEventHandler(&handler);
+  return RUN_ALL_TESTS();
 }
-
-}  // namespace pw::unit_test

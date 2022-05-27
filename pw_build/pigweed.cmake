@@ -522,7 +522,7 @@ function(pw_set_module_config NAME LIBRARY)
   set("${NAME}" "${LIBRARY}" CACHE STRING "Config for ${NAME}" FORCE)
 endfunction(pw_set_module_config)
 
-set(pw_unit_test_MAIN pw_unit_test.main CACHE STRING
+set(pw_unit_test_MAIN pw_unit_test.simple_printing_main CACHE STRING
     "Implementation of a main function for ``pw_test`` unit test binaries.")
 
 set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test.light CACHE STRING

@@ -19,6 +19,7 @@
 
 #include "pw_preprocessor/compiler.h"
 #include "pw_unit_test/event_handler.h"
+#include "pw_unit_test/googletest_style_event_handler.h"
 
 namespace pw::unit_test {
 
@@ -32,7 +33,7 @@ namespace pw::unit_test {
 //     at ../path/to/my/file_test.cc:4831
 //   <<< Test MyTestSuite.TestCase1 failed
 //
-class SimplePrintingEventHandler : public EventHandler {
+class SimplePrintingEventHandler : public GoogleTestStyleEventHandler {
  public:
   // Function for writing output as a string.
   using WriteFunction = void (*)(const std::string_view& string,
@@ -41,22 +42,17 @@ class SimplePrintingEventHandler : public EventHandler {
   // Instantiates an event handler with a function to which to output results.
   // If verbose is set, information for successful tests is written as well as
   // failures.
-  SimplePrintingEventHandler(WriteFunction write_function, bool verbose = false)
-      : write_(write_function), verbose_(verbose) {}
-
-  void RunAllTestsStart() override;
-  void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) override;
-  void TestCaseStart(const TestCase& test_case) override;
-  void TestCaseEnd(const TestCase& test_case, TestResult result) override;
-  void TestCaseExpect(const TestCase& test_case,
-                      const TestExpectation& expectation) override;
-  void TestCaseDisabled(const TestCase& test_case) override;
+  constexpr SimplePrintingEventHandler(WriteFunction write_function,
+                                       bool verbose = false)
+      : GoogleTestStyleEventHandler(verbose), write_(write_function), buffer_ {}
+  {}
 
  private:
-  void WriteLine(const char* format, ...) PW_PRINTF_FORMAT(2, 3);
+  void WriteLine(const char* format, ...) override PW_PRINTF_FORMAT(2, 3);
+
+  void Write(const char* content) override { write_(content, false); }
 
   WriteFunction write_;
-  bool verbose_;
   char buffer_[512];
 };
 

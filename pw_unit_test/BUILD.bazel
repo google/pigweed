@@ -67,6 +67,16 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "googletest_style_event_handler",
+    srcs = ["googletest_style_event_handler.cc"],
+    hdrs = ["public/pw_unit_test/googletest_style_event_handler.h"],
+    deps = [
+        ":event_handler",
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
     name = "simple_printing_event_handler",
     srcs = ["simple_printing_event_handler.cc"],
     hdrs = [
@@ -76,8 +86,39 @@ pw_cc_library(
         "public",
     ],
     deps = [
-        ":event_handler",
+        ":googletest_style_event_handler",
         "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
+    name = "simple_printing_main",
+    srcs = [
+        "simple_printing_main.cc",
+    ],
+    deps = [
+        ":pw_unit_test",
+        ":simple_printing_event_handler",
+        "//pw_span",
+        "//pw_sys_io",
+    ],
+)
+
+pw_cc_library(
+    name = "printf_event_handler",
+    hdrs = ["public/pw_unit_test/printf_event_handler.h"],
+    deps = [
+        ":googletest_style_event_handler",
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
+    name = "printf_main",
+    srcs = ["printf_main.cc"],
+    deps = [
+        ":printf_event_handler",
+        ":pw_unit_test",
     ],
 )
 
@@ -93,7 +134,7 @@ pw_cc_library(
         "public",
     ],
     deps = [
-        ":event_handler",
+        ":googletest_style_event_handler",
         "//pw_log",
     ],
 )
@@ -106,19 +147,6 @@ pw_cc_binary(
     deps = [
         ":logging_event_handler",
         "//pw_unit_test",
-    ],
-)
-
-pw_cc_library(
-    name = "main",
-    srcs = [
-        "simple_printing_main.cc",
-    ],
-    deps = [
-        ":pw_unit_test",
-        ":simple_printing_event_handler",
-        "//pw_span",
-        "//pw_sys_io",
     ],
 )
 
