@@ -491,12 +491,12 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
 
       // Convert result type.
       if (result.is_error()) {
-        self->OnScoConnectionResult(std::move(request), fpromise::error(result.error()));
+        self->OnScoConnectionResult(std::move(request), result.take_error());
         return;
       }
       self->OnScoConnectionResult(
           std::move(request),
-          fpromise::ok(std::make_pair(result.take_value(), /*parameter index=*/0u)));
+          fitx::ok(std::make_pair(std::move(result.value()), /*parameter index=*/0u)));
     };
 
     request->request_handle =
@@ -636,13 +636,13 @@ void ProfileServer::OnScoConnectionResult(
     }
 
     bt_log(INFO, "fidl", "%s: SCO connection failed (status: %s)", __FUNCTION__,
-           bt::HostErrorToString(result.error()).c_str());
+           bt::HostErrorToString(result.error_value()).c_str());
 
     fidlbredr::ScoErrorCode fidl_error = fidlbredr::ScoErrorCode::FAILURE;
-    if (result.error() == bt::HostError::kCanceled) {
+    if (result.error_value() == bt::HostError::kCanceled) {
       fidl_error = fidlbredr::ScoErrorCode::CANCELLED;
     }
-    if (result.error() == bt::HostError::kParametersRejected) {
+    if (result.error_value() == bt::HostError::kParametersRejected) {
       fidl_error = fidlbredr::ScoErrorCode::PARAMETERS_REJECTED;
     }
     receiver->Error(fidl_error);

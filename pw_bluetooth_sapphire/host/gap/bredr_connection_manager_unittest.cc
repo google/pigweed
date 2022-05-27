@@ -3479,13 +3479,14 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionWithoutExistingBrEdrConnectionFails) {
-  sco::ScoConnectionManager::OpenConnectionResult conn_result;
+  std::optional<sco::ScoConnectionManager::OpenConnectionResult> conn_result;
   auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
   auto handle = connmgr()->OpenScoConnection(
       PeerId(1), {hci_spec::SynchronousConnectionParameters{}}, std::move(conn_cb));
   EXPECT_FALSE(handle.has_value());
-  ASSERT_TRUE(conn_result.is_error());
-  EXPECT_EQ(conn_result.error(), HostError::kNotFound);
+  ASSERT_TRUE(conn_result.has_value());
+  ASSERT_TRUE(conn_result->is_error());
+  EXPECT_EQ(conn_result->error_value(), HostError::kNotFound);
 }
 
 TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
@@ -3507,15 +3508,16 @@ TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
       testing::EnhancedSetupSynchronousConnectionPacket(kConnectionHandle, kScoConnectionParams),
       &setup_status_packet, &conn_complete_packet);
 
-  sco::ScoConnectionManager::OpenConnectionResult conn_result;
+  std::optional<sco::ScoConnectionManager::OpenConnectionResult> conn_result;
   auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
 
   auto req_handle =
       connmgr()->OpenScoConnection(peer->identifier(), {kScoConnectionParams}, std::move(conn_cb));
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(conn_result.is_ok());
-  EXPECT_EQ(conn_result.value()->handle(), kScoConnectionHandle);
+  ASSERT_TRUE(conn_result.has_value());
+  ASSERT_TRUE(conn_result->is_ok());
+  EXPECT_EQ(conn_result->value()->handle(), kScoConnectionHandle);
 
   // Disconnecting from a peer should first disconnect SCO connections, then disconnect the ACL
   // connection.
@@ -3539,7 +3541,7 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
   sco_conn_params.packet_types = static_cast<uint16_t>(GetParam() == hci_spec::LinkType::kSCO
                                                            ? hci_spec::ScoPacketTypeBits::kHv3
                                                            : hci_spec::ScoPacketTypeBits::kEv3);
-  sco::ScoConnectionManager::AcceptConnectionResult conn_result;
+  std::optional<sco::ScoConnectionManager::AcceptConnectionResult> conn_result;
   auto conn_cb = [&conn_result](sco::ScoConnectionManager::AcceptConnectionResult result) {
     EXPECT_TRUE(result.is_ok());
     conn_result = std::move(result);
@@ -3558,7 +3560,7 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(peer->address(), sco_conn_params),
       &accept_status_packet);
   RunLoopUntilIdle();
-  EXPECT_TRUE(conn_result.is_pending());
+  EXPECT_FALSE(conn_result.has_value());
 
   constexpr hci_spec::ConnectionHandle kScoConnectionHandle = 0x41;
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
@@ -3566,8 +3568,9 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
       hci_spec::StatusCode::kSuccess));
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(conn_result.is_ok());
-  EXPECT_EQ(conn_result.value().first->handle(), kScoConnectionHandle);
+  ASSERT_TRUE(conn_result.has_value());
+  ASSERT_TRUE(conn_result->is_ok());
+  EXPECT_EQ(conn_result->value().first->handle(), kScoConnectionHandle);
 
   // Disconnecting from a peer should first disconnect SCO connections, then disconnect the ACL
   // connection.

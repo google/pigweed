@@ -104,7 +104,7 @@ ScoConnectionManager::~ScoConnectionManager() {
     // RequestHandle).
     ConnectionRequest request = std::move(in_progress_request_.value());
     in_progress_request_.reset();
-    request.callback(fpromise::error(HostError::kCanceled));
+    request.callback(fitx::error(HostError::kCanceled));
   }
 }
 
@@ -114,10 +114,10 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::OpenConnection(
                       [cb = std::move(callback)](ConnectionResult result) mutable {
                         // Convert result type.
                         if (result.is_error()) {
-                          cb(fpromise::error(result.take_error()));
+                          cb(fitx::error(result.take_error()));
                           return;
                         }
-                        cb(fpromise::ok(std::move(result.value().first)));
+                        cb(fitx::ok(std::move(result.value().first)));
                       });
 }
 
@@ -160,7 +160,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
           "SCO connection failed to be established; trying next parameters if available (peer: %s)",
           bt_str(peer_id_))) {
     // A request must be in progress for this event to be generated.
-    CompleteRequestOrTryNextParameters(fpromise::error(HostError::kFailed));
+    CompleteRequestOrTryNextParameters(fitx::error(HostError::kFailed));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -194,7 +194,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
                 connection_handle, bt_str(peer_id_));
 
   CompleteRequest(
-      fpromise::ok(std::make_pair(std::move(conn), in_progress_request_->current_param_index)));
+      fitx::ok(std::make_pair(std::move(conn), in_progress_request_->current_param_index)));
 
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
@@ -301,7 +301,7 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
   ZX_ASSERT(cb);
 
   if (params.empty()) {
-    cb(fpromise::error(HostError::kInvalidParameters));
+    cb(fitx::error(HostError::kInvalidParameters));
     return RequestHandle([]() {});
   }
 
@@ -351,7 +351,7 @@ void ScoConnectionManager::TryCreateNextConnection() {
         return;
       }
       bt_is_error(status, WARN, "sco", "SCO setup connection command failed");
-      self->CompleteRequest(fpromise::error(HostError::kFailed));
+      self->CompleteRequest(fitx::error(HostError::kFailed));
     };
 
     SendCommandWithStatusCallback(std::move(packet), std::move(status_cb));
@@ -370,14 +370,14 @@ void ScoConnectionManager::CompleteRequestOrTryNextParameters(ConnectionResult r
   // Check if all accept request parameters have been exhausted.
   if (in_progress_request_->current_param_index + 1 >= in_progress_request_->parameters.size()) {
     bt_log(DEBUG, "sco", "all accept SCO parameters exhausted");
-    CompleteRequest(fpromise::error(HostError::kParametersRejected));
+    CompleteRequest(fitx::error(HostError::kParametersRejected));
     return;
   }
 
   // If a request was queued after the connection request event (blocking cancelation at that time),
   // cancel the current request.
   if (queued_request_) {
-    CompleteRequest(fpromise::error(HostError::kCanceled));
+    CompleteRequest(fitx::error(HostError::kCanceled));
     return;
   }
 
@@ -441,7 +441,7 @@ void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
     // RequestHandle).
     ConnectionRequest request = std::move(queued_request_.value());
     queued_request_.reset();
-    request.callback(fpromise::error(HostError::kCanceled));
+    request.callback(fitx::error(HostError::kCanceled));
     return;
   }
 
@@ -450,7 +450,7 @@ void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
   if (in_progress_request_ && in_progress_request_->id == id && !in_progress_request_->initiator &&
       !in_progress_request_->received_request) {
     bt_log(INFO, "gap-sco", "Cancelling in progress SCO request (id: %zu)", id);
-    CompleteRequest(fpromise::error(HostError::kCanceled));
+    CompleteRequest(fitx::error(HostError::kCanceled));
   }
 }
 
