@@ -331,9 +331,6 @@ class BrEdrConnectionManager final {
 
   l2cap::ChannelManager* l2cap_;
 
-  // Interregator for new connections to pass.
-  BrEdrInterrogator interrogator_;
-
   // Discoverer for SDP services
   sdp::ServiceDiscoverer discoverer_;
 

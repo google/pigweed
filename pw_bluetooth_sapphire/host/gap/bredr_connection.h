@@ -12,6 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection.h"
@@ -43,6 +44,8 @@ class BrEdrConnection final {
 
   BrEdrConnection(BrEdrConnection&&) = default;
   BrEdrConnection& operator=(BrEdrConnection&&) = default;
+
+  void Interrogate(BrEdrInterrogator::ResultCallback callback);
 
   // Called after interrogation completes to mark this connection as available for upper layers,
   // i.e. L2CAP. Also signals any requesters with a successful status and this
@@ -95,6 +98,7 @@ class BrEdrConnection final {
   std::unique_ptr<PairingState> pairing_state_;
   l2cap::ChannelManager* l2cap_;
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
+  std::unique_ptr<BrEdrInterrogator> interrogator_;
   // Time this object was constructed.
   zx::time create_time_;
   // Called when an error occurs and this connection should be disconnected.

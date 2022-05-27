@@ -31,8 +31,8 @@ BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer,
           fit::bind_member<&BrEdrConnection::OnPairingStateStatus>(this))),
       l2cap_(l2cap),
       sco_manager_(std::make_unique<sco::ScoConnectionManager>(
-          peer_id_, link_->handle(), link_->peer_address(), link_->local_address(),
-          std::move(transport))),
+          peer_id_, link_->handle(), link_->peer_address(), link_->local_address(), transport)),
+      interrogator_(new BrEdrInterrogator(peer_, link_->handle(), std::move(transport))),
       create_time_(async::Now(async_get_default_dispatcher())),
       disconnect_cb_(std::move(disconnect_cb)),
       peer_init_token_(request_->take_peer_init_token()),
@@ -50,6 +50,10 @@ BrEdrConnection::~BrEdrConnection() {
   sco_manager_.reset();
   pairing_state_.reset();
   link_.reset();
+}
+
+void BrEdrConnection::Interrogate(BrEdrInterrogator::ResultCallback callback) {
+  interrogator_->Start(std::move(callback));
 }
 
 void BrEdrConnection::OnInterrogationComplete() {

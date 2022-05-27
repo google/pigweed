@@ -141,7 +141,6 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
       cache_(peer_cache),
       local_address_(local_address),
       l2cap_(l2cap),
-      interrogator_(cache_, hci_),
       page_scan_interval_(0),
       page_scan_window_(0),
       use_interlaced_scan_(use_interlaced_scan),
@@ -566,19 +565,15 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
       inspect_properties_.connections_node_.UniqueName(kInspectConnectionNodeNamePrefix));
 
   // Interrogate this peer to find out its version/capabilities.
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  interrogator_.Start(peer->identifier(), handle, [peer, self, handle](auto status) {
-    if (!self) {
-      return;
-    }
+  connection.Interrogate([this, peer = peer->GetWeakPtr(), handle](hci::Result<> result) {
     bt_log_scope("peer: %s, handle: %#.4x", bt_str(peer->identifier()), handle);
-    if (bt_is_error(status, WARN, "gap-bredr", "interrogation failed, dropping connection")) {
+    if (bt_is_error(result, WARN, "gap-bredr", "interrogation failed, dropping connection")) {
       // If this connection was locally requested, requester(s) are notified by the disconnection.
-      self->Disconnect(peer->identifier(), DisconnectReason::kInterrogationFailed);
+      Disconnect(peer->identifier(), DisconnectReason::kInterrogationFailed);
       return;
     }
     bt_log(INFO, "gap-bredr", "interrogation complete");
-    self->CompleteConnectionSetup(peer, handle);
+    CompleteConnectionSetup(peer.get(), handle);
   });
 
   // If this was our in-flight request, close it

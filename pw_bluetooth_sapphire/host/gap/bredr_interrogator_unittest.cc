@@ -48,7 +48,15 @@ class BrEdrInterrogatorTest : public TestingBase {
     TestingBase::SetUp();
 
     peer_cache_ = std::make_unique<PeerCache>();
-    interrogator_ = std::make_unique<BrEdrInterrogator>(peer_cache_.get(), transport()->WeakPtr());
+    peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
+    EXPECT_FALSE(peer_->name());
+    EXPECT_FALSE(peer_->version());
+    EXPECT_FALSE(peer_->features().HasPage(0));
+    EXPECT_FALSE(peer_->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
+    EXPECT_EQ(0u, peer_->features().last_page_number());
+
+    interrogator_ = std::make_unique<BrEdrInterrogator>(peer_->GetWeakPtr(), kConnectionHandle,
+                                                        transport()->WeakPtr());
 
     StartTestDevice();
   }
@@ -62,13 +70,14 @@ class BrEdrInterrogatorTest : public TestingBase {
   }
 
  protected:
-  void QueueSuccessfulInterrogation(DeviceAddress addr, hci_spec::ConnectionHandle conn) const {
+  void QueueSuccessfulInterrogation(DeviceAddress addr, hci_spec::ConnectionHandle conn,
+                                    bool extended_features = true) const {
     const DynamicByteBuffer remote_name_request_complete_packet =
         testing::RemoteNameRequestCompletePacket(addr);
     const DynamicByteBuffer remote_version_complete_packet =
         testing::ReadRemoteVersionInfoCompletePacket(conn);
     const DynamicByteBuffer remote_supported_complete_packet =
-        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, /*extended_features=*/true);
+        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, extended_features);
 
     EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
                           &kRemoteNameRequestRsp, &remote_name_request_complete_packet);
@@ -76,7 +85,9 @@ class BrEdrInterrogatorTest : public TestingBase {
                           &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
     EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteSupportedFeaturesPacket(conn),
                           &kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet);
-    QueueSuccessfulReadRemoteExtendedFeatures(conn);
+    if (extended_features) {
+      QueueSuccessfulReadRemoteExtendedFeatures(conn);
+    }
   }
 
   void QueueSuccessfulReadRemoteExtendedFeatures(hci_spec::ConnectionHandle conn) const {
@@ -91,11 +102,16 @@ class BrEdrInterrogatorTest : public TestingBase {
                           &kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet);
   }
 
+  void DestroyInterrogator() { interrogator_.reset(); }
+
+  Peer* peer() const { return peer_; }
+
   PeerCache* peer_cache() const { return peer_cache_.get(); }
 
   BrEdrInterrogator* interrogator() const { return interrogator_.get(); }
 
  private:
+  Peer* peer_ = nullptr;
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<BrEdrInterrogator> interrogator_;
 
@@ -121,49 +137,34 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestCo
   EXPECT_CMD_PACKET_OUT(test_device(),
                         testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
-
   hci::Result<> status = fitx::ok();
-  interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
-
   EXPECT_TRUE(status.is_error());
 }
 
 TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
-  EXPECT_FALSE(peer->name());
-  EXPECT_FALSE(peer->version());
-  EXPECT_FALSE(peer->features().HasPage(0));
-  EXPECT_FALSE(peer->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
-  EXPECT_EQ(0u, peer->features().last_page_number());
-
   std::optional<hci::Result<>> status;
-  interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fitx::ok(), *status);
 
-  EXPECT_TRUE(peer->name());
-  EXPECT_TRUE(peer->version());
-  EXPECT_TRUE(peer->features().HasPage(0));
-  EXPECT_TRUE(peer->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
-  EXPECT_EQ(2u, peer->features().last_page_number());
+  EXPECT_TRUE(peer()->name());
+  EXPECT_TRUE(peer()->version());
+  EXPECT_TRUE(peer()->features().HasPage(0));
+  EXPECT_TRUE(peer()->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
+  EXPECT_EQ(2u, peer()->features().last_page_number());
 }
 
 TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
-
   std::optional<hci::Result<>> status;
-  interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
@@ -171,8 +172,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   status = std::nullopt;
 
   QueueSuccessfulReadRemoteExtendedFeatures(kConnectionHandle);
-  interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fitx::ok(), *status);
@@ -187,15 +187,50 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
   EXPECT_CMD_PACKET_OUT(test_device(),
                         testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
 
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
-  EXPECT_FALSE(peer->name());
-
   std::optional<hci::Result<>> status;
-  interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
   EXPECT_FALSE(status->is_ok());
+}
+
+TEST_F(BrEdrInterrogatorTest, Cancel) {
+  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle, /*extended_features=*/false);
+
+  std::optional<hci::Result<>> result;
+  interrogator()->Start([&](hci::Result<> status) { result = status; });
+  EXPECT_FALSE(result.has_value());
+
+  interrogator()->Cancel();
+
+  // The result callback should be called synchronously.
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(result.value(), ToResult(HostError::kCanceled));
+  result.reset();
+
+  // Events should be ignored.
+  RunLoopUntilIdle();
+  EXPECT_FALSE(result.has_value());
+}
+
+TEST_F(BrEdrInterrogatorTest, InterrogatorDestroyedInCompleteCallback) {
+  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
+
+  std::optional<hci::Result<>> status;
+  interrogator()->Start([this, &status](hci::Result<> cb_status) {
+    status = cb_status;
+    DestroyInterrogator();
+  });
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_ok());
+
+  EXPECT_TRUE(peer()->name());
+  EXPECT_TRUE(peer()->version());
+  EXPECT_TRUE(peer()->features().HasPage(0));
+  EXPECT_TRUE(peer()->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
+  EXPECT_EQ(2u, peer()->features().last_page_number());
 }
 }  // namespace bt::gap
