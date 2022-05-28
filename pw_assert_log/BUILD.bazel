@@ -52,6 +52,7 @@ pw_cc_library(
         "public",
     ],
     deps = [
+        "//pw_log",
         "//pw_preprocessor",
     ],
 )
