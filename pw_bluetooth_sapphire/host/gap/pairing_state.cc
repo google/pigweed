@@ -130,7 +130,7 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
     // We set the state_ to Idle instead of Failed because it is possible that a PairingDelegate
     // will be set before the next pairing attempt, allowing it to succeed.
     state_ = State::kIdle;
-    SignalStatus(ToResult(HostError::kNotReady));
+    SignalStatus(ToResult(HostError::kNotReady), __func__);
     return std::nullopt;
   }
 
@@ -288,10 +288,9 @@ void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
       pairing_delegate()->CompletePairing(peer_id(), ToResult(HostError::kFailed));
     }
     state_ = State::kFailed;
-    SignalStatus(result);
+    SignalStatus(result, __func__);
     return;
   }
-
   // Handle successful Authentication Complete events that are not expected.
   if (state() != State::kWaitPairingComplete) {
     FailWithUnexpectedEvent(__func__);
@@ -370,7 +369,8 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
              "Got Changed Combination key but link %#.4x (id: %s) has no current key", handle(),
              bt_str(peer_id()));
       state_ = State::kFailed;
-      SignalStatus(ToResult(HostError::kInsufficientSecurity));
+      SignalStatus(ToResult(HostError::kInsufficientSecurity),
+                   "OnLinkKeyNotification with no current key");
       return;
     }
 
@@ -395,7 +395,8 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     bt_log(WARN, "gap-bredr", "Link key (type %hhu) for %#.4x (id: %s) has insufficient security",
            key_type, handle(), bt_str(peer_id()));
     state_ = State::kFailed;
-    SignalStatus(ToResult(HostError::kInsufficientSecurity));
+    SignalStatus(ToResult(HostError::kInsufficientSecurity),
+                 "OnLinkKeyNotification with insufficient security");
     return;
   }
 
@@ -407,7 +408,8 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     bt_log(WARN, "gap-bredr", "Expected %sauthenticated link key for %#.4x (id: %s), got %hhu",
            current_pairing_->authenticated ? "" : "un", handle(), bt_str(peer_id()), key_type);
     state_ = State::kFailed;
-    SignalStatus(ToResult(HostError::kInsufficientSecurity));
+    SignalStatus(ToResult(HostError::kInsufficientSecurity),
+                 "OnLinkKeyNotification with incorrect link authorization");
     return;
   }
 
@@ -440,7 +442,7 @@ void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
       bt_is_error(result, INFO, "gap-bredr", "Authentication failed on link %#.4x (id: %s)",
                   handle(), bt_str(peer_id()))) {
     state_ = State::kFailed;
-    SignalStatus(result);
+    SignalStatus(result, __func__);
     return;
   }
 
@@ -479,7 +481,7 @@ void PairingState::OnEncryptionChange(hci::Result<bool> result) {
     state_ = State::kFailed;
   }
 
-  SignalStatus(result.is_ok() ? hci::Result<>(fitx::ok()) : result.take_error());
+  SignalStatus(result.is_ok() ? hci::Result<>(fitx::ok()) : result.take_error(), __func__);
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
@@ -577,9 +579,9 @@ PairingState::State PairingState::GetStateForPairingEvent(hci_spec::EventCode ev
   return State::kFailed;
 }
 
-void PairingState::SignalStatus(hci::Result<> status) {
-  bt_log(INFO, "gap-bredr", "Signaling pairing listeners for %#.4x (id: %s) with %s", handle(),
-         bt_str(peer_id()), bt_str(status));
+void PairingState::SignalStatus(hci::Result<> status, const char* caller) {
+  bt_log(INFO, "gap-bredr", "Signaling pairing listeners for %#.4x (id: %s) from %s with %s",
+         handle(), bt_str(peer_id()), caller, bt_str(status));
 
   // Collect the callbacks before invoking them so that CompletePairingRequests() can safely access
   // members.
@@ -677,7 +679,7 @@ void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
   bt_log(ERROR, "gap-bredr", "%#.4x (id: %s): Unexpected event %s while in state \"%s\"", handle(),
          bt_str(peer_id()), handler_name, ToString(state()));
   state_ = State::kFailed;
-  SignalStatus(ToResult(HostError::kNotSupported));
+  SignalStatus(ToResult(HostError::kNotSupported), __func__);
 }
 
 PairingAction GetInitiatorPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {

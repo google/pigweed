@@ -373,7 +373,8 @@ class PairingState final {
   // Call the permanent status callback this object was created with as well as any completed
   // request callbacks from local initiators. Resets the current pairing and may initiate a new
   // pairing if any requests have not been completed.
-  void SignalStatus(hci::Result<> status);
+  // |caller| is used for logging.
+  void SignalStatus(hci::Result<> status, const char* caller);
 
   // Determines which pairing requests have been completed by the current link key and/or status and
   // removes them from the queue. If any pairing requests were not completed, starts a new pairing
