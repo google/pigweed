@@ -262,6 +262,9 @@ class span : public pw_span_internal::ExtentStorage<Extent> {
     _PW_SPAN_ASSERT(Extent == dynamic_extent || Extent == size);
   }
 
+  // Prevent construction from nullptr, which is disallowed by C++20's std::span
+  constexpr span(std::nullptr_t data, size_t size) = delete;
+
   // Artificially templatized to break ambiguity for span(ptr, 0).
   template <typename = void>
   constexpr span(T* begin, T* end) noexcept : span(begin, end - begin) {
