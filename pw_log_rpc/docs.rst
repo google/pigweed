@@ -296,8 +296,8 @@ conditions must be met for the rule to be met.
 - ``module_equals``: the condition is met if this byte array is empty, or the
   log module equals the contents of this byte array.
 
-- ``thread``: the condition is met if this byte array is empty or the log
-  thread equals the contents of this byte array.
+- ``thread_equals``: the condition is met if this byte array is empty or the
+  log thread equals the contents of this byte array.
 
 Filter
 ------

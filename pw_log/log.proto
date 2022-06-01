@@ -199,6 +199,9 @@ message FilterRule {
     DROP = 2;      // Drop the log entry if all conditions are met
   };
   Action action = 4;
+
+  // Condition 4: (thread_equals.size() == 0 || log.thread == thread_equals).
+  optional bytes thread_equals = 5 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 }
 
 // A filter is a series of rules. First matching rule wins.

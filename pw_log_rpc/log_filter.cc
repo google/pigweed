@@ -25,7 +25,8 @@ namespace {
 bool IsRuleMet(const Filter::Rule& rule,
                uint32_t level,
                ConstByteSpan module,
-               uint32_t flags) {
+               uint32_t flags,
+               ConstByteSpan thread) {
   if (level < static_cast<uint32_t>(rule.level_greater_than_or_equal)) {
     return false;
   }
@@ -36,6 +37,12 @@ bool IsRuleMet(const Filter::Rule& rule,
                                                  module.end(),
                                                  rule.module_equals.begin(),
                                                  rule.module_equals.end())) {
+    return false;
+  }
+  if (!rule.thread_equals.empty() && !std::equal(thread.begin(),
+                                                 thread.end(),
+                                                 rule.thread_equals.begin(),
+                                                 rule.thread_equals.end())) {
     return false;
   }
   return true;
@@ -82,6 +89,14 @@ Status Filter::UpdateRulesFromProto(ConstByteSpan buffer) {
           PW_TRY(rule_decoder.ReadUint32(
               reinterpret_cast<uint32_t*>(&rules_[i].action)));
           break;
+        case log::FilterRule::Fields::THREAD_EQUALS: {
+          ConstByteSpan thread;
+          PW_TRY(rule_decoder.ReadBytes(&thread));
+          if (thread.size() > rules_[i].thread_equals.max_size()) {
+            return Status::InvalidArgument();
+          }
+          rules_[i].thread_equals.assign(thread.begin(), thread.end());
+        } break;
       }
     }
   }
@@ -95,6 +110,7 @@ bool Filter::ShouldDropLog(ConstByteSpan entry) const {
 
   uint32_t log_level = 0;
   ConstByteSpan log_module;
+  ConstByteSpan log_thread;
   uint32_t log_flags = 0;
   protobuf::Decoder decoder(entry);
   while (decoder.Next().ok()) {
@@ -110,6 +126,9 @@ bool Filter::ShouldDropLog(ConstByteSpan entry) const {
       case log::LogEntry::Fields::FLAGS:
         decoder.ReadUint32(&log_flags).IgnoreError();
         break;
+      case log::LogEntry::Fields::THREAD:
+        decoder.ReadBytes(&log_thread).IgnoreError();
+        break;
       default:
         break;
     }
@@ -120,7 +139,7 @@ bool Filter::ShouldDropLog(ConstByteSpan entry) const {
     if (rule.action == Filter::Rule::Action::kInactive) {
       continue;
     }
-    if (IsRuleMet(rule, log_level, log_module, log_flags)) {
+    if (IsRuleMet(rule, log_level, log_module, log_flags, log_thread)) {
       return rule.action == Filter::Rule::Action::kDrop;
     }
   }

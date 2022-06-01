@@ -50,6 +50,9 @@ class Filter {
 
     // Checks if the log entry module equals this value when not empty.
     Vector<std::byte, cfg::kMaxModuleNameBytes> module_equals{};
+
+    // Checks if the log entry thread equals this value when not empty.
+    Vector<std::byte, cfg::kMaxThreadNameBytes> thread_equals{};
   };
 
   Filter(std::span<const std::byte> id, std::span<Rule> rules) : rules_(rules) {
