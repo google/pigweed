@@ -33,7 +33,7 @@ _host_common = {
 
   # Configure backend for assert facade.
   pw_assert_BACKEND = "$dir_pw_assert_basic"
-  pw_assert_LITE_BACKEND = "$dir_pw_assert:print_and_abort_lite_backend"
+  pw_assert_LITE_BACKEND = "$dir_pw_assert:print_and_abort_assert_backend"
 
   # Configure backend for logging facade.
   pw_log_BACKEND = "$dir_pw_log_basic"
@@ -389,7 +389,7 @@ pw_internal_host_toolchains = [
       default_configs += _clang_default_configs
       default_configs += [ "$dir_pw_build:cpp14" ]
 
-      pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_backend"
+      pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_check_backend"
       pw_log_BACKEND = "$dir_pw_log_null"
       pw_unit_test_MAIN = "$dir_pw_unit_test:printf_main"
     }

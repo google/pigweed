@@ -36,6 +36,9 @@ pw_facade("handler") {
   public = [ "public/pw_assert_basic/handler.h" ]
 }
 
+# TODO(pwbug/246): This backend implements pw_assert's check backend and the
+# temporary compatibility C ABI (pw_assert_HandleFailure()).
+#
 # pw_assert_basic only provides the backend's interface. The implementation is
 # pulled in through pw_build_LINK_DEPS.
 pw_source_set("pw_assert_basic") {

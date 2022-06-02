@@ -14,7 +14,7 @@
 #pragma once
 
 #include "pw_assert/config.h"  // For PW_ASSERT_ENABLE_DEBUG
-#include "pw_assert_backend/assert_lite_backend.h"
+#include "pw_assert_backend/assert_backend.h"
 
 // A header- and constexpr-safe version of PW_CHECK().
 //

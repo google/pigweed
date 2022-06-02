@@ -609,7 +609,7 @@ is providing a macro-based backend API for the ``PW_ASSERT()`` and
   are extremely confusingly similar and are NOT interchangeable.
 
 A macro-based backend for the ``PW_ASSERT()`` macros must provide the following
-macro in a header at ``pw_assert_backend/assert_lite_backend.h``.
+macro in a header at ``pw_assert_backend/assert_backend.h``.
 
 .. cpp:function:: PW_ASSERT_HANDLE_FAILURE(expression)
 
