@@ -15,6 +15,7 @@
 
 #include <optional>
 #include <span>
+#include <cstdint>
 
 #include "pw_bytes/span.h"
 
