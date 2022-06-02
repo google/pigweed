@@ -111,12 +111,4 @@
 //   Note that for the assert failures, the handler should assume the assert
 //   has already failed (the facade checks the condition before delegating).
 //
-
-// Temporarily check for the presence of the new header for backwards
-// compatibilty. This will be removed once users migrate.
-#if __has_include("pw_assert_backend/check_backend.h")
 #include "pw_assert_backend/check_backend.h"
-#else
-// If the new header doesn't exist, use the old header.
-#include "pw_assert_backend/assert_backend.h"
-#endif  // __has_include("pw_assert_backend/check_backend.h")
