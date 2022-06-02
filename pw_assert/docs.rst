@@ -522,7 +522,7 @@ This facade module (``pw_assert``) does not provide a backend. See
 
 The backend must provide the header
 
-``pw_assert_backend/backend.h``
+``pw_assert_backend/check_backend.h``
 
 and that header must define the following macros:
 

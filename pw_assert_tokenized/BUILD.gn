@@ -72,7 +72,7 @@ pw_source_set("check_backend") {
     "$dir_pw_tokenizer",
   ]
   public = [
-    "check_public_overrides/pw_assert_backend/assert_backend.h",
+    "check_public_overrides/pw_assert_backend/check_backend.h",
     "public/pw_assert_tokenized/check_tokenized.h",
   ]
 }

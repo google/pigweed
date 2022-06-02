@@ -130,7 +130,7 @@ pw_source_set("print_and_abort_backend") {
   public_configs = [ ":print_and_abort_backend_overrides" ]
   public_deps = [ ":print_and_abort" ]
   public =
-      [ "print_and_abort_public_overrides/pw_assert_backend/assert_backend.h" ]
+      [ "print_and_abort_public_overrides/pw_assert_backend/check_backend.h" ]
 }
 
 group("print_and_abort_backend.impl") {

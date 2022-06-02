@@ -36,7 +36,7 @@ pw_source_set("pw_assert_log") {
     ":default_config",
   ]
   public_deps = [ "$dir_pw_log" ]
-  public = [ "public_overrides/pw_assert_backend/assert_backend.h" ]
+  public = [ "public_overrides/pw_assert_backend/check_backend.h" ]
   deps = [
     "$dir_pw_assert:config",
     "$dir_pw_assert:facade",

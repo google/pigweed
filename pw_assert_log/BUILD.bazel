@@ -28,7 +28,7 @@ pw_cc_library(
     ],
     hdrs = [
         "public/pw_assert_log/assert_log.h",
-        "public_overrides/pw_assert_backend/assert_backend.h",
+        "public_overrides/pw_assert_backend/check_backend.h",
     ],
     includes = [
         "public",

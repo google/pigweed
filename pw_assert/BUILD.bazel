@@ -76,7 +76,7 @@ pw_cc_library(
 pw_cc_library(
     name = "print_and_abort_backend",
     hdrs =
-        ["print_and_abort_public_overrides/pw_assert_backend/assert_backend.h"],
+        ["print_and_abort_public_overrides/pw_assert_backend/check_backend.h"],
     includes = ["print_and_abort_public_overrides"],
     deps = [":print_and_abort"],
 )
