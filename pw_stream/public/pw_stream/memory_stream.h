@@ -62,8 +62,8 @@ class MemoryWriter : public SeekableWriter {
 
   size_t capacity() const { return dest_.size(); }
 
-  const std::byte* begin() const { return dest_.begin(); }
-  const std::byte* end() const { return dest_.begin() + position_; }
+  auto begin() const { return dest_.begin(); }
+  auto end() const { return dest_.begin() + position_; }
 
  private:
   size_t ConservativeLimit(LimitType type) const override {
