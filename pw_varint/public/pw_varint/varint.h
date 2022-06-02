@@ -15,6 +15,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <limits>
 
 #include "pw_preprocessor/compiler.h"
 
