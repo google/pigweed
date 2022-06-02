@@ -24,13 +24,13 @@ Pigweed contribution overview
 
 One-time contributor setup
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-#. Sign the `Contributor License Agreement <https://cla.developers.google.com/>`_.
+#. Sign the
+   `Contributor License Agreement <https://cla.developers.google.com/>`_.
 #. Verify that your Git user email (git config user.email) is either Google
    Account email or an Alternate email for the Google account used to sign
    the CLA (Manage Google account → Personal Info → email).
-#. Sign in to `Gerrit <https://pigweed-review.googlesource.com/>`_ to create
-   an account using the same Google account you used above.
-#. Obtain a login cookie from Gerrit's `new-password <https://pigweed-review.googlesource.com/new-password>`_ page
+#. Obtain a login cookie from Gerrit's
+   `new-password <https://pigweed-review.googlesource.com/new-password>`_ page
 #. Install the Gerrit commit hook to automatically add a ``Change-Id: ...``
    line to your commit.
 #. Install the Pigweed presubmit check hook with ``pw presubmit --install``.
@@ -45,7 +45,8 @@ Change submission process
 #. Add ``gwsq-pigweed@pigweed.google.com.iam.gserviceaccount.com`` as a
    reviewer. This will automatically choose an appropriate person to review the
    change.
-#. Address any reviewer feedback by amending the commit (``git commit --amend``).
+#. Address any reviewer feedback by amending the commit
+   (``git commit --amend``).
 #. Submit change to CI builders to merge. If you are not part of Pigweed's
    core team, you can ask the reviewer to add the `+2 CQ` vote, which will
    trigger a rebase and submit once the builders pass.
@@ -128,8 +129,8 @@ Pigweed commit messages should conform to the following style:
    When changes cross a few modules, include them with the syntax shown above.
 
 
-**Yes**: targets are effectively modules, even though they're nested, so they get a
-``/`` character.
+**Yes**: targets are effectively modules, even though they're nested, so they
+get a ``/`` character.
 
 .. code:: none
 
@@ -425,6 +426,44 @@ track, e.g.
 
 When tracking an upstream branch, ``pw presubmit`` will only run checks on the
 modified files, rather than the entire repository.
+
+Presubmit flags
+^^^^^^^^^^^^^^^
+``pw presubmit`` can accept a number of flags
+
+``-b commit, --base commit``
+  Git revision against which to diff for changed files. Default is the tracking
+  branch of the current branch. Set commit to "HEAD" to check files added or
+  modified but not yet commited. Cannot be used with --full.
+
+``--full``
+  Run presubmit on all files, not just changed files. Cannot be used with
+  --base.
+
+``-e regular_expression, --exclude regular_expression``
+  Exclude paths matching any of these regular expressions, which are interpreted
+  relative to each Git repository's root.
+
+``-k, --keep-going``
+  Continue instead of aborting when errors occur.
+
+``--output-directory OUTPUT_DIRECTORY``
+  Output directory (default: <repo root>/out/presubmit)
+
+``--package-root PACKAGE_ROOT``
+  Package root directory (default: <output directory>/packages)
+
+``--clear, --clean``
+  Delete the presubmit output directory and exit.
+
+``-p, --program PROGRAM``
+  Which presubmit program to run
+
+``--step STEP``
+  Provide explicit steps instead of running a predefined program.
+
+``--install``
+  Install the presubmit as a Git pre-push hook and exit.
 
 .. _Sphinx: https://www.sphinx-doc.org/
 
