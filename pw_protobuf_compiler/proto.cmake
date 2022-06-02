@@ -144,11 +144,12 @@ function(_pw_generate_protos
   # Export the output files to the caller's scope so it can use them if needed.
   set(generated_outputs "${outputs}" PARENT_SCOPE)
 
-  if("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
-      get_filename_component(dir "${source_file}" DIRECTORY)
-      get_filename_component(name "${source_file}" NAME_WE)
-      set(PLUGIN "${dir}/${name}.bat")
-  endif()
+#  Not sure what this is supposed to do, but it always creates an empty PLUGIN variable.
+#  if("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+#      get_filename_component(dir "${source_file}" DIRECTORY)
+#      get_filename_component(name "${source_file}" NAME_WE)
+#      set(PLUGIN "${dir}/${name}.bat")
+#  endif()
 
   set(script "$ENV{PW_ROOT}/pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py")
   add_custom_command(
