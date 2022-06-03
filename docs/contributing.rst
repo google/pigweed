@@ -194,7 +194,7 @@ lowercase identifier.
 
      pw_foo: Improve use of std::unique_lock
 
-**No**: Uses a non-standard ``[]`` to indicate moduule:
+**No**: Uses a non-standard ``[]`` to indicate module:
 
 .. code:: none
 
