@@ -408,6 +408,28 @@ them.
   }  // namespace
   }  // namespace pw::nested
 
+Using directives for literals
+=============================
+`Using-directives
+<https://en.cppreference.com/w/cpp/language/namespace#Using-directives>`_ (e.g.
+``using namespace ...``) are permitted in implementation files only for the
+purposes of importing literals such as ``std::chrono_literals`` or
+``pw::bytes::unit_literals``. Namespaces that contain any symbols other than
+literals are not permitted in a using-directive. This guidance also has no
+impact on `using-declarations
+<https://en.cppreference.com/w/cpp/language/namespace#Using-declarations>`_
+(e.g. ``using foo::Bar;``).
+
+Rationale: Literals improve code readability, making units clearer at the point
+of definition.
+
+.. code-block:: cpp
+
+  using namespace std::chrono;                    // Not allowed
+  using namespace std::literals::chrono_literals; // Allowed
+
+  constexpr std::chrono::duration delay = 250ms;
+
 Pointers and references
 =======================
 For pointer and reference types, place the asterisk or ampersand next to the
