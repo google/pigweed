@@ -2289,7 +2289,7 @@ def process_proto_file(proto_file, proto_options) -> Iterable[OutputFile]:
     # message/enum nodes, then the second creates the fields in each. This is
     # done as non-primitive fields need pointers to their types, which requires
     # the entire tree to have been parsed into memory.
-    _, package_root = build_node_tree(proto_file, proto_options)
+    _, package_root = build_node_tree(proto_file, proto_options=proto_options)
 
     output_filename = _proto_filename_to_generated_header(proto_file.name)
     output_file = OutputFile(output_filename)

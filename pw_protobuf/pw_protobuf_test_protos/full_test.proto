@@ -137,6 +137,46 @@ message Crate {
   repeated Crate smaller_crates = 2;
 }
 
+// Ensure that reserved words are suffixed with underscores.
+message IntegerMetadata {
+  int32 bits = 1;
+  bool signed = 2;  // `signed` should become `signed_` in the C++ code.
+}
+
+// Ensure that messages named `Message` don't cause namespace-resolution issues
+// when the codegen internally references the generated type `Message::Message`.
+message Message {
+  int32 length = 1;
+}
+
+// Ensure that messages named `Fields` don't cause namespace-resolution issues
+// when the codegen internally references the generated type `Fields::Fields`.
+message Fields {
+  message Field {}
+  Field integers = 1;
+  Field complex_numbers = 2;
+  Field meromorphic_functions_on_complex_plane = 3;
+}
+
+// Enum values are handled differently from normal identifiers because they are
+// automatically case-converted in the generated code. Therefore, we append an
+// underscore if the output format exactly matches a reserved word or a
+// standard-library macro. This enum tests that underscores are appended in
+// cases where they're actually necessary but not when they can be skipped due
+// to case conversion.
+enum ReservedWord {
+  NULL = 0;
+  int = 1;
+  return = 2;
+  break = 3;
+  for  // The linter wants a line break here.
+    = 4;
+  do  // The linter wants a line break here.
+    = 5;
+  // Note: This obviously isn't anywhere near a complete list of C++ keywords
+  //       and standard-library macros.
+}
+
 // This might be useful.
 message KeyValuePair {
   string key = 1;

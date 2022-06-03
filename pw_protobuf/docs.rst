@@ -666,6 +666,39 @@ that can hold the set of values encoded by it, following these rules.
       std::optional<int32_t> points;
     };
 
+* Fields and messages whose names conflict with reserved C++ keywords are
+  suffixed with underscores to avoid compilation failures. This also applies to
+  names that conflict with symbols defined by the code-generation
+  implementation. These cases are illustrated below by the ``operator`` field
+  and the ``Message`` message, respectively.
+
+  .. code::
+
+    message Channel {
+      int32 bitrate = 1;
+      float signal_to_noise_ratio = 2;
+      Company operator = 3;
+    }
+
+    message Message {
+      User sender = 2;
+      User recipient = 3;
+      Channel channel = 4;
+    }
+
+  .. code:: c++
+
+    struct Channel::Message {
+      int32_t bitrate;
+      float signal_to_noise_ratio;
+      Company::Message operator_;
+    };
+
+    struct Message_::Message {
+      User::Message sender;
+      User::Message recipient;
+      Channel::Message channel;
+    };
 
 * Repeated scalar fields are represented by ``pw::Vector`` when the
   ``max_count`` option is set for that field, or by ``std::array`` when both

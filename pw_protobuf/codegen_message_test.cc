@@ -14,6 +14,7 @@
 #include <array>
 #include <span>
 #include <string_view>
+#include <tuple>
 
 #include "gtest/gtest.h"
 #include "pw_preprocessor/compiler.h"
@@ -237,6 +238,47 @@ TEST(CodegenMessage, ConstCopyable) {
   Pigweed::Message two = one;
 
   EXPECT_TRUE(one == two);
+}
+
+TEST(CodegenMessage, FixReservedIdentifiers) {
+  // This test checks that the code was generated as expected, so it will simply
+  // fail to compile if its expectations are not met.
+
+  // Make sure that the `signed` field was renamed to `signed_`.
+  std::ignore = IntegerMetadata::Message{
+      .bits = 32,
+      .signed_ = true,
+  };
+
+  // Make sure that `Message::Message` exists in the generated code and hasn't
+  // caused any namespace-resolution issues.
+  std::ignore = Message::Message{
+      .length = 4096,
+  };
+
+  // Make sure that `Fields::Fields` exists in the generated code and hasn't
+  // caused any namespace-resolution issues.
+  std::ignore = Fields::Fields::INTEGERS;
+  std::ignore = Fields::Fields::COMPLEX_NUMBERS;
+  std::ignore = Fields::Fields::MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE;
+
+  // Make sure that the `ReservedWord` enum values were renamed as expected.
+  // Specifically, only enum-value names that are reserved in UPPER_SNAKE_CASE
+  // should be modified. Names that are only reserved in lower_snake_case should
+  // be left alone since they'll never appear in that form in the generated
+  // code.
+  std::ignore = ReservedWord::NULL_;    // Add underscore since NULL is a macro.
+  std::ignore = ReservedWord::kNull;    // No underscore necessary.
+  std::ignore = ReservedWord::INT;      // No underscore necessary.
+  std::ignore = ReservedWord::kInt;     // No underscore necessary.
+  std::ignore = ReservedWord::RETURN;   // No underscore necessary.
+  std::ignore = ReservedWord::kReturn;  // No underscore necessary.
+  std::ignore = ReservedWord::BREAK;    // No underscore necessary.
+  std::ignore = ReservedWord::kBreak;   // No underscore necessary.
+  std::ignore = ReservedWord::FOR;      // No underscore necessary.
+  std::ignore = ReservedWord::kFor;     // No underscore necessary.
+  std::ignore = ReservedWord::DO;       // No underscore necessary.
+  std::ignore = ReservedWord::kDo;      // No underscore necessary.
 }
 
 PW_MODIFY_DIAGNOSTICS_POP();
