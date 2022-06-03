@@ -67,9 +67,8 @@ pw_cc_library(
     deps = [
         ":handler_facade",
         ":headers",
-        "//pw_assert:facade",
         "//pw_preprocessor",
-        "//pw_string",
+        "//pw_string:string_builder",
         "//pw_sys_io",
     ],
 )

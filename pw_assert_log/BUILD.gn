@@ -41,6 +41,7 @@ pw_source_set("check_backend") {
   public =
       [ "check_backend_public_overrides/pw_assert_backend/check_backend.h" ]
   deps = [
+    "$dir_pw_assert:assert_compatibility_backend",
     "$dir_pw_assert:config",
     "$dir_pw_assert:facade",
     "$dir_pw_preprocessor",

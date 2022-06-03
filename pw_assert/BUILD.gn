@@ -196,7 +196,7 @@ pw_test_group("tests") {
 # provided. However, since this doesn't depend on the backend it re-includes
 # the facade headers.
 pw_test("assert_facade_test") {
-  configs = [ ":public_include_path" ]  # For internal/assert_impl.h
+  configs = [ ":public_include_path" ]  # For internal/check_impl.h
   sources = [
     "assert_facade_test.cc",
     "fake_backend.cc",
@@ -204,8 +204,9 @@ pw_test("assert_facade_test") {
     "pw_assert_test/fake_backend.h",
   ]
   deps = [
-    ":assert",
+    ":pw_assert",
     dir_pw_status,
+    dir_pw_string,
   ]
 
   # TODO(frolv): Fix this test on the QEMU target.

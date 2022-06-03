@@ -24,7 +24,8 @@ set(CMAKE_CXX_COMPILER g++)
 # pw_set_backend(pw_unit_test.main pw_unit_test.logging_main)
 
 # Configure backend for assert facade.
-pw_set_backend(pw_assert pw_assert_basic)
+pw_set_backend(pw_assert.check pw_assert.print_and_abort_check_backend)
+pw_set_backend(pw_assert.assert pw_assert.print_and_abort_assert_backend)
 
 # Configure backend for logging facade.
 pw_set_backend(pw_log pw_log_basic)
