@@ -37,6 +37,8 @@ namespace pw::sync {
 // the user and/or backend MUST ensure that any initialization required in your
 // environment is done prior to the creation and/or initialization of the native
 // synchronization primitives (e.g. kernel initialization).
+//
+// The CountingSemaphore is initialized to being empty or having no tokens.
 class CountingSemaphore {
  public:
   using native_handle_type = backend::NativeCountingSemaphoreHandle;

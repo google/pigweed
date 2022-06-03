@@ -1238,6 +1238,8 @@ backed by the most efficient native primitive for a target, regardless of
 whether that is a semaphore, event flag group, condition variable, or something
 else.
 
+The ThreadNotification is initialized to being empty (latch is not set).
+
 Generic BinarySemaphore-based Backend
 -------------------------------------
 This module provides a generic backend for ``pw::sync::ThreadNotification`` via
@@ -1361,6 +1363,8 @@ TimedThreadNotification
 =======================
 The TimedThreadNotification is an extension of the ThreadNotification which
 offers timeout and deadline based semantics.
+
+The TimedThreadNotification is initialized to being empty (latch is not set).
 
 .. Warning::
   This is a single consumer/waiter, multiple producer/notifier API!

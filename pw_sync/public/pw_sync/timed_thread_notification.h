@@ -32,6 +32,8 @@ namespace pw::sync {
 //
 // The single consumer aspect of the API permits the use of a smaller and/or
 // faster native APIs such as direct thread signaling.
+//
+// The TimedThreadNotification is initialized to being empty (latch is not set).
 class TimedThreadNotification : public ThreadNotification {
  public:
   TimedThreadNotification() = default;
