@@ -24,6 +24,7 @@
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
+#include "pw_string/string_builder.h"
 
 namespace pw::kvs {
 namespace {
