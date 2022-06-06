@@ -235,7 +235,7 @@ proto_library(
     import_prefix = "pw_transfer_test",
     strip_import_prefix = "//pw_transfer",
     deps = [
-        "//pw_protobuf:common_protos",
+        "//pw_protobuf:common_proto",
     ],
 )
 

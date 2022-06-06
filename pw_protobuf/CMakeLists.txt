@@ -179,9 +179,14 @@ pw_add_test(pw_protobuf.message_test
     pw_protobuf
 )
 
-pw_proto_library(pw_protobuf.common_protos
+pw_proto_library(pw_protobuf.common_proto
   SOURCES
     pw_protobuf_protos/common.proto
+)
+
+pw_proto_library(pw_protobuf.status_proto
+  SOURCES
+    pw_protobuf_protos/status.proto
 )
 
 pw_proto_library(pw_protobuf.codegen_protos
@@ -201,5 +206,6 @@ pw_proto_library(pw_protobuf.codegen_test_protos
     pw_protobuf_test_protos/full_test.options
     pw_protobuf_test_protos/repeated.options
   DEPS
-    pw_protobuf.common_protos
+    pw_protobuf.common_proto
+    pw_protobuf.status_proto
 )
