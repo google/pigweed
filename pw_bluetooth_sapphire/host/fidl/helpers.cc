@@ -1412,6 +1412,15 @@ bool IsFidlGattHandleValid(fuchsia::bluetooth::gatt2::Handle handle) {
   return true;
 }
 
+bool IsFidlGattServiceHandleValid(fuchsia::bluetooth::gatt2::ServiceHandle handle) {
+  if (handle.value > std::numeric_limits<bt::att::Handle>::max()) {
+    bt_log(ERROR, "fidl", "Invalid 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX)",
+           handle.value);
+    return false;
+  }
+  return true;
+}
+
 fuchsia::bluetooth::bredr::RxPacketStatus ScoPacketStatusToFidl(
     bt::hci_spec::SynchronousDataPacketStatusFlag status) {
   switch (status) {

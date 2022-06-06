@@ -4,6 +4,7 @@
 
 #include "gatt2_client_server.h"
 
+#include "fuchsia/bluetooth/gatt2/cpp/fidl.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
 
@@ -79,8 +80,8 @@ TEST_F(Gatt2ClientServerTest, WatchServicesListsServicesOnFirstRequestAndUpdates
   ASSERT_EQ(updated.size(), 1u);
   ASSERT_TRUE(updated[0].has_handle());
   EXPECT_EQ(updated[0].handle().value, kSvcStartHandle0);
-  ASSERT_TRUE(updated[0].has_primary());
-  EXPECT_TRUE(updated[0].primary());
+  ASSERT_TRUE(updated[0].has_kind());
+  EXPECT_EQ(updated[0].kind(), fbg::ServiceKind::PRIMARY);
   ASSERT_TRUE(updated[0].has_type());
   EXPECT_EQ(bt::UUID(updated[0].type().value), kTestServiceUuid0);
   EXPECT_FALSE(updated[0].has_characteristics());
@@ -114,8 +115,8 @@ TEST_F(Gatt2ClientServerTest, WatchServicesListsServicesOnFirstRequestAndUpdates
   EXPECT_EQ(updated.size(), 1u);
   ASSERT_TRUE(updated[0].has_handle());
   EXPECT_EQ(updated[0].handle().value, kSvcStartHandle1);
-  ASSERT_TRUE(updated[0].has_primary());
-  EXPECT_TRUE(updated[0].primary());
+  ASSERT_TRUE(updated[0].has_kind());
+  EXPECT_EQ(updated[0].kind(), fbg::ServiceKind::PRIMARY);
   ASSERT_TRUE(updated[0].has_type());
   EXPECT_EQ(bt::UUID(updated[0].type().value), kTestServiceUuid0);
   EXPECT_FALSE(updated[0].has_characteristics());
@@ -454,7 +455,7 @@ TEST_F(Gatt2ClientServerTest, ListServicesFails) {
 }
 
 TEST_F(Gatt2ClientServerTest, ConnectToServiceInvalidHandle) {
-  fbg::Handle invalid_handle{static_cast<uint64_t>(bt::att::kHandleMax) + 1};
+  fbg::ServiceHandle invalid_handle{static_cast<uint64_t>(bt::att::kHandleMax) + 1};
   fbg::RemoteServicePtr service_ptr;
   proxy()->ConnectToService(invalid_handle, service_ptr.NewRequest());
 
@@ -474,7 +475,7 @@ TEST_F(Gatt2ClientServerTest, ConnectToServiceServiceAlreadyConnected) {
   gatt()->AddPeerService(kPeerId, svc_data);
 
   fbg::RemoteServicePtr service_ptr_0;
-  proxy()->ConnectToService(fbg::Handle{kSvcStartHandle0}, service_ptr_0.NewRequest());
+  proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_0.NewRequest());
 
   std::optional<zx_status_t> service_epitaph_0;
   service_ptr_0.set_error_handler([&](zx_status_t epitaph) { service_epitaph_0 = epitaph; });
@@ -483,7 +484,7 @@ TEST_F(Gatt2ClientServerTest, ConnectToServiceServiceAlreadyConnected) {
   EXPECT_FALSE(service_epitaph_0);
 
   fbg::RemoteServicePtr service_ptr_1;
-  proxy()->ConnectToService(fbg::Handle{kSvcStartHandle0}, service_ptr_1.NewRequest());
+  proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_1.NewRequest());
 
   std::optional<zx_status_t> service_epitaph_1;
   service_ptr_1.set_error_handler([&](zx_status_t epitaph) { service_epitaph_1 = epitaph; });
@@ -499,7 +500,7 @@ TEST_F(Gatt2ClientServerTest, ConnectToServiceNotFoundThenConnectToServiceWithSa
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
 
   fbg::RemoteServicePtr service_ptr_0;
-  proxy()->ConnectToService(fbg::Handle{kSvcStartHandle0}, service_ptr_0.NewRequest());
+  proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_0.NewRequest());
 
   std::optional<zx_status_t> service_epitaph_0;
   service_ptr_0.set_error_handler([&](zx_status_t epitaph) { service_epitaph_0 = epitaph; });
@@ -515,7 +516,7 @@ TEST_F(Gatt2ClientServerTest, ConnectToServiceNotFoundThenConnectToServiceWithSa
 
   // Connecting to the service after it is added should succeed.
   fbg::RemoteServicePtr service_ptr_1;
-  proxy()->ConnectToService(fbg::Handle{kSvcStartHandle0}, service_ptr_1.NewRequest());
+  proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_1.NewRequest());
 
   std::optional<zx_status_t> service_epitaph_1;
   service_ptr_1.set_error_handler([&](zx_status_t epitaph) { service_epitaph_1 = epitaph; });
@@ -532,7 +533,7 @@ TEST_F(Gatt2ClientServerTest, ClientClosesRemoteServiceAndReconnectsFollowedBySe
   gatt()->AddPeerService(kPeerId, svc_data);
 
   fbg::RemoteServicePtr service_ptr_0;
-  proxy()->ConnectToService(fbg::Handle{kSvcStartHandle0}, service_ptr_0.NewRequest());
+  proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_0.NewRequest());
 
   std::optional<zx_status_t> service_epitaph_0;
   service_ptr_0.set_error_handler([&](zx_status_t epitaph) { service_epitaph_0 = epitaph; });
@@ -543,7 +544,7 @@ TEST_F(Gatt2ClientServerTest, ClientClosesRemoteServiceAndReconnectsFollowedBySe
   service_ptr_0.Unbind();
 
   fbg::RemoteServicePtr service_ptr_1;
-  proxy()->ConnectToService(fbg::Handle{kSvcStartHandle0}, service_ptr_1.NewRequest());
+  proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_1.NewRequest());
 
   std::optional<zx_status_t> service_epitaph_1;
   service_ptr_1.set_error_handler([&](zx_status_t epitaph) { service_epitaph_1 = epitaph; });
@@ -569,7 +570,7 @@ TEST_F(Gatt2ClientServerTest, ClientClosesRemoteServiceFollowedByServiceRemoved)
   gatt()->AddPeerService(kPeerId, svc_data);
 
   fbg::RemoteServicePtr service_ptr_0;
-  proxy()->ConnectToService(fbg::Handle{kSvcStartHandle0}, service_ptr_0.NewRequest());
+  proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_0.NewRequest());
 
   std::optional<zx_status_t> service_epitaph_0;
   service_ptr_0.set_error_handler([&](zx_status_t epitaph) { service_epitaph_0 = epitaph; });

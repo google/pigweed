@@ -45,7 +45,7 @@ class Gatt2ClientServer : public GattServerBase<fuchsia::bluetooth::gatt2::Clien
   void WatchServices(std::vector<::fuchsia::bluetooth::Uuid> fidl_uuids,
                      WatchServicesCallback callback) override;
   void ConnectToService(
-      fuchsia::bluetooth::gatt2::Handle handle,
+      fuchsia::bluetooth::gatt2::ServiceHandle handle,
       fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::RemoteService> request) override;
 
   // The ID of the peer that this client is attached to.

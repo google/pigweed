@@ -190,6 +190,7 @@ FidlToScoParametersVector(
 
 // Returns true if |handle| is within the valid handle range.
 bool IsFidlGattHandleValid(fuchsia::bluetooth::gatt2::Handle handle);
+bool IsFidlGattServiceHandleValid(fuchsia::bluetooth::gatt2::ServiceHandle handle);
 
 fuchsia::bluetooth::bredr::RxPacketStatus ScoPacketStatusToFidl(
     bt::hci_spec::SynchronousDataPacketStatusFlag status);

@@ -15,8 +15,10 @@ namespace {
 
 fbg::ServiceInfo RemoteServiceToFidlServiceInfo(const fbl::RefPtr<bt::gatt::RemoteService>& svc) {
   fbg::ServiceInfo out;
-  out.set_handle(fbg::Handle{svc->handle()});
-  out.set_primary(svc->info().kind == bt::gatt::ServiceKind::PRIMARY);
+  out.set_handle(fbg::ServiceHandle{svc->handle()});
+  auto kind = svc->info().kind == bt::gatt::ServiceKind::PRIMARY ? fbg::ServiceKind::PRIMARY
+                                                                 : fbg::ServiceKind::SECONDARY;
+  out.set_kind(kind);
   out.set_type(fb::Uuid{svc->uuid().value()});
   return out;
 }
@@ -188,11 +190,11 @@ void Gatt2ClientServer::WatchServices(std::vector<fb::Uuid> fidl_uuids,
   TrySendNextWatchServicesResult();
 }
 
-void Gatt2ClientServer::ConnectToService(fbg::Handle handle,
+void Gatt2ClientServer::ConnectToService(fbg::ServiceHandle handle,
                                          fidl::InterfaceRequest<fbg::RemoteService> request) {
   bt_log(DEBUG, "fidl", "%s: (handle: 0x%lX)", __FUNCTION__, handle.value);
 
-  if (!fidl_helpers::IsFidlGattHandleValid(handle)) {
+  if (!fidl_helpers::IsFidlGattServiceHandleValid(handle)) {
     request.Close(ZX_ERR_INVALID_ARGS);
     return;
   }
