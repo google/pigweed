@@ -51,7 +51,7 @@ from pw_presubmit import (
     Programs,
     python_checks,
 )
-from pw_presubmit.install_hook import install_hook
+from pw_presubmit.install_hook import install_git_hook
 
 _LOG = logging.getLogger(__name__)
 
@@ -883,11 +883,10 @@ def run(install: bool, **presubmit_args) -> int:
     """Entry point for presubmit."""
 
     if install:
-        # TODO(pwbug/209, pwbug/386) inclusive-language: disable
-        install_hook(__file__, 'pre-push',
-                     ['--base', 'origin/master..HEAD', '--program', 'quick'],
-                     Path.cwd())
-        # TODO(pwbug/209, pwbug/386) inclusive-language: enable
+        install_git_hook('pre-push', [
+            'python', '-m', 'pw_presubmit.pigweed_presubmit', '--base',
+            'origin/main..HEAD', '--program', 'quick'
+        ])
         return 0
 
     return cli.run(**presubmit_args)

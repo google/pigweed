@@ -300,9 +300,10 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       if install:
           # '$remote_ref' will be replaced by the actual value of the remote ref
           # at runtime.
-          install_hook(__file__, 'pre-push',
-                       ['--base', 'HEAD~', '--remote-ref', '$remote_ref'],
-                       git_repo.root())
+          install_git_hook('pre-push', [
+              'python', '-m', 'tools.presubmit_check', '--base', 'HEAD~',
+              '--remote-ref', '$remote_ref'
+          ])
           return 0
 
       # Run the checks if either no remote_ref was passed, or if the remote ref
