@@ -49,7 +49,7 @@ pw_source_set("check_backend") {
     # TODO(pwbug/246): assert_log.cc implements the assert compatibility
     #     backend, but nothing for check_backend.
     "assert_log.cc",
-    "public/pw_assert_log/assert_log.h",
+    "public/pw_assert_log/check_log.h",
   ]
 }
 
@@ -72,6 +72,7 @@ pw_source_set("assert_backend") {
   ]
   public =
       [ "assert_backend_public_overrides/pw_assert_backend/assert_backend.h" ]
+  sources = [ "public/pw_assert_log/assert_log.h" ]
 }
 
 group("assert_backend.impl") {

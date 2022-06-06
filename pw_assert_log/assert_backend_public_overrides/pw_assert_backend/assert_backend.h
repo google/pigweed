@@ -17,14 +17,4 @@
 // (though only pw_assert/check.h can only point to 1 backend).
 #pragma once
 
-#include "pw_log/levels.h"
-#include "pw_log/log.h"
-#include "pw_log/options.h"
-#include "pw_preprocessor/compiler.h"
-
-#define PW_ASSERT_HANDLE_FAILURE(condition_string)                             \
-  do {                                                                         \
-    PW_LOG(                                                                    \
-        PW_LOG_LEVEL_FATAL, PW_LOG_FLAGS, "Assert failed: " condition_string); \
-    PW_UNREACHABLE;                                                            \
-  } while (0)
+#include "pw_assert_log/assert_log.h"
