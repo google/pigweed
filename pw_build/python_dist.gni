@@ -338,19 +338,26 @@ template("pw_create_python_source_tree") {
     public_deps = [ ":${invoker.target_name}._build_wheel" ]
   }
 
-  # Stub target groups to match a pw_python_package. This lets $target_name be
-  # used as a python_dep in pw_python_group.
-  group("$target_name.install") {
+  # Allow using pw_create_python_source_tree targets as a python_dep in
+  # pw_python_group. To do this, create a pw_python_group with the relevant
+  # packages and create wrappers for each subtarget, except those that are
+  # actually implemented by this template.
+  #
+  # This is an ugly workaround that will be removed when the Python build is
+  # refactored (b/235278298).
+  pw_python_group("$target_name._pw_python_group") {
+    python_deps = invoker.packages
   }
-  group("$target_name._run_pip_install") {
-  }
-  group("$target_name.lint") {
-  }
-  group("$target_name.lint.mypy") {
-  }
-  group("$target_name.lint.pylint") {
-  }
-  group("$target_name.tests") {
+
+  wrapped_subtargets = pw_python_package_subtargets - [
+                         "wheel",
+                         "_build_wheel",
+                       ]
+
+  foreach(subtarget, wrapped_subtargets) {
+    group("$target_name.$subtarget") {
+      public_deps = [ ":${invoker.target_name}._pw_python_group.$subtarget" ]
+    }
   }
 }
 
@@ -456,23 +463,24 @@ template("pw_internal_pip_install") {
     not_needed(invoker, "*")
   }
 
-  # Stub target groups to match a pw_python_package. This lets $target_name be
-  # used as a python_dep in pw_python_group.
   group("$target_name.install") {
     public_deps = [ ":${invoker.target_name}" ]
   }
-  group("$target_name._run_pip_install") {
+
+  # Allow using pw_internal_pip_install targets as a python_dep in
+  # pw_python_group. To do this, create a pw_python_group with the relevant
+  # packages and create wrappers for each subtarget, except those that are
+  # actually implemented by this template.
+  #
+  # This is an ugly workaround that will be removed when the Python build is
+  # refactored (b/235278298).
+  pw_python_group("$target_name._pw_python_group") {
+    python_deps = invoker.packages
   }
-  group("$target_name.wheel") {
-  }
-  group("$target_name._build_wheel") {
-  }
-  group("$target_name.lint") {
-  }
-  group("$target_name.lint.mypy") {
-  }
-  group("$target_name.lint.pylint") {
-  }
-  group("$target_name.tests") {
+
+  foreach(subtarget, pw_python_package_subtargets - [ "install" ]) {
+    group("$target_name.$subtarget") {
+      public_deps = [ ":${invoker.target_name}._pw_python_group.$subtarget" ]
+    }
   }
 }
