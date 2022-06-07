@@ -6,13 +6,13 @@
 
 #include "fbl/ref_ptr.h"
 #include "lib/fpromise/single_threaded_executor.h"
-#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/mock_acl_data_channel.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap::internal {
 namespace {

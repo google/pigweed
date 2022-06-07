@@ -14,7 +14,6 @@
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/comparison.h"
-#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -24,6 +23,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace fble = fuchsia::bluetooth::le;
 namespace fbt = fuchsia::bluetooth;

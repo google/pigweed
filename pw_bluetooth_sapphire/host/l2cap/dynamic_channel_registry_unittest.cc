@@ -6,8 +6,8 @@
 
 #include <lib/async/cpp/task.h>
 
-#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap::internal {
 namespace {

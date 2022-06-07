@@ -10,10 +10,10 @@
 #include <gmock/gmock.h>
 
 #include "fake_client.h"
-#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gatt::internal {
 namespace {

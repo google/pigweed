@@ -5,8 +5,8 @@
 #include "gatt2_client_server.h"
 
 #include "fuchsia/bluetooth/gatt2/cpp/fidl.h"
-#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bthost {
 

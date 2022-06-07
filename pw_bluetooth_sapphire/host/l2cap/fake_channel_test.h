@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_
 
-#include <lib/gtest/test_loop_fixture.h>
-
 #include <memory>
 
 #include <fbl/macros.h>
@@ -14,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap::testing {
 

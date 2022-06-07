@@ -5,12 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_TEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_TEST_H_
 
-#include <lib/gtest/test_loop_fixture.h>
-
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gatt::testing {
 

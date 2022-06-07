@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_sdp_server.h"
 
-#include <lib/gtest/test_loop_fixture.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -14,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_signaling_server.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::testing {
 namespace {

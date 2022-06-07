@@ -5,7 +5,6 @@
 #include "gatt.h"
 
 #include "fake_client.h"
-#include "lib/gtest/test_loop_fixture.h"
 #include "mock_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
@@ -15,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gatt::internal {
 namespace {

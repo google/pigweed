@@ -10,11 +10,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap::internal {
 namespace {

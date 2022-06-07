@@ -11,7 +11,6 @@
 
 #include <fbl/macros.h>
 
-#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -19,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/mock_acl_data_channel.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap {
 namespace {

@@ -11,7 +11,6 @@
 
 #include <fbl/macros.h>
 
-#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -20,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt {
 using testing::FakeController;
