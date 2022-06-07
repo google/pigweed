@@ -20,7 +20,6 @@ pw_add_module_library(pw_varint
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_polyfill.cstddef
     pw_polyfill.span
     pw_preprocessor
   SOURCES

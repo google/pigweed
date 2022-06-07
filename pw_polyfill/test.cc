@@ -20,7 +20,6 @@
 #include "pw_polyfill/standard_library/bit.h"
 #include "pw_polyfill/standard_library/cstddef.h"
 #include "pw_polyfill/standard_library/iterator.h"
-#include "pw_polyfill/standard_library/type_traits.h"
 
 namespace pw {
 namespace polyfill {
@@ -100,71 +99,6 @@ TEST(Constinit, ValueIsMutable) {
   mutable_value = false;
   ASSERT_FALSE(mutable_value);
   mutable_value = true;
-}
-
-TEST(TypeTraits, Aliases) {
-  static_assert(
-      std::is_same<std::aligned_storage_t<40, 40>,
-                   typename std::aligned_storage<40, 40>::type>::value,
-      "Alias must be defined");
-
-  static_assert(std::is_same<std::common_type_t<int, bool>,
-                             typename std::common_type<int, bool>::type>::value,
-                "Alias must be defined");
-
-  static_assert(
-      std::is_same<std::conditional_t<false, int, char>,
-                   typename std::conditional<false, int, char>::type>::value,
-      "Alias must be defined");
-
-  static_assert(
-      std::is_same<std::decay_t<int>, typename std::decay<int>::type>::value,
-      "Alias must be defined");
-
-  static_assert(std::is_same<std::enable_if_t<true, int>,
-                             typename std::enable_if<true, int>::type>::value,
-                "Alias must be defined");
-
-  static_assert(std::is_same<std::make_signed_t<int>,
-                             typename std::make_signed<int>::type>::value,
-                "Alias must be defined");
-
-  static_assert(std::is_same<std::make_unsigned_t<int>,
-                             typename std::make_unsigned<int>::type>::value,
-                "Alias must be defined");
-
-  static_assert(std::is_same<std::remove_cv_t<int>,
-                             typename std::remove_cv<int>::type>::value,
-                "Alias must be defined");
-
-  static_assert(std::is_same<std::remove_pointer_t<int>,
-                             typename std::remove_pointer<int>::type>::value,
-                "Alias must be defined");
-
-  static_assert(std::is_same<std::remove_reference_t<int>,
-                             typename std::remove_reference<int>::type>::value,
-                "Alias must be defined");
-}
-
-TEST(TypeTraits, LogicalTraits) {
-  static_assert(std::conjunction<std::true_type, std::true_type>::value,
-                "conjunction should be true");
-  static_assert(!std::conjunction<std::true_type, std::false_type>::value,
-                "conjunction should be false");
-  static_assert(!std::conjunction<std::false_type, std::false_type>::value,
-                "conjunction should be false");
-
-  static_assert(std::disjunction<std::true_type, std::true_type>::value,
-                "disjunction should be true");
-  static_assert(std::disjunction<std::true_type, std::false_type>::value,
-                "disjunction should be true");
-  static_assert(!std::disjunction<std::false_type, std::false_type>::value,
-                "disjunction should be false");
-
-  static_assert(!std::negation<std::true_type>::value,
-                "negation should be false");
-  static_assert(std::negation<std::false_type>::value,
-                "negation should be true");
 }
 
 }  // namespace

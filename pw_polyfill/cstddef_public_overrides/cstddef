@@ -13,6 +13,10 @@
 // the License.
 #pragma once
 
-#include_next <iterator>
+static_assert(__cplusplus < 201703L,
+              "The <cstddef> polyfill header is only intended for C++14. "
+              "It cannot be used when building with C++17 or newer.");
 
-#include "pw_polyfill/standard_library/iterator.h"
+#include_next <cstddef>
+
+#include "pw_polyfill/standard_library/cstddef.h"

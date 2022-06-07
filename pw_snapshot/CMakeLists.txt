@@ -22,7 +22,6 @@ pw_add_module_library(pw_snapshot.uuid
     public
   PUBLIC_DEPS
     pw_polyfill.span
-    pw_polyfill.cstddef
     pw_result
     pw_bytes
   SOURCES
@@ -81,7 +80,6 @@ pw_add_test(pw_snapshot.uuid_test
     uuid_test.cc
   DEPS
     pw_bytes
-    pw_polyfill.cstddef
     pw_polyfill.span
     pw_protobuf
     pw_result

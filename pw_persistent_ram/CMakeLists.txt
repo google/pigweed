@@ -24,7 +24,6 @@ pw_add_module_library(pw_persistent_ram
     pw_assert
     pw_bytes
     pw_checksum
-    pw_polyfill.cstddef
     pw_polyfill.span
     pw_preprocessor
     pw_stream

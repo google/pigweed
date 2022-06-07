@@ -23,7 +23,6 @@ if((NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows") AND
     PUBLIC_INCLUDES
       public
     PUBLIC_DEPS
-      pw_polyfill.cstddef
       pw_polyfill.span
     PUBLIC_LINK_OPTIONS
       -Wl,--build-id=sha1

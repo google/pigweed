@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_config") {
@@ -44,6 +45,15 @@ pw_source_set("pw_span") {
   remove_public_deps = [ "*" ]
   public_configs = [ ":public_config" ]
   public_deps = [ "$dir_pw_polyfill" ]
+
+  # Polyfill <cstddef> (std::byte) and <iterator> (std::size(), std::data) if
+  # C++17 is not supported.
+  if (pw_toolchain_CXX_STANDARD < pw_toolchain_STANDARD.CXX17) {
+    public_deps += [
+      "$dir_pw_polyfill:cstddef",
+      "$dir_pw_polyfill:iterator",
+    ]
+  }
   sources = [ "public/pw_span/internal/span.h" ]
   visibility = [ ":*" ]
 }

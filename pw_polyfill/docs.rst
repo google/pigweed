@@ -29,7 +29,6 @@ following libraries:
 * ``pw_polyfill:cstddef``
 * ``pw_polyfill:iterator``
 * ``pw_polyfill:span``
-* ``pw_polyfill:type_traits``
 
 The GN build automatically adds dependencies on the ``<bit>`` and ``<span>``
 headers. To apply other overrides, add dependencies as needed. In Bazel or
@@ -45,8 +44,6 @@ Header              Feature                           Level of support  Feature 
 <cstdlib>           std::byte                         full              __cpp_lib_byte                           ❌
 <iterator>          std::data, std::size              full              __cpp_lib_nonmember_container_access     ❌
 <span>              std::span                         no std::ranges    __cpp_lib_span                           GN
-<type_traits>       std::bool_constant                full              __cpp_lib_bool_constant                  ❌
-<type_traits>       std::negation, etc.               full              __cpp_lib_logical_traits                 ❌
 ==================  ================================  ================  ======================================== =============
 
 ----------------------------------------------------

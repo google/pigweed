@@ -26,19 +26,13 @@ licenses(["notice"])
 cc_toolchain_import(
     name = "toolchain_polyfill_overrides",
     hdrs = [
-        "public_overrides/bit",
-        "public_overrides/cstddef",
-        "public_overrides/iterator",
-        "public_overrides/type_traits",
+        "bit_public_overrides/bit",
         "standard_library_public/pw_polyfill/standard_library/bit.h",
-        "standard_library_public/pw_polyfill/standard_library/cstddef.h",
-        "standard_library_public/pw_polyfill/standard_library/iterator.h",
         "standard_library_public/pw_polyfill/standard_library/namespace.h",
-        "standard_library_public/pw_polyfill/standard_library/type_traits.h",
     ],
     includes = [
+        "bit_public_overrides",
         "public",
-        "public_overrides",
         "standard_library_public",
     ],
 )
@@ -52,7 +46,7 @@ pw_cc_library(
     includes = ["public"],
 )
 
-# TODO(pwbug/602): Deprecate this once all users have been migrated to targeted
+# TODO(b/235237667): Deprecate this once all users have been migrated to targeted
 # polyfill deps.
 pw_cc_library(
     name = "overrides",
@@ -66,7 +60,7 @@ pw_cc_library(
 pw_cc_library(
     name = "bit",
     hdrs = [
-        "public_overrides/bit",
+        "bit_public_overrides/bit",
         "standard_library_public/pw_polyfill/standard_library/bit.h",
     ],
     includes = [
@@ -80,7 +74,7 @@ pw_cc_library(
 pw_cc_library(
     name = "cstddef",
     hdrs = [
-        "public_overrides/cstddef",
+        "cstddef_public_overrides/cstddef",
         "standard_library_public/pw_polyfill/standard_library/cstddef.h",
     ],
     includes = [
@@ -94,40 +88,20 @@ pw_cc_library(
 pw_cc_library(
     name = "iterator",
     hdrs = [
-        "public_overrides/iterator",
+        "iterator_public_overrides/iterator",
         "standard_library_public/pw_polyfill/standard_library/iterator.h",
     ],
     includes = [
         "public_overrides",
         "standard_library_public",
     ],
-    deps = [
-        ":standard_library",
-        ":type_traits",
-    ],
+    deps = [":standard_library"],
 )
 
 # Provides <span>.
 pw_cc_library(
     name = "span",
     deps = ["//pw_span"],
-)
-
-# TODO(pwbug/603): Remove this polyfill.
-pw_cc_library(
-    name = "type_traits",
-    hdrs = [
-        "public_overrides/type_traits",
-        "standard_library_public/pw_polyfill/standard_library/type_traits.h",
-    ],
-    includes = [
-        "public_overrides",
-        "standard_library_public",
-    ],
-    deps = [
-        ":cstddef",
-        ":standard_library",
-    ],
 )
 
 pw_cc_library(
@@ -140,11 +114,11 @@ pw_cc_library(
 )
 
 pw_cc_test(
-    name = "default_cpp_test",
-    srcs = [
-        "test.cc",
-    ],
+    name = "test",
+    srcs = ["test.cc"],
     deps = [
+        ":cstddef",
+        ":iterator",
         ":pw_polyfill",
         ":standard_library",
         "//pw_unit_test",

@@ -38,7 +38,6 @@ pw_cc_library(
         "//pw_assert",
         "//pw_bytes",
         "//pw_polyfill",
-        "//pw_polyfill:iterator",
         "//pw_result",
         "//pw_span",
         "//pw_status",

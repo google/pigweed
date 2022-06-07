@@ -33,12 +33,22 @@ pw_source_set("pw_polyfill") {
   ]
 }
 
-config("overrides_config") {
-  include_dirs = [ "public_overrides" ]
+config("bit_overrides_config") {
+  include_dirs = [ "bit_public_overrides" ]
   visibility = [ ":*" ]
 }
 
-# TODO(pwbug/602): Remove this overrides target by migrating all users to
+config("cstddef_overrides_config") {
+  include_dirs = [ "cstddef_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+config("iterator_overrides_config") {
+  include_dirs = [ "iterator_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+# TODO(b/235237667): Remove this overrides target by migrating all users to
 # explicitly depend on the polyfill(s) they require.
 group("overrides") {
   public_deps = [
@@ -55,55 +65,45 @@ config("standard_library_public") {
 pw_source_set("bit") {
   public_configs = [
     ":standard_library_public",
-    ":overrides_config",
+    ":bit_overrides_config",
   ]
   public_deps = [ ":standard_library" ]
   remove_public_deps = [ "*" ]
-  inputs = [ "public_overrides/bit" ]
+  inputs = [ "bit_public_overrides/bit" ]
   public = [ "standard_library_public/pw_polyfill/standard_library/bit.h" ]
 }
 
 # Provides <cstddef>'s std::byte.
+# TODO(pwbug/603): Remove this polyfill.
 pw_source_set("cstddef") {
   public_configs = [
     ":standard_library_public",
-    ":overrides_config",
+    ":cstddef_overrides_config",
   ]
   public_deps = [ ":standard_library" ]
   remove_public_deps = [ "*" ]
-  inputs = [ "public_overrides/cstddef" ]
-  public = [ "standard_library_public/pw_polyfill/standard_library/cstddef.h" ]
+  inputs = [ "cstddef_public_overrides/cstddef" ]
+  sources = [ "standard_library_public/pw_polyfill/standard_library/cstddef.h" ]
 }
 
+# Provides <iterator>'s std::data() and std::size().
 # TODO(pwbug/603): Remove this polyfill.
 pw_source_set("iterator") {
   public_configs = [
     ":standard_library_public",
-    ":overrides_config",
+    ":iterator_overrides_config",
   ]
   public_deps = [ ":standard_library" ]
   remove_public_deps = [ "*" ]
-  inputs = [ "public_overrides/iterator" ]
-  public = [ "standard_library_public/pw_polyfill/standard_library/iterator.h" ]
+  inputs = [ "iterator_public_overrides/iterator" ]
+  sources =
+      [ "standard_library_public/pw_polyfill/standard_library/iterator.h" ]
 }
 
 # Provides <span>.
 pw_source_set("span") {
   remove_public_deps = [ "*" ]
   public_deps = [ "$dir_pw_span:polyfill" ]
-}
-
-# TODO(pwbug/603): Remove this polyfill.
-pw_source_set("type_traits") {
-  public_configs = [
-    ":standard_library_public",
-    ":overrides_config",
-  ]
-  public_deps = [ ":standard_library" ]
-  remove_public_deps = [ "*" ]
-  inputs = [ "public_overrides/type_traits" ]
-  public =
-      [ "standard_library_public/pw_polyfill/standard_library/type_traits.h" ]
 }
 
 pw_source_set("standard_library") {
@@ -120,13 +120,16 @@ pw_test_group("tests") {
 }
 
 pw_test("test") {
-  deps = [
-    ":cstddef",
-    ":iterator",
-    ":pw_polyfill",
-    ":type_traits",
+  deps = [ ":pw_polyfill" ]
+
+  # Do not depend on :cstddef and :iterator since they override library headers.
+  # Instead, add their include path and list them as sources.
+  configs = [ ":standard_library_public" ]
+  sources = [
+    "standard_library_public/pw_polyfill/standard_library/cstddef.h",
+    "standard_library_public/pw_polyfill/standard_library/iterator.h",
+    "test.cc",
   ]
-  sources = [ "test.cc" ]
 }
 
 pw_doc_group("docs") {

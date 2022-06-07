@@ -74,7 +74,6 @@ pw_add_module_library(pw_tokenizer.base64
     public
   PUBLIC_DEPS
     pw_base64
-    pw_polyfill.cstddef
     pw_polyfill.span
     pw_tokenizer
     pw_tokenizer.config

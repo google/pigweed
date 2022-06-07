@@ -26,7 +26,7 @@ pw_add_module_library(pw_bytes
   PUBLIC_DEPS
     pw_containers.iterator
     pw_polyfill
-    pw_polyfill.cstddef
+    pw_polyfill.bit
     pw_polyfill.span
     pw_preprocessor
     pw_status
