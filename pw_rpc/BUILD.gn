@@ -348,7 +348,6 @@ pw_proto_library("protos") {
     "echo.options",
     "benchmark.options",
   ]
-  deps = [ "$dir_pw_protobuf:common_protos" ]
   python_package = "py"
   prefix = "pw_rpc"
 }
