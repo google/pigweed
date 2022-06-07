@@ -31,7 +31,7 @@ C++ standard
 Pigweed primarily uses the C++17 standard. A few modules maintain support for
 C++14, however (e.g. :ref:`module-pw_kvs` and its dependencies).
 
-All Pigweed C++ code must compile with ``-std=C++17`` in Clang and GCC. C++20
+All Pigweed C++ code must compile with ``-std=c++17`` in Clang and GCC. C++20
 features may be used as long as the code still compiles unmodified with C++17.
 See ``pw_polyfill/language_feature_macros.h`` for macros that provide C++20
 features when supported.

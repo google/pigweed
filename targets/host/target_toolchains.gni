@@ -24,6 +24,7 @@ import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_toolchain/host_gcc/toolchains.gni")
+import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_trace/backend.gni")
 import("$dir_pw_trace_tokenized/config.gni")
 
@@ -384,11 +385,12 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-
-      remove_default_configs = [ "$dir_pw_build:cpp17" ]
       default_configs += _clang_default_configs
-      default_configs += [ "$dir_pw_build:cpp14" ]
 
+      # Set the C++ standard to C++14 instead of the default (C++17).
+      pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX14
+
+      # Select C++14-compatible backends.
       pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_check_backend"
       pw_log_BACKEND = "$dir_pw_log_null"
       pw_unit_test_MAIN = "$dir_pw_unit_test:printf_main"
@@ -403,10 +405,10 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-
-      remove_default_configs = [ "$dir_pw_build:cpp17" ]
       default_configs += _clang_default_configs
-      default_configs += [ "$dir_pw_build:cpp20" ]
+
+      # Set the C++ standard to C++20 instead of the default.
+      pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX20
     }
   },
 ]

@@ -18,6 +18,7 @@ import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
+import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -81,10 +82,7 @@ pw_source_set("light") {
   ]
 
   # If C++17 is supported, depend on StringBuilder.
-  # TODO(pwbug/196): C++ standard should be a target trait.
-  if (current_toolchain != get_label_info(
-          "$dir_pigweed/targets/host/pigweed_internal:pw_strict_host_clang_debug_cpp14",
-          "label_no_toolchain")) {
+  if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX17) {
     public_deps += [ "$dir_pw_string:builder" ]
   }
 
