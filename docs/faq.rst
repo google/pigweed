@@ -90,6 +90,16 @@ The summary is:
   the mailing list. We know this part of Pigweed is incomplete and will help
   those who are interested in giving Pigweed a try.
 
+Why doesn't Pigweed allow shell scripting?
+------------------------------------------
+Pigweed supports multiple platforms. The native shells on these differ and
+additionally "compatible" shells often have sububle differences in behavior.
+Pigweed uses Python instead shell wherever practical and changes to Pigweed that
+include shell scripting will likely be rejected. Users of Pigweed may use shell
+scripts in their own code and we have included support for
+`Shellcheck <https://www.shellcheck.net/>`_ during presubmit checks that is
+automatically enabled if ``shellcheck`` found in the path.
+
 What development hosts are supported?
 -------------------------------------
 We support the following platforms:

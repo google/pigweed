@@ -21,6 +21,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 from typing import Sequence, IO, Tuple, Optional, Callable, List
@@ -50,6 +51,7 @@ from pw_presubmit import (
     PresubmitFailure,
     Programs,
     python_checks,
+    shell_checks,
 )
 from pw_presubmit.install_hook import install_git_hook
 
@@ -815,6 +817,7 @@ _LINTFORMAT = (
     cpp_checks.pragma_once,
     build.bazel_lint,
     source_is_in_build_files,
+    shell_checks.shellcheck if shutil.which('shellcheck') else (),
 )
 
 LINTFORMAT = (
