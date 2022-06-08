@@ -91,7 +91,7 @@ group("stack") {
 # dependencies when there is a way for it.
 fuchsia_driver_package("bt-host") {
   driver_components = [ ":driver" ]
-  # This package is reachable from //garnet/packages/prod:all
+  # This package is reachable from //bundles/packages/prod:all
 }
 
 # See https://fuchsia.dev/fuchsia-src/development/testing/fuzzing/build-a-fuzzer?hl=en#fx-set
