@@ -338,12 +338,6 @@ TEST_F(TransferIntegration, Write_UnknownId) {
   static_assert(true, "Semicolons are required")
 
 PW_TRANSFER_TEST_WRITE(Empty, "");
-PW_TRANSFER_TEST_WRITE(SingleByte_1, "\0");
-PW_TRANSFER_TEST_WRITE(SingleByte_2, "?");
-PW_TRANSFER_TEST_WRITE(SmallData, "hunter2");
-PW_TRANSFER_TEST_WRITE(LargeData, kData512);
-PW_TRANSFER_TEST_WRITE(HdlcEscape, kDataHdlcEscape);
-PW_TRANSFER_TEST_WRITE(VeryLargeData, kData8192);
 
 }  // namespace
 }  // namespace pw::transfer
