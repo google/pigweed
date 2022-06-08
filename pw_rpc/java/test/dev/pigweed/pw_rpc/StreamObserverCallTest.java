@@ -99,6 +99,20 @@ public final class StreamObserverCallTest {
   }
 
   @Test
+  public void abandon_doesNotSendCancelPacket() throws Exception {
+    streamObserverCall.abandon();
+
+    verify(mockOutput, never()).send(cancel());
+  }
+
+  @Test
+  public void abandon_deactivates() {
+    streamObserverCall.abandon();
+
+    assertThat(streamObserverCall.active()).isFalse();
+  }
+
+  @Test
   public void send_sendsClientStreamPacket() throws Exception {
     SomeMessage request = SomeMessage.newBuilder().setMagicNumber(123).build();
     streamObserverCall.send(request);
@@ -234,7 +248,7 @@ public final class StreamObserverCallTest {
   }
 
   @Test
-  public void bidirectionalStreamingfuture_responses_setsValue() throws Exception {
+  public void bidirectionalStreamingFuture_responses_setsValue() throws Exception {
     List<AnotherMessage> responses = new ArrayList<>();
     StreamResponseFuture<SomeMessage, AnotherMessage> call =
         new StreamResponseFuture<>(rpcManager, rpc, responses::add, null);
@@ -251,7 +265,7 @@ public final class StreamObserverCallTest {
   }
 
   @Test
-  public void bidirectionalStreamingfuture_serverError_setsException() {
+  public void bidirectionalStreamingFuture_serverError_setsException() {
     StreamResponseFuture<SomeMessage, AnotherMessage> call =
         new StreamResponseFuture<>(rpcManager, rpc, (msg) -> {}, null);
 
