@@ -21,6 +21,7 @@
 #include "pw_containers/vector.h"
 #include "pw_containers/wrapped_iterator.h"
 #include "pw_rpc/internal/fake_channel_output.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/nanopb/internal/common.h"
 #include "pw_rpc/nanopb/internal/method.h"
 
@@ -122,7 +123,8 @@ class NanopbFakeChannelOutput final
   // thread accesses the FakeChannelOutput.
   template <auto kMethod>
   NanopbPayloadsView<Request<kMethod>> requests(
-      uint32_t channel_id = Channel::kUnassignedChannelId) const {
+      uint32_t channel_id = Channel::kUnassignedChannelId) const
+      PW_NO_LOCK_SAFETY_ANALYSIS {
     constexpr internal::PacketType packet_type =
         HasClientStream(internal::MethodInfo<kMethod>::kType)
             ? internal::PacketType::CLIENT_STREAM
@@ -146,7 +148,8 @@ class NanopbFakeChannelOutput final
   // thread accesses the FakeChannelOutput.
   template <auto kMethod>
   NanopbPayloadsView<Response<kMethod>> responses(
-      uint32_t channel_id = Channel::kUnassignedChannelId) const {
+      uint32_t channel_id = Channel::kUnassignedChannelId) const
+      PW_NO_LOCK_SAFETY_ANALYSIS {
     constexpr internal::PacketType packet_type =
         HasServerStream(internal::MethodInfo<kMethod>::kType)
             ? internal::PacketType::SERVER_STREAM
@@ -163,6 +166,7 @@ class NanopbFakeChannelOutput final
 
   template <auto kMethod>
   Response<kMethod> last_response() const {
+    internal::LockGuard lock(internal::test::FakeChannelOutput::mutex());
     NanopbPayloadsView<Response<kMethod>> payloads = responses<kMethod>();
     PW_ASSERT(!payloads.empty());
     return payloads.back();
@@ -180,12 +184,18 @@ class NanopbFakeChannelOutput final
 
   using internal::test::FakeChannelOutput::last_packet;
 
+  // !!! WARNING !!!
+  //
+  // Access to the FakeChannelOutput through the NanopbPayloadsView is NOT
+  // synchronized! The NanopbPayloadsView is immediately invalidated if any
+  // thread accesses the FakeChannelOutput.
   template <typename T>
   NanopbPayloadsView<T> payload_structs(const internal::NanopbSerde& serde,
                                         MethodType type,
                                         uint32_t channel_id,
                                         uint32_t service_id,
-                                        uint32_t method_id) const {
+                                        uint32_t method_id) const
+      PW_NO_LOCK_SAFETY_ANALYSIS {
     return NanopbPayloadsView<T>(
         serde, Base::packets(), type, channel_id, service_id, method_id);
   }

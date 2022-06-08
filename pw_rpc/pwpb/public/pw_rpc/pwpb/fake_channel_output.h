@@ -17,6 +17,7 @@
 
 #include "pw_containers/wrapped_iterator.h"
 #include "pw_rpc/internal/fake_channel_output.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/pwpb/internal/common.h"
 #include "pw_rpc/pwpb/internal/method.h"
 
@@ -123,7 +124,8 @@ class PwpbFakeChannelOutput final
   // thread accesses the FakeChannelOutput.
   template <auto kMethod>
   PwpbPayloadsView<Request<kMethod>> requests(
-      uint32_t channel_id = Channel::kUnassignedChannelId) const {
+      uint32_t channel_id = Channel::kUnassignedChannelId) const
+      PW_NO_LOCK_SAFETY_ANALYSIS {
     constexpr internal::PacketType packet_type =
         HasClientStream(internal::MethodInfo<kMethod>::kType)
             ? internal::PacketType::CLIENT_STREAM
@@ -149,7 +151,8 @@ class PwpbFakeChannelOutput final
   // thread accesses the FakeChannelOutput.
   template <auto kMethod>
   PwpbPayloadsView<Response<kMethod>> responses(
-      uint32_t channel_id = Channel::kUnassignedChannelId) const {
+      uint32_t channel_id = Channel::kUnassignedChannelId) const
+      PW_NO_LOCK_SAFETY_ANALYSIS {
     constexpr internal::PacketType packet_type =
         HasServerStream(internal::MethodInfo<kMethod>::kType)
             ? internal::PacketType::SERVER_STREAM
@@ -168,6 +171,7 @@ class PwpbFakeChannelOutput final
 
   template <auto kMethod>
   Response<kMethod> last_response() const {
+    internal::LockGuard lock(internal::test::FakeChannelOutput::mutex());
     PwpbPayloadsView<Response<kMethod>> payloads = responses<kMethod>();
     PW_ASSERT(!payloads.empty());
     return payloads.back();
@@ -181,12 +185,18 @@ class PwpbFakeChannelOutput final
 
   using internal::test::FakeChannelOutput::last_packet;
 
+  // !!! WARNING !!!
+  //
+  // Access to the FakeChannelOutput through the PwpbPayloadsView is NOT
+  // synchronized! The PwpbPayloadsView is immediately invalidated if any
+  // thread accesses the FakeChannelOutput.
   template <typename T>
   PwpbPayloadsView<T> payload_structs(const internal::PwpbSerde& serde,
                                       MethodType type,
                                       uint32_t channel_id,
                                       uint32_t service_id,
-                                      uint32_t method_id) const {
+                                      uint32_t method_id) const
+      PW_NO_LOCK_SAFETY_ANALYSIS {
     return PwpbPayloadsView<T>(serde,
                                internal::test::FakeChannelOutputBuffer<
                                    kMaxPackets,

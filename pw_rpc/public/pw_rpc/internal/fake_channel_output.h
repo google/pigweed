@@ -248,7 +248,11 @@ class FakeChannelOutput : public ChannelOutput {
         packets_(packets),
         payloads_(payloads) {}
 
-  const Vector<Packet>& packets() const { return packets_; }
+  const Vector<Packet>& packets() const PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+    return packets_;
+  }
+
+  RpcLock& mutex() const { return mutex_; }
 
  private:
   friend class rpc::FakeServer;
