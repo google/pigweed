@@ -21,6 +21,7 @@
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc/client.h"
+#include "pw_rpc/internal/lock.h"
 
 namespace pw::rpc {
 
@@ -51,16 +52,22 @@ Status FakeServer::ProcessPacket(internal::PacketType type,
                                  uint32_t method_id,
                                  ConstByteSpan payload,
                                  Status status) const {
-  auto view = internal::test::PacketsView(
-      output_.packets(),
-      internal::test::PacketFilter(internal::PacketType::REQUEST,
-                                   internal::PacketType::RESPONSE,
-                                   channel_id_,
-                                   service_id,
-                                   method_id));
+  uint32_t call_id = 0;
+  {
+    internal::LockGuard lock(output_.mutex_);
+    auto view = internal::test::PacketsView(
+        output_.packets(),
+        internal::test::PacketFilter(internal::PacketType::REQUEST,
+                                     internal::PacketType::RESPONSE,
+                                     channel_id_,
+                                     service_id,
+                                     method_id));
 
-  // Re-use the call ID of the most recent packet for this RPC.
-  uint32_t call_id = view.empty() ? 0 : view.back().call_id();
+    // Re-use the call ID of the most recent packet for this RPC.
+    if (!view.empty()) {
+      call_id = view.back().call_id();
+    }
+  }
 
   auto packet_encoding_result =
       internal::Packet(
