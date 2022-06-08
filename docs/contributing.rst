@@ -86,6 +86,14 @@ it to the ``.git\hooks`` directory in the Pigweed repository.
 
 Commit message
 --------------
+Pigweed commit messages follow the `50/72 style
+<https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>`_ (a
+maximum of 50 characters in the commit title, and a 72 character width limit in
+the commit message body). Commit titles should be prefixed with the name of the
+module that the commit is affecting. :ref:`Examples
+<docs-contributing-commit-message-examples>` of well and ill-formed commit
+messages are provided below.
+
 Consider the following when writing a commit message:
 
 #. **Documentation and comments are better** - Consider whether the commit
@@ -96,6 +104,8 @@ Consider the following when writing a commit message:
    important to include a "why" component in most commits. Sometimes, why is
    evident - for example, reducing memory usage, or optimizing. But it is often
    not. Err on the side of over-explaining why, not under-explaining why.
+
+.. _docs-contributing-commit-message-examples:
 
 Pigweed commit messages should conform to the following style:
 
