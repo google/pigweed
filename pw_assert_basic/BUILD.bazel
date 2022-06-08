@@ -68,7 +68,7 @@ pw_cc_library(
         ":handler_facade",
         ":headers",
         "//pw_preprocessor",
-        "//pw_string:string_builder",
+        "//pw_string:builder",
         "//pw_sys_io",
     ],
 )
