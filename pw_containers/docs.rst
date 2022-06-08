@@ -240,7 +240,8 @@ pw::containers::to_array
 ========================
 ``pw::containers::to_array`` is a C++14-compatible implementation of C++20's
 `std::to_array <https://en.cppreference.com/w/cpp/container/array/to_array>`_.
-It converts a C array to a ``std::array``.
+In C++20, it is an alias for ``std::to_array``. It converts a C array to a
+``std::array``.
 
 pw_containers/algorithm.h
 =========================
