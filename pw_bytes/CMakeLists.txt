@@ -24,9 +24,9 @@ pw_add_module_library(pw_bytes
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_bytes.bit
     pw_containers.iterator
     pw_polyfill
-    pw_polyfill.bit
     pw_polyfill.span
     pw_preprocessor
     pw_status
@@ -49,6 +49,16 @@ pw_add_test(pw_bytes.array_test
     array_test.cc
   DEPS
     pw_bytes
+  GROUPS
+    modules
+    pw_bytes
+)
+
+pw_add_test(pw_bytes.bit_test
+  SOURCES
+    bit_test.cc
+  DEPS
+    pw_bytes.bit
   GROUPS
     modules
     pw_bytes

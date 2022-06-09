@@ -28,7 +28,7 @@ StatusWithSize DecodeHciUartData(ConstByteSpan data,
     switch (packet_indicator) {
       case kUartCommandPacketIndicator: {
         const std::optional<CommandPacket> maybe_packet =
-            CommandPacket::Decode(data, std::endian::little);
+            CommandPacket::Decode(data, endian::little);
         if (!maybe_packet.has_value()) {
           return StatusWithSize(
               bytes_consumed);  // Not enough data to complete this packet.
@@ -42,7 +42,7 @@ StatusWithSize DecodeHciUartData(ConstByteSpan data,
 
       case kUartAsyncDataPacketIndicator: {
         const std::optional<AsyncDataPacket> maybe_packet =
-            AsyncDataPacket::Decode(data, std::endian::little);
+            AsyncDataPacket::Decode(data, endian::little);
         if (!maybe_packet.has_value()) {
           return StatusWithSize(
               bytes_consumed);  // Not enough data to complete this packet.
@@ -56,7 +56,7 @@ StatusWithSize DecodeHciUartData(ConstByteSpan data,
 
       case kUartSyncDataPacketIndicator: {
         const std::optional<SyncDataPacket> maybe_packet =
-            SyncDataPacket::Decode(data, std::endian::little);
+            SyncDataPacket::Decode(data, endian::little);
         if (!maybe_packet.has_value()) {
           return StatusWithSize(
               bytes_consumed);  // Not enough data to complete this packet.

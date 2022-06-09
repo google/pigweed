@@ -17,10 +17,10 @@
 // Building the file: ninja -C out build_me
 
 #include <array>
-#include <bit>
 #include <cstdint>
 #include <cstdio>
 
+#include "pw_bytes/bit.h"
 #include "pw_bytes/byte_builder.h"
 
 #if !defined(USE_BYTE_BUILDER)
@@ -35,14 +35,14 @@ ByteBuffer<8> bb;
 
 void PutBytes() {
   bb.PutUint32(0x482B3D9E);
-  bb.PutInt32(0x482B3D9E, std::endian::big);
+  bb.PutInt32(0x482B3D9E, endian::big);
 }
 
 void ReadBytes() {
   auto it = bb.begin();
 
   std::printf("%u\n", static_cast<unsigned>(it.ReadUint32()));
-  std::printf("%d\n", static_cast<int>(it.ReadInt32(std::endian::big)));
+  std::printf("%d\n", static_cast<int>(it.ReadInt32(endian::big)));
 }
 
 #else  // !USE_BYTE_BUILDER
@@ -53,7 +53,7 @@ void PutBytes() {
   uint32_t kVal1 = 0x482B3D9E;
   int32_t kVal2 = 0x482B3D9E;
 
-  if (std::endian::native == std::endian::little) {
+  if (endian::native == endian::little) {
     std::memcpy(b_array, &kVal1, sizeof(kVal1));
 
     kVal2 = int32_t(((kVal2 & 0x000000FF) << 3 * 8) |  //
@@ -76,7 +76,7 @@ void ReadBytes() {
   uint32_t kVal1;
   int32_t kVal2;
 
-  if (std::endian::native == std::endian::little) {
+  if (endian::native == endian::little) {
     std::memcpy(&kVal1, b_array, sizeof(kVal1));
     std::memcpy(&kVal2, b_array + 4, sizeof(kVal2));
     kVal2 = int32_t(((kVal2 & 0x000000FF) << 3 * 8) |  //

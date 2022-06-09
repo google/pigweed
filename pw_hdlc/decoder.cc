@@ -155,7 +155,7 @@ bool Decoder::VerifyFrameCheckSequence() const {
   }
 
   uint32_t actual_fcs =
-      bytes::ReadInOrder<uint32_t>(std::endian::little, fcs_buffer);
+      bytes::ReadInOrder<uint32_t>(endian::little, fcs_buffer);
   return actual_fcs == fcs_.value();
 }
 

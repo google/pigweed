@@ -48,6 +48,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_bytes:bit",
         "//pw_containers:to_array",
         "//pw_polyfill",
         "//pw_preprocessor",

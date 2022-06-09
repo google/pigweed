@@ -15,13 +15,13 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstddef>
 #include <cstring>
 #include <span>
 #include <string_view>
 
 #include "pw_assert/assert.h"
+#include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
@@ -378,7 +378,7 @@ class StreamEncoder {
   // Precondition: Encoder has no active child encoder.
   Status WriteFixed32(uint32_t field_number, uint32_t value) {
     std::array<std::byte, sizeof(value)> data =
-        bytes::CopyInOrder(std::endian::little, value);
+        bytes::CopyInOrder(endian::little, value);
     return WriteFixed(field_number, data);
   }
 
@@ -407,7 +407,7 @@ class StreamEncoder {
   // Precondition: Encoder has no active child encoder.
   Status WriteFixed64(uint32_t field_number, uint64_t value) {
     std::array<std::byte, sizeof(value)> data =
-        bytes::CopyInOrder(std::endian::little, value);
+        bytes::CopyInOrder(endian::little, value);
     return WriteFixed(field_number, data);
   }
 
@@ -494,7 +494,7 @@ class StreamEncoder {
     uint32_t integral_value;
     std::memcpy(&integral_value, &value, sizeof(value));
     std::array<std::byte, sizeof(value)> data =
-        bytes::CopyInOrder(std::endian::little, integral_value);
+        bytes::CopyInOrder(endian::little, integral_value);
     return WriteFixed(field_number, data);
   }
 
@@ -526,7 +526,7 @@ class StreamEncoder {
     uint64_t integral_value;
     std::memcpy(&integral_value, &value, sizeof(value));
     std::array<std::byte, sizeof(value)> data =
-        bytes::CopyInOrder(std::endian::little, integral_value);
+        bytes::CopyInOrder(endian::little, integral_value);
     return WriteFixed(field_number, data);
   }
 

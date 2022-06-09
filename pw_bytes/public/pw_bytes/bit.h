@@ -15,17 +15,9 @@
 // Features from the <bit> header introduced in C++20.
 #pragma once
 
-#if __has_include(<bit>)
-#include <bit>
-#endif  // __has_include(<bit>)
-
 namespace pw {
 
-#ifdef __cpp_lib_endian
-
-using std::endian;
-
-#elif defined(__GNUC__)
+#if defined(__GNUC__)
 
 enum class endian {
   little = __ORDER_LITTLE_ENDIAN__,
@@ -39,6 +31,6 @@ static_assert(false,
               "The pw::endian enum is not defined for this compiler. Add a "
               "definition to pw_bytes/bit.h.");
 
-#endif  // __cpp_lib_endian
+#endif  // defined(__GNUC__)
 
 }  // namespace pw

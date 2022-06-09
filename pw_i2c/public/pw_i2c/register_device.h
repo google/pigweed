@@ -66,8 +66,8 @@ class RegisterDevice : public Device {
   //   register_address_size: Size of the register address.
   constexpr RegisterDevice(Initiator& initiator,
                            Address address,
-                           std::endian register_address_order,
-                           std::endian data_order,
+                           endian register_address_order,
+                           endian data_order,
                            RegisterAddressSize register_address_size)
       : Device(initiator, address),
         register_address_order_(register_address_order),
@@ -81,7 +81,7 @@ class RegisterDevice : public Device {
   //   register_address_size: Size of the register address.
   constexpr RegisterDevice(Initiator& initiator,
                            Address address,
-                           std::endian order,
+                           endian order,
                            RegisterAddressSize register_address_size)
       : Device(initiator, address),
         register_address_order_(order),
@@ -241,8 +241,8 @@ class RegisterDevice : public Device {
                         ByteSpan buffer,
                         chrono::SystemClock::duration timeout);
 
-  const std::endian register_address_order_;
-  const std::endian data_order_;
+  const endian register_address_order_;
+  const endian data_order_;
   const RegisterAddressSize register_address_size_;
 };
 

@@ -25,26 +25,56 @@ compiling with any standard C++14 or newer.
 The wrapper headers are in ``public_overrides``. These are provided through the
 following libraries:
 
-* ``pw_polyfill:bit``
 * ``pw_polyfill:cstddef``
 * ``pw_polyfill:iterator``
 * ``pw_polyfill:span``
 
-The GN build automatically adds dependencies on the ``<bit>`` and ``<span>``
-headers. To apply other overrides, add dependencies as needed. In Bazel or
-CMake, overrides are not applied automatically, so depend on the targets you
-need such as ``//pw_polyfill:span`` or ``pw_polyfill.span``.
+The GN build automatically adds dependencies on the ``<span>`` header. To apply
+other overrides, add dependencies as needed. In Bazel or CMake, overrides are
+not applied automatically, so depend on the targets you need such as
+``//pw_polyfill:span`` or ``pw_polyfill.span``.
 
 Backported features
 ===================
-==================  ================================  ================  ======================================== =============
-Header              Feature                           Level of support  Feature test macro                       Implicit dep?
-==================  ================================  ================  ======================================== =============
-<bit>               std::endian                       full              __cpp_lib_endian                         GN
-<cstdlib>           std::byte                         full              __cpp_lib_byte                           ❌
-<iterator>          std::data, std::size              full              __cpp_lib_nonmember_container_access     ❌
-<span>              std::span                         no std::ranges    __cpp_lib_span                           GN
-==================  ================================  ================  ======================================== =============
+
+.. list-table::
+
+  * - **Header**
+    - **Feature**
+    - **Feature test macro**
+    - **Module**
+    - **Polyfill header**
+    - **Polyfill name**
+  * - ``<array>``
+    - ``std::to_array``
+    - ``__cpp_lib_to_array``
+    - :ref:`module-pw_containers`
+    - ``pw_containers/to_array.h``
+    - ``pw::containers::to_array``
+  * - ``<bit>``
+    - ``std::endian``
+    - ``__cpp_lib_endian``
+    - :ref:`module-pw_bytes`
+    - ``pw_bytes/bit.h``
+    - ``pw::endian``
+  * - ``<cstdlib>``
+    - ``std::byte``
+    - ``__cpp_lib_byte``
+    - pw_polyfill
+    - ``<cstdlib>``
+    - ``std::byte``
+  * - ``<iterator>``
+    - ``std::data``, ``std::size``
+    - ``__cpp_lib_nonmember_container_access``
+    - pw_polyfill
+    - ``<iterator>``
+    - ``std::data``, ``std::size``
+  * - ``<span>``
+    - ``std::span``
+    - ``__cpp_lib_span``
+    - pw_polyfill
+    - ``<span>``
+    - ``std::span``
 
 ----------------------------------------------------
 Adapt code to compile with different versions of C++
@@ -62,7 +92,6 @@ supported.
    Evaluates true if the provided C++ standard (98, 11, 14, 17, 20) is supported
    by the compiler. This is a simpler, cleaner alternative to checking the value
    of the ``__cplusplus`` macro.
-
 
 Language feature macros
 =======================

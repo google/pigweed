@@ -60,7 +60,7 @@ Status Encoder::WriteData(ConstByteSpan data) {
 
 Status Encoder::FinishFrame() {
   if (Status status =
-          WriteData(bytes::CopyInOrder(std::endian::little, fcs_.value()));
+          WriteData(bytes::CopyInOrder(endian::little, fcs_.value()));
       !status.ok()) {
     return status;
   }

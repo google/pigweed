@@ -80,7 +80,7 @@ LogEntry::MemoryEncoder CreateEncoderAndEncodeTokenizedLog(
   status = encoder.WriteTimestamp(ticks_since_epoch);
   if (metadata.module() != 0) {
     const uint32_t little_endian_module =
-        bytes::ConvertOrderTo(std::endian::little, metadata.module());
+        bytes::ConvertOrderTo(endian::little, metadata.module());
     status =
         encoder.WriteModule(std::as_bytes(std::span(&little_endian_module, 1)));
   }

@@ -39,7 +39,7 @@ const std::array<std::byte, cfg::kMaxThreadNameBytes - 7> kSampleThread = {
     std::byte('R'), std::byte('P'), std::byte('C')};
 constexpr char kSampleMessage[] = "message";
 constexpr auto kSampleModuleLittleEndian =
-    bytes::CopyInOrder<uint32_t>(std::endian::little, kSampleModule);
+    bytes::CopyInOrder<uint32_t>(endian::little, kSampleModule);
 
 // Creates and encodes a log entry in the provided buffer.
 template <uintptr_t log_level, uintptr_t module, uintptr_t flags>

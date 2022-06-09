@@ -33,11 +33,6 @@ pw_source_set("pw_polyfill") {
   ]
 }
 
-config("bit_overrides_config") {
-  include_dirs = [ "bit_public_overrides" ]
-  visibility = [ ":*" ]
-}
-
 config("cstddef_overrides_config") {
   include_dirs = [ "cstddef_public_overrides" ]
   visibility = [ ":*" ]
@@ -51,29 +46,11 @@ config("iterator_overrides_config") {
 # TODO(b/235237667): Remove this overrides target by migrating all users to
 # explicitly depend on the polyfill(s) they require.
 group("overrides") {
-  public_deps = [
-    ":bit",
-    ":span",
-  ]
+  public_deps = [ ":span" ]
 }
 
 config("standard_library_public") {
   include_dirs = [ "standard_library_public" ]
-}
-
-# Provides <bit>'s std::endian.
-pw_source_set("bit") {
-  public_configs = [
-    ":standard_library_public",
-    ":bit_overrides_config",
-  ]
-  public_deps = [
-    ":standard_library",
-    "$dir_pw_bytes:bit",
-  ]
-  remove_public_deps = [ "*" ]
-  inputs = [ "bit_public_overrides/bit" ]
-  public = [ "standard_library_public/pw_polyfill/standard_library/bit.h" ]
 }
 
 # Provides <cstddef>'s std::byte.

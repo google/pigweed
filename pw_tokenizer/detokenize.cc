@@ -15,9 +15,9 @@
 #include "pw_tokenizer/detokenize.h"
 
 #include <algorithm>
-#include <bit>
 #include <cstring>
 
+#include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
 #include "pw_tokenizer/internal/decode.h"
 
@@ -114,7 +114,7 @@ DetokenizedString Detokenizer::Detokenize(
   }
 
   uint32_t token = bytes::ReadInOrder<uint32_t>(
-      std::endian::little, encoded.data(), encoded.size());
+      endian::little, encoded.data(), encoded.size());
 
   const auto result = database_.find(token);
 

@@ -17,7 +17,6 @@
 #include "gtest/gtest.h"
 #include "pw_polyfill/language_feature_macros.h"
 #include "pw_polyfill/standard.h"
-#include "pw_polyfill/standard_library/bit.h"
 #include "pw_polyfill/standard_library/cstddef.h"
 #include "pw_polyfill/standard_library/iterator.h"
 
@@ -44,16 +43,6 @@ static_assert(PW_CXX_STANDARD_IS_SUPPORTED(20), "C++20 must be supported");
 #else
 static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(20), "C++20 must not be supported");
 #endif  // __cplusplus >= 202002L
-
-TEST(Bit, Endian) {
-  if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
-    EXPECT_EQ(std::endian::native, std::endian::big);
-  } else if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
-    EXPECT_EQ(std::endian::native, std::endian::little);
-  } else {
-    FAIL();
-  }
-}
 
 TEST(Cstddef, Byte_Operators) {
   std::byte value = std::byte(0);

@@ -35,6 +35,7 @@ pw_source_set("pw_bytes") {
   ]
   sources = [ "byte_builder.cc" ]
   public_deps = [
+    "$dir_pw_bytes:bit",
     "$dir_pw_containers:iterator",
     dir_pw_preprocessor,
     dir_pw_status,
@@ -50,6 +51,7 @@ pw_source_set("bit") {
 pw_test_group("tests") {
   tests = [
     ":array_test",
+    ":bit_test",
     ":byte_builder_test",
     ":endian_test",
     ":units_test",
@@ -63,6 +65,11 @@ pw_test_group("tests") {
 pw_test("array_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "array_test.cc" ]
+}
+
+pw_test("bit_test") {
+  deps = [ ":bit" ]
+  sources = [ "bit_test.cc" ]
 }
 
 pw_test("byte_builder_test") {

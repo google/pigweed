@@ -481,8 +481,8 @@ TEST_F(LogServiceTest, LargeLogEntry) {
             OkStatus());
   ASSERT_EQ(encoder.WriteFlags(expected_entry.metadata.flags()), OkStatus());
   ASSERT_EQ(encoder.WriteTimestamp(expected_entry.timestamp), OkStatus());
-  const uint32_t little_endian_module = bytes::ConvertOrderTo(
-      std::endian::little, expected_entry.metadata.module());
+  const uint32_t little_endian_module =
+      bytes::ConvertOrderTo(endian::little, expected_entry.metadata.module());
   ASSERT_EQ(
       encoder.WriteModule(std::as_bytes(std::span(&little_endian_module, 1))),
       OkStatus());
@@ -799,7 +799,7 @@ TEST_F(LogServiceTest, FilterLogs) {
     rule = {};
   }
   const auto module_little_endian =
-      bytes::CopyInOrder<uint32_t>(std::endian::little, module);
+      bytes::CopyInOrder<uint32_t>(endian::little, module);
   rules2_[0] = {
       .action = Filter::Rule::Action::kKeep,
       .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,

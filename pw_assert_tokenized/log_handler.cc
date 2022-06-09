@@ -66,7 +66,7 @@ extern "C" void pw_assert_tokenized_HandleCheckFailure(
           PW_LOG_LEVEL_FATAL, 0, PW_LOG_FLAGS, line_number)
           .value();
   std::array<std::byte, sizeof(tokenized_message)> token_buffer =
-      pw::bytes::CopyInOrder(std::endian::little, tokenized_message);
+      pw::bytes::CopyInOrder(endian::little, tokenized_message);
 
   pw_tokenizer_HandleEncodedMessageWithPayload(
       payload,

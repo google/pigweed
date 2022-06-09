@@ -151,6 +151,7 @@ pw_source_set("base64") {
 pw_source_set("decoder") {
   public_configs = [ ":public_include_path" ]
   deps = [
+    "$dir_pw_bytes:bit",
     dir_pw_bytes,
     dir_pw_varint,
   ]

@@ -15,10 +15,10 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstddef>
 #include <cstring>
 
+#include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/iterator.h"
@@ -124,30 +124,30 @@ class ByteBuilder {
     int8_t PeekInt8() const { return static_cast<int8_t>(PeekUint8()); }
 
     uint8_t PeekUint8() const {
-      return bytes::ReadInOrder<uint8_t>(std::endian::little, byte_);
+      return bytes::ReadInOrder<uint8_t>(endian::little, byte_);
     }
 
-    int16_t PeekInt16(std::endian order = std::endian::little) const {
+    int16_t PeekInt16(endian order = endian::little) const {
       return static_cast<int16_t>(PeekUint16(order));
     }
 
-    uint16_t PeekUint16(std::endian order = std::endian::little) const {
+    uint16_t PeekUint16(endian order = endian::little) const {
       return bytes::ReadInOrder<uint16_t>(order, byte_);
     }
 
-    int32_t PeekInt32(std::endian order = std::endian::little) const {
+    int32_t PeekInt32(endian order = endian::little) const {
       return static_cast<int32_t>(PeekUint32(order));
     }
 
-    uint32_t PeekUint32(std::endian order = std::endian::little) const {
+    uint32_t PeekUint32(endian order = endian::little) const {
       return bytes::ReadInOrder<uint32_t>(order, byte_);
     }
 
-    int64_t PeekInt64(std::endian order = std::endian::little) const {
+    int64_t PeekInt64(endian order = endian::little) const {
       return static_cast<int64_t>(PeekUint64(order));
     }
 
-    uint64_t PeekUint64(std::endian order = std::endian::little) const {
+    uint64_t PeekUint64(endian order = endian::little) const {
       return bytes::ReadInOrder<uint64_t>(order, byte_);
     }
 
@@ -157,36 +157,36 @@ class ByteBuilder {
     int8_t ReadInt8() { return static_cast<int8_t>(ReadUint8()); }
 
     uint8_t ReadUint8() {
-      uint8_t value = bytes::ReadInOrder<uint8_t>(std::endian::little, byte_);
+      uint8_t value = bytes::ReadInOrder<uint8_t>(endian::little, byte_);
       byte_ += 1;
       return value;
     }
 
-    int16_t ReadInt16(std::endian order = std::endian::little) {
+    int16_t ReadInt16(endian order = endian::little) {
       return static_cast<int16_t>(ReadUint16(order));
     }
 
-    uint16_t ReadUint16(std::endian order = std::endian::little) {
+    uint16_t ReadUint16(endian order = endian::little) {
       uint16_t value = bytes::ReadInOrder<uint16_t>(order, byte_);
       byte_ += 2;
       return value;
     }
 
-    int32_t ReadInt32(std::endian order = std::endian::little) {
+    int32_t ReadInt32(endian order = endian::little) {
       return static_cast<int32_t>(ReadUint32(order));
     }
 
-    uint32_t ReadUint32(std::endian order = std::endian::little) {
+    uint32_t ReadUint32(endian order = endian::little) {
       uint32_t value = bytes::ReadInOrder<uint32_t>(order, byte_);
       byte_ += 4;
       return value;
     }
 
-    int64_t ReadInt64(std::endian order = std::endian::little) {
+    int64_t ReadInt64(endian order = endian::little) {
       return static_cast<int64_t>(ReadUint64(order));
     }
 
-    uint64_t ReadUint64(std::endian order = std::endian::little) {
+    uint64_t ReadUint64(endian order = endian::little) {
       int64_t value = bytes::ReadInOrder<int64_t>(order, byte_);
       byte_ += 8;
       return value;
@@ -297,35 +297,29 @@ class ByteBuilder {
   ByteBuilder& PutInt8(int8_t val) { return WriteInOrder(val); }
 
   // Put methods for inserting different 16-bit ints
-  ByteBuilder& PutUint16(uint16_t value,
-                         std::endian order = std::endian::little) {
+  ByteBuilder& PutUint16(uint16_t value, endian order = endian::little) {
     return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
 
-  ByteBuilder& PutInt16(int16_t value,
-                        std::endian order = std::endian::little) {
+  ByteBuilder& PutInt16(int16_t value, endian order = endian::little) {
     return PutUint16(static_cast<uint16_t>(value), order);
   }
 
   // Put methods for inserting different 32-bit ints
-  ByteBuilder& PutUint32(uint32_t value,
-                         std::endian order = std::endian::little) {
+  ByteBuilder& PutUint32(uint32_t value, endian order = endian::little) {
     return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
 
-  ByteBuilder& PutInt32(int32_t value,
-                        std::endian order = std::endian::little) {
+  ByteBuilder& PutInt32(int32_t value, endian order = endian::little) {
     return PutUint32(static_cast<uint32_t>(value), order);
   }
 
   // Put methods for inserting different 64-bit ints
-  ByteBuilder& PutUint64(uint64_t value,
-                         std::endian order = std::endian::little) {
+  ByteBuilder& PutUint64(uint64_t value, endian order = endian::little) {
     return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
 
-  ByteBuilder& PutInt64(int64_t value,
-                        std::endian order = std::endian::little) {
+  ByteBuilder& PutInt64(int64_t value, endian order = endian::little) {
     return PutUint64(static_cast<uint64_t>(value), order);
   }
 

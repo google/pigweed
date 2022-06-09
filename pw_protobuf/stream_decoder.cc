@@ -15,7 +15,6 @@
 #include "pw_protobuf/stream_decoder.h"
 
 #include <algorithm>
-#include <bit>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -24,6 +23,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_assert/check.h"
+#include "pw_bytes/bit.h"
 #include "pw_containers/vector.h"
 #include "pw_function/function.h"
 #include "pw_protobuf/encoder.h"
@@ -385,7 +385,7 @@ Status StreamDecoder::ReadFixedField(std::span<std::byte> out) {
   position_ += out.size();
   field_consumed_ = true;
 
-  if (std::endian::native != std::endian::little) {
+  if (endian::native != endian::little) {
     std::reverse(out.begin(), out.end());
   }
 
@@ -446,7 +446,7 @@ StatusWithSize StreamDecoder::ReadPackedFixedField(std::span<std::byte> out,
   field_consumed_ = true;
 
   // Decode little-endian serialized packed fields.
-  if (std::endian::native != std::endian::little) {
+  if (endian::native != endian::little) {
     for (auto out_start = out.begin(); out_start != out.end();
          out_start += elem_size) {
       std::reverse(out_start, out_start + elem_size);
