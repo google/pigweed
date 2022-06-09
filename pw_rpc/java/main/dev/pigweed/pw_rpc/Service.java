@@ -38,7 +38,7 @@ public class Service {
     return name;
   }
 
-  public int id() {
+  int id() {
     return id;
   }
 
