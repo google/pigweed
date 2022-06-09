@@ -37,6 +37,13 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_BYTES)
   zephyr_link_libraries(pw_bytes)
 endif()
 
+pw_add_module_library(pw_bytes.bit
+  HEADERS
+    public/pw_bytes/bit.h
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_test(pw_bytes.array_test
   SOURCES
     array_test.cc

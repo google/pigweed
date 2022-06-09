@@ -19,13 +19,13 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
 }
 
 pw_source_set("pw_bytes") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_bytes/array.h",
     "public/pw_bytes/byte_builder.h",
@@ -39,6 +39,12 @@ pw_source_set("pw_bytes") {
     dir_pw_preprocessor,
     dir_pw_status,
   ]
+}
+
+pw_source_set("bit") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bytes/bit.h" ]
+  remove_public_deps = [ "*" ]
 }
 
 pw_test_group("tests") {

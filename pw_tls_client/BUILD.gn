@@ -116,6 +116,7 @@ pw_source_set("build_time") {
 pw_source_set("crlset") {
   public_configs = [ ":public_includes" ]
   public = [ "public/pw_tls_client/crlset.h" ]
+  public_deps = [ dir_pw_bytes ]
 
   # TODO(pwbug/396): Add sources generated from a CRLSet file to build.
 }

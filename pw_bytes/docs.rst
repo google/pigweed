@@ -1,30 +1,33 @@
 .. _module-pw_bytes:
 
----------
+=========
 pw_bytes
----------
+=========
 pw_bytes is a collection of utilities for manipulating binary data.
 
+-------------
 Compatibility
-=============
+-------------
 C++17
 
+------------
 Dependencies
-============
+------------
 * ``pw_preprocessor``
 * ``pw_status``
 * ``pw_span``
 
+--------
 Features
-========
+--------
 
 pw_bytes/array.h
-----------------
+================
 Functions for working with byte arrays, primarily for building fixed-size byte
 arrays at compile time.
 
 pw_bytes/byte_builder.h
------------------------
+=======================
 .. cpp:class:: ByteBuilder
 
   ``ByteBuilder`` is a class that facilitates building or reading arrays of
@@ -36,15 +39,22 @@ pw_bytes/byte_builder.h
   ``ByteBuilder`` with an internally allocated buffer.
 
 Size report: using ByteBuffer
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 .. include:: byte_builder_size_report
 
+pw_bytes/bit.h
+================
+Implementation of features provided by C++20's ``<bit>`` header. Supported
+features:
+
+* ``pw::endian`` -- Implementation of the ``std::endian`` enum.
+
 pw_bytes/endian.h
------------------
+=================
 Functions for converting the endianness of integral values.
 
 pw_bytes/units.h
-----------------
+================
 Constants, functions and user-defined literals for specifying a number of bytes
 in powers of two, as defined by IEC 60027-2 A.2 and ISO/IEC 80000:13-2008.
 
@@ -78,7 +88,8 @@ also similar functions:
 
   constexpr size_t kBufferSizeBytes = pw::bytes::MiB(1) + pw::bytes::KiB(42);
 
+------
 Zephyr
-======
+------
 To enable ``pw_bytes`` for Zephyr add ``CONFIG_PIGWEED_BYTES=y`` to the
 project's configuration.

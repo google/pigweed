@@ -45,6 +45,7 @@ pw_add_module_library(pw_polyfill.bit
     bit_public_overrides
     standard_library_public
   PUBLIC_DEPS
+    pw_bytes.bit
     pw_polyfill.standard_library
 )
 

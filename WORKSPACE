@@ -232,15 +232,6 @@ git_repository(
     remote = "https://github.com/bazelembedded/bazel-embedded.git",
 )
 
-# Instantiate Pigweed configuration for embedded toolchain,
-# this must be called before bazel_embedded_deps.
-load(
-    "//pw_build:pigweed_toolchain_upstream.bzl",
-    "toolchain_upstream_deps",
-)
-
-toolchain_upstream_deps()
-
 # Configure bazel_embedded toolchains and platforms.
 load(
     "@bazel_embedded//:bazel_embedded_deps.bzl",

@@ -67,7 +67,10 @@ pw_source_set("bit") {
     ":standard_library_public",
     ":bit_overrides_config",
   ]
-  public_deps = [ ":standard_library" ]
+  public_deps = [
+    ":standard_library",
+    "$dir_pw_bytes:bit",
+  ]
   remove_public_deps = [ "*" ]
   inputs = [ "bit_public_overrides/bit" ]
   public = [ "standard_library_public/pw_polyfill/standard_library/bit.h" ]

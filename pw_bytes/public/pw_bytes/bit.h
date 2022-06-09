@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,18 +11,34 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+// Features from the <bit> header introduced in C++20.
 #pragma once
 
-#include "pw_bytes/bit.h"
-#include "pw_polyfill/standard_library/namespace.h"
+#if __has_include(<bit>)
+#include <bit>
+#endif  // __has_include(<bit>)
 
-#ifndef __cpp_lib_endian
-#define __cpp_lib_endian 201907L
+namespace pw {
 
-_PW_POLYFILL_BEGIN_NAMESPACE_STD
+#ifdef __cpp_lib_endian
 
-using pw::endian;
+using std::endian;
 
-_PW_POLYFILL_END_NAMESPACE_STD
+#elif defined(__GNUC__)
+
+enum class endian {
+  little = __ORDER_LITTLE_ENDIAN__,
+  big = __ORDER_BIG_ENDIAN__,
+  native = __BYTE_ORDER__,
+};
+
+#else
+
+static_assert(false,
+              "The pw::endian enum is not defined for this compiler. Add a "
+              "definition to pw_bytes/bit.h.");
 
 #endif  // __cpp_lib_endian
+
+}  // namespace pw
