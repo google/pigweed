@@ -24,7 +24,16 @@ public interface Call {
   void cancel() throws ChannelOutputException;
 
   /** Cancels the RPC as in cancel(), but does not send a cancellation packet to the server. */
-  void abandon();
+  default void abandon() {
+    // By default, call cancel() and ignore exceptions.
+    // TODO(b/235513314): Remove this default implementation once users have
+    //     implemented abandon().
+    try {
+      cancel();
+    } catch (ChannelOutputException e) {
+      // Ignore the exception, since abandon() isn't supposed to send packets.
+    }
+  }
 
   /** True if the RPC has not yet completed. */
   default boolean active() {
