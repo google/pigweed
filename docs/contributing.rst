@@ -86,11 +86,9 @@ it to the ``.git\hooks`` directory in the Pigweed repository.
 
 Commit message
 --------------
-Pigweed commit messages follow the `50/72 style
-<https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>`_ (a
-maximum of 50 characters in the commit title, and a 72 character width limit in
-the commit message body). Commit titles should be prefixed with the name of the
-module that the commit is affecting. :ref:`Examples
+Pigweed commit message bodies and summaries are limited to 72 characters wide
+to improve readability. Commit summaries should also be prefixed with the name
+of the module that the commit is affecting. :ref:`Examples
 <docs-contributing-commit-message-examples>` of well and ill-formed commit
 messages are provided below.
 
