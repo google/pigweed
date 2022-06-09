@@ -127,7 +127,7 @@ public class Client {
   }
 
   /** Returns a MethodClient with the provided service and method IDs. */
-  public MethodClient method(int channelId, int serviceId, int methodId) {
+  synchronized MethodClient method(int channelId, int serviceId, int methodId) {
     Channel channel = channels.get(channelId);
     if (channel == null) {
       throw new IllegalArgumentException("Unknown channel ID " + channelId);
