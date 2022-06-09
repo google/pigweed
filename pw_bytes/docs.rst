@@ -59,13 +59,14 @@ Constants, functions and user-defined literals for specifying a number of bytes
 in powers of two, as defined by IEC 60027-2 A.2 and ISO/IEC 80000:13-2008.
 
 The supported suffixes include:
- * ``_B``   for bytes     (1024^0)
- * ``_KiB`` for kibibytes (1024^1)
- * ``_MiB`` for mibibytes (1024^2)
- * ``_GiB`` for gibibytes (1024^3)
- * ``_TiB`` for tebibytes (1024^4)
- * ``_PiB`` for pebibytes (1024^5)
- * ``_EiB`` for exbibytes (1024^6)
+
+* ``_B``   for bytes     (1024\ :sup:`0`)
+* ``_KiB`` for kibibytes (1024\ :sup:`1`)
+* ``_MiB`` for mebibytes (1024\ :sup:`2`)
+* ``_GiB`` for gibibytes (1024\ :sup:`3`)
+* ``_TiB`` for tebibytes (1024\ :sup:`4`)
+* ``_PiB`` for pebibytes (1024\ :sup:`5`)
+* ``_EiB`` for exbibytes (1024\ :sup:`6`)
 
 In order to use these you must use a using namespace directive, for example:
 
