@@ -47,7 +47,8 @@ pw_bytes/bit.h
 Implementation of features provided by C++20's ``<bit>`` header. Supported
 features:
 
-* ``pw::endian`` -- Implementation of the ``std::endian`` enum.
+* ``pw::endian`` -- Implementation of the ``std::endian`` enum. If
+  ``std::endian`` is available, ``pw::endian`` is an alias of it.
 
 pw_bytes/endian.h
 =================
