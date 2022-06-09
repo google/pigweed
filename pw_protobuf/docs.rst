@@ -666,11 +666,17 @@ that can hold the set of values encoded by it, following these rules.
       std::optional<int32_t> points;
     };
 
-* Fields and messages whose names conflict with reserved C++ keywords are
-  suffixed with underscores to avoid compilation failures. This also applies to
-  names that conflict with symbols defined by the code-generation
-  implementation. These cases are illustrated below by the ``operator`` field
-  and the ``Message`` message, respectively.
+* Generated symbols whose names conflict with reserved C++ keywords or
+  standard-library macros are suffixed with underscores to avoid compilation
+  failures. This can be seen below in ``Channel.operator``, which is mapped to
+  ``Channel::Message::operator_`` to avoid conflicting with the ``operator``
+  keyword. Similarly, some POSIX signals are provided as macros by the
+  ``<csignal>`` header, so those names need to be suffixed with underscores in
+  the generated code. Note, however, that some signal names are left unchanged.
+  These signals aren't defined in the standard library, so they won't cause any
+  problems unless the user defines custom macros for them; any naming conflicts
+  caused by user-defined macros are the user's responsibility.
+  (https://google.github.io/styleguide/cppguide.html#Preprocessor_Macros)
 
   .. code::
 
@@ -680,10 +686,20 @@ that can hold the set of values encoded by it, following these rules.
       Company operator = 3;
     }
 
-    message Message {
-      User sender = 2;
-      User recipient = 3;
-      Channel channel = 4;
+    enum PosixSignal {
+      NONE = 0;
+      SIGHUP = 1;
+      SIGINT = 2;
+      SIGQUIT = 3;
+      SIGILL = 4;
+      SIGTRAP = 5;
+      SIGABRT = 6;
+      SIGFPE = 8;
+      SIGKILL = 9;
+      SIGSEGV = 11;
+      SIGPIPE = 13;
+      SIGALRM = 14;
+      SIGTERM = 15;
     }
 
   .. code:: c++
@@ -694,10 +710,34 @@ that can hold the set of values encoded by it, following these rules.
       Company::Message operator_;
     };
 
-    struct Message_::Message {
-      User::Message sender;
-      User::Message recipient;
-      Channel::Message channel;
+    enum class PosixSignal {
+      NONE = 0;
+      SIGHUP = 1;
+      SIGINT_ = 2;
+      SIGQUIT = 3;
+      SIGILL_ = 4;
+      SIGTRAP = 5;
+      SIGABRT_ = 6;
+      SIGFPE_ = 8;
+      SIGKILL = 9;
+      SIGSEGV_ = 11;
+      SIGPIPE = 13;
+      SIGALRM = 14;
+      SIGTERM_ = 15;
+
+      kNone = NONE;
+      kSighup = SIGHUP;
+      kSigint = SIGINT_;
+      kSigquit = SIGQUIT;
+      kSigill = SIGILL_;
+      kSigtrap = SIGTRAP;
+      kSigabrt = SIGABRT_;
+      kSigfpe = SIGFPE_;
+      kSigkill = SIGKILL;
+      kSigsegv = SIGSEGV_;
+      kSigpipe = SIGPIPE;
+      kSigalrm = SIGALRM;
+      kSigterm = SIGTERM_;
     };
 
 * Repeated scalar fields are represented by ``pw::Vector`` when the
