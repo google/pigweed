@@ -83,7 +83,7 @@ message LogEntry {
   //   payload  = N bytes; typically 4-10 in practice
   //
   // Total: 2 + N ~= 6-12 bytes
-  bytes message = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+  optional bytes message = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // Packed log level and line number. Structure:
   //
