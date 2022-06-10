@@ -565,7 +565,12 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
                 raise MissingPythonDependency(
                     'Unable to find top level source dir for the Python '
                     f'package "{pkg}"')
+            # Don't add this dir to the PYTHONPATH if no __init__.py exists.
+            init_py_files = top_level_source_dir.parent.glob('*/__init__.py')
+            if not any(init_py_files):
+                continue
             python_paths_list.append(top_level_source_dir.parent.resolve())
+
         # Sort the PYTHONPATH list, it will be in a different order each build.
         python_paths_list = sorted(python_paths_list)
 

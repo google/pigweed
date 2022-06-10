@@ -374,6 +374,13 @@ template("_pw_python_proto_library") {
       generate_setup = {
         metadata = {
           name = invoker._package_dir
+
+          # The package name should match where the __init__.py lives. If
+          # module_as_package is specified use that for the Python package name.
+          if (defined(invoker.module_as_package) &&
+              invoker.module_as_package != "") {
+            name = invoker.module_as_package
+          }
           version =
               "0.0.1"  # TODO(hepler): Need to be able to set this verison.
         }
