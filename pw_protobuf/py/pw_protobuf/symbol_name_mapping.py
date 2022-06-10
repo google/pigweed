@@ -21,6 +21,10 @@
 # Note: This is primarily used for "if x in y" operations, hence the use of a
 # set rather than a list.
 PW_PROTO_CODEGEN_RESERVED_WORDS: set[str] = {
+    # Identifiers that conflict with the codegen internals when used in certain
+    # contexts:
+    "Fields",
+    "Message",
     # C++20 keywords (https://en.cppreference.com/w/cpp/keyword):
     "alignas",
     "alignof",

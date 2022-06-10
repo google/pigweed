@@ -328,7 +328,7 @@ class PackedReadVectorMethod(ReadMethod):
 class MessageProperty(ProtoMember):
     """Base class for a C++ property for a field in a protobuf message."""
     def name(self) -> str:
-        return self._field.enum_name().lower()
+        return self._field.field_name()
 
     def should_appear(self) -> bool:
         return True

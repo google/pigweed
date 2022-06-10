@@ -349,8 +349,12 @@ class ProtoMessageField:
     def name(self) -> str:
         return self.upper_camel_case(self._field_name)
 
+    def field_name(self) -> str:
+        return self._field_name
+
     def enum_name(self) -> str:
-        return self.upper_snake_case(self._field_name)
+        return self.upper_snake_case(
+            symbol_name_mapping.fix_cc_enum_value_name(self._field_name))
 
     def number(self) -> int:
         return self._number

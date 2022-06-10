@@ -249,19 +249,18 @@ TEST(CodegenMessage, FixReservedIdentifiers) {
   std::ignore = IntegerMetadata::Message{
       .bits = 32,
       .signed_ = true,
+      .null = false,
   };
 
-  // Make sure that `Message::Message` exists in the generated code and hasn't
-  // caused any namespace-resolution issues.
-  std::ignore = Message::Message{
-      .length = 4096,
-  };
-
-  // Make sure that `Fields::Fields` exists in the generated code and hasn't
-  // caused any namespace-resolution issues.
-  std::ignore = Fields::Fields::INTEGERS;
-  std::ignore = Fields::Fields::COMPLEX_NUMBERS;
-  std::ignore = Fields::Fields::MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE;
+  // Make sure that the internal enum describing the struct's fields was
+  // generated as expected:
+  // - `BITS` doesn't need an underscore.
+  // - `SIGNED_` has an underscore to match the corresponding `signed_` field.
+  // - `NULL_` has an underscore to avoid a collision with `NULL` (even though
+  //   the field `null` doesn't have or need an underscore).
+  std::ignore = IntegerMetadata::Fields::BITS;
+  std::ignore = IntegerMetadata::Fields::SIGNED_;
+  std::ignore = IntegerMetadata::Fields::NULL_;
 
   // Make sure that the `ReservedWord` enum values were renamed as expected.
   // Specifically, only enum-value names that are reserved in UPPER_SNAKE_CASE
@@ -280,6 +279,38 @@ TEST(CodegenMessage, FixReservedIdentifiers) {
   std::ignore = ReservedWord::kFor;     // No underscore necessary.
   std::ignore = ReservedWord::DO;       // No underscore necessary.
   std::ignore = ReservedWord::kDo;      // No underscore necessary.
+
+  // Instantiate an extremely degenerately named set of nested types in order to
+  // make sure that name conflicts with the codegen internals are properly
+  // prevented.
+  std::ignore = Function::Message{
+      .description =
+          Function::Message_::Message{
+              .content = "multiplication (mod 5)",
+          },
+      .domain_field = Function::Fields_::INTEGERS_MOD_5,
+      .codomain_field = Function::Fields_::INTEGERS_MOD_5,
+  };
+
+  // Check for expected values of `enum class Function::Fields`:
+  std::ignore = Function::Fields::DESCRIPTION;
+  std::ignore = Function::Fields::DOMAIN_FIELD;
+  std::ignore = Function::Fields::CODOMAIN_FIELD;
+
+  // Check for expected values of `enum class Function::Message_::Fields`:
+  std::ignore = Function::Message_::Fields::CONTENT;
+
+  // Check for expected values of `enum class Function::Fields_`:
+  std::ignore = Function::Fields_::NONE;
+  std::ignore = Function::Fields_::kNone;
+  std::ignore = Function::Fields_::COMPLEX_NUMBERS;
+  std::ignore = Function::Fields_::kComplexNumbers;
+  std::ignore = Function::Fields_::INTEGERS_MOD_5;
+  std::ignore = Function::Fields_::kIntegersMod5;
+  std::ignore = Function::Fields_::MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE;
+  std::ignore = Function::Fields_::kMeromorphicFunctionsOnComplexPlane;
+  std::ignore = Function::Fields_::OTHER;
+  std::ignore = Function::Fields_::kOther;
 }
 
 PW_MODIFY_DIAGNOSTICS_POP();

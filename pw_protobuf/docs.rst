@@ -743,80 +743,6 @@ that can hold the set of values encoded by it, following these rules.
       std::optional<int32_t> points;
     };
 
-* Generated symbols whose names conflict with reserved C++ keywords or
-  standard-library macros are suffixed with underscores to avoid compilation
-  failures. This can be seen below in ``Channel.operator``, which is mapped to
-  ``Channel::Message::operator_`` to avoid conflicting with the ``operator``
-  keyword. Similarly, some POSIX signals are provided as macros by the
-  ``<csignal>`` header, so those names need to be suffixed with underscores in
-  the generated code. Note, however, that some signal names are left unchanged.
-  These signals aren't defined in the standard library, so they won't cause any
-  problems unless the user defines custom macros for them; any naming conflicts
-  caused by user-defined macros are the user's responsibility.
-  (https://google.github.io/styleguide/cppguide.html#Preprocessor_Macros)
-
-  .. code::
-
-    message Channel {
-      int32 bitrate = 1;
-      float signal_to_noise_ratio = 2;
-      Company operator = 3;
-    }
-
-    enum PosixSignal {
-      NONE = 0;
-      SIGHUP = 1;
-      SIGINT = 2;
-      SIGQUIT = 3;
-      SIGILL = 4;
-      SIGTRAP = 5;
-      SIGABRT = 6;
-      SIGFPE = 8;
-      SIGKILL = 9;
-      SIGSEGV = 11;
-      SIGPIPE = 13;
-      SIGALRM = 14;
-      SIGTERM = 15;
-    }
-
-  .. code:: c++
-
-    struct Channel::Message {
-      int32_t bitrate;
-      float signal_to_noise_ratio;
-      Company::Message operator_;
-    };
-
-    enum class PosixSignal {
-      NONE = 0;
-      SIGHUP = 1;
-      SIGINT_ = 2;
-      SIGQUIT = 3;
-      SIGILL_ = 4;
-      SIGTRAP = 5;
-      SIGABRT_ = 6;
-      SIGFPE_ = 8;
-      SIGKILL = 9;
-      SIGSEGV_ = 11;
-      SIGPIPE = 13;
-      SIGALRM = 14;
-      SIGTERM_ = 15;
-
-      kNone = NONE;
-      kSighup = SIGHUP;
-      kSigint = SIGINT_;
-      kSigquit = SIGQUIT;
-      kSigill = SIGILL_;
-      kSigtrap = SIGTRAP;
-      kSigabrt = SIGABRT_;
-      kSigfpe = SIGFPE_;
-      kSigkill = SIGKILL;
-      kSigsegv = SIGSEGV_;
-      kSigpipe = SIGPIPE;
-      kSigalrm = SIGALRM;
-      kSigterm = SIGTERM_;
-    };
-
 * Repeated scalar fields are represented by ``pw::Vector`` when the
   ``max_count`` option is set for that field, or by ``std::array`` when both
   ``max_count`` and ``fixed_count:true`` are set.
@@ -923,6 +849,163 @@ structure is moved.
 Message structures can also be compared with each other for equality. This
 includes all repeated and nested fields represented by value types, but does not
 compare any field represented by a callback.
+
+Reserved-Word Conflicts
+=======================
+Generated symbols whose names conflict with reserved C++ keywords or
+standard-library macros are suffixed with underscores to avoid compilation
+failures. This can be seen below in ``Channel.operator``, which is mapped to
+``Channel::Message::operator_`` to avoid conflicting with the ``operator``
+keyword. Similarly, some POSIX signals are provided as macros by the
+``<csignal>`` header, so those names need to be suffixed with underscores in the
+generated code. Note, however, that some signal names are left unchanged. These
+signals aren't defined in the standard library, so they won't cause any problems
+unless the user defines custom macros for them; any naming conflicts caused by
+user-defined macros are the user's responsibility.
+(https://google.github.io/styleguide/cppguide.html#Preprocessor_Macros)
+
+.. code::
+
+  message Channel {
+    int32 bitrate = 1;
+    float signal_to_noise_ratio = 2;
+    Company operator = 3;
+  }
+
+  enum PosixSignal {
+    NONE = 0;
+    SIGHUP = 1;
+    SIGINT = 2;
+    SIGQUIT = 3;
+    SIGILL = 4;
+    SIGTRAP = 5;
+    SIGABRT = 6;
+    SIGFPE = 8;
+    SIGKILL = 9;
+    SIGSEGV = 11;
+    SIGPIPE = 13;
+    SIGALRM = 14;
+    SIGTERM = 15;
+  }
+
+.. code:: c++
+
+  struct Channel::Message {
+    int32_t bitrate;
+    float signal_to_noise_ratio;
+    Company::Message operator_;
+  };
+
+  enum class PosixSignal {
+    NONE = 0,
+    SIGHUP = 1,
+    SIGINT_ = 2,
+    SIGQUIT = 3,
+    SIGILL_ = 4,
+    SIGTRAP = 5,
+    SIGABRT_ = 6,
+    SIGFPE_ = 8,
+    SIGKILL = 9,
+    SIGSEGV_ = 11,
+    SIGPIPE = 13,
+    SIGALRM = 14,
+    SIGTERM_ = 15,
+
+    kNone = NONE,
+    kSighup = SIGHUP,
+    kSigint = SIGINT_,
+    kSigquit = SIGQUIT,
+    kSigill = SIGILL_,
+    kSigtrap = SIGTRAP,
+    kSigabrt = SIGABRT_,
+    kSigfpe = SIGFPE_,
+    kSigkill = SIGKILL,
+    kSigsegv = SIGSEGV_,
+    kSigpipe = SIGPIPE,
+    kSigalrm = SIGALRM,
+    kSigterm = SIGTERM_,
+  };
+
+Much like reserved words and macros, the names ``Message`` and ``Fields`` are
+suffixed with underscores in generated C++ code. This is to prevent name
+conflicts with the codegen internals if they're used in a nested context as in
+the example below.
+
+.. code::
+
+  message Function {
+    message Message {
+      string content = 1;
+    }
+
+    enum Fields {
+      NONE = 0;
+      COMPLEX_NUMBERS = 1;
+      INTEGERS_MOD_5 = 2;
+      MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE = 3;
+      OTHER = 4;
+    }
+
+    Message description = 1;
+    Fields domain = 2;
+    Fields codomain = 3;
+  }
+
+.. code::
+
+  Function.Message.content max_size:128
+
+.. code:: c++
+
+  struct Function::Message_::Message {
+    pw::Vector<char, 128> content;
+  };
+
+  enum class Function::Message_::Fields {
+    CONTENT = 1,
+  };
+
+  enum class Function::Fields_ {
+    NONE = 0,
+    COMPLEX_NUMBERS = 1,
+    INTEGERS_MOD_5 = 2,
+    MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE = 3,
+    OTHER = 4,
+
+    kNone = NONE,
+    kComplexNumbers = COMPLEX_NUMBERS,
+    kIntegersMod5 = INTEGERS_MOD_5,
+    kMeromorphicFunctionsOnComplexPlane =
+        MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE,
+    kOther = OTHER,
+  };
+
+  struct Function::Message {
+    Function::Message_::Message description;
+    Function::Fields_ domain;
+    Function::Fields_ codomain;
+  };
+
+  enum class Function::Fields {
+    DESCRIPTION = 1,
+    DOMAIN = 2,
+    CODOMAIN = 3,
+  };
+
+.. warning::
+  Note that the C++ spec also reserves two categories of identifiers for the
+  compiler to use in ways that may conflict with generated code:
+
+  * Any identifier that contains two consecutive underscores anywhere in it.
+
+  * Any identifier that starts with an underscore followed by a capital letter.
+
+  Appending underscores to symbols in these categories wouldn't change the fact
+  that they match patterns reserved for the compiler, so the codegen does not
+  currently attempt to fix them. Such names will therefore result in
+  non-portable code that may or may not work depending on the compiler. These
+  naming patterns are of course strongly discouraged in any protobufs that will
+  be used with ``pw_protobuf`` codegen.
 
 Overhead
 ========
