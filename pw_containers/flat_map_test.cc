@@ -178,4 +178,13 @@ TEST(FlatMap, MapsWithUnsortedKeys) {
   EXPECT_EQ(too_short.begin()->first, 0);
 }
 
+TEST(FlatMap, DontDereferenceEnd) {
+  constexpr FlatMap<int, const char*, 2> unsorted_array({{
+      {2, "hello"},
+      {1, "goodbye"},
+  }});
+
+  EXPECT_EQ(unsorted_array.contains(3), false);
+}
+
 }  // namespace pw::containers

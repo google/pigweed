@@ -73,7 +73,10 @@ class FlatMap {
     }
 
     const_iterator it = lower_bound(key);
-    return key == it->first ? it : end();
+    if (it == end() || it->first != key) {
+      return end();
+    }
+    return it;
   }
 
   constexpr const_iterator lower_bound(const key_type& key) const {
