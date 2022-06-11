@@ -377,6 +377,12 @@ def cipd_versions(ctx: DoctorContext):
 
     for json_path in json_paths:
         ctx.debug(f'Checking packages in {json_path}')
+        if not json_path.exists():
+            ctx.error(
+                'CIPD package file %s may have been deleted, please '
+                'rerun bootstrap', json_path)
+            continue
+
         install_path = pathlib.Path(
             cipd_update.package_installation_path(cipd_dir, json_path))
         for package in json.loads(json_path.read_text()).get('packages', ()):
