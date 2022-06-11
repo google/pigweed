@@ -209,9 +209,249 @@ comment line, even if the blank comment line is the last line in the block.
 
 Control statements
 ==================
-All loops and conditional statements must use braces.
+
+Loops and conditionals
+----------------------
+All loops and conditional statements must use braces, and be on their own line.
+
+.. admonition:: **Yes**: Always use braces for line conditionals and loops:
+   :class: checkmark
+
+   .. code:: cpp
+
+      while (SomeCondition()) {
+        x += 2;
+      }
+      if (OtherCondition()) {
+        DoTheThing();
+      }
+
+
+.. admonition:: **No**: Missing braces
+   :class: error
+
+   .. code:: cpp
+
+      while (SomeCondition())
+        x += 2;
+      if (OtherCondition())
+        DoTheThing();
+
+.. admonition:: **No**: Statement on same line as condition
+   :class: error
+
+   .. code:: cpp
+
+      while (SomeCondition()) { x += 2; }
+      if (OtherCondition()) { DoTheThing(); }
+
 
 The syntax ``while (true)`` is preferred over ``for (;;)`` for infinite loops.
+
+.. admonition:: **Yes**:
+   :class: checkmark
+
+   .. code:: cpp
+
+      while (true) {
+        DoSomethingForever();
+      }
+
+.. admonition:: **No**:
+   :class: error
+
+   .. code:: cpp
+
+      for (;;) {
+        DoSomethingForever();
+      }
+
+
+Prefer early exit with ``return`` and ``continue``
+--------------------------------------------------
+Prefer to exit early from functions and loops to simplify code. This is the
+same same conventions as `LLVM
+<https://llvm.org/docs/CodingStandards.html#use-early-exits-and-continue-to-simplify-code>`_.
+We find this approach is superior to the "one return per function" style for a
+multitude of reasons:
+
+* **Visually**, the code is easier to follow, and takes less horizontal screen
+  space.
+* It makes it clear what part of the code is the **"main business" versus "edge
+  case handling"**.
+* For **functions**, parameter checking is in its own section at the top of the
+  function, rather than scattered around in the fuction body.
+* For **loops**, element checking is in its own section at the top of the loop,
+  rather than scattered around in the loop body.
+* Commit **deltas are simpler to follow** in code reviews; since adding a new
+  parameter check or loop element condition doesn't cause an indentation change
+  in the rest of the function.
+
+The guidance applies in two cases:
+
+* **Function early exit** - Early exits are for function parameter checking
+  and edge case checking at the top. The main functionality follows.
+* **Loop early exit** - Early exits in loops are for skipping an iteration
+  due to some edge case with an item getting iterated over. Loops may also
+  contain function exits, which should be structured the same way (see example
+  below).
+
+.. admonition:: **Yes**: Exit early from functions; keeping the main handling
+   at the bottom and de-dentend.
+   :class: checkmark
+
+   .. code:: cpp
+
+      Status DoSomething(Parameter parameter) {
+        // Parameter validation first; detecting incoming use errors.
+        PW_CHECK_INT_EQ(parameter.property(), 3, "Programmer error: frobnitz");
+
+        // Error case: Not in correct state.
+        if (parameter.other() == MyEnum::kBrokenState) {
+          LOG_ERROR("Device in strange state: %s", parametr.state_str());
+          return Status::InvalidPrecondition();
+        }
+
+        // Error case: Not in low power mode; shouldn't do anything.
+        if (parameter.power() != MyEnum::kLowPower) {
+          LOG_ERROR("Not in low power mode");
+          return Status::InvalidPrecondition();
+        }
+
+        // Main business for the function here.
+        MainBody();
+        MoreMainBodyStuff();
+      }
+
+.. admonition:: **No**: Main body of function is buried and right creeping.
+   Even though this is shorter than the version preferred by Pigweed due to
+   factoring the return statement, the logical structure is less obvious. A
+   function in Pigweed containing **nested conditionals indicates that
+   something complicated is happening with the flow**; otherwise it would have
+   the early bail structure; so pay close attention.
+   :class: error
+
+   .. code:: cpp
+
+      Status DoSomething(Parameter parameter) {
+        // Parameter validation first; detecting incoming use errors.
+        PW_CHECK_INT_EQ(parameter.property(), 3, "Programmer error: frobnitz");
+
+        // Error case: Not in correct state.
+        if (parameter.other() != MyEnum::kBrokenState) {
+          // Error case: Not in low power mode; shouldn't do anything.
+          if (parameter.power() == MyEnum::kLowPower) {
+            // Main business for the function here.
+            MainBody();
+            MoreMainBodyStuff();
+          } else {
+            LOG_ERROR("Not in low power mode");
+          }
+        } else {
+          LOG_ERROR("Device in strange state: %s", parametr.state_str());
+        }
+        return Status::InvalidPrecondition();
+      }
+
+.. admonition:: **Yes**: Bail early from loops; keeping the main handling at
+   the bottom and de-dentend.
+   :class: checkmark
+
+   .. code:: cpp
+
+      for (int i = 0; i < LoopSize(); ++i) {
+        // Early skip of item based on edge condition.
+        if (!CommonCase()) {
+          continue;
+        }
+        // Early exit of function based on error case.
+        int my_measurement = GetSomeMeasurement();
+        if (my_measurement < 10) {
+          LOG_ERROR("Found something strange; bailing");
+          return Status::Unknown();
+        }
+
+        // Main body of the loop.
+        ProcessItem(my_items[i], my_measurement);
+        ProcessItemMore(my_items[i], my_measurement, other_details);
+        ...
+      }
+
+.. admonition:: **No**: Right-creeping code with the main body buried inside
+   some nested conditional. This makes it harder to understand what is the
+   main purpose of the loop versus what is edge case handling.
+   :class: error
+
+   .. code:: cpp
+
+      for (int i = 0; i < LoopSize(); ++i) {
+        if (CommonCase()) {
+          int my_measurement = GetSomeMeasurement();
+          if (my_measurement >= 10) {
+            // Main body of the loop.
+            ProcessItem(my_items[i], my_measurement);
+            ProcessItemMore(my_items[i], my_measurement, other_details);
+            ...
+          } else {
+            LOG_ERROR("Found something strange; bailing");
+            return Status::Unknown();
+          }
+        }
+      }
+
+There are cases where this structure doesn't work, and in those cases, it is
+fine to structure the code differently.
+
+No ``else`` after ``return`` or ``continue``
+--------------------------------------------
+Do not put unnecessary ``} else {`` blocks after blocks that terminate with a
+return, since this causes unnecessary rightward indentation creep. This
+guidance pairs with the preference for early exits to reduce code duplication
+and standardize loop/function structure.
+
+.. admonition:: **Yes**: No else after return or continue
+   :class: checkmark
+
+   .. code:: cpp
+
+      // Note lack of else block due to return.
+      if (Failure()) {
+        DoTheThing();
+        return Status::ResourceExausted();
+      }
+
+      // Note lack of else block due to continue.
+      while (MyCondition()) {
+        if (SomeEarlyBail()) {
+          continue;
+        }
+        // Main handling of item
+        ...
+      }
+
+      DoOtherThing();
+      return OkStatus();
+
+.. admonition:: **No**: Else after return needlessly creeps right
+   :class: error
+
+   .. code:: cpp
+
+      if (Failure()) {
+        DoTheThing();
+        return Status::ResourceExausted();
+      } else {
+        while (MyCondition()) {
+          if (SomeEarlyBail()) {
+            continue;
+          } else {
+            // Main handling of item
+            ...
+          }
+        }
+        DoOtherThing();
+        return OkStatus();
+      }
 
 Include guards
 ==============
@@ -276,6 +516,16 @@ C++ code
   ``foo_bar`` style naming.  For consistency with other variables whose value is
   always fixed for the duration of the program, the naming convention is
   ``kCamelCase``, and so that is the style we use in Pigweed.
+* Trivial membor accessors should be named with ``snake_case()``. The Google
+  C++ style allows either ``snake_case()`` or ``CapsCase()``, but Pigweed
+  always uses ``snake_case()``.
+* Abstract base classes should be named generically, with derived types named
+  specifically. For example, ``Stream`` is an abstract base, and
+  ``SocketStream`` and ``StdioStream`` are an implementations of that
+  interface.  Any prefix or postfix indicating whether something is abstract or
+  concrete is not permitted; for example, ``IStream`` or ``SocketStreamImpl``
+  are both not permitted. These pre-/post-fixes add additional visual noise and
+  are irrelevant to consumers of these interfaces.
 
 C code
 ------
