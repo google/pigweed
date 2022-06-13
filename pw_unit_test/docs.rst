@@ -378,7 +378,8 @@ RPC service
 ``pw_unit_test`` provides an RPC service which runs unit tests on demand and
 streams the results back to the client. The service is defined in
 ``pw_unit_test_proto/unit_test.proto``, and implemented by the GN target
-``$dir_pw_unit_test:rpc_service``.
+``$dir_pw_unit_test:rpc_service``. The RPC service is only compatible with the
+default ``pw_unit_test:light`` backend.
 
 To set up RPC-based unit tests in your application, instantiate a
 ``pw::unit_test::UnitTestService`` and register it with your RPC server.

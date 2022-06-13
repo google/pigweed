@@ -167,6 +167,20 @@ pw_source_set("logging_main") {
   sources = [ "logging_main.cc" ]
 }
 
+pw_build_assert("require_light_test_backend") {
+  # TODO(b/233073669): Simplify once pw_unit_test_PUBLIC_DEPS is removed.
+  condition = (pw_unit_test_PUBLIC_DEPS == [] &&
+               pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light") ||
+              filter_include(pw_unit_test_PUBLIC_DEPS,
+                             [ "$dir_pw_unit_test:light" ]) != []
+
+  message = "The pw_unit_test RPC service only works with the 'light' test " +
+            "backend.\n(pw_unit_test_GOOGLETEST_BACKEND = " +
+            "$pw_unit_test_GOOGLETEST_BACKEND)\n" +
+            "(pw_unit_test_PUBLIC_DEPS = $pw_unit_test_PUBLIC_DEPS)"
+  visibility = [ ":*" ]
+}
+
 pw_source_set("rpc_service") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
@@ -175,7 +189,10 @@ pw_source_set("rpc_service") {
     ":unit_test_proto.raw_rpc",
     "$dir_pw_containers:vector",
   ]
-  deps = [ dir_pw_log ]
+  deps = [
+    ":require_light_test_backend",
+    dir_pw_log,
+  ]
   public = [
     "public/pw_unit_test/internal/rpc_event_handler.h",
     "public/pw_unit_test/unit_test_service.h",
