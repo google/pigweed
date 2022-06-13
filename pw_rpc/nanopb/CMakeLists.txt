@@ -14,16 +14,28 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_rpc.nanopb.method
-  SOURCES
-    method.cc
-    server_reader_writer.cc
-  PUBLIC_DEPS
-    pw_rpc.nanopb.common
-    pw_rpc.server
-  PRIVATE_DEPS
-    pw_log
-)
+#pw_add_module_library(pw_rpc.nanopb.method
+#  SOURCES
+#    method.cc
+#    server_reader_writer.cc
+#  PUBLIC_DEPS
+#    pw_rpc.nanopb.common
+#    pw_rpc.server
+#  PRIVATE_DEPS
+#    pw_log
+#)
+
+add_library(pw_rpc.nanopb.method)
+target_sources(pw_rpc.nanopb.method
+        PUBLIC method.cc
+        PUBLIC server_reader_writer.cc)
+target_link_libraries(pw_rpc.nanopb.method
+        PUBLIC
+        pw_rpc.nanopb.common
+        pw_rpc.server
+        PRIVATE
+        pw_log)
+
 if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_METHOD)
   zephyr_link_libraries(pw_rpc.nanopb.method)
 endif()
@@ -50,15 +62,26 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_CLIENT)
   zephyr_link_libraries(pw_rpc.nanopb.client)
 endif()
 
-pw_add_module_library(pw_rpc.nanopb.common
-  SOURCES
-    common.cc
-  PUBLIC_DEPS
-    pw_bytes
-    pw_log
-    pw_rpc.common
-    pw_third_party.nanopb
-)
+#pw_add_module_library(pw_rpc.nanopb.common
+#  SOURCES
+#    common.cc
+#  PUBLIC_DEPS
+#    pw_bytes
+#    pw_log
+#    pw_rpc.common
+#    pw_third_party.nanopb
+#)
+add_library(pw_rpc.nanopb.common)
+target_sources(pw_rpc.nanopb.common
+        PUBLIC common.cc)
+target_link_libraries(pw_rpc.nanopb.common
+        PUBLIC
+        pw_bytes
+        pw_log
+        pw_rpc.common
+        pw_third_party.nanopb)
+target_include_directories(pw_rpc.nanopb.common
+        PUBLIC public)
 if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_COMMON)
   zephyr_link_libraries(pw_rpc.nanopb.common)
 endif()
