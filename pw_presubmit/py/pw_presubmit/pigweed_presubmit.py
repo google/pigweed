@@ -331,8 +331,8 @@ def cmake_gcc(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
 
 
-# TODO(pwbug/180): Slowly remove modules from here that work with bazel until no
-# modules remain.
+# TODO(b/235882003): Slowly remove modules from here that work with bazel until
+# no modules remain.
 _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'docker',
     'pw_android_toolchain',
@@ -392,8 +392,8 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_work_queue',
 )
 
-# TODO(pwbug/180): Slowly remove modules from here that work with bazel until no
-# modules remain.
+# TODO(b/235882003): Slowly remove modules from here that work with bazel until
+# no modules remain.
 _MODULES_THAT_DO_NOT_TEST_WITH_BAZEL = _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL + (
     'pw_malloc_freelist', )
 
