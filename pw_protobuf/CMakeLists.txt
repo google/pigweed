@@ -26,42 +26,68 @@ pw_add_module_library(pw_protobuf.config
     ${pw_protobuf_CONFIG}
 )
 
-pw_add_module_library(pw_protobuf
-  HEADERS
-    public/pw_protobuf/decoder.h
-    public/pw_protobuf/encoder.h
-    public/pw_protobuf/find.h
-    public/pw_protobuf/internal/codegen.h
-    public/pw_protobuf/internal/proto_integer_base.h
-    public/pw_protobuf/map_utils.h
-    public/pw_protobuf/message.h
-    public/pw_protobuf/serialized_size.h
-    public/pw_protobuf/stream_decoder.h
-    public/pw_protobuf/wire_format.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_assert
-    pw_bytes
-    pw_containers.vector
-    pw_function
-    pw_protobuf.config
-    pw_polyfill.span
-    pw_polyfill.cstddef
-    pw_result
-    pw_status
-    pw_stream
-    pw_stream.interval_reader
-    pw_varint
-    pw_varint.stream
-  SOURCES
-    decoder.cc
-    encoder.cc
-    find.cc
-    map_utils.cc
-    message.cc
-    stream_decoder.cc
-)
+#pw_add_module_library(pw_protobuf
+#  HEADERS
+#    public/pw_protobuf/decoder.h
+#    public/pw_protobuf/encoder.h
+#    public/pw_protobuf/find.h
+#    public/pw_protobuf/internal/codegen.h
+#    public/pw_protobuf/internal/proto_integer_base.h
+#    public/pw_protobuf/map_utils.h
+#    public/pw_protobuf/message.h
+#    public/pw_protobuf/serialized_size.h
+#    public/pw_protobuf/stream_decoder.h
+#    public/pw_protobuf/wire_format.h
+#  PUBLIC_INCLUDES
+#    public
+#  PUBLIC_DEPS
+#    pw_assert
+#    pw_bytes
+#    pw_containers.vector
+#    pw_function
+#    pw_protobuf.config
+#    pw_polyfill.span
+#    pw_polyfill.cstddef
+#    pw_result
+#    pw_status
+#    pw_stream
+#    pw_stream.interval_reader
+#    pw_varint
+#    pw_varint.stream
+#  SOURCES
+#    decoder.cc
+#    encoder.cc
+#    find.cc
+#    map_utils.cc
+#    message.cc
+#    stream_decoder.cc
+#)
+add_library(pw_protobuf)
+target_sources(pw_protobuf
+        PUBLIC
+        decoder.cc
+        encoder.cc
+        find.cc
+        map_utils.cc
+        message.cc
+        stream_decoder.cc)
+target_link_libraries(pw_protobuf
+        PUBLIC
+        pw_assert
+        pw_bytes
+        pw_containers.vector
+        pw_function
+        pw_protobuf.config
+        pw_polyfill.span
+        pw_polyfill.cstddef
+        pw_result
+        pw_status
+        pw_stream
+        pw_stream.interval_reader
+        pw_varint
+        pw_varint.stream)
+target_include_directories(pw_protobuf
+        PUBLIC public)
 
 pw_add_module_library(pw_protobuf.bytes_utils
   HEADERS

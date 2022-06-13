@@ -14,24 +14,38 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_stream
-  HEADERS
-    public/pw_stream/memory_stream.h
-    public/pw_stream/null_stream.h
-    public/pw_stream/seek.h
-    public/pw_stream/stream.h
-  PUBLIC_INCLUDES
-    public
-  SOURCES
-    memory_stream.cc
-  PUBLIC_DEPS
-    pw_assert
-    pw_bytes
-    pw_polyfill
-    pw_polyfill.span
-    pw_result
-    pw_status
-)
+#pw_add_module_library(pw_stream
+#  HEADERS
+#    public/pw_stream/memory_stream.h
+#    public/pw_stream/null_stream.h
+#    public/pw_stream/seek.h
+#    public/pw_stream/stream.h
+#  PUBLIC_INCLUDES
+#    public
+#  SOURCES
+#    memory_stream.cc
+#  PUBLIC_DEPS
+#    pw_assert
+#    pw_bytes
+#    pw_polyfill
+#    pw_polyfill.span
+#    pw_result
+#    pw_status
+#)
+add_library(pw_stream)
+target_sources(pw_stream
+        PUBLIC memory_stream.cc)
+target_link_libraries(pw_stream
+        PUBLIC
+        pw_assert
+        pw_bytes
+        pw_polyfill
+        pw_polyfill.span
+        pw_result
+        pw_status)
+target_include_directories(pw_stream
+        PUBLIC public)
+
 if(Zephyr_FOUND AND CONFIG_PIGWEED_STREAM)
   zephyr_link_libraries(pw_stream)
 endif()

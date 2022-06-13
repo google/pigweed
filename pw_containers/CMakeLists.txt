@@ -80,17 +80,25 @@ pw_add_module_library(pw_containers.wrapped_iterator
     public
 )
 
-pw_add_module_library(pw_containers.intrusive_list
-  HEADERS
-    public/pw_containers/internal/intrusive_list_impl.h
-    public/pw_containers/intrusive_list.h
-  PUBLIC_INCLUDES
-    public
-  SOURCES
-    intrusive_list.cc
-  PRIVATE_DEPS
-    pw_assert
-)
+#pw_add_module_library(pw_containers.intrusive_list
+#  HEADERS
+#    public/pw_containers/internal/intrusive_list_impl.h
+#    public/pw_containers/intrusive_list.h
+#  PUBLIC_INCLUDES
+#    public
+#  SOURCES
+#    intrusive_list.cc
+#  PRIVATE_DEPS
+#    pw_assert
+#)
+
+add_library(pw_containers.intrusive_list)
+target_sources(pw_containers.intrusive_list
+        PUBLIC intrusive_list.cc)
+target_link_libraries(pw_containers.intrusive_list
+        PRIVATE pw_assert)
+target_include_directories(pw_containers.intrusive_list
+        PUBLIC public)
 
 pw_add_test(pw_containers.algorithm_test
   SOURCES

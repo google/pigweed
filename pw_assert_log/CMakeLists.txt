@@ -14,11 +14,23 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_assert_log
-  IMPLEMENTS_FACADE
-    pw_assert
-  PUBLIC_DEPS
-    pw_log
-  PRIVATE_DEPS
-    pw_preprocessor
-)
+#pw_auto_add_simple_module(pw_assert_log
+#  IMPLEMENTS_FACADE
+#    pw_assert
+#  PUBLIC_DEPS
+#    pw_log
+#  PRIVATE_DEPS
+#    pw_preprocessor
+#)
+
+add_library(pw_assert_log)
+target_sources(pw_assert_log
+        PUBLIC assert_log.cc)
+target_link_libraries(pw_assert_log
+        PUBLIC pw_log
+        PRIVATE pw_preprocessor)
+target_include_directories(pw_assert_log
+        PUBLIC public
+        PUBLIC public_overrides)
+target_link_libraries(pw_assert_log
+        PUBLIC pw_assert.facade)
