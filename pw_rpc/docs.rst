@@ -876,6 +876,51 @@ Example
     }
   }
 
+RPC calls introspection
+-----------------------
+``pw_rpc`` provides ``pw_rpc/method_info.h`` header that allows to obtain
+information about the generated RPC method in compile time.
+
+For now it provides only two types: ``MethodRequestType<RpcMethod>`` and
+``MethodResponseType<RpcMethod>``. They are aliases to the types that are used
+as a request and response respectively for the given RpcMethod.
+
+Example
+^^^^^^^
+We have an RPC service ``SpecialService`` with ``MyMethod`` method:
+
+.. code-block:: protobuf
+
+  package some.package;
+  service SpecialService {
+    rpc MyMethod(MyMethodRequest) returns (MyMethodResponse) {}
+  }
+
+We also have a templated Storage type alias:
+
+.. code-block:: c++
+
+  template <auto kMethod>
+  using Storage =
+     std::pair<MethodRequestType<kMethod>, MethodResponseType<kMethod>>;
+
+``Storage<some::package::pw_rpc::pwpb::SpecialService::MyMethod>`` will
+instantiate as:
+
+.. code-block:: c++
+
+  std::pair<some::package::MyMethodRequest::Message,
+            some::package::MyMethodResponse::Message>;
+
+.. note::
+
+  Only nanopb and pw_protobuf have real types as
+  ``MethodRequestType<RpcMethod>``/``MethodResponseType<RpcMethod>``. Raw has
+  them both set as ``void``. In reality, they are ``pw::ConstByteSpan``. Any
+  helper/trait that wants to use this types for raw methods should do a custom
+  implemenation that copies the bytes under the span instead of copying just the
+  span.
+
 Client Synchronous Call wrappers
 --------------------------------
 If synchronous behavior is desired when making client calls, users can use one

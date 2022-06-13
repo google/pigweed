@@ -87,6 +87,8 @@ pw_add_module_library(pw_rpc.synchronous_client_api
 )
 
 pw_add_module_library(pw_rpc.common
+  HEADERS
+    public/pw_rpc/method_info.h
   SOURCES
     channel.cc
     channel_list.cc
