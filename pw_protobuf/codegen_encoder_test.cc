@@ -534,5 +534,38 @@ TEST(Codegen, NonPigweedPackage) {
   EXPECT_EQ(packed.status(), OkStatus());
 }
 
+TEST(Codegen, MemoryToStreamConversion) {
+  std::byte encode_buffer[IntegerMetadata::kMaxEncodedSizeBytes];
+  IntegerMetadata::MemoryEncoder metadata(encode_buffer);
+  IntegerMetadata::StreamEncoder& streamed_metadata = metadata;
+  EXPECT_EQ(streamed_metadata.WriteBits(3), OkStatus());
+
+  constexpr uint8_t expected_proto[] = {0x08, 0x03};
+
+  ConstByteSpan result(metadata);
+  ASSERT_EQ(metadata.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
+TEST(Codegen, OverlayConversion) {
+  std::byte encode_buffer[BaseMessage::kMaxEncodedSizeBytes +
+                          Overlay::kMaxEncodedSizeBytes];
+  BaseMessage::MemoryEncoder base(encode_buffer);
+  Overlay::StreamEncoder& overlay =
+      StreamEncoderCast<Overlay::StreamEncoder>(base);
+  EXPECT_EQ(overlay.WriteHeight(15), OkStatus());
+  EXPECT_EQ(base.WriteLength(7), OkStatus());
+
+  constexpr uint8_t expected_proto[] = {0x10, 0x0f, 0x08, 0x07};
+
+  ConstByteSpan result(base);
+  ASSERT_EQ(base.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
 }  // namespace
 }  // namespace pw::protobuf

@@ -253,6 +253,83 @@ than staging information to a mutable datastructure. This means any writes of a
 value are final, and can't be referenced or modified as a later step in the
 encode process.
 
+Casting between generated StreamEncoder types
+=============================================
+pw_protobuf guarantees that all generated ``StreamEncoder`` classes can be
+converted among each other. It's also safe to convert any ``MemoryEncoder`` to
+any other ``StreamEncoder``.
+
+This guarantee exists to facilitate usage of protobuf overlays. Protobuf
+overlays are protobuf message definitions that deliberately ensure that
+fields defined in one message will not conflict with fields defined in other
+messages.
+
+For example:
+
+.. code::
+
+  // The first half of the overlaid message.
+  message BaseMessage {
+    uint32 length = 1;
+    reserved 2;  // Reserved for Overlay
+  }
+
+  // OK: The second half of the overlaid message.
+  message Overlay {
+    reserved 1;  // Reserved for BaseMessage
+    uint32 height = 2;
+  }
+
+  // OK: A message that overlays and bundles both types together.
+  message Both {
+    uint32 length = 1;  // Defined independently by BaseMessage
+    uint32 height = 2;  // Defined independently by Overlay
+  }
+
+  // BAD: Diverges from BaseMessage's definition, and can cause decode
+  // errors/corruption.
+  message InvalidOverlay {
+    fixed32 length = 1;
+  }
+
+The ``StreamEncoderCast<>()`` helper template reduces very messy casting into
+a much easier to read syntax:
+
+.. code:: c++
+
+  #include "pw_protobuf/encoder.h"
+  #include "pw_protobuf_test_protos/full_test.pwpb.h"
+
+  Result<ConstByteSpan> EncodeOverlaid(uint32_t height,
+                                       uint32_t length,
+                                       ConstByteSpan encode_buffer) {
+    BaseMessage::MemoryEncoder base(encode_buffer);
+
+    // Without StreamEncoderCast<>(), this line would be:
+    //   Overlay::StreamEncoder& overlay =
+    //       *static_cast<Overlay::StreamEncoder*>(
+    //           static_cast<pw::protobuf::StreamEncoder*>(&base)
+    Overlay::StreamEncoder& overlay =
+        StreamEncoderCast<Overlay::StreamEncoder>(base);
+    if (!overlay.WriteHeight(height).ok()) {
+      return overlay.status();
+    }
+    if (!base.WriteLength(length).ok()) {
+      return base.status();
+    }
+    return ConstByteSpan(base);
+  }
+
+While this use case is somewhat uncommon, it's a core supported use case of
+pw_protobuf.
+
+.. warning::
+
+  Using this to convert one stream encoder to another when the messages
+  themselves do not safely overlay will result in corrupt protos. Be careful
+  when doing this as there's no compile-time way to detect whether or not two
+  messages are meant to overlay.
+
 Decoding
 --------
 For decoding, in addition to the ``Read()`` method that populates a message

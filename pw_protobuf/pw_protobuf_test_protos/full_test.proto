@@ -143,6 +143,17 @@ message IntegerMetadata {
   bool signed = 2;  // `signed` should become `signed_` in the C++ code.
 }
 
+// Two messages that should properly overlay without collisions.
+message BaseMessage {
+  uint32 length = 1;
+  reserved 2;
+}
+
+message Overlay {
+  reserved 1;
+  uint32 height = 2;
+}
+
 // Ensure that messages named `Message` don't cause namespace-resolution issues
 // when the codegen internally references the generated type `Message::Message`.
 message Message {

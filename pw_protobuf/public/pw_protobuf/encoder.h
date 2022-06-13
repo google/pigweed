@@ -849,4 +849,57 @@ class MemoryEncoder : public StreamEncoder {
   MemoryEncoder(MemoryEncoder&& other) = default;
 };
 
+// pw_protobuf guarantees that all generated StreamEncoder classes can be
+// converted among each other. It's also safe to convert any MemoryEncoder to
+// any other StreamEncoder.
+//
+// This guarantee exists to facilitate usage of protobuf overlays. Protobuf
+// overlays are protobuf message definitions that deliberately ensure that
+// fields defined in one message will not conflict with fields defined in other
+// messages.
+//
+// Example:
+//
+//   // The first half of the overlaid message.
+//   message BaseMessage {
+//     uint32 length = 1;
+//     reserved 2;  // Reserved for Overlay
+//   }
+//
+//   // OK: The second half of the overlaid message.
+//   message Overlay {
+//     reserved 1;  // Reserved for BaseMessage
+//     uint32 height = 2;
+//   }
+//
+//   // OK: A message that overlays and bundles both types together.
+//   message Both {
+//     uint32 length = 1;  // Defined independently by BaseMessage
+//     uint32 height = 2;  // Defined independently by Overlay
+//   }
+//
+//   // BAD: Diverges from BaseMessage's definition, and can cause decode
+//   // errors/corruption.
+//   message InvalidOverlay {
+//     fixed32 length = 1;
+//   }
+//
+// While this use case is somewhat uncommon, it's a core supported use case of
+// pw_protobuf.
+//
+// Warning: Using this to convert one stream encoder to another when the
+// messages themselves do not safely overlay will result in corrupt protos.
+// Be careful when doing this as there's no compile-time way to detect whether
+// or not two messages are meant to overlay.
+template <typename ToStreamEncoder, typename FromStreamEncoder>
+inline ToStreamEncoder& StreamEncoderCast(FromStreamEncoder& encoder) {
+  static_assert(std::is_base_of<StreamEncoder, FromStreamEncoder>::value,
+                "Provided argument is not a derived class of "
+                "pw::protobuf::StreamEncoder");
+  static_assert(std::is_base_of<StreamEncoder, ToStreamEncoder>::value,
+                "Cannot cast to a type that is not a derived class of "
+                "pw::protobuf::StreamEncoder");
+  return static_cast<ToStreamEncoder&>(static_cast<StreamEncoder&>(encoder));
+}
+
 }  // namespace pw::protobuf
