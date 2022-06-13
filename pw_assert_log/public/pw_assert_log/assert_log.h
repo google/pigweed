@@ -18,9 +18,12 @@
 #include "pw_log/options.h"
 #include "pw_preprocessor/compiler.h"
 
+// Forward directly to the backend PW_HANDLE_LOG() macro rather than PW_LOG().
+// PW_LOG() checks the user-overridable PW_LOG_LEVEL macro, which may not work
+// in headers without additional handling.
 #define PW_ASSERT_HANDLE_FAILURE(condition_string)                             \
   do {                                                                         \
-    PW_LOG(                                                                    \
+    PW_HANDLE_LOG(                                                             \
         PW_LOG_LEVEL_FATAL, PW_LOG_FLAGS, "Assert failed: " condition_string); \
     PW_UNREACHABLE;                                                            \
   } while (0)
