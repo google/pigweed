@@ -114,11 +114,12 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
   return ctx.thread_capture_status;
 }
 
-Status SnapshotThread(TaskHandle_t thread,
-                      eTaskState thread_state,
-                      void* running_thread_stack_pointer,
-                      Thread::StreamEncoder& encoder,
-                      ProcessThreadStackCallback& thread_stack_callback) {
+Status SnapshotThread(
+    TaskHandle_t thread,
+    eTaskState thread_state,
+    void* running_thread_stack_pointer,
+    Thread::StreamEncoder& encoder,
+    [[maybe_unused]] ProcessThreadStackCallback& thread_stack_callback) {
   const tskTCB& tcb = *reinterpret_cast<tskTCB*>(thread);
 
   PW_LOG_DEBUG("Capturing thread info for %s", tcb.pcTaskName);
