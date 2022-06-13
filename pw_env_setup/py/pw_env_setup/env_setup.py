@@ -345,7 +345,7 @@ class EnvSetup(object):
                 file=sys.stderr)
             print('', file=sys.stderr)
 
-            for miss in missing:
+            for miss in sorted(missing):
                 print('    git submodule update --init {}'.format(miss),
                       file=sys.stderr)
             print('', file=sys.stderr)
