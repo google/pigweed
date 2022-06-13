@@ -79,6 +79,9 @@ pw_source_set("assert_backend") {
 group("assert_backend.impl") {
 }
 
+group("check_backend.impl") {
+}
+
 # pw_assert_log doesn't have deps with potential circular dependencies, so this
 # impl group can be empty.
 group("pw_assert_log.impl") {
