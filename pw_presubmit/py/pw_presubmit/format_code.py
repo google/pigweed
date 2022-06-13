@@ -283,9 +283,9 @@ class CodeFormat(NamedTuple):
     fix: Callable[[Iterable], Dict[Path, str]]
 
 
-CPP_HEADER_EXTS = frozenset(
-    ('.h', '.hpp', '.hxx', '.h++', '.hh', '.H', '.inc', '.inl'))
-CPP_SOURCE_EXTS = frozenset(('.c', '.cpp', '.cxx', '.c++', '.cc', '.C'))
+CPP_HEADER_EXTS = frozenset(('.h', '.hpp', '.hxx', '.h++', '.hh', '.H'))
+CPP_SOURCE_EXTS = frozenset(
+    ('.c', '.cpp', '.cxx', '.c++', '.cc', '.C', '.inc', '.inl'))
 CPP_EXTS = CPP_HEADER_EXTS.union(CPP_SOURCE_EXTS)
 
 C_FORMAT: CodeFormat = CodeFormat('C and C++', CPP_EXTS,

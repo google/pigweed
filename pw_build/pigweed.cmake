@@ -540,11 +540,12 @@ set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test.light CACHE STRING
 #   NAME: name to use for the target
 #   SOURCES: source files for this test
 #   DEPS: libraries on which this test depends
+#   DEFINES: defines to set for the source files in this test
 #   GROUPS: groups to which to add this test; if none are specified, the test is
 #       added to the 'default' and 'all' groups
 #
 function(pw_add_test NAME)
-  pw_parse_arguments_strict(pw_add_test 1 "" "" "SOURCES;DEPS;GROUPS")
+  pw_parse_arguments_strict(pw_add_test 1 "" "" "SOURCES;DEPS;DEFINES;GROUPS")
 
   add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
   target_link_libraries("${NAME}"
@@ -553,6 +554,11 @@ function(pw_add_test NAME)
       ${pw_unit_test_MAIN}
       ${arg_DEPS}
   )
+  target_compile_definitions("${NAME}"
+    PRIVATE
+      ${arg_DEFINES}
+  )
+
   # Tests require at least one source file.
   if(NOT arg_SOURCES)
     target_sources("${NAME}" PRIVATE $<TARGET_PROPERTY:pw_build.empty,SOURCES>)

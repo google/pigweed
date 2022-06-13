@@ -22,9 +22,22 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# TODO(b/235237667): Rename this target to pw_span:pw_span.
+pw_cc_library(
+    name = "pigweed_span",
+    srcs = ["public/pw_span/internal/span_common.inc"],
+    hdrs = ["public/pw_span/span.h"],
+    includes = ["public"],
+    deps = ["//pw_polyfill"],
+)
+
+# TODO(b/235237667): Rename this target to pw_span:polyfill.
 pw_cc_library(
     name = "pw_span",
-    srcs = ["public/pw_span/internal/span_common.inc"],
+    srcs = [
+        "public/pw_span/internal/span.h",
+        "public/pw_span/internal/span_common.inc",
+    ],
     hdrs = ["public_overrides/span"],
     includes = [
         "public",
@@ -37,10 +50,27 @@ pw_cc_library(
 )
 
 pw_cc_test(
-    name = "span_test",
+    name = "polyfill_test",
     srcs = ["span_test.cc"],
+    defines = [
+        "PW_SPAN_TEST_INCLUDE=<span>",
+        "PW_SPAN_TEST_NAMESPACE=std",
+    ],
     deps = [
         ":pw_span",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "pw_span_test",
+    srcs = ["span_test.cc"],
+    defines = [
+        'PW_SPAN_TEST_INCLUDE=\\"pw_span/span.h\\"',
+        "PW_SPAN_TEST_NAMESPACE=pw",
+    ],
+    deps = [
+        ":pigweed_span",
         "//pw_unit_test",
     ],
 )

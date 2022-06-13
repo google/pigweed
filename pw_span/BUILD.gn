@@ -29,22 +29,11 @@ config("overrides_config") {
   visibility = [ ":*" ]
 }
 
-# This source set provides the <span> header, which is accessed only through
-# pw_polyfill.
-pw_source_set("polyfill") {
-  remove_public_deps = [ "*" ]
-  public_configs = [ ":overrides_config" ]
-  public_deps = [ ":pw_span" ]
-  public = [ "public_overrides/span" ]
-  visibility = [ "$dir_pw_polyfill:*" ]
-}
-
-# This source set provides the internal span.h header included by <span>. This
-# source set is only used by pw_polyfill, so its visibility is restricted.
 pw_source_set("pw_span") {
-  remove_public_deps = [ "*" ]
+  public = [ "public/pw_span/span.h" ]
   public_configs = [ ":public_config" ]
-  public_deps = [ "$dir_pw_polyfill" ]
+  public_deps = [ dir_pw_polyfill ]
+  sources = [ "public/pw_span/internal/span_common.inc" ]
 
   # Polyfill <cstddef> (std::byte) and <iterator> (std::size(), std::data) if
   # C++17 is not supported.
@@ -54,18 +43,64 @@ pw_source_set("pw_span") {
       "$dir_pw_polyfill:iterator",
     ]
   }
-  sources = [ "public/pw_span/internal/span_common.inc" ]
-  visibility = [ ":*" ]
+}
+
+# This source set provides the <span> header, which is accessed only through
+# pw_polyfill. This source set provides the internal span.h header included by
+# <span>. This source set is only used by pw_polyfill, so its visibility is
+# restricted.
+pw_source_set("polyfill") {
+  remove_public_deps = [ "*" ]
+  public_configs = [
+    ":public_config",
+    ":overrides_config",
+  ]
+  public_deps = [ dir_pw_polyfill ]
+
+  # Polyfill <cstddef> (std::byte) and <iterator> (std::size(), std::data) if
+  # C++17 is not supported.
+  if (pw_toolchain_CXX_STANDARD < pw_toolchain_STANDARD.CXX17) {
+    public_deps += [
+      "$dir_pw_polyfill:cstddef",
+      "$dir_pw_polyfill:iterator",
+    ]
+  }
+  public = [ "public_overrides/span" ]
+  sources = [
+    "public/pw_span/internal/span.h",
+    "public/pw_span/internal/span_common.inc",
+  ]
+  visibility = [
+    ":*",
+    "$dir_pw_polyfill:*",
+  ]
 }
 
 pw_test_group("tests") {
-  tests = [ ":test" ]
+  tests = [
+    ":polyfill_test",
+    ":pw_span_test",
+  ]
 }
 
-pw_test("test") {
+pw_test("polyfill_test") {
+  deps = [ ":polyfill" ]
+  remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
+  sources = [ "span_test.cc" ]
+  defines = [
+    "PW_SPAN_TEST_INCLUDE=<span>",
+    "PW_SPAN_TEST_NAMESPACE=std",
+  ]
+}
+
+pw_test("pw_span_test") {
   deps = [ ":pw_span" ]
   remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
   sources = [ "span_test.cc" ]
+  defines = [
+    "PW_SPAN_TEST_INCLUDE=\"pw_span/span.h\"",
+    "PW_SPAN_TEST_NAMESPACE=pw",
+  ]
 }
 
 pw_doc_group("docs") {

@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// std::span is a stand-in for C++20's std::span. Do NOT include this header
-// directly; instead, include it as <span>.
+// This span implementation is a stand-in for C++20's std::span. Do NOT include
+// this header directly; instead, include it as "pw_span/span.h".
 //
 // A span is a non-owning array view class. It refers to an external array by
 // storing a pointer and length. Unlike std::array, the size does not have to be
@@ -32,11 +32,9 @@
 //   - Remove uses of checked_iterators.h and CHECK.
 //   - Replace make_span functions with C++17 class template deduction guides.
 //   - Use std::byte instead of uint8_t for compatibility with std::span.
-//
-#pragma once
 
-#ifndef __cpp_lib_span
-#define __cpp_lib_span 202002L
+// This file does not have #pragma once! It is intended to be included in
+// multiple header files!
 
 #include <algorithm>
 #include <array>
@@ -47,12 +45,16 @@
 #include <utility>
 
 #include "pw_polyfill/language_feature_macros.h"
-#include "pw_polyfill/standard_library/namespace.h"
 
 // Pigweed: Disable the asserts from Chromium for now.
 #define _PW_SPAN_ASSERT(arg)
 
-_PW_POLYFILL_BEGIN_NAMESPACE_STD
+// The file that includes this .inc file must define the following macros:
+//
+//   * _PW_SPAN_COMMON_NAMEPACE_BEGIN
+//   * _PW_SPAN_COMMON_NAMEPACE_END
+
+_PW_SPAN_COMMON_NAMEPACE_BEGIN
 
 // [views.constants]
 constexpr size_t dynamic_extent = std::numeric_limits<size_t>::max();
@@ -72,7 +74,7 @@ template <typename T, size_t N>
 struct ExtentImpl<std::array<T, N>> : std::integral_constant<size_t, N> {};
 
 template <typename T, size_t N>
-struct ExtentImpl<std::span<T, N>> : std::integral_constant<size_t, N> {};
+struct ExtentImpl<span<T, N>> : std::integral_constant<size_t, N> {};
 
 template <typename T>
 using Extent = ExtentImpl<std::remove_cv_t<std::remove_reference_t<T>>>;
@@ -473,7 +475,6 @@ span(const Container&) -> span<pw_span_internal::ValueType<const Container>>;
 
 #endif  // __cpp_deduction_guides
 
-_PW_POLYFILL_END_NAMESPACE_STD
+_PW_SPAN_COMMON_NAMEPACE_END
 
 #undef _PW_SPAN_ASSERT
-#endif  // __cpp_lib_span
