@@ -1286,12 +1286,6 @@ TEST(CodegenMessage, WriteDefaults) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.pigweed (empty)
-    0x3a, 0x00,
-    // pigweed.proto
-    0x4a, 0x02,
-    // pigweed.proto.meta (empty)
-    0x2a, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   };
@@ -1476,12 +1470,6 @@ TEST(CodegenMessage, WriteStringCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.pigweed (empty)
-    0x3a, 0x00,
-    // pigweed.proto (default)
-    0x4a, 0x02,
-    // pigweed.proto.meta (empty)
-    0x2a, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.description
@@ -1520,12 +1508,6 @@ TEST(CodegenMessage, WriteForcedCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.pigweed (empty)
-    0x3a, 0x00,
-    // pigweed.proto (default)
-    0x4a, 0x02,
-    // pigweed.proto.meta (empty)
-    0x2a, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.special_property
@@ -1687,12 +1669,6 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
     0x0a, 0x04, 'c', 'h', 'i', 'p',
     // pigweed.device_info.attributes[1].value
     0x12, 0x08, 'l', 'e', 'f', 't', '-', 's', 'o', 'c',
-    // pigweed.pigweed (empty)
-    0x3a, 0x00,
-    // pigweed.proto (default)
-    0x4a, 0x02,
-    // pigweed.proto.meta (empty)
-    0x2a, 0x00,
     // pigweed.bytes (default)
     0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   };

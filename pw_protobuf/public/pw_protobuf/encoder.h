@@ -118,6 +118,7 @@ class StreamEncoder {
   // provide a zero-length scratch buffer.
   constexpr StreamEncoder(stream::Writer& writer, ByteSpan scratch_buffer)
       : status_(OkStatus()),
+        write_when_empty_(true),
         parent_(nullptr),
         nested_field_number_(0),
         memory_writer_(scratch_buffer),
@@ -154,7 +155,9 @@ class StreamEncoder {
   //
   // Postcondition: Until the nested child encoder has been destroyed, this
   //     encoder cannot be used.
-  StreamEncoder GetNestedEncoder(uint32_t field_number);
+  StreamEncoder GetNestedEncoder(uint32_t field_number) {
+    return GetNestedEncoder(field_number, /*write_when_empty=*/true);
+  }
 
   // Returns the current encoder's status.
   //
@@ -628,6 +631,7 @@ class StreamEncoder {
   //     acts like a parent encoder with an active child encoder.
   constexpr StreamEncoder(StreamEncoder&& other)
       : status_(other.status_),
+        write_when_empty_(true),
         parent_(other.parent_),
         nested_field_number_(other.nested_field_number_),
         memory_writer_(std::move(other.memory_writer_)),
@@ -649,12 +653,21 @@ class StreamEncoder {
   Status Write(std::span<const std::byte> message,
                std::span<const MessageField> table);
 
+  // Protected method to create a nested encoder, specifying whether the field
+  // should be written when no fields were added to the nested encoder. Not
+  // part of the public API since callers can simply not create a nested encoder
+  // in those situations.
+  StreamEncoder GetNestedEncoder(uint32_t field_number, bool write_when_empty);
+
  private:
   friend class MemoryEncoder;
 
-  constexpr StreamEncoder(StreamEncoder& parent, ByteSpan scratch_buffer)
+  constexpr StreamEncoder(StreamEncoder& parent,
+                          ByteSpan scratch_buffer,
+                          bool write_when_empty = true)
       : status_(scratch_buffer.empty() ? Status::ResourceExhausted()
                                        : OkStatus()),
+        write_when_empty_(write_when_empty),
         parent_(&parent),
         nested_field_number_(0),
         memory_writer_(scratch_buffer),
@@ -768,6 +781,10 @@ class StreamEncoder {
   // first error encountered. Any further write operations are blocked when the
   // encoder enters an error state.
   Status status_;
+
+  // Checked by the parent when the nested encoder is closed, and if no bytes
+  // were written, the field is not written.
+  bool write_when_empty_;
 
   // If this is a nested encoder, this points to the encoder that created it.
   // For user-created MemoryEncoders, parent_ points to this object as an

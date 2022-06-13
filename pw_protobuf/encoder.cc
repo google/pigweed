@@ -35,7 +35,8 @@
 
 namespace pw::protobuf {
 
-StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number) {
+StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number,
+                                              bool write_when_empty) {
   PW_CHECK(!nested_encoder_open());
   PW_CHECK(ValidFieldNumber(field_number));
 
@@ -62,7 +63,7 @@ StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number) {
   } else {
     nested_buffer = ByteSpan();
   }
-  return StreamEncoder(*this, nested_buffer);
+  return StreamEncoder(*this, nested_buffer, write_when_empty);
 }
 
 StreamEncoder::~StreamEncoder() {
@@ -106,6 +107,10 @@ void StreamEncoder::CloseNestedMessage(StreamEncoder& nested) {
   if (varint::EncodedSize(nested.memory_writer_.bytes_written()) >
       config::kMaxVarintSize) {
     status_ = Status::OutOfRange();
+    return;
+  }
+
+  if (!nested.memory_writer_.bytes_written() && !nested.write_when_empty_) {
     return;
   }
 
@@ -511,7 +516,8 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
           // Nested Message. Struct member is an embedded struct for the
           // nested field. Obtain a nested encoder and recursively call Write()
           // using the fields table pointer from this field.
-          auto nested_encoder = GetNestedEncoder(field.field_number());
+          auto nested_encoder = GetNestedEncoder(field.field_number(),
+                                                 /*write_when_empty=*/false);
           PW_TRY(nested_encoder.Write(values, *field.nested_message_fields()));
         } else if (field.is_fixed_size()) {
           // Fixed-length bytes field. Struct member is a std::array<std::byte>.
