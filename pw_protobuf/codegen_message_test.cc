@@ -1284,17 +1284,9 @@ TEST(CodegenMessage, WriteDefaults) {
   const auto status = pigweed.Write(message);
   ASSERT_EQ(status, OkStatus());
 
-  // clang-format off
-  constexpr uint8_t expected_proto[] = {
-    // pigweed.bytes (default)
-    0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  };
-  // clang-format on
-
+  // Since all fields are at their default, the output should be zero sized.
   ConstByteSpan result = writer.WrittenData();
-  EXPECT_EQ(result.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
-            0);
+  EXPECT_EQ(result.size(), 0u);
 }
 
 TEST(CodegenMessage, WritePackedScalar) {
@@ -1320,18 +1312,12 @@ TEST(CodegenMessage, WritePackedScalar) {
     0x10,
     0x20,
     0x30,
-    // doubles[], v={0, 0} (default)
-    0x22, 0x10,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // fixed32s[]. v={0, 16, 32, 48}
     0x32, 0x10,
     0x00, 0x00, 0x00, 0x00,
     0x10, 0x00, 0x00, 0x00,
     0x20, 0x00, 0x00, 0x00,
     0x30, 0x00, 0x00, 0x00,
-    // uint64s[]. v={0, 0, 0, 0} (default)
-    0x42, 0x04, 0x00, 0x00, 0x00, 0x00
   };
   // clang-format on
 
@@ -1399,13 +1385,6 @@ TEST(CodegenMessage, WritePackedScalarCallback) {
     0x00,
     0x02,
     0x32,
-    // doubles[], v={0, 0} (default)
-    0x22, 0x10,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    // uint64s[]. v={0, 0, 0, 0} (default)
-    0x42, 0x04, 0x00, 0x00, 0x00, 0x00
-
   };
   // clang-format on
 
@@ -1432,12 +1411,6 @@ TEST(CodegenMessage, WritePackedEnum) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // doubles[], v={0, 0} (default)
-    0x22, 0x10,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    // uint64s[]. v={0, 0, 0, 0} (default)
-    0x42, 0x04, 0x00, 0x00, 0x00, 0x00,
     // enums[], v={RED, GREEN, AMBER, RED}
     0x4a, 0x04, 0x00, 0x02, 0x01, 0x00,
   };
@@ -1470,8 +1443,6 @@ TEST(CodegenMessage, WriteStringCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.bytes (default)
-    0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.description
     0x62, 0x5c, 'a', 'n', ' ', 'o', 'p', 'e', 'n', ' ', 's', 'o', 'u', 'r', 'c',
     'e', ' ', 'c', 'o', 'l', 'l', 'e', 'c', 't', 'i', 'o', 'n', ' ', 'o', 'f',
@@ -1508,8 +1479,6 @@ TEST(CodegenMessage, WriteForcedCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // pigweed.bytes (default)
-    0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.special_property
     0x68, 0x2a,
   };
@@ -1583,10 +1552,6 @@ TEST(CodegenMessage, WriteNestedRepeated) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
-    // doubles[], v={0, 0} (default)
-    0x22, 0x10,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // repeated.structs
     0x2a, 0x04,
     // repeated.structs.one v=16
@@ -1599,8 +1564,6 @@ TEST(CodegenMessage, WriteNestedRepeated) {
     0x08, 0x30,
     // repeated.structs.two v=64
     0x10, 0x40,
-    // uint64s[]. v={0, 0, 0, 0} (default)
-    0x42, 0x04, 0x00, 0x00, 0x00, 0x00
   };
   // clang-format on
 
@@ -1669,8 +1632,6 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
     0x0a, 0x04, 'c', 'h', 'i', 'p',
     // pigweed.device_info.attributes[1].value
     0x12, 0x08, 'l', 'e', 'f', 't', '-', 's', 'o', 'c',
-    // pigweed.bytes (default)
-    0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   };
   // clang-format on
 

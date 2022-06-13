@@ -273,8 +273,12 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
                  "Mismatched message field type and size");
         if (field.is_fixed_size()) {
           PW_CHECK(field.is_repeated(), "Non-repeated fixed size field");
-          PW_TRY(WritePackedFixed(
-              field.field_number(), values, field.elem_size()));
+          if (static_cast<size_t>(
+                  std::count(values.begin(), values.end(), std::byte{0})) <
+              values.size()) {
+            PW_TRY(WritePackedFixed(
+                field.field_number(), values, field.elem_size()));
+          }
         } else if (field.is_repeated()) {
           // The struct member for this field is a vector of a type
           // corresponding to the field element size. Cast to the correct
@@ -348,6 +352,11 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
           // the array so we're not performing type aliasing (except for
           // unsigned vs signed which is explicitly allowed).
           PW_CHECK(field.is_repeated(), "Non-repeated fixed size field");
+          if (static_cast<size_t>(
+                  std::count(values.begin(), values.end(), std::byte{0})) ==
+              values.size()) {
+            continue;
+          }
           if (field.elem_size() == sizeof(uint64_t)) {
             PW_TRY(WritePackedVarints(
                 field.field_number(),
@@ -524,7 +533,11 @@ Status StreamEncoder::Write(std::span<const std::byte> message,
           // Call WriteLengthDelimitedField() to output it to the stream.
           PW_CHECK(field.elem_size() == sizeof(std::byte),
                    "Mismatched message field type and size");
-          PW_TRY(WriteLengthDelimitedField(field.field_number(), values));
+          if (static_cast<size_t>(
+                  std::count(values.begin(), values.end(), std::byte{0})) <
+              values.size()) {
+            PW_TRY(WriteLengthDelimitedField(field.field_number(), values));
+          }
         } else {
           // bytes or string field with a maximum size. Struct member is a
           // pw::Vector<std::byte>. Use the contents as a span and call
