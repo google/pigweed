@@ -8,9 +8,8 @@ Raspberry Pi Pico
   is not very polished, and many features/configuration options that work in
   upstream Pi Pico CMake build have not yet been ported to the GN build.
 
------
 Setup
------
+=====
 To use this target, Pigweed must be set up to build against the Raspberry Pi
 Pico SDK. This can be downloaded via ``pw package``, and then the build must be
 manually configured to point to the location of the downloaded SDK.
@@ -24,9 +23,8 @@ manually configured to point to the location of the downloaded SDK.
     # Pigweed is checked out at.
     PICO_SRC_DIR = "${PW_ROOT}/.environment/packages/pico_sdk"
 
------
 Usage
------
+=====
 The Pi Pico is currently configured to output logs and test results over UART
 via GPIO 1 and 2 (TX and RX, respectively) at a baud rate of 115200. Because
 of this, you'll need a USB TTL adapter to communicate with the Pi Pico.

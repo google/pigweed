@@ -15,9 +15,8 @@ primary target for on-device testing and development. This target configuration
 uses :ref:`pw_system<module-pw_system>` on top of FreeRTOS and the STM32Cube HAL
 rather than a from-the-ground-up baremetal approach.
 
------
 Setup
------
+=====
 To use this target, Pigweed must be set up to use FreeRTOS and the STM32Cube HAL
 for the STM32F4 series. The supported repositories can be downloaded via
 ``pw package``, and then the build must be manually configured to point to the

@@ -1,15 +1,15 @@
 .. _target-emcraft-sf2-som:
 
--------------------------------------
-_target-emcraft-sf2-som: SmartFusion2
--------------------------------------
+--------------------
+Emcraft SmartFusion2
+--------------------
 The Emcraft SmartFusion2 system-on-module target configuration
 uses FreeRTOS and the Microchip MSS HAL rather than a from-the-ground-up
 baremetal approach.
 
------
+
 Setup
------
+=====
 To use this target, pigweed must be set up to use FreeRTOS and the Microchip
 MSS HAL for the SmartFusion series. The supported repositories can be
 downloaded via ``pw package``, and then the build must be manually configured
