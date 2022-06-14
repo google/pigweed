@@ -1,16 +1,17 @@
-.. _module-pw_gpio:
+.. _module-pw_digital_io:
 
-.. cpp:namespace-push:: pw::gpio
+.. cpp:namespace-push:: pw::digital_io
 
-=======
-pw_gpio
-=======
+=============
+pw_digital_io
+=============
 .. warning::
    This module is under construction and may not be ready for use.
 
-``pw_gpio`` provides a set of interfaces for using General Purpose Input and
-Output (GPIO) lines for Digital IO. This module can either be used directly by
-the application code or wrapped in a device driver for more complex peripherals.
+``pw_digital_io`` provides a set of interfaces for using General Purpose Input
+and Output (GPIO) lines for simple Digital I/O. This module can either be used
+directly by the application code or wrapped in a device driver for more complex
+peripherals.
 
 --------
 Overview
@@ -25,7 +26,7 @@ Example API usage:
 
 .. code-block:: cpp
 
-   using namespace pw::gpio;
+   using namespace pw::digital_io;
 
    Status UpdateLedFromSwitch(const DigitalIn& switch, DigitalOut& led) {
      PW_TRY_ASSIGN(const DigitalIo::State state, switch.GetState());
@@ -41,9 +42,9 @@ Example API usage:
      return button.EnableInterruptHandler();
    }
 
--------------------
-pw::gpio Interfaces
--------------------
+-------------------------
+pw::digital_io Interfaces
+-------------------------
 There are 3 basic capabilities of a Digital IO line:
 
 * Input - Get the state of the line.
@@ -189,7 +190,7 @@ handlers running in an interrupt context cannot query the state of the line.
 
 Class Hierarchy
 ===============
-``pw_gpio`` contains a 2-level hierarchy of classes.
+``pw_digital_io`` contains a 2-level hierarchy of classes.
 
 * ``DigitalIoOptional`` acts as the base class and represents a line that does
   not guarantee any particular functionality is available.
@@ -232,10 +233,10 @@ example:
 
 Asynchronous APIs
 =================
-At present, ``pw_gpio`` is synchronous. All the API calls are expected to block
-until the operation is complete. This is desirable for simple GPIO chips that
-are controlled through direct register access. However, this may be undesirable
-for GPIO extenders controlled through I2C or another shared bus.
+At present, ``pw_digital_io`` is synchronous. All the API calls are expected to
+block until the operation is complete. This is desirable for simple GPIO chips
+that are controlled through direct register access. However, this may be
+undesirable for GPIO extenders controlled through I2C or another shared bus.
 
 The API may be extended in the future to add asynchronous capabilities, or a
 separate asynchronous API may be created.
@@ -279,5 +280,5 @@ Dependencies
 
 Zephyr
 ======
-To enable ``pw_gpio`` for Zephyr add ``CONFIG_PIGWEED_GPIO=y`` to the
-project's configuration.
+To enable ``pw_digital_io`` for Zephyr add ``CONFIG_PIGWEED_DIGITAL_IO=y`` to
+the project's configuration.

@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_gpio/gpio.h"
+#include "pw_digital_io/digital_io.h"
 
-namespace pw::gpio {
+namespace pw::digital_io {
 
 Status DigitalInterrupt::DoSetState(State) {
   PW_CRASH("DoSetState not implemented");
@@ -57,4 +57,4 @@ Status DigitalInOut::DoEnableInterruptHandler(bool) {
   PW_CRASH("DoEnableInterruptHandler not implemented");
 }
 
-}  // namespace pw::gpio
+}  // namespace pw::digital_io

@@ -15,7 +15,7 @@
 
 #include <type_traits>
 
-namespace pw::gpio {
+namespace pw::digital_io {
 namespace internal {
 
 // A type trait that describes the functionality required by a particular type
@@ -138,4 +138,4 @@ struct internal::Requires<class DigitalInOutInterrupt> {
   static constexpr bool interrupt = true;
 };
 
-}  // namespace pw::gpio
+}  // namespace pw::digital_io

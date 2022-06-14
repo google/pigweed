@@ -14,13 +14,13 @@
 #pragma once
 
 #include "pw_assert/check.h"
+#include "pw_digital_io/internal/conversions.h"
 #include "pw_function/function.h"
-#include "pw_gpio/internal/conversions.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
-namespace pw::gpio {
+namespace pw::digital_io {
 
 // The logical state of a digital line.
 enum class State : bool {
@@ -111,8 +111,9 @@ class DigitalIoOptional {
   // blocking or expensive work in the handler. The only universally safe
   // operations are the IRQ-safe functions on pw_sync primitives.
   //
-  // In particular, it is NOT safe to get the state of a GPIO line - either from
-  // this line or any other DigitalIoOptional instance - inside the handler.
+  // In particular, it is NOT safe to get the state of a DigitalIo line - either
+  // from this line or any other DigitalIoOptional instance - inside the
+  // handler.
   //
   // This method is not thread-safe and cannot be used in interrupt handlers.
   //
@@ -444,4 +445,4 @@ class DigitalInOutInterrupt
   }
 };
 
-}  // namespace pw::gpio
+}  // namespace pw::digital_io

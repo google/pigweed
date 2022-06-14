@@ -24,13 +24,13 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
-pw_source_set("pw_gpio") {
+pw_source_set("pw_digital_io") {
   public_configs = [ ":public_include_path" ]
   public = [
-    "public/pw_gpio/gpio.h",
-    "public/pw_gpio/internal/conversions.h",
+    "public/pw_digital_io/digital_io.h",
+    "public/pw_digital_io/internal/conversions.h",
   ]
-  sources = [ "gpio.cc" ]
+  sources = [ "digital_io.cc" ]
   public_deps = [
     dir_pw_assert,
     dir_pw_function,
@@ -44,10 +44,10 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":gpio_test" ]
+  tests = [ ":digital_io_test" ]
 }
 
-pw_test("gpio_test") {
-  sources = [ "gpio_test.cc" ]
-  deps = [ ":pw_gpio" ]
+pw_test("digital_io_test") {
+  sources = [ "digital_io_test.cc" ]
+  deps = [ ":pw_digital_io" ]
 }

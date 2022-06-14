@@ -14,30 +14,30 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_gpio
+pw_add_module_library(pw_digital_io
   HEADERS
-    public/pw_gpio/gpio.h
-    public/pw_gpio/internal/conversions.h
+    public/pw_digital_io/digital_io.h
+    public/pw_digital_io/internal/conversions.h
   PUBLIC_INCLUDES
     public
   SOURCES
-    gpio.cc
+    digital_io.cc
   PUBLIC_DEPS
     pw_assert
     pw_function
     pw_result
     pw_status
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_GPIO)
-  zephyr_link_libraries(pw_gpio)
+if(Zephyr_FOUND AND CONFIG_PIGWEED_DIGITAL_IO)
+  zephyr_link_libraries(pw_digital_io)
 endif()
 
-pw_add_test(pw_gpio.stream_test
+pw_add_test(pw_digital_io.stream_test
   SOURCES
-    gpio_test.cc
+    digital_io_test.cc
   DEPS
-    pw_gpio
+    pw_digital_io
   GROUPS
     modules
-    pw_gpio
+    pw_digital_io
 )

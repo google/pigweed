@@ -62,13 +62,13 @@ declare_args() {
   dir_pw_cpu_exception_cortex_m =
       get_path_info("../pw_cpu_exception_cortex_m", "abspath")
   dir_pw_crypto = get_path_info("../pw_crypto", "abspath")
+  dir_pw_digital_io = get_path_info("../pw_digital_io", "abspath")
   dir_pw_docgen = get_path_info("../pw_docgen", "abspath")
   dir_pw_doctor = get_path_info("../pw_doctor", "abspath")
   dir_pw_env_setup = get_path_info("../pw_env_setup", "abspath")
   dir_pw_file = get_path_info("../pw_file", "abspath")
   dir_pw_function = get_path_info("../pw_function", "abspath")
   dir_pw_fuzzer = get_path_info("../pw_fuzzer", "abspath")
-  dir_pw_gpio = get_path_info("../pw_gpio", "abspath")
   dir_pw_hdlc = get_path_info("../pw_hdlc", "abspath")
   dir_pw_hex_dump = get_path_info("../pw_hex_dump", "abspath")
   dir_pw_i2c = get_path_info("../pw_i2c", "abspath")
@@ -198,13 +198,13 @@ declare_args() {
     dir_pw_cpu_exception,
     dir_pw_cpu_exception_cortex_m,
     dir_pw_crypto,
+    dir_pw_digital_io,
     dir_pw_docgen,
     dir_pw_doctor,
     dir_pw_env_setup,
     dir_pw_file,
     dir_pw_function,
     dir_pw_fuzzer,
-    dir_pw_gpio,
     dir_pw_hdlc,
     dir_pw_hex_dump,
     dir_pw_i2c,
@@ -303,10 +303,10 @@ declare_args() {
     "$dir_pw_containers:tests",
     "$dir_pw_cpu_exception_cortex_m:tests",
     "$dir_pw_crypto:tests",
+    "$dir_pw_digital_io:tests",
     "$dir_pw_file:tests",
     "$dir_pw_function:tests",
     "$dir_pw_fuzzer:tests",
-    "$dir_pw_gpio:tests",
     "$dir_pw_hdlc:tests",
     "$dir_pw_hex_dump:tests",
     "$dir_pw_i2c:tests",
@@ -392,13 +392,13 @@ declare_args() {
     "$dir_pw_cpu_exception:docs",
     "$dir_pw_cpu_exception_cortex_m:docs",
     "$dir_pw_crypto:docs",
+    "$dir_pw_digital_io:docs",
     "$dir_pw_docgen:docs",
     "$dir_pw_doctor:docs",
     "$dir_pw_env_setup:docs",
     "$dir_pw_file:docs",
     "$dir_pw_function:docs",
     "$dir_pw_fuzzer:docs",
-    "$dir_pw_gpio:docs",
     "$dir_pw_hdlc:docs",
     "$dir_pw_hex_dump:docs",
     "$dir_pw_i2c:docs",

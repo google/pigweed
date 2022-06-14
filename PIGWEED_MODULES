@@ -32,13 +32,13 @@ pw_containers
 pw_cpu_exception
 pw_cpu_exception_cortex_m
 pw_crypto
+pw_digital_io
 pw_docgen
 pw_doctor
 pw_env_setup
 pw_file
 pw_function
 pw_fuzzer
-pw_gpio
 pw_hdlc
 pw_hex_dump
 pw_i2c

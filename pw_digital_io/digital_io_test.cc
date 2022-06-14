@@ -12,12 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_gpio/gpio.h"
+#include "pw_digital_io/digital_io.h"
 
 #include "gtest/gtest.h"
 #include "pw_status/status.h"
 
-namespace pw::gpio {
+namespace pw::digital_io {
 namespace {
 
 // The base class should be compact.
@@ -293,4 +293,4 @@ TEST(DigitalIo, InOutInterrupt) {
 }
 
 }  // namespace
-}  // namespace pw::gpio
+}  // namespace pw::digital_io

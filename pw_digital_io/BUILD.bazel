@@ -23,11 +23,11 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "pw_gpio",
-    srcs = ["gpio.cc"],
+    name = "pw_digital_io",
+    srcs = ["digital_io.cc"],
     hdrs = [
-        "public/pw_gpio/gpio.h",
-        "public/pw_gpio/internal/conversions.h",
+        "public/pw_digital_io/digital_io.h",
+        "public/pw_digital_io/internal/conversions.h",
     ],
     includes = ["public"],
     deps = [
@@ -39,10 +39,10 @@ pw_cc_library(
 )
 
 pw_cc_test(
-    name = "gpio_test",
-    srcs = ["gpio_test.cc"],
+    name = "digital_io_test",
+    srcs = ["digital_io_test.cc"],
     deps = [
-        ":pw_gpio",
+        ":pw_digital_io",
         "//pw_unit_test",
     ],
 )
