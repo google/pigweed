@@ -121,10 +121,15 @@ _clang_default_configs = [
   "$dir_pw_build:extra_strict_warnings",
   "$dir_pw_build:clang_thread_safety_warnings",
 ]
+_internal_clang_default_configs =
+    _clang_default_configs + [ "$dir_pw_build:internal_strict_warnings" ]
+
 _gcc_default_configs = [
   "$dir_pw_build:extra_strict_warnings",
   "$dir_pw_toolchain/host_gcc:threading_support",
 ]
+_internal_gcc_default_configs =
+    _gcc_default_configs + [ "$dir_pw_build:internal_strict_warnings" ]
 
 _excluded_members = [
   "defaults",
@@ -313,7 +318,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _clang_default_configs
+      default_configs += _internal_clang_default_configs
     }
   },
   {
@@ -325,7 +330,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _clang_default_configs
+      default_configs += _internal_clang_default_configs
     }
   },
   {
@@ -337,7 +342,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _clang_default_configs
+      default_configs += _internal_clang_default_configs
     }
   },
   {
@@ -349,7 +354,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _gcc_default_configs
+      default_configs += _internal_gcc_default_configs
     }
   },
   {
@@ -361,7 +366,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _gcc_default_configs
+      default_configs += _internal_gcc_default_configs
     }
   },
   {
@@ -373,7 +378,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _gcc_default_configs
+      default_configs += _internal_gcc_default_configs
     }
   },
   {
@@ -385,7 +390,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _clang_default_configs
+      default_configs += _internal_clang_default_configs
 
       # Set the C++ standard to C++14 instead of the default (C++17).
       pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX14
@@ -405,7 +410,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _clang_default_configs
+      default_configs += _internal_clang_default_configs
 
       # Set the C++ standard to C++20 instead of the default.
       pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX20

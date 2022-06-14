@@ -84,7 +84,7 @@ TEST(SystemTimer, StaticInvokeAt) {
       EXPECT_GE(SystemClock::now(), expired_deadline);
       EXPECT_EQ(expired_deadline, expected_deadline);
       callback_ran_notification.release();
-    };
+    }
 
     SystemClock::time_point expected_deadline;
     sync::ThreadNotification callback_ran_notification;
@@ -108,7 +108,7 @@ TEST(SystemTimer, InvokeAt) {
       EXPECT_GE(SystemClock::now(), expired_deadline);
       EXPECT_EQ(expired_deadline, expected_deadline);
       callback_ran_notification.release();
-    };
+    }
 
     SystemClock::time_point expected_deadline;
     sync::ThreadNotification callback_ran_notification;
@@ -137,7 +137,7 @@ TEST(SystemTimer, InvokeAfter) {
       EXPECT_GE(SystemClock::now(), expired_deadline);
       EXPECT_GE(expired_deadline, expected_min_deadline);
       callback_ran_notification.release();
-    };
+    }
 
     SystemClock::time_point expected_min_deadline;
     sync::ThreadNotification callback_ran_notification;
@@ -167,7 +167,7 @@ TEST(SystemTimer, CancelFromCallback) {
     void OnExpiryCallback(SystemClock::time_point) override {
       timer().Cancel();
       callback_ran_notification.release();
-    };
+    }
 
     sync::ThreadNotification callback_ran_notification;
   };
@@ -184,7 +184,7 @@ TEST(SystemTimer, RescheduleAndCancelFromCallback) {
       timer().InvokeAfter(kRoundedArbitraryShortDuration);
       timer().Cancel();
       callback_ran_notification.release();
-    };
+    }
 
     sync::ThreadNotification callback_ran_notification;
   };
@@ -209,7 +209,7 @@ TEST(SystemTimer, RescheduleFromCallback) {
       } else {
         callbacks_done_notification.release();
       }
-    };
+    }
 
     const uint8_t kRequiredInvocations = 5;
     const SystemClock::duration kPeriod = kRoundedArbitraryShortDuration;
@@ -240,7 +240,7 @@ TEST(SystemTimer, DoubleRescheduleFromCallback) {
       } else {
         callbacks_done_notification.release();
       }
-    };
+    }
 
     const uint8_t kExpectedInvocations = 2;
     const SystemClock::duration kPeriod = kRoundedArbitraryShortDuration;

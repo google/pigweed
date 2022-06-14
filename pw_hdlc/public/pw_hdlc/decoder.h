@@ -115,7 +115,7 @@ class Decoder {
   void Clear() {
     state_ = State::kInterFrame;
     Reset();
-  };
+  }
 
  private:
   // State enum class is used to make the Decoder a finite state machine.

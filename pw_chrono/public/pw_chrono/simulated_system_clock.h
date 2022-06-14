@@ -58,7 +58,7 @@ class SimulatedSystemClock : public VirtualSystemClock {
   SystemClock::time_point now() override {
     std::lock_guard lock(interrupt_spin_lock_);
     return current_timestamp_;
-  };
+  }
 
  private:
   // In theory atomics could be used if 64bit atomics are supported, however

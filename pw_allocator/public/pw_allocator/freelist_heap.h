@@ -71,7 +71,7 @@ class FreeListHeapBuffer {
 
   const FreeListHeap::HeapStats& heap_stats() const {
     return heap_.heap_stats_;
-  };
+  }
 
   void LogHeapStats() { heap_.LogHeapStats(); }
 

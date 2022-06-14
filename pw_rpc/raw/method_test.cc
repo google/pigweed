@@ -150,7 +150,7 @@ class FakeService : public FakeServiceBase<FakeService> {
           break;
       }
     }
-  };
+  }
 
   struct {
     int64_t integer;

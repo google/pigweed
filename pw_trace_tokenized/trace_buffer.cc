@@ -70,7 +70,7 @@ class TraceBuffer {
 
   pw::ring_buffer::PrefixedEntryRingBuffer& RingBuffer() {
     return ring_buffer_;
-  };
+  }
 
   ConstByteSpan DeringAndViewRawBuffer() {
     ring_buffer_.Dering()

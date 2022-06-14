@@ -247,7 +247,7 @@ class ByteBuilder {
   void clear() {
     size_ = 0;
     status_ = OkStatus();
-  };
+  }
 
   // Sets the statuses to OkStatus();
   void clear_status() { status_ = OkStatus(); }
@@ -331,7 +331,7 @@ class ByteBuilder {
   void CopySizeAndStatus(const ByteBuilder& other) {
     size_ = other.size_;
     status_ = other.status_;
-  };
+  }
 
  private:
   template <typename T>

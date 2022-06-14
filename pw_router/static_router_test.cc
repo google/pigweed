@@ -55,7 +55,7 @@ class BasicPacketParser : public PacketParser {
   uint32_t priority() const {
     PW_DCHECK_NOTNULL(packet_);
     return packet_->priority;
-  };
+  }
 
  private:
   const BasicPacket* packet_;

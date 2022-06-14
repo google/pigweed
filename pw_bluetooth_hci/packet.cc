@@ -32,7 +32,7 @@ Result<ConstByteSpan> CommandPacket::Encode(ByteSpan buffer,
   builder.append(parameters_);
   PW_TRY(builder.status());
   return ConstByteSpan(builder.data(), builder.size());
-};
+}
 
 std::optional<CommandPacket> CommandPacket::Decode(ConstByteSpan data,
                                                    endian order) {
@@ -60,7 +60,7 @@ Result<ConstByteSpan> AsyncDataPacket::Encode(ByteSpan buffer,
   builder.append(data_);
   PW_TRY(builder.status());
   return ConstByteSpan(builder.data(), builder.size());
-};
+}
 
 std::optional<AsyncDataPacket> AsyncDataPacket::Decode(ConstByteSpan data,
                                                        endian order) {
@@ -89,7 +89,7 @@ Result<ConstByteSpan> SyncDataPacket::Encode(ByteSpan buffer,
   builder.append(data_);
   PW_TRY(builder.status());
   return ConstByteSpan(builder.data(), builder.size());
-};
+}
 
 std::optional<SyncDataPacket> SyncDataPacket::Decode(ConstByteSpan data,
                                                      endian order) {
@@ -117,7 +117,7 @@ Result<ConstByteSpan> EventPacket::Encode(ByteSpan buffer) const {
   builder.append(parameters_);
   PW_TRY(builder.status());
   return ConstByteSpan(builder.data(), builder.size());
-};
+}
 
 std::optional<EventPacket> EventPacket::Decode(ConstByteSpan data) {
   if (data.size_bytes() < kHeaderSizeBytes) {

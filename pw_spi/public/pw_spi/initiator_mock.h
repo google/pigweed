@@ -106,7 +106,7 @@ class MockInitiator : public pw::spi::Initiator {
 
   pw::Status Configure(const pw::spi::Config& /*config */) override {
     return pw::OkStatus();
-  };
+  }
 
  private:
   std::span<MockTransaction> expected_transactions_;

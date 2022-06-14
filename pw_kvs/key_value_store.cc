@@ -1045,7 +1045,7 @@ Status KeyValueStore::RelocateKeyAddressesInSector(
   }
 
   return OkStatus();
-};
+}
 
 Status KeyValueStore::GarbageCollectSector(
     SectorDescriptor& sector_to_gc,

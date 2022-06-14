@@ -154,4 +154,4 @@ StatusWithSize SocketStream::DoRead(ByteSpan dest) {
   return StatusWithSize(bytes_rcvd);
 }
 
-};  // namespace pw::stream
+}  // namespace pw::stream

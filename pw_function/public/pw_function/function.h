@@ -104,7 +104,7 @@ class Function<Return(Args...)> {
   template <typename... PassedArgs>
   Return operator()(PassedArgs&&... args) const {
     return holder_.target()(std::forward<PassedArgs>(args)...);
-  };
+  }
 
   explicit operator bool() const { return !holder_.target().IsNull(); }
 

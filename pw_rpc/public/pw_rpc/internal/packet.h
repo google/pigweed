@@ -37,7 +37,6 @@ class Packet {
       protobuf::SizeOfFieldUint32(RpcPacket::Fields::STATUS,
                                   Status::Unauthenticated().code()) +
       protobuf::SizeOfFieldUint32(RpcPacket::Fields::CALL_ID);
-  ;
 
   // Parses a packet from a protobuf message. Missing or malformed fields take
   // their default values.

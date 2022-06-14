@@ -271,7 +271,8 @@ class StatusOrData;
   template <typename... Arg>                                                   \
   void MakeValue(Arg&&... arg) {                                               \
     internal_result::PlacementNew<T>(&unused_, std::forward<Arg>(arg)...);     \
-  }
+  }                                                                            \
+  static_assert(true, "Macros must be terminated with a semicolon")
 
 template <typename T>
 class StatusOrData<T, true> {

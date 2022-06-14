@@ -95,7 +95,7 @@ class LogPopReaderThread : public thread::ThreadCore {
   void Run() override {
     multisink_.AttachDrain(drain_);
     ReadAllEntries();
-  };
+  }
 
   virtual void ReadAllEntries() {
     do {
@@ -175,7 +175,7 @@ class LogWriterThread : public thread::ThreadCore {
           std::as_bytes(std::span(std::string_view(message))));
       pw::this_thread::yield();
     }
-  };
+  }
 
  private:
   MultiSink& multisink_;

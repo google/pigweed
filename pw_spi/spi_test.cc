@@ -44,11 +44,11 @@ class SpiTestDevice : public ::testing::Test {
   // Stub SPI Initiator/ChipSelect objects, used to exercise public API surface.
   class TestInitiator : public Initiator {
    public:
-    Status Configure(const Config& /*config */) override { return OkStatus(); };
+    Status Configure(const Config& /*config */) override { return OkStatus(); }
     Status WriteRead(ConstByteSpan /* write_buffer */,
                      ByteSpan /* read_buffer */) override {
       return OkStatus();
-    };
+    }
   };
 
   class TestChipSelector : public ChipSelector {

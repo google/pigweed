@@ -30,9 +30,9 @@ class PW_LOCKABLE("pw::sync::VirtualBasicLockable") VirtualBasicLockable {
  public:
   void lock() PW_EXCLUSIVE_LOCK_FUNCTION() {
     DoLockOperation(Operation::kLock);
-  };
+  }
 
-  void unlock() PW_UNLOCK_FUNCTION() { DoLockOperation(Operation::kUnlock); };
+  void unlock() PW_UNLOCK_FUNCTION() { DoLockOperation(Operation::kUnlock); }
 
  protected:
   ~VirtualBasicLockable() = default;

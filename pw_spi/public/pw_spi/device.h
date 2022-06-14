@@ -105,7 +105,7 @@ class Device {
           behavior_(other.behavior_),
           first_write_read_(other.first_write_read_) {
       other.selector_ = nullptr;
-    };
+    }
 
     Transaction& operator=(Transaction&& other) {
       initiator_ = std::move(other.initiator_);

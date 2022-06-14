@@ -53,6 +53,6 @@ constexpr auto GetNanopbOrRawMethodFor(
   } else {
     return InvalidMethod<kMethod, kType, RawMethod>(id);
   }
-};
+}
 
 }  // namespace pw::rpc::internal

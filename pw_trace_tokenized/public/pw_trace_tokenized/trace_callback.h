@@ -196,7 +196,7 @@ class CallbacksImpl {
 // Example: pw::trace::Callbacks::Instance().UnregisterAllSinks();
 class Callbacks {
  public:
-  static CallbacksImpl& Instance() { return instance_; };
+  static CallbacksImpl& Instance() { return instance_; }
 
  private:
   static CallbacksImpl instance_;

@@ -52,6 +52,6 @@ constexpr auto GetPwpbOrRawMethodFor(uint32_t id,
   } else {
     return InvalidMethod<kMethod, kType, RawMethod>(id);
   }
-};
+}
 
 }  // namespace pw::rpc::internal

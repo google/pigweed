@@ -284,7 +284,7 @@ class CallbackDecoder {
     return decoder_.ReadBytes(out);
   }
 
-  bool cancelled() const { return state_ == kDecodeCancelled; };
+  bool cancelled() const { return state_ == kDecodeCancelled; }
 
  private:
   enum State {

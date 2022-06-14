@@ -112,7 +112,7 @@ struct SystemClock {
   template <class Rep, class Period>
   static constexpr duration for_at_least(std::chrono::duration<Rep, Period> d) {
     return std::chrono::ceil<duration>(d);
-  };
+  }
 
   // Computes the nearest time_point after the specified duration has elapsed.
   //

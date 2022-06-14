@@ -115,6 +115,13 @@ config("extra_strict_warnings") {
   cflags_c = [ "-Wstrict-prototypes" ]
 }
 
+# This config contains warnings that are enabled for upstream Pigweed.
+# This config MUST NOT be used downstream to allow for warnings to be
+# added in the future without breaking downstream.
+config("internal_strict_warnings") {
+  cflags_cc = [ "-Wextra-semi" ]
+}
+
 config("cpp14") {
   cflags_cc = [ "-std=c++14" ]
 }
