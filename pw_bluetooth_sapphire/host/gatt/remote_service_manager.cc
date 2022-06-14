@@ -96,15 +96,20 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb, std::vector<UUID
     user_init_cb(status);
   };
 
-  client_->ExchangeMTU([self, init_cb = std::move(init_cb), services = std::move(services)](
-                           att::Result<> status, uint16_t mtu) mutable {
+  client_->ExchangeMTU([self, init_cb = std::move(init_cb),
+                        services = std::move(services)](att::Result<uint16_t> mtu_result) mutable {
     // The Client's Bearer may outlive this object.
     if (!self) {
       return;
     }
 
-    if (bt_is_error(status, INFO, "gatt", "MTU exchange failed")) {
-      init_cb(status);
+    // Support for the MTU exchange is optional, so if the peer indicated they don't support it, we
+    // continue with initialization.
+    if (mtu_result.is_ok() || mtu_result.error_value().is(att::ErrorCode::kRequestNotSupported)) {
+      bt_is_error(mtu_result, DEBUG, "gatt", "MTU exchange not supported");
+    } else {
+      bt_log(INFO, "gatt", "MTU exchange failed: %s", bt_str(mtu_result.error_value()));
+      init_cb(fitx::error(mtu_result.error_value()));
       return;
     }
 

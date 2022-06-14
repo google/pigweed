@@ -23,8 +23,13 @@ uint16_t FakeClient::mtu() const {
 }
 
 void FakeClient::ExchangeMTU(MTUCallback callback) {
-  auto task = [status = exchange_mtu_status_, mtu = server_mtu_, callback = std::move(callback)] {
-    callback(status, mtu);
+  auto task = [status = exchange_mtu_status_, mtu = server_mtu_,
+               callback = std::move(callback)]() mutable {
+    if (status.is_error()) {
+      callback(fitx::error(status.error_value()));
+    } else {
+      callback(fitx::ok(mtu));
+    }
   };
   async::PostTask(dispatcher_, std::move(task));
 }

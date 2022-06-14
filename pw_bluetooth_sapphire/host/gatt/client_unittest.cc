@@ -4,6 +4,7 @@
 
 #include "client.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 
@@ -13,6 +14,14 @@ namespace {
 constexpr UUID kTestUuid1(uint16_t{0xDEAD});
 constexpr UUID kTestUuid2(uint16_t{0xBEEF});
 constexpr UUID kTestUuid3({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+
+att::Result<uint16_t> MtuResultFromErrCode(att::ErrorCode ecode) {
+  return fitx::error(att::Error(ecode));
+}
+
+att::Result<uint16_t> MtuResultFromHostErrCode(HostError ecode) {
+  return fitx::error(att::Error(ecode));
+}
 
 // clang-format off
 const StaticByteBuffer kDiscoverPrimaryRequest(
@@ -98,13 +107,8 @@ TEST_F(ClientTest, ExchangeMTUMalformedResponse) {
                                           kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
   );
 
-  // Initialize to a non-zero value.
-  uint16_t final_mtu = kPreferredMTU;
-  att::Result<> status = fitx::ok();
-  auto mtu_cb = [&](att::Result<> cb_status, uint16_t val) {
-    final_mtu = val;
-    status = cb_status;
-  };
+  std::optional<att::Result<uint16_t>> result;
+  auto mtu_cb = [&](att::Result<uint16_t> cb_result) { result = cb_result; };
 
   att()->set_preferred_mtu(kPreferredMTU);
 
@@ -122,8 +126,8 @@ TEST_F(ClientTest, ExchangeMTUMalformedResponse) {
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
-  EXPECT_EQ(0, final_mtu);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(MtuResultFromHostErrCode(HostError::kPacketMalformed), *result);
   EXPECT_TRUE(fake_chan()->link_error());
 }
 
@@ -135,12 +139,8 @@ TEST_F(ClientTest, ExchangeMTUErrorNotSupported) {
                                           kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
   );
 
-  uint16_t final_mtu = 0;
-  att::Result<> status = fitx::ok();
-  auto mtu_cb = [&](att::Result<> cb_status, uint16_t val) {
-    final_mtu = val;
-    status = cb_status;
-  };
+  std::optional<att::Result<uint16_t>> result;
+  auto mtu_cb = [&](att::Result<uint16_t> cb_result) { result = cb_result; };
 
   // Set the initial MTU to something other than the default LE MTU since we
   // want to confirm that the MTU changes to the default.
@@ -154,16 +154,15 @@ TEST_F(ClientTest, ExchangeMTUErrorNotSupported) {
 
   // Respond with "Request Not Supported". This will cause us to switch to the
   // default MTU.
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x02,        // request: exchange MTU
-                                        0x00, 0x00,  // handle: 0
-                                        0x06         // error: Request Not Supported
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(att::kErrorResponse,       // opcode
+                                        att::kExchangeMTURequest,  // request opcode
+                                        0x00, 0x00,                // handle: 0
+                                        att::ErrorCode::kRequestNotSupported));
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
-  EXPECT_EQ(att::kLEMinMTU, final_mtu);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(MtuResultFromErrCode(att::ErrorCode::kRequestNotSupported), *result);
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
@@ -174,12 +173,8 @@ TEST_F(ClientTest, ExchangeMTUErrorOther) {
                        kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
       );
 
-  uint16_t final_mtu = kPreferredMTU;
-  att::Result<> status = fitx::ok();
-  auto mtu_cb = [&](att::Result<> cb_status, uint16_t val) {
-    final_mtu = val;
-    status = cb_status;
-  };
+  std::optional<att::Result<uint16_t>> result;
+  auto mtu_cb = [&](att::Result<uint16_t> cb_result) { result = cb_result; };
 
   att()->set_preferred_mtu(kPreferredMTU);
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
@@ -190,16 +185,15 @@ TEST_F(ClientTest, ExchangeMTUErrorOther) {
   ASSERT_TRUE(Expect(kExpectedRequest));
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x02,        // request: exchange MTU
-                                        0x00, 0x00,  // handle: 0
-                                        0x0E         // error: Unlikely Error
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(att::kErrorResponse,       // opcode
+                                        att::kExchangeMTURequest,  // request opcode
+                                        0x00, 0x00,                // handle: 0
+                                        att::ErrorCode::kUnlikelyError));
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(ToResult(att::ErrorCode::kUnlikelyError), status);
-  EXPECT_EQ(0, final_mtu);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(MtuResultFromErrCode(att::ErrorCode::kUnlikelyError), *result);
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
@@ -213,12 +207,8 @@ TEST_F(ClientTest, ExchangeMTUSelectLocal) {
                        kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
       );
 
-  uint16_t final_mtu = 0;
-  att::Result<> status = fitx::ok();
-  auto mtu_cb = [&](att::Result<> cb_status, uint16_t val) {
-    final_mtu = val;
-    status = cb_status;
-  };
+  std::optional<att::Result<uint16_t>> result;
+  auto mtu_cb = [&](att::Result<uint16_t> cb_result) { result = cb_result; };
 
   att()->set_preferred_mtu(kPreferredMTU);
 
@@ -234,9 +224,8 @@ TEST_F(ClientTest, ExchangeMTUSelectLocal) {
                                         ));
 
   RunLoopUntilIdle();
-
-  EXPECT_EQ(fitx::ok(), status);
-  EXPECT_EQ(kPreferredMTU, final_mtu);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(att::Result<uint16_t>(fitx::ok(kPreferredMTU)), *result);
   EXPECT_EQ(kPreferredMTU, att()->mtu());
 }
 
@@ -250,12 +239,8 @@ TEST_F(ClientTest, ExchangeMTUSelectRemote) {
                        kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
       );
 
-  uint16_t final_mtu = 0;
-  att::Result<> status = fitx::ok();
-  auto mtu_cb = [&](att::Result<> cb_status, uint16_t val) {
-    final_mtu = val;
-    status = cb_status;
-  };
+  std::optional<att::Result<uint16_t>> result;
+  auto mtu_cb = [&](att::Result<uint16_t> cb_result) { result = cb_result; };
 
   att()->set_preferred_mtu(kPreferredMTU);
 
@@ -272,8 +257,8 @@ TEST_F(ClientTest, ExchangeMTUSelectRemote) {
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(fitx::ok(), status);
-  EXPECT_EQ(kServerRxMTU, final_mtu);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(att::Result<uint16_t>(fitx::ok(kServerRxMTU)), *result);
   EXPECT_EQ(kServerRxMTU, att()->mtu());
 }
 
@@ -287,12 +272,8 @@ TEST_F(ClientTest, ExchangeMTUSelectDefault) {
                        kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
       );
 
-  uint16_t final_mtu = 0;
-  att::Result<> status = fitx::ok();
-  auto mtu_cb = [&](att::Result<> cb_status, uint16_t val) {
-    final_mtu = val;
-    status = cb_status;
-  };
+  std::optional<att::Result<uint16_t>> result;
+  auto mtu_cb = [&](att::Result<uint16_t> cb_result) { result = cb_result; };
 
   att()->set_preferred_mtu(kPreferredMTU);
 
@@ -309,8 +290,8 @@ TEST_F(ClientTest, ExchangeMTUSelectDefault) {
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(fitx::ok(), status);
-  EXPECT_EQ(att::kLEMinMTU, final_mtu);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(att::Result<uint16_t>(fitx::ok(att::kLEMinMTU)), *result);
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
@@ -3213,12 +3194,8 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
                        LowerBits(kPreferredMTU), UpperBits(kPreferredMTU)  // client rx mtu
       );
 
-  uint16_t final_mtu = 0;
-  att::Result<> mtu_status = fitx::ok();
-  auto mtu_cb = [&](att::Result<> cb_status, uint16_t val) {
-    final_mtu = val;
-    mtu_status = cb_status;
-  };
+  std::optional<att::Result<uint16_t>> result;
+  auto mtu_cb = [&](att::Result<uint16_t> cb_result) { result = cb_result; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
@@ -3232,8 +3209,8 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
                                         ));
 
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), mtu_status);
-  EXPECT_EQ(kPreferredMTU, final_mtu);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(att::Result<uint16_t>(fitx::ok(kPreferredMTU)), *result);
   EXPECT_EQ(kPreferredMTU, att()->mtu());
 
   constexpr att::Handle kHandle = 0x0001;
@@ -3386,6 +3363,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess128BitUUID) {
   EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
 }
+
 TEST_F(ClientTest, ReadByTypeRequestError) {
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;

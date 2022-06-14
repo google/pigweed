@@ -35,17 +35,19 @@ class Client {
   // Returns the current ATT MTU.
   virtual uint16_t mtu() const = 0;
 
-  // Initiates an MTU exchange and adjusts the MTU of the bearer according to
-  // what the peer is capable of. The request will be initiated using the
-  // bearer's preferred MTU.
+  // Initiates an MTU exchange and adjusts the bearer's MTU as outlined in Core Spec v5.3 Vol. 3
+  // Part F 3.4.2. The request will be made using the locally-preferred MTU.
   //
-  // After the exchange is complete, the bearer will be updated to use the
-  // resulting MTU. The resulting MTU will be notified via |callback|.
+  // Upon successful exchange, the bearer will be updated to use the resulting MTU and |callback|
+  // will be notified with the the resulting MTU.
   //
-  // |status| will be set to an error if the MTU exchange fails. The |mtu|
-  // parameter will be set to 0 and the underlying bearer's MTU will remain
-  // unmodified.
-  using MTUCallback = fit::function<void(att::Result<> status, uint16_t mtu)>;
+  // MTU exchange support is optional per v5.3 Vol. 3 Part F Table 4.1, so if the exchange fails
+  // because the peer doesn't support it, the bearer's MTU will be |kLEMinMTU| and initialization
+  // should proceed. In this case, |mtu_result| will be |att::Error(att::kRequestNotSupported)|.
+  //
+  // If the MTU exchange otherwise fails, |mtu_result| will be an error and the bearer's MTU will
+  // not change.
+  using MTUCallback = fit::callback<void(att::Result<uint16_t> mtu_result)>;
   virtual void ExchangeMTU(MTUCallback callback) = 0;
 
   // Performs a modified version of the "Discover All Primary Services" procedure defined in v5.0,

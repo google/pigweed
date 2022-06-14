@@ -137,7 +137,7 @@ class Impl final : public Client {
   void ExchangeMTU(MTUCallback mtu_cb) override {
     auto pdu = NewPDU(sizeof(att::ExchangeMTURequestParams));
     if (!pdu) {
-      mtu_cb(ToResult(HostError::kOutOfMemory), 0);
+      mtu_cb(fitx::error(att::Error(HostError::kOutOfMemory)));
       return;
     }
 
@@ -145,7 +145,8 @@ class Impl final : public Client {
     auto params = writer.mutable_payload<att::ExchangeMTURequestParams>();
     params->client_rx_mtu = htole16(att_->preferred_mtu());
 
-    auto rsp_cb = [this, mtu_cb = std::move(mtu_cb)](att::Bearer::TransactionResult result) {
+    auto rsp_cb = [this,
+                   mtu_cb = std::move(mtu_cb)](att::Bearer::TransactionResult result) mutable {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
         ZX_DEBUG_ASSERT(rsp.opcode() == att::kExchangeMTUResponse);
@@ -154,7 +155,7 @@ class Impl final : public Client {
           // Received a malformed response. Disconnect the link.
           att_->ShutDown();
 
-          mtu_cb(ToResult(HostError::kPacketMalformed), 0);
+          mtu_cb(fitx::error(att::Error(HostError::kPacketMalformed)));
           return;
         }
 
@@ -166,7 +167,7 @@ class Impl final : public Client {
         uint16_t final_mtu = std::max(att::kLEMinMTU, std::min(server_mtu, att_->preferred_mtu()));
         att_->set_mtu(final_mtu);
 
-        mtu_cb(fitx::ok(), final_mtu);
+        mtu_cb(fitx::ok(final_mtu));
         return;
       }
       const auto& [error, handle] = result.error_value();
@@ -177,12 +178,12 @@ class Impl final : public Client {
       if (error.is(att::ErrorCode::kRequestNotSupported)) {
         bt_log(DEBUG, "gatt", "peer does not support MTU exchange: using default");
         att_->set_mtu(att::kLEMinMTU);
-        mtu_cb(fitx::error(error), att::kLEMinMTU);
+        mtu_cb(fitx::error(error));
         return;
       }
 
       bt_log(DEBUG, "gatt", "MTU exchange failed: %s", bt_str(error));
-      mtu_cb(fitx::error(error), 0);
+      mtu_cb(fitx::error(error));
     };
 
     att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));

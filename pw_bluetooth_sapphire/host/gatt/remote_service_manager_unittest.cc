@@ -225,6 +225,29 @@ TEST_F(RemoteServiceManagerTest, InitializeFailure) {
   EXPECT_TRUE(watcher_services.empty());
 }
 
+TEST_F(RemoteServiceManagerTest, InitializeMtuExchangeNotSupportedSucceeds) {
+  ServiceData svc(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
+  fake_client()->set_services({svc});
+  // The MTU exchange is an optional procedure, so if the peer tells us that they do not support it,
+  // we should continue with initialization.
+  fake_client()->set_exchage_mtu_status(ToResult(att::ErrorCode::kRequestNotSupported));
+
+  ServiceList services;
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
+
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(fitx::ok(), status);
+  ASSERT_EQ(1u, services.size());
+  EXPECT_EQ(svc.range_start, services[0]->handle());
+  EXPECT_EQ(svc.type, services[0]->uuid());
+}
+
 TEST_F(RemoteServiceManagerTest, InitializeByUUIDNoServices) {
   ServiceList services;
   mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
@@ -315,7 +338,7 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServices) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(fitx::ok(), status);
-  EXPECT_EQ(1u, services.size());
+  ASSERT_EQ(1u, services.size());
   EXPECT_EQ(svc.range_start, services[0]->handle());
   EXPECT_EQ(svc.type, services[0]->uuid());
   EXPECT_EQ(ServiceKind::SECONDARY, services[0]->info().kind);
@@ -431,7 +454,7 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesErrorUnsupportedGrou
   RunLoopUntilIdle();
 
   EXPECT_EQ(fitx::ok(), status);
-  EXPECT_EQ(1u, services.size());
+  ASSERT_EQ(1u, services.size());
   EXPECT_EQ(svc1, services[0]->info());
 }
 
@@ -452,7 +475,7 @@ TEST_F(RemoteServiceManagerTest, ListServicesBeforeInit) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(fitx::ok(), status);
-  EXPECT_EQ(1u, services.size());
+  ASSERT_EQ(1u, services.size());
   EXPECT_EQ(svc.range_start, services[0]->handle());
   EXPECT_EQ(svc.type, services[0]->uuid());
 }
@@ -473,7 +496,7 @@ TEST_F(RemoteServiceManagerTest, ListServicesAfterInit) {
   mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
     services = std::move(cb_services);
   });
-  EXPECT_EQ(1u, services.size());
+  ASSERT_EQ(1u, services.size());
   EXPECT_EQ(svc.range_start, services[0]->handle());
   EXPECT_EQ(svc.type, services[0]->uuid());
 }
