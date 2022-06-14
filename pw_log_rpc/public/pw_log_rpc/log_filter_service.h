@@ -58,10 +58,12 @@ class FilterService final
           (protobuf::SizeOfFieldEnum(
                log::FilterRule::Fields::LEVEL_GREATER_THAN_OR_EQUAL, 7) +
            protobuf::SizeOfFieldBytes(log::FilterRule::Fields::MODULE_EQUALS,
-                                      6) +
+                                      cfg::kMaxModuleNameBytes) +
            protobuf::SizeOfFieldUint32(log::FilterRule::Fields::ANY_FLAGS_SET,
                                        1) +
-           protobuf::SizeOfFieldEnum(log::FilterRule::Fields::ACTION, 2));
+           protobuf::SizeOfFieldEnum(log::FilterRule::Fields::ACTION, 2) +
+           protobuf::SizeOfFieldBytes(log::FilterRule::Fields::THREAD_EQUALS,
+                                      cfg::kMaxThreadNameBytes));
 
   static constexpr size_t kFilterIdsResponseBufferSize =
       kMinSupportedFilters *
