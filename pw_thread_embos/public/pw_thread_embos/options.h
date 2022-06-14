@@ -42,9 +42,9 @@ namespace pw::thread::embos {
 //
 class Options : public thread::Options {
  public:
-  constexpr Options() = default;
-  constexpr Options(const Options&) = default;
-  constexpr Options(Options&& other) = default;
+  constexpr Options() {}
+  constexpr Options(const Options&) {}
+  constexpr Options(Options&&) {}
 
   // Sets the name for the embOS task, this is optional.
   // Note that this will be deep copied into the context and may be truncated

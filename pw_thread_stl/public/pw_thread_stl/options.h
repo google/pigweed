@@ -21,6 +21,9 @@ namespace pw::thread::stl {
 // Instead, users are expected to start the thread and after dynamically adjust
 // the thread's attributes using std::thread::native_handle based on the native
 // threading APIs.
-class Options : public thread::Options {};
+class Options : public thread::Options {
+ public:
+  constexpr Options() {}
+};
 
 }  // namespace pw::thread::stl
