@@ -46,9 +46,9 @@ namespace pw::thread::threadx {
 //
 class Options : public thread::Options {
  public:
-  constexpr Options() = default;
+  constexpr Options() {}
   constexpr Options(const Options&) = default;
-  constexpr Options(Options&& other) = default;
+  constexpr Options(Options&&) = default;
 
   // Sets the name for the ThreadX thread, note that this will be deep copied
   // into the context and may be truncated based on
