@@ -370,7 +370,6 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_software_update',
     'pw_spi',
     'pw_stm32cube_build',
-    'pw_sync',
     'pw_sync_zephyr',
     'pw_sys_io_arduino',
     'pw_sys_io_mcuxpresso',

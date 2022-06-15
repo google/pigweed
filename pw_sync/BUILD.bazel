@@ -442,7 +442,6 @@ pw_cc_test(
     name = "thread_notification_facade_test",
     srcs = [
         "thread_notification_facade_test.cc",
-        "thread_notification_facade_test_c.c",
     ],
     deps = [
         ":thread_notification",
@@ -454,7 +453,6 @@ pw_cc_test(
     name = "timed_thread_notification_facade_test",
     srcs = [
         "timed_thread_notification_facade_test.cc",
-        "timed_thread_notification_facade_test_c.c",
     ],
     deps = [
         ":timed_thread_notification",
