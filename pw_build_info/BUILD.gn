@@ -62,7 +62,10 @@ if (current_os != "mac" && current_os != "win") {
     ]
     public = [ "public/pw_build_info/build_id.h" ]
     sources = [ "build_id.cc" ]
-    deps = [ dir_pw_preprocessor ]
+    deps = [
+      dir_pw_preprocessor,
+      dir_pw_span,
+    ]
   }
 }
 
