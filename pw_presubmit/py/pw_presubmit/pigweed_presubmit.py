@@ -383,7 +383,6 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_tls_client',
     'pw_tls_client_boringssl',
     'pw_tls_client_mbedtls',
-    'pw_tokenizer',
     'pw_trace',
     'pw_trace_tokenized',
     'pw_watch',

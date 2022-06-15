@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_binary")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
@@ -157,17 +156,19 @@ pw_cc_binary(
 
 # Executable for generating a test ELF file for elf_reader_test.py. A host
 # version of this binary is checked in for use in elf_reader_test.py.
-cc_binary(
-    name = "elf_reader_test_binary",
-    srcs = [
-        "py/elf_reader_test_binary.c",
-    ],
-    linkopts = ["-Wl,--unresolved-symbols=ignore-all"],  # main is not defined
-    deps = [
-        ":pw_tokenizer",
-        "//pw_varint",
-    ],
-)
+# Commented out because it fails to compile with bazel, with the error
+# ld.lld: error: symbol 'main' has no type
+# cc_binary(
+#     name = "elf_reader_test_binary",
+#     srcs = [
+#         "py/elf_reader_test_binary.c",
+#     ],
+#     linkopts = ["-Wl,--unresolved-symbols=ignore-all"],  # main is not defined
+#     deps = [
+#         ":pw_tokenizer",
+#         "//pw_varint",
+#     ],
+# )
 
 pw_cc_test(
     name = "argument_types_test",
