@@ -4,6 +4,18 @@
   "description": "An open source collection of embedded-targeted libraries",
   "author": "",
   "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    "./pw_status": "./dist/pw_status",
+    "./pw_hdlc": "./dist/pw_hdlc"
+  },
+  "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "rollup -c && rimraf dist/types && rimraf dist/**/types",
+    "start": "tsc-watch --onSuccess \"rollup -c\"",
+    "check": "gts check",
+    "fix": "gts fix"
+  },
   "devDependencies": {
     "@bazel/concatjs": "4.1.0",
     "@bazel/esbuild": "4.1.0",
@@ -15,7 +27,7 @@
     "@material-ui/core": "^4.12.1",
     "@material-ui/lab": "^4.0.0-alpha.60",
     "@rollup/plugin-commonjs": "^19.0.0",
-    "@rollup/plugin-node-resolve": "^13.0.0",
+    "@rollup/plugin-node-resolve": "^13.3.0",
     "@types/argparse": "^2.0.10",
     "@types/crc": "^3.4.0",
     "@types/google-protobuf": "^3.15.5",
@@ -26,7 +38,7 @@
     "argparse": "^2.0.1",
     "base64-js": "^1.5.1",
     "buffer": "^6.0.3",
-    "crc": "^3.8.0",
+    "crc": "^4.1.1",
     "debug": "^4.3.2",
     "eslint": "^7.30.0",
     "eslint-plugin-react": "^7.24.0",
@@ -48,19 +60,20 @@
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "requirejs": "^2.3.6",
+    "rimraf": "^3.0.2",
     "rollup": "^2.52.8",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-sourcemaps": "^0.6.3",
+    "rollup-plugin-dts": "^4.2.2",
+    "@rollup/plugin-typescript": "^8.3.3",
     "rxjs": "^7.2.0",
     "tmp": "0.2.1",
     "ts-protoc-gen": "^0.15.0",
+    "tsc-watch": "^5.0.3",
+    "tslib": "^2.4.0",
     "typescript": "^4.3.5",
     "wait-queue": "^1.1.4"
-  },
-  "scripts": {
-    "check": "gts check",
-    "fix": "gts fix"
   },
   "dependencies": {
     "ansi_up": "^5.1.0",

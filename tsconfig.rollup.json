@@ -1,0 +1,32 @@
+{
+  "extends": "./node_modules/gts/tsconfig-google.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "declaration": true,
+    "declarationDir": "./types",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "jsx": "react",
+    "plugins": [
+      {
+        "name": "@bazel/tsetse",
+        "disabledRules": [
+          "must-use-promises"
+        ]
+      }
+    ],
+    "paths": {
+      "pigweed/pw_status": [
+        "./pw_status/ts"
+      ]
+    }
+  },
+  "include": [
+    "ts",
+    "pw_status/ts",
+  ]
+}
