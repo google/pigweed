@@ -184,11 +184,11 @@ DecodedArg StringSegment::DecodeString(
 
   if (arguments.size() - 1 < size) {
     status.Update(ArgStatus::kDecodeError);
-    return DecodedArg(
-        status,
-        text_,
-        arguments.size(),
-        {reinterpret_cast<const char*>(&arguments[1]), arguments.size() - 1});
+    return DecodedArg(status,
+                      text_,
+                      arguments.size(),
+                      {reinterpret_cast<const char*>(&arguments[1]),
+                       static_cast<size_t>(arguments.size()) - 1});
   }
 
   std::string value(reinterpret_cast<const char*>(&arguments[1]), size);
