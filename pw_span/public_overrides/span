@@ -17,4 +17,4 @@
 #include_next <span>
 #endif  // __has_include_next(<span>)
 
-#include "pw_span/internal/span.h"
+#include "pw_span/internal/span_common.inc"

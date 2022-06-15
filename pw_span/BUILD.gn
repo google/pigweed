@@ -54,7 +54,7 @@ pw_source_set("pw_span") {
       "$dir_pw_polyfill:iterator",
     ]
   }
-  sources = [ "public/pw_span/internal/span.h" ]
+  sources = [ "public/pw_span/internal/span_common.inc" ]
   visibility = [ ":*" ]
 }
 

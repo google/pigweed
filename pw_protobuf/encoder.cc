@@ -26,7 +26,6 @@
 #include "pw_protobuf/serialized_size.h"
 #include "pw_protobuf/stream_decoder.h"
 #include "pw_protobuf/wire_format.h"
-#include "pw_span/internal/span.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 #include "pw_stream/memory_stream.h"
