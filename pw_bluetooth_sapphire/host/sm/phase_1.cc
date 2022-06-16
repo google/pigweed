@@ -100,11 +100,11 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   pres_->initiator_key_dist_gen = pres_values.remote_keys & req_params.initiator_key_dist_gen;
   pres_->responder_key_dist_gen = pres_values.local_keys & req_params.responder_key_dist_gen;
 
-  fpromise::result<PairingFeatures, ErrorCode> maybe_features =
+  fitx::result<ErrorCode, PairingFeatures> maybe_features =
       ResolveFeatures(/*local_initiator=*/false, req_params, *pres_);
   if (maybe_features.is_error()) {
     bt_log(DEBUG, "sm", "rejecting pairing features");
-    Abort(maybe_features.error());
+    Abort(maybe_features.error_value());
     return;
   }
   PairingFeatures features = maybe_features.value();
@@ -162,7 +162,7 @@ LocalPairingParams Phase1::BuildPairingParameters() {
   return local_params;
 }
 
-fpromise::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(
+fitx::result<ErrorCode, PairingFeatures> Phase1::ResolveFeatures(
     bool local_initiator, const PairingRequestParams& preq, const PairingResponseParams& pres) {
   // Select the smaller of the initiator and responder max. encryption key size
   // values (Vol 3, Part H, 2.3.4).
@@ -172,7 +172,7 @@ fpromise::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(
                                          : kMinEncryptionKeySize;
   if (enc_key_size < min_allowed_enc_key_size) {
     bt_log(DEBUG, "sm", "encryption key size too small! (%u)", enc_key_size);
-    return fpromise::error(ErrorCode::kEncryptionKeySize);
+    return fitx::error(ErrorCode::kEncryptionKeySize);
   }
 
   bool will_bond = (preq.auth_req & kBondingFlag) && (pres.auth_req & kBondingFlag);
@@ -200,7 +200,7 @@ fpromise::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(
   // If MITM protection is required but the pairing method cannot provide MITM,
   // then reject the pairing.
   if (mitm && method == PairingMethod::kJustWorks) {
-    return fpromise::error(ErrorCode::kAuthenticationRequirements);
+    return fitx::error(ErrorCode::kAuthenticationRequirements);
   }
 
   // The "Pairing Response" command (i.e. |pres|) determines the keys that shall
@@ -218,7 +218,7 @@ fpromise::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(
     // support.
     if ((preq.initiator_key_dist_gen & local_keys) != local_keys ||
         (preq.responder_key_dist_gen & remote_keys) != remote_keys) {
-      return fpromise::error(ErrorCode::kInvalidParameters);
+      return fitx::error(ErrorCode::kInvalidParameters);
     }
   } else {
     local_keys = pres.responder_key_dist_gen;
@@ -233,7 +233,7 @@ fpromise::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(
   // bondable mode and a peer requested non-bondable mode with a non-zero keydistgen field, we pair
   // in non-bondable mode but also attempt to distribute keys.
   if (!will_bond && (local_keys || remote_keys)) {
-    return fpromise::error(ErrorCode::kInvalidParameters);
+    return fitx::error(ErrorCode::kInvalidParameters);
   }
 
   // "If both [...] devices support [LE] Secure Connections [...] the devices may optionally
@@ -259,17 +259,17 @@ fpromise::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(
   } else if (requested_level_ == SecurityLevel::kSecureAuthenticated) {
     // SecureAuthenticated means Secure Connections is required, so if this pairing would not use
     // Secure Connections it does not meet the requirements of `requested_level_`
-    return fpromise::error(ErrorCode::kAuthenticationRequirements);
+    return fitx::error(ErrorCode::kAuthenticationRequirements);
   }
 
-  return fpromise::ok(PairingFeatures{.initiator = local_initiator,
-                                      .secure_connections = sc,
-                                      .will_bond = will_bond,
-                                      .generate_ct_key = generate_ct_key,
-                                      .method = method,
-                                      .encryption_key_size = enc_key_size,
-                                      .local_key_distribution = local_keys,
-                                      .remote_key_distribution = remote_keys});
+  return fitx::ok(PairingFeatures{.initiator = local_initiator,
+                                  .secure_connections = sc,
+                                  .will_bond = will_bond,
+                                  .generate_ct_key = generate_ct_key,
+                                  .method = method,
+                                  .encryption_key_size = enc_key_size,
+                                  .local_key_distribution = local_keys,
+                                  .remote_key_distribution = remote_keys});
 }
 
 void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
@@ -286,12 +286,12 @@ void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
     return;
   }
 
-  fpromise::result<PairingFeatures, ErrorCode> maybe_features =
+  fitx::result<ErrorCode, PairingFeatures> maybe_features =
       ResolveFeatures(/*local_initiator=*/true, *preq_, response_params);
 
   if (maybe_features.is_error()) {
     bt_log(DEBUG, "sm", "rejecting pairing features");
-    Abort(maybe_features.error());
+    Abort(maybe_features.error_value());
     return;
   }
   PairingFeatures features = maybe_features.value();
@@ -300,9 +300,9 @@ void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
 }
 
 void Phase1::OnRxBFrame(ByteBufferPtr sdu) {
-  fpromise::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fitx::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
-    Abort(maybe_reader.error());
+    Abort(maybe_reader.error_value());
     return;
   }
   ValidPacketReader reader = maybe_reader.value();

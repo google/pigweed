@@ -54,7 +54,6 @@ static_library("sm") {
   public_deps = [
     ":definitions",
     "//sdk/lib/fit",
-    "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host/gap:definitions",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",

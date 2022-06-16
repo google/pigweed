@@ -7,7 +7,6 @@
 #include <gtest/gtest.h>
 
 #include "lib/async/default.h"
-#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -49,10 +48,11 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
     fake_chan_->SetSendCallback(
         [this](ByteBufferPtr sent_packet) {
-          auto maybe_reader = ValidPacketReader::ParseSdu(sent_packet);
+          fitx::result<ErrorCode, ValidPacketReader> maybe_reader =
+              ValidPacketReader::ParseSdu(sent_packet);
           ASSERT_TRUE(maybe_reader.is_ok())
               << "Sent invalid packet: "
-              << ProtocolErrorTraits<sm::ErrorCode>::ToString(maybe_reader.error());
+              << ProtocolErrorTraits<sm::ErrorCode>::ToString(maybe_reader.error_value());
           last_packet_.emplace(maybe_reader.value());
           last_packet_internal_ = std::move(sent_packet);
         },
@@ -60,7 +60,7 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
     stage_1_ = std::make_unique<ScStage1Passkey>(
         listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
         sm_chan_->GetWeakPtr(),
-        [this](fpromise::result<ScStage1::Output, ErrorCode> out) { last_results_ = out; });
+        [this](fitx::result<ErrorCode, ScStage1::Output> out) { last_results_ = out; });
   }
 
   UInt128 GenerateConfirmValue(const UInt128& random, bool gen_initiator_confirm, uint8_t r) const {
@@ -90,7 +90,7 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
   ScStage1Passkey* stage_1() { return stage_1_.get(); }
   FakeListener* listener() { return listener_.get(); }
   std::optional<ValidPacketReader> last_packet() const { return last_packet_; }
-  std::optional<fpromise::result<ScStage1::Output, ErrorCode>> last_results() const {
+  std::optional<fitx::result<ErrorCode, ScStage1::Output>> last_results() const {
     return last_results_;
   }
 
@@ -103,7 +103,7 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;
   // To store the last sent SDU so that the the last_packet_ PacketReader points at valid data.
   ByteBufferPtr last_packet_internal_;
-  std::optional<fpromise::result<ScStage1::Output, ErrorCode>> last_results_ = std::nullopt;
+  std::optional<fitx::result<ErrorCode, ScStage1::Output>> last_results_ = std::nullopt;
 };
 
 using ScStage1PasskeyDeathTest = ScStage1PasskeyTest;
@@ -219,7 +219,7 @@ TEST_F(ScStage1PasskeyTest, InitiatorPeerConfirmBeforeUserInputFails) {
   stage_1()->OnPairingConfirm(vals.confirm);
   // The initiator expects to send the pairing confirm first, so it should now reject pairing
   ASSERT_TRUE(last_results()->is_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 TEST_F(ScStage1PasskeyTest, ReceiveRandomBeforePeerConfirm) {
@@ -237,7 +237,7 @@ TEST_F(ScStage1PasskeyTest, ReceiveRandomBeforePeerConfirm) {
   MatchingPair vals = GenerateMatchingConfirmAndRandom(r);
   stage_1()->OnPairingRandom(vals.random);
   ASSERT_TRUE(last_results()->is_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 TEST_F(ScStage1PasskeyTest, ListenerRejectsPasskeyEntryDisplay) {
@@ -256,7 +256,7 @@ TEST_F(ScStage1PasskeyTest, ListenerRejectsPasskeyEntryDisplay) {
   user_confirm(false);
   // No packets should be sent, but Stage 1 should end with kPasskeyEntryFailed
   EXPECT_FALSE(last_packet().has_value());
-  EXPECT_EQ(ErrorCode::kPasskeyEntryFailed, last_results()->error());
+  EXPECT_EQ(ErrorCode::kPasskeyEntryFailed, last_results()->error_value());
 }
 
 TEST_F(ScStage1PasskeyTest, ListenerRejectsPasskeyEntryInput) {
@@ -273,7 +273,7 @@ TEST_F(ScStage1PasskeyTest, ListenerRejectsPasskeyEntryInput) {
   // Responding with a negative number indicates failure.
   passkey_responder(-12345);
   EXPECT_FALSE(last_packet().has_value());
-  EXPECT_EQ(ErrorCode::kPasskeyEntryFailed, last_results()->error());
+  EXPECT_EQ(ErrorCode::kPasskeyEntryFailed, last_results()->error_value());
 }
 
 TEST_F(ScStage1PasskeyTest, StageDestroyedWhileWaitingForPasskeyEntryDisplay) {
@@ -469,7 +469,7 @@ TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingConfirmsFails) {
 
   stage_1()->OnPairingConfirm(vals.confirm);
   ASSERT_TRUE(last_results()->is_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingRandomsFails) {
@@ -493,7 +493,7 @@ TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingRandomsFails) {
 
   stage_1()->OnPairingRandom(vals.confirm);
   ASSERT_TRUE(last_results()->is_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 TEST_F(ScStage1PasskeyTest, ReceiveMismatchedPairingConfirmFails) {
@@ -519,7 +519,7 @@ TEST_F(ScStage1PasskeyTest, ReceiveMismatchedPairingConfirmFails) {
 
   stage_1()->OnPairingRandom(vals.random);
   ASSERT_TRUE(last_results()->is_error());
-  EXPECT_EQ(ErrorCode::kConfirmValueFailed, last_results()->error());
+  EXPECT_EQ(ErrorCode::kConfirmValueFailed, last_results()->error_value());
 }
 
 }  // namespace

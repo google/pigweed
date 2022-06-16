@@ -54,9 +54,9 @@ void SecurityRequestPhase::OnPairingRequest(PairingRequestParams req_params) {
 }
 
 void SecurityRequestPhase::OnRxBFrame(ByteBufferPtr sdu) {
-  fpromise::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fitx::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
-    Abort(maybe_reader.error());
+    Abort(maybe_reader.error_value());
     return;
   }
   ValidPacketReader reader = maybe_reader.value();

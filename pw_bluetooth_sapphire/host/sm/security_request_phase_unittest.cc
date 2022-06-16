@@ -10,7 +10,6 @@
 #include <gtest/gtest.h>
 
 #include "lib/async/cpp/task.h"
-#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"

@@ -318,9 +318,9 @@ fitx::result<ErrorCode> Phase2Legacy::CanReceivePairingRandom() const {
 }
 
 void Phase2Legacy::OnRxBFrame(ByteBufferPtr sdu) {
-  fpromise::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fitx::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
-    Abort(maybe_reader.error());
+    Abort(maybe_reader.error_value());
     return;
   }
   ValidPacketReader reader = maybe_reader.value();

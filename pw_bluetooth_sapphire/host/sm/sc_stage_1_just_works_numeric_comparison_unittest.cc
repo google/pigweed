@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "lib/async/default.h"
-#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -49,10 +48,11 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
     fake_chan_->SetSendCallback(
         [this](ByteBufferPtr sent_packet) {
-          auto maybe_reader = ValidPacketReader::ParseSdu(sent_packet);
+          fitx::result<ErrorCode, ValidPacketReader> maybe_reader =
+              ValidPacketReader::ParseSdu(sent_packet);
           ASSERT_TRUE(maybe_reader.is_ok())
               << "Sent invalid packet: "
-              << ProtocolErrorTraits<sm::ErrorCode>::ToString(maybe_reader.error());
+              << ProtocolErrorTraits<sm::ErrorCode>::ToString(maybe_reader.error_value());
           last_packet_.emplace(maybe_reader.value());
           last_packet_internal_ = std::move(sent_packet);
         },
@@ -60,7 +60,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
     stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
         listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
         sm_chan_->GetWeakPtr(),
-        [this](fpromise::result<ScStage1::Output, ErrorCode> out) { last_results_ = out; });
+        [this](fitx::result<ErrorCode, ScStage1::Output> out) { last_results_ = out; });
   }
 
   UInt128 GenerateConfirmValue(const UInt128& random) const {
@@ -86,7 +86,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
   ScStage1JustWorksNumericComparison* stage_1() { return stage_1_.get(); }
   FakeListener* listener() { return listener_.get(); }
   std::optional<ValidPacketReader> last_packet() const { return last_packet_; }
-  std::optional<fpromise::result<ScStage1::Output, ErrorCode>> last_results() const {
+  std::optional<fitx::result<ErrorCode, ScStage1::Output>> last_results() const {
     return last_results_;
   }
 
@@ -99,7 +99,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;
   // To store the last sent SDU so that the last_packet_ PacketReader points at valid data.
   ByteBufferPtr last_packet_internal_;
-  std::optional<fpromise::result<ScStage1::Output, ErrorCode>> last_results_ = std::nullopt;
+  std::optional<fitx::result<ErrorCode, ScStage1::Output>> last_results_ = std::nullopt;
 };
 
 using ScStage1JustWorksNumericComparisonDeathTest = ScStage1JustWorksNumericComparisonTest;
@@ -181,14 +181,14 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorReceivesConfirmTwiceFail
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingConfirm(Random<PairingConfirmValue>());
   stage_1()->OnPairingConfirm(Random<PairingConfirmValue>());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorReceiveRandomOutOfOrder) {
   stage_1()->Run();
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 // Test to demonstrate receiving random twice for responder causes pairing to fail.
@@ -201,7 +201,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomTwiceFails)
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAndRand) {
@@ -216,7 +216,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAndRand
   vals.random[0] -= 1;
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingRandom(vals.random);
-  EXPECT_EQ(ErrorCode::kConfirmValueFailed, last_results()->error());
+  EXPECT_EQ(ErrorCode::kConfirmValueFailed, last_results()->error_value());
 }
 
 TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
@@ -296,7 +296,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceivesConfirmFails) {
   stage_1()->Run();
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingConfirm(Random<PairingConfirmValue>());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomOutOfOrder) {
@@ -304,7 +304,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomOutOfOrder)
   // `stage_1_` was not `Run`, so the Pairing Confirm hasn't been sent and the peer should not have
   // sent the Pairing Random.
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 // This test uses responder flow, but the behavior under test is the same for initiator.
@@ -322,7 +322,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ListenerRejectsJustWorks) {
   // No results should be reported until the confirmation is rejected.
   ASSERT_FALSE(last_results().has_value());
   user_confirm(false);
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
 // This test uses responder flow, but the behavior under test is the same for initiator.
@@ -344,7 +344,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ListenerRejectsNumericComparison)
   // No results should be reported until the numeric comparison is rejected.
   ASSERT_FALSE(last_results().has_value());
   user_confirm(false);
-  EXPECT_EQ(ErrorCode::kNumericComparisonFailed, last_results()->error());
+  EXPECT_EQ(ErrorCode::kNumericComparisonFailed, last_results()->error_value());
 }
 
 TEST_F(ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForJustWorksConfirm) {

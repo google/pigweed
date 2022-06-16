@@ -320,9 +320,9 @@ void Phase3::SignalComplete() {
 }
 
 void Phase3::OnRxBFrame(ByteBufferPtr sdu) {
-  fpromise::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  auto maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
-    Abort(maybe_reader.error());
+    Abort(maybe_reader.error_value());
     return;
   }
   ValidPacketReader reader = maybe_reader.value();

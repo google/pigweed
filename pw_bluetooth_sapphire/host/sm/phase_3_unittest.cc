@@ -129,7 +129,7 @@ class Phase3Test : public l2cap::testing::FakeChannelTest {
   static void ExpectEncryptionInfo(ByteBufferPtr sdu,
                                    std::optional<EncryptionInformationParams>* out_ltk_bytes,
                                    std::optional<CentralIdentificationParams>* out_central_id) {
-    fpromise::result<ValidPacketReader, ErrorCode> reader = ValidPacketReader::ParseSdu(sdu);
+    fitx::result<ErrorCode, ValidPacketReader> reader = ValidPacketReader::ParseSdu(sdu);
     ASSERT_TRUE(reader.is_ok());
     if (reader.value().code() == kEncryptionInformation) {
       *out_ltk_bytes = reader.value().payload<EncryptionInformationParams>();
@@ -142,7 +142,7 @@ class Phase3Test : public l2cap::testing::FakeChannelTest {
 
   static void ExpectIdentity(ByteBufferPtr sdu, std::optional<IRK>* out_irk,
                              std::optional<IdentityAddressInformationParams>* out_id_address) {
-    fpromise::result<ValidPacketReader, ErrorCode> reader = ValidPacketReader::ParseSdu(sdu);
+    fitx::result<ErrorCode, ValidPacketReader> reader = ValidPacketReader::ParseSdu(sdu);
     ASSERT_TRUE(reader.is_ok());
     if (reader.value().code() == kIdentityInformation) {
       *out_irk = reader.value().payload<IRK>();

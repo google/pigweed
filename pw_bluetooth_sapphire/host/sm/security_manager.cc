@@ -697,9 +697,9 @@ void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
 }
 
 void SecurityManagerImpl::OnRxBFrame(ByteBufferPtr sdu) {
-  fpromise::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fitx::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
-    bt_log(INFO, "sm", "dropped SMP packet: %s", bt_str(ToResult(maybe_reader.error())));
+    bt_log(INFO, "sm", "dropped SMP packet: %s", bt_str(ToResult(maybe_reader.error_value())));
     return;
   }
   ValidPacketReader reader = maybe_reader.value();

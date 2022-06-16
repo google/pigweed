@@ -5,7 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PACKET_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PACKET_H_
 
-#include "lib/fpromise/result.h"
+#include <lib/fitx/result.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -29,7 +30,7 @@ class ValidPacketReader : public PacketReader {
  public:
   // Convert a ByteBufferPtr to a ValidPacketReader if possible to allow unchecked access to
   // its payload, or an error explaining why we could not.
-  static fpromise::result<ValidPacketReader, ErrorCode> ParseSdu(const ByteBufferPtr& sdu);
+  static fitx::result<ErrorCode, ValidPacketReader> ParseSdu(const ByteBufferPtr& sdu);
 
  private:
   // Private constructor because a valid PacketReader must be parsed from a ByteBufferPtr
