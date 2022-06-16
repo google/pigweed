@@ -207,7 +207,9 @@ Result<ConstByteSpan> Chunk::Encode(ByteSpan buffer) const {
 
     // In the legacy protocol, the pending_bytes field must be set alongside
     // window_end_offset, as some transfer implementations require it.
-    encoder.WritePendingBytes(window_end_offset_ - offset_).IgnoreError();
+    if (window_end_offset_ != 0) {
+      encoder.WritePendingBytes(window_end_offset_ - offset_).IgnoreError();
+    }
   }
 
   if (max_chunk_size_bytes_.has_value()) {
