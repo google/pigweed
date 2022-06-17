@@ -51,7 +51,6 @@ static_library("hci") {
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c_client",
     "//sdk/lib/fdio",
     "//sdk/lib/fit",
-    "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/lib/ddk",
     "//src/lib/files",

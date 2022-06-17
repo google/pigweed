@@ -43,7 +43,6 @@ static_library("gatt") {
     ":definitions",
     "//sdk/lib/fidl/cpp",
     "//sdk/lib/fit",
-    "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host/att",
   ]
 
