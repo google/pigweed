@@ -4,7 +4,6 @@
 
 #include "logical_link.h"
 
-#include <lib/fpromise/bridge.h>
 #include <zircon/assert.h>
 
 #include <functional>
@@ -14,7 +13,6 @@
 #include "channel.h"
 #include "fbl/ref_ptr.h"
 #include "le_signaling_channel.h"
-#include "lib/fpromise/promise.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
@@ -58,19 +56,19 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 // static
 fbl::RefPtr<LogicalLink> LogicalLink::New(hci_spec::ConnectionHandle handle, bt::LinkType type,
                                           hci_spec::ConnectionRole role,
-                                          fpromise::executor* executor, size_t max_acl_payload_size,
+                                          size_t max_acl_payload_size,
                                           QueryServiceCallback query_service_cb,
                                           hci::AclDataChannel* acl_data_channel,
                                           bool random_channel_ids) {
-  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, executor, max_acl_payload_size,
+  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, max_acl_payload_size,
                                           std::move(query_service_cb), acl_data_channel));
   ll->Initialize(random_channel_ids);
   return ll;
 }
 
 LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                         hci_spec::ConnectionRole role, fpromise::executor* executor,
-                         size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
+                         hci_spec::ConnectionRole role, size_t max_acl_payload_size,
+                         QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel)
     : handle_(handle),
       type_(type),
@@ -81,10 +79,8 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
       recombiner_(handle),
       acl_data_channel_(acl_data_channel),
       query_service_cb_(std::move(query_service_cb)),
-      executor_(executor),
       weak_ptr_factory_(this) {
   ZX_ASSERT(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
-  ZX_ASSERT(executor_);
   ZX_ASSERT(acl_data_channel_);
   ZX_ASSERT(query_service_cb_);
 }
@@ -303,24 +299,27 @@ bool LogicalLink::AllowsFixedChannel(ChannelId id) {
   return (type_ == bt::LinkType::kLE) ? IsValidLEFixedChannel(id) : IsValidBREDRFixedChannel(id);
 }
 
-fpromise::promise<> LogicalLink::RemoveChannel(Channel* chan) {
+void LogicalLink::RemoveChannel(Channel* chan, fit::closure removed_cb) {
   ZX_DEBUG_ASSERT(chan);
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignore RemoveChannel() on closed link");
-    return fpromise::make_ok_promise();
+    removed_cb();
+    return;
   }
 
   const ChannelId id = chan->id();
   auto iter = channels_.find(id);
   if (iter == channels_.end()) {
-    return fpromise::make_ok_promise();
+    removed_cb();
+    return;
   }
 
   // Ignore if the found channel doesn't match the requested one (even though
   // their IDs are the same).
   if (iter->second.get() != chan) {
-    return fpromise::make_ok_promise();
+    removed_cb();
+    return;
   }
 
   pending_pdus_.erase(id);
@@ -338,21 +337,10 @@ fpromise::promise<> LogicalLink::RemoveChannel(Channel* chan) {
   // TODO(armansito): Change this if statement into an assert when a registry
   // gets created for LE channels.
   if (dynamic_registry_) {
-    // This bridge can and probably should be pushed farther down through DynamicChannelRegistry,
-    // BrEdrCommandHandler, SignalingChannel, and ACLDataChannel all the way up to the underlying
-    // async::Wait.
-    //
-    // Note that completing a bridge seems to always produce a new task for fulfilling dependent
-    // consumer promises, which for fpromise::executor means posting the consumer onto its
-    // dispatcher.
-    fpromise::bridge<> bridge;
-    dynamic_registry_->CloseChannel(id, bridge.completer.bind());
-
-    // promise_or converts completer abandonment (e.g. destroyed in an early error branch) to a
-    // promise that yields a result.
-    return bridge.consumer.promise_or(fpromise::ok());
+    dynamic_registry_->CloseChannel(id, std::move(removed_cb));
+    return;
   }
-  return fpromise::make_ok_promise();
+  removed_cb();
 }
 
 void LogicalLink::SignalError() {
@@ -363,7 +351,30 @@ void LogicalLink::SignalError() {
 
   bt_log(INFO, "l2cap", "Upper layer error on link %#.4x; closing all channels", handle());
 
-  std::vector<fpromise::promise<>> channel_closures;
+  uint16_t num_channels_closing = channels_.size();
+
+  if (signaling_channel_) {
+    ZX_ASSERT(channels_.count(kSignalingChannelId) || channels_.count(kLESignalingChannelId));
+    // There is no need to close the signaling channel.
+    num_channels_closing--;
+  }
+
+  if (num_channels_closing == 0) {
+    link_error_cb_();
+    return;
+  }
+
+  // num_channels_closing is shared across all callbacks.
+  fit::closure channel_removed_cb = [this, num_channels_closing = num_channels_closing]() mutable {
+    num_channels_closing--;
+    if (num_channels_closing != 0) {
+      return;
+    }
+    bt_log(TRACE, "l2cap", "Channels on link %#.4x closed; passing error to lower layer", handle());
+    // Invoking error callback may destroy this LogicalLink.
+    link_error_cb_();
+  };
+
   for (auto channel_iter = channels_.begin(); channel_iter != channels_.end();) {
     auto& [id, channel] = *channel_iter++;
 
@@ -376,22 +387,8 @@ void LogicalLink::SignalError() {
     channel->OnClosed();
 
     // This erases from |channel_| and invalidates any iterator pointing to |channel|.
-    channel_closures.emplace_back(RemoveChannel(channel.get()));
+    RemoveChannel(channel.get(), channel_removed_cb.share());
   }
-
-  fpromise::promise<> error_signaler =
-      fpromise::join_promise_vector(std::move(channel_closures))
-          .and_then([this](const std::vector<fpromise::result<>>& results) {
-            bt_log(TRACE, "l2cap", "Channels on link %#.4x closed; passing error to lower layer",
-                   handle());
-
-            // Invoking this may destroy this LogicalLink.
-            link_error_cb_();
-
-            // Link is expected to be closed by its owner.
-            return fpromise::ok();
-          });
-  executor_->schedule_task(std::move(error_signaler));
 }
 
 void LogicalLink::Close() {

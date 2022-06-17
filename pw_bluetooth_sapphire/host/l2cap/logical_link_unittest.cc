@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/logical_link.h"
 
 #include "fbl/ref_ptr.h"
-#include "lib/fpromise/single_threaded_executor.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -35,8 +34,8 @@ class LogicalLinkTest : public ::gtest::TestLoopFixture {
     const hci_spec::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci_spec::ConnectionHandle, PSM) { return std::nullopt; };
-    link_ = LogicalLink::New(kConnHandle, type, hci_spec::ConnectionRole::kCentral, &executor_,
-                             kMaxPayload, std::move(query_service_cb), &acl_data_channel_,
+    link_ = LogicalLink::New(kConnHandle, type, hci_spec::ConnectionRole::kCentral, kMaxPayload,
+                             std::move(query_service_cb), &acl_data_channel_,
                              /*random_channel_ids=*/true);
   }
   LogicalLink* link() const { return link_.get(); }
@@ -46,7 +45,6 @@ class LogicalLinkTest : public ::gtest::TestLoopFixture {
 
  private:
   fbl::RefPtr<LogicalLink> link_;
-  fpromise::single_threaded_executor executor_;
   hci::testing::MockAclDataChannel acl_data_channel_;
 };
 

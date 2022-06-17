@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fpromise/promise.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
 #include <zircon/compiler.h>
@@ -55,7 +54,6 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
       hci_spec::ConnectionHandle handle, PSM psm)>;
 
   // Constructs a new LogicalLink and initializes the signaling fixed channel.
-  // |dispatcher| will be used for all Channels created on this link.
   // |max_payload_size| shall be the maximum "host to controller" data packet payload size for the
   // link |type|, per Core Spec v5.0 Vol 2, Part E, Sec 4.1.
   // Both |query_service_cb| and the inbound channel delivery callback that it returns will be
@@ -63,8 +61,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
   static fbl::RefPtr<LogicalLink> New(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                                      hci_spec::ConnectionRole role, fpromise::executor* executor,
-                                      size_t max_payload_size,
+                                      hci_spec::ConnectionRole role, size_t max_payload_size,
                                       QueryServiceCallback query_service_cb,
                                       hci::AclDataChannel* acl_data_channel,
                                       bool random_channel_ids);
@@ -176,8 +173,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   friend fbl::RefPtr<LogicalLink>;
 
   LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type, hci_spec::ConnectionRole role,
-              fpromise::executor* executor, size_t max_acl_payload_size,
-              QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel);
+              size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
+              hci::AclDataChannel* acl_data_channel);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
   // channel registry based on the link type. Called by the factory method
@@ -192,9 +189,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Returns true if |id| is valid and supported by the peer.
   bool AllowsFixedChannel(ChannelId id);
 
-  // Called by ChannelImpl::Deactivate(). Removes the channel from the given link. Returned promise
-  // yields fpromise::ok when channel no longer exists.
-  fpromise::promise<> RemoveChannel(Channel* chan);
+  // Called by ChannelImpl::Deactivate(). Removes the channel from the given link. Calls
+  // |removed_cb| when the channel no longer exists.
+  void RemoveChannel(Channel* chan, fit::closure removed_cb);
 
   // Called by ChannelImpl::SignalLinkError() to disconnect all channels then signal an error to the
   // lower layers (usually GAP, to request a link disconnection). Has no effect if the link is
@@ -310,8 +307,6 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
     inspect::StringProperty link_type;
   };
   InspectProperties inspect_properties_;
-
-  fpromise::executor* const executor_;
 
   fxl::WeakPtrFactory<LogicalLink> weak_ptr_factory_;
 

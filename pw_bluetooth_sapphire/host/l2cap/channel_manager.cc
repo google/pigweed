@@ -8,7 +8,6 @@
 #include <lib/trace/event.h>
 #include <zircon/assert.h>
 
-#include "lib/async/cpp/executor.h"
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
@@ -119,11 +118,6 @@ class ChannelManagerImpl final : public ChannelManager {
   // Stored info on whether random channel ids are requested.
   bool random_channel_ids_;
 
-  // TODO(fxbug.rev/63851): Find a better home for this. For now, we know that this only holds
-  // promises scheduled by LogicalLinks to destroy themselves, so this living here provides a
-  // minimal guarantee that the executor outlives the LogicalLinks.
-  async::Executor executor_;
-
   fxl::WeakPtrFactory<ChannelManagerImpl> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerImpl);
@@ -133,7 +127,6 @@ ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
                                        bool random_channel_ids)
     : acl_data_channel_(acl_data_channel),
       random_channel_ids_(random_channel_ids),
-      executor_(async_get_default_dispatcher()),
       weak_ptr_factory_(this) {
   ZX_ASSERT(acl_data_channel_);
   max_acl_payload_size_ = acl_data_channel_->GetBufferInfo().max_data_length();
@@ -341,7 +334,7 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(hci_spec::Connection
   auto iter = ll_map_.find(handle);
   ZX_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
 
-  auto ll = internal::LogicalLink::New(handle, ll_type, role, &executor_, max_payload_size,
+  auto ll = internal::LogicalLink::New(handle, ll_type, role, max_payload_size,
                                        fit::bind_member<&ChannelManagerImpl::QueryService>(this),
                                        acl_data_channel_, random_channel_ids_);
   if (ll_node_) {
