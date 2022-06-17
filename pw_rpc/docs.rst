@@ -1214,6 +1214,30 @@ to with a test service implemenation.
     EXPECT_EQ(response.value, value + 1);
   }
 
+SendResponseIfCalled() helper
+-----------------------------
+``SendResponseIfCalled()`` function waits on ``*ClientTestContext*`` output to
+have a call for the specified method and then responses to it. It supports
+timeout for the waiting part (default timeout is 100ms).
+
+.. code:: c++
+
+  #include "pw_rpc/test_helpers.h"
+
+  pw::rpc::PwpbClientTestContext client_context;
+  other::pw_rpc::pwpb::OtherService::Client other_service_client(
+      client_context.client(), client_context.channel().id());
+
+  PW_PWPB_TEST_METHOD_CONTEXT(MyService, GetData)
+  context(other_service_client);
+  context.call({});
+
+  ASSERT_OK(pw::rpc::test::SendResponseIfCalled<
+            other::pw_rpc::pwpb::OtherService::GetPart>(
+      client_context, {.value = 42}));
+
+  // At this point MyService::GetData handler received the GetPartResponse.
+
 Integration testing with ``pw_rpc``
 -----------------------------------
 ``pw_rpc`` provides utilities to simplify writing integration tests for systems
