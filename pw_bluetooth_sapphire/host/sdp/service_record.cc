@@ -6,6 +6,7 @@
 
 #include <endian.h>
 
+#include <iterator>
 #include <set>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
