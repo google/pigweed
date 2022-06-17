@@ -153,7 +153,7 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
   if (should_retransmit) {
     const bool set_is_poll_response =
         range_request.value_or(RangeRetransmitRequest{}).is_poll_request;
-    if (RetransmitUnackedData(std::nullopt, set_is_poll_response).is_error()) {
+    if (!RetransmitUnackedData(std::nullopt, set_is_poll_response)) {
       return;
     }
   }
@@ -244,7 +244,7 @@ Engine::UpdateAckSeqAction Engine::ProcessSingleRetransmitRequest(uint8_t new_se
     retransmitted_single_during_poll_ = new_seq;
   }
 
-  if (RetransmitUnackedData(new_seq, single_request->is_poll_request).is_error()) {
+  if (!RetransmitUnackedData(new_seq, single_request->is_poll_request)) {
     return UpdateAckSeqAction::kConsumeAckSeq;
   }
 
@@ -323,8 +323,8 @@ void Engine::SendPdu(PendingPdu* pdu) {
   send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
 
-fpromise::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
-                                                 bool set_is_poll_response) {
+bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
+                                   bool set_is_poll_response) {
   // The receive engine should have cleared the remote busy condition before
   // calling any method that would cause us (the transmit engine) to retransmit
   // unacked data. See, e.g., Core Spec v5.0, Volume 3, Part A, Table 8.6, row
@@ -360,7 +360,7 @@ fpromise::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_wit
       ZX_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
                     max_transmissions_);
       connection_failure_callback_();
-      return fpromise::error();
+      return false;
     }
 
     if (set_is_poll_response) {
@@ -377,7 +377,7 @@ fpromise::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_wit
     cur_frame->buf.AsMutable<EnhancedControlField>() = control_field;
   }
 
-  return fpromise::ok();
+  return true;
 }
 
 }  // namespace bt::l2cap::internal

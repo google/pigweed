@@ -75,7 +75,6 @@ static_library("l2cap") {
   public_deps = [
     ":definitions",
     "//sdk/lib/fit",
-    "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/lib/fxl",

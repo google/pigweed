@@ -9,7 +9,6 @@
 
 #include "lib/async/cpp/task.h"
 #include "lib/fit/function.h"
-#include "lib/fpromise/result.h"
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -165,7 +164,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   void SendPdu(PendingPdu* pdu);
 
   // Retransmits frames from |pending_pdus_|. Invokes |connection_failure_callback_| on error and
-  // returns fpromise::error(). Cancels |monitor_task_| if it's running.
+  // returns false. Cancels |monitor_task_| if it's running.
   //
   // If |only_with_seq| is set, then only the unacked frame with that TxSeq will be retransmitted.
   //
@@ -175,8 +174,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Notes:
   // * The caller must ensure that |!remote_is_busy_|.
   // * When return value is an error, |this| may be invalid.
-  [[nodiscard]] fpromise::result<> RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
-                                                         bool set_is_poll_response);
+  [[nodiscard]] bool RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
+                                           bool set_is_poll_response);
 
   const uint8_t max_transmissions_;
   const uint8_t n_frames_in_tx_window_;
