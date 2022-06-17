@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 #include <lib/async/cpp/task.h>
-#include <lib/fpromise/single_threaded_executor.h>
 #include <lib/inspect/testing/cpp/inspect.h>
 #include <zircon/assert.h>
 
@@ -19,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
@@ -138,16 +138,6 @@ TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
 
   EXPECT_EQ(5, handle0_packet_count);
   EXPECT_EQ(5, handle1_packet_count);
-}
-
-inspect::Hierarchy ReadInspect(inspect::Inspector& inspector) {
-  fpromise::single_threaded_executor executor;
-  fpromise::result<inspect::Hierarchy> hierarchy;
-  executor.schedule_task(inspect::ReadFromInspector(inspector).then(
-      [&](fpromise::result<inspect::Hierarchy>& res) { hierarchy = std::move(res); }));
-  executor.run();
-  ZX_ASSERT(hierarchy.is_ok());
-  return hierarchy.take_value();
 }
 
 // Test that SendPacket works using the LE buffer when no BR/EDR buffer is
@@ -1637,7 +1627,7 @@ TEST_F(ACLDataChannelTest, SendingPacketsUpdatesSendMetrics) {
   // Wait for the metric writing task to catch up
   RunLoopRepeatedlyFor(zx::min(1));
 
-  inspect::Hierarchy hierarchy = ReadInspect(inspector);
+  inspect::Hierarchy hierarchy = bt::testing::ReadInspect(inspector);
   const inspect::Hierarchy* const send_latency_node =
       hierarchy.GetByPath({AclDataChannel::kInspectNodeName, "metrics", "send_latency"});
   ASSERT_TRUE(send_latency_node);

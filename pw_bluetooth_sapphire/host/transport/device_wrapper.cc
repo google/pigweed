@@ -123,10 +123,10 @@ bt_vendor_features_t DdkDeviceWrapper::GetVendorFeatures() {
   return bt_vendor_get_features(&vendor_proto_.value());
 }
 
-fpromise::result<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(
-    bt_vendor_command_t command, bt_vendor_params_t& params) {
+std::optional<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(bt_vendor_command_t command,
+                                                                       bt_vendor_params_t& params) {
   if (!vendor_proto_) {
-    return fpromise::error();
+    return std::nullopt;
   }
 
   auto buffer = std::unique_ptr<uint8_t[]>(new uint8_t[BT_VENDOR_MAX_COMMAND_BUFFER_LEN]);
@@ -135,10 +135,10 @@ fpromise::result<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(
                                          BT_VENDOR_MAX_COMMAND_BUFFER_LEN, &actual);
   if (status != ZX_OK || !actual || actual > BT_VENDOR_MAX_COMMAND_BUFFER_LEN) {
     bt_log(DEBUG, "hci", "Failed to encode vendor command: %s", zx_status_get_string(status));
-    return fpromise::error();
+    return std::nullopt;
   }
 
-  return fpromise::ok(DynamicByteBuffer(actual, std::move(buffer)));
+  return DynamicByteBuffer(actual, std::move(buffer));
 }
 
 // ================= DummyDeviceWrapper =================
@@ -175,12 +175,12 @@ void DummyDeviceWrapper::ResetSco(bt_hci_reset_sco_callback callback, void* cook
   reset_sco_cb_(callback, cookie);
 }
 
-fpromise::result<DynamicByteBuffer> DummyDeviceWrapper::EncodeVendorCommand(
+std::optional<DynamicByteBuffer> DummyDeviceWrapper::EncodeVendorCommand(
     bt_vendor_command_t command, bt_vendor_params_t& params) {
   if (vendor_encode_cb_) {
     return vendor_encode_cb_(command, params);
   }
-  return fpromise::error();
+  return std::nullopt;
 }
 
 }  // namespace bt::hci

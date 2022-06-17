@@ -10,7 +10,6 @@
 #include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/fit/function.h>
 #include <lib/fitx/result.h>
-#include <lib/fpromise/result.h>
 #include <lib/zx/channel.h>
 #include <zircon/status.h>
 #include <zircon/types.h>
@@ -50,9 +49,9 @@ class DeviceWrapper {
 
   virtual bt_vendor_features_t GetVendorFeatures() = 0;
 
-  virtual fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
-                                                                  bt_vendor_params_t& params) {
-    return fpromise::error();
+  virtual std::optional<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                               bt_vendor_params_t& params) {
+    return std::nullopt;
   }
 };
 
@@ -107,8 +106,8 @@ class DdkDeviceWrapper : public DeviceWrapper {
                     void* cookie) override;
   void ResetSco(bt_hci_reset_sco_callback callback, void* cookie) override;
   bt_vendor_features_t GetVendorFeatures() override;
-  fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
-                                                          bt_vendor_params_t& params) override;
+  std::optional<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                       bt_vendor_params_t& params) override;
 
  private:
   bt_hci_protocol_t hci_proto_;
@@ -125,7 +124,7 @@ class DummyDeviceWrapper : public DeviceWrapper {
   // them when asked for them. |vendor_features| will be returned by GetVendorFeatures() and calls
   // to EncodeVendorCommand() are forwarded to |vendor_encode_cb|.
   using EncodeCallback =
-      fit::function<fpromise::result<DynamicByteBuffer>(bt_vendor_command_t, bt_vendor_params_t)>;
+      fit::function<std::optional<DynamicByteBuffer>(bt_vendor_command_t, bt_vendor_params_t)>;
   DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_data_channel,
                      bt_vendor_features_t vendor_features = 0u,
                      EncodeCallback vendor_encode_cb = nullptr);
@@ -155,8 +154,8 @@ class DummyDeviceWrapper : public DeviceWrapper {
   void ResetSco(bt_hci_reset_sco_callback callback, void* cookie) override;
 
   bt_vendor_features_t GetVendorFeatures() override { return vendor_features_; }
-  fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
-                                                          bt_vendor_params_t& params) override;
+  std::optional<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                       bt_vendor_params_t& params) override;
 
  private:
   zx::channel cmd_channel_;

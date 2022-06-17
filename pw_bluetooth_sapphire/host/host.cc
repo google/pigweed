@@ -28,12 +28,11 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallb
   auto dev = std::make_unique<hci::DdkDeviceWrapper>(hci_proto_, vendor_proto_);
   auto hci_wrapper = hci::HciWrapper::Create(std::move(dev), async_get_default_dispatcher());
 
-  auto hci_result = hci::Transport::Create(std::move(hci_wrapper));
-  if (hci_result.is_error()) {
+  hci_ = hci::Transport::Create(std::move(hci_wrapper));
+  if (!hci_) {
     bt_log(ERROR, "bt-host", "failed to initialize HCI transport");
     return false;
   }
-  hci_ = hci_result.take_value();
 
   gatt_ = gatt::GATT::Create();
 

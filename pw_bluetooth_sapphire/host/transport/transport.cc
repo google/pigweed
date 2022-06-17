@@ -15,12 +15,12 @@
 
 namespace bt::hci {
 
-fpromise::result<std::unique_ptr<Transport>> Transport::Create(std::unique_ptr<HciWrapper> hci) {
+std::unique_ptr<Transport> Transport::Create(std::unique_ptr<HciWrapper> hci) {
   auto transport = std::unique_ptr<Transport>(new Transport(std::move(hci)));
   if (!transport->command_channel()) {
-    return fpromise::error();
+    return nullptr;
   }
-  return fpromise::ok(std::move(transport));
+  return transport;
 }
 
 Transport::Transport(std::unique_ptr<HciWrapper> hci)

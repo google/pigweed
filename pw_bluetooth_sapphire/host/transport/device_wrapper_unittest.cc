@@ -14,7 +14,7 @@ TEST(DdkDeviceWrapperTest, NullVendorProto) {
   DdkDeviceWrapper wrapper(hci_proto, std::nullopt);
   EXPECT_EQ(wrapper.GetVendorFeatures(), 0u);
   bt_vendor_params_t params = {};
-  EXPECT_TRUE(wrapper.EncodeVendorCommand(0, params).is_error());
+  EXPECT_FALSE(wrapper.EncodeVendorCommand(0, params));
 }
 
 constexpr bt_vendor_features_t kVendorFeatures = 1;
@@ -40,7 +40,7 @@ TEST(DdkDeviceWrapperTest, EncodeCommandError) {
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};
   DdkDeviceWrapper wrapper(hci_proto, vendor_proto);
   bt_vendor_params_t params = {};
-  EXPECT_TRUE(wrapper.EncodeVendorCommand(0, params).is_error());
+  EXPECT_FALSE(wrapper.EncodeVendorCommand(0, params));
 }
 
 zx_status_t encode_command_actual_size_0(void* ctx, bt_vendor_command_t command,
@@ -57,7 +57,7 @@ TEST(DdkDeviceWrapperTest, EncodeCommandActualSizeZero) {
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};
   DdkDeviceWrapper wrapper(hci_proto, vendor_proto);
   bt_vendor_params_t params = {};
-  EXPECT_TRUE(wrapper.EncodeVendorCommand(0, params).is_error());
+  EXPECT_FALSE(wrapper.EncodeVendorCommand(0, params));
 }
 
 zx_status_t encode_command_actual_size_too_large(void* ctx, bt_vendor_command_t command,
@@ -74,7 +74,7 @@ TEST(DdkDeviceWrapperTest, EncodeCommandActualSizeTooLarge) {
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};
   DdkDeviceWrapper wrapper(hci_proto, vendor_proto);
   bt_vendor_params_t params = {};
-  EXPECT_TRUE(wrapper.EncodeVendorCommand(0, params).is_error());
+  EXPECT_FALSE(wrapper.EncodeVendorCommand(0, params));
 }
 
 zx_status_t encode_command_success(void* ctx, bt_vendor_command_t command,
@@ -91,10 +91,10 @@ TEST(DdkDeviceWrapperTest, EncodeCommandSuccess) {
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};
   DdkDeviceWrapper wrapper(hci_proto, vendor_proto);
   bt_vendor_params_t params = {};
-  auto result = wrapper.EncodeVendorCommand(0, params);
-  ASSERT_TRUE(result.is_ok());
-  ASSERT_EQ(result.value().size(), 1u);
-  EXPECT_EQ(result.value()[0], 0x01);
+  std::optional<DynamicByteBuffer> buffer = wrapper.EncodeVendorCommand(0, params);
+  ASSERT_TRUE(buffer.has_value());
+  ASSERT_EQ(buffer.value().size(), 1u);
+  EXPECT_EQ(buffer.value()[0], 0x01);
 }
 
 TEST(DdkDeviceWrapperTest, GetScoChannelSuccess) {

@@ -56,8 +56,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
 
   void SetUp(bool sco_enabled) {
     sco_enabled_ = sco_enabled;
-    transport_ = hci::Transport::Create(ControllerTest<ControllerTestDoubleType>::SetUpTestHci())
-                     .take_value();
+    transport_ = hci::Transport::Create(ControllerTest<ControllerTestDoubleType>::SetUpTestHci());
   }
 
   void TearDown() override {

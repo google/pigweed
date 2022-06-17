@@ -9,7 +9,6 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
-#include <lib/fpromise/result.h>
 #include <lib/sys/inspect/cpp/component.h>
 
 #include <atomic>
@@ -39,12 +38,12 @@ class DeviceWrapper;
 // clean up (and also fxbug.dev/721).
 class Transport final {
  public:
-  // Initializes the command channel.
+  // Initializes the command channel. Returns nullptr on error.
   //
   // NOTE: AclDataChannel and ScoDataChannel will be left uninitialized. They must be
   // initialized after available data buffer information has been obtained from
   // the controller (via HCI_Read_Buffer_Size and HCI_LE_Read_Buffer_Size).
-  static fpromise::result<std::unique_ptr<Transport>> Create(std::unique_ptr<HciWrapper> hci);
+  static std::unique_ptr<Transport> Create(std::unique_ptr<HciWrapper> hci);
 
   // TODO(armansito): hci::Transport::~Transport() should send a shutdown message
   // to the bt-hci device, which would be responsible for sending HCI_Reset upon

@@ -418,13 +418,13 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     zx::channel::create(0, &cmd0, &cmd_chan_);
     zx::channel acl0;
     zx::channel::create(0, &acl0, &acl_chan_);
-    auto vendor_encode_cb = [](auto cmd, auto params) -> fpromise::result<DynamicByteBuffer> {
-      return fpromise::error();
+    auto vendor_encode_cb = [](auto cmd, auto params) -> std::optional<DynamicByteBuffer> {
+      return std::nullopt;
     };
     auto device_wrapper = std::make_unique<hci::DummyDeviceWrapper>(
         std::move(cmd0), std::move(acl0), bt_vendor_features_t(), std::move(vendor_encode_cb));
     auto hci_wrapper = hci::HciWrapper::Create(std::move(device_wrapper), dispatcher());
-    transport_ = hci::Transport::Create(std::move(hci_wrapper)).take_value();
+    transport_ = hci::Transport::Create(std::move(hci_wrapper));
     transport_->InitializeACLDataChannel(hci::DataBufferInfo(1, 1), hci::DataBufferInfo(1, 1));
   }
 

@@ -276,14 +276,14 @@ fitx::result<zx_status_t, DynamicByteBuffer> HciWrapperImpl::EncodeSetAclPriorit
                                                               : BT_VENDOR_ACL_DIRECTION_SINK)};
   bt_vendor_params_t cmd_params = {.set_acl_priority = priority_params};
 
-  fpromise::result<DynamicByteBuffer> encode_result =
+  std::optional<DynamicByteBuffer> encode_result =
       device_->EncodeVendorCommand(BT_VENDOR_COMMAND_SET_ACL_PRIORITY, cmd_params);
-  if (encode_result.is_error()) {
+  if (!encode_result) {
     bt_log(WARN, "hci", "Failed to encode vendor command");
     return fitx::error(ZX_ERR_INTERNAL);
   }
 
-  return fitx::ok(encode_result.take_value());
+  return fitx::ok(std::move(encode_result.value()));
 }
 
 zx_status_t HciWrapperImpl::OnChannelReadable(zx_status_t status, async::WaitBase* wait,

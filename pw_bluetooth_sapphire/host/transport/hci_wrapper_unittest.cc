@@ -78,9 +78,8 @@ TEST_F(HciWrapperTest, InitializeFailureCommandChannelInvalid) {
   zx::channel acl0;
   zx::channel acl1;
   ZX_ASSERT(zx::channel::create(/*flags=*/0, &acl0, &acl1) == ZX_OK);
-  auto device =
-      std::make_unique<DummyDeviceWrapper>(zx::channel(), std::move(acl1), kVendorFeatures,
-                                           [](auto, auto) { return fpromise::error(); });
+  auto device = std::make_unique<DummyDeviceWrapper>(
+      zx::channel(), std::move(acl1), kVendorFeatures, [](auto, auto) { return std::nullopt; });
   auto hci = HciWrapper::Create(std::move(device), dispatcher());
   EXPECT_FALSE(hci->Initialize([](auto) {}));
 }
@@ -90,9 +89,8 @@ TEST_F(HciWrapperTest, InitializeFailureAclChannelInvalid) {
   zx::channel cmd1;
   zx::channel acl;
   ZX_ASSERT(zx::channel::create(/*flags=*/0, &cmd0, &cmd1) == ZX_OK);
-  auto device =
-      std::make_unique<DummyDeviceWrapper>(std::move(cmd1), std::move(acl), kVendorFeatures,
-                                           [](auto, auto) { return fpromise::error(); });
+  auto device = std::make_unique<DummyDeviceWrapper>(
+      std::move(cmd1), std::move(acl), kVendorFeatures, [](auto, auto) { return std::nullopt; });
   auto hci = HciWrapper::Create(std::move(device), dispatcher());
   EXPECT_FALSE(hci->Initialize([](auto) {}));
 }
@@ -446,7 +444,7 @@ TEST_F(HciWrapperTest, ReceiveScoPacketWithInvalidSizeFieldInHeaderFollowedByVal
 
 TEST_F(HciWrapperTest, EncodeSetAclPriorityCommandFailure) {
   InitializeHci(/*sco_supported=*/true);
-  device()->set_vendor_encode_callback([](auto, auto) { return fpromise::error(); });
+  device()->set_vendor_encode_callback([](auto, auto) { return std::nullopt; });
   fitx::result<zx_status_t, DynamicByteBuffer> result =
       hci()->EncodeSetAclPriorityCommand(/*connection=*/1, AclPriority::kSink);
   ASSERT_TRUE(result.is_error());
@@ -462,7 +460,7 @@ TEST_F(HciWrapperTest, EncodeSetAclPriorityCommandSuccessNormal) {
   device()->set_vendor_encode_callback([&](uint32_t cb_command, bt_vendor_params_t cb_params) {
     command = cb_command;
     params = cb_params;
-    return fpromise::ok(DynamicByteBuffer(packet));
+    return DynamicByteBuffer(packet);
   });
   fitx::result<zx_status_t, DynamicByteBuffer> result =
       hci()->EncodeSetAclPriorityCommand(handle, AclPriority::kNormal);
@@ -483,7 +481,7 @@ TEST_F(HciWrapperTest, EncodeSetAclPriorityCommandSuccessSource) {
   device()->set_vendor_encode_callback([&](uint32_t cb_command, bt_vendor_params_t cb_params) {
     command = cb_command;
     params = cb_params;
-    return fpromise::ok(DynamicByteBuffer(packet));
+    return DynamicByteBuffer(packet);
   });
   fitx::result<zx_status_t, DynamicByteBuffer> result =
       hci()->EncodeSetAclPriorityCommand(handle, AclPriority::kSource);
@@ -505,7 +503,7 @@ TEST_F(HciWrapperTest, EncodeSetAclPriorityCommandSuccessSink) {
   device()->set_vendor_encode_callback([&](uint32_t cb_command, bt_vendor_params_t cb_params) {
     command = cb_command;
     params = cb_params;
-    return fpromise::ok(DynamicByteBuffer(packet));
+    return DynamicByteBuffer(packet);
   });
   fitx::result<zx_status_t, DynamicByteBuffer> result =
       hci()->EncodeSetAclPriorityCommand(handle, AclPriority::kSink);
