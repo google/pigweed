@@ -97,6 +97,13 @@ class Conversions {
 // declarations are in the correct namespace.
 
 template <>
+struct internal::Requires<class DigitalInterrupt> {
+  static constexpr bool input = false;
+  static constexpr bool output = false;
+  static constexpr bool interrupt = true;
+};
+
+template <>
 struct internal::Requires<class DigitalIn> {
   static constexpr bool input = true;
   static constexpr bool output = false;

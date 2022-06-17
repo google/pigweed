@@ -230,12 +230,6 @@ class DigitalIoOptional {
 // Use this class in APIs when only interrupt functionality is required.
 // Extend this class to implement a line that only supports interrupts.
 //
-template <>
-struct internal::Requires<class DigitalInterrupt> {
-  static constexpr bool input = false;
-  static constexpr bool output = false;
-  static constexpr bool interrupt = true;
-};
 class DigitalInterrupt
     : public DigitalIoOptional,
       public internal::Conversions<DigitalInterrupt, DigitalIoOptional> {
