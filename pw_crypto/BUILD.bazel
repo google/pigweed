@@ -43,7 +43,7 @@ pw_cc_library(
         "public/pw_crypto/sha256_mbedtls.h",
         "public_overrides/mbedtls/pw_crypto/sha256_backend.h",
     ],
-    includes = ["public_overrides"],
+    includes = ["public_overrides/mbedtls"],
     deps = [":sha256_facade"],
 )
 
@@ -116,9 +116,12 @@ pw_cc_library(
     name = "ecdsa_uecc",
     srcs = [
         "ecdsa_uecc.cc",
-        "micro-ecc/uEDD.c",
     ],
-    deps = [":ecdsa_facade"],
+    deps = [
+        ":ecdsa_facade",
+        "//pw_log",
+        "@micro_ecc//:uecc",
+    ],
 )
 
 pw_cc_test(

@@ -18,7 +18,7 @@ workspace(
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "pigweed_deps")
 
 # Setup CIPD client and packages.
@@ -375,4 +375,11 @@ maven_install(
         "https://jcenter.bintray.com/",
         "https://repo1.maven.org/maven2",
     ],
+)
+
+new_git_repository(
+  name = "micro_ecc",
+  commit = "b335ee812bfcca4cd3fb0e2a436aab39553a555a",
+  remote = "https://github.com/kmackay/micro-ecc.git",
+  build_file = "//:third_party/micro_ecc/BUILD.bazel",
 )
