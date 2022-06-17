@@ -99,6 +99,15 @@ class Impl final : public GATT {
     connections_.erase(peer_id);
   }
 
+  PeerMtuListenerId RegisterPeerMtuListener(PeerMtuListener listener) override {
+    peer_mtu_listeners_.insert({next_mtu_listener_id_, std::move(listener)});
+    return next_mtu_listener_id_++;
+  }
+
+  bool UnregisterPeerMtuListener(PeerMtuListenerId listener_id) override {
+    return peer_mtu_listeners_.erase(listener_id) == 1;
+  }
+
   void RegisterService(ServicePtr service, ServiceIdCallback callback, ReadHandler read_handler,
                        WriteHandler write_handler, ClientConfigCallback ccc_callback) override {
     IdType id = local_services_->RegisterService(std::move(service), std::move(read_handler),
@@ -163,16 +172,20 @@ class Impl final : public GATT {
     retrieve_service_changed_ccc_callback_ = std::move(callback);
   }
 
-  void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) override {
-    bt_log(TRACE, "gatt", "discover services: %s", bt_str(peer_id));
+  void InitializeClient(PeerId peer_id, std::vector<UUID> services_to_discover) override {
+    bt_log(TRACE, "gatt", "initialize client: %s", bt_str(peer_id));
 
     auto iter = connections_.find(peer_id);
     if (iter == connections_.end()) {
       bt_log(WARN, "gatt", "unknown peer: %s", bt_str(peer_id));
       return;
     }
-
-    iter->second.Initialize(std::move(service_uuids));
+    auto mtu_cb = [this, peer_id](uint16_t mtu) {
+      for (auto& [_id, listener] : peer_mtu_listeners_) {
+        listener(peer_id, mtu);
+      }
+    };
+    iter->second.Initialize(std::move(services_to_discover), std::move(mtu_cb));
   }
 
   RemoteServiceWatcherId RegisterRemoteServiceWatcherForPeer(
@@ -245,6 +258,8 @@ class Impl final : public GATT {
   RemoteServiceWatcherId next_watcher_id_ = 0u;
   std::unordered_multimap<PeerId, std::pair<RemoteServiceWatcherId, RemoteServiceWatcher>>
       peer_remote_service_watchers_;
+  PeerMtuListenerId next_mtu_listener_id_ = 0u;
+  std::unordered_map<PeerMtuListenerId, PeerMtuListener> peer_mtu_listeners_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };

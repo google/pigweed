@@ -1643,7 +1643,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUID) {
     ASSERT_TRUE(uuids.empty());
     cb_called = true;
   };
-  fake_gatt()->SetDiscoverServicesCallback(expect_uuids);
+  fake_gatt()->SetInitializeClientCallback(expect_uuids);
 
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
@@ -1675,7 +1675,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUuid) {
     EXPECT_THAT(uuids, ::testing::UnorderedElementsAreArray(expected_uuids));
     cb_called = true;
   };
-  fake_gatt()->SetDiscoverServicesCallback(expect_uuid);
+  fake_gatt()->SetInitializeClientCallback(expect_uuid);
 
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));

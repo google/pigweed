@@ -36,6 +36,7 @@ namespace gatt {
 class GATT {
  public:
   using RemoteServiceWatcherId = uint64_t;
+  using PeerMtuListenerId = uint64_t;
 
   // Constructs a production GATT object.
   static std::unique_ptr<GATT> Create();
@@ -61,6 +62,15 @@ class GATT {
 
   // Unregisters the GATT profile connection to the peer with Id |peer_id|.
   virtual void RemoveConnection(PeerId peer_id) = 0;
+
+  // |PeerMtuListener| will be notified when any MTU negotiation completes without an unrecoverable
+  // error. The PeerId is the peer using that MTU, and the uint16_t is the MTU.
+  using PeerMtuListener = fit::function<void(PeerId, uint16_t)>;
+  virtual PeerMtuListenerId RegisterPeerMtuListener(PeerMtuListener listener) = 0;
+
+  // Unregisters the PeerMtuListener associated with |listener_id|. Returns true if a listener was
+  // successfully unregistered, or false if |listener_id| was not associated with an active listener.
+  virtual bool UnregisterPeerMtuListener(PeerMtuListenerId listener_id) = 0;
 
   // ==============
   // Local Services
@@ -141,10 +151,10 @@ class GATT {
   // The methods below are for interacting with remote GATT services. These
   // methods operate asynchronously.
 
-  // Perform service discovery and initialize remote services for the peer with
+  // Initialize remote services (e.g. exchange MTU, perform service discovery) for the peer with
   // the given |peer_id|.
-  // If |service_uuids| is non-empty, only discover services with the given UUIDs.
-  virtual void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) = 0;
+  // If |services_to_discover| is non-empty, only discover services with the given UUIDs.
+  virtual void InitializeClient(PeerId peer_id, std::vector<UUID> services_to_discover) = 0;
 
   // Register a handler that will be notified when remote services are added, modified, or
   // removed on the peer |peer_id|. Returns an ID that can be used to unregister the handler.
@@ -156,7 +166,7 @@ class GATT {
   virtual bool UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) = 0;
 
   // Returns the list of remote services that were found on the device with
-  // |peer_id|. If |peer_id| was registered but DiscoverServices() has not been
+  // |peer_id|. If |peer_id| was registered but InitializeClient() has not been
   // called yet, this request will be buffered until remote services have been
   // discovered. If the connection is removed without discovery services,
   // |callback| will be called with an error status.

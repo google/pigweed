@@ -47,11 +47,14 @@ class RemoteServiceManager final {
 
   // Initiates the Exchange MTU procedure followed by service discovery.
   // |callback| is called to notify the result of the procedure.
+  // |mtu_cb| is called when the MTU for the connection is determined, which may occur before
+  // initialization completes.
   // If |services| is empty, discover all services.
   // If |services| is not empty, only discover services that match the UUIDs in |services|.
   // TODO(fxbug.dev/65592): Support initiating multiple service discoveries for different service
   // UUIDs.
-  void Initialize(att::ResultFunction<> callback, std::vector<UUID> services = {});
+  void Initialize(att::ResultFunction<> callback, fit::callback<void(uint16_t)> mtu_cb,
+                  std::vector<UUID> services = {});
 
   // Returns a vector containing discovered services that match any of the given
   // |uuids| via |callback|. All services will be returned if |uuids| is empty.

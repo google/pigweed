@@ -4,6 +4,7 @@
 
 #include "remote_service_manager.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 
@@ -64,7 +65,9 @@ RemoteServiceManager::~RemoteServiceManager() {
   }
 }
 
-void RemoteServiceManager::Initialize(att::ResultFunction<> cb, std::vector<UUID> services) {
+void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
+                                      fit::callback<void(uint16_t)> mtu_cb,
+                                      std::vector<UUID> services) {
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   auto init_cb = [self, user_init_cb = std::move(cb)](att::Result<> status) mutable {
@@ -96,7 +99,7 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb, std::vector<UUID
     user_init_cb(status);
   };
 
-  client_->ExchangeMTU([self, init_cb = std::move(init_cb),
+  client_->ExchangeMTU([self, init_cb = std::move(init_cb), mtu_cb = std::move(mtu_cb),
                         services = std::move(services)](att::Result<uint16_t> mtu_result) mutable {
     // The Client's Bearer may outlive this object.
     if (!self) {
@@ -107,6 +110,7 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb, std::vector<UUID
     // continue with initialization.
     if (mtu_result.is_ok() || mtu_result.error_value().is(att::ErrorCode::kRequestNotSupported)) {
       bt_is_error(mtu_result, DEBUG, "gatt", "MTU exchange not supported");
+      mtu_cb(mtu_result.value_or(att::kLEMinMTU));
     } else {
       bt_log(INFO, "gatt", "MTU exchange failed: %s", bt_str(mtu_result.error_value()));
       init_cb(fitx::error(mtu_result.error_value()));

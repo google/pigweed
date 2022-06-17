@@ -521,7 +521,7 @@ bool LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att_channel
     // TODO(fxbug.dev/65592): De-duplicate services.
     service_uuids = {*service_uuid, kGenericAccessService};
   }
-  gatt_->DiscoverServices(peer_id(), std::move(service_uuids));
+  gatt_->InitializeClient(peer_id(), std::move(service_uuids));
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   gatt_->ListServices(peer_id(), {kGenericAccessService}, [self](auto status, auto services) {

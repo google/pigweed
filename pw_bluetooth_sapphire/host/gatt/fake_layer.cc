@@ -79,6 +79,14 @@ void FakeLayer::AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
 
 void FakeLayer::RemoveConnection(PeerId peer_id) { peers_.erase(peer_id); }
 
+GATT::PeerMtuListenerId FakeLayer::RegisterPeerMtuListener(PeerMtuListener listener) {
+  ZX_PANIC("TODO: implement fake behavior if needed");
+}
+
+bool FakeLayer::UnregisterPeerMtuListener(PeerMtuListenerId listener_id) {
+  ZX_PANIC("TODO: implement fake behavior if needed");
+}
+
 void FakeLayer::RegisterService(ServicePtr service, ServiceIdCallback callback,
                                 ReadHandler read_handler, WriteHandler write_handler,
                                 ClientConfigCallback ccc_callback) {
@@ -113,9 +121,10 @@ void FakeLayer::SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCa
   retrieve_service_changed_ccc_cb_ = std::move(callback);
 }
 
-void FakeLayer::DiscoverServices(PeerId peer_id, std::vector<UUID> uuids) {
-  if (discover_services_cb_) {
-    discover_services_cb_(peer_id, uuids);
+void FakeLayer::InitializeClient(PeerId peer_id, std::vector<UUID> services_to_discover) {
+  std::vector<UUID> uuids = std::move(services_to_discover);
+  if (initialize_client_cb_) {
+    initialize_client_cb_(peer_id, uuids);
   }
 
   auto iter = peers_.find(peer_id);
@@ -190,8 +199,8 @@ fbl::RefPtr<RemoteService> FakeLayer::FindService(PeerId peer_id, IdType service
   return svc_iter->second;
 }
 
-void FakeLayer::SetDiscoverServicesCallback(DiscoverServicesCallback cb) {
-  discover_services_cb_ = std::move(cb);
+void FakeLayer::SetInitializeClientCallback(InitializeClientCallback cb) {
+  initialize_client_cb_ = std::move(cb);
 }
 
 void FakeLayer::set_list_services_status(att::Result<> status) { list_services_status_ = status; }

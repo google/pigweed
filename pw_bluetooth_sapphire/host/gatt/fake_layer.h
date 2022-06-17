@@ -23,16 +23,16 @@ class FakeLayer final : public GATT {
   //
   // Returns the fake remote service and a handle to the fake object.
   //
-  // NOTE: the remote service watcher can also get triggered by calling DiscoverServices().
+  // NOTE: the remote service watcher can also get triggered by calling InitializeClient().
   std::pair<fbl::RefPtr<RemoteService>, fxl::WeakPtr<FakeClient>> AddPeerService(
       PeerId peer_id, const ServiceData& info, bool notify = false);
 
   // Removes the service with start handle of |handle| and notifies service watcher.
   void RemovePeerService(PeerId peer_id, att::Handle handle);
 
-  // Assign a callback to be notified when a service discovery has been requested.
-  using DiscoverServicesCallback = fit::function<void(PeerId, std::vector<UUID>)>;
-  void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
+  // Assign a callback to be notified when a request is made to initialize the client.
+  using InitializeClientCallback = fit::function<void(PeerId, std::vector<UUID>)>;
+  void SetInitializeClientCallback(InitializeClientCallback cb);
 
   // Assign the status that will be returned by the ListServices callback.
   void set_list_services_status(att::Result<>);
@@ -63,6 +63,8 @@ class FakeLayer final : public GATT {
   void AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
                      Server::FactoryFunction server_factory) override;
   void RemoveConnection(PeerId peer_id) override;
+  PeerMtuListenerId RegisterPeerMtuListener(PeerMtuListener listener) override;
+  bool UnregisterPeerMtuListener(PeerMtuListenerId listener_id) override;
   void RegisterService(ServicePtr service, ServiceIdCallback callback, ReadHandler read_handler,
                        WriteHandler write_handler, ClientConfigCallback ccc_callback) override;
   void UnregisterService(IdType service_id) override;
@@ -72,7 +74,7 @@ class FakeLayer final : public GATT {
                             IndicationCallback indicate_cb) override;
   void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override;
   void SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) override;
-  void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) override;
+  void InitializeClient(PeerId peer_id, std::vector<UUID> services_to_discover) override;
   RemoteServiceWatcherId RegisterRemoteServiceWatcherForPeer(PeerId peer_id,
                                                              RemoteServiceWatcher watcher) override;
   bool UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) override;
@@ -81,7 +83,7 @@ class FakeLayer final : public GATT {
 
  private:
   // Test callbacks
-  DiscoverServicesCallback discover_services_cb_;
+  InitializeClientCallback initialize_client_cb_;
   SetPersistServiceChangedCCCCallbackCallback set_persist_service_changed_ccc_cb_cb_;
   SetRetrieveServiceChangedCCCCallbackCallback set_retrieve_service_changed_ccc_cb_cb_;
 

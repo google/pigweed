@@ -25,7 +25,7 @@ Connection::Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> s
   remote_service_manager_->set_service_watcher(std::move(svc_watcher));
 }
 
-void Connection::Initialize(std::vector<UUID> service_uuids) {
+void Connection::Initialize(std::vector<UUID> service_uuids, fit::callback<void(uint16_t)> mtu_cb) {
   ZX_ASSERT(remote_service_manager_);
 
   auto uuids_count = service_uuids.size();
@@ -46,7 +46,8 @@ void Connection::Initialize(std::vector<UUID> service_uuids) {
     }
   };
 
-  remote_service_manager_->Initialize(std::move(status_cb), std::move(service_uuids));
+  remote_service_manager_->Initialize(std::move(status_cb), std::move(mtu_cb),
+                                      std::move(service_uuids));
 }
 
 void Connection::ShutDown() {

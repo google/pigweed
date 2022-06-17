@@ -10,6 +10,7 @@
 #include <gmock/gmock.h>
 
 #include "fake_client.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
@@ -41,6 +42,7 @@ constexpr att::Handle kDesc2 = 5;
 constexpr att::Handle kEnd = 5;
 
 void NopStatusCallback(att::Result<>) {}
+void NopMtuCallback(uint16_t) {}
 void NopValueCallback(const ByteBuffer& /*value*/, bool /*maybe_truncated*/) {}
 
 class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
@@ -68,7 +70,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     std::vector<ServiceData> fake_services{{data}};
     fake_client()->set_services(std::move(fake_services));
 
-    mgr()->Initialize(NopStatusCallback);
+    mgr()->Initialize(NopStatusCallback, NopMtuCallback);
 
     ServiceList services;
     mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
@@ -158,7 +160,7 @@ TEST_F(RemoteServiceManagerTest, InitializeNoServices) {
   });
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
 
   RunLoopUntilIdle();
 
@@ -182,10 +184,18 @@ TEST_F(RemoteServiceManagerTest, Initialize) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
+  const uint16_t kArbitraryMtu = att::kLEMinMTU + 10;
+  fake_client()->set_server_mtu(kArbitraryMtu);
+
+  uint16_t new_mtu = 0;
+  auto mtu_cb = [&](uint16_t cb_mtu) { new_mtu = cb_mtu; };
+
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, std::move(mtu_cb));
 
   RunLoopUntilIdle();
+
+  EXPECT_EQ(kArbitraryMtu, new_mtu);
 
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(2u, services.size());
@@ -216,7 +226,7 @@ TEST_F(RemoteServiceManagerTest, InitializeFailure) {
   ASSERT_TRUE(services.empty());
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
 
   RunLoopUntilIdle();
 
@@ -230,15 +240,18 @@ TEST_F(RemoteServiceManagerTest, InitializeMtuExchangeNotSupportedSucceeds) {
   fake_client()->set_services({svc});
   // The MTU exchange is an optional procedure, so if the peer tells us that they do not support it,
   // we should continue with initialization.
-  fake_client()->set_exchage_mtu_status(ToResult(att::ErrorCode::kRequestNotSupported));
+  fake_client()->set_exchange_mtu_status(ToResult(att::ErrorCode::kRequestNotSupported));
 
   ServiceList services;
   mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
+  std::optional<uint16_t> mtu;
+  auto mtu_cb = [&mtu](uint16_t cb_mtu) { mtu = cb_mtu; };
+
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, std::move(mtu_cb));
 
   RunLoopUntilIdle();
 
@@ -246,6 +259,25 @@ TEST_F(RemoteServiceManagerTest, InitializeMtuExchangeNotSupportedSucceeds) {
   ASSERT_EQ(1u, services.size());
   EXPECT_EQ(svc.range_start, services[0]->handle());
   EXPECT_EQ(svc.type, services[0]->uuid());
+
+  // If the MTU exchange isn't supported, "the default MTU shall be used" (v5.3 Vol. 3 Part G 4.3.1)
+  ASSERT_TRUE(mtu.has_value());
+  EXPECT_EQ(att::kLEMinMTU, *mtu);
+}
+
+TEST_F(RemoteServiceManagerTest, InitializeMtuExchangeFailure) {
+  fake_client()->set_exchange_mtu_status(ToResult(att::ErrorCode::kUnlikelyError));
+
+  bool mtu_updated = false;
+  auto mtu_cb = [&](uint16_t /*ignore*/) { mtu_updated = true; };
+
+  att::Result<> status = fitx::ok();
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, std::move(mtu_cb));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(ToResult(att::ErrorCode::kUnlikelyError), status);
+  EXPECT_FALSE(mtu_updated);
 }
 
 TEST_F(RemoteServiceManagerTest, InitializeByUUIDNoServices) {
@@ -255,7 +287,8 @@ TEST_F(RemoteServiceManagerTest, InitializeByUUIDNoServices) {
   });
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; }, {kTestServiceUuid1});
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback,
+                    {kTestServiceUuid1});
 
   RunLoopUntilIdle();
 
@@ -281,7 +314,7 @@ TEST_F(RemoteServiceManagerTest, InitializeWithUuids) {
   });
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; },
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback,
                     {kTestServiceUuid1, kTestServiceUuid3});
 
   RunLoopUntilIdle();
@@ -313,7 +346,8 @@ TEST_F(RemoteServiceManagerTest, InitializeByUUIDFailure) {
   ASSERT_TRUE(services.empty());
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; }, {kTestServiceUuid1});
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback,
+                    {kTestServiceUuid1});
 
   RunLoopUntilIdle();
 
@@ -333,7 +367,7 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServices) {
   });
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
 
   RunLoopUntilIdle();
 
@@ -356,7 +390,7 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServices) {
   });
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
 
   RunLoopUntilIdle();
 
@@ -380,7 +414,7 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServicesOutOfOrder
   });
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
 
   EXPECT_EQ(fitx::ok(), status);
@@ -404,7 +438,7 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
   });
 
   att::Result<> status = fitx::ok();
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
 
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
@@ -426,7 +460,7 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryServicesErrorUnsupportedGroupT
   });
 
   att::Result<> status = fitx::ok();
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
 
   EXPECT_EQ(ToResult(att::ErrorCode::kUnsupportedGroupType), status);
@@ -450,7 +484,7 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesErrorUnsupportedGrou
   });
 
   att::Result<> status = fitx::ok();
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
 
   EXPECT_EQ(fitx::ok(), status);
@@ -470,7 +504,7 @@ TEST_F(RemoteServiceManagerTest, ListServicesBeforeInit) {
   EXPECT_TRUE(services.empty());
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
 
   RunLoopUntilIdle();
 
@@ -486,7 +520,7 @@ TEST_F(RemoteServiceManagerTest, ListServicesAfterInit) {
   fake_client()->set_services(std::move(fake_services));
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
 
   RunLoopUntilIdle();
 
@@ -524,7 +558,7 @@ TEST_F(RemoteServiceManagerTest, ListServicesByUuid) {
   ASSERT_TRUE(service_watcher_services.empty());
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
 
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
@@ -3254,7 +3288,7 @@ class RemoteServiceManagerServiceChangedTest : public RemoteServiceManagerTest {
         });
 
     att::Result<> status = ToResult(HostError::kFailed);
-    mgr()->Initialize([&status](att::Result<> val) { status = val; });
+    mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
     RunLoopUntilIdle();
     EXPECT_EQ(fitx::ok(), status);
     EXPECT_EQ(write_request_count_, 1);
@@ -3516,10 +3550,12 @@ TEST_F(RemoteServiceManagerTest, ServiceChangedDuringInitialization) {
       });
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&](att::Result<> val) {
-    status = val;
-    EXPECT_EQ(1, svc_watcher_count);
-  });
+  mgr()->Initialize(
+      [&](att::Result<> val) {
+        status = val;
+        EXPECT_EQ(1, svc_watcher_count);
+      },
+      NopMtuCallback);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1, write_request_count);
@@ -3782,7 +3818,7 @@ TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileService) {
   });
 
   std::optional<att::Result<>> status;
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), *status);
 }
@@ -3794,7 +3830,7 @@ TEST_F(RemoteServiceManagerTest, MultipleGattProfileServicesFailsInitialization)
   fake_client()->set_services(std::move(fake_services));
 
   std::optional<att::Result<>> status;
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(HostError::kFailed), *status);
 }
@@ -3811,7 +3847,7 @@ TEST_F(RemoteServiceManagerTest, InitializeEmptyGattProfileService) {
   });
 
   att::Result<> status = ToResult(HostError::kFailed);
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(2u, services.size());
@@ -3854,7 +3890,7 @@ TEST_F(RemoteServiceManagerTest, EnableServiceChangedNotificationsReturnsError) 
       });
 
   std::optional<att::Result<>> status;
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kWriteNotPermitted), *status);
   EXPECT_EQ(write_request_count, 1);
@@ -3870,7 +3906,7 @@ TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileServiceCharacteristi
       ToResult(att::ErrorCode::kRequestNotSupported));
 
   std::optional<att::Result<>> status;
-  mgr()->Initialize([&status](att::Result<> val) { status = val; });
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, NopMtuCallback);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), *status);
 }

@@ -16,7 +16,7 @@ class FakeClient final : public Client {
   ~FakeClient() override = default;
 
   void set_server_mtu(uint16_t mtu) { server_mtu_ = mtu; }
-  void set_exchage_mtu_status(att::Result<> status) { exchange_mtu_status_ = status; }
+  void set_exchange_mtu_status(att::Result<> status) { exchange_mtu_status_ = status; }
 
   void set_services(std::vector<ServiceData> services) { services_ = std::move(services); }
 

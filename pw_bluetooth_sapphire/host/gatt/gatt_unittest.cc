@@ -136,7 +136,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   RunLoopUntilIdle();
   EXPECT_EQ(write_request_count, 0);
 
-  gatt()->DiscoverServices(kPeerId, /*service_uuids=*/{});
+  gatt()->InitializeClient(kPeerId, /*service_uuids=*/{});
   RunLoopUntilIdle();
   EXPECT_EQ(write_request_count, 1);
   ASSERT_EQ(1u, svc_watcher_data.size());
@@ -267,8 +267,8 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
       });
 
   // Service discovery should complete and all service watchers should be notified.
-  gatt()->DiscoverServices(kPeerId0, /*service_uuids=*/{});
-  gatt()->DiscoverServices(kPeerId1, /*service_uuids=*/{});
+  gatt()->InitializeClient(kPeerId0, /*service_uuids=*/{});
+  gatt()->InitializeClient(kPeerId1, /*service_uuids=*/{});
   RunLoopUntilIdle();
   ASSERT_EQ(watcher_data_0.size(), 1u);
   ASSERT_EQ(watcher_data_0[0].added.size(), 1u);
@@ -321,7 +321,7 @@ TEST_F(GattTest, ServiceDiscoveryFailureShutsDownConnection) {
   gatt()->AddConnection(kPeerId, take_client(), std::move(mock_server_factory));
   ASSERT_TRUE(mock_server);
   EXPECT_FALSE(mock_server->was_shut_down());
-  gatt()->DiscoverServices(kPeerId, std::vector<UUID>{});
+  gatt()->InitializeClient(kPeerId, std::vector<UUID>{});
   RunLoopUntilIdle();
   EXPECT_TRUE(mock_server->was_shut_down());
 }
@@ -428,6 +428,112 @@ TEST_F(GattTest, IndicateConnectedPeersNoneConnectedSucceeds) {
   gatt()->UpdateConnectedPeers(svc_id, kChrcId, indicate_val, std::move(indicate_cb));
 
   EXPECT_EQ(fitx::ok(), res);
+}
+
+struct PeerIdAndMtu {
+  PeerId peer_id;
+  uint16_t mtu;
+};
+TEST_F(GattTest, UpdateMtuListenersNotified) {
+  // Add MTU listeners to GATT
+  std::optional<PeerIdAndMtu> listener_1_results;
+  auto listener_1 = [&](PeerId peer_id, uint16_t mtu) {
+    listener_1_results = PeerIdAndMtu{.peer_id = peer_id, .mtu = mtu};
+  };
+  std::optional<PeerIdAndMtu> listener_2_results;
+  auto listener_2 = [&](PeerId peer_id, uint16_t mtu) {
+    listener_2_results = PeerIdAndMtu{.peer_id = peer_id, .mtu = mtu};
+  };
+  gatt()->RegisterPeerMtuListener(std::move(listener_1));
+  GATT::PeerMtuListenerId listener_2_id = gatt()->RegisterPeerMtuListener(std::move(listener_2));
+
+  // Configure MTU
+  const uint16_t kExpectedMtu = att::kLEMinMTU + 1;
+  fake_client()->set_server_mtu(kExpectedMtu);
+
+  // Add connection, initialize, and verify that MTU exchange succeeds
+  gatt()->AddConnection(kPeerId0, take_client(), CreateMockServer);
+  gatt()->InitializeClient(kPeerId0, {});
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(listener_1_results.has_value());
+  EXPECT_EQ(kPeerId0, listener_1_results->peer_id);
+  EXPECT_EQ(kExpectedMtu, listener_1_results->mtu);
+  ASSERT_TRUE(listener_2_results.has_value());
+  EXPECT_EQ(kPeerId0, listener_2_results->peer_id);
+  EXPECT_EQ(kExpectedMtu, listener_2_results->mtu);
+
+  // After unregistering listener_2, only listener_1 should be notified for the next update
+  listener_1_results.reset();
+  listener_2_results.reset();
+  EXPECT_TRUE(gatt()->UnregisterPeerMtuListener(listener_2_id));
+  auto client_2 = std::make_unique<testing::FakeClient>(dispatcher());
+  const uint16_t kNewExpectedMtu = kExpectedMtu + 1;
+  client_2->set_server_mtu(kNewExpectedMtu);
+  gatt()->AddConnection(kPeerId1, std::move(client_2), CreateMockServer);
+  gatt()->InitializeClient(kPeerId1, {});
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(listener_1_results.has_value());
+  EXPECT_EQ(kPeerId1, listener_1_results->peer_id);
+  EXPECT_EQ(kNewExpectedMtu, listener_1_results->mtu);
+  EXPECT_FALSE(listener_2_results.has_value());
+}
+
+TEST_F(GattTest, MtuExchangeServerNotSupportedListenersNotifiedDefaultMtu) {
+  // Add MTU listeners to GATT
+  std::optional<PeerIdAndMtu> listener_1_results;
+  auto listener_1 = [&](PeerId peer_id, uint16_t mtu) {
+    listener_1_results = PeerIdAndMtu{.peer_id = peer_id, .mtu = mtu};
+  };
+  std::optional<PeerIdAndMtu> listener_2_results;
+  auto listener_2 = [&](PeerId peer_id, uint16_t mtu) {
+    listener_2_results = PeerIdAndMtu{.peer_id = peer_id, .mtu = mtu};
+  };
+  gatt()->RegisterPeerMtuListener(std::move(listener_1));
+  gatt()->RegisterPeerMtuListener(std::move(listener_2));
+
+  // It should be OK for the MTU exchange to fail with kRequestNotSupported, in which case we use
+  // the default LE MTU per v5.3 Vol. 3 Part G 4.3.1 (not the Server MTU)
+  fake_client()->set_server_mtu(att::kLEMinMTU + 5);
+  fake_client()->set_exchange_mtu_status(ToResult(att::ErrorCode::kRequestNotSupported));
+  gatt()->AddConnection(kPeerId0, take_client(), CreateMockServer);
+  gatt()->InitializeClient(kPeerId0, {});
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(listener_1_results.has_value());
+  EXPECT_EQ(kPeerId0, listener_1_results->peer_id);
+  EXPECT_EQ(att::kLEMinMTU, listener_1_results->mtu);
+  ASSERT_TRUE(listener_2_results.has_value());
+  EXPECT_EQ(kPeerId0, listener_2_results->peer_id);
+  EXPECT_EQ(att::kLEMinMTU, listener_2_results->mtu);
+}
+
+TEST_F(GattTest, MtuExchangeFailsListenersNotNotifiedConnectionShutdown) {
+  // Add MTU listener to GATT
+  bool listener_invoked = false;
+  auto listener = [&](PeerId /*ignore*/, uint16_t /*ignore*/) { listener_invoked = true; };
+  gatt()->RegisterPeerMtuListener(std::move(listener));
+
+  // Configure MTU exchange to fail
+  fake_client()->set_exchange_mtu_status(ToResult(HostError::kFailed));
+
+  // Track mock server
+  fxl::WeakPtr<testing::MockServer> mock_server;
+  auto mock_server_factory = [&](PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services) {
+    auto unique_mock_server =
+        std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+    mock_server = unique_mock_server->AsMockWeakPtr();
+    return unique_mock_server;
+  };
+
+  // Add connection, initialize, and verify that MTU exchange failure causes connection shutdown.
+  gatt()->AddConnection(kPeerId0, take_client(), std::move(mock_server_factory));
+  gatt()->InitializeClient(kPeerId0, {});
+  RunLoopUntilIdle();
+  EXPECT_FALSE(listener_invoked);
+  ASSERT_TRUE(mock_server);
+  EXPECT_TRUE(mock_server->was_shut_down());
 }
 
 const std::vector<uint8_t> kIndicateVal{12u};

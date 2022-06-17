@@ -49,7 +49,8 @@ class Connection final {
   // Performs MTU exchange, then primary service discovery. Shuts down the connection on failure.
   // If |service_uuids| is non-empty, discovery is only performed for services with the indicated
   // UUIDs.
-  void Initialize(std::vector<UUID> service_uuids);
+  // Returns the agreed-upon MTU via |mtu_cb|.
+  void Initialize(std::vector<UUID> service_uuids, fit::callback<void(uint16_t)> mtu_cb);
 
   // Closes the ATT bearer on which the connection operates.
   void ShutDown();
