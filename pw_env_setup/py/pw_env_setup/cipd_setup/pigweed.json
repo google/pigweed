@@ -36,7 +36,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:3.24.20220610-g5ed9232"
+        "version:3.24.20220618-gc27a0b7"
       ],
       "version_file": ".versions/cmake.cipd_version"
     },
@@ -56,7 +56,7 @@
       "platforms": [
         "linux-amd64"
       ],
-      "tags":[
+      "tags": [
         "version:1.9.4"
       ],
       "version_file": ".versions/doxygen.cipd_version"
