@@ -186,6 +186,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         jobs: int = None,
         fullscreen: bool = False,
         banners: bool = True,
+        keep_going: bool = False,
     ):
         super().__init__()
 
@@ -207,6 +208,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self._current_build: subprocess.Popen
 
         self._extra_ninja_args = [] if jobs is None else [f'-j{jobs}']
+        if keep_going:
+            self._extra_ninja_args.extend(['-k', '0'])
 
         self.debouncer = Debouncer(self)
 
@@ -573,6 +576,11 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
                         dest='restart',
                         action='store_false',
                         help='do not restart ongoing builds if files change')
+    parser.add_argument('-k',
+                        '--keep-going',
+                        action='store_true',
+                        help=('Keep building past the first failure. This is'
+                              'equivalent to passing "-k 0" to ninja.'))
     parser.add_argument(
         'default_build_targets',
         nargs='*',
@@ -793,6 +801,8 @@ def watch_setup(
     serve_docs_path: Path,
     fullscreen: bool,
     banners: bool,
+    keep_going: bool,
+    debug_logging: bool,  # pylint: disable=unused-argument
     # pylint: disable=too-many-arguments
 ) -> Tuple[str, PigweedBuildWatcher, List[Path]]:
     """Watches files and runs Ninja commands when they change."""
@@ -875,6 +885,7 @@ def watch_setup(
         jobs=jobs,
         fullscreen=fullscreen,
         banners=banners,
+        keep_going=keep_going,
     )
     return path_to_log, event_handler, exclude_list
 
@@ -931,20 +942,7 @@ def main() -> None:
     add_parser_arguments(parser)
     args = parser.parse_args()
 
-    path_to_log, event_handler, exclude_list = watch_setup(
-        default_build_targets=args.default_build_targets,
-        build_directories=args.build_directories,
-        patterns=args.patterns,
-        ignore_patterns_string=args.ignore_patterns_string,
-        exclude_list=args.exclude_list,
-        restart=args.restart,
-        jobs=args.jobs,
-        serve_docs=args.serve_docs,
-        serve_docs_port=args.serve_docs_port,
-        serve_docs_path=args.serve_docs_path,
-        fullscreen=args.fullscreen,
-        banners=args.banners,
-    )
+    path_to_log, event_handler, exclude_list = watch_setup(**vars(args))
 
     if args.fullscreen:
         watch_logfile = (pw_console.python_logging.create_temp_log_file(
