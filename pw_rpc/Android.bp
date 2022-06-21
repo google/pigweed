@@ -17,6 +17,7 @@ java_library {
     srcs: ["java/main/dev/pigweed/pw_rpc/*.java"],
     visibility: ["//visibility:public"],
     static_libs: [
+        "pw_log_android_java",
         "pw_rpc_packet_proto_java_lite",
     ],
     libs: [
@@ -24,7 +25,6 @@ java_library {
         "guava",
         "jsr305",
         "libprotobuf-java-lite",
-        "pw_log_android_java",
     ],
     plugins: ["auto_value_plugin"],
     sdk_version: "current",
