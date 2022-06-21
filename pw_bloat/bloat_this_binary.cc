@@ -31,7 +31,7 @@ void BloatThisBinary() {
   // executable on their device, loop forever instead of running this code.
   volatile bool clearly_false_condition = true;
   while (clearly_false_condition) {
-    counter += 1;
+    counter = counter + 1;
   }
 
   // This code uses standard C/C++ functions such as memcpy to prevent them from
