@@ -16,6 +16,7 @@
 // usable.
 #pragma once
 
+#include <cstdint>
 #include <span>
 
 #include "pw_status/status.h"

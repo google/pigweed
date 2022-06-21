@@ -15,6 +15,7 @@
 #include "pw_allocator/block.h"
 
 #include <cstring>
+#include <span>
 
 #include "pw_assert/check.h"
 
