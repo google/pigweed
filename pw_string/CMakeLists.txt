@@ -48,18 +48,29 @@ pw_add_module_library(pw_string.builder
     string_builder.cc
 )
 
-pw_add_module_library(pw_string.format
-  HEADERS
-    public/pw_string/format.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_preprocessor
-    pw_span
-    pw_status
-  SOURCES
-    format.cc
-)
+add_library(pw_string.format STATIC)
+target_sources(pw_string.format
+        PUBLIC format.cc)
+target_include_directories(pw_string.format
+        PUBLIC public)
+target_link_libraries(pw_string.format
+        PUBLIC
+        pw_preprocessor
+        pw_span
+        pw_status)
+
+#pw_add_module_library(pw_string.format
+#  HEADERS
+#    public/pw_string/format.h
+#  PUBLIC_INCLUDES
+#    public
+#  PUBLIC_DEPS
+#    pw_preprocessor
+#    pw_span
+#    pw_status
+#  SOURCES
+#    format.cc
+#)
 
 pw_add_module_library(pw_string.to_string
   HEADERS
