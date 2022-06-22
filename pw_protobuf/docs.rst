@@ -856,13 +856,7 @@ Generated symbols whose names conflict with reserved C++ keywords or
 standard-library macros are suffixed with underscores to avoid compilation
 failures. This can be seen below in ``Channel.operator``, which is mapped to
 ``Channel::Message::operator_`` to avoid conflicting with the ``operator``
-keyword. Similarly, some POSIX signals are provided as macros by the
-``<csignal>`` header, so those names need to be suffixed with underscores in the
-generated code. Note, however, that some signal names are left unchanged. These
-signals aren't defined in the standard library, so they won't cause any problems
-unless the user defines custom macros for them; any naming conflicts caused by
-user-defined macros are the user's responsibility.
-(https://google.github.io/styleguide/cppguide.html#Preprocessor_Macros)
+keyword.
 
 .. code::
 
@@ -871,6 +865,25 @@ user-defined macros are the user's responsibility.
     float signal_to_noise_ratio = 2;
     Company operator = 3;
   }
+
+.. code:: c++
+
+  struct Channel::Message {
+    int32_t bitrate;
+    float signal_to_noise_ratio;
+    Company::Message operator_;
+  };
+
+Similarly, as shown in the example below, some POSIX-signal names conflict with
+macros defined by the standard-library header ``<csignal>`` and therefore
+require underscore suffixes in the generated code. Note, however, that some
+signal names are left alone. This is because ``<csignal>`` only defines a subset
+of the POSIX signals as macros; the rest are perfectly valid identifiers that
+won't cause any problems unless the user defines custom macros for them. Any
+naming conflicts caused by user-defined macros are the user's responsibility
+(https://google.github.io/styleguide/cppguide.html#Preprocessor_Macros).
+
+.. code::
 
   enum PosixSignal {
     NONE = 0;
@@ -889,12 +902,6 @@ user-defined macros are the user's responsibility.
   }
 
 .. code:: c++
-
-  struct Channel::Message {
-    int32_t bitrate;
-    float signal_to_noise_ratio;
-    Company::Message operator_;
-  };
 
   enum class PosixSignal {
     NONE = 0,
