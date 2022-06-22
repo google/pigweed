@@ -279,7 +279,7 @@ Try running the ``pw_status`` test manually:
 
 .. code:: bash
 
-  $ ./out/host_{clang,gcc}_debug/obj/pw_status/test/status_test
+  $ ./out/pw_strict_host_{clang,gcc}_debug/obj/pw_status/test/status_test
 
 Depending on your host OS, the compiler will default to either ``clang`` or
 ``gcc``.

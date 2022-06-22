@@ -256,7 +256,7 @@ Pigweed intends to provide the ``pw::sync::ThreadNotification`` and
 ``pw::sync::TimedThreadNotification`` facades which permit a single consumer to
 block until an event occurs. This should be backed by the most efficient native
 primitive for a target, regardless of whether that is a semaphore, event flag
-group, condition variable, or direct task notification with a critical section
+group, condition variable, direct task notification with a critical section, or
 something else.
 
 Counting Semaphore
