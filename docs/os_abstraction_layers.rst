@@ -253,7 +253,7 @@ portability efficiency tradeoff does not have to be made up front.
 Thread Notification
 -------------------
 Pigweed intends to provide the ``pw::sync::ThreadNotification`` and
-``pw::sync::TimedThreadNotification`` facades which permit a singler consumer to
+``pw::sync::TimedThreadNotification`` facades which permit a single consumer to
 block until an event occurs. This should be backed by the most efficient native
 primitive for a target, regardless of whether that is a semaphore, event flag
 group, condition variable, or direct task notification with a critical section
@@ -413,13 +413,13 @@ Pigweed has a single API which validates the context requirements through
 a few reasons:
 
 #. **Too many contexts** - Since there are contexts beyond just thread,
-   interrupt, and NMI, having context-specefic APIs would be a hard to
+   interrupt, and NMI, having context-specific APIs would be a hard to
    maintain. The proliferation of postfixed APIs (``...FromISR``,
    ``...FromNMI``, ``...FromThreadCriticalSection``, and so on) would also be
    confusing for users.
 
-#. **Must verify context anyway** - Backends are requried to enforce context
-   requirements with ``DHCECK`` or related calls, so we chose a simple API
+#. **Must verify context anyway** - Backends are required to enforce context
+   requirements with ``DCHECK`` or related calls, so we chose a simple API
    which happens to match both the C++'s STL and Google's Abseil.
 
 #. **Multi-context code** - Code running in multiple contexts would need to be

@@ -51,8 +51,8 @@ the Pigweed integrated environment and build, or just use individual modules?
 
 A la carte: Individual modules only
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This is best option if you have an existing project, with pre-existing build in
-place.
+This is the best option if you have an existing project, with pre-existing build
+in place.
 
 To use the libraries, submodule or copy the relevant Pigweed modules into your
 project, and use them like any other C++ library. You can reference the

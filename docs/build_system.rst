@@ -360,7 +360,7 @@ Next runtime sanitizers supported:
 
    * ``integer``: Checks for undefined or suspicious integer behavior.
    * ``float-divide-by-zero``: Checks for floating point division by zero.
-   * ``implicit-conversion"``: Checks for suspicious behavior of implicit conversions.
+   * ``implicit-conversion``: Checks for suspicious behavior of implicit conversions.
    * ``nullability``: Checks for null as function arg, lvalue and return type.
 
   These additional checks are heuristic and may not correspond to undefined
@@ -454,7 +454,7 @@ build. For information on Pigweed's target system, refer to
 
 The empty toolchain
 -------------------
-Pigweed's ``BUILDCONFIG.gn`` sets the project's default toolchain to a "empty"
+Pigweed's ``BUILDCONFIG.gn`` sets the project's default toolchain to an "empty"
 toolchain which does not specify any compilers or override any build arguments.
 Downstream projects are recommended to do the same, following the steps
 described in :ref:`top-level-build` to configure builds for each of their

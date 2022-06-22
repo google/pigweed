@@ -4,7 +4,7 @@
 Host Device Simulator
 =====================
 This Pigweed target simulates the behavior of an embedded device, spawning
-threads for facilities like RPC and logging. Executables build by this target
+threads for facilities like RPC and logging. Executables built by this target
 will perpetually run until they crash or are explicitly terminated. All
 communications with the process are over the RPC server hosted on a local
 socket rather than by directly interacting with the terminal via standard I/O.

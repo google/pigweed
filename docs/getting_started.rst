@@ -263,8 +263,8 @@ the host automatically build and run the unit tests. Unit tests err on the side
 of being quiet in the success case, and only output test results when there's a
 failure.
 
-To see the a test failure, modify ``pw_status/status_test.cc`` to fail by
-changing one of the strings in the "KnownString" test.
+To see a test failure, modify ``pw_status/status_test.cc`` to fail by changing
+one of the strings in the "KnownString" test.
 
 .. image:: images/pw_watch_test_demo.gif
   :width: 800

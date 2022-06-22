@@ -70,7 +70,7 @@ top-level ``host`` group as the target to build.
   $ ninja -C out host
 
 
-``host`` may be replaced with with ``host_clang``, ``host_gcc``,
+``host`` may be replaced with ``host_clang``, ``host_gcc``,
 ``host_clang_debug``, etc. to build with a more specific host toolchain. Not all
 toolchains are supported on all platforms. Unless working specifically on one
 toolchain, it is recommended to use the default.

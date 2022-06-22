@@ -41,7 +41,7 @@ the variables ``ar``, ``cc``, and ``cxx`` to the appropriate compilers. Pigweed
 provides many commonly used compiler configurations in the ``pw_toolchain``
 module.
 
-The rest of the a Pigweed target's configuration is listed within a ``defaults``
+The rest of a Pigweed target's configuration is listed within a ``defaults``
 scope in its toolchain. Every variable in this scope is an override of a GN
 build argument defined in Pigweed. Some notable arguments include:
 

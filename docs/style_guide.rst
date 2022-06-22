@@ -548,7 +548,7 @@ length of the prefix.
 
   * C functions (``int pw_foo_FunctionName(void);``),
   * variables used by C code (``int pw_foo_variable_name;``),
-  * constant variables used by C code (``int pw_foo_kConstantName;``),
+  * constant variables used by C code (``const int pw_foo_kConstantName;``),
   * structs used by C code (``typedef struct {} pw_foo_StructName;``), and
   * all of the above for ``extern "C"`` names in C++ code.
 
@@ -772,7 +772,7 @@ example:
 
 Macros in private implementation files (.cc)
 --------------------------------------------
-Macros within .cc files that should only used within one file should be
+Macros within .cc files that should only be used within one file should be
 undefined after their last use; for example:
 
 .. code-block:: cpp
@@ -951,13 +951,13 @@ for the ReST heading syntax.
    Document Title: Two Bars of Equals
    ==================================
    Document titles use equals ("====="), above and below. Capitalize the words
-   in the title, except for 'of' and 'the'.
+   in the title, except for 'a', 'of', and 'the'.
 
    ---------------------------
    Major Sections Within a Doc
    ---------------------------
-   Major sections use hypens ("----"), above and below. Capitalize the words in
-   the title, except for 'of' and 'the'.
+   Major sections use hyphens ("----"), above and below. Capitalize the words in
+   the title, except for 'a', 'of', and 'the'.
 
    Heading 1 - For Sections Within a Doc
    =====================================
@@ -965,7 +965,7 @@ for the ReST heading syntax.
 
    Heading 2 - for subsections
    ---------------------------
-   Subsections use hypens ("----"). In many cases, these headings may be
+   Subsections use hyphens ("----"). In many cases, these headings may be
    sentence-like. In those cases, only the first letter should be capitalized.
    For example, FAQ subsections would have a title with "Why does the X do the
    Y?"; note the sentence capitalization (but not title capitalization).

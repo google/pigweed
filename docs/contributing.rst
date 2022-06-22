@@ -213,7 +213,7 @@ lowercase identifier.
 
 .. code:: none
 
-   pw_bar: Do somehthing great.
+   pw_bar: Do something great.
 
 **No**: Puts extra stuff after the module which isn't a module.
 
