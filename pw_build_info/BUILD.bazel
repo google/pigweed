@@ -32,6 +32,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_preprocessor",
+        "//pw_span:pigweed_span",
     ],
 )
 

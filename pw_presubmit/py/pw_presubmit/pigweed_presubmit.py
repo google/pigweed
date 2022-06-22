@@ -343,7 +343,6 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_assert_zephyr',
     'pw_blob_store',
     'pw_boot',
-    'pw_build_info',
     'pw_build_mcuxpresso',
     'pw_bytes',
     'pw_chrono_zephyr',
