@@ -30,7 +30,7 @@ namespace pw::rpc::internal {
 class ChannelList {
  public:
   _PW_RPC_CONSTEXPR ChannelList(std::span<Channel> channels)
-      : channels_(channels.begin(), channels.end()) {}
+      : channels_(channels) {}
 
   // Returns the first channel with the matching ID or nullptr if none match.
   // Except for Channel::kUnassignedChannelId, there should be no duplicate
