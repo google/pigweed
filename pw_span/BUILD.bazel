@@ -44,6 +44,9 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
+        # Temporarily provide pw::span in this target to support the migration
+        # from std::span to pw::span.
+        ":pigweed_span",
         "//pw_polyfill",
         "//pw_polyfill:standard_library",
     ],

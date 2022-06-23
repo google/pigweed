@@ -31,6 +31,7 @@ config("overrides_config") {
 }
 
 pw_source_set("pw_span") {
+  remove_public_deps = [ "*" ]
   public = [ "public/pw_span/span.h" ]
   public_configs = [ ":public_config" ]
   public_deps = [ dir_pw_polyfill ]
@@ -52,7 +53,12 @@ pw_source_set("polyfill") {
     ":public_config",
     ":overrides_config",
   ]
-  public_deps = [ dir_pw_polyfill ]
+  public_deps = [
+    # Temporarily provide pw::span in this target to support the migration
+    # from std::span to pw::span.
+    ":pw_span",
+    dir_pw_polyfill,
+  ]
 
   # Polyfill <cstddef> (std::byte) and <iterator> (std::size(), std::data) if
   # C++17 is not supported.
