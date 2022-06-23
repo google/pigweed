@@ -13,8 +13,16 @@
 // the License.
 #pragma once
 
-#if __has_include_next(<span>)
-#include_next <span>
-#endif  // __has_include_next(<span>)
+#if __has_include(<version>)
+#include <version>
+#endif  // __has_include(<version>)
 
+// We are using <span> only if we were able to fetch __cpp_lib_span from
+// <version> and it is at least 202002. In all other cases we are using
+// custom span implementation.
+#if defined(__cpp_lib_span) && __cpp_lib_span >= 202002L
+#include_next <span>
+#else
+#undef __cpp_lib_span
 #include "pw_span/internal/span.h"
+#endif  // defined(__cpp_lib_span) && __cpp_lib_span >= 202002L
