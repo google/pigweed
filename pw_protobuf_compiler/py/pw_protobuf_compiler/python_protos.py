@@ -25,7 +25,26 @@ from types import ModuleType
 from typing import (Dict, Generic, Iterable, Iterator, List, NamedTuple, Set,
                     Tuple, TypeVar, Union)
 
-from yapf.yapflib import yapf_api  # type: ignore[import]
+# Temporarily set the root logger level to critical while importing yapf.
+# This silences INFO level messages from
+# .environment/cipd/packages/python/lib/python3.9/lib2to3/driver.py
+# when it writes Grammar3.*.pickle and PatternGrammar3.*.pickle files.
+_original_level = 0
+for handler in logging.getLogger().handlers:
+    if type(handler) == logging.StreamHandler:  # pylint: disable=unidiomatic-typecheck
+        if handler.level > _original_level:
+            _original_level = handler.level
+        handler.level = logging.CRITICAL
+
+from yapf.yapflib import yapf_api  # type: ignore[import] # pylint: disable=wrong-import-position
+
+# Restore the original stderr/out log handler level.
+for handler in logging.getLogger().handlers:
+    # Must use type() check here since isinstance returns True for FileHandlers
+    # and StreamHandler: isinstance(logging.FileHandler, logging.StreamHandler)
+    if type(handler) == logging.StreamHandler:  # pylint: disable=unidiomatic-typecheck
+        handler.level = _original_level
+del _original_level
 
 _LOG = logging.getLogger(__name__)
 
