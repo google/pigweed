@@ -45,28 +45,28 @@ Pointer and size arguments can be replaced with a :cpp:class:`pw::span`:
 
   #include <span>
 
-  // With std::span, the buffer is passed as a single argument.
-  bool ProcessBuffer(std::span<uint8_t> buffer);
+  // With pw::span, the buffer is passed as a single argument.
+  bool ProcessBuffer(pw::span<uint8_t> buffer);
 
   bool DoStuff() {
     ProcessBuffer(c_array);
     ProcessBuffer(array_object);
-    ProcessBuffer(std::span(data_pointer, data_size));
+    ProcessBuffer(pw::span(data_pointer, data_size));
   }
 
 .. tip::
 
-  Use ``pw::span<std::byte>`` or ``std::span<const std::byte>`` to represent
+  Use ``pw::span<std::byte>`` or ``pw::span<const std::byte>`` to represent
   spans of binary data. Use ``pw::as_bytes`` or ``pw::as_writeable_bytes`` to
   convert any span to a byte span.
 
   .. code-block:: cpp
 
-    void ProcessData(std::span<const std::byte> data);
+    void ProcessData(pw::span<const std::byte> data);
 
     void DoStuff() {
       std::array<AnyType, 7> data = { ... };
-      ProcessData(std::as_bytes(std::span(data)));
+      ProcessData(pw::as_bytes(pw::span(data)));
     }
 
   ``pw_bytes/span.h`` provides ``ByteSpan`` and ``ConstByteSpan`` aliases for

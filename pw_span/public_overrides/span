@@ -24,5 +24,5 @@
 #include_next <span>
 #else
 #undef __cpp_lib_span
-#include "pw_span/internal/span.h"
+#include "pw_span/internal/span_polyfill.h"
 #endif  // defined(__cpp_lib_span) && __cpp_lib_span >= 202002L

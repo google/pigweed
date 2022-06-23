@@ -16,7 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_library(pw_span
   HEADERS
-
+    public/pw_span/span.h
   PUBLIC_INCLUDES
     public
     public_overrides

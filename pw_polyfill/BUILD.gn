@@ -43,12 +43,6 @@ config("iterator_overrides_config") {
   visibility = [ ":*" ]
 }
 
-# TODO(b/235237667): Remove this overrides target by migrating all users to
-# explicitly depend on the polyfill(s) they require.
-group("overrides") {
-  public_deps = [ ":span" ]
-}
-
 config("standard_library_public") {
   include_dirs = [ "standard_library_public" ]
 }
