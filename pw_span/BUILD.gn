@@ -80,6 +80,7 @@ pw_test_group("tests") {
   tests = [
     ":polyfill_test",
     ":pw_span_test",
+    ":compatibility_test",
   ]
 }
 
@@ -101,6 +102,14 @@ pw_test("pw_span_test") {
     "PW_SPAN_TEST_INCLUDE=\"pw_span/span.h\"",
     "PW_SPAN_TEST_NAMESPACE=pw",
   ]
+}
+
+pw_test("compatibility_test") {
+  deps = [
+    ":polyfill",
+    ":pw_span",
+  ]
+  sources = [ "compatibility_test.cc" ]
 }
 
 pw_doc_group("docs") {

@@ -8,6 +8,9 @@ C++20's `std::span <https://en.cppreference.com/w/cpp/container/span>`_.
 ``std::span`` is a non-owning view of an array of values. The intent is for
 :cpp:class:`pw::span` is to match the C++20 standard as closely as possible.
 
+:cpp:class:`pw::span` and ``std::span`` are fully compatible and
+interchangeable. The classes implicitly convert to one another.
+
 .. note::
 
  ``pw_span:polyfill`` provides ``<span>`` and a ``std::span`` class that is
