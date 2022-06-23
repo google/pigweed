@@ -2124,9 +2124,10 @@ def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
     output.write_line('};')
     output.write_line('PW_MODIFY_DIAGNOSTICS_POP();')
 
-    output.write_line('inline constexpr std::span<const {}::MessageField> '
-                      'kMessageFields = {{ _kMessageFields, {} }};'.format(
-                          PROTOBUF_NAMESPACE, len(properties)))
+    output.write_line(
+        'inline constexpr std::span<const {}::MessageField> '
+        'kMessageFields = {{ _kMessageFields, size_t({}) }};'.format(
+            PROTOBUF_NAMESPACE, len(properties)))
 
     output.write_line(f'}}  // namespace {namespace}')
 
