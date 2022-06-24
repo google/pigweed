@@ -248,7 +248,7 @@ Backend Implemention Notes
   declare ``GetState`` public and ``SetState`` private.
 * Derived classes that exclude a particular functionality provide a private,
   final implementation of the unsupported virtual method that crashes if it is
-  called. For example, ``DigitalIoIn`` implements ``DoSetState`` to trigger
+  called. For example, ``DigitalIn`` implements ``DoSetState`` to trigger
   ``PW_CRASH``.
 * Backend implementations provide real implementation for the remaining pure
   virtual functions of the class they extend.
