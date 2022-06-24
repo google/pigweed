@@ -35,6 +35,7 @@ pw_source_set("pw_ring_buffer") {
   deps = [
     "$dir_pw_assert:pw_assert",
     "$dir_pw_varint",
+    dir_pw_span,
   ]
 }
 

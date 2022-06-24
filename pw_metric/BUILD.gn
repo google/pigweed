@@ -36,6 +36,7 @@ pw_source_set("pw_metric") {
     dir_pw_log,
     dir_pw_tokenizer,
   ]
+  deps = [ dir_pw_span ]
 }
 
 # This gives access to the "PW_METRIC_GLOBAL()" macros, for globally-registered
@@ -66,6 +67,7 @@ if (dir_pw_third_party_nanopb != "") {
     public_deps = [
       ":metric_service_proto.nanopb_rpc",
       ":pw_metric",
+      dir_pw_span,
     ]
     public = [ "public/pw_metric/metric_service_nanopb.h" ]
     deps = [

@@ -79,6 +79,7 @@ pw_source_set("light") {
     ":event_handler",
     dir_pw_polyfill,
     dir_pw_preprocessor,
+    dir_pw_span,
   ]
 
   # If C++17 is supported, depend on StringBuilder.
@@ -128,6 +129,7 @@ pw_source_set("simple_printing_main") {
     ":pw_unit_test",
     ":simple_printing_event_handler",
     "$dir_pw_sys_io",
+    dir_pw_span,
   ]
   sources = [ "simple_printing_main.cc" ]
 }

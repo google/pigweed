@@ -54,6 +54,7 @@ pw_source_set("pw_bluetooth") {
     "$dir_pw_chrono:system_clock",
     dir_pw_containers,
     dir_pw_function,
+    dir_pw_span,
     dir_pw_status,
   ]
 }

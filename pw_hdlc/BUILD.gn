@@ -46,6 +46,7 @@ pw_source_set("decoder") {
     dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_result,
+    dir_pw_span,
     dir_pw_status,
   ]
   deps = [ dir_pw_log ]
@@ -63,6 +64,7 @@ pw_source_set("encoder") {
     ":common",
     dir_pw_bytes,
     dir_pw_checksum,
+    dir_pw_span,
     dir_pw_status,
     dir_pw_stream,
   ]
@@ -75,6 +77,7 @@ pw_source_set("rpc_channel_output") {
   public_deps = [
     ":pw_hdlc",
     "$dir_pw_rpc:server",
+    dir_pw_span,
   ]
 }
 

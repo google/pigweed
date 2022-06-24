@@ -38,6 +38,7 @@ pw_source_set("pw_bytes") {
     "$dir_pw_bytes:bit",
     "$dir_pw_containers:iterator",
     dir_pw_preprocessor,
+    dir_pw_span,
     dir_pw_status,
   ]
 }

@@ -39,6 +39,7 @@ pw_source_set("packet") {
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_result,
+    dir_pw_span,
   ]
   sources = [ "packet.cc" ]
   deps = [ dir_pw_status ]
@@ -53,6 +54,7 @@ pw_source_set("uart_transport") {
     "$dir_pw_bytes:bit",
     dir_pw_bytes,
     dir_pw_function,
+    dir_pw_span,
     dir_pw_status,
   ]
 }

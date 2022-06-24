@@ -100,7 +100,10 @@ pw_facade("handler") {
 pw_facade("support") {
   backend = pw_cpu_exception_SUPPORT_BACKEND
   public_configs = [ ":public_include_path" ]
-  public_deps = [ ":entry" ]
+  public_deps = [
+    ":entry",
+    dir_pw_span,
+  ]
   public = [ "public/pw_cpu_exception/support.h" ]
 }
 

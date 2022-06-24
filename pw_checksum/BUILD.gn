@@ -32,7 +32,10 @@ pw_source_set("pw_checksum") {
     "crc16_ccitt.cc",
     "crc32.cc",
   ]
-  public_deps = [ dir_pw_bytes ]
+  public_deps = [
+    dir_pw_bytes,
+    dir_pw_span,
+  ]
 }
 
 pw_test_group("tests") {

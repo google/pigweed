@@ -37,6 +37,7 @@ pw_source_set("pw_blob_store") {
     dir_pw_bytes,
     dir_pw_kvs,
     dir_pw_preprocessor,
+    dir_pw_span,
     dir_pw_status,
     dir_pw_stream,
   ]

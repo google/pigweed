@@ -77,6 +77,7 @@ pw_source_set("pw_tokenizer") {
     "$dir_pw_containers:to_array",
     dir_pw_polyfill,
     dir_pw_preprocessor,
+    dir_pw_span,
   ]
   deps = [ dir_pw_varint ]
   public = [
@@ -153,6 +154,7 @@ pw_source_set("decoder") {
   deps = [
     "$dir_pw_bytes:bit",
     dir_pw_bytes,
+    dir_pw_span,
     dir_pw_varint,
   ]
   public = [
@@ -222,7 +224,10 @@ pw_test("argument_types_test") {
 
 pw_test("base64_test") {
   sources = [ "base64_test.cc" ]
-  deps = [ ":base64" ]
+  deps = [
+    ":base64",
+    dir_pw_span,
+  ]
 }
 
 pw_test("decode_test") {
@@ -305,6 +310,7 @@ pw_fuzzer("token_database_fuzzer") {
     ":decoder",
     "$dir_pw_fuzzer",
     "$dir_pw_preprocessor",
+    dir_pw_span,
   ]
 }
 
@@ -349,6 +355,7 @@ pw_shared_library("detokenizer_jni") {
     ":decoder",
     "$dir_pw_preprocessor",
   ]
+  deps = [ dir_pw_span ]
 }
 
 pw_doc_group("docs") {

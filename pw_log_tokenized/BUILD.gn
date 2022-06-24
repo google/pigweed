@@ -91,6 +91,7 @@ pw_source_set("base64_over_hdlc") {
     "$dir_pw_stream:sys_io_stream",
     "$dir_pw_tokenizer:base64",
     "$dir_pw_tokenizer:global_handler_with_payload.facade",
+    dir_pw_span,
   ]
 }
 

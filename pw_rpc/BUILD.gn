@@ -101,6 +101,7 @@ pw_source_set("client") {
   public_deps = [
     ":common",
     dir_pw_result,
+    dir_pw_span,
   ]
   deps = [
     ":log_config",
@@ -153,6 +154,7 @@ pw_source_set("common") {
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_function,
+    dir_pw_span,
     dir_pw_status,
   ]
 

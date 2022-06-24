@@ -89,6 +89,7 @@ pw_source_set("core") {
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_result,
+    dir_pw_span,
     dir_pw_status,
     dir_pw_stream,
   ]
