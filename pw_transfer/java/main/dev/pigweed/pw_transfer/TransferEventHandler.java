@@ -179,7 +179,7 @@ class TransferEventHandler {
   }
 
   private void handleNextEvent() {
-    final long sleepFor = Math.min(0, Instant.now().until(getNextTimeout(), TIME_UNIT));
+    final long sleepFor = TIME_UNIT.between(Instant.now(), getNextTimeout());
     try {
       Event event = events.poll(sleepFor, POLL_TIME_UNIT);
       if (event != null) {
