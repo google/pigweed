@@ -149,7 +149,7 @@ pw_cc_test(
     deps = [
         ":pw_transfer",
         ":test_helpers",
-        "//pw_rpc:thread_testing",
+        "//pw_rpc:test_helpers",
         "//pw_rpc/raw:client_testing",
         "//pw_rpc/raw:test_method_context",
         "//pw_thread:thread",
@@ -165,7 +165,7 @@ pw_cc_test(
         ":test_helpers",
         "//pw_assert",
         "//pw_containers",
-        "//pw_rpc:thread_testing",
+        "//pw_rpc:test_helpers",
         "//pw_rpc/raw:test_method_context",
         "//pw_thread:thread",
         "//pw_unit_test",
@@ -178,7 +178,7 @@ pw_cc_test(
     deps = [
         ":client",
         ":test_helpers",
-        "//pw_rpc:thread_testing",
+        "//pw_rpc:test_helpers",
         "//pw_rpc/raw:client_testing",
         "//pw_thread:sleep",
         "//pw_thread:thread",

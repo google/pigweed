@@ -19,7 +19,7 @@
 #include "pw_bytes/array.h"
 #include "pw_containers/algorithm.h"
 #include "pw_rpc/raw/test_method_context.h"
-#include "pw_rpc/thread_testing.h"
+#include "pw_rpc/test_helpers.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 #include "pw_transfer/transfer.pwpb.h"

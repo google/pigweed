@@ -20,7 +20,7 @@
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_rpc/raw/client_testing.h"
-#include "pw_rpc/thread_testing.h"
+#include "pw_rpc/test_helpers.h"
 #include "pw_thread/sleep.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
