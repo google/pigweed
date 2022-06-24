@@ -20,8 +20,8 @@ pw_add_facade(pw_sys_io
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_bytes
     pw_status
-    pw_polyfill.span
 )
 
 pw_add_module_library(pw_sys_io.default_putget_bytes
