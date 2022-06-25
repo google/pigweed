@@ -52,10 +52,7 @@ class SocketFactoryTest : public ::testing::Test {
   fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
 };
 
-TEST_F(SocketFactoryTest, TemplatesCompile) {
-  socket::SocketFactory<l2cap::Channel> l2cap_factory;
-  socket::SocketFactory<sco::ScoConnection> sco_factory;
-}
+TEST_F(SocketFactoryTest, TemplatesCompile) { socket::SocketFactory<l2cap::Channel> l2cap_factory; }
 
 TEST_F(SocketFactoryTest, CanCreateSocket) {
   FactoryT socket_factory;

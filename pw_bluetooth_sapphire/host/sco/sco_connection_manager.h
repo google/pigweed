@@ -50,7 +50,7 @@ class ScoConnectionManager final {
   // |kCanceled| if a connection was never attempted, or |kFailed| if establishing a connection
   // failed. Returns a handle that will cancel the request when dropped (if connection establishment
   // has not started).
-  using OpenConnectionResult = fitx::result<HostError, fbl::RefPtr<ScoConnection>>;
+  using OpenConnectionResult = fitx::result<HostError, fxl::WeakPtr<ScoConnection>>;
   using OpenConnectionCallback = fit::callback<void(OpenConnectionResult)>;
   RequestHandle OpenConnection(hci_spec::SynchronousConnectionParameters parameters,
                                OpenConnectionCallback callback);
@@ -64,7 +64,7 @@ class ScoConnectionManager final {
   // cancel the request when destroyed (if connection establishment has not started).
   using AcceptConnectionResult =
       fitx::result<HostError,
-                   std::pair<fbl::RefPtr<ScoConnection>, size_t /*index of parameters used*/>>;
+                   std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
   using AcceptConnectionCallback = fit::callback<void(AcceptConnectionResult)>;
   RequestHandle AcceptConnection(std::vector<hci_spec::SynchronousConnectionParameters> parameters,
                                  AcceptConnectionCallback callback);
@@ -73,7 +73,7 @@ class ScoConnectionManager final {
   using ScoRequestId = uint64_t;
   using ConnectionResult =
       fitx::result<HostError,
-                   std::pair<fbl::RefPtr<ScoConnection>, size_t /*index of parameters used*/>>;
+                   std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
   using ConnectionCallback = fit::callback<void(ConnectionResult)>;
 
   class ConnectionRequest final {
@@ -146,7 +146,7 @@ class ScoConnectionManager final {
   std::optional<ConnectionRequest> in_progress_request_;
 
   // Holds active connections.
-  std::unordered_map<hci_spec::ConnectionHandle, fbl::RefPtr<ScoConnection>> connections_;
+  std::unordered_map<hci_spec::ConnectionHandle, std::unique_ptr<ScoConnection>> connections_;
 
   // Handler IDs for registered events
   std::vector<hci::CommandChannel::EventHandlerId> event_handler_ids_;

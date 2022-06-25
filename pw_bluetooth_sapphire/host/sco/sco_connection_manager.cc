@@ -85,8 +85,8 @@ ScoConnectionManager::~ScoConnectionManager() {
   // iterator, which would be invalidated by the removal.
   while (connections_.size() > 0) {
     auto pair = connections_.begin();
-    auto handle = pair->first;
-    auto conn = pair->second;
+    hci_spec::ConnectionHandle handle = pair->first;
+    ScoConnection* conn = pair->second.get();
 
     conn->Close();
     // Make sure we erase the connection if Close doesn't so the loop terminates.
@@ -117,7 +117,7 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::OpenConnection(
                           cb(fitx::error(result.take_error()));
                           return;
                         }
-                        cb(fitx::ok(std::move(result.value().first)));
+                        cb(fitx::ok(result.value().first));
                       });
 }
 
@@ -186,15 +186,16 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   };
   hci_spec::SynchronousConnectionParameters conn_params =
       in_progress_request_->parameters[in_progress_request_->current_param_index];
-  auto conn = ScoConnection::Create(std::move(link), std::move(deactivated_cb), conn_params,
-                                    transport_->sco_data_channel());
+  auto conn = std::make_unique<ScoConnection>(std::move(link), std::move(deactivated_cb),
+                                              conn_params, transport_->sco_data_channel());
+  fxl::WeakPtr<ScoConnection> conn_weak = conn->GetWeakPtr();
 
-  auto [_, success] = connections_.try_emplace(connection_handle, conn);
+  auto [_, success] = connections_.try_emplace(connection_handle, std::move(conn));
   ZX_ASSERT_MSG(success, "SCO connection already exists with handle %#.4x (peer: %s)",
                 connection_handle, bt_str(peer_id_));
 
   CompleteRequest(
-      fitx::ok(std::make_pair(std::move(conn), in_progress_request_->current_param_index)));
+      fitx::ok(std::make_pair(std::move(conn_weak), in_progress_request_->current_param_index)));
 
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }

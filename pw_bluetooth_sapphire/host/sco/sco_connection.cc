@@ -29,13 +29,6 @@ ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
   });
 }
 
-fbl::RefPtr<ScoConnection> ScoConnection::Create(
-    std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
-    hci_spec::SynchronousConnectionParameters parameters, hci::ScoDataChannel* channel) {
-  return fbl::AdoptRef(
-      new ScoConnection(std::move(connection), std::move(deactivated_cb), parameters, channel));
-}
-
 ScoConnection::UniqueId ScoConnection::unique_id() const {
   // HCI connection handles are unique per controller.
   return handle();

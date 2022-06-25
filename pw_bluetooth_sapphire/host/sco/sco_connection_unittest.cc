@@ -56,16 +56,16 @@ class ScoConnectionTest : public TestingBase {
     TestingBase::TearDown();
   }
 
-  virtual fbl::RefPtr<ScoConnection> CreateScoConnection(
+  virtual std::unique_ptr<ScoConnection> CreateScoConnection(
       std::unique_ptr<hci::Connection> hci_conn) {
-    return ScoConnection::Create(
+    return std::make_unique<ScoConnection>(
         std::move(hci_conn), [this] { OnDeactivated(); },
         hci_spec::SynchronousConnectionParameters(), /*channel=*/nullptr);
   }
 
   void OnDeactivated() { deactivated_cb_count_++; }
 
-  auto sco_conn() { return sco_conn_; }
+  ScoConnection* sco_conn() { return sco_conn_.get(); }
 
   auto hci_conn() { return hci_conn_; }
 
@@ -73,19 +73,19 @@ class ScoConnectionTest : public TestingBase {
 
  private:
   size_t deactivated_cb_count_;
-  fbl::RefPtr<ScoConnection> sco_conn_;
+  std::unique_ptr<ScoConnection> sco_conn_;
   fxl::WeakPtr<hci::ScoConnection> hci_conn_;
 };
 
 class HciScoConnectionTest : public ScoConnectionTest {
  public:
-  fbl::RefPtr<ScoConnection> CreateScoConnection(
+  std::unique_ptr<ScoConnection> CreateScoConnection(
       std::unique_ptr<hci::Connection> hci_conn) override {
     constexpr hci_spec::SynchronousConnectionParameters hci_conn_params{
         .input_data_path = hci_spec::ScoDataPath::kHci,
         .output_data_path = hci_spec::ScoDataPath::kHci,
     };
-    return ScoConnection::Create(
+    return std::make_unique<ScoConnection>(
         std::move(hci_conn), [this] { OnDeactivated(); }, hci_conn_params,
         transport()->sco_data_channel());
   }
@@ -93,7 +93,7 @@ class HciScoConnectionTest : public ScoConnectionTest {
 
 class HciScoConnectionTestWithFakeScoChannel : public ScoConnectionTest {
  public:
-  fbl::RefPtr<ScoConnection> CreateScoConnection(
+  std::unique_ptr<ScoConnection> CreateScoConnection(
       std::unique_ptr<hci::Connection> hci_conn) override {
     channel_ = std::make_unique<hci::FakeScoDataChannel>(/*mtu=*/kHciScoMtu);
 
@@ -101,7 +101,7 @@ class HciScoConnectionTestWithFakeScoChannel : public ScoConnectionTest {
         .input_data_path = hci_spec::ScoDataPath::kHci,
         .output_data_path = hci_spec::ScoDataPath::kHci,
     };
-    return ScoConnection::Create(
+    return std::make_unique<ScoConnection>(
         std::move(hci_conn), [this] { OnDeactivated(); }, hci_conn_params, channel_.get());
   }
 
@@ -225,7 +225,7 @@ TEST_F(HciScoConnectionTestWithFakeScoChannel, ReceiveTwoPackets) {
   auto closed_cb = [&] { close_count++; };
 
   std::vector<std::unique_ptr<hci::ScoDataPacket>> packets;
-  auto rx_callback = [&packets, sco_conn = sco_conn().get()]() {
+  auto rx_callback = [&packets, sco_conn = sco_conn()->GetWeakPtr()]() {
     std::unique_ptr<hci::ScoDataPacket> packet = sco_conn->Read();
     ASSERT_TRUE(packet);
     packets.push_back(std::move(packet));
@@ -364,7 +364,7 @@ TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
   // Queue a packet on a second connection.
   auto hci_conn_1 = std::make_unique<hci::ScoConnection>(kConnectionHandle2, DeviceAddress(),
                                                          DeviceAddress(), transport()->WeakPtr());
-  fbl::RefPtr<ScoConnection> sco_conn_1 = CreateScoConnection(std::move(hci_conn_1));
+  std::unique_ptr<ScoConnection> sco_conn_1 = CreateScoConnection(std::move(hci_conn_1));
   size_t close_count_1 = 0;
   auto closed_cb_1 = [&] { close_count_1++; };
   EXPECT_TRUE(sco_conn_1->Activate(/*rx_callback=*/[] {}, std::move(closed_cb_1)));

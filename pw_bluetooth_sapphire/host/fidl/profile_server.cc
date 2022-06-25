@@ -243,7 +243,7 @@ void ProfileServer::L2capParametersExt::RequestParameters(
 
 ProfileServer::ScoConnectionServer::ScoConnectionServer(
     fidl::InterfaceRequest<fuchsia::bluetooth::bredr::ScoConnection> request,
-    fbl::RefPtr<bt::sco::ScoConnection> connection)
+    fxl::WeakPtr<bt::sco::ScoConnection> connection)
     : ServerBase(this, std::move(request)), connection_(std::move(connection)) {
   binding()->set_error_handler([this](zx_status_t) { Close(ZX_ERR_CANCELED); });
 }
@@ -649,7 +649,7 @@ void ProfileServer::OnScoConnectionResult(
     return;
   }
 
-  fbl::RefPtr<bt::sco::ScoConnection> connection = std::move(result.value().first);
+  fxl::WeakPtr<bt::sco::ScoConnection> connection = std::move(result.value().first);
   const uint16_t max_tx_data_size = connection->max_tx_sdu_size();
 
   fidl::InterfaceHandle<fidlbredr::ScoConnection> sco_handle;

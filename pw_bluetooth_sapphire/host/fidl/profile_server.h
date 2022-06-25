@@ -46,7 +46,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   class ScoConnectionServer final : public ServerBase<fuchsia::bluetooth::bredr::ScoConnection> {
    public:
     ScoConnectionServer(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::ScoConnection> request,
-                        fbl::RefPtr<bt::sco::ScoConnection> connection);
+                        fxl::WeakPtr<bt::sco::ScoConnection> connection);
     ~ScoConnectionServer() override;
     void Activate(fit::callback<void()> on_closed);
     void Read(ReadCallback callback) override;
@@ -55,7 +55,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
    private:
     void TryRead();
     void Close(zx_status_t epitaph);
-    fbl::RefPtr<bt::sco::ScoConnection> connection_;
+    fxl::WeakPtr<bt::sco::ScoConnection> connection_;
     fit::callback<void()> on_closed_;
     // Non-null when a read request is waiting for an inbound packet.
     fit::callback<void(fuchsia::bluetooth::bredr::RxPacketStatus, std::vector<uint8_t>)> read_cb_;

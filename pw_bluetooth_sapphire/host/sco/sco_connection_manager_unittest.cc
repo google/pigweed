@@ -296,12 +296,13 @@ TEST_F(ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
+  EXPECT_TRUE(conn_result->value());
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
   DestroyManager();
   RunLoopUntilIdle();
-  // Ref should still be valid.
-  EXPECT_TRUE(conn_result->value());
+  // WeakPtr should become invalid.
+  EXPECT_FALSE(conn_result->value());
 }
 
 TEST_F(ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
@@ -398,7 +399,7 @@ TEST_F(ScoConnectionManagerTest, HandleReuse) {
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
-  fbl::RefPtr<ScoConnection> conn = std::move(conn_result->value());
+  fxl::WeakPtr<ScoConnection> conn = conn_result->value();
   EXPECT_EQ(conn->handle(), kScoConnectionHandle);
 
   auto disconn_status_packet =

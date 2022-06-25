@@ -9,9 +9,6 @@
 
 #include <queue>
 
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
@@ -20,20 +17,19 @@
 namespace bt::sco {
 
 // ScoConnection is a wrapper around an owned SCO hci::Connection. It provides a
-// high-level interface to the underlying connection. This class implements the required ChannelT
-// template parameter methods of SocketChannelRelay and SocketFactory.
+// high-level interface to the underlying connection.
 //
 // This class is intended to be owned by a ScoConnectionManager.
-class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface,
-                            public fbl::RefCounted<ScoConnection> {
+class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
  public:
   // |connection| is the underlying connection and must have the link type kSCO or kESCO.
   // |deactivated_cb| will be called when the connection has been Deactivated and should be
   // destroyed.
-  static fbl::RefPtr<ScoConnection> Create(std::unique_ptr<hci::Connection> connection,
-                                           fit::closure deactivated_cb,
-                                           hci_spec::SynchronousConnectionParameters parameters,
-                                           hci::ScoDataChannel* channel);
+  ScoConnection(std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
+                hci_spec::SynchronousConnectionParameters parameters, hci::ScoDataChannel* channel);
+
+  // Destroying this object will disconnect the underlying HCI connection.
+  ~ScoConnection() override = default;
 
   hci_spec::ConnectionHandle handle() const override { return handle_; }
 
@@ -68,6 +64,8 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface,
   // If an inbound packet is ready to be read, returns the packet. Otherwise, returns nullptr.
   std::unique_ptr<hci::ScoDataPacket> Read();
 
+  fxl::WeakPtr<ScoConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
   // ScoDataChannel overrides:
   hci_spec::SynchronousConnectionParameters parameters() override;
   std::unique_ptr<hci::ScoDataPacket> GetNextOutboundPacket() override;
@@ -75,15 +73,6 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface,
   void OnHciError() override;
 
  private:
-  friend class fbl::RefPtr<ScoConnection>;
-
-  explicit ScoConnection(std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
-                         hci_spec::SynchronousConnectionParameters parameters,
-                         hci::ScoDataChannel* channel);
-
-  // Destroying this object will disconnect the underlying HCI connection.
-  ~ScoConnection() = default;
-
   // Common clean up logic for Close() and Deactivate(). Marks connection as inactive and closes the
   // underlying connection.
   void CleanUp();
