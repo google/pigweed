@@ -34,9 +34,10 @@ class LogicalLinkTest : public ::gtest::TestLoopFixture {
     const hci_spec::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci_spec::ConnectionHandle, PSM) { return std::nullopt; };
-    link_ = LogicalLink::New(kConnHandle, type, hci_spec::ConnectionRole::kCentral, kMaxPayload,
-                             std::move(query_service_cb), &acl_data_channel_,
-                             /*random_channel_ids=*/true);
+    link_ =
+        std::make_unique<LogicalLink>(kConnHandle, type, hci_spec::ConnectionRole::kCentral,
+                                      kMaxPayload, std::move(query_service_cb), &acl_data_channel_,
+                                      /*random_channel_ids=*/true);
   }
   LogicalLink* link() const { return link_.get(); }
   void DeleteLink() { link_ = nullptr; }
@@ -44,7 +45,7 @@ class LogicalLinkTest : public ::gtest::TestLoopFixture {
   hci::testing::MockAclDataChannel* acl_data_channel() { return &acl_data_channel_; }
 
  private:
-  fbl::RefPtr<LogicalLink> link_;
+  std::unique_ptr<LogicalLink> link_;
   hci::testing::MockAclDataChannel acl_data_channel_;
 };
 

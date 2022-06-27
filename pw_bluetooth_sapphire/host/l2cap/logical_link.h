@@ -17,7 +17,6 @@
 #include <unordered_map>
 
 #include <fbl/macros.h>
-#include <fbl/ref_counted.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -45,7 +44,7 @@ class SignalingChannel;
 // explicitly `Close`d before destruction, and will assert on this behavior in its destructor.
 //
 // Instances are created and owned by a ChannelManager.
-class LogicalLink final : public fbl::RefCounted<LogicalLink> {
+class LogicalLink final {
  public:
   // Returns a function that accepts opened channels for a registered local service identified by
   // |psm| on a given connection identified by |handle|, or nullptr if there is no service
@@ -60,15 +59,16 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // executed on this object's creation thread.
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
-  static fbl::RefPtr<LogicalLink> New(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                                      hci_spec::ConnectionRole role, size_t max_payload_size,
-                                      QueryServiceCallback query_service_cb,
-                                      hci::AclDataChannel* acl_data_channel,
-                                      bool random_channel_ids);
+  LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type, hci_spec::ConnectionRole role,
+              size_t max_payload_size, QueryServiceCallback query_service_cb,
+              hci::AclDataChannel* acl_data_channel, bool random_channel_ids);
+
+  // When a logical link is destroyed it notifies all of its channels to close themselves. Data
+  // packets will no longer be routed to the associated channels.
+  ~LogicalLink();
 
   // Notifies and closes all open channels on this link. This must be called to
-  // cleanly shut down a LogicalLink. WARNING: Failure to do so will cause the
-  // memory to leak since associated channels hold a reference back to the link.
+  // cleanly shut down a LogicalLink.
   //
   // The link MUST not be closed when this is called.
   void Close();
@@ -170,21 +170,6 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
  private:
   friend class ChannelImpl;
-  friend fbl::RefPtr<LogicalLink>;
-
-  LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type, hci_spec::ConnectionRole role,
-              size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
-              hci::AclDataChannel* acl_data_channel);
-
-  // Initializes the fragmenter, the fixed signaling channel, and the dynamic
-  // channel registry based on the link type. Called by the factory method
-  // "New()".
-  void Initialize(bool random_channel_ids);
-
-  // When a logical link is destroyed it notifies all of its channels to close
-  // themselves. Data packets will no longer be routed to the associated
-  // channels.
-  ~LogicalLink();
 
   // Returns true if |id| is valid and supported by the peer.
   bool AllowsFixedChannel(ChannelId id);

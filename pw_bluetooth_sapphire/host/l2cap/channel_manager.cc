@@ -91,7 +91,7 @@ class ChannelManagerImpl final : public ChannelManager {
   hci::AclDataChannel* acl_data_channel_;
 
   using LinkMap =
-      std::unordered_map<hci_spec::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
+      std::unordered_map<hci_spec::ConnectionHandle, std::unique_ptr<internal::LogicalLink>>;
   LinkMap ll_map_;
   inspect::Node ll_node_;
 
@@ -334,9 +334,10 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(hci_spec::Connection
   auto iter = ll_map_.find(handle);
   ZX_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
 
-  auto ll = internal::LogicalLink::New(handle, ll_type, role, max_payload_size,
-                                       fit::bind_member<&ChannelManagerImpl::QueryService>(this),
-                                       acl_data_channel_, random_channel_ids_);
+  auto ll = std::make_unique<internal::LogicalLink>(
+      handle, ll_type, role, max_payload_size,
+      fit::bind_member<&ChannelManagerImpl::QueryService>(this), acl_data_channel_,
+      random_channel_ids_);
   if (ll_node_) {
     ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));
   }

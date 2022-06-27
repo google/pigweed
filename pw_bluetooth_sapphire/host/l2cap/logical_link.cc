@@ -53,23 +53,10 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 
 }  // namespace
 
-// static
-fbl::RefPtr<LogicalLink> LogicalLink::New(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                                          hci_spec::ConnectionRole role,
-                                          size_t max_acl_payload_size,
-                                          QueryServiceCallback query_service_cb,
-                                          hci::AclDataChannel* acl_data_channel,
-                                          bool random_channel_ids) {
-  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, max_acl_payload_size,
-                                          std::move(query_service_cb), acl_data_channel));
-  ll->Initialize(random_channel_ids);
-  return ll;
-}
-
 LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
                          hci_spec::ConnectionRole role, size_t max_acl_payload_size,
                          QueryServiceCallback query_service_cb,
-                         hci::AclDataChannel* acl_data_channel)
+                         hci::AclDataChannel* acl_data_channel, bool random_channel_ids)
     : handle_(handle),
       type_(type),
       role_(role),
@@ -83,11 +70,6 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
   ZX_ASSERT(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
   ZX_ASSERT(acl_data_channel_);
   ZX_ASSERT(query_service_cb_);
-}
-
-void LogicalLink::Initialize(bool randomize_channel_ids) {
-  ZX_DEBUG_ASSERT(!signaling_channel_);
-  ZX_DEBUG_ASSERT(!dynamic_registry_);
 
   // Set up the signaling channel and dynamic channels.
   if (type_ == bt::LinkType::kLE) {
@@ -101,7 +83,7 @@ void LogicalLink::Initialize(bool randomize_channel_ids) {
         std::make_unique<BrEdrSignalingChannel>(OpenFixedChannel(kSignalingChannelId), role_);
     dynamic_registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         signaling_channel_.get(), fit::bind_member<&LogicalLink::OnChannelDisconnectRequest>(this),
-        fit::bind_member<&LogicalLink::OnServiceRequest>(this), randomize_channel_ids);
+        fit::bind_member<&LogicalLink::OnServiceRequest>(this), random_channel_ids);
 
     SendFixedChannelsSupportedInformationRequest();
   }
