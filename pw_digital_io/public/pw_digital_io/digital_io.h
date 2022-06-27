@@ -294,6 +294,10 @@ class DigitalInterrupt
 
  private:
   // Unavailable functionality
+  using DigitalIoOptional::provides_input;
+  using DigitalIoOptional::provides_interrupt;
+  using DigitalIoOptional::provides_output;
+
   using DigitalIoOptional::GetState;
   using DigitalIoOptional::IsStateActive;
   using DigitalIoOptional::SetState;
@@ -325,6 +329,10 @@ class DigitalIn : public DigitalIoOptional,
 
  private:
   // Unavailable functionality
+  using DigitalIoOptional::provides_input;
+  using DigitalIoOptional::provides_interrupt;
+  using DigitalIoOptional::provides_output;
+
   using DigitalIoOptional::ClearInterruptHandler;
   using DigitalIoOptional::DisableInterruptHandler;
   using DigitalIoOptional::EnableInterruptHandler;
@@ -366,6 +374,10 @@ class DigitalInInterrupt
 
  private:
   // Unavailable functionality
+  using DigitalIoOptional::provides_input;
+  using DigitalIoOptional::provides_interrupt;
+  using DigitalIoOptional::provides_output;
+
   using DigitalIoOptional::SetState;
   using DigitalIoOptional::SetStateActive;
   using DigitalIoOptional::SetStateInactive;
@@ -395,6 +407,10 @@ class DigitalOut : public DigitalIoOptional,
 
  private:
   // Unavailable functionality
+  using DigitalIoOptional::provides_input;
+  using DigitalIoOptional::provides_interrupt;
+  using DigitalIoOptional::provides_output;
+
   using DigitalIoOptional::ClearInterruptHandler;
   using DigitalIoOptional::DisableInterruptHandler;
   using DigitalIoOptional::EnableInterruptHandler;
@@ -437,6 +453,10 @@ class DigitalOutInterrupt
 
  private:
   // Unavailable functionality
+  using DigitalIoOptional::provides_input;
+  using DigitalIoOptional::provides_interrupt;
+  using DigitalIoOptional::provides_output;
+
   using DigitalIoOptional::GetState;
   using DigitalIoOptional::IsStateActive;
 
@@ -469,6 +489,10 @@ class DigitalInOut
 
  private:
   // Unavailable functionality
+  using DigitalIoOptional::provides_input;
+  using DigitalIoOptional::provides_interrupt;
+  using DigitalIoOptional::provides_output;
+
   using DigitalIoOptional::ClearInterruptHandler;
   using DigitalIoOptional::DisableInterruptHandler;
   using DigitalIoOptional::EnableInterruptHandler;
@@ -506,6 +530,12 @@ class DigitalInOutInterrupt
   constexpr DigitalInOutInterrupt()
       : DigitalIoOptional(internal::AlwaysProvidedBy<DigitalInOutInterrupt>()) {
   }
+
+ private:
+  // Unavailable functionality
+  using DigitalIoOptional::provides_input;
+  using DigitalIoOptional::provides_interrupt;
+  using DigitalIoOptional::provides_output;
 };
 
 }  // namespace pw::digital_io

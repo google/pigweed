@@ -246,85 +246,82 @@ void TestInterrupt(Line& line) {
 
 TEST(Digital, Interrupt) {
   TestDigitalInterrupt line;
+  DigitalIoOptional& optional_line = line;
 
-  ASSERT_EQ(false, line.provides_input());
-  ASSERT_EQ(false, line.provides_output());
-  ASSERT_EQ(true, line.provides_interrupt());
+  ASSERT_EQ(false, optional_line.provides_input());
+  ASSERT_EQ(false, optional_line.provides_output());
+  ASSERT_EQ(true, optional_line.provides_interrupt());
 
   TestInterrupt(line);
-
-  DigitalIoOptional& optional_line = line;
   TestInterrupt(optional_line);
 }
 
 TEST(Digital, In) {
   TestDigitalIn line;
+  DigitalIoOptional& optional_line = line;
 
-  ASSERT_EQ(true, line.provides_input());
-  ASSERT_EQ(false, line.provides_output());
-  ASSERT_EQ(false, line.provides_interrupt());
+  ASSERT_EQ(true, optional_line.provides_input());
+  ASSERT_EQ(false, optional_line.provides_output());
+  ASSERT_EQ(false, optional_line.provides_interrupt());
 
   TestInput(line);
-
-  DigitalIoOptional& optional_line = line;
   TestInput(optional_line);
 }
 
 TEST(Digital, InInterrupt) {
   TestDigitalInInterrupt line;
+  DigitalIoOptional& optional_line = line;
 
-  ASSERT_EQ(true, line.provides_input());
-  ASSERT_EQ(false, line.provides_output());
-  ASSERT_EQ(true, line.provides_interrupt());
+  ASSERT_EQ(true, optional_line.provides_input());
+  ASSERT_EQ(false, optional_line.provides_output());
+  ASSERT_EQ(true, optional_line.provides_interrupt());
 
   TestInput(line);
   TestInterrupt(line);
 
-  DigitalIoOptional& optional_line = line;
   TestInput(optional_line);
   TestInterrupt(optional_line);
 }
 
 TEST(Digital, Out) {
   TestDigitalOut line;
+  DigitalIoOptional& optional_line = line;
 
-  ASSERT_EQ(false, line.provides_input());
-  ASSERT_EQ(true, line.provides_output());
-  ASSERT_EQ(false, line.provides_interrupt());
+  ASSERT_EQ(false, optional_line.provides_input());
+  ASSERT_EQ(true, optional_line.provides_output());
+  ASSERT_EQ(false, optional_line.provides_interrupt());
 
   TestOutput(line);
-
-  DigitalIoOptional& optional_line = line;
   TestOutput(optional_line);
 }
 
 TEST(Digital, OutInterrupt) {
   TestDigitalOutInterrupt line;
+  DigitalIoOptional& optional_line = line;
 
-  ASSERT_EQ(false, line.provides_input());
-  ASSERT_EQ(true, line.provides_output());
-  ASSERT_EQ(true, line.provides_interrupt());
+  ASSERT_EQ(false, optional_line.provides_input());
+  ASSERT_EQ(true, optional_line.provides_output());
+  ASSERT_EQ(true, optional_line.provides_interrupt());
 
   TestOutput(line);
   TestInterrupt(line);
 
-  DigitalIoOptional& optional_line = line;
   TestOutput(optional_line);
   TestInterrupt(optional_line);
 }
 
 TEST(Digital, InOut) {
   TestDigitalInOut line;
+  DigitalIoOptional& optional_line = line;
 
-  ASSERT_EQ(true, line.provides_input());
-  ASSERT_EQ(true, line.provides_output());
-  ASSERT_EQ(false, line.provides_interrupt());
+  ASSERT_EQ(true, optional_line.provides_input());
+  ASSERT_EQ(true, optional_line.provides_output());
+  ASSERT_EQ(false, optional_line.provides_interrupt());
 
   TestInput(line);
   TestOutput(line);
   TestOutputReadback(line);
 
-  DigitalIoOptional& optional_line = line;
   TestInput(optional_line);
   TestOutput(optional_line);
   TestOutputReadback(optional_line);
@@ -332,17 +329,17 @@ TEST(Digital, InOut) {
 
 TEST(DigitalIo, InOutInterrupt) {
   TestDigitalInOutInterrupt line;
+  DigitalIoOptional& optional_line = line;
 
-  ASSERT_EQ(true, line.provides_input());
-  ASSERT_EQ(true, line.provides_output());
-  ASSERT_EQ(true, line.provides_interrupt());
+  ASSERT_EQ(true, optional_line.provides_input());
+  ASSERT_EQ(true, optional_line.provides_output());
+  ASSERT_EQ(true, optional_line.provides_interrupt());
 
   TestInput(line);
   TestOutput(line);
   TestOutputReadback(line);
   TestInterrupt(line);
 
-  DigitalIoOptional& optional_line = line;
   TestInput(optional_line);
   TestOutput(optional_line);
   TestOutputReadback(optional_line);
