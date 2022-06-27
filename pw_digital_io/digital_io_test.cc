@@ -174,25 +174,36 @@ static_assert(
 
 void FakeInterruptHandler(State) {}
 
-void TestInput(DigitalIoOptional& line) {
+template <typename Line>
+void TestInput(Line& line) {
   ASSERT_EQ(OkStatus(), line.Enable());
 
   auto state_result = line.GetState();
   ASSERT_EQ(OkStatus(), state_result.status());
   ASSERT_EQ(State::kInactive, state_result.value());
 
+  auto active_result = line.IsStateActive();
+  ASSERT_EQ(OkStatus(), active_result.status());
+  ASSERT_EQ(false, active_result.value());
+
   ASSERT_EQ(OkStatus(), line.Disable());
 }
 
-void TestOutput(DigitalIoOptional& line) {
+template <typename Line>
+void TestOutput(Line& line) {
   ASSERT_EQ(OkStatus(), line.Enable());
 
   ASSERT_EQ(OkStatus(), line.SetState(State::kActive));
+  ASSERT_EQ(OkStatus(), line.SetState(State::kInactive));
+
+  ASSERT_EQ(OkStatus(), line.SetStateActive());
+  ASSERT_EQ(OkStatus(), line.SetStateInactive());
 
   ASSERT_EQ(OkStatus(), line.Disable());
 }
 
-void TestOutputReadback(DigitalIoOptional& line) {
+template <typename Line>
+void TestOutputReadback(Line& line) {
   ASSERT_EQ(OkStatus(), line.Enable());
 
   ASSERT_EQ(OkStatus(), line.SetState(State::kActive));
@@ -200,10 +211,26 @@ void TestOutputReadback(DigitalIoOptional& line) {
   ASSERT_EQ(OkStatus(), state_result.status());
   ASSERT_EQ(State::kActive, state_result.value());
 
+  ASSERT_EQ(OkStatus(), line.SetState(State::kInactive));
+  state_result = line.GetState();
+  ASSERT_EQ(OkStatus(), state_result.status());
+  ASSERT_EQ(State::kInactive, state_result.value());
+
+  ASSERT_EQ(OkStatus(), line.SetStateActive());
+  auto active_result = line.IsStateActive();
+  ASSERT_EQ(OkStatus(), active_result.status());
+  ASSERT_EQ(true, active_result.value());
+
+  ASSERT_EQ(OkStatus(), line.SetStateInactive());
+  active_result = line.IsStateActive();
+  ASSERT_EQ(OkStatus(), active_result.status());
+  ASSERT_EQ(false, active_result.value());
+
   ASSERT_EQ(OkStatus(), line.Disable());
 }
 
-void TestInterrupt(DigitalIoOptional& line) {
+template <typename Line>
+void TestInterrupt(Line& line) {
   ASSERT_EQ(OkStatus(), line.Enable());
 
   ASSERT_EQ(OkStatus(),
@@ -225,6 +252,9 @@ TEST(Digital, Interrupt) {
   ASSERT_EQ(true, line.provides_interrupt());
 
   TestInterrupt(line);
+
+  DigitalIoOptional& optional_line = line;
+  TestInterrupt(optional_line);
 }
 
 TEST(Digital, In) {
@@ -235,6 +265,9 @@ TEST(Digital, In) {
   ASSERT_EQ(false, line.provides_interrupt());
 
   TestInput(line);
+
+  DigitalIoOptional& optional_line = line;
+  TestInput(optional_line);
 }
 
 TEST(Digital, InInterrupt) {
@@ -246,6 +279,10 @@ TEST(Digital, InInterrupt) {
 
   TestInput(line);
   TestInterrupt(line);
+
+  DigitalIoOptional& optional_line = line;
+  TestInput(optional_line);
+  TestInterrupt(optional_line);
 }
 
 TEST(Digital, Out) {
@@ -256,6 +293,9 @@ TEST(Digital, Out) {
   ASSERT_EQ(false, line.provides_interrupt());
 
   TestOutput(line);
+
+  DigitalIoOptional& optional_line = line;
+  TestOutput(optional_line);
 }
 
 TEST(Digital, OutInterrupt) {
@@ -267,6 +307,10 @@ TEST(Digital, OutInterrupt) {
 
   TestOutput(line);
   TestInterrupt(line);
+
+  DigitalIoOptional& optional_line = line;
+  TestOutput(optional_line);
+  TestInterrupt(optional_line);
 }
 
 TEST(Digital, InOut) {
@@ -277,7 +321,13 @@ TEST(Digital, InOut) {
   ASSERT_EQ(false, line.provides_interrupt());
 
   TestInput(line);
+  TestOutput(line);
   TestOutputReadback(line);
+
+  DigitalIoOptional& optional_line = line;
+  TestInput(optional_line);
+  TestOutput(optional_line);
+  TestOutputReadback(optional_line);
 }
 
 TEST(DigitalIo, InOutInterrupt) {
@@ -288,8 +338,15 @@ TEST(DigitalIo, InOutInterrupt) {
   ASSERT_EQ(true, line.provides_interrupt());
 
   TestInput(line);
+  TestOutput(line);
   TestOutputReadback(line);
   TestInterrupt(line);
+
+  DigitalIoOptional& optional_line = line;
+  TestInput(optional_line);
+  TestOutput(optional_line);
+  TestOutputReadback(optional_line);
+  TestInterrupt(optional_line);
 }
 
 }  // namespace

@@ -103,6 +103,54 @@ class DigitalIoOptional {
   //
   Status SetState(State state) { return DoSetState(state); }
 
+  // Check if the line is in the active state.
+  //
+  // The line is in the active state when GetState() returns State::kActive.
+  //
+  // This method is not thread-safe and cannot be used in interrupt handlers.
+  //
+  // Returns:
+  //
+  //   OK - true if the line is in the active state, otherwise false.
+  //   FAILED_PRECONDITION - The line has not been enabled.
+  //   Other status codes as defined by the backend.
+  //
+  Result<bool> IsStateActive() {
+    PW_TRY_ASSIGN(const State state, GetState());
+    return state == State::kActive;
+  }
+
+  // Sets the line to the active state. Equivalent to SetState(State::kActive).
+  //
+  // Callers are responsible to wait for the voltage level to settle after this
+  // call returns.
+  //
+  // This method is not thread-safe and cannot be used in interrupt handlers.
+  //
+  // Returns:
+  //
+  //   OK - the state has been set.
+  //   FAILED_PRECONDITION - The line has not been enabled.
+  //   Other status codes as defined by the backend.
+  //
+  Status SetStateActive() { return SetState(State::kActive); }
+
+  // Sets the line to the inactive state. Equivalent to
+  // SetState(State::kInactive).
+  //
+  // Callers are responsible to wait for the voltage level to settle after this
+  // call returns.
+  //
+  // This method is not thread-safe and cannot be used in interrupt handlers.
+  //
+  // Returns:
+  //
+  //   OK - the state has been set.
+  //   FAILED_PRECONDITION - The line has not been enabled.
+  //   Other status codes as defined by the backend.
+  //
+  Status SetStateInactive() { return SetState(State::kInactive); }
+
   // Set an interrupt handler to execute when an interrupt is triggered, and
   // Configure the condition for triggering the interrupt.
   //
@@ -247,7 +295,10 @@ class DigitalInterrupt
  private:
   // Unavailable functionality
   using DigitalIoOptional::GetState;
+  using DigitalIoOptional::IsStateActive;
   using DigitalIoOptional::SetState;
+  using DigitalIoOptional::SetStateActive;
+  using DigitalIoOptional::SetStateInactive;
 
   // These overrides invoke PW_CRASH.
   Status DoSetState(State) final;
@@ -266,6 +317,7 @@ class DigitalIn : public DigitalIoOptional,
  public:
   // Available functionality
   using DigitalIoOptional::GetState;
+  using DigitalIoOptional::IsStateActive;
 
  protected:
   constexpr DigitalIn()
@@ -278,6 +330,8 @@ class DigitalIn : public DigitalIoOptional,
   using DigitalIoOptional::EnableInterruptHandler;
   using DigitalIoOptional::SetInterruptHandler;
   using DigitalIoOptional::SetState;
+  using DigitalIoOptional::SetStateActive;
+  using DigitalIoOptional::SetStateInactive;
 
   // These overrides invoke PW_CRASH.
   Status DoSetState(State) final;
@@ -303,6 +357,7 @@ class DigitalInInterrupt
   using DigitalIoOptional::DisableInterruptHandler;
   using DigitalIoOptional::EnableInterruptHandler;
   using DigitalIoOptional::GetState;
+  using DigitalIoOptional::IsStateActive;
   using DigitalIoOptional::SetInterruptHandler;
 
  protected:
@@ -312,6 +367,8 @@ class DigitalInInterrupt
  private:
   // Unavailable functionality
   using DigitalIoOptional::SetState;
+  using DigitalIoOptional::SetStateActive;
+  using DigitalIoOptional::SetStateInactive;
 
   // These overrides invoke PW_CRASH.
   Status DoSetState(State) final;
@@ -329,6 +386,8 @@ class DigitalOut : public DigitalIoOptional,
  public:
   // Available functionality
   using DigitalIoOptional::SetState;
+  using DigitalIoOptional::SetStateActive;
+  using DigitalIoOptional::SetStateInactive;
 
  protected:
   constexpr DigitalOut()
@@ -340,6 +399,7 @@ class DigitalOut : public DigitalIoOptional,
   using DigitalIoOptional::DisableInterruptHandler;
   using DigitalIoOptional::EnableInterruptHandler;
   using DigitalIoOptional::GetState;
+  using DigitalIoOptional::IsStateActive;
   using DigitalIoOptional::SetInterruptHandler;
 
   // These overrides invoke PW_CRASH.
@@ -368,6 +428,8 @@ class DigitalOutInterrupt
   using DigitalIoOptional::EnableInterruptHandler;
   using DigitalIoOptional::SetInterruptHandler;
   using DigitalIoOptional::SetState;
+  using DigitalIoOptional::SetStateActive;
+  using DigitalIoOptional::SetStateInactive;
 
  protected:
   constexpr DigitalOutInterrupt()
@@ -376,6 +438,7 @@ class DigitalOutInterrupt
  private:
   // Unavailable functionality
   using DigitalIoOptional::GetState;
+  using DigitalIoOptional::IsStateActive;
 
   // These overrides invoke PW_CRASH.
   Result<State> DoGetState() final;
@@ -395,7 +458,10 @@ class DigitalInOut
  public:
   // Available functionality
   using DigitalIoOptional::GetState;
+  using DigitalIoOptional::IsStateActive;
   using DigitalIoOptional::SetState;
+  using DigitalIoOptional::SetStateActive;
+  using DigitalIoOptional::SetStateInactive;
 
  protected:
   constexpr DigitalInOut()
@@ -430,8 +496,11 @@ class DigitalInOutInterrupt
   using DigitalIoOptional::DisableInterruptHandler;
   using DigitalIoOptional::EnableInterruptHandler;
   using DigitalIoOptional::GetState;
+  using DigitalIoOptional::IsStateActive;
   using DigitalIoOptional::SetInterruptHandler;
   using DigitalIoOptional::SetState;
+  using DigitalIoOptional::SetStateActive;
+  using DigitalIoOptional::SetStateInactive;
 
  protected:
   constexpr DigitalInOutInterrupt()
