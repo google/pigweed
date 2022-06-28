@@ -23,7 +23,7 @@ fuchsia_driver("fuchsia_driver") {
   deps = [
     ":bt_host_bind",
     ":sources",
-    "//sdk/lib/syslog/cpp:backend_legacy",
+    "//sdk/lib/syslog/cpp:backend",
   ]
 }
 
