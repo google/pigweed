@@ -14,7 +14,7 @@
 
 cc_library_static {
     name: "pw_detokenizer",
-    cpp_std: "c++20",
+    cpp_std: "c++2a",
     vendor_available: true,
     export_include_dirs: ["public"],
     srcs: [
