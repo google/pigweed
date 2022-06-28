@@ -6,7 +6,6 @@
 
 #include <fuchsia/mem/cpp/fidl.h>
 #include <lib/fpromise/result.h>
-#include <lib/syslog/cpp/macros.h>
 #include <zircon/assert.h>
 
 #include "gatt_server_server.h"
