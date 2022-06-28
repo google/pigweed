@@ -22,6 +22,7 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/flash_test_partition.h"
 #include "pw_kvs/key_value_store.h"
+#include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"
@@ -158,6 +159,13 @@ TEST(KvsFuzz, FuzzTestWithGC) {
     KeyValueStore::StorageStats stats = kvs_.GetStorageStats();
     EXPECT_GT(stats.sector_erase_count, 1u);
     EXPECT_EQ(stats.reclaimable_bytes, 0u);
+
+    if (!PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE) {
+      PW_LOG_INFO(
+          "PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE is "
+          "disabled; skipping remainder of test");
+      return;
+    }
 
     // Write out rotating keyvalue, read it, and delete kMaxEntries * 4.
     // This tests whether garbage collection is working on write.

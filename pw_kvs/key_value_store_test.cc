@@ -34,6 +34,7 @@
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/entry.h"
+#include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 #include "pw_log/shorter.h"
 #include "pw_status/status.h"
@@ -436,10 +437,16 @@ TEST_F(LargeEmptyInitializedKvs, KeyDeletionMaintenance) {
   // resulting in no reclaimable bytes and an erased sector.
   EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
   stats = kvs_.GetStorageStats();
-  EXPECT_GT(stats.sector_erase_count, 1u);
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   ASSERT_EQ(kvs_.size(), 0u);
-  ASSERT_EQ(kvs_.total_entries_with_deleted(), 0u);
+
+  if (PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE) {
+    EXPECT_GT(stats.sector_erase_count, 1u);
+    ASSERT_EQ(kvs_.total_entries_with_deleted(), 0u);
+  } else {  // The deleted entries are only removed if that feature is enabled.
+    EXPECT_EQ(stats.sector_erase_count, 1u);
+    ASSERT_EQ(kvs_.total_entries_with_deleted(), 1u);
+  }
 
   // Do it again but with 2 keys and keep one.
   ASSERT_EQ(OkStatus(), kvs_.Put(keys[0], kValue1));
@@ -457,7 +464,12 @@ TEST_F(LargeEmptyInitializedKvs, KeyDeletionMaintenance) {
   EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
   stats = kvs_.GetStorageStats();
   ASSERT_EQ(kvs_.size(), 1u);
-  ASSERT_EQ(kvs_.total_entries_with_deleted(), 1u);
+
+  if (PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE) {
+    ASSERT_EQ(kvs_.total_entries_with_deleted(), 1u);
+  } else {  // The deleted entries are only removed if that feature is enabled.
+    ASSERT_EQ(kvs_.total_entries_with_deleted(), 2u);
+  }
 
   // Read back the second key to make sure it is still valid.
   ASSERT_EQ(kvs_.Get(keys[1], &val), OkStatus());

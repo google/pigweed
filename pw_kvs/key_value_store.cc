@@ -400,6 +400,8 @@ Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
   return Status::NotFound();
 }
 
+#if PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
+
 Status KeyValueStore::RemoveDeletedKeyEntries() {
   for (internal::EntryCache::iterator it = entry_cache_.begin();
        it != entry_cache_.end();
@@ -429,6 +431,8 @@ Status KeyValueStore::RemoveDeletedKeyEntries() {
 
   return OkStatus();
 }
+
+#endif  // PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
 
 StatusWithSize KeyValueStore::Get(Key key,
                                   std::span<byte> value_buffer,
@@ -974,14 +978,15 @@ Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
 
   // Step 4: (if heavy maintenance) garbage collect all the deleted keys.
   if (heavy) {
-    // Remove deleted keys from the entry cache, including freeing sector bytes
-    // used by those keys. This must only be done directly after a full garbage
-    // collection, otherwise the current deleted entry could be garbage
-    // collected before the older stale entry producing a window for an
+    // If enabled, remove deleted keys from the entry cache, including freeing
+    // sector bytes used by those keys. This must only be done directly after a
+    // full garbage collection, otherwise the current deleted entry could be
+    // garbage collected before the older stale entry producing a window for an
     // invalid/corrupted KVS state if there was a power-fault, crash or other
     // interruption.
-    Status rdk_status = RemoveDeletedKeyEntries();
-    overall_status.Update(rdk_status);
+#if PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
+    overall_status.Update(RemoveDeletedKeyEntries());
+#endif  // PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
 
     // Do another garbage collect pass that will fully remove the deleted keys
     // from flash. Garbage collect will only touch sectors that have something

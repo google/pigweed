@@ -311,6 +311,7 @@ pw_source_set("key_value_store_initialized_test") {
 
 pw_source_set("key_value_store_fuzz_test") {
   deps = [
+    ":config",
     ":crc16",
     ":flash_test_partition",
     ":pw_kvs",
@@ -483,6 +484,7 @@ pw_test("flash_partition_256_write_size_test") {
 
 pw_test("key_value_store_test") {
   deps = [
+    ":config",
     ":crc16",
     ":fake_flash",
     ":pw_kvs",
