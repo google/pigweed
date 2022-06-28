@@ -379,7 +379,7 @@ Execution Contexts
 ------------------
 Code runs in *execution contexts*. Common examples of execution contexts on
 microcontrollers are **thread context** and **interrupt context**, though there
-are others. Since OS abstactions deal with concurrency, it's important to
+are others. Since OS abstractions deal with concurrency, it's important to
 understand what API primitives are safe to call in what contexts.  Since the
 number of execution contexts is too large for Pigweed to cover exhaustively,
 Pigweed has the following classes of APIs:
