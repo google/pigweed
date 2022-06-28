@@ -33,22 +33,17 @@ Result<uint32_t> Chunk::ExtractSessionId(ConstByteSpan message) {
     ProtoChunk::Fields field =
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
 
-    switch (field) {
-      case ProtoChunk::Fields::TRANSFER_ID:
-        // Interpret a legacy transfer_id field as a session ID, but don't
-        // return immediately. Instead, check to see if the message also
-        // contains a newer session_id field.
-        PW_TRY(decoder.ReadUint32(&session_id));
-        break;
+    if (field == ProtoChunk::Fields::TRANSFER_ID) {
+      // Interpret a legacy transfer_id field as a session ID, but don't
+      // return immediately. Instead, check to see if the message also
+      // contains a newer session_id field.
+      PW_TRY(decoder.ReadUint32(&session_id));
 
-      case ProtoChunk::Fields::SESSION_ID:
-        // A session_id field always takes precedence over transfer_id, so
-        // return it immediately when encountered.
-        PW_TRY(decoder.ReadUint32(&session_id));
-        return session_id;
-
-      default:
-        continue;
+    } else if (field == ProtoChunk::Fields::SESSION_ID) {
+      // A session_id field always takes precedence over transfer_id, so
+      // return it immediately when encountered.
+      PW_TRY(decoder.ReadUint32(&session_id));
+      return session_id;
     }
   }
 

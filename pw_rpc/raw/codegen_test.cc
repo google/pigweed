@@ -329,6 +329,7 @@ int32_t ReadResponseNumber(ConstByteSpan data) {
         EXPECT_EQ(OkStatus(), decoder.ReadInt32(&value));
         break;
       }
+      case test::TestStreamResponse::Fields::CHUNK:
       default:
         ADD_FAILURE();
         break;

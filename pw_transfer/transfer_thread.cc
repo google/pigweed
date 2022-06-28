@@ -323,6 +323,14 @@ void TransferThread::HandleEvent(const internal::Event& event) {
       handlers_.remove(*event.remove_transfer_handler);
       return;
 
+    case EventType::kNewClientTransfer:
+    case EventType::kNewServerTransfer:
+    case EventType::kClientChunk:
+    case EventType::kServerChunk:
+    case EventType::kClientTimeout:
+    case EventType::kServerTimeout:
+    case EventType::kClientEndTransfer:
+    case EventType::kServerEndTransfer:
     default:
       // Other events are handled by individual transfer contexts.
       break;
@@ -364,6 +372,11 @@ Context* TransferThread::FindContextForEvent(
       return FindActiveTransfer(server_transfers_,
                                 event.end_transfer.session_id);
 
+    case EventType::kSendStatusChunk:
+    case EventType::kSetTransferStream:
+    case EventType::kAddTransferHandler:
+    case EventType::kRemoveTransferHandler:
+    case EventType::kTerminate:
     default:
       return nullptr;
   }

@@ -126,6 +126,7 @@ if (dir_pw_third_party_stm32cube == "") {
       "-Wno-maybe-uninitialized",
       "-Wno-undef",
       "-Wno-implicit-function-declaration",
+      "-Wno-switch-enum",
     ]
     defines = [
       "USE_HAL_DRIVER",

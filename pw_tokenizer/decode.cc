@@ -266,6 +266,11 @@ DecodedArg StringSegment::Skip() const {
       return DecodedArg(text_);
     case kPercent:
       return DecodedArg("%");
+    case kString:
+    case kSignedInt:
+    case kUnsigned32:
+    case kUnsigned64:
+    case kFloatingPoint:
     default:
       return DecodedArg(ArgStatus::kSkipped, text_);
   }

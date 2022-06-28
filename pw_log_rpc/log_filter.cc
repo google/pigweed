@@ -114,23 +114,22 @@ bool Filter::ShouldDropLog(ConstByteSpan entry) const {
   uint32_t log_flags = 0;
   protobuf::Decoder decoder(entry);
   while (decoder.Next().ok()) {
-    switch (static_cast<log::LogEntry::Fields>(decoder.FieldNumber())) {
-      case log::LogEntry::Fields::LINE_LEVEL:
-        if (decoder.ReadUint32(&log_level).ok()) {
-          log_level &= PW_LOG_LEVEL_BITMASK;
-        }
-        break;
-      case log::LogEntry::Fields::MODULE:
-        decoder.ReadBytes(&log_module).IgnoreError();
-        break;
-      case log::LogEntry::Fields::FLAGS:
-        decoder.ReadUint32(&log_flags).IgnoreError();
-        break;
-      case log::LogEntry::Fields::THREAD:
-        decoder.ReadBytes(&log_thread).IgnoreError();
-        break;
-      default:
-        break;
+    const auto field_num =
+        static_cast<log::LogEntry::Fields>(decoder.FieldNumber());
+
+    if (field_num == log::LogEntry::Fields::LINE_LEVEL) {
+      if (decoder.ReadUint32(&log_level).ok()) {
+        log_level &= PW_LOG_LEVEL_BITMASK;
+      }
+
+    } else if (field_num == log::LogEntry::Fields::MODULE) {
+      decoder.ReadBytes(&log_module).IgnoreError();
+
+    } else if (field_num == log::LogEntry::Fields::FLAGS) {
+      decoder.ReadUint32(&log_flags).IgnoreError();
+
+    } else if (field_num == log::LogEntry::Fields::THREAD) {
+      decoder.ReadBytes(&log_thread).IgnoreError();
     }
   }
 

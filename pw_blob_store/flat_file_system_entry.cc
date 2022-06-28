@@ -59,13 +59,12 @@ StatusWithSize FlatFileSystemBlobStoreEntry::Name(std::span<char> dest) {
     // When a BlobStore is empty, Open() reports FAILED_PRECONDITION. The
     // FlatFileSystemService expects NOT_FOUND when a file is not present at the
     // entry.
-    switch (status.code()) {
-      case Status::FailedPrecondition().code():
-        return StatusWithSize(Status::NotFound(), 0);
-      case Status::Unavailable().code():
-        return StatusWithSize(Status::Unavailable(), 0);
-      default:
-        return StatusWithSize(Status::Internal(), 0);
+    if (status.IsFailedPrecondition()) {
+      return StatusWithSize(Status::NotFound(), 0);
+    } else if (status.IsUnavailable()) {
+      return StatusWithSize(Status::Unavailable(), 0);
+    } else {
+      return StatusWithSize(Status::Internal(), 0);
     }
   }
   return reader.GetFileName(dest);
