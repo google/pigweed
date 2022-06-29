@@ -559,7 +559,8 @@ Preprocessor macros
 * Public Pigweed macros must be prefixed with the module name (e.g.
   ``PW_MY_MODULE_*``).
 * Private Pigweed macros must be prefixed with an underscore followed by the
-  module name (e.g. ``_PW_MY_MODULE_*``).
+  module name (e.g. ``_PW_MY_MODULE_*``). (This style may change, see
+  `b/234886184 <https://issuetracker.google.com/issues/234886184>`_).
 
 **Example**
 
@@ -613,6 +614,8 @@ Preprocessor macros
 
   }  // namespace nested_namespace
   }  // namespace pw::my_module
+
+See :ref:`docs-pw-style-macros` for details about macro usage.
 
 Namespace scope formatting
 ==========================
@@ -696,6 +699,8 @@ Prefer storing references over storing pointers. Pointers are required when the
 pointer can change its target or may be ``nullptr``. Otherwise, a reference or
 const reference should be used.
 
+.. _docs-pw-style-macros:
+
 Preprocessor macros
 ===================
 Macros should only be used when they significantly improve upon the C++ code
@@ -711,8 +716,9 @@ to ensure the macros are hard to use wrong.
 Stand-alone statement macros
 ----------------------------
 Macros that are standalone statements must require the caller to terminate the
-macro invocation with a semicolon. For example, the following does *not* conform
-to Pigweed's macro style:
+macro invocation with a semicolon (see `Swalling the Semicolon
+<https://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html>`_). For
+example, the following does *not* conform to Pigweed's macro style:
 
 .. code-block:: cpp
 
@@ -747,8 +753,7 @@ contents can be placed in a ``do { ... } while (0)`` loop.
     } while (0)
 
 Standalone macros at global scope that do not already require a semicolon can
-add a ``static_assert`` or throwaway struct declaration statement as their
-last line.
+add a ``static_assert`` declaration statement as their last line.
 
 .. code-block:: cpp
 
