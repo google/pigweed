@@ -74,12 +74,6 @@ pw_source_set("iterator") {
       [ "standard_library_public/pw_polyfill/standard_library/iterator.h" ]
 }
 
-# Provides <span>.
-pw_source_set("span") {
-  remove_public_deps = [ "*" ]
-  public_deps = [ "$dir_pw_span:polyfill" ]
-}
-
 pw_source_set("standard_library") {
   public_configs = [ ":standard_library_public" ]
   remove_public_deps = [ "*" ]
