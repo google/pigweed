@@ -220,9 +220,6 @@ class BundledUpdateBackend {
   //
   // The updating must be atomic/fail-safe. An invalid or corrupted root
   // metadata will result in permanent OTA failures.
-  //
-  // TODO(pwbug/456): Investigate whether we should get a writer i.e.
-  // GetRootMetadataWriter() instead of passing a reader.
   virtual Status SafelyPersistRootMetadata(
       [[maybe_unused]] stream::IntervalReader root_metadata) {
     return Status::Unimplemented();

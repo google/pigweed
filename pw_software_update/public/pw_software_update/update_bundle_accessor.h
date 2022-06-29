@@ -112,7 +112,6 @@ class UpdateBundleAccessor {
   //
   // Returns:
   // FAILED_PRECONDITION - Bundle is not open and verified.
-  // TODO(pwbug/456): Add other error codes if necessary.
   Status PersistManifest();
 
   // Returns a reader for the (verified) payload bytes of a specified target
@@ -120,7 +119,6 @@ class UpdateBundleAccessor {
   //
   // Returns:
   // A reader instance for the target file.
-  // TODO(pwbug/456): Figure out a way to propagate error.
   stream::IntervalReader GetTargetPayload(std::string_view target_name);
   stream::IntervalReader GetTargetPayload(protobuf::String target_name);
 
