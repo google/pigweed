@@ -38,7 +38,18 @@
 #include "pw_polyfill/standard_library/namespace.h"
 
 #ifndef __cpp_lib_span
+
+// When polyfilling std::span, set __cpp_lib_span to the standard value of
+// 202002L. When std::span is not polyfilled, this header should not be used. To
+// support testing non-polyfilled std::span alongside pw::span, set
+// __cpp_lib_span to 202001L (lower than the standard value) so that pw::span is
+// not aliased to std::span.
+#ifdef _PW_SPAN_POLYFILL_ENABLED
+#undef _PW_SPAN_POLYFILL_ENABLED
 #define __cpp_lib_span 202002L
+#else
+#define __cpp_lib_span 202001L
+#endif  // _PW_SPAN_POLYFILL_ENABLED
 
 #define _PW_SPAN_COMMON_NAMEPACE_BEGIN _PW_POLYFILL_BEGIN_NAMESPACE_STD
 #define _PW_SPAN_COMMON_NAMEPACE_END _PW_POLYFILL_END_NAMESPACE_STD

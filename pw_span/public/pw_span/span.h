@@ -16,7 +16,26 @@
 // implementation is shared with the std::span polyfill class.
 #pragma once
 
-// TODO(b/235237667): Make pw::span an alias of std::span when it is available.
+#if __has_include(<version>)
+#include <version>
+#endif  // __has_include(<version>)
+
+// If the C++ library fully supports <span>, pw::span is an alias of std::span.
+#if defined(__cpp_lib_span) && __cpp_lib_span >= 202002L || \
+    defined(_PW_SPAN_POLYFILL_ENABLED)
+
+#include <span>
+
+namespace pw {
+
+using std::as_bytes;
+using std::as_writable_bytes;
+using std::dynamic_extent;
+using std::span;
+
+}  // namespace pw
+
+#else
 
 #define _PW_SPAN_COMMON_NAMEPACE_BEGIN namespace pw {
 #define _PW_SPAN_COMMON_NAMEPACE_END }  // namespace pw
@@ -25,3 +44,5 @@
 
 #undef _PW_SPAN_COMMON_NAMEPACE_BEGIN
 #undef _PW_SPAN_COMMON_NAMEPACE_END
+
+#endif  // defined(__cpp_lib_span) && __cpp_lib_span >= 202002L

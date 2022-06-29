@@ -23,6 +23,9 @@ pw_add_module_library(pw_span
   PUBLIC_DEPS
     pw_polyfill
     pw_polyfill.standard_library
+  PUBLIC_DEFINES
+    # Indicate that <span> and std::span are available.
+    _PW_SPAN_POLYFILL_ENABLED
 )
 
 pw_add_test(pw_span.polyfill_test

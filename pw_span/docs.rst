@@ -8,15 +8,18 @@ C++20's `std::span <https://en.cppreference.com/w/cpp/container/span>`_.
 ``std::span`` is a non-owning view of an array of values. The intent is for
 :cpp:class:`pw::span` is to match the C++20 standard as closely as possible.
 
-:cpp:class:`pw::span` and ``std::span`` are fully compatible and
-interchangeable. The classes implicitly convert to one another.
+If C++20's ``std::span`` is available, :cpp:class:`pw::span` is simply an alias
+of it.
 
 .. note::
 
- ``pw_span:polyfill`` provides ``<span>`` and a ``std::span`` class that is
- identical to :cpp:class:`pw::span`. The ``std::span`` polyfill is DEPRECATED;
- do NOT use it for new code.  Use :cpp:class:`pw::span` instead, or
- ``std::span`` if you are building with C++20.
+ ``pw_span:polyfill`` provides ``<span>`` and a ``std::span`` class. However,
+ this ``std::span`` polyfill is DEPRECATED; do NOT use it for new code. Use
+ :cpp:class:`pw::span` instead, or ``std::span`` if you are building with C++20.
+
+ To use the ``std::span`` polyfill, set the GN arg
+ ``pw_span_ENABLE_STD_SPAN_POLYFILL`` to true. This makes ``std::span``
+ available and makes :cpp:class:`pw::span` an alias of it.
 
 --------------
 Using pw::span
