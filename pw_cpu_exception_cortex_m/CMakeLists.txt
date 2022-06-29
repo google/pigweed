@@ -78,8 +78,8 @@ pw_add_module_library(pw_cpu_exception_cortex_m.support
     pw_cpu_exception_cortex_m.constants
     pw_cpu_exception_cortex_m.util
     pw_log
-    pw_polyfill.span
     pw_preprocessor.arch
+    pw_span
     pw_string
   SOURCES
     support.cc
@@ -121,7 +121,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.snapshot
     pw_cpu_exception_cortex_m.proto_dump
     pw_cpu_exception_cortex_m.util
     pw_log
-    pw_polyfill.span
+    pw_span
   SOURCES
     snapshot.cc
   HEADERS
@@ -148,7 +148,7 @@ if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
       pw_cpu_exception_cortex_m.cortex_m_constants
       pw_cpu_exception_cortex_m.cpu_exception
       pw_cpu_exception_cortex_m.cpu_state
-      pw_polyfill.span
+      pw_span
     GROUPS
       modules
       pw_cpu_exception_cortex_m

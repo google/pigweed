@@ -82,7 +82,7 @@ pw_add_module_library(pw_thread_freertos.thread
     public_overrides
   PUBLIC_DEPS
     pw_assert
-    pw_polyfill.span
+    pw_span
     pw_string
     pw_third_party.freertos
     pw_thread.id
@@ -115,7 +115,7 @@ pw_add_module_library(pw_thread_freertos.util
   PUBLIC_DEPS
     pw_third_party.freertos
     pw_function
-    pw_polyfill.span
+    pw_span
     pw_status
   SOURCES
     util.cc
@@ -130,7 +130,7 @@ pw_add_module_library(pw_thread_freertos.snapshot
     public
   PUBLIC_DEPS
     pw_function
-    pw_polyfill.span
+    pw_span
     pw_protobuf
     pw_status
     pw_third_party.freertos

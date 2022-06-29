@@ -28,8 +28,8 @@ pw_add_module_library(pw_stream
     pw_assert
     pw_bytes
     pw_polyfill
-    pw_polyfill.span
     pw_result
+    pw_span
     pw_status
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_STREAM)

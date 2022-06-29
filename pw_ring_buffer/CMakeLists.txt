@@ -21,8 +21,8 @@ pw_add_module_library(pw_ring_buffer
     public
   PUBLIC_DEPS
     pw_containers
-    pw_polyfill.span
     pw_result
+    pw_span
     pw_status
   SOURCES
     prefixed_entry_ring_buffer.cc

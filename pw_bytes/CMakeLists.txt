@@ -27,8 +27,8 @@ pw_add_module_library(pw_bytes
     pw_bytes.bit
     pw_containers.iterator
     pw_polyfill
-    pw_polyfill.span
     pw_preprocessor
+    pw_span
     pw_status
   SOURCES
     byte_builder.cc

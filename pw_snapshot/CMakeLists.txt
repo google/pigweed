@@ -21,9 +21,9 @@ pw_add_module_library(pw_snapshot.uuid
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_polyfill.span
-    pw_result
     pw_bytes
+    pw_result
+    pw_span
   SOURCES
     uuid.cc
   PRIVATE_DEPS
@@ -80,7 +80,7 @@ pw_add_test(pw_snapshot.uuid_test
     uuid_test.cc
   DEPS
     pw_bytes
-    pw_polyfill.span
+    pw_span
     pw_protobuf
     pw_result
     pw_snapshot.metadata_proto.pwpb

@@ -99,7 +99,7 @@ pw_add_test(pw_containers.algorithm_test
     pw_containers.algorithm
     pw_containers.intrusive_list
     pw_containers.vector
-    pw_polyfill.span
+    pw_span
   GROUPS
     modules
     pw_containers
@@ -111,7 +111,7 @@ pw_add_test(pw_containers.filtered_view_test
   DEPS
     pw_containers.filtered_view
     pw_containers.intrusive_list
-    pw_polyfill.span
+    pw_span
   GROUPS
     modules
     pw_containers

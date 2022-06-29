@@ -47,8 +47,8 @@ pw_add_module_library(pw_protobuf
     pw_containers.vector
     pw_function
     pw_protobuf.config
-    pw_polyfill.span
     pw_result
+    pw_span
     pw_status
     pw_stream
     pw_stream.interval_reader
