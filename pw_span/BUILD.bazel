@@ -22,18 +22,16 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(b/235237667): Rename this target to pw_span:pw_span.
 pw_cc_library(
-    name = "pigweed_span",
+    name = "pw_span",
     srcs = ["public/pw_span/internal/span_common.inc"],
     hdrs = ["public/pw_span/span.h"],
     includes = ["public"],
     deps = ["//pw_polyfill"],
 )
 
-# TODO(b/235237667): Rename this target to pw_span:polyfill.
 pw_cc_library(
-    name = "pw_span",
+    name = "polyfill",
     srcs = [
         "public/pw_span/internal/span_common.inc",
         "public/pw_span/internal/span_polyfill.h",
@@ -43,10 +41,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    # Disallow use of the <span> polyfill.
+    visibility = ["//visibility:private"],
     deps = [
-        # Temporarily provide pw::span in this target to support the migration
-        # from std::span to pw::span.
-        ":pigweed_span",
         "//pw_polyfill",
         "//pw_polyfill:standard_library",
     ],
@@ -60,7 +57,7 @@ pw_cc_test(
         "PW_SPAN_TEST_NAMESPACE=std",
     ],
     deps = [
-        ":pw_span",
+        ":polyfill",
         "//pw_unit_test",
     ],
 )
@@ -73,7 +70,7 @@ pw_cc_test(
         "PW_SPAN_TEST_NAMESPACE=pw",
     ],
     deps = [
-        ":pigweed_span",
+        ":pw_span",
         "//pw_unit_test",
     ],
 )
@@ -82,7 +79,7 @@ pw_cc_test(
     name = "compatibility_test",
     srcs = ["compatibility_test.cc"],
     deps = [
-        ":pigweed_span",
+        ":polyfill",
         ":pw_span",
     ],
 )
