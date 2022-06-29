@@ -141,9 +141,11 @@ def _check_python_install_permissions(python):
     # importing yapf.
     lib2to3_path = os.path.join(os.path.dirname(os.path.dirname(python)),
                                 'lib', 'python3.9', 'lib2to3')
-    pickle_file_paths = list(file_path
-                             for file_path in os.listdir(lib2to3_path)
-                             if '.pickle' in file_path)
+    pickle_file_paths = []
+    if os.path.isdir(lib2to3_path):
+        pickle_file_paths.extend(file_path
+                                 for file_path in os.listdir(lib2to3_path)
+                                 if '.pickle' in file_path)
     for pickle_file in pickle_file_paths:
         pickle_full_path = os.path.join(lib2to3_path, pickle_file)
         os.chmod(pickle_full_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP)
