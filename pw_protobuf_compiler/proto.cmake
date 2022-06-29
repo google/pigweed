@@ -194,8 +194,8 @@ function(_pw_pwpb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   target_link_libraries("${NAME}.pwpb"
     INTERFACE
       pw_build
-      pw_polyfill.span
       pw_protobuf
+      pw_span
       ${DEPS}
   )
   add_dependencies("${NAME}.pwpb" "${NAME}._generate.pwpb")

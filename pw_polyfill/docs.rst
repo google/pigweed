@@ -57,18 +57,16 @@ systems, add ``pw_polyfill/public`` as an include path.
 ------------------------------------------------
 Backport new C++ features to older C++ standards
 ------------------------------------------------
-``pw_polyfill`` backports a few C++17 library features to C++14 by wrapping the
-standard C++ and C headers. The wrapper headers include the original header
+Pigweed backports a few C++ features to older C++ standards. These features
+are provided in the ``pw`` namespace. If the features are provided by the
+toolchain, the ``pw`` versions are aliases of the ``std`` versions.
+
+``pw_polyfill`` also backports a few C++17 library features to C++14 by wrapping
+the standard C++ and C headers. The wrapper headers include the original header
 using `#include_next
 <https://gcc.gnu.org/onlinedocs/cpp/Wrapper-Headers.html>`_, then add missing
 features. The backported features are only defined if they aren't provided by
-the standard header and can only be used when compiling with C++14.
-
-The wrapper headers are in ``<feature>_public_overrides directories``. These are
-provided through the following libraries:
-
-* ``pw_polyfill:cstddef``
-* ``pw_polyfill:iterator``
+the standard header and can only be used when compiling with C++14 in GN.
 
 Backported features
 ===================
@@ -87,6 +85,12 @@ Backported features
     - :ref:`module-pw_containers`
     - ``pw_containers/to_array.h``
     - ``pw::containers::to_array``
+  * - ``<bit>``
+    - ``std::endian``
+    - ``__cpp_lib_endian``
+    - :ref:`module-pw_bytes`
+    - ``pw_bytes/bit.h``
+    - ``pw::endian``
   * - ``<cstdlib>``
     - ``std::byte``
     - ``__cpp_lib_byte``
@@ -99,6 +103,12 @@ Backported features
     - pw_polyfill
     - ``<iterator>``
     - ``std::data``, ``std::size``
+  * - ``<span>``
+    - ``std::span``
+    - ``__cpp_lib_span``
+    - :ref:`module-pw_span`
+    - ``pw_span/span.h``
+    - ``pw::span``
 
 -------------
 Compatibility
@@ -108,5 +118,4 @@ C++14
 Zephyr
 ======
 To enable ``pw_polyfill`` for Zephyr add ``CONFIG_PIGWEED_POLYFILL=y`` to the
-project's configuration. Similarly, to enable ``pw_polyfill.overrides``, add
-``CONFIG_PIGWEED_POLYFILL_OVERRIDES=y`` to the project's configuration.
+project's configuration.

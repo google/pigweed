@@ -14,35 +14,23 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+# Provides pw::span in "pw_span/span.h".
 pw_add_module_library(pw_span
   HEADERS
     public/pw_span/span.h
+    public/pw_span/internal/span_common.inc
   PUBLIC_INCLUDES
     public
-    public_overrides
   PUBLIC_DEPS
     pw_polyfill
     pw_polyfill.standard_library
-  PUBLIC_DEFINES
-    # Indicate that <span> and std::span are available.
-    _PW_SPAN_POLYFILL_ENABLED
 )
-
-pw_add_test(pw_span.polyfill_test
-  SOURCES
-    span_test.cc
-  DEFINES
-    "PW_SPAN_TEST_INCLUDE=<span>"
-    "PW_SPAN_TEST_NAMESPACE=std"
-  GROUPS
-    modules
-    pw_span
-)
-
 
 pw_add_test(pw_span.pw_span_test
   SOURCES
     span_test.cc
+  DEPS
+    pw_span
   DEFINES
     "PW_SPAN_TEST_INCLUDE=\"pw_span/span.h\""
     "PW_SPAN_TEST_NAMESPACE=pw"

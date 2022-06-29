@@ -35,47 +35,44 @@ config("polyfill_config") {
   visibility = [ ":*" ]
 }
 
+# Provides "pw_span/span.h" and pw::span.
 pw_source_set("pw_span") {
   public = [ "public/pw_span/span.h" ]
-  public_configs = [ ":public_config" ]
-  public_deps = [ dir_pw_polyfill ]
-  sources = [ "public/pw_span/internal/span_common.inc" ]
-
-  # Polyfill <cstddef> (std::byte) and <iterator> (std::size(), std::data) if
-  # C++17 is not supported.
-  if (pw_toolchain_CXX_STANDARD < pw_toolchain_STANDARD.CXX17) {
-    public_deps += [
-      "$dir_pw_polyfill:cstddef",
-      "$dir_pw_polyfill:iterator",
-    ]
-  }
+  public_deps = [ ":common" ]
 }
 
-# This source set provides the <span> header.
+# Provides <span> and std::span.
 pw_source_set("polyfill") {
-  public_configs = [
-    ":public_config",
-    ":polyfill_config",
-  ]
-  public_deps = [ dir_pw_polyfill ]
-
-  # Polyfill <cstddef> (std::byte) and <iterator> (std::size(), std::data) if
-  # C++17 is not supported.
-  if (pw_toolchain_CXX_STANDARD < pw_toolchain_STANDARD.CXX17) {
-    public_deps += [
-      "$dir_pw_polyfill:cstddef",
-      "$dir_pw_polyfill:iterator",
-    ]
-  }
+  public_configs = [ ":polyfill_config" ]
+  public_deps = [ ":common" ]
   public = [ "public_overrides/span" ]
-  sources = [
-    "public/pw_span/internal/span_common.inc",
-    "public/pw_span/internal/span_polyfill.h",
-  ]
+  sources = [ "public/pw_span/internal/span_polyfill.h" ]
+
   if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
     remove_public_deps = [ "*" ]
   } else {
     visibility = [ ":*" ]
+  }
+}
+
+pw_source_set("common") {
+  public_configs = [ ":public_config" ]
+  public_deps = [ dir_pw_polyfill ]
+
+  # Polyfill <cstddef> (std::byte) and <iterator> (std::size(), std::data) if
+  # C++17 is not supported.
+  if (pw_toolchain_CXX_STANDARD < pw_toolchain_STANDARD.CXX17) {
+    public_deps += [
+      "$dir_pw_polyfill:cstddef",
+      "$dir_pw_polyfill:iterator",
+    ]
+  }
+
+  sources = [ "public/pw_span/internal/span_common.inc" ]
+  visibility = [ ":*" ]
+
+  if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
+    remove_public_deps = [ "*" ]
   }
 }
 

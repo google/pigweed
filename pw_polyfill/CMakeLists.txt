@@ -25,46 +25,6 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL)
   zephyr_link_libraries(pw_polyfill)
 endif()
 
-# TODO(b/235237667): Remove this overrides target by migrating all users to
-# explicitly depend on the polyfill(s) they require.
-pw_add_module_library(pw_polyfill.overrides
-  PUBLIC_DEPS
-    pw_polyfill.span
-)
-if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL_OVERRIDES)
-  zephyr_link_libraries(pw_polyfill.overrides)
-endif()
-
-# Provides <cstddef>'s std::byte.
-pw_add_module_library(pw_polyfill.cstddef
-  HEADERS
-    cstddef_public_overrides/cstddef
-    standard_library_public/pw_polyfill/standard_library/cstddef.h
-  PUBLIC_INCLUDES
-    cstddef_public_overrides
-    standard_library_public
-  PUBLIC_DEPS
-    pw_polyfill.standard_library
-)
-
-# TODO(pwbug/603): Remove this polyfill.
-pw_add_module_library(pw_polyfill.iterator
-  HEADERS
-    iterator_public_overrides/iterator
-    standard_library_public/pw_polyfill/standard_library/iterator.h
-  PUBLIC_INCLUDES
-    iterator_public_overrides
-    standard_library_public
-  PUBLIC_DEPS
-    pw_polyfill.standard_library
-)
-
-# Provides <span>.
-pw_add_module_library(pw_polyfill.span
-  PUBLIC_DEPS
-    pw_span
-)
-
 pw_add_module_library(pw_polyfill.standard_library
   HEADERS
     standard_library_public/pw_polyfill/standard_library/namespace.h
