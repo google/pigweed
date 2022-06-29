@@ -15,13 +15,13 @@
 
 #include <cstdint>
 #include <cstring>
-#include <span>
 #include <type_traits>
 #include <utility>
 
 #include "pw_bytes/span.h"
 #include "pw_checksum/crc16_ccitt.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 

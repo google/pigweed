@@ -13,9 +13,8 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "pw_function/function.h"
+#include "pw_span/span.h"
 
 namespace pw::bluetooth {
 
@@ -23,19 +22,19 @@ namespace pw::bluetooth {
 // between the Host and the Controller.
 class Hci {
  public:
-  using DataCallback = Function<void(std::span<const std::byte>)>;
+  using DataCallback = Function<void(span<const std::byte>)>;
 
   virtual ~Hci() = default;
 
   // Sends an HCI `command` packet to the controller.
-  virtual void SendCommand(std::span<const std::byte> command) = 0;
+  virtual void SendCommand(span<const std::byte> command) = 0;
 
   // Sets a callback that will be called with HCI event packets received from
   // the controller.
   virtual void SetEventCallback(DataCallback callback) = 0;
 
   // Sends an ACL data packet to the controller.
-  virtual void SendAclData(std::span<const std::byte> data) = 0;
+  virtual void SendAclData(span<const std::byte> data) = 0;
 
   // Sets a callback that will be called with ACL data packets received from the
   // controller.

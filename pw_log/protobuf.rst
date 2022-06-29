@@ -100,7 +100,7 @@ for encoding tokenized logs and string-based logs.
 
      Result<ConstByteSpan> result = EncodeTokenizedLog(
          metadata,
-         std::as_bytes(std::span(data, size)),
+         pw::as_bytes(pw::span(data, size)),
          log_buffer);
      if (result.ok()) {
        // This makes use of the encoded log proto and is custom per-product.

@@ -48,7 +48,7 @@ int GetServerSocketFd() { return socket_stream.connection_fd(); }
 void Init() {
   log_basic::SetOutput([](std::string_view log) {
     std::fprintf(stderr, "%.*s\n", static_cast<int>(log.size()), log.data());
-    hdlc::WriteUIFrame(1, std::as_bytes(std::span(log)), socket_stream)
+    hdlc::WriteUIFrame(1, as_bytes(span(log)), socket_stream)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   });
 

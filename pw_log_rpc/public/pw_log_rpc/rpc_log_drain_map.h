@@ -14,10 +14,9 @@
 
 #pragma once
 
-#include <span>
-
 #include "pw_log_rpc/rpc_log_drain.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::log_rpc {
@@ -26,7 +25,7 @@ namespace pw::log_rpc {
 // maintenance of all RPC log streams.
 class RpcLogDrainMap {
  public:
-  explicit constexpr RpcLogDrainMap(std::span<RpcLogDrain> drains)
+  explicit constexpr RpcLogDrainMap(span<RpcLogDrain> drains)
       : drains_(drains) {}
 
   // Not copyable nor movable.
@@ -44,10 +43,10 @@ class RpcLogDrainMap {
     return Status::NotFound();
   }
 
-  const std::span<RpcLogDrain>& drains() const { return drains_; }
+  const span<RpcLogDrain>& drains() const { return drains_; }
 
  protected:
-  const std::span<RpcLogDrain> drains_;
+  const span<RpcLogDrain> drains_;
 };
 
 }  // namespace pw::log_rpc

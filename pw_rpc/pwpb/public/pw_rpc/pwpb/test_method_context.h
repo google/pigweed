@@ -160,7 +160,7 @@ class PwpbInvocationContext
   template <size_t kEncodingBufferSizeBytes = 128>
   void SendClientStream(const Request& request) PW_LOCKS_EXCLUDED(rpc_lock()) {
     std::array<std::byte, kEncodingBufferSizeBytes> buffer;
-    Base::SendClientStream(std::span(buffer).first(
+    Base::SendClientStream(span(buffer).first(
         kMethodInfo.serde().EncodeRequest(request, buffer).size()));
   }
 

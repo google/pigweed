@@ -15,12 +15,12 @@
 #include "pw_metric/metric_service_nanopb.h"
 
 #include <cstring>
-#include <span>
 
 #include "pw_assert/check.h"
 #include "pw_containers/vector.h"
 #include "pw_metric/metric.h"
 #include "pw_preprocessor/util.h"
+#include "pw_span/span.h"
 
 namespace pw::metric {
 namespace {
@@ -38,14 +38,14 @@ class MetricWriter {
   void Write(const Metric& metric, const Vector<Token>& path) {
     // Nanopb doesn't offer an easy way to do bounds checking, so use span's
     // type deduction magic to figure out the max size.
-    std::span<pw_metric_Metric> metrics(response_.metrics);
+    span<pw_metric_Metric> metrics(response_.metrics);
     PW_CHECK_INT_LT(response_.metrics_count, metrics.size());
 
     // Grab the next available Metric slot to write to in the response.
     pw_metric_Metric& proto_metric = response_.metrics[response_.metrics_count];
 
     // Copy the path.
-    std::span<Token> proto_path(proto_metric.token_path);
+    span<Token> proto_path(proto_metric.token_path);
     PW_CHECK_INT_LE(path.size(), proto_path.size());
     std::copy(path.begin(), path.end(), proto_path.begin());
     proto_metric.token_path_count = path.size();

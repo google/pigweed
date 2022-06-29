@@ -13,12 +13,12 @@
 // the License.
 
 #include <cstring>
-#include <span>
 
 #include "pw_bytes/array.h"
 #include "pw_log/log.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 
 namespace {
 
@@ -30,13 +30,13 @@ constexpr auto kArray = pw::bytes::Array<
     0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01>();
 // clang-format on
 
-PW_NO_INLINE pw::Result<std::span<const std::byte>> Read(size_t offset,
-                                                         size_t size) {
+PW_NO_INLINE pw::Result<pw::span<const std::byte>> Read(size_t offset,
+                                                        size_t size) {
   if (offset + size >= std::size(kArray)) {
     return pw::Status::OutOfRange();
   }
 
-  return std::span<const std::byte>(std::data(kArray) + offset, size);
+  return pw::span<const std::byte>(std::data(kArray) + offset, size);
 }
 
 }  // namespace

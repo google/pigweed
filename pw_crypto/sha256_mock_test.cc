@@ -21,7 +21,7 @@
 namespace pw::crypto::sha256 {
 namespace {
 
-#define AS_BYTES(str) std::as_bytes(std::span(str, sizeof(str) - 1))
+#define AS_BYTES(str) as_bytes(span(str, sizeof(str) - 1))
 
 #define ASSERT_OK(expr) ASSERT_EQ(OkStatus(), expr)
 #define ASSERT_FAIL(expr) ASSERT_NE(OkStatus(), expr)

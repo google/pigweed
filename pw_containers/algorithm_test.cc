@@ -20,11 +20,11 @@
 
 #include <algorithm>
 #include <iterator>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_containers/vector.h"
+#include "pw_span/span.h"
 
 namespace {
 
@@ -49,7 +49,7 @@ class TestItem : public pw::IntrusiveList<TestItem>::Item {
 class NonMutatingTest : public testing::Test {
  protected:
   std::array<int, 3> span_array_ = {1, 2, 3};
-  std::span<int> span_{NonMutatingTest::span_array_};
+  pw::span<int> span_{NonMutatingTest::span_array_};
   pw::Vector<int, 3> vector_ = {1, 2, 3};
   int array_[3] = {1, 2, 3};
 };

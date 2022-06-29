@@ -15,10 +15,10 @@
 
 #include <cstdint>
 #include <cstring>
-#include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_random/random.h"
+#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::random {

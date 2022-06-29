@@ -103,7 +103,7 @@ Status Decoder::ReadBool(bool* out) {
 }
 
 Status Decoder::ReadString(std::string_view* out) {
-  std::span<const std::byte> bytes;
+  span<const std::byte> bytes;
   Status status = ReadDelimited(&bytes);
   if (!status.ok()) {
     return status;
@@ -120,7 +120,7 @@ size_t Decoder::FieldSize() const {
     return 0;
   }
 
-  std::span<const std::byte> remainder = proto_.subspan(key_size);
+  span<const std::byte> remainder = proto_.subspan(key_size);
   uint64_t value = 0;
   size_t expected_size = 0;
 
@@ -212,7 +212,7 @@ Status Decoder::ReadFixed(std::byte* out, size_t size) {
   return OkStatus();
 }
 
-Status Decoder::ReadDelimited(std::span<const std::byte>* out) {
+Status Decoder::ReadDelimited(span<const std::byte>* out) {
   Status status = ConsumeKey(WireType::kDelimited);
   if (!status.ok()) {
     return status;
@@ -236,7 +236,7 @@ Status Decoder::ReadDelimited(std::span<const std::byte>* out) {
   return OkStatus();
 }
 
-Status CallbackDecoder::Decode(std::span<const std::byte> proto) {
+Status CallbackDecoder::Decode(span<const std::byte> proto) {
   if (handler_ == nullptr || state_ != kReady) {
     return Status::FailedPrecondition();
   }

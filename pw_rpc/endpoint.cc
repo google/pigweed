@@ -36,7 +36,7 @@ Endpoint::~Endpoint() {
   }
 }
 
-Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
+Result<Packet> Endpoint::ProcessPacket(span<const std::byte> data,
                                        Packet::Destination destination) {
   Result<Packet> result = Packet::FromBuffer(data);
 

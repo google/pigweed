@@ -15,8 +15,8 @@
 #include "pw_assert_test/fake_backend.h"
 
 #include <cstring>
-#include <span>
 
+#include "pw_span/span.h"
 #include "pw_string/string_builder.h"
 
 // Global that's publicly accessible to read captured assert contents.

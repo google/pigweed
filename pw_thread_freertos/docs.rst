@@ -154,7 +154,7 @@ FreeRTOS Thread Options
 
     Set the pre-allocated context (all memory needed to run a thread). The
     ``StaticContext`` can either be constructed with an externally provided
-    ``std::span<StackType_t>`` stack or the templated form of
+    ``pw::span<StackType_t>`` stack or the templated form of
     ``StaticContextWithStack<kStackSizeWords>`` can be used.
 
 

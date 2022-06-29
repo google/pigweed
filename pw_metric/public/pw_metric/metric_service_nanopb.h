@@ -14,11 +14,11 @@
 #pragma once
 
 #include <cstring>
-#include <span>
 
 #include "pw_log/log.h"
 #include "pw_metric/metric.h"
 #include "pw_metric_proto/metric_service.rpc.pb.h"
+#include "pw_span/span.h"
 
 namespace pw::metric {
 

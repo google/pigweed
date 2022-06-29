@@ -413,8 +413,8 @@ log drains and filters are set up.
       },
   }};
   std::array<Filter, 2> filters{
-      Filter(std::as_bytes(std::span("HOST", 4)), logs_to_host_filter_rules),
-      Filter(std::as_bytes(std::span("WEB", 3)), logs_to_server_filter_rules),
+      Filter(pw::as_bytes(pw::span("HOST", 4)), logs_to_host_filter_rules),
+      Filter(pw::as_bytes(pw::span("WEB", 3)), logs_to_server_filter_rules),
   };
   pw::log_rpc::FilterMap filter_map(filters);
 

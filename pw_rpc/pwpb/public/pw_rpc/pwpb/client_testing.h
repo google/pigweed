@@ -70,7 +70,7 @@ class PwpbFakeServer : public FakeServer {
     const StatusWithSize result =
         internal::MethodInfo<kMethod>::serde().EncodeResponse(payload, buffer);
     PW_ASSERT(result.ok());
-    return std::span(buffer).first(result.size());
+    return span(buffer).first(result.size());
   }
 };
 
@@ -84,7 +84,7 @@ class PwpbClientTestContext {
  public:
   constexpr PwpbClientTestContext()
       : channel_(Channel::Create<kDefaultChannelId>(&channel_output_)),
-        client_(std::span(&channel_, 1)),
+        client_(span(&channel_, 1)),
         packet_buffer_{},
         fake_server_(
             channel_output_, client_, kDefaultChannelId, packet_buffer_) {}

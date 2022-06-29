@@ -19,7 +19,6 @@
 #include <cstring>
 #include <limits>
 #include <optional>
-#include <span>
 
 #include "pw_assert/assert.h"
 #include "pw_assert/check.h"
@@ -29,6 +28,7 @@
 #include "pw_protobuf/encoder.h"
 #include "pw_protobuf/internal/codegen.h"
 #include "pw_protobuf/wire_format.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_status/try.h"
@@ -171,7 +171,7 @@ Status StreamDecoder::Advance(size_t end_position) {
 
   while (position_ < end_position) {
     std::byte b;
-    PW_TRY(reader_.Read(std::span(&b, 1)));
+    PW_TRY(reader_.Read(span(&b, 1)));
     position_++;
   }
   return OkStatus();
@@ -302,7 +302,7 @@ Status StreamDecoder::SkipField() {
   return OkStatus();
 }
 
-Status StreamDecoder::ReadVarintField(std::span<std::byte> out,
+Status StreamDecoder::ReadVarintField(span<std::byte> out,
                                       VarintType decode_type) {
   PW_CHECK(out.size() == sizeof(bool) || out.size() == sizeof(uint32_t) ||
                out.size() == sizeof(uint64_t),
@@ -316,7 +316,7 @@ Status StreamDecoder::ReadVarintField(std::span<std::byte> out,
   return sws.status();
 }
 
-StatusWithSize StreamDecoder::ReadOneVarint(std::span<std::byte> out,
+StatusWithSize StreamDecoder::ReadOneVarint(span<std::byte> out,
                                             VarintType decode_type) {
   uint64_t value;
   StatusWithSize sws = varint::Read(reader_, &value, RemainingBytes());
@@ -366,7 +366,7 @@ StatusWithSize StreamDecoder::ReadOneVarint(std::span<std::byte> out,
   return sws;
 }
 
-Status StreamDecoder::ReadFixedField(std::span<std::byte> out) {
+Status StreamDecoder::ReadFixedField(span<std::byte> out) {
   WireType expected_wire_type =
       out.size() == sizeof(uint32_t) ? WireType::kFixed32 : WireType::kFixed64;
   PW_TRY(CheckOkToRead(expected_wire_type));
@@ -392,7 +392,7 @@ Status StreamDecoder::ReadFixedField(std::span<std::byte> out) {
   return OkStatus();
 }
 
-StatusWithSize StreamDecoder::ReadDelimitedField(std::span<std::byte> out) {
+StatusWithSize StreamDecoder::ReadDelimitedField(span<std::byte> out) {
   if (Status status = CheckOkToRead(WireType::kDelimited); !status.ok()) {
     return StatusWithSize(status, 0);
   }
@@ -419,7 +419,7 @@ StatusWithSize StreamDecoder::ReadDelimitedField(std::span<std::byte> out) {
   return StatusWithSize(result.value().size());
 }
 
-StatusWithSize StreamDecoder::ReadPackedFixedField(std::span<std::byte> out,
+StatusWithSize StreamDecoder::ReadPackedFixedField(span<std::byte> out,
                                                    size_t elem_size) {
   if (Status status = CheckOkToRead(WireType::kDelimited); !status.ok()) {
     return StatusWithSize(status, 0);
@@ -456,7 +456,7 @@ StatusWithSize StreamDecoder::ReadPackedFixedField(std::span<std::byte> out,
   return StatusWithSize(result.value().size() / elem_size);
 }
 
-StatusWithSize StreamDecoder::ReadPackedVarintField(std::span<std::byte> out,
+StatusWithSize StreamDecoder::ReadPackedVarintField(span<std::byte> out,
                                                     size_t elem_size,
                                                     VarintType decode_type) {
   PW_CHECK(elem_size == sizeof(bool) || elem_size == sizeof(uint32_t) ||
@@ -512,8 +512,8 @@ Status StreamDecoder::CheckOkToRead(WireType type) {
   return status_;
 }
 
-Status StreamDecoder::Read(std::span<std::byte> message,
-                           std::span<const MessageField> table) {
+Status StreamDecoder::Read(span<std::byte> message,
+                           span<const MessageField> table) {
   PW_TRY(status_);
 
   while (Next().ok()) {
@@ -579,15 +579,13 @@ Status StreamDecoder::Read(std::span<std::byte> message,
           // a temporary.
           if (field->elem_size() == sizeof(uint64_t)) {
             uint64_t value = 0;
-            PW_TRY(
-                ReadFixedField(std::as_writable_bytes(std::span(&value, 1))));
+            PW_TRY(ReadFixedField(as_writable_bytes(span(&value, 1))));
             auto* optional =
                 reinterpret_cast<std::optional<uint64_t>*>(out.data());
             *optional = value;
           } else if (field->elem_size() == sizeof(uint32_t)) {
             uint32_t value = 0;
-            PW_TRY(
-                ReadFixedField(std::as_writable_bytes(std::span(&value, 1))));
+            PW_TRY(ReadFixedField(as_writable_bytes(span(&value, 1))));
             auto* optional =
                 reinterpret_cast<std::optional<uint32_t>*>(out.data());
             *optional = value;
@@ -634,21 +632,21 @@ Status StreamDecoder::Read(std::span<std::byte> message,
           // a temporary.
           if (field->elem_size() == sizeof(uint64_t)) {
             uint64_t value = 0;
-            PW_TRY(ReadVarintField(std::as_writable_bytes(std::span(&value, 1)),
+            PW_TRY(ReadVarintField(as_writable_bytes(span(&value, 1)),
                                    field->varint_type()));
             auto* optional =
                 reinterpret_cast<std::optional<uint64_t>*>(out.data());
             *optional = value;
           } else if (field->elem_size() == sizeof(uint32_t)) {
             uint32_t value = 0;
-            PW_TRY(ReadVarintField(std::as_writable_bytes(std::span(&value, 1)),
+            PW_TRY(ReadVarintField(as_writable_bytes(span(&value, 1)),
                                    field->varint_type()));
             auto* optional =
                 reinterpret_cast<std::optional<uint32_t>*>(out.data());
             *optional = value;
           } else if (field->elem_size() == sizeof(bool)) {
             bool value = false;
-            PW_TRY(ReadVarintField(std::as_writable_bytes(std::span(&value, 1)),
+            PW_TRY(ReadVarintField(as_writable_bytes(span(&value, 1)),
                                    field->varint_type()));
             auto* optional = reinterpret_cast<std::optional<bool>*>(out.data());
             *optional = value;
@@ -691,7 +689,7 @@ Status StreamDecoder::Read(std::span<std::byte> message,
           }
           vector->resize(vector->capacity());
           const auto sws =
-              ReadDelimitedField(std::span(vector->data(), vector->size()));
+              ReadDelimitedField(span(vector->data(), vector->size()));
           vector->resize(sws.size());
           PW_TRY(sws);
         }

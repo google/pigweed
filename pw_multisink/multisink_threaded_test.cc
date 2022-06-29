@@ -14,12 +14,12 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_multisink/multisink.h"
 #include "pw_multisink/test_thread.h"
+#include "pw_span/span.h"
 #include "pw_string/string_builder.h"
 #include "pw_thread/thread.h"
 #include "pw_thread/yield.h"
@@ -30,7 +30,7 @@ constexpr size_t kEntryBufferSize = sizeof("message 000");
 constexpr size_t kMaxMessageCount = 250;
 constexpr size_t kBufferSize = kMaxMessageCount * kEntryBufferSize;
 
-using MessageSpan = std::span<const StringBuffer<kEntryBufferSize>>;
+using MessageSpan = span<const StringBuffer<kEntryBufferSize>>;
 
 void CompareSentAndReceivedMessages(const MessageSpan& sent_messages,
                                     const MessageSpan& received_messages) {
@@ -171,8 +171,7 @@ class LogWriterThread : public thread::ThreadCore {
 
   void Run() override {
     for (const auto& message : message_stack_) {
-      multisink_.HandleEntry(
-          std::as_bytes(std::span(std::string_view(message))));
+      multisink_.HandleEntry(as_bytes(span(std::string_view(message))));
       pw::this_thread::yield();
     }
   }

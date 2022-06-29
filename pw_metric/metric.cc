@@ -15,19 +15,19 @@
 #include "pw_metric/metric.h"
 
 #include <array>
-#include <span>
 
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
+#include "pw_span/span.h"
 #include "pw_tokenizer/base64.h"
 
 namespace pw::metric {
 namespace {
 
 template <typename T>
-std::span<const std::byte> AsSpan(const T& t) {
-  return std::span<const std::byte>(reinterpret_cast<const std::byte*>(&t),
-                                    sizeof(t));
+span<const std::byte> AsSpan(const T& t) {
+  return span<const std::byte>(reinterpret_cast<const std::byte*>(&t),
+                               sizeof(t));
 }
 
 // A convenience class to encode a token as base64 while managing the storage.

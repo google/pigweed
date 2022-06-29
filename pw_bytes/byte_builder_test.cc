@@ -867,7 +867,7 @@ TEST(ByteBuffer, ConvertsToSpan) {
   ByteBuffer<16> bb;
   bb.push_back(std::byte{210});
 
-  std::span<const std::byte> byte_span(bb);
+  span<const std::byte> byte_span(bb);
   EXPECT_EQ(byte_span.data(), bb.data());
   EXPECT_EQ(byte_span.size(), bb.size());
   EXPECT_EQ(byte_span[0], std::byte{210});

@@ -14,23 +14,23 @@
 #pragma once
 
 #include <cstdint>
-#include <span>
 
 #include "pw_bluetooth/types.h"
 #include "pw_containers/vector.h"
+#include "pw_span/span.h"
 
 namespace pw::bluetooth::low_energy {
 
 // A service data field in an advertising data payload.
 struct ServiceData {
   Uuid uuid;
-  std::span<const std::byte> data;
+  span<const std::byte> data;
 };
 
 // A manufacturer data field in an advertising data payload.
 struct ManufacturerData {
   uint16_t company_id = 0;
-  std::span<const std::byte> data;
+  span<const std::byte> data;
 };
 
 // Represents advertising and scan response data that are transmitted by a LE

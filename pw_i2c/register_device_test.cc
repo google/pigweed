@@ -431,8 +431,8 @@ TEST(RegisterDevice, ReadRegisters8IntWith2RegistersAnd1ByteAddress) {
                         RegisterAddressSize::k1Byte);
 
   std::array<uint8_t, 2> register_data = {0xCD, 0xEF};
-  initiator.SetReadData(std::as_writable_bytes(
-      std::span(register_data.data(), register_data.size())));
+  initiator.SetReadData(
+      as_writable_bytes(span(register_data.data(), register_data.size())));
 
   std::array<uint8_t, 2> buffer;
   constexpr uint32_t kRegisterAddress = 0xAB;
@@ -492,8 +492,8 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddress) {
                         RegisterAddressSize::k2Bytes);
 
   std::array<uint16_t, 2> register_data = {0xCDEF, 0x1234};
-  initiator.SetReadData(std::as_writable_bytes(
-      std::span(register_data.data(), register_data.size())));
+  initiator.SetReadData(
+      as_writable_bytes(span(register_data.data(), register_data.size())));
 
   std::array<uint16_t, 2> buffer;
   constexpr uint32_t kRegisterAddress = 0xAB;
@@ -521,8 +521,8 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddressBigEndian) {
       initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k2Bytes);
 
   std::array<uint16_t, 2> register_data = {0xCDEF, 0x1234};
-  initiator.SetReadData(std::as_writable_bytes(
-      std::span(register_data.data(), register_data.size())));
+  initiator.SetReadData(
+      as_writable_bytes(span(register_data.data(), register_data.size())));
 
   std::array<uint16_t, 2> buffer;
   constexpr uint32_t kRegisterAddress = 0xAB;

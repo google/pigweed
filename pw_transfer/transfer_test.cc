@@ -41,7 +41,7 @@ using internal::ProtocolVersion;
 
 class TestMemoryReader : public stream::SeekableReader {
  public:
-  constexpr TestMemoryReader(std::span<const std::byte> data)
+  constexpr TestMemoryReader(span<const std::byte> data)
       : memory_reader_(data) {}
 
   Status DoSeek(ptrdiff_t offset, Whence origin) override {
@@ -112,7 +112,7 @@ class ReadTransfer : public ::testing::Test {
  protected:
   ReadTransfer(size_t max_chunk_size_bytes = 64)
       : handler_(3, kData),
-        transfer_thread_(std::span(data_buffer_).first(max_chunk_size_bytes),
+        transfer_thread_(span(data_buffer_).first(max_chunk_size_bytes),
                          encode_buffer_),
         ctx_(transfer_thread_, 64),
         system_thread_(TransferThreadOptions(), transfer_thread_) {
@@ -284,8 +284,7 @@ TEST_F(ReadTransfer, OutOfOrder_SeekingSupported) {
     transfer_thread_.WaitUntilEventIsProcessed();
 
     Chunk chunk = DecodeChunk(ctx_.responses().back());
-    EXPECT_TRUE(
-        pw::containers::Equal(std::span(kData).first(16), chunk.payload()));
+    EXPECT_TRUE(pw::containers::Equal(span(kData).first(16), chunk.payload()));
 
     ctx_.SendClientStream(EncodeChunk(
         Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
@@ -297,7 +296,7 @@ TEST_F(ReadTransfer, OutOfOrder_SeekingSupported) {
 
     chunk = DecodeChunk(ctx_.responses().back());
     EXPECT_TRUE(
-        pw::containers::Equal(std::span(kData).subspan(2, 8), chunk.payload()));
+        pw::containers::Equal(span(kData).subspan(2, 8), chunk.payload()));
 
     ctx_.SendClientStream(EncodeChunk(
         Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
@@ -308,8 +307,8 @@ TEST_F(ReadTransfer, OutOfOrder_SeekingSupported) {
 
   ASSERT_EQ(ctx_.total_responses(), 4u);
   Chunk chunk = DecodeChunk(ctx_.responses()[2]);
-  EXPECT_TRUE(pw::containers::Equal(std::span(&kData[17], kData.end()),
-                                    chunk.payload()));
+  EXPECT_TRUE(
+      pw::containers::Equal(span(&kData[17], kData.end()), chunk.payload()));
 }
 
 TEST_F(ReadTransfer, OutOfOrder_SeekingNotSupported_EndsWithUnimplemented) {
@@ -541,7 +540,7 @@ TEST_F(ReadTransfer, IgnoresNonPendingTransfers) {
   ctx_.SendClientStream(
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(3)
-                      .set_payload(std::span(kData).first(10))
+                      .set_payload(span(kData).first(10))
                       .set_offset(3)));
   ctx_.SendClientStream(
       EncodeChunk(Chunk::Final(ProtocolVersion::kLegacy, 3, OkStatus())));
@@ -868,7 +867,7 @@ TEST_F(WriteTransfer, MultiChunk) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(0)
-                      .set_payload(std::span(kData).first(8))));
+                      .set_payload(span(kData).first(8))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(ctx_.total_responses(), 1u);
@@ -877,7 +876,7 @@ TEST_F(WriteTransfer, MultiChunk) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(8)
-                      .set_payload(std::span(kData).subspan(8))
+                      .set_payload(span(kData).subspan(8))
                       .set_remaining_bytes(0)));
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -926,7 +925,7 @@ TEST_F(WriteTransfer, TimeoutInRecoveryState) {
   EXPECT_EQ(chunk.offset(), 0u);
   EXPECT_EQ(chunk.window_end_offset(), 32u);
 
-  constexpr std::span data(kData);
+  constexpr span data(kData);
 
   ctx_.SendClientStream(
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
@@ -980,7 +979,7 @@ TEST_F(WriteTransfer, ExtendWindow) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(0)
-                      .set_payload(std::span(kData).first(4))));
+                      .set_payload(span(kData).first(4))));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(ctx_.total_responses(), 1u);
 
@@ -988,7 +987,7 @@ TEST_F(WriteTransfer, ExtendWindow) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(4)
-                      .set_payload(std::span(kData).subspan(4, 4))));
+                      .set_payload(span(kData).subspan(4, 4))));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(ctx_.total_responses(), 1u);
 
@@ -996,7 +995,7 @@ TEST_F(WriteTransfer, ExtendWindow) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(8)
-                      .set_payload(std::span(kData).subspan(8, 4))));
+                      .set_payload(span(kData).subspan(8, 4))));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(ctx_.total_responses(), 1u);
 
@@ -1004,7 +1003,7 @@ TEST_F(WriteTransfer, ExtendWindow) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(12)
-                      .set_payload(std::span(kData).subspan(12, 4))));
+                      .set_payload(span(kData).subspan(12, 4))));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(ctx_.total_responses(), 2u);
 
@@ -1018,7 +1017,7 @@ TEST_F(WriteTransfer, ExtendWindow) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(16)
-                      .set_payload(std::span(kData).subspan(16))
+                      .set_payload(span(kData).subspan(16))
                       .set_remaining_bytes(0)));
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1058,7 +1057,7 @@ TEST_F(WriteTransfer, TransmitterReducesWindow) {
                       .set_session_id(7)
                       .set_offset(0)
                       .set_window_end_offset(12)
-                      .set_payload(std::span(kData).first(12))));
+                      .set_payload(span(kData).first(12))));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(ctx_.total_responses(), 2u);
 
@@ -1091,7 +1090,7 @@ TEST_F(WriteTransfer, TransmitterExtendsWindow_TerminatesWithInvalid) {
                       .set_offset(0)
                       // Larger window end offset than the receiver's.
                       .set_window_end_offset(48)
-                      .set_payload(std::span(kData).first(16))));
+                      .set_payload(span(kData).first(16))));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(ctx_.total_responses(), 2u);
 
@@ -1119,7 +1118,7 @@ TEST_F(WriteTransferMaxBytes16, MultipleParameters) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(0)
-                      .set_payload(std::span(kData).first(8))));
+                      .set_payload(span(kData).first(8))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(ctx_.total_responses(), 2u);
@@ -1132,7 +1131,7 @@ TEST_F(WriteTransferMaxBytes16, MultipleParameters) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(8)
-                      .set_payload(std::span(kData).subspan(8, 8))));
+                      .set_payload(span(kData).subspan(8, 8))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(ctx_.total_responses(), 3u);
@@ -1145,7 +1144,7 @@ TEST_F(WriteTransferMaxBytes16, MultipleParameters) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(16)
-                      .set_payload(std::span(kData).subspan(16, 8))));
+                      .set_payload(span(kData).subspan(16, 8))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(ctx_.total_responses(), 4u);
@@ -1158,7 +1157,7 @@ TEST_F(WriteTransferMaxBytes16, MultipleParameters) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(24)
-                      .set_payload(std::span(kData).subspan(24))
+                      .set_payload(span(kData).subspan(24))
                       .set_remaining_bytes(0)));
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1225,7 +1224,7 @@ TEST_F(WriteTransfer, UnexpectedOffset) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(0)
-                      .set_payload(std::span(kData).first(8))));
+                      .set_payload(span(kData).first(8))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(ctx_.total_responses(), 1u);
@@ -1234,7 +1233,7 @@ TEST_F(WriteTransfer, UnexpectedOffset) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(4)  // incorrect
-                      .set_payload(std::span(kData).subspan(8))
+                      .set_payload(span(kData).subspan(8))
                       .set_remaining_bytes(0)));
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1248,7 +1247,7 @@ TEST_F(WriteTransfer, UnexpectedOffset) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(8)  // correct
-                      .set_payload(std::span(kData).subspan(8))
+                      .set_payload(span(kData).subspan(8))
                       .set_remaining_bytes(0)));
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1282,7 +1281,7 @@ TEST_F(WriteTransferMaxBytes16, TooMuchData) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(0)
-                      .set_payload(std::span(kData).first(24))));
+                      .set_payload(span(kData).first(24))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(ctx_.total_responses(), 2u);
@@ -1337,7 +1336,7 @@ TEST_F(WriteTransfer, OnlySendParametersUpdateOnceAfterDrop) {
 
   ASSERT_EQ(ctx_.total_responses(), 1u);
 
-  constexpr std::span data(kData);
+  constexpr span data(kData);
   ctx_.SendClientStream<64>(
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
@@ -1381,7 +1380,7 @@ TEST_F(WriteTransfer, ResendParametersIfSentRepeatedChunkDuringRecovery) {
 
   ASSERT_EQ(ctx_.total_responses(), 1u);
 
-  constexpr std::span data(kData);
+  constexpr span data(kData);
 
   // Skip offset 0, then send the rest of the data.
   for (uint32_t i = 1; i < kData.size(); ++i) {
@@ -1474,7 +1473,7 @@ TEST_F(WriteTransfer, IgnoresNonPendingTransfers) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(0)
-                      .set_payload(std::span(kData).first(10))
+                      .set_payload(span(kData).first(10))
                       .set_remaining_bytes(0)));
 
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -1496,7 +1495,7 @@ TEST_F(WriteTransfer, AbortAndRestartIfInitialPacketIsReceived) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(0)
-                      .set_payload(std::span(kData).first(8))));
+                      .set_payload(span(kData).first(8))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(ctx_.total_responses(), 1u);
@@ -1612,7 +1611,7 @@ TEST_F(WriteTransferMaxBytes16, Service_SetMaxPendingBytes) {
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kTransferData)
                       .set_session_id(7)
                       .set_offset(0)
-                      .set_payload(std::span(kData).first(8))));
+                      .set_payload(span(kData).first(8))));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // Second parameters chunk should use the new max pending bytes.

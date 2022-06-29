@@ -33,7 +33,7 @@ TEST(ProtoHelper, IterateMessage) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   uint32_t count = 0;
@@ -58,7 +58,7 @@ TEST(ProtoHelper, MessageIterator) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   Message::iterator iter = parser.begin();
@@ -97,7 +97,7 @@ TEST(ProtoHelper, MessageIteratorMalformedProto) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   Message::iterator iter = parser.begin();
@@ -160,7 +160,7 @@ TEST(ProtoHelper, AsProtoInteger) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   {
@@ -259,7 +259,7 @@ TEST(ProtoHelper, AsString) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   constexpr uint32_t kFieldNumber = 1;
@@ -308,7 +308,7 @@ TEST(ProtoHelper, AsRepeatedStrings) {
   constexpr uint32_t kMsgBFieldNumber = 2;
   constexpr uint32_t kNonExistFieldNumber = 3;
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   // Field 'msg_a'
@@ -377,7 +377,7 @@ TEST(ProtoHelper, RepeatedFieldIterator) {
   // clang-format on
 
   constexpr uint32_t kFieldNumber = 1;
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
   RepeatedStrings repeated_str = parser.AsRepeatedStrings(kFieldNumber);
 
@@ -418,7 +418,7 @@ TEST(ProtoHelper, RepeatedFieldIteratorMalformedFieldID) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
   RepeatedStrings repeated_str = parser.AsRepeatedStrings(1);
 
@@ -449,7 +449,7 @@ TEST(ProtoHelper, RepeatedFieldIteratorMalformedFieldIDBeginning) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
   RepeatedStrings repeated_str = parser.AsRepeatedStrings(1);
 
@@ -478,7 +478,7 @@ TEST(ProtoHelper, RepeatedFieldIteratorMalformedDataLoss) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
   RepeatedStrings repeated_str = parser.AsRepeatedStrings(1);
 
@@ -514,7 +514,7 @@ TEST(ProtoHelper, AsMessage) {
   constexpr uint32_t kNumberFieldNumber = 1;
   constexpr uint32_t kEmailFieldNumber = 2;
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   Message info = parser.AsMessage(kInfoFieldNumber);
@@ -560,7 +560,7 @@ TEST(ProtoHelper, AsRepeatedMessages) {
   constexpr uint32_t kNumberFieldNumber = 1;
   constexpr uint32_t kEmailFieldNumber = 2;
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   RepeatedMessages messages = parser.AsRepeatedMessages(kInfoFieldNumber);
@@ -623,7 +623,7 @@ TEST(ProtoHelper, AsStringToBytesMap) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   {
@@ -699,7 +699,7 @@ TEST(ProtoHelper, AsStringToMessageMap) {
   constexpr uint32_t kNumberFieldId = 1;
   constexpr uint32_t kEmailFieldId = 2;
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   StringMapParser<Message> staffs = parser.AsStringToMessageMap(kStaffsFieldId);
@@ -751,7 +751,7 @@ TEST(ProtoHelper, AsStringToBytesMapMalformed) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   Message parser = Message(reader, sizeof(encoded_proto));
 
   // Parse field 'map_a'

@@ -114,7 +114,7 @@ class RawClientTestContext {
 
   constexpr RawClientTestContext()
       : channel_(Channel::Create<kDefaultChannelId>(&channel_output_)),
-        client_(std::span(&channel_, 1)),
+        client_(span(&channel_, 1)),
         packet_buffer_{},
         fake_server_(
             channel_output_, client_, kDefaultChannelId, packet_buffer_) {}

@@ -16,7 +16,6 @@
 
 #include <cinttypes>
 #include <cstdint>
-#include <span>
 
 #include "pw_cpu_exception_cortex_m/cpu_state.h"
 #include "pw_cpu_exception_cortex_m/util.h"
@@ -24,19 +23,18 @@
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_log/log.h"
 #include "pw_preprocessor/arch.h"
+#include "pw_span/span.h"
 #include "pw_string/string_builder.h"
 
 namespace pw::cpu_exception {
 
-std::span<const uint8_t> RawFaultingCpuState(
+span<const uint8_t> RawFaultingCpuState(
     const pw_cpu_exception_State& cpu_state) {
-  return std::span(reinterpret_cast<const uint8_t*>(&cpu_state),
-                   sizeof(cpu_state));
+  return span(reinterpret_cast<const uint8_t*>(&cpu_state), sizeof(cpu_state));
 }
 
 // Using this function adds approximately 100 bytes to binary size.
-void ToString(const pw_cpu_exception_State& cpu_state,
-              const std::span<char>& dest) {
+void ToString(const pw_cpu_exception_State& cpu_state, const span<char>& dest) {
   StringBuilder builder(dest);
   const cortex_m::ExceptionRegisters& base = cpu_state.base;
   const cortex_m::ExtraRegisters& extended = cpu_state.extended;

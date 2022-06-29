@@ -14,10 +14,10 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 
 namespace pw::snapshot {
 
@@ -26,8 +26,8 @@ namespace pw::snapshot {
 // Note this is not strictly enforced anywhere, this is pure for convenience.
 inline constexpr size_t kUuidSizeBytes = 16;
 
-using UuidSpan = std::span<std::byte, kUuidSizeBytes>;
-using ConstUuidSpan = std::span<const std::byte, kUuidSizeBytes>;
+using UuidSpan = span<std::byte, kUuidSizeBytes>;
+using ConstUuidSpan = span<const std::byte, kUuidSizeBytes>;
 
 // Reads the snapshot UUID from an in memory snapshot, if present, and returns
 // the subspan of `output` that contains the read snapshot.

@@ -16,8 +16,8 @@
 #include <cstdarg>
 #include <cstddef>
 #include <cstring>
-#include <span>
 
+#include "pw_span/span.h"
 #include "pw_tokenizer/config.h"
 #include "pw_tokenizer/internal/argument_types.h"
 #include "pw_tokenizer/tokenize.h"
@@ -32,7 +32,7 @@ namespace tokenizer {
 // Most tokenization implementations may use the EncodedMessage class below.
 size_t EncodeArgs(pw_tokenizer_ArgTypes types,
                   va_list args,
-                  std::span<std::byte> output);
+                  span<std::byte> output);
 
 // Encodes a tokenized message to a fixed size buffer. The size of the buffer is
 // determined by the PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES config macro.
@@ -45,7 +45,7 @@ size_t EncodeArgs(pw_tokenizer_ArgTypes types,
 // To use the pw::Tokenizer::EncodedMessage, construct it with the token,
 // argument types, and va_list from the variadic arguments:
 //
-//   void SendLogMessage(std::span<std::byte> log_data);
+//   void SendLogMessage(span<std::byte> log_data);
 //
 //   extern "C" void TokenizeToSendLogMessage(pw_tokenizer_Token token,
 //                                            pw_tokenizer_ArgTypes types,
@@ -55,7 +55,7 @@ size_t EncodeArgs(pw_tokenizer_ArgTypes types,
 //     EncodedMessage encoded_message(token, types, args);
 //     va_end(args);
 //
-//     SendLogMessage(encoded_message);  // EncodedMessage converts to std::span
+//     SendLogMessage(encoded_message);  // EncodedMessage converts to span
 //   }
 //
 class EncodedMessage {
@@ -65,8 +65,8 @@ class EncodedMessage {
                  pw_tokenizer_ArgTypes types,
                  va_list args) {
     std::memcpy(data_, &token, sizeof(token));
-    args_size_ = EncodeArgs(
-        types, args, std::span<std::byte>(data_).subspan(sizeof(token)));
+    args_size_ =
+        EncodeArgs(types, args, span<std::byte>(data_).subspan(sizeof(token)));
   }
 
   // The binary-encoded tokenized message.

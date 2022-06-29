@@ -19,7 +19,7 @@
 
 namespace {
 #define MESSAGE "Hello, Pigweed!"
-#define STR_TO_BYTES(s) std::as_bytes(std::span(s, std::strlen(s)))
+#define STR_TO_BYTES(s) pw::as_bytes(pw::span(s, std::strlen(s)))
 }  // namespace
 
 int main() {

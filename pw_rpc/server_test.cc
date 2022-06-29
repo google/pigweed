@@ -84,13 +84,12 @@ class BasicServer : public ::testing::Test {
     server_.RegisterService(service_1_, service_42_, empty_service_);
   }
 
-  std::span<const byte> EncodePacket(
-      PacketType type,
-      uint32_t channel_id,
-      uint32_t service_id,
-      uint32_t method_id,
-      std::span<const byte> payload = kDefaultPayload,
-      Status status = OkStatus()) {
+  span<const byte> EncodePacket(PacketType type,
+                                uint32_t channel_id,
+                                uint32_t service_id,
+                                uint32_t method_id,
+                                span<const byte> payload = kDefaultPayload,
+                                Status status = OkStatus()) {
     auto result =
         Packet(type, channel_id, service_id, method_id, 0, payload, status)
             .Encode(request_buffer_);
@@ -98,9 +97,9 @@ class BasicServer : public ::testing::Test {
     return result.value_or(ConstByteSpan());
   }
 
-  std::span<const byte> EncodeCancel(uint32_t channel_id = 1,
-                                     uint32_t service_id = 42,
-                                     uint32_t method_id = 100) {
+  span<const byte> EncodeCancel(uint32_t channel_id = 1,
+                                uint32_t service_id = 42,
+                                uint32_t method_id = 100) {
     return EncodePacket(PacketType::CLIENT_ERROR,
                         channel_id,
                         service_id,
@@ -113,8 +112,7 @@ class BasicServer : public ::testing::Test {
   ConstByteSpan PacketForRpc(PacketType type,
                              Status status = OkStatus(),
                              T&& payload = {}) {
-    return EncodePacket(
-        type, 1, 42, 100, std::as_bytes(std::span(payload)), status);
+    return EncodePacket(type, 1, 42, 100, as_bytes(span(payload)), status);
   }
 
   RawFakeChannelOutput<2> output_;
@@ -327,7 +325,7 @@ TEST_F(BasicServer, CloseChannel_PendingCall) {
 }
 
 TEST_F(BasicServer, OpenChannel_UnusedSlot) {
-  const std::span request = EncodePacket(PacketType::REQUEST, 9, 42, 100);
+  const span request = EncodePacket(PacketType::REQUEST, 9, 42, 100);
   EXPECT_EQ(Status::Unavailable(), server_.ProcessPacket(request, output_));
 
   EXPECT_EQ(OkStatus(), server_.OpenChannel(9, output_));
@@ -450,7 +448,7 @@ TEST_F(BidiMethod, Cancel_IncorrectMethod_SendsNothing) {
 }
 
 TEST_F(BidiMethod, ClientStream_CallsCallback) {
-  ConstByteSpan data = std::as_bytes(std::span("?"));
+  ConstByteSpan data = as_bytes(span("?"));
   responder_.set_on_next([&data](ConstByteSpan payload) { data = payload; });
 
   ASSERT_EQ(OkStatus(),

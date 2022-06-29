@@ -15,7 +15,6 @@
 
 #include <cassert>
 #include <cstddef>
-#include <span>
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
@@ -27,6 +26,7 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/service.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/lock_annotations.h"
 

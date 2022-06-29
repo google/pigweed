@@ -15,10 +15,10 @@
 #include "pw_containers/filtered_view.h"
 
 #include <array>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_containers/intrusive_list.h"
+#include "pw_span/span.h"
 
 namespace pw::containers {
 namespace {

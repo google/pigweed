@@ -117,7 +117,7 @@ void SocketStream::Close() {
   }
 }
 
-Status SocketStream::DoWrite(std::span<const std::byte> data) {
+Status SocketStream::DoWrite(span<const std::byte> data) {
   // Use MSG_NOSIGNAL to avoid getting a SIGPIPE signal when the remote
   // peer drops the connection.
   ssize_t bytes_sent =

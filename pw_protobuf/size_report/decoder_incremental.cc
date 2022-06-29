@@ -39,7 +39,7 @@ int main() {
   double d;
   uint32_t uint;
 
-  pw::protobuf::Decoder decoder(std::as_bytes(std::span(encoded_proto)));
+  pw::protobuf::Decoder decoder(pw::as_bytes(pw::span(encoded_proto)));
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
       case 1:

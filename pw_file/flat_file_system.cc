@@ -18,7 +18,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <span>
 #include <string_view>
 
 #include "pw_assert/check.h"
@@ -29,6 +28,7 @@
 #include "pw_protobuf/encoder.h"
 #include "pw_protobuf/serialized_size.h"
 #include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 

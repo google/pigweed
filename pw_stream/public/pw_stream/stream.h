@@ -15,11 +15,11 @@
 
 #include <array>
 #include <cstddef>
-#include <span>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
@@ -107,7 +107,7 @@ class Stream {
     return result.status();
   }
   Result<ByteSpan> Read(void* dest, size_t size_bytes) {
-    return Read(std::span(static_cast<std::byte*>(dest), size_bytes));
+    return Read(span(static_cast<std::byte*>(dest), size_bytes));
   }
 
   // Writes data to this stream. Data is not guaranteed to be fully written out
@@ -144,7 +144,7 @@ class Stream {
     return DoWrite(data);
   }
   Status Write(const void* data, size_t size_bytes) {
-    return Write(std::span(static_cast<const std::byte*>(data), size_bytes));
+    return Write(span(static_cast<const std::byte*>(data), size_bytes));
   }
   Status Write(const std::byte b) { return Write(&b, 1); }
 

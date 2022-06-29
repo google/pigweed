@@ -16,7 +16,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <span>
 #include <type_traits>
 
 #include "pw_containers/vector.h"
@@ -29,6 +28,7 @@
 #include "pw_kvs/internal/sectors.h"
 #include "pw_kvs/internal/span_traits.h"
 #include "pw_kvs/key.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
@@ -118,12 +118,12 @@ class KeyValueStore {
   //      INVALID_ARGUMENT: key is empty or too long or value is too large
   //
   StatusWithSize Get(Key key,
-                     std::span<std::byte> value,
+                     span<std::byte> value,
                      size_t offset_bytes = 0) const;
 
   // This overload of Get accepts a pointer to a trivially copyable object.
   // If the value is an array, call Get with
-  // std::as_writable_bytes(std::span(array)), or pass a pointer to the array
+  // as_writable_bytes(span(array)), or pass a pointer to the array
   // instead of the array itself.
   template <typename Pointer,
             typename = std::enable_if_t<std::is_pointer<Pointer>::value>>
@@ -136,7 +136,7 @@ class KeyValueStore {
   // Adds a key-value entry to the KVS. If the key was already present, its
   // value is overwritten.
   //
-  // The value may be a std::span of bytes or a trivially copyable object.
+  // The value may be a span of bytes or a trivially copyable object.
   //
   // In the current implementation, all keys in the KVS must have a unique hash.
   // If Put is called with a key whose hash matches an existing key, nothing
@@ -153,14 +153,14 @@ class KeyValueStore {
   template <typename T,
             typename std::enable_if_t<ConvertsToSpan<T>::value>* = nullptr>
   Status Put(const Key& key, const T& value) {
-    return PutBytes(key, std::as_bytes(internal::make_span(value)));
+    return PutBytes(key, as_bytes(internal::make_span(value)));
   }
 
   template <typename T,
             typename std::enable_if_t<!ConvertsToSpan<T>::value>* = nullptr>
   Status Put(const Key& key, const T& value) {
     CheckThatObjectCanBePutOrGet<T>();
-    return PutBytes(key, std::as_bytes(std::span<const T>(&value, 1)));
+    return PutBytes(key, as_bytes(span<const T>(&value, 1)));
   }
 
   // Removes a key-value entry from the KVS.
@@ -224,7 +224,7 @@ class KeyValueStore {
 
     // Gets the value referred to by this iterator. Equivalent to
     // KeyValueStore::Get.
-    StatusWithSize Get(std::span<std::byte> value_buffer,
+    StatusWithSize Get(span<std::byte> value_buffer,
                        size_t offset_bytes = 0) const {
       return kvs_.Get(key(), *iterator_, value_buffer, offset_bytes);
     }
@@ -360,7 +360,7 @@ class KeyValueStore {
   // In the future, will be able to provide additional EntryFormats for
   // backwards compatibility.
   KeyValueStore(FlashPartition* partition,
-                std::span<const EntryFormat> formats,
+                span<const EntryFormat> formats,
                 const Options& options,
                 size_t redundancy,
                 Vector<SectorDescriptor>& sector_descriptor_list,
@@ -377,9 +377,9 @@ class KeyValueStore {
     static_assert(
         std::is_trivially_copyable<T>::value && !std::is_pointer<T>::value,
         "Only trivially copyable, non-pointer objects may be Put and Get by "
-        "value. Any value may be stored by converting it to a byte std::span "
-        "with std::as_bytes(std::span(&value, 1)) or "
-        "std::as_writable_bytes(std::span(&value, 1)).");
+        "value. Any value may be stored by converting it to a byte span "
+        "with as_bytes(span(&value, 1)) or "
+        "as_writable_bytes(span(&value, 1)).");
   }
 
   Status InitializeMetadata();
@@ -396,7 +396,7 @@ class KeyValueStore {
   // interruption.
   Status RemoveDeletedKeyEntries();
 
-  Status PutBytes(Key key, std::span<const std::byte> value);
+  Status PutBytes(Key key, span<const std::byte> value);
 
   StatusWithSize ValueSize(const EntryMetadata& metadata) const;
 
@@ -426,7 +426,7 @@ class KeyValueStore {
 
   StatusWithSize Get(Key key,
                      const EntryMetadata& metadata,
-                     std::span<std::byte> value_buffer,
+                     span<std::byte> value_buffer,
                      size_t offset_bytes) const;
 
   Status FixedSizeGet(Key key, void* value, size_t size_bytes) const;
@@ -442,12 +442,12 @@ class KeyValueStore {
   Status WriteEntryForExistingKey(EntryMetadata& metadata,
                                   EntryState new_state,
                                   Key key,
-                                  std::span<const std::byte> value);
+                                  span<const std::byte> value);
 
-  Status WriteEntryForNewKey(Key key, std::span<const std::byte> value);
+  Status WriteEntryForNewKey(Key key, span<const std::byte> value);
 
   Status WriteEntry(Key key,
-                    std::span<const std::byte> value,
+                    span<const std::byte> value,
                     EntryState new_state,
                     EntryMetadata* prior_metadata = nullptr,
                     const internal::Entry* prior_entry = nullptr);
@@ -466,13 +466,11 @@ class KeyValueStore {
 
   Status GetSectorForWrite(SectorDescriptor** sector,
                            size_t entry_size,
-                           std::span<const Address> reserved_addresses);
+                           span<const Address> reserved_addresses);
 
   Status MarkSectorCorruptIfNotOk(Status status, SectorDescriptor* sector);
 
-  Status AppendEntry(const Entry& entry,
-                     Key key,
-                     std::span<const std::byte> value);
+  Status AppendEntry(const Entry& entry, Key key, span<const std::byte> value);
 
   StatusWithSize CopyEntryToSector(Entry& entry,
                                    SectorDescriptor* new_sector,
@@ -480,7 +478,7 @@ class KeyValueStore {
 
   Status RelocateEntry(const EntryMetadata& metadata,
                        KeyValueStore::Address& address,
-                       std::span<const Address> reserved_addresses);
+                       span<const Address> reserved_addresses);
 
   // Perform all maintenance possible, including all neeeded repairing of
   // corruption and garbage collection of reclaimable space in the KVS. When
@@ -499,15 +497,14 @@ class KeyValueStore {
 
   // Find and garbage collect a singe sector that does not include a reserved
   // address.
-  Status GarbageCollect(std::span<const Address> reserved_addresses);
+  Status GarbageCollect(span<const Address> reserved_addresses);
 
-  Status RelocateKeyAddressesInSector(
-      SectorDescriptor& sector_to_gc,
-      const EntryMetadata& metadata,
-      std::span<const Address> reserved_addresses);
+  Status RelocateKeyAddressesInSector(SectorDescriptor& sector_to_gc,
+                                      const EntryMetadata& metadata,
+                                      span<const Address> reserved_addresses);
 
   Status GarbageCollectSector(SectorDescriptor& sector_to_gc,
-                              std::span<const Address> reserved_addresses);
+                              span<const Address> reserved_addresses);
 
   // Ensure that all entries are on the primary (first) format. Entries that are
   // not on the primary format are rewritten.
@@ -529,7 +526,7 @@ class KeyValueStore {
 
   internal::Entry CreateEntry(Address address,
                               Key key,
-                              std::span<const std::byte> value,
+                              span<const std::byte> value,
                               EntryState state);
 
   void LogSectors() const;
@@ -594,7 +591,7 @@ class KeyValueStoreBuffer : public KeyValueStore {
                       const Options& options = {})
       : KeyValueStoreBuffer(
             partition,
-            std::span<const EntryFormat, kEntryFormats>(
+            span<const EntryFormat, kEntryFormats>(
                 reinterpret_cast<const EntryFormat (&)[1]>(format)),
             options) {
     static_assert(kEntryFormats == 1,
@@ -604,7 +601,7 @@ class KeyValueStoreBuffer : public KeyValueStore {
   // Constructs a KeyValueStore on the partition. Supports multiple entry
   // formats. The first EntryFormat is used for new entries.
   KeyValueStoreBuffer(FlashPartition* partition,
-                      std::span<const EntryFormat, kEntryFormats> formats,
+                      span<const EntryFormat, kEntryFormats> formats,
                       const Options& options = {})
       : KeyValueStore(partition,
                       formats_,

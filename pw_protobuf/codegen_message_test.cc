@@ -12,13 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #include <array>
-#include <span>
 #include <string_view>
 #include <tuple>
 
 #include "gtest/gtest.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_protobuf/internal/codegen.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
@@ -336,7 +336,7 @@ TEST(CodegenMessage, Read) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -374,7 +374,7 @@ TEST(CodegenMessage, ReadNonPackedScalar) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -410,7 +410,7 @@ TEST(CodegenMessage, ReadPackedScalar) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -458,7 +458,7 @@ TEST(CodegenMessage, ReadPackedScalarRepeated) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -493,7 +493,7 @@ TEST(CodegenMessage, ReadPackedScalarExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // uint32s has max_size=8, so this will exhaust the vector.
@@ -515,7 +515,7 @@ TEST(CodegenMessage, ReadPackedScalarCallback) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // sint32s is a repeated field declared without max_count, so requirses a
@@ -554,7 +554,7 @@ TEST(CodegenMessage, ReadPackedScalarFixedLength) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -581,7 +581,7 @@ TEST(CodegenMessage, ReadPackedScalarFixedLengthShort) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -605,7 +605,7 @@ TEST(CodegenMessage, ReadPackedScalarVarintFixedLengthExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -625,7 +625,7 @@ TEST(CodegenMessage, ReadPackedScalarFixedLengthExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -641,7 +641,7 @@ TEST(CodegenMessage, ReadPackedEnum) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -681,7 +681,7 @@ TEST(CodegenMessage, ReadStringExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -703,7 +703,7 @@ TEST(CodegenMessage, ReadStringCallback) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   // pigweed.description has no max_size specified so a callback must be
@@ -743,7 +743,7 @@ TEST(CodegenMessage, ReadMultipleString) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -777,7 +777,7 @@ TEST(CodegenMessage, ReadRepeatedStrings) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // Repeated strings require a callback to avoid forcing multi-dimensional
@@ -817,7 +817,7 @@ TEST(CodegenMessage, ReadForcedCallback) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   // pigweed.special_property has use_callback=true to force the use of a
@@ -854,7 +854,7 @@ TEST(CodegenMessage, ReadMissingCallback) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // Failing to set a callback will give a DataLoss error if that field is
@@ -872,7 +872,7 @@ TEST(CodegenMessage, ReadFixedLength) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -897,7 +897,7 @@ TEST(CodegenMessage, ReadFixedLengthShort) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -924,7 +924,7 @@ TEST(CodegenMessage, ReadFixedLengthExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -946,7 +946,7 @@ TEST(CodegenMessage, ReadNested) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -976,7 +976,7 @@ TEST(CodegenMessage, ReadNestedImported) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Period::StreamDecoder period(reader);
 
   // Messages imported from another file can be directly embedded in a message.
@@ -1008,7 +1008,7 @@ TEST(CodegenMessage, ReadNestedRepeated) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // Repeated nested messages require a callback since there would otherwise be
@@ -1049,7 +1049,7 @@ TEST(CodegenMessage, ReadNestedForcedCallback) {
       };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   // pigweed.device_info has use_callback=true to force the use of a callback.
@@ -1097,7 +1097,7 @@ TEST(CodegenMessage, ReadOptionalPresent) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   OptionalTest::StreamDecoder optional_test(reader);
 
   OptionalTest::Message message{};
@@ -1157,7 +1157,7 @@ TEST(CodegenMessage, ReadOptionalPresentDefaults) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   OptionalTest::StreamDecoder optional_test(reader);
 
   OptionalTest::Message message{};
@@ -1188,10 +1188,9 @@ class BreakableDecoder : public KeyValuePair::StreamDecoder {
  public:
   constexpr BreakableDecoder(stream::Reader& reader) : StreamDecoder(reader) {}
 
-  Status Read(KeyValuePair::Message& message,
-              std::span<const MessageField> table) {
+  Status Read(KeyValuePair::Message& message, span<const MessageField> table) {
     return ::pw::protobuf::StreamDecoder::Read(
-        std::as_writable_bytes(std::span(&message, 1)), table);
+        as_writable_bytes(span(&message, 1)), table);
   }
 };
 
@@ -1220,7 +1219,7 @@ TEST(CodegenMessage, DISABLED_ReadDoesNotOverrun) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   BreakableDecoder decoder(reader);
 
   KeyValuePair::Message message{};
@@ -1795,9 +1794,9 @@ class BreakableEncoder : public KeyValuePair::MemoryEncoder {
       : KeyValuePair::MemoryEncoder(buffer) {}
 
   Status Write(const KeyValuePair::Message& message,
-               std::span<const MessageField> table) {
-    return ::pw::protobuf::StreamEncoder::Write(
-        std::as_bytes(std::span(&message, 1)), table);
+               span<const MessageField> table) {
+    return ::pw::protobuf::StreamEncoder::Write(as_bytes(span(&message, 1)),
+                                                table);
   }
 };
 
@@ -1887,7 +1886,7 @@ TEST(CodegenMessage, CallbackInClass) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   StringChecker checker{};
@@ -1942,7 +1941,7 @@ TEST(CodegenMessage, CallbackInSubclass) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   CustomMessage message{};

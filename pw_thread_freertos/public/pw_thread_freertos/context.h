@@ -14,9 +14,9 @@
 #pragma once
 
 #include <cstdint>
-#include <span>
 
 #include "FreeRTOS.h"
+#include "pw_span/span.h"
 #include "pw_thread_freertos/config.h"
 #include "task.h"
 #if PW_THREAD_JOINING_ENABLED
@@ -108,17 +108,17 @@ class Context {
 //   }
 class StaticContext : public Context {
  public:
-  explicit StaticContext(std::span<StackType_t> stack_span)
+  explicit StaticContext(span<StackType_t> stack_span)
       : tcb_{}, stack_span_(stack_span) {}
 
  private:
   friend Thread;
 
   StaticTask_t& tcb() { return tcb_; }
-  std::span<StackType_t> stack() { return stack_span_; }
+  span<StackType_t> stack() { return stack_span_; }
 
   StaticTask_t tcb_;
-  std::span<StackType_t> stack_span_;
+  span<StackType_t> stack_span_;
 };
 
 // Static thread context allocation including the stack along with the Context.

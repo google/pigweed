@@ -112,7 +112,7 @@ class Options : public thread::Options {
 
   // Set the pre-allocated context (all memory needed to run a thread). Note
   // that this is required for this thread creation backend! The Context can
-  // either be constructed with an externally provided std::span<ULONG> stack
+  // either be constructed with an externally provided span<ULONG> stack
   // or the templated form of ContextWihtStack<kStackSizeWords> can be used.
   constexpr Options& set_context(Context& context) {
     context_ = &context;

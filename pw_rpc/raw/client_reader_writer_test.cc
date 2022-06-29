@@ -292,7 +292,7 @@ void WriteAsWriter(Writer& writer) {
   ASSERT_TRUE(writer.active());
   ASSERT_EQ(writer.channel_id(), RawClientTestContext<>::kDefaultChannelId);
 
-  EXPECT_EQ(OkStatus(), writer.Write(std::as_bytes(std::span(kWriterData))));
+  EXPECT_EQ(OkStatus(), writer.Write(as_bytes(span(kWriterData))));
 }
 
 TEST(RawClientWriter, UsableAsWriter) {

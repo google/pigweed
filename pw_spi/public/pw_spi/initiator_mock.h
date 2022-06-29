@@ -70,7 +70,7 @@ constexpr MockTransaction MockWriteTransaction(Status expected_return_value,
 // frame.
 class MockInitiator : public pw::spi::Initiator {
  public:
-  explicit constexpr MockInitiator(std::span<MockTransaction> transaction_list)
+  explicit constexpr MockInitiator(span<MockTransaction> transaction_list)
       : expected_transactions_(transaction_list),
         expected_transaction_index_(0) {}
 
@@ -109,7 +109,7 @@ class MockInitiator : public pw::spi::Initiator {
   }
 
  private:
-  std::span<MockTransaction> expected_transactions_;
+  span<MockTransaction> expected_transactions_;
   size_t expected_transaction_index_;
 };
 

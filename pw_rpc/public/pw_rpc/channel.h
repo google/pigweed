@@ -15,13 +15,13 @@
 
 #include <cstdint>
 #include <limits>
-#include <span>
 #include <type_traits>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
@@ -68,7 +68,7 @@ class ChannelOutput {
   // The buffer provided in packet must NOT be accessed outside of this
   // function. It must be sent immediately or copied elsewhere before the
   // function returns.
-  virtual Status Send(std::span<const std::byte> buffer)
+  virtual Status Send(span<const std::byte> buffer)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) = 0;
 
  private:

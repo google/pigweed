@@ -14,12 +14,12 @@
 #pragma once
 
 #include <cinttypes>
-#include <span>
 
 #include "pw_rpc/channel.h"
 #include "pw_rpc/client_server.h"
 #include "pw_rpc/internal/fake_channel_output.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
@@ -37,7 +37,7 @@ class ForwardingChannelOutput : public ChannelOutput {
     return output_.MaximumTransmissionUnit();
   }
 
-  Status Send(std::span<const std::byte> buffer) override {
+  Status Send(span<const std::byte> buffer) override {
     return output_.Send(buffer);
   }
 

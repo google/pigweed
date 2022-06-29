@@ -349,7 +349,7 @@ structure, the following additional methods are also generated in the typed
     // Per-Field Typed Readers.
     pw::Result<int32_t> ReadAge();
 
-    pw::StatusWithSize ReadName(std::span<char>);
+    pw::StatusWithSize ReadName(pw::span<char>);
     BytesReader GetNameReader(); // Read name as a stream of bytes.
 
     pw::Result<Customer::Status> ReadStatus();
@@ -452,7 +452,7 @@ To decode the same message we would use the following parts of the core API:
     Result<int32_t> ReadInt32();
     Result<uint32_t> ReadUint32();
 
-    StatusWithSize ReadString(std::span<char>);
+    StatusWithSize ReadString(pw::span<char>);
 
     // And many other methods, see pw_protobuf/stream_decoder.h
   };
@@ -1269,37 +1269,37 @@ are provided.
 
   This writes a single unpacked value.
 
-.. cpp:function:: Status MyProto::StreamEncoder::WriteFoos(std::span<const T>)
+.. cpp:function:: Status MyProto::StreamEncoder::WriteFoos(pw::span<const T>)
 .. cpp:function:: Status MyProto::StreamEncoder::WriteFoos(const pw::Vector<T>&)
 
   These write a packed field containing all of the values in the provided span
   or vector.
 
 These too can be freely intermixed with the lower-level API methods, both to
-write a single value, or to write packed values from either a ``std::span`` or
+write a single value, or to write packed values from either a ``pw::span`` or
 ``pw::Vector`` source.
 
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedUint64(uint32_t field_number, std::span<const uint64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedUint64(uint32_t field_number, pw::span<const uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedUint64(uint32_t field_number, const pw::Vector<uint64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedSint64(uint32_t field_number, std::span<const int64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedSint64(uint32_t field_number, pw::span<const int64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedSint64(uint32_t field_number, const pw::Vector<int64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedInt64(uint32_t field_number, std::span<const int64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedInt64(uint32_t field_number, pw::span<const int64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedInt64(uint32_t field_number, const pw::Vector<int64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedUint32(uint32_t field_number, std::span<const uint32_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedUint32(uint32_t field_number, pw::span<const uint32_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedUint32(uint32_t field_number, const pw::Vector<uint32_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedSint32(uint32_t field_number, std::span<const int32_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedSint32(uint32_t field_number, pw::span<const int32_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedSint32(uint32_t field_number, const pw::Vector<int32_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedInt32(uint32_t field_number, std::span<const int32_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedInt32(uint32_t field_number, pw::span<const int32_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedInt32(uint32_t field_number, const pw::Vector<int32_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFixed64(uint32_t field_number, std::span<const uint64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFixed64(uint32_t field_number, pw::span<const uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedFixed64(uint32_t field_number, const pw::Vector<uint64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFixed32(uint32_t field_number, std::span<const uint64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFixed32(uint32_t field_number, pw::span<const uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedFixed32(uint32_t field_number, const pw::Vector<uint64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedDouble(uint32_t field_number, std::span<const double>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedDouble(uint32_t field_number, pw::span<const double>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedDouble(uint32_t field_number, const pw::Vector<double>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFloat(uint32_t field_number, std::span<const float>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFloat(uint32_t field_number, pw::span<const float>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedFloat(uint32_t field_number, const pw::Vector<float>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedBool(uint32_t field_number, std::span<const bool>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedBool(uint32_t field_number, pw::span<const bool>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedBool(uint32_t field_number, const pw::Vector<bool>&)
 
 The following two method calls are equivalent, where the first is using the
@@ -1344,7 +1344,7 @@ are provided.
 
   This writes a single unpacked value.
 
-.. cpp:function:: Status MyProto::StreamEncoder::WriteEnums(std::span<const MyProto::Enums>)
+.. cpp:function:: Status MyProto::StreamEncoder::WriteEnums(pw::span<const MyProto::Enums>)
 .. cpp:function:: Status MyProto::StreamEncoder::WriteEnums(const pw::Vector<MyProto::Enums>&)
 
   These write a packed field containing all of the values in the provided span
@@ -1604,7 +1604,7 @@ are provided.
 
   This reads a single unpacked value.
 
-.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadFoos(std::span<T>)
+.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadFoos(pw::span<T>)
 
   This reads a packed field containing all of the values into the provided span.
 
@@ -1618,30 +1618,30 @@ are provided.
   ``pw::Vector``.
 
 These too can be freely intermixed with the lower-level API methods, to read a
-single value, a field of packed values into a ``std::span``, or support both
+single value, a field of packed values into a ``pw::span``, or support both
 formats appending to a ``pw::Vector`` source.
 
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedUint64(std::span<uint64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedUint64(pw::span<uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedUint64(pw::Vector<uint64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedSint64(std::span<int64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedSint64(pw::span<int64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedSint64(pw::Vector<int64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedInt64(std::span<int64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedInt64(pw::span<int64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedInt64(pw::Vector<int64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedUint32(std::span<uint32_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedUint32(pw::span<uint32_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedUint32(pw::Vector<uint32_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedSint32(std::span<int32_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedSint32(pw::span<int32_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedSint32(pw::Vector<int32_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedInt32(std::span<int32_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedInt32(pw::span<int32_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedInt32(pw::Vector<int32_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFixed64(std::span<uint64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFixed64(pw::span<uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedFixed64(pw::Vector<uint64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFixed32(std::span<uint64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFixed32(pw::span<uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedFixed32(pw::Vector<uint64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedDouble(std::span<double>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedDouble(pw::span<double>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedDouble(pw::Vector<double>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFloat(std::span<float>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFloat(pw::span<float>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedFloat(pw::Vector<float>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedBool(std::span<bool>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedBool(pw::span<bool>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedBool(pw::Vector<bool>&)
 
 The following two code blocks are equivalent, where the first uses the code
@@ -1704,7 +1704,7 @@ are provided.
 
   This reads a single unpacked value.
 
-.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadEnums(std::span<MyProto::Enums>)
+.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadEnums(pw::span<MyProto::Enums>)
 
   This reads a packed field containing all of the checked values into the
   provided span.
@@ -1723,7 +1723,7 @@ provided span. Since the span is updated with the size of the string, the string
 is not automatically null-terminated. :ref:`module-pw_string` provides utility
 methods to copy string data from spans into other targets.
 
-.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadName(std::span<char>)
+.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadName(pw::span<char>)
 
 An additional code generated method is provided to return a nested
 ``BytesReader`` to access the data as a stream. As with nested submessage
@@ -1735,7 +1735,7 @@ first.
 
 These can be freely intermixed with the lower-level API method:
 
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadString(std::span<char>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadString(pw::span<char>)
 
 The lower-level ``GetBytesReader()`` method can also be used to read string data
 as bytes.
@@ -1806,7 +1806,7 @@ field within the buffer; no data is copied out.
   #include "pw_protobuf/decoder.h"
   #include "pw_status/try.h"
 
-  pw::Status DecodeProtoFromBuffer(std::span<const std::byte> buffer) {
+  pw::Status DecodeProtoFromBuffer(pw::span<const std::byte> buffer) {
     pw::protobuf::Decoder decoder(buffer);
     pw::Status status;
 

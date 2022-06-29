@@ -21,11 +21,11 @@
 #include <cstdint>
 #include <cstring>
 #include <new>
-#include <span>
 
 #include "pw_polyfill/standard.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
+#include "pw_span/span.h"
 #include "pw_unit_test/config.h"
 #include "pw_unit_test/event_handler.h"
 
@@ -147,7 +147,7 @@ namespace string {
 //
 //   template <>
 //   StatusWithSize ToString<MyType>(const MyType& value,
-//                                   std::span<char> buffer) {
+//                                   span<char> buffer) {
 //     return string::Format("<MyType|%d>", value.id);
 //   }
 //
@@ -155,7 +155,7 @@ namespace string {
 //
 // See the documentation in pw_string/string_builder.h for more information.
 template <typename T>
-StatusWithSize UnknownTypeToString(const T& value, std::span<char> buffer) {
+StatusWithSize UnknownTypeToString(const T& value, span<char> buffer) {
   StringBuilder sb(buffer);
   sb << '<' << sizeof(value) << "-byte object at 0x" << &value << '>';
   return sb.status_with_size();
@@ -219,7 +219,7 @@ class Framework {
   // Only run test suites whose names are included in the provided list during
   // the next test run. This is C++17 only; older versions of C++ will run all
   // non-disabled tests.
-  void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
+  void SetTestSuitesToRun(span<std::string_view> test_suites) {
     test_suites_to_run_ = test_suites;
   }
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
@@ -352,9 +352,9 @@ class Framework {
   EventHandler* event_handler_;
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
-  std::span<std::string_view> test_suites_to_run_;
+  span<std::string_view> test_suites_to_run_;
 #else
-  std::span<const char*> test_suites_to_run_;  // Always empty in C++14.
+  span<const char*> test_suites_to_run_;  // Always empty in C++14.
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   std::aligned_storage_t<config::kMemoryPoolSize, alignof(std::max_align_t)>
@@ -471,7 +471,7 @@ constexpr bool HasNoUnderscores(const char* suite) {
 }  // namespace internal
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
-inline void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
+inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
   internal::Framework::Get().SetTestSuitesToRun(test_suites);
 }
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)

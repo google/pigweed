@@ -18,11 +18,11 @@
 // operations on this database.
 
 #include <cstring>
-#include <span>
 
 #include "pw_fuzzer/asan_interface.h"
 #include "pw_fuzzer/fuzzed_data_provider.h"
 #include "pw_preprocessor/util.h"
+#include "pw_span/span.h"
 #include "pw_tokenizer/token_database.h"
 
 namespace pw::tokenizer {
@@ -113,12 +113,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   ASAN_POISON_MEMORY_REGION(poisoned, poisoned_length);
 
-  // We create a database from a std::span of the buffer since the string
+  // We create a database from a span of the buffer since the string
   // entries might not be null terminated, and the creation of a database
   // from a raw buffer has an explicit null terminated string requirement
   // specified in the API.
-  std::span<uint8_t> data_span(buffer, data_size);
-  auto token_database = TokenDatabase::Create<std::span<uint8_t>>(data_span);
+  span<uint8_t> data_span(buffer, data_size);
+  auto token_database = TokenDatabase::Create<span<uint8_t>>(data_span);
   [[maybe_unused]] volatile auto match = token_database.Find(random_token);
 
   IterateOverDatabase(&token_database);

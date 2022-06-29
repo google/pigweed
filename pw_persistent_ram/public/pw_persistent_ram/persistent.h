@@ -15,13 +15,13 @@
 
 #include <cstdint>
 #include <cstring>
-#include <span>
 #include <type_traits>
 #include <utility>
 
 #include "pw_assert/assert.h"
 #include "pw_checksum/crc16_ccitt.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_span/span.h"
 
 namespace pw::persistent_ram {
 
@@ -160,7 +160,7 @@ class Persistent {
 
   uint16_t CalculateCrc() const {
     return checksum::Crc16Ccitt::Calculate(
-        std::as_bytes(std::span(const_cast<const T*>(&contents_), 1)));
+        as_bytes(span(const_cast<const T*>(&contents_), 1)));
   }
 
   // Use unions to denote that these members are never initialized by design and

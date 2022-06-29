@@ -61,7 +61,7 @@ TEST_F(MemoryWriterTest, ValidateContents) {
   EXPECT_TRUE(
       memory_writer.Write(&kExpectedStruct, sizeof(kExpectedStruct)).ok());
 
-  std::span<const std::byte> written_data = memory_writer.WrittenData();
+  span<const std::byte> written_data = memory_writer.WrittenData();
   EXPECT_EQ(written_data.size_bytes(), sizeof(kExpectedStruct));
   TestStruct temp;
   std::memcpy(&temp, written_data.data(), written_data.size_bytes());
@@ -82,14 +82,13 @@ TEST_F(MemoryWriterTest, MultipleWrites) {
     for (size_t i = 0; i < sizeof(buffer); ++i) {
       buffer[i] = std::byte(counter++);
     }
-    EXPECT_EQ(memory_writer.Write(std::span(buffer)), OkStatus());
+    EXPECT_EQ(memory_writer.Write(span(buffer)), OkStatus());
   }
 
   EXPECT_GT(memory_writer.ConservativeWriteLimit(), 0u);
   EXPECT_LT(memory_writer.ConservativeWriteLimit(), kTempBufferSize);
 
-  EXPECT_EQ(memory_writer.Write(std::span(buffer)),
-            Status::ResourceExhausted());
+  EXPECT_EQ(memory_writer.Write(span(buffer)), Status::ResourceExhausted());
   EXPECT_EQ(memory_writer.bytes_written(), counter);
 
   counter = 0;
@@ -112,13 +111,12 @@ TEST_F(MemoryWriterTest, FullWriter) {
   while (memory_writer.ConservativeWriteLimit() > 0) {
     size_t bytes_to_write =
         std::min(sizeof(buffer), memory_writer.ConservativeWriteLimit());
-    EXPECT_EQ(memory_writer.Write(std::span(buffer, bytes_to_write)),
-              OkStatus());
+    EXPECT_EQ(memory_writer.Write(span(buffer, bytes_to_write)), OkStatus());
   }
 
   EXPECT_EQ(memory_writer.ConservativeWriteLimit(), 0u);
 
-  EXPECT_EQ(memory_writer.Write(std::span(buffer)), Status::OutOfRange());
+  EXPECT_EQ(memory_writer.Write(span(buffer)), Status::OutOfRange());
   EXPECT_EQ(memory_writer.bytes_written(), memory_buffer_.size());
 
   for (const std::byte& value : memory_writer) {
@@ -334,7 +332,7 @@ TEST(MemoryReader, MultipleReads) {
 
 TEST(MemoryReader, Seek) {
   constexpr std::string_view data = "0123456789";
-  MemoryReader reader(std::as_bytes(std::span(data)));
+  MemoryReader reader(as_bytes(span(data)));
 
   char buffer[5] = {};  // Leave a null terminator at the end.
   ASSERT_EQ(OkStatus(), reader.Read(buffer, sizeof(buffer) - 1).status());
@@ -350,18 +348,18 @@ TEST(MemoryReader, Seek) {
 }
 
 TEST(MemoryReader, Tell_StartsAt0) {
-  MemoryReader reader(std::as_bytes(std::span("\3\2\1")));
+  MemoryReader reader(as_bytes(span("\3\2\1")));
   EXPECT_EQ(0u, reader.Tell());
 }
 
 TEST(MemoryReader, Tell_UpdatesOnSeek) {
-  MemoryReader reader(std::as_bytes(std::span("\3\2\1")));
+  MemoryReader reader(as_bytes(span("\3\2\1")));
   ASSERT_EQ(OkStatus(), reader.Seek(2, Stream::kCurrent));
   EXPECT_EQ(2u, reader.Tell());
 }
 
 TEST(MemoryReader, Tell_UpdatesOnRead) {
-  MemoryReader reader(std::as_bytes(std::span("\3\2\1")));
+  MemoryReader reader(as_bytes(span("\3\2\1")));
   std::byte buffer[4];
   ASSERT_EQ(OkStatus(), reader.Read(buffer).status());
   EXPECT_EQ(4u, reader.Tell());

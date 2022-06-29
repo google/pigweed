@@ -63,8 +63,7 @@ Status ManifestAccessor::Export(stream::Writer& writer) {
   PW_TRY(status());
 
   // Write out the targets metadata map.
-  stream::MemoryReader name_reader(
-      std::as_bytes(std::span(kTopLevelTargetsName)));
+  stream::MemoryReader name_reader(as_bytes(span(kTopLevelTargetsName)));
   stream::IntervalReader metadata_reader =
       targets_metadata_.ToBytes().GetBytesReader();
   std::byte stream_pipe_buffer[WRITE_MANIFEST_STREAM_PIPE_BUFFER_SIZE];

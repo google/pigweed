@@ -35,7 +35,7 @@ constexpr std::string_view kString =
 constexpr uint16_t kStringCrc = 0xC184;
 
 TEST(Crc16, Empty) {
-  EXPECT_EQ(Crc16Ccitt::Calculate(std::span<std::byte>()),
+  EXPECT_EQ(Crc16Ccitt::Calculate(span<std::byte>()),
             Crc16Ccitt::kInitialValue);
 }
 
@@ -48,24 +48,22 @@ TEST(Crc16, ByteByByte) {
 }
 
 TEST(Crc16, Buffer) {
-  EXPECT_EQ(Crc16Ccitt::Calculate(std::as_bytes(std::span(kBytes))),
-            kBufferCrc);
+  EXPECT_EQ(Crc16Ccitt::Calculate(as_bytes(span(kBytes))), kBufferCrc);
 }
 
 TEST(Crc16, String) {
-  EXPECT_EQ(Crc16Ccitt::Calculate(std::as_bytes(std::span(kString))),
-            kStringCrc);
+  EXPECT_EQ(Crc16Ccitt::Calculate(as_bytes(span(kString))), kStringCrc);
 }
 
 TEST(Crc16Class, Buffer) {
   Crc16Ccitt crc16;
-  crc16.Update(std::as_bytes(std::span(kBytes)));
+  crc16.Update(as_bytes(span(kBytes)));
   EXPECT_EQ(crc16.value(), kBufferCrc);
 }
 
 TEST(Crc16Class, String) {
   Crc16Ccitt crc16;
-  crc16.Update(std::as_bytes(std::span(kString)));
+  crc16.Update(as_bytes(span(kString)));
   EXPECT_EQ(crc16.value(), kStringCrc);
 }
 

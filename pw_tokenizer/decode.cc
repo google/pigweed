@@ -172,7 +172,7 @@ StringSegment::ArgSize StringSegment::VarargSize(std::array<char, 2> length,
 }
 
 DecodedArg StringSegment::DecodeString(
-    const std::span<const uint8_t>& arguments) const {
+    const span<const uint8_t>& arguments) const {
   if (arguments.empty()) {
     return DecodedArg(ArgStatus::kMissing, text_);
   }
@@ -201,13 +201,13 @@ DecodedArg StringSegment::DecodeString(
 }
 
 DecodedArg StringSegment::DecodeInteger(
-    const std::span<const uint8_t>& arguments) const {
+    const span<const uint8_t>& arguments) const {
   if (arguments.empty()) {
     return DecodedArg(ArgStatus::kMissing, text_);
   }
 
   int64_t value;
-  const size_t bytes = varint::Decode(std::as_bytes(arguments), &value);
+  const size_t bytes = varint::Decode(as_bytes(arguments), &value);
 
   if (bytes == 0u) {
     return DecodedArg(ArgStatus::kDecodeError,
@@ -229,7 +229,7 @@ DecodedArg StringSegment::DecodeInteger(
 }
 
 DecodedArg StringSegment::DecodeFloatingPoint(
-    const std::span<const uint8_t>& arguments) const {
+    const span<const uint8_t>& arguments) const {
   static_assert(sizeof(float) == 4u);
   if (arguments.size() < sizeof(float)) {
     return DecodedArg(ArgStatus::kMissing, text_);
@@ -240,8 +240,7 @@ DecodedArg StringSegment::DecodeFloatingPoint(
   return DecodedArg::FromValue(text_.c_str(), value, sizeof(value));
 }
 
-DecodedArg StringSegment::Decode(
-    const std::span<const uint8_t>& arguments) const {
+DecodedArg StringSegment::Decode(const span<const uint8_t>& arguments) const {
   switch (type_) {
     case kLiteral:
       return DecodedArg(text_);
@@ -336,8 +335,7 @@ FormatString::FormatString(const char* format) {
   }
 }
 
-DecodedFormatString FormatString::Format(
-    std::span<const uint8_t> arguments) const {
+DecodedFormatString FormatString::Format(span<const uint8_t> arguments) const {
   std::vector<DecodedArg> results;
   bool skip = false;
 

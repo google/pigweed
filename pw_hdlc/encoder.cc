@@ -18,10 +18,10 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
-#include <span>
 
 #include "pw_bytes/endian.h"
 #include "pw_hdlc/internal/encoder.h"
+#include "pw_span/span.h"
 #include "pw_varint/varint.h"
 
 using std::byte;
@@ -44,7 +44,7 @@ Status Encoder::WriteData(ConstByteSpan data) {
   while (true) {
     auto end = std::find_if(begin, data.end(), NeedsEscaping);
 
-    if (Status status = writer_.Write(std::span(begin, end)); !status.ok()) {
+    if (Status status = writer_.Write(span(begin, end)); !status.ok()) {
       return status;
     }
     if (end == data.end()) {
@@ -92,7 +92,7 @@ Status Encoder::StartFrame(uint64_t address, std::byte control) {
   }
 
   metadata_buffer[metadata_size++] = control;
-  return WriteData(std::span(metadata_buffer).first(metadata_size));
+  return WriteData(span(metadata_buffer).first(metadata_size));
 }
 
 }  // namespace internal

@@ -120,7 +120,7 @@ constexpr Transaction ProbeTransaction(
 // frame.
 class MockInitiator : public Initiator {
  public:
-  explicit constexpr MockInitiator(std::span<Transaction> transaction_list)
+  explicit constexpr MockInitiator(span<Transaction> transaction_list)
       : expected_transactions_(transaction_list),
         expected_transaction_index_(0) {}
 
@@ -158,7 +158,7 @@ class MockInitiator : public Initiator {
                         ByteSpan rx_buffer,
                         chrono::SystemClock::duration timeout) override;
 
-  std::span<Transaction> expected_transactions_;
+  span<Transaction> expected_transactions_;
   size_t expected_transaction_index_;
 };
 

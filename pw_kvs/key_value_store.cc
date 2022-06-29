@@ -39,7 +39,7 @@ constexpr bool InvalidKey(Key key) {
 }  // namespace
 
 KeyValueStore::KeyValueStore(FlashPartition* partition,
-                             std::span<const EntryFormat> formats,
+                             span<const EntryFormat> formats,
                              const Options& options,
                              size_t redundancy,
                              Vector<SectorDescriptor>& sector_descriptor_list,
@@ -386,7 +386,7 @@ Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
        address += Entry::kMinAlignmentBytes) {
     uint32_t magic;
     StatusWithSize read_result =
-        partition_.Read(address, std::as_writable_bytes(std::span(&magic, 1)));
+        partition_.Read(address, as_writable_bytes(span(&magic, 1)));
     if (!read_result.ok()) {
       continue;
     }
@@ -435,7 +435,7 @@ Status KeyValueStore::RemoveDeletedKeyEntries() {
 #endif  // PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
 
 StatusWithSize KeyValueStore::Get(Key key,
-                                  std::span<byte> value_buffer,
+                                  span<byte> value_buffer,
                                   size_t offset_bytes) const {
   PW_TRY_WITH_SIZE(CheckReadOperation(key));
 
@@ -445,7 +445,7 @@ StatusWithSize KeyValueStore::Get(Key key,
   return Get(key, metadata, value_buffer, offset_bytes);
 }
 
-Status KeyValueStore::PutBytes(Key key, std::span<const byte> value) {
+Status KeyValueStore::PutBytes(Key key, span<const byte> value) {
   PW_TRY(CheckWriteOperation(key));
   DBG("Writing key/value; key length=%u, value length=%u",
       unsigned(key.size()),
@@ -571,7 +571,7 @@ Status KeyValueStore::FindExisting(Key key, EntryMetadata* metadata_out) const {
 
 StatusWithSize KeyValueStore::Get(Key key,
                                   const EntryMetadata& metadata,
-                                  std::span<std::byte> value_buffer,
+                                  span<std::byte> value_buffer,
                                   size_t offset_bytes) const {
   Entry entry;
 
@@ -618,7 +618,7 @@ Status KeyValueStore::FixedSizeGet(Key key,
   }
 
   StatusWithSize result =
-      Get(key, metadata, std::span(static_cast<byte*>(value), size_bytes), 0);
+      Get(key, metadata, span(static_cast<byte*>(value), size_bytes), 0);
 
   return result.status();
 }
@@ -658,7 +658,7 @@ Status KeyValueStore::CheckReadOperation(Key key) const {
 Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
                                                EntryState new_state,
                                                Key key,
-                                               std::span<const byte> value) {
+                                               span<const byte> value) {
   // Read the original entry to get the size for sector accounting purposes.
   Entry entry;
   PW_TRY(ReadEntry(metadata, entry));
@@ -666,8 +666,7 @@ Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
   return WriteEntry(key, value, new_state, &metadata, &entry);
 }
 
-Status KeyValueStore::WriteEntryForNewKey(Key key,
-                                          std::span<const byte> value) {
+Status KeyValueStore::WriteEntryForNewKey(Key key, span<const byte> value) {
   // If we are trying to ensure that all possible writes are successful, and the
   // cache is full, attempt heavy maintenance now.
   if (options_.gc_on_write == GargbageCollectOnWrite::kAsManySectorsNeeded &&
@@ -689,7 +688,7 @@ Status KeyValueStore::WriteEntryForNewKey(Key key,
 }
 
 Status KeyValueStore::WriteEntry(Key key,
-                                 std::span<const byte> value,
+                                 span<const byte> value,
                                  EntryState new_state,
                                  EntryMetadata* prior_metadata,
                                  const Entry* prior_entry) {
@@ -766,8 +765,7 @@ Status KeyValueStore::GetAddressesForWrite(Address* write_addresses,
                                            size_t write_size) {
   for (size_t i = 0; i < redundancy(); i++) {
     SectorDescriptor* sector;
-    PW_TRY(
-        GetSectorForWrite(&sector, write_size, std::span(write_addresses, i)));
+    PW_TRY(GetSectorForWrite(&sector, write_size, span(write_addresses, i)));
     write_addresses[i] = sectors_.NextWritableAddress(*sector);
 
     DBG("Found space for entry in sector %u at address %u",
@@ -786,7 +784,7 @@ Status KeyValueStore::GetAddressesForWrite(Address* write_addresses,
 Status KeyValueStore::GetSectorForWrite(
     SectorDescriptor** sector,
     size_t entry_size,
-    std::span<const Address> reserved_addresses) {
+    span<const Address> reserved_addresses) {
   Status result = sectors_.FindSpace(sector, entry_size, reserved_addresses);
 
   size_t gc_sector_count = 0;
@@ -840,7 +838,7 @@ Status KeyValueStore::MarkSectorCorruptIfNotOk(Status status,
 
 Status KeyValueStore::AppendEntry(const Entry& entry,
                                   Key key,
-                                  std::span<const byte> value) {
+                                  span<const byte> value) {
   const StatusWithSize result = entry.Write(key, value);
 
   SectorDescriptor& sector = sectors_.FromAddress(entry.address());
@@ -886,10 +884,9 @@ StatusWithSize KeyValueStore::CopyEntryToSector(Entry& entry,
   return result;
 }
 
-Status KeyValueStore::RelocateEntry(
-    const EntryMetadata& metadata,
-    KeyValueStore::Address& address,
-    std::span<const Address> reserved_addresses) {
+Status KeyValueStore::RelocateEntry(const EntryMetadata& metadata,
+                                    KeyValueStore::Address& address,
+                                    span<const Address> reserved_addresses) {
   Entry entry;
   PW_TRY(ReadEntry(metadata, entry));
 
@@ -1013,11 +1010,10 @@ Status KeyValueStore::PartialMaintenance() {
   if (error_detected_ && options_.recovery != ErrorRecovery::kManual) {
     PW_TRY(Repair());
   }
-  return GarbageCollect(std::span<const Address>());
+  return GarbageCollect(span<const Address>());
 }
 
-Status KeyValueStore::GarbageCollect(
-    std::span<const Address> reserved_addresses) {
+Status KeyValueStore::GarbageCollect(span<const Address> reserved_addresses) {
   DBG("Garbage Collect a single sector");
   for ([[maybe_unused]] Address address : reserved_addresses) {
     DBG("   Avoid address %u", unsigned(address));
@@ -1039,7 +1035,7 @@ Status KeyValueStore::GarbageCollect(
 Status KeyValueStore::RelocateKeyAddressesInSector(
     SectorDescriptor& sector_to_gc,
     const EntryMetadata& metadata,
-    std::span<const Address> reserved_addresses) {
+    span<const Address> reserved_addresses) {
   for (FlashPartition::Address& address : metadata.addresses()) {
     if (sectors_.AddressInSector(sector_to_gc, address)) {
       DBG("  Relocate entry for Key 0x%08" PRIx32 ", sector %u",
@@ -1053,8 +1049,7 @@ Status KeyValueStore::RelocateKeyAddressesInSector(
 }
 
 Status KeyValueStore::GarbageCollectSector(
-    SectorDescriptor& sector_to_gc,
-    std::span<const Address> reserved_addresses) {
+    SectorDescriptor& sector_to_gc, span<const Address> reserved_addresses) {
   DBG("  Garbage Collect sector %u", sectors_.Index(sector_to_gc));
 
   // Step 1: Move any valid entries in the GC sector to other sectors
@@ -1202,7 +1197,7 @@ Status KeyValueStore::EnsureFreeSectorExists() {
   }
   if (empty_sector_found == false) {
     DBG("   No empty sector found, attempting to GC a free sector");
-    Status sector_status = GarbageCollect(std::span<const Address, 0>());
+    Status sector_status = GarbageCollect(span<const Address, 0>());
     if (repair_status.ok() && !sector_status.ok()) {
       DBG("   Unable to free an empty sector");
       repair_status = sector_status;
@@ -1289,7 +1284,7 @@ Status KeyValueStore::Repair() {
 
 KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
                                                 Key key,
-                                                std::span<const byte> value,
+                                                span<const byte> value,
                                                 EntryState state) {
   // Always bump the transaction ID when creating a new entry.
   //

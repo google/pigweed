@@ -14,7 +14,6 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 #include <tuple>
 
 #include "pw_containers/intrusive_list.h"
@@ -26,13 +25,14 @@
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/service.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
 
 class Server : public internal::Endpoint {
  public:
-  _PW_RPC_CONSTEXPR Server(std::span<Channel> channels) : Endpoint(channels) {}
+  _PW_RPC_CONSTEXPR Server(span<Channel> channels) : Endpoint(channels) {}
 
   // Registers one or more services with the server. This should not be called
   // directly with a Service; instead, use a generated class which inherits

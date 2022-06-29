@@ -16,12 +16,12 @@
 #include <atomic>
 #include <cstdint>
 #include <optional>
-#include <span>
 #include <thread>
 
 #include "pw_hdlc/rpc_channel.h"
 #include "pw_hdlc/rpc_packets.h"
 #include "pw_rpc/integration_testing.h"
+#include "pw_span/span.h"
 #include "pw_status/try.h"
 #include "pw_stream/socket_stream.h"
 
@@ -38,7 +38,7 @@ class SocketClientContext {
         channel_output_with_manipulator_(channel_output_),
         channel_(
             Channel::Create<kChannelId>(&channel_output_with_manipulator_)),
-        client_(std::span(&channel_, 1)) {}
+        client_(span(&channel_, 1)) {}
 
   Client& client() { return client_; }
 
@@ -108,7 +108,7 @@ class SocketClientContext {
     size_t MaximumTransmissionUnit() override {
       return actual_output_.MaximumTransmissionUnit();
     }
-    Status Send(std::span<const std::byte> buffer) override
+    Status Send(span<const std::byte> buffer) override
         PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
       if (channel_manipulator_ != nullptr) {
         return channel_manipulator_->ProcessAndSend(buffer);

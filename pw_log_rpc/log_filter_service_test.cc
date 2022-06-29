@@ -367,7 +367,7 @@ void VerifyFilterRule(protobuf::Decoder& decoder,
 }
 
 void VerifyFilterRules(protobuf::Decoder& decoder,
-                       std::span<const Filter::Rule> expected_rules) {
+                       span<const Filter::Rule> expected_rules) {
   size_t rules_found = 0;
   while (decoder.Next().ok()) {
     ConstByteSpan rule;

@@ -235,13 +235,13 @@ Result<uint32_t> GetMetadataVersion(protobuf::Message& metadata,
 
 // Reads a protobuf::String into a buffer and returns a std::string_view.
 Result<std::string_view> ReadProtoString(protobuf::String str,
-                                         std::span<char> buffer) {
+                                         span<char> buffer) {
   stream::IntervalReader reader = str.GetBytesReader();
   if (reader.interval_size() > buffer.size()) {
     return Status::ResourceExhausted();
   }
 
-  Result<ByteSpan> res = reader.Read(std::as_writable_bytes(buffer));
+  Result<ByteSpan> res = reader.Read(as_writable_bytes(buffer));
   PW_TRY(res.status());
   return std::string_view(buffer.data(), res.value().size());
 }

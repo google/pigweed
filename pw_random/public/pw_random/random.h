@@ -15,9 +15,9 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <span>
 
 #include "pw_bytes/span.h"
+#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::random {

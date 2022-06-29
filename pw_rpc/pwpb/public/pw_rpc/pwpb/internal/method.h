@@ -15,7 +15,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <span>
 #include <type_traits>
 
 #include "pw_bytes/span.h"
@@ -27,6 +26,7 @@
 #include "pw_rpc/pwpb/internal/common.h"
 #include "pw_rpc/pwpb/server_reader_writer.h"
 #include "pw_rpc/service.h"
+#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {

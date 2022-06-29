@@ -23,7 +23,7 @@ namespace {
 
 TEST(IntervalReader, IntervalReaderRead) {
   std::uint8_t data[] = {0, 1, 2, 3, 4, 5, 6, 7, 9, 10};
-  stream::MemoryReader reader(std::as_bytes(std::span(data)));
+  stream::MemoryReader reader(as_bytes(span(data)));
   IntervalReader reader_first_half(reader, 0, 5);
   IntervalReader reader_second_half(reader, 5, 10);
 
@@ -53,7 +53,7 @@ TEST(IntervalReader, IntervalReaderRead) {
 
 TEST(IntervalReader, IntervalReaderSeek) {
   std::uint8_t data[] = {0, 1, 2, 3, 4, 5, 6, 7, 9, 10};
-  stream::MemoryReader reader(std::as_bytes(std::span(data)));
+  stream::MemoryReader reader(as_bytes(span(data)));
   IntervalReader interval_reader(reader, 0, 10);
 
   // Absolute seeking.

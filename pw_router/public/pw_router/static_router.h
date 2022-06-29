@@ -13,12 +13,11 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "pw_bytes/span.h"
 #include "pw_metric/metric.h"
 #include "pw_router/egress.h"
 #include "pw_router/packet_parser.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::router {
@@ -38,7 +37,7 @@ class StaticRouter {
     Egress& egress;
   };
 
-  StaticRouter(std::span<const Route> routes) : routes_(routes) {}
+  StaticRouter(span<const Route> routes) : routes_(routes) {}
 
   StaticRouter(const StaticRouter&) = delete;
   StaticRouter(StaticRouter&&) = delete;
@@ -63,7 +62,7 @@ class StaticRouter {
   Status RoutePacket(ConstByteSpan packet, PacketParser& parser);
 
  private:
-  const std::span<const Route> routes_;
+  const span<const Route> routes_;
   PW_METRIC_GROUP(metrics_, "static_router");
   PW_METRIC(metrics_, parser_errors_, "parser_errors", 0u);
   PW_METRIC(metrics_, route_errors_, "route_errors", 0u);

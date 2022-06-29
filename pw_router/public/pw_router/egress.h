@@ -14,10 +14,10 @@
 #pragma once
 
 #include <optional>
-#include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_router/packet_parser.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::router {

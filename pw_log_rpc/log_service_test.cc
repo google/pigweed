@@ -100,7 +100,7 @@ class LogServiceTest : public ::testing::Test {
                              ConstByteSpan thread) {
     Result<ConstByteSpan> encoded_log_result =
         log::EncodeTokenizedLog(metadata,
-                                std::as_bytes(std::span(message)),
+                                as_bytes(span(message)),
                                 timestamp,
                                 thread,
                                 entry_encode_buffer_);
@@ -231,7 +231,7 @@ TEST_F(LogServiceTest, StartAndEndStream) {
     expected_messages.push_back(
         {.metadata = kSampleMetadata,
          .timestamp = kSampleTimestamp,
-         .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+         .tokenized_data = as_bytes(span(std::string_view(kMessage))),
          .thread = {}});
   }
   size_t entries_found = 0;
@@ -286,20 +286,20 @@ TEST_F(LogServiceTest, HandleDropped) {
     expected_messages.push_back(
         {.metadata = kSampleMetadata,
          .timestamp = kSampleTimestamp,
-         .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+         .tokenized_data = as_bytes(span(std::string_view(kMessage))),
          .thread = kSampleThread});
   }
   expected_messages.push_back(
       {.metadata = kDropMessageMetadata,
        .dropped = total_drop_count,
-       .tokenized_data = std::as_bytes(
-           std::span(std::string_view(RpcLogDrain::kIngressErrorMessage))),
+       .tokenized_data =
+           as_bytes(span(std::string_view(RpcLogDrain::kIngressErrorMessage))),
        .thread = {}});
   for (; i < total_entries; ++i) {
     expected_messages.push_back(
         {.metadata = kSampleMetadata,
          .timestamp = kSampleTimestamp,
-         .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+         .tokenized_data = as_bytes(span(std::string_view(kMessage))),
          .thread = kSampleThread});
   }
 
@@ -358,13 +358,13 @@ TEST_F(LogServiceTest, HandleDroppedBetweenFilteredOutLogs) {
   expected_messages.push_back(
       {.metadata = kDropMessageMetadata,
        .dropped = total_drop_count,
-       .tokenized_data = std::as_bytes(
-           std::span(std::string_view(RpcLogDrain::kIngressErrorMessage))),
+       .tokenized_data =
+           as_bytes(span(std::string_view(RpcLogDrain::kIngressErrorMessage))),
        .thread = {}});
   expected_messages.push_back(
       {.metadata = metadata,
        .timestamp = kSampleTimestamp,
-       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+       .tokenized_data = as_bytes(span(std::string_view(kMessage))),
        .thread = kSampleThread});
 
   // Verify data in responses.
@@ -414,13 +414,13 @@ TEST_F(LogServiceTest, HandleSmallLogEntryBuffer) {
   expected_messages.push_back(
       {.metadata = kDropMessageMetadata,
        .dropped = total_drop_count,
-       .tokenized_data = std::as_bytes(std::span(
-           std::string_view(RpcLogDrain::kSmallStackBufferErrorMessage))),
+       .tokenized_data = as_bytes(
+           span(std::string_view(RpcLogDrain::kSmallStackBufferErrorMessage))),
        .thread = {}});
   expected_messages.push_back(
       {.metadata = kSampleMetadata,
        .timestamp = kSampleTimestamp,
-       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+       .tokenized_data = as_bytes(span(std::string_view(kMessage))),
        .thread = kSampleThread});
 
   // Expect one drop message with the total drop count, and the only message
@@ -467,7 +467,7 @@ TEST_F(LogServiceTest, LargeLogEntry) {
                                        (1 << PW_LOG_TOKENIZED_FLAG_BITS) - 1,
                                        (1 << PW_LOG_TOKENIZED_LINE_BITS) - 1>(),
       .timestamp = std::numeric_limits<int64_t>::max(),
-      .tokenized_data = std::as_bytes(std::span(kMessage)),
+      .tokenized_data = as_bytes(span(kMessage)),
       .thread = kSampleThread,
   };
 
@@ -483,9 +483,8 @@ TEST_F(LogServiceTest, LargeLogEntry) {
   ASSERT_EQ(encoder.WriteTimestamp(expected_entry.timestamp), OkStatus());
   const uint32_t little_endian_module =
       bytes::ConvertOrderTo(endian::little, expected_entry.metadata.module());
-  ASSERT_EQ(
-      encoder.WriteModule(std::as_bytes(std::span(&little_endian_module, 1))),
-      OkStatus());
+  ASSERT_EQ(encoder.WriteModule(as_bytes(span(&little_endian_module, 1))),
+            OkStatus());
   ASSERT_EQ(encoder.WriteThread(expected_entry.thread), OkStatus());
   ASSERT_EQ(encoder.status(), OkStatus());
   multisink_.HandleEntry(encoder);
@@ -521,7 +520,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   const size_t max_packets = 10;
   rpc::RawFakeChannelOutput<10, 512> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
-  rpc::Server server(std::span(&channel, 1));
+  rpc::Server server(span(&channel, 1));
 
   // Add as many entries needed to have multiple packets send.
   StatusWithSize status =
@@ -563,7 +562,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
     expected_messages.push_back(
         {.metadata = kSampleMetadata,
          .timestamp = kSampleTimestamp,
-         .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+         .tokenized_data = as_bytes(span(std::string_view(kMessage))),
          .thread = kSampleThread});
   }
   size_t entries_found = 0;
@@ -597,15 +596,15 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   expected_messages_after_reset.push_back(
       {.metadata = kDropMessageMetadata,
        .dropped = total_drop_count,
-       .tokenized_data = std::as_bytes(
-           std::span(std::string_view(RpcLogDrain::kWriterErrorMessage)))});
+       .tokenized_data =
+           as_bytes(span(std::string_view(RpcLogDrain::kWriterErrorMessage)))});
 
   const uint32_t remaining_entries = total_entries - total_drop_count;
   for (size_t i = 0; i < remaining_entries; ++i) {
     expected_messages_after_reset.push_back(
         {.metadata = kSampleMetadata,
          .timestamp = kSampleTimestamp,
-         .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+         .tokenized_data = as_bytes(span(std::string_view(kMessage))),
          .thread = kSampleThread});
   }
 
@@ -633,7 +632,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   const size_t max_packets = 20;
   rpc::RawFakeChannelOutput<max_packets, 512> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
-  rpc::Server server(std::span(&channel, 1));
+  rpc::Server server(span(&channel, 1));
 
   // Add as many entries needed to have multiple packets send.
   StatusWithSize status =
@@ -684,7 +683,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
     expected_messages.push_back(
         {.metadata = kSampleMetadata,
          .timestamp = kSampleTimestamp,
-         .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+         .tokenized_data = as_bytes(span(std::string_view(kMessage))),
          .thread = kSampleThread});
   }
 
@@ -777,19 +776,19 @@ TEST_F(LogServiceTest, FilterLogs) {
   Vector<TestLogEntry, 4> expected_messages{
       {.metadata = info_metadata,
        .timestamp = kSampleTimestamp,
-       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+       .tokenized_data = as_bytes(span(std::string_view(kMessage))),
        .thread = kSampleThread},
       {.metadata = warn_metadata,
        .timestamp = kSampleTimestamp,
-       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+       .tokenized_data = as_bytes(span(std::string_view(kMessage))),
        .thread = kSampleThread},
       {.metadata = error_metadata,
        .timestamp = kSampleTimestamp,
-       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+       .tokenized_data = as_bytes(span(std::string_view(kMessage))),
        .thread = kNewThread},
       {.metadata = second_info_metadata,
        .timestamp = kSampleTimestamp,
-       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage))),
+       .tokenized_data = as_bytes(span(std::string_view(kMessage))),
        .thread = kNewThread},
   };
 
@@ -853,7 +852,7 @@ TEST_F(LogServiceTest, ReopenClosedLogStreamWithAcquiredBuffer) {
   LogService log_service(drain_map_);
   rpc::RawFakeChannelOutput<10, 512> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
-  rpc::Server server(std::span(&channel, 1));
+  rpc::Server server(span(&channel, 1));
 
   // Request logs.
   rpc::RawServerWriter writer = rpc::RawServerWriter::Open<Logs::Listen>(

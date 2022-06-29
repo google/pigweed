@@ -53,7 +53,7 @@ class WriteUnnumberedFrame : public ::testing::Test {
 constexpr byte kUnnumberedControl = byte{0x3};
 
 TEST_F(WriteUnnumberedFrame, EmptyPayload) {
-  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, std::span<byte>(), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, span<byte>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
       kFlag, kEncodedAddress, kUnnumberedControl, uint32_t{0x832d343f}, kFlag));
 }

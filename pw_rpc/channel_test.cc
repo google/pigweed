@@ -27,7 +27,7 @@ TEST(ChannelOutput, Name) {
   class NameTester : public ChannelOutput {
    public:
     NameTester(const char* name) : ChannelOutput(name) {}
-    Status Send(std::span<const std::byte>) override { return OkStatus(); }
+    Status Send(span<const std::byte>) override { return OkStatus(); }
   };
 
   EXPECT_STREQ("hello_world", NameTester("hello_world").name());

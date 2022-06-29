@@ -16,10 +16,10 @@
 
 #include <array>
 #include <cstdint>
-#include <span>
 
 #include "pw_function/function.h"
 #include "pw_metric/metric.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/lock_annotations.h"
@@ -38,7 +38,7 @@ using WorkItem = Function<void()>;
 class WorkQueue : public thread::ThreadCore {
  public:
   // Note: the ThreadNotification prevents this from being constexpr.
-  explicit WorkQueue(std::span<WorkItem> queue_storage)
+  explicit WorkQueue(span<WorkItem> queue_storage)
       : stop_requested_(false), circular_buffer_(queue_storage) {}
 
   // Enqueues a work_item for execution by the work queue thread.

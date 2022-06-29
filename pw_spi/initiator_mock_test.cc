@@ -15,12 +15,12 @@
 #include "pw_spi/initiator_mock.h"
 
 #include <array>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/algorithm.h"
+#include "pw_span/span.h"
 
 namespace pw::spi {
 namespace {

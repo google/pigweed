@@ -170,7 +170,7 @@ def c_escaped_string(data: bytes):
 def byte_array_declaration(data: bytes, name: str) -> str:
     """Generates a ConstByteSpan declaration for a byte array"""
     type_name = '[[maybe_unused]] const pw::ConstByteSpan'
-    array_body = f'std::as_bytes(std::span{c_escaped_string(data)})'
+    array_body = f'pw::as_bytes(pw::span{c_escaped_string(data)})'
     return f'{type_name} {name} = {array_body};'
 
 

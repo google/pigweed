@@ -14,10 +14,10 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_polyfill/language_feature_macros.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/stream.h"

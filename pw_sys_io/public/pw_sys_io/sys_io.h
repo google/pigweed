@@ -84,7 +84,7 @@ Status WriteByte(std::byte b);
 // are returned as part of the StatusWithSize.
 StatusWithSize WriteLine(const std::string_view& s);
 
-// Fill a byte std::span from the sys io backend using ReadByte().
+// Fill a byte span from the sys io backend using ReadByte().
 // Implemented by: Facade
 //
 // This function is implemented by this facade and simply uses ReadByte() to
@@ -98,7 +98,7 @@ StatusWithSize WriteLine(const std::string_view& s);
 // destination span are returned as part of the StatusWithSize.
 StatusWithSize ReadBytes(ByteSpan dest);
 
-// Write std::span of bytes out the sys io backend using WriteByte().
+// Write span of bytes out the sys io backend using WriteByte().
 // Implemented by: Facade
 //
 // This function is implemented by this facade and simply writes the source

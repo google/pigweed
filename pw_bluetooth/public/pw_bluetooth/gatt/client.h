@@ -14,7 +14,6 @@
 #pragma once
 
 #include <memory>
-#include <span>
 
 #include "pw_bluetooth/gatt/constants.h"
 #include "pw_bluetooth/gatt/error.h"
@@ -24,6 +23,7 @@
 #include "pw_containers/vector.h"
 #include "pw_function/function.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 
 namespace pw::bluetooth::gatt {
 
@@ -173,7 +173,7 @@ class RemoteService {
   // kWriteNotPermitted or kInsufficient* if the server rejects the request.
   // kFailure if the server returns an error not covered by the above errors.
   void WriteCharacteristic(Handle handle,
-                           std::span<const std::byte> value,
+                           span<const std::byte> value,
                            WriteOptions options,
                            Function<void(Result<Error>)>&& result_callback);
 
@@ -194,7 +194,7 @@ class RemoteService {
                       ReadCallback&& result_callback);
 
   void WriteDescriptor(Handle handle,
-                       std::span<const std::byte> value,
+                       span<const std::byte> value,
                        WriteOptions options,
                        Function<void(Result<Error>)>&& result_callback);
 

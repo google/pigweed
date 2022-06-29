@@ -15,18 +15,18 @@
 #pragma once
 
 #include <cstring>
-#include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_log_rpc/log_filter.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 
 namespace pw::log_rpc {
 
 // Holds an inmutable Filter map, ordered by filter ID to facilitate set up.
 class FilterMap {
  public:
-  explicit constexpr FilterMap(std::span<Filter> filters) : filters_(filters) {}
+  explicit constexpr FilterMap(span<Filter> filters) : filters_(filters) {}
 
   // Not copyable nor movable.
   FilterMap(FilterMap const&) = delete;
@@ -44,10 +44,10 @@ class FilterMap {
     return Status::NotFound();
   }
 
-  const std::span<Filter>& filters() const { return filters_; }
+  const span<Filter>& filters() const { return filters_; }
 
  protected:
-  const std::span<Filter> filters_;
+  const span<Filter> filters_;
 };
 
 }  // namespace pw::log_rpc

@@ -95,7 +95,7 @@ class MutablePersistentTest : public ::testing::Test {
   void ZeroPersistentMemory() { memset(&buffer_, 0, sizeof(buffer_)); }
   void RandomFillMemory() {
     random::XorShiftStarRng64 rng(0x9ad75);
-    StatusWithSize sws = rng.Get(std::span<std::byte>(
+    StatusWithSize sws = rng.Get(span<std::byte>(
         reinterpret_cast<std::byte*>(&buffer_), sizeof(buffer_)));
     ASSERT_TRUE(sws.ok());
     ASSERT_EQ(sws.size(), sizeof(buffer_));

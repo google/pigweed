@@ -14,13 +14,13 @@
 
 #include "pw_log/proto_utils.h"
 
-#include <span>
 #include <string_view>
 
 #include "pw_bytes/endian.h"
 #include "pw_log/levels.h"
 #include "pw_log_tokenized/metadata.h"
 #include "pw_protobuf/wire_format.h"
+#include "pw_span/span.h"
 
 namespace pw::log {
 
@@ -41,7 +41,7 @@ Result<ConstByteSpan> EncodeLog(int level,
   }
 
   // Defer status checks until the end.
-  Status status = encoder.WriteMessage(std::as_bytes(std::span(message)));
+  Status status = encoder.WriteMessage(as_bytes(span(message)));
   status = encoder.WriteLineLevel(PackLineLevel(line_number, level));
   if (flags != 0) {
     status = encoder.WriteFlags(flags);
@@ -50,13 +50,13 @@ Result<ConstByteSpan> EncodeLog(int level,
 
   // Module name and file name may or may not be present.
   if (!module_name.empty()) {
-    status = encoder.WriteModule(std::as_bytes(std::span(module_name)));
+    status = encoder.WriteModule(as_bytes(span(module_name)));
   }
   if (!file_name.empty()) {
-    status = encoder.WriteFile(std::as_bytes(std::span(file_name)));
+    status = encoder.WriteFile(as_bytes(span(file_name)));
   }
   if (!thread_name.empty()) {
-    status = encoder.WriteThread(std::as_bytes(std::span(thread_name)));
+    status = encoder.WriteThread(as_bytes(span(thread_name)));
   }
   PW_TRY(encoder.status());
   return ConstByteSpan(encoder);
@@ -81,8 +81,7 @@ LogEntry::MemoryEncoder CreateEncoderAndEncodeTokenizedLog(
   if (metadata.module() != 0) {
     const uint32_t little_endian_module =
         bytes::ConvertOrderTo(endian::little, metadata.module());
-    status =
-        encoder.WriteModule(std::as_bytes(std::span(&little_endian_module, 1)));
+    status = encoder.WriteModule(as_bytes(span(&little_endian_module, 1)));
   }
   return encoder;
 }

@@ -13,10 +13,9 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "FreeRTOS.h"
 #include "pw_function/function.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "task.h"
 

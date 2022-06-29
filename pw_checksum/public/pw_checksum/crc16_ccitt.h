@@ -35,9 +35,8 @@ uint16_t pw_checksum_Crc16Ccitt(const void* data,
 #ifdef __cplusplus
 }  // extern "C"
 
-#include <span>
-
 #include "pw_bytes/span.h"
+#include "pw_span/span.h"
 
 namespace pw::checksum {
 
@@ -49,7 +48,7 @@ class Crc16Ccitt {
   // Calculates the CRC-16-CCITT for the provided data and returns it as a
   // uint16_t. To update a CRC in multiple calls, use an instance of the
   // Crc16Ccitt class or pass the previous value as the initial_value argument.
-  static uint16_t Calculate(std::span<const std::byte> data,
+  static uint16_t Calculate(span<const std::byte> data,
                             uint16_t initial_value = kInitialValue) {
     return pw_checksum_Crc16Ccitt(
         data.data(), data.size_bytes(), initial_value);
@@ -62,9 +61,7 @@ class Crc16Ccitt {
 
   constexpr Crc16Ccitt() : value_(kInitialValue) {}
 
-  void Update(std::span<const std::byte> data) {
-    value_ = Calculate(data, value_);
-  }
+  void Update(span<const std::byte> data) { value_ = Calculate(data, value_); }
 
   void Update(std::byte data) { Update(ByteSpan(&data, 1)); }
 

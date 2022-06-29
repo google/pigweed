@@ -14,11 +14,11 @@
 #pragma once
 
 #include <cinttypes>
-#include <span>
 
 #include "pw_rpc/channel.h"
 #include "pw_rpc/client_server.h"
 #include "pw_rpc/internal/client_server_testing.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_sync/mutex.h"
@@ -50,8 +50,7 @@ class WatchableChannelOutput
     return Base::MaximumTransmissionUnit();
   }
 
-  Status Send(std::span<const std::byte> buffer)
-      PW_LOCKS_EXCLUDED(mutex_) override {
+  Status Send(span<const std::byte> buffer) PW_LOCKS_EXCLUDED(mutex_) override {
     Status status;
     mutex_.lock();
     status = Base::Send(buffer);

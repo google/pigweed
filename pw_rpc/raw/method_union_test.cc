@@ -58,7 +58,7 @@ class FakeGeneratedServiceImpl
     ASSERT_EQ(OkStatus(), test_response.WriteValue(last_request.integer + 5));
 
     ASSERT_EQ(OkStatus(),
-              responder.Finish(std::span(response).first(test_response.size()),
+              responder.Finish(span(response).first(test_response.size()),
                                Status::Unauthenticated()));
   }
 

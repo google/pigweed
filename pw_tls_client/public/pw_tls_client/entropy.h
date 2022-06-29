@@ -24,7 +24,7 @@ namespace pw::tls_client {
 Status GetRandomBytes(ByteSpan dest);
 
 // An overloaded variant for accomodating C API interfaces, i.e. mbed TLS.
-inline Status GetRandomBytes(std::span<unsigned char> dest) {
-  return GetRandomBytes(std::as_writable_bytes(dest));
+inline Status GetRandomBytes(span<unsigned char> dest) {
+  return GetRandomBytes(as_writable_bytes(dest));
 }
 }  // namespace pw::tls_client

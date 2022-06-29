@@ -16,11 +16,11 @@
 
 #include <cstddef>
 #include <mutex>
-#include <span>
 
 #include "pw_assert/check.h"
 #include "pw_blob_store/blob_store.h"
 #include "pw_file/flat_file_system.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_sync/virtual_basic_lockable.h"
@@ -51,7 +51,7 @@ void FlatFileSystemBlobStoreEntry::EnsureInitialized() {
   PW_DCHECK_OK(status);
 }
 
-StatusWithSize FlatFileSystemBlobStoreEntry::Name(std::span<char> dest) {
+StatusWithSize FlatFileSystemBlobStoreEntry::Name(span<char> dest) {
   EnsureInitialized();
   std::lock_guard lock(blob_store_lock_);
   BlobStore::BlobReader reader(blob_store_);

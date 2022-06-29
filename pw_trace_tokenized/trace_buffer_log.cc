@@ -15,10 +15,9 @@
 //
 #include "pw_trace_tokenized/trace_buffer_log.h"
 
-#include <span>
-
 #include "pw_base64/base64.h"
 #include "pw_log/log.h"
+#include "pw_span/span.h"
 #include "pw_string/string_builder.h"
 #include "pw_trace_tokenized/trace_buffer.h"
 
@@ -53,17 +52,16 @@ pw::Status DumpTraceBufferToLog() {
       pw::trace::GetBuffer();
   size_t bytes_read = 0;
   PW_LOG_INFO("[TRACE] begin");
-  while (trace_buffer->PeekFront(std::span(entry_buffer).subspan(1),
-                                 &bytes_read) != pw::Status::OutOfRange()) {
+  while (trace_buffer->PeekFront(span(entry_buffer).subspan(1), &bytes_read) !=
+         pw::Status::OutOfRange()) {
     trace_buffer->PopFront()
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     entry_buffer[0] = static_cast<std::byte>(bytes_read);
     // The entry buffer is formatted as (size, entry) with an extra byte as
     // a header to the entry. The calcuation of bytes_read + 1 represents
     // the extra size header.
-    size_t to_write =
-        pw::base64::Encode(std::span(entry_buffer, bytes_read + 1),
-                           std::span(entry_base64_buffer));
+    size_t to_write = pw::base64::Encode(span(entry_buffer, bytes_read + 1),
+                                         span(entry_base64_buffer));
     size_t space_left = line_builder.max_size() - line_builder.size();
     size_t written = 0;
     while (to_write - written >= space_left) {

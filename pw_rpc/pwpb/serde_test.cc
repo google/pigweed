@@ -12,11 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <span>
-
 #include "gtest/gtest.h"
 #include "pw_rpc/pwpb/internal/common.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
+#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {

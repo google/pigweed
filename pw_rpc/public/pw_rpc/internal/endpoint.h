@@ -13,8 +13,6 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "pw_containers/intrusive_list.h"
 #include "pw_result/result.h"
 #include "pw_rpc/internal/call.h"
@@ -22,6 +20,7 @@
 #include "pw_rpc/internal/channel_list.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_span/span.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::rpc::internal {
@@ -73,14 +72,14 @@ class Endpoint {
   }
 
  protected:
-  _PW_RPC_CONSTEXPR Endpoint(std::span<rpc::Channel> channels)
-      : channels_(std::span(static_cast<internal::Channel*>(channels.data()),
-                            channels.size())),
+  _PW_RPC_CONSTEXPR Endpoint(span<rpc::Channel> channels)
+      : channels_(span(static_cast<internal::Channel*>(channels.data()),
+                       channels.size())),
         next_call_id_(0) {}
 
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
   // Returns the parsed packet or an error.
-  Result<Packet> ProcessPacket(std::span<const std::byte> data,
+  Result<Packet> ProcessPacket(span<const std::byte> data,
                                Packet::Destination destination)
       PW_LOCKS_EXCLUDED(rpc_lock());
 

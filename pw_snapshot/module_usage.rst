@@ -44,9 +44,9 @@ write a few fields in a snapshot, you can do so with minimal memory overhead.
           snapshot_encoder.GetMetadataEncoder();
       metadata_encoder.WriteReason(EncodeReasonLog(crash_info));
       metadata_encoder.WriteFatal(true);
-      metadata_encoder.WriteProjectName(std::as_bytes(std::span("smart-shoe")));
+      metadata_encoder.WriteProjectName(pw::as_bytes(pw::span("smart-shoe")));
       metadata_encoder.WriteDeviceName(
-          std::as_bytes(std::span("smart-shoe-p1")));
+          pw::as_bytes(pw::span("smart-shoe-p1")));
     }
     return proto_encoder.status();
   }

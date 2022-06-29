@@ -16,12 +16,12 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
-#include <span>
 #include <type_traits>
 
 #include "pw_bytes/array.h"
 #include "pw_bytes/bit.h"
 #include "pw_bytes/span.h"
+#include "pw_span/span.h"
 
 namespace pw::bytes {
 namespace internal {
@@ -170,9 +170,9 @@ T ReadInOrder(endian order, const void* buffer, size_t max_bytes_to_read) {
 template <typename T,
           typename B,
           size_t kBufferSize,
-          typename = std::enable_if_t<kBufferSize != std::dynamic_extent &&
+          typename = std::enable_if_t<kBufferSize != dynamic_extent &&
                                       sizeof(B) == sizeof(std::byte)>>
-T ReadInOrder(endian order, std::span<B, kBufferSize> buffer) {
+T ReadInOrder(endian order, span<B, kBufferSize> buffer) {
   static_assert(kBufferSize >= sizeof(T));
   return ReadInOrder<T>(order, buffer.data());
 }
@@ -180,13 +180,13 @@ T ReadInOrder(endian order, std::span<B, kBufferSize> buffer) {
 // ReadInOrder from a std::array, with compile-time bounds checking.
 template <typename T, typename B, size_t kBufferSize>
 T ReadInOrder(endian order, const std::array<B, kBufferSize>& buffer) {
-  return ReadInOrder<T>(order, std::span(buffer));
+  return ReadInOrder<T>(order, span(buffer));
 }
 
 // ReadInOrder from a C array, with compile-time bounds checking.
 template <typename T, typename B, size_t kBufferSize>
 T ReadInOrder(endian order, const B (&buffer)[kBufferSize]) {
-  return ReadInOrder<T>(order, std::span(buffer));
+  return ReadInOrder<T>(order, span(buffer));
 }
 
 // Reads a value with the specified endianness from the buffer, with bounds

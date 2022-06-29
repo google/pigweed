@@ -44,7 +44,7 @@ Consider splitting templated interfaces into multiple layers so that more of the
 implementation can be shared between different instantiations. A more advanced
 form is to share common logic internally by using default sentinel template
 argument value and ergo instantation such as ``pw::Vector``'s
-``size_t kMaxSize = vector_impl::kGeneric`` or ``std::span``'s
+``size_t kMaxSize = vector_impl::kGeneric`` or ``pw::span``'s
 ``size_t Extent = dynamic_extent``.
 
 -----------------

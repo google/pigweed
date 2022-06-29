@@ -66,7 +66,7 @@ void AddGroupingByte(size_t byte_index,
 
 }  // namespace
 
-Status DumpAddr(std::span<char> dest, uintptr_t addr) {
+Status DumpAddr(span<char> dest, uintptr_t addr) {
   if (dest.data() == nullptr) {
     return Status::InvalidArgument();
   }
@@ -198,7 +198,7 @@ Status FormattedHexDumper::DumpLine() {
   return builder.status();
 }
 
-Status FormattedHexDumper::SetLineBuffer(std::span<char> dest) {
+Status FormattedHexDumper::SetLineBuffer(span<char> dest) {
   if (dest.data() == nullptr || dest.size_bytes() == 0) {
     return Status::InvalidArgument();
   }

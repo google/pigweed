@@ -71,10 +71,10 @@ size_t pw_varint_ZigZagEncodedSize(int64_t integer);
 }  // extern "C"
 
 #include <limits>
-#include <span>
 #include <type_traits>
 
 #include "pw_polyfill/language_feature_macros.h"
+#include "pw_span/span.h"
 
 namespace pw {
 namespace varint {
@@ -113,7 +113,7 @@ constexpr std::make_signed_t<T> ZigZagDecode(T n)
 
 // Encodes a uint64_t with Little-Endian Base 128 (LEB128) encoding.
 inline size_t EncodeLittleEndianBase128(uint64_t integer,
-                                        const std::span<std::byte>& output) {
+                                        const span<std::byte>& output) {
   return pw_varint_Encode(integer, output.data(), output.size());
 }
 
@@ -128,7 +128,7 @@ inline size_t EncodeLittleEndianBase128(uint64_t integer,
 // Returns the number of bytes written or 0 if the result didn't fit in the
 // encoding buffer.
 template <typename T>
-size_t Encode(T integer, const std::span<std::byte>& output) {
+size_t Encode(T integer, const span<std::byte>& output) {
   if (std::is_signed<T>()) {
     return pw_varint_ZigZagEncode(integer, output.data(), output.size());
   } else {
@@ -156,11 +156,11 @@ size_t Encode(T integer, const std::span<std::byte>& output) {
 //     data = data.subspan(bytes)
 //   }
 //
-inline size_t Decode(const std::span<const std::byte>& input, int64_t* value) {
+inline size_t Decode(const span<const std::byte>& input, int64_t* value) {
   return pw_varint_ZigZagDecode(input.data(), input.size(), value);
 }
 
-inline size_t Decode(const std::span<const std::byte>& input, uint64_t* value) {
+inline size_t Decode(const span<const std::byte>& input, uint64_t* value) {
   return pw_varint_Decode(input.data(), input.size(), value);
 }
 
@@ -172,9 +172,7 @@ enum class Format {
 };
 
 // Encodes a varint in a custom format.
-inline size_t Encode(uint64_t value,
-                     std::span<std::byte> output,
-                     Format format) {
+inline size_t Encode(uint64_t value, span<std::byte> output, Format format) {
   return pw_varint_EncodeCustom(value,
                                 output.data(),
                                 output.size(),
@@ -182,7 +180,7 @@ inline size_t Encode(uint64_t value,
 }
 
 // Decodes a varint from a custom format.
-inline size_t Decode(std::span<const std::byte> input,
+inline size_t Decode(span<const std::byte> input,
                      uint64_t* value,
                      Format format) {
   return pw_varint_DecodeCustom(

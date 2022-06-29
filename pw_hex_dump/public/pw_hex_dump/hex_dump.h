@@ -15,9 +15,9 @@
 #pragma once
 
 #include <cstdint>
-#include <span>
 
 #include "pw_bytes/span.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::dump {
@@ -97,11 +97,11 @@ class FormattedHexDumper {
                  .prefix_mode = AddressMode::kOffset};
 
   FormattedHexDumper() = default;
-  FormattedHexDumper(std::span<char> dest) {
+  FormattedHexDumper(span<char> dest) {
     SetLineBuffer(dest)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
-  FormattedHexDumper(std::span<char> dest, Flags config_flags)
+  FormattedHexDumper(span<char> dest, Flags config_flags)
       : flags(config_flags) {
     SetLineBuffer(dest)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
@@ -116,7 +116,7 @@ class FormattedHexDumper {
   //     current formatting configuration.
   //   INVALID_ARGUMENT - The destination buffer is invalid (nullptr or zero-
   //     length).
-  Status SetLineBuffer(std::span<char> dest);
+  Status SetLineBuffer(span<char> dest);
 
   // Begin dumping the provided data. Does NOT populate the line buffer with
   // a string, simply resets the statefulness to track this buffer.
@@ -151,7 +151,7 @@ class FormattedHexDumper {
   Status PrintFormatHeader();
 
   size_t current_offset_;
-  std::span<char> dest_;
+  span<char> dest_;
   ConstByteSpan source_data_;
 };
 
@@ -169,8 +169,8 @@ class FormattedHexDumper {
 //   OK - Address has been written to the buffer.
 //   INVALID_ARGUMENT - The destination buffer is invalid (nullptr).
 //   RESOURCE_EXHAUSTED - The destination buffer is too small. No data written.
-Status DumpAddr(std::span<char> dest, uintptr_t addr);
-inline Status DumpAddr(std::span<char> dest, const void* ptr) {
+Status DumpAddr(span<char> dest, uintptr_t addr);
+inline Status DumpAddr(span<char> dest, const void* ptr) {
   uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
   return DumpAddr(dest, addr);
 }

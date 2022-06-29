@@ -20,11 +20,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include "pw_span/span.h"
 
 // Decoding errors are marked with prefix and suffix so that they stand out from
 // the rest of the decoded strings. These macros are used to build decoding
@@ -131,7 +132,7 @@ class StringSegment {
 
   // Returns the DecodedArg with this StringSegment decoded according to the
   // provided arguments.
-  DecodedArg Decode(const std::span<const uint8_t>& arguments) const;
+  DecodedArg Decode(const span<const uint8_t>& arguments) const;
 
   // Skips decoding this StringSegment. Literals and %% are expanded as normal.
   DecodedArg Skip() const;
@@ -169,12 +170,11 @@ class StringSegment {
   StringSegment(const std::string_view& text, Type type, ArgSize local_size)
       : text_(text), type_(type), local_size_(local_size) {}
 
-  DecodedArg DecodeString(const std::span<const uint8_t>& arguments) const;
+  DecodedArg DecodeString(const span<const uint8_t>& arguments) const;
 
-  DecodedArg DecodeInteger(const std::span<const uint8_t>& arguments) const;
+  DecodedArg DecodeInteger(const span<const uint8_t>& arguments) const;
 
-  DecodedArg DecodeFloatingPoint(
-      const std::span<const uint8_t>& arguments) const;
+  DecodedArg DecodeFloatingPoint(const span<const uint8_t>& arguments) const;
 
   std::string text_;
   Type type_;
@@ -229,11 +229,11 @@ class FormatString {
 
   // Formats this format string according to the provided encoded arguments and
   // returns a string.
-  DecodedFormatString Format(std::span<const uint8_t> arguments) const;
+  DecodedFormatString Format(span<const uint8_t> arguments) const;
 
   DecodedFormatString Format(const std::string_view& arguments) const {
-    return Format(std::span(reinterpret_cast<const uint8_t*>(arguments.data()),
-                            arguments.size()));
+    return Format(span(reinterpret_cast<const uint8_t*>(arguments.data()),
+                       arguments.size()));
   }
 
  private:

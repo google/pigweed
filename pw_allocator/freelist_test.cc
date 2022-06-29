@@ -14,9 +14,8 @@
 
 #include "pw_allocator/freelist.h"
 
-#include <span>
-
 #include "gtest/gtest.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 using std::byte;
@@ -42,7 +41,7 @@ TEST(FreeList, CanRetrieveAddedMember) {
 
   byte data[kN] = {std::byte(0)};
 
-  auto status = list.AddChunk(std::span(data, kN));
+  auto status = list.AddChunk(span(data, kN));
   EXPECT_EQ(status, OkStatus());
 
   auto item = list.FindChunk(kN);
@@ -56,7 +55,7 @@ TEST(FreeList, CanRetrieveAddedMemberForSmallerSize) {
 
   byte data[kN] = {std::byte(0)};
 
-  list.AddChunk(std::span(data, kN))
+  list.AddChunk(span(data, kN))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   auto item = list.FindChunk(kN / 2);
   EXPECT_EQ(item.size(), kN);
@@ -69,9 +68,9 @@ TEST(FreeList, CanRemoveItem) {
 
   byte data[kN] = {std::byte(0)};
 
-  list.AddChunk(std::span(data, kN))
+  list.AddChunk(span(data, kN))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  auto status = list.RemoveChunk(std::span(data, kN));
+  auto status = list.RemoveChunk(span(data, kN));
   EXPECT_EQ(status, OkStatus());
 
   auto item = list.FindChunk(kN);
@@ -86,9 +85,9 @@ TEST(FreeList, FindReturnsSmallestChunk) {
   byte data1[kN1] = {std::byte(0)};
   byte data2[kN2] = {std::byte(0)};
 
-  list.AddChunk(std::span(data1, kN1))
+  list.AddChunk(span(data1, kN1))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  list.AddChunk(std::span(data2, kN2))
+  list.AddChunk(span(data2, kN2))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   auto chunk = list.FindChunk(kN1 / 2);
@@ -115,9 +114,9 @@ TEST(FreeList, FindReturnsCorrectChunkInSameBucket) {
   byte data2[kN2] = {std::byte(0)};
 
   // List should now be 257 -> 512 -> NULL
-  list.AddChunk(std::span(data1, kN1))
+  list.AddChunk(span(data1, kN1))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  list.AddChunk(std::span(data2, kN2))
+  list.AddChunk(span(data2, kN2))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   auto chunk = list.FindChunk(kN2 + 1);
@@ -137,9 +136,9 @@ TEST(FreeList, FindCanMoveUpThroughBuckets) {
   // List should now be:
   // bkt[3] (257 bytes up to 512 bytes) -> 257 -> NULL
   // bkt[4] (513 bytes up to 1024 bytes) -> 513 -> NULL
-  list.AddChunk(std::span(data1, kN1))
+  list.AddChunk(span(data1, kN1))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  list.AddChunk(std::span(data2, kN2))
+  list.AddChunk(span(data2, kN2))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Request a 300 byte chunk. This should return the 513 byte one
@@ -154,9 +153,9 @@ TEST(FreeList, RemoveUnknownChunkReturnsNotFound) {
   byte data[kN] = {std::byte(0)};
   byte data2[kN] = {std::byte(0)};
 
-  list.AddChunk(std::span(data, kN))
+  list.AddChunk(span(data, kN))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  auto status = list.RemoveChunk(std::span(data2, kN));
+  auto status = list.RemoveChunk(span(data2, kN));
   EXPECT_EQ(status, Status::NotFound());
 }
 
@@ -167,9 +166,9 @@ TEST(FreeList, CanStoreMultipleChunksPerBucket) {
   byte data1[kN] = {std::byte(0)};
   byte data2[kN] = {std::byte(0)};
 
-  list.AddChunk(std::span(data1, kN))
+  list.AddChunk(span(data1, kN))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  list.AddChunk(std::span(data2, kN))
+  list.AddChunk(span(data2, kN))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   auto chunk1 = list.FindChunk(kN);

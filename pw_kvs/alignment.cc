@@ -18,7 +18,7 @@
 
 namespace pw {
 
-StatusWithSize AlignedWriter::Write(std::span<const std::byte> data) {
+StatusWithSize AlignedWriter::Write(span<const std::byte> data) {
   while (!data.empty()) {
     size_t to_copy = std::min(write_size_ - bytes_in_buffer_, data.size());
 

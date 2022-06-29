@@ -14,13 +14,14 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
+
+#include "pw_span/span.h"
 
 namespace pw {
 
 // Aliases for spans of bytes.
-using ByteSpan = std::span<std::byte>;
+using ByteSpan = span<std::byte>;
 
-using ConstByteSpan = std::span<const std::byte>;
+using ConstByteSpan = span<const std::byte>;
 
 }  // namespace pw

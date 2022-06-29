@@ -15,7 +15,6 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_blob_store/blob_store.h"
@@ -25,6 +24,7 @@
 #include "pw_kvs/test_key_value_store.h"
 #include "pw_log/log.h"
 #include "pw_random/xor_shift.h"
+#include "pw_span/span.h"
 
 namespace pw::blob_store {
 namespace {
@@ -33,7 +33,7 @@ class BlobStoreChunkTest : public ::testing::Test {
  protected:
   BlobStoreChunkTest() : flash_(kFlashAlignment), partition_(&flash_) {}
 
-  void InitFlashTo(std::span<const std::byte> contents) {
+  void InitFlashTo(span<const std::byte> contents) {
     partition_.Erase()
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());

@@ -33,7 +33,7 @@ void FakeChannelOutput::clear() {
   return_after_packet_count_ = -1;
 }
 
-Status FakeChannelOutput::HandlePacket(std::span<const std::byte> buffer) {
+Status FakeChannelOutput::HandlePacket(span<const std::byte> buffer) {
   // If the buffer is empty, this is just releasing an unused buffer.
   if (buffer.empty()) {
     return OkStatus();
@@ -104,7 +104,7 @@ void FakeChannelOutput::CopyPayloadToBuffer(Packet& packet) {
   const size_t start = payloads_.size();
   payloads_.resize(payloads_.size() + payload.size());
   std::memcpy(&payloads_[start], payload.data(), payload.size());
-  packet.set_payload(std::span(&payloads_[start], payload.size()));
+  packet.set_payload(span(&payloads_[start], payload.size()));
 }
 
 void FakeChannelOutput::LogPackets() const {

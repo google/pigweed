@@ -423,8 +423,8 @@ hypothetical global ``Uart`` object:
     // Send/receive here...
 
    private:
-    std::span<std::byte> rx_buffer;
-    std::span<std::byte> tx_buffer;
+    pw::span<std::byte> rx_buffer;
+    pw::span<std::byte> tx_buffer;
   };
 
   std::array<std::byte, 512> uart_rx_buffer;
@@ -454,8 +454,8 @@ might consider the following approach:
     // Send/receive here which increment tx/rx_bytes.
 
    private:
-    std::span<std::byte> rx_buffer;
-    std::span<std::byte> tx_buffer;
+    pw::span<std::byte> rx_buffer;
+    pw::span<std::byte> tx_buffer;
 
     PW_METRIC(tx_bytes_, "tx_bytes", 0);
     PW_METRIC(rx_bytes_, "rx_bytes", 0);
@@ -503,8 +503,8 @@ correctly, even when the objects are allocated globally:
     // Send/receive here which increment tx/rx_bytes.
 
    private:
-    std::span<std::byte> rx_buffer;
-    std::span<std::byte> tx_buffer;
+    pw::span<std::byte> rx_buffer;
+    pw::span<std::byte> tx_buffer;
 
     PW_METRIC(tx_bytes_, "tx_bytes", 0);
     PW_METRIC(rx_bytes_, "rx_bytes", 0);

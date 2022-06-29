@@ -306,7 +306,7 @@ transmitted or stored as needed.
    #include "pw_tokenizer/encode_args.h"
 
    void HandleTokenizedMessage(pw::log_tokenized::Metadata metadata,
-                               std::span<std::byte> message);
+                               pw::span<std::byte> message);
 
    extern "C" void EncodeTokenizedMessage(const pw_tokenizer_Payload metadata,
                                           const pw_tokenizer_Token token,

@@ -48,7 +48,7 @@ Result<ConstByteSpan> EncodeLogEntry(std::string_view message,
                                      ConstByteSpan thread) {
   auto metadata = log_tokenized::Metadata::Set<log_level, module, flags, 0>();
   return log::EncodeTokenizedLog(metadata,
-                                 std::as_bytes(std::span(message)),
+                                 as_bytes(span(message)),
                                  /*ticks_since_epoch=*/0,
                                  thread,
                                  buffer);
@@ -98,7 +98,7 @@ TEST(FilterMap, RetrieveFiltersById) {
   FilterMap filter_map(filters);
 
   // Check that each filters() element points to the same object provided.
-  std::span<const Filter> filter_list = filter_map.filters();
+  span<const Filter> filter_list = filter_map.filters();
   ASSERT_EQ(filter_list.size(), filters.size());
   size_t i = 0;
   for (auto& filter : filter_list) {

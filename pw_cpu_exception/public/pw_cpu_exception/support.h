@@ -20,22 +20,21 @@
 #pragma once
 
 #include <cstdint>
-#include <span>
 
 #include "pw_cpu_exception/state.h"
+#include "pw_span/span.h"
 
 namespace pw::cpu_exception {
 
 // Gets raw CPU state as a single contiguous block of data. The particular
 // contents will depend on the specific backend and platform.
-std::span<const uint8_t> RawFaultingCpuState(
+span<const uint8_t> RawFaultingCpuState(
     const pw_cpu_exception_State& cpu_state);
 
 // Writes CPU state as a formatted string to a string builder.
 // NEVER depend on the format of this output. This is exclusively FYI human
 // readable output.
-void ToString(const pw_cpu_exception_State& cpu_state,
-              const std::span<char>& dest);
+void ToString(const pw_cpu_exception_State& cpu_state, const span<char>& dest);
 
 // Logs captured CPU state using pw_log at PW_LOG_LEVEL_INFO.
 void LogCpuState(const pw_cpu_exception_State& cpu_state);

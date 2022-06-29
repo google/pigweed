@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
-#include <span>
 
 #include "pw_assert/config.h"
 #include "pw_assert_tokenized/handler.h"
@@ -25,6 +24,7 @@
 #include "pw_log_tokenized/config.h"
 #include "pw_log_tokenized/log_tokenized.h"
 #include "pw_log_tokenized/metadata.h"
+#include "pw_span/span.h"
 
 extern "C" void pw_assert_tokenized_HandleAssertFailure(
     uint32_t tokenized_file_name, int line_number) {
@@ -35,8 +35,8 @@ extern "C" void pw_assert_tokenized_HandleAssertFailure(
   char base64_buffer[kBufferSize];
 
   size_t len =
-      pw::base64::Encode(std::span(hash_buffer, sizeof(tokenized_file_name)),
-                         std::span(base64_buffer));
+      pw::base64::Encode(pw::span(hash_buffer, sizeof(tokenized_file_name)),
+                         pw::span(base64_buffer));
   base64_buffer[len] = '\0';
 #if PW_ASSERT_ENABLE_DEBUG
   PW_LOG(PW_LOG_LEVEL_FATAL,

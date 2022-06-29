@@ -15,7 +15,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <span>
 
 #include "pw_bluetooth/gatt/error.h"
 #include "pw_bluetooth/gatt/types.h"
@@ -23,6 +22,7 @@
 #include "pw_bluetooth/types.h"
 #include "pw_containers/vector.h"
 #include "pw_function/function.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::gatt {
@@ -93,8 +93,7 @@ class LocalServiceDelegate {
       PeerId peer_id,
       Handle handle,
       uint32_t offset,
-      Function<void(Result<Error, std::span<const std::byte>>)>
-          result_callback) = 0;
+      Function<void(Result<Error, span<const std::byte>>)> result_callback) = 0;
 
   // Called when a peer issues a request to write the value of a characteristic
   // or descriptor. It is guaranteed that the peer satisfies the permissions
@@ -112,7 +111,7 @@ class LocalServiceDelegate {
   virtual void WriteValue(PeerId peer_id,
                           Handle handle,
                           uint32_t offset,
-                          std::span<const std::byte> value,
+                          span<const std::byte> value,
                           Function<void(Result<Error>)> status_callback) = 0;
 
   // Called when the MTU of a peer is updated. Also called for peers that are
@@ -136,7 +135,7 @@ class LocalService {
     // The handle of the characteristic value being signaled.
     Handle handle;
     // The new value for the descriptor/characteristic.
-    std::span<const std::byte> value;
+    span<const std::byte> value;
   };
 
   virtual ~LocalService() = default;

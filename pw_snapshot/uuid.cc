@@ -15,12 +15,12 @@
 #include "pw_snapshot/uuid.h"
 
 #include <cstddef>
-#include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_result/result.h"
 #include "pw_snapshot_metadata_proto/snapshot_metadata.pwpb.h"
+#include "pw_span/span.h"
 #include "pw_status/try.h"
 
 namespace pw::snapshot {

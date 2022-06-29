@@ -42,7 +42,7 @@ void Init() {
   // Send log messages to HDLC address 1. This prevents logs from interfering
   // with pw_rpc communications.
   pw::log_basic::SetOutput([](std::string_view log) {
-    pw::hdlc::WriteUIFrame(1, std::as_bytes(std::span(log)), writer);
+    pw::hdlc::WriteUIFrame(1, as_bytes(span(log)), writer);
   });
 }
 

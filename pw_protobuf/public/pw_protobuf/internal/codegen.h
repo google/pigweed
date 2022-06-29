@@ -14,10 +14,10 @@
 #pragma once
 
 #include <cstdint>
-#include <span>
 
 #include "pw_function/function.h"
 #include "pw_protobuf/wire_format.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::protobuf {
@@ -43,7 +43,7 @@ enum class VarintType {
 //  - Individual field size (including repeated and nested messages) must be no
 //    larger than 64 KB. (This is already the maximum size of pw::Vector).
 //
-// A complete codegen struct is represented by a std::span<MessageField>,
+// A complete codegen struct is represented by a span<MessageField>,
 // holding a pointer to the MessageField members themselves, and the number of
 // fields in the struct. These spans are global data, one span per protobuf
 // message (including the size), and one MessageField per field in the message.
@@ -56,18 +56,17 @@ class MessageField {
  public:
   static constexpr unsigned int kMaxFieldSize = (1u << 16) - 1;
 
-  constexpr MessageField(
-      uint32_t field_number,
-      WireType wire_type,
-      size_t elem_size,
-      VarintType varint_type,
-      bool is_fixed_size,
-      bool is_repeated,
-      bool is_optional,
-      bool use_callback,
-      size_t field_offset,
-      size_t field_size,
-      const std::span<const MessageField>* nested_message_fields)
+  constexpr MessageField(uint32_t field_number,
+                         WireType wire_type,
+                         size_t elem_size,
+                         VarintType varint_type,
+                         bool is_fixed_size,
+                         bool is_repeated,
+                         bool is_optional,
+                         bool use_callback,
+                         size_t field_offset,
+                         size_t field_size,
+                         const span<const MessageField>* nested_message_fields)
       : field_number_(field_number),
         field_info_(
             static_cast<unsigned int>(wire_type) << kWireTypeShift |
@@ -107,7 +106,7 @@ class MessageField {
   constexpr size_t field_size() const {
     return (field_info_ >> kFieldSizeShift) & kFieldSizeMask;
   }
-  constexpr const std::span<const MessageField>* nested_message_fields() const {
+  constexpr const span<const MessageField>* nested_message_fields() const {
     return nested_message_fields_;
   }
 
@@ -145,7 +144,7 @@ class MessageField {
   uint32_t field_info_;
   size_t field_offset_;
   // TODO(pwbug/649): Could be replaced by a class MessageDescriptor*
-  const std::span<const MessageField>* nested_message_fields_;
+  const span<const MessageField>* nested_message_fields_;
 };
 static_assert(sizeof(MessageField) <= sizeof(size_t) * 4,
               "MessageField should be four words or less");

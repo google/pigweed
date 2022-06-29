@@ -22,9 +22,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <span>
 
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 #include "pw_string/util.h"
 
 namespace {
@@ -64,7 +64,7 @@ void toy_example(const char* word1, const char* word2) {
 // The fuzz target function
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // We want to split our input into two strings.
-  const std::span<const char> input(reinterpret_cast<const char*>(data), size);
+  const pw::span<const char> input(reinterpret_cast<const char*>(data), size);
 
   // If that's not feasible, toss this input. The fuzzer will quickly learn that
   // inputs without null-terminators are uninteresting.
@@ -73,11 +73,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (!possible_word1_size.ok()) {
     return 0;
   }
-  const std::span<const char> word1 =
+  const pw::span<const char> word1 =
       input.first(possible_word1_size.value() + 1);
 
   // Actually, inputs without TWO null terminators are uninteresting.
-  std::span<const char> remaining_input = input.subspan(word1.size());
+  pw::span<const char> remaining_input = input.subspan(word1.size());
   if (!pw::string::NullTerminatedLength(remaining_input).ok()) {
     return 0;
   }

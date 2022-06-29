@@ -20,7 +20,8 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
-#include <span>
+
+#include "pw_span/span.h"
 
 #if DUMP_KVS_STATE_TO_FILE
 #include <vector>
@@ -69,7 +70,7 @@ struct FlashWithPartitionFake {
     }
     std::vector<std::byte> out_vec(memory.size_bytes());
     Status status =
-        memory.Read(0, std::span<std::byte>(out_vec.data(), out_vec.size()));
+        memory.Read(0, span<std::byte>(out_vec.data(), out_vec.size()));
     if (status != OkStatus()) {
       fclose(out_file);
       return status;
@@ -316,7 +317,7 @@ TEST(InMemoryKvs, Basic) {
 
   // Add two entries with different keys and values.
   uint8_t value1 = 0xDA;
-  ASSERT_OK(kvs.Put(key1, std::as_bytes(std::span(&value1, sizeof(value1)))));
+  ASSERT_OK(kvs.Put(key1, as_bytes(span(&value1, sizeof(value1)))));
   EXPECT_EQ(kvs.size(), 1u);
 
   uint32_t value2 = 0xBAD0301f;
@@ -497,7 +498,7 @@ TEST(InMemoryKvs, Put_MaxValueSize) {
 
   // Use the large_test_flash as a big chunk of data for the Put statement.
   ASSERT_GT(sizeof(large_test_flash), max_value_size + 2 * sizeof(EntryHeader));
-  auto big_data = std::as_bytes(std::span(&large_test_flash, 1));
+  auto big_data = as_bytes(span(&large_test_flash, 1));
 
   EXPECT_EQ(OkStatus(), kvs.Put("K", big_data.subspan(0, max_value_size)));
 

@@ -13,11 +13,11 @@
 // the License.
 
 #include <cstring>
-#include <span>
 
 #include "pw_bytes/array.h"
 #include "pw_log/log.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace {
@@ -32,12 +32,12 @@ constexpr auto kArray = pw::bytes::Array<
 
 PW_NO_INLINE pw::Status Read(size_t offset,
                              size_t size,
-                             std::span<const std::byte>* out) {
+                             pw::span<const std::byte>* out) {
   if (offset + size >= std::size(kArray)) {
     return pw::Status::OutOfRange();
   }
 
-  *out = std::span<const std::byte>(std::data(kArray) + offset, size);
+  *out = pw::span<const std::byte>(std::data(kArray) + offset, size);
   return pw::OkStatus();
 }
 
@@ -46,7 +46,7 @@ PW_NO_INLINE pw::Status Read(size_t offset,
 size_t volatile* unoptimizable;
 
 int main() {
-  std::span<const std::byte> data;
+  pw::span<const std::byte> data;
   pw::Status status = Read(*unoptimizable, *unoptimizable, &data);
   if (!status.ok()) {
     return 1;

@@ -14,9 +14,9 @@
 #pragma once
 
 #include <cstring>
-#include <span>
 
 #include "RTOS.h"
+#include "pw_span/span.h"
 #include "pw_string/util.h"
 #include "pw_thread_embos/config.h"
 
@@ -45,7 +45,7 @@ namespace pw::thread::embos {
 //   }
 class Context {
  public:
-  explicit Context(std::span<OS_UINT> stack_span)
+  explicit Context(span<OS_UINT> stack_span)
       : tcb_{}, stack_span_(stack_span) {}
   Context(const Context&) = delete;
   Context& operator=(const Context&) = delete;
@@ -56,7 +56,7 @@ class Context {
  private:
   friend Thread;
 
-  std::span<OS_UINT> stack() { return stack_span_; }
+  span<OS_UINT> stack() { return stack_span_; }
 
   bool in_use() const { return in_use_; }
   void set_in_use(bool in_use = true) { in_use_ = in_use; }
@@ -84,7 +84,7 @@ class Context {
   static void TerminateThread(Context& context);
 
   OS_TASK tcb_;
-  std::span<OS_UINT> stack_span_;
+  span<OS_UINT> stack_span_;
 
   ThreadRoutine user_thread_entry_function_ = nullptr;
   void* user_thread_entry_arg_ = nullptr;

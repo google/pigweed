@@ -14,11 +14,11 @@
 #pragma once
 
 #include <array>
-#include <span>
 
 #include "pw_assert/assert.h"
 #include "pw_hdlc/encoder.h"
 #include "pw_rpc/channel.h"
+#include "pw_span/span.h"
 #include "pw_stream/stream.h"
 
 namespace pw::hdlc {
@@ -38,7 +38,7 @@ class RpcChannelOutput : public rpc::ChannelOutput {
                              const char* channel_name)
       : ChannelOutput(channel_name), writer_(writer), address_(address) {}
 
-  Status Send(std::span<const std::byte> buffer) override {
+  Status Send(span<const std::byte> buffer) override {
     return hdlc::WriteUIFrame(address_, buffer, writer_);
   }
 

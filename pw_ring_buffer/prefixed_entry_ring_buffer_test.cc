@@ -36,9 +36,9 @@ TEST(PrefixedEntryRingBuffer, NoBuffer) {
   size_t count;
 
   EXPECT_EQ(ring.EntryCount(), 0u);
-  EXPECT_EQ(ring.SetBuffer(std::span<byte>(static_cast<byte*>(nullptr), 10u)),
+  EXPECT_EQ(ring.SetBuffer(span<byte>(static_cast<byte*>(nullptr), 10u)),
             Status::InvalidArgument());
-  EXPECT_EQ(ring.SetBuffer(std::span(buf, 0u)), Status::InvalidArgument());
+  EXPECT_EQ(ring.SetBuffer(span(buf, 0u)), Status::InvalidArgument());
   EXPECT_EQ(ring.FrontEntryDataSizeBytes(), 0u);
 
   EXPECT_EQ(ring.PushBack(buf), Status::FailedPrecondition());
@@ -91,9 +91,8 @@ void SingleEntryWriteReadTest(bool user_data) {
   EXPECT_EQ(ring.EntryCount(), 0u);
   EXPECT_EQ(ring.PopFront(), Status::OutOfRange());
   EXPECT_EQ(ring.EntryCount(), 0u);
-  EXPECT_EQ(
-      ring.PushBack(std::span(single_entry_data, sizeof(test_buffer) + 5)),
-      Status::OutOfRange());
+  EXPECT_EQ(ring.PushBack(span(single_entry_data, sizeof(test_buffer) + 5)),
+            Status::OutOfRange());
   EXPECT_EQ(ring.EntryCount(), 0u);
   EXPECT_EQ(ring.PeekFront(read_buffer, &read_size), Status::OutOfRange());
   EXPECT_EQ(read_size, 0u);
@@ -118,9 +117,8 @@ void SingleEntryWriteReadTest(bool user_data) {
     // retain a static `single_entry_buffer_size` during the test. Single
     // bytes are varint-encoded to the same value.
     uint32_t preamble_byte = i % 128;
-    ASSERT_EQ(
-        ring.PushBack(std::span(single_entry_data, data_size), preamble_byte),
-        OkStatus());
+    ASSERT_EQ(ring.PushBack(span(single_entry_data, data_size), preamble_byte),
+              OkStatus());
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), data_size);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), single_entry_total_size);
 
@@ -128,12 +126,12 @@ void SingleEntryWriteReadTest(bool user_data) {
     ASSERT_EQ(ring.PeekFront(read_buffer, &read_size), OkStatus());
     ASSERT_EQ(read_size, data_size);
 
-    // ASSERT_THAT(std::span(expect_buffer).last(data_size),
-    //            testing::ElementsAreArray(std::span(read_buffer, data_size)));
-    ASSERT_EQ(memcmp(std::span(expect_buffer).last(data_size).data(),
-                     read_buffer,
-                     data_size),
-              0);
+    // ASSERT_THAT(span(expect_buffer).last(data_size),
+    //            testing::ElementsAreArray(span(read_buffer, data_size)));
+    ASSERT_EQ(
+        memcmp(
+            span(expect_buffer).last(data_size).data(), read_buffer, data_size),
+        0);
 
     read_size = 500U;
     ASSERT_EQ(ring.PeekFrontWithPreamble(read_buffer, &read_size), OkStatus());
@@ -143,8 +141,8 @@ void SingleEntryWriteReadTest(bool user_data) {
       expect_buffer[0] = byte(preamble_byte);
     }
 
-    // ASSERT_THAT(std::span(expect_buffer),
-    //            testing::ElementsAreArray(std::span(read_buffer)));
+    // ASSERT_THAT(span(expect_buffer),
+    //            testing::ElementsAreArray(span(read_buffer)));
     ASSERT_EQ(memcmp(expect_buffer, read_buffer, single_entry_total_size), 0);
 
     if (user_data) {
@@ -154,7 +152,7 @@ void SingleEntryWriteReadTest(bool user_data) {
           OkStatus());
       ASSERT_EQ(read_size, data_size);
       ASSERT_EQ(user_preamble, preamble_byte);
-      ASSERT_EQ(memcmp(std::span(expect_buffer).last(data_size).data(),
+      ASSERT_EQ(memcmp(span(expect_buffer).last(data_size).data(),
                        read_buffer,
                        data_size),
                 0);
@@ -242,7 +240,7 @@ void SingleEntryWriteReadWithSectionWriterTest(bool user_data) {
 
   EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
 
-  auto output = [](std::span<const byte> src) -> Status {
+  auto output = [](span<const byte> src) -> Status {
     for (byte b : src) {
       read_buffer.push_back(b);
     }
@@ -265,9 +263,8 @@ void SingleEntryWriteReadWithSectionWriterTest(bool user_data) {
     // retain a static `single_entry_buffer_size` during the test. Single
     // bytes are varint-encoded to the same value.
     uint32_t preamble_byte = i % 128;
-    ASSERT_EQ(
-        ring.PushBack(std::span(single_entry_data, data_size), preamble_byte),
-        OkStatus());
+    ASSERT_EQ(ring.PushBack(span(single_entry_data, data_size), preamble_byte),
+              OkStatus());
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), data_size);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), single_entry_total_size);
 
@@ -275,7 +272,7 @@ void SingleEntryWriteReadWithSectionWriterTest(bool user_data) {
     ASSERT_EQ(ring.PeekFront(output), OkStatus());
     ASSERT_EQ(read_buffer.size(), data_size);
 
-    ASSERT_EQ(memcmp(std::span(expect_buffer).last(data_size).data(),
+    ASSERT_EQ(memcmp(span(expect_buffer).last(data_size).data(),
                      read_buffer.data(),
                      data_size),
               0);
@@ -320,7 +317,7 @@ void DeringTest(bool preload) {
 
   // Entry data is entry size - preamble (single byte in this case).
   byte single_entry_buffer[kEntrySizeBytes - 1u];
-  auto entry_data = std::span(single_entry_buffer);
+  auto entry_data = span(single_entry_buffer);
   size_t i;
 
   // TODO(b/234883746): Increase this to 500 once we have a way to detect
@@ -369,7 +366,7 @@ void DeringTest(bool preload) {
 
     // Read out the entries of the ring buffer.
     actual_result.clear();
-    auto output = [](std::span<const byte> src) -> Status {
+    auto output = [](span<const byte> src) -> Status {
       for (byte b : src) {
         actual_result.push_back(b);
       }
@@ -438,7 +435,7 @@ T PeekFront(PrefixedEntryRingBufferMulti::Reader& reader,
 }
 
 template <typename T>
-T GetEntry(std::span<const std::byte> lhs) {
+T GetEntry(span<const std::byte> lhs) {
   union {
     std::array<byte, sizeof(T)> buffer;
     T item;
@@ -453,7 +450,7 @@ void EmptyDataPushBackTest(bool user_data) {
   EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
 
   // Push back an empty span and a non-empty span.
-  EXPECT_EQ(ring.PushBack(std::span<std::byte>(), 1u), OkStatus());
+  EXPECT_EQ(ring.PushBack(span<std::byte>(), 1u), OkStatus());
   EXPECT_EQ(ring.EntryCount(), 1u);
   EXPECT_EQ(ring.PushBack(single_entry_data, 2u), OkStatus());
   EXPECT_EQ(ring.EntryCount(), 2u);

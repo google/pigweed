@@ -135,7 +135,7 @@ connection to www.google.com:
 
   // pw::stream::SocketStream doesn't accept host domain name as input. Thus we
   // introduce this helper function for getting the IP address
-  pw::Status GetIPAddrFromHostName(std::string_view host, std::span<char> ip) {
+  pw::Status GetIPAddrFromHostName(std::string_view host, pw::span<char> ip) {
     char null_terminated_host_name[256] = {0};
     auto host_copy_status = pw::string::Copy(host, null_terminated_host_name);
     if (!host_copy_status.ok()) {
@@ -194,7 +194,7 @@ connection to www.google.com:
       return 1;
     }
 
-    auto write_status = tls_conn.value()->Write(std::as_bytes(std::span{kHTTPRequest}));
+    auto write_status = tls_conn.value()->Write(pw::as_bytes(pw::span{kHTTPRequest}));
     if (!write_status.ok()) {
       // Inspect/handle error with write_status.code() and
       // tls_conn.value()->GetLastTLSStatus().

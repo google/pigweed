@@ -1399,7 +1399,7 @@ interface.
     returns :cpp:member:`kUnlimited`, which indicates that there is no MTU
     limit.
 
-  .. cpp:function:: virtual pw::Status Send(std::span<std::byte> packet)
+  .. cpp:function:: virtual pw::Status Send(span<std::byte> packet)
 
     Sends an encoded RPC packet. Returns OK if further packets may be sent, even
     if the current packet could not be sent. Returns any other status if the

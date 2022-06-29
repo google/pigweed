@@ -15,10 +15,10 @@
 #include "pw_malloc_freelist/freelist_malloc.h"
 
 #include <memory>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_allocator/freelist_heap.h"
+#include "pw_span/span.h"
 
 namespace pw::allocator {
 
