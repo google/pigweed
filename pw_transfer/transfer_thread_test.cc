@@ -48,7 +48,7 @@ class TransferThreadTest : public ::testing::Test {
         transfer_thread_(chunk_buffer_, encode_buffer_),
         system_thread_(TransferThreadOptions(), transfer_thread_) {}
 
-  ~TransferThreadTest() {
+  ~TransferThreadTest() override {
     transfer_thread_.Terminate();
     system_thread_.join();
   }

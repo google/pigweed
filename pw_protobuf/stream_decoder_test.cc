@@ -35,7 +35,7 @@ class NonSeekableMemoryReader : public stream::NonSeekableReader {
   const std::byte* data() const { return reader_.data(); }
 
  private:
-  virtual StatusWithSize DoRead(ByteSpan destination) override {
+  StatusWithSize DoRead(ByteSpan destination) override {
     const pw::Result<pw::ByteSpan> result = reader_.Read(destination);
     if (!result.ok()) {
       return StatusWithSize(result.status(), 0);

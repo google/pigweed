@@ -66,7 +66,7 @@ class BlobStore {
         : store_(store), metadata_buffer_(metadata_buffer), open_(false) {}
     BlobWriter(const BlobWriter&) = delete;
     BlobWriter& operator=(const BlobWriter&) = delete;
-    virtual ~BlobWriter() {
+    ~BlobWriter() override {
       if (open_) {
         Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
@@ -200,7 +200,7 @@ class BlobStore {
         : BlobWriter(store, metadata_buffer) {}
     DeferredWriter(const DeferredWriter&) = delete;
     DeferredWriter& operator=(const DeferredWriter&) = delete;
-    virtual ~DeferredWriter() {}
+    ~DeferredWriter() override {}
 
     // Flush data in the write buffer. Only a multiple of flash_write_size_bytes
     // are written in the flush. Any remainder is held until later for either
@@ -255,7 +255,7 @@ class BlobStore {
     BlobReader(const BlobReader&) = delete;
     BlobReader& operator=(const BlobReader&) = delete;
 
-    ~BlobReader() {
+    ~BlobReader() override {
       if (open_) {
         Close().IgnoreError();
       }

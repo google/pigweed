@@ -87,7 +87,7 @@ class MockInitiator : public pw::spi::Initiator {
   }
 
   // Runs Finalize() regardless of whether it was already optionally finalized.
-  ~MockInitiator();
+  ~MockInitiator() override;
 
   // Implements a mocked backend for the SPI initiator.
   //

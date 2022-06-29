@@ -50,7 +50,7 @@ class ReadTransfer : public ::testing::Test {
                 max_bytes_to_receive),
         system_thread_(TransferThreadOptions(), transfer_thread_) {}
 
-  ~ReadTransfer() {
+  ~ReadTransfer() override {
     transfer_thread_.Terminate();
     system_thread_.join();
   }
@@ -903,7 +903,7 @@ class WriteTransfer : public ::testing::Test {
         client_(context_.client(), context_.channel().id(), transfer_thread_),
         system_thread_(TransferThreadOptions(), transfer_thread_) {}
 
-  ~WriteTransfer() {
+  ~WriteTransfer() override {
     transfer_thread_.Terminate();
     system_thread_.join();
   }

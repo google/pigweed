@@ -101,7 +101,7 @@ class Base2 {
 
 class Derived : public Base1, public Base2 {
  public:
-  virtual ~Derived() {}
+  ~Derived() override {}
   int evenmorepad;
 };
 

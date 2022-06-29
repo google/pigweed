@@ -136,7 +136,7 @@ class LogPeekAndCommitReaderThread : public LogPopReaderThread {
                                uint32_t expected_message_and_drop_count)
       : LogPopReaderThread(multisink, expected_message_and_drop_count) {}
 
-  virtual void ReadAllEntries() {
+  void ReadAllEntries() override {
     do {
       uint32_t drop_count = 0;
       uint32_t ingress_drop_count = 0;

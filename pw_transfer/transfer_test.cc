@@ -125,7 +125,7 @@ class ReadTransfer : public ::testing::Test {
     transfer_thread_.WaitUntilEventIsProcessed();
   }
 
-  ~ReadTransfer() {
+  ~ReadTransfer() override {
     transfer_thread_.Terminate();
     system_thread_.join();
   }
@@ -745,7 +745,7 @@ class WriteTransfer : public ::testing::Test {
     transfer_thread_.WaitUntilEventIsProcessed();
   }
 
-  ~WriteTransfer() {
+  ~WriteTransfer() override {
     transfer_thread_.Terminate();
     system_thread_.join();
   }

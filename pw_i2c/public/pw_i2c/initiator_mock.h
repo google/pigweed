@@ -137,7 +137,7 @@ class MockInitiator : public Initiator {
   }
 
   // Runs Finalize() regardless of whether it was already optionally finalized.
-  ~MockInitiator();
+  ~MockInitiator() override;
 
  private:
   // Implements a mocked backend for the i2c initiator.

@@ -73,7 +73,7 @@ class StreamDecoder {
   // will also not.
   class BytesReader : public stream::RelativeSeekableReader {
    public:
-    ~BytesReader() { decoder_.CloseBytesReader(*this); }
+    ~BytesReader() override { decoder_.CloseBytesReader(*this); }
 
     constexpr size_t field_size() const { return end_offset_ - start_offset_; }
 
