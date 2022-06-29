@@ -70,7 +70,7 @@ pw_add_facade(pw_assert.check
 )
 
 # Warning: The assert facade is in a transitional state, and this target is
-# likely to be removed as the pw_assert API is reassessed. (pwbug/246)
+# likely to be removed as the pw_assert API is reassessed. (b/235149326)
 pw_add_module_library(pw_assert.assert_compatibility_backend
   HEADERS
     assert_compatibility_public_overrides/pw_assert_backend/assert_backend.h

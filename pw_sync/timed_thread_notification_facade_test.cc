@@ -35,7 +35,7 @@ TEST(TimedThreadNotification, EmptyInitialState) {
   EXPECT_FALSE(notification.try_acquire());
 }
 
-// TODO(pwbug/291): Add real concurrency tests.
+// TODO(b/235284163): Add real concurrency tests.
 
 TEST(TimedThreadNotification, Release) {
   TimedThreadNotification notification;

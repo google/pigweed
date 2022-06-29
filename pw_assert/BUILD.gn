@@ -105,7 +105,7 @@ pw_facade("assert") {
 # compatibility with pw_assert's previous C-symbol based API.
 #
 # Warning: The assert facade is in a transitional state, and this target is
-# likely to be removed as the pw_assert API is reassessed. (pwbug/246)
+# likely to be removed as the pw_assert API is reassessed. (b/235149326)
 pw_source_set("assert_compatibility_backend") {
   public_configs = [ ":assert_backend_overrides" ]
   public_deps = [ dir_pw_preprocessor ]

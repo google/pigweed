@@ -143,7 +143,7 @@ class MessageField {
   uint32_t field_number_;
   uint32_t field_info_;
   size_t field_offset_;
-  // TODO(pwbug/649): Could be replaced by a class MessageDescriptor*
+  // TODO(b/234875722): Could be replaced by a class MessageDescriptor*
   const span<const MessageField>* nested_message_fields_;
 };
 static_assert(sizeof(MessageField) <= sizeof(size_t) * 4,

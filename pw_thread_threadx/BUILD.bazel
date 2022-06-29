@@ -42,7 +42,7 @@ pw_cc_library(
         ":id_headers",
         "//pw_thread:id_facade",
     ],
-    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
 )
 
@@ -68,7 +68,7 @@ pw_cc_library(
         "//pw_string",
         "//pw_thread:thread_headers",
     ],
-    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
 )
 
@@ -82,7 +82,7 @@ pw_cc_library(
         ":thread_headers",
         "//pw_assert",
     ],
-    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
 )
 
@@ -134,7 +134,7 @@ pw_cc_library(
         "//pw_chrono_threadx:system_clock_headers",
         "//pw_thread:sleep_facade",
     ],
-    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
 )
 
@@ -148,7 +148,7 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
 )
 
@@ -172,7 +172,7 @@ pw_cc_library(
         "//pw_function",
         "//pw_status",
     ],
-    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
 )
 
@@ -193,6 +193,6 @@ pw_cc_library(
         "//pw_status",
         "//pw_thread:protos",
     ],
-    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
 )

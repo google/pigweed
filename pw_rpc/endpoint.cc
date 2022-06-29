@@ -67,9 +67,9 @@ void Endpoint::RegisterCall(Call& call) {
   RegisterUniqueCall(call);
 
   if (existing_call != nullptr) {
-    // TODO(pwbug/597): Ensure call object is locked when calling callback. For
-    //     on_error, could potentially move the callback and call it after the
-    //     lock is released.
+    // TODO(b/234876851): Ensure call object is locked when calling callback.
+    //     For on_error, could potentially move the callback and call it after
+    //     the lock is released.
     existing_call->HandleError(Status::Cancelled());
     rpc_lock().lock();
   }

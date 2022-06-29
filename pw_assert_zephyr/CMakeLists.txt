@@ -18,7 +18,7 @@ if(NOT CONFIG_PIGWEED_ASSERT)
   return()
 endif()
 
-# TODO(pwbug/246): This backend implements pw_assert's check backend and the
+# TODO(b/235149326): This backend implements pw_assert's check backend and the
 # temporary compatibility C ABI (pw_assert_HandleFailure()).
 pw_auto_add_simple_module(pw_assert_zephyr
   IMPLEMENTS_FACADE
