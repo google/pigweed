@@ -166,9 +166,7 @@ def install(  # pylint: disable=too-many-arguments
 
     version = subprocess.check_output(
         (python, '--version'), stderr=subprocess.STDOUT).strip().decode()
-    # We expect Python 3.8, but if it came from CIPD let it pass anyway.
-    if ('3.8' not in version and '3.9' not in version
-            and 'chromium' not in version):
+    if ' 3.' not in version:
         print('=' * 60, file=sys.stderr)
         print('Unexpected Python version:', version, file=sys.stderr)
         print('=' * 60, file=sys.stderr)
