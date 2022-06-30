@@ -30,6 +30,7 @@ ts_project(
         "index.ts",
         "method.ts",
         "packets.ts",
+        "queue.ts",
         "rpc_classes.ts",
     ],
     declaration = True,
@@ -39,7 +40,6 @@ ts_project(
         "//pw_protobuf_compiler/ts:pw_protobuf_compiler",
         "//pw_status/ts:pw_status",
         "@npm//@types/google-protobuf",
-        "@npm//wait-queue",
     ],
 )
 
