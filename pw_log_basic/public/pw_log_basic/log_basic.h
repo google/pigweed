@@ -38,7 +38,8 @@ PW_EXTERN_C_END
 // arguments. Additionally, the use of the __FUNC__ macro adds a static const
 // char[] variable inside functions with a log.
 //
-// TODO(pwbug/87): Reconsider the naming of this module when more is in place.
+// TODO(b/235289435): Reconsider the naming of this module when more is in
+// place.
 #define PW_HANDLE_LOG(level, flags, message, ...) \
   do {                                            \
     pw_Log((level),                               \

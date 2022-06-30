@@ -429,7 +429,7 @@ def _target_objects(paths: GnPaths, expr: _Expression) -> _Actions:
         yield _ArgAction.EMIT_NEW, str(obj)
 
 
-# TODO(pwbug/347): Replace expressions with native GN features when possible.
+# TODO(b/234886742): Replace expressions with native GN features when possible.
 _FUNCTIONS: Dict['str', Callable[[GnPaths, _Expression], _Actions]] = {
     'TARGET_FILE': _target_file,
     'TARGET_FILE_IF_EXISTS': _target_file_if_exists,
@@ -662,8 +662,8 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     if working_directory:
         run_args['cwd'] = working_directory
 
-    # TODO(pwbug/666): Deprecate the --lockfile option as part of the Python GN
-    # template refactor.
+    # TODO(b/235239674): Deprecate the --lockfile option as part of the Python
+    # GN template refactor.
     if lockfile:
         try:
             acquire_lock(lockfile, is_pip_command)

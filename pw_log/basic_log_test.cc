@@ -16,7 +16,7 @@
 // compile the constructs  promised by the logging facade; and that when run,
 // there is no crash.
 //
-// TODO(pwbug/88): Add verification of the actually logged statements.
+// TODO(b/235289499): Add verification of the actually logged statements.
 
 // clang-format off
 #define PW_LOG_MODULE_NAME "TST"
@@ -28,8 +28,8 @@
 
 #include "gtest/gtest.h"
 
-// TODO(pwbug/86): Test unsigned integer logging (32 and 64 bit); test pointer
-// logging.
+// TODO(b/235291136): Test unsigned integer logging (32 and 64 bit); test
+// pointer logging.
 
 void LoggingFromFunction() { PW_LOG_INFO("From a function!"); }
 

@@ -58,7 +58,7 @@ enum FieldType : uint8_t {
   kMaxValue = kPush,
 };
 
-// TODO(pwbug/181): Move this to pw_fuzzer/fuzzed_data_provider.h
+// TODO(b/235289495): Move this to pw_fuzzer/fuzzed_data_provider.h
 
 // Uses the given |provider| to pick and return a number between 0 and the
 // maximum numbers of T that can be generated from the remaining input data.

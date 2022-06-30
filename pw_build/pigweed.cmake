@@ -371,7 +371,7 @@ function(pw_add_module_library NAME)
     HEADERS
       ${arg_HEADERS}
     PUBLIC_DEPS
-      # TODO(pwbug/232141950): Apply compilation options that affect ABI
+      # TODO(b/232141950): Apply compilation options that affect ABI
       # globally in the CMake build instead of injecting them into libraries.
       pw_build
       ${arg_PUBLIC_DEPS}
@@ -396,13 +396,13 @@ function(pw_add_module_library NAME)
       ${arg_PRIVATE_LINK_OPTIONS}
   )
 
-  # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
+  # TODO(b/235273746): Deprecate this legacy implicit PUBLIC_INCLUDES.
   if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
     target_include_directories("${NAME}" ${public_or_interface} public)
   endif("${arg_PUBLIC_INCLUDES}" STREQUAL "")
 
   if(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
-    # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
+    # TODO(b/235273746): Deprecate this legacy implicit PUBLIC_INCLUDES.
     if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
       target_include_directories(
         "${NAME}" ${public_or_interface} public_overrides)

@@ -135,7 +135,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.constants
     pw_cpu_exception_cortex_m_private/cortex_m_constants.h
 )
 
-# TODO(pwbug/583): Add ARMv8-M mainline coverage.
+# TODO(b/234888156): Add ARMv8-M mainline coverage.
 if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
    "pw_cpu_exception_cortex_m.cpu_exception")
   pw_add_test(pw_cpu_exception_cortex_m.cpu_exception_entry_test

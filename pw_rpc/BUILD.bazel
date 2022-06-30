@@ -323,7 +323,7 @@ pw_cc_test(
     deps = [":internal_test_utils"],
 )
 
-# TODO(pwbug/628): Add test_helpers_test when it is possible to use .options
+# TODO(b/234874064): Add test_helpers_test when it is possible to use .options
 # in bazel build.
 filegroup(
     name = "test_helpers_test",

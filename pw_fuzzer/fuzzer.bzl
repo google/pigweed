@@ -21,7 +21,7 @@ load(
 )
 
 def pw_cc_fuzz_test(**kwargs):
-    # TODO(pwbug/440): Remove this implicit dependency once we have a better
+    # TODO(b/234877642): Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
     if not _has_pw_assert_dep(kwargs["deps"]):

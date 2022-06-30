@@ -19,7 +19,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../../pw_build/pigweed.cmake)
 set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang++)
 
-# TODO(pwbug/606): set up this facade in CMake
+# TODO(b/235273743): set up this facade in CMake
 # Use logging-based test output on host.
 # pw_set_backend(pw_unit_test.main pw_unit_test.logging_main)
 

@@ -134,7 +134,7 @@ template("pw_python_zip_with_setup") {
 
     output = _zip_path
 
-    # TODO(pwbug/634): Remove the plumbing-through of invoker's public_deps.
+    # TODO(b/235245034): Remove the plumbing-through of invoker's public_deps.
     public_deps = _public_deps + [ ":${_outer_name}.wheels" ]
   }
 }

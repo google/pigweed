@@ -59,7 +59,7 @@ declare_args() {
 #   current_os: The OS of the toolchain. Defaults to "".
 #     Well known values include "win", "mac", "linux", "android", and "ios".
 #
-# TODO(pwbug/333): This should be renamed to pw_generate_toolchain.
+# TODO(b/234891809): This should be renamed to pw_generate_toolchain.
 template("generate_toolchain") {
   assert(defined(invoker.defaults), "toolchain is missing 'defaults'")
 

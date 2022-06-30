@@ -41,7 +41,7 @@ class CheckThatTestsRanWhenDestructed {
   }
 } check_that_tests_ran;
 
-// TODO(pwbug/47): Convert this to a compilation failure test.
+// TODO(b/234882063): Convert this to a compilation failure test.
 #if defined(PW_COMPILE_FAIL_TEST_FailsToLinkInvalidTestSuite)
 
 PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST(NotARealSuite, NotARealTest);

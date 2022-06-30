@@ -22,7 +22,7 @@ of rules_proto_grpc. However, the version checked in here does not yet support,
 
 In addition, nanopb proto files are not yet generated.
 
-TODO(pwbug/621): Close these gaps and start using this implementation.
+TODO(b/234873954): Close these gaps and start using this implementation.
 
 # Overview of implementation
 
@@ -241,7 +241,7 @@ def _impl_pw_proto_library(ctx):
     # in srcs. We don't perform layering_check in Pigweed, so this is not a big
     # deal.
     #
-    # TODO(pwbug/621): Tidy this up.
+    # TODO(b/234873954): Tidy this up.
     all_genfiles = []
     for dep in ctx.attr.deps:
         for f in dep[PwProtoInfo].genfiles:

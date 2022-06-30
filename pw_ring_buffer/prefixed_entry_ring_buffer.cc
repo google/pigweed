@@ -173,9 +173,9 @@ Status PrefixedEntryRingBufferMulti::InternalPeekFrontPreamble(
   return OkStatus();
 }
 
-// TODO(pwbug/339): Consider whether this internal templating is required, or if
-// we can simply promote GetOutput to a static function and remove the template.
-// T should be similar to Status (*read_output)(span<const byte>)
+// TODO(b/235351046): Consider whether this internal templating is required, or
+// if we can simply promote GetOutput to a static function and remove the
+// template. T should be similar to Status (*read_output)(span<const byte>)
 template <typename T>
 Status PrefixedEntryRingBufferMulti::InternalRead(
     const Reader& reader,

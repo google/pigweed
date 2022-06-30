@@ -295,7 +295,7 @@ about converting them to files.
 .. note::
 
   We intend to replace these expressions with native GN features when possible.
-  See `pwbug/347 <http://bugs.pigweed.dev/347>`_.
+  See `b/234886742 <http://issuetracker.google.com/234886742>`_.
 
 The following expressions are supported:
 

@@ -148,7 +148,7 @@ pw_test_group("tests") {
       ":transfer_thread_test",
     ]
 
-    # TODO(pwbug/441): Fix transfer tests on Windows and non-host builds.
+    # TODO(b/235345886): Fix transfer tests on Windows and non-host builds.
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
       tests += [

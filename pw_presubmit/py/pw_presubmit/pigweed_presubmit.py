@@ -785,7 +785,7 @@ OTHER_CHECKS = (
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
     # failing.
     oss_fuzz_build,
-    # TODO(pwbug/346): Enable all Bazel tests when they're fixed.
+    # TODO(b/235277910): Enable all Bazel tests when they're fixed.
     bazel_test,
     cmake_clang,
     cmake_gcc,
@@ -828,7 +828,7 @@ LINTFORMAT = (
 QUICK = (
     _LINTFORMAT,
     gn_quick_build_check,
-    # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
+    # TODO(b/34884583): Re-enable CMake and Bazel for Mac after we have fixed
     # the clang issues. The problem is that all clang++ invocations need the
     # two extra flags: "-nostdc++" and "${clang_prefix}/../lib/libc++.a".
     cmake_clang if sys.platform != 'darwin' else (),

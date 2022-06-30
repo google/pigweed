@@ -91,7 +91,7 @@ def execute_integration_test(server: str,
 
     try:
         server_process = subprocess.Popen([server, *common_args])
-        # TODO(pwbug/508): Replace this delay with some sort of IPC.
+        # TODO(b/234879791): Replace this delay with some sort of IPC.
         time.sleep(setup_time_s)
 
         result = subprocess.run([client, *common_args]).returncode

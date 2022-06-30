@@ -107,7 +107,7 @@ class FormattedHexDumper {
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
-  // TODO(pwbug/218): Add iterator support.
+  // TODO(b/234892215): Add iterator support.
 
   // Set the destination buffer that the hex dumper will write to line-by-line.
   //
