@@ -9,9 +9,14 @@
     "./pw_status": "./dist/pw_status",
     "./pw_hdlc": "./dist/pw_hdlc"
   },
+  "bin": {
+    "pw_protobuf_compiler": "./dist/bin/pw_protobuf_compiler.js"
+  },
   "scripts": {
-    "prebuild": "rimraf dist",
-    "build": "rollup -c && rimraf dist/types && rimraf dist/**/types",
+    "prebuild": "rimraf dist && npm run build-protos",
+    "build-protos": "ts-node -P tsconfig.rollup.json ./pw_protobuf_compiler/ts/build.ts -p pw_rpc/ts/test.proto -p pw_rpc/echo.proto -p pw_rpc/ts/test2.proto -p pw_rpc/internal/packet.proto --out dist/protos",
+    "build": "npm run rollup",
+    "rollup": "rollup -c && rimraf dist/types && rimraf dist/**/types && chmod +x ./dist/bin/pw_protobuf_compiler.js",
     "start": "tsc-watch --onSuccess \"rollup -c\"",
     "check": "gts check",
     "fix": "gts fix"
@@ -28,6 +33,7 @@
     "@material-ui/lab": "^4.0.0-alpha.60",
     "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-typescript": "^8.3.3",
     "@types/argparse": "^2.0.10",
     "@types/crc": "^3.4.0",
     "@types/google-protobuf": "^3.15.5",
@@ -62,11 +68,10 @@
     "requirejs": "^2.3.6",
     "rimraf": "^3.0.2",
     "rollup": "^2.52.8",
+    "rollup-plugin-dts": "^4.2.2",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-sourcemaps": "^0.6.3",
-    "rollup-plugin-dts": "^4.2.2",
-    "@rollup/plugin-typescript": "^8.3.3",
     "rxjs": "^7.2.0",
     "tmp": "0.2.1",
     "ts-protoc-gen": "^0.15.0",
@@ -76,6 +81,8 @@
   },
   "dependencies": {
     "ansi_up": "^5.1.0",
-    "html-react-parser": "^1.4.0"
+    "arg": "^5.0.2",
+    "html-react-parser": "^1.4.0",
+    "ts-node": "^10.8.1"
   }
 }

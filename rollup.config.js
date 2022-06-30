@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import pluginTypescript from '@rollup/plugin-typescript';
 import builtins from 'builtin-modules';
@@ -21,6 +22,25 @@ import sourceMaps from 'rollup-plugin-sourcemaps';
 
 const modules = ['pw_status'];
 
+// Bundle proto collection script
+const protoCompilerConfig = {
+  input: path.join('pw_protobuf_compiler', 'ts', 'build.ts'),
+  output: [{
+    file: path.join('dist', 'bin', 'pw_protobuf_compiler.js'),
+    format: 'esm',
+    banner: '#!/usr/bin/env node'
+  }],
+  plugins: [
+    pluginTypescript({tsconfig: './tsconfig.json'}),
+    resolve(),
+    commonjs(),
+
+    // Resolve source maps to the original source
+    sourceMaps()
+  ]
+};
+
+// Bundle Pigweed module from ts to js
 const rollupConfig = modules.map((module) => {
   const modInputPath = path.join(module, 'ts');
   const modOutputPath = path.join('dist', module);
@@ -54,6 +74,7 @@ const rollupConfig = modules.map((module) => {
   }
 })
 
+// Also add .d.ts type definitions for modules
 const rollupTypesConfig = modules.map((module) => {
   const modInputPath = path.join('dist', module, 'types', module, 'ts');
   const modOutputPath = path.join('dist', module);
@@ -64,4 +85,5 @@ const rollupTypesConfig = modules.map((module) => {
   }
 })
 
-export default rollupConfig.concat(rollupTypesConfig);
+export default [protoCompilerConfig].concat(
+    rollupConfig.concat(rollupTypesConfig));
