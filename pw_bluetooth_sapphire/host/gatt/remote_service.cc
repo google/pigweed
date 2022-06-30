@@ -47,24 +47,15 @@ CharacteristicMap CharacteristicsToCharacteristicMap(
 RemoteService::RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client)
     : service_data_(service_data),
       client_(std::move(client)),
-      remaining_descriptor_requests_(kSentinel),
-      shut_down_(false) {
+      remaining_descriptor_requests_(kSentinel) {
   ZX_DEBUG_ASSERT(client_);
 }
 
-RemoteService::~RemoteService() { ZX_DEBUG_ASSERT(!alive()); }
-
-void RemoteService::ShutDown(bool service_changed) {
-  if (!alive()) {
-    return;
-  }
-
+RemoteService::~RemoteService() {
   for (auto& chr : characteristics_) {
-    chr.second.set_service_changed(service_changed);
+    chr.second.set_service_changed(service_changed_);
   }
   characteristics_.clear();
-
-  shut_down_ = true;
 
   std::vector<fit::callback<void()>> rm_handlers = std::move(rm_handlers_);
   for (auto& handler : rm_handlers) {
@@ -73,19 +64,11 @@ void RemoteService::ShutDown(bool service_changed) {
 }
 
 bool RemoteService::AddRemovedHandler(fit::closure handler) {
-  if (!alive())
-    return false;
-
   rm_handlers_.emplace_back(std::move(handler));
   return true;
 }
 
 void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback) {
-  if (shut_down_) {
-    callback(ToResult(HostError::kFailed), CharacteristicMap());
-    return;
-  }
-
   // Characteristics already discovered. Return success.
   if (HasCharacteristics()) {
     // We return a new copy of only the immutable data of our characteristics and their
@@ -104,7 +87,7 @@ void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback) {
 
   auto self = GetWeakPtr();
   auto chrc_cb = [self](const CharacteristicData& chr) {
-    if (!self || self->shut_down_) {
+    if (!self) {
       return;
     }
     // try_emplace should not fail here; our GATT::Client explicitly ensures that handles are
@@ -113,7 +96,7 @@ void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback) {
   };
 
   auto res_cb = [self](att::Result<> status) mutable {
-    if (!self || self->shut_down_) {
+    if (!self) {
       return;
     }
 
@@ -398,7 +381,7 @@ void RemoteService::StartDescriptorDiscovery() {
   // order since we request the descriptors of all characteristics all at
   // once.
   auto desc_done_callback = [self](att::Result<> status) {
-    if (!self || self->shut_down_) {
+    if (!self) {
       return;
     }
 
@@ -454,11 +437,6 @@ fitx::result<Error<>> RemoteService::GetCharacteristic(CharacteristicHandle id,
                                                        RemoteCharacteristic** out_char) {
   ZX_DEBUG_ASSERT(out_char);
 
-  if (shut_down_) {
-    *out_char = nullptr;
-    return fitx::error(HostError::kFailed);
-  }
-
   if (!HasCharacteristics()) {
     *out_char = nullptr;
     return fitx::error(HostError::kNotReady);
@@ -477,11 +455,6 @@ fitx::result<Error<>> RemoteService::GetCharacteristic(CharacteristicHandle id,
 fitx::result<Error<>> RemoteService::GetDescriptor(DescriptorHandle id,
                                                    const DescriptorData** out_desc) {
   ZX_DEBUG_ASSERT(out_desc);
-
-  if (shut_down_) {
-    *out_desc = nullptr;
-    return fitx::error(HostError::kFailed);
-  }
 
   if (!HasCharacteristics()) {
     *out_desc = nullptr;
@@ -548,13 +521,12 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
                                    ReadValueCallback callback) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(buffer);
-  ZX_DEBUG_ASSERT(!shut_down_);
 
   auto self = GetWeakPtr();
   auto read_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
                   cb = std::move(callback)](att::Result<> status, const ByteBuffer& blob,
                                             bool maybe_truncated_by_mtu) mutable {
-    if (!self || self->shut_down_) {
+    if (!self) {
       return;
     }
 
@@ -616,7 +588,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
 
   auto read_cb = [self = GetWeakPtr(), type, start, end, values_accum = std::move(values),
                   cb = std::move(callback)](Client::ReadByTypeResult result) mutable {
-    if (!self || self->shut_down_) {
+    if (!self) {
       return;
     }
 
@@ -703,9 +675,6 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
 
 void RemoteService::HandleNotification(att::Handle value_handle, const ByteBuffer& value,
                                        bool maybe_truncated) {
-  if (shut_down_)
-    return;
-
   auto iter = characteristics_.find(CharacteristicHandle(value_handle));
   if (iter != characteristics_.end()) {
     iter->second.HandleNotification(value, maybe_truncated);

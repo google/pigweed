@@ -128,9 +128,6 @@ class RemoteServiceManager final {
                                                   ServiceCallback service_cb,
                                                   att::ResultFunction<> status_cb);
 
-  // Shuts down and cleans up all services.
-  void ClearServices();
-
   // Called by |client_| when a notification or indication is received.
   void OnNotification(bool ind, att::Handle value_handle, const ByteBuffer& value,
                       bool maybe_truncated);

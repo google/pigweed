@@ -48,19 +48,11 @@ class RemoteService final {
   // In production, a RemoteService should only be constructed by a RemoteServiceManager.
   // The constructor and destructor are made available for testing.
   RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client);
-  // TODO(fxbug.dev/83509): Perform clean up in the destructor.
   ~RemoteService();
 
-  // Shuts down this service. Called when the service gets removed (e.g. due to disconnection or
-  // because it was removed by the peer) or modified (via the Service Changed notification).
-  // `service_changed` indicates whether shut down is occurring due to a Service Changed
-  // notification, in which case this service may no longer exist or may have been modified (and so
-  // no writes should be performed).
-  //
-  // This method is used for clean up instead of the destructor because
-  // ownership is shared across threads and clean up needs to be thread safe.
-  // TODO(fxbug.dev/83509): Remove this method and perform clean up in the destructor.
-  void ShutDown(bool service_changed = false);
+  // If true, a Service Changed notification for this service was received. This service may no
+  // longer exist or may have been modified (and so no writes should be performed upon destruction).
+  void set_service_changed(bool service_changed) { service_changed_ = service_changed; }
 
   const ServiceData& info() const { return service_data_; }
 
@@ -216,8 +208,6 @@ class RemoteService final {
 
   static constexpr size_t kSentinel = std::numeric_limits<size_t>::max();
 
-  bool alive() const { return !shut_down_; }
-
   // Returns a pointer to the characteristic with |id|. Returns nullptr if not
   // found.
   fitx::result<Error<>> GetCharacteristic(CharacteristicHandle id, RemoteCharacteristic** out_char);
@@ -279,11 +269,8 @@ class RemoteService final {
   // Characteristics get marked as ready when this number reaches 0.
   size_t remaining_descriptor_requests_;
 
-  // Set to true by ShutDown() which makes this service defunct. This happens
-  // when the remote device that this service was found on removes this service
-  // or gets disconnected.
-  // TODO(fxbug.dev/83509): Remove this variable once cleanup is moved to destructor.
-  bool shut_down_;
+  // Indicates whether the service was changed, as indicated by a service changed notification.
+  bool service_changed_ = false;
 
   // Called by ShutDown().
   std::vector<fit::callback<void()>> rm_handlers_;

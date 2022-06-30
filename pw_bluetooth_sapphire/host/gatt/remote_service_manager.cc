@@ -52,7 +52,7 @@ RemoteServiceManager::RemoteServiceManager(std::unique_ptr<Client> client,
 
 RemoteServiceManager::~RemoteServiceManager() {
   client_->SetNotificationHandler({});
-  ClearServices();
+  services_.clear();
 
   // Resolve all pending requests with an error.
   att::Result<> status = ToResult(HostError::kFailed);
@@ -346,8 +346,7 @@ void RemoteServiceManager::DiscoverServices(std::vector<UUID> service_uuids,
 
     // Service discovery support is mandatory for servers (v5.0, Vol 3, Part G, 4.2).
     if (bt_is_error(status, TRACE, "gatt", "failed to discover services")) {
-      // Clear services that were buffered so far.
-      self->ClearServices();
+      self->services_.clear();
     }
 
     status_cb(status);
@@ -422,13 +421,6 @@ void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,
 fxl::WeakPtr<RemoteService> RemoteServiceManager::FindService(att::Handle handle) {
   auto iter = services_.find(handle);
   return iter == services_.end() ? nullptr : iter->second->GetWeakPtr();
-}
-
-void RemoteServiceManager::ClearServices() {
-  auto services = std::move(services_);
-  for (auto& iter : services) {
-    iter.second->ShutDown();
-  }
 }
 
 void RemoteServiceManager::OnNotification(bool /*indication*/, att::Handle value_handle,
@@ -557,7 +549,7 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
   std::vector<att::Handle> removed_service_handles;
   for (ServiceMap::iterator& service_iter : removed_iters) {
     removed_service_handles.push_back(service_iter->first);
-    service_iter->second->ShutDown(/*service_changed=*/true);
+    service_iter->second->set_service_changed(true);
     services_.erase(service_iter);
   }
 
@@ -580,7 +572,9 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
 
     // Destroy the old service and replace with a new service in order to easily cancel ongoing
     // procedures and ensure clients handle service change.
-    service_iter->second->ShutDown(/*service_changed=*/true);
+    service_iter->second->set_service_changed(true);
+    service_iter->second.reset();
+
     auto new_service = std::make_unique<RemoteService>(new_service_data, client_->AsWeakPtr());
     ZX_ASSERT(new_service->handle() == service_iter->first);
     modified_services.push_back(new_service->GetWeakPtr());

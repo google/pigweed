@@ -10,12 +10,6 @@ namespace bt::gatt::testing {
 
 FakeLayer::TestPeer::TestPeer() : fake_client(async_get_default_dispatcher()) {}
 
-FakeLayer::TestPeer::~TestPeer() {
-  for (auto& svc_pair : services) {
-    svc_pair.second->ShutDown();
-  }
-}
-
 std::pair<fxl::WeakPtr<RemoteService>, fxl::WeakPtr<FakeClient>> FakeLayer::AddPeerService(
     PeerId peer_id, const ServiceData& info, bool notify) {
   auto [iter, _] = peers_.try_emplace(peer_id);
@@ -38,7 +32,7 @@ std::pair<fxl::WeakPtr<RemoteService>, fxl::WeakPtr<FakeClient>> FakeLayer::AddP
       added.push_back(service_weak);
     }
 
-    svc_iter->second->ShutDown(/*service_changed=*/true);
+    svc_iter->second->set_service_changed(true);
     peer.services.erase(svc_iter);
   } else {
     added.push_back(service_weak);
@@ -65,7 +59,7 @@ void FakeLayer::RemovePeerService(PeerId peer_id, att::Handle handle) {
   if (svc_iter == peer_iter->second.services.end()) {
     return;
   }
-  svc_iter->second->ShutDown(/*service_changed=*/true);
+  svc_iter->second->set_service_changed(true);
   peer_iter->second.services.erase(svc_iter);
 
   if (remote_service_watchers_.count(peer_id)) {

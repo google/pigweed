@@ -99,7 +99,6 @@ class FakeLayer final : public GATT {
   // Emulated GATT peer.
   struct TestPeer {
     TestPeer();
-    ~TestPeer();
 
     FakeClient fake_client;
     std::unordered_map<IdType, std::unique_ptr<RemoteService>> services;
