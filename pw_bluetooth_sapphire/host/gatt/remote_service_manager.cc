@@ -31,7 +31,7 @@ void RemoteServiceManager::ServiceListRequest::Complete(att::Result<> status,
     auto& svc = iter.second;
     auto pred = [&svc](const UUID& uuid) { return svc->uuid() == uuid; };
     if (uuids_.empty() || std::find_if(uuids_.begin(), uuids_.end(), pred) != uuids_.end()) {
-      result.push_back(iter.second);
+      result.push_back(iter.second->GetWeakPtr());
     }
   }
 
@@ -86,7 +86,7 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
       TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::svc_watcher_");
       ServiceList added;
       std::transform(self->services_.begin(), self->services_.end(), std::back_inserter(added),
-                     [](ServiceMap::value_type& svc) { return svc.second; });
+                     [](ServiceMap::value_type& svc) { return svc.second->GetWeakPtr(); });
       self->svc_watcher_(/*removed=*/{}, std::move(added), /*modified=*/{});
     }
 
@@ -153,15 +153,15 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
   });
 }
 
-fbl::RefPtr<RemoteService> RemoteServiceManager::GattProfileService() {
+RemoteService* RemoteServiceManager::GattProfileService() {
   auto service_iter = std::find_if(services_.begin(), services_.end(), [](auto& s) {
     return s.second->uuid() == types::kGenericAttributeService;
   });
-  return service_iter == services_.end() ? nullptr : service_iter->second;
+  return service_iter == services_.end() ? nullptr : service_iter->second.get();
 }
 
-void RemoteServiceManager::ConfigureServiceChangedNotifications(
-    fbl::RefPtr<RemoteService> gatt_profile_service, att::ResultFunction<> callback) {
+void RemoteServiceManager::ConfigureServiceChangedNotifications(RemoteService* gatt_profile_service,
+                                                                att::ResultFunction<> callback) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   gatt_profile_service->DiscoverCharacteristics(
       [self, callback = std::move(callback)](att::Result<> status,
@@ -177,7 +177,7 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(
           return;
         }
 
-        auto gatt_profile_service = self->GattProfileService();
+        RemoteService* gatt_profile_service = self->GattProfileService();
         ZX_ASSERT(gatt_profile_service);
 
         auto svc_changed_char_iter =
@@ -240,7 +240,7 @@ void RemoteServiceManager::InitializeGattProfileService(att::ResultFunction<> ca
       return;
     }
 
-    fbl::RefPtr<RemoteService> gatt_svc = self->GattProfileService();
+    RemoteService* gatt_svc = self->GattProfileService();
     ZX_ASSERT(gatt_svc);
     self->ConfigureServiceChangedNotifications(
         std::move(gatt_svc), [self, callback = std::move(callback)](att::Result<> status) {
@@ -305,7 +305,7 @@ void RemoteServiceManager::AddService(const ServiceData& service_data) {
     return;
   }
 
-  auto svc = fbl::AdoptRef(new RemoteService(service_data, client_->AsWeakPtr()));
+  auto svc = std::make_unique<RemoteService>(service_data, client_->AsWeakPtr());
   if (!svc) {
     bt_log(DEBUG, "gatt", "failed to allocate RemoteService");
     return;
@@ -419,9 +419,9 @@ void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,
   }
 }
 
-fbl::RefPtr<RemoteService> RemoteServiceManager::FindService(att::Handle handle) {
+fxl::WeakPtr<RemoteService> RemoteServiceManager::FindService(att::Handle handle) {
   auto iter = services_.find(handle);
-  return iter == services_.end() ? nullptr : iter->second;
+  return iter == services_.end() ? nullptr : iter->second->GetWeakPtr();
 }
 
 void RemoteServiceManager::ClearServices() {
@@ -574,26 +574,26 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
       bt_log(INFO, "gatt",
              "GATT Profile Service changed; assuming same characteristics (server values probably "
              "changed)");
-      modified_services.push_back(service_iter->second);
+      modified_services.push_back(service_iter->second->GetWeakPtr());
       continue;
     }
 
     // Destroy the old service and replace with a new service in order to easily cancel ongoing
     // procedures and ensure clients handle service change.
     service_iter->second->ShutDown(/*service_changed=*/true);
-    auto new_service = fbl::AdoptRef(new RemoteService(new_service_data, client_->AsWeakPtr()));
+    auto new_service = std::make_unique<RemoteService>(new_service_data, client_->AsWeakPtr());
     ZX_ASSERT(new_service->handle() == service_iter->first);
-    service_iter->second = new_service;
-    modified_services.push_back(std::move(new_service));
+    modified_services.push_back(new_service->GetWeakPtr());
+    service_iter->second = std::move(new_service);
   }
 
   ServiceList added_services;
   added_services.reserve(added_data.size());
   for (ServiceData service_data : added_data) {
-    auto service = fbl::AdoptRef(new RemoteService(service_data, client_->AsWeakPtr()));
-    auto [_, inserted] = services_.try_emplace(service->handle(), service);
+    auto service = std::make_unique<RemoteService>(service_data, client_->AsWeakPtr());
+    added_services.push_back(service->GetWeakPtr());
+    auto [_, inserted] = services_.try_emplace(service->handle(), std::move(service));
     ZX_ASSERT_MSG(inserted, "service with handle (%#.4x) already exists", service->handle());
-    added_services.push_back(std::move(service));
   }
 
   // Skip notifying the service watcher callback during initialization as it will be notified in the

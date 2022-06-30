@@ -9,10 +9,7 @@
 #include <lib/fitx/result.h>
 #include <zircon/assert.h>
 
-#include <fbl/intrusive_hash_table.h>
 #include <fbl/macros.h>
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
@@ -23,19 +20,18 @@ namespace bt::gatt {
 
 class RemoteService;
 
+using ServiceList = std::vector<fxl::WeakPtr<RemoteService>>;
+
 // Callback type invoked when GATT services are removed, added, or modified.
 // `added` and `modified` are not combined into `updated` for flexibility and debuggability.
 // Modified service handles are not included in `removed`.
 // NOTE: `removed` services should be handled first because they may share handles with `added`
 // services.
-using RemoteServiceWatcher = fit::function<void(std::vector<att::Handle> removed,
-                                                std::vector<fbl::RefPtr<RemoteService>> added,
-                                                std::vector<fbl::RefPtr<RemoteService>> modified)>;
+using RemoteServiceWatcher =
+    fit::function<void(std::vector<att::Handle> removed, ServiceList added, ServiceList modified)>;
 
-using ServiceList = std::vector<fbl::RefPtr<RemoteService>>;
 using ServiceListCallback = fit::function<void(att::Result<>, ServiceList)>;
 
-using RemoteServiceCallback = fit::function<void(fbl::RefPtr<RemoteService>)>;
 using DescriptorMap = std::map<DescriptorHandle, DescriptorData>;
 using CharacteristicMap =
     std::map<CharacteristicHandle, std::pair<CharacteristicData, DescriptorMap>>;
@@ -47,10 +43,7 @@ class RemoteServiceManager;
 // Represents the state of a GATT service that was discovered on a remote
 // device. Clients can interact with a remote GATT service by obtaining a
 // RemoteService object from the GATT system.
-//
-// TODO(fxbug.dev/83509): Remove RefCounted/RefPtr now that RemoteService doesn't need to be thread
-// safe.
-class RemoteService final : public fbl::RefCounted<RemoteService> {
+class RemoteService final {
  public:
   // In production, a RemoteService should only be constructed by a RemoteServiceManager.
   // The constructor and destructor are made available for testing.
@@ -216,8 +209,9 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
     HandleNotification(value_handle, value, maybe_truncated);
   }
 
+  fxl::WeakPtr<RemoteService> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
  private:
-  friend class fbl::RefPtr<RemoteService>;
   friend class internal::RemoteServiceManager;
 
   static constexpr size_t kSentinel = std::numeric_limits<size_t>::max();
@@ -288,10 +282,13 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   // Set to true by ShutDown() which makes this service defunct. This happens
   // when the remote device that this service was found on removes this service
   // or gets disconnected.
+  // TODO(fxbug.dev/83509): Remove this variable once cleanup is moved to destructor.
   bool shut_down_;
 
   // Called by ShutDown().
   std::vector<fit::callback<void()>> rm_handlers_;
+
+  fxl::WeakPtrFactory<RemoteService> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteService);
 };

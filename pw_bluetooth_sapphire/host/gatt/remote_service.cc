@@ -102,19 +102,19 @@ void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback) {
   if (pending_discov_reqs_.size() > 1u)
     return;
 
-  auto self = fbl::RefPtr(this);
+  auto self = GetWeakPtr();
   auto chrc_cb = [self](const CharacteristicData& chr) {
-    if (!self->shut_down_) {
-      // try_emplace should not fail here; our GATT::Client explicitly ensures that handles are
-      // strictly ascending (as described in the spec) so we should never see a handle collision
-      self->characteristics_.try_emplace(CharacteristicHandle(chr.value_handle), self->client_,
-                                         chr);
+    if (!self || self->shut_down_) {
+      return;
     }
+    // try_emplace should not fail here; our GATT::Client explicitly ensures that handles are
+    // strictly ascending (as described in the spec) so we should never see a handle collision
+    self->characteristics_.try_emplace(CharacteristicHandle(chr.value_handle), self->client_, chr);
   };
 
   auto res_cb = [self](att::Result<> status) mutable {
-    if (self->shut_down_) {
-      status = ToResult(HostError::kFailed);
+    if (!self || self->shut_down_) {
+      return;
     }
 
     if (bt_is_error(status, TRACE, "gatt", "characteristic discovery failed")) {
@@ -392,28 +392,29 @@ void RemoteService::StartDescriptorDiscovery() {
   ZX_ASSERT(!characteristics_.empty());
   remaining_descriptor_requests_ = characteristics_.size();
 
-  auto self = fbl::RefPtr(this);
+  auto self = GetWeakPtr();
 
   // Callback called for each characteristic. This may be called in any
   // order since we request the descriptors of all characteristics all at
   // once.
   auto desc_done_callback = [self](att::Result<> status) {
+    if (!self || self->shut_down_) {
+      return;
+    }
+
     // Do nothing if discovery was concluded earlier (which would have cleared
     // the pending discovery requests).
-    if (self->pending_discov_reqs_.empty())
+    if (self->pending_discov_reqs_.empty()) {
       return;
-
-    // Report an error if the service was removed.
-    if (self->shut_down_) {
-      status = ToResult(HostError::kFailed);
     }
 
     if (status.is_ok()) {
       self->remaining_descriptor_requests_ -= 1;
 
       // Defer handling
-      if (self->remaining_descriptor_requests_ > 0)
+      if (self->remaining_descriptor_requests_ > 0) {
         return;
+      }
 
       // HasCharacteristics() should return true now.
       ZX_DEBUG_ASSERT(self->HasCharacteristics());
@@ -549,14 +550,11 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
   ZX_DEBUG_ASSERT(buffer);
   ZX_DEBUG_ASSERT(!shut_down_);
 
-  // Capture a reference so that this object is alive when the callback runs.
-  auto self = fbl::RefPtr(this);
+  auto self = GetWeakPtr();
   auto read_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
                   cb = std::move(callback)](att::Result<> status, const ByteBuffer& blob,
                                             bool maybe_truncated_by_mtu) mutable {
-    if (self->shut_down_) {
-      // The service was removed. Report an error.
-      ReportReadValueError(ToResult(HostError::kCanceled), std::move(cb));
+    if (!self || self->shut_down_) {
       return;
     }
 
@@ -616,8 +614,12 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
     return;
   }
 
-  auto read_cb = [self = fbl::RefPtr(this), type, start, end, values_accum = std::move(values),
+  auto read_cb = [self = GetWeakPtr(), type, start, end, values_accum = std::move(values),
                   cb = std::move(callback)](Client::ReadByTypeResult result) mutable {
+    if (!self || self->shut_down_) {
+      return;
+    }
+
     // Pass results to client when this goes out of scope.
     auto deferred_cb = fit::defer_callback([&]() { cb(fitx::ok(), std::move(values_accum)); });
     if (result.is_error()) {

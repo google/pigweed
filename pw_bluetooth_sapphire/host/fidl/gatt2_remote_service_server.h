@@ -23,7 +23,7 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
   static const size_t kMaxPendingNotifierValues = 20;
 
   Gatt2RemoteServiceServer(
-      fbl::RefPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
+      fxl::WeakPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
       bt::PeerId peer_id, fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::RemoteService> request);
   ~Gatt2RemoteServiceServer() override;
 
@@ -78,7 +78,7 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
                                      bt::gatt::IdType handler_id);
 
   // The remote GATT service that backs this service.
-  fbl::RefPtr<bt::gatt::RemoteService> service_;
+  fxl::WeakPtr<bt::gatt::RemoteService> service_;
 
   NotifierId next_notifier_id_ = 0u;
   std::unordered_map<NotifierId, CharacteristicNotifier> characteristic_notifiers_;

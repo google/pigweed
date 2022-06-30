@@ -24,7 +24,7 @@ class FakeLayer final : public GATT {
   // Returns the fake remote service and a handle to the fake object.
   //
   // NOTE: the remote service watcher can also get triggered by calling InitializeClient().
-  std::pair<fbl::RefPtr<RemoteService>, fxl::WeakPtr<FakeClient>> AddPeerService(
+  std::pair<fxl::WeakPtr<RemoteService>, fxl::WeakPtr<FakeClient>> AddPeerService(
       PeerId peer_id, const ServiceData& info, bool notify = false);
 
   // Removes the service with start handle of |handle| and notifies service watcher.
@@ -79,7 +79,7 @@ class FakeLayer final : public GATT {
                                                              RemoteServiceWatcher watcher) override;
   bool UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
-  fbl::RefPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) override;
+  fxl::WeakPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) override;
 
  private:
   // Test callbacks
@@ -102,7 +102,7 @@ class FakeLayer final : public GATT {
     ~TestPeer();
 
     FakeClient fake_client;
-    std::unordered_map<IdType, fbl::RefPtr<RemoteService>> services;
+    std::unordered_map<IdType, std::unique_ptr<RemoteService>> services;
 
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestPeer);
   };

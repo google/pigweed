@@ -30,11 +30,6 @@ namespace internal {
 // device. The RemoteServiceManager owns the GATT client data bearer, interacts
 // with the profile-defined GATT service, and allows observers to be notified
 // as services get discovered.
-//
-// THREAD SAFETY:
-//
-// This class is NOT thread safe. It must be created, used, and destroyed on a
-// specific thread.
 class RemoteServiceManager final {
  public:
   RemoteServiceManager(std::unique_ptr<Client> client, async_dispatcher_t* gatt_dispatcher);
@@ -65,10 +60,10 @@ class RemoteServiceManager final {
   // Returns the RemoteService with the requested range start |handle| or
   // nullptr if it is not recognized. This method may fail if called before or
   // during initialization.
-  fbl::RefPtr<RemoteService> FindService(att::Handle handle);
+  fxl::WeakPtr<RemoteService> FindService(att::Handle handle);
 
  private:
-  using ServiceMap = std::map<att::Handle, fbl::RefPtr<RemoteService>>;
+  using ServiceMap = std::map<att::Handle, std::unique_ptr<RemoteService>>;
 
   // Used to represent a queued ListServices() request.
   class ServiceListRequest {
@@ -98,7 +93,7 @@ class RemoteServiceManager final {
 
   // If the GATT Profile service has been discovered, returns the service. Returns
   // nullptr otherwise.
-  fbl::RefPtr<RemoteService> GattProfileService();
+  RemoteService* GattProfileService();
 
   // Attempt to discover the GATT Profile service. This method must complete before discovery of
   // other services. Notifies |callback| with a status of HostError::kNotFound if the GATT Profile
@@ -108,7 +103,7 @@ class RemoteServiceManager final {
   // Discovers characteristics of |gatt_profile_service| and enables notifications of the Service
   // Changed characteristic. Notifies |callback| with a status of HostError::kNotFound if the GATT
   // Profile service's Service Changed characteristic is not found.
-  void ConfigureServiceChangedNotifications(fbl::RefPtr<RemoteService> gatt_profile_service,
+  void ConfigureServiceChangedNotifications(RemoteService* gatt_profile_service,
                                             att::ResultFunction<> callback);
 
   // Discover the GATT Profile service and configure the Service Changed characteristic therein.

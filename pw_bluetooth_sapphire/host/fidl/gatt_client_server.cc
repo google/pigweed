@@ -82,7 +82,7 @@ void GattClientServer::ConnectToService(uint64_t id,
   // Initialize an entry so that we remember when this request is in progress.
   connected_services_[id] = nullptr;
 
-  fbl::RefPtr<bt::gatt::RemoteService> service = gatt()->FindService(peer_id_, id);
+  fxl::WeakPtr<bt::gatt::RemoteService> service = gatt()->FindService(peer_id_, id);
 
   // Automatically called on failure.
   auto fail_cleanup = fit::defer([this, id] { connected_services_.erase(id); });
@@ -112,7 +112,7 @@ void GattClientServer::ConnectToService(uint64_t id,
 
   fail_cleanup.cancel();
 
-  auto server = std::make_unique<GattRemoteServiceServer>(std::move(service), gatt(), peer_id_,
+  auto server = std::make_unique<GattRemoteServiceServer>(service->GetWeakPtr(), gatt(), peer_id_,
                                                           std::move(request));
   server->set_error_handler([cb = std::move(error_cb)](zx_status_t status) { cb(); });
 

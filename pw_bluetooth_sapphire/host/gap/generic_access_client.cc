@@ -8,7 +8,7 @@
 
 namespace bt::gap::internal {
 
-GenericAccessClient::GenericAccessClient(PeerId peer_id, fbl::RefPtr<gatt::RemoteService> service)
+GenericAccessClient::GenericAccessClient(PeerId peer_id, fxl::WeakPtr<gatt::RemoteService> service)
     : service_(std::move(service)), peer_id_(peer_id), weak_ptr_factory_(this) {
   ZX_ASSERT(service_);
   ZX_ASSERT(service_->uuid() == kGenericAccessService);

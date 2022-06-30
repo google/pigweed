@@ -19,7 +19,7 @@ class GenericAccessClient {
  public:
   // |peer_id| is the id of the peer serving the service.
   // The UUID of |generic_access_service| must be kGenericAccessService.
-  GenericAccessClient(PeerId peer_id, fbl::RefPtr<gatt::RemoteService> generic_access_service);
+  GenericAccessClient(PeerId peer_id, fxl::WeakPtr<gatt::RemoteService> generic_access_service);
 
   // Discover and read the device name characteristic, if present.
   using DeviceNameCallback = fit::callback<void(att::Result<std::string>)>;
@@ -35,7 +35,7 @@ class GenericAccessClient {
   void ReadPeripheralPreferredConnectionParameters(ConnectionParametersCallback callback);
 
  private:
-  fbl::RefPtr<gatt::RemoteService> service_;
+  fxl::WeakPtr<gatt::RemoteService> service_;
   PeerId peer_id_;
   fxl::WeakPtrFactory<GenericAccessClient> weak_ptr_factory_;
 };

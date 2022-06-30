@@ -28,7 +28,7 @@ class Gatt2ClientServer : public GattServerBase<fuchsia::bluetooth::gatt2::Clien
                          std::vector<::fuchsia::bluetooth::gatt2::Handle>)>;
   using WatchServicesRequest = WatchServicesCallbackOnce;
 
-  using ServiceMap = std::unordered_map<bt::att::Handle, fbl::RefPtr<bt::gatt::RemoteService>>;
+  using ServiceMap = std::unordered_map<bt::att::Handle, fxl::WeakPtr<bt::gatt::RemoteService>>;
 
   struct WatchServicesResult {
     std::unordered_set<bt::att::Handle> removed;
@@ -36,8 +36,8 @@ class Gatt2ClientServer : public GattServerBase<fuchsia::bluetooth::gatt2::Clien
   };
 
   void OnWatchServicesResult(const std::vector<bt::att::Handle>& removed,
-                             const std::vector<fbl::RefPtr<bt::gatt::RemoteService>>& added,
-                             const std::vector<fbl::RefPtr<bt::gatt::RemoteService>>& modified);
+                             const bt::gatt::ServiceList& added,
+                             const bt::gatt::ServiceList& modified);
 
   void TrySendNextWatchServicesResult();
 

@@ -69,7 +69,8 @@ class GATT {
   virtual PeerMtuListenerId RegisterPeerMtuListener(PeerMtuListener listener) = 0;
 
   // Unregisters the PeerMtuListener associated with |listener_id|. Returns true if a listener was
-  // successfully unregistered, or false if |listener_id| was not associated with an active listener.
+  // successfully unregistered, or false if |listener_id| was not associated with an active
+  // listener.
   virtual bool UnregisterPeerMtuListener(PeerMtuListenerId listener_id) = 0;
 
   // ==============
@@ -174,8 +175,8 @@ class GATT {
                             ServiceListCallback callback) = 0;
 
   // Connects the RemoteService with the given identifier found on the device with |peer_id|. A
-  // reference to the service will be returned if it exists, or nullptr will be returned otherwise.
-  virtual fbl::RefPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) = 0;
+  // pointer to the service will be returned if it exists, or nullptr will be returned otherwise.
+  virtual fxl::WeakPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) = 0;
 
   fxl::WeakPtr<GATT> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 

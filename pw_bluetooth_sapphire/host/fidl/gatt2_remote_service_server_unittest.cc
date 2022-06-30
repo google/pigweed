@@ -63,7 +63,7 @@ class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
   }
 
   fbg::RemoteServicePtr& service_proxy() { return proxy_; }
-  fbl::RefPtr<bt::gatt::RemoteService> service() { return service_; }
+  fxl::WeakPtr<bt::gatt::RemoteService> service() { return service_; }
 
   void DestroyServer() { server_.reset(); }
 
@@ -71,7 +71,7 @@ class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
   std::unique_ptr<Gatt2RemoteServiceServer> server_;
 
   fbg::RemoteServicePtr proxy_;
-  fbl::RefPtr<bt::gatt::RemoteService> service_;
+  fxl::WeakPtr<bt::gatt::RemoteService> service_;
   fxl::WeakPtr<bt::gatt::testing::FakeClient> fake_client_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(Gatt2RemoteServiceServerTest);

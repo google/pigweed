@@ -115,7 +115,7 @@ bt::gatt::ReliableMode ReliableModeFromFidl(const fbg::WriteMode& mode) {
 }  // namespace
 
 Gatt2RemoteServiceServer::Gatt2RemoteServiceServer(
-    fbl::RefPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
+    fxl::WeakPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
     bt::PeerId peer_id, fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::RemoteService> request)
     : GattServerBase(gatt, this, std::move(request)),
       service_(std::move(service)),

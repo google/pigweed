@@ -64,7 +64,7 @@ class GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
   std::unique_ptr<GattRemoteServiceServer> server_;
 
   fbgatt::RemoteServicePtr proxy_;
-  fbl::RefPtr<bt::gatt::RemoteService> service_;
+  fxl::WeakPtr<bt::gatt::RemoteService> service_;
   fxl::WeakPtr<bt::gatt::testing::FakeClient> fake_client_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(GattRemoteServiceServerTest);
