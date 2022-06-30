@@ -26,7 +26,7 @@ config("public_config") {
 }
 
 config("polyfill_config") {
-  include_dirs = [ "public_overrides" ]
+  include_dirs = [ "internal_only_include_path_do_not_use" ]
 
   if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
     defines = [ "_PW_SPAN_POLYFILL_ENABLED" ]
@@ -45,7 +45,7 @@ pw_source_set("pw_span") {
 pw_source_set("polyfill") {
   public_configs = [ ":polyfill_config" ]
   public_deps = [ ":common" ]
-  public = [ "public_overrides/span" ]
+  public = [ "internal_only_include_path_do_not_use/span" ]
   sources = [ "public/pw_span/internal/span_polyfill.h" ]
 
   if (pw_span_ENABLE_STD_SPAN_POLYFILL) {

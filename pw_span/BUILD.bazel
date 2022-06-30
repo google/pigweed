@@ -36,10 +36,10 @@ pw_cc_library(
         "public/pw_span/internal/span_common.inc",
         "public/pw_span/internal/span_polyfill.h",
     ],
-    hdrs = ["public_overrides/span"],
+    hdrs = ["internal_only_include_path_do_not_use/span"],
     includes = [
+        "internal_only_include_path_do_not_use",
         "public",
-        "public_overrides",
     ],
     # Disallow use of the <span> polyfill.
     visibility = ["//visibility:private"],
