@@ -13,8 +13,6 @@
 // the License.
 
 // The Pigweed unit test framework requires C++17 to use its full functionality.
-// In C++11, only the TEST, TEST_F, EXPECT_TRUE, EXPECT_FALSE, ASSERT_TRUE,
-// ASSERT_FALSE, FAIL, and ADD_FAILURE macros may be used.
 #pragma once
 
 #include <cstddef>
@@ -126,7 +124,7 @@
     static_cast<void>(statement);                   \
     static_cast<void>(regex);                       \
   }                                                 \
-  static_assert(true, "Macros must be termianted with a semicolon")
+  static_assert(true, "Macros must be terminated with a semicolon")
 
 #define ASSERT_DEATH_IF_SUPPORTED(statement, regex) \
   EXPECT_DEATH_IF_SUPPORTED(statement, regex)
