@@ -16,5 +16,5 @@ declare_args() {
   # Whether to provide <span> and std::span in the build. This feature is
   # DEPRECATED and should not be used. Instead, use "pw_span/span.h" and
   # pw::span in C++17, or std::span in C++20 or newer.
-  pw_span_ENABLE_STD_SPAN_POLYFILL = true
+  pw_span_ENABLE_STD_SPAN_POLYFILL = false
 }
