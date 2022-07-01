@@ -117,16 +117,21 @@ TEST_F(HostTest, InitializeFailsWhenCommandTimesOut) {
       [&]() { error_cb_called = true; });
 
   // Any command sent to the command channel will time out, so run the loop until it does, and the
-  // transport should signal failure, which should call our error callback.
+  // transport should signal failure, which should call our init callback.
   constexpr zx::duration kCommandTimeout = zx::sec(12);
   RunLoopFor(kCommandTimeout);
-  EXPECT_TRUE(error_cb_called);
-  EXPECT_FALSE(init_cb_result.has_value());
+  ASSERT_TRUE(init_cb_result.has_value());
+  EXPECT_FALSE(*init_cb_result);
+  EXPECT_FALSE(error_cb_called);
+  init_cb_result.reset();
 
   host()->ShutDown();
-  ASSERT_TRUE(init_cb_result.has_value());
-  EXPECT_FALSE(init_cb_result.value());
+  EXPECT_FALSE(init_cb_result.has_value());
+  EXPECT_FALSE(error_cb_called);
+
   DestroyHost();
+  EXPECT_FALSE(init_cb_result.has_value());
+  EXPECT_FALSE(error_cb_called);
 }
 
 }  // namespace

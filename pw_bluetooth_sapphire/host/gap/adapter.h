@@ -87,7 +87,7 @@ class Adapter {
   // device disappeared or the transport channels were closed for an unknown
   // reason). The implementation is responsible for cleaning up this adapter by
   // calling ShutDown().
-  using InitializeCallback = fit::function<void(bool success)>;
+  using InitializeCallback = fit::callback<void(bool success)>;
   virtual bool Initialize(InitializeCallback callback, fit::closure transport_closed_callback) = 0;
 
   // Shuts down this Adapter. Invokes |callback| when shut down has completed.

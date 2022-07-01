@@ -255,6 +255,35 @@ TEST_F(AdapterTest, InitializeFailureHCICommandError) {
   EXPECT_FALSE(transport_closed_called());
 }
 
+TEST_F(AdapterTest, InitializeFailureTransportErrorDuringWriteLocalName) {
+  std::optional<bool> success;
+  int init_cb_count = 0;
+  auto init_cb = [&](bool cb_success) {
+    success = cb_success;
+    init_cb_count++;
+  };
+
+  // Make all settings valid but make an HCI command fail.
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+  fit::closure resume_write_local_name_cb = nullptr;
+  test_device()->pause_responses_for_opcode(hci_spec::kWriteLocalName, [&](fit::closure resume) {
+    resume_write_local_name_cb = std::move(resume);
+  });
+
+  InitializeAdapter(std::move(init_cb));
+  ASSERT_TRUE(resume_write_local_name_cb);
+  EXPECT_EQ(0, init_cb_count);
+
+  // Signaling an error should cause Transport to close, which should cause initialization to fail.
+  test_device()->SignalError(ZX_ERR_IO);
+  ASSERT_TRUE(success.has_value());
+  EXPECT_FALSE(*success);
+  EXPECT_EQ(1, init_cb_count);
+  EXPECT_FALSE(transport_closed_called());
+}
+
 TEST_F(AdapterTest, TransportClosedCallback) {
   bool success;
   int init_cb_count = 0;
@@ -279,6 +308,7 @@ TEST_F(AdapterTest, TransportClosedCallback) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(transport_closed_called());
+  EXPECT_EQ(1, init_cb_count);
 }
 
 // TODO(fxbug.dev/1512): Add a unit test for Adapter::ShutDown() and update

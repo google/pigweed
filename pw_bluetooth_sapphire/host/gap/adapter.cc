@@ -272,15 +272,19 @@ class AdapterImpl final : public Adapter {
  private:
   // Second step of the initialization sequence. Called by Initialize() when the
   // first batch of HCI commands have been sent.
-  void InitializeStep2(InitializeCallback callback);
+  void InitializeStep2();
 
   // Third step of the initialization sequence. Called by InitializeStep2() when
   // the second batch of HCI commands have been sent.
-  void InitializeStep3(InitializeCallback callback);
+  void InitializeStep3();
 
   // Fourth step of the initialization sequence. Called by InitializeStep3()
   // when the third batch of HCI commands have been sent.
-  void InitializeStep4(InitializeCallback callback);
+  void InitializeStep4();
+
+  // Returns true if initialization was completed, or false if initialization is not
+  // in progress.
+  bool CompleteInitialization(bool success);
 
   // Assigns properties to |adapter_node_| using values discovered during other initialization
   // steps.
@@ -384,6 +388,9 @@ class AdapterImpl final : public Adapter {
   };
   std::atomic<State> init_state_;
   std::unique_ptr<hci::SequentialCommandRunner> init_seq_runner_;
+
+  // The callback passed to Initialize(). Null after initialization completes.
+  InitializeCallback init_cb_;
 
   // Contains the global adapter state.
   AdapterState state_;
@@ -504,12 +511,11 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
   }
 
   ZX_DEBUG_ASSERT(!IsInitializing());
-
-  init_state_ = State::kInitializing;
-
   ZX_DEBUG_ASSERT(init_seq_runner_->IsReady());
   ZX_DEBUG_ASSERT(!init_seq_runner_->HasQueuedCommands());
 
+  init_state_ = State::kInitializing;
+  init_cb_ = std::move(callback);
   transport_closed_cb_ = std::move(transport_closed_cb);
 
   state_.vendor_features_ = hci_->GetVendorFeatures();
@@ -586,17 +592,15 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
         });
   }
 
-  init_seq_runner_->RunCommands(
-      [callback = std::move(callback), this](hci::Result<> status) mutable {
-        if (bt_is_error(status, ERROR, "gap", "Failed to obtain initial controller information: %s",
-                        bt_str(status))) {
-          CleanUp();
-          callback(false);
-          return;
-        }
+  init_seq_runner_->RunCommands([this](hci::Result<> status) mutable {
+    if (bt_is_error(status, ERROR, "gap", "Failed to obtain initial controller information: %s",
+                    bt_str(status))) {
+      CompleteInitialization(/*success=*/false);
+      return;
+    }
 
-        InitializeStep2(std::move(callback));
-      });
+    InitializeStep2();
+  });
 
   return true;
 }
@@ -695,14 +699,13 @@ void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
                                                            "open_l2cap_channel_requests");
 }
 
-void AdapterImpl::InitializeStep2(InitializeCallback callback) {
+void AdapterImpl::InitializeStep2() {
   ZX_DEBUG_ASSERT(IsInitializing());
 
   // Low Energy MUST be supported. We don't support BR/EDR-only controllers.
   if (!state_.IsLowEnergySupported()) {
     bt_log(ERROR, "gap", "Bluetooth LE not supported by controller");
-    CleanUp();
-    callback(false);
+    CompleteInitialization(/*success=*/false);
     return;
   }
 
@@ -816,19 +819,17 @@ void AdapterImpl::InitializeStep2(InitializeCallback callback) {
         });
   }
 
-  init_seq_runner_->RunCommands(
-      [callback = std::move(callback), this](hci::Result<> status) mutable {
-        if (bt_is_error(status, ERROR, "gap",
-                        "failed to obtain initial controller information (step 2)")) {
-          CleanUp();
-          callback(false);
-          return;
-        }
-        InitializeStep3(std::move(callback));
-      });
+  init_seq_runner_->RunCommands([this](hci::Result<> status) mutable {
+    if (bt_is_error(status, ERROR, "gap",
+                    "failed to obtain initial controller information (step 2)")) {
+      CompleteInitialization(/*success=*/false);
+      return;
+    }
+    InitializeStep3();
+  });
 }
 
-void AdapterImpl::InitializeStep3(InitializeCallback callback) {
+void AdapterImpl::InitializeStep3() {
   ZX_ASSERT(IsInitializing());
   ZX_ASSERT(init_seq_runner_->IsReady());
   ZX_ASSERT(!init_seq_runner_->HasQueuedCommands());
@@ -836,8 +837,7 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
   if (!state_.bredr_data_buffer_info().IsAvailable() &&
       !state_.low_energy_state().data_buffer_info().IsAvailable()) {
     bt_log(ERROR, "gap", "Both BR/EDR and LE buffers are unavailable");
-    CleanUp();
-    callback(false);
+    CompleteInitialization(/*success=*/false);
     return;
   }
 
@@ -846,8 +846,7 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
   if (!hci_->InitializeACLDataChannel(state_.bredr_data_buffer_info(),
                                       state_.low_energy_state().data_buffer_info())) {
     bt_log(ERROR, "gap", "Failed to initialize ACLDataChannel (step 3)");
-    CleanUp();
-    callback(false);
+    CompleteInitialization(/*success=*/false);
     return;
   }
 
@@ -959,19 +958,17 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
         });
   }
 
-  init_seq_runner_->RunCommands(
-      [callback = std::move(callback), this](hci::Result<> status) mutable {
-        if (bt_is_error(status, ERROR, "gap",
-                        "failed to obtain initial controller information (step 3)")) {
-          CleanUp();
-          callback(false);
-          return;
-        }
-        InitializeStep4(std::move(callback));
-      });
+  init_seq_runner_->RunCommands([this](hci::Result<> status) mutable {
+    if (bt_is_error(status, ERROR, "gap",
+                    "failed to obtain initial controller information (step 3)")) {
+      CompleteInitialization(/*success=*/false);
+      return;
+    }
+    InitializeStep4();
+  });
 }
 
-void AdapterImpl::InitializeStep4(InitializeCallback callback) {
+void AdapterImpl::InitializeStep4() {
   // Initialize the scan manager and low energy adapters based on current feature support
   ZX_DEBUG_ASSERT(IsInitializing());
 
@@ -1047,17 +1044,29 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
 
   // Assign a default name and device class before notifying completion.
   auto self = weak_ptr_factory_.GetWeakPtr();
-  SetLocalName(kDefaultLocalName, [self, callback = std::move(callback)](auto status) mutable {
+  SetLocalName(kDefaultLocalName, [self](auto status) mutable {
     // Set the default device class - a computer with audio.
     // TODO(fxbug.dev/1234): set this from a platform configuration file
     DeviceClass dev_class(DeviceClass::MajorClass::kComputer);
     dev_class.SetServiceClasses({DeviceClass::ServiceClass::kAudio});
-    self->SetDeviceClass(dev_class, [self, callback = std::move(callback)](const auto&) {
-      // This completes the initialization sequence.
-      self->init_state_ = State::kInitialized;
-      callback(true);
-    });
+    self->SetDeviceClass(dev_class,
+                         [self](const auto&) { self->CompleteInitialization(/*success=*/true); });
   });
+}
+
+bool AdapterImpl::CompleteInitialization(bool success) {
+  if (!init_cb_) {
+    return false;
+  }
+
+  if (success) {
+    init_state_ = State::kInitialized;
+  } else {
+    CleanUp();
+  }
+
+  init_cb_(success);
+  return true;
 }
 
 void AdapterImpl::UpdateInspectProperties() {
@@ -1120,8 +1129,12 @@ void AdapterImpl::CleanUp() {
 
 void AdapterImpl::OnTransportClosed() {
   bt_log(INFO, "gap", "HCI transport was closed");
-  if (transport_closed_cb_)
+  if (CompleteInitialization(/*success=*/false)) {
+    return;
+  }
+  if (transport_closed_cb_) {
     transport_closed_cb_();
+  }
 }
 
 void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {

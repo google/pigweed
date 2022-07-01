@@ -16,7 +16,7 @@ FakeAdapter::FakeAdapter()
 
 bool FakeAdapter::Initialize(InitializeCallback callback, fit::closure transport_closed_callback) {
   init_state_ = InitState::kInitializing;
-  async::PostTask(async_get_default_dispatcher(), [this, cb = std::move(callback)] {
+  async::PostTask(async_get_default_dispatcher(), [this, cb = std::move(callback)]() mutable {
     init_state_ = InitState::kInitialized;
     cb(/*success=*/true);
   });

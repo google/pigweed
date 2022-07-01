@@ -76,13 +76,13 @@ class ControllerTestDoubleBase {
   void HandleACLPacket(std::unique_ptr<hci::ACLDataPacket> packet);
   void HandleScoPacket(std::unique_ptr<hci::ScoDataPacket> packet);
 
- protected:
   void SignalError(zx_status_t status) {
     if (error_cb_) {
       error_cb_(status);
     }
   }
 
+ protected:
   const zx::channel& snoop_channel() const { return snoop_channel_; }
 
   // Called when there is an outgoing command packet.

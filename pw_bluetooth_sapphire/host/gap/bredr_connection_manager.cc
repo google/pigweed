@@ -191,13 +191,19 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
 }
 
 BrEdrConnectionManager::~BrEdrConnectionManager() {
+  // Disconnect any connections that we're holding.
+  connections_.clear();
+
+  if (!hci_ || !hci_->command_channel()) {
+    return;
+  }
+
   if (pending_request_ && pending_request_->Cancel())
     SendCreateConnectionCancelCommand(pending_request_->peer_address());
 
-  // Disconnect any connections that we're holding.
-  connections_.clear();
   // Become unconnectable
   SetPageScanEnabled(/*enabled=*/false, hci_, dispatcher_, [](const auto) {});
+
   // Remove all event handlers
   for (auto handler_id : event_handler_ids_) {
     hci_->command_channel()->RemoveEventHandler(handler_id);
