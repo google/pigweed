@@ -18,12 +18,32 @@ if(NOT CONFIG_PIGWEED_ASSERT)
   return()
 endif()
 
-# TODO(b/235149326): This backend implements pw_assert's check backend and the
-# temporary compatibility C ABI (pw_assert_HandleFailure()).
-pw_auto_add_simple_module(pw_assert_zephyr
+pw_add_module_library(pw_assert_zephyr.check
   IMPLEMENTS_FACADE
-    pw_assert
+    pw_assert.check
+  HEADERS
+    public/pw_assert_zephyr/check_zephyr.h
+    public_overrides/pw_assert_backend/check_backend.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    zephyr_interface
 )
-pw_set_backend(pw_assert pw_assert_zephyr)
-target_link_libraries(pw_assert_zephyr PUBLIC zephyr_interface)
-zephyr_link_libraries(pw_assert_zephyr)
+pw_set_backend(pw_assert.check pw_assert_zephyr.check)
+zephyr_link_libraries(pw_assert_zephyr.check)
+
+pw_add_module_library(pw_assert_zephyr.assert
+  IMPLEMENTS_FACADE
+    pw_assert.assert
+  HEADERS
+    public/pw_assert_zephyr/assert_zephyr.h
+    public_overrides/pw_assert_backend/assert_backend.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    zephyr_interface
+)
+pw_set_backend(pw_assert.assert pw_assert_zephyr.assert)
+zephyr_link_libraries(pw_assert_zephyr.assert)
