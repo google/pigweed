@@ -116,6 +116,7 @@ def _parse_args():
                         help='Path to a pw_console yaml config file.')
     parser.add_argument('--proto-globs',
                         nargs='+',
+                        default=[],
                         help='glob pattern for .proto files')
     parser.add_argument('-v',
                         '--verbose',
@@ -263,9 +264,6 @@ def console(device: str,
     if token_databases:
         detokenizer = AutoUpdatingDetokenizer(*token_databases)
         detokenizer.show_errors = True
-
-    if not proto_globs:
-        proto_globs = ['**/*.proto']
 
     protos: List[Union[ModuleType, Path]] = list(_expand_globs(proto_globs))
 
