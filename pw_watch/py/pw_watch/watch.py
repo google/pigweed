@@ -58,7 +58,10 @@ from typing import (
     Tuple,
 )
 
-import httpwatcher  # type: ignore
+try:
+    import httpwatcher  # type: ignore[import]
+except ImportError:
+    httpwatcher = None
 
 from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
@@ -607,23 +610,23 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
         dest='serve_docs',
         action='store_true',
         default=False,
-        help='Start a webserver for docs on localhost. The port for this '
-        ' webserver can be set with the --serve-docs-port option. '
-        ' Defaults to http://127.0.0.1:8000')
+        help=('Start a webserver for docs on localhost. The port for this '
+              'webserver can be set with the --serve-docs-port option. '
+              'Defaults to http://127.0.0.1:8000. This option requires '
+              'the httpwatcher package to be installed.'))
     parser.add_argument(
         '--serve-docs-port',
         dest='serve_docs_port',
         type=int,
         default=8000,
         help='Set the port for the docs webserver. Default to 8000.')
-
     parser.add_argument(
         '--serve-docs-path',
         dest='serve_docs_path',
         type=Path,
         default="docs/gen/docs",
-        help='Set the path for the docs to serve. Default to docs/gen/docs'
-        ' in the build directory.')
+        help=('Set the path for the docs to serve. Default to docs/gen/docs'
+              ' in the build directory.'))
     parser.add_argument(
         '-j',
         '--jobs',
@@ -788,6 +791,26 @@ def get_common_excludes() -> List[Path]:
     return exclude_list
 
 
+def _serve_docs(build_dir: Path, serve_docs_port: int,
+                serve_docs_path: Path) -> None:
+    if httpwatcher is None:
+        _LOG.warning(
+            '--serve-docs was specified, but httpwatcher is not available')
+        _LOG.info('Install httpwatcher to use --serve-docs')
+        return
+
+    def httpwatcher_thread():
+        # Disable logs from httpwatcher and deps
+        logging.getLogger('httpwatcher').setLevel(logging.CRITICAL)
+        logging.getLogger('tornado').setLevel(logging.CRITICAL)
+
+        docs_path = build_dir.joinpath(serve_docs_path.joinpath('html'))
+        httpwatcher.watch(docs_path, host='127.0.0.1', port=serve_docs_port)
+
+    # Spin up an httpwatcher in a new thread since it blocks
+    threading.Thread(None, httpwatcher_thread, 'httpwatcher').start()
+
+
 def watch_setup(
     default_build_targets: List[str],
     build_directories: List[str],
@@ -846,20 +869,8 @@ def watch_setup(
     _LOG.debug('Patterns: %s', patterns)
 
     if serve_docs:
-
-        def _serve_docs():
-            # Disable logs from httpwatcher and deps
-            logging.getLogger('httpwatcher').setLevel(logging.CRITICAL)
-            logging.getLogger('tornado').setLevel(logging.CRITICAL)
-
-            docs_path = build_commands[0].build_dir.joinpath(
-                serve_docs_path.joinpath('html'))
-            httpwatcher.watch(docs_path,
-                              host="127.0.0.1",
-                              port=serve_docs_port)
-
-        # Spin up an httpwatcher in a new thread since it blocks
-        threading.Thread(None, _serve_docs, "httpwatcher").start()
+        _serve_docs(build_commands[0].build_dir, serve_docs_port,
+                    serve_docs_path)
 
     # Try to make a short display path for the watched directory that has
     # "$HOME" instead of the full home directory. This is nice for users
