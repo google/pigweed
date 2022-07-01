@@ -15,6 +15,7 @@
 // Configuration macros for the transfer module.
 #pragma once
 
+#include <chrono>
 #include <cinttypes>
 #include <limits>
 
