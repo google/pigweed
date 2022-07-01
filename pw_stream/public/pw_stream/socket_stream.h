@@ -26,7 +26,7 @@ class SocketStream : public NonSeekableReaderWriter {
  public:
   constexpr SocketStream() = default;
 
-  ~SocketStream() { Close(); }
+  ~SocketStream() override { Close(); }
 
   // Listen to the port and return after a client is connected
   Status Serve(uint16_t port);
