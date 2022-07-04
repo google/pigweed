@@ -14,13 +14,15 @@
 # the License.
 """Fixes identifiers that would cause compiler errors in generated C++ code."""
 
+from typing import Set
+
 # Set of words that can't be used as identifiers in the generated code. Many of
 # these are valid identifiers in proto syntax, but they need special handling in
 # the generated C++ code.
 #
 # Note: This is primarily used for "if x in y" operations, hence the use of a
 # set rather than a list.
-PW_PROTO_CODEGEN_RESERVED_WORDS: set[str] = {
+PW_PROTO_CODEGEN_RESERVED_WORDS: Set[str] = {
     # Identifiers that conflict with the codegen internals when used in certain
     # contexts:
     "Fields",
