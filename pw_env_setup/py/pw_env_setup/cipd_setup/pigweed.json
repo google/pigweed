@@ -65,16 +65,6 @@
       "version_file": ".versions/bloaty-embedded.cipd_version"
     },
     {
-      "path": "pigweed/third_party/doxygen/${platform}",
-      "platforms": [
-        "linux-amd64"
-      ],
-      "tags": [
-        "version:1.9.4"
-      ],
-      "version_file": ".versions/doxygen.cipd_version"
-    },
-    {
       "path": "infra/3pp/tools/protoc/${platform}",
       "platforms": [
         "linux-amd64",
