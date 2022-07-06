@@ -78,13 +78,22 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_CLIENT)
   zephyr_link_libraries(pw_rpc.client)
 endif()
 
-pw_add_module_library(pw_rpc.client_server
-  SOURCES
-    client_server.cc
-  PUBLIC_DEPS
-    pw_rpc.client
-    pw_rpc.server
-)
+add_library(pw_rpc.client_server)
+target_sources(pw_rpc.client_server
+        PUBLIC
+        client_server.cc)
+target_link_libraries(pw_rpc.client_server
+        PUBLIC
+        pw_rpc.client
+        pw_rpc.server)
+
+#pw_add_module_library(pw_rpc.client_server
+#  SOURCES
+#    client_server.cc
+#  PUBLIC_DEPS
+#    pw_rpc.client
+#    pw_rpc.server
+#)
 if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_CLIENT_SERVER)
   zephyr_link_libraries(pw_rpc.client_server)
 endif()
