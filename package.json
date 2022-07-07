@@ -19,7 +19,8 @@
     "rollup": "rollup -c && rimraf dist/types && rimraf dist/**/types && chmod +x ./dist/bin/pw_protobuf_compiler.js",
     "start": "tsc-watch --onSuccess \"rollup -c\"",
     "check": "gts check",
-    "fix": "gts fix"
+    "fix": "gts fix",
+    "test": "echo \"No tests defined yet\""
   },
   "devDependencies": {
     "@bazel/concatjs": "4.1.0",

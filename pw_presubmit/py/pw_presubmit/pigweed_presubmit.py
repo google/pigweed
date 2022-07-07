@@ -52,6 +52,7 @@ from pw_presubmit import (
     Programs,
     python_checks,
     shell_checks,
+    npm_presubmit,
 )
 from pw_presubmit.install_hook import install_git_hook
 
@@ -805,6 +806,7 @@ OTHER_CHECKS = (
     renode_check,
     static_analysis,
     stm32f429i,
+    npm_presubmit.npm_test,
 )
 
 _LINTFORMAT = (

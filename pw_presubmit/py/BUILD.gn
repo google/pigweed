@@ -31,6 +31,7 @@ pw_python_package("py") {
     "pw_presubmit/git_repo.py",
     "pw_presubmit/inclusive_language.py",
     "pw_presubmit/install_hook.py",
+    "pw_presubmit/npm_presubmit.py",
     "pw_presubmit/pigweed_presubmit.py",
     "pw_presubmit/presubmit.py",
     "pw_presubmit/python_checks.py",
