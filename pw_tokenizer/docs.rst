@@ -458,6 +458,28 @@ Arguments are encoded as follows:
    arguments short or avoid encoding them as strings (e.g. encode an enum as an
    integer instead of a string). See also `Tokenized strings as %s arguments`_.
 
+Encoding command line utility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The ``pw_tokenizer.encode`` command line tool can be used to encode tokenized
+strings.
+
+.. code-block:: bash
+
+  python -m pw_tokenizer.encode [-h] FORMAT_STRING [ARG ...]
+
+Example:
+
+.. code-block:: text
+
+  $ python -m pw_tokenizer.encode "There's... %d many of %s!" 2 them
+        Raw input: "There's... %d many of %s!" % (2, 'them')
+  Formatted input: There's... 2 many of them!
+            Token: 0xb6ef8b2d
+          Encoded: b'-\x8b\xef\xb6\x04\x04them' (2d 8b ef b6 04 04 74 68 65 6d) [10 bytes]
+  Prefixed Base64: $LYvvtgQEdGhlbQ==
+
+See ``--help`` for full usage details.
+
 Token generation: fixed length hashing at compile time
 ------------------------------------------------------
 String tokens are generated using a modified version of the x65599 hash used by
