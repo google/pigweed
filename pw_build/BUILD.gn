@@ -14,10 +14,12 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/cc_blob_library.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/relative_source_file_names.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_toolchain/traits.gni")
+import("$dir_pw_unit_test/test.gni")
 import("target_types.gni")
 
 # IMPORTANT: The compilation flags in this file must be kept in sync with
@@ -230,4 +232,30 @@ pw_doc_group("docs") {
     "docs.rst",
     "python.rst",
   ]
+}
+
+pw_test("cc_blob_library_test") {
+  sources = [ "cc_blob_library_test.cc" ]
+  deps = [ ":test_blob" ]
+}
+
+pw_cc_blob_library("test_blob") {
+  out_header = "pw_build/test_blob.h"
+  namespace = "test::ns"
+  blobs = [
+    {
+      file_path = "test_blob_0123.bin"
+      symbol_name = "kFirstBlob0123"
+      alignas = 512
+    },
+    {
+      file_path = "test_blob_0123.bin"
+      symbol_name = "kSecondBlob0123"
+    },
+  ]
+  visibility = [ ":*" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":cc_blob_library_test" ]
 }

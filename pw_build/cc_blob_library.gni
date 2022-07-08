@@ -18,6 +18,8 @@ import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 
 # Turns binary blobs into a C++ source_set library of hard-coded byte arrays.
+# The byte arrays are constant initialized and are safe to access at any time,
+# including before main().
 #
 #   blobs           A list of scopes, where each scope corresponds to a binary
 #                   blob to be transformed from file to byte array. This is a
@@ -30,15 +32,21 @@ import("$dir_pw_build/target_types.gni")
 #                   linker_section [optional]: If present, places the byte array
 #                     in the specified linker section.
 #
+#                   alignas [optional]: If present, the byte array is aligned as
+#                     specified. The value of this argument is used verbatim
+#                     in an alignas() specifier for the blob byte array.
+#
 #   out_header      The header file to generate. Users will include this file
 #                   exactly as it is written here to reference the byte arrays.
 #
-#   namespace       An optional (but highly recommended!) C++ namespace to place
-#                   the generated blobs within.
+#   namespace       The C++ namespace in which to place the generated blobs.
+#
 template("pw_cc_blob_library") {
   assert(defined(invoker.blobs), "pw_cc_blob_library requires 'blobs'")
   assert(defined(invoker.out_header),
          "pw_cc_blob_library requires an 'out_header'")
+  assert(defined(invoker.namespace),
+         "pw_cc_blob_library requires a 'namespace'")
 
   _blobs = []
   _blob_files = []
@@ -50,8 +58,12 @@ template("pw_cc_blob_library") {
     _blob_files += [ blob.file_path ]
   }
 
-  _blob_json_file = "$target_gen_dir/$target_name.json"
+  _out_dir = "$target_gen_dir/$target_name"
+  _blob_json_file = "$_out_dir/blobs.json"
   write_file(_blob_json_file, _blobs, "json")
+
+  _header = "$_out_dir/public/${invoker.out_header}"
+  _source = "$_out_dir/" + get_path_info(invoker.out_header, "name") + ".cc"
 
   pw_python_action("$target_name._gen") {
     forward_variables_from(invoker,
@@ -62,24 +74,16 @@ template("pw_cc_blob_library") {
     module = "pw_build.generate_cc_blob_library"
     python_deps = [ "$dir_pw_build/py" ]
 
-    _header = "${target_gen_dir}/public/" + invoker.out_header
-    _source =
-        "${target_gen_dir}/" + get_path_info(invoker.out_header, "name") + ".cc"
     args = [
       "--blob-file",
       rebase_path(_blob_json_file, root_build_dir),
+      "--namespace=${invoker.namespace}",
+      "--header-include=${invoker.out_header}",
       "--out-header",
-      rebase_path(_header),
+      rebase_path(_header, root_build_dir),
       "--out-source",
-      rebase_path(_source),
+      rebase_path(_source, root_build_dir),
     ]
-
-    if (defined(invoker.namespace)) {
-      args += [
-        "--namespace",
-        invoker.namespace,
-      ]
-    }
 
     inputs = [ _blob_json_file ] + _blob_files
     outputs = [
@@ -89,14 +93,18 @@ template("pw_cc_blob_library") {
   }
 
   config("$target_name._include_path") {
-    include_dirs = [ "${target_gen_dir}/public" ]
+    include_dirs = [ "$_out_dir/public" ]
     visibility = [ ":*" ]
   }
 
   pw_source_set(target_name) {
-    sources = get_target_outputs(":$target_name._gen")
+    public = [ _header ]
+    sources = [ _source ]
     public_configs = [ ":$target_name._include_path" ]
-    deps = [ ":$target_name._gen" ]
-    public_deps = [ "$dir_pw_preprocessor" ]
+    deps = [
+      ":$target_name._gen",
+      dir_pw_preprocessor,
+    ]
+    forward_variables_from(invoker, [ "visibility" ])
   }
 }

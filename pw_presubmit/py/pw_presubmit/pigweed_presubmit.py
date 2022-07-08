@@ -541,6 +541,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bpackage.json$',
     r'\byarn.lock$',
     # Data files
+    r'\.bin$',
     r'\.elf$',
     r'\.gif$',
     r'\.jpg$',

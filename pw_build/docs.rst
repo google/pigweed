@@ -128,7 +128,10 @@ pw_cc_blob_library
 The ``pw_cc_blob_library`` template is useful for embedding binary data into a
 program. The template takes in a mapping of symbol names to file paths, and
 generates a set of C++ source and header files that embed the contents of the
-passed-in files as arrays.
+passed-in files as arrays of ``std::byte``.
+
+The blob byte arrays are constant initialized and are safe to access at any
+time, including before ``main()``.
 
 **Arguments**
 
@@ -140,6 +143,8 @@ passed-in files as arrays.
   * ``file_path``: The file path for the binary blob.
   * ``linker_section``: If present, places the byte array in the specified
     linker section.
+  * ``alignas``: If present, uses the specified string or integer verbatim in
+    the ``alignas()`` specifier for the byte array.
 
 * ``out_header``: The header file to generate. Users will include this file
   exactly as it is written here to reference the byte arrays.

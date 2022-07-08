@@ -297,6 +297,7 @@ declare_args() {
     "$dir_pw_blob_store:tests",
     "$dir_pw_bluetooth:tests",
     "$dir_pw_bluetooth_hci:tests",
+    "$dir_pw_build:tests",
     "$dir_pw_bytes:tests",
     "$dir_pw_checksum:tests",
     "$dir_pw_chrono:tests",
