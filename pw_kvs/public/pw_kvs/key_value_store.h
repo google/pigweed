@@ -610,7 +610,10 @@ class KeyValueStoreBuffer : public KeyValueStore {
                       sectors_,
                       temp_sectors_to_skip_,
                       key_descriptors_,
-                      addresses_) {
+                      addresses_),
+        sectors_(),
+        key_descriptors_(),
+        formats_() {
     std::copy(formats.begin(), formats.end(), formats_.begin());
   }
 

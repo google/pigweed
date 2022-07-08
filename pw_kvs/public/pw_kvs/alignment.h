@@ -57,6 +57,9 @@ class AlignedWriter {
     // TODO(hepler): Add DCHECK to ensure that buffer.size() >= alignment_bytes.
   }
 
+  AlignedWriter(const AlignedWriter&) = delete;
+  AlignedWriter& operator=(const AlignedWriter&) = delete;
+
   ~AlignedWriter() {
     Flush().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
