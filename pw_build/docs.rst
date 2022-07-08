@@ -133,6 +133,9 @@ passed-in files as arrays of ``std::byte``.
 The blob byte arrays are constant initialized and are safe to access at any
 time, including before ``main()``.
 
+``pw_cc_blob_library`` is also available in the CMake build. It is provided by
+``pw_build/cc_blob_library.cmake``.
+
 **Arguments**
 
 * ``blobs``: A list of GN scopes, where each scope corresponds to a binary blob

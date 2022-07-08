@@ -39,6 +39,38 @@ macro(pw_parse_arguments_strict function start_arg options one multi)
   endif()
 endmacro()
 
+# Checks that one or more variables are set. This is used to check that
+# arguments were provided to a function. Fails with FATAL_ERROR if
+# ${ARG_PREFIX}${name} is empty. The FUNCTION_NAME is used in the error message.
+# If FUNCTION_NAME is "", it is set to CMAKE_CURRENT_FUNCTION.
+#
+# Usage:
+#
+#   pw_require_args(FUNCTION_NAME ARG_PREFIX ARG_NAME [ARG_NAME ...])
+#
+# Examples:
+#
+#   # Checks that arg_FOO is non-empty, using the current function name.
+#   pw_require_args("" arg_ FOO)
+#
+#   # Checks that FOO and BAR are non-empty, using function name "do_the_thing".
+#   pw_require_args(do_the_thing "" FOO BAR)
+#
+macro(pw_require_args FUNCTION_NAME ARG_PREFIX)
+  if("${FUNCTION_NAME}" STREQUAL "")
+    set(_pw_require_args_FUNCTION_NAME "${CMAKE_CURRENT_FUNCTION}")
+  else()
+    set(_pw_require_args_FUNCTION_NAME "${FUNCTION_NAME}")
+  endif()
+
+  foreach(name IN ITEMS ${ARGN})
+    if("${${ARG_PREFIX}${name}}" STREQUAL "")
+      message(FATAL_ERROR "A value must be provided for ${name} in "
+          "${_pw_require_args_FUNCTION_NAME}.")
+    endif()
+  endforeach()
+endmacro()
+
 # Automatically creates a library and test targets for the files in a module.
 # This function is only suitable for simple modules that meet the following
 # requirements:
