@@ -80,7 +80,8 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
     features_.method = method;
     ChannelOptions options(l2cap::kLESMPChannelId, mtu);
     options.link_type = bt::LinkType::kLE;
-    sm_chan_ = std::make_unique<PairingChannel>(CreateFakeChannel(options));
+    fake_sm_chan_ = CreateFakeChannel(options);
+    sm_chan_ = std::make_unique<PairingChannel>(fake_sm_chan_->GetWeakPtr());
 
     listener_ = std::make_unique<FakeListener>();
     phase_2_sc_ = std::make_unique<Phase2SecureConnections>(
@@ -252,6 +253,7 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
   }
 
   std::unique_ptr<FakeListener> listener_;
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_sm_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<Phase2SecureConnections> phase_2_sc_;
   // Key of the internal bt-host SMP stack

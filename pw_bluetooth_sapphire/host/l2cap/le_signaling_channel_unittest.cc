@@ -24,8 +24,8 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
     ChannelOptions options(kLESignalingChannelId);
     options.conn_handle = kTestHandle;
 
-    auto fake_chan = CreateFakeChannel(options);
-    sig_ = std::make_unique<LESignalingChannel>(std::move(fake_chan), Role);
+    fake_sig_chan_ = CreateFakeChannel(options);
+    sig_ = std::make_unique<LESignalingChannel>(fake_sig_chan_->GetWeakPtr(), Role);
   }
 
   void TearDown() override { sig_ = nullptr; }
@@ -33,6 +33,7 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
   LESignalingChannel* sig() const { return sig_.get(); }
 
  private:
+  std::unique_ptr<testing::FakeChannel> fake_sig_chan_;
   std::unique_ptr<LESignalingChannel> sig_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannelTestBase);

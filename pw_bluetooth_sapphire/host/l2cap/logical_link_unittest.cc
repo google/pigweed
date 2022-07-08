@@ -57,7 +57,7 @@ TEST_F(LogicalLinkDeathTest, DestructedWithoutClosingDies) {
 }
 
 TEST_F(LogicalLinkTest, FixedChannelHasCorrectMtu) {
-  fbl::RefPtr<Channel> fixed_chan = link()->OpenFixedChannel(kATTChannelId);
+  fxl::WeakPtr<Channel> fixed_chan = link()->OpenFixedChannel(kATTChannelId);
   ASSERT_TRUE(fixed_chan);
   EXPECT_EQ(kMaxMTU, fixed_chan->max_rx_sdu_size());
   EXPECT_EQ(kMaxMTU, fixed_chan->max_tx_sdu_size());
@@ -66,7 +66,7 @@ TEST_F(LogicalLinkTest, FixedChannelHasCorrectMtu) {
 TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
   link()->Close();
   NewLogicalLink(bt::LinkType::kACL);
-  fbl::RefPtr<Channel> connectionless_chan = link()->OpenFixedChannel(kConnectionlessChannelId);
+  fxl::WeakPtr<Channel> connectionless_chan = link()->OpenFixedChannel(kConnectionlessChannelId);
   ASSERT_TRUE(connectionless_chan);
 
   size_t rx_count = 0;

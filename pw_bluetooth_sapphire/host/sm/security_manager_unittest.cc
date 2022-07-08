@@ -64,7 +64,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     fake_link_ = std::make_unique<hci::testing::FakeLowEnergyConnection>(
         1, kLocalAddr, kPeerAddr, link_role, transport_->WeakPtr());
 
-    pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(), fake_chan_, ioc,
+    pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(), fake_chan_->GetWeakPtr(), ioc,
                                        weak_ptr_factory_.GetWeakPtr(), bondable_mode,
                                        gap::LESecurityMode::Mode1);
   }
@@ -498,7 +498,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
   std::optional<ErrorCode> received_error_code_;
 
-  fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<hci::testing::FakeLowEnergyConnection> fake_link_;
   std::unique_ptr<SecurityManager> pairing_;
 

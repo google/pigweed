@@ -14,7 +14,6 @@
 #include <unordered_map>
 
 #include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 
 #include "socket_channel_relay.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -55,7 +54,7 @@ class SocketFactory final {
   //
   // Returns the new socket on success, and an invalid socket otherwise
   // (including if |channel| is nullptr).
-  zx::socket MakeSocketForChannel(fbl::RefPtr<ChannelT> channel);
+  zx::socket MakeSocketForChannel(fxl::WeakPtr<ChannelT> channel);
 
  private:
   using RelayT = SocketChannelRelay<ChannelT>;
@@ -74,12 +73,10 @@ template <typename ChannelT>
 SocketFactory<ChannelT>::SocketFactory() : weak_ptr_factory_(this) {}
 
 template <typename ChannelT>
-SocketFactory<ChannelT>::~SocketFactory() {
-}
+SocketFactory<ChannelT>::~SocketFactory() {}
 
 template <typename ChannelT>
-zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fbl::RefPtr<ChannelT> channel) {
-
+zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fxl::WeakPtr<ChannelT> channel) {
   if (!channel) {
     return zx::socket();
   }

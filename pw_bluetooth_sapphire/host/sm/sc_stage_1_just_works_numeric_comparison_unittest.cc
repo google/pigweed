@@ -45,7 +45,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
     args_ = args;
     listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(ChannelOptions(l2cap::kLESMPChannelId));
-    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
+    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_->GetWeakPtr());
     fake_chan_->SetSendCallback(
         [this](ByteBufferPtr sent_packet) {
           fitx::result<ErrorCode, ValidPacketReader> maybe_reader =
@@ -93,7 +93,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
  private:
   ScStage1Args args_;
   std::unique_ptr<FakeListener> listener_;
-  fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<ScStage1JustWorksNumericComparison> stage_1_;
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;

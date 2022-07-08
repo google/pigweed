@@ -7,11 +7,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt::l2cap::testing {
-
-class FakeChannel;
 
 // This is a fake version of the ChannelManager class that can be injected into other
 // layers for unit testing.
@@ -63,8 +62,8 @@ class FakeL2cap final : public ChannelManager {
       hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
       ConnectionParameterUpdateRequestCallback request_cb) override;
 
-  fbl::RefPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
-                                        ChannelId channel_id) override {
+  fxl::WeakPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
+                                         ChannelId channel_id) override {
     return nullptr;
   }
   void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
@@ -80,7 +79,7 @@ class FakeL2cap final : public ChannelManager {
 
   // Called when a new channel gets opened. Tests can use this to obtain a
   // reference to all channels.
-  using FakeChannelCallback = fit::function<void(fbl::RefPtr<testing::FakeChannel>)>;
+  using FakeChannelCallback = fit::function<void(fxl::WeakPtr<testing::FakeChannel>)>;
   void set_channel_callback(FakeChannelCallback callback) { chan_cb_ = std::move(callback); }
   void set_simulate_open_channel_failure(bool simulate_failure) {
     simulate_open_channel_failure_ = simulate_failure;
@@ -118,15 +117,17 @@ class FakeL2cap final : public ChannelManager {
 
     // LE-only callbacks
     LEConnectionParameterUpdateCallback le_conn_param_cb;
+
+    std::unordered_map<ChannelId, std::unique_ptr<FakeChannel>> channels_;
   };
 
   LinkData* RegisterInternal(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                              bt::LinkType link_type, LinkErrorCallback link_error_callback);
 
-  fbl::RefPtr<testing::FakeChannel> OpenFakeChannel(
+  fxl::WeakPtr<testing::FakeChannel> OpenFakeChannel(
       LinkData* link, ChannelId id, ChannelId remote_id,
       ChannelInfo info = ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU));
-  fbl::RefPtr<testing::FakeChannel> OpenFakeFixedChannel(LinkData* link, ChannelId id);
+  fxl::WeakPtr<testing::FakeChannel> OpenFakeFixedChannel(LinkData* link, ChannelId id);
 
   // Gets the link data for |handle|, creating it if necessary.
   LinkData& GetLinkData(hci_spec::ConnectionHandle handle);

@@ -78,7 +78,7 @@ class LogicalLink final {
   // if a Channel for |channel_id| already exists.
   //
   // The link MUST not be closed when this is called.
-  fbl::RefPtr<Channel> OpenFixedChannel(ChannelId channel_id);
+  fxl::WeakPtr<Channel> OpenFixedChannel(ChannelId channel_id);
 
   // Opens a dynamic channel to the requested |psm| with the preferred parameters |params| and
   // returns a channel asynchronously via |callback|.
@@ -249,19 +249,18 @@ class LogicalLink final {
   // No data packets are processed once this gets set to true.
   bool closed_;
 
-  // Owns and manages the L2CAP signaling channel on this logical link.
-  // Depending on |type_| this will either implement the LE or BR/EDR signaling
-  // commands.
-  std::unique_ptr<SignalingChannel> signaling_channel_;
-
   // Fragmenter and Recombiner are always accessed on the L2CAP thread.
   const Fragmenter fragmenter_;
   Recombiner recombiner_;
 
   // Channels that were created on this link. Channels notify the link for
   // removal when deactivated.
-  using ChannelMap = std::unordered_map<ChannelId, fbl::RefPtr<ChannelImpl>>;
+  using ChannelMap = std::unordered_map<ChannelId, std::unique_ptr<ChannelImpl>>;
   ChannelMap channels_;
+
+  // Manages the L2CAP signaling channel on this logical link. Depending on |type_| this will
+  // either implement the LE or BR/EDR signaling commands.
+  std::unique_ptr<SignalingChannel> signaling_channel_;
 
   // Stores packets that have been received on a currently closed channel. We
   // buffer these for fixed channels so that the data is available when the
@@ -270,11 +269,14 @@ class LogicalLink final {
   PendingPduMap pending_pdus_;
 
   struct PendingAclRequest {
-    fbl::RefPtr<ChannelImpl> channel;
+    fxl::WeakPtr<ChannelImpl> channel;
     hci::AclPriority priority;
     fit::callback<void(fitx::result<fitx::failed>)> callback;
   };
   std::queue<PendingAclRequest> pending_acl_requests_;
+
+  // The current ACL priority of this link.
+  hci::AclPriority acl_priority_ = hci::AclPriority::kNormal;
 
   // Dynamic channels opened with the remote. The registry is destroyed and all
   // procedures terminated when this link gets closed.

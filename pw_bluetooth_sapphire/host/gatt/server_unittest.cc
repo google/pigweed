@@ -49,14 +49,15 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
     local_services_ = std::make_unique<LocalServiceManager>();
 
     ChannelOptions options(l2cap::kATTChannelId);
-    auto fake_chan = CreateFakeChannel(options);
-    att_ = att::Bearer::Create(std::move(fake_chan));
+    fake_att_chan_ = CreateFakeChannel(options);
+    att_ = att::Bearer::Create(fake_att_chan_->GetWeakPtr());
     server_ = gatt::Server::Create(kTestPeerId, local_services_->GetWeakPtr(), att_->GetWeakPtr());
   }
 
   void TearDown() override {
     server_ = nullptr;
     att_ = nullptr;
+    fake_att_chan_ = nullptr;
     local_services_ = nullptr;
   }
 
@@ -143,6 +144,7 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
   }
 
   std::unique_ptr<LocalServiceManager> local_services_;
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_att_chan_;
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
 

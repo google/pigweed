@@ -15,7 +15,7 @@
 namespace bt::sm::testing {
 
 TestSecurityManager::TestSecurityManager(fxl::WeakPtr<hci::LowEnergyConnection> link,
-                                         fbl::RefPtr<l2cap::Channel> smp,
+                                         fxl::WeakPtr<l2cap::Channel> smp,
                                          IOCapability io_capability,
                                          fxl::WeakPtr<Delegate> delegate,
                                          BondableMode bondable_mode,
@@ -43,7 +43,7 @@ void TestSecurityManager::Reset(IOCapability io_capability) {}
 void TestSecurityManager::Abort(ErrorCode ecode) {}
 
 std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
-    fxl::WeakPtr<hci::LowEnergyConnection> link, fbl::RefPtr<l2cap::Channel> smp,
+    fxl::WeakPtr<hci::LowEnergyConnection> link, fxl::WeakPtr<l2cap::Channel> smp,
     IOCapability io_capability, fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode,
     gap::LESecurityMode security_mode) {
   hci_spec::ConnectionHandle conn = link->handle();

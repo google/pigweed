@@ -8,7 +8,6 @@
 #include <lib/async/default.h>
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt {
@@ -188,13 +187,15 @@ FakeL2cap::LinkData* FakeL2cap::RegisterInternal(hci_spec::ConnectionHandle hand
   return &data;
 }
 
-fbl::RefPtr<FakeChannel> FakeL2cap::OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
-                                                    l2cap::ChannelId remote_id,
-                                                    l2cap::ChannelInfo info) {
-  fbl::RefPtr<FakeChannel> chan;
+fxl::WeakPtr<FakeChannel> FakeL2cap::OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
+                                                     l2cap::ChannelId remote_id,
+                                                     l2cap::ChannelInfo info) {
+  fxl::WeakPtr<FakeChannel> chan;
   if (!simulate_open_channel_failure_) {
-    chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type, info));
-    chan->SetLinkErrorCallback(link->link_error_cb.share());
+    auto channel = std::make_unique<FakeChannel>(id, remote_id, link->handle, link->type, info);
+    chan = channel->AsWeakPtr();
+    channel->SetLinkErrorCallback(link->link_error_cb.share());
+    link->channels_.emplace(id, std::move(channel));
   }
 
   if (chan_cb_) {
@@ -204,7 +205,7 @@ fbl::RefPtr<FakeChannel> FakeL2cap::OpenFakeChannel(LinkData* link, l2cap::Chann
   return chan;
 }
 
-fbl::RefPtr<FakeChannel> FakeL2cap::OpenFakeFixedChannel(LinkData* link, l2cap::ChannelId id) {
+fxl::WeakPtr<FakeChannel> FakeL2cap::OpenFakeFixedChannel(LinkData* link, l2cap::ChannelId id) {
   return OpenFakeChannel(link, id, id);
 }
 

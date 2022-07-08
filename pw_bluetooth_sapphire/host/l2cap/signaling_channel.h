@@ -101,7 +101,7 @@ class SignalingChannelInterface {
 // TODO(armansito): Implement flow control (RTX/ERTX timers).
 class SignalingChannel : public SignalingChannelInterface {
  public:
-  SignalingChannel(fbl::RefPtr<Channel> chan, hci_spec::ConnectionRole role);
+  SignalingChannel(fxl::WeakPtr<Channel> chan, hci_spec::ConnectionRole role);
   ~SignalingChannel() override = default;
 
   // SignalingChannelInterface overrides

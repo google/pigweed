@@ -49,7 +49,7 @@ class SecurityManagerImpl final : public SecurityManager,
                                   public PairingChannel::Handler {
  public:
   ~SecurityManagerImpl() override;
-  SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link, fbl::RefPtr<l2cap::Channel> smp,
+  SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link, fxl::WeakPtr<l2cap::Channel> smp,
                       IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
                       BondableMode bondable_mode, gap::LESecurityMode security_mode);
   // SecurityManager overrides:
@@ -216,7 +216,7 @@ SecurityManagerImpl::~SecurityManagerImpl() {
 }
 
 SecurityManagerImpl::SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link,
-                                         fbl::RefPtr<l2cap::Channel> smp,
+                                         fxl::WeakPtr<l2cap::Channel> smp,
                                          IOCapability io_capability,
                                          fxl::WeakPtr<Delegate> delegate,
                                          BondableMode bondable_mode,
@@ -829,7 +829,7 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
 }
 
 std::unique_ptr<SecurityManager> SecurityManager::Create(
-    fxl::WeakPtr<hci::LowEnergyConnection> link, fbl::RefPtr<l2cap::Channel> smp,
+    fxl::WeakPtr<hci::LowEnergyConnection> link, fxl::WeakPtr<l2cap::Channel> smp,
     IOCapability io_capability, fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode,
     gap::LESecurityMode security_mode) {
   return std::unique_ptr<SecurityManagerImpl>(

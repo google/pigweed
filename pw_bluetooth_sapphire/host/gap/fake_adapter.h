@@ -119,11 +119,11 @@ class FakeAdapter final : public Adapter {
     };
 
     FakeBrEdr() = default;
-    ~FakeBrEdr() override = default;
+    ~FakeBrEdr() override;
 
     // Called with a reference to the l2cap::FakeChannel created when a channel is connected with
     // Connect().
-    using ChannelCallback = fit::function<void(fbl::RefPtr<l2cap::testing::FakeChannel>)>;
+    using ChannelCallback = fit::function<void(fxl::WeakPtr<l2cap::testing::FakeChannel>)>;
     void set_l2cap_channel_callback(ChannelCallback cb) { channel_cb_ = std::move(cb); }
 
     // Notifies all registered searches associated with the provided |uuid| with the peer's
@@ -191,6 +191,9 @@ class FakeAdapter final : public Adapter {
     RegistrationHandle next_search_handle_ = 1;
     std::map<RegistrationHandle, RegisteredService> registered_services_;
     std::map<RegistrationHandle, RegisteredSearch> registered_searches_;
+
+    l2cap::ChannelId next_channel_id_ = l2cap::kFirstDynamicChannelId;
+    std::unordered_map<l2cap::ChannelId, std::unique_ptr<l2cap::testing::FakeChannel>> channels_;
   };
 
   BrEdr* bredr() const override { return fake_bredr_.get(); }

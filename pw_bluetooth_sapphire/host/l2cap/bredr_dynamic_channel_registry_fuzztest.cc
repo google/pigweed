@@ -34,11 +34,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // Sets dispatcher needed for signaling channel response timeout.
   async::TestLoop loop;
 
-  auto fake_chan = fbl::AdoptRef(new bt::l2cap::testing::FakeChannel(
+  auto fake_chan = std::make_unique<bt::l2cap::testing::FakeChannel>(
       bt::l2cap::kSignalingChannelId, bt::l2cap::kSignalingChannelId, kTestHandle,
-      bt::LinkType::kACL));
+      bt::LinkType::kACL);
 
-  bt::l2cap::internal::BrEdrSignalingChannel sig_chan(fake_chan,
+  bt::l2cap::internal::BrEdrSignalingChannel sig_chan(fake_chan->GetWeakPtr(),
                                                       bt::hci_spec::ConnectionRole::kCentral);
 
   auto open_cb = [](auto chan) {};

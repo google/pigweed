@@ -44,8 +44,8 @@ class ChannelManager {
   using ServiceInfo = ServiceInfo<ChannelCallback>;
 
   struct LEFixedChannels {
-    fbl::RefPtr<l2cap::Channel> att;
-    fbl::RefPtr<l2cap::Channel> smp;
+    fxl::WeakPtr<l2cap::Channel> att;
+    fxl::WeakPtr<l2cap::Channel> smp;
   };
 
   // Create a ChannelManager. FakeL2cap can be used instead in tests.
@@ -120,8 +120,8 @@ class ChannelManager {
   // |connection_handle| and starts routing packets.
   //
   // Returns nullptr if the channel is already open.
-  virtual fbl::RefPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
-                                                ChannelId channel_id) = 0;
+  virtual fxl::WeakPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
+                                                 ChannelId channel_id) = 0;
 
   // Open an outbound dynamic channel against a peer's Protocol/Service Multiplexing (PSM) code
   // |psm| on a link identified by |handle| using the preferred channel parameters |params|. If the

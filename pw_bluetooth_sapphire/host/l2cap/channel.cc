@@ -45,21 +45,21 @@ constexpr const char* kInspectPsmPropertyName = "psm";
 
 }  // namespace
 
-fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
-                                                         fxl::WeakPtr<internal::LogicalLink> link) {
+std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
+    ChannelId id, fxl::WeakPtr<internal::LogicalLink> link) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level MTU enforcement for
   // services which operate over fixed channels. Such services often define minimum MTU values in
   // their specification, so they are required to respect these MTUs internally by:
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
-  return fbl::AdoptRef(new ChannelImpl(id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU)));
+  return std::unique_ptr<ChannelImpl>(
+      new ChannelImpl(id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU)));
 }
 
-fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, ChannelId peer_id,
-                                                           fxl::WeakPtr<internal::LogicalLink> link,
-                                                           ChannelInfo info) {
-  return fbl::AdoptRef(new ChannelImpl(id, peer_id, link, info));
+std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
+    ChannelId id, ChannelId peer_id, fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info) {
+  return std::unique_ptr<ChannelImpl>(new ChannelImpl(id, peer_id, link, info));
 }
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
@@ -192,9 +192,10 @@ void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
   }
 
   link_->RequestAclPriority(this, priority,
-                            [this, priority, cb = std::move(callback)](auto result) mutable {
-                              if (result.is_ok()) {
-                                requested_acl_priority_ = priority;
+                            [self = weak_ptr_factory_.GetWeakPtr(), priority,
+                             cb = std::move(callback)](auto result) mutable {
+                              if (self && result.is_ok()) {
+                                self->requested_acl_priority_ = priority;
                               }
                               cb(result);
                             });

@@ -19,7 +19,7 @@ constexpr zx::duration kTransactionTimeout = zx::sec(10);
 
 class Impl final : public Client {
  public:
-  explicit Impl(fbl::RefPtr<l2cap::Channel> channel);
+  explicit Impl(fxl::WeakPtr<l2cap::Channel> channel);
 
   virtual ~Impl() override;
 
@@ -76,7 +76,7 @@ class Impl final : public Client {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
-Impl::Impl(fbl::RefPtr<l2cap::Channel> channel)
+Impl::Impl(fxl::WeakPtr<l2cap::Channel> channel)
     : channel_(std::move(channel)), next_tid_(0), weak_ptr_factory_(this) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   bool activated = channel_->Activate(
@@ -267,7 +267,7 @@ TransactionId Impl::GetNextId() {
 
 }  // namespace
 
-std::unique_ptr<Client> Client::Create(fbl::RefPtr<l2cap::Channel> channel) {
+std::unique_ptr<Client> Client::Create(fxl::WeakPtr<l2cap::Channel> channel) {
   ZX_DEBUG_ASSERT(channel);
   return std::make_unique<Impl>(std::move(channel));
 }

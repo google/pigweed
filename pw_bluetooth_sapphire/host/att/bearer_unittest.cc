@@ -30,7 +30,7 @@ class BearerTest : public l2cap::testing::FakeChannelTest {
   void SetUp() override {
     ChannelOptions options(l2cap::kATTChannelId);
     fake_att_chan_ = CreateFakeChannel(options);
-    bearer_ = Bearer::Create(fake_att_chan_);
+    bearer_ = Bearer::Create(fake_att_chan_->GetWeakPtr());
   }
 
   void TearDown() override { bearer_ = nullptr; }
@@ -41,7 +41,7 @@ class BearerTest : public l2cap::testing::FakeChannelTest {
   void DeleteBearer() { bearer_ = nullptr; }
 
  private:
-  fbl::RefPtr<l2cap::testing::FakeChannel> fake_att_chan_;
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_att_chan_;
   std::unique_ptr<Bearer> bearer_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BearerTest);
@@ -52,7 +52,7 @@ TEST_F(BearerTest, CreateFailsToActivate) {
   auto fake_chan = CreateFakeChannel(options);
   fake_chan->set_activate_fails(true);
 
-  EXPECT_FALSE(Bearer::Create(std::move(fake_chan)));
+  EXPECT_FALSE(Bearer::Create(fake_chan->GetWeakPtr()));
 }
 
 TEST_F(BearerTest, CreateUsesLEMaxMTUAsPreferredMTU) {

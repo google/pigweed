@@ -61,7 +61,7 @@ class ClientTest : public l2cap::testing::FakeChannelTest {
   void SetUp() override {
     ChannelOptions options(l2cap::kATTChannelId);
     fake_chan_ = CreateFakeChannel(options);
-    att_ = att::Bearer::Create(fake_chan_);
+    att_ = att::Bearer::Create(fake_chan_->GetWeakPtr());
     client_ = Client::Create(att_->GetWeakPtr());
   }
 
@@ -94,7 +94,7 @@ class ClientTest : public l2cap::testing::FakeChannelTest {
   l2cap::testing::FakeChannel* fake_chan() const { return fake_chan_.get(); }
 
  private:
-  fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Client> client_;
 

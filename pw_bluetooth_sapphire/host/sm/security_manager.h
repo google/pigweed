@@ -52,7 +52,7 @@ class SecurityManager {
   // |bondable_mode|: the operating bondable mode of the device (see v5.2, Vol. 3, Part C 9.4).
   // |security_mode|: the security mode of this SecurityManager (see v5.2, Vol. 3, Part C 10.2).
   static std::unique_ptr<SecurityManager> Create(fxl::WeakPtr<hci::LowEnergyConnection> link,
-                                                 fbl::RefPtr<l2cap::Channel> smp,
+                                                 fxl::WeakPtr<l2cap::Channel> smp,
                                                  IOCapability io_capability,
                                                  fxl::WeakPtr<Delegate> delegate,
                                                  BondableMode bondable_mode,

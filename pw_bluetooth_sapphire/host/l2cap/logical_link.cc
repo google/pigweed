@@ -94,7 +94,7 @@ LogicalLink::~LogicalLink() {
   ZX_ASSERT(closed_);
 }
 
-fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
+fxl::WeakPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   ZX_DEBUG_ASSERT(!closed_);
 
   TRACE_DURATION("bluetooth", "LogicalLink::OpenFixedChannel", "handle", handle_, "channel id", id);
@@ -111,7 +111,7 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
     return nullptr;
   }
 
-  auto chan = ChannelImpl::CreateFixedChannel(id, GetWeakPtr());
+  std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateFixedChannel(id, GetWeakPtr());
 
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
@@ -122,14 +122,13 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
     pending_pdus_.erase(pp_iter);
   }
 
-  channels_[id] = chan;
-
   if (inspect_properties_.channels_node) {
     chan->AttachInspect(inspect_properties_.channels_node,
                         inspect_properties_.channels_node.UniqueName(kInspectChannelNodePrefix));
   }
 
-  return chan;
+  channels_[id] = std::move(chan);
+  return channels_[id]->GetWeakPtr();
 }
 
 void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback) {
@@ -411,7 +410,7 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
     return;
   }
 
-  auto channel = iter->second;
+  ChannelImpl* channel = iter->second.get();
   ZX_DEBUG_ASSERT(channel->remote_id() == dyn_chan->remote_cid());
 
   hci::AclDataChannel::AclPacketPredicate predicate =
@@ -444,24 +443,27 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   auto preferred_flush_timeout = chan_info.flush_timeout;
   chan_info.flush_timeout.reset();
 
-  auto chan = ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), chan_info);
-  channels_[local_cid] = chan;
+  std::unique_ptr<ChannelImpl> chan =
+      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), chan_info);
+  auto chan_weak = chan->GetWeakPtr();
+  channels_[local_cid] = std::move(chan);
 
   if (inspect_properties_.channels_node) {
-    chan->AttachInspect(inspect_properties_.channels_node,
-                        inspect_properties_.channels_node.UniqueName(kInspectChannelNodePrefix));
+    chan_weak->AttachInspect(
+        inspect_properties_.channels_node,
+        inspect_properties_.channels_node.UniqueName(kInspectChannelNodePrefix));
   }
 
   // If a flush timeout was requested for this channel, try to set it before returning the channel
   // to the client to ensure outbound PDUs have correct flushable flag.
   if (preferred_flush_timeout.has_value()) {
-    chan->SetBrEdrAutomaticFlushTimeout(
+    chan_weak->SetBrEdrAutomaticFlushTimeout(
         preferred_flush_timeout.value(),
-        [cb = std::move(open_cb), chan](auto /*result*/) { cb(chan); });
+        [cb = std::move(open_cb), chan_weak](auto /*result*/) { cb(chan_weak); });
     return;
   }
 
-  open_cb(std::move(chan));
+  open_cb(std::move(chan_weak));
 }
 
 void LogicalLink::SendFixedChannelsSupportedInformationRequest() {
@@ -542,10 +544,10 @@ void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority
   ZX_ASSERT(channel);
   auto iter = channels_.find(channel->id());
   ZX_ASSERT(iter != channels_.end());
-  auto chan_ref = iter->second;
+  fxl::WeakPtr<ChannelImpl> chan_weak = iter->second->GetWeakImplPtr();
 
-  // Store ref pointer to channel to ensure it stays alive until this request is handled.
-  pending_acl_requests_.push(PendingAclRequest{chan_ref, priority, std::move(callback)});
+  pending_acl_requests_.push(
+      PendingAclRequest{std::move(chan_weak), priority, std::move(callback)});
   if (pending_acl_requests_.size() == 1) {
     HandleNextAclPriorityRequest();
   }
@@ -609,12 +611,12 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   }
 
   auto& request = pending_acl_requests_.front();
-  ZX_ASSERT(request.channel);
   ZX_ASSERT(request.callback);
 
   // Prevent closed channels with queued requests from upgrading channel priority.
-  if (channels_.find(request.channel->id()) == channels_.end() &&
-      request.priority != hci::AclPriority::kNormal) {
+  // Allow closed channels to downgrade priority so that they can clean up their priority on
+  // destruction.
+  if (!request.channel && request.priority != hci::AclPriority::kNormal) {
     request.callback(fitx::failed());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
@@ -623,47 +625,51 @@ void LogicalLink::HandleNextAclPriorityRequest() {
 
   // Skip sending command if desired priority is already set. Do this here instead of Channel in
   // case Channel queues up multiple requests.
-  if (request.channel->requested_acl_priority() == request.priority) {
+  if (request.priority == acl_priority_) {
     request.callback(fitx::ok());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
     return;
   }
 
-  for (auto& [chan_id, chan] : channels_) {
-    if (chan.get() == request.channel.get()) {
-      continue;
-    }
+  // If priority is not kNormal, then a channel might be using a conflicting priority, and the new
+  // priority should not be requested.
+  if (acl_priority_ != hci::AclPriority::kNormal) {
+    for (auto& [chan_id, chan] : channels_) {
+      if (chan.get() == request.channel.get() ||
+          chan->requested_acl_priority() == hci::AclPriority::kNormal) {
+        continue;
+      }
 
-    if (chan->requested_acl_priority() != hci::AclPriority::kNormal) {
       // If the request returns priority to normal but a different channel still requires high
-      // priority OR if another channel already is using the requested priority, skip sending
-      // command and just report success.
-      if (request.priority == hci::AclPriority::kNormal ||
-          request.priority == chan->requested_acl_priority()) {
+      // priority, skip sending command and just report success.
+      if (request.priority == hci::AclPriority::kNormal) {
         request.callback(fitx::ok());
         break;
       }
 
       // If the request tries to upgrade priority but it conflicts with another channel's priority
       // (e.g. sink vs. source), report an error.
-      if (request.priority != hci::AclPriority::kNormal &&
-          request.priority != chan->requested_acl_priority()) {
+      if (request.priority != chan->requested_acl_priority()) {
         request.callback(fitx::failed());
         break;
       }
     }
+
+    if (!request.callback) {
+      pending_acl_requests_.pop();
+      HandleNextAclPriorityRequest();
+      return;
+    }
   }
 
-  if (!request.callback) {
-    pending_acl_requests_.pop();
-    HandleNextAclPriorityRequest();
-    return;
-  }
-
-  auto cb_wrapper = [self = GetWeakPtr(), cb = std::move(request.callback)](auto result) mutable {
+  auto cb_wrapper = [self = GetWeakPtr(), cb = std::move(request.callback),
+                     priority = request.priority](auto result) mutable {
     if (!self) {
       return;
+    }
+    if (result.is_ok()) {
+      self->acl_priority_ = priority;
     }
     cb(result);
     self->pending_acl_requests_.pop();

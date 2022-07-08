@@ -14,7 +14,7 @@
 
 namespace bt::l2cap::internal {
 
-SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan, hci_spec::ConnectionRole role)
+SignalingChannel::SignalingChannel(fxl::WeakPtr<Channel> chan, hci_spec::ConnectionRole role)
     : is_open_(true),
       chan_(std::move(chan)),
       role_(role),

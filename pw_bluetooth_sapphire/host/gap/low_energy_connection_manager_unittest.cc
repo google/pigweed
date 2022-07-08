@@ -1492,7 +1492,7 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
-  fbl::RefPtr<l2cap::Channel> att_chan;
+  fxl::WeakPtr<l2cap::Channel> att_chan;
   auto l2cap_chan_cb = [&att_chan](auto chan) { att_chan = chan; };
   fake_l2cap()->set_channel_callback(l2cap_chan_cb);
 
@@ -1520,8 +1520,8 @@ TEST_F(LowEnergyConnectionManagerTest, ATTChannelActivateFails) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
-  fbl::RefPtr<l2cap::testing::FakeChannel> att_chan;
-  auto l2cap_chan_cb = [&att_chan](fbl::RefPtr<l2cap::testing::FakeChannel> chan) {
+  std::optional<fxl::WeakPtr<l2cap::testing::FakeChannel>> att_chan;
+  auto l2cap_chan_cb = [&att_chan](fxl::WeakPtr<l2cap::testing::FakeChannel> chan) {
     if (chan->id() == l2cap::kATTChannelId) {
       // Cause att::Bearer construction/activation to fail.
       chan->set_activate_fails(true);
@@ -1537,7 +1537,9 @@ TEST_F(LowEnergyConnectionManagerTest, ATTChannelActivateFails) {
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(att_chan);
+  ASSERT_TRUE(att_chan.has_value());
+  // The link should have been closed due to the error, invalidating the channel.
+  EXPECT_FALSE(att_chan.value());
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(HostError::kFailed, result->error_value());
   EXPECT_TRUE(connected_peers().empty());
@@ -1549,8 +1551,8 @@ TEST_F(LowEnergyConnectionManagerTest, LinkErrorDuringInterrogation) {
   ASSERT_TRUE(peer);
 
   // Get an arbitrary channel in order to signal a link error.
-  fbl::RefPtr<l2cap::testing::FakeChannel> chan;
-  auto l2cap_chan_cb = [&chan](fbl::RefPtr<l2cap::testing::FakeChannel> cb_chan) {
+  fxl::WeakPtr<l2cap::testing::FakeChannel> chan;
+  auto l2cap_chan_cb = [&chan](fxl::WeakPtr<l2cap::testing::FakeChannel> cb_chan) {
     chan = std::move(cb_chan);
   };
   fake_l2cap()->set_channel_callback(l2cap_chan_cb);

@@ -8,6 +8,7 @@
 #include <fuchsia/bluetooth/bredr/cpp/fidl.h>
 
 #include <fbl/macros.h>
+#include <fbl/ref_counted.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
@@ -35,12 +36,12 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
    public:
     L2capParametersExt(
         fidl::InterfaceRequest<fuchsia::bluetooth::bredr::L2capParametersExt> request,
-        fbl::RefPtr<bt::l2cap::Channel> channel);
+        fxl::WeakPtr<bt::l2cap::Channel> channel);
     void RequestParameters(fuchsia::bluetooth::bredr::ChannelParameters requested,
                            RequestParametersCallback callback) override;
 
    private:
-    fbl::RefPtr<bt::l2cap::Channel> channel_;
+    fxl::WeakPtr<bt::l2cap::Channel> channel_;
   };
 
   class ScoConnectionServer final : public ServerBase<fuchsia::bluetooth::bredr::ScoConnection> {
@@ -90,7 +91,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   void OnSearchResultError(uint64_t search_id, zx_status_t status);
 
   // Callback for incoming connections
-  void OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Channel> channel,
+  void OnChannelConnected(uint64_t ad_id, fxl::WeakPtr<bt::l2cap::Channel> channel,
                           const bt::sdp::DataElement& protocol_list);
 
   // Callback for services found on connected device
@@ -107,7 +108,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // Create an AudioDirectionExt server for the given channel and set up callbacks.
   // Returns the client end of the channel.
   fidl::InterfaceHandle<fuchsia::bluetooth::bredr::AudioDirectionExt> BindAudioDirectionExtServer(
-      fbl::RefPtr<bt::l2cap::Channel> channel);
+      fxl::WeakPtr<bt::l2cap::Channel> channel);
 
   // Callback when clients close their l2cap parameters extension.
   void OnL2capParametersExtError(L2capParametersExt* ext_server, zx_status_t status);
@@ -115,11 +116,11 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // Create an L2capParametersExt server for the given channel and set up callbacks.
   // Returns the client end of the channel.
   fidl::InterfaceHandle<fuchsia::bluetooth::bredr::L2capParametersExt> BindL2capParametersExtServer(
-      fbl::RefPtr<bt::l2cap::Channel> channel);
+      fxl::WeakPtr<bt::l2cap::Channel> channel);
 
   // Create a FIDL Channel from an l2cap::Channel. A socket channel relay is created from |channel|
   // and returned in the FIDL Channel.
-  fuchsia::bluetooth::bredr::Channel ChannelToFidl(fbl::RefPtr<bt::l2cap::Channel> channel);
+  fuchsia::bluetooth::bredr::Channel ChannelToFidl(fxl::WeakPtr<bt::l2cap::Channel> channel);
 
   bt::gap::Adapter* adapter() const { return adapter_.get(); }
 
@@ -155,14 +156,14 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
    public:
     // Calls to SetPriority() are forwarded to |priority_cb|.
     AudioDirectionExt(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioDirectionExt> request,
-                      fbl::RefPtr<bt::l2cap::Channel> channel);
+                      fxl::WeakPtr<bt::l2cap::Channel> channel);
 
     // fuchsia::bluetooth::bredr::AudioDirectionExt overrides:
     void SetPriority(fuchsia::bluetooth::bredr::A2dpDirectionPriority priority,
                      SetPriorityCallback callback) override;
 
    private:
-    fbl::RefPtr<bt::l2cap::Channel> channel_;
+    fxl::WeakPtr<bt::l2cap::Channel> channel_;
     fit::function<void(fuchsia::bluetooth::bredr::A2dpDirectionPriority, SetPriorityCallback)> cb_;
   };
   std::unordered_map<AudioDirectionExt*, std::unique_ptr<AudioDirectionExt>>

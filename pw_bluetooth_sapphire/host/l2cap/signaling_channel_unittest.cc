@@ -26,7 +26,7 @@ const auto kTestResponseHandler = [](Status status, const ByteBuffer& rsp_payloa
 
 class TestSignalingChannel : public SignalingChannel {
  public:
-  explicit TestSignalingChannel(fbl::RefPtr<Channel> chan)
+  explicit TestSignalingChannel(fxl::WeakPtr<Channel> chan)
       : SignalingChannel(std::move(chan), hci_spec::ConnectionRole::kCentral) {
     set_mtu(kTestMTU);
   }
@@ -86,7 +86,7 @@ class SignalingChannelTest : public testing::FakeChannelTest {
     options.conn_handle = kTestHandle;
 
     fake_channel_inst_ = CreateFakeChannel(options);
-    sig_ = std::make_unique<TestSignalingChannel>(fake_channel_inst_);
+    sig_ = std::make_unique<TestSignalingChannel>(fake_channel_inst_->GetWeakPtr());
   }
 
   void TearDown() override {
@@ -104,7 +104,7 @@ class SignalingChannelTest : public testing::FakeChannelTest {
   std::unique_ptr<TestSignalingChannel> sig_;
 
   // Own the fake channel so that its lifetime can span beyond that of |sig_|.
-  fbl::RefPtr<Channel> fake_channel_inst_;
+  std::unique_ptr<Channel> fake_channel_inst_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SignalingChannelTest);
 };

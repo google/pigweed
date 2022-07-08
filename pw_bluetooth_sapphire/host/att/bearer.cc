@@ -163,7 +163,7 @@ OpCode MatchingTransactionCode(OpCode transaction_end_code) {
 }  // namespace
 
 // static
-std::unique_ptr<Bearer> Bearer::Create(fbl::RefPtr<l2cap::Channel> chan) {
+std::unique_ptr<Bearer> Bearer::Create(fxl::WeakPtr<l2cap::Channel> chan) {
   std::unique_ptr<Bearer> bearer(new Bearer(std::move(chan)));
   return bearer->Activate() ? std::move(bearer) : nullptr;
 }
@@ -253,7 +253,7 @@ void Bearer::TransactionQueue::InvokeErrorAll(Error error) {
   }
 }
 
-Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan)
+Bearer::Bearer(fxl::WeakPtr<l2cap::Channel> chan)
     : chan_(std::move(chan)),
       next_remote_transaction_id_(1u),
       next_handler_id_(1u),

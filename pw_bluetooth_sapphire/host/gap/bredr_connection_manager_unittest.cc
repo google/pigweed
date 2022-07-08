@@ -1542,7 +1542,7 @@ TEST_F(BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSear
   connmgr()->AddServiceSearch(kServiceUuid2, {sdp::kServiceId},
                               [&](auto, auto&) { search_cb_count++; });
 
-  fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
+  fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
   l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
@@ -1591,7 +1591,7 @@ TEST_F(BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSearchOf
   connmgr()->AddServiceSearch(kServiceUuid, {sdp::kServiceId},
                               [&](auto, auto&) { search_cb_count++; });
 
-  fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
+  fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
   l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
@@ -1640,7 +1640,7 @@ TEST_F(BrEdrConnectionManagerTest, ServiceSearch) {
   auto search_id =
       connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {sdp::kServiceId}, search_cb);
 
-  fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
+  fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
   l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
@@ -1729,7 +1729,7 @@ TEST_F(BrEdrConnectionManagerTest, SearchOnReconnect) {
 
   connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {sdp::kServiceId}, search_cb);
 
-  fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
+  fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
   l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
@@ -1845,7 +1845,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
   ASSERT_TRUE(peer);
   ASSERT_FALSE(IsNotConnected(peer));
 
-  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
+  std::optional<fxl::WeakPtr<l2cap::Channel>> connected_chan;
 
   auto chan_cb = [&](auto chan) { connected_chan = std::move(chan); };
 
@@ -1944,7 +1944,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   ASSERT_FALSE(IsNotConnected(peer));
 
-  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
+  std::optional<fxl::WeakPtr<l2cap::Channel>> connected_chan;
 
   auto socket_cb = [&](auto chan) { connected_chan = std::move(chan); };
 
@@ -2012,7 +2012,7 @@ TEST_F(BrEdrConnectionManagerTest,
   ASSERT_TRUE(peer);
   ASSERT_FALSE(IsNotConnected(peer));
 
-  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
+  std::optional<fxl::WeakPtr<l2cap::Channel>> connected_chan;
 
   auto socket_cb = [&](auto chan) { connected_chan = std::move(chan); };
 
@@ -2043,7 +2043,7 @@ TEST_F(BrEdrConnectionManagerTest,
 
   // An invalid channel should have been sent because the connection failed.
   ASSERT_TRUE(connected_chan);
-  ASSERT_EQ(connected_chan.value(), nullptr);
+  ASSERT_FALSE(connected_chan.value());
 
   ASSERT_EQ(count + kDisconnectionTransactions, transaction_count());
 }
@@ -2096,7 +2096,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
                         &kEncryptionChangeEvent);
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, );
 
-  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
+  std::optional<fxl::WeakPtr<l2cap::Channel>> connected_chan;
 
   auto chan_cb = [&](auto chan) { connected_chan = std::move(chan); };
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kNoSecurityRequirements,
@@ -2115,7 +2115,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
 
   // We should get a callback from the OpenL2capChannel
   ASSERT_TRUE(connected_chan);
-  EXPECT_EQ(nullptr, *connected_chan);
+  EXPECT_FALSE(connected_chan.value());
 
   connected_chan.reset();
 
@@ -2124,7 +2124,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
 
   // The L2CAP should be called right away without a channel.
   ASSERT_TRUE(connected_chan);
-  EXPECT_EQ(nullptr, *connected_chan);
+  EXPECT_FALSE(connected_chan.value());
 
   connected_chan.reset();
 }
@@ -2143,7 +2143,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComple
   ASSERT_TRUE(peer);
   ASSERT_FALSE(IsNotConnected(peer));
 
-  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
+  std::optional<fxl::WeakPtr<l2cap::Channel>> connected_chan;
 
   auto socket_cb = [&](auto chan) { connected_chan = std::move(chan); };
 
@@ -2396,7 +2396,7 @@ TEST_F(BrEdrConnectionManagerTest, AddServiceSearchAll) {
 
   connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {}, search_cb);
 
-  fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
+  fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
   l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {

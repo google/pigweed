@@ -46,7 +46,7 @@ class Bearer final {
  public:
   // Creates a new ATT Bearer. Returns nullptr if |chan| cannot be activated.
   // This can happen if the link is closed.
-  static std::unique_ptr<Bearer> Create(fbl::RefPtr<l2cap::Channel> chan);
+  static std::unique_ptr<Bearer> Create(fxl::WeakPtr<l2cap::Channel> chan);
 
   ~Bearer();
 
@@ -155,7 +155,7 @@ class Bearer final {
   fxl::WeakPtr<Bearer> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  explicit Bearer(fbl::RefPtr<l2cap::Channel> chan);
+  explicit Bearer(fxl::WeakPtr<l2cap::Channel> chan);
 
   // Returns false if activation fails. This is called by the factory method.
   bool Activate();

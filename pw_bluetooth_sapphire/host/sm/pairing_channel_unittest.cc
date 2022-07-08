@@ -48,7 +48,10 @@ class PairingChannelTest : public l2cap::testing::FakeChannelTest {
  protected:
   void SetUp() override { NewPairingChannel(); }
 
-  void TearDown() override { sm_chan_ = nullptr; }
+  void TearDown() override {
+    sm_chan_ = nullptr;
+    fake_sm_chan_ = nullptr;
+  }
 
   void NewPairingChannel(bt::LinkType ll_type = bt::LinkType::kLE,
                          uint16_t mtu = kNoSecureConnectionsMtu) {
@@ -56,8 +59,9 @@ class PairingChannelTest : public l2cap::testing::FakeChannelTest {
         ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     ChannelOptions options(cid, mtu);
     options.link_type = ll_type;
+    fake_sm_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(
-        CreateFakeChannel(options), fit::bind_member<&PairingChannelTest::ResetTimer>(this));
+        fake_sm_chan_->GetWeakPtr(), fit::bind_member<&PairingChannelTest::ResetTimer>(this));
   }
 
   PairingChannel* sm_chan() { return sm_chan_.get(); }
@@ -68,6 +72,7 @@ class PairingChannelTest : public l2cap::testing::FakeChannelTest {
  private:
   void ResetTimer() { timer_resetter_(); }
 
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_sm_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   fit::closure timer_resetter_ = []() {};
 };

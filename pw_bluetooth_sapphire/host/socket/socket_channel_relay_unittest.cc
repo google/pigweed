@@ -32,9 +32,8 @@ class SocketChannelRelayTest : public ::testing::Test {
     constexpr l2cap::ChannelId kDynamicChannelIdMin = 0x0040;
     constexpr l2cap::ChannelId kRemoteChannelId = 0x0050;
     constexpr hci_spec::ConnectionHandle kDefaultConnectionHandle = 0x0001;
-    channel_ = fbl::AdoptRef(new l2cap::testing::FakeChannel(
-        kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL));
-    EXPECT_TRUE(channel_);
+    channel_ = std::make_unique<l2cap::testing::FakeChannel>(
+        kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
 
     const auto socket_status =
         zx::socket::create(ZX_SOCKET_DATAGRAM, &local_socket_, &remote_socket_);
@@ -98,7 +97,7 @@ class SocketChannelRelayTest : public ::testing::Test {
  protected:
   static constexpr auto kGoodChar = 'a';
   static constexpr auto kSpamChar = 'b';
-  fbl::RefPtr<l2cap::testing::FakeChannel> channel() { return channel_; }
+  l2cap::testing::FakeChannel* channel() { return channel_.get(); }
   async_dispatcher_t* dispatcher() { return loop_.dispatcher(); }
   zx::socket* local_socket() { return &local_socket_; }
   zx::unowned_socket local_socket_unowned() { return zx::unowned_socket(local_socket_unowned_); }
@@ -113,7 +112,7 @@ class SocketChannelRelayTest : public ::testing::Test {
   void ShutdownLoop() { loop_.Shutdown(); }
 
  private:
-  fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
+  std::unique_ptr<l2cap::testing::FakeChannel> channel_;
   zx::socket local_socket_;
   zx::socket remote_socket_;
   zx::unowned_socket local_socket_unowned_;
@@ -126,7 +125,7 @@ class SocketChannelRelayLifetimeTest : public SocketChannelRelayTest {
  public:
   SocketChannelRelayLifetimeTest()
       : was_deactivation_callback_invoked_(false),
-        relay_(std::make_unique<RelayT>(ConsumeLocalSocket(), channel(),
+        relay_(std::make_unique<RelayT>(ConsumeLocalSocket(), channel()->GetWeakPtr(),
                                         [this]() { was_deactivation_callback_invoked_ = true; })) {}
 
  protected:
@@ -258,7 +257,7 @@ TEST_F(SocketChannelRelayLifetimeTest, DeactivationClosesSocket) {
 class SocketChannelRelayDataPathTest : public SocketChannelRelayTest {
  public:
   SocketChannelRelayDataPathTest()
-      : relay_(ConsumeLocalSocket(), channel(), /*deactivation_cb=*/nullptr) {
+      : relay_(ConsumeLocalSocket(), channel()->GetWeakPtr(), /*deactivation_cb=*/nullptr) {
     channel()->SetSendCallback([&](auto data) { sent_to_channel_.push_back(std::move(data)); },
                                dispatcher());
   }

@@ -46,7 +46,7 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
     options.link_type = ll_type;
 
     fake_chan_ = CreateFakeChannel(options);
-    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
+    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_->GetWeakPtr());
     fake_listener_ = std::make_unique<FakeListener>();
     security_request_phase_ = std::make_unique<SecurityRequestPhase>(
         sm_chan_->GetWeakPtr(), fake_listener_->as_weak_ptr(), opts.requested_level, opts.bondable,
@@ -59,7 +59,7 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
   std::optional<PairingRequestParams> last_pairing_req() { return last_pairing_req_; }
 
  private:
-  fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<FakeListener> fake_listener_;
   std::unique_ptr<SecurityRequestPhase> security_request_phase_;

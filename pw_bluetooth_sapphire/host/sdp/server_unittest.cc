@@ -29,7 +29,7 @@ using TestingBase = l2cap::testing::FakeChannelTest;
 constexpr hci_spec::ConnectionHandle kTestHandle1 = 1;
 constexpr hci_spec::ConnectionHandle kTestHandle2 = 2;
 
-void NopConnectCallback(fbl::RefPtr<l2cap::Channel>, const DataElement&) {}
+void NopConnectCallback(fxl::WeakPtr<l2cap::Channel>, const DataElement&) {}
 
 constexpr l2cap::ChannelParameters kChannelParams;
 
@@ -43,7 +43,7 @@ class ServerTest : public TestingBase {
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
     l2cap_->set_channel_callback([this](auto fake_chan) {
       channel_ = std::move(fake_chan);
-      set_fake_chan(channel_->AsWeakPtr());
+      set_fake_chan(channel_);
     });
     l2cap_->AddACLConnection(kTestHandle1, hci_spec::ConnectionRole::kPeripheral, nullptr, nullptr);
     l2cap_->AddACLConnection(kTestHandle2, hci_spec::ConnectionRole::kPeripheral, nullptr, nullptr);
@@ -115,7 +115,7 @@ class ServerTest : public TestingBase {
   }
 
  private:
-  fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
+  fxl::WeakPtr<l2cap::testing::FakeChannel> channel_;
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   std::unique_ptr<Server> server_;
 };
@@ -1023,11 +1023,11 @@ TEST_F(ServerTest, ConnectionCallbacks) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
 
-  std::vector<fbl::RefPtr<l2cap::Channel>> channels;
+  std::vector<fxl::WeakPtr<l2cap::Channel>> channels;
   hci_spec::ConnectionHandle latest_handle;
 
   // Register a service
-  AddA2DPSink([&channels, &latest_handle](auto chan, const auto& protocol) {
+  AddA2DPSink([&channels, &latest_handle](fxl::WeakPtr<l2cap::Channel> chan, const auto& protocol) {
     bt_log(TRACE, "test", "Got channel for the a2dp sink");
     latest_handle = chan->link_handle();
     channels.emplace_back(std::move(chan));
@@ -1050,7 +1050,7 @@ TEST_F(ServerTest, ConnectionCallbacks) {
 
   ASSERT_EQ(2u, channels.size());
   EXPECT_EQ(kTestHandle2, latest_handle);
-  EXPECT_NE(channels.front(), channels.back());
+  EXPECT_NE(channels.front().get(), channels.back().get());
 
   // Connect to the service again, on the first connection.
   EXPECT_TRUE(

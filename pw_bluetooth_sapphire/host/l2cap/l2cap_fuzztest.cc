@@ -115,7 +115,7 @@ class DataFuzzTest : public TestingBase {
 
   void RegisterService() {
     channel_manager_->RegisterService(
-        l2cap::kAVDTP, l2cap::ChannelParameters(), [this](fbl::RefPtr<l2cap::Channel> chan) {
+        l2cap::kAVDTP, l2cap::ChannelParameters(), [this](fxl::WeakPtr<l2cap::Channel> chan) {
           if (!chan) {
             return;
           }
@@ -144,7 +144,7 @@ class DataFuzzTest : public TestingBase {
   FuzzedDataProvider data_;
   std::unique_ptr<l2cap::ChannelManager> channel_manager_;
   bool connection_;
-  std::unordered_map<l2cap::ChannelId, fbl::RefPtr<l2cap::Channel>> channels_;
+  std::unordered_map<l2cap::ChannelId, fxl::WeakPtr<l2cap::Channel>> channels_;
 };
 
 }  // namespace bt::testing

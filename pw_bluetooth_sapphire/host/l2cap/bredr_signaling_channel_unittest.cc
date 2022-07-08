@@ -27,8 +27,8 @@ class BrEdrSignalingChannelTest : public testing::FakeChannelTest {
     ChannelOptions options(kSignalingChannelId);
     options.conn_handle = kTestHandle;
 
-    auto fake_chan = CreateFakeChannel(options);
-    sig_ = std::make_unique<BrEdrSignalingChannel>(std::move(fake_chan), kDeviceRole);
+    fake_chan_ = CreateFakeChannel(options);
+    sig_ = std::make_unique<BrEdrSignalingChannel>(fake_chan_->GetWeakPtr(), kDeviceRole);
   }
 
   void TearDown() override { sig_ = nullptr; }
@@ -36,6 +36,7 @@ class BrEdrSignalingChannelTest : public testing::FakeChannelTest {
   BrEdrSignalingChannel* sig() const { return sig_.get(); }
 
  private:
+  std::unique_ptr<testing::FakeChannel> fake_chan_;
   std::unique_ptr<BrEdrSignalingChannel> sig_;
 };
 

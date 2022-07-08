@@ -10,20 +10,20 @@
 #include <optional>
 
 #include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::l2cap {
 
 class Channel;
 // Callback invoked when a channel has been created or when an error occurs during channel creation
 // (in which case the channel will be nullptr).
-using ChannelCallback = fit::function<void(fbl::RefPtr<Channel>)>;
+using ChannelCallback = fit::function<void(fxl::WeakPtr<Channel>)>;
 
 // Callback invoked when a logical link should be closed due to an error.
 using LinkErrorCallback = fit::closure;
@@ -40,7 +40,7 @@ using ConnectionParameterUpdateRequestCallback = fit::function<void(bool accepte
 // Callback used to deliver LE fixed channels that are created when a LE link is
 // registered with L2CAP.
 using LEFixedChannelsCallback =
-    fit::function<void(fbl::RefPtr<Channel> att, fbl::RefPtr<Channel> smp)>;
+    fit::function<void(fxl::WeakPtr<Channel> att, fxl::WeakPtr<Channel> smp)>;
 
 // Callback used to request a security upgrade for an active logical link.
 // Invokes its |callback| argument with the result of the operation.

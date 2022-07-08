@@ -178,14 +178,16 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
     return result;
   }
 
-  std::tuple<bt::gap::Peer*, FakeChannel*> CreateAndConnectFakePeer(bool connect_le = true) {
+  std::tuple<bt::gap::Peer*, fxl::WeakPtr<FakeChannel>> CreateAndConnectFakePeer(
+      bool connect_le = true) {
     auto address = connect_le ? kLeTestAddr : kBredrTestAddr;
     bt::gap::Peer* peer = AddFakePeer(address);
 
     // This is to capture the channel created during the Connection process
-    FakeChannel* fake_chan = nullptr;
-    l2cap()->set_channel_callback(
-        [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
+    fxl::WeakPtr<FakeChannel> fake_chan = nullptr;
+    l2cap()->set_channel_callback([&fake_chan](fxl::WeakPtr<FakeChannel> new_fake_chan) {
+      fake_chan = std::move(new_fake_chan);
+    });
 
     auto connect_result = ConnectFakePeer(peer->identifier());
 
@@ -253,12 +255,12 @@ class HostServerPairingTest : public HostServerTest {
   }
 
   bt::gap::Peer* peer() { return fake_peer_; }
-  FakeChannel* fake_chan() { return fake_chan_; }
+  FakeChannel* fake_chan() { return fake_chan_.get(); }
 
  private:
   std::unique_ptr<MockFidlPairingDelegate> pairing_delegate_;
   bt::gap::Peer* fake_peer_ = nullptr;
-  FakeChannel* fake_chan_ = nullptr;
+  fxl::WeakPtr<FakeChannel> fake_chan_ = nullptr;
 };
 
 // Constructs a vector of a fidl::Clone'able data type that contains a copy of the input |data|.

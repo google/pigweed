@@ -11,10 +11,10 @@ namespace bt::l2cap::testing {
 
 void FakeChannelTest::SetUp() {}
 
-fbl::RefPtr<FakeChannel> FakeChannelTest::CreateFakeChannel(const ChannelOptions& options) {
-  auto fake_chan = fbl::AdoptRef(
-      new FakeChannel(options.id, options.remote_id, options.conn_handle, options.link_type,
-                      ChannelInfo::MakeBasicMode(options.mtu, options.mtu)));
+std::unique_ptr<FakeChannel> FakeChannelTest::CreateFakeChannel(const ChannelOptions& options) {
+  auto fake_chan = std::make_unique<FakeChannel>(
+      options.id, options.remote_id, options.conn_handle, options.link_type,
+      ChannelInfo::MakeBasicMode(options.mtu, options.mtu));
   fake_chan_ = fake_chan->AsWeakPtr();
   return fake_chan;
 }

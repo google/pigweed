@@ -78,8 +78,8 @@ class L2capIntegrationTest : public TestingBase {
 
   l2cap::CommandId NextCommandId() { return next_command_id_++; }
 
-  zx::socket MakeSocketForChannel(fbl::RefPtr<l2cap::Channel> channel) {
-    return socket_factory_->MakeSocketForChannel(channel);
+  zx::socket MakeSocketForChannel(fxl::WeakPtr<l2cap::Channel> channel) {
+    return socket_factory_->MakeSocketForChannel(std::move(channel));
   }
 
   void QueueConfigNegotiation(hci_spec::ConnectionHandle handle,
@@ -115,10 +115,9 @@ class L2capIntegrationTest : public TestingBase {
         l2cap::testing::AclConnectionReq(kPeerConnReqId, handle, remote_cid, psm));
   }
 
-  template <typename CallbackT>
   void QueueOutboundL2capConnection(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
                                     l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid,
-                                    CallbackT open_cb,
+                                    ChannelCallback open_cb,
                                     l2cap::ChannelParameters local_params = kChannelParameters,
                                     l2cap::ChannelParameters peer_params = kChannelParameters) {
     const l2cap::CommandId kPeerConfigReqId = 1;
@@ -188,7 +187,7 @@ TEST_F(L2capIntegrationTest, InboundL2capSocket) {
 
   QueueAclConnection(kLinkHandle);
 
-  fbl::RefPtr<l2cap::Channel> chan;
+  fxl::WeakPtr<l2cap::Channel> chan;
   auto chan_cb = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan = std::move(cb_chan);
@@ -316,7 +315,7 @@ TEST_F(L2capIntegrationTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
 
   QueueAclConnection(kLinkHandle);
 
-  fbl::RefPtr<l2cap::Channel> chan;
+  fxl::WeakPtr<l2cap::Channel> chan;
   auto chan_cb = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan = std::move(cb_chan);
@@ -384,7 +383,7 @@ TEST_F(L2capIntegrationTest, OutboundL2capSocket) {
 
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fbl::RefPtr<l2cap::Channel> chan;
+  fxl::WeakPtr<l2cap::Channel> chan;
   auto chan_cb = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan = std::move(cb_chan);
@@ -459,7 +458,7 @@ TEST_F(L2capIntegrationTest, ChannelCreationPrioritizedOverDynamicChannelData) {
 
   QueueAclConnection(kLinkHandle);
 
-  fbl::RefPtr<l2cap::Channel> chan0;
+  fxl::WeakPtr<l2cap::Channel> chan0;
   auto chan_cb0 = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan0 = std::move(cb_chan);
@@ -505,7 +504,7 @@ TEST_F(L2capIntegrationTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fbl::RefPtr<l2cap::Channel> chan1;
+  fxl::WeakPtr<l2cap::Channel> chan1;
   auto chan_cb1 = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan1 = std::move(cb_chan);
@@ -546,8 +545,8 @@ TEST_F(L2capIntegrationTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fbl::RefPtr<l2cap::Channel> chan;
-  auto chan_cb = [&](fbl::RefPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
+  fxl::WeakPtr<l2cap::Channel> chan;
+  auto chan_cb = [&](fxl::WeakPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
 
   QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, chan_cb, chan_params,
                                chan_params);
@@ -574,7 +573,7 @@ TEST_F(L2capIntegrationTest, NegotiateChannelParametersOnInboundL2capSocket) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fbl::RefPtr<l2cap::Channel> chan;
+  fxl::WeakPtr<l2cap::Channel> chan;
   auto chan_cb = [&](auto cb_chan) { chan = std::move(cb_chan); };
   l2cap()->RegisterService(kPSM, chan_params, chan_cb);
 
@@ -677,7 +676,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fbl::RefPtr<l2cap::Channel> channel = nullptr;
+  fxl::WeakPtr<l2cap::Channel> channel = nullptr;
   auto chan_cb = [&](auto chan) { channel = std::move(chan); };
 
   QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(chan_cb));

@@ -78,6 +78,7 @@ class FakeChannel : public Channel {
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}
+  fxl::WeakPtr<Channel> GetWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   hci_spec::ConnectionHandle handle_;

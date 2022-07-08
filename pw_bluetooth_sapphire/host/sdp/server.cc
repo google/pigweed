@@ -157,7 +157,7 @@ void Server::AttachInspect(inspect::Node& parent, std::string name) {
   UpdateInspectProperties();
 }
 
-bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
+bool Server::AddConnection(fxl::WeakPtr<l2cap::Channel> channel) {
   ZX_ASSERT(channel);
   hci_spec::ConnectionHandle handle = channel->link_handle();
   bt_log(DEBUG, "sdp", "add connection handle %#.4x", handle);
@@ -315,7 +315,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     bt_log(TRACE, "sdp", "Allocating PSM %#.4x for new service", psm);
     l2cap_->RegisterService(
         psm, chan_params,
-        [psm = psm, conn_cb = conn_cb.share()](fbl::RefPtr<l2cap::Channel> channel) mutable {
+        [psm = psm, conn_cb = conn_cb.share()](fxl::WeakPtr<l2cap::Channel> channel) mutable {
           bt_log(TRACE, "sdp", "Channel connected to %#.4x", psm);
           // Build the L2CAP descriptor
           std::vector<DataElement> protocol_l2cap;

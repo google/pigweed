@@ -73,7 +73,7 @@ class PairingPhaseTest : public l2cap::testing::FakeChannelTest {
 
     listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(options);
-    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
+    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_->GetWeakPtr());
     pairing_phase_ = std::make_unique<ConcretePairingPhase>(sm_chan_->GetWeakPtr(),
                                                             listener_->as_weak_ptr(), role);
   }
@@ -84,7 +84,7 @@ class PairingPhaseTest : public l2cap::testing::FakeChannelTest {
 
  private:
   std::unique_ptr<FakeListener> listener_;
-  fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
+  std::unique_ptr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<ConcretePairingPhase> pairing_phase_;
 

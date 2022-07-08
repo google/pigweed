@@ -322,7 +322,7 @@ class ChannelManagerTest : public TestingBase {
                                                                    kTestHandle1, channels));
   }
 
-  fbl::RefPtr<Channel> ActivateNewFixedChannel(
+  fxl::WeakPtr<Channel> ActivateNewFixedChannel(
       ChannelId id, hci_spec::ConnectionHandle conn_handle = kTestHandle1,
       Channel::ClosedCallback closed_cb = DoNothing, Channel::RxCallback rx_cb = NopRxCallback) {
     auto chan = chanmgr()->OpenFixedChannel(conn_handle, id);
@@ -353,7 +353,7 @@ class ChannelManagerTest : public TestingBase {
   void SetUpOutboundChannelWithCallback(ChannelId local_id, ChannelId remote_id,
                                         Channel::ClosedCallback closed_cb,
                                         ChannelParameters channel_params,
-                                        fit::function<void(fbl::RefPtr<Channel>)> channel_cb) {
+                                        fit::function<void(fxl::WeakPtr<Channel>)> channel_cb) {
     const auto conn_req_id = NextCommandId();
     const auto config_req_id = NextCommandId();
     EXPECT_ACL_PACKET_OUT(testing::AclConnectionReq(conn_req_id, kTestHandle1, local_id, kTestPsm),
@@ -379,12 +379,12 @@ class ChannelManagerTest : public TestingBase {
     EXPECT_TRUE(AllExpectedPacketsSent());
   }
 
-  fbl::RefPtr<Channel> SetUpOutboundChannel(ChannelId local_id = kLocalId,
-                                            ChannelId remote_id = kRemoteId,
-                                            Channel::ClosedCallback closed_cb = DoNothing,
-                                            ChannelParameters channel_params = kChannelParams) {
-    fbl::RefPtr<Channel> channel;
-    auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> SetUpOutboundChannel(ChannelId local_id = kLocalId,
+                                             ChannelId remote_id = kRemoteId,
+                                             Channel::ClosedCallback closed_cb = DoNothing,
+                                             ChannelParameters channel_params = kChannelParams) {
+    fxl::WeakPtr<Channel> channel;
+    auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
       channel = std::move(activated_chan);
     };
 
@@ -500,12 +500,12 @@ class ChannelManagerTest : public TestingBase {
 
 TEST_F(ChannelManagerTest, OpenFixedChannelErrorNoConn) {
   // This should fail as the ChannelManager has no entry for |kTestHandle1|.
-  EXPECT_EQ(nullptr, ActivateNewFixedChannel(kATTChannelId));
+  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId));
 
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   // This should fail as the ChannelManager has no entry for |kTestHandle2|.
-  EXPECT_EQ(nullptr, ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
+  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
 }
 
 TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
@@ -517,20 +517,43 @@ TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
   RunLoopUntilIdle();
 
   // This should fail as kSMPChannelId is ACL-U only.
-  EXPECT_EQ(nullptr, ActivateNewFixedChannel(kSMPChannelId, kTestHandle1));
+  EXPECT_FALSE(ActivateNewFixedChannel(kSMPChannelId, kTestHandle1));
 
   // This should fail as kATTChannelId is LE-U only.
-  EXPECT_EQ(nullptr, ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
+  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
 }
 
-TEST_F(ChannelManagerTest, ActivateFailsAfterDeactivate) {
+TEST_F(ChannelManagerTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
+  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  RunLoopUntilIdle();
+
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+    channel = std::move(activated_chan);
+  };
+  ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1, []() {});
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
+  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(channel);
+  const auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
+  channel->Deactivate();
+  ASSERT_FALSE(channel);
+}
+
+TEST_F(ChannelManagerTest, DeactivateAttChannelInvalidatesChannelPointer) {
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
-
   fixed_channels.att->Deactivate();
-
-  // Activate should fail.
-  EXPECT_FALSE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+  ASSERT_FALSE(fixed_channels.att);
 }
 
 TEST_F(ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
@@ -599,7 +622,7 @@ TEST_F(ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   EXPECT_FALSE(smp_closed);
 }
 
-TEST_F(ChannelManagerTest, SendingPacketsBeforeAndAfterCleanUp) {
+TEST_F(ChannelManagerTest, SendingPacketsBeforeRemoveConnectionAndVerifyChannelClosed) {
   // LE-U link
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
@@ -627,10 +650,7 @@ TEST_F(ChannelManagerTest, SendingPacketsBeforeAndAfterCleanUp) {
 
   // The L2CAP channel should have been notified of closure immediately.
   EXPECT_TRUE(closed_called);
-
-  EXPECT_FALSE(chan->Send(NewBuffer('h', 'i')));
-
-  // Ensure no unexpected packets are sent.
+  EXPECT_FALSE(chan);
   RunLoopUntilIdle();
 }
 
@@ -662,9 +682,7 @@ TEST_F(ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
   TearDown();
 
   EXPECT_TRUE(closed_called);
-
-  EXPECT_FALSE(chan->Send(NewBuffer('h', 'i')));
-
+  EXPECT_FALSE(chan);
   // No outbound packet expectations were set, so this test will fail if it sends any data.
   RunLoopUntilIdle();
 }
@@ -786,7 +804,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
       // L2CAP B-frame (empty)
       0x00, 0x00, 0x06, 0x00));
 
-  fbl::RefPtr<Channel> att_chan, smp_chan;
+  fxl::WeakPtr<Channel> att_chan, smp_chan;
 
   // Run the loop so all packets are received.
   RunLoopUntilIdle();
@@ -933,13 +951,11 @@ TEST_F(ChannelManagerTest, ActivateChannelProcessesCallbacksSynchronously) {
   EXPECT_TRUE(smp_closed_called);
 }
 
-TEST_F(ChannelManagerTest, SendOnClosedLink) {
+TEST_F(ChannelManagerTest, RemovingLinkInvalidatesChannelPointer) {
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   ZX_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
-
   chanmgr()->RemoveConnection(kTestHandle1);
-
-  EXPECT_FALSE(fixed_channels.att->Send(NewBuffer('T', 'e', 's', 't')));
+  EXPECT_FALSE(fixed_channels.att);
 }
 
 TEST_F(ChannelManagerTest, SendBasicSdu) {
@@ -1120,8 +1136,8 @@ TEST_F(ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
-  fbl::RefPtr<Channel> dynamic_channel;
-  auto channel_cb = [&dynamic_channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> dynamic_channel;
+  auto channel_cb = [&dynamic_channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
     dynamic_channel = std::move(activated_chan);
   };
 
@@ -1243,8 +1259,8 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   RunLoopUntilIdle();
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1344,8 +1360,8 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1447,8 +1463,8 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1494,7 +1510,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_NE(nullptr, channel);
+  EXPECT_TRUE(channel);
   EXPECT_FALSE(channel_closed);
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionResponse(7), kHighPriority);
@@ -1520,7 +1536,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   bool channel_cb_called = false;
-  auto channel_cb = [&channel_cb_called](fbl::RefPtr<l2cap::Channel> channel) {
+  auto channel_cb = [&channel_cb_called](fxl::WeakPtr<l2cap::Channel> channel) {
     channel_cb_called = true;
     EXPECT_FALSE(channel);
   };
@@ -1555,7 +1571,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
   bool channel_cb_called = false;
-  auto channel_cb = [&channel_cb_called](fbl::RefPtr<l2cap::Channel> channel) {
+  auto channel_cb = [&channel_cb_called](fxl::WeakPtr<l2cap::Channel> channel) {
     channel_cb_called = true;
     EXPECT_FALSE(channel);
   };
@@ -1614,9 +1630,9 @@ TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
 
-  fbl::RefPtr<Channel> channel;
+  fxl::WeakPtr<Channel> channel;
   auto channel_cb = [&channel,
-                     closed_cb = std::move(closed_cb)](fbl::RefPtr<l2cap::Channel> opened_chan) {
+                     closed_cb = std::move(closed_cb)](fxl::WeakPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, std::move(closed_cb)));
   };
@@ -1707,8 +1723,7 @@ TEST_F(ChannelManagerTest, LinkSecurityProperties) {
   EXPECT_EQ(security, fixed_channels.att->security());
 }
 
-// Tests that assigning a new security level on a closed link does nothing.
-TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
+TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLinkDoesNothing) {
   // Register a link and open a channel. The security properties should be
   // accessible using the channel.
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
@@ -1716,13 +1731,11 @@ TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
 
   chanmgr()->RemoveConnection(kTestHandle1);
   RunLoopUntilIdle();
+  EXPECT_FALSE(fixed_channels.att);
 
   // Assign a new security level.
   sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false);
   chanmgr()->AssignLinkSecurityProperties(kTestHandle1, security);
-
-  // Channel should return the old security level.
-  EXPECT_EQ(sm::SecurityProperties(), fixed_channels.att->security());
 }
 
 TEST_F(ChannelManagerTest, UpgradeSecurity) {
@@ -1750,7 +1763,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   LEFixedChannels fixed_channels =
       RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral, DoNothing,
                  NopLeConnParamCallback, std::move(security_handler));
-  fbl::RefPtr<l2cap::Channel> att = std::move(fixed_channels.att);
+  fxl::WeakPtr<l2cap::Channel> att = std::move(fixed_channels.att);
   ASSERT_TRUE(att->Activate(NopRxCallback, DoNothing));
 
   // Requesting security at or below the current level should succeed without
@@ -1770,14 +1783,9 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   EXPECT_EQ(delivered_status, received_status);
   EXPECT_EQ(sm::SecurityLevel::kEncrypted, last_requested_level);
 
-  // Close the link. Future security requests should have no effect.
   chanmgr()->RemoveConnection(kTestHandle1);
   RunLoopUntilIdle();
-
-  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
-  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
-  att->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
-  RunLoopUntilIdle();
+  EXPECT_FALSE(att);
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
 }
@@ -1785,8 +1793,8 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
 TEST_F(ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChannelData) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1831,8 +1839,8 @@ TEST_F(ChannelManagerTest, MtuOutboundChannelConfiguration) {
 
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1865,8 +1873,8 @@ TEST_F(ChannelManagerTest, MtuInboundChannelConfiguration) {
 
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
   };
@@ -1901,8 +1909,8 @@ TEST_F(ChannelManagerTest, OutboundChannelConfigurationUsesChannelParameters) {
   ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
                                                       kExtendedFeaturesBitEnhancedRetransmission));
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<Channel> activated_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1955,8 +1963,8 @@ TEST_F(ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
                                                       kExtendedFeaturesBitEnhancedRetransmission));
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
   };
@@ -2012,8 +2020,8 @@ TEST_F(ChannelManagerTest,
        PacketsReceivedAfterChannelDeactivatedAndBeforeRemoveChannelCalledAreDropped) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
   };
@@ -2422,7 +2430,6 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfterResul
   channel->Deactivate();
   ASSERT_TRUE(requested_priority.has_value());
   EXPECT_EQ(*requested_priority, hci::AclPriority::kNormal);
-  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
 TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
@@ -2459,7 +2466,6 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
   RunLoopUntilIdle();
   ASSERT_TRUE(requested_priority.has_value());
   EXPECT_EQ(*requested_priority, hci::AclPriority::kNormal);
-  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
 TEST_F(ChannelManagerTest,
@@ -2486,18 +2492,16 @@ TEST_F(ChannelManagerTest,
   EXPECT_EQ(requests.size(), 1u);
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
+  // Should queue kNormal ACL priority request.
   channel->Deactivate();
-  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
   ASSERT_EQ(requests.size(), 1u);
 
   requests[0].second(fitx::ok());
-  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
   EXPECT_EQ(result_cb_count, 1u);
   ASSERT_EQ(requests.size(), 2u);
   EXPECT_EQ(requests[1].first, hci::AclPriority::kNormal);
 
   requests[1].second(fitx::ok());
-  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
 TEST_F(ChannelManagerTest, RequestAclPrioritySinkFails) {
@@ -2719,17 +2723,16 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
   // Closing channel will queue normal request.
   channel->Deactivate();
+  EXPECT_FALSE(channel);
 
   // Send result to source request. Second sink request should receive error result too.
   requests[1].second(fitx::ok());
   EXPECT_EQ(result_cb_count, 3u);
-  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSource);
   ASSERT_EQ(requests.size(), 3u);
   EXPECT_EQ(requests[2].first, hci::AclPriority::kNormal);
 
-  // Send response to normal request.
+  // Send response to kNormal request sent on Deactivate().
   requests[2].second(fitx::ok());
-  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
 TEST_F(ChannelManagerTest, InspectHierarchy) {
@@ -2750,8 +2753,8 @@ TEST_F(ChannelManagerTest, InspectHierarchy) {
   EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
-  fbl::RefPtr<Channel> dynamic_channel;
-  auto channel_cb = [&dynamic_channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> dynamic_channel;
+  auto channel_cb = [&dynamic_channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
     dynamic_channel = std::move(activated_chan);
   };
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1, []() {});
@@ -2809,8 +2812,8 @@ TEST_F(ChannelManagerTest,
   ChannelParameters chan_params;
   chan_params.flush_timeout = kFlushTimeout;
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
   SetUpOutboundChannelWithCallback(kLocalId, kRemoteId, /*closed_cb=*/DoNothing, chan_params,
@@ -2892,8 +2895,8 @@ TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
   ChannelParameters chan_params;
   chan_params.flush_timeout = kFlushTimeout;
 
-  fbl::RefPtr<Channel> channel;
-  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+  fxl::WeakPtr<Channel> channel;
+  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
   };
@@ -3005,31 +3008,6 @@ TEST_F(ChannelManagerTest, SettingFlushTimeoutFails) {
           'h', 'i'),                                   // payload
       kLowPriority);
   EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
-}
-
-TEST_F(ChannelManagerTest, SetFlushTimeoutOnDeactivatedChannel) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  RunLoopUntilIdle();
-  auto channel = SetUpOutboundChannel();
-
-  int set_flush_timeout_cb_count = 0;
-  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
-        set_flush_timeout_cb_count++;
-      });
-
-  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
-  channel->Deactivate();
-
-  int flush_timeout_cb_count = 0;
-  channel->SetBrEdrAutomaticFlushTimeout(zx::msec(0), [&](auto result) {
-    flush_timeout_cb_count++;
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::kCommandDisallowed), result);
-  });
-
-  RunLoopUntilIdle();
-  EXPECT_EQ(set_flush_timeout_cb_count, 0);
-  EXPECT_EQ(flush_timeout_cb_count, 1);
 }
 
 }  // namespace

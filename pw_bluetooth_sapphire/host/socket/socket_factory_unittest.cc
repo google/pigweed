@@ -15,7 +15,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/sco/sco_connection.h"
 
 namespace bt::socket {
 namespace {
@@ -32,9 +31,8 @@ class SocketFactoryTest : public ::testing::Test {
  public:
   SocketFactoryTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
     EXPECT_EQ(ASYNC_LOOP_RUNNABLE, loop_.GetState());
-    channel_ = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
+    channel_ = std::make_unique<l2cap::testing::FakeChannel>(
         kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
-    EXPECT_TRUE(channel_);
   }
 
   void TearDown() {
@@ -43,13 +41,13 @@ class SocketFactoryTest : public ::testing::Test {
   }
 
  protected:
-  fbl::RefPtr<l2cap::testing::FakeChannel> channel() { return channel_; }
+  fxl::WeakPtr<l2cap::testing::FakeChannel> channel() { return channel_->AsWeakPtr(); }
   async_dispatcher_t* dispatcher() { return loop_.dispatcher(); }
   void RunLoopUntilIdle() { loop_.RunUntilIdle(); }
 
  private:
   async::Loop loop_;
-  fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
+  std::unique_ptr<l2cap::testing::FakeChannel> channel_;
 };
 
 TEST_F(SocketFactoryTest, TemplatesCompile) { socket::SocketFactory<l2cap::Channel> l2cap_factory; }
@@ -79,16 +77,19 @@ TEST_F(SocketFactoryTest, SocketCreationFailsIfChannelActivationFails) {
 
 TEST_F(SocketFactoryTest, CanCreateSocketForNewChannelWithRecycledId) {
   FactoryT socket_factory;
-  auto original_channel = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
+  auto original_channel = std::make_unique<l2cap::testing::FakeChannel>(
       kDynamicChannelIdMin + 1, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
-  zx::socket socket = socket_factory.MakeSocketForChannel(original_channel);
+  zx::socket socket = socket_factory.MakeSocketForChannel(original_channel->GetWeakPtr());
   ASSERT_TRUE(socket);
   original_channel->Close();
+  original_channel.reset();
   RunLoopUntilIdle();  // Process any events related to channel closure.
 
-  auto new_channel = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
+  auto new_channel = std::make_unique<l2cap::testing::FakeChannel>(
       kDynamicChannelIdMin + 1, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
-  EXPECT_TRUE(socket_factory.MakeSocketForChannel(new_channel));
+  EXPECT_TRUE(socket_factory.MakeSocketForChannel(new_channel->GetWeakPtr()));
+  new_channel->Close();
+  original_channel.reset();
 }
 
 TEST_F(SocketFactoryTest, DestructionWithActiveRelayDoesNotCrash) {
@@ -110,9 +111,10 @@ TEST_F(SocketFactoryTest, DestructionAfterDeactivatingRelayDoesNotCrash) {
 TEST_F(SocketFactoryTest, SameChannelIdDifferentHandles) {
   FactoryT socket_factory;
   EXPECT_TRUE(socket_factory.MakeSocketForChannel(channel()));
-  auto another_channel = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
+  auto another_channel = std::make_unique<l2cap::testing::FakeChannel>(
       kDynamicChannelIdMin, kRemoteChannelId, kAnotherConnectionHandle, bt::LinkType::kACL);
-  EXPECT_TRUE(socket_factory.MakeSocketForChannel(another_channel));
+  EXPECT_TRUE(socket_factory.MakeSocketForChannel(another_channel->GetWeakPtr()));
+  another_channel->Close();
 }
 
 }  // namespace

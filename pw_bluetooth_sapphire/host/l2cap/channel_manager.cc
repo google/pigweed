@@ -46,8 +46,8 @@ class ChannelManagerImpl final : public ChannelManager {
   void AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
                                     sm::SecurityProperties security) override;
 
-  fbl::RefPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
-                                        ChannelId channel_id) override;
+  fxl::WeakPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
+                                         ChannelId channel_id) override;
 
   void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
                         ChannelCallback cb) override;
@@ -175,8 +175,8 @@ ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(
   ll->set_security_upgrade_callback(std::move(security_cb));
   ll->set_connection_parameter_update_callback(std::move(conn_param_cb));
 
-  fbl::RefPtr<Channel> att = OpenFixedChannel(handle, kATTChannelId);
-  fbl::RefPtr<Channel> smp = OpenFixedChannel(handle, kLESMPChannelId);
+  fxl::WeakPtr<Channel> att = OpenFixedChannel(handle, kATTChannelId);
+  fxl::WeakPtr<Channel> smp = OpenFixedChannel(handle, kLESMPChannelId);
   ZX_ASSERT(att);
   ZX_ASSERT(smp);
   return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
@@ -211,8 +211,8 @@ void ChannelManagerImpl::AssignLinkSecurityProperties(hci_spec::ConnectionHandle
   iter->second->AssignSecurityProperties(security);
 }
 
-fbl::RefPtr<Channel> ChannelManagerImpl::OpenFixedChannel(hci_spec::ConnectionHandle handle,
-                                                          ChannelId channel_id) {
+fxl::WeakPtr<Channel> ChannelManagerImpl::OpenFixedChannel(hci_spec::ConnectionHandle handle,
+                                                           ChannelId channel_id) {
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
     bt_log(ERROR, "l2cap", "cannot open fixed channel on unknown connection handle: %#.4x", handle);

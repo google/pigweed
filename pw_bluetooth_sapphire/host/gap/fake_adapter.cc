@@ -25,6 +25,12 @@ bool FakeAdapter::Initialize(InitializeCallback callback, fit::closure transport
 
 void FakeAdapter::ShutDown() { init_state_ = InitState::kNotInitialized; }
 
+FakeAdapter::FakeBrEdr::~FakeBrEdr() {
+  for (auto& chan : channels_) {
+    chan.second->Close();
+  }
+}
+
 void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                                               BrEdrSecurityRequirements security_requirements,
                                               l2cap::ChannelParameters params,
@@ -34,13 +40,16 @@ void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                           /*max_tx_sdu_size=*/l2cap::kDefaultMTU, /*n_frames_in_tx_window=*/0,
                           /*max_transmissions=*/0, /*max_tx_pdu_payload_size=*/0, psm,
                           params.flush_timeout);
-  auto channel = fbl::AdoptRef(new l2cap::testing::FakeChannel(
-      /*id=*/l2cap::kFirstDynamicChannelId, /*remote_id=*/l2cap::kFirstDynamicChannelId,
-      /*handle=*/1, bt::LinkType::kACL, info));
+  l2cap::ChannelId local_id = next_channel_id_++;
+  auto channel = std::make_unique<l2cap::testing::FakeChannel>(
+      /*id=*/local_id, /*remote_id=*/l2cap::kFirstDynamicChannelId,
+      /*handle=*/1, bt::LinkType::kACL, info);
+  fxl::WeakPtr<l2cap::testing::FakeChannel> weak_channel = channel->AsWeakPtr();
+  channels_.emplace(local_id, std::move(channel));
   if (channel_cb_) {
-    channel_cb_(channel);
+    channel_cb_(weak_channel);
   }
-  cb(channel);
+  cb(weak_channel);
 }
 
 void FakeAdapter::FakeLowEnergy::Connect(PeerId peer_id, ConnectionResultCallback callback,

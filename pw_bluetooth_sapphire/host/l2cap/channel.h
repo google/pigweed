@@ -19,8 +19,6 @@
 #include <queue>
 
 #include <fbl/macros.h>
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -63,8 +61,13 @@ namespace bt::l2cap {
 // When a LogicalLink closes, all of its active channels become deactivated
 // when it closes and this is signaled by running the ClosedCallback passed to
 // Activate().
-class Channel : public fbl::RefCounted<Channel> {
+class Channel {
  public:
+  // TODO(fxbug.dev/1022): define a preferred MTU somewhere
+  Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
+          hci_spec::ConnectionHandle link_handle, ChannelInfo info);
+  virtual ~Channel() = default;
+
   // Identifier for this channel's endpoint on this device. It can be prior-
   // specified for fixed channels or allocated for dynamic channels per v5.0,
   // Vol 3, Part A, Section 2.1 "Channel Identifiers." Channels on a link will
@@ -194,13 +197,9 @@ class Channel : public fbl::RefCounted<Channel> {
   // The ACL priority that was both requested and accepted by the controller.
   hci::AclPriority requested_acl_priority() const { return requested_acl_priority_; }
 
- protected:
-  friend class fbl::RefPtr<Channel>;
-  // TODO(fxbug.dev/1022): define a preferred MTU somewhere
-  Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
-          hci_spec::ConnectionHandle link_handle, ChannelInfo info);
-  virtual ~Channel() = default;
+  virtual fxl::WeakPtr<Channel> GetWeakPtr() = 0;
 
+ protected:
   const ChannelId id_;
   const ChannelId remote_id_;
   const bt::LinkType link_type_;
@@ -244,12 +243,14 @@ class ChannelImpl : public Channel {
   // fixed channels are required to respect their MTU internally by:
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
-  static fbl::RefPtr<ChannelImpl> CreateFixedChannel(ChannelId id,
-                                                     fxl::WeakPtr<internal::LogicalLink> link);
+  static std::unique_ptr<ChannelImpl> CreateFixedChannel(ChannelId id,
+                                                         fxl::WeakPtr<internal::LogicalLink> link);
 
-  static fbl::RefPtr<ChannelImpl> CreateDynamicChannel(ChannelId id, ChannelId peer_id,
-                                                       fxl::WeakPtr<internal::LogicalLink> link,
-                                                       ChannelInfo info);
+  static std::unique_ptr<ChannelImpl> CreateDynamicChannel(ChannelId id, ChannelId peer_id,
+                                                           fxl::WeakPtr<internal::LogicalLink> link,
+                                                           ChannelInfo info);
+
+  ~ChannelImpl() override = default;
 
   // Called by |link_| to notify us when the channel can no longer process data.
   void OnClosed();
@@ -257,6 +258,8 @@ class ChannelImpl : public Channel {
   // Called by |link_| when a PDU targeting this channel has been received.
   // Contents of |pdu| will be moved.
   void HandleRxPdu(PDU&& pdu);
+
+  fxl::WeakPtr<ChannelImpl> GetWeakImplPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
   // Channel overrides:
   const sm::SecurityProperties security() override;
@@ -270,13 +273,11 @@ class ChannelImpl : public Channel {
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
+  fxl::WeakPtr<Channel> GetWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  friend class fbl::RefPtr<ChannelImpl>;
-
   ChannelImpl(ChannelId id, ChannelId remote_id, fxl::WeakPtr<internal::LogicalLink> link,
               ChannelInfo info);
-  ~ChannelImpl() override = default;
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
   void CleanUp();

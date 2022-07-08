@@ -16,7 +16,6 @@
 #include <utility>
 
 #include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 
 #include "lib/zx/socket.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -27,10 +26,6 @@ namespace bt::socket {
 
 // SocketChannelRelay relays data between a zx::socket and a Channel. This class
 // should not be used directly. Instead, see SocketFactory.
-//
-// THREAD-SAFETY: This class is thread-hostile. Creation, use, and destruction
-// _must_ occur on a single thread. |dispatcher|, which _must_ be
-// single-threaded, must run on that same thread.
 template <typename ChannelT>
 class SocketChannelRelay final {
  public:
@@ -62,7 +57,7 @@ class SocketChannelRelay final {
   // we never leave the thread idle), and b) to provide in-order delivery,
   // moving the data between the zx::socket and the ChannelT needs to be
   // serialized even in the multi-threaded case.
-  SocketChannelRelay(zx::socket socket, fbl::RefPtr<ChannelT> channel,
+  SocketChannelRelay(zx::socket socket, fxl::WeakPtr<ChannelT> channel,
                      DeactivationCallback deactivation_cb,
                      size_t socket_write_queue_max_frames = kDefaultSocketWriteQueueLimitFrames);
   ~SocketChannelRelay();
@@ -142,7 +137,7 @@ class SocketChannelRelay final {
   RelayState state_;  // Initial state is kActivating.
 
   zx::socket socket_;
-  const fbl::RefPtr<ChannelT> channel_;
+  const fxl::WeakPtr<ChannelT> channel_;
   async_dispatcher_t* const dispatcher_;
   DeactivationCallback deactivation_cb_;
   const size_t socket_write_queue_max_frames_;
@@ -175,12 +170,12 @@ class SocketChannelRelay final {
 };
 
 template <typename ChannelT>
-SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fbl::RefPtr<ChannelT> channel,
+SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fxl::WeakPtr<ChannelT> channel,
                                                  DeactivationCallback deactivation_cb,
                                                  size_t socket_write_queue_max_frames)
     : state_(RelayState::kActivating),
       socket_(std::move(socket)),
-      channel_(channel),
+      channel_(std::move(channel)),
       dispatcher_(async_get_default_dispatcher()),
       deactivation_cb_(std::move(deactivation_cb)),
       socket_write_queue_max_frames_(socket_write_queue_max_frames),
@@ -206,10 +201,7 @@ SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fbl::RefPtr<
 template <typename ChannelT>
 SocketChannelRelay<ChannelT>::~SocketChannelRelay() {
   if (state_ != RelayState::kDeactivated) {
-    bt_log(TRACE, "l2cap",
-           "Deactivating relay for channel %u in dtor; will require Channel's "
-           "mutex",
-           channel_->id());
+    bt_log(TRACE, "l2cap", "Deactivating relay for channel %u in dtor", channel_->id());
     Deactivate();
   }
 }
