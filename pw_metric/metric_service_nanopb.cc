@@ -27,9 +27,9 @@ namespace {
 
 class MetricWriter {
  public:
-  MetricWriter(
-      MetricService::ServerWriter<pw_metric_MetricResponse>& response_writer)
-      : response_(pw_metric_MetricResponse_init_zero),
+  MetricWriter(MetricService::ServerWriter<pw_metric_proto_MetricResponse>&
+                   response_writer)
+      : response_(pw_metric_proto_MetricResponse_init_zero),
         response_writer_(response_writer) {}
 
   // TODO(keir): Figure out a pw_rpc mechanism to fill a streaming packet based
@@ -38,11 +38,12 @@ class MetricWriter {
   void Write(const Metric& metric, const Vector<Token>& path) {
     // Nanopb doesn't offer an easy way to do bounds checking, so use span's
     // type deduction magic to figure out the max size.
-    span<pw_metric_Metric> metrics(response_.metrics);
+    span<pw_metric_proto_Metric> metrics(response_.metrics);
     PW_CHECK_INT_LT(response_.metrics_count, metrics.size());
 
     // Grab the next available Metric slot to write to in the response.
-    pw_metric_Metric& proto_metric = response_.metrics[response_.metrics_count];
+    pw_metric_proto_Metric& proto_metric =
+        response_.metrics[response_.metrics_count];
 
     // Copy the path.
     span<Token> proto_path(proto_metric.token_path);
@@ -53,10 +54,10 @@ class MetricWriter {
     // Copy the metric value.
     if (metric.is_float()) {
       proto_metric.value.as_float = metric.as_float();
-      proto_metric.which_value = pw_metric_Metric_as_float_tag;
+      proto_metric.which_value = pw_metric_proto_Metric_as_float_tag;
     } else {
       proto_metric.value.as_int = metric.as_int();
-      proto_metric.which_value = pw_metric_Metric_as_int_tag;
+      proto_metric.which_value = pw_metric_proto_Metric_as_int_tag;
     }
 
     // Move write head to the next slot.
@@ -73,14 +74,14 @@ class MetricWriter {
     if (response_.metrics_count) {
       response_writer_.Write(response_)
           .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-      response_ = pw_metric_MetricResponse_init_zero;
+      response_ = pw_metric_proto_MetricResponse_init_zero;
     }
   }
 
  private:
-  pw_metric_MetricResponse response_;
+  pw_metric_proto_MetricResponse response_;
   // This RPC stream writer handle must be valid for the metric writer lifetime.
-  MetricService::ServerWriter<pw_metric_MetricResponse>& response_writer_;
+  MetricService::ServerWriter<pw_metric_proto_MetricResponse>& response_writer_;
 };
 
 // Walk a metric tree recursively; passing metrics with their path (names) to a
@@ -129,8 +130,9 @@ class MetricWalker {
 
 }  // namespace
 
-void MetricService::Get(const pw_metric_MetricRequest& /* request */,
-                        ServerWriter<pw_metric_MetricResponse>& response) {
+void MetricService::Get(
+    const pw_metric_proto_MetricRequest& /* request */,
+    ServerWriter<pw_metric_proto_MetricResponse>& response) {
   // For now, ignore the request and just stream all the metrics back.
   MetricWriter writer(response);
   MetricWalker walker(writer);

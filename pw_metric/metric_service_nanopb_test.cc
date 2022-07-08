@@ -131,7 +131,7 @@ TEST(MetricService, NestedGroupsWithBatches) {
 }
 
 bool TokenPathsMatch(uint32_t expected_token_path[5],
-                     const pw_metric_Metric& metric) {
+                     const pw_metric_proto_Metric& metric) {
   // Calculate length of expected token & compare.
   int expected_length = 0;
   while (expected_token_path[expected_length]) {
