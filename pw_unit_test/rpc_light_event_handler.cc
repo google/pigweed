@@ -13,10 +13,25 @@
 // the License.
 
 #include "pw_unit_test/internal/rpc_event_handler.h"
-
 #include "pw_unit_test/unit_test_service.h"
 
 namespace pw::unit_test::internal {
+
+RpcEventHandler::RpcEventHandler(UnitTestService& service)
+    : service_(service) {}
+
+void RpcEventHandler::ExecuteTests(span<std::string_view> suites_to_run) {
+  RegisterEventHandler(this);
+  SetTestSuitesToRun(suites_to_run);
+
+  PW_LOG_DEBUG("%u test suite filters applied",
+               static_cast<unsigned>(suites_to_run.size()));
+
+  RUN_ALL_TESTS();
+
+  RegisterEventHandler(nullptr);
+  SetTestSuitesToRun({});
+}
 
 void RpcEventHandler::RunAllTestsStart() { service_.WriteTestRunStart(); }
 

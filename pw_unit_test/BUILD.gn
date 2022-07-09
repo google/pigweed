@@ -169,18 +169,12 @@ pw_source_set("logging_main") {
   sources = [ "logging_main.cc" ]
 }
 
-pw_build_assert("require_light_test_backend") {
-  # TODO(b/233073669): Simplify once pw_unit_test_PUBLIC_DEPS is removed.
-  condition = (pw_unit_test_PUBLIC_DEPS == [] &&
-               pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light") ||
-              filter_include(pw_unit_test_PUBLIC_DEPS,
-                             [ "$dir_pw_unit_test:light" ]) != []
+config("rpc_service_backend_light") {
+  include_dirs = [ "rpc_light_public" ]
+}
 
-  message = "The pw_unit_test RPC service only works with the 'light' test " +
-            "backend.\n(pw_unit_test_GOOGLETEST_BACKEND = " +
-            "$pw_unit_test_GOOGLETEST_BACKEND)\n" +
-            "(pw_unit_test_PUBLIC_DEPS = $pw_unit_test_PUBLIC_DEPS)"
-  visibility = [ ":*" ]
+config("rpc_service_backend_gtest") {
+  include_dirs = [ "rpc_gtest_public" ]
 }
 
 pw_source_set("rpc_service") {
@@ -191,18 +185,27 @@ pw_source_set("rpc_service") {
     ":unit_test_proto.raw_rpc",
     "$dir_pw_containers:vector",
   ]
-  deps = [
-    ":require_light_test_backend",
-    dir_pw_log,
-  ]
-  public = [
-    "public/pw_unit_test/internal/rpc_event_handler.h",
-    "public/pw_unit_test/unit_test_service.h",
-  ]
-  sources = [
-    "rpc_event_handler.cc",
-    "unit_test_service.cc",
-  ]
+  deps = [ dir_pw_log ]
+  public = [ "public/pw_unit_test/unit_test_service.h" ]
+  sources = [ "unit_test_service.cc" ]
+  defines = []
+
+  # TODO(b/233073669): Simplify once pw_unit_test_PUBLIC_DEPS is removed.
+  using_light_backend =
+      (pw_unit_test_PUBLIC_DEPS == [] &&
+       pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light") ||
+      filter_include(pw_unit_test_PUBLIC_DEPS, [ "$dir_pw_unit_test:light" ]) !=
+      []
+
+  if (using_light_backend) {
+    public_configs += [ ":rpc_service_backend_light" ]
+    sources += [ "rpc_light_event_handler.cc" ]
+    public += [ "rpc_light_public/pw_unit_test/internal/rpc_event_handler.h" ]
+  } else {
+    public_configs += [ ":rpc_service_backend_gtest" ]
+    sources += [ "rpc_gtest_event_handler.cc" ]
+    public += [ "rpc_gtest_public/pw_unit_test/internal/rpc_event_handler.h" ]
+  }
 }
 
 pw_source_set("rpc_main") {

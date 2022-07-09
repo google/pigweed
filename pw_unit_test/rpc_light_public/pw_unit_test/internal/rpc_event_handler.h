@@ -13,7 +13,8 @@
 // the License.
 #pragma once
 
-#include "pw_unit_test/event_handler.h"
+#include "gtest/gtest.h"
+#include "pw_span/span.h"
 
 namespace pw::unit_test {
 
@@ -24,7 +25,8 @@ namespace internal {
 // Unit test event handler that streams test events through an RPC service.
 class RpcEventHandler : public EventHandler {
  public:
-  RpcEventHandler(UnitTestService& service) : service_(service) {}
+  RpcEventHandler(UnitTestService& service);
+  void ExecuteTests(span<std::string_view> suites_to_run);
 
   void RunAllTestsStart() override;
   void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) override;
