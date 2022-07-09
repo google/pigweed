@@ -87,7 +87,7 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
 
   hci_spec::AdvertisingHandle handle = last_handle_;
   do {
-    handle = uint8_t(handle + 1) % capacity_;
+    handle = static_cast<uint8_t>(handle + 1) % capacity_;
   } while (handle_to_addr_.count(handle) != 0);
 
   last_handle_ = handle;
