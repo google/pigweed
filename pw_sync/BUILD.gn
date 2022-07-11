@@ -103,6 +103,18 @@ pw_facade("timed_mutex") {
   sources = [ "timed_mutex.cc" ]
 }
 
+pw_facade("recursive_mutex") {
+  backend = pw_sync_RECURSIVE_MUTEX_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/recursive_mutex.h" ]
+  public_deps = [
+    ":lock_annotations",
+    "$dir_pw_preprocessor",
+  ]
+  sources = [ "recursive_mutex.cc" ]
+  visibility = [ ":*" ]
+}
+
 pw_facade("interrupt_spin_lock") {
   backend = pw_sync_INTERRUPT_SPIN_LOCK_BACKEND
   public_configs = [ ":public_include_path" ]
@@ -180,6 +192,7 @@ pw_test_group("tests") {
     ":counting_semaphore_facade_test",
     ":mutex_facade_test",
     ":timed_mutex_facade_test",
+    ":recursive_mutex_facade_test",
     ":interrupt_spin_lock_facade_test",
     ":thread_notification_facade_test",
     ":timed_thread_notification_facade_test",
@@ -244,6 +257,19 @@ pw_test("timed_mutex_facade_test") {
     ":timed_mutex",
     "$dir_pw_preprocessor",
     pw_sync_TIMED_MUTEX_BACKEND,
+  ]
+}
+
+pw_test("recursive_mutex_facade_test") {
+  enable_if = pw_sync_RECURSIVE_MUTEX_BACKEND != ""
+  sources = [
+    "recursive_mutex_facade_test.cc",
+    "recursive_mutex_facade_test_c.c",
+  ]
+  deps = [
+    ":recursive_mutex",
+    "$dir_pw_preprocessor",
+    pw_sync_RECURSIVE_MUTEX_BACKEND,
   ]
 }
 

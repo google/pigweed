@@ -209,6 +209,34 @@ pw_cc_library(
     }),
 )
 
+pw_cc_library(
+    name = "recursive_mutex_facade",
+    hdrs = ["public/pw_sync/recursive_mutex.h"],
+    includes = ["public"],
+    deps = [
+        ":lock_annotations",
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
+    name = "recursive_mutex",
+    srcs = ["recursive_mutex.cc"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":recursive_mutex_facade",
+        "@pigweed_config//:pw_sync_recursive_mutex_backend",
+    ],
+)
+
+pw_cc_library(
+    name = "recursive_mutex_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//conditions:default": ["//pw_sync_stl:recursive_mutex"],
+    }),
+)
+
 pw_cc_facade(
     name = "interrupt_spin_lock_facade",
     hdrs = [
@@ -420,6 +448,19 @@ pw_cc_test(
     deps = [
         ":timed_mutex",
         "//pw_chrono:system_clock",
+        "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "recursive_mutex_facade_test",
+    srcs = [
+        "recursive_mutex_facade_test.cc",
+        "recursive_mutex_facade_test_c.c",
+    ],
+    deps = [
+        ":recursive_mutex",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],

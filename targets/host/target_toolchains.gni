@@ -48,6 +48,7 @@ _host_common = {
   pw_sync_COUNTING_SEMAPHORE_BACKEND =
       "$dir_pw_sync_stl:counting_semaphore_backend"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_stl:mutex_backend"
+  pw_sync_RECURSIVE_MUTEX_BACKEND = "$dir_pw_sync_stl:recursive_mutex_backend"
   pw_sync_TIMED_MUTEX_BACKEND = "$dir_pw_sync_stl:timed_mutex_backend"
   pw_sync_THREAD_NOTIFICATION_BACKEND =
       "$dir_pw_sync:binary_semaphore_thread_notification_backend"

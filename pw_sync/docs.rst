@@ -432,6 +432,11 @@ Example in C
     return true;
   }
 
+RecursiveMutex
+==============
+``pw_sync`` provides ``pw::sync::RecursiveMutex``, a recursive mutex
+implementation. At this time, this facade can only be used internally by
+Pigweed.
 
 InterruptSpinLock
 =================

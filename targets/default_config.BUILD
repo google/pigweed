@@ -70,6 +70,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_sync_recursive_mutex_backend",
+    build_setting_default = "@pigweed//pw_sync:recursive_mutex_backend_multiplexer",
+)
+
+label_flag(
     name = "pw_sync_interrupt_spin_lock_backend",
     build_setting_default = "@pigweed//pw_sync:interrupt_spin_lock_backend_multiplexer",
 )
