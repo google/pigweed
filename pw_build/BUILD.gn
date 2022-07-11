@@ -234,28 +234,34 @@ pw_doc_group("docs") {
   ]
 }
 
-pw_test("cc_blob_library_test") {
-  sources = [ "cc_blob_library_test.cc" ]
-  deps = [ ":test_blob" ]
-}
+# Pigweed upstream does not use the default toolchain, but other projects may
+# use it. To support using pw_build from the default toolchain without fully
+# configuring the Pigweed build, only instantiate the pw_build tests for a
+# non-default toolchain.
+if (current_toolchain != default_toolchain) {
+  pw_test("cc_blob_library_test") {
+    sources = [ "cc_blob_library_test.cc" ]
+    deps = [ ":test_blob" ]
+  }
 
-pw_cc_blob_library("test_blob") {
-  out_header = "pw_build/test_blob.h"
-  namespace = "test::ns"
-  blobs = [
-    {
-      file_path = "test_blob_0123.bin"
-      symbol_name = "kFirstBlob0123"
-      alignas = 512
-    },
-    {
-      file_path = "test_blob_0123.bin"
-      symbol_name = "kSecondBlob0123"
-    },
-  ]
-  visibility = [ ":*" ]
-}
+  pw_cc_blob_library("test_blob") {
+    out_header = "pw_build/test_blob.h"
+    namespace = "test::ns"
+    blobs = [
+      {
+        file_path = "test_blob_0123.bin"
+        symbol_name = "kFirstBlob0123"
+        alignas = 512
+      },
+      {
+        file_path = "test_blob_0123.bin"
+        symbol_name = "kSecondBlob0123"
+      },
+    ]
+    visibility = [ ":*" ]
+  }
 
-pw_test_group("tests") {
-  tests = [ ":cc_blob_library_test" ]
+  pw_test_group("tests") {
+    tests = [ ":cc_blob_library_test" ]
+  }
 }
