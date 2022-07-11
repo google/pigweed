@@ -52,6 +52,13 @@ class Server : public internal::Endpoint {
     (services_.push_front(services), ...);
   }
 
+  template <typename... OtherServices>
+  void UnregisterService(Service& service, OtherServices&... services)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
+    internal::LockGuard lock(internal::rpc_lock());
+    UnregisterServiceLocked(service, static_cast<Service&>(services)...);
+  }
+
   // Processes an RPC packet. The packet may contain an RPC request or a control
   // packet, the result of which is processed in this function. Returns whether
   // the packet was able to be processed:
@@ -149,6 +156,17 @@ class Server : public internal::Endpoint {
                                 internal::Channel& channel,
                                 internal::ServerCall* call) const
       PW_UNLOCK_FUNCTION(internal::rpc_lock());
+
+  template <typename... OtherServices>
+  void UnregisterServiceLocked(Service& service, OtherServices&... services)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
+    services_.remove(service);
+    AbortCallsForService(service);
+
+    UnregisterServiceLocked(services...);
+  }
+
+  void UnregisterServiceLocked() {}  // Base case; nothing left to do.
 
   // Remove these internal::Endpoint functions from the public interface.
   using Endpoint::active_call_count;

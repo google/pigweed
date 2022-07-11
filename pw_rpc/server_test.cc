@@ -154,6 +154,39 @@ TEST_F(BasicServer, ProcessPacket_ValidMethodInService42_InvokesMethod) {
             0);
 }
 
+TEST_F(BasicServer, UnregisterService_CannotCallMethod) {
+  server_.UnregisterService(service_1_, service_42_);
+
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100),
+                                  output_));
+
+  const Packet& packet =
+      static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
+  EXPECT_EQ(packet.type(), PacketType::SERVER_ERROR);
+  EXPECT_EQ(packet.channel_id(), 1u);
+  EXPECT_EQ(packet.service_id(), 1u);
+  EXPECT_EQ(packet.method_id(), 100u);
+  EXPECT_EQ(packet.status(), Status::NotFound());
+}
+
+TEST_F(BasicServer, UnregisterService_AlreadyUnregistered_DoesNothing) {
+  server_.UnregisterService(service_42_, service_42_, service_42_);
+  server_.UnregisterService(service_42_);
+
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100),
+                                  output_));
+
+  const TestMethod& method = service_1_.method(100);
+  EXPECT_EQ(1u, method.last_channel_id());
+  ASSERT_EQ(sizeof(kDefaultPayload), method.last_request().payload().size());
+  EXPECT_EQ(std::memcmp(kDefaultPayload,
+                        method.last_request().payload().data(),
+                        method.last_request().payload().size()),
+            0);
+}
+
 TEST_F(BasicServer, ProcessPacket_IncompletePacket_NothingIsInvoked) {
   EXPECT_EQ(Status::DataLoss(),
             server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 0, 42, 101),
@@ -457,6 +490,19 @@ TEST_F(BidiMethod, ClientStream_CallsCallback) {
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_STREQ(reinterpret_cast<const char*>(data.data()), "hello");
+}
+
+TEST_F(BidiMethod, UnregsiterService_AbortsActiveCalls) {
+  ASSERT_TRUE(responder_.active());
+
+  Status on_error_status = OkStatus();
+  responder_.set_on_error(
+      [&on_error_status](Status status) { on_error_status = status; });
+
+  server_.UnregisterService(service_42_);
+
+  EXPECT_FALSE(responder_.active());
+  EXPECT_EQ(Status::Aborted(), on_error_status);
 }
 
 #if PW_RPC_CLIENT_STREAM_END_CALLBACK

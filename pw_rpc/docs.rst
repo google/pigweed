@@ -390,6 +390,10 @@ user-defined RPCs are implemented.
 ``pw_rpc`` supports multiple protobuf libraries, and the generated code API
 depends on which is used.
 
+Services must be registered with a server in order to call their methods.
+Services may later be unregistered, which aborts calls for methods in that
+service and prevents future calls to them, until the service is re-registered.
+
 .. _module-pw_rpc-protobuf-library-apis:
 
 Protobuf library APIs

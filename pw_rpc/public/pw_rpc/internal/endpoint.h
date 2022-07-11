@@ -90,9 +90,20 @@ class Endpoint {
         packet.channel_id(), packet.service_id(), packet.method_id());
   }
 
+  void AbortCallsForService(const Service& service)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    AbortCalls(AbortIdType::kService, service.id());
+  }
+
  private:
   // Give Call access to the register/unregister functions.
   friend class Call;
+
+  enum class AbortIdType : bool { kChannel, kService };
+
+  // Aborts calls for a particular channel or service.
+  void AbortCalls(AbortIdType type, uint32_t id)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Returns an ID that can be assigned to a new call.
   uint32_t NewCallId() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {

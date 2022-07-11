@@ -97,20 +97,24 @@ Status Endpoint::CloseChannel(uint32_t channel_id) {
   channel->Close();
 
   // Close pending calls on the channel that's going away.
+  AbortCalls(AbortIdType::kChannel, channel_id);
+  return OkStatus();
+}
+
+void Endpoint::AbortCalls(AbortIdType type, uint32_t id) {
   auto previous = calls_.before_begin();
   auto current = calls_.begin();
 
   while (current != calls_.end()) {
-    if (channel_id == current->channel_id_locked()) {
-      current->HandleChannelClose();
+    if (id == (type == AbortIdType::kChannel ? current->channel_id_locked()
+                                             : current->service_id())) {
+      current->Abort();
       current = calls_.erase_after(previous);  // previous stays the same
     } else {
       previous = current;
       ++current;
     }
   }
-
-  return OkStatus();
 }
 
 }  // namespace pw::rpc::internal

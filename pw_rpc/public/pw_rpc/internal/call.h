@@ -165,9 +165,10 @@ class Call : public IntrusiveList<Call>::Item {
     CallOnError(status);
   }
 
-  // Aborts the RPC because its channel was closed. Does NOT unregister the
-  // call! The calls are removed when iterating over the list in the endpoint.
-  void HandleChannelClose() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  // Aborts the RPC because of a change in the endpoint (e.g. channel closed,
+  // service unregistered). Does NOT unregister the call! The calls must be
+  // removed when iterating over the list in the endpoint.
+  void Abort() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     // Locking here is problematic because CallOnError releases rpc_lock().
     //
     // b/234876851 must be addressed before the locking here can be cleaned up.
