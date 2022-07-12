@@ -57,15 +57,7 @@ pw_source_set("config") {
 
 # pw_unit_test facade. This provides a GoogleTest-compatible test framework.
 pw_source_set("pw_unit_test") {
-  if (pw_unit_test_PUBLIC_DEPS == []) {
-    # TODO(b/233073669): For now, use pw_unit_test_GOOGLETEST_BACKEND only if
-    #     pw_unit_test_PUBLIC_DEPS is not set. Remove pw_unit_test_PUBLIC_DEPS
-    #     when projects have migrated. There is an assert in test.gni that
-    #     ensures both variables are not set.
-    public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
-  } else {
-    public_deps = pw_unit_test_PUBLIC_DEPS
-  }
+  public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
 }
 
 # Lightweight unit test backend that implements a subset of GoogleTest.
@@ -190,14 +182,7 @@ pw_source_set("rpc_service") {
   sources = [ "unit_test_service.cc" ]
   defines = []
 
-  # TODO(b/233073669): Simplify once pw_unit_test_PUBLIC_DEPS is removed.
-  using_light_backend =
-      (pw_unit_test_PUBLIC_DEPS == [] &&
-       pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light") ||
-      filter_include(pw_unit_test_PUBLIC_DEPS, [ "$dir_pw_unit_test:light" ]) !=
-      []
-
-  if (using_light_backend) {
+  if (pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light") {
     public_configs += [ ":rpc_service_backend_light" ]
     sources += [ "rpc_light_event_handler.cc" ]
     public += [ "rpc_light_public/pw_unit_test/internal/rpc_event_handler.h" ]

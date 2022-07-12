@@ -82,23 +82,6 @@ declare_args() {
   pw_unit_test_POOL_TOOLCHAIN = ""
 }
 
-# Define this in a separate block so it can refer to
-# pw_unit_test_GOOGLETEST_BACKEND.
-declare_args() {
-  # Deprecated! Do not use. Set pw_unit_test_GOOGLETEST_BACKEND instead.
-  #
-  # Type: list of strings (list of dependencies as GN paths)
-  pw_unit_test_PUBLIC_DEPS = []
-}
-
-assert(pw_unit_test_PUBLIC_DEPS == [] ||
-           pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light",
-       "Both pw_unit_test_PUBLIC_DEPS ($pw_unit_test_PUBLIC_DEPS) and " +
-           "pw_unit_test_GOOGLETEST_BACKEND " +
-           "($pw_unit_test_GOOGLETEST_BACKEND) are set. " +
-           "pw_unit_test_PUBLIC_DEPS is deprecated; only set " +
-           "pw_unit_test_GOOGLETEST_BACKEND.")
-
 # Defines a target if enable_if is true. Otherwise, it defines that target as
 # <target_name>.DISABLED and creates an empty <target_name> group. This can be
 # used to conditionally create targets without having to conditionally add them
