@@ -22,7 +22,7 @@ namespace pw::software_update {
 
 class BlobStoreOpenableReader final : public OpenableReader {
  public:
-  constexpr BlobStoreOpenableReader(blob_store::BlobStore& blob_store)
+  explicit constexpr BlobStoreOpenableReader(blob_store::BlobStore& blob_store)
       : blob_store_(blob_store),
         blob_reader_(blob_store_),
         OpenableReader(blob_reader_) {}
