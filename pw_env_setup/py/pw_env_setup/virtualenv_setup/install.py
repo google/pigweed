@@ -155,11 +155,12 @@ def _check_python_install_permissions(python):
         pass
 
 
-def install(  # pylint: disable=too-many-arguments
+def install(  # pylint: disable=too-many-arguments,too-many-locals
     project_root,
     venv_path,
     full_envsetup=True,
-    requirements=(),
+    requirements=None,
+    constraints=None,
     gn_args=(),
     gn_targets=(),
     gn_out_dir=None,
@@ -241,6 +242,11 @@ def install(  # pylint: disable=too-many-arguments
             cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
             return _check_call(cmd)
 
+    constraint_args = []
+    if constraints:
+        constraint_args.extend('--constraint={}'.format(constraint)
+                               for constraint in constraints)
+
     pip_install(
         '--log',
         os.path.join(venv_path, 'pip-upgrade.log'),
@@ -250,13 +256,20 @@ def install(  # pylint: disable=too-many-arguments
         'toml',  # Needed for pyproject.toml package installs.
         # Include wheel so pip installs can be done without build
         # isolation.
-        'wheel')
+        'wheel',
+        *constraint_args)
+
+    # TODO(tonymd): Remove this when projects have defined requirements.
+    if (not requirements) and constraints:
+        requirements = constraints
 
     if requirements:
-        requirement_args = tuple('--requirement={}'.format(req)
-                                 for req in requirements)
+        requirement_args = ['--no-build-isolation']
+        requirement_args.extend('--requirement={}'.format(req)
+                                for req in requirements)
+        combined_requirement_args = requirement_args + constraint_args
         pip_install('--log', os.path.join(venv_path, 'pip-requirements.log'),
-                    *requirement_args)
+                    *combined_requirement_args)
 
     def install_packages(gn_target):
         if gn_out_dir is None:
