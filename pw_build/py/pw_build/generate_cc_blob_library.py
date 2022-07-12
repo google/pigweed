@@ -188,7 +188,11 @@ def main(blob_file: Path,
          out_header: Path,
          namespace: Optional[str] = None) -> None:
     blobs = load_blobs(blob_file)
+
+    out_header.parent.mkdir(parents=True, exist_ok=True)
     out_header.write_text(header_from_blobs(blobs, namespace))
+
+    out_source.parent.mkdir(parents=True, exist_ok=True)
     out_source.write_text(source_from_blobs(blobs, header_include, namespace))
 
 
