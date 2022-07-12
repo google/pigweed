@@ -222,7 +222,7 @@ pw_cc_library(
 pw_cc_library(
     name = "recursive_mutex",
     srcs = ["recursive_mutex.cc"],
-    visibility = ["//visibility:private"],
+    visibility = ["//pw_sync_baremetal:__pkg__"],
     deps = [
         ":recursive_mutex_facade",
         "@pigweed_config//:pw_sync_recursive_mutex_backend",
@@ -233,6 +233,7 @@ pw_cc_library(
     name = "recursive_mutex_backend_multiplexer",
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
+        "@platforms//os:none": ["//pw_sync_baremetal:recursive_mutex"],
         "//conditions:default": ["//pw_sync_stl:recursive_mutex"],
     }),
 )

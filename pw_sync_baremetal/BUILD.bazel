@@ -71,3 +71,23 @@ pw_cc_library(
         "//pw_sync:mutex_facade",
     ],
 )
+
+pw_cc_library(
+    name = "recursive_mutex",
+    hdrs = [
+        "public/pw_sync_baremetal/recursive_mutex_inline.h",
+        "public/pw_sync_baremetal/recursive_mutex_native.h",
+        "public_overrides/pw_sync_backend/recursive_mutex_inline.h",
+        "public_overrides/pw_sync_backend/recursive_mutex_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    target_compatible_with = ["@platforms//os:none"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pw_assert",
+        "//pw_sync:recursive_mutex",
+    ],
+)

@@ -74,6 +74,28 @@ pw_source_set("mutex") {
   ]
 }
 
+# This target provides the backend for pw::sync::RecursiveMutex.
+# The provided implementation makes a single attempt to acquire the lock and
+# asserts if it is unavailable. This implementation is not yet set up to support
+# hardware multi-threading (SMP, SMT, etc).
+pw_source_set("recursive_mutex") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync_baremetal/recursive_mutex_inline.h",
+    "public/pw_sync_baremetal/recursive_mutex_native.h",
+    "public_overrides/pw_sync_backend/recursive_mutex_inline.h",
+    "public_overrides/pw_sync_backend/recursive_mutex_native.h",
+  ]
+  public_deps = [
+    "$dir_pw_assert",
+    "$dir_pw_sync:recursive_mutex.facade",
+  ]
+  visibility = [ "$dir_pw_sync:*" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
