@@ -20,7 +20,18 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io/sys_io.h"
 
-extern "C" void pw_sys_io_arduino_Init() { Serial.begin(115200); }
+extern "C" void pw_sys_io_arduino_Init() {
+  // On Linux serial output may still not work if the serial monitor is not
+  // connected to ttyACM0 quickly enough after reset. This check forces the
+  // device to wait for a serial connection for up to 3 seconds.
+  //
+  // If you get no serial output, try to connect minicom on the port and then
+  // reboot the chip (reset button). If using Python miniterm, start it right
+  // after pushing the reset switch.
+  while (!Serial && millis() < 3000) {
+  }
+  Serial.begin(115200);
+}
 
 namespace pw::sys_io {
 
