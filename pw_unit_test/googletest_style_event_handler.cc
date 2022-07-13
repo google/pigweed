@@ -19,37 +19,29 @@
 namespace pw {
 namespace unit_test {
 
-// These must be declared here for C++14 compatibility.
-constexpr const char GoogleTestStyleEventHandler::kRunAllTestsStart[];
-constexpr const char GoogleTestStyleEventHandler::kRunAllTestsEnd[];
-
-constexpr const char GoogleTestStyleEventHandler::kPassedSummary[];
-constexpr const char GoogleTestStyleEventHandler::kSkippedSummary[];
-constexpr const char GoogleTestStyleEventHandler::kFailedSummary[];
-
-constexpr const char GoogleTestStyleEventHandler::kCaseStart[];
-constexpr const char GoogleTestStyleEventHandler::kCaseOk[];
-constexpr const char GoogleTestStyleEventHandler::kCaseFailed[];
-constexpr const char GoogleTestStyleEventHandler::kCaseSkipped[];
-
 void GoogleTestStyleEventHandler::RunAllTestsStart() {
-  WriteLine(kRunAllTestsStart);
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_START);
 }
 
 void GoogleTestStyleEventHandler::RunAllTestsEnd(
     const RunTestsSummary& run_tests_summary) {
-  WriteLine(kRunAllTestsEnd);
-  WriteLine(kPassedSummary, run_tests_summary.passed_tests);
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_END);
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_PASSED_SUMMARY,
+            run_tests_summary.passed_tests);
   if (run_tests_summary.skipped_tests) {
-    WriteLine(kSkippedSummary, run_tests_summary.skipped_tests);
+    WriteLine(PW_UNIT_TEST_GOOGLETEST_SKIPPED_SUMMARY,
+              run_tests_summary.skipped_tests);
   }
   if (run_tests_summary.failed_tests) {
-    WriteLine(kFailedSummary, run_tests_summary.failed_tests);
+    WriteLine(PW_UNIT_TEST_GOOGLETEST_FAILED_SUMMARY,
+              run_tests_summary.failed_tests);
   }
 }
 
 void GoogleTestStyleEventHandler::TestCaseStart(const TestCase& test_case) {
-  WriteLine(kCaseStart, test_case.suite_name, test_case.test_name);
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_CASE_START,
+            test_case.suite_name,
+            test_case.test_name);
 }
 
 void GoogleTestStyleEventHandler::TestCaseEnd(const TestCase& test_case,
@@ -57,13 +49,19 @@ void GoogleTestStyleEventHandler::TestCaseEnd(const TestCase& test_case,
   // Use a switch with no default to detect changes in the test result enum.
   switch (result) {
     case TestResult::kSuccess:
-      WriteLine(kCaseOk, test_case.suite_name, test_case.test_name);
+      WriteLine(PW_UNIT_TEST_GOOGLETEST_CASE_OK,
+                test_case.suite_name,
+                test_case.test_name);
       break;
     case TestResult::kFailure:
-      WriteLine(kCaseFailed, test_case.suite_name, test_case.test_name);
+      WriteLine(PW_UNIT_TEST_GOOGLETEST_CASE_FAILED,
+                test_case.suite_name,
+                test_case.test_name);
       break;
     case TestResult::kSkipped:
-      WriteLine(kCaseSkipped, test_case.suite_name, test_case.test_name);
+      WriteLine(PW_UNIT_TEST_GOOGLETEST_CASE_SKIPPED,
+                test_case.suite_name,
+                test_case.test_name);
       break;
   }
 }
