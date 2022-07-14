@@ -109,24 +109,20 @@ pw_facade("io") {
   public_deps = [ "$dir_pw_stream" ]
 }
 
-# TODO(b/235145328, b/235146933): Remove this check after pw_metric and
-# echo services don't depend on nanopb
-if (dir_pw_third_party_nanopb != "") {
-  pw_source_set("init") {
-    public_configs = [ ":public_include_path" ]
-    public = [ "public/pw_system/init.h" ]
-    sources = [ "init.cc" ]
-    deps = [
-      ":log",
-      ":rpc_server",
-      ":target_hooks.facade",
-      ":work_queue",
-      "$dir_pw_metric:global",
-      "$dir_pw_metric:metric_service_nanopb",
-      "$dir_pw_rpc/nanopb:echo_service",
-      "$dir_pw_thread:thread",
-    ]
-  }
+pw_source_set("init") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_system/init.h" ]
+  sources = [ "init.cc" ]
+  deps = [
+    ":log",
+    ":rpc_server",
+    ":target_hooks.facade",
+    ":work_queue",
+    "$dir_pw_metric:global",
+    "$dir_pw_metric:metric_service_pwpb",
+    "$dir_pw_rpc/pwpb:echo_service",
+    "$dir_pw_thread:thread",
+  ]
 }
 
 pw_source_set("hdlc_rpc_server") {
@@ -208,55 +204,43 @@ if (pw_system_TARGET_HOOKS_BACKEND == "") {
   }
 }
 
-# TODO(b/235145328, b/235146933): Remove this check after pw_metric and
-# echo services don't depend on nanopb
-if (dir_pw_third_party_nanopb != "") {
-  group("pw_system") {
-    public_deps = [
-      ":init",
-      ":io",
-      ":log",
-      ":rpc_server",
-      ":work_queue",
-    ]
-    deps = [ ":target_hooks" ]
-  }
+group("pw_system") {
+  public_deps = [
+    ":init",
+    ":io",
+    ":log",
+    ":rpc_server",
+    ":work_queue",
+  ]
+  deps = [ ":target_hooks" ]
+}
 
-  pw_executable("system_example") {
-    sources = [ "example_user_app_init.cc" ]
-    deps = [
-      ":pw_system",
-      "$dir_pw_log",
-      "$dir_pw_thread:sleep",
-      "$dir_pw_unit_test:rpc_service",
+pw_executable("system_example") {
+  sources = [ "example_user_app_init.cc" ]
+  deps = [
+    ":pw_system",
+    "$dir_pw_log",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_unit_test:rpc_service",
 
-      # Adds a test that the test server can run.
-      "$dir_pw_status:status_test.lib",
-      "$dir_pw_string:string_builder_test.lib",
-    ]
-  }
+    # Adds a test that the test server can run.
+    "$dir_pw_status:status_test.lib",
+    "$dir_pw_string:string_builder_test.lib",
+  ]
+}
 
-  group("system_examples") {
-    deps = [ ":system_example($dir_pigweed/targets/host_device_simulator:host_device_simulator.speed_optimized)" ]
-    if (dir_pw_third_party_stm32cube_f4 != "" &&
-        dir_pw_third_party_freertos != "") {
-      deps += [ ":system_example($dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f429i_disc1_stm32cube.size_optimized)" ]
-    }
-    if (dir_pw_third_party_smartfusion_mss != "" &&
-        dir_pw_third_party_freertos != "") {
-      deps += [
-        ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som.size_optimized)",
-        ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som.speed_optimized)",
-        ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som_debug.debug)",
-      ]
-    }
+group("system_examples") {
+  deps = [ ":system_example($dir_pigweed/targets/host_device_simulator:host_device_simulator.speed_optimized)" ]
+  if (dir_pw_third_party_stm32cube_f4 != "" &&
+      dir_pw_third_party_freertos != "") {
+    deps += [ ":system_example($dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f429i_disc1_stm32cube.size_optimized)" ]
   }
-} else {
-  pw_error("system_examples") {
-    message_lines = [
-      "Building the pw_system examples requires Nanopb.",
-      "Nanopb can be installed by running the command below and then following the prompted setup steps:",
-      "   pw package install nanopb",
+  if (dir_pw_third_party_smartfusion_mss != "" &&
+      dir_pw_third_party_freertos != "") {
+    deps += [
+      ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som.size_optimized)",
+      ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som.speed_optimized)",
+      ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som_debug.debug)",
     ]
   }
 }
