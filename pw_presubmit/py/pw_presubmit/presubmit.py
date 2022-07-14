@@ -429,10 +429,15 @@ def run(program: Sequence[Callable],
     """
     repos = [repo.resolve() for repo in repos]
 
+    non_empty_repos = []
     for repo in repos:
-        if git_repo.root(repo) != repo:
-            raise ValueError(f'{repo} is not the root of a Git repo; '
-                             'presubmit checks must be run from a Git repo')
+        if list(repo.iterdir()):
+            non_empty_repos.append(repo)
+            if git_repo.root(repo) != repo:
+                raise ValueError(
+                    f'{repo} is not the root of a Git repo; '
+                    'presubmit checks must be run from a Git repo')
+    repos = non_empty_repos
 
     pathspecs_by_repo = _process_pathspecs(repos, paths)
 
