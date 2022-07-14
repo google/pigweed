@@ -66,7 +66,17 @@ pw_add_module_library(pw_unit_test.googletest_style_event_handler
     googletest_style_event_handler.cc
 )
 
+pw_add_facade(pw_unit_test.main
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_unit_test
+    pw_unit_test.event_handler
+)
+
 pw_add_module_library(pw_unit_test.simple_printing_main
+  IMPLEMENTS_FACADES
+    pw_unit_test.main
   SOURCES
     simple_printing_main.cc
     simple_printing_event_handler.cc
