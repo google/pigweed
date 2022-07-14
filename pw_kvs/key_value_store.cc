@@ -667,8 +667,11 @@ Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
 }
 
 Status KeyValueStore::WriteEntryForNewKey(Key key, span<const byte> value) {
-  // If we are trying to ensure that all possible writes are successful, and the
-  // cache is full, attempt heavy maintenance now.
+  // If there is no room in the cache for a new entry, it is possible some cache
+  // entries could be freed by removing deleted keys. If deleted key removal is
+  // enabled and the KVS is configured to make all possible writes succeed,
+  // attempt heavy maintenance now.
+#if PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
   if (options_.gc_on_write == GargbageCollectOnWrite::kAsManySectorsNeeded &&
       entry_cache_.full()) {
     Status maintenance_status = HeavyMaintenance();
@@ -677,6 +680,7 @@ Status KeyValueStore::WriteEntryForNewKey(Key key, span<const byte> value) {
       return maintenance_status;
     }
   }
+#endif  // PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
 
   if (entry_cache_.full()) {
     WRN("KVS full: trying to store a new entry, but can't. Have %u entries",
@@ -973,6 +977,7 @@ Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
   // old/state entries from flash and leave only current/valid entries.
   do_garbage_collect_pass();
 
+#if PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
   // Step 4: (if heavy maintenance) garbage collect all the deleted keys.
   if (heavy) {
     // If enabled, remove deleted keys from the entry cache, including freeing
@@ -981,9 +986,7 @@ Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
     // garbage collected before the older stale entry producing a window for an
     // invalid/corrupted KVS state if there was a power-fault, crash or other
     // interruption.
-#if PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
     overall_status.Update(RemoveDeletedKeyEntries());
-#endif  // PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
 
     // Do another garbage collect pass that will fully remove the deleted keys
     // from flash. Garbage collect will only touch sectors that have something
@@ -991,6 +994,7 @@ Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
     // keys.
     do_garbage_collect_pass();
   }
+#endif  // PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
 
   if (overall_status.ok()) {
     INF("Full maintenance complete");
