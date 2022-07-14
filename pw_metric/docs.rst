@@ -632,8 +632,9 @@ Below is an example that **is incorrect**. Don't do what follows!
 Exporting metrics
 -----------------
 Collecting metrics on a device is not useful without a mechanism to export
-those metrics for analysis and debugging. ``pw_metric`` offers an optional RPC
-service library (``:metric_service_nanopb``) that enables exporting a
+those metrics for analysis and debugging. ``pw_metric`` offers optional RPC
+service libraries (``:metric_service_nanopb`` based on nanopb, and
+``:metric_service_pwpb`` based on pw_protobuf) that enable exporting a
 user-supplied set of on-device metrics via RPC. This facility is intended to
 function from the early stages of device bringup through production in the
 field.
