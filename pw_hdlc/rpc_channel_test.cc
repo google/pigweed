@@ -34,6 +34,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_hdlc/encoded_size.h"
 #include "pw_stream/memory_stream.h"
 
 using std::byte;
@@ -46,8 +47,9 @@ constexpr uint8_t kAddress = 0x7b;  // 123
 constexpr uint8_t kEncodedAddress = (kAddress << 1) | 1;
 constexpr byte kControl = byte{0x3};  // UI-frame control sequence.
 
-// Size of the in-memory buffer to use for this test.
-constexpr size_t kSinkBufferSize = 15;
+// Size of the in-memory buffer to use for this test. All tests send a one-byte
+// payload.
+constexpr size_t kSinkBufferSize = MaxEncodedFrameSize(1);
 
 TEST(RpcChannelOutput, 1BytePayload) {
   stream::MemoryWriterBuffer<kSinkBufferSize> memory_writer;

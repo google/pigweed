@@ -23,10 +23,10 @@ namespace pw::hdlc {
 // writer. The complete frame contains the following:
 //
 //   - HDLC flag byte (0x7e)
-//   - Address
+//   - Address (variable length, up to 10 bytes)
 //   - UI-frame control (metadata) byte
 //   - Payload (0 or more bytes)
-//   - Frame check sequence (CRC-32)
+//   - Frame check sequence (CRC-32, 4 bytes)
 //   - HDLC flag byte (0x7e)
 //
 Status WriteUIFrame(uint64_t address,

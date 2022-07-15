@@ -28,6 +28,37 @@ inline constexpr std::array<std::byte, 2> kEscapedFlag = {kEscape,
 inline constexpr std::array<std::byte, 2> kEscapedEscape = {kEscape,
                                                             std::byte{0x5D}};
 
+// This implementation also only supports addresses up to the maximum value of a
+// 64-bit unsigned integer.
+inline constexpr size_t kMinAddressSize = 1;
+inline constexpr size_t kMaxAddressSize =
+    varint::EncodedSize(std::numeric_limits<uint64_t>::max());
+
+// The biggest on-the-wire size of a FCS after HDLC escaping. If, for example,
+// the FCS is 0x7e7e7e7e the encoded value will be:
+//   [ 0x7e, 0x5e, 0x7e, 0x5e, 0x7e, 0x5e, 0x7e, 0x5e ]
+inline constexpr size_t kMaxEscapedFcsSize = 8;
+
+// The biggest on-the-wire size of an HDLC address after escaping. This number
+// is not just kMaxAddressSize * 2 because the kFlag and kEscape bytes are not
+// valid terminating bytes of a one-terminated least significant varint. This
+// means that the practical biggest varint BEFORE escaping looks like this:
+//   [ 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x03 ]
+// The first nine bytes will be escaped, but the tenth never will be escaped
+// since any values other than 0x03 would cause a uint64_t to overflow.
+inline constexpr size_t kMaxEscapedVarintAddressSize =
+    (kMaxAddressSize * 2) - 1;
+
+// This implementation does not support extended control fields.
+inline constexpr size_t kControlSize = 1;
+
+// The control byte may need to be escaped. When it is, this is its maximum
+// size.
+inline constexpr size_t kMaxEscapedControlSize = 2;
+
+// This implementation only supports a 32-bit CRC-32 Frame Check Sequence (FCS).
+inline constexpr size_t kFcsSize = sizeof(uint32_t);
+
 inline constexpr varint::Format kAddressFormat =
     varint::Format::kOneTerminatedLeastSignificant;
 

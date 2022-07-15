@@ -13,8 +13,13 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
+#include "pw_bytes/span.h"
 #include "pw_checksum/crc32.h"
 #include "pw_hdlc/internal/protocol.h"
+#include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
 namespace pw::hdlc::internal {
@@ -42,10 +47,6 @@ class Encoder {
 
   // Finishes a frame. Writes the frame check sequence and a terminating flag.
   Status FinishFrame();
-
-  // Runs a pass through a payload, returning the worst-case encoded size for a
-  // frame containing it. Does not calculate CRC to improve efficiency.
-  static size_t MaxEncodedSize(uint64_t address, ConstByteSpan payload);
 
  private:
   // Indicates this an information packet with sequence numbers set to 0.

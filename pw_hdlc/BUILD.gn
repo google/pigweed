@@ -26,6 +26,7 @@ config("default_config") {
 group("pw_hdlc") {
   public_deps = [
     ":decoder",
+    ":encoded_size",
     ":encoder",
   ]
 }
@@ -35,6 +36,17 @@ pw_source_set("common") {
   public = [ "public/pw_hdlc/internal/protocol.h" ]
   public_deps = [ dir_pw_varint ]
   visibility = [ ":*" ]
+}
+
+pw_source_set("encoded_size") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_hdlc/encoded_size.h" ]
+  public_deps = [
+    ":common",
+    "$dir_pw_bytes",
+    "$dir_pw_span",
+    "$dir_pw_varint",
+  ]
 }
 
 pw_source_set("decoder") {
@@ -68,6 +80,7 @@ pw_source_set("encoder") {
     dir_pw_status,
     dir_pw_stream,
   ]
+  deps = [ ":encoded_size" ]
   friend = [ ":*" ]
 }
 
@@ -111,6 +124,7 @@ pw_test_group("tests") {
     ":encoder_test",
     ":decoder_test",
     ":rpc_channel_test",
+    ":encoded_size_test",
     ":wire_packet_parser_test",
   ]
   group_deps = [
@@ -118,6 +132,17 @@ pw_test_group("tests") {
     "$dir_pw_status:tests",
     "$dir_pw_stream:tests",
   ]
+}
+
+pw_test("encoded_size_test") {
+  deps = [
+    ":pw_hdlc",
+    "$dir_pw_bytes",
+    "$dir_pw_result",
+    "$dir_pw_stream",
+    "$dir_pw_varint",
+  ]
+  sources = [ "encoded_size_test.cc" ]
 }
 
 pw_test("encoder_test") {

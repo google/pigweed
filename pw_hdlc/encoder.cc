@@ -20,6 +20,7 @@
 #include <cstring>
 
 #include "pw_bytes/endian.h"
+#include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/internal/encoder.h"
 #include "pw_span/span.h"
 #include "pw_varint/varint.h"
@@ -67,17 +68,6 @@ Status Encoder::FinishFrame() {
   return writer_.Write(kFlag);
 }
 
-size_t Encoder::MaxEncodedSize(uint64_t address, ConstByteSpan payload) {
-  constexpr size_t kFcsMaxSize = 8;  // Worst case FCS: 0x7e7e7e7e.
-  size_t max_encoded_address_size = varint::EncodedSize(address) * 2;
-  size_t encoded_payload_size =
-      payload.size() +
-      std::count_if(payload.begin(), payload.end(), NeedsEscaping);
-
-  return max_encoded_address_size + sizeof(kUnusedControl) +
-         encoded_payload_size + kFcsMaxSize;
-}
-
 Status Encoder::StartFrame(uint64_t address, std::byte control) {
   fcs_.clear();
   if (Status status = writer_.Write(kFlag); !status.ok()) {
@@ -100,8 +90,7 @@ Status Encoder::StartFrame(uint64_t address, std::byte control) {
 Status WriteUIFrame(uint64_t address,
                     ConstByteSpan payload,
                     stream::Writer& writer) {
-  if (internal::Encoder::MaxEncodedSize(address, payload) >
-      writer.ConservativeWriteLimit()) {
+  if (MaxEncodedFrameSize(address, payload) > writer.ConservativeWriteLimit()) {
     return Status::ResourceExhausted();
   }
 

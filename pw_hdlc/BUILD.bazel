@@ -31,6 +31,7 @@ pw_cc_library(
     ],
     hdrs = [
         "public/pw_hdlc/decoder.h",
+        "public/pw_hdlc/encoded_size.h",
         "public/pw_hdlc/encoder.h",
     ],
     includes = ["public"],
@@ -99,6 +100,19 @@ cc_test(
         "//pw_result",
         "//pw_stream",
         "//pw_unit_test",
+    ],
+)
+
+cc_test(
+    name = "encoded_size_test",
+    srcs = ["encoded_size_test.cc"],
+    deps = [
+        ":pw_hdlc",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_stream",
+        "//pw_unit_test",
+        "//pw_varint",
     ],
 )
 
