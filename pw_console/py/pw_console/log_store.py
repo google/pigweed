@@ -66,7 +66,7 @@ class LogStore(logging.Handler):
             loggers={
                 'Host Logs': [
                     logging.getLogger(__package__),
-                    logging.getLogger(__file__),
+                    logging.getLogger(__name__),
                 ],
                 # Set the LogStore as the value of this logger window.
                 'Device Logs': device_log_store,

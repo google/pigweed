@@ -16,6 +16,7 @@
 import asyncio
 import builtins
 import functools
+import importlib.resources
 import logging
 import os
 from pathlib import Path
@@ -156,7 +157,8 @@ class ConsoleApp:
         # Setup the Jinja environment
         self.jinja_env = Environment(
             # Load templates automatically from pw_console/templates
-            loader=FileSystemLoader(Path(__file__).parent / 'templates'),
+            loader=FileSystemLoader(
+                importlib.resources.files('pw_console.templates')),
             # Raise errors if variables are undefined in templates
             undefined=make_logging_undefined(
                 logger=logging.getLogger(__package__), ),

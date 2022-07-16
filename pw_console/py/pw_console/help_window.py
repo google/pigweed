@@ -14,9 +14,9 @@
 """Help window container class."""
 
 import functools
+import importlib.resources
 import inspect
 import logging
-from pathlib import Path
 from typing import Dict, TYPE_CHECKING
 
 from prompt_toolkit.document import Document
@@ -239,14 +239,14 @@ class HelpWindow(ConditionalContainer):
         return min(desired_width, window_manager_width)
 
     def load_user_guide(self):
-        rstdoc = Path(__file__).parent / 'docs/user_guide.rst'
+        rstdoc_text = importlib.resources.read_text('pw_console.docs',
+                                                    'user_guide.rst')
         max_line_length = 0
         rst_text = ''
-        with rstdoc.open() as rstfile:
-            for line in rstfile.readlines():
-                if 'https://' not in line and len(line) > max_line_length:
-                    max_line_length = len(line)
-                rst_text += line
+        for line in rstdoc_text.splitlines():
+            if 'https://' not in line and len(line) > max_line_length:
+                max_line_length = len(line)
+            rst_text += line + '\n'
         self.max_line_length = max_line_length
 
         self.help_text_area = self._create_help_text_area(
