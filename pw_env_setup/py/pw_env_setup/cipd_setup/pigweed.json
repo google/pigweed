@@ -49,7 +49,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:3.24.20220709-g6734c2a"
+        "version:3.24.20220716-g831757e"
       ],
       "version_file": ".versions/cmake.cipd_version"
     },
