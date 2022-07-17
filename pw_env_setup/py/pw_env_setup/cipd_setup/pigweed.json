@@ -177,7 +177,7 @@
         "mac-amd64"
       ],
       "tags": [
-        "version:v6.2.0"
+        "git_revision:44f28df24767cf9dca1ddc9b23157737c4cbb645,1"
       ],
       "version_file": ".versions/qemu.cipd_version"
     },
