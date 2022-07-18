@@ -28,9 +28,6 @@ embedded development beyond just C++ style.
 
 C++ standard
 ============
-Pigweed primarily uses the C++17 standard. A few modules maintain support for
-C++14, however (e.g. :ref:`module-pw_kvs` and its dependencies).
-
 All Pigweed C++ code must compile with ``-std=c++17`` in Clang and GCC. C++20
 features may be used as long as the code still compiles unmodified with C++17.
 See ``pw_polyfill/language_feature_macros.h`` for macros that provide C++20
@@ -841,10 +838,10 @@ Pigweed uses the standard Python style: PEP8, which is available on the web at
 https://www.python.org/dev/peps/pep-0008/. All Pigweed Python code should pass
 ``yapf`` when configured for PEP8 style.
 
-Python 3
-========
-Pigweed uses Python 3. Some modules may offer limited support for Python 2, but
-Python 3.6 or newer is required for most Pigweed code.
+Python versions
+===============
+Pigweed code must support Python 3.7.7, 3.8, and 3.9. The only exception is
+:ref:`module-pw_env_setup`, which also supports Python 2 and 3.6.
 
 ---------------
 Build files: GN
