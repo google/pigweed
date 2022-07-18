@@ -16,9 +16,21 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_log_basic_CONFIG)
 
-pw_auto_add_simple_module(pw_log_basic
-  IMPLEMENTS_FACADE
+pw_add_module_library(pw_log_basic
+  IMPLEMENTS_FACADES
     pw_log
+  HEADERS
+    public/pw_log_basic/log_basic.h
+    public_overrides/pw_log_backend/log_backend.h
+    pw_log_basic_private/config.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    pw_log.facade
+    pw_preprocessor
+  SOURCES
+    log_basic.cc
   PRIVATE_DEPS
     pw_string
     pw_sys_io
