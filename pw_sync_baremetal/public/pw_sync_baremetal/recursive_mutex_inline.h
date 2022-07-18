@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <limits>
+
 #include "pw_assert/assert.h"
 #include "pw_sync/recursive_mutex.h"
 

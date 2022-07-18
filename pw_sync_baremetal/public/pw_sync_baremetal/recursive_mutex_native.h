@@ -17,7 +17,7 @@
 
 namespace pw::sync::backend {
 
-using NativeMutex = std::atomic<int>;
-using NativeMutexHandle = std::atomic<int>&;
+using NativeRecursiveMutex = std::atomic<int>;
+using NativeRecursiveMutexHandle = std::atomic<int>&;
 
 }  // namespace pw::sync::backend
