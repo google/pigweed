@@ -47,6 +47,7 @@ from pw_presubmit import (
     filter_paths,
     inclusive_language,
     plural,
+    presubmit,
     PresubmitContext,
     PresubmitFailure,
     Programs,
@@ -61,8 +62,8 @@ _LOG = logging.getLogger(__name__)
 pw_package.pigweed_packages.initialize()
 
 # Trigger builds if files with these extensions change.
-_BUILD_EXTENSIONS = ('.py', '.rst', '.gn', '.gni',
-                     *format_code.C_FORMAT.extensions)
+_BUILD_FILE_FILTER = presubmit.FileFilter(
+    endswith=('.py', '.rst', '.gn', '.gni', *format_code.C_FORMAT.extensions))
 
 
 def _at_all_optimization_levels(target):
@@ -80,7 +81,7 @@ def gn_clang_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_clang'))
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_gcc_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_gcc'))
@@ -95,13 +96,13 @@ def gn_host_build(ctx: PresubmitContext):
                 *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_quick_build_check(ctx: PresubmitContext):
     """Checks the state of the GN build by running gn gen and gn check."""
     build.gn_gen(ctx.root, ctx.output_dir)
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_full_build_check(ctx: PresubmitContext) -> None:
     build_targets = [
         *_at_all_optimization_levels('stm32f429i'),
@@ -122,7 +123,7 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
     build.ninja(ctx.output_dir, *build_targets)
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_full_qemu_check(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(
@@ -132,20 +133,20 @@ def gn_full_qemu_check(ctx: PresubmitContext):
     )
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_arm_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'))
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def stm32f429i(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir, pw_use_test_server=True)
     with build.test_server('stm32f429i_disc1_test_server', ctx.output_dir):
         build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'))
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'boringssl')
     build.gn_gen(ctx.root,
@@ -159,7 +160,7 @@ def gn_boringssl_build(ctx: PresubmitContext):
     )
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_nanopb_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'nanopb')
     build.gn_gen(ctx.root,
@@ -173,7 +174,7 @@ def gn_nanopb_build(ctx: PresubmitContext):
     )
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_mbedtls_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'mbedtls')
     build.gn_gen(
@@ -188,7 +189,7 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir)
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'boringssl')
     build.gn_gen(
@@ -205,7 +206,7 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir)
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'micro-ecc')
     build.gn_gen(
@@ -220,7 +221,7 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir)
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_teensy_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'teensy')
     build.gn_gen(ctx.root,
@@ -233,7 +234,7 @@ def gn_teensy_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('arduino'))
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_software_update_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'nanopb')
     build.install_package(ctx.package_root, 'protobuf')
@@ -258,7 +259,7 @@ def gn_software_update_build(ctx: PresubmitContext):
     )
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'freertos')
     build.install_package(ctx.package_root, 'nanopb')
@@ -275,13 +276,13 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'pw_system_demo')
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_qemu_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_gcc'))
 
 
-@filter_paths(endswith=_BUILD_EXTENSIONS)
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_qemu_clang_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_clang'))

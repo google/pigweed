@@ -41,7 +41,10 @@ def _ls_files(args: Collection[PathOrStr], repo: Path) -> Iterable[Path]:
     """Returns results of git ls-files as absolute paths."""
     git_root = repo.resolve()
     for file in git_stdout('ls-files', '--', *args, repo=repo).splitlines():
-        yield git_root / file
+        full_path = git_root / file
+        # Modified submodules will show up as directories and should be ignored.
+        if full_path.is_file():
+            yield full_path
 
 
 def _diff_names(commit: str, pathspecs: Collection[PathOrStr],
@@ -55,7 +58,10 @@ def _diff_names(commit: str, pathspecs: Collection[PathOrStr],
                            '--',
                            *pathspecs,
                            repo=repo).splitlines():
-        yield git_root / file
+        full_path = git_root / file
+        # Modified submodules will show up as directories and should be ignored.
+        if full_path.is_file():
+            yield full_path
 
 
 def tracking_branch(repo_path: Path = None) -> Optional[str]:
