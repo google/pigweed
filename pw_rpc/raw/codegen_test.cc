@@ -19,6 +19,7 @@
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/raw/client_testing.h"
 #include "pw_rpc/raw/test_method_context.h"
+#include "pw_rpc_test_protos/no_package.raw_rpc.pb.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
 
@@ -174,6 +175,21 @@ class TestService final
   RawUnaryResponder last_responder_;
   RawServerReader last_reader_;
   RawServerReaderWriter last_reader_writer_;
+};
+
+// Test that code generation succeeds when no proto package is specified.
+class NoPackageTestService final
+    : public ::pw_rpc::raw::PwRpcTestService::Service<NoPackageTestService> {
+ public:
+  static void TestUnaryRpc(ConstByteSpan, RawUnaryResponder&) {}
+
+  void TestAnotherUnaryRpc(ConstByteSpan, RawUnaryResponder&) {}
+
+  void TestServerStreamRpc(ConstByteSpan, RawServerWriter&) {}
+
+  void TestClientStreamRpc(RawServerReader&) {}
+
+  void TestBidirectionalStreamRpc(RawServerReaderWriter&) {}
 };
 
 }  // namespace test

@@ -439,7 +439,10 @@ pw_test_group("tests") {
 }
 
 pw_proto_library("test_protos") {
-  sources = [ "pw_rpc_test_protos/test.proto" ]
+  sources = [
+    "pw_rpc_test_protos/no_package.proto",
+    "pw_rpc_test_protos/test.proto",
+  ]
   inputs = [ "pw_rpc_test_protos/test.options" ]
   visibility = [ "./*" ]
 }

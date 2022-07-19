@@ -273,7 +273,8 @@ def _generate_info(gen: CodeGenerator, namespace: str,
 
             gen.line('}')
 
-            gen.line(f'using GeneratedClient = ::{namespace}'
+            gen.line('using GeneratedClient = '
+                     f'{"::" + namespace if namespace else ""}'
                      f'::pw_rpc::{gen.name()}::{service.name()}::Client;')
 
             gen.method_info_specialization(method)

@@ -159,6 +159,7 @@ pw_proto_library(pw_rpc.protos
 
 pw_proto_library(pw_rpc.test_protos
   SOURCES
+    pw_rpc_test_protos/no_package.proto
     pw_rpc_test_protos/test.proto
 )
 
