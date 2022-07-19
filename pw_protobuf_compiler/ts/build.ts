@@ -19,6 +19,9 @@ import path from 'path';
 import * as argModule from 'arg';
 const arg = argModule.default;
 
+const googProtobufPath = require.resolve('google-protobuf');
+const googProtobufModule = fs.readFileSync(googProtobufPath, 'utf-8');
+
 const args = arg({
   // Types
   '--proto': [String],
@@ -63,8 +66,7 @@ const protoc = async function (protos: string[], outDir: string) {
 
     if (fs.existsSync(outPath)) {
       let data = fs.readFileSync(outPath, 'utf8');
-      data = data.replace("var jspb = require('google-protobuf');", '');
-      data = data.replace("import * as jspb from 'google-protobuf';", '');
+      data = data.replace("var jspb = require('google-protobuf');", googProtobufModule);
       data = data.replace('var goog = jspb;', '');
       fs.writeFileSync(outPath, data);
     }

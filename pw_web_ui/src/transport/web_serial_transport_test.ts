@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,11 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser, jasmine */
+/* eslint-env browser */
 import {last, take} from 'rxjs/operators';
 
 import {SerialMock} from './serial_mock';
 import {DeviceLockedError, WebSerialTransport} from './web_serial_transport';
+import type {Serial} from "../../types/serial"
 
 describe('WebSerialTransport', () => {
   let serialMock: SerialMock;
@@ -26,14 +27,14 @@ describe('WebSerialTransport', () => {
 
   it('is disconnected before connecting', () => {
     const transport = new WebSerialTransport(serialMock as Serial);
-    expect(transport.connected.getValue()).toBeFalse();
+    expect(transport.connected.getValue()).toBe(false);
   });
 
   it('reports that it has connected', async () => {
     const transport = new WebSerialTransport(serialMock as Serial);
     await transport.connect();
     expect(serialMock.serialPort.open).toHaveBeenCalled();
-    expect(transport.connected.getValue()).toBeTrue();
+    expect(transport.connected.getValue()).toBe(true);
   });
 
   it('emits chunks as they arrive from the device', async () => {
@@ -44,9 +45,9 @@ describe('WebSerialTransport', () => {
     serialMock.dataFromDevice(data);
 
     expect(await emitted).toEqual(data);
-    expect(transport.connected.getValue()).toBeTrue();
-    expect(serialMock.serialPort.readable.locked).toBeTrue();
-    expect(serialMock.serialPort.writable.locked).toBeTrue();
+    expect(transport.connected.getValue()).toBe(true);
+    expect(serialMock.serialPort.readable.locked).toBe(true);
+    expect(serialMock.serialPort.writable.locked).toBe(true);
   });
 
   it('is disconnected when it reaches the final chunk', async () => {
@@ -57,7 +58,7 @@ describe('WebSerialTransport', () => {
       .toPromise();
     serialMock.closeFromDevice();
 
-    expect(await disconnectPromise).toBeFalse();
+    expect(await disconnectPromise).toBe(false);
   });
 
   it('waits for the writer to be ready', async () => {
@@ -91,9 +92,11 @@ describe('WebSerialTransport', () => {
 
   it('throws an error on failing to connect', async () => {
     const connectError = new Error('Example connection error');
-    spyOn(serialMock, 'requestPort').and.throwError(connectError);
+    const spy = jest.spyOn(serialMock, 'requestPort').mockImplementation(() => {
+      throw connectError;
+    });
     const transport = new WebSerialTransport(serialMock as Serial);
-    await expectAsync(transport.connect()).toBeRejectedWith(connectError);
+    await expect(transport.connect()).rejects.toThrow(connectError.message);
   });
 
   it("emits connection errors in the 'errors' observable", async () => {

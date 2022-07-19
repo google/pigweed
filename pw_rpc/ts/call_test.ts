@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,10 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser, jasmine */
-import 'jasmine';
+/* eslint-env browser */
 
-import {SomeMessage} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb';
+import {SomeMessage} from 'pigweed/protos/pw_rpc/ts/test2_pb';
 
 import {Call} from './call';
 import {Channel, Method, Service} from './descriptors';
@@ -34,9 +33,8 @@ describe('Call', () => {
   let call: Call;
 
   beforeEach(() => {
-    const noop = () => {};
+    const noop = () => { };
     const pendingCalls = new PendingCalls();
-    const channel = jasmine.createSpy();
     const rpc = new FakeRpc();
     call = new Call(pendingCalls, rpc, noop, noop, noop);
   });
@@ -60,11 +58,11 @@ describe('Call', () => {
     let responses = call.getResponses(2);
     expect((await responses.next()).value).toEqual(message1);
     expect((await responses.next()).value).toEqual(message2);
-    expect((await responses.next()).done).toBeTrue();
+    expect((await responses.next()).done).toEqual(true);
 
     responses = call.getResponses(1);
     expect((await responses.next()).value).toEqual(message3);
-    expect((await responses.next()).done).toBeTrue();
+    expect((await responses.next()).done).toEqual(true);
   });
 
   it('getResponse early returns on stream end.', async () => {
@@ -76,10 +74,11 @@ describe('Call', () => {
     call.handleCompletion(0);
 
     expect((await responses.next()).value).toEqual(message);
-    expect((await responses.next()).done).toBeTrue();
+    expect((await responses.next()).done).toEqual(true);
   });
 
   it('getResponse promise is rejected on stream error.', async () => {
+    expect.assertions(2);
     const message = newMessage();
     const responses = call.getResponses(3);
 
@@ -91,7 +90,9 @@ describe('Call', () => {
 
     // Promise is rejected as soon as an error is received, even if there is a
     // response in the queue.
-    await expectAsync(responses.next()).toBeRejected();
+    responses.next().catch((e: Error) => {
+      expect(e.name).toEqual('TypeError');
+    });
   });
 
   it('getResponse waits if queue is empty', async () => {
@@ -104,13 +105,13 @@ describe('Call', () => {
       call.handleResponse(message1);
       call.handleResponse(message2);
       call.handleCompletion(0);
-      expect(call.completed).toBeTrue();
+      expect(call.completed).toEqual(true);
     }, 200);
 
-    expect(call.completed).toBeFalse();
+    expect(call.completed).toEqual(false);
     expect((await responses.next()).value).toEqual(message1);
     expect((await responses.next()).value).toEqual(message2);
-    expect((await responses.next()).done).toBeTrue();
+    expect((await responses.next()).done).toEqual(true);
   });
 
   it('getResponse without count fetches all results', async () => {
@@ -124,11 +125,11 @@ describe('Call', () => {
     setTimeout(() => {
       call.handleResponse(message2);
       call.handleCompletion(0);
-      expect(call.completed).toBeTrue();
+      expect(call.completed).toEqual(true);
     }, 200);
 
-    expect(call.completed).toBeFalse();
+    expect(call.completed).toEqual(false);
     expect((await responses.next()).value).toEqual(message2);
-    expect((await responses.next()).done).toBeTrue();
+    expect((await responses.next()).done).toEqual(true);
   });
 });

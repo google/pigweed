@@ -18,7 +18,7 @@ import {
   ServiceClient,
 } from '@pigweed/pw_rpc';
 import {Status} from '@pigweed/pw_status';
-import {Chunk} from 'transfer_proto_tspb/transfer_proto_tspb_pb/pw_transfer/transfer_pb';
+import {Chunk} from 'pigweed/protos/pw_transfer/transfer_pb';
 
 export class ProgressStats {
   constructor(
