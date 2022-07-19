@@ -506,9 +506,11 @@ COPYRIGHT_BLOCK_COMMENTS = (
 COPYRIGHT_FIRST_LINE_EXCEPTIONS = (
     '#!',
     '/*',
+    ' */',
     '@echo off',
     '# -*-',
     ':',
+    ' * @jest',
 )
 
 COPYRIGHT_LINES = tuple("""\
@@ -541,6 +543,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bgo.(mod|sum)$',
     r'\bpackage.json$',
     r'\byarn.lock$',
+    r'\bpackage-lock.json$',
     # Data files
     r'\.bin$',
     r'\.elf$',
@@ -815,8 +818,10 @@ _LINTFORMAT = (
     commit_message_format,
     copyright_notice,
     format_code.presubmit_checks(),
-    inclusive_language.inclusive_language.with_filter(
-        exclude=(r'\byarn.lock$', )),
+    inclusive_language.inclusive_language.with_filter(exclude=(
+        r'\byarn.lock$',
+        r'\bpackage-lock.json$',
+    )),
     cpp_checks.pragma_once,
     build.bazel_lint,
     source_is_in_build_files,

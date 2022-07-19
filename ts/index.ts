@@ -12,21 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {pathsToModuleNameMapper} from "ts-jest";
-import type {InitialOptionsTsJest} from 'ts-jest/dist/types';
-
-const paths = {
-  "@pigweed/pw_*": [
-    "./pw_*/ts"
-  ],
-  "pigweed/protos/*": [
-    "./dist/protos/*"
-  ]
-}
-const config: InitialOptionsTsJest = {
-  preset: 'ts-jest/presets/js-with-ts',
-  testRegex: "(/__tests__/.*|(\\_|/)(test|spec))\\.[jt]sx?$",
-  moduleNameMapper: pathsToModuleNameMapper(paths, {prefix: '<rootDir>/'})
-}
-
-export default config
+export * as pw_hdlc from "../pw_hdlc/ts";
+export * as pw_rpc from "../pw_rpc/ts";
+export * as pw_status from "../pw_status/ts";
+export * as pw_tokenizer from "../pw_tokenizer/ts";
+export * as pw_protobuf_compiler from "../pw_protobuf_compiler/ts";
+export * as pw_transfer from "../pw_transfer/ts";

@@ -15,75 +15,89 @@
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import pluginTypescript from '@rollup/plugin-typescript';
-import builtins from 'builtin-modules';
 import path from 'path';
 import dts from 'rollup-plugin-dts';
+import nodePolyfills from 'rollup-plugin-node-polyfills';
 import sourceMaps from 'rollup-plugin-sourcemaps';
 
-const modules = ['pw_status'];
+import tsConfig from './tsconfig.json';
 
-// Bundle proto collection script
-const protoCompilerConfig = {
-  input: path.join('pw_protobuf_compiler', 'ts', 'build.ts'),
-  output: [{
-    file: path.join('dist', 'bin', 'pw_protobuf_compiler.js'),
-    format: 'esm',
-    banner: '#!/usr/bin/env node'
-  }],
-  plugins: [
-    pluginTypescript({tsconfig: './tsconfig.json'}),
-    resolve(),
-    commonjs(),
+export default [
+  // Bundle proto collection script
+  {
+    input: path.join('pw_protobuf_compiler', 'ts', 'build.ts'),
+    output: [{
+      file: path.join('dist', 'bin', 'pw_protobuf_compiler.js'),
+      format: 'esm',
+      banner: '#!/usr/bin/env node'
+    }],
+    plugins: [
+      pluginTypescript(
+          {tsconfig: './tsconfig.json', exclude: ['**/*_test.ts']}),
+      resolve(),
+      commonjs(),
 
-    // Resolve source maps to the original source
-    sourceMaps()
-  ]
-};
+      // Resolve source maps to the original source
+      sourceMaps()
+    ]
+  },
+  // Bundle proto collection into one UMD file for consumption from browser
+  {
+    input: path.join('dist', 'protos', 'collection.ts'),
+    output: [{
+      file: path.join('dist', 'protos', 'collection.umd.js'),
+      format: 'umd',
+      sourcemap: true,
+      name: 'PigweedProtoCollection',
+    }],
+    plugins: [
+      pluginTypescript({tsconfig: './tsconfig.json'}),
+      commonjs(),
+      resolve(),
 
-// Bundle Pigweed module from ts to js
-const rollupConfig = modules.map((module) => {
-  const modInputPath = path.join(module, 'ts');
-  const modOutputPath = path.join('dist', module);
-  return {
-    input: path.join(modInputPath, 'index.ts'), external: builtins,
-        output:
-            [
-              {
-                file: path.join(modOutputPath, 'index.umd.js'),
-                format: 'umd',
-                sourcemap: true,
-                name: module || 'Pigweed'
-              },
-              {
-                file: path.join(modOutputPath, 'index.mjs'),
-                format: 'esm',
-                sourcemap: true,
-              }
-            ],
-        plugins: [
-          pluginTypescript(
-              {tsconfig: './tsconfig.rollup.json', esModuleInterop: true}),
-          // Allow node_modules resolution, so you can use 'external' to control
-          // which external modules to include in the bundle
-          // https://github.com/rollup/rollup-plugin-node-resolve#usage
-          resolve({browser: true, preferBuiltins: false}),
+      // Resolve source maps to the original source
+      sourceMaps()
+    ]
+  },
+  // Types for proto collection
+  {
+    input: path.join(
+        'dist', 'protos', 'types', 'dist', 'protos', 'collection.d.ts'),
+    output:
+        [{file: path.join('dist', 'protos', 'collection.d.ts'), format: 'es'}],
+    plugins: [dts({compilerOptions: tsConfig.compilerOptions})]
+  },
+  // Bundle Pigweed modules
+  {
+    input: path.join('ts', 'index.ts'),
+    output: [
+      {
+        file: path.join('dist', 'index.umd.js'),
+        format: 'umd',
+        sourcemap: true,
+        name: 'Pigweed',
+      },
+      {
+        file: path.join('dist', 'index.mjs'),
+        format: 'esm',
+        sourcemap: true,
+      }
+    ],
+    plugins: [
+      pluginTypescript(
+          {tsconfig: './tsconfig.json', exclude: ['**/*_test.ts']}),
+      nodePolyfills(),
+      resolve(),
+      commonjs(),
 
-          // Resolve source maps to the original source
-          sourceMaps()
-        ]
-  }
-})
-
-// Also add .d.ts type definitions for modules
-const rollupTypesConfig = modules.map((module) => {
-  const modInputPath = path.join('dist', module, 'types', module, 'ts');
-  const modOutputPath = path.join('dist', module);
-  return {
-    input: path.join(modInputPath, 'index.d.ts'),
-        output: [{file: path.join(modOutputPath, 'index.d.ts'), format: 'es'}],
-        plugins: [dts()]
-  }
-})
-
-export default [protoCompilerConfig].concat(
-    rollupConfig.concat(rollupTypesConfig));
+      // Resolve source maps to the original source
+      sourceMaps()
+    ]
+  },
+  // Bundle types for pigweed module
+  {
+    input: path.join('dist', 'types', 'ts', 'index.d.ts'),
+    output: [{file: path.join('dist', 'index.d.ts'), format: 'es'}],
+    plugins: [dts({compilerOptions: tsConfig.compilerOptions})]
+  },
+];
