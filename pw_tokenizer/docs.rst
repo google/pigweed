@@ -906,13 +906,14 @@ this check can be done at compile time.
 
 TypeScript
 ----------
-To detokenize in TypeScript, import ``Detokenizer`` from the ``pw_tokenizer``
+To detokenize in TypeScript, import ``Detokenizer`` from the ``pigweedjs``
 package, and instantiate it with a CSV token database.
 
 .. code-block:: typescript
 
-   import {Detokenizer} from "@pigweed/pw_tokenizer";
-   import {Frame} from '@pigweed/pw_hdlc';
+   import { pw_tokenizer, pw_hdlc } from 'pigweedjs';
+   const { Detokenizer } = pw_tokenizer;
+   const { Frame } = pw_hdlc;
 
    const detokenizer = new Detokenizer(String(tokenCsv));
 
