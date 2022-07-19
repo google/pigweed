@@ -47,6 +47,7 @@ pw_cc_library(
 pw_cc_library(
     name = "packet_parser",
     hdrs = ["public/pw_router/packet_parser.h"],
+    includes = ["public"],
     deps = ["//pw_bytes"],
 )
 
