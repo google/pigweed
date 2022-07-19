@@ -60,7 +60,8 @@ uint_fast8_t DecimalDigitCount(uint64_t integer) {
   // This fancy piece of code takes the log base 2, then approximates the
   // change-of-base formula by multiplying by 1233 / 4096.
   // TODO(hepler): Replace __builtin_clzll with std::countl_zeros in C++20.
-  const uint_fast8_t log_10 = (64 - __builtin_clzll(integer | 1)) * 1233 >> 12;
+  const uint_fast8_t log_10 = static_cast<uint_fast8_t>(
+      (64 - __builtin_clzll(integer | 1)) * 1233 >> 12);
 
   // Adjust the estimated log base 10 by comparing against the power of 10.
   return log_10 + (integer < kPowersOf10[log_10] ? 0u : 1u);
@@ -93,7 +94,7 @@ StatusWithSize IntToString(uint64_t value, span<char> buffer) {
     // 64-bit division is slow on 32-bit platforms, so print large numbers in
     // 32-bit chunks to minimize the number of 64-bit divisions.
     if (value <= std::numeric_limits<uint32_t>::max()) {
-      lower_digits = value;
+      lower_digits = static_cast<uint32_t>(value);
       digit_count = remaining;
     } else {
       lower_digits = value % max_uint32_base_power;
