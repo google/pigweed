@@ -292,7 +292,7 @@ CPP_HEADER_EXTS = frozenset(('.h', '.hpp', '.hxx', '.h++', '.hh', '.H'))
 CPP_SOURCE_EXTS = frozenset(
     ('.c', '.cpp', '.cxx', '.c++', '.cc', '.C', '.inc', '.inl'))
 CPP_EXTS = CPP_HEADER_EXTS.union(CPP_SOURCE_EXTS)
-CPP_FILE_FILTER = FileFilter(endswith=CPP_HEADER_EXTS,
+CPP_FILE_FILTER = FileFilter(endswith=CPP_EXTS,
                              exclude=(r'\.pb\.h$', r'\.pb\.c$'))
 
 C_FORMAT = CodeFormat('C and C++', CPP_FILE_FILTER, clang_format_check,
