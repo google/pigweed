@@ -102,17 +102,15 @@ pw_doc_gen("docs") {
     ":core_docs",
     ":module_docs",
     ":release_notes",
-    ":sphinx_themes.install",
     ":target_docs",
     ":third_party_docs",
     "$dir_pw_env_setup:python.install",
   ]
-}
 
-# Install Pigweed specific sphinx themes.
-pw_python_requirements("sphinx_themes") {
-  requirements = [
-    "furo",
-    "sphinx_design",
+  # Required to set the PYTHONPATH so automodule, autoclass or autofunction RST
+  # directives work.
+  python_metadata_deps = [
+    "$dir_pw_console/py",
+    "$dir_pw_hdlc/py",
   ]
 }

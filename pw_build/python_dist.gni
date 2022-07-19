@@ -248,12 +248,25 @@ template("pw_create_python_source_tree") {
   # Finally, write out the json
   write_file(_package_metadata_json_file, _package_metadata, "json")
 
+  group("$target_name._package_metadata") {
+    metadata = {
+      pw_python_package_metadata_json = [ _package_metadata_json_file ]
+    }
+  }
+
+  _package_metadata_targets = []
+  foreach(pkg, invoker.packages) {
+    _package_metadata_targets +=
+        [ get_label_info(pkg, "label_no_toolchain") +
+          "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
+  }
+
   # Build a list of relative paths containing all the python
   # package_metadata.json files we depend on.
   generated_file("${target_name}.${_metadata_path_list_suffix}") {
     data_keys = [ "pw_python_package_metadata_json" ]
     rebase = root_build_dir
-    deps = invoker.packages
+    deps = _package_metadata_targets
     outputs = [ _metadata_json_file_list ]
   }
 
@@ -381,6 +394,18 @@ template("pw_internal_pip_install") {
         message_lines = [ "pw_internal_pip_install targets are not supported unless this gn arg is set pw_build_USE_NEW_PYTHON_BUILD=true." ]
       }
     } else {
+      # Create a target group for the Python package metadata only.
+      group("$target_name._package_metadata") {
+        # Forward the package_metadata subtarget for all python_deps.
+        public_deps = []
+        if (defined(invoker.packages)) {
+          foreach(dep, invoker.packages) {
+            public_deps += [ get_label_info(dep, "label_no_toolchain") +
+                             "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
+          }
+        }
+      }
+
       pw_python_action("$target_name") {
         script = "$dir_pw_build/py/pw_build/pip_install_python_deps.py"
 

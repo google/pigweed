@@ -35,9 +35,9 @@ version = '0.1'
 # The full version, including alpha/beta/rc tags.
 release = '0.1.0'
 
-# The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'pigweed-code-light'
-pygments_dark_style = 'pigweed-code'
+# The class of the Pygments (syntax highlighting) style to use.
+pygments_style = 'pw_console.pigweed_code_style.PigweedCodeLightStyle'
+pygments_dark_style = 'pw_console.pigweed_code_style.PigweedCodeStyle'
 
 extensions = [
     'pw_docgen.sphinx.google_analytics',  # Enables optional Google Analytics

@@ -21,14 +21,13 @@ import("$dir_pw_build/python_gn_args.gni")
 import("$dir_pw_protobuf_compiler/toolchain.gni")
 
 declare_args() {
-  # Python tasks, such as running tests and Pylint, are done in a single GN
-  # toolchain to avoid unnecessary duplication in the build.
-  pw_build_PYTHON_TOOLCHAIN = "$dir_pw_build/python_toolchain:python"
-
   # Constraints file selection (arguments to pip install --constraint).
   # See pip help install.
   pw_build_PIP_CONSTRAINTS =
       [ "$dir_pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list" ]
+
+  # Default pip requirements file for all Pigweed based projects.
+  pw_build_PIP_REQUIREMENTS = []
 
   # If true, GN will run each Python test using the coverage command. A separate
   # coverage data file for each test will be saved. To generate reports from
@@ -384,6 +383,20 @@ template("pw_python_package") {
     # Finally, write out the json
     write_file(_package_metadata_json_file, _package_metadata, "json")
 
+    # Create a target group for the Python package metadata only.
+    group("$target_name._package_metadata") {
+      metadata = {
+        pw_python_package_metadata_json = [ _package_metadata_json_file ]
+      }
+
+      # Forward the package_metadata subtarget for all python_deps.
+      public_deps = []
+      foreach(dep, _python_deps) {
+        public_deps += [ get_label_info(dep, "label_no_toolchain") +
+                         "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
+      }
+    }
+
     # Declare the main Python package group. This represents the Python files,
     # but does not take any actions. GN targets can depend on the package name
     # to run when any files in the package change.
@@ -625,7 +638,12 @@ template("pw_python_package") {
       # All packages to install for either general use or test running.
       _test_install_deps = [ ":$target_name.install" ]
 
-      foreach(dep, _python_test_deps + [ "$dir_pw_build:python_lint" ]) {
+      foreach(dep,
+              _python_test_deps + [
+                    # TODO(b/232800695): Remove when all projects are on the new
+                    # Python build.
+                    "$dir_pw_build:python_lint",
+                  ]) {
         _test_install_deps += [ string_replace(dep, "(", ".install(") ]
         _test_install_deps += [ dep ]
       }
@@ -790,6 +808,16 @@ template("pw_python_group") {
     }
   }
 
+  # Create a target group for the Python package metadata only.
+  group("$target_name._package_metadata") {
+    # Forward the package_metadata subtarget for all python_deps.
+    public_deps = []
+    foreach(dep, _python_deps) {
+      public_deps += [ get_label_info(dep, "label_no_toolchain") +
+                       "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
+    }
+  }
+
   foreach(subtarget, pw_python_package_subtargets) {
     group("$target_name.$subtarget") {
       public_deps = []
@@ -891,25 +919,30 @@ template("pw_python_requirements") {
   pw_python_action("$target_name.install") {
     inputs = _requirements_files
 
-    module = "pip"
-    args = [ "install" ]
+    if (pw_build_USE_NEW_PYTHON_BUILD) {
+      # This template is a no-op if the new Python build is enabled.
+      script = "$dir_pw_build/py/pw_build/nop.py"
+    } else {
+      module = "pip"
+      args = [ "install" ]
 
-    foreach(_requirements_file, inputs) {
-      args += [
-        "--requirement",
-        rebase_path(_requirements_file, root_build_dir),
-      ]
+      foreach(_requirements_file, inputs) {
+        args += [
+          "--requirement",
+          rebase_path(_requirements_file, root_build_dir),
+        ]
+      }
+
+      inputs += pw_build_PIP_CONSTRAINTS
+      foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
+        args += [
+          "--constraint",
+          rebase_path(_constraints_file, root_build_dir),
+        ]
+      }
+
+      pool = "$dir_pw_build/pool:pip($default_toolchain)"
     }
-
-    inputs += pw_build_PIP_CONSTRAINTS
-    foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
-      args += [
-        "--constraint",
-        rebase_path(_constraints_file, root_build_dir),
-      ]
-    }
-
-    pool = "$dir_pw_build/pool:pip($default_toolchain)"
     stamp = true
   }
 
@@ -917,6 +950,18 @@ template("pw_python_requirements") {
   # used as python_deps.
   foreach(subtarget, pw_python_package_subtargets - [ "install" ]) {
     group("$target_name.$subtarget") {
+    }
+  }
+
+  # Create a target group for the Python package metadata only.
+  group("$target_name._package_metadata") {
+    # Forward the package_metadata subtarget for all python_deps.
+    public_deps = []
+    if (defined(invoker.python_deps)) {
+      foreach(dep, invoker.python_deps) {
+        public_deps += [ get_label_info(dep, "label_no_toolchain") +
+                         "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
+      }
     }
   }
 

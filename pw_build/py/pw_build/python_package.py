@@ -63,6 +63,18 @@ class MissingSetupSources(Exception):
     """
 
 
+def _sanitize_install_requires(metadata_dict: dict) -> dict:
+    """Convert install_requires lists into strings joined with line breaks."""
+    try:
+        install_requires = metadata_dict['options']['install_requires']
+        if isinstance(install_requires, list):
+            metadata_dict['options']['install_requires'] = (
+                '\n'.join(install_requires))
+    except KeyError:
+        pass
+    return metadata_dict
+
+
 @dataclass
 class PythonPackage:
     """Class to hold a single Python package's metadata."""
@@ -161,12 +173,31 @@ class PythonPackage:
 
     def _load_config(self) -> Optional[configparser.ConfigParser]:
         config = configparser.ConfigParser()
+
         # Check for a setup.cfg and load that config.
         if self.setup_cfg:
-            with self.setup_cfg.open() as config_file:
-                config.read_file(config_file)
+            if self.setup_cfg.is_file():
+                with self.setup_cfg.open() as config_file:
+                    config.read_file(config_file)
+                return config
+            if self.setup_cfg.with_suffix('.json').is_file():
+                return self._load_setup_json_config()
+
+        # Fallback on the generate_setup scope from GN
+        if self.generate_setup:
+            config.read_dict(_sanitize_install_requires(self.generate_setup))
             return config
         return None
+
+    def _load_setup_json_config(self) -> configparser.ConfigParser:
+        assert self.setup_cfg
+        setup_json = self.setup_cfg.with_suffix('.json')
+        config = configparser.ConfigParser()
+        with setup_json.open() as json_fp:
+            json_dict = _sanitize_install_requires(json.load(json_fp))
+
+        config.read_dict(json_dict)
+        return config
 
     def copy_sources_to(self, destination: Path) -> None:
         """Copy this PythonPackage source files to another path."""

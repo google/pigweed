@@ -16,6 +16,8 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_dist.gni")
+import("$dir_pw_build/python_gn_args.gni")
+import("$dir_pw_build/python_venv.gni")
 import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("docs") {
@@ -79,44 +81,26 @@ pw_python_group("python") {
     "$dir_pw_third_party/nanopb:generate_nanopb_proto",
     "$dir_pw_transfer/py:python_cpp_transfer_test",
 
+    # TODO(b/232800695): Remove when all projects are on the new Python build.
     # Python requirements for CIPD packages that don't have dedicated modules.
     ":renode_requirements",
   ]
 }
 
 if (pw_build_USE_NEW_PYTHON_BUILD) {
-  group("create_gn_venv") {
-    if (current_toolchain == default_toolchain) {
-      exec_script("create_gn_venv.py",
-                  [
-                    "--destination-dir",
-                    rebase_path("$root_build_dir/python-venv", root_build_dir),
-                  ])
-    }
+  pw_python_venv("pigweed_build_venv") {
+    path = "$root_build_dir/python-venv"
+    constraints = pw_build_PIP_CONSTRAINTS
+    requirements = pw_build_PIP_REQUIREMENTS
+    source_packages = _pigweed_python_deps
   }
 
-  pw_python_action("install_3p_deps") {
-    module = "pip"
-    _pw_internal_run_in_venv = true
-    skip_installing_external_python_deps = true
-    args = [
-      "install",
-      "--no-build-isolation",
-    ]
-    inputs = pw_build_PIP_CONSTRAINTS
-    foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
-      args += [
-        "--requirement",
-        rebase_path(_constraints_file, root_build_dir),
-      ]
-    }
-    outputs = [ "$root_build_dir/python-venv" ]
-    deps = [ ":create_gn_venv" ]
-    stamp = true
-    pool = "$dir_pw_build/pool:pip($default_toolchain)"
+  # TODO(tonymd): Remove this target after this CL lands and rolls to all projects.
+  group("install_3p_deps") {
+    public_deps = [ pw_build_PYTHON_BUILD_VENV ]
   }
 } else {
-  group("create_gn_venv") {
+  group("pigweed_build_venv") {
   }
   group("install_3p_deps") {
   }
@@ -140,6 +124,7 @@ if (pw_build_USE_NEW_PYTHON_BUILD) {
   }
 }
 
+# TODO(b/232800695): Remove when all projects are on the new Python build.
 pw_python_requirements("renode_requirements") {
   requirements = [
     "psutil",

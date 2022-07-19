@@ -212,6 +212,7 @@ group("link_deps") {
 group("empty") {
 }
 
+# TODO(b/232800695): Remove when all projects are on the new Python build.
 # Requirements for the pw_python_package lint targets.
 pw_python_requirements("python_lint") {
   requirements = [

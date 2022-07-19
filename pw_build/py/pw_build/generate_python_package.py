@@ -17,7 +17,6 @@ import argparse
 from collections import defaultdict
 import configparser
 from dataclasses import dataclass
-from itertools import chain
 import json
 from pathlib import Path
 import sys
@@ -251,9 +250,7 @@ def main(generated_root: Path, files: List[Path], module_as_package: bool,
         setup_keywords = json.load(setup_json)
         setup_keywords.setdefault('options', {})
 
-    install_requires = setup_keywords['options'].setdefault(
-        'install_requires', [])
-    install_requires += chain.from_iterable(i.deps for i in proto_infos)
+    setup_keywords['options'].setdefault('install_requires', [])
 
     if module_as_package:
         _import_module_in_package_init(files)
