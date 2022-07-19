@@ -14,14 +14,13 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-if(Zephyr_FOUND AND CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK)
+if(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK)
   pw_add_module_library(pw_chrono_zephyr.system_clock
     IMPLEMENTS_FACADES
       pw_chrono.system_clock
     PUBLIC_DEPS
       pw_function
   )
-  pw_set_backend(pw_chrono.system_clock pw_chrono_zephyr.system_clock)
   zephyr_link_interface(pw_chrono_zephyr.system_clock)
   zephyr_link_libraries(pw_chrono_zephyr.system_clock)
 endif()

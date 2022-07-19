@@ -26,5 +26,4 @@ pw_auto_add_simple_module(pw_log_zephyr
   PRIVATE_DEPS
     pw_preprocessor
 )
-pw_set_backend(pw_log pw_log_zephyr)
 zephyr_link_libraries(pw_log_zephyr)

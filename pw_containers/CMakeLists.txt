@@ -40,6 +40,7 @@ pw_add_module_library(pw_containers.filtered_view
     public
   PUBLIC_DEPS
     pw_assert
+    pw_preprocessor
 )
 
 pw_add_module_library(pw_containers.flat_map

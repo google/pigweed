@@ -12,14 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-menuconfig PIGWEED_CHRONO
-    bool "Enable the Pigweed chrono facade (pw_chrono)"
-    select PIGWEED_PREPROCESSOR
-
-if PIGWEED_CHRONO
-
 config PIGWEED_CHRONO_SYSTEM_CLOCK
     bool "Enabled the Pigweed chrono system clock library (pw_chrono.system_clock)"
+    select PIGWEED_PREPROCESSOR
     select PIGWEED_FUNCTION
-
-endif # PIGWEED_CHRONO

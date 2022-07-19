@@ -514,8 +514,19 @@ endfunction(pw_add_facade)
 
 # Sets which backend to use for the given facade.
 function(pw_set_backend FACADE BACKEND)
-  set("${FACADE}_BACKEND" "${BACKEND}" CACHE STRING "Backend for ${NAME}" FORCE)
+  set("${FACADE}_BACKEND" "${BACKEND}" CACHE STRING "Backend for ${FACADE}" FORCE)
 endfunction(pw_set_backend)
+
+# Zephyr specific wrapper for pw_set_backend, selects the default zephyr backend based on a Kconfig while
+# still allowing the application to set the backend if they choose to
+function(pw_set_zephyr_backend_ifdef COND FACADE BACKEND)
+  get_property(result CACHE "${FACADE}_BACKEND" PROPERTY TYPE)
+  if(${${COND}})
+    if("${result}" STREQUAL "")
+      pw_set_backend("${FACADE}" "${BACKEND}")
+    endif()
+  endif()
+endfunction()
 
 # Set up the default pw_build_DEFAULT_MODULE_CONFIG.
 set("pw_build_DEFAULT_MODULE_CONFIG" pw_build.empty CACHE STRING

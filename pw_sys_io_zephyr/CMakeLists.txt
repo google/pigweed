@@ -24,5 +24,4 @@ pw_auto_add_simple_module(pw_sys_io_zephyr
   PUBLIC_DEPS
     zephyr_interface
 )
-pw_set_backend(pw_sys_io pw_sys_io_zephyr)
 zephyr_link_libraries(pw_sys_io_zephyr)

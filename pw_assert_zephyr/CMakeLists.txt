@@ -19,7 +19,7 @@ if(NOT CONFIG_PIGWEED_ASSERT)
 endif()
 
 pw_add_module_library(pw_assert_zephyr.check
-  IMPLEMENTS_FACADE
+  IMPLEMENTS_FACADES
     pw_assert.check
   HEADERS
     public/pw_assert_zephyr/check_zephyr.h
@@ -30,11 +30,10 @@ pw_add_module_library(pw_assert_zephyr.check
   PUBLIC_DEPS
     zephyr_interface
 )
-pw_set_backend(pw_assert.check pw_assert_zephyr.check)
 zephyr_link_libraries(pw_assert_zephyr.check)
 
 pw_add_module_library(pw_assert_zephyr.assert
-  IMPLEMENTS_FACADE
+  IMPLEMENTS_FACADES
     pw_assert.assert
   HEADERS
     public/pw_assert_zephyr/assert_zephyr.h
@@ -45,5 +44,4 @@ pw_add_module_library(pw_assert_zephyr.assert
   PUBLIC_DEPS
     zephyr_interface
 )
-pw_set_backend(pw_assert.assert pw_assert_zephyr.assert)
 zephyr_link_libraries(pw_assert_zephyr.assert)

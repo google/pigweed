@@ -17,6 +17,7 @@
 #include <iterator>
 
 #include "pw_assert/assert.h"
+#include "pw_preprocessor/compiler.h"
 
 namespace pw::containers {
 
@@ -160,6 +161,7 @@ FilteredView<Container, Filter>::iterator::operator--() {
   }
 
   PW_ASSERT(false);
+  PW_UNREACHABLE;
 }
 
 }  // namespace pw::containers

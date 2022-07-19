@@ -15,6 +15,4 @@
 
 #include <sys/__assert.h>
 
-#define PW_ASSERT_HANDLE_FAILURE(condition) \
-  __ASSERT_LOC(condition);                  \
-  __ASSERT_POST_ACTION();
+#define PW_ASSERT_HANDLE_FAILURE(condition) __ASSERT_NO_MSG(condition);

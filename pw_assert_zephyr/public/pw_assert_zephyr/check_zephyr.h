@@ -20,6 +20,7 @@
     __ASSERT_LOC("PW_CRASH()");     \
     __ASSERT_MSG_INFO(__VA_ARGS__); \
     __ASSERT_POST_ACTION();         \
+    PW_UNREACHABLE;                 \
   }
 
 #define PW_HANDLE_ASSERT_FAILURE(condition_string, ...)                    \
@@ -27,6 +28,7 @@
     __ASSERT_LOC("PW_CHECK() or PW_DCHECK() failure");                     \
     __ASSERT_MSG_INFO("Check failed: " condition_string ". " __VA_ARGS__); \
     __ASSERT_POST_ACTION();                                                \
+    PW_UNREACHABLE;                                                        \
   }
 
 #define PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(arg_a_str,                 \

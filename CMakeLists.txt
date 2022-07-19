@@ -20,6 +20,17 @@ cmake_minimum_required(VERSION 3.16)
 # Regardless of whether it's set or not the following include will ensure it is.
 include(pw_build/pigweed.cmake)
 
+if(CONFIG_ZEPHYR_PIGWEED_MODULE)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_ASSERT pw_assert.assert pw_assert_zephyr.assert)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_ASSERT pw_assert.check pw_assert_zephyr.check)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK pw_chrono.system_clock pw_chrono_zephyr.system_clock)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_INTERRUPT_CONTEXT pw_interrupt.context pw_interrupt_zephyr.context)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_LOG pw_log pw_log_zephyr)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_MUTEX pw_sync.mutex pw_sync_zephyr.mutex_backend)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE pw_sync.mutex pw_sync_zephyr.binary_semaphore_backend)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYS_IO pw_sys_io pw_sys_io_zephyr)
+endif()
+
 add_subdirectory(pw_assert EXCLUDE_FROM_ALL)
 add_subdirectory(pw_assert_basic EXCLUDE_FROM_ALL)
 add_subdirectory(pw_assert_log EXCLUDE_FROM_ALL)
