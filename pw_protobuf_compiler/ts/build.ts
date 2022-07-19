@@ -15,6 +15,7 @@
 import {exec, ExecException} from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import generateTemplate from './codegen/template_replacement';
 // eslint-disable-next-line node/no-extraneous-import
 import * as argModule from 'arg';
 const arg = argModule.default;
@@ -32,7 +33,7 @@ const args = arg({
 });
 
 const protos = args['--proto'];
-const outDir = args['--out'] || 'dist';
+const outDir = args['--out'] || 'protos';
 
 fs.mkdirSync(outDir, {recursive: true});
 
@@ -50,17 +51,23 @@ const run = function (executable: string, args: string[]) {
 };
 
 const protoc = async function (protos: string[], outDir: string) {
-  const PROTOC_GEN_TS_PATH = './node_modules/.bin/protoc-gen-ts';
+  const PROTOC_GEN_TS_PATH = path.resolve(
+    path.dirname(require.resolve('ts-protoc-gen/generate.js')),
+    '..',
+    '.bin',
+    'protoc-gen-ts'
+  );
+
   await run('protoc', [
     `--plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}"`,
     `--descriptor_set_out=${outDir}/descriptor.bin`,
     `--js_out=import_style=commonjs,binary:${outDir}`,
     `--ts_out=${outDir}`,
+    `--proto_path=${process.cwd()}`,
     ...protos,
   ]);
 
-  // ES6 workaround: Remove any google-protobuf imports for now,
-  // user brings their own google-protobuf defined as a global: window.goog
+  // ES6 workaround: Replace google-protobuf imports with entire library.
   protos.forEach(protoPath => {
     const outPath = path.join(outDir, protoPath.replace('.proto', '_pb.js'));
 
@@ -78,18 +85,14 @@ const makeProtoCollection = function (
   protoPath: string,
   importPath: string
 ) {
-  run('ts-node', [
-    'pw_protobuf_compiler/ts/codegen/template_replacement.ts',
-    `--output=${protoPath}/collection.ts`,
-    `--descriptor_data=${descriptorBinPath}`,
-    '--template=pw_protobuf_compiler/ts/ts_proto_collection.template.ts',
-    `--proto_root_dir=${importPath}`,
-  ]);
+  const outputCollectionName = path.extname(require.resolve("./ts_proto_collection.template")) === ".ts" ? "collection.ts" : "collection.js";
+  generateTemplate(`${protoPath}/${outputCollectionName}`, descriptorBinPath, require.resolve("./ts_proto_collection.template"), importPath)
 };
 
-protoc(protos, outDir);
-makeProtoCollection(
-  'dist/protos/descriptor.bin',
-  'dist/protos',
-  'pigweed/protos'
-);
+protoc(protos, outDir).then(() => {
+  makeProtoCollection(
+    path.join(outDir, 'descriptor.bin'),
+    outDir,
+    'pigweed/protos'
+  );
+});
