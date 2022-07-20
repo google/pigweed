@@ -398,12 +398,14 @@ def presubmit_checks(exclude: Collection[Union[str, Pattern]] = (),
 
 class CodeFormatter:
     """Checks or fixes the formatting of a set of files."""
-    def __init__(self, files: Iterable[Path]):
+    def __init__(self,
+                 files: Iterable[Path],
+                 code_formats: Collection[CodeFormat] = CODE_FORMATS):
         self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
 
         for path in self.paths:
-            for code_format in CODE_FORMATS:
+            for code_format in code_formats:
                 if code_format.filter.matches(path):
                     self._formats[code_format].append(path)
 
@@ -443,10 +445,14 @@ def _file_summary(files: Iterable[Union[Path, str]], base: Path) -> List[str]:
         return []
 
 
-def format_paths_in_repo(paths: Collection[Union[Path, str]],
-                         exclude: Collection[Pattern[str]], fix: bool,
-                         base: str) -> int:
+def format_paths_in_repo(
+        paths: Collection[Union[Path, str]],
+        exclude: Collection[Pattern[str]],
+        fix: bool,
+        base: str,
+        code_formats: Collection[CodeFormat] = CODE_FORMATS) -> int:
     """Checks or fixes formatting for files in a Git repo."""
+
     files = [Path(path).resolve() for path in paths if os.path.isfile(path)]
     repo = git_repo.root() if git_repo.is_repo() else None
 
@@ -475,14 +481,17 @@ def format_paths_in_repo(paths: Collection[Union[Path, str]],
             'A base commit may only be provided if running from a Git repo')
         return 1
 
-    return format_files(files, fix, repo=repo)
+    return format_files(files, fix, repo=repo, code_formats=code_formats)
 
 
 def format_files(paths: Collection[Union[Path, str]],
                  fix: bool,
-                 repo: Optional[Path] = None) -> int:
+                 repo: Optional[Path] = None,
+                 code_formats: Collection[CodeFormat] = CODE_FORMATS) -> int:
     """Checks or fixes formatting for the specified files."""
-    formatter = CodeFormatter(Path(p) for p in paths)
+
+    formatter = CodeFormatter(files=(Path(p) for p in paths),
+                              code_formats=code_formats)
 
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
 
