@@ -203,30 +203,45 @@ class FileFilter:
 
     _StrOrPattern = Union[Pattern, str]
 
-    endswith: Collection[str]
-    exclude: Collection[Pattern[str]]
-
     def __init__(
         self,
         endswith: Collection[str] = (),
-        exclude: Collection[_StrOrPattern] = ()
+        exclude: Collection[_StrOrPattern] = (),
+        name: Collection[_StrOrPattern] = (),
+        suffix: Collection[str] = ()
     ) -> None:
         """
         Args:
-            endswidth: Paths that end with any of the passed strings match
-            exclude: Paths that are matched by the passed regular expresion are
-                    not matched. This overrides and other matches.
+            endswidth: True if the end of the path is equal to any of the passed
+                       strings
+            exclude: If any of the passed regular expresion match return False.
+                     This overrides and other matches.
+            name: Regexs to match with file names(pathlib.Path.name). True if
+                  the resulting regex matches the entire file name.
+            suffix: True if final suffix (as determined by pathlib.Path) is
+                    matched by any of the passed str.
         """
         self.endswith = endswith
         self.exclude = tuple(re.compile(i) for i in exclude)
+        self.name = tuple(re.compile(i) for i in name)
+        self.suffix = suffix
 
     def matches(self, path: Union[str, Path]) -> bool:
-        """Returns true if file matches any filter but not a exclude"""
+        """Returns true if file matches any filter but not a exclude.
+
+        If 'path' is a Path object it is rendered as a posix path (i.e.
+        using "/" as the path seperator) before testing with 'exclude' and
+        'endswith'.
+        """
 
         posix_path = path.as_posix() if isinstance(path, Path) else path
+        if any(bool(exp.search(posix_path)) for exp in self.exclude):
+            return False
 
-        return (any(posix_path.endswith(end) for end in self.endswith)
-                and not any(exp.search(posix_path) for exp in self.exclude))
+        path_obj = Path(path)
+        return (path_obj.suffix in self.suffix
+                or any(regex.fullmatch(path_obj.name) for regex in self.name)
+                or any(posix_path.endswith(end) for end in self.endswith))
 
     def apply_to_check(self, always_run: bool = False) -> Callable:
         def wrapper(func: Callable) -> Check:
@@ -640,7 +655,8 @@ def filter_paths(*,
     Args:
         endswith: str or iterable of path endings to include
         exclude: regular expressions of paths to exclude
-
+        file_filter: FileFilter used to select files
+        always_run: Run check even when no files match
     Returns:
         a wrapped version of the presubmit function
     """

@@ -63,7 +63,7 @@ pw_package.pigweed_packages.initialize()
 
 # Trigger builds if files with these extensions change.
 _BUILD_FILE_FILTER = presubmit.FileFilter(
-    endswith=('.py', '.rst', '.gn', '.gni', *format_code.C_FORMAT.extensions))
+    suffix=(*format_code.C_FORMAT.extensions, '.py', '.rst', '.gn', '.gni'))
 
 
 def _at_all_optimization_levels(target):
@@ -662,9 +662,14 @@ _BAZEL_SOURCES_IN_BUILD = tuple(format_code.C_FORMAT.extensions)
 _GN_SOURCES_IN_BUILD = ('setup.cfg', '.toml', '.rst', '.py',
                         *_BAZEL_SOURCES_IN_BUILD)
 
+SOURCE_FILES_FILTER = presubmit.FileFilter(endswith=_GN_SOURCES_IN_BUILD,
+                                           name=('BUILD', ),
+                                           suffix=('.bzl', '.gn', '.gni'),
+                                           exclude=(r'zephyr.*/',
+                                                    r'android.*/'))
 
-@filter_paths(endswith=(*_GN_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'),
-              exclude=['zephyr.*/', 'android.*/'])
+
+@SOURCE_FILES_FILTER.apply_to_check()
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
     missing = build.check_builds_for_files(
