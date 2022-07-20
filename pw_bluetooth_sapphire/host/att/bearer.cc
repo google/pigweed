@@ -198,19 +198,21 @@ Bearer::PendingTransactionPtr Bearer::TransactionQueue::ClearCurrent() {
 }
 
 void Bearer::TransactionQueue::Enqueue(PendingTransactionPtr transaction) {
-  queue_.push_back(std::move(transaction));
+  queue_.push(std::move(transaction));
 }
 
 void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Handler timeout_cb,
                                            zx::duration timeout) {
   ZX_DEBUG_ASSERT(chan);
 
-  // Abort if a transaction is currently pending.
-  if (current())
+  // Abort if a transaction is currently pending or there are no transactions queued.
+  if (current_ || queue_.empty()) {
     return;
+  }
 
   // Advance to the next transaction.
-  current_ = queue_.pop_front();
+  current_ = std::move(queue_.front());
+  queue_.pop();
   while (current()) {
     ZX_DEBUG_ASSERT(!timeout_task_.is_pending());
     ZX_DEBUG_ASSERT(current()->pdu);
@@ -231,25 +233,32 @@ void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Ha
     t->callback(fitx::error(std::pair(Error(HostError::kOutOfMemory), kInvalidHandle)));
 
     // Process the next command until we can send OR we have drained the queue.
-    current_ = queue_.pop_front();
+    if (queue_.empty()) {
+      break;
+    }
+    current_ = std::move(queue_.front());
+    queue_.pop();
   }
 }
 
 void Bearer::TransactionQueue::Reset() {
   timeout_task_.Cancel();
-  queue_.clear();
+  queue_ = {};
   current_ = nullptr;
 }
 
 void Bearer::TransactionQueue::InvokeErrorAll(Error error) {
   if (current_) {
     current_->callback(fitx::error(std::pair(error, kInvalidHandle)));
+    current_ = nullptr;
+    timeout_task_.Cancel();
   }
 
-  for (auto& t : queue_) {
-    if (t.callback) {
-      t.callback(fitx::error(std::pair(error, kInvalidHandle)));
+  while (!queue_.empty()) {
+    if (queue_.front()->callback) {
+      queue_.front()->callback(fitx::error(std::pair(error, kInvalidHandle)));
     }
+    queue_.pop();
   }
 }
 

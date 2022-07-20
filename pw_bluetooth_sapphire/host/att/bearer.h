@@ -161,7 +161,7 @@ class Bearer final {
   bool Activate();
 
   // Represents a locally initiated pending request or indication transaction.
-  struct PendingTransaction : LinkedListable<PendingTransaction> {
+  struct PendingTransaction {
     PendingTransaction(OpCode opcode, TransactionCallback callback, ByteBufferPtr pdu);
 
     // Required fields
@@ -226,8 +226,8 @@ class Bearer final {
     void InvokeErrorAll(Error error);
 
    private:
-    LinkedList<PendingTransaction> queue_;
-    PendingTransactionPtr current_;
+    std::queue<std::unique_ptr<PendingTransaction>> queue_;
+    std::unique_ptr<PendingTransaction> current_;
     async::Task timeout_task_;
   };
 
