@@ -81,7 +81,7 @@ void ValidatePdu(PDU pdu, std::string expected_payload, ChannelId expected_cid =
   auto fragments = pdu.ReleaseFragments();
   size_t sum = 0;
   for (const auto& f : fragments) {
-    sum += f.view().payload_size();
+    sum += f->view().payload_size();
   }
   EXPECT_EQ(expected_payload.length() + sizeof(BasicHeader), sum);
 }

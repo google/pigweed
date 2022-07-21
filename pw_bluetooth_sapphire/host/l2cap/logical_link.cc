@@ -254,7 +254,7 @@ void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
   PDU pdu = fragmenter_.BuildFrame(id, payload, fcs_option, flushable);
   auto fragments = pdu.ReleaseFragments();
 
-  ZX_ASSERT(!fragments.is_empty());
+  ZX_ASSERT(!fragments.empty());
   acl_data_channel_->SendPackets(std::move(fragments), id, ChannelPriority(id));
 }
 

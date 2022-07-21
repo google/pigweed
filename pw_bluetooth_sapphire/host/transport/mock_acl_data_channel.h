@@ -19,7 +19,7 @@ class MockAclDataChannel final : public AclDataChannel {
   void set_le_buffer_info(DataBufferInfo info) { le_buffer_info_ = info; }
 
   using SendPacketsCallback = fit::function<bool(
-      LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id, PacketPriority priority)>;
+      std::list<ACLDataPacketPtr> packets, UniqueChannelId channel_id, PacketPriority priority)>;
   void set_send_packets_cb(SendPacketsCallback cb) { send_packets_cb_ = std::move(cb); }
 
   using DropQueuedPacketsCallback = fit::function<void(AclPacketPredicate predicate)>;
@@ -55,7 +55,7 @@ class MockAclDataChannel final : public AclDataChannel {
                   PacketPriority priority) override {
     return false;
   }
-  bool SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
+  bool SendPackets(std::list<ACLDataPacketPtr> packets, UniqueChannelId channel_id,
                    PacketPriority priority) override {
     if (send_packets_cb_) {
       return send_packets_cb_(std::move(packets), channel_id, priority);

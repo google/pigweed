@@ -5,6 +5,7 @@
 #include "slab_allocators.h"
 
 #include <forward_list>
+#include <list>
 
 #include <gtest/gtest.h>
 
@@ -32,7 +33,7 @@ TEST(SlabAllocatorsTest, CommandPacket) {
 
 TEST(SlabAllocatorsTest, CommandPacketFallBack) {
   size_t num_packets = 0;
-  LinkedList<Packet<hci_spec::CommandHeader>> packets;
+  std::list<std::unique_ptr<hci::CommandPacket>> packets;
 
   // Allocate a lot of small packets. We should be able to allocate two
   // allocators' worth of packets until we fail.
@@ -68,7 +69,7 @@ TEST(SlabAllocatorsTest, ACLDataPacketFallBack) {
                                  kMaxNumSlabs * kNumMediumACLDataPackets +
                                  kMaxNumSlabs * kNumLargeACLDataPackets;
   const size_t kPayloadSize = 5;
-  LinkedList<Packet<hci_spec::ACLDataHeader>> packets;
+  std::list<hci::ACLDataPacketPtr> packets;
 
   for (size_t num_packets = 0; num_packets < kMaxSlabPackets; num_packets++) {
     auto packet = ACLDataPacket::New(kPayloadSize);
@@ -91,7 +92,7 @@ TEST(SlabAllocatorsTest, LargeACLDataPacketFallback) {
   // Maximum number of packets we can expect to obtain from the large slab allocator.
   const size_t kMaxSlabPackets = kMaxNumSlabs * kNumLargeACLDataPackets;
   const size_t kPayloadSize = kLargeACLDataPayloadSize;
-  LinkedList<Packet<hci_spec::ACLDataHeader>> packets;
+  std::list<hci::ACLDataPacketPtr> packets;
 
   for (size_t num_packets = 0; num_packets < kMaxSlabPackets; num_packets++) {
     auto packet = ACLDataPacket::New(kPayloadSize);

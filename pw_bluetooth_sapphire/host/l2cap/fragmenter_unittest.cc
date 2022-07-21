@@ -187,7 +187,7 @@ TEST(FragmenterTest, EmptyPayload) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment, (*fragments.begin())->view().data()));
 }
 
 TEST(FragmenterTest, SingleFragment) {
@@ -208,7 +208,7 @@ TEST(FragmenterTest, SingleFragment) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment, (*fragments.begin())->view().data()));
 }
 
 TEST(FragmenterTest, SingleFragmentExactFit) {
@@ -230,7 +230,7 @@ TEST(FragmenterTest, SingleFragmentExactFit) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment, (*fragments.begin())->view().data()));
 }
 
 TEST(FragmenterTest, TwoFragmentsOffByOne) {
@@ -260,8 +260,8 @@ TEST(FragmenterTest, TwoFragmentsOffByOne) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(ContainersEqual(expected_fragment0, fragments.begin()->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment1, (++fragments.begin())->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment0, (*fragments.begin())->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1, (*++fragments.begin())->view().data()));
 }
 
 TEST(FragmenterTest, TwoFragmentsExact) {
@@ -292,8 +292,8 @@ TEST(FragmenterTest, TwoFragmentsExact) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(ContainersEqual(expected_fragment0, fragments.begin()->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment1, (++fragments.begin())->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment0, (*fragments.begin())->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1, (*++fragments.begin())->view().data()));
 }
 
 TEST(FragmenterTest, ManyFragmentsOffByOne) {
@@ -339,10 +339,10 @@ TEST(FragmenterTest, ManyFragmentsOffByOne) {
 
   auto fragments = pdu.ReleaseFragments();
   auto iter = fragments.begin();
-  EXPECT_TRUE(ContainersEqual(expected_fragment0, (iter++)->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment1, (iter++)->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment2, (iter++)->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment3, iter->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment0, (*iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1, (*iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment2, (*iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment3, (*iter)->view().data()));
 }
 
 TEST(FragmenterTest, MaximalSizedPayload) {
@@ -389,9 +389,9 @@ TEST(FragmenterTest, FragmentsFrameCheckSequence) {
 
   auto fragments = pdu.ReleaseFragments();
   auto iter = fragments.begin();
-  EXPECT_TRUE(ContainersEqual(expected_fragment0, (iter++)->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment1, (iter++)->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment2, (iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment0, (*iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1, (*iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment2, (*iter++)->view().data()));
 }
 
 }  // namespace

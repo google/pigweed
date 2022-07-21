@@ -19,7 +19,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/linked_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"

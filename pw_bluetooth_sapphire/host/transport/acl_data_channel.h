@@ -111,7 +111,7 @@ class AclDataChannel {
   // |priority| indicates the order this packet should be dispatched off of the queue relative to
   // packets of other priorities. Note that high priority packets may still wait behind low priority
   // packets that have already been sent to the controller.
-  virtual bool SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
+  virtual bool SendPackets(std::list<ACLDataPacketPtr> packets, UniqueChannelId channel_id,
                            PacketPriority priority) = 0;
 
   // Allowlist packets destined for the link identified by |handle| (of link type |ll_type|) for

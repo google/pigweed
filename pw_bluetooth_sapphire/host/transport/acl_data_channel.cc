@@ -40,7 +40,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   void SetDataRxHandler(ACLPacketHandler rx_callback) override;
   bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                   PacketPriority priority) override;
-  bool SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
+  bool SendPackets(std::list<ACLDataPacketPtr> packets, UniqueChannelId channel_id,
                    PacketPriority priority) override;
   void RegisterLink(hci_spec::ConnectionHandle handle, bt::LinkType ll_type) override;
   void UnregisterLink(hci_spec::ConnectionHandle handle) override;
@@ -220,10 +220,6 @@ class AclDataChannelImpl final : public AclDataChannel {
   // TODO(armansito): Use priority_queue based on L2CAP channel priority.
   // TODO(fxbug.dev/944): Keep a separate queue for each open connection. Benefits:
   //   * Helps address the packet-prioritization TODO above.
-  //   * Also: having separate queues, which know their own
-  //     bt::LinkType, would let us replace std::list<QueuedDataPacket>
-  //     with LinkedList<ACLDataPacket> which has a more efficient
-  //     memory layout.
   using InspectableDataPacketQueue = Inspectable<DataPacketQueue, inspect::UintProperty, size_t>;
   InspectableDataPacketQueue send_queue_{std::mem_fn(&DataPacketQueue::size)};
 
@@ -290,7 +286,6 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, HciWrapper* hci,
 }
 
 AclDataChannelImpl::~AclDataChannelImpl() {
-
   bt_log(INFO, "hci", "AclDataChannel shutting down");
 
   transport_->command_channel()->RemoveEventHandler(num_completed_packets_event_handler_id_);
@@ -331,23 +326,23 @@ void AclDataChannelImpl::SetDataRxHandler(ACLPacketHandler rx_callback) {
 bool AclDataChannelImpl::SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                                     PacketPriority priority) {
   ZX_ASSERT(data_packet);
-  LinkedList<ACLDataPacket> packets;
+  std::list<ACLDataPacketPtr> packets;
   packets.push_back(std::move(data_packet));
   return SendPackets(std::move(packets), channel_id, priority);
 }
 
-bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
-                                     PacketPriority priority) {
-  if (packets.is_empty()) {
+bool AclDataChannelImpl::SendPackets(std::list<ACLDataPacketPtr> packets,
+                                     UniqueChannelId channel_id, PacketPriority priority) {
+  if (packets.empty()) {
     bt_log(DEBUG, "hci", "no packets to send!");
     return false;
   }
 
-  auto handle = packets.front().connection_handle();
+  auto handle = packets.front()->connection_handle();
 
   if (registered_links_.find(handle) == registered_links_.end()) {
     bt_log(TRACE, "hci", "dropping packets for unregistered connection (handle: %#.4x, count: %lu)",
-           handle, packets.size_slow());
+           handle, packets.size());
     return false;
   }
 
@@ -355,27 +350,28 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
   // continuing fragment at the head. There is no check for whether |packets| have enough data to
   // form whole PDUs because queue management doesn't require that and it would break abstraction
   // even more.
-  ZX_ASSERT_MSG(packets.front().packet_boundary_flag() !=
+  ZX_ASSERT_MSG(packets.front()->packet_boundary_flag() !=
                     hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
                 "expected full PDU");
 
   for (const auto& packet : packets) {
     // This call assumes that all packets in each call are for the same connection
-    ZX_ASSERT_MSG(packet.connection_handle() == handle,
+    ZX_ASSERT_MSG(packet->connection_handle() == handle,
                   "expected only fragments for one connection (%#.4x, got %#.4x)", handle,
-                  packet.connection_handle());
+                  packet->connection_handle());
 
     // Make sure that all packets are within the MTU.
-    if (packet.view().payload_size() >
-        GetBufferMtu(registered_links_[packet.connection_handle()])) {
+    if (packet->view().payload_size() >
+        GetBufferMtu(registered_links_[packet->connection_handle()])) {
       bt_log(ERROR, "hci", "ACL data packet too large!");
       return false;
     }
   }
 
   auto insert_iter = SendQueueInsertLocationForPriority(priority);
-  for (int i = 0; !packets.is_empty(); i++) {
-    auto packet = packets.pop_front();
+  for (int i = 0; !packets.empty(); i++) {
+    auto packet = std::move(packets.front());
+    packets.pop_front();
     auto ll_type = registered_links_[packet->connection_handle()];
     const size_t payload_size = packet->view().payload_size();
     auto queue_packet = QueuedDataPacket(ll_type, channel_id, priority, std::move(packet),

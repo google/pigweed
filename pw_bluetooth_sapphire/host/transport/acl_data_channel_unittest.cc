@@ -375,11 +375,12 @@ TEST_F(ACLDataChannelTest, SendPacketsFailure) {
   acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
 
   // Empty packet list.
-  EXPECT_FALSE(acl_data_channel()->SendPackets(
-      LinkedList<ACLDataPacket>(), l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
+  EXPECT_FALSE(acl_data_channel()->SendPackets(std::list<ACLDataPacketPtr>(),
+                                               l2cap::kInvalidChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
 
   // Packet exceeds MTU
-  LinkedList<ACLDataPacket> packets;
+  std::list<ACLDataPacketPtr> packets;
   packets.push_back(ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
                                        hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU + 1));
   EXPECT_FALSE(acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId,
@@ -396,7 +397,7 @@ TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithContinuingFragments) {
 
   acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
 
-  LinkedList<ACLDataPacket> packets;
+  std::list<ACLDataPacketPtr> packets;
   packets.push_back(ACLDataPacket::New(kHandle,
                                        hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
                                        hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU));
@@ -416,7 +417,7 @@ TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneConne
   acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // Packet exceeds MTU
-  LinkedList<ACLDataPacket> packets;
+  std::list<ACLDataPacketPtr> packets;
   packets.push_back(ACLDataPacket::New(kHandle0,
                                        hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
                                        hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU));
@@ -456,7 +457,7 @@ TEST_F(ACLDataChannelTest, SendPackets) {
   };
   test_device()->SetDataCallback(data_cb, dispatcher());
 
-  LinkedList<ACLDataPacket> packets;
+  std::list<ACLDataPacketPtr> packets;
   for (int i = 1; i <= kExpectedPacketCount; ++i) {
     auto packet = ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      hci_spec::ACLBroadcastFlag::kPointToPoint, 1);
@@ -1318,7 +1319,7 @@ TEST_F(ACLDataChannelTest,
   // Send enough data that the first PDU sent in this loop gets dropped
   for (size_t i = 0; i < AclDataChannel::kMaxAclPacketsPerChannel + 1; ++i) {
     // Send two fragments per PDU
-    LinkedList<ACLDataPacket> packets;
+    std::list<ACLDataPacketPtr> packets;
     for (auto pbf : {hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
                      hci_spec::ACLPacketBoundaryFlag::kContinuingFragment}) {
       auto packet =

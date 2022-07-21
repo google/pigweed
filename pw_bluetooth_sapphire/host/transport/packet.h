@@ -12,7 +12,6 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/linked_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 
 namespace bt::hci {
@@ -88,11 +87,10 @@ namespace bt::hci {
 //
 //   Packet is NOT thread-safe without external locking.
 
-// PacketBase provides basic view functionality and intrusively
-// linked-listability. Intended to be inherited by the Packet template and all
-// of its specializations.
+// PacketBase provides basic view functionality. Intended to be inherited by the Packet template and
+// all of its specializations.
 template <typename HeaderType, typename T>
-class PacketBase : public LinkedListable<T> {
+class PacketBase {
  public:
   virtual ~PacketBase() = default;
 

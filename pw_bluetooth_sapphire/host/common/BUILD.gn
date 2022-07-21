@@ -24,7 +24,6 @@ source_set("common") {
     "identifier.cc",
     "identifier.h",
     "inspectable.h",
-    "linked_list.h",
     "log.cc",
     "log.h",
     "manufacturer_names.cc",

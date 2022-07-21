@@ -98,7 +98,7 @@ class ChannelManagerImpl final : public ChannelManager {
   // Stores packets received on a connection handle before a link for it has
   // been created.
   using PendingPacketMap =
-      std::unordered_map<hci_spec::ConnectionHandle, LinkedList<hci::ACLDataPacket>>;
+      std::unordered_map<hci_spec::ConnectionHandle, std::queue<hci::ACLDataPacketPtr>>;
   PendingPacketMap pending_packets_;
 
   // Store information required to create and forward channels for locally-
@@ -305,7 +305,7 @@ void ChannelManagerImpl::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
   // If a LogicalLink does not exist, we set up a queue for its packets to be
   // delivered when the LogicalLink gets created.
   if (iter == ll_map_.end()) {
-    pp_iter = pending_packets_.emplace(handle, LinkedList<hci::ACLDataPacket>()).first;
+    pp_iter = pending_packets_.emplace(handle, std::queue<hci::ACLDataPacketPtr>()).first;
   } else {
     // A logical link exists. |pp_iter| will be valid only if the drain task has
     // not run yet (see ChannelManagerImpl::RegisterInternal()).
@@ -315,7 +315,7 @@ void ChannelManagerImpl::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
   if (pp_iter != pending_packets_.end()) {
     packet->set_trace_id(TRACE_NONCE());
     TRACE_FLOW_BEGIN("bluetooth", "ChannelMaager::OnDataReceived queued", packet->trace_id());
-    pp_iter->second.push_back(std::move(packet));
+    pp_iter->second.push(std::move(packet));
     bt_log(TRACE, "l2cap", "queued rx packet on handle: %#.4x", handle);
     return;
   }
@@ -346,8 +346,9 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(hci_spec::Connection
   auto pp_iter = pending_packets_.find(handle);
   if (pp_iter != pending_packets_.end()) {
     auto& packets = pp_iter->second;
-    while (!packets.is_empty()) {
-      auto packet = packets.pop_front();
+    while (!packets.empty()) {
+      auto packet = std::move(packets.front());
+      packets.pop();
       TRACE_FLOW_END("bluetooth", "ChannelManagerImpl::OnDataReceived queued", packet->trace_id());
       ll->HandleRxPacket(std::move(packet));
     }

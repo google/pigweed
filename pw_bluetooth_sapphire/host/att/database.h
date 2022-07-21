@@ -154,10 +154,6 @@ class Database final {
   // The list of groupings is sorted by handle where each grouping maps to a
   // non-overlapping handle range. Successive groupings don't necessarily
   // represent contiguous handle ranges as any grouping can be removed.
-  //
-  // Note: This uses a std::list because std::lower_bound doesn't work with a
-  // LinkedList (aka fbl::DoublyLinkedList). This is only marginally
-  // less space efficient.
   GroupingList groupings_;
 
   fxl::WeakPtrFactory<Database> weak_ptr_factory_;

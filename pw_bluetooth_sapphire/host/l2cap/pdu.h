@@ -8,6 +8,8 @@
 #include <endian.h>
 #include <zircon/assert.h>
 
+#include <list>
+
 #include <fbl/intrusive_double_list.h>
 #include <fbl/macros.h>
 
@@ -24,19 +26,13 @@ namespace bt::l2cap {
 // packet. A PDU cannot be populated directly and must be obtained from a
 // Recombiner or Fragmenter.
 //
-// A PDU instance is light-weight (it consists of a single unique_ptr via
-// LinkedList and a size_t field) and can be passed around by value.
+// A PDU instance is light-weight and can be passed around by value.
 // As the PDU uniquely owns its chain of fragments, a PDU is move-only.
-//
-// THREAD-SAFETY:
-//
-// This class is not thread-safe. External locking should be provided if an
-// instance will be accessed on multiple threads.
 class PDU final {
  public:
-  using FragmentList = LinkedList<hci::ACLDataPacket>;
+  using FragmentList = std::list<hci::ACLDataPacketPtr>;
 
-  PDU();
+  PDU() = default;
   ~PDU() = default;
 
   // Allow move operations.
@@ -45,14 +41,10 @@ class PDU final {
 
   // An unpopulated PDU is considered invalid, which is the default-constructed
   // state.
-  bool is_valid() const {
-    ZX_DEBUG_ASSERT(fragments_.is_empty() && !fragment_count_ ||
-                    !fragments_.is_empty() && fragment_count_);
-    return !fragments_.is_empty();
-  }
+  bool is_valid() const { return !fragments_.empty(); }
 
   // The number of ACL data fragments that are currently a part of this PDU.
-  size_t fragment_count() const { return fragment_count_; }
+  size_t fragment_count() const { return fragments_.size(); }
 
   // Returns the number of bytes that are currently contained in this PDU,
   // excluding the Basic L2CAP header.
@@ -65,7 +57,7 @@ class PDU final {
   // for.
   hci_spec::ConnectionHandle connection_handle() const {
     ZX_DEBUG_ASSERT(is_valid());
-    return fragments_.begin()->connection_handle();
+    return (*fragments_.begin())->connection_handle();
   }
 
   // This method will attempt to read |size| bytes of the basic-frame
@@ -103,9 +95,6 @@ class PDU final {
   // Takes ownership of |fragment| and adds it to |fragments_|. This method
   // assumes that validity checks on |fragment| have already been performed.
   void AppendFragment(hci::ACLDataPacketPtr fragment);
-
-  // The number of fragments currently stored in this PDU.
-  size_t fragment_count_;
 
   // ACL data fragments that currently form this PDU. In a complete PDU, it is
   // expected that the sum of the payload sizes of all elements in |fragments_|

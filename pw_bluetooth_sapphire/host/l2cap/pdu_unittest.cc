@@ -128,7 +128,7 @@ TEST(PduTest, ReleaseFragments) {
   auto fragments = pdu.ReleaseFragments();
 
   EXPECT_FALSE(pdu.is_valid());
-  ASSERT_FALSE(fragments.is_empty());
+  ASSERT_FALSE(fragments.empty());
   EXPECT_EQ(0u, pdu.fragment_count());
 
   // Directly count the elements in |fragments| to make sure the count is
@@ -145,7 +145,7 @@ TEST(PduTest, ReleaseFragments) {
 
                                   // Basic l2cap header
                                   0x04, 0x00, 0xFF, 0xFF, 'T', 'e', 's', 't'),
-                              fragments.begin()->view().data()));
+                              (*fragments.begin())->view().data()));
 }
 
 TEST(PduTest, ReadSingleFragment) {

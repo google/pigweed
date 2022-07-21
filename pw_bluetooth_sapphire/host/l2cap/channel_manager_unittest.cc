@@ -451,10 +451,10 @@ class ChannelManagerTest : public TestingBase {
   CommandId NextCommandId() { return next_command_id_++; }
 
  private:
-  bool SendPackets(LinkedList<hci::ACLDataPacket> packets, ChannelId channel_id,
+  bool SendPackets(std::list<hci::ACLDataPacketPtr> packets, ChannelId channel_id,
                    hci::AclDataChannel::PacketPriority priority) {
     for (const auto& packet : packets) {
-      const ByteBuffer& data = packet.view().data();
+      const ByteBuffer& data = packet->view().data();
       if (expected_packets_.empty()) {
         ADD_FAILURE() << "Unexpected outbound ACL data";
         std::cout << "{ ";
@@ -484,7 +484,7 @@ class ChannelManagerTest : public TestingBase {
         expected_packets_.pop();
       }
     }
-    return !packets.is_empty();
+    return !packets.empty();
   }
 
   std::unique_ptr<ChannelManager> chanmgr_;
