@@ -21,6 +21,7 @@
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_rpc/internal/packet.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
@@ -29,6 +30,18 @@ namespace pw::rpc {
 // Extracts the channel ID from a pw_rpc packet. Returns DATA_LOSS if the
 // packet is corrupt and the channel ID could not be found.
 Result<uint32_t> ExtractChannelId(ConstByteSpan packet);
+
+// Returns the maximum size of the payload of an RPC packet. This can be used
+// when allocating response encode buffers for RPC services.
+// If the RPC encode buffer is too small to fit RPC packet headers, this will
+// return zero.
+constexpr size_t MaxSafePayloadSize(
+    size_t encode_buffer_size = cfg::kEncodingBufferSizeBytes) {
+  return encode_buffer_size > internal::Packet::kMinEncodedSizeWithoutPayload
+             ? encode_buffer_size -
+                   internal::Packet::kMinEncodedSizeWithoutPayload
+             : 0;
+}
 
 class ChannelOutput {
  public:

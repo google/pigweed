@@ -28,11 +28,15 @@ class Packet {
  public:
   static constexpr uint32_t kUnassignedId = 0;
 
+  // TODO(b/236156534): This can use the pwpb generated
+  // pw::rpc::internal::RpcPacket::kMaxEncodedSizeBytes once the max value of
+  // enums is properly accounted for and when `status` is changed from a uint32
+  // to a StatusCode.
   static constexpr size_t kMinEncodedSizeWithoutPayload =
       protobuf::SizeOfFieldEnum(RpcPacket::Fields::TYPE, 7) +
       protobuf::SizeOfFieldUint32(RpcPacket::Fields::CHANNEL_ID) +
-      protobuf::SizeOfFieldUint32(RpcPacket::Fields::SERVICE_ID) +
-      protobuf::SizeOfFieldUint32(RpcPacket::Fields::METHOD_ID) +
+      protobuf::SizeOfFieldFixed32(RpcPacket::Fields::SERVICE_ID) +
+      protobuf::SizeOfFieldFixed32(RpcPacket::Fields::METHOD_ID) +
       protobuf::SizeOfDelimitedFieldWithoutValue(RpcPacket::Fields::PAYLOAD) +
       protobuf::SizeOfFieldUint32(RpcPacket::Fields::STATUS,
                                   Status::Unauthenticated().code()) +

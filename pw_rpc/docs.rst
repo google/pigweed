@@ -493,11 +493,47 @@ The C++ service implementation class may append "Service" to the name.
     void List(ConstByteSpan request, RawServerWriter& writer);
   };
 
-  }
+  }  // namespace pw::file
 
 For upstream Pigweed services, this naming style is a requirement. Note that
 some services created before this was established may use non-compliant
 names. For Pigweed users, this naming style is a suggestion.
+
+C++ payload sizing limitations
+===============================
+The individual size of each sent RPC request or response is limited by
+``pw_rpc``'s ``PW_RPC_ENCODING_BUFFER_SIZE_BYTES`` configuration option when
+using Pigweed's C++ implementation. While multiple RPC messages can be enqueued
+(as permitted by the underlying transport), if a single individual sent message
+exceeds the limitations of the statically allocated encode buffer, the packet
+will fail to encode and be dropped.
+
+This applies to all C++ RPC service implementations (nanopb, raw, and pwpb),
+so it's important to ensure request and response message sizes do not exceed
+this limitation.
+
+As ``pw_rpc`` has some additional encoding overhead, a helper,
+``pw::rpc::MaxSafePayloadSize()`` is provided to expose the practical max RPC
+message payload size.
+
+.. code-block:: cpp
+
+  #include "pw_file/file.raw_rpc.pb.h"
+  #include "pw_rpc/channel.h"
+
+  namespace pw::file {
+
+  class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
+   public:
+    void List(ConstByteSpan request, RawServerWriter& writer);
+
+   private:
+    // Allocate a buffer for building proto responses.
+    static constexpr size_t kEncodeBufferSize = pw::rpc::MaxSafePayloadSize();
+    std::array<std::byte, kEncodeBufferSize> encode_buffer_;
+  };
+
+  }  // namespace pw::file
 
 Protocol description
 ====================

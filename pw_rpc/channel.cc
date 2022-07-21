@@ -30,6 +30,8 @@ namespace {
 //     PW_RPC_DYNAMIC_ALLOCATION is enabled.
 std::array<std::byte, cfg::kEncodingBufferSizeBytes> encoding_buffer
     PW_GUARDED_BY(internal::rpc_lock());
+static_assert(MaxSafePayloadSize() > 0,
+              "pw_rpc's encode buffer is too small to fit any data");
 
 }  // namespace
 

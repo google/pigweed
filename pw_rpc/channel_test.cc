@@ -45,6 +45,69 @@ enum class ChannelId {
   kTwo = 2,
 };
 
+TEST(Channel, MaxSafePayload) {
+  constexpr size_t kUint32Max = std::numeric_limits<uint32_t>::max();
+  constexpr size_t kMaxPayloadSize = 64;
+
+  constexpr size_t kTestPayloadSize = MaxSafePayloadSize(kMaxPayloadSize);
+
+  // Because it's impractical to test a payload that nears the limits of a
+  // uint32 varint, calculate the difference when using a smaller payload.
+  constexpr size_t kPayloadSizeTestLimitations =
+      varint::EncodedSize(kUint32Max) - varint::EncodedSize(kTestPayloadSize);
+
+  // The buffer to use for encoding the RPC packet.
+  std::array<std::byte, kMaxPayloadSize - kPayloadSizeTestLimitations> buffer;
+
+  std::array<std::byte, kTestPayloadSize> payload;
+  for (size_t i = 0; i < payload.size(); i++) {
+    payload[i] = std::byte(i % std::numeric_limits<uint8_t>::max());
+  }
+
+  Packet packet(PacketType::SERVER_STREAM,
+                /*channel_id=*/kUint32Max,  // Varint, needs to be uint32_t max.
+                /*service_id=*/42,       // Fixed-width. Value doesn't matter.
+                /*method_id=*/100,       // Fixed-width. Value doesn't matter.
+                /*call_id=*/kUint32Max,  // Varint, needs to be uint32_t max.
+                payload,
+                Status::Unauthenticated());
+
+  Result<ConstByteSpan> result = packet.Encode(buffer);
+  ASSERT_EQ(OkStatus(), result.status());
+}
+
+TEST(Channel, MaxSafePayload_OffByOne) {
+  constexpr size_t kUint32Max = std::numeric_limits<uint32_t>::max();
+  constexpr size_t kMaxPayloadSize = 64;
+
+  constexpr size_t kTestPayloadSize = MaxSafePayloadSize(kMaxPayloadSize);
+
+  // Because it's impractical to test a payload that nears the limits of a
+  // uint32 varint, calculate the difference when using a smaller payload.
+  constexpr size_t kPayloadSizeTestLimitations =
+      varint::EncodedSize(kUint32Max) - varint::EncodedSize(kTestPayloadSize);
+
+  // The buffer to use for encoding the RPC packet.
+  std::array<std::byte, kMaxPayloadSize - kPayloadSizeTestLimitations - 1>
+      buffer;
+
+  std::array<std::byte, kTestPayloadSize> payload;
+  for (size_t i = 0; i < payload.size(); i++) {
+    payload[i] = std::byte(i % std::numeric_limits<uint8_t>::max());
+  }
+
+  Packet packet(PacketType::SERVER_STREAM,
+                /*channel_id=*/kUint32Max,  // Varint, needs to be uint32_t max.
+                /*service_id=*/42,       // Fixed-width. Value doesn't matter.
+                /*method_id=*/100,       // Fixed-width. Value doesn't matter.
+                /*call_id=*/kUint32Max,  // Varint, needs to be uint32_t max.
+                payload,
+                Status::Unauthenticated());
+
+  Result<ConstByteSpan> result = packet.Encode(buffer);
+  ASSERT_EQ(Status::ResourceExhausted(), result.status());
+}
+
 TEST(Channel, Create_FromEnum) {
   constexpr rpc::Channel one = Channel::Create<ChannelId::kOne>(nullptr);
   constexpr rpc::Channel two = Channel::Create<ChannelId::kTwo>(nullptr);
