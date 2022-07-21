@@ -18,12 +18,19 @@ custom_data_source: {
   name: "segment_names"
   base_data_source: "segments"
 
+  # Segment containing .code section.
   rewrite: {
     pattern: "LOAD #1"
     replacement: "FLASH"
   }
+  # Segment containing .static_init_ram section.
   rewrite: {
     pattern: "LOAD #2"
+    replacement: "RAM"
+  }
+  # Segment containing .zero_init_ram section.
+  rewrite: {
+    pattern: "LOAD #4"
     replacement: "RAM"
   }
 }
