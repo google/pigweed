@@ -517,10 +517,12 @@ template("pw_python_package") {
           args = [
             "install",
 
-            # This speeds up pip installs. At this point in the gn build the
-            # virtualenv is already activated so build isolation isn't required.
-            # This requires that pip, setuptools, and wheel packages are
-            # installed.
+            # This speeds up pip installs. Build isolation isn't required for
+            # in-tree packages unless that package includes C/C++ extension
+            # modules:
+            # https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
+            # For packages witout extensions this option requires that pip,
+            # setuptools, and wheel packages are available.
             "--no-build-isolation",
           ]
 

@@ -264,7 +264,10 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
         requirements = constraints
 
     if requirements:
-        requirement_args = ['--no-build-isolation']
+        requirement_args = []
+        # Note: --no-build-isolation should be avoided for installing 3rd party
+        # Python packages that use C/C++ extension modules.
+        # https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
         requirement_args.extend('--requirement={}'.format(req)
                                 for req in requirements)
         combined_requirement_args = requirement_args + constraint_args

@@ -168,7 +168,6 @@ template("pw_python_venv") {
         _skip_installing_external_python_deps = true
         args = [
           "install",
-          "--no-build-isolation",
           "wheel",
         ]
         inputs = _constraints
@@ -190,10 +189,11 @@ template("pw_python_venv") {
         module = "pip"
         _pw_internal_run_in_venv = true
         _skip_installing_external_python_deps = true
-        args = [
-          "install",
-          "--no-build-isolation",
-        ]
+        args = [ "install" ]
+
+        # Note: --no-build-isolation should be avoided for installing 3rd party
+        # Python packages that use C/C++ extension modules.
+        # https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
         inputs = _constraints + _requirements
 
         # Constraints
