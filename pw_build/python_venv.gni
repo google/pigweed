@@ -158,6 +158,34 @@ template("pw_python_venv") {
 
   if (defined(invoker.source_packages) || defined(invoker.requirements)) {
     if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
+      # This target will run 'pip install wheel' in the venv. This is purposely
+      # run before further pip installs so packages that run bdist_wheel as part
+      # of their install process will succeed. Packages that run native compiles
+      # typically do this.
+      pw_python_action("${target_name}._install_base_3p_deps") {
+        module = "pip"
+        _pw_internal_run_in_venv = true
+        _skip_installing_external_python_deps = true
+        args = [
+          "install",
+          "--no-build-isolation",
+          "wheel",
+        ]
+        inputs = _constraints
+
+        foreach(_constraints_file, _constraints) {
+          args += [
+            "--constraint",
+            rebase_path(_constraints_file, root_build_dir),
+          ]
+        }
+
+        deps = [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
+        stamp = true
+        pool = "$dir_pw_build/pool:pip($default_toolchain)"
+      }
+
+      # Install all 3rd party Python dependencies.
       pw_python_action("${target_name}._install_3p_deps") {
         module = "pip"
         _pw_internal_run_in_venv = true
@@ -193,7 +221,10 @@ template("pw_python_venv") {
           ]
         }
 
-        deps = [ ":${invoker.target_name}._generate_3p_requirements($pw_build_PYTHON_TOOLCHAIN)" ]
+        deps = [
+          ":${invoker.target_name}._generate_3p_requirements($pw_build_PYTHON_TOOLCHAIN)",
+          ":${invoker.target_name}._install_base_3p_deps($pw_build_PYTHON_TOOLCHAIN)",
+        ]
         stamp = true
         pool = "$dir_pw_build/pool:pip($default_toolchain)"
       }
