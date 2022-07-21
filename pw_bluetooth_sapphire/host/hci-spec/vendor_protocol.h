@@ -22,6 +22,7 @@
 // CommandPacket::mutable_payload() instead. Take extra care when accessing flexible array members.
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt::hci_spec::vendor::android {
 
@@ -35,6 +36,60 @@ enum class A2dpCodecType : uint32_t {
   kLdac   = (1 << 4),
   // Bits 5 - 31 are reserved
   // clang-format on
+};
+
+// Bitmask values for Sampling Frequency
+enum class A2dpSamplingFrequency : uint32_t {
+  // clang-format off
+  k44100Hz  = (1 << 0),
+  k48000Hz  = (1 << 1),
+  k88200Hz  = (1 << 2),
+  k96000Hz  = (1 << 3),
+  // clang-format on
+};
+
+// Bitmask values for Bits per Sample
+enum class A2dpBitsPerSample : uint8_t {
+  // clang-format off
+  k16BitsPerSample  = (1 << 0),
+  k24BitsPerSample  = (1 << 1),
+  k32BitsPerSample  = (1 << 2),
+  // clang-format on
+};
+
+// Bitmask values for Channel Mode
+enum class A2dpChannelMode : uint8_t {
+  // clang-format off
+  kMono   = (1 << 0),
+  kStereo = (1 << 1),
+  // clang-format on
+};
+
+// Bitmask values for Channel Mode
+enum class A2dpBitrateIndex : uint8_t {
+  // clang-format off
+  kHigh             = 0x00,
+  kMild             = 0x01,
+  kLow              = 0x02,
+  // Values 0x03 - 0x7E are reserved
+  kAdaptiveBitrate  = 0x7F,
+  // Values 0x80 - 0xFF are reserved
+  // clang-format on
+};
+
+// Bitmask values for LDAC Channel Mode
+enum class A2dpLdacChannelMode : uint8_t {
+  // clang-format off
+  kStereo = (1 << 0),
+  kDual   = (1 << 1),
+  kMono   = (1 << 2),
+  // clang-format on
+};
+
+// 1-octet boolean "enable"/"disable" parameter for AAC variable bitrate
+enum class A2dpAacEnableVariableBitRate : uint8_t {
+  kDisable = 0x00,
+  kEnable = 0x80,
 };
 
 // ============================================================================
@@ -100,6 +155,149 @@ struct LEGetVendorCapabilitiesReturnParams {
   // Bitmask: codec types supported in dynamic audio buffer within the Bluetooth controller (see
   // A2dpCodecType for bitmask values)
   uint32_t dynamic_audio_buffer_support;
+} __PACKED;
+
+// ============================================================================
+// A2DP Offload Commands
+
+constexpr OpCode kA2dpOffloadCommand = VendorOpCode(0x15D);
+constexpr uint8_t kStartA2dpOffloadCommandSubopcode = 0x01;
+constexpr uint8_t kStopA2dpOffloadCommandSubopcode = 0x02;
+constexpr uint32_t kLdacVendorId = 0x0000012D;
+constexpr uint16_t kLdacCodeId = 0x00AA;
+
+struct A2dpScmsTEnable {
+  GenericEnableParam enabled;
+  uint8_t header;
+} __PACKED;
+
+struct SbcCodecInformation {
+  // Bitmask: block length | subbands | allocation method
+  // Block length: bits 7-4
+  // Subbands: bits 3-2
+  // Allocation method: bits 1-0
+  uint8_t blocklen_subbands_alloc_method;
+
+  uint8_t min_bitpool_value;
+
+  uint8_t max_bitpool_value;
+
+  // Bitmask: sampling frequency | channel mode
+  // Sampling frequency: bits 7-4
+  // Channel mode: bits 3-0
+  uint8_t sampling_freq_channel_mode;
+
+  // Bytes 4 - 31 are reserved
+  uint8_t reserved[28];
+} __PACKED;
+
+static_assert(sizeof(SbcCodecInformation) == 32,
+              "SbcCodecInformation must take up exactly 32 bytes");
+
+struct AacCodecInformation {
+  // Object type
+  uint8_t object_type;
+
+  A2dpAacEnableVariableBitRate variable_bit_rate;
+
+  // Bytes 2 - 31 are reserved
+  uint8_t reserved[30];
+} __PACKED;
+
+static_assert(sizeof(AacCodecInformation) == 32,
+              "AacCodecInformation must take up exactly 32 bytes");
+
+struct LdacCodecInformation {
+  // Must always be set to kLdacVendorId
+  uint32_t vendor_id;
+
+  // Must always be set to kLdacCodeId
+  // All other values are reserved
+  uint16_t codec_id;
+
+  // Bitmask: bitrate index (see BitrateIndex for bitmask values)
+  A2dpBitrateIndex bitrate_index;
+
+  // Bitmask: LDAC channel mode (see LdacChannelMode for bitmask values)
+  A2dpLdacChannelMode ldac_channel_mode;
+
+  // Bytes 8 - 31 are reserved
+  uint8_t reserved[24];
+} __PACKED;
+
+static_assert(sizeof(LdacCodecInformation) == 32,
+              "LdacCodecInformation must take up exactly 32 bytes");
+
+struct AptxCodecInformation {
+  // Bits 0 - 31 are reserved
+  uint8_t reserved[32];
+} __PACKED;
+
+static_assert(sizeof(AptxCodecInformation) == 32,
+              "AptxCodecInformation must take up exactly 32 bytes");
+
+union A2dpOffloadCodecInformation {
+  SbcCodecInformation sbc;
+  AacCodecInformation aac;
+  LdacCodecInformation ldac;
+  AptxCodecInformation aptx;
+} __PACKED;
+
+static_assert(sizeof(A2dpOffloadCodecInformation) == 32,
+              "A2dpOffloadCodecInformation must take up exactly 32 bytes");
+
+struct StartA2dpOffloadCommand {
+  // Must always be set to kStartA2dpOffloadCommandSubopcode
+  uint8_t opcode;
+
+  // Bitmask: codec types supported (see A2dpCodecType for bitmask values)
+  A2dpCodecType codec;
+
+  // Max latency allowed in ms. A value of zero disables flush.
+  uint16_t max_latency;
+
+  A2dpScmsTEnable scms_t_enable;
+
+  // Bitmask: sampling frequency (see SamplingFrequency for bitmask values)
+  A2dpSamplingFrequency sampling_frequency;
+
+  // Bitmask: bits per sample (see BitsPerSample for bitmask values)
+  A2dpBitsPerSample bits_per_sample;
+
+  // Bitmask: channel mode (see ChannelMode for bitmask values)
+  A2dpChannelMode channel_mode;
+
+  // The encoded audio bitrate in bits per second
+  // 0x00000000 - The audio bitrate is not specified / unused
+  // 0x00000001 - 0x00FFFFFF - Encoded audio bitrate in bits per second
+  // 0x01000000 - 0xFFFFFFFF - Reserved
+  uint32_t encoded_audio_bitrate;
+
+  // Connection handle of A2DP connection being configured
+  ConnectionHandle connection_handle;
+
+  // L2CAP channel ID to be used for this A2DP connection
+  l2cap::ChannelId l2cap_channel_id;
+
+  // Maximum size of L2CAP MTY containing encoded audio packets
+  uint16_t l2cap_mtu_size;
+
+  // Codec-specific information
+  A2dpOffloadCodecInformation codec_information;
+} __PACKED;
+
+struct StartA2dpOffloadCommandReturnParams {
+  StatusCode status;
+
+  // Will always be set to kStartA2dpOffloadCommandSubopcode
+  uint8_t opcode;
+} __PACKED;
+
+struct StopA2dpOffloadCommandReturnParams {
+  StatusCode status;
+
+  // Will always be set to kStopA2dpOffloadCommandSubopcode
+  uint8_t opcode;
 } __PACKED;
 
 // ============================================================================
