@@ -30,7 +30,7 @@ using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 // A reference counted object used to verify that HCI command completion and
 // status callbacks are properly cleaned up after the end of a transaction.
-class TestCallbackObject : public fbl::RefCounted<TestCallbackObject> {
+class TestCallbackObject {
  public:
   explicit TestCallbackObject(fit::closure deletion_callback)
       : deletion_cb_(std::move(deletion_callback)) {}
@@ -81,7 +81,7 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
   // verify that it gets cleaned up as expected.
   bool test_obj_deleted = false;
   auto test_obj =
-      fbl::MakeRefCounted<TestCallbackObject>([&test_obj_deleted] { test_obj_deleted = true; });
+      std::make_shared<TestCallbackObject>([&test_obj_deleted] { test_obj_deleted = true; });
 
   auto reset = CommandPacket::New(hci_spec::kReset);
   CommandChannel::TransactionId id = cmd_channel()->SendCommand(

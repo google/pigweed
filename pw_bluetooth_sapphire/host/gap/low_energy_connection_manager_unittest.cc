@@ -459,7 +459,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_EQ(letoh16(connect_params->scan_window), kLEScanFastWindow);
 }
 
-struct TestObject final : fbl::RefCounted<TestObject> {
+struct TestObject final {
   explicit TestObject(bool* d) : deleted(d) {
     ZX_DEBUG_ASSERT(deleted);
     *deleted = false;
@@ -475,7 +475,7 @@ TEST_F(LowEnergyConnectionManagerTest, DeleteRefInClosedCallback) {
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
   bool deleted = false;
-  auto obj = fbl::AdoptRef(new TestObject(&deleted));
+  auto obj = std::make_shared<TestObject>(&deleted);
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   int closed_count = 0;
   auto closed_cb = [&, obj = std::move(obj)] {
