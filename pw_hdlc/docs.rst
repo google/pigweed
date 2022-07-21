@@ -284,11 +284,18 @@ lower overhead.
 Additional features
 ===================
 
-pw::stream::SysIoWriter
-------------------------
-The ``SysIoWriter`` C++ class implements the ``Writer`` interface with
-``pw::sys_io``. This Writer may be used by the C++ encoder to send HDLC frames
-over serial.
+RpcChannelOutput
+----------------
+The ``RpcChannelOutput`` implements pw_rpc's ``pw::rpc::ChannelOutput``
+interface, simplifying the process of creating an RPC channel over HDLC. A
+``pw::stream::Writer`` must be provided as the underlying transport
+implementation.
+
+If your HDLC routing path has a Maximum Transmission Unit (MTU) limitation,
+using the ``FixedMtuChannelOutput`` is strongly recommended to verify that the
+currently configured max RPC payload size (dictated by pw_rpc's static encode
+buffer) will always fit safely within the limits of the fixed HDLC MTU *after*
+HDLC encoding.
 
 HdlcRpcClient
 -------------

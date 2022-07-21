@@ -97,6 +97,15 @@ TEST(RpcChannelOutput, EscapingPayloadTest) {
       0);
 }
 
+TEST(FixedMtuChannelOutput, CompileTest) {
+  constexpr size_t kRequiredMtu =
+      MaxEncodedFrameSize(rpc::cfg::kEncodingBufferSizeBytes);
+  stream::MemoryWriterBuffer<kRequiredMtu> memory_writer;
+  [[maybe_unused]] FixedMtuChannelOutput<kRequiredMtu> channel_output(
+      memory_writer, kAddress, "RpcChannelOutput");
+  EXPECT_EQ(channel_output.MaxSafePayloadSize(), rpc::MaxSafePayloadSize());
+}
+
 TEST(RpcChannelOutputBuffer, 1BytePayload) {
   stream::MemoryWriterBuffer<kSinkBufferSize> memory_writer;
 
