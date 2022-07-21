@@ -18,6 +18,7 @@
 #include <optional>
 #include <thread>
 
+#include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/rpc_channel.h"
 #include "pw_hdlc/rpc_packets.h"
 #include "pw_rpc/integration_testing.h"
@@ -125,7 +126,7 @@ class SocketClientContext {
   std::atomic_flag should_terminate_ = ATOMIC_FLAG_INIT;
   std::optional<std::thread> rpc_dispatch_thread_handle_;
   stream::SocketStream stream_;
-  hdlc::RpcChannelOutput channel_output_;
+  hdlc::FixedMtuChannelOutput<kMaxTransmissionUnit> channel_output_;
   ChannelOutputWithManipulator channel_output_with_manipulator_;
   ChannelManipulator* ingress_channel_manipulator_;
   Channel channel_;
@@ -134,7 +135,9 @@ class SocketClientContext {
 
 template <size_t kMaxTransmissionUnit>
 void SocketClientContext<kMaxTransmissionUnit>::ProcessPackets() {
-  std::byte decode_buffer[kMaxTransmissionUnit];
+  constexpr size_t kDecoderBufferSize =
+      hdlc::Decoder::RequiredBufferSizeForFrameSize(kMaxTransmissionUnit);
+  std::array<std::byte, kDecoderBufferSize> decode_buffer;
   hdlc::Decoder decoder(decode_buffer);
 
   while (true) {

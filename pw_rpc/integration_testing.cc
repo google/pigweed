@@ -24,7 +24,9 @@
 namespace pw::rpc::integration_test {
 namespace {
 
-SocketClientContext<512> context;
+// Hard-coded to 1055 bytes, which is enough to fit 512-byte payloads when using
+// HDLC framing.
+SocketClientContext<1055> context;
 unit_test::LoggingEventHandler log_test_events;
 
 }  // namespace

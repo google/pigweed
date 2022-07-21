@@ -17,6 +17,7 @@
 #include <cstdio>
 
 #include "pw_assert/check.h"
+#include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/rpc_channel.h"
 #include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
@@ -26,14 +27,18 @@
 namespace pw::rpc::system_server {
 namespace {
 
-constexpr size_t kMaxTransmissionUnit = 512;
+// Hard-coded to 1055 bytes, which is enough to fit 512-byte payloads when using
+// HDLC framing.
+constexpr size_t kMaxTransmissionUnit = 1055;
 uint16_t socket_port = 33000;
+
+static_assert(kMaxTransmissionUnit ==
+              hdlc::MaxEncodedFrameSize(rpc::cfg::kEncodingBufferSizeBytes));
 
 stream::SocketStream socket_stream;
 
-hdlc::RpcChannelOutput hdlc_channel_output(socket_stream,
-                                           hdlc::kDefaultRpcAddress,
-                                           "HDLC channel");
+hdlc::FixedMtuChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
+    socket_stream, hdlc::kDefaultRpcAddress, "HDLC channel");
 Channel channels[] = {rpc::Channel::Create<1>(&hdlc_channel_output)};
 rpc::Server server(channels);
 
@@ -59,8 +64,10 @@ void Init() {
 rpc::Server& Server() { return server; }
 
 Status Start() {
+  constexpr size_t kDecoderBufferSize =
+      hdlc::Decoder::RequiredBufferSizeForFrameSize(kMaxTransmissionUnit);
   // Declare a buffer for decoding incoming HDLC frames.
-  std::array<std::byte, kMaxTransmissionUnit> input_buffer;
+  std::array<std::byte, kDecoderBufferSize> input_buffer;
   hdlc::Decoder decoder(input_buffer);
 
   while (true) {
