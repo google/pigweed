@@ -150,7 +150,7 @@ class DynamicChannelRegistry {
 
   fxl::WeakPtrFactory<DynamicChannelRegistry> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannelRegistry);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannelRegistry);
 };
 
 }  // namespace bt::l2cap::internal

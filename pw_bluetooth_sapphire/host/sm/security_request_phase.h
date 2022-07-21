@@ -72,7 +72,7 @@ class SecurityRequestPhase final : public PairingPhase, public PairingChannelHan
 
   PairingRequestCallback on_pairing_req_;
   fxl::WeakPtrFactory<SecurityRequestPhase> weak_ptr_factory_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityRequestPhase);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityRequestPhase);
 };
 
 }  // namespace bt::sm

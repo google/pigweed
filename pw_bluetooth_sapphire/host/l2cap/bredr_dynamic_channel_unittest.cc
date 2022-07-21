@@ -532,7 +532,7 @@ class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<BrEdrDynamicChannelRegistry> registry_;
   testing::FakeSignalingChannel::TransactionId ext_info_transaction_id_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDynamicChannelTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDynamicChannelTest);
 };
 
 TEST_F(BrEdrDynamicChannelTest,

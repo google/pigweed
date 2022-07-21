@@ -81,7 +81,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   std::optional<StagedParams> staged_params_;
   bool starting_ = false;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiser);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiser);
 };
 
 }  // namespace bt::hci

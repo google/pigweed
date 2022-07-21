@@ -64,7 +64,7 @@ class LowEnergyAddressManagerTest : public TestingBase {
   std::unique_ptr<LowEnergyAddressManager> addr_mgr_;
   bool random_address_change_allowed_ = true;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyAddressManagerTest);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyAddressManagerTest);
 };
 
 TEST_F(LowEnergyAddressManagerTest, DefaultState) { EXPECT_EQ(kPublic, EnsureLocalAddress()); }

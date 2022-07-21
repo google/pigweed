@@ -81,7 +81,7 @@ class RemoteServiceManager final {
     ServiceListCallback callback_;
     std::vector<UUID> uuids_;
 
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceListRequest);
+    BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceListRequest);
   };
 
   // State of the current Service Changed notification procedure.
@@ -177,7 +177,7 @@ class RemoteServiceManager final {
 
   fxl::WeakPtrFactory<RemoteServiceManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManager);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManager);
 };
 
 }  // namespace internal

@@ -11,9 +11,8 @@
 #include <queue>
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -133,7 +132,7 @@ class RemoteCharacteristic final {
 
   fxl::WeakPtrFactory<RemoteCharacteristic> weak_ptr_factory_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(RemoteCharacteristic);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(RemoteCharacteristic);
 };
 
 }  // namespace bt::gatt

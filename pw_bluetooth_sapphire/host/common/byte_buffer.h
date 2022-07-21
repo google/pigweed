@@ -18,8 +18,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/lib/cpp-type/member_pointer_traits.h"
 #include "src/connectivity/bluetooth/lib/cpp-type/to_std_array.h"
 

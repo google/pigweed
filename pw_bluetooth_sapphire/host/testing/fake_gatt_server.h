@@ -49,7 +49,7 @@ class FakeGattServer final {
   // The fake device that owns this server. Must outlive this instance.
   FakePeer* dev_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeGattServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeGattServer);
 };
 
 }  // namespace bt::testing

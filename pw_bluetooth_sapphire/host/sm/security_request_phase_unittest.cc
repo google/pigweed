@@ -6,11 +6,11 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
 #include <gtest/gtest.h>
 
 #include "lib/async/cpp/task.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
@@ -66,7 +66,7 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
 
   std::optional<PairingRequestParams> last_pairing_req_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityRequestPhaseTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityRequestPhaseTest);
 };
 
 using SMP_SecurityRequestPhaseDeathTest = SecurityRequestPhaseTest;

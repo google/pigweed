@@ -6,8 +6,7 @@
 
 #include <cstdlib>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -504,7 +503,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
   fxl::WeakPtrFactory<SecurityManagerTest> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManagerTest);
 };
 
 class InitiatorPairingTest : public SecurityManagerTest {
@@ -679,7 +678,7 @@ class InitiatorPairingTest : public SecurityManagerTest {
   }
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(InitiatorPairingTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(InitiatorPairingTest);
 };
 
 class ResponderPairingTest : public SecurityManagerTest {
@@ -860,7 +859,7 @@ class ResponderPairingTest : public SecurityManagerTest {
   }
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ResponderPairingTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ResponderPairingTest);
 };
 
 // Calling `Abort` with no in-progress security upgrade should not cause a PairingComplete event.

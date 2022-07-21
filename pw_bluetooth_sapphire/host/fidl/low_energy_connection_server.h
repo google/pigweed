@@ -7,8 +7,7 @@
 
 #include <fuchsia/bluetooth/le/cpp/fidl.h>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt2_client_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_handle.h"
@@ -43,7 +42,7 @@ class LowEnergyConnectionServer : public ServerBase<fuchsia::bluetooth::le::Conn
   fxl::WeakPtr<bt::gatt::GATT> gatt_;
   std::optional<Gatt2ClientServer> gatt_client_server_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyConnectionServer);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyConnectionServer);
 };
 
 }  // namespace bthost

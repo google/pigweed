@@ -198,7 +198,7 @@ class FakeClient final : public Client {
 
   fxl::WeakPtrFactory<FakeClient> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeClient);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeClient);
 };
 
 }  // namespace bt::gatt::testing

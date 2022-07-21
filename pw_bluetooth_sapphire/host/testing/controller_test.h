@@ -10,8 +10,7 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/mock_hci_wrapper.h"
@@ -256,7 +255,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   hci::testing::MockHciWrapper::ConfigureScoFunction configure_sco_cb_;
   hci::testing::MockHciWrapper::ResetScoFunction reset_sco_cb_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTest);
   static_assert(std::is_base_of<ControllerTestDoubleBase, ControllerTestDoubleType>::value,
                 "TestBase must be used with a derivative of ControllerTestDoubleBase");
 };

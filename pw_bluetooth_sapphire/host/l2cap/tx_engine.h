@@ -56,7 +56,7 @@ class TxEngine {
   const SendFrameCallback send_frame_callback_;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TxEngine);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TxEngine);
 };
 
 }  // namespace bt::l2cap::internal

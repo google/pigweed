@@ -13,10 +13,9 @@
 #include <memory>
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "socket_channel_relay.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::socket {
@@ -66,7 +65,7 @@ class SocketFactory final {
 
   fxl::WeakPtrFactory<SocketFactory> weak_ptr_factory_;  // Keep last.
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketFactory);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketFactory);
 };
 
 template <typename ChannelT>

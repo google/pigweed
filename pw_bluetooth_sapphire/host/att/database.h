@@ -8,12 +8,11 @@
 #include <list>
 #include <memory>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/write_queue.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -158,7 +157,7 @@ class Database final {
 
   fxl::WeakPtrFactory<Database> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Database);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Database);
 };
 
 }  // namespace bt::att

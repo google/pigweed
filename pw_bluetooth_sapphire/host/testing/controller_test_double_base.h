@@ -9,9 +9,8 @@
 #include <lib/zx/channel.h>
 #include <zircon/device/bt-hci.h>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
@@ -105,7 +104,7 @@ class ControllerTestDoubleBase {
 
   fit::callback<void(zx_status_t)> error_cb_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTestDoubleBase);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTestDoubleBase);
 };
 
 }  // namespace bt::testing

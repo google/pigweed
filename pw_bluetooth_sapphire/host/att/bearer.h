@@ -13,12 +13,11 @@
 #include <memory>
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
@@ -303,7 +302,7 @@ class Bearer final {
 
   fxl::WeakPtrFactory<Bearer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Bearer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Bearer);
 };
 
 }  // namespace bt::att

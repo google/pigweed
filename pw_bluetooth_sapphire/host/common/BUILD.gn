@@ -26,6 +26,7 @@ source_set("common") {
     "inspectable.h",
     "log.cc",
     "log.h",
+    "macros.h",
     "manufacturer_names.cc",
     "manufacturer_names.h",
     "metrics.cc",

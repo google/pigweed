@@ -269,7 +269,7 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
   int phase_2_complete_count_ = 0;
   UInt128 ltk_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2SecureConnectionsTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2SecureConnectionsTest);
 };
 
 using Phase2SecureConnectionsDeathTest = Phase2SecureConnectionsTest;

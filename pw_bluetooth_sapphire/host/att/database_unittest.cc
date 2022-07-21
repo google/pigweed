@@ -418,7 +418,7 @@ class DatabaseIteratorManyTest : public ::testing::Test {
  private:
   std::unique_ptr<Database> db_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(DatabaseIteratorManyTest);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(DatabaseIteratorManyTest);
 };
 
 TEST_F(DatabaseIteratorManyTest, NoFilter) {
@@ -610,7 +610,7 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
   Handle test_handle2_ = kInvalidHandle;
   Handle test_handle3_ = kInvalidHandle;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(DatabaseExecuteWriteQueueTest);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(DatabaseExecuteWriteQueueTest);
 };
 
 constexpr PeerId kPeerId(1);

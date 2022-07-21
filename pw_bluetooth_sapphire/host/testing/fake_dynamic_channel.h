@@ -126,7 +126,7 @@ class FakeDynamicChannel {
   // should be done through the use of WeakPtrs.
   fxl::WeakPtrFactory<FakeDynamicChannel> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDynamicChannel);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDynamicChannel);
 };
 
 }  // namespace bt::testing

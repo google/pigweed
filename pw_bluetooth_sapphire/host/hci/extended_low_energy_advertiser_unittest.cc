@@ -90,7 +90,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
   std::unique_ptr<ExtendedLowEnergyAdvertiser> advertiser_;
   std::optional<Result<>> last_status_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiserTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiserTest);
 };
 
 TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {

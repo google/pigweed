@@ -169,7 +169,7 @@ class Phase3Test : public l2cap::testing::FakeChannelTest {
   int phase_3_complete_count_ = 0;
   PairingData pairing_data_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase3Test);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase3Test);
 };
 
 using Phase3DeathTest = Phase3Test;

@@ -44,7 +44,7 @@ class EcdhKey {
 
  private:
   EC_KEY* key_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EcdhKey);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EcdhKey);
 };
 
 // Specialization of EcdhKey used to ensure that when calculating the shared DH Key between two
@@ -66,7 +66,7 @@ class LocalEcdhKey : public EcdhKey {
 
  private:
   LocalEcdhKey();
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalEcdhKey);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalEcdhKey);
 };
 
 }  // namespace bt::sm

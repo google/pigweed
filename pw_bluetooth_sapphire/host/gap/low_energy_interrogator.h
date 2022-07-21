@@ -58,7 +58,7 @@ class LowEnergyInterrogator final {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyInterrogator> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyInterrogator);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyInterrogator);
 };
 
 }  // namespace gap

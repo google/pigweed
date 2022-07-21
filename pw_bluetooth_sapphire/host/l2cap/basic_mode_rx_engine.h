@@ -19,7 +19,7 @@ class BasicModeRxEngine final : public RxEngine {
   ByteBufferPtr ProcessPdu(PDU) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeRxEngine);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeRxEngine);
 };
 
 }  // namespace bt::l2cap::internal

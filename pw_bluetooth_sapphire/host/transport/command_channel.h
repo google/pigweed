@@ -20,11 +20,10 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
@@ -262,7 +261,7 @@ class CommandChannel final {
     // Always zero if this transaction is synchronous.
     EventHandlerId handler_id_;
 
-    DISALLOW_COPY_ASSIGN_AND_MOVE(TransactionData);
+    BT_DISALLOW_COPY_ASSIGN_AND_MOVE(TransactionData);
   };
 
   // Adds an internal event handler for |data| if one does not exist yet and another transaction is
@@ -385,7 +384,7 @@ class CommandChannel final {
 
   fxl::WeakPtrFactory<CommandChannel> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandChannel);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandChannel);
 };
 
 }  // namespace bt::hci

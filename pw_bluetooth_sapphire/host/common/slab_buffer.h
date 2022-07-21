@@ -39,7 +39,7 @@ class SlabBuffer : public MutableByteBuffer {
   // requested.
   StaticByteBuffer<BackingBufferSize> buffer_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBuffer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBuffer);
 };
 
 namespace internal {
@@ -62,7 +62,7 @@ class SlabBufferImpl : public SlabBuffer<BufferSize>,
   explicit SlabBufferImpl(size_t size) : SlabBuffer<BufferSize>(size) {}
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBufferImpl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBufferImpl);
 };
 
 }  // namespace internal

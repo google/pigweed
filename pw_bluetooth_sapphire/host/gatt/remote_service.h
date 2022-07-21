@@ -9,9 +9,8 @@
 #include <lib/fitx/result.h>
 #include <zircon/assert.h>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_characteristic.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -277,7 +276,7 @@ class RemoteService final {
 
   fxl::WeakPtrFactory<RemoteService> weak_ptr_factory_{this};
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteService);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteService);
 };
 
 }  // namespace bt::gatt

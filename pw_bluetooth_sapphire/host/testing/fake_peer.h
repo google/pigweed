@@ -7,10 +7,9 @@
 
 #include <unordered_set>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -213,7 +212,7 @@ class FakePeer {
   FakeGattServer gatt_server_;
   FakeSignalingServer signaling_server_;
   FakeSdpServer sdp_server_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakePeer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakePeer);
 };
 
 }  // namespace bt::testing

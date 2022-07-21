@@ -22,7 +22,7 @@ class FakeScoConnection final : public ScoConnection {
   void Disconnect(hci_spec::StatusCode reason) override {}
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeScoConnection);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeScoConnection);
 };
 
 }  // namespace bt::hci::testing

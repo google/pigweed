@@ -225,7 +225,7 @@ class LocalServiceManager::ServiceData final {
     att::Handle handle_;
     std::unordered_map<PeerId, uint16_t> client_states_;
 
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CharacteristicConfig);
+    BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CharacteristicConfig);
   };
 
   // Called when a read request is performed on a CCC descriptor belonging to
@@ -458,7 +458,7 @@ class LocalServiceManager::ServiceData final {
 
   fxl::WeakPtrFactory<ServiceData> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceData);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceData);
 };
 
 LocalServiceManager::LocalServiceManager()

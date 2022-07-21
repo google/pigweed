@@ -120,7 +120,7 @@ class ChannelManagerImpl final : public ChannelManager {
 
   fxl::WeakPtrFactory<ChannelManagerImpl> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerImpl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerImpl);
 };
 
 ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,

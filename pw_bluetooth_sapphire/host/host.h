@@ -92,7 +92,7 @@ class Host final : public fbl::RefCounted<Host> {
 
   fit::thread_checker thread_checker_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Host);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Host);
 };
 
 }  // namespace bthost

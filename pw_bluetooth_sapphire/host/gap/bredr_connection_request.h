@@ -98,7 +98,7 @@ class BrEdrConnectionRequest final {
 
   std::optional<Peer::InitializingConnectionToken> peer_init_conn_token_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionRequest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionRequest);
 };
 
 }  // namespace bt::gap

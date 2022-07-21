@@ -12,11 +12,10 @@
 #include <memory>
 #include <vector>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
@@ -165,7 +164,7 @@ class Attribute final {
 
   DynamicByteBuffer value_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Attribute);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Attribute);
 };
 
 // Represents a grouping of attributes (see Vol 3, Part F, 3.2.3). Each grouping
@@ -238,7 +237,7 @@ class AttributeGrouping final {
   // |attributes_| reflects how many of the attributes have been initialized.
   std::vector<Attribute> attributes_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AttributeGrouping);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AttributeGrouping);
 };
 
 }  // namespace bt::att

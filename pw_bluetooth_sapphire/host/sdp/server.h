@@ -171,7 +171,7 @@ class Server final {
 
   fxl::WeakPtrFactory<Server> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Server);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Server);
 };
 
 }  // namespace bt::sdp

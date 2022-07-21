@@ -83,7 +83,7 @@ class LowEnergyConnectionRequest final {
   // This object's destructor notifies Peer of request destruction.
   std::optional<Peer::InitializingConnectionToken> peer_conn_token_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionRequest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionRequest);
 };
 
 }  // namespace internal

@@ -7,8 +7,7 @@
 
 #include <zircon/assert.h>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 
@@ -25,7 +24,7 @@ class LESignalingChannel final : public SignalingChannel {
   void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) override;
   bool IsSupportedResponse(CommandCode code) const override;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannel);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannel);
 };
 
 }  // namespace bt::l2cap::internal

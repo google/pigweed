@@ -143,7 +143,7 @@ class FakeL2cap final : public ChannelManager {
 
   std::unordered_map<PSM, ServiceInfo> registered_services_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2cap);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2cap);
 };
 
 }  // namespace bt::l2cap::testing

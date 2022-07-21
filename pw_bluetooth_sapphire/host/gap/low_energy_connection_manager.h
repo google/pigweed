@@ -14,11 +14,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include <fbl/macros.h>
-
 #include "lib/fitx/result.h"
 #include "low_energy_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/windowed_inspect_numeric_property.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -350,7 +349,7 @@ class LowEnergyConnectionManager final {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyConnectionManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManager);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManager);
 };
 
 }  // namespace gap

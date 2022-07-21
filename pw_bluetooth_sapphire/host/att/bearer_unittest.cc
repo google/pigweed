@@ -44,7 +44,7 @@ class BearerTest : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<l2cap::testing::FakeChannel> fake_att_chan_;
   std::unique_ptr<Bearer> bearer_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BearerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BearerTest);
 };
 
 TEST_F(BearerTest, CreateFailsToActivate) {

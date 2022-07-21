@@ -108,7 +108,7 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
   std::optional<Result<>> last_status_;
   uint8_t max_advertisements_ = 2;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyMultipleAdvertisingTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyMultipleAdvertisingTest);
 };
 
 using Implementations =

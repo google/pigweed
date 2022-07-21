@@ -116,7 +116,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // members get destroyed
   fxl::WeakPtrFactory<ExtendedLowEnergyAdvertiser> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiser);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiser);
 };
 
 }  // namespace bt::hci

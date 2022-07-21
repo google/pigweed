@@ -10,11 +10,11 @@
 #include <unordered_set>
 #include <vector>
 
-#include <fbl/macros.h>
 #include <gmock/gmock.h>
 
 #include "lib/inspect/cpp/reader.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -231,7 +231,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
   inspect::Inspector inspector_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoveryManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoveryManagerTest);
 };
 
 using GAP_LowEnergyDiscoveryManagerTest = LowEnergyDiscoveryManagerTest;

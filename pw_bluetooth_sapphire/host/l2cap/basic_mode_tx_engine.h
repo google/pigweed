@@ -27,7 +27,7 @@ class BasicModeTxEngine final : public TxEngine {
   bool QueueSdu(ByteBufferPtr sdu) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeTxEngine);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeTxEngine);
 };
 
 }  // namespace bt::l2cap::internal

@@ -11,8 +11,8 @@
 #include <list>
 
 #include <fbl/intrusive_double_list.h>
-#include <fbl/macros.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 
@@ -105,7 +105,7 @@ class PDU final {
   trace_flow_id_t trace_id_;
 #endif
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PDU);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PDU);
 };
 
 }  // namespace bt::l2cap

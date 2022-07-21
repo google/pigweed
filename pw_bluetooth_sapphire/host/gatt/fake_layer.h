@@ -103,11 +103,11 @@ class FakeLayer final : public GATT {
     FakeClient fake_client;
     std::unordered_map<IdType, std::unique_ptr<RemoteService>> services;
 
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestPeer);
+    BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestPeer);
   };
   std::unordered_map<PeerId, TestPeer> peers_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);
 };
 
 }  // namespace bt::gatt::testing

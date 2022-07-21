@@ -12,13 +12,12 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <fbl/macros.h>
-
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
@@ -214,7 +213,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<HostServer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServer);
 };
 
 }  // namespace bthost

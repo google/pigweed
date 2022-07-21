@@ -6,10 +6,10 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
@@ -88,7 +88,7 @@ class PairingPhaseTest : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<ConcretePairingPhase> pairing_phase_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhaseTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhaseTest);
 };
 
 using PairingPhaseDeathTest = PairingPhaseTest;

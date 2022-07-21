@@ -37,7 +37,7 @@ class FakeL2capTest : public gtest::TestLoopFixture {
  private:
   FakeL2cap::SendFrameCallback send_frame_callback_;
   std::unique_ptr<FakeL2cap> fake_l2cap_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2capTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2capTest);
 };
 
 TEST_F(FakeL2capTest, RegisterHandler) {

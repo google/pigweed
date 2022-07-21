@@ -32,7 +32,7 @@ class FakeBrEdrConnection final : public BrEdrConnection {
  private:
   int start_encryption_count_ = 0;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeBrEdrConnection);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeBrEdrConnection);
 };
 
 }  // namespace bt::hci::testing

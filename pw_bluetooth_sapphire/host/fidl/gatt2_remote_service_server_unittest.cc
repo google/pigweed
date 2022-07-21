@@ -74,7 +74,7 @@ class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
   fxl::WeakPtr<bt::gatt::RemoteService> service_;
   fxl::WeakPtr<bt::gatt::testing::FakeClient> fake_client_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(Gatt2RemoteServiceServerTest);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(Gatt2RemoteServiceServerTest);
 };
 
 TEST_F(Gatt2RemoteServiceServerTest, DiscoverCharacteristics) {

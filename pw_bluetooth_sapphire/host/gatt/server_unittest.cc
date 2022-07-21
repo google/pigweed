@@ -6,11 +6,10 @@
 
 #include <lib/async/cpp/task.h>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
@@ -148,7 +147,7 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServerTest);
 };
 
 TEST_F(ServerTest, ExchangeMTURequestInvalidPDU) {

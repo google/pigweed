@@ -15,7 +15,7 @@ class LowEnergyCommandHandlerTest : public TestBase {
  public:
   LowEnergyCommandHandlerTest() = default;
   ~LowEnergyCommandHandlerTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCommandHandlerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCommandHandlerTest);
 
  protected:
   // TestLoopFixture overrides

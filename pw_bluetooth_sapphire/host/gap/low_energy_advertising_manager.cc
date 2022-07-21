@@ -82,7 +82,7 @@ class LowEnergyAdvertisingManager::ActiveAdvertisement final {
   DeviceAddress address_;
   AdvertisementId id_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ActiveAdvertisement);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ActiveAdvertisement);
 };
 
 LowEnergyAdvertisingManager::LowEnergyAdvertisingManager(

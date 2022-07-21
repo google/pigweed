@@ -107,7 +107,7 @@ class PairingPhase {
   fxl::WeakPtr<Listener> listener_;
   Role role_;
   bool has_failed_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhase);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhase);
 };
 
 }  // namespace bt::sm

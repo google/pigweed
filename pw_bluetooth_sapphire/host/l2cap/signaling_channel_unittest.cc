@@ -72,7 +72,7 @@ class TestSignalingChannel : public SignalingChannel {
 
   PacketCallback packet_cb_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestSignalingChannel);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestSignalingChannel);
 };
 
 class SignalingChannelTest : public testing::FakeChannelTest {
@@ -106,7 +106,7 @@ class SignalingChannelTest : public testing::FakeChannelTest {
   // Own the fake channel so that its lifetime can span beyond that of |sig_|.
   std::unique_ptr<Channel> fake_channel_inst_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SignalingChannelTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SignalingChannelTest);
 };
 
 TEST_F(SignalingChannelTest, IgnoreEmptyFrame) {

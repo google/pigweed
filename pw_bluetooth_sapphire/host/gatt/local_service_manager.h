@@ -7,10 +7,9 @@
 
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -119,7 +118,7 @@ class LocalServiceManager final {
 
   fxl::WeakPtrFactory<LocalServiceManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceManager);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceManager);
 };
 
 }  // namespace bt::gatt

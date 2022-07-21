@@ -7,8 +7,7 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -77,7 +76,7 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
 
   fxl::WeakPtr<FakeChannel> fake_chan_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannelTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannelTest);
 };
 
 }  // namespace bt::l2cap::testing

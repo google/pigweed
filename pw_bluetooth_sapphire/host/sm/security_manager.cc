@@ -203,7 +203,7 @@ class SecurityManagerImpl final : public SecurityManager,
 
   fxl::WeakPtrFactory<SecurityManagerImpl> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManagerImpl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManagerImpl);
 };
 
 SecurityManagerImpl::PendingRequest::PendingRequest(SecurityLevel level, PairingCallback callback)

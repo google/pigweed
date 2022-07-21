@@ -91,7 +91,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
   PeerCache peer_cache_;
   std::unique_ptr<BrEdrDiscoveryManager> discovery_manager_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoveryManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoveryManagerTest);
 };
 
 using GAP_BrEdrDiscoveryManagerTest = BrEdrDiscoveryManagerTest;

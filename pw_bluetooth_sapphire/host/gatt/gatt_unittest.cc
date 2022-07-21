@@ -93,7 +93,7 @@ class GattTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<Client> client_;
   fxl::WeakPtr<testing::FakeClient> fake_client_weak_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattTest);
 };
 
 TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {

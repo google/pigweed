@@ -184,7 +184,7 @@ class FakeL2cap final {
   // Largest dynamic channel ID this FakeL2cap instance can allocate IDs for.
   // Defaults to l2cap::kLastACLDynamicChannelId.
   l2cap::ChannelId largest_channel_id_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2cap);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2cap);
 };
 
 }  // namespace bt::testing

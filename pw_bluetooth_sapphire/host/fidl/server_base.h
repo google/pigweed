@@ -8,11 +8,11 @@
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
-#include <fbl/macros.h>
 #include <fbl/ref_ptr.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -65,7 +65,7 @@ class ServerBase : public Server, public Interface {
   ::fidl::Binding<Interface> binding_;
 
   // Binding cannot be copied or moved.
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ServerBase);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(ServerBase);
 };
 
 // Base template for GAP FIDL interface servers. The GAP profile is accessible
@@ -90,7 +90,7 @@ class AdapterServerBase : public ServerBase<Interface> {
  private:
   fxl::WeakPtr<bt::gap::Adapter> adapter_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterServerBase);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterServerBase);
 };
 
 // Base template for GATT FIDL interface servers. The GATT profile is accessible
@@ -112,7 +112,7 @@ class GattServerBase : public ServerBase<Interface> {
  private:
   fxl::WeakPtr<bt::gatt::GATT> gatt_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattServerBase);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattServerBase);
 };
 
 }  // namespace bthost

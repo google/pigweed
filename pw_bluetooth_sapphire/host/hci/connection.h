@@ -8,9 +8,8 @@
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
@@ -112,7 +111,7 @@ class Connection {
 
   fxl::WeakPtrFactory<Connection> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
 };
 
 }  // namespace bt::hci

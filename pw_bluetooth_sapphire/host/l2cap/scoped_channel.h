@@ -5,8 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SCOPED_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SCOPED_CHANNEL_H_
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 
 namespace bt::l2cap {
@@ -42,7 +41,7 @@ class ScopedChannel final {
 
   fxl::WeakPtr<Channel> chan_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScopedChannel);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScopedChannel);
 };
 
 }  // namespace bt::l2cap

@@ -55,7 +55,7 @@ class AdvertisementInstance final {
   AdvertisementId id_;
   fxl::WeakPtr<LowEnergyAdvertisingManager> owner_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
 };
 
 // Enum values for determining the advertising interval range. These ranges come from Core
@@ -132,7 +132,7 @@ class LowEnergyAdvertisingManager {
   // invalidate it's pointers before other members are destroyed.
   fxl::WeakPtrFactory<LowEnergyAdvertisingManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertisingManager);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertisingManager);
 };
 
 }  // namespace gap

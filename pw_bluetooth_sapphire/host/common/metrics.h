@@ -7,7 +7,7 @@
 
 #include <lib/sys/inspect/cpp/component.h>
 
-#include <fbl/macros.h>
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 
 namespace bt {
 
@@ -33,7 +33,7 @@ class MetricCounter {
   // Update underlying inspect attributes.
   void UpdateInspect();
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MetricCounter);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MetricCounter);
 };
 
 using IntMetricCounter = MetricCounter<inspect::IntProperty>;

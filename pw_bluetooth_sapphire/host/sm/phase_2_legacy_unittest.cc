@@ -158,7 +158,7 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   int phase_2_complete_count_ = 0;
   UInt128 stk_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2LegacyTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2LegacyTest);
 };
 
 using Phase2LegacyDeathTest = Phase2LegacyTest;

@@ -804,7 +804,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   int transaction_count_ = 0;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManagerTest);
 };
 
 using GAP_BrEdrConnectionManagerTest = BrEdrConnectionManagerTest;

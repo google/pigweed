@@ -168,7 +168,7 @@ class LowEnergyDiscoverySession final {
   PeerFoundCallback peer_found_callback_;
   DiscoveryFilter filter_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoverySession);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoverySession);
 };
 
 using LowEnergyDiscoverySessionPtr = std::unique_ptr<LowEnergyDiscoverySession>;
@@ -340,7 +340,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyDiscoveryManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoveryManager);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoveryManager);
 };
 
 }  // namespace gap

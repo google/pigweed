@@ -7,9 +7,8 @@
 
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 
-#include <fbl/macros.h>
-
 #include "lib/fidl/cpp/binding.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt_remote_service_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -39,7 +38,7 @@ class GattClientServer : public GattServerBase<fuchsia::bluetooth::gatt::Client>
 
   fxl::WeakPtrFactory<GattClientServer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattClientServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattClientServer);
 };
 
 }  // namespace bthost

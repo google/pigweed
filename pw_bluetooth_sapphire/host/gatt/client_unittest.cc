@@ -98,7 +98,7 @@ class ClientTest : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Client> client_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ClientTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ClientTest);
 };
 
 TEST_F(ClientTest, ExchangeMTUMalformedResponse) {

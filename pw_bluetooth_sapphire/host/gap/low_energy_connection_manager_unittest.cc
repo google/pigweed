@@ -13,12 +13,12 @@
 #include <memory>
 #include <vector>
 
-#include <fbl/macros.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -208,7 +208,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   PeerList connected_peers_;
   PeerList canceled_peers_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManagerTest);
 };
 
 using GAP_LowEnergyConnectionManagerTest = LowEnergyConnectionManagerTest;

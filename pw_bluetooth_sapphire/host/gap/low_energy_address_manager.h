@@ -10,9 +10,8 @@
 #include <optional>
 #include <queue>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
@@ -150,7 +149,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
 
   fxl::WeakPtrFactory<LowEnergyAddressManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyAddressManager);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyAddressManager);
 };
 
 }  // namespace gap

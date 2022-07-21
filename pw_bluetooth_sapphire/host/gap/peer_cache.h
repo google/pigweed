@@ -11,9 +11,8 @@
 
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/identity_resolving_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -235,7 +234,7 @@ class PeerCache final {
 
   PeerMetrics peer_metrics_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PeerCache);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PeerCache);
 };
 
 }  // namespace gap

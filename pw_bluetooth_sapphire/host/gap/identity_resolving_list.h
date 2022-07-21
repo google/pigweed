@@ -8,9 +8,8 @@
 #include <optional>
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
 namespace bt::gap {
@@ -41,7 +40,7 @@ class IdentityResolvingList final {
   // Maps identity addresses to IRKs.
   std::unordered_map<DeviceAddress, UInt128> registry_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(IdentityResolvingList);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(IdentityResolvingList);
 };
 
 }  // namespace bt::gap

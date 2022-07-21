@@ -9,10 +9,9 @@
 
 #include <set>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
@@ -231,7 +230,7 @@ class LowEnergyScanner : public LocalAddressClient {
   // Command runner for all HCI commands sent out by implementations.
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyScanner);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyScanner);
 };
 
 }  // namespace bt::hci

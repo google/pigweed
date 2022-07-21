@@ -5,9 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAGMENTER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAGMENTER_H_
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 
@@ -50,7 +49,7 @@ class OutboundFrame final {
   const FrameCheckSequenceOption fcs_option_;
   const std::optional<FrameCheckSequenceBuffer> fcs_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(OutboundFrame);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(OutboundFrame);
 };
 
 // A Fragmenter is used to construct L2CAP PDUs composed of fragments that can
@@ -96,7 +95,7 @@ class Fragmenter final {
   hci_spec::ConnectionHandle connection_handle_;
   size_t max_acl_payload_size_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Fragmenter);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Fragmenter);
 };
 
 }  // namespace bt::l2cap

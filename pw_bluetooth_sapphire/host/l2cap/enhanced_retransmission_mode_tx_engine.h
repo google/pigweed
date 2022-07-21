@@ -241,7 +241,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   async::TaskClosure receiver_ready_poll_task_;
   async::TaskClosure monitor_task_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeTxEngine);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeTxEngine);
 };
 
 }  // namespace bt::l2cap::internal

@@ -11,9 +11,8 @@
 #include <cstdint>
 #include <type_traits>
 
-#include <fbl/macros.h>
-
 #include "lib/zx/time.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -121,7 +120,7 @@ enum class ExecuteWriteFlag : uint8_t {
 
 struct AttributeData {
   AttributeData() = default;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeData);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeData);
 
   Handle handle;
   uint8_t value[];
@@ -189,7 +188,7 @@ constexpr OpCode kFindByTypeValueResponse = 0x07;
 
 struct FindByTypeValueRequestParams {
   FindByTypeValueRequestParams() = default;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(FindByTypeValueRequestParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(FindByTypeValueRequestParams);
 
   Handle start_handle;
   Handle end_handle;
@@ -227,7 +226,7 @@ using ReadByTypeRequestParams128 = ReadByTypeRequestParams<UUIDType::k128Bit>;
 
 struct ReadByTypeResponseParams {
   ReadByTypeResponseParams() = default;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByTypeResponseParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByTypeResponseParams);
 
   uint8_t length;
   AttributeData attribute_data_list[];
@@ -279,7 +278,7 @@ using ReadByGroupTypeRequestParams128 = ReadByTypeRequestParams128;
 
 struct AttributeGroupDataEntry {
   AttributeGroupDataEntry() = default;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeGroupDataEntry);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeGroupDataEntry);
 
   Handle start_handle;
   Handle group_end_handle;
@@ -288,7 +287,7 @@ struct AttributeGroupDataEntry {
 
 struct ReadByGroupTypeResponseParams {
   ReadByGroupTypeResponseParams() = default;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByGroupTypeResponseParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByGroupTypeResponseParams);
 
   uint8_t length;
   AttributeGroupDataEntry attribute_data_list[];
@@ -310,7 +309,7 @@ constexpr OpCode kPrepareWriteResponse = 0x17;
 
 struct PrepareWriteRequestParams {
   PrepareWriteRequestParams() = default;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(PrepareWriteRequestParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(PrepareWriteRequestParams);
 
   Handle handle;
   uint16_t offset;

@@ -44,7 +44,7 @@ class ACLDataChannelTest : public TestingBase {
   }
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannelTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannelTest);
 };
 
 using HCI_ACLDataChannelTest = ACLDataChannelTest;

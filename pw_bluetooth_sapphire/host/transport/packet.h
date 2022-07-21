@@ -9,9 +9,8 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 
 namespace bt::hci {
@@ -103,7 +102,7 @@ class PacketBase {
  private:
   MutablePacketView<HeaderType> view_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PacketBase);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PacketBase);
 };
 
 // The basic Packet template. See control_packets.h and acl_data_packet.h for

@@ -131,7 +131,7 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
 
   OnPhase2KeyGeneratedCallback on_ltk_ready_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2SecureConnections);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2SecureConnections);
 };
 
 }  // namespace bt::sm

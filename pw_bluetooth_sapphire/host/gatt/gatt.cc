@@ -261,7 +261,7 @@ class Impl final : public GATT {
   PeerMtuListenerId next_mtu_listener_id_ = 0u;
   std::unordered_map<PeerMtuListenerId, PeerMtuListener> peer_mtu_listeners_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 }  // namespace
 

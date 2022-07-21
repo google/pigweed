@@ -32,7 +32,7 @@ class GattClientServerTest : public bt::gatt::testing::FakeLayerTest {
   std::unique_ptr<GattClientServer> server_;
   fgatt::ClientPtr proxy_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(GattClientServerTest);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(GattClientServerTest);
 };
 
 TEST_F(GattClientServerTest, ListServices) {

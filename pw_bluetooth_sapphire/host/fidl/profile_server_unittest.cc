@@ -189,7 +189,7 @@ class ProfileServerTest : public TestingBase {
   std::unique_ptr<ProfileServer> server_;
   fidlbredr::ProfilePtr client_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTest);
 };
 
 class FakeConnectionReceiver : public fidlbredr::testing::ConnectionReceiver_TestBase {
@@ -459,7 +459,7 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
   bt::gap::BrEdrConnection* connection_;
   bt::gap::Peer* peer_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTestConnectedPeer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTestConnectedPeer);
 };
 
 class ProfileServerTestScoConnected : public ProfileServerTestConnectedPeer {
@@ -1111,7 +1111,7 @@ class ProfileServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFix
  private:
   std::unique_ptr<ProfileServer> server_;
   fidlbredr::ProfilePtr client_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTestFakeAdapter);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTestFakeAdapter);
 };
 
 TEST_F(ProfileServerTestFakeAdapter, ConnectChannelParametersContainsFlushTimeout) {

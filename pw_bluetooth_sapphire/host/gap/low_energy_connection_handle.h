@@ -67,7 +67,7 @@ class LowEnergyConnectionHandle final {
   fit::function<sm::BondableMode()> bondable_cb_;
   fit::function<sm::SecurityProperties()> security_cb_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionHandle);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionHandle);
 };
 
 }  // namespace bt::gap

@@ -218,7 +218,7 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
   std::unique_ptr<bt::gatt::GATT> gatt_;
   fuchsia::bluetooth::host::HostPtr host_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServerTest);
 };
 
 // The main role of this sub-suite is improved test object lifecycle management (see TearDown for
@@ -1259,7 +1259,7 @@ class HostServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixtur
   fuchsia::bluetooth::host::HostPtr host_;
   std::unique_ptr<bt::gatt::GATT> gatt_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServerTestFakeAdapter);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServerTestFakeAdapter);
 };
 
 TEST_F(HostServerTestFakeAdapter, SetLocalNameNotifiesWatchState) {

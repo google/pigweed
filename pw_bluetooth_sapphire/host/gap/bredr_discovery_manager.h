@@ -12,8 +12,7 @@
 #include <queue>
 #include <unordered_set>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
@@ -81,7 +80,7 @@ class BrEdrDiscoverySession final {
   fit::closure error_callback_;
   PeerFoundCallback peer_found_callback_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverySession);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverySession);
 };
 
 class BrEdrDiscoverableSession final {
@@ -98,7 +97,7 @@ class BrEdrDiscoverableSession final {
 
   fxl::WeakPtr<BrEdrDiscoveryManager> manager_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverableSession);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverableSession);
 };
 
 class BrEdrDiscoveryManager final {
@@ -261,7 +260,7 @@ class BrEdrDiscoveryManager final {
 
   fxl::WeakPtrFactory<BrEdrDiscoveryManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoveryManager);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoveryManager);
 };
 
 }  // namespace gap

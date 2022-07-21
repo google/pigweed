@@ -20,7 +20,7 @@ class LogicalLinkTest : public ::gtest::TestLoopFixture {
  public:
   LogicalLinkTest() = default;
   ~LogicalLinkTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLinkTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLinkTest);
 
  protected:
   void SetUp() override { NewLogicalLink(); }

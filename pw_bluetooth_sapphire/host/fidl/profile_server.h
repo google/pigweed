@@ -7,10 +7,10 @@
 
 #include <fuchsia/bluetooth/bredr/cpp/fidl.h>
 
-#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 
 #include "lib/fidl/cpp/binding.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -184,7 +184,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<ProfileServer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServer);
 };
 
 }  // namespace bthost

@@ -5,8 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_ADAPTER_TEST_FIXTURE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_ADAPTER_TEST_FIXTURE_H_
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
@@ -38,7 +37,7 @@ class AdapterTestFixture : public bt::testing::ControllerTest<bt::testing::FakeC
   bt::l2cap::testing::FakeL2cap* l2cap_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> gatt_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(AdapterTestFixture);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(AdapterTestFixture);
 };
 
 }  // namespace bthost::testing

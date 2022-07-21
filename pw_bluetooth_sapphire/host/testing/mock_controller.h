@@ -11,9 +11,8 @@
 #include <queue>
 #include <vector>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 
@@ -57,7 +56,7 @@ class Transaction {
   PacketExpectation expected_;
   std::queue<DynamicByteBuffer> replies_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transaction);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transaction);
 };
 
 // A CommandTransaction is used to set up an expectation for a command channel
@@ -195,7 +194,7 @@ class MockController : public ControllerTestDoubleBase {
   TransactionCallback transaction_callback_;
   async_dispatcher_t* transaction_dispatcher_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };
 
 }  // namespace bt::testing

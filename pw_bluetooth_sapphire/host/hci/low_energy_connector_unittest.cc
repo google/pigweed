@@ -8,8 +8,7 @@
 
 #include <vector>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_low_energy_connection.h"
@@ -91,7 +90,7 @@ class LowEnergyConnectorTest : public TestingBase {
   // Incoming connections.
   std::vector<std::unique_ptr<LowEnergyConnection>> in_connections_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectorTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectorTest);
 };
 
 using HCI_LowEnergyConnectorTest = LowEnergyConnectorTest;

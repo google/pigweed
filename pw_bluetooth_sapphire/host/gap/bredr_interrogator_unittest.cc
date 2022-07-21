@@ -115,7 +115,7 @@ class BrEdrInterrogatorTest : public TestingBase {
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<BrEdrInterrogator> interrogator_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrInterrogatorTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrInterrogatorTest);
 };
 
 using GAP_BrEdrInterrogatorTest = BrEdrInterrogatorTest;

@@ -9,8 +9,7 @@
 #include <memory>
 #include <type_traits>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -495,7 +494,7 @@ class ChannelManagerTest : public TestingBase {
 
   CommandId next_command_id_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerTest);
 };
 
 TEST_F(ChannelManagerTest, OpenFixedChannelErrorNoConn) {

@@ -6,10 +6,10 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
@@ -95,7 +95,7 @@ class Phase1Test : public l2cap::testing::FakeChannelTest {
   MutableByteBufferPtr last_pairing_req_;
   MutableByteBufferPtr last_pairing_res_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase1Test);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase1Test);
 };
 
 TEST_F(Phase1Test, FeatureExchangeStartDefaultParams) {

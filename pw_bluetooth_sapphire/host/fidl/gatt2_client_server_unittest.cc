@@ -48,7 +48,7 @@ class Gatt2ClientServerTest : public bt::gatt::testing::FakeLayerTest {
   bool error_cb_called_ = false;
   std::optional<zx_status_t> proxy_epitaph_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(Gatt2ClientServerTest);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(Gatt2ClientServerTest);
 };
 
 TEST_F(Gatt2ClientServerTest, FidlClientClosingProxyCallsServerErrorCallback) {

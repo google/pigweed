@@ -436,7 +436,7 @@ class AdapterImpl final : public Adapter {
   // invalidating before other members are destroyed.
   fxl::WeakPtrFactory<AdapterImpl> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterImpl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterImpl);
 };
 
 AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,

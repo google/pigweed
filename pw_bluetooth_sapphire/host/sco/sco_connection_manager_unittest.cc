@@ -118,7 +118,7 @@ class ScoConnectionManagerTest : public TestingBase {
  private:
   std::unique_ptr<ScoConnectionManager> manager_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnectionManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnectionManagerTest);
 };
 
 TEST_F(ScoConnectionManagerTest, OpenConnectionSuccess) {

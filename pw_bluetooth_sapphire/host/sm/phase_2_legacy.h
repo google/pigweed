@@ -99,7 +99,7 @@ class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
   const OnPhase2KeyGeneratedCallback on_stk_ready_;
 
   fxl::WeakPtrFactory<Phase2Legacy> weak_ptr_factory_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2Legacy);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2Legacy);
 };
 
 }  // namespace bt::sm

@@ -42,7 +42,7 @@ class FakeSdpServer {
   // The production SDP server associated with this FakeSdpServer,
   sdp::Server server_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSdpServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSdpServer);
 };
 
 }  // namespace bt::testing

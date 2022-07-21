@@ -9,10 +9,9 @@
 
 #include <map>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_low_energy_connection.h"
@@ -157,7 +156,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   hci::Result<> pending_error_ = fitx::ok();
   fxl::WeakPtr<hci::Transport> hci_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
 };
 
 class LowEnergyAdvertisingManagerTest : public TestingBase {
@@ -255,7 +254,7 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   std::unique_ptr<FakeLowEnergyAdvertiser> advertiser_;
   std::unique_ptr<LowEnergyAdvertisingManager> adv_mgr_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertisingManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertisingManagerTest);
 };
 
 // Tests:

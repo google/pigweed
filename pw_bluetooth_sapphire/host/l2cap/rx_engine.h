@@ -29,7 +29,7 @@ class RxEngine {
   virtual ByteBufferPtr ProcessPdu(PDU pdu) = 0;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RxEngine);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RxEngine);
 };
 
 }  // namespace bt::l2cap::internal

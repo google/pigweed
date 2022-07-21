@@ -120,7 +120,7 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
 
   fxl::WeakPtrFactory<Phase1> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase1);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase1);
 };
 
 }  // namespace bt::sm

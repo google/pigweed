@@ -59,7 +59,7 @@ class PeerMetrics {
   UintMetricCounter bredr_connections_;
   UintMetricCounter bredr_disconnections_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PeerMetrics);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PeerMetrics);
 };
 
 }  // namespace bt::gap

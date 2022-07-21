@@ -42,7 +42,7 @@ class LowEnergyCommandHandler final : public CommandHandler {
   explicit LowEnergyCommandHandler(SignalingChannelInterface* sig,
                                    fit::closure request_fail_callback = nullptr);
   ~LowEnergyCommandHandler() = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCommandHandler);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCommandHandler);
 
   // Outbound request sending methods. Response callbacks are required to be
   // non-empty. The callbacks are wrapped and moved into the SignalingChannel

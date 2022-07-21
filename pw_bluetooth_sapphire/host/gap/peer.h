@@ -13,11 +13,10 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -136,7 +135,7 @@ class Peer final {
 
    private:
     fit::deferred_callback on_destruction_;
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TokenWithCallback);
+    BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TokenWithCallback);
   };
 
   // InitializingConnectionToken is meant to be held by a connection request object. When the
@@ -669,7 +668,7 @@ class Peer final {
 
   fxl::WeakPtrFactory<Peer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Peer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Peer);
 };
 
 }  // namespace bt::gap

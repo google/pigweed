@@ -114,7 +114,7 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   // cleared at the end of the scan period.
   std::unordered_map<DeviceAddress, std::unique_ptr<PendingScanResult>> pending_results_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScanner);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScanner);
 };
 
 }  // namespace bt::hci

@@ -16,9 +16,8 @@
 #include <mutex>
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
@@ -297,7 +296,7 @@ class LogicalLink final {
 
   fxl::WeakPtrFactory<LogicalLink> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLink);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLink);
 };
 
 }  // namespace bt::l2cap::internal

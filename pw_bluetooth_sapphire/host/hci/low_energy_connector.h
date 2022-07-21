@@ -10,9 +10,8 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -189,7 +188,7 @@ class LowEnergyConnector : public LocalAddressClient {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyConnector> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnector);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnector);
 };
 
 }  // namespace bt::hci

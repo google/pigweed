@@ -333,7 +333,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   fxl::WeakPtrFactory<LowEnergyConnection> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnection);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnection);
 };
 
 }  // namespace internal

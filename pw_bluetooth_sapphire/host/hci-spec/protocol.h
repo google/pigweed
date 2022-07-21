@@ -10,10 +10,9 @@
 #include <array>
 #include <cstdint>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 
@@ -1163,7 +1162,7 @@ constexpr EventCode kVendorDebugEventCode = 0xFF;
 
 struct VendorEventParams {
   VendorEventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(VendorEventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(VendorEventParams);
 
   // The event code for the vendor subevent.
   EventCode subevent_code;
@@ -1206,7 +1205,7 @@ struct InquiryResult {
 
 struct InquiryResultEventParams {
   InquiryResultEventParams() = default;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultEventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultEventParams);
 
   // The number of responses included.
   uint8_t num_responses;
@@ -1370,7 +1369,7 @@ constexpr EventCode kCommandCompleteEventCode = 0x0E;
 
 struct CommandCompleteEventParams {
   CommandCompleteEventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(CommandCompleteEventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(CommandCompleteEventParams);
 
   // The Number of HCI command packets which are allowed to be sent to the
   // Controller from the Host.
@@ -1439,7 +1438,7 @@ struct NumberOfCompletedPacketsEventData {
 
 struct NumberOfCompletedPacketsEventParams {
   NumberOfCompletedPacketsEventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(NumberOfCompletedPacketsEventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(NumberOfCompletedPacketsEventParams);
 
   uint8_t number_of_handles;
   NumberOfCompletedPacketsEventData data[];
@@ -1507,7 +1506,7 @@ struct InquiryResultRSSI {
 
 struct InquiryResultWithRSSIEventParams {
   InquiryResultWithRSSIEventParams() = default;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultWithRSSIEventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultWithRSSIEventParams);
 
   // The number of responses included.
   uint8_t num_responses;
@@ -1705,7 +1704,7 @@ constexpr EventCode kLEMetaEventCode = 0x3E;
 
 struct LEMetaEventParams {
   LEMetaEventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LEMetaEventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEMetaEventParams);
 
   // The event code for the LE subevent.
   EventCode subevent_code;
@@ -1754,7 +1753,7 @@ constexpr EventCode kLEAdvertisingReportSubeventCode = 0x02;
 
 struct LEAdvertisingReportData {
   LEAdvertisingReportData() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LEAdvertisingReportData);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEAdvertisingReportData);
 
   // The event type.
   LEAdvertisingEventType event_type;
@@ -1786,7 +1785,7 @@ struct LEAdvertisingReportData {
 
 struct LEAdvertisingReportSubeventParams {
   LEAdvertisingReportSubeventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LEAdvertisingReportSubeventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEAdvertisingReportSubeventParams);
 
   // Number of LEAdvertisingReportData instances contained in the array
   // |reports|.
@@ -1987,7 +1986,7 @@ struct LEDirectedAdvertisingReportData {
 
 struct LEDirectedAdvertisingReportSubeventParams {
   LEDirectedAdvertisingReportSubeventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LEDirectedAdvertisingReportSubeventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEDirectedAdvertisingReportSubeventParams);
 
   // Number of LEAdvertisingReportData instances contained in the array
   // |reports|.
@@ -2020,7 +2019,7 @@ constexpr EventCode kLEExtendedAdvertisingReportSubeventCode = 0x0D;
 
 struct LEExtendedAdvertisingReportData {
   LEExtendedAdvertisingReportData() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedAdvertisingReportData);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedAdvertisingReportData);
 
   // The advertising event type bitfield. For more information on how to
   // interpret this see kLEExtendedAdvEventType* constants in hci_constants.h
@@ -2081,7 +2080,7 @@ struct LEExtendedAdvertisingReportData {
 
 struct LEExtendedAdvertisingReportSubeventParams {
   LEExtendedAdvertisingReportSubeventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedAdvertisingReportSubeventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedAdvertisingReportSubeventParams);
 
   // Number of separate reports in the event.
   uint8_t num_reports;
@@ -2130,7 +2129,7 @@ constexpr EventCode kLEPeriodicAdvertisingReportSubeventCode = 0x0F;
 
 struct LEPeriodicAdvertisingReportSubeventParams {
   LEPeriodicAdvertisingReportSubeventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LEPeriodicAdvertisingReportSubeventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEPeriodicAdvertisingReportSubeventParams);
 
   // (only the lower 12 bits are meaningful).
   PeriodicAdvertiserHandle sync_handle;
@@ -2230,7 +2229,7 @@ struct NumberOfCompletedDataBlocksEventData {
 
 struct NumberOfCompletedDataBlocksEventParams {
   NumberOfCompletedDataBlocksEventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(NumberOfCompletedDataBlocksEventParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(NumberOfCompletedDataBlocksEventParams);
 
   uint16_t total_num_data_blocks;
   uint8_t number_of_handles;
@@ -3273,7 +3272,7 @@ constexpr OpCode kLESetExtendedAdvertisingData = LEControllerCommandOpCode(0x003
 
 struct LESetExtendedAdvertisingDataCommandParams {
   LESetExtendedAdvertisingDataCommandParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedAdvertisingDataCommandParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedAdvertisingDataCommandParams);
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
@@ -3301,7 +3300,7 @@ constexpr OpCode kLESetExtendedScanResponseData = LEControllerCommandOpCode(0x00
 
 struct LESetExtendedScanResponseDataCommandParams {
   LESetExtendedScanResponseDataCommandParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedScanResponseDataCommandParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedScanResponseDataCommandParams);
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
@@ -3347,7 +3346,7 @@ struct LESetExtendedAdvertisingEnableData {
 
 struct LESetExtendedAdvertisingEnableCommandParams {
   LESetExtendedAdvertisingEnableCommandParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedAdvertisingEnableCommandParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedAdvertisingEnableCommandParams);
 
   // Enable or Disable extended advertising.
   GenericEnableParam enable;
@@ -3423,7 +3422,7 @@ constexpr OpCode kLESetPeriodicAdvertisingData = LEControllerCommandOpCode(0x003
 
 struct LESetPeriodicAdvertisingDataCommandParams {
   LESetPeriodicAdvertisingDataCommandParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetPeriodicAdvertisingDataCommandParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetPeriodicAdvertisingDataCommandParams);
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
@@ -3469,7 +3468,7 @@ struct LESetExtendedScanParametersData {
 
 struct LESetExtendedScanParametersCommandParams {
   LESetExtendedScanParametersCommandParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedScanParametersCommandParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedScanParametersCommandParams);
 
   // Indicates the type of address being used in the scan request packets (for
   // active scanning).
@@ -3546,7 +3545,7 @@ struct LEExtendedCreateConnectionData {
 
 struct LEExtendedCreateConnectionCommandParams {
   LEExtendedCreateConnectionCommandParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedCreateConnectionCommandParams);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedCreateConnectionCommandParams);
 
   GenericEnableParam initiator_filter_policy;
   LEOwnAddressType own_address_type;

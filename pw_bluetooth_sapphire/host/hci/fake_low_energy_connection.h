@@ -32,7 +32,7 @@ class FakeLowEnergyConnection final : public LowEnergyConnection {
  private:
   int start_encryption_count_ = 0;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyConnection);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyConnection);
 };
 
 }  // namespace bt::hci::testing

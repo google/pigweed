@@ -9,8 +9,7 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service_manager.h"
 
@@ -61,7 +60,7 @@ class Connection final {
 
   fxl::WeakPtrFactory<Connection> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
 };
 
 }  // namespace internal

@@ -9,8 +9,7 @@
 
 #include <optional>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -136,7 +135,7 @@ struct ServiceInfo {
       : channel_params(params), channel_cb(std::move(cb)) {}
   ServiceInfo(ServiceInfo&&) = default;
   ServiceInfo& operator=(ServiceInfo&&) = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceInfo);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceInfo);
 
   // Preferred channel configuration parameters for new channels for this service.
   ChannelParameters channel_params;

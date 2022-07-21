@@ -16,10 +16,10 @@
 
 #include <optional>
 
-#include <fbl/macros.h>
 #include <fbl/unique_fd.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 
 namespace bt::hci {
 
@@ -86,7 +86,7 @@ class FidlDeviceWrapper : public DeviceWrapper {
  private:
   zx::channel device_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FidlDeviceWrapper);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FidlDeviceWrapper);
 };
 
 // A DeviceWrapper that calls bt-hci and bt-vendor DDK protocol ops.
@@ -113,7 +113,7 @@ class DdkDeviceWrapper : public DeviceWrapper {
   bt_hci_protocol_t hci_proto_;
   std::optional<bt_vendor_protocol_t> vendor_proto_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DdkDeviceWrapper);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DdkDeviceWrapper);
 };
 
 // A pass-through DeviceWrapper that returns the channel endpoints that it is
@@ -166,7 +166,7 @@ class DummyDeviceWrapper : public DeviceWrapper {
   ConfigureScoCallback configure_sco_cb_ = nullptr;
   ResetScoCallback reset_sco_cb_ = nullptr;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DummyDeviceWrapper);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DummyDeviceWrapper);
 };
 
 }  // namespace bt::hci

@@ -18,9 +18,8 @@
 #include <mutex>
 #include <queue>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
@@ -208,7 +207,7 @@ class Channel {
   // The ACL priority that was requested by a client and accepted by the controller.
   hci::AclPriority requested_acl_priority_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
 };
 
 // A socket connected to an L2cap channel and its parameters
@@ -227,7 +226,7 @@ struct ChannelSocket {
   zx::socket socket;
   std::optional<const ChannelInfo> params;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelSocket);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelSocket);
 };
 
 namespace internal {
@@ -322,7 +321,7 @@ class ChannelImpl : public Channel {
 
   fxl::WeakPtrFactory<ChannelImpl> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };
 
 }  // namespace internal

@@ -60,7 +60,7 @@ class LowEnergyPeripheralServerTestFakeAdapter : public bt::gap::testing::FakeAd
   std::unique_ptr<LowEnergyPeripheralServer> server_;
   fble::PeripheralPtr peripheral_client_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTestFakeAdapter);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTestFakeAdapter);
 };
 
 class LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFixture {
@@ -98,7 +98,7 @@ class LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFixture
   std::unique_ptr<LowEnergyPeripheralServer> server_;
   fble::PeripheralPtr peripheral_client_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTest);
 };
 
 class BoolParam : public LowEnergyPeripheralServerTest,

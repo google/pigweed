@@ -885,7 +885,7 @@ class AttBasedServer final : public Server {
 
   fxl::WeakPtrFactory<AttBasedServer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AttBasedServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AttBasedServer);
 };
 
 // static

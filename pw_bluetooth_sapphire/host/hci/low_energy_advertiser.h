@@ -240,7 +240,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   std::unordered_map<DeviceAddress, ConnectionCallback> connection_callbacks_;
   StagedParameters staged_parameters_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertiser);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertiser);
 };
 
 }  // namespace hci

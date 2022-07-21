@@ -36,7 +36,7 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
   std::unique_ptr<testing::FakeChannel> fake_sig_chan_;
   std::unique_ptr<LESignalingChannel> sig_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannelTestBase);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannelTestBase);
 };
 
 using LESignalingChannelTest = LESignalingChannelTestBase<>;

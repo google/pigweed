@@ -14,7 +14,7 @@
 #include <string>
 #include <type_traits>
 
-#include <fbl/macros.h>
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 
 namespace bt {
 
@@ -44,7 +44,7 @@ class InspectableGuard {
   ValueT& value_;
   fit::closure update_cb_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(InspectableGuard);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(InspectableGuard);
 };
 
 // Inspectable is a utility class for keeping inspected values in sync with their corresponding
@@ -141,7 +141,7 @@ class Inspectable {
   static_assert(!std::is_pointer_v<ValueT>, "Pointer passed to Inspectable");
   static_assert(!std::is_reference_v<ValueT>, "Reference passed to Inspectable");
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Inspectable);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Inspectable);
 };
 
 // Convenience Inspectable types:

@@ -1093,7 +1093,7 @@ class Impl final : public Client {
   std::queue<PreparedWrite> long_write_queue_;
   fxl::WeakPtrFactory<Client> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
 // static

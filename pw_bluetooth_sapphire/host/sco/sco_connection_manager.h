@@ -33,7 +33,7 @@ class ScoConnectionManager final {
 
    private:
     fit::callback<void()> on_cancel_;
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RequestHandle);
+    BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RequestHandle);
   };
 
   // |peer_id| corresponds to the peer associated with this BR/EDR connection.
@@ -164,7 +164,7 @@ class ScoConnectionManager final {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<ScoConnectionManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnectionManager);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnectionManager);
 };
 }  // namespace bt::sco
 

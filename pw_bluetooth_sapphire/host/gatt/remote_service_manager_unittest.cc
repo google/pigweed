@@ -6,12 +6,12 @@
 
 #include <vector>
 
-#include <fbl/macros.h>
 #include <gmock/gmock.h>
 
 #include "fake_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -157,7 +157,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
   // The memory is owned by |mgr_|.
   testing::FakeClient* fake_client_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManagerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManagerTest);
 };
 
 TEST_F(RemoteServiceManagerTest, InitializeNoServices) {

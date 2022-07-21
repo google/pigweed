@@ -15,9 +15,8 @@
 #include <memory>
 #include <thread>
 
-#include <fbl/macros.h>
-
 #include "lib/inspect/cpp/vmo/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/hci_wrapper.h"
@@ -117,7 +116,7 @@ class Transport final {
 
   fxl::WeakPtrFactory<Transport> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
 };
 
 }  // namespace bt::hci

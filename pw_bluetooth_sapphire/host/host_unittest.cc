@@ -81,7 +81,7 @@ class HostTest : public TestingBase {
     return hci_proto;
   }
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostTest);
 };
 
 zx_status_t hosttest_open_command_channel(void *ctx, zx_handle_t in) {

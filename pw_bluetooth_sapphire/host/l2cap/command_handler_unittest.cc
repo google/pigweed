@@ -47,7 +47,7 @@ class CommandHandlerTest : public TestBase {
  public:
   CommandHandlerTest() = default;
   ~CommandHandlerTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandHandlerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandHandlerTest);
 
  protected:
   // TestLoopFixture overrides

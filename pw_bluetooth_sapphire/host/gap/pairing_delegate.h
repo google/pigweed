@@ -56,7 +56,7 @@ class PairingDelegate {
   PairingDelegate() = default;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingDelegate);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingDelegate);
 };
 
 }  // namespace bt::gap

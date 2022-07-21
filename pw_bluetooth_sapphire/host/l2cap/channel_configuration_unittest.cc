@@ -30,7 +30,7 @@ class ChannelConfigurationTest : public ::testing::Test {
  public:
   ChannelConfigurationTest() = default;
   ~ChannelConfigurationTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelConfigurationTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelConfigurationTest);
 };
 
 TEST_F(ChannelConfigurationTest, ReadAllOptionTypes) {

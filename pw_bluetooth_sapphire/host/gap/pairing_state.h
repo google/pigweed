@@ -9,9 +9,8 @@
 #include <optional>
 #include <vector>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
@@ -439,7 +438,7 @@ class PairingState final {
   // moved with PairingState. |self| shall be a pointer to the moved-to instance being cleaned up.
   fit::callback<void(PairingState* self)> cleanup_cb_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };
 
 PairingAction GetInitiatorPairingAction(hci_spec::IOCapability initiator_cap,

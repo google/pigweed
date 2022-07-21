@@ -115,7 +115,7 @@ class BrEdrConnection final {
   // Unregisters the connection from PeerCache when this connection is destroyed.
   Peer::ConnectionToken peer_conn_token_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };
 
 }  // namespace bt::gap

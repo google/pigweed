@@ -14,9 +14,8 @@
 #include <memory>
 #include <string>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"

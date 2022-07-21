@@ -247,7 +247,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   // Stores links registered by RegisterLink
   std::unordered_map<hci_spec::ConnectionHandle, bt::LinkType> registered_links_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AclDataChannelImpl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AclDataChannelImpl);
 };
 
 std::unique_ptr<AclDataChannel> AclDataChannel::Create(Transport* transport, HciWrapper* hci,

@@ -7,9 +7,9 @@
 
 #include <memory>
 
-#include <fbl/macros.h>
 #include <fbl/slab_allocator.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -138,7 +138,7 @@ class SlabPacket : public FixedSizePacket<HeaderType, BufferSize>,
       : FixedSizePacket<HeaderType, BufferSize>(payload_size) {}
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabPacket);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabPacket);
 };
 
 }  // namespace internal

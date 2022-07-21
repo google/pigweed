@@ -75,7 +75,7 @@ class Gatt2ClientServer : public GattServerBase<fuchsia::bluetooth::gatt2::Clien
   // Must be the last member of this class.
   fxl::WeakPtrFactory<Gatt2ClientServer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Gatt2ClientServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Gatt2ClientServer);
 };
 }  // namespace bthost
 

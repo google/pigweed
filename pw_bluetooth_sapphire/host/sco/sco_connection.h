@@ -106,7 +106,7 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
 
   fxl::WeakPtrFactory<ScoConnection> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnection);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnection);
 };
 
 }  // namespace bt::sco

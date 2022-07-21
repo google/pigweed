@@ -125,7 +125,7 @@ class DynamicChannel {
   ChannelId remote_cid_;
   bool opened_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannel);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannel);
 };
 
 using DynamicChannelPtr = std::unique_ptr<DynamicChannel>;

@@ -11,9 +11,10 @@
 #include <lib/fit/defer.h>
 #include <lib/zx/channel.h>
 
-#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 
 namespace bt::hci {
 

@@ -139,7 +139,7 @@ class FakeSignalingServer final {
   // FakeSignalingServer registers itself with FakeL2cap.
   FakeL2cap* fake_l2cap_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSignalingServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSignalingServer);
 };
 
 }  // namespace bt::testing

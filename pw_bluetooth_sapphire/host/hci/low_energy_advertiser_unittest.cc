@@ -219,7 +219,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
   std::unique_ptr<LowEnergyAdvertiser> advertiser_;
   std::optional<Result<>> last_status_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertiserTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertiserTest);
 };
 
 using Implementations = ::testing::Types<LegacyLowEnergyAdvertiser, ExtendedLowEnergyAdvertiser,

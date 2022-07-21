@@ -152,7 +152,7 @@ class SequentialCommandRunner final {
 
   fxl::WeakPtrFactory<SequentialCommandRunner> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SequentialCommandRunner);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SequentialCommandRunner);
 };
 
 }  // namespace bt::hci

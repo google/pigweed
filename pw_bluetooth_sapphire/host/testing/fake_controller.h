@@ -13,12 +13,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -765,7 +765,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<FakeController> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };
 
 }  // namespace bt::testing

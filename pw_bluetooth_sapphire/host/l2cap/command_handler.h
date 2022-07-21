@@ -136,7 +136,7 @@ class CommandHandler {
                        ChannelId local_cid = kInvalidChannelId,
                        ChannelId remote_cid = kInvalidChannelId);
     virtual ~Responder() = default;
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Responder);
+    BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Responder);
 
     ChannelId local_cid() const { return local_cid_; }
     ChannelId remote_cid() const { return remote_cid_; }
@@ -242,7 +242,7 @@ class CommandHandler {
   SignalingChannelInterface* const sig_;  // weak
   fit::closure request_fail_callback_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandHandler);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandHandler);
 };
 
 }  // namespace bt::l2cap::internal

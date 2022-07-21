@@ -7,9 +7,8 @@
 
 #include <fuchsia/bluetooth/gatt2/cpp/fidl.h>
 
-#include <fbl/macros.h>
-
 #include "lib/fidl/cpp/binding.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/lib/fxl/memory/weak_ptr.h"

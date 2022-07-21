@@ -48,7 +48,7 @@ class Service final {
   UUID type_;
   std::vector<CharacteristicPtr> characteristics_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Service);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Service);
 };
 
 using ServicePtr = std::unique_ptr<Service>;
@@ -96,7 +96,7 @@ class Characteristic final {
   att::AccessRequirements update_permissions_;
   std::vector<DescriptorPtr> descriptors_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Characteristic);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Characteristic);
 };
 
 // Represents a single remote or local GATT characteristic descriptor. This
@@ -121,7 +121,7 @@ class Descriptor final {
   att::AccessRequirements read_permissions_;
   att::AccessRequirements write_permissions_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Descriptor);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Descriptor);
 };
 
 }  // namespace bt::gatt

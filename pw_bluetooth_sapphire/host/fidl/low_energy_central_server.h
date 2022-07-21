@@ -10,9 +10,8 @@
 #include <memory>
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "lib/fidl/cpp/binding.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt_client_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/low_energy_connection_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
@@ -161,7 +160,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyCentralServer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCentralServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCentralServer);
 };
 
 }  // namespace bthost

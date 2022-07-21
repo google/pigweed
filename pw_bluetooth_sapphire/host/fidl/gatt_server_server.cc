@@ -188,7 +188,7 @@ class GattServerServer::LocalServiceImpl
   // destruction).
   LocalServiceDelegatePtr delegate_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceImpl);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceImpl);
 };
 
 GattServerServer::GattServerServer(fxl::WeakPtr<bt::gatt::GATT> gatt,

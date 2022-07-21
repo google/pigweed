@@ -285,7 +285,7 @@ class AdvertisingData {
 
   std::unordered_set<std::string> uris_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisingData);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisingData);
 };
 
 }  // namespace bt

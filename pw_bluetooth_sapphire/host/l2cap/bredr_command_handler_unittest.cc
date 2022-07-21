@@ -29,7 +29,7 @@ class BrEdrCommandHandlerTest : public TestBase {
  public:
   BrEdrCommandHandlerTest() = default;
   ~BrEdrCommandHandlerTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrCommandHandlerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrCommandHandlerTest);
 
  protected:
   // TestLoopFixture overrides

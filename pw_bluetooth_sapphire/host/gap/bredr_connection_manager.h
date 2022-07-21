@@ -393,7 +393,7 @@ class BrEdrConnectionManager final {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<BrEdrConnectionManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManager);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManager);
 };
 
 }  // namespace gap

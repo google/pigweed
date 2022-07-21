@@ -23,7 +23,7 @@ class FakeSignalingServerTest : public gtest::TestLoopFixture {
   l2cap::CommandId kCommandId = 0x02;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSignalingServerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSignalingServerTest);
 };
 
 TEST_F(FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {

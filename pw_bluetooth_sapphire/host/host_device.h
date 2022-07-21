@@ -16,8 +16,8 @@
 #include <mutex>
 
 #include <ddktl/device.h>
-#include <fbl/macros.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/host.h"
 
 namespace bthost {
@@ -77,7 +77,7 @@ class HostDevice final : public HostDeviceType {
   async::Loop loop_;
   fbl::RefPtr<Host> host_ __TA_GUARDED(mtx_);
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostDevice);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostDevice);
 };
 
 }  // namespace bthost

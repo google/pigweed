@@ -15,11 +15,10 @@
 #include <deque>
 #include <utility>
 
-#include <fbl/macros.h>
-
 #include "lib/zx/socket.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::socket {
@@ -165,7 +164,7 @@ class SocketChannelRelay final {
 
   fxl::WeakPtrFactory<SocketChannelRelay> weak_ptr_factory_;  // Keep last.
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketChannelRelay);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketChannelRelay);
 };
 
 template <typename ChannelT>

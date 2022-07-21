@@ -156,7 +156,7 @@ class BrEdrCommandHandler final : public CommandHandler {
   // Disallow copy even though there's no state because having multiple
   // BrEdrCommandHandlers in the same scope is likely due to a bug or is at
   // least redundant.
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrCommandHandler);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrCommandHandler);
 
   // Outbound request sending methods. Response callbacks are required to be
   // non-empty. The callbacks are wrapped and moved into the SignalingChannel

@@ -5,9 +5,8 @@
 #include <lib/async/cpp/task.h>
 #include <lib/inspect/testing/cpp/inspect.h>
 
-#include <fbl/macros.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
@@ -176,7 +175,7 @@ class L2capIntegrationTest : public TestingBase {
   l2cap::CommandId next_command_id_;
   std::unique_ptr<socket::SocketFactory<l2cap::Channel>> socket_factory_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(L2capIntegrationTest);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(L2capIntegrationTest);
 };
 
 TEST_F(L2capIntegrationTest, InboundL2capSocket) {
@@ -223,8 +222,7 @@ TEST_F(L2capIntegrationTest, InboundL2capSocket) {
   ASSERT_EQ(4u, bytes_read);
   EXPECT_EQ("test", socket_bytes.view(0, bytes_read).AsString());
 
-  const char write_data[81] =
-      "🚂🚃🚄🚅🚆🚈🚇🚈🚉🚊🚋🚌🚎🚝🚞🚟🚠🚡🛤🛲";
+  const char write_data[81] = "🚂🚃🚄🚅🚆🚈🚇🚈🚉🚊🚋🚌🚎🚝🚞🚟🚠🚡🛤🛲";
 
   // Test outbound data fragments using |kMaxDataPacketLength|.
   constexpr size_t kFirstFragmentPayloadSize = kMaxDataPacketLength - sizeof(l2cap::BasicHeader);

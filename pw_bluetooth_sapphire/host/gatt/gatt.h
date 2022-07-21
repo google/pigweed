@@ -183,7 +183,7 @@ class GATT {
  private:
   fxl::WeakPtrFactory<GATT> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT);
 };
 
 }  // namespace gatt

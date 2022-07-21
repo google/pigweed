@@ -5,8 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ADVERTISING_REPORT_PARSER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ADVERTISING_REPORT_PARSER_H_
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 
@@ -53,7 +52,7 @@ class AdvertisingReportParser final {
   // Pointer to the beginning of the next advertising report segment.
   const uint8_t* ptr_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisingReportParser);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisingReportParser);
 };
 
 }  // namespace bt::hci

@@ -113,7 +113,7 @@ class LowEnergyCentralServerTest : public TestingBase {
   fble::CentralPtr proxy_;
   std::unique_ptr<bt::gatt::GATT> gatt_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCentralServerTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCentralServerTest);
 };
 
 class LowEnergyCentralServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {

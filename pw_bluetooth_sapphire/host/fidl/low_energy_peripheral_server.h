@@ -11,8 +11,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/low_energy_connection_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
@@ -98,7 +97,7 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
 
     fxl::WeakPtrFactory<AdvertisementInstance> weak_ptr_factory_;
 
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
+    BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
   };
 
   class AdvertisementInstanceDeprecated final {
@@ -123,7 +122,7 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
     fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> handle_;
     async::Wait handle_closed_wait_;
 
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstanceDeprecated);
+    BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstanceDeprecated);
   };
 
   // Called when a central connects to us.  When this is called, the
@@ -172,7 +171,7 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyPeripheralServer> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServer);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServer);
 };
 
 }  // namespace bthost

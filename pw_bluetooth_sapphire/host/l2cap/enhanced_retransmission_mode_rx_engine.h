@@ -97,7 +97,8 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
   // Invoked when the connection encounters a fatal error.
   const ConnectionFailureCallback connection_failure_callback_;
 
-  // TODO(fxbug.dev/52554): Refactor these delegates into a single interface for TxEngine to implement.
+  // TODO(fxbug.dev/52554): Refactor these delegates into a single interface for TxEngine to
+  // implement.
   ReceiveSeqNumCallback receive_seq_num_callback_;
   AckSeqNumCallback ack_seq_num_callback_;
   RemoteBusyChangedCallback remote_busy_set_callback_;
@@ -105,7 +106,7 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
   RangeRetransmitSetCallback range_retransmit_set_callback_;
   SingleRetransmitSetCallback single_retransmit_set_callback_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
 };
 
 }  // namespace bt::l2cap::internal

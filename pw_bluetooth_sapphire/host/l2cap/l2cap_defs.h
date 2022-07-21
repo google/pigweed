@@ -11,7 +11,7 @@
 #include <limits>
 #include <string>
 
-#include <fbl/macros.h>
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include <zircon/compiler.h>
 
 #include "lib/zx/time.h"

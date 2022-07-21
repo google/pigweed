@@ -90,7 +90,7 @@ class AdapterTest : public TestingBase {
   std::unique_ptr<gatt::testing::FakeLayer> gatt_;
   std::unique_ptr<Adapter> adapter_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterTest);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterTest);
 };
 
 class AdapterScoDisabledTest : public AdapterTest {

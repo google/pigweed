@@ -8,10 +8,9 @@
 #include <memory>
 #include <unordered_map>
 
-#include <fbl/macros.h>
-
 #include "lib/async/cpp/task.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -258,7 +257,7 @@ class SignalingChannel : public SignalingChannelInterface {
 
   fxl::WeakPtrFactory<SignalingChannel> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SignalingChannel);
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SignalingChannel);
 };
 
 }  // namespace internal
