@@ -37,6 +37,29 @@ compiler defaults. (See Pigweed's ``//BUILDCONFIG.gn``)
 ``pw_build`` also provides several useful GN templates that are used throughout
 Pigweed.
 
+Build system philosophies
+-------------------------
+While Pigweed's GN build is not hermetic, it strives to adhere to principles of
+`hermeticity <https://bazel.build/concepts/hermeticity>`_. Some guidelines to
+move towards the ideal of hermeticity include:
+
+* Only rely on pre-compiled tools provided by CIPD (or some other versioned,
+  pre-compiled binary distribution mechanism). This eliminates build artifact
+  differences caused by different tool versions or variations (e.g. same tool
+  version built with slightly different compilation flags).
+* Do not use absolute paths in Ninja commands. Typically, these appear when
+  using ``rebase_path("//path/to/my_script.py")``. Most of the time, Ninja
+  steps should be passed paths rebased relative to the build directory (i.e.
+  ``rebase_path("//path/to/my_script.py", root_build_dir)``). This ensures build
+  commands are the same across different machines.
+* Prevent produced artifacts from relying on or referencing system state. This
+  includes time stamps, writing absolute paths to generated artifacts, or
+  producing artifacts that reference system state in a way that prevents them
+  from working the same way on a different machine.
+* Isolate build actions to the build directory. In general, the build system
+  should not add or modify files outside of the build directory. This can cause
+  confusion to users, and makes the concept of a clean build more ambiguous.
+
 Target types
 ------------
 .. code-block::

@@ -15,6 +15,9 @@
 
 from __future__ import print_function
 
+import ntpath
+import os
+import posixpath
 import re
 
 # Disable super() warnings since this file must be Python 2 compatible.
@@ -27,13 +30,13 @@ class GNIVisitor(object):  # pylint: disable=useless-object-inheritance
     Example gni file:
 
     declare_args() {
-      dir_cipd_default = "<ENVIRONMENT_DIR>/cipd/packages/default"
-      dir_cipd_pigweed = "<ENVIRONMENT_DIR>/cipd/packages/pigweed"
-      dir_cipd_arm = "<ENVIRONMENT_DIR>/cipd/packages/arm"
-      dir_cipd_python = "<ENVIRONMENT_DIR>/cipd/packages/python"
-      dir_cipd_bazel = "<ENVIRONMENT_DIR>/cipd/packages/bazel"
-      dir_cipd_luci = "<ENVIRONMENT_DIR>/cipd/packages/luci"
-      dir_virtual_env = "<ENVIRONMENT_DIR>/pigweed-venv"
+      dir_cipd_default = "//<ENVIRONMENT_DIR>/cipd/packages/default"
+      dir_cipd_pigweed = "//<ENVIRONMENT_DIR>/cipd/packages/pigweed"
+      dir_cipd_arm = "//<ENVIRONMENT_DIR>/cipd/packages/arm"
+      dir_cipd_python = "//<ENVIRONMENT_DIR>/cipd/packages/python"
+      dir_cipd_bazel = "//<ENVIRONMENT_DIR>/cipd/packages/bazel"
+      dir_cipd_luci = "//<ENVIRONMENT_DIR>/cipd/packages/luci"
+      dir_virtual_env = "//<ENVIRONMENT_DIR>/pigweed-venv"
     }
     """
     def __init__(self, project_root, *args, **kwargs):
@@ -57,14 +60,25 @@ class GNIVisitor(object):  # pylint: disable=useless-object-inheritance
             print(line, file=outs)
         self._lines = []
 
+    def _abspath_to_gn_path(self, path):
+        gn_path = os.path.relpath(path, start=self._project_root)
+        if os.name == 'nt':
+            # GN paths are posix-style, so convert to posix. This
+            # find-and-replace is a little crude, but python 2.7 doesn't support
+            # pathlib.
+            gn_path = gn_path.replace(ntpath.sep, posixpath.sep)
+        return '//{}'.format(gn_path)
+
     def visit_set(self, set):  # pylint: disable=redefined-builtin
         match = re.search(r'PW_(.*)_CIPD_INSTALL_DIR', set.name)
         if match:
             name = 'dir_cipd_{}'.format(match.group(1).lower())
-            self._lines.append('  {} = "{}"'.format(name, set.value))
+            self._lines.append('  {} = "{}"'.format(
+                name, self._abspath_to_gn_path(set.value)))
 
         if set.name == 'VIRTUAL_ENV':
-            self._lines.append('  dir_virtual_env = "{}"'.format(set.value))
+            self._lines.append('  dir_virtual_env = "{}"'.format(
+                self._abspath_to_gn_path(set.value)))
 
     def visit_clear(self, clear):
         pass
