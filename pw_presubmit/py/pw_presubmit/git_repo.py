@@ -319,6 +319,10 @@ def commit_message(commit: str = 'HEAD', repo: PathOrStr = '.') -> str:
     return git_stdout('log', '--format=%B', '-n1', commit, repo=repo)
 
 
+def commit_author(commit: str = 'HEAD', repo: PathOrStr = '.') -> str:
+    return git_stdout('log', '--format=%ae', '-n1', commit, repo=repo)
+
+
 def commit_hash(rev: str = 'HEAD',
                 short: bool = True,
                 repo: PathOrStr = '.') -> str:
