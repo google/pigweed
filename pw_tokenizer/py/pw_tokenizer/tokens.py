@@ -13,6 +13,7 @@
 # the License.
 """Builds and manages databases of tokenized strings."""
 
+from abc import abstractmethod
 import collections
 import csv
 from dataclasses import dataclass
@@ -23,7 +24,8 @@ from pathlib import Path
 import re
 import struct
 from typing import (BinaryIO, Callable, Dict, Iterable, Iterator, List,
-                    NamedTuple, Optional, Pattern, Tuple, Union, ValuesView)
+                    NamedTuple, Optional, Pattern, TextIO, Tuple, Union,
+                    ValuesView)
 
 DATE_FORMAT = '%Y-%m-%d'
 DEFAULT_DOMAIN = ''
@@ -295,7 +297,7 @@ class Database:
         return csv_output.getvalue().decode()
 
 
-def parse_csv(fd) -> Iterable[TokenizedStringEntry]:
+def parse_csv(fd: TextIO) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries from a CSV token database file."""
     for line in csv.reader(fd):
         try:
@@ -445,23 +447,44 @@ class DatabaseFile(Database):
     This class adds the write_to_file() method that writes to file from which it
     was created in the correct format (CSV or binary).
     """
-    def __init__(self, path: Union[Path, str]):
-        self.path = Path(path)
+    def __init__(self, path: Path,
+                 entries: Iterable[TokenizedStringEntry]) -> None:
+        super().__init__(entries)
+        self.path = path
 
+    @staticmethod
+    def create(path: Path) -> 'DatabaseFile':
+        """Creates a DatabaseFile that coincides to the file type."""
         # Read the path as a packed binary file.
-        with self.path.open('rb') as fd:
+        with path.open('rb') as fd:
             if file_is_binary_database(fd):
-                super().__init__(parse_binary(fd))
-                self._export = write_binary
-                return
+                return _BinaryDatabase(path, fd)
 
         # Read the path as a CSV file.
-        _check_that_file_is_csv_database(self.path)
-        with self.path.open('r', newline='', encoding='utf-8') as file:
-            super().__init__(parse_csv(file))
-            self._export = write_csv
+        _check_that_file_is_csv_database(path)
+        with path.open('r', newline='', encoding='utf-8') as csv_fd:
+            return _CSVDatabase(path, csv_fd)
 
-    def write_to_file(self, path: Optional[Union[Path, str]] = None) -> None:
-        """Exports in the original format to the original or provided path."""
-        with open(self.path if path is None else path, 'wb') as fd:
-            self._export(self, fd)
+    @abstractmethod
+    def write_to_file(self) -> None:
+        """Exports in the original format to the original path."""
+
+
+class _BinaryDatabase(DatabaseFile):
+    def __init__(self, path: Path, fd: BinaryIO) -> None:
+        super().__init__(path, parse_binary(fd))
+
+    def write_to_file(self) -> None:
+        """Exports in the binary format to the original path."""
+        with self.path.open('wb') as fd:
+            write_binary(self, fd)
+
+
+class _CSVDatabase(DatabaseFile):
+    def __init__(self, path: Path, fd: TextIO) -> None:
+        super().__init__(path, parse_csv(fd))
+
+    def write_to_file(self) -> None:
+        """Exports in the csv format to the original path."""
+        with self.path.open('wb') as fd:
+            write_csv(self, fd)

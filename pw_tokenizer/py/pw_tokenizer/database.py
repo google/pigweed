@@ -28,8 +28,8 @@ from pathlib import Path
 import re
 import struct
 import sys
-from typing import (Any, Callable, Dict, Iterable, Iterator, List, Pattern,
-                    Set, TextIO, Tuple, Union)
+from typing import (Any, Callable, Dict, Iterable, Iterator, List, Optional,
+                    Pattern, Set, TextIO, Tuple, Union)
 
 try:
     from pw_tokenizer import elf_reader, tokens
@@ -218,7 +218,7 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:
                 return _database_from_json(json_fd)
 
         # Read the path as a packed binary or CSV file.
-        return tokens.DatabaseFile(db)
+        return tokens.DatabaseFile.create(Path(db))
 
     # Assume that it's a file object and check if it's an ELF.
     if elf_reader.compatible_file(db):
@@ -230,7 +230,7 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:
         if db.name.endswith('.json'):
             return _database_from_json(db)
 
-        return tokens.DatabaseFile(db.name)
+        return tokens.DatabaseFile.create(Path(db.name))
 
     # Read CSV directly from the file object.
     return tokens.Database(tokens.parse_csv(db))
@@ -293,9 +293,8 @@ def generate_reports(paths: Iterable[Path]) -> _DatabaseReport:
 
 
 def _handle_create(databases, database, force, output_type, include, exclude,
-                   replace):
+                   replace) -> None:
     """Creates a token database file from one or more ELF files."""
-
     if database == '-':
         # Must write bytes to stdout; use sys.stdout.buffer.
         fd = sys.stdout.buffer
@@ -320,19 +319,24 @@ def _handle_create(databases, database, force, output_type, include, exclude,
               fd.name, output_type)
 
 
-def _handle_add(token_database, databases):
+def _handle_add(token_database: tokens.DatabaseFile,
+                databases: List[tokens.Database]) -> None:
     initial = len(token_database)
 
     for source in databases:
         token_database.add(source.entries())
 
+    number_of_entries_added = len(token_database) - initial
+
     token_database.write_to_file()
 
-    _LOG.info('Added %d entries to %s',
-              len(token_database) - initial, token_database.path)
+    _LOG.info('Added %d entries to %s', number_of_entries_added,
+              token_database.path)
 
 
-def _handle_mark_removed(token_database, databases, date):
+def _handle_mark_removed(token_database: tokens.DatabaseFile,
+                         databases: List[tokens.Database],
+                         date: Optional[datetime]):
     marked_removed = token_database.mark_removed(
         (entry for entry in tokens.Database.merged(*databases).entries()
          if not entry.date_removed), date)
@@ -343,7 +347,8 @@ def _handle_mark_removed(token_database, databases, date):
               len(token_database), token_database.path)
 
 
-def _handle_purge(token_database, before):
+def _handle_purge(token_database: tokens.DatabaseFile,
+                  before: Optional[datetime]):
     purged = token_database.purge(before)
     token_database.write_to_file()
 
@@ -460,12 +465,13 @@ def _parse_args():
 
     # Shared command line options.
     option_db = argparse.ArgumentParser(add_help=False)
-    option_db.add_argument('-d',
-                           '--database',
-                           dest='token_database',
-                           type=tokens.DatabaseFile,
-                           required=True,
-                           help='The database file to update.')
+    option_db.add_argument(
+        '-d',
+        '--database',
+        dest='token_database',
+        type=lambda arg: tokens.DatabaseFile.create(Path(arg)),
+        required=True,
+        help='The database file to update.')
 
     option_tokens = token_databases_parser('*')
 

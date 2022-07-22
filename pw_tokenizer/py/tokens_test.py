@@ -405,7 +405,7 @@ class TestDatabaseFile(unittest.TestCase):
 
     def test_update_csv_file(self):
         self._path.write_text(CSV_DATABASE)
-        db = tokens.DatabaseFile(self._path)
+        db = tokens.DatabaseFile.create(self._path)
         self.assertEqual(str(db), CSV_DATABASE)
 
         db.add([tokens.TokenizedStringEntry(0xffffffff, 'New entry!')])
@@ -419,19 +419,19 @@ class TestDatabaseFile(unittest.TestCase):
         self._path.write_text('1234')
 
         with self.assertRaises(tokens.DatabaseFormatError):
-            tokens.DatabaseFile(self._path)
+            tokens.DatabaseFile.create(self._path)
 
     def test_csv_invalid_format_raises_exception(self):
         self._path.write_text('MK34567890')
 
         with self.assertRaises(tokens.DatabaseFormatError):
-            tokens.DatabaseFile(self._path)
+            tokens.DatabaseFile.create(self._path)
 
     def test_csv_not_utf8(self):
         self._path.write_bytes(b'\x80' * 20)
 
         with self.assertRaises(tokens.DatabaseFormatError):
-            tokens.DatabaseFile(self._path)
+            tokens.DatabaseFile.create(self._path)
 
 
 class TestFilter(unittest.TestCase):
