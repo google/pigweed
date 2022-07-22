@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
-import("$dir_pw_docgen/docs.gni")
 
 pw_python_package("pw_snapshot_metadata") {
   generate_setup = {
@@ -68,9 +67,4 @@ pw_python_group("py") {
     ":pw_snapshot",
     ":pw_snapshot_metadata",
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  other_deps = [ ":py" ]
 }

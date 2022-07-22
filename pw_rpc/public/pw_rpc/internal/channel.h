@@ -13,13 +13,12 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc::internal {

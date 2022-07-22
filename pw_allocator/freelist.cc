@@ -16,7 +16,7 @@
 
 namespace pw::allocator {
 
-Status FreeList::AddChunk(std::span<std::byte> chunk) {
+Status FreeList::AddChunk(span<std::byte> chunk) {
   // Check that the size is enough to actually store what we need
   if (chunk.size() < sizeof(FreeListNode)) {
     return Status::OutOfRange();
@@ -39,9 +39,9 @@ Status FreeList::AddChunk(std::span<std::byte> chunk) {
   return OkStatus();
 }
 
-std::span<std::byte> FreeList::FindChunk(size_t size) const {
+span<std::byte> FreeList::FindChunk(size_t size) const {
   if (size == 0) {
-    return std::span<std::byte>();
+    return span<std::byte>();
   }
 
   size_t chunk_ptr = FindChunkPtrForSize(size, true);
@@ -49,7 +49,7 @@ std::span<std::byte> FreeList::FindChunk(size_t size) const {
   // Check that there's data. This catches the case where we run off the
   // end of the array
   if (chunks_[chunk_ptr] == nullptr) {
-    return std::span<std::byte>();
+    return span<std::byte>();
   }
 
   // Now iterate up the buckets, walking each list to find a good candidate
@@ -62,7 +62,7 @@ std::span<std::byte> FreeList::FindChunk(size_t size) const {
 
     while (aliased.node != nullptr) {
       if (aliased.node->size >= size) {
-        return std::span<std::byte>(aliased.data, aliased.node->size);
+        return span<std::byte>(aliased.data, aliased.node->size);
       }
 
       aliased.node = aliased.node->next;
@@ -71,10 +71,10 @@ std::span<std::byte> FreeList::FindChunk(size_t size) const {
 
   // If we get here, we've checked every block in every bucket. There's
   // nothing that can support this allocation.
-  return std::span<std::byte>();
+  return span<std::byte>();
 }
 
-Status FreeList::RemoveChunk(std::span<std::byte> chunk) {
+Status FreeList::RemoveChunk(span<std::byte> chunk) {
   size_t chunk_ptr = FindChunkPtrForSize(chunk.size(), true);
 
   // Walk that list, finding the chunk.

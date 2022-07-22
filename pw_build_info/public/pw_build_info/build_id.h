@@ -14,7 +14,8 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
+
+#include "pw_span/span.h"
 
 namespace pw::build_info {
 
@@ -25,6 +26,6 @@ inline constexpr size_t kMaxBuildIdSizeBytes = 20;
 // Reads a GNU build ID from the address starting at the address of the
 // `gnu_build_id_begin` symbol. This must be manually explicitly provided as
 // part of a linker script. See build_id_linker_snippet.ld for an example.
-std::span<const std::byte> BuildId();
+span<const std::byte> BuildId();
 
 }  // namespace pw::build_info

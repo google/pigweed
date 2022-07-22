@@ -21,6 +21,7 @@
 #include "pw_log/proto_utils.h"
 #include "pw_log_string/handler.h"
 #include "pw_log_tokenized/metadata.h"
+#include "pw_metric/global.h"
 #include "pw_multisink/multisink.h"
 #include "pw_result/result.h"
 #include "pw_string/string_builder.h"
@@ -32,6 +33,11 @@
 
 namespace pw::system {
 namespace {
+
+// Sample metric usage.
+PW_METRIC_GROUP_GLOBAL(log_metric_group, "log");
+PW_METRIC(log_metric_group, total_created, "total_created", 0u);
+PW_METRIC(log_metric_group, total_dropped, "total_dropped", 0u);
 
 // Buffer used to encode each log entry before saving into log buffer.
 sync::InterruptSpinLock log_encode_lock;
@@ -66,9 +72,11 @@ extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
       metadata, message, size_bytes, timestamp, log_encode_buffer);
   if (!encoded_log_result.ok()) {
     GetMultiSink().HandleDropped();
+    total_dropped.Increment();
     return;
   }
   GetMultiSink().HandleEntry(encoded_log_result.value());
+  total_created.Increment();
 }
 
 // Implementation for string log handling. This will be optimized out for
@@ -98,9 +106,11 @@ extern "C" void pw_log_string_HandleMessageVaList(int level,
                      log_encode_buffer);
   if (!encoded_log_result.ok()) {
     GetMultiSink().HandleDropped();
+    total_dropped.Increment();
     return;
   }
   GetMultiSink().HandleEntry(encoded_log_result.value());
+  total_created.Increment();
 }
 
 }  // namespace pw::system

@@ -14,7 +14,10 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_sys_io_stdio
-  IMPLEMENTS_FACADE
-    pw_sys_io
+pw_add_module_library(pw_sys_io_stdio
+  SOURCES
+    sys_io.cc
+  PRIVATE_DEPS
+    pw_sys_io.default_putget_bytes
+    pw_sys_io.facade
 )

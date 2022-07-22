@@ -16,8 +16,8 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <span>
 
+#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/stream.h"
 #include "pw_varint/varint.h"
@@ -56,7 +56,7 @@ StatusWithSize Read(stream::Reader& reader, uint64_t* output, size_t max_size) {
     }
 
     std::byte b;
-    if (auto result = reader.Read(std::span(&b, 1)); !result.ok()) {
+    if (auto result = reader.Read(span(&b, 1)); !result.ok()) {
       if (count > 0 && result.status().IsOutOfRange()) {
         // Status::OutOfRange on the first byte means we tried to read a varint
         // when we reached the end of file. But after the first byte it means we

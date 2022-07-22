@@ -78,7 +78,7 @@ int main() {
   PW_LOG_INFO("Use the variable. %u", unsigned(*val));
 
   std::array<std::byte, 32> blob_source_buffer;
-  pw::ConstByteSpan write_data = std::span(blob_source_buffer);
+  pw::ConstByteSpan write_data = pw::span(blob_source_buffer);
   char name[16] = "BLOB";
   std::array<std::byte, 32> read_buffer;
   pw::ByteSpan read_span = read_buffer;

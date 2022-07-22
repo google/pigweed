@@ -15,13 +15,13 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstring>
-#include <span>
 #include <type_traits>
 
 #include "pw_bytes/array.h"
+#include "pw_bytes/bit.h"
 #include "pw_bytes/span.h"
+#include "pw_span/span.h"
 
 namespace pw::bytes {
 namespace internal {
@@ -115,7 +115,7 @@ constexpr T ReverseBytes(T value) {
 // directly, since the value will be meaningless. Such values are only suitable
 // to memcpy'd or sent to a different device.
 template <typename T>
-constexpr T ConvertOrder(std::endian from, std::endian to, T value) {
+constexpr T ConvertOrder(endian from, endian to, T value) {
   return from == to ? value : internal::ReverseBytes(value);
 }
 
@@ -123,19 +123,19 @@ constexpr T ConvertOrder(std::endian from, std::endian to, T value) {
 // this function changes the value's endianness, the result should only be used
 // to memcpy the bytes to a buffer or send to a different device.
 template <typename T>
-constexpr T ConvertOrderTo(std::endian to_endianness, T value) {
-  return ConvertOrder(std::endian::native, to_endianness, value);
+constexpr T ConvertOrderTo(endian to_endianness, T value) {
+  return ConvertOrder(endian::native, to_endianness, value);
 }
 
 // Converts a value from the specified byte order to the native byte order.
 template <typename T>
-constexpr T ConvertOrderFrom(std::endian from_endianness, T value) {
-  return ConvertOrder(from_endianness, std::endian::native, value);
+constexpr T ConvertOrderFrom(endian from_endianness, T value) {
+  return ConvertOrder(from_endianness, endian::native, value);
 }
 
 // Copies the value to a std::array with the specified endianness.
 template <typename T>
-constexpr auto CopyInOrder(std::endian order, T value) {
+constexpr auto CopyInOrder(endian order, T value) {
   return internal::CopyLittleEndian(ConvertOrderTo(order, value));
 }
 
@@ -145,7 +145,7 @@ constexpr auto CopyInOrder(std::endian order, T value) {
 // absolutely certain the input buffer is large enough, use the ReadInOrder
 // overload that returns bool, which checks the buffer size at runtime.
 template <typename T>
-T ReadInOrder(std::endian order, const void* buffer) {
+T ReadInOrder(endian order, const void* buffer) {
   T value;
   std::memcpy(&value, buffer, sizeof(value));
   return ConvertOrderFrom(order, value);
@@ -160,7 +160,7 @@ T ReadInOrder(std::endian order, const void* buffer) {
 // The buffer **MUST** be at least as large as the smaller of max_bytes_to_read
 // and sizeof(T)!
 template <typename T>
-T ReadInOrder(std::endian order, const void* buffer, size_t max_bytes_to_read) {
+T ReadInOrder(endian order, const void* buffer, size_t max_bytes_to_read) {
   T value = {};
   std::memcpy(&value, buffer, std::min(sizeof(value), max_bytes_to_read));
   return ConvertOrderFrom(order, value);
@@ -170,31 +170,29 @@ T ReadInOrder(std::endian order, const void* buffer, size_t max_bytes_to_read) {
 template <typename T,
           typename B,
           size_t kBufferSize,
-          typename = std::enable_if_t<kBufferSize != std::dynamic_extent &&
+          typename = std::enable_if_t<kBufferSize != dynamic_extent &&
                                       sizeof(B) == sizeof(std::byte)>>
-T ReadInOrder(std::endian order, std::span<B, kBufferSize> buffer) {
+T ReadInOrder(endian order, span<B, kBufferSize> buffer) {
   static_assert(kBufferSize >= sizeof(T));
   return ReadInOrder<T>(order, buffer.data());
 }
 
 // ReadInOrder from a std::array, with compile-time bounds checking.
 template <typename T, typename B, size_t kBufferSize>
-T ReadInOrder(std::endian order, const std::array<B, kBufferSize>& buffer) {
-  return ReadInOrder<T>(order, std::span(buffer));
+T ReadInOrder(endian order, const std::array<B, kBufferSize>& buffer) {
+  return ReadInOrder<T>(order, span(buffer));
 }
 
 // ReadInOrder from a C array, with compile-time bounds checking.
 template <typename T, typename B, size_t kBufferSize>
-T ReadInOrder(std::endian order, const B (&buffer)[kBufferSize]) {
-  return ReadInOrder<T>(order, std::span(buffer));
+T ReadInOrder(endian order, const B (&buffer)[kBufferSize]) {
+  return ReadInOrder<T>(order, span(buffer));
 }
 
 // Reads a value with the specified endianness from the buffer, with bounds
 // checking. Returns true if successful, false if buffer is too small for a T.
 template <typename T>
-[[nodiscard]] bool ReadInOrder(std::endian order,
-                               ConstByteSpan buffer,
-                               T& value) {
+[[nodiscard]] bool ReadInOrder(endian order, ConstByteSpan buffer, T& value) {
   if (buffer.size() < sizeof(T)) {
     return false;
   }

@@ -89,6 +89,7 @@ pw_cc_library(
         "public/pw_rpc/internal/method_union.h",
         "public/pw_rpc/internal/packet.h",
         "public/pw_rpc/internal/server_call.h",
+        "public/pw_rpc/method_info.h",
         "public/pw_rpc/method_type.h",
         "public/pw_rpc/writer.h",
         "server.cc",
@@ -99,6 +100,7 @@ pw_cc_library(
         "public/pw_rpc/channel.h",
         "public/pw_rpc/client.h",
         "public/pw_rpc/internal/service_client.h",
+        "public/pw_rpc/method_info.h",
         "public/pw_rpc/server.h",
         "public/pw_rpc/service.h",
     ],
@@ -161,14 +163,27 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "thread_testing",
-    hdrs = ["public/pw_rpc/thread_testing.h"],
+    name = "test_helpers",
+    hdrs = ["public/pw_rpc/test_helpers.h"],
     includes = ["public"],
     deps = [
         ":internal_test_utils",
+        ":pw_rpc",
         "//pw_assert",
+        "//pw_chrono:system_clock",
+        "//pw_status",
         "//pw_sync:counting_semaphore",
+        "//pw_thread:yield",
     ],
+)
+
+# thread_testing target is kept for backward compatibility.
+# New code should use test_helpers instead.
+pw_cc_library(
+    name = "thread_testing",
+    hdrs = ["public/pw_rpc/thread_testing.h"],
+    includes = ["public"],
+    deps = [":test_helpers"],
 )
 
 pw_cc_library(
@@ -308,6 +323,13 @@ pw_cc_test(
     deps = [":internal_test_utils"],
 )
 
+# TODO(b/234874064): Add test_helpers_test when it is possible to use .options
+# in bazel build.
+filegroup(
+    name = "test_helpers_test",
+    srcs = ["test_helpers_test.cc"],
+)
+
 proto_library(
     name = "internal_packet_proto",
     srcs = ["internal/packet.proto"],
@@ -331,7 +353,10 @@ pw_proto_library(
 
 proto_library(
     name = "pw_rpc_test_proto",
-    srcs = ["pw_rpc_test_protos/test.proto"],
+    srcs = [
+        "pw_rpc_test_protos/no_package.proto",
+        "pw_rpc_test_protos/test.proto",
+    ],
     strip_import_prefix = "//pw_rpc",
 )
 

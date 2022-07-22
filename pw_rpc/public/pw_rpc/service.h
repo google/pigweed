@@ -15,12 +15,12 @@
 
 #include <cstdint>
 #include <limits>
-#include <span>
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_union.h"
+#include "pw_span/span.h"
 
 namespace pw::rpc {
 

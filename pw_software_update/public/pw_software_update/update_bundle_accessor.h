@@ -19,10 +19,13 @@
 #include "pw_blob_store/blob_store.h"
 #include "pw_protobuf/map_utils.h"
 #include "pw_protobuf/message.h"
+#include "pw_software_update/blob_store_openable_reader.h"
 #include "pw_software_update/bundled_update_backend.h"
 #include "pw_software_update/manifest_accessor.h"
+#include "pw_software_update/openable_reader.h"
 
 namespace pw::software_update {
+
 class BundledUpdateBackend;
 
 // Name of the top-level Targets metadata.
@@ -44,20 +47,36 @@ constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
 class UpdateBundleAccessor {
  public:
   // UpdateBundleAccessor
-  // blob_store - The staged incoming software update bundle.
+  // update_reader - The staged incoming software update bundle.
   // backend - Project-specific BundledUpdateBackend.
   // self_verification - When set to true, perform a voluntary best effort
   //     verification against available metadata in the incoming bundle itself.
   //     Self verification does NOT use any on-device metadata, thus does not
   //     guard against malicious attacks. Self-verification is primarily meant
   //     to de-risk 0-day verification turn-on.
+  constexpr UpdateBundleAccessor(OpenableReader& update_reader,
+                                 BundledUpdateBackend& backend,
+                                 bool self_verification = false)
+      : optional_blob_store_reader_unused_(),
+        update_reader_(update_reader),
+        backend_(backend),
+        self_verification_(self_verification) {}
+
+  // Overloaded constructor to maintain backwards compatibility. This should be
+  // removed once users have migrated.
   constexpr UpdateBundleAccessor(blob_store::BlobStore& blob_store,
                                  BundledUpdateBackend& backend,
                                  bool self_verification = false)
-      : blob_store_(blob_store),
-        blob_store_reader_(blob_store_),
+      : optional_blob_store_openeable_reader_(blob_store),
+        update_reader_(optional_blob_store_openeable_reader_),
         backend_(backend),
         self_verification_(self_verification) {}
+
+  ~UpdateBundleAccessor() {
+    if (&update_reader_ == &optional_blob_store_openeable_reader_) {
+      optional_blob_store_openeable_reader_.~BlobStoreOpenableReader();
+    }
+  }
 
   // Opens and verifies the software update bundle.
   //
@@ -101,7 +120,6 @@ class UpdateBundleAccessor {
   //
   // Returns:
   // FAILED_PRECONDITION - Bundle is not open and verified.
-  // TODO(pwbug/456): Add other error codes if necessary.
   Status PersistManifest();
 
   // Returns a reader for the (verified) payload bytes of a specified target
@@ -109,7 +127,6 @@ class UpdateBundleAccessor {
   //
   // Returns:
   // A reader instance for the target file.
-  // TODO(pwbug/456): Figure out a way to propagate error.
   stream::IntervalReader GetTargetPayload(std::string_view target_name);
   stream::IntervalReader GetTargetPayload(protobuf::String target_name);
 
@@ -122,8 +139,15 @@ class UpdateBundleAccessor {
   Result<uint64_t> GetTotalPayloadSize();
 
  private:
-  blob_store::BlobStore& blob_store_;
-  blob_store::BlobStore::BlobReader blob_store_reader_;
+  // Union is a temporary measure to allow for migration from the BlobStore
+  // constructor to the OpenableReader constructor. The BlobStoreOpenableReader
+  // should never be accessed directly. Access it through the update_reader_.
+  union {
+    BlobStoreOpenableReader optional_blob_store_openeable_reader_;
+    char optional_blob_store_reader_unused_;
+  };
+
+  OpenableReader& update_reader_;
   BundledUpdateBackend& backend_;
   protobuf::Message bundle_;
   // The current, cached, trusted `SignedRootMetadata{}`.

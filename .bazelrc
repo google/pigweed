@@ -40,9 +40,6 @@ build:asan-libfuzzer \
     --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
 build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
 
-# Configures toolchain with polyfill headers.
-build --@rules_cc_toolchain_config//:user_defined=//pw_polyfill:toolchain_polyfill_overrides
-
 # Specifies desired output mode for running tests.
 # Valid values are
 #   'summary' to output only test status summary

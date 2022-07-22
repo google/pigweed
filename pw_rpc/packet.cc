@@ -75,7 +75,7 @@ Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
     return status;
   }
 
-  // TODO(pwbug/512): CANCEL is equivalent to CLIENT_ERROR with status
+  // TODO(b/234879973): CANCEL is equivalent to CLIENT_ERROR with status
   //     CANCELLED. Remove this workaround when CANCEL is removed.
   if (packet.type() == PacketType::DEPRECATED_CANCEL) {
     packet.set_status(Status::Cancelled());

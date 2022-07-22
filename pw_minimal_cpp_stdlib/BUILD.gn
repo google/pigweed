@@ -67,6 +67,7 @@ pw_source_set("pw_minimal_cpp_stdlib") {
     "public/internal/type_traits.h",
     "public/internal/utility.h",
   ]
+  public_deps = [ dir_pw_polyfill ]
 }
 
 pw_test_group("tests") {

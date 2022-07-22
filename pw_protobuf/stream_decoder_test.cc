@@ -35,7 +35,7 @@ class NonSeekableMemoryReader : public stream::NonSeekableReader {
   const std::byte* data() const { return reader_.data(); }
 
  private:
-  virtual StatusWithSize DoRead(ByteSpan destination) override {
+  StatusWithSize DoRead(ByteSpan destination) override {
     const pw::Result<pw::ByteSpan> result = reader_.Read(destination);
     if (!result.ok()) {
       return StatusWithSize(result.status(), 0);
@@ -70,7 +70,7 @@ TEST(StreamDecoder, Decode) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -150,7 +150,7 @@ TEST(StreamDecoder, Decode_SkipsUnusedFields) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   // Don't process any fields except for the fourth. Next should still iterate
@@ -184,7 +184,7 @@ TEST(StreamDecoder, Decode_NonSeekable_SkipsUnusedFields) {
   // clang-format on
 
   // Test with a non-seekable memory reader
-  stream::MemoryReader wrapped_reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader wrapped_reader(as_bytes(span(encoded_proto)));
   NonSeekableMemoryReader reader(wrapped_reader);
   StreamDecoder decoder(reader);
 
@@ -210,7 +210,7 @@ TEST(StreamDecoder, Decode_BadData) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -236,7 +236,7 @@ TEST(StreamDecoder, Decode_MissingDelimitedLength) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -264,7 +264,7 @@ TEST(StreamDecoder, Decode_VarintTooBig) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -307,7 +307,7 @@ TEST(Decoder, Decode_SkipsBadFieldNumbers) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -342,7 +342,7 @@ TEST(StreamDecoder, Decode_Nested) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -399,7 +399,7 @@ TEST(StreamDecoder, Decode_Nested_SeeksToNextFieldOnDestruction) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -439,7 +439,7 @@ TEST(StreamDecoder,
   // clang-format on
 
   // Test with a non-seekable memory reader
-  stream::MemoryReader wrapped_reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader wrapped_reader(as_bytes(span(encoded_proto)));
   NonSeekableMemoryReader reader(wrapped_reader);
   StreamDecoder decoder(reader);
 
@@ -475,7 +475,7 @@ TEST(StreamDecoder, Decode_Nested_LastField) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -507,7 +507,7 @@ TEST(StreamDecoder, Decode_Nested_MultiLevel) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -545,7 +545,7 @@ TEST(StreamDecoder, Decode_Nested_InvalidField) {
     // Oops. No data!
   };
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -572,7 +572,7 @@ TEST(StreamDecoder, Decode_Nested_InvalidFieldKey) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -602,7 +602,7 @@ TEST(StreamDecoder, Decode_Nested_MissingDelimitedLength) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -632,7 +632,7 @@ TEST(StreamDecoder, Decode_Nested_InvalidDelimitedLength) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -662,7 +662,7 @@ TEST(StreamDecoder, Decode_Nested_InvalidVarint) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -696,7 +696,7 @@ TEST(StreamDecoder, Decode_Nested_SkipInvalidVarint) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -730,7 +730,7 @@ TEST(StreamDecoder, Decode_Nested_TruncatedFixed) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -764,7 +764,7 @@ TEST(StreamDecoder, Decode_Nested_SkipTruncatedFixed) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -798,7 +798,7 @@ TEST(StreamDecoder, Decode_BytesReader) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -833,7 +833,7 @@ TEST(StreamDecoder, Decode_BytesReader_Seek) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -890,7 +890,7 @@ TEST(StreamDecoder, Decode_BytesReader_Close) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -929,7 +929,7 @@ TEST(StreamDecoder, Decode_BytesReader_NonSeekable_Close) {
   // clang-format on
 
   // Test with a non-seekable memory reader
-  stream::MemoryReader wrapped_reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader wrapped_reader(as_bytes(span(encoded_proto)));
   NonSeekableMemoryReader reader(wrapped_reader);
   StreamDecoder decoder(reader);
 
@@ -960,7 +960,7 @@ TEST(StreamDecoder, Decode_BytesReader_InvalidField) {
     // Oops. No data!
   };
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -993,7 +993,7 @@ TEST(StreamDecoder, GetLengthDelimitedPayloadBounds) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   ASSERT_EQ(OkStatus(), decoder.Next());
@@ -1018,7 +1018,7 @@ TEST(StreamDecoder, ReadDelimitedField_DoesntOverConsume) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   ASSERT_EQ(OkStatus(), decoder.Next());
@@ -1047,7 +1047,7 @@ TEST(StreamDecoder, Decode_WithLength) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader, /*length=*/2u);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1070,7 +1070,7 @@ TEST(StreamDecoder, Decode_WithLength_SkipsToEnd) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   {
     StreamDecoder decoder(reader, /*length=*/13u);
 
@@ -1099,7 +1099,7 @@ TEST(StreamDecoder, RepeatedField) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1151,7 +1151,7 @@ TEST(StreamDecoder, RepeatedFieldVector) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   pw::Vector<uint32_t, 8> uint32{};
@@ -1210,7 +1210,7 @@ TEST(StreamDecoder, RepeatedFieldVectorFull) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   pw::Vector<uint32_t, 2> uint32{};
@@ -1249,7 +1249,7 @@ TEST(StreamDecoder, PackedVarint) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1279,7 +1279,7 @@ TEST(StreamDecoder, PackedVarintInsufficientSpace) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1307,7 +1307,7 @@ TEST(StreamDecoder, PackedVarintVector) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1337,7 +1337,7 @@ TEST(StreamDecoder, PackedVarintVectorFull) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1367,7 +1367,7 @@ TEST(StreamDecoder, PackedZigZag) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1401,7 +1401,7 @@ TEST(StreamDecoder, PackedZigZagVector) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1452,7 +1452,7 @@ TEST(StreamDecoder, PackedFixed) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1533,7 +1533,7 @@ TEST(StreamDecoder, PackedFixedInsufficientSpace) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1556,7 +1556,7 @@ TEST(StreamDecoder, PackedFixedVector) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -1588,7 +1588,7 @@ TEST(StreamDecoder, PackedFixedVectorFull) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());

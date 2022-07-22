@@ -40,7 +40,7 @@
 #define PW_CONSTINIT constinit
 #elif defined(__clang__)
 #define PW_CONSTINIT [[clang::require_constant_initialization]]
-#elif __GNUC__ >= 10
+#elif defined(__GNUC__) && __GNUC__ >= 10
 #define PW_CONSTINIT __constinit
 #else
 #define PW_CONSTINIT

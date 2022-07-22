@@ -30,6 +30,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,9 +62,9 @@ public class JavaClient {
   // smaller receive buffer size.
   private static final int MAX_SOCKET_SEND_BUFFER_SIZE = 1;
 
-  private HdlcRpcChannelOutput channelOutput;
-  private Client rpcClient;
-  private HdlcParseThread parseThread;
+  private final HdlcRpcChannelOutput channelOutput;
+  private final Client rpcClient;
+  private final HdlcParseThread parseThread;
 
   public JavaClient(OutputStream writer, InputStream reader) {
     this.channelOutput = new HdlcRpcChannelOutput(writer, RPC_HDLC_ADDRESS);
@@ -101,9 +102,9 @@ public class JavaClient {
   }
 
   private class HdlcParseThread extends Thread {
-    private InputStream reader;
-    private RpcOnComplete frame_handler;
-    private Decoder decoder;
+    private final InputStream reader;
+    private final RpcOnComplete frame_handler;
+    private final Decoder decoder;
 
     private class RpcOnComplete implements Decoder.OnCompleteFrame {
       private final Client rpc_client;
@@ -143,7 +144,7 @@ public class JavaClient {
     byte[] buffer = new byte[reader.available()];
     reader.read(buffer);
     ConfigProtos.ClientConfig.Builder config_builder = ConfigProtos.ClientConfig.newBuilder();
-    TextFormat.merge(new String(buffer, "UTF8"), config_builder);
+    TextFormat.merge(new String(buffer, StandardCharsets.UTF_8), config_builder);
     if (config_builder.getChunkTimeoutMs() == 0) {
       throw new AssertionError("chunk_timeout_ms may not be 0");
     }
@@ -233,14 +234,11 @@ public class JavaClient {
 
     JavaClient hdlc_rpc_client = new JavaClient(writer, reader);
 
-    ExecutorService workQueue = Executors.newFixedThreadPool(1);
-
     hdlc_rpc_client.startClient();
 
     TransferClient client = new TransferClient(
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Read"),
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Write"),
-        workQueue::execute,
         config.getChunkTimeoutMs(),
         config.getInitialChunkTimeoutMs(),
         config.getMaxRetries(),

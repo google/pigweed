@@ -380,6 +380,10 @@ streams the results back to the client. The service is defined in
 ``pw_unit_test_proto/unit_test.proto``, and implemented by the GN target
 ``$dir_pw_unit_test:rpc_service``.
 
+The RPC service is primarily intended for use with the default
+``pw_unit_test:light`` backend. It has some support for the GoogleTest backend,
+however some features (such as test suite filtering) are missing.
+
 To set up RPC-based unit tests in your application, instantiate a
 ``pw::unit_test::UnitTestService`` and register it with your RPC server.
 

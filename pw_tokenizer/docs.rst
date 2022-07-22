@@ -306,7 +306,7 @@ transmitted or stored as needed.
    #include "pw_tokenizer/encode_args.h"
 
    void HandleTokenizedMessage(pw::log_tokenized::Metadata metadata,
-                               std::span<std::byte> message);
+                               pw::span<std::byte> message);
 
    extern "C" void EncodeTokenizedMessage(const pw_tokenizer_Payload metadata,
                                           const pw_tokenizer_Token token,
@@ -457,6 +457,28 @@ Arguments are encoded as follows:
    ``%s`` arguments can quickly fill a tokenization buffer. Keep ``%s``
    arguments short or avoid encoding them as strings (e.g. encode an enum as an
    integer instead of a string). See also `Tokenized strings as %s arguments`_.
+
+Encoding command line utility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The ``pw_tokenizer.encode`` command line tool can be used to encode tokenized
+strings.
+
+.. code-block:: bash
+
+  python -m pw_tokenizer.encode [-h] FORMAT_STRING [ARG ...]
+
+Example:
+
+.. code-block:: text
+
+  $ python -m pw_tokenizer.encode "There's... %d many of %s!" 2 them
+        Raw input: "There's... %d many of %s!" % (2, 'them')
+  Formatted input: There's... 2 many of them!
+            Token: 0xb6ef8b2d
+          Encoded: b'-\x8b\xef\xb6\x04\x04them' (2d 8b ef b6 04 04 74 68 65 6d) [10 bytes]
+  Prefixed Base64: $LYvvtgQEdGhlbQ==
+
+See ``--help`` for full usage details.
 
 Token generation: fixed length hashing at compile time
 ------------------------------------------------------
@@ -884,13 +906,14 @@ this check can be done at compile time.
 
 TypeScript
 ----------
-To detokenize in TypeScript, import ``Detokenizer`` from the ``pw_tokenizer``
+To detokenize in TypeScript, import ``Detokenizer`` from the ``pigweedjs``
 package, and instantiate it with a CSV token database.
 
 .. code-block:: typescript
 
-   import {Detokenizer} from "@pigweed/pw_tokenizer";
-   import {Frame} from '@pigweed/pw_hdlc';
+   import { pw_tokenizer, pw_hdlc } from 'pigweedjs';
+   const { Detokenizer } = pw_tokenizer;
+   const { Frame } = pw_hdlc;
 
    const detokenizer = new Detokenizer(String(tokenCsv));
 

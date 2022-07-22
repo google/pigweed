@@ -87,7 +87,7 @@ int main() {
 
   ProcessResult(buffer, &bytes, size, result);
 
-  pw::StringBuilder sb(std::span(buffer, size));
+  pw::StringBuilder sb(pw::span(buffer, size));
   sb << "This is part of the base " << 123 << false << '\n';
 
   sb.clear();

@@ -20,7 +20,7 @@ namespace pw::kvs {
 
 using std::byte;
 
-Status ChecksumAlgorithm::Verify(std::span<const byte> checksum) const {
+Status ChecksumAlgorithm::Verify(span<const byte> checksum) const {
   if (checksum.size() < size_bytes()) {
     return Status::InvalidArgument();
   }

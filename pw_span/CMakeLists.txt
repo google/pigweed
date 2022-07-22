@@ -14,12 +14,30 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_span
+# Provides pw::span in "pw_span/span.h".
+pw_add_module_library(pw_span
+  HEADERS
+    public/pw_span/span.h
+    public/pw_span/internal/span_common.inc
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_polyfill
     pw_polyfill.standard_library
 )
-target_include_directories(pw_span INTERFACE public_overrides)
+
+pw_add_test(pw_span.pw_span_test
+  SOURCES
+    span_test.cc
+  DEPS
+    pw_span
+  DEFINES
+    "PW_SPAN_TEST_INCLUDE=\"pw_span/span.h\""
+    "PW_SPAN_TEST_NAMESPACE=pw"
+  GROUPS
+    modules
+    pw_span
+)
 
 if(Zephyr_FOUND AND CONFIG_PIGWEED_SPAN)
   zephyr_link_libraries(pw_span)

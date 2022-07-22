@@ -13,7 +13,6 @@
 // the License.
 
 #include <cstdint>
-#include <span>
 #include <type_traits>
 
 #include "gtest/gtest.h"
@@ -22,6 +21,7 @@
 #include "pw_cpu_exception/support.h"
 #include "pw_cpu_exception_cortex_m/cpu_state.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
+#include "pw_span/span.h"
 
 namespace pw::cpu_exception::cortex_m {
 namespace {
@@ -119,7 +119,7 @@ size_t current_fault_depth = 0;
 pw_cpu_exception_State captured_states[kMaxFaultDepth] = {};
 pw_cpu_exception_State& captured_state = captured_states[0];
 
-// Flag used to check if the contents of std::span matches the captured state.
+// Flag used to check if the contents of span matches the captured state.
 bool span_matches = false;
 
 // Variable to be manipulated by function that uses floating
@@ -575,8 +575,8 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
                 state,
                 sizeof(pw_cpu_exception_State));
 
-    // Ensure std::span compares to be the same.
-    std::span<const uint8_t> state_span = RawFaultingCpuState(*state);
+    // Ensure span compares to be the same.
+    span<const uint8_t> state_span = RawFaultingCpuState(*state);
     EXPECT_EQ(state_span.size(), sizeof(pw_cpu_exception_State));
     if (std::memcmp(state, state_span.data(), state_span.size()) == 0) {
       span_matches = true;

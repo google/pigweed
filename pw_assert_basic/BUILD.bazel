@@ -25,7 +25,7 @@ pw_cc_library(
     name = "headers",
     hdrs = [
         "public/pw_assert_basic/assert_basic.h",
-        "public_overrides/pw_assert_backend/assert_backend.h",
+        "public_overrides/pw_assert_backend/check_backend.h",
     ],
     includes = [
         "public",
@@ -67,9 +67,8 @@ pw_cc_library(
     deps = [
         ":handler_facade",
         ":headers",
-        "//pw_assert:facade",
         "//pw_preprocessor",
-        "//pw_string",
+        "//pw_string:builder",
         "//pw_sys_io",
     ],
 )

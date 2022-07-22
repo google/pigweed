@@ -52,7 +52,7 @@ pw_source_set("assert_backend") {
     "$dir_pw_tokenizer",
   ]
   public = [
-    "assert_public_overrides/pw_assert_backend/assert_lite_backend.h",
+    "assert_public_overrides/pw_assert_backend/assert_backend.h",
     "public/pw_assert_tokenized/assert_tokenized.h",
   ]
 }
@@ -72,7 +72,7 @@ pw_source_set("check_backend") {
     "$dir_pw_tokenizer",
   ]
   public = [
-    "check_public_overrides/pw_assert_backend/assert_backend.h",
+    "check_public_overrides/pw_assert_backend/check_backend.h",
     "public/pw_assert_tokenized/check_tokenized.h",
   ]
 }
@@ -103,6 +103,7 @@ pw_source_set("log_handler") {
     "$dir_pw_bytes",
     "$dir_pw_log",
     "$dir_pw_log_tokenized",
+    "$dir_pw_span",
   ]
   sources = [ "log_handler.cc" ]
 }

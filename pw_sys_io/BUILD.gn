@@ -26,7 +26,10 @@ config("public_include_path") {
 pw_facade("pw_sys_io") {
   backend = pw_sys_io_BACKEND
   public_configs = [ ":public_include_path" ]
-  public_deps = [ dir_pw_status ]
+  public_deps = [
+    dir_pw_bytes,
+    dir_pw_status,
+  ]
   public = [ "public/pw_sys_io/sys_io.h" ]
 }
 

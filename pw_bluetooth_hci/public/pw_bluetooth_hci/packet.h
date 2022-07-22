@@ -13,11 +13,11 @@
 // the License.
 #pragma once
 
-#include <bit>
 #include <cstdint>
 #include <optional>
 
 #include "pw_assert/assert.h"
+#include "pw_bytes/bit.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 
@@ -131,8 +131,8 @@ class CommandPacket : public Packet {
   }
 
   // Decodes the packet based on the specified endianness.
-  static std::optional<CommandPacket> Decode(
-      ConstByteSpan data, std::endian order = std::endian::little);
+  static std::optional<CommandPacket> Decode(ConstByteSpan data,
+                                             endian order = endian::little);
 
   // Encodes the packet based on the specified endianness.
   //
@@ -140,7 +140,7 @@ class CommandPacket : public Packet {
   //   OK - returns the encoded packet.
   //   RESOURCE_EXHAUSTED - The input buffer is too small for this packet.
   Result<ConstByteSpan> Encode(ByteSpan buffer,
-                               std::endian order = std::endian::little) const;
+                               endian order = endian::little) const;
 
   constexpr uint16_t opcode() const { return opcode_; }
 
@@ -196,8 +196,8 @@ class AsyncDataPacket : public Packet {
   }
 
   // Decodes the packet based on the specified endianness.
-  static std::optional<AsyncDataPacket> Decode(
-      ConstByteSpan data, std::endian order = std::endian::little);
+  static std::optional<AsyncDataPacket> Decode(ConstByteSpan data,
+                                               endian order = endian::little);
 
   // Encodes the packet based on the specified endianness.
   //
@@ -205,7 +205,7 @@ class AsyncDataPacket : public Packet {
   //   OK - returns the encoded packet.
   //   RESOURCE_EXHAUSTED - The input buffer is too small for this packet.
   Result<ConstByteSpan> Encode(ByteSpan buffer,
-                               std::endian order = std::endian::little) const;
+                               endian order = endian::little) const;
 
   constexpr uint16_t handle_and_fragmentation_bits() const {
     return handle_and_fragmentation_bits_;
@@ -266,8 +266,8 @@ class SyncDataPacket : public Packet {
   }
 
   // Decodes the packet based on the specified endianness.
-  static std::optional<SyncDataPacket> Decode(
-      ConstByteSpan data, std::endian order = std::endian::little);
+  static std::optional<SyncDataPacket> Decode(ConstByteSpan data,
+                                              endian order = endian::little);
 
   // Encodes the packet based on the specified endianness.
   //
@@ -275,7 +275,7 @@ class SyncDataPacket : public Packet {
   //   OK - returns the encoded packet.
   //   RESOURCE_EXHAUSTED - The input buffer is too small for this packet.
   Result<ConstByteSpan> Encode(ByteSpan buffer,
-                               std::endian order = std::endian::little) const;
+                               endian order = endian::little) const;
 
   constexpr uint16_t handle_and_status_bits() const {
     return handle_and_status_bits_;

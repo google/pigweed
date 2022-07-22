@@ -65,7 +65,7 @@ class InMemoryTestServer : public stream::NonSeekableReaderWriter {
   // CA chains (all DER format)
   Status Initialize(ConstByteSpan key,
                     ConstByteSpan cert,
-                    std::span<const ConstByteSpan> chains);
+                    span<const ConstByteSpan> chains);
 
   // Is handshake completed.
   bool SessionEstablished() { return is_handshake_done_; }
@@ -99,7 +99,7 @@ class InMemoryTestServer : public stream::NonSeekableReaderWriter {
   // Methods for loading private key, certificate, and intermediate CA chain.
   Status LoadPrivateKey(ConstByteSpan key);
   Status LoadCertificate(ConstByteSpan cert);
-  Status LoadCAChain(std::span<const ConstByteSpan> chains);
+  Status LoadCAChain(span<const ConstByteSpan> chains);
 
   // Methods for providing BIO interfaces.
   static int BioRead(BIO* bio, char* out, int output_length);

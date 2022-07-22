@@ -16,13 +16,13 @@
 #include <cctype>
 #include <functional>
 #include <iostream>
-#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
 
 #include "pw_log/log.h"
+#include "pw_span/span.h"
 
 namespace {
 
@@ -106,11 +106,11 @@ struct CommandContext {
 // Commands are given mutable CommandContext and a span tokens in the line of
 // the command.
 using Command =
-    std::function<bool(CommandContext*, std::span<std::string_view>)>;
+    std::function<bool(CommandContext*, pw::span<std::string_view>)>;
 
 // Echoes all arguments provided to cout.
 bool CommandEcho(CommandContext* /*context*/,
-                 std::span<std::string_view> tokens) {
+                 pw::span<std::string_view> tokens) {
   bool first = true;
   for (const auto& token : tokens.subspan(1)) {
     if (!first) {
@@ -127,7 +127,7 @@ bool CommandEcho(CommandContext* /*context*/,
 
 // Quit the CLI.
 bool CommandQuit(CommandContext* context,
-                 std::span<std::string_view> /*tokens*/) {
+                 pw::span<std::string_view> /*tokens*/) {
   context->quit = true;
   return true;
 }

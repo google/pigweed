@@ -56,7 +56,7 @@ TEST(Method, Invoke) {
   } channel_output;
 
   Channel channel(123, &channel_output);
-  Server server(std::span(static_cast<rpc::Channel*>(&channel), 1));
+  Server server(span(static_cast<rpc::Channel*>(&channel), 1));
   TestService service;
 
   const CallContext context(server, channel.id(), service, kTestMethod, 0);

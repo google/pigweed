@@ -33,7 +33,7 @@ template <typename Iter>
 using iter_reference_t = decltype(*std::declval<Iter&>());
 
 template <typename T>
-struct ExtentImpl : std::integral_constant<size_t, std::dynamic_extent> {};
+struct ExtentImpl : std::integral_constant<size_t, dynamic_extent> {};
 
 template <typename T, size_t N>
 struct ExtentImpl<T[N]> : std::integral_constant<size_t, N> {};
@@ -42,7 +42,7 @@ template <typename T, size_t N>
 struct ExtentImpl<std::array<T, N>> : std::integral_constant<size_t, N> {};
 
 template <typename T, size_t N>
-struct ExtentImpl<std::span<T, N>> : std::integral_constant<size_t, N> {};
+struct ExtentImpl<span<T, N>> : std::integral_constant<size_t, N> {};
 
 template <typename T>
 using Extent = ExtentImpl<std::remove_cv_t<std::remove_reference_t<T>>>;
@@ -51,7 +51,7 @@ using Extent = ExtentImpl<std::remove_cv_t<std::remove_reference_t<T>>>;
 template <int&... ExplicitArgumentBarrier, typename It, typename EndOrSize>
 constexpr auto make_span(It it, EndOrSize end_or_size) noexcept {
   using T = std::remove_reference_t<iter_reference_t<It>>;
-  return std::span<T>(it, end_or_size);
+  return span<T>(it, end_or_size);
 }
 
 // make_span utility function that deduces both the span's value_type and extent
@@ -63,8 +63,7 @@ template <int&... ExplicitArgumentBarrier,
           typename T = std::remove_pointer_t<
               decltype(std::data(std::declval<Container>()))>>
 constexpr auto make_span(Container&& container) noexcept {
-  return std::span<T, Extent<Container>::value>(
-      std::forward<Container>(container));
+  return span<T, Extent<Container>::value>(std::forward<Container>(container));
 }
 
 // The make_span functions above don't seem to work correctly with arrays of
@@ -76,8 +75,8 @@ constexpr bool ConvertsToSpan(int) {
   return true;
 }
 
-// If the expression std::span(T) fails, then the type can't be converted to a
-// std::span.
+// If the expression span(T) fails, then the type can't be converted to a
+// span.
 template <typename T>
 constexpr bool ConvertsToSpan(...) {
   return false;
@@ -85,7 +84,7 @@ constexpr bool ConvertsToSpan(...) {
 
 }  // namespace internal
 
-// Traits class to detect if the type converts to a std::span.
+// Traits class to detect if the type converts to a span.
 template <typename T>
 struct ConvertsToSpan
     : public std::bool_constant<

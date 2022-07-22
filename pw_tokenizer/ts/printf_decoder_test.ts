@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser, jasmine */
-import 'jasmine';
+/* eslint-env browser */
 import {PrintfDecoder} from './printf_decoder';
 
 function argFromString(arg: string): Uint8Array {

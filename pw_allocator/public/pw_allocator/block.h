@@ -16,8 +16,9 @@
 // usable.
 #pragma once
 
-#include <span>
+#include <cstdint>
 
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
@@ -91,7 +92,7 @@ class Block final {
   // Returns:
   //   INVALID_ARGUMENT if the given region is unaligned to too small, or
   //   OK otherwise.
-  static Status Init(const std::span<std::byte> region, Block** block);
+  static Status Init(const span<std::byte> region, Block** block);
 
   // Returns a pointer to a Block, given a pointer to the start of the usable
   // space inside the block (i.e. the opposite operation to UsableSpace()). In

@@ -69,6 +69,7 @@ StatusWithSize FilterService::GetFilterImpl(ConstByteSpan request,
     rule_encoder.WriteAnyFlagsSet(rule.any_flags_set).IgnoreError();
     rule_encoder.WriteAction(static_cast<log::FilterRule::Action>(rule.action))
         .IgnoreError();
+    rule_encoder.WriteThreadEquals(rule.thread_equals).IgnoreError();
     PW_TRY_WITH_SIZE(rule_encoder.status());
   }
   PW_TRY_WITH_SIZE(encoder.status());

@@ -83,8 +83,8 @@ class Initiator {
                       chrono::SystemClock::duration timeout) {
     return WriteReadFor(
         device_address,
-        std::span(static_cast<const std::byte*>(tx_buffer), tx_size_bytes),
-        std::span(static_cast<std::byte*>(rx_buffer), rx_size_bytes),
+        span(static_cast<const std::byte*>(tx_buffer), tx_size_bytes),
+        span(static_cast<std::byte*>(rx_buffer), rx_size_bytes),
         timeout);
   }
 
@@ -118,7 +118,7 @@ class Initiator {
                   chrono::SystemClock::duration timeout) {
     return WriteFor(
         device_address,
-        std::span(static_cast<const std::byte*>(tx_buffer), tx_size_bytes),
+        span(static_cast<const std::byte*>(tx_buffer), tx_size_bytes),
         timeout);
   }
 
@@ -151,7 +151,7 @@ class Initiator {
                  size_t rx_size_bytes,
                  chrono::SystemClock::duration timeout) {
     return ReadFor(device_address,
-                   std::span(static_cast<std::byte*>(rx_buffer), rx_size_bytes),
+                   span(static_cast<std::byte*>(rx_buffer), rx_size_bytes),
                    timeout);
   }
 

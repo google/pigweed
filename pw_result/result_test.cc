@@ -50,8 +50,8 @@ TEST(Result, ValueOr) {
 
 TEST(Result, Deref) {
   struct Tester {
-    constexpr bool True() { return true; };
-    constexpr bool False() { return false; };
+    constexpr bool True() { return true; }
+    constexpr bool False() { return false; }
   };
 
   auto tester = Result<Tester>(Tester());
@@ -66,8 +66,8 @@ TEST(Result, Deref) {
 
 TEST(Result, ConstDeref) {
   struct Tester {
-    constexpr bool True() const { return true; };
-    constexpr bool False() const { return false; };
+    constexpr bool True() const { return true; }
+    constexpr bool False() const { return false; }
   };
 
   const auto tester = Result<Tester>(Tester());

@@ -149,7 +149,7 @@ class TokenizedTraceImpl {
 // Example: pw::trace::TokenizedTrace::Instance().Enable(true);
 class TokenizedTrace {
  public:
-  static TokenizedTraceImpl& Instance() { return instance_; };
+  static TokenizedTraceImpl& Instance() { return instance_; }
 
  private:
   static TokenizedTraceImpl instance_;

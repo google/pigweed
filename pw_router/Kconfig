@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-menuconfig PIGWEED_ROUTER
-    bool "Enable the Pigweed router library (pw_router)"
-
-if PIGWEED_ROUTER
-
 config PIGWEED_ROUTER_STATIC_ROUTER
     bool "Enable the Pigweed static router library (pw_router.static_router)"
     select PIGWEED_METRIC
@@ -36,5 +31,3 @@ config PIGWEED_ROUTER_PACKET_PARSER
 config PIGWEED_ROUTER_EGRESS_FUNCTION
     bool "Enable the Pigweed router egress function library (pw_router.egress_function)"
     select PIGWEED_RPC_EGRESS
-
-endif # PIGWEED_ROUTER

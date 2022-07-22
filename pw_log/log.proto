@@ -93,12 +93,12 @@ message LogEntry {
   // Note: This packing saves two bytes per log message in most cases compared
   // to having line and level separately; and is zero-cost if the log backend
   // omits the line number.
-  optional uint32 line_level = 2;
+  uint32 line_level = 2;
 
   // Some log messages have flags to indicate attributes such as whether they
   // are from an assert or if they contain PII. The particular flags are
   // product- and implementation-dependent.
-  optional uint32 flags = 3;
+  uint32 flags = 3;
 
   // Timestamps are either specified with an absolute timestamp or relative to
   // the previous log entry.
@@ -130,17 +130,17 @@ message LogEntry {
   // When the log buffers are full but more logs come in, the logs are counted
   // and a special log message is omitted with only counts for the number of
   // messages dropped.
-  optional uint32 dropped = 6;
+  uint32 dropped = 6;
 
   // The PW_LOG_MODULE_NAME for this log message.
-  optional bytes module = 7 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+  bytes module = 7 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // The file path where this log was created, if not encoded in the message.
-  optional bytes file = 8 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+  bytes file = 8 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // The task or thread name that created the log message. If the log was not
   // created on a thread, it should use a name appropriate to that context.
-  optional bytes thread = 9 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+  bytes thread = 9 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // The following fields are planned but will not be added until they are
   // needed. Protobuf field numbers over 15 use an extra byte, so these fields
@@ -148,22 +148,22 @@ message LogEntry {
 
   // Represents the device from which the log originated. The meaning of this
   // field is implementation defined
-  // optional uint32 source_id = ?;
+  // uint32 source_id = ?;
 
   // Some messages are associated with trace events, which may carry additional
   // contextual data. This is a tuple of a data format string which could be
   // used by the decoder to identify the data (e.g. printf-style tokens) and the
   // data itself in bytes.
-  // optional bytes data_format = ?
+  // bytes data_format = ?
   //     [(tokenizer.format) = TOKENIZATION_OPTIONAL];
-  // optional bytes data = ?;
+  // bytes data = ?;
 }
 
 message LogRequest {}
 
 message LogEntries {
   repeated LogEntry entries = 1;
-  optional uint32 first_entry_sequence_id = 2;
+  uint32 first_entry_sequence_id = 2;
 }
 
 // RPC service for accessing logs.
@@ -199,6 +199,9 @@ message FilterRule {
     DROP = 2;      // Drop the log entry if all conditions are met
   };
   Action action = 4;
+
+  // Condition 4: (thread_equals.size() == 0 || log.thread == thread_equals).
+  bytes thread_equals = 5 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 }
 
 // A filter is a series of rules. First matching rule wins.

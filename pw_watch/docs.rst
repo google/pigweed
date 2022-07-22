@@ -42,6 +42,10 @@ override this behavior, provide the ``-C`` argument to ``pw watch``.
   # Build the default target, but only run up to 8 jobs in parallel.
   pw watch -j8
 
+  # Build the default target and keep building past the first error as far as
+  # possible.
+  pw watch --keep-going
+
   # Build the default target and start a docs server on http://127.0.0.1:8000
   pw watch --serve-docs
 

@@ -16,7 +16,7 @@
 Nanopb C++ library generating targets.
 """
 
-# TODO(pwbug/621) Enable unused variable check.
+# TODO(b/234873954) Enable unused variable check.
 # buildifier: disable=unused-variable
 def pw_nanopb_cc_library(
         name,

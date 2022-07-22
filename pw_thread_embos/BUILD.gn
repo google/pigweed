@@ -115,6 +115,7 @@ pw_source_set("thread") {
     "$dir_pw_third_party/embos",
     "$dir_pw_thread:id",
     "$dir_pw_thread:thread.facade",
+    dir_pw_span,
   ]
   public = [
     "public/pw_thread_embos/context.h",

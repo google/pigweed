@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser, jasmine */
-import 'jasmine';
+/* eslint-env browser */
 
 import {Frame, Encoder, Decoder} from '@pigweed/pw_hdlc';
 import {Detokenizer} from './detokenizer';

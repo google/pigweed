@@ -66,6 +66,14 @@ public class RpcManager {
     return call;
   }
 
+  /** Cancels an ongoing RPC without sending a cancellation packet. */
+  public synchronized void abandon(PendingRpc rpc) {
+    StreamObserverCall<?, ?> call = pending.remove(rpc);
+    if (call != null) {
+      logger.atFine().log("%s was abandoned", rpc);
+    }
+  }
+
   @Nullable
   public synchronized StreamObserverCall<?, ?> clientStream(PendingRpc rpc, MessageLite payload)
       throws ChannelOutputException {

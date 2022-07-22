@@ -29,6 +29,7 @@
 #include "google/protobuf/text_format.h"
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/integration_testing.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
@@ -77,15 +78,15 @@ struct TransferResult {
 
 // Create a pw_transfer client and perform the transfer actions.
 pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
-  std::byte chunk_buffer[512];
-  std::byte encode_buffer[512];
+  constexpr size_t kMaxPayloadSize = rpc::MaxSafePayloadSize();
+  std::byte chunk_buffer[kMaxPayloadSize];
+  std::byte encode_buffer[kMaxPayloadSize];
   transfer::Thread<2, 2> transfer_thread(chunk_buffer, encode_buffer);
   thread::Thread system_thread(TransferThreadOptions(), transfer_thread);
 
   pw::transfer::Client client(rpc::integration_test::client(),
                               rpc::integration_test::kChannelId,
-                              transfer_thread,
-                              /*max_bytes_to_receive=*/256);
+                              transfer_thread);
 
   Status status = pw::OkStatus();
   for (const pw::transfer::TransferAction& action : config.transfer_actions()) {

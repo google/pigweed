@@ -130,7 +130,7 @@ TEST(Packet, EncodeDecode) {
   Result result = packet.Encode(buffer);
   ASSERT_EQ(result.status(), OkStatus());
 
-  std::span<byte> packet_data(buffer, result.value().size());
+  span<byte> packet_data(buffer, result.value().size());
   auto decode_result = Packet::FromBuffer(packet_data);
   ASSERT_TRUE(decode_result.ok());
 

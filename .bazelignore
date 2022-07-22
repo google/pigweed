@@ -2,3 +2,5 @@
 .presubmit
 .environment
 environment
+node_modules
+out

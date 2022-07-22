@@ -21,6 +21,6 @@ declare_args() {
   # Backend for the pw_assert module's ASSERT facade.
   #
   # Warning: This naming is transitional. Modifying this build argument WILL
-  #     result in future breakages. (pwbug/246)
-  pw_assert_LITE_BACKEND = "${dir_pw_assert}:lite_compatibility_backend"
+  #     result in future breakages. (b/235149326)
+  pw_assert_LITE_BACKEND = "${dir_pw_assert}:assert_compatibility_backend"
 }

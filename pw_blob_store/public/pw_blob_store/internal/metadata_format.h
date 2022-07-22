@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #include "pw_preprocessor/compiler.h"
 

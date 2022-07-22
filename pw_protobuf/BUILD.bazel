@@ -60,10 +60,9 @@ pw_cc_library(
         ":config",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_bytes:bit",
         "//pw_containers:vector",
         "//pw_function",
-        "//pw_polyfill:bit",
-        "//pw_polyfill:overrides",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -176,9 +175,16 @@ py_proto_library(
 )
 
 proto_library(
-    name = "common_protos",
+    name = "common_proto",
     srcs = [
         "pw_protobuf_protos/common.proto",
+    ],
+    strip_import_prefix = "//pw_protobuf",
+)
+
+proto_library(
+    name = "status_proto",
+    srcs = [
         "pw_protobuf_protos/status.proto",
     ],
     strip_import_prefix = "//pw_protobuf",
@@ -191,18 +197,19 @@ proto_library(
         "pw_protobuf_test_protos/imported.proto",
         "pw_protobuf_test_protos/importer.proto",
         "pw_protobuf_test_protos/non_pw_package.proto",
+        "pw_protobuf_test_protos/optional.proto",
         "pw_protobuf_test_protos/proto2.proto",
         "pw_protobuf_test_protos/repeated.proto",
     ],
     strip_import_prefix = "//pw_protobuf",
-    deps = [":common_protos"],
+    deps = [":common_proto"],
 )
 
 pw_proto_library(
     name = "codegen_test_proto_cc",
     deps = [
         ":codegen_test_proto",
-        ":common_protos",
+        ":common_proto",
     ],
 )
 

@@ -45,6 +45,7 @@ if (dir_pw_third_party_freertos == "") {
     cflags = [
       "-Wno-unused-parameter",
       "-Wno-cast-qual",
+      "-Wno-int-in-bool-context",
     ]
     visibility = [ ":*" ]
   }

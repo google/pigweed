@@ -16,6 +16,8 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_span/polyfill.gni")
+import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_config") {
@@ -23,39 +25,91 @@ config("public_config") {
   visibility = [ ":*" ]
 }
 
-config("overrides_config") {
-  include_dirs = [ "public_overrides" ]
+config("polyfill_config") {
+  include_dirs = [ "internal_only_include_path_do_not_use" ]
+
+  if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
+    defines = [ "_PW_SPAN_POLYFILL_ENABLED" ]
+  }
+
   visibility = [ ":*" ]
 }
 
-# This source set provides the <span> header, which is accessed only through
-# pw_polyfill.
-pw_source_set("polyfill") {
-  remove_public_deps = [ "*" ]
-  public_configs = [ ":overrides_config" ]
-  public_deps = [ ":pw_span" ]
-  public = [ "public_overrides/span" ]
-  visibility = [ "$dir_pw_polyfill:*" ]
-}
-
-# This source set provides the internal span.h header included by <span>. This
-# source set is only used by pw_polyfill, so its visibility is restricted.
+# Provides "pw_span/span.h" and pw::span.
 pw_source_set("pw_span") {
-  remove_public_deps = [ "*" ]
+  public = [ "public/pw_span/span.h" ]
+  public_deps = [ ":common" ]
+}
+
+# Provides <span> and std::span.
+pw_source_set("polyfill") {
+  public_configs = [ ":polyfill_config" ]
+  public_deps = [ ":common" ]
+  public = [ "internal_only_include_path_do_not_use/span" ]
+  sources = [ "public/pw_span/internal/span_polyfill.h" ]
+
+  if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
+    remove_public_deps = [ "*" ]
+  } else {
+    visibility = [ ":*" ]
+  }
+}
+
+pw_source_set("common") {
   public_configs = [ ":public_config" ]
-  public_deps = [ "$dir_pw_polyfill" ]
-  sources = [ "public/pw_span/internal/span.h" ]
+  public_deps = [ dir_pw_polyfill ]
+
+  # Polyfill <cstddef> (std::byte) and <iterator> (std::size(), std::data) if
+  # C++17 is not supported.
+  if (pw_toolchain_CXX_STANDARD < pw_toolchain_STANDARD.CXX17) {
+    public_deps += [
+      "$dir_pw_polyfill:cstddef",
+      "$dir_pw_polyfill:iterator",
+    ]
+  }
+
+  sources = [ "public/pw_span/internal/span_common.inc" ]
   visibility = [ ":*" ]
+
+  if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
+    remove_public_deps = [ "*" ]
+  }
 }
 
 pw_test_group("tests") {
-  tests = [ ":test" ]
+  tests = [
+    ":polyfill_test",
+    ":pw_span_test",
+    ":compatibility_test",
+  ]
 }
 
-pw_test("test") {
+pw_test("polyfill_test") {
+  deps = [ ":polyfill" ]
+  remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
+  sources = [ "span_test.cc" ]
+  defines = [
+    "PW_SPAN_TEST_INCLUDE=<span>",
+    "PW_SPAN_TEST_NAMESPACE=std",
+  ]
+}
+
+pw_test("pw_span_test") {
   deps = [ ":pw_span" ]
   remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
   sources = [ "span_test.cc" ]
+  defines = [
+    "PW_SPAN_TEST_INCLUDE=\"pw_span/span.h\"",
+    "PW_SPAN_TEST_NAMESPACE=pw",
+  ]
+}
+
+pw_test("compatibility_test") {
+  deps = [
+    ":polyfill",
+    ":pw_span",
+  ]
+  sources = [ "compatibility_test.cc" ]
 }
 
 pw_doc_group("docs") {

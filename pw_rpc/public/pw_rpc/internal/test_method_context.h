@@ -101,7 +101,7 @@ class InvocationContext {
                     ServiceArgs&&... service_args)
       : method_type_(method_type),
         channel_(123, &output_),
-        server_(std::span(static_cast<rpc::Channel*>(&channel_), 1)),
+        server_(span(static_cast<rpc::Channel*>(&channel_), 1)),
         service_(std::forward<ServiceArgs>(service_args)...),
         context_(server_, channel_.id(), service_, method, 0) {
     server_.RegisterService(service_);

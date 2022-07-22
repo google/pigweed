@@ -13,21 +13,19 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "pw_checksum/crc16_ccitt.h"
 #include "pw_kvs/checksum.h"
+#include "pw_span/span.h"
 
 namespace pw::kvs {
 
 class ChecksumCrc16 final : public ChecksumAlgorithm {
  public:
-  ChecksumCrc16()
-      : ChecksumAlgorithm(std::as_bytes(std::span<uint16_t>(&crc_, 1))) {}
+  ChecksumCrc16() : ChecksumAlgorithm(as_bytes(span<uint16_t>(&crc_, 1))) {}
 
   void Reset() override { crc_ = checksum::Crc16Ccitt::kInitialValue; }
 
-  void Update(std::span<const std::byte> data) override {
+  void Update(span<const std::byte> data) override {
     crc_ = checksum::Crc16Ccitt::Calculate(data, crc_);
   }
 

@@ -76,7 +76,8 @@ static char char_array[16];
   pw_tokenizer_ArgTypes pw_TestTokenizer##name(void) { \
     (void)char_array;                                  \
     return PW_TOKENIZER_ARG_TYPES(__VA_ARGS__);        \
-  }
+  }                                                    \
+  static_assert(1, "Macros must be terminated with a semicolon")
 
 DEFINE_TEST_FUNCTION(NoArgs);
 
@@ -86,7 +87,7 @@ DEFINE_TEST_FUNCTION(Uint16, ((int16_t)100));
 DEFINE_TEST_FUNCTION(Int32, ((int32_t)1));
 DEFINE_TEST_FUNCTION(Int64, ((int64_t)0));
 DEFINE_TEST_FUNCTION(Uint64, ((uint64_t)1));
-DEFINE_TEST_FUNCTION(Float, 1e10f)
+DEFINE_TEST_FUNCTION(Float, 1e10f);
 DEFINE_TEST_FUNCTION(Double, -2.5e-50);
 DEFINE_TEST_FUNCTION(String, "const char*");
 DEFINE_TEST_FUNCTION(MutableString, ((char*)NULL));

@@ -14,11 +14,12 @@
 #pragma once
 
 #include <cinttypes>
-#include <span>
 
 #include "pw_rpc/channel.h"
 #include "pw_rpc/client_server.h"
 #include "pw_rpc/internal/fake_channel_output.h"
+#include "pw_rpc/internal/lock.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
@@ -36,7 +37,7 @@ class ForwardingChannelOutput : public ChannelOutput {
     return output_.MaximumTransmissionUnit();
   }
 
-  Status Send(std::span<const std::byte> buffer) override {
+  Status Send(span<const std::byte> buffer) override {
     return output_.Send(buffer);
   }
 
@@ -61,14 +62,16 @@ class ForwardingChannelOutput : public ChannelOutput {
 
   // Functions are virtual to allow for their override in threaded version, so
   // threading protection can be added.
-  virtual size_t PacketCount() const { return output_.packets().size(); }
+  virtual size_t PacketCount() const { return output_.total_packets(); }
 
   virtual Result<ConstByteSpan> EncodeNextUnsentPacket(
       std::array<std::byte, kPayloadsBufferSizeBytes>& packet_buffer) {
-    if (output_.packets().size() <= sent_packets_) {
+    pw::rpc::internal::LockGuard lock(output_.mutex_);
+    const auto& packets = output_.packets();
+    if (packets.size() <= sent_packets_) {
       return Status::NotFound();
     }
-    return output_.packets()[sent_packets_].Encode(packet_buffer);
+    return packets[sent_packets_].Encode(packet_buffer);
   }
 
   uint16_t sent_packets_ = 0;

@@ -56,7 +56,7 @@ Status CaptureMainStack(
     PW_LOG_DEBUG("Thread state: RUNNING");
   }
   encoder.WriteState(thread_state);
-  encoder.WriteName(std::as_bytes(std::span(std::string_view(thread_name))));
+  encoder.WriteName(as_bytes(span(std::string_view(thread_name))));
 
   const thread::StackContext thread_ctx = {
       .thread_name = thread_name,

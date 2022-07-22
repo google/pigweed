@@ -14,9 +14,8 @@
 
 #include "pw_allocator/freelist_heap.h"
 
-#include <span>
-
 #include "gtest/gtest.h"
+#include "pw_span/span.h"
 
 namespace pw::allocator {
 

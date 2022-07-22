@@ -130,7 +130,7 @@ embOS Thread Options
 
     Set the pre-allocated context (all memory needed to run a thread). Note that
     this is required for this thread creation backend! The ``Context`` can
-    either be constructed with an externally provided ``std::span<OS_UINT>``
+    either be constructed with an externally provided ``pw::span<OS_UINT>``
     stack or the templated form of ``ContextWithStack<kStackSizeWords>`` can
     be used.
 

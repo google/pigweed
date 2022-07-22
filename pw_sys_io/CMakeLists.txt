@@ -15,9 +15,18 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_facade(pw_sys_io
+  HEADERS
+    public/pw_sys_io/sys_io.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_bytes
+    pw_status
+)
+
+pw_add_module_library(pw_sys_io.default_putget_bytes
   SOURCES
     sys_io.cc
   PUBLIC_DEPS
-    pw_span
-    pw_status
+    pw_sys_io.facade
 )

@@ -14,11 +14,11 @@
 #pragma once
 
 #include <cstring>
-#include <span>
 
 #include "pw_log/log.h"
 #include "pw_metric/metric.h"
 #include "pw_metric_proto/metric_service.rpc.pb.h"
+#include "pw_span/span.h"
 
 namespace pw::metric {
 
@@ -32,14 +32,14 @@ namespace pw::metric {
 // future, we may switch to offering an async version where the Get() method
 // returns immediately, and someone else is responsible for pumping the queue.
 class MetricService final
-    : public pw_rpc::nanopb::MetricService::Service<MetricService> {
+    : public proto::pw_rpc::nanopb::MetricService::Service<MetricService> {
  public:
   MetricService(const IntrusiveList<Metric>& metrics,
                 const IntrusiveList<Group>& groups)
       : metrics_(metrics), groups_(groups) {}
 
-  void Get(const pw_metric_MetricRequest& request,
-           ServerWriter<pw_metric_MetricResponse>& response);
+  void Get(const pw_metric_proto_MetricRequest& request,
+           ServerWriter<pw_metric_proto_MetricResponse>& response);
 
  private:
   const IntrusiveList<Metric>& metrics_;

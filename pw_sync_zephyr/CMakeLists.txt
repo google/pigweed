@@ -19,7 +19,6 @@ if(CONFIG_PIGWEED_SYNC_MUTEX)
     IMPLEMENTS_FACADES
       pw_sync.mutex
   )
-  pw_set_backend(pw_sync.mutex pw_sync_zephyr.mutex_backend)
   zephyr_link_libraries(pw_sync_zephyr.mutex_backend)
   zephyr_link_interface(pw_sync_zephyr.mutex_backend)
 endif()
@@ -31,7 +30,6 @@ if(CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE)
     SOURCES
       binary_semaphore.cc
   )
-  pw_set_backend(pw_sync.binary_semaphore pw_sync_zephyr.binary_semaphore_backend)
   zephyr_link_libraries(pw_sync_zephyr.binary_semaphore_backend)
   zephyr_link_interface(pw_sync_zephyr.binary_semaphore_backend)
 endif()

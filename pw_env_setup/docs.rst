@@ -262,6 +262,19 @@ here.
   only installing Pigweed Python packages, use the location of the Pigweed
   submodule.
 
+``virtualenv.requirements``
+  A list of Python Pip requirements files for installing into the Pigweed
+  virtualenv. Each file will be passed as additional ``--requirement`` argument
+  to a single ```pip install`` at the beginning of bootstrap's ``Python
+  environment`` setup stage. See the `Requirements Files documentation`_ for
+  details on what can be specified using requirements files.
+
+``virtualenv.constraints``
+  A list of Python Pip constraints files. These constraints will be passed to
+  every ``pip`` invocation as an additional ``--constraint`` argument during
+  bootstrap.  virtualenv. See the `Constraints Files documentation`_ for details
+  on formatting.
+
 ``virtualenv.system_packages``
   A boolean value that can be used the give the Python virtual environment
   access to the system site packages. Defaults to ``false``.
@@ -534,3 +547,6 @@ high-level commands to system-specific initialization files is shown below.
 .. image:: doc_resources/pw_env_setup_output.png
    :alt: Mapping of high-level commands to system-specific commands.
    :align: left
+
+.. _Requirements Files documentation: https://pip.pypa.io/en/stable/user_guide/#requirements-files
+.. _Constraints Files documentation: https://pip.pypa.io/en/stable/user_guide/#constraints-files

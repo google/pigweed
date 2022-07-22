@@ -16,9 +16,9 @@
 
 #include <cstdint>
 #include <cstring>
-#include <span>
 
 #include "pw_preprocessor/compiler.h"
+#include "pw_span/span.h"
 
 extern "C" const uint8_t gnu_build_id_begin;
 
@@ -39,17 +39,16 @@ PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Warray-bounds");
 PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wstringop-overflow");
 
-std::span<const std::byte> BuildId() {
+span<const std::byte> BuildId() {
   // Read the sizes at the beginning of the note section.
   ElfNoteInfo build_id_note_sizes;
   memcpy(
       &build_id_note_sizes, &gnu_build_id_begin, sizeof(build_id_note_sizes));
   // Skip the "name" entry of the note section, and return a span to the
   // descriptor.
-  return std::as_bytes(std::span(&gnu_build_id_begin +
-                                     sizeof(build_id_note_sizes) +
-                                     build_id_note_sizes.name_size,
-                                 build_id_note_sizes.descriptor_size));
+  return as_bytes(span(&gnu_build_id_begin + sizeof(build_id_note_sizes) +
+                           build_id_note_sizes.name_size,
+                       build_id_note_sizes.descriptor_size));
 }
 
 PW_MODIFY_DIAGNOSTICS_POP();

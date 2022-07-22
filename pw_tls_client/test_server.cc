@@ -84,8 +84,8 @@ InMemoryTestServer::InMemoryTestServer(ByteSpan input_buffer,
 
 int InMemoryTestServer::BioRead(BIO* bio, char* out, int output_length) {
   auto server = static_cast<InMemoryTestServer*>(bio->ptr);
-  auto read = server->input_buffer_.Read(std::as_writable_bytes(
-      std::span{out, static_cast<size_t>(output_length)}));
+  auto read = server->input_buffer_.Read(
+      as_writable_bytes(span{out, static_cast<size_t>(output_length)}));
   if (!read.ok()) {
     server->last_bio_status_ = read.status();
     return -1;
@@ -102,7 +102,7 @@ int InMemoryTestServer::BioWrite(BIO* bio,
                                  int input_length) {
   auto server = static_cast<InMemoryTestServer*>(bio->ptr);
   if (auto status = server->output_buffer_.Write(
-          std::as_bytes(std::span{input, static_cast<size_t>(input_length)}));
+          as_bytes(span{input, static_cast<size_t>(input_length)}));
       !status.ok()) {
     server->last_bio_status_ = status;
     return -1;
@@ -113,7 +113,7 @@ int InMemoryTestServer::BioWrite(BIO* bio,
 
 Status InMemoryTestServer::Initialize(ConstByteSpan key,
                                       ConstByteSpan cert,
-                                      std::span<const ConstByteSpan> chains) {
+                                      span<const ConstByteSpan> chains) {
   input_buffer_.clear();
   output_buffer_.clear();
   is_handshake_done_ = false;
@@ -201,7 +201,7 @@ Status InMemoryTestServer::LoadCertificate(ConstByteSpan cert) {
   return OkStatus();
 }
 
-Status InMemoryTestServer::LoadCAChain(std::span<const ConstByteSpan> chains) {
+Status InMemoryTestServer::LoadCAChain(span<const ConstByteSpan> chains) {
   for (auto cert : chains) {
     auto res = ParseDerCertificate(cert);
     if (!res.ok()) {

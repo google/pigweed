@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <span>
 #include <type_traits>
 
 #include "pw_function/function.h"
@@ -26,6 +25,7 @@
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/nanopb/internal/common.h"
 #include "pw_rpc/nanopb/server_reader_writer.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 

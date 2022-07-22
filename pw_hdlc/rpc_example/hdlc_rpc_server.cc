@@ -13,7 +13,6 @@
 // the License.
 
 #include <array>
-#include <span>
 #include <string_view>
 
 #include "pw_assert/check.h"
@@ -23,6 +22,7 @@
 #include "pw_rpc/echo_service_nanopb.h"
 #include "pw_rpc/server.h"
 #include "pw_rpc_system_server/rpc_server.h"
+#include "pw_span/span.h"
 
 namespace hdlc_example {
 namespace {

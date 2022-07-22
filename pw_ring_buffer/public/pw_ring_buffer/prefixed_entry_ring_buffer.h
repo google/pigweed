@@ -14,10 +14,10 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw {
@@ -40,7 +40,7 @@ namespace ring_buffer {
 // around as needed.
 class PrefixedEntryRingBufferMulti {
  public:
-  typedef Status (*ReadOutput)(std::span<const std::byte>);
+  typedef Status (*ReadOutput)(span<const std::byte>);
 
   // A reader that provides a single-reader interface into the multi-reader ring
   // buffer it has been attached to via AttachReader(). Readers maintain their
@@ -63,13 +63,13 @@ class PrefixedEntryRingBufferMulti {
    public:
     constexpr Reader() : buffer_(nullptr), read_idx_(0), entry_count_(0) {}
 
-    // TODO(pwbug/344): Add locking to the internal functions. Who owns the
+    // TODO(b/235351035): Add locking to the internal functions. Who owns the
     // lock? This class? Does this class need a lock if it's not a multi-reader?
     // (One doesn't exist today but presumably nothing prevents push + pop
     // operations from happening on two different threads).
 
     // Read the oldest stored data chunk of data from the ring buffer to
-    // the provided destination std::span. The number of bytes read is written
+    // the provided destination span. The number of bytes read is written
     // to bytes_read
     //
     // Precondition: the buffer data must not be corrupt, otherwise there will
@@ -79,11 +79,11 @@ class PrefixedEntryRingBufferMulti {
     // OK - Data successfully read from the ring buffer.
     // FAILED_PRECONDITION - Buffer not initialized.
     // OUT_OF_RANGE - No entries in ring buffer to read.
-    // RESOURCE_EXHAUSTED - Destination data std::span was smaller number of
+    // RESOURCE_EXHAUSTED - Destination data span was smaller number of
     // bytes than the data size of the data chunk being read.  Available
     // destination bytes were filled, remaining bytes of the data chunk were
     // ignored.
-    Status PeekFront(std::span<std::byte> data, size_t* bytes_read_out) const {
+    Status PeekFront(span<std::byte> data, size_t* bytes_read_out) const {
       return buffer_->InternalPeekFront(*this, data, bytes_read_out);
     }
 
@@ -101,13 +101,14 @@ class PrefixedEntryRingBufferMulti {
 
     // Same as PeekFront but includes the entry's preamble of optional user
     // value and the varint of the data size.
-    // TODO(pwbug/341): Move all other APIs to passing bytes_read by reference,
-    // as it is required to determine the length populated in the span.
-    Status PeekFrontWithPreamble(std::span<std::byte> data,
+    // TODO(b/235351847): Move all other APIs to passing bytes_read by
+    // reference, as it is required to determine the length populated in the
+    // span.
+    Status PeekFrontWithPreamble(span<std::byte> data,
                                  uint32_t& user_preamble_out,
                                  size_t& entry_bytes_read_out) const;
 
-    Status PeekFrontWithPreamble(std::span<std::byte> data,
+    Status PeekFrontWithPreamble(span<std::byte> data,
                                  size_t* bytes_read_out) const {
       return buffer_->InternalPeekFrontWithPreamble(
           *this, data, bytes_read_out);
@@ -174,7 +175,7 @@ class PrefixedEntryRingBufferMulti {
   // An entry returned by the iterator containing the byte span of the entry
   // and preamble data (if the ring buffer was configured with a preamble).
   struct Entry {
-    std::span<const std::byte> buffer;
+    span<const std::byte> buffer;
     uint32_t preamble;
   };
 
@@ -219,7 +220,7 @@ class PrefixedEntryRingBufferMulti {
 
    private:
     static constexpr Entry kEndEntry = {
-        .buffer = std::span<const std::byte>(),
+        .buffer = span<const std::byte>(),
         .preamble = 0,
     };
 
@@ -248,8 +249,8 @@ class PrefixedEntryRingBufferMulti {
   const_iterator cbegin() { return begin(); }
   const_iterator cend() { return end(); }
 
-  // TODO(pwbug/340): Consider changing bool to an enum, to explicitly enumerate
-  // what this variable means in clients.
+  // TODO(b/235351861): Consider changing bool to an enum, to explicitly
+  // enumerate what this variable means in clients.
   PrefixedEntryRingBufferMulti(bool user_preamble = false)
       : buffer_(nullptr),
         buffer_bytes_(0),
@@ -261,7 +262,7 @@ class PrefixedEntryRingBufferMulti {
   // Return values:
   // OK - successfully set the raw buffer.
   // INVALID_ARGUMENT - Argument was nullptr, size zero, or too large.
-  Status SetBuffer(std::span<std::byte> buffer);
+  Status SetBuffer(span<std::byte> buffer);
 
   // Determines if the ring buffer has corrupted entries.
   //
@@ -308,15 +309,13 @@ class PrefixedEntryRingBufferMulti {
   // OK - Data successfully written to the ring buffer.
   // FAILED_PRECONDITION - Buffer not initialized.
   // OUT_OF_RANGE - Size of data is greater than buffer size.
-  Status PushBack(std::span<const std::byte> data,
-                  uint32_t user_preamble_data = 0) {
+  Status PushBack(span<const std::byte> data, uint32_t user_preamble_data = 0) {
     return InternalPushBack(data, user_preamble_data, true);
   }
 
   // [Deprecated] An implementation of PushBack that accepts a single-byte as
   // preamble data. Clients should migrate to passing uint32_t preamble data.
-  Status PushBack(std::span<const std::byte> data,
-                  std::byte user_preamble_data) {
+  Status PushBack(span<const std::byte> data, std::byte user_preamble_data) {
     return PushBack(data, static_cast<uint32_t>(user_preamble_data));
   }
 
@@ -336,15 +335,14 @@ class PrefixedEntryRingBufferMulti {
   // OUT_OF_RANGE - Size of data is greater than buffer size.
   // RESOURCE_EXHAUSTED - The ring buffer doesn't have space for the data
   // without popping off existing elements.
-  Status TryPushBack(std::span<const std::byte> data,
+  Status TryPushBack(span<const std::byte> data,
                      uint32_t user_preamble_data = 0) {
     return InternalPushBack(data, user_preamble_data, false);
   }
 
   // [Deprecated] An implementation of TryPushBack that accepts a single-byte as
   // preamble data. Clients should migrate to passing uint32_t preamble data.
-  Status TryPushBack(std::span<const std::byte> data,
-                     std::byte user_preamble_data) {
+  Status TryPushBack(span<const std::byte> data, std::byte user_preamble_data) {
     return TryPushBack(data, static_cast<uint32_t>(user_preamble_data));
   }
 
@@ -364,7 +362,7 @@ class PrefixedEntryRingBufferMulti {
 
  private:
   // Read the oldest stored data chunk of data from the ring buffer to
-  // the provided destination std::span. The number of bytes read is written to
+  // the provided destination span. The number of bytes read is written to
   // `bytes_read_out`.
   //
   // Precondition: the buffer data must not be corrupt, otherwise there will
@@ -374,11 +372,11 @@ class PrefixedEntryRingBufferMulti {
   // OK - Data successfully read from the ring buffer.
   // FAILED_PRECONDITION - Buffer not initialized.
   // OUT_OF_RANGE - No entries in ring buffer to read.
-  // RESOURCE_EXHAUSTED - Destination data std::span was smaller number of bytes
+  // RESOURCE_EXHAUSTED - Destination data span was smaller number of bytes
   // than the data size of the data chunk being read.  Available destination
   // bytes were filled, remaining bytes of the data chunk were ignored.
   Status InternalPeekFront(const Reader& reader,
-                           std::span<std::byte> data,
+                           span<std::byte> data,
                            size_t* bytes_read_out) const;
   Status InternalPeekFront(const Reader& reader, ReadOutput output) const;
 
@@ -387,7 +385,7 @@ class PrefixedEntryRingBufferMulti {
   // Same as Read but includes the entry's preamble of optional user value and
   // the varint of the data size
   Status InternalPeekFrontWithPreamble(const Reader& reader,
-                                       std::span<std::byte> data,
+                                       span<std::byte> data,
                                        size_t* bytes_read_out) const;
   Status InternalPeekFrontWithPreamble(const Reader& reader,
                                        ReadOutput output) const;
@@ -437,7 +435,7 @@ class PrefixedEntryRingBufferMulti {
 
   // Push back implementation, which optionally discards front elements to fit
   // the incoming element.
-  Status InternalPushBack(std::span<const std::byte> data,
+  Status InternalPushBack(span<const std::byte> data,
                           uint32_t user_preamble_data,
                           bool pop_front_if_needed);
 
@@ -480,7 +478,7 @@ class PrefixedEntryRingBufferMulti {
   // Do the basic write of the specified number of bytes starting at the last
   // write index of the ring buffer to the destination, handing any wrap-around
   // of the ring buffer. This is basic, raw operation with no safety checks.
-  void RawWrite(std::span<const std::byte> source);
+  void RawWrite(span<const std::byte> source);
 
   // Do the basic read of the specified number of bytes starting at the given
   // index of the ring buffer to the destination, handing any wrap-around of

@@ -36,16 +36,19 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":bit",
         "//pw_containers:iterator",
         "//pw_polyfill",
-        "//pw_polyfill:bit",
-        "//pw_polyfill:cstddef",
-        "//pw_polyfill:iterator",
-        "//pw_polyfill:type_traits",
         "//pw_preprocessor",
         "//pw_span",
         "//pw_status",
     ],
+)
+
+pw_cc_library(
+    name = "bit",
+    hdrs = ["public/pw_bytes/bit.h"],
+    includes = ["public"],
 )
 
 pw_cc_test(
@@ -53,6 +56,15 @@ pw_cc_test(
     srcs = ["array_test.cc"],
     deps = [
         ":pw_bytes",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "bit_test",
+    srcs = ["bit_test.cc"],
+    deps = [
+        ":bit",
         "//pw_unit_test",
     ],
 )

@@ -37,13 +37,13 @@ TEST(InterruptSpinLock, LockUnlock) {
   interrupt_spin_lock.unlock();
 }
 
-// TODO(pwbug/291): Add real concurrency tests once we have pw::thread on SMP
+// TODO(b/235284163): Add real concurrency tests once we have pw::thread on SMP
 // systems given that uniprocessor systems cannot fail to acquire an ISL.
 
 InterruptSpinLock static_interrupt_spin_lock;
 TEST(InterruptSpinLock, LockUnlockStatic) {
   static_interrupt_spin_lock.lock();
-  // TODO(pwbug/291): Ensure other cores fail to lock when its locked.
+  // TODO(b/235284163): Ensure other cores fail to lock when its locked.
   // EXPECT_FALSE(static_interrupt_spin_lock.try_lock());
   static_interrupt_spin_lock.unlock();
 }
@@ -53,7 +53,7 @@ TEST(InterruptSpinLock, TryLockUnlock) {
   const bool locked = interrupt_spin_lock.try_lock();
   EXPECT_TRUE(locked);
   if (locked) {
-    // TODO(pwbug/291): Ensure other cores fail to lock when its locked.
+    // TODO(b/235284163): Ensure other cores fail to lock when its locked.
     // EXPECT_FALSE(interrupt_spin_lock.try_lock());
     interrupt_spin_lock.unlock();
   }
@@ -62,7 +62,7 @@ TEST(InterruptSpinLock, TryLockUnlock) {
 TEST(VirtualInterruptSpinLock, LockUnlock) {
   pw::sync::VirtualInterruptSpinLock interrupt_spin_lock;
   interrupt_spin_lock.lock();
-  // TODO(pwbug/291): Ensure other cores fail to lock when its locked.
+  // TODO(b/235284163): Ensure other cores fail to lock when its locked.
   // EXPECT_FALSE(interrupt_spin_lock.try_lock());
   interrupt_spin_lock.unlock();
 }
@@ -70,7 +70,7 @@ TEST(VirtualInterruptSpinLock, LockUnlock) {
 VirtualInterruptSpinLock static_virtual_interrupt_spin_lock;
 TEST(VirtualInterruptSpinLock, LockUnlockStatic) {
   static_virtual_interrupt_spin_lock.lock();
-  // TODO(pwbug/291): Ensure other cores fail to lock when its locked.
+  // TODO(b/235284163): Ensure other cores fail to lock when its locked.
   // EXPECT_FALSE(static_virtual_interrupt_spin_lock.try_lock());
   static_virtual_interrupt_spin_lock.unlock();
 }
@@ -84,7 +84,7 @@ TEST(InterruptSpinLock, LockUnlockInC) {
 TEST(InterruptSpinLock, TryLockUnlockInC) {
   pw::sync::InterruptSpinLock interrupt_spin_lock;
   ASSERT_TRUE(pw_sync_InterruptSpinLock_CallTryLock(&interrupt_spin_lock));
-  // TODO(pwbug/291): Ensure other cores fail to lock when its locked.
+  // TODO(b/235284163): Ensure other cores fail to lock when its locked.
   // EXPECT_FALSE(pw_sync_InterruptSpinLock_CallTryLock(&interrupt_spin_lock));
   pw_sync_InterruptSpinLock_CallUnlock(&interrupt_spin_lock);
 }

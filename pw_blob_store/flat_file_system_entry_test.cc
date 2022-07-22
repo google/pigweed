@@ -17,7 +17,6 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_blob_store/blob_store.h"
@@ -26,6 +25,7 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/test_key_value_store.h"
 #include "pw_random/xor_shift.h"
+#include "pw_span/span.h"
 #include "pw_sync/mutex.h"
 
 namespace pw::blob_store {
@@ -55,7 +55,7 @@ class FlatFileSystemBlobStoreEntryTest : public ::testing::Test {
     std::memset(source_buffer_.data(),
                 static_cast<int>(flash_.erased_memory_content()),
                 source_buffer_.size());
-    rng.Get(std::span(source_buffer_).first(init_size_bytes))
+    rng.Get(span(source_buffer_).first(init_size_bytes))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
@@ -64,8 +64,7 @@ class FlatFileSystemBlobStoreEntryTest : public ::testing::Test {
   void WriteTestBlock(std::string_view file_name, size_t write_size_bytes) {
     ASSERT_LE(write_size_bytes, source_buffer_.size());
 
-    ConstByteSpan write_data =
-        std::span(source_buffer_).first(write_size_bytes);
+    ConstByteSpan write_data = span(source_buffer_).first(write_size_bytes);
 
     BlobStore::BlobWriter writer(blob_, metadata_buffer_);
     EXPECT_EQ(OkStatus(), writer.Open());

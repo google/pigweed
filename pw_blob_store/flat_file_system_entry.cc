@@ -16,11 +16,11 @@
 
 #include <cstddef>
 #include <mutex>
-#include <span>
 
 #include "pw_assert/check.h"
 #include "pw_blob_store/blob_store.h"
 #include "pw_file/flat_file_system.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_sync/virtual_basic_lockable.h"
@@ -51,7 +51,7 @@ void FlatFileSystemBlobStoreEntry::EnsureInitialized() {
   PW_DCHECK_OK(status);
 }
 
-StatusWithSize FlatFileSystemBlobStoreEntry::Name(std::span<char> dest) {
+StatusWithSize FlatFileSystemBlobStoreEntry::Name(span<char> dest) {
   EnsureInitialized();
   std::lock_guard lock(blob_store_lock_);
   BlobStore::BlobReader reader(blob_store_);
@@ -59,13 +59,12 @@ StatusWithSize FlatFileSystemBlobStoreEntry::Name(std::span<char> dest) {
     // When a BlobStore is empty, Open() reports FAILED_PRECONDITION. The
     // FlatFileSystemService expects NOT_FOUND when a file is not present at the
     // entry.
-    switch (status.code()) {
-      case Status::FailedPrecondition().code():
-        return StatusWithSize(Status::NotFound(), 0);
-      case Status::Unavailable().code():
-        return StatusWithSize(Status::Unavailable(), 0);
-      default:
-        return StatusWithSize(Status::Internal(), 0);
+    if (status.IsFailedPrecondition()) {
+      return StatusWithSize(Status::NotFound(), 0);
+    } else if (status.IsUnavailable()) {
+      return StatusWithSize(Status::Unavailable(), 0);
+    } else {
+      return StatusWithSize(Status::Internal(), 0);
     }
   }
   return reader.GetFileName(dest);
@@ -81,7 +80,7 @@ size_t FlatFileSystemBlobStoreEntry::SizeBytes() {
   return reader.ConservativeReadLimit();
 }
 
-// TODO(pwbug/488): This file can be deleted even though it is read-only.
+// TODO(b/234888404): This file can be deleted even though it is read-only.
 // This type of behavior should be possible to express via the FileSystem RPC
 // service.
 Status FlatFileSystemBlobStoreEntry::Delete() {

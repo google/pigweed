@@ -80,8 +80,8 @@ extern "C" void _pw_tokenizer_ToBuffer(void* buffer,
   const size_t encoded_bytes = EncodeArgs(
       types,
       args,
-      std::span<std::byte>(static_cast<std::byte*>(buffer) + sizeof(token),
-                           *buffer_size_bytes - sizeof(token)));
+      span<std::byte>(static_cast<std::byte*>(buffer) + sizeof(token),
+                      *buffer_size_bytes - sizeof(token)));
   va_end(args);
 
   *buffer_size_bytes = sizeof(token) + encoded_bytes;

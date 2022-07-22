@@ -18,11 +18,11 @@
 #include <cstdint>
 #include <cstring>
 #include <optional>
-#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
 #include "pw_function/function.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::multisink {
@@ -260,7 +260,7 @@ TEST_F(MultiSinkTest, TooSmallBuffer) {
   // Attempting to acquire an entry with a small buffer should result in
   // RESOURCE_EXHAUSTED and remove it.
   Result<ConstByteSpan> result = drains_[0].PopEntry(
-      std::span(entry_buffer_, 1), drop_count, ingress_drop_count);
+      span(entry_buffer_, 1), drop_count, ingress_drop_count);
   EXPECT_EQ(result.status(), Status::ResourceExhausted());
 
   VerifyPopEntry(drains_[0], std::nullopt, 1u, 1u);
@@ -510,13 +510,13 @@ TEST(UnsafeIteration, NoLimit) {
   MultiSink multisink(buffer);
 
   for (std::string_view entry : kExpectedEntries) {
-    multisink.HandleEntry(std::as_bytes(std::span(entry)));
+    multisink.HandleEntry(as_bytes(span(entry)));
   }
 
   size_t entry_count = 0;
   struct {
     size_t& entry_count;
-    std::span<const std::string_view> expected_results;
+    span<const std::string_view> expected_results;
   } ctx{entry_count, kExpectedEntries};
   auto cb = [&ctx](ConstByteSpan data) {
     std::string_view expected_entry = ctx.expected_results[ctx.entry_count];
@@ -541,13 +541,13 @@ TEST(UnsafeIteration, Subset) {
   MultiSink multisink(buffer);
 
   for (std::string_view entry : kExpectedEntries) {
-    multisink.HandleEntry(std::as_bytes(std::span(entry)));
+    multisink.HandleEntry(as_bytes(span(entry)));
   }
 
   size_t entry_count = 0;
   struct {
     size_t& entry_count;
-    std::span<const std::string_view> expected_results;
+    span<const std::string_view> expected_results;
   } ctx{entry_count, kExpectedEntries};
   auto cb = [&ctx](ConstByteSpan data) {
     std::string_view expected_entry =

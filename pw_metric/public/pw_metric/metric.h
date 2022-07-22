@@ -298,12 +298,12 @@ class Group : public IntrusiveList<Group>::Item {
 #define _PW_METRIC_GROUP_3(static_def, variable_name, group_name) \
   static constexpr uint32_t variable_name##_token =               \
       PW_TOKENIZE_STRING_DOMAIN("metrics", group_name);           \
-  static_def ::pw::metric::Group variable_name = {variable_name##_token};
+  static_def ::pw::metric::Group variable_name = {variable_name##_token}
 
 #define _PW_METRIC_GROUP_4(static_def, parent, variable_name, group_name) \
   static constexpr uint32_t variable_name##_token =                       \
       PW_TOKENIZE_STRING_DOMAIN("metrics", group_name);                   \
   static_def ::pw::metric::Group variable_name = {variable_name##_token,  \
-                                                  parent.children()};
+                                                  parent.children()}
 
 }  // namespace pw::metric

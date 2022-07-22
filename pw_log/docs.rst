@@ -158,7 +158,7 @@ This module defines macros that can be overridden to independently control the
 behavior of ``pw_log`` statements for each C or C++ source file. To override
 these macros, add ``#define`` statements for them before including headers.
 
-The option macro definitions must be visibile to ``pw_log/log.h`` the first time
+The option macro definitions must be visible to ``pw_log/log.h`` the first time
 it is included. To handle potential transitive includes, place these
 ``#defines`` before all ``#include`` statements. This should only be done in
 source files, not headers. For example:

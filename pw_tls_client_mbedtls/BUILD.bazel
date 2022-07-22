@@ -22,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(pwbug/398): The recipe is under construction.
+# TODO(b/235289501): The recipe is under construction.
 
 pw_cc_library(
     name = "pw_tls_client_mbedtls",

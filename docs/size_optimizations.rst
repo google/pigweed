@@ -44,7 +44,7 @@ Consider splitting templated interfaces into multiple layers so that more of the
 implementation can be shared between different instantiations. A more advanced
 form is to share common logic internally by using default sentinel template
 argument value and ergo instantation such as ``pw::Vector``'s
-``size_t kMaxSize = vector_impl::kGeneric`` or ``std::span``'s
+``size_t kMaxSize = vector_impl::kGeneric`` or ``pw::span``'s
 ``size_t Extent = dynamic_extent``.
 
 -----------------
@@ -88,7 +88,7 @@ all zeros for ``.bss`` section placement.
 
 Static Destructors And Finalizers
 =================================
-For many embedded projects, cleaning up after the program is not a requiement,
+For many embedded projects, cleaning up after the program is not a requirement,
 meaning the exit functions including any finalizers registered through
 ``atexit``, ``at_quick_exit``, and static destructors can all be removed to
 reduce the size.
@@ -237,18 +237,18 @@ Buffer Sizing
 =============
 We'd be remiss not to mention the sizing of the various buffers that may exist
 in your application. You could consider watermarking them with
-:ref:`module-pw_metric`. You may also be able toadjust their servicing interval
+:ref:`module-pw_metric`. You may also be able to adjust their servicing interval
 and priority, but do not forget to keep the ingress burst sizes and scheduling
 jitter into account.
 
 ----------------------------
 Standard C and C++ libraries
 ----------------------------
-Toolchains are typically distrubted with their preferred standard C library and
+Toolchains are typically distributed with their preferred standard C library and
 standard C++ library of choice for the target platform.
 
 Although you do not always have a choice in what standard C library and what
-what standard C++ library is used or even how it's compiled, we recommend always
+standard C++ library is used or even how it's compiled, we recommend always
 keeping an eye out for common sources of bloat.
 
 Assert
@@ -560,7 +560,7 @@ Compiler Optimization Options
 =============================
 Don't forget to configure your compiler to optimize for size if needed. With
 Clang this is ``-Oz`` and with GCC this can be done via ``-Os``. The GN
-toolchains provided through :ref:`module-pw_toolchain` which are optimize for
+toolchains provided through :ref:`module-pw_toolchain` which are optimized for
 size are suffixed with ``*_size_optimized``.
 
 Garbage collect function and data sections

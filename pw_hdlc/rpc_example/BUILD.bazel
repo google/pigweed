@@ -23,15 +23,12 @@ pw_cc_library(
         "hdlc_rpc_server.cc",
         "main.cc",
     ],
-    hdrs = [
-        "public/pw_hdlc/decoder.h",
-        "public/pw_hdlc/hdlc_channel.h",
-        "public/pw_hdlc/rpc_server_packets.h",
-    ],
     deps = [
         "//pw_hdlc",
         "//pw_hdlc:pw_rpc",
         "//pw_log",
         "//pw_rpc",
+        "//pw_rpc/nanopb:echo_service",
+        "//pw_rpc/system_server",
     ],
 )

@@ -85,6 +85,29 @@ class FakeChannelOutput : public ChannelOutput {
     return PayloadsView(packets_, type, channel_id, service_id, method_id);
   }
 
+  // Returns a number of the payloads seen for this RPC.
+  template <auto kMethod>
+  size_t total_payloads(uint32_t channel_id = Channel::kUnassignedChannelId)
+      const PW_LOCKS_EXCLUDED(mutex_) {
+    LockGuard lock(mutex_);
+    return PayloadsView(packets_,
+                        MethodInfo<kMethod>::kType,
+                        channel_id,
+                        MethodInfo<kMethod>::kServiceId,
+                        MethodInfo<kMethod>::kMethodId)
+        .size();
+  }
+
+  // Returns a number of the payloads seen for this RPC.
+  size_t total_payloads(MethodType type,
+                        uint32_t channel_id,
+                        uint32_t service_id,
+                        uint32_t method_id) const PW_LOCKS_EXCLUDED(mutex_) {
+    LockGuard lock(mutex_);
+    return PayloadsView(packets_, type, channel_id, service_id, method_id)
+        .size();
+  }
+
   // Returns a view of the final statuses seen for this RPC. Only relevant for
   // checking packets sent by a server.
   //
@@ -225,7 +248,11 @@ class FakeChannelOutput : public ChannelOutput {
         packets_(packets),
         payloads_(payloads) {}
 
-  const Vector<Packet>& packets() const { return packets_; }
+  const Vector<Packet>& packets() const PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+    return packets_;
+  }
+
+  RpcLock& mutex() const { return mutex_; }
 
  private:
   friend class rpc::FakeServer;

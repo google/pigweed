@@ -15,10 +15,10 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 
 #include "pw_allocator/block.h"
 #include "pw_allocator/freelist.h"
+#include "pw_span/span.h"
 
 namespace pw::allocator {
 
@@ -34,7 +34,7 @@ class FreeListHeap {
     size_t total_allocate_calls;
     size_t total_free_calls;
   };
-  FreeListHeap(std::span<std::byte> region, FreeList& freelist);
+  FreeListHeap(span<std::byte> region, FreeList& freelist);
 
   void* Allocate(size_t size);
   void Free(void* ptr);
@@ -44,13 +44,13 @@ class FreeListHeap {
   void LogHeapStats();
 
  private:
-  std::span<std::byte> BlockToSpan(Block* block) {
-    return std::span<std::byte>(block->UsableSpace(), block->InnerSize());
+  span<std::byte> BlockToSpan(Block* block) {
+    return span<std::byte>(block->UsableSpace(), block->InnerSize());
   }
 
   void InvalidFreeCrash();
 
-  std::span<std::byte> region_;
+  span<std::byte> region_;
   FreeList& freelist_;
   HeapStats heap_stats_;
 };
@@ -61,7 +61,7 @@ class FreeListHeapBuffer {
   static constexpr std::array<size_t, kNumBuckets> defaultBuckets{
       16, 32, 64, 128, 256, 512};
 
-  FreeListHeapBuffer(std::span<std::byte> region)
+  FreeListHeapBuffer(span<std::byte> region)
       : freelist_(defaultBuckets), heap_(region, freelist_) {}
 
   void* Allocate(size_t size) { return heap_.Allocate(size); }
@@ -71,7 +71,7 @@ class FreeListHeapBuffer {
 
   const FreeListHeap::HeapStats& heap_stats() const {
     return heap_.heap_stats_;
-  };
+  }
 
   void LogHeapStats() { heap_.LogHeapStats(); }
 

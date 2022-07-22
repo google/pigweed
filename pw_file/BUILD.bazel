@@ -23,8 +23,11 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 proto_library(
-    name = "proto",
+    name = "file_proto",
     srcs = ["file.proto"],
+    deps = [
+        "//pw_protobuf:common_proto",
+    ],
 )
 
 pw_cc_library(
@@ -36,7 +39,7 @@ pw_cc_library(
         "public/pw_file/flat_file_system.h",
     ],
     deps = [
-        ":proto",
+        ":file_proto",
         "//pw_bytes",
         "//pw_result",
         "//pw_rpc/raw:method",
@@ -50,8 +53,8 @@ pw_cc_test(
         "flat_file_system_test.cc",
     ],
     deps = [
+        ":file_proto",
         ":flat_file_system",
-        ":proto",
         "//pw_bytes",
         "//pw_protobuf",
         "//pw_rpc/raw:test_method_context",

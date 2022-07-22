@@ -23,6 +23,9 @@ public interface Call {
   /** Cancels the RPC. Sends a cancellation packet to the server and sets error() to CANCELLED. */
   void cancel() throws ChannelOutputException;
 
+  /** Cancels the RPC as in cancel(), but does not send a cancellation packet to the server. */
+  void abandon();
+
   /** True if the RPC has not yet completed. */
   default boolean active() {
     return status() == null && error() == null;

@@ -20,7 +20,7 @@
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_rpc/raw/client_testing.h"
-#include "pw_rpc/thread_testing.h"
+#include "pw_rpc/test_helpers.h"
 #include "pw_thread/sleep.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
@@ -50,7 +50,7 @@ class ReadTransfer : public ::testing::Test {
                 max_bytes_to_receive),
         system_thread_(TransferThreadOptions(), transfer_thread_) {}
 
-  ~ReadTransfer() {
+  ~ReadTransfer() override {
     transfer_thread_.Terminate();
     system_thread_.join();
   }
@@ -903,7 +903,7 @@ class WriteTransfer : public ::testing::Test {
         client_(context_.client(), context_.channel().id(), transfer_thread_),
         system_thread_(TransferThreadOptions(), transfer_thread_) {}
 
-  ~WriteTransfer() {
+  ~WriteTransfer() override {
     transfer_thread_.Terminate();
     system_thread_.join();
   }

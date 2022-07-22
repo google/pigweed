@@ -18,7 +18,7 @@
 
 namespace pw::string {
 
-StatusWithSize Format(std::span<char> buffer, const char* format, ...) {
+StatusWithSize Format(span<char> buffer, const char* format, ...) {
   va_list args;
   va_start(args, format);
   const StatusWithSize result = FormatVaList(buffer, format, args);
@@ -27,7 +27,7 @@ StatusWithSize Format(std::span<char> buffer, const char* format, ...) {
   return result;
 }
 
-StatusWithSize FormatVaList(std::span<char> buffer,
+StatusWithSize FormatVaList(span<char> buffer,
                             const char* format,
                             va_list args) {
   if (buffer.empty()) {

@@ -66,7 +66,7 @@ class LogStore(logging.Handler):
             loggers={
                 'Host Logs': [
                     logging.getLogger(__package__),
-                    logging.getLogger(__file__),
+                    logging.getLogger(__name__),
                 ],
                 # Set the LogStore as the value of this logger window.
                 'Device Logs': device_log_store,
@@ -216,8 +216,8 @@ class LogStore(logging.Handler):
         self.channel_counts[record.name] = self.channel_counts.get(
             record.name, 0) + 1
 
-        # TODO(pwbug/614): Revisit calculating prefix widths automatically when
-        # line wrapping indentation is supported.
+        # TODO(b/235271486): Revisit calculating prefix widths automatically
+        # when line wrapping indentation is supported.
         # Set the prefix width to 0
         self.channel_formatted_prefix_widths[record.name] = 0
 

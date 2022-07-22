@@ -30,7 +30,7 @@ struct BasicPacket {
   constexpr BasicPacket(uint32_t addr, uint32_t prio, uint64_t data)
       : magic(kMagic), address(addr), priority(prio), payload(data) {}
 
-  ConstByteSpan data() const { return std::as_bytes(std::span(this, 1)); }
+  ConstByteSpan data() const { return as_bytes(span(this, 1)); }
 
   uint32_t magic;
   uint32_t address;
@@ -55,7 +55,7 @@ class BasicPacketParser : public PacketParser {
   uint32_t priority() const {
     PW_DCHECK_NOTNULL(packet_);
     return packet_->priority;
-  };
+  }
 
  private:
   const BasicPacket* packet_;

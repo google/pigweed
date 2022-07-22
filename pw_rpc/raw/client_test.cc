@@ -103,8 +103,8 @@ TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
 
   ASSERT_NE(call.completed, OkStatus());
 
-  context.server().SendResponse<UnaryMethod>(
-      std::as_bytes(std::span("you nary?!?")), OkStatus());
+  context.server().SendResponse<UnaryMethod>(as_bytes(span("you nary?!?")),
+                                             OkStatus());
 
   ASSERT_NE(call.payload, nullptr);
   EXPECT_STREQ(call.payload, "you nary?!?");
@@ -118,7 +118,7 @@ TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
   call.SendInitialClientRequest({});
 
   context.server().SendServerStream<BidirectionalStreamMethod>(
-      std::as_bytes(std::span("<=>")));
+      as_bytes(span("<=>")));
 
   ASSERT_NE(call.payload, nullptr);
   EXPECT_STREQ(call.payload, "<=>");
@@ -170,7 +170,7 @@ TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
   RawClientTestContext context;
 
   std::byte encoded[64];
-  Result<std::span<const std::byte>> result =
+  Result<span<const std::byte>> result =
       internal::Packet(internal::PacketType::REQUEST, 1, 2, 3).Encode(encoded);
   ASSERT_TRUE(result.ok());
 

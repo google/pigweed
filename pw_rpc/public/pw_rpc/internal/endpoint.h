@@ -13,8 +13,6 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "pw_containers/intrusive_list.h"
 #include "pw_result/result.h"
 #include "pw_rpc/internal/call.h"
@@ -22,6 +20,7 @@
 #include "pw_rpc/internal/channel_list.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_span/span.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::rpc::internal {
@@ -73,14 +72,14 @@ class Endpoint {
   }
 
  protected:
-  _PW_RPC_CONSTEXPR Endpoint(std::span<rpc::Channel> channels)
-      : channels_(std::span(static_cast<internal::Channel*>(channels.data()),
-                            channels.size())),
+  _PW_RPC_CONSTEXPR Endpoint(span<rpc::Channel> channels)
+      : channels_(span(static_cast<internal::Channel*>(channels.data()),
+                       channels.size())),
         next_call_id_(0) {}
 
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
   // Returns the parsed packet or an error.
-  Result<Packet> ProcessPacket(std::span<const std::byte> data,
+  Result<Packet> ProcessPacket(span<const std::byte> data,
                                Packet::Destination destination)
       PW_LOCKS_EXCLUDED(rpc_lock());
 
@@ -91,9 +90,20 @@ class Endpoint {
         packet.channel_id(), packet.service_id(), packet.method_id());
   }
 
+  void AbortCallsForService(const Service& service)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    AbortCalls(AbortIdType::kService, service.id());
+  }
+
  private:
   // Give Call access to the register/unregister functions.
   friend class Call;
+
+  enum class AbortIdType : bool { kChannel, kService };
+
+  // Aborts calls for a particular channel or service.
+  void AbortCalls(AbortIdType type, uint32_t id)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Returns an ID that can be assigned to a new call.
   uint32_t NewCallId() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {

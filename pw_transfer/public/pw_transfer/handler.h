@@ -103,7 +103,7 @@ class ReadOnlyHandler : public internal::Handler {
   constexpr ReadOnlyHandler(uint32_t resource_id, stream::Reader& reader)
       : internal::Handler(resource_id, &reader) {}
 
-  virtual ~ReadOnlyHandler() = default;
+  ~ReadOnlyHandler() override = default;
 
   Status PrepareRead() override { return OkStatus(); }
 
@@ -124,7 +124,7 @@ class WriteOnlyHandler : public internal::Handler {
   constexpr WriteOnlyHandler(uint32_t resource_id, stream::Writer& writer)
       : internal::Handler(resource_id, &writer) {}
 
-  virtual ~WriteOnlyHandler() = default;
+  ~WriteOnlyHandler() override = default;
 
   // Reads are not supported.
   Status PrepareRead() final { return Status::PermissionDenied(); }
@@ -146,7 +146,7 @@ class ReadWriteHandler : public internal::Handler {
       : internal::Handler(resource_id,
                           &static_cast<stream::Reader&>(reader_writer)) {}
 
-  virtual ~ReadWriteHandler() = default;
+  ~ReadWriteHandler() override = default;
 
   // Both reads and writes are supported.
   Status PrepareRead() override { return OkStatus(); }

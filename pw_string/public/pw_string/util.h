@@ -15,12 +15,12 @@
 
 #include <cctype>
 #include <cstddef>
-#include <span>
 #include <string_view>
 
 #include "pw_assert/assert.h"
 #include "pw_polyfill/language_feature_macros.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_string/internal/length.h"
@@ -33,13 +33,13 @@ namespace string {
 //
 // This is strongly recommended over using something like C11's strnlen_s as
 // a string_view does not require null-termination.
-constexpr std::string_view ClampedCString(std::span<const char> str) {
+constexpr std::string_view ClampedCString(span<const char> str) {
   return std::string_view(str.data(),
                           internal::ClampedLength(str.data(), str.size()));
 }
 
 constexpr std::string_view ClampedCString(const char* str, size_t max_len) {
-  return ClampedCString(std::span<const char>(str, max_len));
+  return ClampedCString(span<const char>(str, max_len));
 }
 
 // Safe alternative to strlen to calculate the null-terminated length of the
@@ -51,7 +51,7 @@ constexpr std::string_view ClampedCString(const char* str, size_t max_len) {
 //   OutOfRange - if the string is not null-terminated.
 //
 // Precondition: The string shall be at a valid pointer.
-constexpr pw::Result<size_t> NullTerminatedLength(std::span<const char> str) {
+constexpr pw::Result<size_t> NullTerminatedLength(span<const char> str) {
   PW_DASSERT(str.data() != nullptr);
 
   const size_t length = internal::ClampedLength(str.data(), str.size());
@@ -64,7 +64,7 @@ constexpr pw::Result<size_t> NullTerminatedLength(std::span<const char> str) {
 
 constexpr pw::Result<size_t> NullTerminatedLength(const char* str,
                                                   size_t max_len) {
-  return NullTerminatedLength(std::span<const char>(str, max_len));
+  return NullTerminatedLength(span<const char>(str, max_len));
 }
 
 // Copies the source string to the dest, truncating if the full string does not
@@ -76,7 +76,7 @@ constexpr pw::Result<size_t> NullTerminatedLength(const char* str,
 // Precondition: The destination and source shall not overlap.
 // Precondition: The source shall be a valid pointer.
 PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const std::string_view& source,
-                                              std::span<char> dest) {
+                                              span<char> dest) {
   if (dest.empty()) {
     return StatusWithSize::ResourceExhausted();
   }
@@ -90,7 +90,7 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const std::string_view& source,
 }
 
 PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
-                                              std::span<char> dest) {
+                                              span<char> dest) {
   PW_DASSERT(source != nullptr);
   return Copy(ClampedCString(source, dest.size()), dest);
 }
@@ -98,13 +98,13 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
 PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
                                               char* dest,
                                               size_t num) {
-  return Copy(source, std::span<char>(dest, num));
+  return Copy(source, span<char>(dest, num));
 }
 
 // Copies source string to the dest with same behavior as Copy, with the
 // difference that any non-printable characters are changed to '.'.
 PW_CONSTEXPR_CPP20 inline StatusWithSize PrintableCopy(
-    const std::string_view& source, std::span<char> dest) {
+    const std::string_view& source, span<char> dest) {
   StatusWithSize copy_result = Copy(source, dest);
   for (size_t i = 0; i < copy_result.size(); i++) {
     dest[i] = std::isprint(dest[i]) ? dest[i] : '.';

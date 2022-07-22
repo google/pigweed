@@ -61,6 +61,7 @@ pw_source_set("common") {
   public_deps = [
     "..:common",
     dir_pw_bytes,
+    dir_pw_span,
   ]
   public_configs = [ ":public" ]
   deps = [

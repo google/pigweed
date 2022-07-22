@@ -40,7 +40,7 @@ int main() {
 
   // Use CRC16.
   value = pw::checksum::Crc16Ccitt::Calculate(
-      std::as_bytes(std::span(const_cast<uint32_t*>(&value), 1)));
+      pw::as_bytes(pw::span(const_cast<uint32_t*>(&value), 1)));
 
   return 0;
 }

@@ -52,7 +52,7 @@ inline Result<uint32_t> DecodeBytesToUint32(Decoder& decoder) {
     return Status::InvalidArgument();
   }
   uint32_t value;
-  if (!bytes::ReadInOrder(std::endian::little, bytes_read, value)) {
+  if (!bytes::ReadInOrder(endian::little, bytes_read, value)) {
     return Status::Internal();
   }
   return value;

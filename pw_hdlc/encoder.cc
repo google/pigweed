@@ -18,10 +18,11 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
-#include <span>
 
 #include "pw_bytes/endian.h"
+#include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/internal/encoder.h"
+#include "pw_span/span.h"
 #include "pw_varint/varint.h"
 
 using std::byte;
@@ -44,7 +45,7 @@ Status Encoder::WriteData(ConstByteSpan data) {
   while (true) {
     auto end = std::find_if(begin, data.end(), NeedsEscaping);
 
-    if (Status status = writer_.Write(std::span(begin, end)); !status.ok()) {
+    if (Status status = writer_.Write(span(begin, end)); !status.ok()) {
       return status;
     }
     if (end == data.end()) {
@@ -60,22 +61,11 @@ Status Encoder::WriteData(ConstByteSpan data) {
 
 Status Encoder::FinishFrame() {
   if (Status status =
-          WriteData(bytes::CopyInOrder(std::endian::little, fcs_.value()));
+          WriteData(bytes::CopyInOrder(endian::little, fcs_.value()));
       !status.ok()) {
     return status;
   }
   return writer_.Write(kFlag);
-}
-
-size_t Encoder::MaxEncodedSize(uint64_t address, ConstByteSpan payload) {
-  constexpr size_t kFcsMaxSize = 8;  // Worst case FCS: 0x7e7e7e7e.
-  size_t max_encoded_address_size = varint::EncodedSize(address) * 2;
-  size_t encoded_payload_size =
-      payload.size() +
-      std::count_if(payload.begin(), payload.end(), NeedsEscaping);
-
-  return max_encoded_address_size + sizeof(kUnusedControl) +
-         encoded_payload_size + kFcsMaxSize;
 }
 
 Status Encoder::StartFrame(uint64_t address, std::byte control) {
@@ -92,7 +82,7 @@ Status Encoder::StartFrame(uint64_t address, std::byte control) {
   }
 
   metadata_buffer[metadata_size++] = control;
-  return WriteData(std::span(metadata_buffer).first(metadata_size));
+  return WriteData(span(metadata_buffer).first(metadata_size));
 }
 
 }  // namespace internal
@@ -100,8 +90,7 @@ Status Encoder::StartFrame(uint64_t address, std::byte control) {
 Status WriteUIFrame(uint64_t address,
                     ConstByteSpan payload,
                     stream::Writer& writer) {
-  if (internal::Encoder::MaxEncodedSize(address, payload) >
-      writer.ConservativeWriteLimit()) {
+  if (MaxEncodedFrameSize(address, payload) > writer.ConservativeWriteLimit()) {
     return Status::ResourceExhausted();
   }
 

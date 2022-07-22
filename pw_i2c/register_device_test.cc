@@ -71,7 +71,7 @@ TEST(RegisterDevice, Construction) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k1Byte);
 }
 
@@ -79,7 +79,7 @@ TEST(RegisterDevice, WriteRegisters8With2RegistersAnd1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k1Byte);
 
   std::array<std::byte, 2> register_data = {std::byte{0xCD}, std::byte{0xEF}};
@@ -108,7 +108,7 @@ TEST(RegisterDevice, WriteRegisters8With2RegistersAnd2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   constexpr uint32_t kRegisterAddress = 0x89AB;
@@ -138,7 +138,7 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   constexpr uint32_t kRegisterAddress = 0x89AB;
@@ -171,10 +171,8 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddress) {
 
 TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   TestInitiator initiator;
-  RegisterDevice device(initiator,
-                        kTestDeviceAddress,
-                        std::endian::big,
-                        RegisterAddressSize::k2Bytes);
+  RegisterDevice device(
+      initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k2Bytes);
 
   constexpr uint32_t kRegisterAddress = 0x89AB;
   std::array<uint16_t, 2> register_data = {0xCDEF, 0x1234};
@@ -189,7 +187,7 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   // Check address.
   const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
       const_cast<std::byte*>(test_device_builder.data())));
-  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &kRegisterAddress),
+  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
   // Check data.
@@ -201,7 +199,7 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   for (uint32_t i = 0; i < (test_device_builder.size() - kAddressSize) /
                                sizeof(register_data[0]);
        i++) {
-    EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &register_data[i]),
+    EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &register_data[i]),
               read_pointer[i]);
   }
 }
@@ -210,7 +208,7 @@ TEST(RegisterDevice, WriteRegisters8BufferTooSmall) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   constexpr uint32_t kRegisterAddress = 0x89AB;
@@ -225,7 +223,7 @@ TEST(RegisterDevice, WriteRegister16With1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k1Byte);
 
   constexpr uint32_t kRegisterAddress = 0xAB;
@@ -254,7 +252,7 @@ TEST(RegisterDevice, WriteRegister32With1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k1Byte);
 
   constexpr uint32_t kRegisterAddress = 0xAB;
@@ -283,7 +281,7 @@ TEST(RegisterDevice, WriteRegister16with2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   constexpr uint32_t kRegisterAddress = 0xAB23;
@@ -311,10 +309,8 @@ TEST(RegisterDevice, WriteRegister16with2ByteAddress) {
 
 TEST(RegisterDevice, WriteRegister16With1ByteAddressAndBigEndian) {
   TestInitiator initiator;
-  RegisterDevice device(initiator,
-                        kTestDeviceAddress,
-                        std::endian::big,
-                        RegisterAddressSize::k1Byte);
+  RegisterDevice device(
+      initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k1Byte);
 
   constexpr uint32_t kRegisterAddress = 0xAB;
   constexpr uint16_t kRegisterData = 0xBCDE;
@@ -341,10 +337,8 @@ TEST(RegisterDevice, WriteRegister16With1ByteAddressAndBigEndian) {
 
 TEST(RegisterDevice, WriteRegister32With1ByteAddressAndBigEndian) {
   TestInitiator initiator;
-  RegisterDevice device(initiator,
-                        kTestDeviceAddress,
-                        std::endian::big,
-                        RegisterAddressSize::k1Byte);
+  RegisterDevice device(
+      initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k1Byte);
 
   constexpr uint32_t kRegisterAddress = 0xAB;
   constexpr uint32_t kRegisterData = 0xBCCDDEEF;
@@ -371,10 +365,8 @@ TEST(RegisterDevice, WriteRegister32With1ByteAddressAndBigEndian) {
 
 TEST(RegisterDevice, WriteRegister16With2ByteAddressAndBigEndian) {
   TestInitiator initiator;
-  RegisterDevice device(initiator,
-                        kTestDeviceAddress,
-                        std::endian::big,
-                        RegisterAddressSize::k2Bytes);
+  RegisterDevice device(
+      initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k2Bytes);
 
   constexpr uint32_t kRegisterAddress = 0xAB11;
   constexpr uint16_t kRegisterData = 0xBCDF;
@@ -389,7 +381,7 @@ TEST(RegisterDevice, WriteRegister16With2ByteAddressAndBigEndian) {
   // Check address.
   const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
       const_cast<std::byte*>(test_device_builder.data())));
-  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &kRegisterAddress),
+  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
   // Check data.
@@ -405,7 +397,7 @@ TEST(RegisterDevice, ReadRegisters8ByteWith2RegistersAnd1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k1Byte);
 
   std::array<std::byte, 2> register_data = {std::byte{0xCD}, std::byte{0xEF}};
@@ -435,12 +427,12 @@ TEST(RegisterDevice, ReadRegisters8IntWith2RegistersAnd1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k1Byte);
 
   std::array<uint8_t, 2> register_data = {0xCD, 0xEF};
-  initiator.SetReadData(std::as_writable_bytes(
-      std::span(register_data.data(), register_data.size())));
+  initiator.SetReadData(
+      as_writable_bytes(span(register_data.data(), register_data.size())));
 
   std::array<uint8_t, 2> buffer;
   constexpr uint32_t kRegisterAddress = 0xAB;
@@ -466,7 +458,7 @@ TEST(RegisterDevice, ReadRegisters8ByteWith2RegistersAnd2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   std::array<std::byte, 2> register_data = {std::byte{0xCD}, std::byte{0xEF}};
@@ -496,12 +488,12 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   std::array<uint16_t, 2> register_data = {0xCDEF, 0x1234};
-  initiator.SetReadData(std::as_writable_bytes(
-      std::span(register_data.data(), register_data.size())));
+  initiator.SetReadData(
+      as_writable_bytes(span(register_data.data(), register_data.size())));
 
   std::array<uint16_t, 2> buffer;
   constexpr uint32_t kRegisterAddress = 0xAB;
@@ -525,14 +517,12 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddress) {
 
 TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   TestInitiator initiator;
-  RegisterDevice device(initiator,
-                        kTestDeviceAddress,
-                        std::endian::big,
-                        RegisterAddressSize::k2Bytes);
+  RegisterDevice device(
+      initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k2Bytes);
 
   std::array<uint16_t, 2> register_data = {0xCDEF, 0x1234};
-  initiator.SetReadData(std::as_writable_bytes(
-      std::span(register_data.data(), register_data.size())));
+  initiator.SetReadData(
+      as_writable_bytes(span(register_data.data(), register_data.size())));
 
   std::array<uint16_t, 2> buffer;
   constexpr uint32_t kRegisterAddress = 0xAB;
@@ -546,12 +536,12 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddressBigEndian) {
 
   const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
       const_cast<std::byte*>(address_buffer.data())));
-  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &kRegisterAddress),
+  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
   // Check data.
   for (uint32_t i = 0; i < buffer.size(); i++) {
-    EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &register_data[i]),
+    EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &register_data[i]),
               buffer[i]);
   }
 }
@@ -560,7 +550,7 @@ TEST(RegisterDevice, ReadRegister16With1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k1Byte);
 
   std::array<std::byte, 2> register_data = {std::byte{0xCD}, std::byte{0xEF}};
@@ -591,7 +581,7 @@ TEST(RegisterDevice, ReadRegister32With1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k1Byte);
 
   std::array<std::byte, 4> register_data = {
@@ -623,7 +613,7 @@ TEST(RegisterDevice, ReadRegister16With2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::little,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   std::array<std::byte, 2> register_data = {std::byte{0x98}, std::byte{0x76}};
@@ -652,10 +642,8 @@ TEST(RegisterDevice, ReadRegister16With2ByteAddress) {
 
 TEST(RegisterDevice, ReadRegister16With1ByteAddressAndBigEndian) {
   TestInitiator initiator;
-  RegisterDevice device(initiator,
-                        kTestDeviceAddress,
-                        std::endian::big,
-                        RegisterAddressSize::k1Byte);
+  RegisterDevice device(
+      initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k1Byte);
 
   std::array<std::byte, 2> register_data = {std::byte{0x98}, std::byte{0x76}};
   initiator.SetReadData(register_data);
@@ -685,10 +673,8 @@ TEST(RegisterDevice, ReadRegister16With1ByteAddressAndBigEndian) {
 
 TEST(RegisterDevice, ReadRegister32With1ByteAddressAndBigEndian) {
   TestInitiator initiator;
-  RegisterDevice device(initiator,
-                        kTestDeviceAddress,
-                        std::endian::big,
-                        RegisterAddressSize::k1Byte);
+  RegisterDevice device(
+      initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k1Byte);
 
   std::array<std::byte, 4> register_data = {
       std::byte{0x98}, std::byte{0x76}, std::byte{0x54}, std::byte{0x32}};
@@ -719,10 +705,8 @@ TEST(RegisterDevice, ReadRegister32With1ByteAddressAndBigEndian) {
 
 TEST(RegisterDevice, ReadRegister16With2ByteAddressAndBigEndian) {
   TestInitiator initiator;
-  RegisterDevice device(initiator,
-                        kTestDeviceAddress,
-                        std::endian::big,
-                        RegisterAddressSize::k2Bytes);
+  RegisterDevice device(
+      initiator, kTestDeviceAddress, endian::big, RegisterAddressSize::k2Bytes);
 
   std::array<std::byte, 2> register_data = {std::byte{0x98}, std::byte{0x76}};
   initiator.SetReadData(register_data);
@@ -739,7 +723,7 @@ TEST(RegisterDevice, ReadRegister16With2ByteAddressAndBigEndian) {
 
   const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
       const_cast<std::byte*>(address_buffer.data())));
-  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &kRegisterAddress),
+  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
   // Check data.
@@ -755,8 +739,8 @@ TEST(RegisterDevice, ReadRegister16With2ByteBigEndianAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::big,
-                        std::endian::little,
+                        endian::big,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   std::array<std::byte, 2> register_data = {std::byte{0x98}, std::byte{0x76}};
@@ -774,7 +758,7 @@ TEST(RegisterDevice, ReadRegister16With2ByteBigEndianAddress) {
 
   const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
       const_cast<std::byte*>(address_buffer.data())));
-  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &kRegisterAddress),
+  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
   // Check data.
@@ -788,8 +772,8 @@ TEST(RegisterDevice, WriteRegister16with2ByteBigEndianAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
                         kTestDeviceAddress,
-                        std::endian::big,
-                        std::endian::little,
+                        endian::big,
+                        endian::little,
                         RegisterAddressSize::k2Bytes);
 
   constexpr uint32_t kRegisterAddress = 0xAB11;
@@ -805,7 +789,7 @@ TEST(RegisterDevice, WriteRegister16with2ByteBigEndianAddress) {
   // Check address.
   const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
       const_cast<std::byte*>(test_device_builder.data())));
-  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &kRegisterAddress),
+  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(endian::big, &kRegisterAddress),
             kActualAddress);
 
   // Check data.

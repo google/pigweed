@@ -18,7 +18,7 @@
 // compatibility and we rely on implicit conversion to tell us at compile time
 // whether this is incompatible.
 #define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR 1
-#define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR 100'000'0000
+#define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR 1000000000
 
 #ifdef __cplusplus
 

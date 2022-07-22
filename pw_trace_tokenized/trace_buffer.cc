@@ -15,9 +15,8 @@
 //
 #include "pw_trace_tokenized/trace_buffer.h"
 
-#include <span>
-
 #include "pw_ring_buffer/prefixed_entry_ring_buffer.h"
+#include "pw_span/span.h"
 #include "pw_trace_tokenized/trace_callback.h"
 
 namespace pw {
@@ -63,14 +62,14 @@ class TraceBuffer {
       return;  // Block is too large, skipping.
     }
     buffer->ring_buffer_
-        .PushBack(std::span<const std::byte>(&buffer->current_block_[0],
-                                             buffer->block_size_))
+        .PushBack(span<const std::byte>(&buffer->current_block_[0],
+                                        buffer->block_size_))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   pw::ring_buffer::PrefixedEntryRingBuffer& RingBuffer() {
     return ring_buffer_;
-  };
+  }
 
   ConstByteSpan DeringAndViewRawBuffer() {
     ring_buffer_.Dering()

@@ -15,13 +15,13 @@
 #include "pw_snapshot/uuid.h"
 
 #include <array>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_result/result.h"
 #include "pw_snapshot_metadata_proto/snapshot_metadata.pwpb.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::snapshot {
@@ -43,8 +43,8 @@ TEST(ReadUuid, ReadUuid) {
   const std::array<uint8_t, 8> kExpectedUuid = {
       0x1F, 0x8F, 0xBF, 0xC4, 0x86, 0x0E, 0xED, 0xD4};
   std::array<std::byte, 16> snapshot_buffer;
-  ConstByteSpan snapshot = EncodeSnapshotWithUuid(
-      std::as_bytes(std::span(kExpectedUuid)), snapshot_buffer);
+  ConstByteSpan snapshot =
+      EncodeSnapshotWithUuid(as_bytes(span(kExpectedUuid)), snapshot_buffer);
 
   std::array<std::byte, kUuidSizeBytes> uuid_dest;
   Result<ConstByteSpan> result = ReadUuidFromSnapshot(snapshot, uuid_dest);
@@ -90,8 +90,8 @@ TEST(ReadUuid, UndersizedBuffer) {
                                                  0xB5,
                                                  0xBB};
   std::array<std::byte, 32> snapshot_buffer;
-  ConstByteSpan snapshot = EncodeSnapshotWithUuid(
-      std::as_bytes(std::span(kExpectedUuid)), snapshot_buffer);
+  ConstByteSpan snapshot =
+      EncodeSnapshotWithUuid(as_bytes(span(kExpectedUuid)), snapshot_buffer);
 
   std::array<std::byte, kUuidSizeBytes> uuid_dest;
   Result<ConstByteSpan> result = ReadUuidFromSnapshot(snapshot, uuid_dest);

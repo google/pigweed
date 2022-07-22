@@ -13,10 +13,10 @@
 // the License.
 #pragma once
 
-#include <span>
 #include <string_view>
 
 #include "pw_protobuf/wire_format.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_varint/varint.h"
 
@@ -45,7 +45,7 @@ namespace pw::protobuf {
 // TODO(frolv): Rename this to MemoryDecoder to match the encoder naming.
 class Decoder {
  public:
-  constexpr Decoder(std::span<const std::byte> proto)
+  constexpr Decoder(span<const std::byte> proto)
       : proto_(proto), previous_field_consumed_(true) {}
 
   Decoder(const Decoder& other) = delete;
@@ -134,14 +134,12 @@ class Decoder {
   Status ReadString(std::string_view* out);
 
   // Reads a proto bytes value from the current cursor and returns a view of it
-  // in `out`. The raw protobuf data must outlive the `out` std::span. If the
+  // in `out`. The raw protobuf data must outlive the `out` span. If the
   // bytes field is invalid, `out` is not modified.
-  Status ReadBytes(std::span<const std::byte>* out) {
-    return ReadDelimited(out);
-  }
+  Status ReadBytes(span<const std::byte>* out) { return ReadDelimited(out); }
 
   // Resets the decoder to start reading a new proto message.
-  void Reset(std::span<const std::byte> proto) {
+  void Reset(span<const std::byte> proto) {
     proto_ = proto;
     previous_field_consumed_ = true;
   }
@@ -169,9 +167,9 @@ class Decoder {
     return ReadFixed(reinterpret_cast<std::byte*>(out), sizeof(T));
   }
 
-  Status ReadDelimited(std::span<const std::byte>* out);
+  Status ReadDelimited(span<const std::byte>* out);
 
-  std::span<const std::byte> proto_;
+  span<const std::byte> proto_;
   bool previous_field_consumed_;
 };
 
@@ -206,7 +204,7 @@ class DecodeHandler;
 //     unsigned int baz;
 //   };
 //
-//   void DecodeFooProto(std::span<std::byte> raw_proto) {
+//   void DecodeFooProto(span<std::byte> raw_proto) {
 //     Decoder decoder;
 //     FooProtoHandler handler;
 //
@@ -231,7 +229,7 @@ class CallbackDecoder {
 
   // Decodes the specified protobuf data. The registered handler's ProcessField
   // function is called on each field found in the data.
-  Status Decode(std::span<const std::byte> proto);
+  Status Decode(span<const std::byte> proto);
 
   // Reads a proto int32 value from the current cursor.
   Status ReadInt32(int32_t* out) { return decoder_.ReadInt32(out); }
@@ -278,13 +276,13 @@ class CallbackDecoder {
   Status ReadString(std::string_view* out) { return decoder_.ReadString(out); }
 
   // Reads a proto bytes value from the current cursor and returns a view of it
-  // in `out`. The raw protobuf data must outlive the `out` std::span. If the
+  // in `out`. The raw protobuf data must outlive the `out` span. If the
   // bytes field is invalid, `out` is not modified.
-  Status ReadBytes(std::span<const std::byte>* out) {
+  Status ReadBytes(span<const std::byte>* out) {
     return decoder_.ReadBytes(out);
   }
 
-  bool cancelled() const { return state_ == kDecodeCancelled; };
+  bool cancelled() const { return state_ == kDecodeCancelled; }
 
  private:
   enum State {

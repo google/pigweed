@@ -17,7 +17,6 @@
 #include <limits>
 #include <mutex>
 #include <optional>
-#include <span>
 #include <string_view>
 
 #include "pw_assert/check.h"
@@ -25,6 +24,7 @@
 #include "pw_log/proto/log.pwpb.h"
 #include "pw_result/result.h"
 #include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
@@ -40,7 +40,7 @@ void TryEncodeDropMessage(ByteSpan encoded_drop_message_buffer,
   // Encode drop count and reason, if any, in log proto.
   log::LogEntry::MemoryEncoder encoder(encoded_drop_message_buffer);
   if (!reason.empty()) {
-    encoder.WriteMessage(std::as_bytes(std::span(reason))).IgnoreError();
+    encoder.WriteMessage(as_bytes(span(reason))).IgnoreError();
   }
   encoder.WriteDropped(drop_count).IgnoreError();
   if (!encoder.status().ok()) {

@@ -18,10 +18,10 @@
 // in "pw_string/to_string.h" should be used instead of these functions.
 
 #include <cstdint>
-#include <span>
 #include <string_view>
 #include <type_traits>
 
+#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 #include "pw_string/util.h"
 
@@ -34,7 +34,8 @@ uint_fast8_t DecimalDigitCount(uint64_t integer);
 // Returns the number of digits in the hexadecimal representation of the
 // provided non-negative integer.
 constexpr uint_fast8_t HexDigitCount(uint64_t integer) {
-  return (64u - __builtin_clzll(integer | 1u) + 3u) / 4u;
+  return static_cast<uint_fast8_t>((64u - __builtin_clzll(integer | 1u) + 3u) /
+                                   4u);
 }
 
 // Writes an integer as a null-terminated string in base 10. Returns the number
@@ -56,7 +57,7 @@ constexpr uint_fast8_t HexDigitCount(uint64_t integer) {
 //      sites pass their arguments directly and casting instructions are shared.
 //
 template <typename T>
-StatusWithSize IntToString(T value, std::span<char> buffer) {
+StatusWithSize IntToString(T value, span<char> buffer) {
   if constexpr (std::is_signed_v<T>) {
     return IntToString<int64_t>(value, buffer);
   } else {
@@ -65,16 +66,16 @@ StatusWithSize IntToString(T value, std::span<char> buffer) {
 }
 
 template <>
-StatusWithSize IntToString(uint64_t value, std::span<char> buffer);
+StatusWithSize IntToString(uint64_t value, span<char> buffer);
 
 template <>
-StatusWithSize IntToString(int64_t value, std::span<char> buffer);
+StatusWithSize IntToString(int64_t value, span<char> buffer);
 
 // Writes an integer as a hexadecimal string. Semantics match IntToString. The
 // output is lowercase without a leading 0x. min_width adds leading zeroes such
 // that the final string is at least the specified number of characters wide.
 StatusWithSize IntToHexString(uint64_t value,
-                              std::span<char> buffer,
+                              span<char> buffer,
                               uint_fast8_t min_width = 0);
 
 // Rounds a floating point number to an integer and writes it as a
@@ -96,17 +97,17 @@ StatusWithSize IntToHexString(uint64_t value,
 //   FloatAsIntToString(INFINITY, buffer) -> writes "-inf" to the buffer
 //   FloatAsIntToString(-NAN, buffer)     -> writes "-NaN" to the buffer
 //
-StatusWithSize FloatAsIntToString(float value, std::span<char> buffer);
+StatusWithSize FloatAsIntToString(float value, span<char> buffer);
 
 // Writes a bool as "true" or "false". Semantics match CopyEntireString.
-StatusWithSize BoolToString(bool value, std::span<char> buffer);
+StatusWithSize BoolToString(bool value, span<char> buffer);
 
 // String used to represent null pointers.
 inline constexpr std::string_view kNullPointerString("(null)");
 
 // Writes the pointer's address or kNullPointerString. Semantics match
 // CopyEntireString.
-StatusWithSize PointerToString(const void* pointer, std::span<char> buffer);
+StatusWithSize PointerToString(const void* pointer, span<char> buffer);
 
 // Specialized form of pw::string::Copy which supports nullptr values.
 //
@@ -118,11 +119,10 @@ StatusWithSize PointerToString(const void* pointer, std::span<char> buffer);
 // Returns the number of characters written, excluding the null terminator. If
 // the string is truncated, the status is RESOURCE_EXHAUSTED.
 inline StatusWithSize CopyStringOrNull(const std::string_view& value,
-                                       std::span<char> buffer) {
+                                       span<char> buffer) {
   return Copy(value, buffer);
 }
-inline StatusWithSize CopyStringOrNull(const char* value,
-                                       std::span<char> buffer) {
+inline StatusWithSize CopyStringOrNull(const char* value, span<char> buffer) {
   if (value == nullptr) {
     return PointerToString(value, buffer);
   }
@@ -138,12 +138,12 @@ inline StatusWithSize CopyStringOrNull(const char* value,
 // the full string does not fit, only a null terminator is written and the
 // status is RESOURCE_EXHAUSTED.
 StatusWithSize CopyEntireStringOrNull(const std::string_view& value,
-                                      std::span<char> buffer);
+                                      span<char> buffer);
 
 // Same as the string_view form of CopyEntireString, except that if value is a
 // nullptr, then "(null)" is used as a fallback.
 inline StatusWithSize CopyEntireStringOrNull(const char* value,
-                                             std::span<char> buffer) {
+                                             span<char> buffer) {
   if (value == nullptr) {
     return PointerToString(value, buffer);
   }
@@ -158,6 +158,6 @@ inline StatusWithSize CopyEntireStringOrNull(const char* value,
 // printing for unknown types, if desired. Implementations must follow the
 // ToString semantics.
 template <typename T>
-StatusWithSize UnknownTypeToString(const T& value, std::span<char> buffer);
+StatusWithSize UnknownTypeToString(const T& value, span<char> buffer);
 
 }  // namespace pw::string

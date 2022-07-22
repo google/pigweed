@@ -17,12 +17,12 @@
 #include <cstdarg>
 #include <cstddef>
 #include <cstring>
-#include <span>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 
 #include "pw_preprocessor/compiler.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_string/to_string.h"
@@ -64,7 +64,7 @@ namespace pw {
 //   namespace pw {
 //
 //   template <>
-//   StatusWithSize ToString<MyStatus>(MyStatus value, std::span<char> buffer) {
+//   StatusWithSize ToString<MyStatus>(MyStatus value, span<char> buffer) {
 //     return Copy(MyStatusString(value), buffer);
 //   }
 //
@@ -73,10 +73,10 @@ namespace pw {
 class StringBuilder {
  public:
   // Creates an empty StringBuilder.
-  constexpr StringBuilder(std::span<char> buffer) : buffer_(buffer), size_(0) {
+  constexpr StringBuilder(span<char> buffer) : buffer_(buffer), size_(0) {
     NullTerminate();
   }
-  StringBuilder(std::span<std::byte> buffer)
+  StringBuilder(span<std::byte> buffer)
       : StringBuilder(
             {reinterpret_cast<char*>(buffer.data()), buffer.size_bytes()}) {}
 
@@ -98,9 +98,9 @@ class StringBuilder {
   // passed into functions that take a std::string_view.
   operator std::string_view() const { return view(); }
 
-  // Returns a std::span<const std::byte> representation of this StringBuffer.
-  std::span<const std::byte> as_bytes() const {
-    return std::span(reinterpret_cast<const std::byte*>(buffer_.data()), size_);
+  // Returns a span<const std::byte> representation of this StringBuffer.
+  span<const std::byte> as_bytes() const {
+    return span(reinterpret_cast<const std::byte*>(buffer_.data()), size_);
   }
 
   // Returns the StringBuilder's status, which reflects the most recent error
@@ -190,7 +190,7 @@ class StringBuilder {
     // gives smaller code size.
     if constexpr (std::is_convertible_v<T, std::string_view>) {
       append(value);
-    } else if constexpr (std::is_convertible_v<T, std::span<const std::byte>>) {
+    } else if constexpr (std::is_convertible_v<T, span<const std::byte>>) {
       WriteBytes(value);
     } else {
       HandleStatusWithSize(ToString(value, buffer_.subspan(size_)));
@@ -235,7 +235,7 @@ class StringBuilder {
 
  protected:
   // Functions to support StringBuffer copies.
-  constexpr StringBuilder(std::span<char> buffer, const StringBuilder& other)
+  constexpr StringBuilder(span<char> buffer, const StringBuilder& other)
       : buffer_(buffer),
         size_(other.size_),
         status_(other.status_),
@@ -244,7 +244,7 @@ class StringBuilder {
   void CopySizeAndStatus(const StringBuilder& other);
 
  private:
-  void WriteBytes(std::span<const std::byte> data);
+  void WriteBytes(span<const std::byte> data);
 
   size_t ResizeAndTerminate(size_t chars_to_append);
 
@@ -258,7 +258,7 @@ class StringBuilder {
 
   void SetErrorStatus(Status status);
 
-  const std::span<char> buffer_;
+  const span<char> buffer_;
 
   size_t size_;
   Status status_;

@@ -125,7 +125,7 @@ TEST(Decoder, TooLargeForBuffer_ReportsResourceExhausted) {
 TEST(Decoder, TooLargeForBuffer_StaysWithinBufferBoundaries) {
   std::array<byte, 16> buffer = bytes::Initialized<16>('?');
 
-  Decoder decoder(std::span(buffer.data(), 8));
+  Decoder decoder(span(buffer.data(), 8));
 
   for (byte b : bytes::String("~12345678901234567890\xf2\x19\x63\x90")) {
     EXPECT_EQ(Status::Unavailable(), decoder.Process(b).status());

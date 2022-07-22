@@ -113,7 +113,7 @@ class UnaryResponseClientCall : public ClientCall {
 
   void set_on_completed(Function<void(ConstByteSpan, Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    // TODO(pwbug/597): Ensure on_completed_ is properly guarded.
+    // TODO(b/234876851): Ensure on_completed_ is properly guarded.
     LockGuard lock(rpc_lock());
     set_on_completed_locked(std::move(on_completed));
   }
@@ -160,7 +160,7 @@ class StreamResponseClientCall : public ClientCall {
     UnregisterAndMarkClosed();
     rpc_lock().unlock();
 
-    // TODO(pwbug/597): Ensure on_completed_ is properly guarded.
+    // TODO(b/234876851): Ensure on_completed_ is properly guarded.
     if (invoke_callback) {
       on_completed_(status);
     }
@@ -195,7 +195,7 @@ class StreamResponseClientCall : public ClientCall {
 
   void set_on_completed(Function<void(Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    // TODO(pwbug/597): Ensure on_completed_ is properly guarded.
+    // TODO(b/234876851): Ensure on_completed_ is properly guarded.
     LockGuard lock(rpc_lock());
     set_on_completed_locked(std::move(on_completed));
   }

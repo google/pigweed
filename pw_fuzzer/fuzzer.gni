@@ -92,7 +92,7 @@ template("pw_fuzzer") {
   } else {
     # Build a unit test that exercise the fuzz target function.
     pw_test(target_name) {
-      # TODO(pwbug/195): Re-enable when there's better configurability for
+      # TODO(b/234891784): Re-enable when there's better configurability for
       # on-device fuzz testing.
       enable_if = false
       sources = []

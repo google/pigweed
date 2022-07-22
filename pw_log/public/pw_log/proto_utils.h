@@ -95,11 +95,10 @@ inline Result<ConstByteSpan> EncodeTokenizedLog(
     size_t tokenized_data_size,
     int64_t ticks_since_epoch,
     ByteSpan encode_buffer) {
-  return EncodeTokenizedLog(
-      metadata,
-      std::as_bytes(std::span(tokenized_data, tokenized_data_size)),
-      ticks_since_epoch,
-      encode_buffer);
+  return EncodeTokenizedLog(metadata,
+                            as_bytes(span(tokenized_data, tokenized_data_size)),
+                            ticks_since_epoch,
+                            encode_buffer);
 }
 
 // Encodes tokenized message (passed as pointer and size), tokenized metadata,
@@ -118,7 +117,7 @@ inline Result<ConstByteSpan> EncodeTokenizedLog(
     ByteSpan encode_buffer) {
   LogEntry::MemoryEncoder encoder = CreateEncoderAndEncodeTokenizedLog(
       metadata,
-      std::as_bytes(std::span(tokenized_data, tokenized_data_size)),
+      as_bytes(span(tokenized_data, tokenized_data_size)),
       ticks_since_epoch,
       encode_buffer);
   if (!thread_name.empty()) {

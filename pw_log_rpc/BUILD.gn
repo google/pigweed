@@ -88,6 +88,7 @@ pw_source_set("log_filter") {
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_protobuf",
     "$dir_pw_status",
+    dir_pw_span,
   ]
 }
 
@@ -112,6 +113,7 @@ pw_source_set("rpc_log_drain") {
     "$dir_pw_status",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
+    dir_pw_span,
   ]
 }
 

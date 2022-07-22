@@ -111,4 +111,4 @@
 //   Note that for the assert failures, the handler should assume the assert
 //   has already failed (the facade checks the condition before delegating).
 //
-#include "pw_assert_backend/assert_backend.h"
+#include "pw_assert_backend/check_backend.h"

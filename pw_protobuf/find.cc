@@ -28,7 +28,7 @@ Status FindDecodeHandler::ProcessField(CallbackDecoder& decoder,
     return Status::Cancelled();
   }
 
-  std::span<const std::byte> submessage;
+  span<const std::byte> submessage;
   if (Status status = decoder.ReadBytes(&submessage); !status.ok()) {
     return status;
   }

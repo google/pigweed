@@ -13,8 +13,11 @@
 // the License.
 #pragma once
 
+#include <type_traits>
+
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/method_info.h"
+#include "pw_rpc/method_info.h"
 
 namespace pw::rpc::internal {
 
@@ -23,7 +26,8 @@ template <typename GeneratedClass, typename ServiceImpl>
 class MethodInfoTests {
  public:
   constexpr bool Pass() const {
-    return Ids().Pass() && MethodFunction().Pass();
+    return Ids().Pass() && MethodFunction().Pass() &&
+           MethodRequestResponseTypes().Pass();
   }
 
  private:
@@ -67,6 +71,25 @@ class MethodInfoTests {
     PW_RPC_TEST_METHOD_INFO_FUNCTION(TestClientStreamRpc);
     PW_RPC_TEST_METHOD_INFO_FUNCTION(TestBidirectionalStreamRpc);
 #undef PW_RPC_TEST_METHOD_INFO_FUNCTION
+  };
+
+  struct MethodRequestResponseTypes {
+    constexpr bool Pass() const { return true; }
+
+#define PW_RPC_TEST_PUBLIC_METHOD_INFO_TYPES(function)                         \
+  static_assert(                                                               \
+      std::is_same_v<typename MethodInfo<GeneratedClass::function>::Request,   \
+                     ::pw::rpc::MethodRequestType<GeneratedClass::function>>); \
+  static_assert(                                                               \
+      std::is_same_v<typename MethodInfo<GeneratedClass::function>::Response,  \
+                     ::pw::rpc::MethodResponseType<GeneratedClass::function>>)
+
+    PW_RPC_TEST_PUBLIC_METHOD_INFO_TYPES(TestUnaryRpc);
+    PW_RPC_TEST_PUBLIC_METHOD_INFO_TYPES(TestAnotherUnaryRpc);
+    PW_RPC_TEST_PUBLIC_METHOD_INFO_TYPES(TestServerStreamRpc);
+    PW_RPC_TEST_PUBLIC_METHOD_INFO_TYPES(TestClientStreamRpc);
+    PW_RPC_TEST_PUBLIC_METHOD_INFO_TYPES(TestBidirectionalStreamRpc);
+#undef PW_RPC_TEST_PUBLIC_METHOD_INFO_TYPES
   };
 };
 

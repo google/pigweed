@@ -14,13 +14,13 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_span/span.h"
 
 namespace pw::rpc {
 
@@ -28,7 +28,7 @@ class Client : public internal::Endpoint {
  public:
   // Creates a client that uses a set of RPC channels. Channels can be shared
   // between a client and a server, but not between multiple clients.
-  _PW_RPC_CONSTEXPR Client(std::span<Channel> channels) : Endpoint(channels) {}
+  _PW_RPC_CONSTEXPR Client(span<Channel> channels) : Endpoint(channels) {}
 
   // Processes an incoming RPC packet. The packet may be an RPC response or a
   // control packet, the result of which is processed in this function. Returns

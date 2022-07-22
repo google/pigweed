@@ -18,10 +18,10 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
+#include "pw_span/span.h"
 #include "pw_string/format.h"
 
 namespace this_pw_test {
@@ -45,7 +45,7 @@ namespace pw {
 
 template <>
 StatusWithSize ToString<this_pw_test::CustomType>(
-    const this_pw_test::CustomType&, std::span<char> buffer) {
+    const this_pw_test::CustomType&, span<char> buffer) {
   return string::Format(buffer, this_pw_test::CustomType::kToString);
 }
 
@@ -57,7 +57,7 @@ namespace {
 using this_pw_test::CustomType;
 
 TEST(StringBuilder, EmptyBuffer_SizeAndMaxSizeAreCorrect) {
-  StringBuilder sb(std::span<char>{});
+  StringBuilder sb(span<char>{});
 
   EXPECT_TRUE(sb.empty());
   EXPECT_EQ(0u, sb.size());
@@ -72,7 +72,7 @@ TEST(StringBuilder, EmptyBuffer_StreamOutput_WritesNothing) {
   char buffer[kNoTouch.size()];
   std::memcpy(buffer, kNoTouch.data(), sizeof(buffer));
 
-  StringBuilder sb(std::span(buffer, 0));
+  StringBuilder sb(span(buffer, 0));
 
   sb << CustomType() << " is " << 12345;
   EXPECT_EQ(Status::ResourceExhausted(), sb.status());
@@ -83,7 +83,7 @@ TEST(StringBuilder, EmptyBuffer_Append_WritesNothing) {
   char buffer[kNoTouch.size()];
   std::memcpy(buffer, kNoTouch.data(), sizeof(buffer));
 
-  StringBuilder sb(std::span(buffer, 0));
+  StringBuilder sb(span(buffer, 0));
 
   EXPECT_FALSE(sb.append("Hello").ok());
   EXPECT_EQ(kNoTouch, std::string_view(buffer, sizeof(buffer)));
@@ -93,7 +93,7 @@ TEST(StringBuilder, EmptyBuffer_Resize_WritesNothing) {
   char buffer[kNoTouch.size()];
   std::memcpy(buffer, kNoTouch.data(), sizeof(buffer));
 
-  StringBuilder sb(std::span(buffer, 0));
+  StringBuilder sb(span(buffer, 0));
 
   sb.resize(0);
   EXPECT_TRUE(sb.ok());
@@ -101,7 +101,7 @@ TEST(StringBuilder, EmptyBuffer_Resize_WritesNothing) {
 }
 
 TEST(StringBuilder, EmptyBuffer_AppendEmpty_ResourceExhausted) {
-  StringBuilder sb(std::span<char>{});
+  StringBuilder sb(span<char>{});
   EXPECT_EQ(OkStatus(), sb.last_status());
   EXPECT_EQ(OkStatus(), sb.status());
 
@@ -204,7 +204,7 @@ TEST(StringBuilder, Append_Chars_Full) {
 }
 
 TEST(StringBuilder, Append_Chars_ToEmpty) {
-  StringBuilder sb(std::span<char>{});
+  StringBuilder sb(span<char>{});
 
   EXPECT_EQ(Status::ResourceExhausted(), sb.append(1, '?').last_status());
 }
@@ -395,7 +395,7 @@ TEST(StringBuilder, StreamOutput_ByteSpan) {
                                  std::byte(0x02),
                                  std::byte(0x41),
                                  std::byte(0xe0)}};
-  buffer << std::as_bytes(std::span(data));
+  buffer << as_bytes(span(data));
   EXPECT_EQ(buffer.status(), OkStatus());
   EXPECT_STREQ("00c80241e0", buffer.data());
 }
@@ -403,7 +403,7 @@ TEST(StringBuilder, StreamOutput_ByteSpan) {
 TEST(StringBuilder, StreamOutput_ByteSpanOutOfSpace) {
   StringBuffer<4> buffer;
   std::array<uint8_t, 3> data{{0xc8, 0x02, 0x41}};
-  buffer << std::as_bytes(std::span(data));
+  buffer << as_bytes(span(data));
   EXPECT_EQ(buffer.status(), Status::ResourceExhausted());
   EXPECT_STREQ("", buffer.data());
 }

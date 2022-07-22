@@ -57,7 +57,7 @@ static inline uint32_t pw_checksum_Crc32Append(const void* data,
 #ifdef __cplusplus
 }  // extern "C"
 
-#include <span>
+#include "pw_span/span.h"
 
 namespace pw::checksum {
 
@@ -69,17 +69,17 @@ class Crc32 {
  public:
   // Calculates the CRC32 for the provided data and returns it as a uint32_t.
   // To update a CRC in multiple pieces, use an instance of the Crc32 class.
-  static uint32_t Calculate(std::span<const std::byte> data) {
+  static uint32_t Calculate(span<const std::byte> data) {
     return pw_checksum_Crc32(data.data(), data.size_bytes());
   }
 
   constexpr Crc32() : state_(kInitialValue) {}
 
-  void Update(std::span<const std::byte> data) {
+  void Update(span<const std::byte> data) {
     state_ = _pw_checksum_InternalCrc32(data.data(), data.size(), state_);
   }
 
-  void Update(std::byte data) { Update(std::span(&data, 1)); }
+  void Update(std::byte data) { Update(span(&data, 1)); }
 
   // Returns the value of the CRC32 for all data passed to Update.
   uint32_t value() const { return ~state_; }

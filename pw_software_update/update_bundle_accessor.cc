@@ -39,7 +39,7 @@ namespace {
 Result<bool> VerifyEcdsaSignature(protobuf::Bytes public_key,
                                   ConstByteSpan digest,
                                   protobuf::Bytes signature) {
-  // TODO(pwbug/456): Move this logic into an variant of the API in
+  // TODO(b/237580538): Move this logic into an variant of the API in
   // pw_crypto:ecdsa that takes readers as inputs.
   std::byte public_key_bytes[65];
   std::byte signature_bytes[64];
@@ -235,13 +235,13 @@ Result<uint32_t> GetMetadataVersion(protobuf::Message& metadata,
 
 // Reads a protobuf::String into a buffer and returns a std::string_view.
 Result<std::string_view> ReadProtoString(protobuf::String str,
-                                         std::span<char> buffer) {
+                                         span<char> buffer) {
   stream::IntervalReader reader = str.GetBytesReader();
   if (reader.interval_size() > buffer.size()) {
     return Status::ResourceExhausted();
   }
 
-  Result<ByteSpan> res = reader.Read(std::as_writable_bytes(buffer));
+  Result<ByteSpan> res = reader.Read(as_writable_bytes(buffer));
   PW_TRY(res.status());
   return std::string_view(buffer.data(), res.value().size());
 }
@@ -346,16 +346,15 @@ Status UpdateBundleAccessor::PersistManifest() {
 
 Status UpdateBundleAccessor::Close() {
   bundle_verified_ = false;
-  return blob_store_reader_.IsOpen() ? blob_store_reader_.Close() : OkStatus();
+  return update_reader_.IsOpen() ? update_reader_.Close() : OkStatus();
 }
 
 Status UpdateBundleAccessor::DoOpen() {
-  PW_TRY(blob_store_.Init());
-  PW_TRY(blob_store_reader_.Open());
-  bundle_ = protobuf::Message(blob_store_reader_,
-                              blob_store_reader_.ConservativeReadLimit());
+  PW_TRY(update_reader_.Open());
+  bundle_ = protobuf::Message(update_reader_.reader(),
+                              update_reader_.reader().ConservativeReadLimit());
   if (!bundle_.ok()) {
-    blob_store_reader_.Close();
+    update_reader_.Close();
     return bundle_.status();
   }
   return OkStatus();
@@ -391,22 +390,15 @@ Status UpdateBundleAccessor::DoVerify() {
     return status;
   }
 
-  // TODO(pwbug/456): Verify the targets metadata against the current trusted
-  // root.
   if (Status status = VerifyTargetsMetadata(); !status.ok()) {
     PW_LOG_ERROR("Failed to verify Targets metadata");
     return status;
   }
 
-  // TODO(pwbug/456): Investigate whether targets payload verification should
-  // be performed here or deferred until a specific target is requested.
   if (Status status = VerifyTargetsPayloads(); !status.ok()) {
     PW_LOG_ERROR("Failed to verify all manifested payloads");
     return status;
   }
-
-  // TODO(pwbug/456): Invoke the backend to do downstream verification of the
-  // bundle (e.g. compatibility and manifest completeness checks).
 
   bundle_verified_ = true;
   return OkStatus();
@@ -454,7 +446,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     return OkStatus();
   }
 
-  // TODO(pwbug/456): Check whether the bundle contains a root metadata that
+  // TODO(b/237580538): Check whether the bundle contains a root metadata that
   // is different from the on-device trusted root.
 
   // Verify the signatures against the trusted root metadata.
@@ -465,7 +457,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     return Status::Unauthenticated();
   }
 
-  // TODO(pwbug/456): Verifiy the content of the new root metadata, including:
+  // TODO(b/237580538): Verifiy the content of the new root metadata, including:
   //    1) Check role magic field.
   //    2) Check signature requirement. Specifically, check that no key is
   //       reused across different roles and keys are unique in the same
@@ -481,7 +473,6 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     return Status::Unauthenticated();
   }
 
-  // TODO(pwbug/456): Check rollback.
   // Retrieves the trusted root metadata content message.
   protobuf::Message trusted_root_content =
       trusted_root_.AsMessage(static_cast<uint32_t>(
@@ -524,7 +515,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     }
   }
 
-  // TODO(pwbug/456): Implement key change detection to determine whether
+  // TODO(b/237580538): Implement key change detection to determine whether
   // rotation has occured or not. Delete the persisted targets metadata version
   // if any of the targets keys has been rotated.
 
@@ -614,8 +605,6 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
     PW_LOG_ERROR("Targets Metadata failed signature verification");
     return Status::Unauthenticated();
   }
-
-  // TODO(pwbug/456): Check targets metadtata content.
 
   if (self_verification_) {
     // Don't bother because it does not matter.

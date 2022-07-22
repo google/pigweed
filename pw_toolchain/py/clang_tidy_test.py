@@ -31,8 +31,9 @@ class ClangTidyTest(unittest.TestCase):
             'somefile.cc')
         source_root = pathlib.Path('..')
         source_exclude = ['third_party.*']
+        extra_args = ['END_OF_INVOKER']
         got = clang_tidy.main(False, 'clang-tidy', source_file, source_root,
-                              None, source_exclude, list(), list())
+                              None, source_exclude, list(), extra_args)
 
         # Return code is zero.
         self.assertEqual(got, 0)
@@ -46,8 +47,9 @@ class ClangTidyTest(unittest.TestCase):
             'somefile.cc')
         source_root = pathlib.Path('..')
         source_exclude = ['someotherdir.*']
+        extra_args = ['END_OF_INVOKER']
         got = clang_tidy.main(False, 'clang-tidy', source_file, source_root,
-                              None, source_exclude, list(), list())
+                              None, source_exclude, list(), extra_args)
 
         # Return code is zero.
         self.assertEqual(got, 0)

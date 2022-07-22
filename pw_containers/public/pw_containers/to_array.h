@@ -20,6 +20,14 @@
 
 namespace pw {
 namespace containers {
+
+// If std::to_array is available, use it as pw::containers::to_array.
+#ifdef __cpp_lib_to_array
+
+using std::to_array;
+
+#else
+
 namespace impl {
 
 template <typename T, size_t kSize, size_t... kIndices>
@@ -36,8 +44,8 @@ constexpr std::array<std::remove_cv_t<T>, kSize> MoveArray(
 
 }  // namespace impl
 
-// pw::containers::to_array is C++14-compatible implementation of C++20's
-// std::to_array.
+// If C++20's std::to_array is not available, implement pw::containers::to_array
+// in a C++14-compatible way.
 template <typename T, size_t kSize>
 constexpr std::array<std::remove_cv_t<T>, kSize> to_array(T (&values)[kSize]) {
   return impl::CopyArray(values, std::make_index_sequence<kSize>{});
@@ -47,6 +55,8 @@ template <typename T, size_t kSize>
 constexpr std::array<std::remove_cv_t<T>, kSize> to_array(T (&&values)[kSize]) {
   return impl::MoveArray(std::move(values), std::make_index_sequence<kSize>{});
 }
+
+#endif  // __cpp_lib_to_array
 
 }  // namespace containers
 }  // namespace pw

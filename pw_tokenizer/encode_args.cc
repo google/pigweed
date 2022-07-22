@@ -32,15 +32,15 @@ enum class ArgType : uint8_t {
   kString = PW_TOKENIZER_ARG_TYPE_STRING,
 };
 
-size_t EncodeInt(int value, const std::span<std::byte>& output) {
-  return varint::Encode(value, std::as_writable_bytes(output));
+size_t EncodeInt(int value, const span<std::byte>& output) {
+  return varint::Encode(value, as_writable_bytes(output));
 }
 
-size_t EncodeInt64(int64_t value, const std::span<std::byte>& output) {
-  return varint::Encode(value, std::as_writable_bytes(output));
+size_t EncodeInt64(int64_t value, const span<std::byte>& output) {
+  return varint::Encode(value, as_writable_bytes(output));
 }
 
-size_t EncodeFloat(float value, const std::span<std::byte>& output) {
+size_t EncodeFloat(float value, const span<std::byte>& output) {
   if (output.size() < sizeof(value)) {
     return 0;
   }
@@ -48,7 +48,7 @@ size_t EncodeFloat(float value, const std::span<std::byte>& output) {
   return sizeof(value);
 }
 
-size_t EncodeString(const char* string, const std::span<std::byte>& output) {
+size_t EncodeString(const char* string, const span<std::byte>& output) {
   // The top bit of the status byte indicates if the string was truncated.
   static constexpr size_t kMaxStringLength = 0x7Fu;
 
@@ -86,7 +86,7 @@ size_t EncodeString(const char* string, const std::span<std::byte>& output) {
 
 size_t EncodeArgs(pw_tokenizer_ArgTypes types,
                   va_list args,
-                  std::span<std::byte> output) {
+                  span<std::byte> output) {
   size_t arg_count = types & PW_TOKENIZER_TYPE_COUNT_MASK;
   types >>= PW_TOKENIZER_TYPE_COUNT_SIZE_BITS;
 

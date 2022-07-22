@@ -6,7 +6,7 @@ that enable faster and more reliable development on small-footprint MMU-less
 32-bit microcontrollers like the STMicroelectronics STM32L452 or the Nordic
 nRF52832.
 
-For more information please see our website: https://pigweed.dev/
+For more information please see our website: https://pigweed.dev/.
 
 ## Links
 

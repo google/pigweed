@@ -136,7 +136,7 @@ Result<bool> Bytes::Equal(ConstByteSpan bytes) {
 }
 
 Result<bool> String::Equal(std::string_view str) {
-  return Bytes::Equal(std::as_bytes(std::span{str}));
+  return Bytes::Equal(as_bytes(span{str}));
 }
 
 Message::iterator& Message::iterator::operator++() {

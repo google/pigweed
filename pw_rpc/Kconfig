@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-menuconfig PIGWEED_RPC
-    bool "Pigweed RPC submodule"
-
-if PIGWEED_RPC
-
 rsource "nanopb/Kconfig"
 
 config PIGWEED_RPC_SERVER
@@ -44,5 +39,4 @@ config PIGWEED_RPC_COMMON
     select PIGWEED_SPAN
     select PIGWEED_STATUS
     select PIGWEED_LOG
-
-endif # PIGWEED_RPC
+    select PIGWEED_SYNC_MUTEX

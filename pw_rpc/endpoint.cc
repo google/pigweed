@@ -36,7 +36,7 @@ Endpoint::~Endpoint() {
   }
 }
 
-Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
+Result<Packet> Endpoint::ProcessPacket(span<const std::byte> data,
                                        Packet::Destination destination) {
   Result<Packet> result = Packet::FromBuffer(data);
 
@@ -67,9 +67,9 @@ void Endpoint::RegisterCall(Call& call) {
   RegisterUniqueCall(call);
 
   if (existing_call != nullptr) {
-    // TODO(pwbug/597): Ensure call object is locked when calling callback. For
-    //     on_error, could potentially move the callback and call it after the
-    //     lock is released.
+    // TODO(b/234876851): Ensure call object is locked when calling callback.
+    //     For on_error, could potentially move the callback and call it after
+    //     the lock is released.
     existing_call->HandleError(Status::Cancelled());
     rpc_lock().lock();
   }
@@ -97,20 +97,24 @@ Status Endpoint::CloseChannel(uint32_t channel_id) {
   channel->Close();
 
   // Close pending calls on the channel that's going away.
+  AbortCalls(AbortIdType::kChannel, channel_id);
+  return OkStatus();
+}
+
+void Endpoint::AbortCalls(AbortIdType type, uint32_t id) {
   auto previous = calls_.before_begin();
   auto current = calls_.begin();
 
   while (current != calls_.end()) {
-    if (channel_id == current->channel_id_locked()) {
-      current->HandleChannelClose();
+    if (id == (type == AbortIdType::kChannel ? current->channel_id_locked()
+                                             : current->service_id())) {
+      current->Abort();
       current = calls_.erase_after(previous);  // previous stays the same
     } else {
       previous = current;
       ++current;
     }
   }
-
-  return OkStatus();
 }
 
 }  // namespace pw::rpc::internal

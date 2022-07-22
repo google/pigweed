@@ -37,7 +37,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(pwbug/317): This should depend on FreeRTOS but our third parties currently
+        # TODO(b/234876414): This should depend on FreeRTOS but our third parties currently
         # do not have Bazel support.
         "//pw_assert",
         "//pw_chrono:system_clock",
@@ -77,7 +77,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(pwbug/317): This should depend on FreeRTOS but our third parties currently
+        # TODO(b/234876414): This should depend on FreeRTOS but our third parties currently
         # do not have Bazel support.
         "//pw_assert",
         "//pw_sync:counting_semaphore_facade",
@@ -118,7 +118,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(pwbug/317): This should depend on FreeRTOS but our third parties currently
+        # TODO(b/234876414): This should depend on FreeRTOS but our third parties currently
         # do not have Bazel support.
         "//pw_assert",
     ],
@@ -152,7 +152,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+        # TODO(b/234876414): This should depend on FreeRTOS but our third parties
         # currently do not have Bazel support.
         "//pw_interrupt:context",
     ],
@@ -188,7 +188,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+        # TODO(b/234876414): This should depend on FreeRTOS but our third parties
         # currently do not have Bazel support.
         "//pw_chrono:system_clock",
         "//pw_sync:timed_thread_notification_facade",
@@ -226,7 +226,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+        # TODO(b/234876414): This should depend on FreeRTOS but our third parties
         # currently do not have Bazel support.
         "//pw_chrono:system_clock",
         "//pw_sync:timed_mutex_facade",
@@ -265,7 +265,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
-    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -298,7 +298,7 @@ pw_cc_library(
 #     target_compatible_with = [
 #         "//pw_build/constraints/rtos:freertos",
 #     ],
-#     # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+#     # TODO(b/234876414): This should depend on FreeRTOS but our third parties
 #     # currently do not have Bazel support.
 #     deps = [
 #         "//pw_chrono:system_clock",
@@ -345,7 +345,7 @@ filegroup(
 #    srcs = [
 #        "timed_thread_notification_test.cc",
 #    ],
-#    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+#    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
 #    # currently do not have Bazel support.
 #    deps = [
 #        "//pw_chrono:system_clock",

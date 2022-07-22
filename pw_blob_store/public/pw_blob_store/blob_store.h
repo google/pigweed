@@ -14,7 +14,6 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 
 #include "pw_assert/assert.h"
 #include "pw_blob_store/internal/metadata_format.h"
@@ -22,6 +21,7 @@
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/key_value_store.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_status/try.h"
@@ -66,7 +66,7 @@ class BlobStore {
         : store_(store), metadata_buffer_(metadata_buffer), open_(false) {}
     BlobWriter(const BlobWriter&) = delete;
     BlobWriter& operator=(const BlobWriter&) = delete;
-    virtual ~BlobWriter() {
+    ~BlobWriter() override {
       if (open_) {
         Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
@@ -200,7 +200,7 @@ class BlobStore {
         : BlobWriter(store, metadata_buffer) {}
     DeferredWriter(const DeferredWriter&) = delete;
     DeferredWriter& operator=(const DeferredWriter&) = delete;
-    virtual ~DeferredWriter() {}
+    ~DeferredWriter() override {}
 
     // Flush data in the write buffer. Only a multiple of flash_write_size_bytes
     // are written in the flush. Any remainder is held until later for either
@@ -255,7 +255,7 @@ class BlobStore {
     BlobReader(const BlobReader&) = delete;
     BlobReader& operator=(const BlobReader&) = delete;
 
-    ~BlobReader() {
+    ~BlobReader() override {
       if (open_) {
         Close().IgnoreError();
       }
@@ -297,7 +297,7 @@ class BlobStore {
     //   NOT_FOUND - No file name set for this blob.
     //   FAILED_PRECONDITION - not open
     //
-    StatusWithSize GetFileName(std::span<char> dest) {
+    StatusWithSize GetFileName(span<char> dest) {
       return open_ ? store_.GetFileName(dest)
                    : StatusWithSize::FailedPrecondition();
     }
@@ -542,7 +542,7 @@ class BlobStore {
   //     first N bytes of the file name.
   //   NOT_FOUND - No file name set for this blob.
   //   FAILED_PRECONDITION - BlobStore has not been initialized.
-  StatusWithSize GetFileName(std::span<char> dest) const;
+  StatusWithSize GetFileName(span<char> dest) const;
 
   std::string_view name_;
   kvs::FlashPartition& partition_;

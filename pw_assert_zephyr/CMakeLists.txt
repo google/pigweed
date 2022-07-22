@@ -18,10 +18,30 @@ if(NOT CONFIG_PIGWEED_ASSERT)
   return()
 endif()
 
-pw_auto_add_simple_module(pw_assert_zephyr
-  IMPLEMENTS_FACADE
-    pw_assert
+pw_add_module_library(pw_assert_zephyr.check
+  IMPLEMENTS_FACADES
+    pw_assert.check
+  HEADERS
+    public/pw_assert_zephyr/check_zephyr.h
+    public_overrides/pw_assert_backend/check_backend.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    zephyr_interface
 )
-pw_set_backend(pw_assert pw_assert_zephyr)
-target_link_libraries(pw_assert_zephyr PUBLIC zephyr_interface)
-zephyr_link_libraries(pw_assert_zephyr)
+zephyr_link_libraries(pw_assert_zephyr.check)
+
+pw_add_module_library(pw_assert_zephyr.assert
+  IMPLEMENTS_FACADES
+    pw_assert.assert
+  HEADERS
+    public/pw_assert_zephyr/assert_zephyr.h
+    public_overrides/pw_assert_backend/assert_backend.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    zephyr_interface
+)
+zephyr_link_libraries(pw_assert_zephyr.assert)

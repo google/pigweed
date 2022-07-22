@@ -38,7 +38,7 @@ class MicrovoltInput : public AnalogInput {
     int32_t min_voltage_uv;  // Microvolts at AnalogInput::Limits::min.
   };
 
-  virtual ~MicrovoltInput() = default;
+  ~MicrovoltInput() override = default;
 
   // Blocks until the specified timeout duration has elapsed or the voltage
   // sample has been returned, whichever comes first.

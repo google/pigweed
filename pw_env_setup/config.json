@@ -7,6 +7,12 @@
     "gn_root": ".",
     "gn_targets": [
       ":python.install"
+    ],
+    "requirements": [
+      "pw_env_setup/py/pw_env_setup/virtualenv_setup/pigweed_upstream_requirements.txt"
+    ],
+    "constraints": [
+      "pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list"
     ]
   },
   "pw_packages": [],

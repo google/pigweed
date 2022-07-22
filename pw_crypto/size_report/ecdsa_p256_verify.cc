@@ -18,7 +18,7 @@
 #include "pw_crypto/ecdsa.h"
 
 namespace {
-#define STR_TO_BYTES(s) std::as_bytes(std::span(s, sizeof(s) - 1))
+#define STR_TO_BYTES(s) pw::as_bytes(pw::span(s, sizeof(s) - 1))
 
 // The SHA256 digest of "Hello, Pigweed!", 32 bytes.
 #define DIGEST                                                       \

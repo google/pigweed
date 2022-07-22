@@ -133,6 +133,19 @@ class RawCodeGenerator(CodeGenerator):
 
         self.line('}')
 
+    def method_info_specialization(self, method: ProtoServiceMethod) -> None:
+        self.line()
+        # We have Request/Response as voids to mark raw as a special case.
+        # Raw operates in ConstByteSpans, which won't be copied by copying the
+        # span itself and without special treatment will lead to dangling
+        # pointers.
+        #
+        # Helpers/traits that want to use Request/Response and should support
+        # raw are required to do a special implementation for them instead that
+        # will copy the actual data.
+        self.line('using Request = void;')
+        self.line('using Response = void;')
+
 
 class StubGenerator(codegen.StubGenerator):
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:

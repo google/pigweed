@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -31,6 +32,7 @@ pw_cc_library(
     ],
     hdrs = [
         "public/pw_hdlc/decoder.h",
+        "public/pw_hdlc/encoded_size.h",
         "public/pw_hdlc/encoder.h",
     ],
     includes = ["public"],
@@ -53,6 +55,7 @@ pw_cc_library(
     deps = [
         ":pw_hdlc",
         "//pw_rpc",
+        "//pw_span",
     ],
 )
 
@@ -81,7 +84,7 @@ pw_cc_library(
     ],
 )
 
-cc_test(
+pw_cc_test(
     name = "encoder_test",
     srcs = ["encoder_test.cc"],
     deps = [
@@ -91,7 +94,7 @@ cc_test(
     ],
 )
 
-cc_test(
+pw_cc_test(
     name = "decoder_test",
     srcs = ["decoder_test.cc"],
     deps = [
@@ -102,7 +105,20 @@ cc_test(
     ],
 )
 
-cc_test(
+pw_cc_test(
+    name = "encoded_size_test",
+    srcs = ["encoded_size_test.cc"],
+    deps = [
+        ":pw_hdlc",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_stream",
+        "//pw_unit_test",
+        "//pw_varint",
+    ],
+)
+
+pw_cc_test(
     name = "wire_packet_parser_test",
     srcs = ["wire_packet_parser_test.cc"],
     deps = [
@@ -111,11 +127,12 @@ cc_test(
     ],
 )
 
-cc_test(
+pw_cc_test(
     name = "rpc_channel_test",
     srcs = ["rpc_channel_test.cc"],
     deps = [
         ":pw_hdlc",
+        ":rpc_channel_output",
         "//pw_stream",
         "//pw_unit_test",
     ],

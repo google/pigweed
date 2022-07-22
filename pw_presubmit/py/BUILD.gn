@@ -31,9 +31,11 @@ pw_python_package("py") {
     "pw_presubmit/git_repo.py",
     "pw_presubmit/inclusive_language.py",
     "pw_presubmit/install_hook.py",
+    "pw_presubmit/npm_presubmit.py",
     "pw_presubmit/pigweed_presubmit.py",
     "pw_presubmit/presubmit.py",
     "pw_presubmit/python_checks.py",
+    "pw_presubmit/shell_checks.py",
     "pw_presubmit/tools.py",
   ]
   tests = [
@@ -41,6 +43,7 @@ pw_python_package("py") {
     "tools_test.py",
   ]
   python_deps = [
+    # TODO(b/232800695): Remove when all projects are on the new Python build.
     "$dir_pw_build:python_lint",
     "$dir_pw_cli/py",
     "$dir_pw_env_setup/py",

@@ -13,10 +13,9 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "pb_decode.h"
 #include "pb_encode.h"
+#include "pw_span/span.h"
 
 namespace pw::rpc::internal {
 
@@ -33,28 +32,27 @@ namespace pw::rpc::internal {
 
 #define _PW_ENCODE_PB_IMPL(proto, result, unique, ...)            \
   std::array<pb_byte_t, 2 * sizeof(proto)> _pb_buffer_##unique{}; \
-  const std::span result =                                        \
+  const span result =                                             \
       ::pw::rpc::internal::EncodeProtobuf<proto, proto##_fields>( \
           proto{__VA_ARGS__}, _pb_buffer_##unique)
 
 template <typename T, auto kFields>
-std::span<const std::byte> EncodeProtobuf(const T& protobuf,
-                                          std::span<pb_byte_t> buffer) {
+span<const std::byte> EncodeProtobuf(const T& protobuf,
+                                     span<pb_byte_t> buffer) {
   auto output = pb_ostream_from_buffer(buffer.data(), buffer.size());
   EXPECT_TRUE(pb_encode(&output, kFields, &protobuf));
-  return std::as_bytes(buffer.first(output.bytes_written));
+  return as_bytes(buffer.first(output.bytes_written));
 }
 
 // Decodes a protobuf to a nanopb struct named by result.
-#define PW_DECODE_PB(proto, result, buffer)                        \
-  proto result;                                                    \
-  ::pw::rpc::internal::DecodeProtobuf<proto, proto##_fields>(      \
-      std::span(reinterpret_cast<const pb_byte_t*>(buffer.data()), \
-                buffer.size()),                                    \
+#define PW_DECODE_PB(proto, result, buffer)                                   \
+  proto result;                                                               \
+  ::pw::rpc::internal::DecodeProtobuf<proto, proto##_fields>(                 \
+      span(reinterpret_cast<const pb_byte_t*>(buffer.data()), buffer.size()), \
       result);
 
 template <typename T, auto kFields>
-void DecodeProtobuf(std::span<const pb_byte_t> buffer, T& protobuf) {
+void DecodeProtobuf(span<const pb_byte_t> buffer, T& protobuf) {
   auto input = pb_istream_from_buffer(buffer.data(), buffer.size());
   EXPECT_TRUE(pb_decode(&input, kFields, &protobuf));
 }

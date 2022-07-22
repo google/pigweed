@@ -16,7 +16,6 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
-#include <span>
 
 #include "gtest/gtest.h"
 #include "public/pw_kvs/flash_memory.h"
@@ -25,6 +24,7 @@
 #include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 #include "pw_random/xor_shift.h"
+#include "pw_span/span.h"
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
 
@@ -75,8 +75,8 @@ class FlashStreamTest : public ::testing::Test {
   }
 
   void DoWriteInChunks(size_t chunk_write_size_bytes, uint64_t seed) {
-    InitBufferToRandom(std::span(source_buffer_), seed);
-    ConstByteSpan write_data = std::span(source_buffer_);
+    InitBufferToRandom(span(source_buffer_), seed);
+    ConstByteSpan write_data = span(source_buffer_);
 
     ASSERT_EQ(OkStatus(), partition_.Erase());
 
@@ -96,7 +96,7 @@ class FlashStreamTest : public ::testing::Test {
       ASSERT_EQ(writer.ConservativeWriteLimit(), write_data.size_bytes());
     }
 
-    VerifyFlashContent(std::span(source_buffer_));
+    VerifyFlashContent(span(source_buffer_));
   }
 
   void DoReadInChunks(size_t chunk_read_size_bytes,
@@ -119,7 +119,7 @@ class FlashStreamTest : public ::testing::Test {
 
       size_t chunk_size = std::min(chunk_read_size_bytes, bytes_to_read);
 
-      ByteSpan read_chunk = std::span(source_buffer_).first(chunk_size);
+      ByteSpan read_chunk = span(source_buffer_).first(chunk_size);
       InitBufferToFill(read_chunk, 0);
       ASSERT_EQ(read_chunk.size_bytes(), chunk_size);
 
@@ -211,7 +211,7 @@ TEST_F(FlashStreamTest, Read_Multiple_Seeks) {
     ASSERT_EQ(reader.Seek(start_offset), OkStatus());
     ASSERT_EQ(start_offset, reader.Tell());
 
-    ByteSpan read_chunk = std::span(source_buffer_).first(kSeekReadSizeBytes);
+    ByteSpan read_chunk = span(source_buffer_).first(kSeekReadSizeBytes);
     InitBufferToFill(read_chunk, 0);
 
     auto result = reader.Read(read_chunk);
@@ -238,7 +238,7 @@ TEST_F(FlashStreamTest, Read_Seek_Forward_and_Back) {
       ASSERT_EQ(reader.Seek(start_offset), OkStatus());
       ASSERT_EQ(start_offset, reader.Tell());
 
-      ByteSpan read_chunk = std::span(source_buffer_).first(kSeekReadSizeBytes);
+      ByteSpan read_chunk = span(source_buffer_).first(kSeekReadSizeBytes);
       InitBufferToFill(read_chunk, 0);
 
       auto result = reader.Read(read_chunk);
@@ -255,7 +255,7 @@ TEST_F(FlashStreamTest, Read_Seek_Forward_and_Back) {
       ASSERT_EQ(start_offset, reader.Tell());
       ASSERT_GE(reader.ConservativeReadLimit(), kSeekReadSizeBytes);
 
-      ByteSpan read_chunk = std::span(source_buffer_).first(kSeekReadSizeBytes);
+      ByteSpan read_chunk = span(source_buffer_).first(kSeekReadSizeBytes);
       InitBufferToFill(read_chunk, 0);
 
       auto result = reader.Read(read_chunk);
@@ -273,8 +273,8 @@ TEST_F(FlashStreamTest, Read_Past_End) {
 
   static const size_t kBytesForFinalRead = 50;
 
-  ByteSpan read_chunk = std::span(source_buffer_)
-                            .first(source_buffer_.size() - kBytesForFinalRead);
+  ByteSpan read_chunk =
+      span(source_buffer_).first(source_buffer_.size() - kBytesForFinalRead);
 
   auto result = reader.Read(read_chunk);
   ASSERT_EQ(result.status(), OkStatus());
@@ -304,7 +304,7 @@ TEST_F(FlashStreamTest, Read_Past_End_After_Seek) {
   ASSERT_EQ(start_offset, reader.Tell());
   ASSERT_EQ(reader.ConservativeReadLimit(), kBytesForFinalRead);
 
-  ByteSpan read_chunk = std::span(source_buffer_);
+  ByteSpan read_chunk = span(source_buffer_);
   auto result = reader.Read(read_chunk);
   ASSERT_EQ(result.status(), OkStatus());
   ASSERT_EQ(result.value().size_bytes(), kBytesForFinalRead);
@@ -318,7 +318,7 @@ TEST_F(FlashStreamTest, Read_Out_Of_Range) {
   InitBufferToRandom(flash_.buffer(), 0x531de176);
   FlashPartition::Reader reader(partition_);
 
-  ByteSpan read_chunk = std::span(source_buffer_);
+  ByteSpan read_chunk = span(source_buffer_);
 
   auto result = reader.Read(read_chunk);
   ASSERT_EQ(result.status(), OkStatus());
@@ -338,7 +338,7 @@ TEST_F(FlashStreamTest, Read_Out_Of_Range_After_Seek) {
   InitBufferToRandom(flash_.buffer(), 0x8c94566);
   FlashPartition::Reader reader(partition_);
 
-  ByteSpan read_chunk = std::span(source_buffer_);
+  ByteSpan read_chunk = span(source_buffer_);
 
   ASSERT_EQ(reader.Seek(flash_.buffer().size_bytes()), OkStatus());
   ASSERT_EQ(reader.Tell(), flash_.buffer().size_bytes());

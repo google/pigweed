@@ -22,7 +22,7 @@ of rules_proto_grpc. However, the version checked in here does not yet support,
 
 In addition, nanopb proto files are not yet generated.
 
-TODO(pwbug/621): Close these gaps and start using this implementation.
+TODO(b/234873954): Close these gaps and start using this implementation.
 
 # Overview of implementation
 
@@ -53,7 +53,11 @@ load("//pw_build:pigweed.bzl", "pw_cc_library")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("//pw_protobuf_compiler:pw_nanopb_cc_library", "pw_nanopb_cc_library")
 
-def pw_proto_library(name = "", deps = [], nanopb_options = None):
+def pw_proto_library(
+        name = "",
+        deps = [],
+        nanopb_options = None,
+        enabled_targets = None):
     """Generate Pigweed proto C++ code.
 
     This is the only public symbol in this file: everything else is
@@ -64,6 +68,13 @@ def pw_proto_library(name = "", deps = [], nanopb_options = None):
       deps: proto_library targets from which to generate Pigweed C++.
       nanopb_options: path to file containing nanopb options, if any
         (https://jpa.kapsi.fi/nanopb/docs/reference.html#proto-file-options).
+      enabled_targets: Specifies which libraries should be generated. Libraries
+        will only be generated as needed, but unnecessary outputs may conflict
+        with other build rules and thus cause build failures. This filter allows
+        manual selection of which libraries should be supported by this build
+        target in order to prevent such conflicts. The argument, if provided,
+        should be a subset of ["pwpb", "nanopb", "raw_rpc", "nanopb_rpc"]. All
+        are enabled by default. Note that "nanopb_rpc" relies on "nanopb".
 
     Example usage:
 
@@ -98,14 +109,23 @@ def pw_proto_library(name = "", deps = [], nanopb_options = None):
         "benchmark.rpc.pb.h" header.
     """
 
-    # Use nanopb to generate the pb.h and pb.c files, and the target exposing
-    # them.
-    pw_nanopb_cc_library(name + ".nanopb", deps, options = nanopb_options)
+    def is_plugin_enabled(plugin):
+        return (enabled_targets == None or plugin in enabled_targets)
+
+    if is_plugin_enabled("nanobp"):
+        # Use nanopb to generate the pb.h and pb.c files, and the target
+        # exposing them.
+        pw_nanopb_cc_library(name + ".nanopb", deps, options = nanopb_options)
 
     # Use Pigweed proto plugins to generate the remaining files and targets.
     for plugin_name, info in PIGWEED_PLUGIN.items():
+        if not is_plugin_enabled(plugin_name):
+            continue
+
         name_pb = name + "_pb." + plugin_name
-        info["compiler"](
+
+        plugin_rule = info["compiler"]
+        plugin_rule(
             name = name_pb,
             deps = deps,
         )
@@ -141,6 +161,7 @@ def _get_path(file):
 def _proto_compiler_aspect_impl(target, ctx):
     # List the files we will generate for this proto_library target.
     genfiles = []
+
     for src in target[ProtoInfo].direct_sources:
         path = src.basename[:-len("proto")] + ctx.attr._extension
         genfiles.append(ctx.actions.declare_file(path, sibling = src))
@@ -154,6 +175,7 @@ def _proto_compiler_aspect_impl(target, ctx):
         join_with = ctx.host_configuration.host_path_separator,
         map_each = _get_path,
     )
+
     args.add_all(target[ProtoInfo].direct_sources, map_each = _get_short_path)
 
     ctx.actions.run(
@@ -200,6 +222,7 @@ def _proto_compiler_aspect(extension, protoc_plugin):
             ),
         },
         implementation = _proto_compiler_aspect_impl,
+        provides = [PwProtoInfo],
     )
 
 def _impl_pw_proto_library(ctx):
@@ -218,7 +241,7 @@ def _impl_pw_proto_library(ctx):
     # in srcs. We don't perform layering_check in Pigweed, so this is not a big
     # deal.
     #
-    # TODO(pwbug/621): Tidy this up.
+    # TODO(b/234873954): Tidy this up.
     all_genfiles = []
     for dep in ctx.attr.deps:
         for f in dep[PwProtoInfo].genfiles:
@@ -279,8 +302,13 @@ PIGWEED_PLUGIN = {
     "pwpb": {
         "compiler": _pw_proto_library,
         "deps": [
+            "//pw_assert:facade",
+            "//pw_containers:vector",
+            "//pw_preprocessor",
+            "//pw_protobuf",
+            "//pw_result",
             "//pw_span",
-            "//pw_protobuf:pw_protobuf",
+            "//pw_status",
         ],
         "include_nanopb_dep": False,
         "include_pwpb_dep": False,

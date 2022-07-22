@@ -100,7 +100,7 @@ StringBuilder& StringBuilder::FormatVaList(const char* format, va_list args) {
   return *this;
 }
 
-void StringBuilder::WriteBytes(std::span<const std::byte> data) {
+void StringBuilder::WriteBytes(span<const std::byte> data) {
   if (size() + data.size() * 2 > max_size()) {
     SetErrorStatus(Status::ResourceExhausted());
   } else {

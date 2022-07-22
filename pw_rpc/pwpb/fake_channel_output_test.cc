@@ -48,11 +48,11 @@ TEST(PwpbFakeChannelOutput, Requests) {
                        Info::kServiceId,
                        Info::kMethodId,
                        999,
-                       std::span(payload_buffer, payload.size()))
+                       span(payload_buffer, payload.size()))
                     .Encode(buffer);
   ASSERT_TRUE(packet.ok());
 
-  ASSERT_EQ(OkStatus(), output.Send(std::span(buffer).first(packet->size())));
+  ASSERT_EQ(OkStatus(), output.Send(span(buffer).first(packet->size())));
 
   ASSERT_TRUE(output.responses<TestService::TestUnaryRpc>().empty());
   ASSERT_EQ(output.requests<TestService::TestUnaryRpc>().size(), 1u);
@@ -78,11 +78,11 @@ TEST(PwpbFakeChannelOutput, Responses) {
                        Info::kServiceId,
                        Info::kMethodId,
                        999,
-                       std::span(payload_buffer, payload.size()))
+                       span(payload_buffer, payload.size()))
                     .Encode(buffer);
   ASSERT_TRUE(packet.ok());
 
-  ASSERT_EQ(OkStatus(), output.Send(std::span(buffer).first(packet->size())));
+  ASSERT_EQ(OkStatus(), output.Send(span(buffer).first(packet->size())));
 
   ASSERT_EQ(output.responses<TestService::TestUnaryRpc>().size(), 1u);
   ASSERT_TRUE(output.requests<TestService::TestUnaryRpc>().empty());

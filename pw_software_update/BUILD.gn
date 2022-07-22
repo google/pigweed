@@ -80,14 +80,29 @@ pw_doc_group("docs") {
 }
 
 if (pw_crypto_SHA256_BACKEND != "" && pw_crypto_ECDSA_BACKEND != "") {
+  pw_source_set("openable_reader") {
+    public_configs = [ ":public_include_path" ]
+    public_deps = [ dir_pw_stream ]
+    public = [ "public/pw_software_update/openable_reader.h" ]
+  }
+
+  pw_source_set("blob_store_openable_reader") {
+    public_configs = [ ":public_include_path" ]
+    public_deps = [
+      ":openable_reader",
+      dir_pw_blob_store,
+    ]
+    public = [ "public/pw_software_update/blob_store_openable_reader.h" ]
+  }
+
   pw_source_set("update_bundle") {
     public_configs = [ ":public_include_path" ]
     public_deps = [
+      ":blob_store_openable_reader",
+      ":openable_reader",
       "$dir_pw_crypto:ecdsa",
       "$dir_pw_crypto:sha256",
       "$dir_pw_stream:interval_reader",
-      dir_pw_blob_store,
-      dir_pw_kvs,
       dir_pw_protobuf,
       dir_pw_result,
       dir_pw_status,
@@ -110,6 +125,10 @@ if (pw_crypto_SHA256_BACKEND != "" && pw_crypto_ECDSA_BACKEND != "") {
     ]
   }
 } else {
+  group("openable_reader") {
+  }
+  group("blob_store_openable_reader") {
+  }
   group("update_bundle") {
   }
 }
@@ -167,11 +186,13 @@ pw_test("update_bundle_test") {
   enable_if = all_dependency_met
   sources = [ "update_bundle_test.cc" ]
   public_deps = [
+    ":blob_store_openable_reader",
     ":bundled_update_service",
     ":generate_test_bundle",
     ":update_bundle",
     "$dir_pw_kvs:fake_flash",
     "$dir_pw_kvs:fake_flash_test_key_value_store",
+    dir_pw_blob_store,
   ]
   configs = [ ":generated_test_bundle_include" ]
 }

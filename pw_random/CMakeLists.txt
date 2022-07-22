@@ -22,8 +22,7 @@ pw_add_module_library(pw_random
     public
   PUBLIC_DEPS
     pw_bytes
-    pw_polyfill.cstddef
-    pw_polyfill.span
+    pw_span
     pw_status
 )
 

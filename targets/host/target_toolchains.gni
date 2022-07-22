@@ -24,6 +24,7 @@ import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_toolchain/host_gcc/toolchains.gni")
+import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_trace/backend.gni")
 import("$dir_pw_trace_tokenized/config.gni")
 
@@ -33,7 +34,7 @@ _host_common = {
 
   # Configure backend for assert facade.
   pw_assert_BACKEND = "$dir_pw_assert_basic"
-  pw_assert_LITE_BACKEND = "$dir_pw_assert:print_and_abort_lite_backend"
+  pw_assert_LITE_BACKEND = "$dir_pw_assert:print_and_abort_assert_backend"
 
   # Configure backend for logging facade.
   pw_log_BACKEND = "$dir_pw_log_basic"
@@ -47,6 +48,7 @@ _host_common = {
   pw_sync_COUNTING_SEMAPHORE_BACKEND =
       "$dir_pw_sync_stl:counting_semaphore_backend"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_stl:mutex_backend"
+  pw_sync_RECURSIVE_MUTEX_BACKEND = "$dir_pw_sync_stl:recursive_mutex_backend"
   pw_sync_TIMED_MUTEX_BACKEND = "$dir_pw_sync_stl:timed_mutex_backend"
   pw_sync_THREAD_NOTIFICATION_BACKEND =
       "$dir_pw_sync:binary_semaphore_thread_notification_backend"
@@ -120,10 +122,15 @@ _clang_default_configs = [
   "$dir_pw_build:extra_strict_warnings",
   "$dir_pw_build:clang_thread_safety_warnings",
 ]
+_internal_clang_default_configs =
+    _clang_default_configs + [ "$dir_pw_build:internal_strict_warnings" ]
+
 _gcc_default_configs = [
   "$dir_pw_build:extra_strict_warnings",
   "$dir_pw_toolchain/host_gcc:threading_support",
 ]
+_internal_gcc_default_configs =
+    _gcc_default_configs + [ "$dir_pw_build:internal_strict_warnings" ]
 
 _excluded_members = [
   "defaults",
@@ -312,7 +319,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _clang_default_configs
+      default_configs += _internal_clang_default_configs
     }
   },
   {
@@ -324,7 +331,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _clang_default_configs
+      default_configs += _internal_clang_default_configs
     }
   },
   {
@@ -336,7 +343,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _clang_default_configs
+      default_configs += _internal_clang_default_configs
     }
   },
   {
@@ -348,7 +355,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _gcc_default_configs
+      default_configs += _internal_gcc_default_configs
     }
   },
   {
@@ -360,7 +367,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _gcc_default_configs
+      default_configs += _internal_gcc_default_configs
     }
   },
   {
@@ -372,7 +379,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
-      default_configs += _gcc_default_configs
+      default_configs += _internal_gcc_default_configs
     }
   },
   {
@@ -384,12 +391,13 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
+      default_configs += _internal_clang_default_configs
 
-      remove_default_configs = [ "$dir_pw_build:cpp17" ]
-      default_configs += _clang_default_configs
-      default_configs += [ "$dir_pw_build:cpp14" ]
+      # Set the C++ standard to C++14 instead of the default (C++17).
+      pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX14
 
-      pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_backend"
+      # Select C++14-compatible backends.
+      pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_check_backend"
       pw_log_BACKEND = "$dir_pw_log_null"
       pw_unit_test_MAIN = "$dir_pw_unit_test:printf_main"
     }
@@ -403,10 +411,10 @@ pw_internal_host_toolchains = [
       forward_variables_from(_host_common, "*")
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
+      default_configs += _internal_clang_default_configs
 
-      remove_default_configs = [ "$dir_pw_build:cpp17" ]
-      default_configs += _clang_default_configs
-      default_configs += [ "$dir_pw_build:cpp20" ]
+      # Set the C++ standard to C++20 instead of the default.
+      pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX20
     }
   },
 ]

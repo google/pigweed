@@ -15,13 +15,14 @@
 
 #include <cstdint>
 #include <limits>
-#include <span>
 #include <type_traits>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_rpc/internal/packet.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
@@ -29,6 +30,18 @@ namespace pw::rpc {
 // Extracts the channel ID from a pw_rpc packet. Returns DATA_LOSS if the
 // packet is corrupt and the channel ID could not be found.
 Result<uint32_t> ExtractChannelId(ConstByteSpan packet);
+
+// Returns the maximum size of the payload of an RPC packet. This can be used
+// when allocating response encode buffers for RPC services.
+// If the RPC encode buffer is too small to fit RPC packet headers, this will
+// return zero.
+constexpr size_t MaxSafePayloadSize(
+    size_t encode_buffer_size = cfg::kEncodingBufferSizeBytes) {
+  return encode_buffer_size > internal::Packet::kMinEncodedSizeWithoutPayload
+             ? encode_buffer_size -
+                   internal::Packet::kMinEncodedSizeWithoutPayload
+             : 0;
+}
 
 class ChannelOutput {
  public:
@@ -68,7 +81,7 @@ class ChannelOutput {
   // The buffer provided in packet must NOT be accessed outside of this
   // function. It must be sent immediately or copied elsewhere before the
   // function returns.
-  virtual Status Send(std::span<const std::byte> buffer)
+  virtual Status Send(span<const std::byte> buffer)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) = 0;
 
  private:
@@ -104,7 +117,7 @@ class Channel {
   // Creates a dynamically assignable channel without a set ID or output.
   constexpr Channel() : id_(kUnassignedChannelId), output_(nullptr) {}
 
-  // TODO(pwbug/620): Remove the Configure and set_channel_output functions.
+  // TODO(b/234876441): Remove the Configure and set_channel_output functions.
   //     Users should call CloseChannel() / OpenChannel() to change a channel.
   //     This ensures calls are properly update and works consistently between
   //     static and dynamic channel allocation.

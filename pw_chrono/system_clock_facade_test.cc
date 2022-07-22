@@ -34,6 +34,19 @@ pw_chrono_SystemClock_Duration pw_chrono_SystemClock_CallTimeElapsed(
 pw_chrono_SystemClock_Nanoseconds pw_chrono_SystemClock_CallDurationToNsFloor(
     pw_chrono_SystemClock_Duration ticks);
 
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_100ms(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_10s(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_1min(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_2h(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_100msCeil(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_10sCeil(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_1minCeil(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_2hCeil(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_100msFloor(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_10sFloor(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_1minFloor(void);
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_2hFloor(void);
+
 }  // extern "C"
 
 // While testing that the clock ticks (i.e. moves forward) we want to ensure a
@@ -108,6 +121,34 @@ TEST(SystemClock, DurationCastInC) {
           .count(),
       pw_chrono_SystemClock_CallDurationToNsFloor(
           kRoundedArbitraryDurationInC));
+}
+
+// Though the macros are intended for C use, test them in this file in C++.
+TEST(SystemClock, DurationMacros) {
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_100ms().ticks,
+            PW_SYSTEM_CLOCK_MS(100).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_10s().ticks,
+            PW_SYSTEM_CLOCK_S(10).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_1min().ticks,
+            PW_SYSTEM_CLOCK_MIN(1).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_2h().ticks,
+            PW_SYSTEM_CLOCK_H(2).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_100msCeil().ticks,
+            PW_SYSTEM_CLOCK_MS_CEIL(100).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_10sCeil().ticks,
+            PW_SYSTEM_CLOCK_S_CEIL(10).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_1minCeil().ticks,
+            PW_SYSTEM_CLOCK_MIN_CEIL(1).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_2hCeil().ticks,
+            PW_SYSTEM_CLOCK_H_CEIL(2).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_100msFloor().ticks,
+            PW_SYSTEM_CLOCK_MS_FLOOR(100).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_10sFloor().ticks,
+            PW_SYSTEM_CLOCK_S_FLOOR(10).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_1minFloor().ticks,
+            PW_SYSTEM_CLOCK_MIN_FLOOR(1).ticks);
+  EXPECT_EQ(pw_chrono_SystemClock_Macros_2hFloor().ticks,
+            PW_SYSTEM_CLOCK_H_FLOOR(2).ticks);
 }
 
 }  // namespace

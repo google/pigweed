@@ -19,13 +19,13 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
 }
 
 pw_source_set("pw_bytes") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_bytes/array.h",
     "public/pw_bytes/byte_builder.h",
@@ -35,15 +35,24 @@ pw_source_set("pw_bytes") {
   ]
   sources = [ "byte_builder.cc" ]
   public_deps = [
+    "$dir_pw_bytes:bit",
     "$dir_pw_containers:iterator",
     dir_pw_preprocessor,
+    dir_pw_span,
     dir_pw_status,
   ]
+}
+
+pw_source_set("bit") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bytes/bit.h" ]
+  remove_public_deps = [ "*" ]
 }
 
 pw_test_group("tests") {
   tests = [
     ":array_test",
+    ":bit_test",
     ":byte_builder_test",
     ":endian_test",
     ":units_test",
@@ -57,6 +66,11 @@ pw_test_group("tests") {
 pw_test("array_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "array_test.cc" ]
+}
+
+pw_test("bit_test") {
+  deps = [ ":bit" ]
+  sources = [ "bit_test.cc" ]
 }
 
 pw_test("byte_builder_test") {

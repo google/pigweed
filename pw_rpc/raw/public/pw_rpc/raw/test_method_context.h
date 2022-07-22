@@ -137,10 +137,9 @@ class UnaryContext
       auto responder = Base::template GetResponder<RawUnaryResponder>();
       std::byte response[kSynchronousResponseBufferSizeBytes] = {};
       auto sws = CallMethodImplFunction<kMethod>(
-          Base::service(), request, std::span(response));
-      PW_ASSERT(
-          responder.Finish(std::span(response).first(sws.size()), sws.status())
-              .ok());
+          Base::service(), request, span(response));
+      PW_ASSERT(responder.Finish(span(response).first(sws.size()), sws.status())
+                    .ok());
       return sws;
     } else {
       Base::template call<kMethod, RawUnaryResponder>(request);

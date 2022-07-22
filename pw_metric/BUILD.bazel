@@ -61,6 +61,37 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "metric_service_pwpb",
+    srcs = ["metric_service_pwpb.cc"],
+    hdrs = [
+        "public/pw_metric/metric_service_pwpb.h",
+    ],
+    deps = [
+        ":metric",
+        ":metric_proto_cc",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_containers",
+        "//pw_preprocessor",
+        "//pw_rpc/raw:server_api",
+        "//pw_span",
+        "//pw_status",
+    ],
+)
+
+proto_library(
+    name = "metric_proto",
+    srcs = [
+        "pw_metric_proto/log.proto",
+    ],
+)
+
+cc_proto_library(
+    name = "metric_proto_cc",
+    deps = [":metric_proto"],
+)
+
 pw_cc_test(
     name = "metric_test",
     srcs = [
@@ -88,5 +119,15 @@ pw_cc_test(
     ],
     deps = [
         ":metric_service_nanopb",
+    ],
+)
+
+pw_cc_test(
+    name = "metric_service_pwpb_test",
+    srcs = [
+        "metric_service_pwpb_test.cc",
+    ],
+    deps = [
+        ":metric_service_pwpb",
     ],
 )

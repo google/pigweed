@@ -41,7 +41,7 @@ class Session : public stream::NonSeekableReaderWriter {
   // Close() will be called if the Session is open. Since Close() returns a
   // pw::Status which cannot be forwarded from a destructor for callers to
   // check. Backend shall assert check that it is OkStatus().
-  virtual ~Session();
+  ~Session() override;
 
   // Starts a TLS connection. The backend performs TLS handshaking and
   // certificate verification/revocation/expiration check.

@@ -52,7 +52,7 @@ import re
 import subprocess
 import time
 from typing import (Callable, Collection, Dict, Iterable, Iterator, List,
-                    NamedTuple, Optional, Pattern, Sequence, Set, Tuple, Union)
+                    Optional, Pattern, Sequence, Set, Tuple, Union)
 
 import pw_cli.env
 from pw_presubmit import git_repo, tools
@@ -198,13 +198,58 @@ class PresubmitContext:
         return repos
 
 
-class _Filter(NamedTuple):
-    endswith: Tuple[str, ...] = ('', )
-    exclude: Tuple[Pattern[str], ...] = ()
+class FileFilter:
+    """Store a description file paths and allow checking if a path matches."""
 
-    def matches(self, path: str) -> bool:
-        return (any(path.endswith(end) for end in self.endswith)
-                and not any(exp.search(path) for exp in self.exclude))
+    _StrOrPattern = Union[Pattern, str]
+
+    def __init__(
+        self,
+        endswith: Collection[str] = (),
+        exclude: Collection[_StrOrPattern] = (),
+        name: Collection[_StrOrPattern] = (),
+        suffix: Collection[str] = ()
+    ) -> None:
+        """
+        Args:
+            endswidth: True if the end of the path is equal to any of the passed
+                       strings
+            exclude: If any of the passed regular expresion match return False.
+                     This overrides and other matches.
+            name: Regexs to match with file names(pathlib.Path.name). True if
+                  the resulting regex matches the entire file name.
+            suffix: True if final suffix (as determined by pathlib.Path) is
+                    matched by any of the passed str.
+        """
+        self.endswith = endswith
+        self.exclude = tuple(re.compile(i) for i in exclude)
+        self.name = tuple(re.compile(i) for i in name)
+        self.suffix = suffix
+
+    def matches(self, path: Union[str, Path]) -> bool:
+        """Returns true if file matches any filter but not a exclude.
+
+        If 'path' is a Path object it is rendered as a posix path (i.e.
+        using "/" as the path seperator) before testing with 'exclude' and
+        'endswith'.
+        """
+
+        posix_path = path.as_posix() if isinstance(path, Path) else path
+        if any(bool(exp.search(posix_path)) for exp in self.exclude):
+            return False
+
+        path_obj = Path(path)
+        return (path_obj.suffix in self.suffix
+                or any(regex.fullmatch(path_obj.name) for regex in self.name)
+                or any(posix_path.endswith(end) for end in self.endswith))
+
+    def apply_to_check(self, always_run: bool = False) -> Callable:
+        def wrapper(func: Callable) -> Check:
+            return Check(check_function=func,
+                         path_filter=self,
+                         always_run=always_run)
+
+        return wrapper
 
 
 def _print_ui(*args) -> None:
@@ -257,7 +302,7 @@ class Presubmit:
             program: Sequence[Callable]) -> List[Tuple[Check, Sequence[Path]]]:
         """Returns list of (check, paths) for checks that should run."""
         checks = [c if isinstance(c, Check) else Check(c) for c in program]
-        filter_to_checks: Dict[_Filter,
+        filter_to_checks: Dict[FileFilter,
                                List[Check]] = collections.defaultdict(list)
 
         for check in checks:
@@ -267,7 +312,7 @@ class Presubmit:
         return [(c, check_to_paths[c]) for c in checks if c in check_to_paths]
 
     def _map_checks_to_paths(
-        self, filter_to_checks: Dict[_Filter, List[Check]]
+        self, filter_to_checks: Dict[FileFilter, List[Check]]
     ) -> Dict[Check, Sequence[Path]]:
         checks_to_paths: Dict[Check, Sequence[Path]] = {}
 
@@ -429,10 +474,15 @@ def run(program: Sequence[Callable],
     """
     repos = [repo.resolve() for repo in repos]
 
+    non_empty_repos = []
     for repo in repos:
-        if git_repo.root(repo) != repo:
-            raise ValueError(f'{repo} is not the root of a Git repo; '
-                             'presubmit checks must be run from a Git repo')
+        if list(repo.iterdir()):
+            non_empty_repos.append(repo)
+            if git_repo.root(repo) != repo:
+                raise ValueError(
+                    f'{repo} is not the root of a Git repo; '
+                    'presubmit checks must be run from a Git repo')
+    repos = non_empty_repos
 
     pathspecs_by_repo = _process_pathspecs(repos, paths)
 
@@ -484,12 +534,12 @@ class Check:
     """
     def __init__(self,
                  check_function: Callable,
-                 path_filter: _Filter = _Filter(),
+                 path_filter: FileFilter = FileFilter(),
                  always_run: bool = True):
         _ensure_is_valid_presubmit_check_function(check_function)
 
         self._check: Callable = check_function
-        self.filter: _Filter = path_filter
+        self.filter = path_filter
         self.always_run: bool = always_run
 
         # Since Check wraps a presubmit function, adopt that function's name.
@@ -498,16 +548,20 @@ class Check:
     def with_filter(
         self,
         *,
-        endswith: Iterable[str] = '',
-        exclude: Iterable[Union[Pattern[str], str]] = ()
+        endswith: Sequence[str] = (),
+        exclude: Sequence[Union[Pattern[str], str]] = ()
     ) -> Check:
-        endswith = self.filter.endswith
-        if endswith:
-            endswith = endswith + _make_str_tuple(endswith)
-        exclude = self.filter.exclude + tuple(re.compile(e) for e in exclude)
 
+        filter_endswith = _make_str_tuple(endswith)
+
+        filter_exclude = tuple(re.compile(e) for e in exclude)
+
+        return self.with_file_filter(
+            FileFilter(endswith=filter_endswith, exclude=filter_exclude))
+
+    def with_file_filter(self, file_filter: FileFilter) -> Check:
         return Check(check_function=self._check,
-                     path_filter=_Filter(endswith=endswith, exclude=exclude),
+                     path_filter=file_filter,
                      always_run=self.always_run)
 
     @property
@@ -586,8 +640,10 @@ def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
              if required_args else ''))
 
 
-def filter_paths(endswith: Iterable[str] = '',
+def filter_paths(*,
+                 endswith: Iterable[str] = (),
                  exclude: Iterable[Union[Pattern[str], str]] = (),
+                 file_filter: FileFilter = None,
                  always_run: bool = False) -> Callable[[Callable], Check]:
     """Decorator for filtering the paths list for a presubmit check function.
 
@@ -599,15 +655,24 @@ def filter_paths(endswith: Iterable[str] = '',
     Args:
         endswith: str or iterable of path endings to include
         exclude: regular expressions of paths to exclude
-
+        file_filter: FileFilter used to select files
+        always_run: Run check even when no files match
     Returns:
         a wrapped version of the presubmit function
     """
+
+    if file_filter:
+        real_file_filter = file_filter
+        if endswith or exclude:
+            raise ValueError('Must specify either file_filter or '
+                             'endswith/exclude args, not both')
+    else:
+        # TODO(b/23842636): Remove these argumes and use FileFilter only.
+        real_file_filter = FileFilter(_make_str_tuple(endswith),
+                                      tuple(re.compile(e) for e in exclude))
+
     def filter_paths_for_function(function: Callable):
-        return Check(function,
-                     _Filter(_make_str_tuple(endswith),
-                             tuple(re.compile(e) for e in exclude)),
-                     always_run=always_run)
+        return Check(function, real_file_filter, always_run=always_run)
 
     return filter_paths_for_function
 

@@ -31,6 +31,7 @@ pw_source_set("pw_malloc_freelist") {
     "$dir_pw_allocator:freelist_heap",
     "$dir_pw_malloc:facade",
     "$dir_pw_preprocessor",
+    dir_pw_span,
   ]
   sources = [ "freelist_malloc.cc" ]
 }
@@ -44,6 +45,7 @@ pw_test("freelist_malloc_test") {
   deps = [
     "$dir_pw_allocator",
     "$dir_pw_malloc",
+    dir_pw_span,
   ]
   sources = [ "freelist_malloc_test.cc" ]
 }

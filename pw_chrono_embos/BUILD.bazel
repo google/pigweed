@@ -71,7 +71,7 @@ pw_cc_library(
         "//pw_chrono:system_clock",
         "//pw_function",
         "//pw_chrono:system_timer_facade",
-        # TODO(pwbug/317): This should depend on embOS but our third parties
+        # TODO(b/234876414): This should depend on embOS but our third parties
         # currently do not have Bazel support.
     ],
 )
@@ -87,7 +87,7 @@ pw_cc_library(
         ":system_clock",
         "//pw_assert",
         "//pw_interrupt:context",
-        # TODO(pwbug/317): This should depend on embOS but our third parties
+        # TODO(b/234876414): This should depend on embOS but our third parties
         # currently do not have Bazel support.
     ],
 )

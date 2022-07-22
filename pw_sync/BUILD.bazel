@@ -209,6 +209,35 @@ pw_cc_library(
     }),
 )
 
+pw_cc_library(
+    name = "recursive_mutex_facade",
+    hdrs = ["public/pw_sync/recursive_mutex.h"],
+    includes = ["public"],
+    deps = [
+        ":lock_annotations",
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
+    name = "recursive_mutex",
+    srcs = ["recursive_mutex.cc"],
+    visibility = ["//pw_sync_baremetal:__pkg__"],
+    deps = [
+        ":recursive_mutex_facade",
+        "@pigweed_config//:pw_sync_recursive_mutex_backend",
+    ],
+)
+
+pw_cc_library(
+    name = "recursive_mutex_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "@platforms//os:none": ["//pw_sync_baremetal:recursive_mutex"],
+        "//conditions:default": ["//pw_sync_stl:recursive_mutex"],
+    }),
+)
+
 pw_cc_facade(
     name = "interrupt_spin_lock_facade",
     hdrs = [
@@ -426,6 +455,19 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "recursive_mutex_facade_test",
+    srcs = [
+        "recursive_mutex_facade_test.cc",
+        "recursive_mutex_facade_test_c.c",
+    ],
+    deps = [
+        ":recursive_mutex",
+        "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "interrupt_spin_lock_facade_test",
     srcs = [
         "interrupt_spin_lock_facade_test.cc",
@@ -442,7 +484,6 @@ pw_cc_test(
     name = "thread_notification_facade_test",
     srcs = [
         "thread_notification_facade_test.cc",
-        "thread_notification_facade_test_c.c",
     ],
     deps = [
         ":thread_notification",
@@ -454,7 +495,6 @@ pw_cc_test(
     name = "timed_thread_notification_facade_test",
     srcs = [
         "timed_thread_notification_facade_test.cc",
-        "timed_thread_notification_facade_test_c.c",
     ],
     deps = [
         ":timed_thread_notification",

@@ -12,10 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
+#include "pw_span/span.h"
 #include "pw_sys_io/sys_io.h"
 #include "pw_unit_test/simple_printing_event_handler.h"
 
@@ -25,7 +25,7 @@ int main() {
         if (append_newline) {
           pw::sys_io::WriteLine(s).IgnoreError();
         } else {
-          pw::sys_io::WriteBytes(std::as_bytes(std::span(s))).IgnoreError();
+          pw::sys_io::WriteBytes(pw::as_bytes(pw::span(s))).IgnoreError();
         }
       });
 

@@ -36,6 +36,7 @@ pw_source_set("pw_persistent_ram") {
     dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_preprocessor,
+    dir_pw_span,
     dir_pw_stream,
   ]
 }

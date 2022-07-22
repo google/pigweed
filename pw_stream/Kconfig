@@ -19,3 +19,4 @@ config PIGWEED_STREAM
     select PIGWEED_RESULT
     select PIGWEED_SPAN
     select PIGWEED_STATUS
+    select PIGWEED_SYS_IO

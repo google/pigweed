@@ -139,7 +139,7 @@ Result<ConstByteSpan> MultiSink::PeekOrPopEntry(
     PW_CHECK(drain.reader_.PopFront().ok());
     drain.last_handled_sequence_id_ = entry_sequence_id_out;
   }
-  return std::as_bytes(buffer.first(bytes_read));
+  return as_bytes(buffer.first(bytes_read));
 }
 
 void MultiSink::AttachDrain(Drain& drain) {

@@ -248,7 +248,7 @@ def parse_args():
 
 def main() -> int:
     """Main"""
-    # TODO(pwbug/456): Refactor the code so that each test bundle generation
+    # TODO(b/237580538): Refactor the code so that each test bundle generation
     # is done in a separate function or script.
     # pylint: disable=too-many-locals
     args = parse_args()
@@ -431,7 +431,7 @@ def main() -> int:
         '-i',
         args.output_header,
     ], check=True)
-    # TODO(pwbug/456): Refactor the code so that each test bundle generation
+    # TODO(b/237580538): Refactor the code so that each test bundle generation
     # is done in a separate function or script.
     # pylint: enable=too-many-locals
     return 0

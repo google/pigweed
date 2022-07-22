@@ -15,10 +15,10 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 
 #include "pw_blob_store/blob_store.h"
 #include "pw_file/flat_file_system.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_sync/lock_annotations.h"
@@ -51,7 +51,7 @@ class FlatFileSystemBlobStoreEntry final
   // as this class will also lazy-init
   Status Init();
 
-  StatusWithSize Name(std::span<char> dest) final;
+  StatusWithSize Name(span<char> dest) final;
 
   size_t SizeBytes() final;
 

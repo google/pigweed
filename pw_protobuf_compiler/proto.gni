@@ -19,6 +19,7 @@ import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/mirror_tree.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
+import("$dir_pw_build/python_gn_args.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("toolchain.gni")
@@ -345,7 +346,9 @@ template("_pw_python_proto_library") {
   _pw_invoke_protoc(target_name) {
     forward_variables_from(invoker, "*", _forwarded_vars + [ "python_package" ])
     language = "python"
-    python_deps = [ "$dir_pw_protobuf_compiler:protobuf_requirements" ]
+    if (!pw_build_USE_NEW_PYTHON_BUILD) {
+      python_deps = [ "$dir_pw_protobuf_compiler:protobuf_requirements" ]
+    }
 
     if (defined(invoker.python_package)) {
       python_package = invoker.python_package
@@ -374,6 +377,13 @@ template("_pw_python_proto_library") {
       generate_setup = {
         metadata = {
           name = invoker._package_dir
+
+          # The package name should match where the __init__.py lives. If
+          # module_as_package is specified use that for the Python package name.
+          if (defined(invoker.module_as_package) &&
+              invoker.module_as_package != "") {
+            name = invoker.module_as_package
+          }
           version =
               "0.0.1"  # TODO(hepler): Need to be able to set this verison.
         }

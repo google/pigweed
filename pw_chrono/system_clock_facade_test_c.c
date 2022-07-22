@@ -31,3 +31,51 @@ pw_chrono_SystemClock_Nanoseconds pw_chrono_SystemClock_CallDurationToNsFloor(
     pw_chrono_SystemClock_Duration ticks) {
   return pw_chrono_SystemClock_DurationToNsFloor(ticks);
 }
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_100ms(void) {
+  return PW_SYSTEM_CLOCK_MS(100);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_10s(void) {
+  return PW_SYSTEM_CLOCK_S(10);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_1min(void) {
+  return PW_SYSTEM_CLOCK_MIN(1);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_2h(void) {
+  return PW_SYSTEM_CLOCK_H(2);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_100msCeil(void) {
+  return PW_SYSTEM_CLOCK_MS_CEIL(100);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_10sCeil(void) {
+  return PW_SYSTEM_CLOCK_S_CEIL(10);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_1minCeil(void) {
+  return PW_SYSTEM_CLOCK_MIN_CEIL(1);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_2hCeil(void) {
+  return PW_SYSTEM_CLOCK_H_CEIL(2);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_100msFloor(void) {
+  return PW_SYSTEM_CLOCK_MS_FLOOR(100);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_10sFloor(void) {
+  return PW_SYSTEM_CLOCK_S_FLOOR(10);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_1minFloor(void) {
+  return PW_SYSTEM_CLOCK_MIN_FLOOR(1);
+}
+
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_Macros_2hFloor(void) {
+  return PW_SYSTEM_CLOCK_H_FLOOR(2);
+}

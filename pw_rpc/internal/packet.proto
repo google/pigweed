@@ -34,7 +34,7 @@ enum PacketType {
   CLIENT_ERROR = 4;
 
   // Deprecated, do not use. Send a CLIENT_ERROR with status CANCELLED instead.
-  // TODO(pwbug/512): Remove this packet type.
+  // TODO(b/234879973): Remove this packet type.
   DEPRECATED_CANCEL = 6;
 
   // A client stream has completed.
@@ -47,7 +47,7 @@ enum PacketType {
 
   // Deprecated, do not use. Formerly was used as the last packet in a server
   // stream.
-  // TODO(pwbug/512): Remove this packet type.
+  // TODO(b/234879973): Remove this packet type.
   DEPRECATED_SERVER_STREAM_END = 3;
 
   // The server was unable to process a request.

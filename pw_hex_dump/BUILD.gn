@@ -26,6 +26,7 @@ pw_source_set("pw_hex_dump") {
   public_configs = [ ":default_config" ]
   public_deps = [
     dir_pw_bytes,
+    dir_pw_span,
     dir_pw_status,
   ]
   deps = [ dir_pw_string ]

@@ -75,7 +75,7 @@ TEST(RawRpcIntegrationTest, Unary) {
   for (int i = 0; i < kIterations; ++i) {
     StringReceiver receiver;
     pw::rpc::RawUnaryReceiver call = kServiceClient.UnaryEcho(
-        std::as_bytes(std::span("hello")), receiver.UnaryOnCompleted());
+        pw::as_bytes(pw::span("hello")), receiver.UnaryOnCompleted());
     EXPECT_STREQ(receiver.Wait(), "hello");
   }
 }
@@ -86,10 +86,10 @@ TEST(RawRpcIntegrationTest, BidirectionalStreaming) {
     pw::rpc::RawClientReaderWriter call =
         kServiceClient.BidirectionalEcho(receiver.OnNext());
 
-    ASSERT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("Yello"))));
+    ASSERT_EQ(OkStatus(), call.Write(pw::as_bytes(pw::span("Yello"))));
     EXPECT_STREQ(receiver.Wait(), "Yello");
 
-    ASSERT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("Dello"))));
+    ASSERT_EQ(OkStatus(), call.Write(pw::as_bytes(pw::span("Dello"))));
     EXPECT_STREQ(receiver.Wait(), "Dello");
 
     ASSERT_EQ(OkStatus(), call.Cancel());

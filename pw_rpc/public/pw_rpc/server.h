@@ -14,7 +14,6 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 #include <tuple>
 
 #include "pw_containers/intrusive_list.h"
@@ -26,13 +25,14 @@
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/service.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
 
 class Server : public internal::Endpoint {
  public:
-  _PW_RPC_CONSTEXPR Server(std::span<Channel> channels) : Endpoint(channels) {}
+  _PW_RPC_CONSTEXPR Server(span<Channel> channels) : Endpoint(channels) {}
 
   // Registers one or more services with the server. This should not be called
   // directly with a Service; instead, use a generated class which inherits
@@ -50,6 +50,13 @@ class Server : public internal::Endpoint {
     // Register any additional services by expanding the parameter pack. This
     // is a fold expression of the comma operator.
     (services_.push_front(services), ...);
+  }
+
+  template <typename... OtherServices>
+  void UnregisterService(Service& service, OtherServices&... services)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
+    internal::LockGuard lock(internal::rpc_lock());
+    UnregisterServiceLocked(service, static_cast<Service&>(services)...);
   }
 
   // Processes an RPC packet. The packet may contain an RPC request or a control
@@ -149,6 +156,17 @@ class Server : public internal::Endpoint {
                                 internal::Channel& channel,
                                 internal::ServerCall* call) const
       PW_UNLOCK_FUNCTION(internal::rpc_lock());
+
+  template <typename... OtherServices>
+  void UnregisterServiceLocked(Service& service, OtherServices&... services)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
+    services_.remove(service);
+    AbortCallsForService(service);
+
+    UnregisterServiceLocked(services...);
+  }
+
+  void UnregisterServiceLocked() {}  // Base case; nothing left to do.
 
   // Remove these internal::Endpoint functions from the public interface.
   using Endpoint::active_call_count;

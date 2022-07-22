@@ -66,6 +66,14 @@ TEST(XorShiftStarRng64, InjectEntropyBits) {
   EXPECT_NE(val, result1[0]);
 }
 
+TEST(XorShiftStarRng64, Inject32BitsEntropy) {
+  XorShiftStarRng64 rng_1(seed1);
+  uint64_t first_val = 0;
+  rng_1.InjectEntropyBits(0x12345678, 32);
+  EXPECT_EQ(rng_1.GetInt(first_val).status(), OkStatus());
+  EXPECT_NE(first_val, result1[0]);
+}
+
 // Ensure injecting the same entropy integer, but different bit counts causes
 // the randomly generated number to differ.
 TEST(XorShiftStarRng64, EntropyBitCount) {

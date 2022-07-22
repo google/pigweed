@@ -30,6 +30,7 @@ pw_source_set("static_router") {
     ":egress",
     ":packet_parser",
     dir_pw_metric,
+    dir_pw_span,
   ]
   public = [ "public/pw_router/static_router.h" ]
   sources = [ "static_router.cc" ]
@@ -41,13 +42,17 @@ pw_source_set("egress") {
   public_deps = [
     ":packet_parser",
     dir_pw_bytes,
+    dir_pw_span,
   ]
 }
 
 pw_source_set("packet_parser") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_router/packet_parser.h" ]
-  public_deps = [ dir_pw_bytes ]
+  public_deps = [
+    dir_pw_bytes,
+    dir_pw_span,
+  ]
 }
 
 pw_source_set("egress_function") {
@@ -56,6 +61,7 @@ pw_source_set("egress_function") {
   public_deps = [
     ":egress",
     dir_pw_function,
+    dir_pw_span,
   ]
 }
 

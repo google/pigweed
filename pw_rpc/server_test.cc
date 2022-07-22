@@ -84,13 +84,12 @@ class BasicServer : public ::testing::Test {
     server_.RegisterService(service_1_, service_42_, empty_service_);
   }
 
-  std::span<const byte> EncodePacket(
-      PacketType type,
-      uint32_t channel_id,
-      uint32_t service_id,
-      uint32_t method_id,
-      std::span<const byte> payload = kDefaultPayload,
-      Status status = OkStatus()) {
+  span<const byte> EncodePacket(PacketType type,
+                                uint32_t channel_id,
+                                uint32_t service_id,
+                                uint32_t method_id,
+                                span<const byte> payload = kDefaultPayload,
+                                Status status = OkStatus()) {
     auto result =
         Packet(type, channel_id, service_id, method_id, 0, payload, status)
             .Encode(request_buffer_);
@@ -98,9 +97,9 @@ class BasicServer : public ::testing::Test {
     return result.value_or(ConstByteSpan());
   }
 
-  std::span<const byte> EncodeCancel(uint32_t channel_id = 1,
-                                     uint32_t service_id = 42,
-                                     uint32_t method_id = 100) {
+  span<const byte> EncodeCancel(uint32_t channel_id = 1,
+                                uint32_t service_id = 42,
+                                uint32_t method_id = 100) {
     return EncodePacket(PacketType::CLIENT_ERROR,
                         channel_id,
                         service_id,
@@ -113,8 +112,7 @@ class BasicServer : public ::testing::Test {
   ConstByteSpan PacketForRpc(PacketType type,
                              Status status = OkStatus(),
                              T&& payload = {}) {
-    return EncodePacket(
-        type, 1, 42, 100, std::as_bytes(std::span(payload)), status);
+    return EncodePacket(type, 1, 42, 100, as_bytes(span(payload)), status);
   }
 
   RawFakeChannelOutput<2> output_;
@@ -148,6 +146,39 @@ TEST_F(BasicServer, ProcessPacket_ValidMethodInService42_InvokesMethod) {
                                   output_));
 
   const TestMethod& method = service_42_.method(200);
+  EXPECT_EQ(1u, method.last_channel_id());
+  ASSERT_EQ(sizeof(kDefaultPayload), method.last_request().payload().size());
+  EXPECT_EQ(std::memcmp(kDefaultPayload,
+                        method.last_request().payload().data(),
+                        method.last_request().payload().size()),
+            0);
+}
+
+TEST_F(BasicServer, UnregisterService_CannotCallMethod) {
+  server_.UnregisterService(service_1_, service_42_);
+
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100),
+                                  output_));
+
+  const Packet& packet =
+      static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
+  EXPECT_EQ(packet.type(), PacketType::SERVER_ERROR);
+  EXPECT_EQ(packet.channel_id(), 1u);
+  EXPECT_EQ(packet.service_id(), 1u);
+  EXPECT_EQ(packet.method_id(), 100u);
+  EXPECT_EQ(packet.status(), Status::NotFound());
+}
+
+TEST_F(BasicServer, UnregisterService_AlreadyUnregistered_DoesNothing) {
+  server_.UnregisterService(service_42_, service_42_, service_42_);
+  server_.UnregisterService(service_42_);
+
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100),
+                                  output_));
+
+  const TestMethod& method = service_1_.method(100);
   EXPECT_EQ(1u, method.last_channel_id());
   ASSERT_EQ(sizeof(kDefaultPayload), method.last_request().payload().size());
   EXPECT_EQ(std::memcmp(kDefaultPayload,
@@ -327,7 +358,7 @@ TEST_F(BasicServer, CloseChannel_PendingCall) {
 }
 
 TEST_F(BasicServer, OpenChannel_UnusedSlot) {
-  const std::span request = EncodePacket(PacketType::REQUEST, 9, 42, 100);
+  const span request = EncodePacket(PacketType::REQUEST, 9, 42, 100);
   EXPECT_EQ(Status::Unavailable(), server_.ProcessPacket(request, output_));
 
   EXPECT_EQ(OkStatus(), server_.OpenChannel(9, output_));
@@ -450,7 +481,7 @@ TEST_F(BidiMethod, Cancel_IncorrectMethod_SendsNothing) {
 }
 
 TEST_F(BidiMethod, ClientStream_CallsCallback) {
-  ConstByteSpan data = std::as_bytes(std::span("?"));
+  ConstByteSpan data = as_bytes(span("?"));
   responder_.set_on_next([&data](ConstByteSpan payload) { data = payload; });
 
   ASSERT_EQ(OkStatus(),
@@ -459,6 +490,19 @@ TEST_F(BidiMethod, ClientStream_CallsCallback) {
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_STREQ(reinterpret_cast<const char*>(data.data()), "hello");
+}
+
+TEST_F(BidiMethod, UnregsiterService_AbortsActiveCalls) {
+  ASSERT_TRUE(responder_.active());
+
+  Status on_error_status = OkStatus();
+  responder_.set_on_error(
+      [&on_error_status](Status status) { on_error_status = status; });
+
+  server_.UnregisterService(service_42_);
+
+  EXPECT_FALSE(responder_.active());
+  EXPECT_EQ(Status::Aborted(), on_error_status);
 }
 
 #if PW_RPC_CLIENT_STREAM_END_CALLBACK

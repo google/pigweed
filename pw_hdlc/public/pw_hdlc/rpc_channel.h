@@ -14,11 +14,12 @@
 #pragma once
 
 #include <array>
-#include <span>
 
 #include "pw_assert/assert.h"
+#include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/encoder.h"
 #include "pw_rpc/channel.h"
+#include "pw_span/span.h"
 #include "pw_stream/stream.h"
 
 namespace pw::hdlc {
@@ -38,13 +39,43 @@ class RpcChannelOutput : public rpc::ChannelOutput {
                              const char* channel_name)
       : ChannelOutput(channel_name), writer_(writer), address_(address) {}
 
-  Status Send(std::span<const std::byte> buffer) override {
+  Status Send(span<const std::byte> buffer) override {
     return hdlc::WriteUIFrame(address_, buffer, writer_);
   }
 
  private:
   stream::Writer& writer_;
   const uint64_t address_;
+};
+
+// A RpcChannelOutput that ensures all packets produced by pw_rpc will safely
+// fit in the specified MTU after HDLC encoding.
+template <size_t kMaxTransmissionUnit>
+class FixedMtuChannelOutput : public RpcChannelOutput {
+ public:
+  constexpr FixedMtuChannelOutput(stream::Writer& writer,
+                                  uint64_t address,
+                                  const char* channel_name)
+      : RpcChannelOutput(writer, address, channel_name) {}
+
+  // Provide a constexpr helper for the maximum safe payload size.
+  static constexpr size_t MaxSafePayloadSize() {
+    static_assert(rpc::cfg::kEncodingBufferSizeBytes <=
+                      hdlc::MaxSafePayloadSize(kMaxTransmissionUnit),
+                  "pw_rpc's encode buffer is large enough to produce HDLC "
+                  "frames that will exceed the bounds of this channel's MTU");
+    static_assert(
+        rpc::MaxSafePayloadSize(
+            hdlc::MaxSafePayloadSize(kMaxTransmissionUnit)) > 0,
+        "The combined MTU and RPC encode buffer size do not afford enough "
+        "space for any RPC payload data to safely be encoded into RPC packets");
+    return rpc::MaxSafePayloadSize(
+        hdlc::MaxSafePayloadSize(kMaxTransmissionUnit));
+  }
+
+  // Users of pw_rpc should only care about the maximum payload size, despite
+  // this being labeled as a MTU.
+  size_t MaximumTransmissionUnit() override { return MaxSafePayloadSize(); }
 };
 
 }  // namespace pw::hdlc

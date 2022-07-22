@@ -14,10 +14,10 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 #include <string_view>
 
 #include "pw_containers/vector.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_string/util.h"
@@ -53,8 +53,7 @@ inline StatusWithSize Copy(const char* source, pw::Vector<char>& dest) {
   return Copy(ClampedCString(source, dest.capacity()), dest);
 }
 
-inline StatusWithSize Copy(const pw::Vector<char>& source,
-                           std::span<char> dest) {
+inline StatusWithSize Copy(const pw::Vector<char>& source, span<char> dest) {
   if (dest.empty()) {
     return StatusWithSize::ResourceExhausted();
   }

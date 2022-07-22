@@ -18,10 +18,12 @@ import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 import("config.gni")
 import("internal/integration_test_ports.gni")
@@ -99,6 +101,7 @@ pw_source_set("client") {
   public_deps = [
     ":common",
     dir_pw_result,
+    dir_pw_span,
   ]
   deps = [
     ":log_config",
@@ -151,6 +154,7 @@ pw_source_set("common") {
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_function,
+    dir_pw_span,
     dir_pw_status,
   ]
 
@@ -164,6 +168,7 @@ pw_source_set("common") {
   ]
   public = [
     "public/pw_rpc/channel.h",
+    "public/pw_rpc/method_info.h",
     "public/pw_rpc/writer.h",
   ]
   sources = [
@@ -240,13 +245,23 @@ pw_source_set("client_server_testing_threaded") {
   visibility = [ "./*" ]
 }
 
-pw_source_set("thread_testing") {
-  public = [ "public/pw_rpc/thread_testing.h" ]
+pw_source_set("test_helpers") {
+  public = [ "public/pw_rpc/test_helpers.h" ]
   public_deps = [
     ":fake_channel_output",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_status",
     "$dir_pw_sync:counting_semaphore",
+    "$dir_pw_thread:yield",
     dir_pw_assert,
   ]
+}
+
+# thread_testing target is kept for backward compatibility.
+# New code should use test_helpers instead.
+pw_source_set("thread_testing") {
+  public = [ "public/pw_rpc/thread_testing.h" ]
+  public_deps = [ ":test_helpers" ]
 }
 
 pw_source_set("test_utils") {
@@ -348,7 +363,6 @@ pw_proto_library("protos") {
     "echo.options",
     "benchmark.options",
   ]
-  deps = [ "$dir_pw_protobuf:common_protos" ]
   python_package = "py"
   prefix = "pw_rpc"
 }
@@ -409,6 +423,7 @@ pw_test_group("tests") {
     ":call_test",
     ":channel_test",
     ":client_server_test",
+    ":test_helpers_test",
     ":fake_channel_output_test",
     ":method_test",
     ":ids_test",
@@ -424,7 +439,10 @@ pw_test_group("tests") {
 }
 
 pw_proto_library("test_protos") {
-  sources = [ "pw_rpc_test_protos/test.proto" ]
+  sources = [
+    "pw_rpc_test_protos/no_package.proto",
+    "pw_rpc_test_protos/test.proto",
+  ]
   inputs = [ "pw_rpc_test_protos/test.options" ]
   visibility = [ "./*" ]
 }
@@ -512,4 +530,22 @@ pw_test("server_test") {
 pw_test("fake_channel_output_test") {
   deps = [ ":test_utils" ]
   sources = [ "fake_channel_output_test.cc" ]
+}
+
+pw_test("test_helpers_test") {
+  deps = [
+    ":test_helpers",
+    "$dir_pw_result",
+    "$dir_pw_status",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:timed_thread_notification",
+    "pwpb:client_testing",
+    "pwpb:echo_service",
+    "pwpb:server_api",
+  ]
+  sources = [ "test_helpers_test.cc" ]
+  enable_if = pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != "" &&
+              pw_sync_COUNTING_SEMAPHORE_BACKEND != "" &&
+              pw_chrono_SYSTEM_CLOCK_BACKEND != ""
 }

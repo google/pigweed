@@ -104,6 +104,10 @@ Status Server::ProcessPacket(ConstByteSpan packet_data,
     case PacketType::CLIENT_STREAM_END:
       HandleClientStreamPacket(packet, *channel, call);
       break;
+    case PacketType::RESPONSE:
+    case PacketType::DEPRECATED_SERVER_STREAM_END:
+    case PacketType::SERVER_ERROR:
+    case PacketType::SERVER_STREAM:
     default:
       internal::rpc_lock().unlock();
       PW_LOG_WARN("pw_rpc server unable to handle packet of type %u",

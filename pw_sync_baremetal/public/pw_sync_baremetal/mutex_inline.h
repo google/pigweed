@@ -20,7 +20,7 @@ namespace pw::sync {
 
 inline Mutex::Mutex() : native_type_() {}
 
-inline Mutex::~Mutex() {}
+inline Mutex::~Mutex() = default;
 
 inline void Mutex::lock() { PW_ASSERT(try_lock()); }
 

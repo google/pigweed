@@ -62,10 +62,10 @@ pw_source_set("pw_kvs") {
     "sectors.cc",
   ]
   public_deps = [
-    "$dir_pw_string:util",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_containers,
+    dir_pw_span,
     dir_pw_status,
     dir_pw_stream,
   ]
@@ -88,6 +88,7 @@ pw_source_set("crc16") {
   public_deps = [
     ":pw_kvs",
     dir_pw_checksum,
+    dir_pw_span,
   ]
 }
 
@@ -310,9 +311,11 @@ pw_source_set("key_value_store_initialized_test") {
 
 pw_source_set("key_value_store_fuzz_test") {
   deps = [
+    ":config",
     ":crc16",
     ":flash_test_partition",
     ":pw_kvs",
+    "$dir_pw_string:builder",
     dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_log,
@@ -355,7 +358,7 @@ pw_test_group("tests") {
 
   if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
       pw_toolchain_SCOPE.is_host_toolchain) {
-    # TODO(pwbug/196): KVS tests are not compatible with device builds as they
+    # TODO(b/234883746): KVS tests are not compatible with device builds as they
     # use features such as std::map and are computationally expensive. Solving
     # this requires a more complex capabilities-based build and configuration
     # system which allowing enabling specific tests for targets that support
@@ -481,6 +484,7 @@ pw_test("flash_partition_256_write_size_test") {
 
 pw_test("key_value_store_test") {
   deps = [
+    ":config",
     ":crc16",
     ":fake_flash",
     ":pw_kvs",

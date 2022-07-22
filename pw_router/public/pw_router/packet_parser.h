@@ -13,11 +13,13 @@
 // the License.
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <span>
 #include <cstdint>
 
 #include "pw_bytes/span.h"
+#include "pw_span/span.h"
 
 namespace pw::router {
 

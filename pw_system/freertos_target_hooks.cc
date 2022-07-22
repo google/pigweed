@@ -34,8 +34,8 @@ enum class ThreadPriority : UBaseType_t {
 static_assert(static_cast<UBaseType_t>(ThreadPriority::kNumPriorities) <=
               configMAX_PRIORITIES);
 
-static constexpr size_t kLogThreadStackWorkds = 1024;
-static thread::freertos::StaticContextWithStack<kLogThreadStackWorkds>
+static constexpr size_t kLogThreadStackWords = 1024;
+static thread::freertos::StaticContextWithStack<kLogThreadStackWords>
     log_thread_context;
 const thread::Options& LogThreadOptions() {
   static constexpr auto options =
@@ -46,8 +46,8 @@ const thread::Options& LogThreadOptions() {
   return options;
 }
 
-static constexpr size_t kRpcThreadStackWorkds = 512;
-static thread::freertos::StaticContextWithStack<kRpcThreadStackWorkds>
+static constexpr size_t kRpcThreadStackWords = 512;
+static thread::freertos::StaticContextWithStack<kRpcThreadStackWords>
     rpc_thread_context;
 const thread::Options& RpcThreadOptions() {
   static constexpr auto options =
@@ -58,8 +58,8 @@ const thread::Options& RpcThreadOptions() {
   return options;
 }
 
-static constexpr size_t kWorkQueueThreadStackWorkds = 512;
-static thread::freertos::StaticContextWithStack<kWorkQueueThreadStackWorkds>
+static constexpr size_t kWorkQueueThreadStackWords = 512;
+static thread::freertos::StaticContextWithStack<kWorkQueueThreadStackWords>
     work_queue_thread_context;
 const thread::Options& WorkQueueThreadOptions() {
   static constexpr auto options =

@@ -126,8 +126,20 @@ public class Client {
     }
   }
 
+  /**
+   * Returns a MethodClient instance from a Method instance.
+   */
+  public MethodClient method(int channelId, Method serviceMethod) {
+    try {
+      return method(channelId, serviceMethod.service().id(), serviceMethod.id());
+    } catch (IllegalArgumentException e) {
+      // Rethrow the exception with the service and method name instead of the ID.
+      throw new IllegalArgumentException("Unknown RPC " + serviceMethod.fullName(), e);
+    }
+  }
+
   /** Returns a MethodClient with the provided service and method IDs. */
-  public MethodClient method(int channelId, int serviceId, int methodId) {
+  synchronized MethodClient method(int channelId, int serviceId, int methodId) {
     Channel channel = channels.get(channelId);
     if (channel == null) {
       throw new IllegalArgumentException("Unknown channel ID " + channelId);

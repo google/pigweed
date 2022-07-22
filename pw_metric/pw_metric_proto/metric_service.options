@@ -13,6 +13,6 @@
 // the License.
 
 // TODO(keir): Figure out appropriate options.
-pw.metric.Metric.token_path max_count:4
-pw.metric.MetricResponse.metrics max_count:10
+pw.metric.proto.Metric.token_path max_count:4
+pw.metric.proto.MetricResponse.metrics max_count:10
 

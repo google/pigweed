@@ -37,9 +37,9 @@
 
 #include <cstddef>
 #include <cstring>
-#include <span>
 #include <string_view>
 
+#include "pw_bytes/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
@@ -84,7 +84,7 @@ Status WriteByte(std::byte b);
 // are returned as part of the StatusWithSize.
 StatusWithSize WriteLine(const std::string_view& s);
 
-// Fill a byte std::span from the sys io backend using ReadByte().
+// Fill a byte span from the sys io backend using ReadByte().
 // Implemented by: Facade
 //
 // This function is implemented by this facade and simply uses ReadByte() to
@@ -96,9 +96,9 @@ StatusWithSize WriteLine(const std::string_view& s);
 // Return status is OkStatus() if the destination span was successfully
 // filled. In all cases, the number of bytes successuflly read to the
 // destination span are returned as part of the StatusWithSize.
-StatusWithSize ReadBytes(std::span<std::byte> dest);
+StatusWithSize ReadBytes(ByteSpan dest);
 
-// Write std::span of bytes out the sys io backend using WriteByte().
+// Write span of bytes out the sys io backend using WriteByte().
 // Implemented by: Facade
 //
 // This function is implemented by this facade and simply writes the source
@@ -110,6 +110,6 @@ StatusWithSize ReadBytes(std::span<std::byte> dest);
 // Return status is OkStatus() if all the bytes from the source span were
 // successfully written. In all cases, the number of bytes successfully written
 // are returned as part of the StatusWithSize.
-StatusWithSize WriteBytes(std::span<const std::byte> src);
+StatusWithSize WriteBytes(ConstByteSpan src);
 
 }  // namespace pw::sys_io

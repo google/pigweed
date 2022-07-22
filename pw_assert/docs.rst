@@ -522,7 +522,7 @@ This facade module (``pw_assert``) does not provide a backend. See
 
 The backend must provide the header
 
-``pw_assert_backend/backend.h``
+``pw_assert_backend/check_backend.h``
 
 and that header must define the following macros:
 
@@ -609,7 +609,7 @@ is providing a macro-based backend API for the ``PW_ASSERT()`` and
   are extremely confusingly similar and are NOT interchangeable.
 
 A macro-based backend for the ``PW_ASSERT()`` macros must provide the following
-macro in a header at ``pw_assert_backend/assert_lite_backend.h``.
+macro in a header at ``pw_assert_backend/assert_backend.h``.
 
 .. cpp:function:: PW_ASSERT_HANDLE_FAILURE(expression)
 

@@ -39,6 +39,38 @@ macro(pw_parse_arguments_strict function start_arg options one multi)
   endif()
 endmacro()
 
+# Checks that one or more variables are set. This is used to check that
+# arguments were provided to a function. Fails with FATAL_ERROR if
+# ${ARG_PREFIX}${name} is empty. The FUNCTION_NAME is used in the error message.
+# If FUNCTION_NAME is "", it is set to CMAKE_CURRENT_FUNCTION.
+#
+# Usage:
+#
+#   pw_require_args(FUNCTION_NAME ARG_PREFIX ARG_NAME [ARG_NAME ...])
+#
+# Examples:
+#
+#   # Checks that arg_FOO is non-empty, using the current function name.
+#   pw_require_args("" arg_ FOO)
+#
+#   # Checks that FOO and BAR are non-empty, using function name "do_the_thing".
+#   pw_require_args(do_the_thing "" FOO BAR)
+#
+macro(pw_require_args FUNCTION_NAME ARG_PREFIX)
+  if("${FUNCTION_NAME}" STREQUAL "")
+    set(_pw_require_args_FUNCTION_NAME "${CMAKE_CURRENT_FUNCTION}")
+  else()
+    set(_pw_require_args_FUNCTION_NAME "${FUNCTION_NAME}")
+  endif()
+
+  foreach(name IN ITEMS ${ARGN})
+    if("${${ARG_PREFIX}${name}}" STREQUAL "")
+      message(FATAL_ERROR "A value must be provided for ${name} in "
+          "${_pw_require_args_FUNCTION_NAME}.")
+    endif()
+  endforeach()
+endmacro()
+
 # Automatically creates a library and test targets for the files in a module.
 # This function is only suitable for simple modules that meet the following
 # requirements:
@@ -371,7 +403,7 @@ function(pw_add_module_library NAME)
     HEADERS
       ${arg_HEADERS}
     PUBLIC_DEPS
-      # TODO(pwbug/232141950): Apply compilation options that affect ABI
+      # TODO(b/232141950): Apply compilation options that affect ABI
       # globally in the CMake build instead of injecting them into libraries.
       pw_build
       ${arg_PUBLIC_DEPS}
@@ -396,13 +428,13 @@ function(pw_add_module_library NAME)
       ${arg_PRIVATE_LINK_OPTIONS}
   )
 
-  # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
+  # TODO(b/235273746): Deprecate this legacy implicit PUBLIC_INCLUDES.
   if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
     target_include_directories("${NAME}" ${public_or_interface} public)
   endif("${arg_PUBLIC_INCLUDES}" STREQUAL "")
 
   if(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
-    # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
+    # TODO(b/235273746): Deprecate this legacy implicit PUBLIC_INCLUDES.
     if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
       target_include_directories(
         "${NAME}" ${public_or_interface} public_overrides)
@@ -482,8 +514,19 @@ endfunction(pw_add_facade)
 
 # Sets which backend to use for the given facade.
 function(pw_set_backend FACADE BACKEND)
-  set("${FACADE}_BACKEND" "${BACKEND}" CACHE STRING "Backend for ${NAME}" FORCE)
+  set("${FACADE}_BACKEND" "${BACKEND}" CACHE STRING "Backend for ${FACADE}" FORCE)
 endfunction(pw_set_backend)
+
+# Zephyr specific wrapper for pw_set_backend, selects the default zephyr backend based on a Kconfig while
+# still allowing the application to set the backend if they choose to
+function(pw_set_zephyr_backend_ifdef COND FACADE BACKEND)
+  get_property(result CACHE "${FACADE}_BACKEND" PROPERTY TYPE)
+  if(${${COND}})
+    if("${result}" STREQUAL "")
+      pw_set_backend("${FACADE}" "${BACKEND}")
+    endif()
+  endif()
+endfunction()
 
 # Set up the default pw_build_DEFAULT_MODULE_CONFIG.
 set("pw_build_DEFAULT_MODULE_CONFIG" pw_build.empty CACHE STRING
@@ -540,11 +583,12 @@ set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test.light CACHE STRING
 #   NAME: name to use for the target
 #   SOURCES: source files for this test
 #   DEPS: libraries on which this test depends
+#   DEFINES: defines to set for the source files in this test
 #   GROUPS: groups to which to add this test; if none are specified, the test is
 #       added to the 'default' and 'all' groups
 #
 function(pw_add_test NAME)
-  pw_parse_arguments_strict(pw_add_test 1 "" "" "SOURCES;DEPS;GROUPS")
+  pw_parse_arguments_strict(pw_add_test 1 "" "" "SOURCES;DEPS;DEFINES;GROUPS")
 
   add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
   target_link_libraries("${NAME}"
@@ -553,6 +597,11 @@ function(pw_add_test NAME)
       ${pw_unit_test_MAIN}
       ${arg_DEPS}
   )
+  target_compile_definitions("${NAME}"
+    PRIVATE
+      ${arg_DEFINES}
+  )
+
   # Tests require at least one source file.
   if(NOT arg_SOURCES)
     target_sources("${NAME}" PRIVATE $<TARGET_PROPERTY:pw_build.empty,SOURCES>)

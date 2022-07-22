@@ -14,9 +14,9 @@
 #pragma once
 
 #include <cstddef>
-#include <span>
 #include <type_traits>
 
+#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw {
@@ -34,55 +34,52 @@ struct FunctionTraits<ReturnType (T::*)(Args...)> {
 }  // namespace internal
 
 // Writes bytes to an unspecified output. Provides a Write function that takes a
-// std::span of bytes and returns a Status.
+// span of bytes and returns a Status.
 class Output {
  public:
-  StatusWithSize Write(std::span<const std::byte> data) {
-    return DoWrite(data);
-  }
+  StatusWithSize Write(span<const std::byte> data) { return DoWrite(data); }
 
   // Convenience wrapper for writing data from a pointer and length.
   StatusWithSize Write(const void* data, size_t size_bytes) {
-    return Write(std::span<const std::byte>(static_cast<const std::byte*>(data),
-                                            size_bytes));
+    return Write(
+        span<const std::byte>(static_cast<const std::byte*>(data), size_bytes));
   }
 
  protected:
   ~Output() = default;
 
  private:
-  virtual StatusWithSize DoWrite(std::span<const std::byte> data) = 0;
+  virtual StatusWithSize DoWrite(span<const std::byte> data) = 0;
 };
 
 class Input {
  public:
-  StatusWithSize Read(std::span<std::byte> data) { return DoRead(data); }
+  StatusWithSize Read(span<std::byte> data) { return DoRead(data); }
 
   // Convenience wrapper for reading data from a pointer and length.
   StatusWithSize Read(void* data, size_t size_bytes) {
-    return Read(
-        std::span<std::byte>(static_cast<std::byte*>(data), size_bytes));
+    return Read(span<std::byte>(static_cast<std::byte*>(data), size_bytes));
   }
 
  protected:
   ~Input() = default;
 
  private:
-  virtual StatusWithSize DoRead(std::span<std::byte> data) = 0;
+  virtual StatusWithSize DoRead(span<std::byte> data) = 0;
 };
 
 // Output adapter that calls a free function.
 class OutputToFunction final : public Output {
  public:
-  OutputToFunction(StatusWithSize (*function)(std::span<const std::byte>))
+  OutputToFunction(StatusWithSize (*function)(span<const std::byte>))
       : function_(function) {}
 
  private:
-  StatusWithSize DoWrite(std::span<const std::byte> data) override {
+  StatusWithSize DoWrite(span<const std::byte> data) override {
     return function_(data);
   }
 
-  StatusWithSize (*function_)(std::span<const std::byte>);
+  StatusWithSize (*function_)(span<const std::byte>);
 };
 
 }  // namespace pw

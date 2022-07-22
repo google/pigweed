@@ -16,11 +16,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
-#include <span>
 
 #include "pw_assert/assert.h"
 #include "pw_kvs/alignment.h"
 #include "pw_polyfill/standard.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
@@ -42,7 +42,7 @@ class FlashMemory {
   // The flash address is in the range of: 0 to FlashSize.
   typedef uint32_t Address;
 
-  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  // TODO(b/235149326): This can be constexpr when tokenized asserts are fixed.
   FlashMemory(size_t sector_size,
               size_t sector_count,
               size_t alignment,
@@ -82,11 +82,10 @@ class FlashMemory {
   // OK - success
   // DEADLINE_EXCEEDED - timeout
   // OUT_OF_RANGE - write does not fit in the flash memory
-  virtual StatusWithSize Read(Address address, std::span<std::byte> output) = 0;
+  virtual StatusWithSize Read(Address address, span<std::byte> output) = 0;
 
   StatusWithSize Read(Address address, void* buffer, size_t len) {
-    return Read(address,
-                std::span<std::byte>(static_cast<std::byte*>(buffer), len));
+    return Read(address, span<std::byte>(static_cast<std::byte*>(buffer), len));
   }
 
   // Writes bytes to flash. Blocking call. Returns:
@@ -96,14 +95,14 @@ class FlashMemory {
   // INVALID_ARGUMENT - address or data size are not aligned
   // OUT_OF_RANGE - write does not fit in the memory
   virtual StatusWithSize Write(Address destination_flash_address,
-                               std::span<const std::byte> data) = 0;
+                               span<const std::byte> data) = 0;
 
   StatusWithSize Write(Address destination_flash_address,
                        const void* data,
                        size_t len) {
     return Write(
         destination_flash_address,
-        std::span<const std::byte>(static_cast<const std::byte*>(data), len));
+        span<const std::byte>(static_cast<const std::byte*>(data), len));
   }
 
   // Convert an Address to an MCU pointer, this can be used for memory
@@ -199,7 +198,7 @@ class FlashPartition {
         : flash_(flash), address_(address) {}
 
    private:
-    StatusWithSize DoWrite(std::span<const std::byte> data) override;
+    StatusWithSize DoWrite(span<const std::byte> data) override;
 
     FlashPartition& flash_;
     FlashPartition::Address address_;
@@ -212,7 +211,7 @@ class FlashPartition {
         : flash_(flash), address_(address) {}
 
    private:
-    StatusWithSize DoRead(std::span<std::byte> data) override;
+    StatusWithSize DoRead(span<std::byte> data) override;
 
     FlashPartition& flash_;
     FlashPartition::Address address_;
@@ -257,11 +256,11 @@ class FlashPartition {
   // TIMEOUT - on timeout.
   // INVALID_ARGUMENT - address or length is invalid.
   // UNKNOWN - HAL error
-  virtual StatusWithSize Read(Address address, std::span<std::byte> output);
+  virtual StatusWithSize Read(Address address, span<std::byte> output);
 
   StatusWithSize Read(Address address, size_t length, void* output) {
     return Read(address,
-                std::span<std::byte>(static_cast<std::byte*>(output), length));
+                span<std::byte>(static_cast<std::byte*>(output), length));
   }
 
   // Writes bytes to flash. Address and data.size_bytes() must both be a
@@ -272,8 +271,7 @@ class FlashPartition {
   // INVALID_ARGUMENT - address or length is invalid.
   // PERMISSION_DENIED - partition is read only.
   // UNKNOWN - HAL error
-  virtual StatusWithSize Write(Address address,
-                               std::span<const std::byte> data);
+  virtual StatusWithSize Write(Address address, span<const std::byte> data);
 
   // Check to see if chunk of flash partition is erased. Address and len need to
   // be aligned with FlashMemory. Returns:
@@ -296,7 +294,7 @@ class FlashPartition {
   // Checks to see if the data appears to be erased. No reads or writes occur;
   // the FlashPartition simply compares the data to
   // flash_.erased_memory_content().
-  bool AppearsErased(std::span<const std::byte> data) const;
+  bool AppearsErased(span<const std::byte> data) const;
 
   // Overridden by derived classes. The reported sector size is space available
   // to users of FlashPartition. It accounts for space reserved in the sector

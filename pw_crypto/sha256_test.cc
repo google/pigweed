@@ -25,7 +25,7 @@ namespace {
 #define ASSERT_OK(expr) ASSERT_EQ(OkStatus(), expr)
 #define ASSERT_FAIL(expr) ASSERT_NE(OkStatus(), expr)
 
-#define AS_BYTES(s) std::as_bytes(std::span(s, sizeof(s) - 1))
+#define AS_BYTES(s) as_bytes(span(s, sizeof(s) - 1))
 
 // Generated in Python 3 with:
 // `hashlib.sha256('Hello, Pigweed!'.encode('ascii')).hexdigest()`.

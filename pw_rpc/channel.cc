@@ -26,10 +26,12 @@
 namespace pw::rpc {
 namespace {
 
-// TODO(pwbug/615): Dynamically allocate this buffer if
+// TODO(b/234876617): Dynamically allocate this buffer if
 //     PW_RPC_DYNAMIC_ALLOCATION is enabled.
 std::array<std::byte, cfg::kEncodingBufferSizeBytes> encoding_buffer
     PW_GUARDED_BY(internal::rpc_lock());
+static_assert(MaxSafePayloadSize() > 0,
+              "pw_rpc's encode buffer is too small to fit any data");
 
 }  // namespace
 
@@ -37,16 +39,13 @@ Result<uint32_t> ExtractChannelId(ConstByteSpan packet) {
   protobuf::Decoder decoder(packet);
 
   while (decoder.Next().ok()) {
-    switch (static_cast<internal::RpcPacket::Fields>(decoder.FieldNumber())) {
-      case internal::RpcPacket::Fields::CHANNEL_ID: {
-        uint32_t channel_id;
-        PW_TRY(decoder.ReadUint32(&channel_id));
-        return channel_id;
-      }
-
-      default:
-        continue;
+    if (static_cast<internal::RpcPacket::Fields>(decoder.FieldNumber()) !=
+        internal::RpcPacket::Fields::CHANNEL_ID) {
+      continue;
     }
+    uint32_t channel_id;
+    PW_TRY(decoder.ReadUint32(&channel_id));
+    return channel_id;
   }
 
   return Status::DataLoss();

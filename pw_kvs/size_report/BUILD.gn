@@ -30,17 +30,17 @@ pw_executable("base") {
 pw_executable("base_with_only_flash") {
   sources = [ "base_with_only_flash.cc" ]
   deps = _deps + [
-           dir_pw_kvs,
-           "$dir_pw_kvs:flash_test_partition",
            "$dir_pw_kvs:fake_flash_12_byte_partition",
+           "$dir_pw_kvs:flash_test_partition",
+           dir_pw_kvs,
          ]
 }
 
 pw_executable("with_kvs") {
   sources = [ "with_kvs.cc" ]
   deps = _deps + [
-           dir_pw_kvs,
-           "$dir_pw_kvs:flash_test_partition",
            "$dir_pw_kvs:fake_flash_12_byte_partition",
+           "$dir_pw_kvs:flash_test_partition",
+           dir_pw_kvs,
          ]
 }

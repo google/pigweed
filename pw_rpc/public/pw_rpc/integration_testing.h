@@ -48,12 +48,11 @@ class ChannelManipulator {
   // Returns:
   //   OK - Packet successfully sent.
   //   Other - Failed to send packet.
-  using SendCallback = Function<Status(std::span<const std::byte>)>;
+  using SendCallback = Function<Status(span<const std::byte>)>;
 
   ChannelManipulator()
-      : send_packet_([](std::span<const std::byte>) {
-          return Status::Unimplemented();
-        }) {}
+      : send_packet_(
+            [](span<const std::byte>) { return Status::Unimplemented(); }) {}
   virtual ~ChannelManipulator() {}
 
   // Sets the true send callback that a ChannelManipulator will use to forward
@@ -68,15 +67,15 @@ class ChannelManipulator {
   // Implementations of this method may send the processed packet, multiple
   // packets, or no packets at all via the registered `send_packet()`
   // handler.
-  virtual Status ProcessAndSend(std::span<const std::byte> packet) = 0;
+  virtual Status ProcessAndSend(span<const std::byte> packet) = 0;
 
  protected:
-  Status send_packet(std::span<const std::byte> payload) {
+  Status send_packet(span<const std::byte> payload) {
     return send_packet_(payload);
   }
 
  private:
-  Function<Status(std::span<const std::byte>)> send_packet_;
+  Function<Status(span<const std::byte>)> send_packet_;
 };
 
 void SetEgressChannelManipulator(ChannelManipulator* new_channel_manipulator);

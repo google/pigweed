@@ -12,20 +12,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-menuconfig PIGWEED_SYNC
-    bool "Enable Pigweed's sync module (pw_sync)"
-
-if PIGWEED_SYNC
+config PIGWEED_SYNC
+    bool
+    select PIGWEED_CHRONO_SYSTEM_CLOCK
+    select PIGWEED_PREPROCESSOR
+    select PIGWEED_INTERRUPT_CONTEXT
 
 config PIGWEED_SYNC_MUTEX
     bool "Enable Pigweed mutex library (pw_sync.mutex)"
-    select PIGWEED_CHRONO_SYSTEM_CLOCK
+    select PIGWEED_SYNC
     select PIGWEED_POLYFILL
-    select PIGWEED_PREPROCESSOR
 
 config PIGWEED_SYNC_BINARY_SEMAPHORE
     bool "Enable Pigweed binary semaphore library (pw_sync.binary_semaphore)"
-    select PIGWEED_CHRONO_SYSTEM_CLOCK
-    select PIGWEED_PREPROCESSOR
-
-endif # PIGWEED_SYNC
+    select PIGWEED_SYNC

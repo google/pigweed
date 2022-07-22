@@ -12,13 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #include <array>
-#include <span>
 #include <stdexcept>
 #include <string_view>
 
 #include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
@@ -118,7 +118,7 @@ TEST(Codegen, StreamDecoder) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
@@ -368,7 +368,7 @@ TEST(Codegen, ResourceExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
@@ -390,7 +390,7 @@ TEST(Codegen, BytesReader) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   constexpr std::string_view kExpectedErrorMessage{"not a typewriter"};
@@ -429,7 +429,7 @@ TEST(Codegen, Enum) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   EXPECT_EQ(pigweed.Next(), OkStatus());
@@ -464,7 +464,7 @@ TEST(Codegen, ImportedEnum) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   TestResult::StreamDecoder test_result(reader);
 
   EXPECT_EQ(test_result.Next(), OkStatus());
@@ -503,7 +503,7 @@ TEST(CodegenRepeated, NonPackedScalar) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   for (int i = 0; i < 4; ++i) {
@@ -543,7 +543,7 @@ TEST(CodegenRepeated, NonPackedScalarVector) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   pw::Vector<uint32_t, 8> uint32s{};
@@ -590,7 +590,7 @@ TEST(CodegenRepeated, NonPackedVarintScalarVectorFull) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   pw::Vector<uint32_t, 2> uint32s{};
@@ -629,7 +629,7 @@ TEST(CodegenRepeated, NonPackedFixedScalarVectorFull) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   pw::Vector<uint32_t, 2> fixed32s{};
@@ -675,7 +675,7 @@ TEST(CodegenRepeated, PackedScalar) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());
@@ -715,7 +715,7 @@ TEST(CodegenRepeated, PackedVarintScalarExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());
@@ -742,7 +742,7 @@ TEST(CodegenRepeated, PackedFixedScalarExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());
@@ -771,7 +771,7 @@ TEST(CodegenRepeated, PackedScalarVector) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());
@@ -811,7 +811,7 @@ TEST(CodegenRepeated, PackedVarintScalarVectorFull) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());
@@ -838,7 +838,7 @@ TEST(CodegenRepeated, PackedFixedScalarVectorFull) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());
@@ -879,7 +879,7 @@ TEST(CodegenRepeated, PackedScalarVectorRepeated) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());
@@ -930,7 +930,7 @@ TEST(CodegenRepeated, NonScalar) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   constexpr std::array<std::string_view, 4> kExpectedString{
@@ -960,7 +960,7 @@ TEST(CodegenRepeated, PackedEnum) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());
@@ -990,7 +990,7 @@ TEST(CodegenRepeated, PackedEnumVector) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   EXPECT_EQ(repeated_test.Next(), OkStatus());

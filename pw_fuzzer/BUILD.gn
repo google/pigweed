@@ -81,8 +81,9 @@ pw_doc_group("docs") {
 pw_fuzzer("toy_fuzzer") {
   sources = [ "examples/toy_fuzzer.cc" ]
   deps = [
-    "$dir_pw_result",
-    "$dir_pw_string",
+    dir_pw_result,
+    dir_pw_span,
+    dir_pw_string,
   ]
 }
 

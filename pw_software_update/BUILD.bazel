@@ -33,6 +33,26 @@ proto_library(
 )
 
 pw_cc_library(
+    name = "openable_reader",
+    hdrs = [
+        "public/pw_software_update/openable_reader.h",
+    ],
+    deps = [
+        "//pw_stream",
+    ],
+)
+
+pw_cc_library(
+    name = "blob_store_openable_reader",
+    hdrs = [
+        "public/pw_software_update/blob_store_openable_reader.h",
+    ],
+    deps = [
+        ":openable_reader",
+    ],
+)
+
+pw_cc_library(
     name = "update_bundle",
     srcs = [
         "manifest_accessor.cc",
@@ -46,6 +66,8 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":blob_store_openable_reader",
+        ":openable_reader",
         "//pw_blob_store",
         "//pw_kvs",
         "//pw_log",

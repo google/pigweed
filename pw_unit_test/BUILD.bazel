@@ -164,13 +164,14 @@ pw_proto_library(
 pw_cc_library(
     name = "rpc_service",
     srcs = [
-        "rpc_event_handler.cc",
+        "rpc_light_event_handler.cc",
         "unit_test_service.cc",
     ],
     hdrs = [
-        "public/pw_unit_test/internal/rpc_event_handler.h",
         "public/pw_unit_test/unit_test_service.h",
+        "rpc_light_public/pw_unit_test/internal/rpc_event_handler.h",
     ],
+    includes = ["rpc_light_public"],
     deps = [
         ":pw_unit_test",
         ":unit_test_cc.pwpb",
@@ -242,4 +243,14 @@ filegroup(
     #     "//pw_log",
     #     "//pw_rpc/system_server",
     # ],
+)
+
+# GTest is not yet supported in the Bazel build. This filegroup silences
+# warnings about these files not being included in the Bazel build.
+filegroup(
+    name = "gtest_rpc_support",
+    srcs = [
+        "rpc_gtest_event_handler.cc",
+        "rpc_gtest_public/pw_unit_test/internal/rpc_event_handler.h",
+    ],
 )

@@ -25,6 +25,14 @@
 #define PW_LOG_RPC_CONFIG_MAX_FILTER_RULE_MODULE_NAME_SIZE 4
 #endif  // PW_LOG_RPC_CONFIG_MAX_FILTER_RULE_MODULE_NAME_SIZE
 
+// Log filter threads are optionally tokenized,thus their backing on-device
+// container can have different sizes. A token may be represented by a 32-bit
+// integer, usually two. Default the max thread size to
+// 10 bytes.
+#ifndef PW_LOG_RPC_CONFIG_MAX_FILTER_RULE_THREAD_NAME_SIZE
+#define PW_LOG_RPC_CONFIG_MAX_FILTER_RULE_THREAD_NAME_SIZE 10
+#endif  // PW_LOG_RPC_CONFIG_MAX_FILTER_RULE_THREAD_NAME_SIZE
+
 // Log filter IDs are optionally tokenized, and thus their backing on-device
 // container can have different sizes. A token may be represented by a 32-bit
 // integer (though it is usually 2 bytes). Default the max module name size to
@@ -80,4 +88,7 @@ inline constexpr size_t kMaxModuleNameBytes =
 
 inline constexpr size_t kMaxFilterIdBytes =
     PW_LOG_RPC_CONFIG_MAX_FILTER_ID_SIZE;
+
+inline constexpr size_t kMaxThreadNameBytes =
+    PW_LOG_RPC_CONFIG_MAX_FILTER_RULE_THREAD_NAME_SIZE;
 }  // namespace pw::log_rpc::cfg

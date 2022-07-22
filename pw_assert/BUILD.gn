@@ -32,18 +32,18 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
-config("lite_backend_overrides") {
-  include_dirs = [ "assert_lite_public_overrides" ]
+config("assert_backend_overrides") {
+  include_dirs = [ "assert_compatibility_public_overrides" ]
   visibility = [ ":*" ]
 }
 
-config("print_and_abort_backend_overrides") {
-  include_dirs = [ "print_and_abort_public_overrides" ]
+config("print_and_abort_check_backend_overrides") {
+  include_dirs = [ "print_and_abort_check_public_overrides" ]
   visibility = [ ":*" ]
 }
 
-config("print_and_abort_lite_backend_overrides") {
-  include_dirs = [ "print_and_abort_lite_public_overrides" ]
+config("print_and_abort_assert_backend_overrides") {
+  include_dirs = [ "print_and_abort_assert_public_overrides" ]
   visibility = [ ":*" ]
 }
 
@@ -104,16 +104,17 @@ pw_facade("assert") {
 # This backend to pw_assert's PW_ASSERT()/PW_DASSERT() macros provides backwards
 # compatibility with pw_assert's previous C-symbol based API.
 #
-# Warning: The "lite" naming is transitional. assert_lite_backend.h headers
-# will be renamed as the pw_assert API is reassessed. (pwbug/246)
-pw_source_set("lite_compatibility_backend") {
-  public_configs = [ ":lite_backend_overrides" ]
+# Warning: The assert facade is in a transitional state, and this target is
+# likely to be removed as the pw_assert API is reassessed. (b/235149326)
+pw_source_set("assert_compatibility_backend") {
+  public_configs = [ ":assert_backend_overrides" ]
   public_deps = [ dir_pw_preprocessor ]
-  public =
-      [ "assert_lite_public_overrides/pw_assert_backend/assert_lite_backend.h" ]
+  public = [
+    "assert_compatibility_public_overrides/pw_assert_backend/assert_backend.h",
+  ]
 }
 
-group("lite_compatibility_backend.impl") {
+group("assert_compatibility_backend.impl") {
 }
 
 pw_source_set("print_and_abort") {
@@ -126,32 +127,30 @@ pw_source_set("print_and_abort") {
 # This backend to pw_assert's PW_CHECK()/PW_DCHECK() macros prints the assert
 # expression, evaluated expression, file/line number, function, and user message
 # with printf, then aborts. It is intended for use with host builds.
-pw_source_set("print_and_abort_backend") {
-  public_configs = [ ":print_and_abort_backend_overrides" ]
+pw_source_set("print_and_abort_check_backend") {
+  public_configs = [ ":print_and_abort_check_backend_overrides" ]
   public_deps = [ ":print_and_abort" ]
-  public =
-      [ "print_and_abort_public_overrides/pw_assert_backend/assert_backend.h" ]
+  public = [
+    "print_and_abort_check_public_overrides/pw_assert_backend/check_backend.h",
+  ]
 }
 
-group("print_and_abort_backend.impl") {
+group("print_and_abort_check_backend.impl") {
 }
 
 # This backend to pw_assert's PW_ASSERT()/PW_DASSERT() macros prints the assert
 # expression, file/line number, and function with printf, then aborts. It is
 # intended for use with host builds.
-#
-# Warning: The "lite" naming is transitional. assert_lite_backend.h headers
-# will be renamed as the pw_assert API is reassessed. (pwbug/246)
-pw_source_set("print_and_abort_lite_backend") {
-  public_configs = [ ":print_and_abort_lite_backend_overrides" ]
+pw_source_set("print_and_abort_assert_backend") {
+  public_configs = [ ":print_and_abort_assert_backend_overrides" ]
   public_deps = [
     ":config",
     ":print_and_abort",
   ]
-  public = [ "print_and_abort_lite_public_overrides/pw_assert_backend/assert_lite_backend.h" ]
+  public = [ "print_and_abort_assert_public_overrides/pw_assert_backend/assert_backend.h" ]
 }
 
-group("print_and_abort_lite_backend.impl") {
+group("print_and_abort_assert_backend.impl") {
 }
 
 # pw_assert is low-level and ubiquitous. Because of this, it can often cause
@@ -197,7 +196,7 @@ pw_test_group("tests") {
 # provided. However, since this doesn't depend on the backend it re-includes
 # the facade headers.
 pw_test("assert_facade_test") {
-  configs = [ ":public_include_path" ]  # For internal/assert_impl.h
+  configs = [ ":public_include_path" ]  # For internal/check_impl.h
   sources = [
     "assert_facade_test.cc",
     "fake_backend.cc",
@@ -205,8 +204,10 @@ pw_test("assert_facade_test") {
     "pw_assert_test/fake_backend.h",
   ]
   deps = [
-    ":assert",
+    ":pw_assert",
+    dir_pw_span,
     dir_pw_status,
+    dir_pw_string,
   ]
 
   # TODO(frolv): Fix this test on the QEMU target.

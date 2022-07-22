@@ -22,7 +22,7 @@ pw_auto_add_simple_module(pw_sys_io_zephyr
   IMPLEMENTS_FACADE
     pw_sys_io
   PUBLIC_DEPS
+    pw_sys_io.default_putget_bytes
     zephyr_interface
 )
-pw_set_backend(pw_sys_io pw_sys_io_zephyr)
 zephyr_link_libraries(pw_sys_io_zephyr)

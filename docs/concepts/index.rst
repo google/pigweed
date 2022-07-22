@@ -109,3 +109,21 @@ to keep in mind:
 * Setting up new projects to use Pigweed is currently not very easy, but we are
   working to address that. In the meantime, join the Pigweed community on
   `Discord <https://discord.gg/M9NSeTA>`_ to get help.
+
+Supported language versions
+===========================
+
+C++
+---
+Most Pigweed code requires C++17, but a few modules, such as
+:ref:`module-pw_kvs` and :ref:`module-pw_tokenizer`, work with C++14. All
+Pigweed code is compatible with C++20. Pigweed defines toolchains for testing
+with C++14 and C++20; see :ref:`target-host` target documentation for more
+information.
+
+Python
+------
+We currently officially support Python 3.7.7, 3.8, and 3.9.
+
+.. note::
+   Python 3.10 is not yet supported (https://bugs.pigweed.dev/234874769).

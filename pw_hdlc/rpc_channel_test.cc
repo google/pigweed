@@ -34,6 +34,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_hdlc/encoded_size.h"
 #include "pw_stream/memory_stream.h"
 
 using std::byte;
@@ -46,8 +47,9 @@ constexpr uint8_t kAddress = 0x7b;  // 123
 constexpr uint8_t kEncodedAddress = (kAddress << 1) | 1;
 constexpr byte kControl = byte{0x3};  // UI-frame control sequence.
 
-// Size of the in-memory buffer to use for this test.
-constexpr size_t kSinkBufferSize = 15;
+// Size of the in-memory buffer to use for this test. All tests send a one-byte
+// payload.
+constexpr size_t kSinkBufferSize = MaxEncodedFrameSize(1);
 
 TEST(RpcChannelOutput, 1BytePayload) {
   stream::MemoryWriterBuffer<kSinkBufferSize> memory_writer;
@@ -61,8 +63,7 @@ TEST(RpcChannelOutput, 1BytePayload) {
   constexpr auto expected = bytes::Concat(
       kFlag, kEncodedAddress, kControl, 'A', uint32_t{0x653c9e82}, kFlag);
 
-  EXPECT_EQ(OkStatus(),
-            output.Send(std::span(buffer).first(sizeof(test_data))));
+  EXPECT_EQ(OkStatus(), output.Send(span(buffer).first(sizeof(test_data))));
 
   ASSERT_EQ(memory_writer.bytes_written(), expected.size());
   EXPECT_EQ(
@@ -87,13 +88,22 @@ TEST(RpcChannelOutput, EscapingPayloadTest) {
                                           byte{0x7d} ^ byte{0x20},
                                           uint32_t{0x4a53e205},
                                           kFlag);
-  EXPECT_EQ(OkStatus(), output.Send(std::span(buffer).first(test_data.size())));
+  EXPECT_EQ(OkStatus(), output.Send(span(buffer).first(test_data.size())));
 
   ASSERT_EQ(memory_writer.bytes_written(), 10u);
   EXPECT_EQ(
       std::memcmp(
           memory_writer.data(), expected.data(), memory_writer.bytes_written()),
       0);
+}
+
+TEST(FixedMtuChannelOutput, CompileTest) {
+  constexpr size_t kRequiredMtu =
+      MaxEncodedFrameSize(rpc::cfg::kEncodingBufferSizeBytes);
+  stream::MemoryWriterBuffer<kRequiredMtu> memory_writer;
+  [[maybe_unused]] FixedMtuChannelOutput<kRequiredMtu> channel_output(
+      memory_writer, kAddress, "RpcChannelOutput");
+  EXPECT_EQ(channel_output.MaxSafePayloadSize(), rpc::MaxSafePayloadSize());
 }
 
 TEST(RpcChannelOutputBuffer, 1BytePayload) {
@@ -108,8 +118,7 @@ TEST(RpcChannelOutputBuffer, 1BytePayload) {
   constexpr auto expected = bytes::Concat(
       kFlag, kEncodedAddress, kControl, 'A', uint32_t{0x653c9e82}, kFlag);
 
-  EXPECT_EQ(OkStatus(),
-            output.Send(std::span(buffer).first(sizeof(test_data))));
+  EXPECT_EQ(OkStatus(), output.Send(span(buffer).first(sizeof(test_data))));
 
   ASSERT_EQ(memory_writer.bytes_written(), expected.size());
   EXPECT_EQ(
@@ -134,8 +143,7 @@ TEST(RpcChannelOutputBuffer, MultibyteAddress) {
                                           uint32_t{0xd393a8a0},
                                           kFlag);
 
-  EXPECT_EQ(OkStatus(),
-            output.Send(std::span(buffer).first(sizeof(test_data))));
+  EXPECT_EQ(OkStatus(), output.Send(span(buffer).first(sizeof(test_data))));
 
   ASSERT_EQ(memory_writer.bytes_written(), expected.size());
   EXPECT_EQ(

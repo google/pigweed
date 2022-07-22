@@ -16,8 +16,8 @@
 #include <netinet/in.h>
 
 #include <cstdint>
-#include <span>
 
+#include "pw_span/span.h"
 #include "pw_stream/stream.h"
 
 namespace pw::stream {
@@ -26,7 +26,7 @@ class SocketStream : public NonSeekableReaderWriter {
  public:
   constexpr SocketStream() = default;
 
-  ~SocketStream() { Close(); }
+  ~SocketStream() override { Close(); }
 
   // Listen to the port and return after a client is connected
   Status Serve(uint16_t port);
@@ -48,7 +48,7 @@ class SocketStream : public NonSeekableReaderWriter {
  private:
   static constexpr int kInvalidFd = -1;
 
-  Status DoWrite(std::span<const std::byte> data) override;
+  Status DoWrite(span<const std::byte> data) override;
 
   StatusWithSize DoRead(ByteSpan dest) override;
 

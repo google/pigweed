@@ -17,26 +17,28 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_unit_test/event_handler.h"
 
+// Define the test messages and string formats as literal strings so they
+// work with different log databases.
+#define PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_START \
+  "[==========] Running all tests."
+#define PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_END \
+  "[==========] Done running all tests."
+
+#define PW_UNIT_TEST_GOOGLETEST_PASSED_SUMMARY "[  PASSED  ] %d test(s)."
+#define PW_UNIT_TEST_GOOGLETEST_SKIPPED_SUMMARY "[  SKIPPED ] %d test(s)."
+#define PW_UNIT_TEST_GOOGLETEST_FAILED_SUMMARY "[  FAILED  ] %d test(s)."
+
+#define PW_UNIT_TEST_GOOGLETEST_CASE_START "[ RUN      ] %s.%s"
+#define PW_UNIT_TEST_GOOGLETEST_CASE_OK "[       OK ] %s.%s"
+#define PW_UNIT_TEST_GOOGLETEST_CASE_FAILED "[  FAILED  ] %s.%s"
+#define PW_UNIT_TEST_GOOGLETEST_CASE_SKIPPED "[  SKIPPED ] %s.%s"
+
 namespace pw {
 namespace unit_test {
 
 // Renders the test results in Google Test style.
 class GoogleTestStyleEventHandler : public EventHandler {
  public:
-  static constexpr const char kRunAllTestsStart[] =
-      "[==========] Running all tests.";
-  static constexpr const char kRunAllTestsEnd[] =
-      "[==========] Done running all tests.";
-
-  static constexpr const char kPassedSummary[] = "[  PASSED  ] %d test(s).";
-  static constexpr const char kSkippedSummary[] = "[  SKIPPED ] %d test(s).";
-  static constexpr const char kFailedSummary[] = "[  FAILED  ] %d test(s).";
-
-  static constexpr const char kCaseStart[] = "[ RUN      ] %s.%s";
-  static constexpr const char kCaseOk[] = "[       OK ] %s.%s";
-  static constexpr const char kCaseFailed[] = "[  FAILED  ] %s.%s";
-  static constexpr const char kCaseSkipped[] = "[  SKIPPED ] %s.%s";
-
   void RunAllTestsStart() override;
   void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) override;
   void TestCaseStart(const TestCase& test_case) override;

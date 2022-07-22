@@ -13,10 +13,9 @@
 // the License.
 #pragma once
 
-#include <span>
-
 #include "pw_function/function.h"
 #include "pw_router/egress.h"
+#include "pw_span/span.h"
 
 namespace pw::router {
 

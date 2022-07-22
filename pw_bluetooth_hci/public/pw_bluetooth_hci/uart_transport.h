@@ -13,9 +13,8 @@
 // the License.
 #pragma once
 
-#include <bit>
-
 #include "pw_bluetooth_hci/packet.h"
+#include "pw_bytes/bit.h"
 #include "pw_bytes/span.h"
 #include "pw_function/function.h"
 #include "pw_status/status_with_size.h"

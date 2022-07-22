@@ -31,6 +31,8 @@ namespace pw::sync {
 //
 // The single consumer aspect of the API permits the use of a smaller and/or
 // faster native APIs such as direct thread signaling.
+//
+// The ThreadNotification is initialized to being empty (latch is not set).
 class ThreadNotification {
  public:
   using native_handle_type = backend::NativeThreadNotificationHandle;

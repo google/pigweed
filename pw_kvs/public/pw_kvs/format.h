@@ -14,9 +14,9 @@
 #pragma once
 
 #include <cstdint>
-#include <span>
 
 #include "pw_kvs/checksum.h"
+#include "pw_span/span.h"
 
 namespace pw {
 namespace kvs {
@@ -85,7 +85,7 @@ static_assert(sizeof(EntryHeader) == 16, "EntryHeader must not have padding");
 // simultaneously supported formats.
 class EntryFormats {
  public:
-  explicit constexpr EntryFormats(std::span<const EntryFormat> formats)
+  explicit constexpr EntryFormats(span<const EntryFormat> formats)
       : formats_(formats) {}
 
   explicit constexpr EntryFormats(const EntryFormat& format)
@@ -98,7 +98,7 @@ class EntryFormats {
   const EntryFormat* Find(uint32_t magic) const;
 
  private:
-  const std::span<const EntryFormat> formats_;
+  const span<const EntryFormat> formats_;
 };
 
 }  // namespace internal

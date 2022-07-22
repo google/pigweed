@@ -36,7 +36,12 @@ std::array<std::byte, PW_SYSTEM_LOG_BUFFER_SIZE> log_buffer;
 // To save RAM, share the mutex and buffer between drains, since drains are
 // flushed sequentially.
 sync::Mutex drains_mutex;
+
 // Buffer to decode and remove entries from log buffer, to send to a drain.
+//
+// TODO(amontanez): pw_log_rpc should provide a helper for this since there's
+// proto encoding overhead unaccounted for here.
+static_assert(rpc::MaxSafePayloadSize() >= PW_SYSTEM_MAX_LOG_ENTRY_SIZE);
 std::array<std::byte, PW_SYSTEM_MAX_LOG_ENTRY_SIZE> log_decode_buffer
     PW_GUARDED_BY(drains_mutex);
 
@@ -49,10 +54,7 @@ std::array<RpcLogDrain, 1> drains{{
 
 log_rpc::RpcLogDrainMap drain_map(drains);
 
-// TODO(amontanez): Is there a helper to subtract RPC overhead?
-constexpr size_t kMaxPackedLogMessagesSize =
-    PW_SYSTEM_MAX_TRANSMISSION_UNIT - 32;
-
+constexpr size_t kMaxPackedLogMessagesSize = rpc::MaxSafePayloadSize();
 std::array<std::byte, kMaxPackedLogMessagesSize> log_packing_buffer;
 
 }  // namespace

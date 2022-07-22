@@ -52,7 +52,7 @@ class SynchronousCallTest : public ::testing::Test {
  protected:
   using FakeChannelOutput = PwpbFakeChannelOutput<2>;
 
-  void OnSend(std::span<const std::byte> buffer, Status status) {
+  void OnSend(span<const std::byte> buffer, Status status) {
     if (!status.ok()) {
       return;
     }
@@ -81,8 +81,9 @@ class SynchronousCallTest : public ::testing::Test {
                     Status response_status = OkStatus()) {
     response_ = response;
     response_status_ = response_status;
-    output().set_on_send([this](std::span<const std::byte> buffer,
-                                Status status) { OnSend(buffer, status); });
+    output().set_on_send([this](span<const std::byte> buffer, Status status) {
+      OnSend(buffer, status);
+    });
   }
 
   MethodInfo::GeneratedClient generated_client() {

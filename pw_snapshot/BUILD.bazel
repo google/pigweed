@@ -33,7 +33,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":metadata_proto_cc",
+        ":metadata_proto_cc.pwpb",
         "//pw_bytes",
         "//pw_protobuf",
         "//pw_status",

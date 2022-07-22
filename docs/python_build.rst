@@ -24,7 +24,7 @@ Build systems automate these auxiliary tasks of software development, making it
 possible to build larger, more complex systems quickly and robustly.
 
 Python is an interpreted language, but it shares most build automation concerns
-with other languages. Pigweed uses Python extensively and must to address these
+with other languages. Pigweed uses Python extensively and must address these
 needs for itself and its users.
 
 Existing solutions
@@ -271,8 +271,8 @@ Testing
 ^^^^^^^
 Tests for a Python package are listed in its ``pw_python_package`` target.
 Adding a new test is simple: write the test file and list it in its accompanying
-Python package. The build will run the it when the test, the package, or one
-of its dependencies is updated.
+Python package. The build will run it when the test, the package, or one of its
+dependencies is updated.
 
 Static analysis
 ^^^^^^^^^^^^^^^
@@ -340,7 +340,7 @@ source tree. However, removing the ``setup.py`` would preclude using a direct,
 editable installation from the source tree.
 
 Pigweed packages containing protobufs are generated in full or in part. These
-packages may use generated setup files, since they are always be packaged or
+packages may use generated setup files, since they are always packaged or
 installed from the build output directory.
 
 See also

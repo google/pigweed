@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser, jasmine */
+/* eslint-env browser */
 import {Subject} from 'rxjs';
-
+import type {SerialConnectionEvent, SerialPort, Serial, SerialPortRequestOptions, SerialOptions} from "../../types/serial"
 /**
  * AsyncQueue is a queue that allows values to be dequeued
  * before they are enqueued, returning a promise that resolves
@@ -125,12 +125,12 @@ class SerialPortMock implements SerialPort {
   /**
    * A spy for opening the serial port.
    */
-  open = jasmine.createSpy('openSpy', async (options?: SerialOptions) => {});
+  open = jest.fn(async (options?: SerialOptions) => { });
 
   /**
    * A spy for closing the serial port.
    */
-  close = jasmine.createSpy('closeSpy', () => {});
+  close = jest.fn(() => { });
 }
 
 export class SerialMock implements Serial {

@@ -15,9 +15,9 @@
 #include "pw_string/format.h"
 
 #include <cstdarg>
-#include <span>
 
 #include "gtest/gtest.h"
+#include "pw_span/span.h"
 
 namespace pw::string {
 namespace {
@@ -41,7 +41,7 @@ TEST(Format, ValidFormatStringAndArguments_Succeeds) {
 }
 
 TEST(Format, EmptyBuffer_ReturnsResourceExhausted) {
-  auto result = Format(std::span<char>(), "?");
+  auto result = Format(span<char>(), "?");
 
   EXPECT_EQ(Status::ResourceExhausted(), result.status());
   EXPECT_EQ(0u, result.size());
@@ -65,9 +65,7 @@ TEST(Format, ArgumentLargerThanBuffer_ReturnsResourceExhausted) {
   EXPECT_STREQ("2big", buffer);
 }
 
-StatusWithSize CallFormatWithVaList(std::span<char> buffer,
-                                    const char* fmt,
-                                    ...) {
+StatusWithSize CallFormatWithVaList(span<char> buffer, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
 

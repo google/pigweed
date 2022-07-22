@@ -13,11 +13,11 @@
 // the License.
 #include "pw_checksum/crc32.h"
 
-#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_span/span.h"
 
 namespace pw::checksum {
 namespace {
@@ -39,15 +39,15 @@ constexpr std::string_view kString =
 constexpr uint32_t kStringCrc = 0x9EC87F88;
 
 TEST(Crc32, Empty) {
-  EXPECT_EQ(Crc32::Calculate(std::span<std::byte>()), PW_CHECKSUM_EMPTY_CRC32);
+  EXPECT_EQ(Crc32::Calculate(span<std::byte>()), PW_CHECKSUM_EMPTY_CRC32);
 }
 
 TEST(Crc32, Buffer) {
-  EXPECT_EQ(Crc32::Calculate(std::as_bytes(std::span(kBytes))), kBufferCrc);
+  EXPECT_EQ(Crc32::Calculate(as_bytes(span(kBytes))), kBufferCrc);
 }
 
 TEST(Crc32, String) {
-  EXPECT_EQ(Crc32::Calculate(std::as_bytes(std::span(kString))), kStringCrc);
+  EXPECT_EQ(Crc32::Calculate(as_bytes(span(kString))), kStringCrc);
 }
 
 TEST(Crc32Class, ByteByByte) {
@@ -60,7 +60,7 @@ TEST(Crc32Class, ByteByByte) {
 
 TEST(Crc32Class, Buffer) {
   Crc32 crc32;
-  crc32.Update(std::as_bytes(std::span(kBytes)));
+  crc32.Update(as_bytes(span(kBytes)));
   EXPECT_EQ(crc32.value(), kBufferCrc);
 }
 
@@ -73,7 +73,7 @@ TEST(Crc32Class, BufferAppend) {
 
 TEST(Crc32Class, String) {
   Crc32 crc32;
-  crc32.Update(std::as_bytes(std::span(kString)));
+  crc32.Update(as_bytes(span(kString)));
   EXPECT_EQ(crc32.value(), kStringCrc);
 }
 

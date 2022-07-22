@@ -19,9 +19,9 @@
 #include <jni.h>
 
 #include <cstring>
-#include <span>
 
 #include "pw_preprocessor/concat.h"
+#include "pw_span/span.h"
 #include "pw_tokenizer/detokenize.h"
 #include "pw_tokenizer/token_database.h"
 
@@ -57,7 +57,7 @@ JNIEXPORT jlong DETOKENIZER_METHOD(newNativeDetokenizer)(JNIEnv* env,
   jbyte* const data = env->GetByteArrayElements(array, nullptr);
   const jsize size = env->GetArrayLength(array);
 
-  TokenDatabase tokens = TokenDatabase::Create(std::span(data, size));
+  TokenDatabase tokens = TokenDatabase::Create(span(data, size));
   const jlong handle =
       PointerToHandle(new Detokenizer(tokens.ok() ? tokens : TokenDatabase()));
 

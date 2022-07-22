@@ -13,8 +13,15 @@
 // the License.
 #pragma once
 
+// The C implementation of this macro requires a C99 compound literal. In C++,
+// avoid the compound literal in case -Wc99-extensions is enabled.
+#ifdef __cplusplus
 #define _PW_SYSTEM_CLOCK_DURATION(num_ticks) \
   (pw_chrono_SystemClock_Duration{.ticks = (num_ticks)})
+#else
+#define _PW_SYSTEM_CLOCK_DURATION(num_ticks) \
+  ((pw_chrono_SystemClock_Duration){.ticks = (num_ticks)})
+#endif  // __cplusplus
 
 // clang-format off
 

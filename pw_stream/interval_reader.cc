@@ -80,4 +80,4 @@ Status IntervalReader::DoSeek(ptrdiff_t offset, Whence origin) {
   return OkStatus();
 }
 
-};  // namespace pw::stream
+}  // namespace pw::stream

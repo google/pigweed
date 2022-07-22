@@ -237,7 +237,6 @@ def pw_proto_library(name, **kwargs):  # buildifier: disable=function-docstring
             defines = kwargs.get("defines", []),
             srcs = [name_pb + "_srcs"] if info["has_srcs"] else [],
             deps = info["deps"],
-            include_prefix = kwargs.get("include_prefix", ""),
             linkopts = kwargs.get("linkopts", []),
             linkstatic = kwargs.get("linkstatic", True),
             local_defines = kwargs.get("local_defines", []),

@@ -89,6 +89,7 @@ pw_source_set("core") {
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_result,
+    dir_pw_span,
     dir_pw_status,
     dir_pw_stream,
   ]
@@ -147,7 +148,7 @@ pw_test_group("tests") {
       ":transfer_thread_test",
     ]
 
-    # TODO(pwbug/441): Fix transfer tests on Windows and non-host builds.
+    # TODO(b/235345886): Fix transfer tests on Windows and non-host builds.
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
       tests += [
@@ -171,7 +172,7 @@ pw_test("transfer_test") {
     ":test_helpers",
     "$dir_pw_assert",
     "$dir_pw_containers",
-    "$dir_pw_rpc:thread_testing",
+    "$dir_pw_rpc:test_helpers",
     "$dir_pw_rpc/raw:test_method_context",
     "$dir_pw_thread:thread",
   ]
@@ -184,7 +185,7 @@ pw_test("transfer_thread_test") {
     ":proto.raw_rpc",
     ":pw_transfer",
     ":test_helpers",
-    "$dir_pw_rpc:thread_testing",
+    "$dir_pw_rpc:test_helpers",
     "$dir_pw_rpc/raw:client_testing",
     "$dir_pw_rpc/raw:test_method_context",
     "$dir_pw_thread:thread",
@@ -196,7 +197,7 @@ pw_test("client_test") {
   deps = [
     ":client",
     ":test_helpers",
-    "$dir_pw_rpc:thread_testing",
+    "$dir_pw_rpc:test_helpers",
     "$dir_pw_rpc/raw:client_testing",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",

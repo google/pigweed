@@ -169,7 +169,7 @@ It's also possible to construct a ``pw_tokenizer_Payload`` using the
             level, module, PW_LOG_FLAGS, line_number)
             .value();
     std::array<std::byte, sizeof(token)> token_buffer =
-        pw::bytes::CopyInOrder(std::endian::little, token);
+        pw::bytes::CopyInOrder(endian::little, token);
 
     pw_tokenizer_HandleEncodedMessageWithPayload(
         payload,

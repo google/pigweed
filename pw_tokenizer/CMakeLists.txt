@@ -35,7 +35,7 @@ pw_add_module_library(pw_tokenizer
     public
   PUBLIC_DEPS
     pw_containers
-    pw_polyfill.span
+    pw_span
     pw_preprocessor
     pw_tokenizer.config
   SOURCES
@@ -74,8 +74,7 @@ pw_add_module_library(pw_tokenizer.base64
     public
   PUBLIC_DEPS
     pw_base64
-    pw_polyfill.cstddef
-    pw_polyfill.span
+    pw_span
     pw_tokenizer
     pw_tokenizer.config
   SOURCES
@@ -89,7 +88,7 @@ pw_add_module_library(pw_tokenizer.decoder
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_polyfill.span
+    pw_span
     pw_tokenizer
   SOURCES
     decode.cc
@@ -98,6 +97,7 @@ pw_add_module_library(pw_tokenizer.decoder
     token_database.cc
   PRIVATE_DEPS
     pw_bytes
+    pw_bytes.bit
     pw_varint
 )
 

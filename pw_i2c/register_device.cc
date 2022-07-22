@@ -26,7 +26,7 @@ namespace {
 void PutRegisterAddressInByteBuilder(
     ByteBuilder& byte_builder,
     const uint32_t register_address,
-    const std::endian order,
+    const endian order,
     RegisterAddressSize register_address_size) {
   // TODO(b/185952662): Simplify the call site by extending the byte builder
   //                   and endian API.
@@ -50,7 +50,7 @@ void PutRegisterAddressInByteBuilder(
 
 void PutRegisterData16InByteBuilder(ByteBuilder& byte_builder,
                                     ConstByteSpan register_data,
-                                    const std::endian order) {
+                                    const endian order) {
   uint32_t data_pointer_index = 0;
 
   while (data_pointer_index < register_data.size()) {
@@ -63,7 +63,7 @@ void PutRegisterData16InByteBuilder(ByteBuilder& byte_builder,
 
 Status PutRegisterData32InByteBuilder(ByteBuilder& byte_builder,
                                       ConstByteSpan register_data,
-                                      const std::endian order) {
+                                      const endian order) {
   uint32_t data_pointer_index = 0;
 
   while (data_pointer_index < register_data.size()) {

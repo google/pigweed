@@ -15,10 +15,10 @@
 
 #include <array>
 #include <cstddef>
-#include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
+#include "pw_span/span.h"
 #include "pw_stream/seek.h"
 #include "pw_stream/stream.h"
 

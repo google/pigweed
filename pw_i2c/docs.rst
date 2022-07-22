@@ -73,7 +73,7 @@ list. An example of this is shown below:
 
   // Takes the first two bytes from the expected array to build a mismatching
   // span to write.
-  ConstByteSpan write2 = std::span(kExpectWrite2).first(2);
+  ConstByteSpan write2 = pw::span(kExpectWrite2).first(2);
   // write2 fails as i2c_mock expects {3, 4, 5} != {3, 4}
   status = i2c_mock.WriteFor(kAddress2, write2, 2ms);
   // End driver code

@@ -34,9 +34,9 @@ void RawMethod::SynchronousUnaryInvoker(const CallContext& context,
   StatusWithSize sws =
       static_cast<const RawMethod&>(context.method())
           .function_.synchronous_unary(
-              context.service(), request.payload(), std::span(payload_buffer));
+              context.service(), request.payload(), span(payload_buffer));
 
-  responder.Finish(std::span(payload_buffer, sws.size()), sws.status())
+  responder.Finish(span(payload_buffer, sws.size()), sws.status())
       .IgnoreError();
 }
 

@@ -15,7 +15,6 @@
 
 #include <cassert>
 #include <cstddef>
-#include <span>
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
@@ -27,6 +26,7 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/service.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/lock_annotations.h"
 
@@ -134,7 +134,7 @@ class Call : public IntrusiveList<Call>::Item {
   // is closed.
   void SendInitialClientRequest(ConstByteSpan payload)
       PW_UNLOCK_FUNCTION(rpc_lock()) {
-    // TODO(pwbug/597): Ensure the call object is locked before releasing the
+    // TODO(b/234876851): Ensure the call object is locked before releasing the
     //     RPC mutex.
     if (const Status status = SendPacket(PacketType::REQUEST, payload);
         !status.ok()) {
@@ -150,7 +150,7 @@ class Call : public IntrusiveList<Call>::Item {
   void HandlePayload(ConstByteSpan message) const
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     const bool invoke = on_next_ != nullptr;
-    // TODO(pwbug/597): Ensure on_next_ is properly guarded.
+    // TODO(b/234876851): Ensure on_next_ is properly guarded.
     rpc_lock().unlock();
 
     if (invoke) {
@@ -165,12 +165,13 @@ class Call : public IntrusiveList<Call>::Item {
     CallOnError(status);
   }
 
-  // Aborts the RPC because its channel was closed. Does NOT unregister the
-  // call! The calls are removed when iterating over the list in the endpoint.
-  void HandleChannelClose() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  // Aborts the RPC because of a change in the endpoint (e.g. channel closed,
+  // service unregistered). Does NOT unregister the call! The calls must be
+  // removed when iterating over the list in the endpoint.
+  void Abort() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     // Locking here is problematic because CallOnError releases rpc_lock().
     //
-    // pwbug/597 must be addressed before the locking here can be cleaned up.
+    // b/234876851 must be addressed before the locking here can be cleaned up.
     MarkClosed();
 
     CallOnError(Status::Aborted());
@@ -258,7 +259,7 @@ class Call : public IntrusiveList<Call>::Item {
   void CallOnError(Status error) PW_UNLOCK_FUNCTION(rpc_lock()) {
     const bool invoke = on_error_ != nullptr;
 
-    // TODO(pwbug/597): Ensure on_error_ is properly guarded.
+    // TODO(b/234876851): Ensure on_error_ is properly guarded.
     rpc_lock().unlock();
     if (invoke) {
       on_error_(error);

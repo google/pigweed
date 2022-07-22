@@ -42,7 +42,7 @@ struct ReaderWriterTestContext {
 
   ReaderWriterTestContext()
       : channel(Channel::Create<kChannelId>(&output)),
-        server(std::span(&channel, 1)) {}
+        server(span(&channel, 1)) {}
 
   TestServiceImpl service;
   RawFakeChannelOutput<4> output;
@@ -169,8 +169,7 @@ TEST(RawUnaryResponder, Open_ReturnsUsableResponder) {
       ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
-  EXPECT_EQ(OkStatus(),
-            call.Finish(std::as_bytes(std::span("hello from pw_rpc"))));
+  EXPECT_EQ(OkStatus(), call.Finish(as_bytes(span("hello from pw_rpc"))));
 
   EXPECT_STREQ(
       reinterpret_cast<const char*>(
@@ -222,7 +221,7 @@ TEST(RawServerWriter, Open_ReturnsUsableWriter) {
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
-  EXPECT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("321"))));
+  EXPECT_EQ(OkStatus(), call.Write(as_bytes(span("321"))));
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output.payloads<TestService::TestServerStreamRpc>()
@@ -238,8 +237,7 @@ TEST(RawServerReader, Open_ReturnsUsableReader) {
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
-  EXPECT_EQ(OkStatus(),
-            call.Finish(std::as_bytes(std::span("This is a message"))));
+  EXPECT_EQ(OkStatus(), call.Finish(as_bytes(span("This is a message"))));
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output.payloads<TestService::TestClientStreamRpc>()
@@ -255,7 +253,7 @@ TEST(RawServerReaderWriter, Open_ReturnsUsableReaderWriter) {
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
-  EXPECT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("321"))));
+  EXPECT_EQ(OkStatus(), call.Write(as_bytes(span("321"))));
 
   EXPECT_STREQ(
       reinterpret_cast<const char*>(
@@ -318,9 +316,9 @@ TEST(RawUnaryResponder, ReplaceActiveCall_DoesNotFinishCall) {
   ASSERT_TRUE(ctx.output.completions<TestService::TestUnaryRpc>().empty());
 
   constexpr const char kData[] = "Some data!";
-  EXPECT_EQ(OkStatus(),
-            active_call.Finish(std::as_bytes(std::span(kData)),
-                               Status::InvalidArgument()));
+  EXPECT_EQ(
+      OkStatus(),
+      active_call.Finish(as_bytes(span(kData)), Status::InvalidArgument()));
 
   EXPECT_STREQ(
       reinterpret_cast<const char*>(
@@ -378,7 +376,7 @@ TEST(RawServerWriter, ReplaceActiveCall_DoesNotFinishCall) {
       ctx.output.completions<TestService::TestServerStreamRpc>().empty());
 
   constexpr const char kData[] = "Some data!";
-  EXPECT_EQ(OkStatus(), active_call.Write(std::as_bytes(std::span(kData))));
+  EXPECT_EQ(OkStatus(), active_call.Write(as_bytes(span(kData))));
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output.payloads<TestService::TestServerStreamRpc>()
@@ -393,7 +391,7 @@ void WriteAsWriter(Writer& writer) {
   ASSERT_TRUE(writer.active());
   ASSERT_EQ(writer.channel_id(), ReaderWriterTestContext::kChannelId);
 
-  EXPECT_EQ(OkStatus(), writer.Write(std::as_bytes(std::span(kWriterData))));
+  EXPECT_EQ(OkStatus(), writer.Write(as_bytes(span(kWriterData))));
 }
 
 TEST(RawServerWriter, UsableAsWriter) {

@@ -16,7 +16,6 @@
 
 #include <array>
 #include <cstdint>
-#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
@@ -35,6 +34,7 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/mutex.h"
 
@@ -98,7 +98,7 @@ TEST(RpcLogDrainMap, GetDrainsByIdFromDrainMap) {
     ASSERT_TRUE(drain_result.ok());
     EXPECT_EQ(drain_result.value(), &drains[channel_id]);
   }
-  const std::span<RpcLogDrain> mapped_drains = drain_map.drains();
+  const span<RpcLogDrain> mapped_drains = drain_map.drains();
   ASSERT_EQ(mapped_drains.size(), kMaxDrains);
   for (uint32_t channel_id = 0; channel_id < kMaxDrains; ++channel_id) {
     EXPECT_EQ(&mapped_drains[channel_id], &drains[channel_id]);
@@ -123,7 +123,7 @@ TEST(RpcLogDrain, FlushingDrainWithOpenWriter) {
 
   rpc::RawFakeChannelOutput<3> output;
   rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
-  rpc::Server server(std::span(&channel, 1));
+  rpc::Server server(span(&channel, 1));
 
   // Attach drain to a MultiSink.
   RpcLogDrain& drain = drains[0];
@@ -162,7 +162,7 @@ TEST(RpcLogDrain, TryReopenOpenedDrain) {
 
   rpc::RawFakeChannelOutput<1> output;
   rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
-  rpc::Server server(std::span(&channel, 1));
+  rpc::Server server(span(&channel, 1));
 
   // Open Drain and try to open with a new writer.
   rpc::RawServerWriter writer =
@@ -200,14 +200,14 @@ class TrickleTest : public ::testing::Test {
         log_service_(drain_map_),
         output_(),
         channel_(rpc::Channel::Create<kDrainChannelId>(&output_)),
-        server_(std::span(&channel_, 1)) {}
+        server_(span(&channel_, 1)) {}
 
   TestLogEntry BasicLog(std::string_view message) {
     return {.metadata = kSampleMetadata,
             .timestamp = kSampleTimestamp,
             .dropped = 0,
-            .tokenized_data = std::as_bytes(std::span(message)),
-            .thread = std::as_bytes(std::span(kSampleThreadName))};
+            .tokenized_data = as_bytes(span(message)),
+            .thread = as_bytes(span(kSampleThreadName))};
   }
 
   void AttachDrain() { multisink_.AttachDrain(drains_[0]); }
@@ -423,7 +423,7 @@ TEST(RpcLogDrain, OnOpenCallbackCalled) {
       mutex,
       RpcLogDrain::LogDrainErrorHandling::kCloseStreamOnWriterError,
       nullptr);
-  RpcLogDrainMap drain_map(std::span(&drain, 1));
+  RpcLogDrainMap drain_map(span(&drain, 1));
   LogService log_service(drain_map);
   std::array<std::byte, kBufferSize * 2> multisink_buffer;
   multisink::MultiSink multisink(multisink_buffer);
@@ -432,7 +432,7 @@ TEST(RpcLogDrain, OnOpenCallbackCalled) {
   // Create server writer.
   rpc::RawFakeChannelOutput<3> output;
   rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
-  rpc::Server server(std::span(&channel, 1));
+  rpc::Server server(span(&channel, 1));
   rpc::RawServerWriter writer =
       rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
           server, drain_id, log_service);

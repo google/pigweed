@@ -31,7 +31,7 @@
 #include "pw_string/format.h"
 
 #define FORMAT_FUNCTION(...) \
-  pw::string::Format(std::span(buffer, buffer_size - string_size), __VA_ARGS__)
+  pw::string::Format(span(buffer, buffer_size - string_size), __VA_ARGS__)
 #define CHECK_RESULT(result) ProcessResult(&string_size, result)
 
 namespace {

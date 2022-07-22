@@ -69,13 +69,13 @@ StatusWithSize FlashPartition::Reader::DoRead(ByteSpan data) {
 
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
-StatusWithSize FlashPartition::Output::DoWrite(std::span<const byte> data) {
+StatusWithSize FlashPartition::Output::DoWrite(span<const byte> data) {
   PW_TRY_WITH_SIZE(flash_.Write(address_, data));
   address_ += data.size();
   return StatusWithSize(data.size());
 }
 
-StatusWithSize FlashPartition::Input::DoRead(std::span<byte> data) {
+StatusWithSize FlashPartition::Input::DoRead(span<byte> data) {
   StatusWithSize result = flash_.Read(address_, data);
   address_ += result.size();
   return result;
@@ -115,13 +115,12 @@ Status FlashPartition::Erase(Address address, size_t num_sectors) {
   return flash_.Erase(PartitionToFlashAddress(address), num_sectors);
 }
 
-StatusWithSize FlashPartition::Read(Address address, std::span<byte> output) {
+StatusWithSize FlashPartition::Read(Address address, span<byte> output) {
   PW_TRY_WITH_SIZE(CheckBounds(address, output.size()));
   return flash_.Read(PartitionToFlashAddress(address), output);
 }
 
-StatusWithSize FlashPartition::Write(Address address,
-                                     std::span<const byte> data) {
+StatusWithSize FlashPartition::Write(Address address, span<const byte> data) {
   if (permission_ == PartitionPermission::kReadOnly) {
     return StatusWithSize::PermissionDenied();
   }
@@ -161,7 +160,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
     PW_TRY(
         Read(source_flash_address + offset, read_size, read_buffer).status());
 
-    for (byte b : std::span(read_buffer, read_size)) {
+    for (byte b : span(read_buffer, read_size)) {
       if (b != erased_byte) {
         // Detected memory chunk is not entirely erased
         return OkStatus();
@@ -175,7 +174,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
   return OkStatus();
 }
 
-bool FlashPartition::AppearsErased(std::span<const byte> data) const {
+bool FlashPartition::AppearsErased(span<const byte> data) const {
   byte erased_content = flash_.erased_memory_content();
   for (byte b : data) {
     if (b != erased_content) {

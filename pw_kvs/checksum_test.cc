@@ -32,20 +32,19 @@ TEST(Checksum, UpdateAndVerify) {
   ChecksumAlgorithm& algo = crc16_algo;
 
   algo.Update(kString.data(), kString.size());
-  EXPECT_EQ(OkStatus(), algo.Verify(std::as_bytes(std::span(&kStringCrc, 1))));
+  EXPECT_EQ(OkStatus(), algo.Verify(as_bytes(span(&kStringCrc, 1))));
 }
 
 TEST(Checksum, Verify_Failure) {
   ChecksumCrc16 algo;
-  EXPECT_EQ(Status::DataLoss(),
-            algo.Verify(std::as_bytes(std::span(kString.data(), 2))));
+  EXPECT_EQ(Status::DataLoss(), algo.Verify(as_bytes(span(kString.data(), 2))));
 }
 
 TEST(Checksum, Verify_InvalidSize) {
   ChecksumCrc16 algo;
   EXPECT_EQ(Status::InvalidArgument(), algo.Verify({}));
   EXPECT_EQ(Status::InvalidArgument(),
-            algo.Verify(std::as_bytes(std::span(kString.substr(0, 1)))));
+            algo.Verify(as_bytes(span(kString.substr(0, 1)))));
 }
 
 TEST(Checksum, Verify_LargerState_ComparesToTruncatedData) {
@@ -53,17 +52,17 @@ TEST(Checksum, Verify_LargerState_ComparesToTruncatedData) {
   ChecksumCrc16 algo;
   ASSERT_GT(sizeof(crc), algo.size_bytes());
 
-  algo.Update(std::as_bytes(std::span(kString)));
+  algo.Update(as_bytes(span(kString)));
 
   EXPECT_EQ(OkStatus(), algo.Verify(crc));
 }
 
 TEST(Checksum, Reset) {
   ChecksumCrc16 crc_algo;
-  crc_algo.Update(std::as_bytes(std::span(kString)));
+  crc_algo.Update(as_bytes(span(kString)));
   crc_algo.Reset();
 
-  std::span state = crc_algo.Finish();
+  span state = crc_algo.Finish();
   EXPECT_EQ(state[0], byte{0xFF});
   EXPECT_EQ(state[1], byte{0xFF});
 }
@@ -77,13 +76,13 @@ TEST(IgnoreChecksum, NeverUpdate_VerifyWithoutData) {
 TEST(IgnoreChecksum, NeverUpdate_VerifyWithData) {
   IgnoreChecksum checksum;
 
-  EXPECT_EQ(OkStatus(), checksum.Verify(std::as_bytes(std::span(kString))));
+  EXPECT_EQ(OkStatus(), checksum.Verify(as_bytes(span(kString))));
 }
 
 TEST(IgnoreChecksum, AfterUpdate_Verify) {
   IgnoreChecksum checksum;
 
-  checksum.Update(std::as_bytes(std::span(kString)));
+  checksum.Update(as_bytes(span(kString)));
   EXPECT_EQ(OkStatus(), checksum.Verify({}));
 }
 
@@ -92,7 +91,7 @@ constexpr size_t kAlignment = 10;
 constexpr std::string_view kData =
     "123456789_123456789_123456789_123456789_123456789_"   //  50
     "123456789_123456789_123456789_123456789_123456789_";  // 100
-const std::span<const byte> kBytes = std::as_bytes(std::span(kData));
+const span<const byte> kBytes = as_bytes(span(kData));
 
 class PickyChecksum final : public AlignedChecksum<kAlignment, 32> {
  public:
@@ -102,7 +101,7 @@ class PickyChecksum final : public AlignedChecksum<kAlignment, 32> {
 
   void FinalizeAligned() override { EXPECT_EQ(kData.size(), size_); }
 
-  void UpdateAligned(std::span<const std::byte> data) override {
+  void UpdateAligned(span<const std::byte> data) override {
     ASSERT_EQ(data.size() % kAlignment, 0u);
     EXPECT_EQ(kData.substr(0, data.size()),
               std::string_view(reinterpret_cast<const char*>(data.data()),

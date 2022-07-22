@@ -62,6 +62,7 @@ pw_proto_library("test_protos") {
   ]
 }
 
+# TODO(b/232800695): Remove when all projects are on the new Python build.
 # PyPI Requirements needed to install Python protobuf packages.
 pw_python_requirements("protobuf_requirements") {
   requirements = [
