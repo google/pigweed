@@ -548,16 +548,22 @@ class Client:
     def _look_up_service_and_method(
             self, packet: RpcPacket,
             channel_client: ChannelClient) -> PendingRpc:
+        # Protobuf is sometimes silly so the 32 bit python bindings return
+        # signed values from `fixed32` fields. Let's convert back to unsigned.
+        # b/239712573
+        service_id = packet.service_id & 0xffffffff
         try:
-            service = self.services[packet.service_id]
+            service = self.services[service_id]
         except KeyError:
-            raise ValueError(f'Unrecognized service ID {packet.service_id}')
+            raise ValueError(f'Unrecognized service ID {service_id}')
 
+        # See above, also for b/239712573
+        method_id = packet.method_id & 0xffffffff
         try:
-            method = service.methods[packet.method_id]
+            method = service.methods[method_id]
         except KeyError:
             raise ValueError(
-                f'No method ID {packet.method_id} in service {service.name}')
+                f'No method ID {method_id} in service {service.name}')
 
         return PendingRpc(channel_client.channel, service, method)
 
