@@ -108,7 +108,7 @@ Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
   }
 
   if (rpc_packet.status().ok()) {
-    return ConstByteSpan(rpc_packet);
+    return ConstByteSpan(rpc_packet.data(), rpc_packet.size());
   }
   return rpc_packet.status();
 }
