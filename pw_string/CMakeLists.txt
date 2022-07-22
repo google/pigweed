@@ -87,19 +87,15 @@ pw_add_module_library(pw_string.to_string
     type_to_string.cc
 )
 
-pw_add_module_library(pw_string.util
-  HEADERS
-    public/pw_string/util.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_assert
-    pw_result
-    pw_span
-    pw_status
-  SOURCES
-    public/pw_string/internal/length.h
-)
+add_library(pw_string.util INTERFACE)
+target_include_directories(pw_string.util
+        INTERFACE public)
+target_link_libraries(pw_string.util
+        INTERFACE
+        pw_assert
+        pw_result
+        pw_span
+        pw_status)
 
 pw_add_module_library(pw_string.vector
   HEADERS
