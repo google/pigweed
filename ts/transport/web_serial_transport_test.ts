@@ -16,8 +16,8 @@
 import {last, take} from 'rxjs/operators';
 
 import {SerialMock} from './serial_mock';
-import {DeviceLockedError, WebSerialTransport} from './web_serial_transport';
-import type {Serial} from "../../types/serial"
+import {WebSerialTransport, DeviceLockedError} from './web_serial_transport';
+import type {Serial} from "pigweed/types/serial"
 
 describe('WebSerialTransport', () => {
   let serialMock: SerialMock;

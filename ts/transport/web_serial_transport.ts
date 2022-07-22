@@ -15,7 +15,7 @@
 /* eslint-env browser */
 import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
 import DeviceTransport from './device_transport';
-import type {SerialPort, Serial, SerialOptions, Navigator, SerialPortFilter} from "../../types/serial"
+import type {SerialPort, Serial, SerialOptions, Navigator, SerialPortFilter} from "pigweed/types/serial"
 
 const DEFAULT_SERIAL_OPTIONS: SerialOptions & {baudRate: number} = {
   // Some versions of chrome use `baudrate` (linux)
@@ -62,7 +62,7 @@ export class WebSerialTransport implements DeviceTransport {
     private serial: Serial = (navigator as unknown as Navigator).serial,
     private filters: SerialPortFilter[] = [],
     private serialOptions = DEFAULT_SERIAL_OPTIONS
-  ) {}
+  ) { }
 
   /**
    * Send a UInt8Array chunk of data to the connected device.

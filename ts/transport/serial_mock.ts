@@ -14,7 +14,7 @@
 
 /* eslint-env browser */
 import {Subject} from 'rxjs';
-import type {SerialConnectionEvent, SerialPort, Serial, SerialPortRequestOptions, SerialOptions} from "../../types/serial"
+import type {SerialConnectionEvent, SerialPort, Serial, SerialPortRequestOptions, SerialOptions} from "pigweed/types/serial"
 /**
  * AsyncQueue is a queue that allows values to be dequeued
  * before they are enqueued, returning a promise that resolves

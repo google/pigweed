@@ -19,6 +19,30 @@ Following Pigweed modules are included in the NPM package:
 - `pw_tokenizer <https://pigweed.dev/pw_tokenizer/#typescript>`_
 - `pw_transfer <https://pigweed.dev/pw_transfer/#typescript>`_
 
+To help with connecting to WebSerial and listening for serial data, a helper
+class is also included under ``WebSerial.WebSerialTransport``. Here is an example
+usage:
+
+.. code:: javascript
+
+   import { WebSerial, pw_hdlc } from 'pigweedjs';
+
+   const transport = new WebSerial.WebSerialTransport();
+   const decoder = new pw_hdlc.Decoder();
+
+   // Present device selection prompt to user
+   await transport.connect();
+
+   // Listen and decode HDLC frames
+   transport.chunks.subscribe((item) => {
+     const decoded = decoder.process(item);
+     for (const frame of decoded) {
+       if (frame.address === 1) {
+         const decodedLine = new TextDecoder().decode(frame.data);
+         console.log(decodedLine);
+       }
+     }
+   });
 
 Installation
 =============

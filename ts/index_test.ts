@@ -21,7 +21,8 @@ import {
   pw_hdlc,
   pw_rpc,
   pw_tokenizer,
-  pw_transfer
+  pw_transfer,
+  WebSerial
 } from "../dist/index.umd";
 
 import {ProtoCollection} from "../dist/protos/collection.umd";
@@ -59,6 +60,10 @@ describe('Pigweed Bundle', () => {
 
   it('has pw_transfer defined', () => {
     expect(pw_transfer.Manager).toBeDefined();
+  });
+
+  it('has WebSerialTransport defined', () => {
+    expect(WebSerial.WebSerialTransport).toBeDefined();
   });
 
 });

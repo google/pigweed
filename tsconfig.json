@@ -19,6 +19,9 @@
       ],
       "pigweed/protos/*": [
         "./dist/protos/*"
+      ],
+      "pigweed/types/*": [
+        "./ts/types/*"
       ]
     }
   },
