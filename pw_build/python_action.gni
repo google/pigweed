@@ -53,9 +53,6 @@ import("$dir_pw_build/python_gn_args.gni")
 #   working_directory  Switch to the provided working directory before running
 #                      the Python script or action.
 #
-#   venv            Optional gn target of the pw_python_venv that should be used
-#                   to run this action.
-#
 template("pw_python_action") {
   assert(defined(invoker.script) != defined(invoker.module),
          "pw_python_action requires either 'script' or 'module'")
@@ -164,7 +161,7 @@ template("pw_python_action") {
       _deps += [ get_label_info(dep, "label_no_toolchain") + ".install(" +
                  get_label_info(dep, "toolchain") + ")" ]
       _py_metadata_deps += [ get_label_info(dep, "label_no_toolchain") +
-                             "($pw_build_PYTHON_TOOLCHAIN)" ]
+                             "($dir_pw_build/python_toolchain:python)" ]
     }
 
     # Add the base target as a dep so the action reruns when any source files
@@ -178,15 +175,12 @@ template("pw_python_action") {
     foreach(dep, invoker.python_metadata_deps) {
       _extra_python_metadata_deps +=
           [ get_label_info(dep, "label_no_toolchain") +
-            "($pw_build_PYTHON_TOOLCHAIN)" ]
+            "($dir_pw_build/python_toolchain:python)" ]
     }
   }
 
   _metadata_path_list_file =
       "${target_gen_dir}/${target_name}_metadata_path_list.txt"
-
-  # GN metadata only dependencies used for setting PYTHONPATH.
-  _metadata_deps = _py_metadata_deps + _extra_python_metadata_deps
 
   # Build a list of relative paths containing all the python
   # package_metadata.json files we depend on.
@@ -194,35 +188,32 @@ template("pw_python_action") {
   generated_file(_metadata_path_list_target) {
     data_keys = [ "pw_python_package_metadata_json" ]
     rebase = root_build_dir
-    deps = _metadata_deps
+    deps = _py_metadata_deps + _extra_python_metadata_deps
     outputs = [ _metadata_path_list_file ]
   }
   _deps += [ ":${_metadata_path_list_target}" ]
 
   if (pw_build_USE_NEW_PYTHON_BUILD) {
-    # Set venv options if needed.
-    if (_use_build_dir_virtualenv) {
-      _venv_target_label = pw_build_PYTHON_BUILD_VENV
-      if (defined(invoker.venv)) {
-        _venv_target_label = invoker.venv
-      }
-      _venv_target_label =
-          get_label_info(_venv_target_label, "label_no_toolchain") +
-          "($pw_build_PYTHON_TOOLCHAIN)"
-
-      _venv_json =
-          get_label_info(_venv_target_label, "target_gen_dir") + "/" +
-          get_label_info(_venv_target_label, "name") + "/venv_metadata.json"
-      _script_args += [
-        "--python-virtualenv-config",
-        rebase_path(_venv_json, root_build_dir),
-      ]
-    }
-
     _script_args += [
       "--python-dep-list-files",
       rebase_path(_metadata_path_list_file, root_build_dir),
     ]
+
+    # Set venv options if needed.
+    if (_use_build_dir_virtualenv) {
+      _script_args += [ "--python-interpreter" ]
+
+      if (host_os == "win") {
+        _script_args += [ "python-venv/Scripts/python.exe" ]
+      } else {
+        _script_args += [ "python-venv/bin/python" ]
+      }
+
+      _script_args += [
+        "--python-virtualenv",
+        "python-venv",
+      ]
+    }
   }
 
   if (!pw_build_USE_NEW_PYTHON_BUILD) {
@@ -263,8 +254,8 @@ template("pw_python_action") {
   # Assume third party PyPI deps should be available in the build_dir virtualenv.
   _install_venv_3p_deps = true
   if (!_use_build_dir_virtualenv ||
-      (defined(invoker._skip_installing_external_python_deps) &&
-       invoker._skip_installing_external_python_deps)) {
+      (defined(invoker.skip_installing_external_python_deps) &&
+       invoker.skip_installing_external_python_deps)) {
     _install_venv_3p_deps = false
   }
 
@@ -295,8 +286,7 @@ template("pw_python_action") {
 
     if (pw_build_USE_NEW_PYTHON_BUILD) {
       if (_install_venv_3p_deps && _run_script_or_module) {
-        deps += [ get_label_info(_venv_target_label, "label_no_toolchain") +
-                  "._install_3p_deps($pw_build_PYTHON_TOOLCHAIN)" ]
+        deps += [ "$dir_pw_env_setup:install_3p_deps($default_toolchain)" ]
       }
     }
   }

@@ -21,11 +21,9 @@ import argparse
 import atexit
 from dataclasses import dataclass
 import enum
-import json
 import logging
 import os
 from pathlib import Path
-import platform
 import re
 import shlex
 import subprocess
@@ -94,9 +92,14 @@ def _parse_args() -> argparse.Namespace:
         'json files.',
     )
     parser.add_argument(
-        '--python-virtualenv-config',
+        '--python-interpreter',
         type=Path,
-        help='Path to a virtualenv json config to use for this action.',
+        help='Python interpreter to use for this action.',
+    )
+    parser.add_argument(
+        '--python-virtualenv',
+        type=Path,
+        help='Path to a virtualenv to use for this action.',
     )
     parser.add_argument(
         'original_cmd',
@@ -426,7 +429,7 @@ def _target_objects(paths: GnPaths, expr: _Expression) -> _Actions:
         yield _ArgAction.EMIT_NEW, str(obj)
 
 
-# TODO(b/234886742): Replace expressions with native GN features when possible.
+# TODO(pwbug/347): Replace expressions with native GN features when possible.
 _FUNCTIONS: Dict['str', Callable[[GnPaths, _Expression], _Actions]] = {
     'TARGET_FILE': _target_file,
     'TARGET_FILE_IF_EXISTS': _target_file_if_exists,
@@ -530,12 +533,6 @@ class MissingPythonDependency(Exception):
     """An error occurred while processing a Python dependency."""
 
 
-def _load_virtualenv_config(json_file_path: Path) -> Tuple[str, str]:
-    with json_file_path.open() as json_fp:
-        json_dict = json.load(json_fp)
-    return json_dict.get('interpreter'), json_dict.get('path')
-
-
 def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-locals
     gn_root: Path,
     current_path: Path,
@@ -545,7 +542,8 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     module: Optional[str],
     env: Optional[List[str]],
     python_dep_list_files: List[Path],
-    python_virtualenv_config: Optional[Path],
+    python_interpreter: Optional[Path],
+    python_virtualenv: Optional[Path],
     capture_output: bool,
     touch: Optional[Path],
     working_directory: Optional[Path],
@@ -567,12 +565,7 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
                 raise MissingPythonDependency(
                     'Unable to find top level source dir for the Python '
                     f'package "{pkg}"')
-            # Don't add this dir to the PYTHONPATH if no __init__.py exists.
-            init_py_files = top_level_source_dir.parent.glob('*/__init__.py')
-            if not any(init_py_files):
-                continue
             python_paths_list.append(top_level_source_dir.parent.resolve())
-
         # Sort the PYTHONPATH list, it will be in a different order each build.
         python_paths_list = sorted(python_paths_list)
 
@@ -590,13 +583,6 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
                     toolchain=tool)
 
     command = [sys.executable]
-
-    python_interpreter = None
-    python_virtualenv = None
-    if python_virtualenv_config:
-        python_interpreter, python_virtualenv = _load_virtualenv_config(
-            python_virtualenv_config)
-
     if python_interpreter is not None:
         command = [str(root_build_dir / python_interpreter)]
 
@@ -621,18 +607,10 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     is_pip_command = (module == 'pip'
                       or 'pip_install_python_deps.py' in script_command)
 
-    existing_env = (run_args['env']
-                    if 'env' in run_args else os.environ.copy())
-    new_env = {}
-    if python_virtualenv:
-        new_env['VIRTUAL_ENV'] = str(root_build_dir / python_virtualenv)
-        bin_folder = 'Scripts' if platform.system() == 'Windows' else 'bin'
-        new_env['PATH'] = os.pathsep.join([
-            str(root_build_dir / python_virtualenv / bin_folder),
-            existing_env.get('PATH', '')
-        ])
+    if python_paths_list and not is_pip_command:
+        existing_env = (run_args['env']
+                        if 'env' in run_args else os.environ.copy())
 
-    if python_virtualenv and python_paths_list and not is_pip_command:
         python_path_prepend = os.pathsep.join(
             str(p) for p in set(python_paths_list))
 
@@ -641,15 +619,26 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
             path_str for path_str in
             [python_path_prepend,
              existing_env.get('PYTHONPATH', '')] if path_str)
+        new_env = {
+            'PYTHONPATH': new_python_path,
+            # mypy doesn't use PYTHONPATH for analyzing imports so module
+            # directories must be added to the MYPYPATH environment variable.
+            'MYPYPATH': new_python_path,
+        }
+        # print('PYTHONPATH')
+        # for ppath in python_paths_list:
+        #     print(str(ppath))
 
-        new_env['PYTHONPATH'] = new_python_path
-        # mypy doesn't use PYTHONPATH for analyzing imports so module
-        # directories must be added to the MYPYPATH environment variable.
-        new_env['MYPYPATH'] = new_python_path
+        if python_virtualenv:
+            new_env['VIRTUAL_ENV'] = str(root_build_dir / python_virtualenv)
+            new_env['PATH'] = os.pathsep.join([
+                str(root_build_dir / python_virtualenv / 'bin'),
+                existing_env.get('PATH', '')
+            ])
 
-    if 'env' not in run_args:
-        run_args['env'] = {}
-    run_args['env'].update(new_env)
+        if 'env' not in run_args:
+            run_args['env'] = {}
+        run_args['env'].update(new_env)
 
     if capture_output:
         # Combine stdout and stderr so that error messages are correctly
@@ -668,8 +657,8 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     if working_directory:
         run_args['cwd'] = working_directory
 
-    # TODO(b/235239674): Deprecate the --lockfile option as part of the Python
-    # GN template refactor.
+    # TODO(pwbug/666): Deprecate the --lockfile option as part of the Python GN
+    # template refactor.
     if lockfile:
         try:
             acquire_lock(lockfile, is_pip_command)

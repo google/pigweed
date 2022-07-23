@@ -32,7 +32,7 @@ pw_proto_library(pw_file.proto
   SOURCES
     file.proto
   DEPS
-     pw_protobuf.common_proto
+     pw_protobuf.common_protos
   PREFIX
     pw_file
 )

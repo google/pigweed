@@ -21,18 +21,10 @@
 // In order to minimize changes from the original, this file does NOT fully
 // adhere to Pigweed's style guide.
 
-#ifndef PW_SPAN_TEST_INCLUDE
-#error "The PW_SPAN_TEST_INCLUDE macro must be defined to compile this test."
-#endif  // PW_SPAN_TEST_INCLUDE
-
-#ifndef PW_SPAN_TEST_NAMESPACE
-#error "The PW_SPAN_TEST_NAMESPACE macro must be defined to compile this test."
-#endif  // PW_SPAN_TEST_NAMESPACE
-
 #include <algorithm>
 #include <cstdint>
 #include <memory>
-#include PW_SPAN_TEST_INCLUDE
+#include <span>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -47,7 +39,7 @@ using ::testing::Eq;
 using ::testing::Pointwise;
 #endif  // 0
 
-namespace PW_SPAN_TEST_NAMESPACE {
+namespace std {
 
 namespace {
 
@@ -1653,4 +1645,4 @@ TEST(SpanTest, IteratorConversions) {
                 "Error: const iterator should not be convertible to iterator");
 }
 
-}  // namespace PW_SPAN_TEST_NAMESPACE
+}  // namespace std

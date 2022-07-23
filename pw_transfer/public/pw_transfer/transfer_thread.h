@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 
 #include "pw_assert/assert.h"
 #include "pw_chrono/system_clock.h"
@@ -21,7 +22,6 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_rpc/raw/client_reader_writer.h"
 #include "pw_rpc/raw/server_reader_writer.h"
-#include "pw_span/span.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_sync/timed_thread_notification.h"
 #include "pw_thread/thread_core.h"
@@ -36,8 +36,8 @@ namespace internal {
 
 class TransferThread : public thread::ThreadCore {
  public:
-  TransferThread(span<ClientContext> client_transfers,
-                 span<ServerContext> server_transfers,
+  TransferThread(std::span<ClientContext> client_transfers,
+                 std::span<ServerContext> server_transfers,
                  ByteSpan chunk_buffer,
                  ByteSpan encode_buffer)
       : client_transfers_(client_transfers),
@@ -159,7 +159,7 @@ class TransferThread : public thread::ThreadCore {
 
   // Finds an active server or client transfer.
   template <typename T>
-  static Context* FindActiveTransfer(const span<T>& transfers,
+  static Context* FindActiveTransfer(const std::span<T>& transfers,
                                      uint32_t session_id) {
     auto transfer =
         std::find_if(transfers.begin(), transfers.end(), [session_id](auto& c) {
@@ -172,7 +172,7 @@ class TransferThread : public thread::ThreadCore {
 
   // Finds an new server or client transfer.
   template <typename T>
-  static Context* FindNewTransfer(const span<T>& transfers,
+  static Context* FindNewTransfer(const std::span<T>& transfers,
                                   uint32_t session_id) {
     Context* new_transfer = nullptr;
 
@@ -256,8 +256,8 @@ class TransferThread : public thread::ThreadCore {
   rpc::RawServerReaderWriter server_read_stream_;
   rpc::RawServerReaderWriter server_write_stream_;
 
-  span<ClientContext> client_transfers_;
-  span<ServerContext> server_transfers_;
+  std::span<ClientContext> client_transfers_;
+  std::span<ServerContext> server_transfers_;
 
   // All registered transfer handlers.
   IntrusiveList<Handler> handlers_;

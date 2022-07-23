@@ -22,7 +22,7 @@
 namespace pw::hdlc {
 
 bool WirePacketParser::Parse(ConstByteSpan packet) {
-  if (packet.size_bytes() < Frame::kMinContentSizeBytes) {
+  if (packet.size_bytes() < Frame::kMinSizeBytes) {
     return false;
   }
 

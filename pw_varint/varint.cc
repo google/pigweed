@@ -15,7 +15,6 @@
 #include "pw_varint/varint.h"
 
 #include <algorithm>
-#include <cstddef>
 
 namespace pw {
 namespace varint {

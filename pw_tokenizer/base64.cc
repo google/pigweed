@@ -33,9 +33,9 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
   }
 
   output[0] = kBase64Prefix;
-  base64::Encode(
-      span(static_cast<const std::byte*>(binary_message), binary_size_bytes),
-      &output[1]);
+  base64::Encode(std::span(static_cast<const std::byte*>(binary_message),
+                           binary_size_bytes),
+                 &output[1]);
   output[encoded_size - 1] = '\0';
   return encoded_size - sizeof('\0');  // exclude the null terminator
 }
@@ -52,7 +52,7 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Decode(const void* base64_message,
 
   return base64::Decode(
       std::string_view(&base64[1], base64_size_bytes - 1),
-      span(static_cast<std::byte*>(output_buffer), output_buffer_size));
+      std::span(static_cast<std::byte*>(output_buffer), output_buffer_size));
 }
 
 }  // namespace pw::tokenizer

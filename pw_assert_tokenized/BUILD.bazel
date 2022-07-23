@@ -27,8 +27,8 @@ pw_cc_library(
         "log_handler.cc",
     ],
     hdrs = [
-        "assert_public_overrides/pw_assert_backend/assert_backend.h",
-        "check_public_overrides/pw_assert_backend/check_backend.h",
+        "assert_public_overrides/pw_assert_backend/assert_lite_backend.h",
+        "check_public_overrides/pw_assert_backend/assert_backend.h",
         "public/pw_assert_tokenized/assert_tokenized.h",
         "public/pw_assert_tokenized/check_tokenized.h",
         "public/pw_assert_tokenized/handler.h",

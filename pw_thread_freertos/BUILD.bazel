@@ -43,7 +43,7 @@ pw_cc_library(
         ":id_headers",
         "//pw_thread:id_facade",
     ],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -74,7 +74,7 @@ pw_cc_library(
         "//pw_chrono_freertos:system_clock_headers",
         "//pw_thread:sleep_facade",
     ],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -101,7 +101,7 @@ pw_cc_library(
         "//pw_sync:binary_semaphore",
         "//pw_thread:thread_headers",
     ],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -115,7 +115,7 @@ pw_cc_library(
         ":thread_headers",
         "//pw_assert",
     ],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -171,7 +171,7 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -195,7 +195,7 @@ pw_cc_library(
         "//pw_function",
         "//pw_status",
     ],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -217,7 +217,7 @@ pw_cc_library(
         "//pw_thread:protos",
         "//pw_thread:snapshot",
     ],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -227,7 +227,7 @@ pw_cc_facade(
         "public/pw_thread_freertos/freertos_tsktcb.h",
     ],
     includes = ["public"],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
 

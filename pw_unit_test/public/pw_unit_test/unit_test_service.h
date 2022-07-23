@@ -15,7 +15,6 @@
 
 #include "pw_log/log.h"
 #include "pw_unit_test/config.h"
-#include "pw_unit_test/event_handler.h"
 #include "pw_unit_test/internal/rpc_event_handler.h"
 #include "pw_unit_test_proto/unit_test.pwpb.h"
 #include "pw_unit_test_proto/unit_test.raw_rpc.pb.h"

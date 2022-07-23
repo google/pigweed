@@ -128,11 +128,7 @@ pw_cc_library(
     deps = [
         ":log",
         ":rpc_server",
-        ":target_hooks.facade",
-        ":work_queue",
-        "//pw_metric:global",
-        "//pw_metric:metric_service_pwpb",
-        "//pw_rpc/pwpb:echo_service",
+        "//pw_rpc/nanopb:echo_service",
         "//pw_thread:thread",
     ],
 )
@@ -208,7 +204,7 @@ pw_cc_library(
         "freertos_target_hooks.cc",
     ],
 
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
     deps = [
         "//pw_thread:thread",

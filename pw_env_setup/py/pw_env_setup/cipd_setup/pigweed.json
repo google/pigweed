@@ -10,7 +10,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:9ef321772ecc161937db69acb346397e0ccc484d"
+        "git_revision:578a7fe4c3c6b0bc2ae1fd2e37f14857d09895bf"
       ],
       "version_file": ".versions/gn.cipd_version"
     },
@@ -24,20 +24,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@1.11.0.chromium.4"
-      ]
-    },
-    {
-      "path": "infra/3pp/tools/nodejs/${platform}",
-      "platforms": [
-        "linux-amd64",
-        "linux-arm64",
-        "mac-amd64",
-        "mac-arm64",
-        "windows-amd64"
-      ],
-      "tags": [
-        "version:2@18.4.0"
+        "version:2@1.8.2.chromium.2"
       ]
     },
     {
@@ -49,7 +36,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:3.24.20220716-g831757e"
+        "version:3.23.20220528-g04ff557"
       ],
       "version_file": ".versions/cmake.cipd_version"
     },
@@ -109,7 +96,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@1.18.4"
+        "version:2@1.18.2"
       ]
     },
     {
@@ -153,7 +140,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:3492e0dd3ef3b3fa108524fecc7e25ea9eb6f735"
+        "git_revision:09949ee542c796a1d0cdecfae8d62882c2fef06a"
       ],
       "version_file": ".versions/host_tools.cipd_version"
     },
@@ -177,7 +164,7 @@
         "mac-amd64"
       ],
       "tags": [
-        "git_revision:44f28df24767cf9dca1ddc9b23157737c4cbb645,1"
+        "version:v6.2.0"
       ],
       "version_file": ".versions/qemu.cipd_version"
     },

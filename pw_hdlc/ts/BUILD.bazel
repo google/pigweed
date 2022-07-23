@@ -1,0 +1,68 @@
+# Copyright 2021 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
+load("@npm//@bazel/typescript:index.bzl", "ts_library", "ts_project")
+load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_project(
+    name = "lib",
+    srcs = [
+        "decoder.ts",
+        "encoder.ts",
+        "index.ts",
+        "protocol.ts",
+        "util.ts",
+    ],
+    declaration = True,
+    source_map = True,
+    deps = ["@npm//:node_modules"],  # can't use fine-grained deps
+)
+
+js_library(
+    name = "pw_hdlc",
+    package_name = "@pigweed/pw_hdlc",
+    srcs = ["package.json"],
+    deps = [":lib"],
+)
+
+ts_library(
+    name = "hdlc_test_lib",
+    srcs = [
+        "decoder_test.ts",
+        "encoder_test.ts",
+    ],
+    deps = [
+        ":lib",
+        "@npm//@types/jasmine",
+        "@npm//@types/node",
+        "@npm//buffer",
+    ],
+)
+
+jasmine_node_test(
+    name = "hdlc_test",
+    srcs = [
+        ":hdlc_test_lib",
+    ],
+)
+
+# needed for embedding into downstream projects
+filegroup(name = "pw_hdlc__contents")
+
+filegroup(name = "pw_hdlc__files")
+
+filegroup(name = "pw_hdlc__nested_node_modules")

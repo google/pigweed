@@ -22,7 +22,7 @@ from typing import cast
 
 from google.protobuf import descriptor_pb2
 
-from pw_protobuf import options, symbol_name_mapping
+from pw_protobuf import options
 from pw_protobuf_codegen_protos.options_pb2 import Options
 
 T = TypeVar('T')  # pylint: disable=invalid-name
@@ -66,8 +66,7 @@ class ProtoNode(abc.ABC):
 
     def cpp_name(self) -> str:
         """The name of this node in generated C++ code."""
-        return symbol_name_mapping.fix_cc_identifier(self._name).replace(
-            '.', '::')
+        return self._name.replace('.', '::')
 
     def cpp_namespace(self, root: Optional['ProtoNode'] = None) -> str:
         """C++ namespace of the node, up to the specified root."""
@@ -161,11 +160,7 @@ class ProtoNode(abc.ABC):
         # pylint: enable=protected-access
 
     def find(self, path: str) -> Optional['ProtoNode']:
-        """Finds a node within this node's subtree.
-
-        Args:
-          path: The path to the sought node.
-        """
+        """Finds a node within this node's subtree."""
         node = self
 
         # pylint: disable=protected-access
@@ -234,11 +229,7 @@ class ProtoEnum(ProtoNode):
         return list(self._values)
 
     def add_value(self, name: str, value: int) -> None:
-        self._values.append((
-            ProtoMessageField.upper_snake_case(
-                symbol_name_mapping.fix_cc_enum_value_name(name)),
-            value,
-        ))
+        self._values.append((ProtoMessageField.upper_snake_case(name), value))
 
     def _supports_child(self, child: ProtoNode) -> bool:
         # Enums cannot have nested children.
@@ -335,26 +326,20 @@ class ProtoMessageField:
                  field_number: int,
                  field_type: int,
                  type_node: Optional[ProtoNode] = None,
-                 optional: bool = False,
                  repeated: bool = False,
                  field_options: Optional[Options] = None):
-        self._field_name = symbol_name_mapping.fix_cc_identifier(field_name)
+        self._field_name = field_name
         self._number: int = field_number
         self._type: int = field_type
         self._type_node: Optional[ProtoNode] = type_node
-        self._optional: bool = optional
         self._repeated: bool = repeated
         self._options: Optional[Options] = field_options
 
     def name(self) -> str:
         return self.upper_camel_case(self._field_name)
 
-    def field_name(self) -> str:
-        return self._field_name
-
     def enum_name(self) -> str:
-        return self.upper_snake_case(
-            symbol_name_mapping.fix_cc_enum_value_name(self._field_name))
+        return self.upper_snake_case(self._field_name)
 
     def number(self) -> int:
         return self._number
@@ -364,9 +349,6 @@ class ProtoMessageField:
 
     def type_node(self) -> Optional[ProtoNode]:
         return self._type_node
-
-    def is_optional(self) -> bool:
-        return self._optional
 
     def is_repeated(self) -> bool:
         return self._repeated
@@ -378,7 +360,9 @@ class ProtoMessageField:
     def upper_camel_case(field_name: str) -> str:
         """Converts a field name to UpperCamelCase."""
         name_components = field_name.split('_')
-        return ''.join([word.lower().capitalize() for word in name_components])
+        for i, _ in enumerate(name_components):
+            name_components[i] = name_components[i].lower().capitalize()
+        return ''.join(name_components)
 
     @staticmethod
     def upper_snake_case(field_name: str) -> str:
@@ -494,7 +478,6 @@ def _add_message_fields(global_root: ProtoNode, package_root: ProtoNode,
         else:
             type_node = None
 
-        optional = field.proto3_optional
         repeated = \
             field.label == descriptor_pb2.FieldDescriptorProto.LABEL_REPEATED
         field_options = options.match_options(
@@ -502,7 +485,7 @@ def _add_message_fields(global_root: ProtoNode, package_root: ProtoNode,
             proto_options) if proto_options is not None else None
         message.add_field(
             ProtoMessageField(field.name, field.number, field.type, type_node,
-                              optional, repeated, field_options))
+                              repeated, field_options))
 
 
 def _add_service_methods(global_root: ProtoNode, package_root: ProtoNode,

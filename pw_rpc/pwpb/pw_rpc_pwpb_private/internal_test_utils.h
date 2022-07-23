@@ -15,8 +15,8 @@
 
 #include <array>
 #include <cstddef>
+#include <span>
 
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_stream/memory_stream.h"
 
@@ -36,14 +36,14 @@ namespace pw::rpc::internal {
 
 #define _PW_ENCODE_PB_IMPL(proto, result, unique, ...)                     \
   std::array<std::byte, 2 * sizeof(proto::Message)> _pb_buffer_##unique{}; \
-  const span result =                                                      \
+  const std::span result =                                                 \
       ::pw::rpc::internal::EncodeProtobuf<proto::Message,                  \
                                           proto::MemoryEncoder>(           \
           proto::Message{__VA_ARGS__}, _pb_buffer_##unique)
 
 template <typename Message, typename MemoryEncoder>
-span<const std::byte> EncodeProtobuf(const Message& message,
-                                     span<std::byte> buffer) {
+std::span<const std::byte> EncodeProtobuf(const Message& message,
+                                          std::span<std::byte> buffer) {
   MemoryEncoder encoder(buffer);
   EXPECT_EQ(encoder.Write(message), OkStatus());
   return buffer.first(encoder.size());
@@ -61,7 +61,7 @@ span<const std::byte> EncodeProtobuf(const Message& message,
       buffer, result);
 
 template <typename Message, typename StreamDecoder>
-void DecodeProtobuf(span<const std::byte> buffer, Message& message) {
+void DecodeProtobuf(std::span<const std::byte> buffer, Message& message) {
   stream::MemoryReader reader(buffer);
   EXPECT_EQ(StreamDecoder(reader).Read(message), OkStatus());
 }

@@ -33,17 +33,22 @@ Result<uint32_t> Chunk::ExtractSessionId(ConstByteSpan message) {
     ProtoChunk::Fields field =
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
 
-    if (field == ProtoChunk::Fields::TRANSFER_ID) {
-      // Interpret a legacy transfer_id field as a session ID, but don't
-      // return immediately. Instead, check to see if the message also
-      // contains a newer session_id field.
-      PW_TRY(decoder.ReadUint32(&session_id));
+    switch (field) {
+      case ProtoChunk::Fields::TRANSFER_ID:
+        // Interpret a legacy transfer_id field as a session ID, but don't
+        // return immediately. Instead, check to see if the message also
+        // contains a newer session_id field.
+        PW_TRY(decoder.ReadUint32(&session_id));
+        break;
 
-    } else if (field == ProtoChunk::Fields::SESSION_ID) {
-      // A session_id field always takes precedence over transfer_id, so
-      // return it immediately when encountered.
-      PW_TRY(decoder.ReadUint32(&session_id));
-      return session_id;
+      case ProtoChunk::Fields::SESSION_ID:
+        // A session_id field always takes precedence over transfer_id, so
+        // return it immediately when encountered.
+        PW_TRY(decoder.ReadUint32(&session_id));
+        return session_id;
+
+      default:
+        continue;
     }
   }
 
@@ -202,9 +207,7 @@ Result<ConstByteSpan> Chunk::Encode(ByteSpan buffer) const {
 
     // In the legacy protocol, the pending_bytes field must be set alongside
     // window_end_offset, as some transfer implementations require it.
-    if (window_end_offset_ != 0) {
-      encoder.WritePendingBytes(window_end_offset_ - offset_).IgnoreError();
-    }
+    encoder.WritePendingBytes(window_end_offset_ - offset_).IgnoreError();
   }
 
   if (max_chunk_size_bytes_.has_value()) {

@@ -14,13 +14,14 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-if(NOT CONFIG_PIGWEED_INTERRUPT_CONTEXT)
+if(NOT CONFIG_PIGWEED_INTERRUPT)
   return()
 endif()
 
-pw_add_module_library(pw_interrupt_zephyr.context
+pw_add_module_library(pw_interrupt_zephyr
   IMPLEMENTS_FACADES
-    pw_interrupt.context
+    pw_interrupt
 )
-zephyr_link_interface(pw_interrupt_zephyr.context)
-zephyr_link_libraries(pw_interrupt_zephyr.context)
+pw_set_backend(pw_interrupt pw_interrupt_zephyr)
+zephyr_link_interface(pw_interrupt_zephyr)
+zephyr_link_libraries(pw_interrupt_zephyr)

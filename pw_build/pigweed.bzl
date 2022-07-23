@@ -22,7 +22,7 @@ load(
 def pw_cc_binary(**kwargs):
     kwargs["deps"] = kwargs.get("deps", [])
 
-    # TODO(b/234877642): Remove this implicit dependency once we have a better
+    # TODO(pwbug/440): Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
     if not _has_pw_assert_dep(kwargs["deps"]):
@@ -36,7 +36,7 @@ def pw_cc_test(**kwargs):
     kwargs["deps"] = kwargs.get("deps", []) + \
                      ["@pigweed//pw_unit_test:simple_printing_main"]
 
-    # TODO(b/234877642): Remove this implicit dependency once we have a better
+    # TODO(pwbug/440): Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
     if not _has_pw_assert_dep(kwargs["deps"]):

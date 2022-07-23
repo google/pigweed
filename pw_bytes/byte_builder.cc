@@ -16,16 +16,15 @@
 
 namespace pw {
 
-auto const append_destination = buffer_.begin() + size_;
-
-std::fill_n(append_destination, ResizeForAppend(count), b);
+ByteBuilder& ByteBuilder::append(size_t count, std::byte b) {
+  auto const append_destination = buffer_.begin() + size_;
+  std::fill_n(append_destination, ResizeForAppend(count), b);
   return *this;
 }
 
 ByteBuilder& ByteBuilder::append(const void* bytes, size_t count) {
   auto const append_destination = buffer_.begin() + size_;
-
-std::copy_n(static_cast<const std::byte*>(bytes),
+  std::copy_n(static_cast<const std::byte*>(bytes),
               ResizeForAppend(count),
               append_destination);
   return *this;

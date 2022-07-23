@@ -14,6 +14,19 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+#pw_add_module_library(pw_varint
+#  HEADERS
+#    public/pw_varint/varint.h
+#  PUBLIC_INCLUDES
+#    public
+#  PUBLIC_DEPS
+#    pw_polyfill.cstddef
+#    pw_polyfill.span
+#    pw_preprocessor
+#  SOURCES
+#    varint.cc
+#)
+
 add_library(pw_varint)
 target_sources(pw_varint
         PUBLIC varint.cc)

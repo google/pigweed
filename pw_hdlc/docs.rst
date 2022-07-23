@@ -239,63 +239,14 @@ Decodes one or more HDLC frames from a stream of data.
     :param Uint8Array data: bytes to be decoded.
     :yields: Valid HDLC frames, logging any errors.
 
-Allocating buffers
-------------------
-Since HDLC's encoding overhead changes with payload size and what data is being
-encoded, this module provides helper functions that are useful for determining
-the size of buffers by providing worst-case sizes of frames given a certain
-payload size and vice-versa.
-
-.. code-block:: cpp
-
-  #include "pw_assert/check.h"
-  #include "pw_bytes/span.h"
-  #include "pw_hdlc/encoder"
-  #include "pw_hdlc/encoded_size.h"
-  #include "pw_status/status.h"
-
-  // The max on-the-wire size in bytes of a single HDLC frame after encoding.
-  constexpr size_t kMtu = 512;
-  constexpr size_t kRpcEncodeBufferSize = pw::hdlc::MaxSafePayloadSize(kMtu);
-  std::array<std::byte, kRpcEncodeBufferSize> rpc_encode_buffer;
-
-  // Any data encoded to this buffer is guaranteed to fit in the MTU after
-  // HDLC encoding.
-  pw::ConstByteSpan GetRpcEncodeBuffer() {
-    return rpc_encode_buffer;
-  }
-
-The HDLC ``Decoder`` has its own helper for allocating a buffer since it doesn't
-need the entire escaped frame in-memory to decode, and therefore has slightly
-lower overhead.
-
-.. code-block:: cpp
-
-  #include "pw_hdlc/decoder.h"
-
-  // The max on-the-wire size in bytes of a single HDLC frame after encoding.
-  constexpr size_t kMtu = 512;
-
-  // Create a decoder given the MTU constraint.
-  constexpr size_t kDecoderBufferSize =
-      pw::hdlc::Decoder::RequiredBufferSizeForFrameSize(kMtu);
-  pw::hdlc::DecoderBuffer<kDecoderBufferSize> decoder;
-
 Additional features
 ===================
 
-RpcChannelOutput
-----------------
-The ``RpcChannelOutput`` implements pw_rpc's ``pw::rpc::ChannelOutput``
-interface, simplifying the process of creating an RPC channel over HDLC. A
-``pw::stream::Writer`` must be provided as the underlying transport
-implementation.
-
-If your HDLC routing path has a Maximum Transmission Unit (MTU) limitation,
-using the ``FixedMtuChannelOutput`` is strongly recommended to verify that the
-currently configured max RPC payload size (dictated by pw_rpc's static encode
-buffer) will always fit safely within the limits of the fixed HDLC MTU *after*
-HDLC encoding.
+pw::stream::SysIoWriter
+------------------------
+The ``SysIoWriter`` C++ class implements the ``Writer`` interface with
+``pw::sys_io``. This Writer may be used by the C++ encoder to send HDLC frames
+over serial.
 
 HdlcRpcClient
 -------------

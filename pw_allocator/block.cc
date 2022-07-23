@@ -17,11 +17,10 @@
 #include <cstring>
 
 #include "pw_assert/check.h"
-#include "pw_span/span.h"
 
 namespace pw::allocator {
 
-Status Block::Init(const span<std::byte> region, Block** block) {
+Status Block::Init(const std::span<std::byte> region, Block** block) {
   // Ensure the region we're given is aligned and sized accordingly
   if (reinterpret_cast<uintptr_t>(region.data()) % alignof(Block) != 0) {
     return Status::InvalidArgument();
@@ -41,8 +40,7 @@ Status Block::Init(const span<std::byte> region, Block** block) {
   // with the following storage. Since the space between this block and the
   // next are implicitly part of the raw data, size can be computed by
   // subtracting the pointers.
-  aliased.block->next_ =
-      reinterpret_cast<Block*>(region.data() + region.size_bytes());
+  aliased.block->next_ = reinterpret_cast<Block*>(region.end());
   aliased.block->MarkLast();
 
   aliased.block->prev_ = nullptr;

@@ -12,10 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <span>
+
 #include "gtest/gtest.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_snapshot_protos/snapshot.pwpb.h"
-#include "pw_span/span.h"
 
 namespace pw::snapshot {
 namespace {
@@ -31,13 +32,14 @@ TEST(Status, CompileTest) {
     Metadata::StreamEncoder metadata_encoder =
         snapshot_encoder.GetMetadataEncoder();
     metadata_encoder
-        .WriteReason(as_bytes(span("It just died, I didn't do anything")))
+        .WriteReason(
+            std::as_bytes(std::span("It just died, I didn't do anything")))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     metadata_encoder.WriteFatal(true)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    metadata_encoder.WriteProjectName(as_bytes(span("smart-shoe")))
+    metadata_encoder.WriteProjectName(std::as_bytes(std::span("smart-shoe")))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    metadata_encoder.WriteDeviceName(as_bytes(span("smart-shoe-p1")))
+    metadata_encoder.WriteDeviceName(std::as_bytes(std::span("smart-shoe-p1")))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   ASSERT_TRUE(snapshot_encoder.status().ok());

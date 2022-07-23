@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,7 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser */
+/* eslint-env browser, jasmine */
+import 'jasmine';
 
 import {Decoder} from './decoder';
 import * as protocol from './protocol';

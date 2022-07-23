@@ -28,7 +28,7 @@ inline constexpr uint8_t kDefaultRpcAddress = 'R';
 // HDLC frames sent to rpc_address are passed to the RPC server.
 Status ReadAndProcessPackets(rpc::Server& server,
                              rpc::ChannelOutput& output,
-                             span<std::byte> decode_buffer,
+                             std::span<std::byte> decode_buffer,
                              unsigned rpc_address = kDefaultRpcAddress);
 
 }  // namespace pw::hdlc

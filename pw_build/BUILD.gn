@@ -14,12 +14,9 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/cc_blob_library.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/relative_source_file_names.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_toolchain/traits.gni")
-import("$dir_pw_unit_test/test.gni")
 import("target_types.gni")
 
 # IMPORTANT: The compilation flags in this file must be kept in sync with
@@ -117,14 +114,6 @@ config("extra_strict_warnings") {
   cflags_c = [ "-Wstrict-prototypes" ]
 }
 
-# This config contains warnings that are enabled for upstream Pigweed.
-# This config MUST NOT be used downstream to allow for warnings to be
-# added in the future without breaking downstream.
-config("internal_strict_warnings") {
-  cflags = [ "-Wswitch-enum" ]
-  cflags_cc = [ "-Wextra-semi" ]
-}
-
 config("cpp14") {
   cflags_cc = [ "-std=c++14" ]
 }
@@ -143,22 +132,6 @@ config("cpp20") {
     "-std=c++20",
     "-Wno-register",
   ]
-}
-
-# Selects the C++ standard to used based on the pw_toolchain_CXX_STANDARD
-# toolchain trait.
-config("toolchain_cpp_standard") {
-  if (pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX14) {
-    configs = [ ":cpp14" ]
-  } else if (pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX17) {
-    configs = [ ":cpp17" ]
-  } else if (pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX20) {
-    configs = [ ":cpp20" ]
-  } else {
-    assert(false,
-           "Unexpected pw_toolchain_CXX_STANDARD value: " +
-               pw_toolchain_CXX_STANDARD)
-  }
 }
 
 # Removes system-dependent prefixes from macros like __FILE__ and debug symbols.
@@ -212,7 +185,6 @@ group("link_deps") {
 group("empty") {
 }
 
-# TODO(b/232800695): Remove when all projects are on the new Python build.
 # Requirements for the pw_python_package lint targets.
 pw_python_requirements("python_lint") {
   requirements = [
@@ -233,36 +205,4 @@ pw_doc_group("docs") {
     "docs.rst",
     "python.rst",
   ]
-}
-
-# Pigweed upstream does not use the default toolchain, but other projects may
-# use it. To support using pw_build from the default toolchain without fully
-# configuring the Pigweed build, only instantiate the pw_build tests for a
-# non-default toolchain.
-if (current_toolchain != default_toolchain) {
-  pw_test("cc_blob_library_test") {
-    sources = [ "cc_blob_library_test.cc" ]
-    deps = [ ":test_blob" ]
-  }
-
-  pw_cc_blob_library("test_blob") {
-    out_header = "pw_build/test_blob.h"
-    namespace = "test::ns"
-    blobs = [
-      {
-        file_path = "test_blob_0123.bin"
-        symbol_name = "kFirstBlob0123"
-        alignas = 512
-      },
-      {
-        file_path = "test_blob_0123.bin"
-        symbol_name = "kSecondBlob0123"
-      },
-    ]
-    visibility = [ ":*" ]
-  }
-
-  pw_test_group("tests") {
-    tests = [ ":cc_blob_library_test" ]
-  }
 }

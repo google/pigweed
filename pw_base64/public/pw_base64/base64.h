@@ -63,10 +63,9 @@ bool pw_Base64IsValid(const char* base64_data, size_t base64_size);
 #ifdef __cplusplus
 }  // extern "C"
 
+#include <span>
 #include <string_view>
 #include <type_traits>
-
-#include "pw_span/span.h"
 
 namespace pw::base64 {
 
@@ -84,14 +83,14 @@ constexpr size_t EncodedSize(size_t binary_size_bytes) {
 // output buffers MUST NOT be the same; encoding cannot occur in place.
 //
 // The resulting string in the output is NOT null-terminated!
-inline void Encode(span<const std::byte> binary, char* output) {
+inline void Encode(std::span<const std::byte> binary, char* output) {
   pw_Base64Encode(binary.data(), binary.size_bytes(), output);
 }
 
 // Encodes the provided data in Base64 if the result fits in the provided
 // buffer. Returns the number of bytes written, which will be 0 if the output
 // buffer is too small.
-size_t Encode(span<const std::byte> binary, span<char> output_buffer);
+size_t Encode(std::span<const std::byte> binary, std::span<char> output_buffer);
 
 // Returns the maximum size of decoded Base64 data in bytes. base64_size_bytes
 // must be a multiple of 4, since Base64 encodes 3-byte groups into 4-character
@@ -117,7 +116,7 @@ inline size_t Decode(std::string_view base64, void* output) {
 // Decodes the provided Base64 data, if the data is valid and fits in the output
 // buffer. Returns the number of bytes written, which will be 0 if the data is
 // invalid or doesn't fit.
-size_t Decode(std::string_view base64, span<std::byte> output_buffer);
+size_t Decode(std::string_view base64, std::span<std::byte> output_buffer);
 
 // Returns true if the provided string is valid Base64 encoded data. Accepts
 // either the standard (+/) or URL-safe (-_) alphabets.

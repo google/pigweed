@@ -125,6 +125,32 @@ class TransferServiceIntegrationTest(IntegrationTestServer):
             self.manager.write(28, b'')
             self.assertEqual(self.get_content(28), b'')
 
+    def test_write_single_byte(self) -> None:
+        for _ in range(ITERATIONS):
+            self.set_content(29, 'junk')
+            self.manager.write(29, b'$')
+            self.assertEqual(self.get_content(29), b'$')
+
+    def test_write_small_amount_of_data(self) -> None:
+        for _ in range(ITERATIONS):
+            self.set_content(30, 'junk')
+            self.manager.write(30, b'file transfer')
+            self.assertEqual(self.get_content(30), b'file transfer')
+
+    def test_write_large_amount_of_data(self) -> None:
+        for _ in range(ITERATIONS):
+            self.set_content(31, 'junk')
+            self.manager.write(31, b'*' * 512)
+            self.assertEqual(self.get_content(31), b'*' * 512)
+
+    def test_write_very_large_amount_of_data(self) -> None:
+        for _ in range(ITERATIONS):
+            self.set_content(32, 'junk')
+
+            # Larger than the transfer service's configured pending_bytes.
+            self.manager.write(32, _DATA_4096B)
+            self.assertEqual(self.get_content(32), _DATA_4096B)
+
     def test_write_string(self) -> None:
         for _ in range(ITERATIONS):
             # Write a string instead of bytes.
@@ -248,6 +274,11 @@ class FuzzyLossTransferServiceIntegrationTest(IntegrationTestServer):
         self._outgoing_filter.dropped_packet_probability = 0.1
         self.read_large_amount_of_data()
 
+    def test_packet_loss_during_write(self) -> None:
+        self._incoming_filter.dropped_packet_probability = 0.1
+        self._outgoing_filter.dropped_packet_probability = 0.1
+        self.write_very_large_amount_of_data()
+
     def test_packet_delay_during_read(self) -> None:
         self._incoming_filter.delayed_packet_probability = 0.1
         self._outgoing_filter.delayed_packet_probability = 0.1
@@ -274,6 +305,11 @@ class FuzzyLossTransferServiceIntegrationTest(IntegrationTestServer):
         self._incoming_filter.out_of_order_probability = 0.01
         self._outgoing_filter.out_of_order_probability = 0.01
         self.read_large_amount_of_data()
+
+    def test_packet_reordering_during_write(self) -> None:
+        self._incoming_filter.out_of_order_probability = 0.05
+        self._outgoing_filter.out_of_order_probability = 0.05
+        self.write_very_large_amount_of_data()
 
 
 def _main(test_server_command: List[str], port: int,

@@ -15,7 +15,7 @@
 import {Status} from '@pigweed/pw_status';
 import {Message} from 'google-protobuf';
 
-import WaitQueue from "./queue";
+import WaitQueue = require('wait-queue');
 
 import {PendingCalls, Rpc} from './rpc_classes';
 

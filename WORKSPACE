@@ -18,7 +18,7 @@ workspace(
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "pigweed_deps")
 
 # Setup CIPD client and packages.
@@ -232,6 +232,15 @@ git_repository(
     remote = "https://github.com/bazelembedded/bazel-embedded.git",
 )
 
+# Instantiate Pigweed configuration for embedded toolchain,
+# this must be called before bazel_embedded_deps.
+load(
+    "//pw_build:pigweed_toolchain_upstream.bzl",
+    "toolchain_upstream_deps",
+)
+
+toolchain_upstream_deps()
+
 # Configure bazel_embedded toolchains and platforms.
 load(
     "@bazel_embedded//:bazel_embedded_deps.bzl",
@@ -375,11 +384,4 @@ maven_install(
         "https://jcenter.bintray.com/",
         "https://repo1.maven.org/maven2",
     ],
-)
-
-new_git_repository(
-  name = "micro_ecc",
-  commit = "b335ee812bfcca4cd3fb0e2a436aab39553a555a",
-  remote = "https://github.com/kmackay/micro-ecc.git",
-  build_file = "//:third_party/micro_ecc/BUILD.bazel",
 )

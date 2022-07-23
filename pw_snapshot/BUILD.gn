@@ -30,7 +30,6 @@ pw_source_set("uuid") {
   public_deps = [
     dir_pw_bytes,
     dir_pw_result,
-    dir_pw_span,
     dir_pw_status,
   ]
   deps = [

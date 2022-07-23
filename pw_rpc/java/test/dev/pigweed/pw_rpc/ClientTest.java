@@ -130,11 +130,6 @@ public final class ClientTest {
         IllegalArgumentException.class, () -> client.method(CHANNEL_ID, "abc.Service/Method"));
     assertThrows(IllegalArgumentException.class,
         () -> client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService/NotAnRpc").method());
-
-    Service service = new Service("throwaway.NotRealService",
-        Service.unaryMethod("NotAnRpc", SomeMessage.class, AnotherMessage.class));
-    assertThrows(IllegalArgumentException.class,
-        () -> client.method(CHANNEL_ID, service.method("NotAnRpc")));
   }
 
   @Test
@@ -178,15 +173,6 @@ public final class ClientTest {
         .isSameInstanceAs(SERVER_STREAMING_METHOD);
     assertThat(
         client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeClientStreaming").method())
-        .isSameInstanceAs(CLIENT_STREAMING_METHOD);
-  }
-
-  @Test
-  public void method_accessFromMethodInstance() {
-    assertThat(client.method(CHANNEL_ID, UNARY_METHOD).method()).isSameInstanceAs(UNARY_METHOD);
-    assertThat(client.method(CHANNEL_ID, SERVER_STREAMING_METHOD).method())
-        .isSameInstanceAs(SERVER_STREAMING_METHOD);
-    assertThat(client.method(CHANNEL_ID, CLIENT_STREAMING_METHOD).method())
         .isSameInstanceAs(CLIENT_STREAMING_METHOD);
   }
 

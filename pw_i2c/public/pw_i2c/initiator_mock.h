@@ -120,7 +120,7 @@ constexpr Transaction ProbeTransaction(
 // frame.
 class MockInitiator : public Initiator {
  public:
-  explicit constexpr MockInitiator(span<Transaction> transaction_list)
+  explicit constexpr MockInitiator(std::span<Transaction> transaction_list)
       : expected_transactions_(transaction_list),
         expected_transaction_index_(0) {}
 
@@ -137,7 +137,7 @@ class MockInitiator : public Initiator {
   }
 
   // Runs Finalize() regardless of whether it was already optionally finalized.
-  ~MockInitiator() override;
+  ~MockInitiator();
 
  private:
   // Implements a mocked backend for the i2c initiator.
@@ -158,7 +158,7 @@ class MockInitiator : public Initiator {
                         ByteSpan rx_buffer,
                         chrono::SystemClock::duration timeout) override;
 
-  span<Transaction> expected_transactions_;
+  std::span<Transaction> expected_transactions_;
   size_t expected_transaction_index_;
 };
 

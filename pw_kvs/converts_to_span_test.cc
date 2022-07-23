@@ -14,22 +14,23 @@
 
 #include <array>
 #include <cstddef>
+#include <span>
 #include <string_view>
 #include <vector>
 
 #include "gtest/gtest.h"
 #include "pw_kvs/internal/span_traits.h"
-#include "pw_span/span.h"
 
 namespace pw::kvs {
 namespace {
 
 using internal::make_span;
-
 using std::byte;
+using std::dynamic_extent;
+using std::span;
 
 // Test that the ConvertsToSpan trait correctly idenitifies types that convert
-// to span.
+// to std::span.
 
 // Basic types should not convert to span.
 struct Foo {};
@@ -91,12 +92,12 @@ static_assert(ConvertsToSpan<const std::string_view&>());
 static_assert(ConvertsToSpan<const std::string_view&&>());
 
 // Spans should also convert to span.
-static_assert(ConvertsToSpan<span<int>>());
-static_assert(ConvertsToSpan<span<byte>>());
-static_assert(ConvertsToSpan<span<const int*>>());
-static_assert(ConvertsToSpan<span<bool>&&>());
-static_assert(ConvertsToSpan<const span<bool>&>());
-static_assert(ConvertsToSpan<span<bool>&&>());
+static_assert(ConvertsToSpan<std::span<int>>());
+static_assert(ConvertsToSpan<std::span<byte>>());
+static_assert(ConvertsToSpan<std::span<const int*>>());
+static_assert(ConvertsToSpan<std::span<bool>&&>());
+static_assert(ConvertsToSpan<const std::span<bool>&>());
+static_assert(ConvertsToSpan<std::span<bool>&&>());
 
 // These tests for the make_span function were copied from Chromium:
 // https://chromium.googlesource.com/chromium/src/+/main/base/containers/span_unittest.cc

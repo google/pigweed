@@ -70,7 +70,7 @@ constexpr MockTransaction MockWriteTransaction(Status expected_return_value,
 // frame.
 class MockInitiator : public pw::spi::Initiator {
  public:
-  explicit constexpr MockInitiator(span<MockTransaction> transaction_list)
+  explicit constexpr MockInitiator(std::span<MockTransaction> transaction_list)
       : expected_transactions_(transaction_list),
         expected_transaction_index_(0) {}
 
@@ -87,7 +87,7 @@ class MockInitiator : public pw::spi::Initiator {
   }
 
   // Runs Finalize() regardless of whether it was already optionally finalized.
-  ~MockInitiator() override;
+  ~MockInitiator();
 
   // Implements a mocked backend for the SPI initiator.
   //
@@ -106,10 +106,10 @@ class MockInitiator : public pw::spi::Initiator {
 
   pw::Status Configure(const pw::spi::Config& /*config */) override {
     return pw::OkStatus();
-  }
+  };
 
  private:
-  span<MockTransaction> expected_transactions_;
+  std::span<MockTransaction> expected_transactions_;
   size_t expected_transaction_index_;
 };
 

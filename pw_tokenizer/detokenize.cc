@@ -15,9 +15,9 @@
 #include "pw_tokenizer/detokenize.h"
 
 #include <algorithm>
+#include <bit>
 #include <cstring>
 
-#include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
 #include "pw_tokenizer/internal/decode.h"
 
@@ -72,8 +72,8 @@ bool IsBetterResult(const DecodingResult& lhs, const DecodingResult& rhs) {
 
 DetokenizedString::DetokenizedString(
     uint32_t token,
-    const span<const TokenizedStringEntry>& entries,
-    const span<const uint8_t>& arguments)
+    const std::span<const TokenizedStringEntry>& entries,
+    const std::span<const uint8_t>& arguments)
     : token_(token), has_token_(true) {
   std::vector<DecodingResult> results;
 
@@ -107,21 +107,21 @@ Detokenizer::Detokenizer(const TokenDatabase& database) {
 }
 
 DetokenizedString Detokenizer::Detokenize(
-    const span<const uint8_t>& encoded) const {
+    const std::span<const uint8_t>& encoded) const {
   // The token is missing from the encoded data; there is nothing to do.
   if (encoded.empty()) {
     return DetokenizedString();
   }
 
   uint32_t token = bytes::ReadInOrder<uint32_t>(
-      endian::little, encoded.data(), encoded.size());
+      std::endian::little, encoded.data(), encoded.size());
 
   const auto result = database_.find(token);
 
   return DetokenizedString(token,
                            result == database_.end()
-                               ? span<TokenizedStringEntry>()
-                               : span(result->second),
+                               ? std::span<TokenizedStringEntry>()
+                               : std::span(result->second),
                            encoded.subspan(sizeof(token)));
 }
 

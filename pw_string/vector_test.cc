@@ -80,7 +80,7 @@ TEST_F(CopyFromVectorTest, EmptyVector_WritesNullTerminator) {
 
 TEST_F(CopyFromVectorTest, EmptyBuffer_WritesNothing) {
   const pw::Vector<char, 32> vector{'H', 'e', 'l', 'l', 'o'};
-  auto result = Copy(vector, span(buffer_, 0));
+  auto result = Copy(vector, std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
@@ -88,7 +88,7 @@ TEST_F(CopyFromVectorTest, EmptyBuffer_WritesNothing) {
 
 TEST_F(CopyFromVectorTest, TooSmall_Truncates) {
   const pw::Vector<char, 32> vector{'H', 'i', '!'};
-  auto result = Copy(vector, span(buffer_, 3));
+  auto result = Copy(vector, std::span(buffer_, 3));
   EXPECT_EQ(2u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("Hi", buffer_);
@@ -96,7 +96,7 @@ TEST_F(CopyFromVectorTest, TooSmall_Truncates) {
 
 TEST_F(CopyFromVectorTest, ExactFit) {
   const pw::Vector<char, 32> vector{'H', 'i', '!'};
-  auto result = Copy(vector, span(buffer_, 4));
+  auto result = Copy(vector, std::span(buffer_, 4));
   EXPECT_EQ(3u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("Hi!", buffer_);
@@ -104,7 +104,7 @@ TEST_F(CopyFromVectorTest, ExactFit) {
 
 TEST_F(CopyFromVectorTest, NullTerminatorsInString) {
   const pw::Vector<char, 32> vector{'\0', '!', '\0', '\0'};
-  ASSERT_EQ(4u, Copy(vector, span(buffer_, 5)).size());
+  ASSERT_EQ(4u, Copy(vector, std::span(buffer_, 5)).size());
   EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
 }
 

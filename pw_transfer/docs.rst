@@ -146,26 +146,25 @@ Provides a simple interface for transferring bulk data over pw_rpc.
 
 .. code-block:: typescript
 
-   import { pw_transfer } from 'pigweedjs';
-   const { Manager } from pw_transfer;
+    import {Manager} from '@pigweed/pw_transfer'
 
-   const client = new CustomRpcClient();
-   service = client.channel()!.service('pw.transfer.Transfer')!;
+    const client = new CustomRpcClient();
+    service = client.channel()!.service('pw.transfer.Transfer')!;
 
-   const manager = new Manager(service, DEFAULT_TIMEOUT_S);
+    const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
-   manager.read(3, (stats: ProgressStats) => {
-     console.log(`Progress Update: ${stats}`);
-   }).then((data: Uint8Array) => {
-     console.log(`Completed read: ${data}`);
-   }).catch(error => {
-     console.log(`Failed to read: ${error.status}`);
-   });
+    manager.read(3, (stats: ProgressStats) => {
+      console.log(`Progress Update: ${stats}`);
+    }).then((data: Uint8Array) => {
+      console.log(`Completed read: ${data}`);
+    }).catch(error => {
+      console.log(`Failed to read: ${error.status}`);
+    });
 
-   manager.write(2, textEncoder.encode('hello world'))
-     .catch(error => {
-       console.log(`Failed to read: ${error.status}`);
-     });
+    manager.write(2, textEncoder.encode('hello world'))
+      .catch(error => {
+        console.log(`Failed to read: ${error.status}`);
+      });
 
 --------
 Protocol

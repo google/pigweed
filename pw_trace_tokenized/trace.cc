@@ -124,21 +124,22 @@ void TokenizedTraceImpl::HandleNextItemInQueue(
           : PW_TRACE_GET_TIME_DELTA(last_trace_time_, trace_time);
   header_size += pw::varint::Encode(
       delta,
-      span<std::byte>(&header[header_size], kMaxHeaderSize - header_size));
+      std::span<std::byte>(&header[header_size], kMaxHeaderSize - header_size));
   last_trace_time_ = trace_time;
 
   // Calculate packet id if needed.
   if (PW_TRACE_HAS_TRACE_ID(event_type)) {
-    header_size += pw::varint::Encode(
-        trace_id,
-        span<std::byte>(&header[header_size], kMaxHeaderSize - header_size));
+    header_size +=
+        pw::varint::Encode(trace_id,
+                           std::span<std::byte>(&header[header_size],
+                                                kMaxHeaderSize - header_size));
   }
 
   // Send encoded output to any registered trace sinks.
   Callbacks::Instance().CallSinks(
-      span<const std::byte>(header, header_size),
-      span<const std::byte>(reinterpret_cast<const std::byte*>(data_buffer),
-                            data_size));
+      std::span<const std::byte>(header, header_size),
+      std::span<const std::byte>(
+          reinterpret_cast<const std::byte*>(data_buffer), data_size));
   // Disable after processing if an event callback had set the flag.
   if (PW_TRACE_EVENT_RETURN_FLAGS_DISABLE_AFTER_PROCESSING & ret_flags) {
     enabled_ = false;
@@ -168,8 +169,8 @@ pw_trace_TraceEventReturnFlags CallbacksImpl::CallEventCallbacks(
   return ret_flags;
 }
 
-void CallbacksImpl::CallSinks(span<const std::byte> header,
-                              span<const std::byte> data) {
+void CallbacksImpl::CallSinks(std::span<const std::byte> header,
+                              std::span<const std::byte> data) {
   for (size_t sink_idx = 0; sink_idx < PW_TRACE_CONFIG_MAX_SINKS; sink_idx++) {
     void* user_data = sink_callbacks_[sink_idx].user_data;
     if (sink_callbacks_[sink_idx].start_block) {

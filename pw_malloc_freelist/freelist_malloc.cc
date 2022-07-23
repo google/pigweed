@@ -12,11 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <span>
+
 #include "pw_allocator/freelist_heap.h"
 #include "pw_malloc/malloc.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
-#include "pw_span/span.h"
 
 namespace {
 std::aligned_storage_t<sizeof(pw::allocator::FreeListHeapBuffer<>),
@@ -30,9 +31,9 @@ extern "C" {
 #endif  // __cplusplus
 // Define the global heap variables.
 void pw_MallocInit(uint8_t* heap_low_addr, uint8_t* heap_high_addr) {
-  pw::span<std::byte> pw_allocator_freelist_raw_heap =
-      pw::span(reinterpret_cast<std::byte*>(heap_low_addr),
-               heap_high_addr - heap_low_addr);
+  std::span<std::byte> pw_allocator_freelist_raw_heap =
+      std::span(reinterpret_cast<std::byte*>(heap_low_addr),
+                heap_high_addr - heap_low_addr);
   pw_freelist_heap = new (&buf)
       pw::allocator::FreeListHeapBuffer(pw_allocator_freelist_raw_heap);
 }

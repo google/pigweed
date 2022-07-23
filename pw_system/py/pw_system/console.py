@@ -60,7 +60,6 @@ from pw_console.pyserial_wrapper import SerialWithLogging
 from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
 from pw_console.log_store import LogStore
 from pw_log.proto import log_pb2
-from pw_metric_proto import metric_service_pb2
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
 from pw_unit_test_proto import unit_test_pb2
@@ -116,7 +115,6 @@ def _parse_args():
                         help='Path to a pw_console yaml config file.')
     parser.add_argument('--proto-globs',
                         nargs='+',
-                        default=[],
                         help='glob pattern for .proto files')
     parser.add_argument('-v',
                         '--verbose',
@@ -265,6 +263,9 @@ def console(device: str,
         detokenizer = AutoUpdatingDetokenizer(*token_databases)
         detokenizer.show_errors = True
 
+    if not proto_globs:
+        proto_globs = ['**/*.proto']
+
     protos: List[Union[ModuleType, Path]] = list(_expand_globs(proto_globs))
 
     if compiled_protos is None:
@@ -276,7 +277,6 @@ def console(device: str,
     compiled_protos.append(log_pb2)
     compiled_protos.append(unit_test_pb2)
     protos.extend(compiled_protos)
-    protos.append(metric_service_pb2)
 
     if not protos:
         _LOG.critical('No .proto files were found with %s',

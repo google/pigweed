@@ -38,7 +38,7 @@ void PrefixedEntryRingBufferMulti::Clear() {
   }
 }
 
-Status PrefixedEntryRingBufferMulti::SetBuffer(span<byte> buffer) {
+Status PrefixedEntryRingBufferMulti::SetBuffer(std::span<byte> buffer) {
   if ((buffer.data() == nullptr) ||  //
       (buffer.size_bytes() == 0) ||  //
       (buffer.size_bytes() > kMaxBufferBytes)) {
@@ -83,7 +83,7 @@ Status PrefixedEntryRingBufferMulti::DetachReader(Reader& reader) {
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPushBack(
-    span<const byte> data,
+    std::span<const byte> data,
     uint32_t user_preamble_data,
     bool pop_front_if_needed) {
   if (buffer_ == nullptr) {
@@ -99,7 +99,7 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
         varint::Encode<uint32_t>(user_preamble_data, preamble_buf);
   }
   size_t length_bytes = varint::Encode<uint32_t>(
-      data.size_bytes(), span(preamble_buf).subspan(user_preamble_bytes));
+      data.size_bytes(), std::span(preamble_buf).subspan(user_preamble_bytes));
   size_t total_write_bytes =
       user_preamble_bytes + length_bytes + data.size_bytes();
   if (buffer_bytes_ < total_write_bytes) {
@@ -118,7 +118,7 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
   }
 
   // Write the new entry into the ring buffer.
-  RawWrite(span(preamble_buf, user_preamble_bytes + length_bytes));
+  RawWrite(std::span(preamble_buf, user_preamble_bytes + length_bytes));
   RawWrite(data);
 
   // Update all readers of the new count.
@@ -128,8 +128,8 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
   return OkStatus();
 }
 
-auto GetOutput(span<byte> data_out, size_t* write_index) {
-  return [data_out, write_index](span<const byte> src) -> Status {
+auto GetOutput(std::span<byte> data_out, size_t* write_index) {
+  return [data_out, write_index](std::span<const byte> src) -> Status {
     size_t copy_size = std::min(data_out.size_bytes(), src.size_bytes());
 
     memcpy(data_out.data() + *write_index, src.data(), copy_size);
@@ -141,7 +141,7 @@ auto GetOutput(span<byte> data_out, size_t* write_index) {
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFront(
-    const Reader& reader, span<byte> data, size_t* bytes_read_out) const {
+    const Reader& reader, std::span<byte> data, size_t* bytes_read_out) const {
   *bytes_read_out = 0;
   return InternalRead(reader, GetOutput(data, bytes_read_out), false);
 }
@@ -152,7 +152,7 @@ Status PrefixedEntryRingBufferMulti::InternalPeekFront(
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFrontWithPreamble(
-    const Reader& reader, span<byte> data, size_t* bytes_read_out) const {
+    const Reader& reader, std::span<byte> data, size_t* bytes_read_out) const {
   *bytes_read_out = 0;
   return InternalRead(reader, GetOutput(data, bytes_read_out), true);
 }
@@ -173,9 +173,9 @@ Status PrefixedEntryRingBufferMulti::InternalPeekFrontPreamble(
   return OkStatus();
 }
 
-// TODO(b/235351046): Consider whether this internal templating is required, or
-// if we can simply promote GetOutput to a static function and remove the
-// template. T should be similar to Status (*read_output)(span<const byte>)
+// TODO(pwbug/339): Consider whether this internal templating is required, or if
+// we can simply promote GetOutput to a static function and remove the template.
+// T should be similar to Status (*read_output)(std::span<const byte>)
 template <typename T>
 Status PrefixedEntryRingBufferMulti::InternalRead(
     const Reader& reader,
@@ -205,11 +205,12 @@ Status PrefixedEntryRingBufferMulti::InternalRead(
   // Read bytes, stopping at the end of the buffer if this entry wraps.
   size_t bytes_until_wrap = buffer_bytes_ - data_read_idx;
   size_t bytes_to_copy = std::min(read_bytes, bytes_until_wrap);
-  Status status = read_output(span(buffer_ + data_read_idx, bytes_to_copy));
+  Status status =
+      read_output(std::span(buffer_ + data_read_idx, bytes_to_copy));
 
   // If the entry wrapped, read the remaining bytes.
   if (status.ok() && (bytes_to_copy < read_bytes)) {
-    status = read_output(span(buffer_, read_bytes - bytes_to_copy));
+    status = read_output(std::span(buffer_, read_bytes - bytes_to_copy));
   }
   return status;
 }
@@ -262,7 +263,7 @@ Status PrefixedEntryRingBufferMulti::InternalDering(Reader& dering_reader) {
     return Status::FailedPrecondition();
   }
 
-  auto buffer_span = span(buffer_, buffer_bytes_);
+  auto buffer_span = std::span(buffer_, buffer_bytes_);
   std::rotate(buffer_span.begin(),
               buffer_span.begin() + dering_reader.read_idx_,
               buffer_span.end());
@@ -390,7 +391,7 @@ size_t PrefixedEntryRingBufferMulti::RawAvailableBytes() const {
   return buffer_bytes_;
 }
 
-void PrefixedEntryRingBufferMulti::RawWrite(span<const std::byte> source) {
+void PrefixedEntryRingBufferMulti::RawWrite(std::span<const std::byte> source) {
   if (source.size_bytes() == 0) {
     return;
   }
@@ -438,7 +439,7 @@ size_t PrefixedEntryRingBufferMulti::IncrementIndex(size_t index,
 }
 
 Status PrefixedEntryRingBufferMulti::Reader::PeekFrontWithPreamble(
-    span<byte> data,
+    std::span<byte> data,
     uint32_t& user_preamble_out,
     size_t& entry_bytes_read_out) const {
   entry_bytes_read_out = 0;
@@ -486,7 +487,7 @@ const Entry& iterator::operator*() const {
   PW_DCHECK_OK(info.status());
 
   entry_ = {
-      .buffer = span<const byte>(
+      .buffer = std::span<const byte>(
           ring_buffer_->buffer_ + read_idx_ + info.value().preamble_bytes,
           info.value().data_bytes),
       .preamble = info.value().user_preamble,

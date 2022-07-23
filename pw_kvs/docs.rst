@@ -1,8 +1,9 @@
 .. _module-pw_kvs:
 
-======
+------
 pw_kvs
-======
+------
+
 .. note::
   The documentation for this module is currently under construction.
 
@@ -10,9 +11,9 @@ pw_kvs
 persistent storage system with integrated wear-leveling that serves as a
 relatively lightweight alternative to a file system.
 
--------------
 KeyValueStore
--------------
+=============
+
 The KVS system stores key and value data pairs. The key value pairs are stored
 in `flash memory`_ as a `key-value entry`_ (KV entry) that consists of a
 header/metadata, the key data, and value data. KV entries are accessed through
@@ -53,7 +54,8 @@ sector to be garbage collected to a different sector and then erasing the
 sector.
 
 Flash Memory
-============
+-------------
+
 The flash storage used by KVS is comprised of two layers, FlashMemory and
 FlashPartition.
 
@@ -86,14 +88,15 @@ sectors into larger logical sectors.
 FlashPartition supports access via NonSeekableWriter and SeekableReader.
 
 Size report
-===========
+-----------
 The following size report showcases the memory usage of the KVS and
 FlashPartition.
 
 .. include:: kvs_size
 
 Storage Allocation
-==================
+------------------
+
 KVS requires more storage space than the size of the key-value data stored.
 This is due to the always free sector required for garbage collection and the
 "write and garbage collect later" approach KVS uses.
@@ -108,7 +111,8 @@ The flash storage used by KVS is multiplied by `redundancy`_ used. A redundancy
 of 2 will use twice the storage.
 
 Key-Value Entry
-===============
+---------------
+
 Each key-value (KV) entry consists of a header/metadata, the key data, and
 value data. Individual KV entries are contained within a single flash sector
 (do not cross sector boundaries). Because of this the maximum KV entry size is
@@ -128,7 +132,8 @@ remains unaltered “on-disk” but is considered “stale”. It is garbage col
 at some future time.
 
 Redundancy
-==========
+----------
+
 KVS supports storing redundant copies of KV entries. For a given redundancy
 level (N), N total copies of each KV entry are stored. Redundant copies are
 always stored in different sectors. This protects against corruption or even
@@ -138,7 +143,8 @@ Redundancy increases flash usage proportional to the redundancy level. The RAM
 usage for KVS internal state has a small increase with redundancy.
 
 Garbage Collection
-==================
+------------------
+
 Storage space occupied by stale KV entries is reclaimed and made available
 for reuse through a garbage collection process. The base garbage collection
 operation is done to reclaim one sector at a time.
@@ -151,16 +157,16 @@ always free sector is rotated as part of the KVS wear leveling.
 Full Maintenance does garbage collection of all sectors except those that have
 current valid KV entries.
 
-Heavy Maintenance does garbage collection of all sectors, including removing
-entries for deleted keys. Use strong caution when doing Heavy Maintenance as it
-can, compared to Full Maintenance, result in a significant amount of moving
-valid entries,
+Heavy Maintenance does garbage collection of all sectors. Use strong caution
+when doing Heavy Maintenance as it can, compared to Full Maintenance, result
+in a significant amount of moving valid entries,
 
 Garbage collection can be performed by request of higher level software or
 automatically as needed to make space available to write new entries.
 
 Flash wear management
-=====================
+---------------------
+
 Wear leveling is accomplished by cycling selection of the next sector to write
 to. This cycling spreads flash wear across all free sectors so that no one
 sector is prematurely worn out.
@@ -181,16 +187,3 @@ Wear leveling through cycling selection of next sector to write
 * Sectors with already written key-values that are not modified will remain in
   the original sector and not participate in wear-leveling, so long as the
   key-values in the sector remain unchanged
-
-Configuration
-=============
-.. c:macro:: PW_KVS_MAX_FLASH_ALIGNMENT
-
-  The maximum flash alignment supported.
-
-.. c:macro:: PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
-
-  Whether to remove deleted keys in heavy maintanence. This feature costs some
-  code size (>1KB) and is only necessary if arbitrary key names are used.
-  Without this feature, deleted key entries can fill the KVS, making it
-  impossible to add more keys, even though most keys are deleted.

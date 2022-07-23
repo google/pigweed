@@ -62,7 +62,6 @@ pw_source_set("builder") {
     ":to_string",
     ":util",
     dir_pw_preprocessor,
-    dir_pw_span,
     dir_pw_status,
   ]
 }
@@ -73,7 +72,6 @@ pw_source_set("format") {
   sources = [ "format.cc" ]
   public_deps = [
     dir_pw_preprocessor,
-    dir_pw_span,
     dir_pw_status,
   ]
 }
@@ -89,7 +87,6 @@ pw_source_set("to_string") {
     ":config",
     ":format",
     ":util",
-    dir_pw_span,
     dir_pw_status,
   ]
 }
@@ -101,7 +98,6 @@ pw_source_set("util") {
   public_deps = [
     dir_pw_assert,
     dir_pw_result,
-    dir_pw_span,
     dir_pw_status,
   ]
 }
@@ -113,7 +109,6 @@ pw_source_set("vector") {
     ":pw_string",
     "$dir_pw_containers:vector",
     "$dir_pw_status",
-    dir_pw_span,
   ]
 }
 

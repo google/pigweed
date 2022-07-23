@@ -41,9 +41,7 @@ namespace pw::thread {
 // starting a thread.
 class Options {
  protected:
-  // We can't use `= default` here, because it allows to create an Options
-  // instance in C++17 with `pw::thread::Options{}` syntax.
-  constexpr Options() {}
+  constexpr Options() = default;
 };
 
 // The class Thread can represent a single thread of execution. Threads allow

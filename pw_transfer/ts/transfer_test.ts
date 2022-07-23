@@ -12,7 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser */
+/* eslint-env browser, jasmine */
+import 'jasmine';
 
 import {
   Channel,
@@ -25,9 +26,9 @@ import {Status} from '@pigweed/pw_status';
 import {
   PacketType,
   RpcPacket,
-} from 'pigweed/protos/pw_rpc/internal/packet_pb';
-import {ProtoCollection} from 'pigweed/protos/collection';
-import {Chunk} from 'pigweed/protos/pw_transfer/transfer_pb';
+} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb';
+import {ProtoCollection} from 'transfer_proto_collection/generated/ts_proto_collection';
+import {Chunk} from 'transfer_proto_tspb/transfer_proto_tspb_pb/pw_transfer/transfer_pb';
 
 import {Manager} from './client';
 import {ProgressStats} from './transfer';
@@ -132,8 +133,8 @@ describe('Transfer client', () => {
 
     const data = await manager.read(3);
     expect(textDecoder.decode(data)).toEqual('abc');
-    expect(sentChunks).toHaveLength(2);
-    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBe(true);
+    expect(sentChunks).toHaveSize(2);
+    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBeTrue();
     expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
   });
 
@@ -146,8 +147,8 @@ describe('Transfer client', () => {
 
     const data = await manager.read(3);
     expect(data).toEqual(textEncoder.encode('abcdef'));
-    expect(sentChunks).toHaveLength(2);
-    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBe(true);
+    expect(sentChunks).toHaveSize(2);
+    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBeTrue();
     expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
   });
 
@@ -164,8 +165,8 @@ describe('Transfer client', () => {
       progress.push(stats);
     });
     expect(textDecoder.decode(data)).toEqual('abcdef');
-    expect(sentChunks).toHaveLength(2);
-    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBe(true);
+    expect(sentChunks).toHaveSize(2);
+    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBeTrue();
     expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
 
     expect(progress).toEqual([
@@ -189,8 +190,8 @@ describe('Transfer client', () => {
 
     const data = await manager.read(3);
     expect(data).toEqual(textEncoder.encode('123456789'));
-    expect(sentChunks).toHaveLength(3);
-    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBe(true);
+    expect(sentChunks).toHaveSize(3);
+    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBeTrue();
     expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
   });
 
@@ -204,8 +205,8 @@ describe('Transfer client', () => {
     expect(textDecoder.decode(data)).toEqual('xyz');
 
     // Two transfer parameter requests should have been sent.
-    expect(sentChunks).toHaveLength(3);
-    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBe(true);
+    expect(sentChunks).toHaveSize(3);
+    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBeTrue();
     expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
   });
 
@@ -220,7 +221,7 @@ describe('Transfer client', () => {
       .catch(error => {
         expect(error.id).toEqual(27);
         expect(Status[error.status]).toEqual(Status[Status.DEADLINE_EXCEEDED]);
-        expect(sentChunks).toHaveLength(4);
+        expect(sentChunks).toHaveSize(4);
       });
   });
 
@@ -277,7 +278,7 @@ describe('Transfer client', () => {
     ]);
 
     await manager.write(4, textEncoder.encode('hello'));
-    expect(sentChunks).toHaveLength(2);
+    expect(sentChunks).toHaveSize(2);
     expect(receivedData()).toEqual(textEncoder.encode('hello'));
   });
 
@@ -300,7 +301,7 @@ describe('Transfer client', () => {
     ]);
 
     await manager.write(4, textEncoder.encode('hello world'));
-    expect(sentChunks).toHaveLength(3);
+    expect(sentChunks).toHaveSize(3);
     expect(receivedData()).toEqual(textEncoder.encode('hello world'));
     expect(sentChunks[1].getData()).toEqual(textEncoder.encode('hello wo'));
     expect(sentChunks[2].getData()).toEqual(textEncoder.encode('rld'));
@@ -332,7 +333,7 @@ describe('Transfer client', () => {
     ]);
 
     await manager.write(4, textEncoder.encode('data to write'));
-    expect(sentChunks).toHaveLength(3);
+    expect(sentChunks).toHaveSize(3);
     expect(receivedData()).toEqual(textEncoder.encode('data to write'));
     expect(sentChunks[1].getData()).toEqual(textEncoder.encode('data to '));
     expect(sentChunks[2].getData()).toEqual(textEncoder.encode('write'));
@@ -443,7 +444,7 @@ describe('Transfer client', () => {
         progress.push(stats);
       }
     );
-    expect(sentChunks).toHaveLength(3);
+    expect(sentChunks).toHaveSize(3);
     expect(receivedData()).toEqual(textEncoder.encode('data to write'));
     expect(sentChunks[1].getData()).toEqual(textEncoder.encode('data to '));
     expect(sentChunks[2].getData()).toEqual(textEncoder.encode('write'));
@@ -496,7 +497,7 @@ describe('Transfer client', () => {
     ]);
 
     await manager.write(4, textEncoder.encode('pigweed data transfer'));
-    expect(sentChunks).toHaveLength(5);
+    expect(sentChunks).toHaveSize(5);
     expect(sentChunks[1].getData()).toEqual(textEncoder.encode('pigweed '));
     expect(sentChunks[2].getData()).toEqual(textEncoder.encode('data tra'));
     expect(sentChunks[3].getData()).toEqual(textEncoder.encode('eed data'));
@@ -588,7 +589,7 @@ describe('Transfer client', () => {
         fail('unexpected succesful write');
       })
       .catch(error => {
-        expect(sentChunks).toHaveLength(3); // Initial chunk + two retries.
+        expect(sentChunks).toHaveSize(3); // Initial chunk + two retries.
         expect(error.id).toEqual(22);
         expect(Status[error.status]).toEqual(Status[Status.DEADLINE_EXCEEDED]);
       });

@@ -198,7 +198,6 @@ class EnvSetup(object):
 
         self._cipd_package_file = []
         self._virtualenv_requirements = []
-        self._virtualenv_constraints = []
         self._virtualenv_gn_targets = []
         self._virtualenv_gn_args = []
         self._use_pinned_pip_packages = use_pinned_pip_packages
@@ -305,14 +304,6 @@ class EnvSetup(object):
         self._virtualenv_system_packages = virtualenv.pop(
             'system_packages', False)
 
-        for req_txt in virtualenv.pop('requirements', ()):
-            self._virtualenv_requirements.append(
-                os.path.join(self._project_root, req_txt))
-
-        for constraint_txt in virtualenv.pop('constraints', ()):
-            self._virtualenv_constraints.append(
-                os.path.join(self._project_root, constraint_txt))
-
         if virtualenv:
             raise ConfigFileError(
                 'unrecognized option in {}: "virtualenv.{}"'.format(
@@ -354,7 +345,7 @@ class EnvSetup(object):
                 file=sys.stderr)
             print('', file=sys.stderr)
 
-            for miss in sorted(missing):
+            for miss in missing:
                 print('    git submodule update --init {}'.format(miss),
                       file=sys.stderr)
             print('', file=sys.stderr)
@@ -578,11 +569,7 @@ Then use `set +x` to go back to normal.
 
         requirements, req_glob_warnings = self._process_globs(
             self._virtualenv_requirements)
-
-        constraints, constraint_glob_warnings = self._process_globs(
-            self._virtualenv_constraints)
-
-        result = result_func(req_glob_warnings + constraint_glob_warnings)
+        result = result_func(req_glob_warnings)
 
         orig_python3 = _which('python3')
         with self._env():
@@ -607,7 +594,6 @@ Then use `set +x` to go back to normal.
                 project_root=self._project_root,
                 venv_path=self._virtualenv_root,
                 requirements=requirements,
-                constraints=constraints,
                 gn_args=self._virtualenv_gn_args,
                 gn_targets=self._virtualenv_gn_targets,
                 gn_out_dir=self._virtualenv_gn_out_dir,

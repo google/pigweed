@@ -42,9 +42,9 @@ namespace pw::thread::freertos {
 //
 class Options : public thread::Options {
  public:
-  constexpr Options() {}
+  constexpr Options() = default;
   constexpr Options(const Options&) = default;
-  constexpr Options(Options&&) = default;
+  constexpr Options(Options&& other) = default;
 
   // Sets the name for the FreeRTOS task, note that this will be truncated
   // based on configMAX_TASK_NAME_LEN.

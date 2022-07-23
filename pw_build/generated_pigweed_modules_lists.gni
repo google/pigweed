@@ -40,7 +40,6 @@ declare_args() {
   dir_pw_base64 = get_path_info("../pw_base64", "abspath")
   dir_pw_bloat = get_path_info("../pw_bloat", "abspath")
   dir_pw_blob_store = get_path_info("../pw_blob_store", "abspath")
-  dir_pw_bluetooth = get_path_info("../pw_bluetooth", "abspath")
   dir_pw_bluetooth_hci = get_path_info("../pw_bluetooth_hci", "abspath")
   dir_pw_boot = get_path_info("../pw_boot", "abspath")
   dir_pw_boot_cortex_m = get_path_info("../pw_boot_cortex_m", "abspath")
@@ -62,7 +61,6 @@ declare_args() {
   dir_pw_cpu_exception_cortex_m =
       get_path_info("../pw_cpu_exception_cortex_m", "abspath")
   dir_pw_crypto = get_path_info("../pw_crypto", "abspath")
-  dir_pw_digital_io = get_path_info("../pw_digital_io", "abspath")
   dir_pw_docgen = get_path_info("../pw_docgen", "abspath")
   dir_pw_doctor = get_path_info("../pw_doctor", "abspath")
   dir_pw_env_setup = get_path_info("../pw_env_setup", "abspath")
@@ -177,7 +175,6 @@ declare_args() {
     dir_pw_base64,
     dir_pw_bloat,
     dir_pw_blob_store,
-    dir_pw_bluetooth,
     dir_pw_bluetooth_hci,
     dir_pw_boot,
     dir_pw_boot_cortex_m,
@@ -198,7 +195,6 @@ declare_args() {
     dir_pw_cpu_exception,
     dir_pw_cpu_exception_cortex_m,
     dir_pw_crypto,
-    dir_pw_digital_io,
     dir_pw_docgen,
     dir_pw_doctor,
     dir_pw_env_setup,
@@ -295,16 +291,13 @@ declare_args() {
     "$dir_pw_assert:tests",
     "$dir_pw_base64:tests",
     "$dir_pw_blob_store:tests",
-    "$dir_pw_bluetooth:tests",
     "$dir_pw_bluetooth_hci:tests",
-    "$dir_pw_build:tests",
     "$dir_pw_bytes:tests",
     "$dir_pw_checksum:tests",
     "$dir_pw_chrono:tests",
     "$dir_pw_containers:tests",
     "$dir_pw_cpu_exception_cortex_m:tests",
     "$dir_pw_crypto:tests",
-    "$dir_pw_digital_io:tests",
     "$dir_pw_file:tests",
     "$dir_pw_function:tests",
     "$dir_pw_fuzzer:tests",
@@ -372,7 +365,6 @@ declare_args() {
     "$dir_pw_base64:docs",
     "$dir_pw_bloat:docs",
     "$dir_pw_blob_store:docs",
-    "$dir_pw_bluetooth:docs",
     "$dir_pw_bluetooth_hci:docs",
     "$dir_pw_boot:docs",
     "$dir_pw_boot_cortex_m:docs",
@@ -393,7 +385,6 @@ declare_args() {
     "$dir_pw_cpu_exception:docs",
     "$dir_pw_cpu_exception_cortex_m:docs",
     "$dir_pw_crypto:docs",
-    "$dir_pw_digital_io:docs",
     "$dir_pw_docgen:docs",
     "$dir_pw_doctor:docs",
     "$dir_pw_env_setup:docs",

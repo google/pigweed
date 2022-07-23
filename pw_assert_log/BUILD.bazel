@@ -22,17 +22,17 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "check_backend",
+    name = "pw_assert_log",
     srcs = [
         "assert_log.cc",
     ],
     hdrs = [
-        "check_backend_public_overrides/pw_assert_backend/check_backend.h",
-        "public/pw_assert_log/check_log.h",
+        "public/pw_assert_log/assert_log.h",
+        "public_overrides/pw_assert_backend/assert_backend.h",
     ],
     includes = [
-        "check_backend_public_overrides",
         "public",
+        "public_overrides",
     ],
     deps = [
         "//pw_assert:facade",
@@ -42,13 +42,13 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "assert_backend",
+    name = "lite_backend",
     hdrs = [
-        "assert_backend_public_overrides/pw_assert_backend/assert_backend.h",
-        "public/pw_assert_log/assert_log.h",
+        "assert_lite_public_overrides/pw_assert_backend/assert_lite_backend.h",
+        "public/pw_assert_log/assert_lite_log.h",
     ],
     includes = [
-        "assert_backend_public_overrides",
+        "assert_lite_public_overrides",
         "public",
     ],
     deps = [

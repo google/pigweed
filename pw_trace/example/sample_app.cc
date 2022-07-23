@@ -76,7 +76,7 @@ class ProcessingTask : public SimpleRunnable {
   };
   ProcessingTask() {
     // Buffer is used for the job queue.
-    pw::span<std::byte> buf_span = pw::span<std::byte>(
+    std::span<std::byte> buf_span = std::span<std::byte>(
         reinterpret_cast<std::byte*>(jobs_buffer_), sizeof(jobs_buffer_));
     jobs_.SetBuffer(buf_span)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly

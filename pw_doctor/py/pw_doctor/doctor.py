@@ -214,7 +214,9 @@ def python_version(ctx: DoctorContext):
     """Check the Python version is correct."""
     actual = sys.version_info
     expected = (3, 8)
-    if actual[0:2] < expected or actual[0] != expected[0]:
+    latest = (3, 9)
+    if (actual[0:2] < expected or actual[0] != expected[0]
+            or actual[0:2] > latest):
         # If we get the wrong version but it still came from CIPD print a
         # warning but give it a pass.
         if 'chromium' in sys.version:
@@ -375,12 +377,6 @@ def cipd_versions(ctx: DoctorContext):
 
     for json_path in json_paths:
         ctx.debug(f'Checking packages in {json_path}')
-        if not json_path.exists():
-            ctx.error(
-                'CIPD package file %s may have been deleted, please '
-                'rerun bootstrap', json_path)
-            continue
-
         install_path = pathlib.Path(
             cipd_update.package_installation_path(cipd_dir, json_path))
         for package in json.loads(json_path.read_text()).get('packages', ()):
@@ -430,7 +426,7 @@ def run_doctor(strict=False, checks=None):
             "Your environment setup has completed, but something isn't right "
             'and some things may not work correctly. You may continue with '
             'development, but please seek support at '
-            'https://bugs.pigweed.dev/new or by reaching out to your team.')
+            'https://bugs.pigweed.dev/ or by reaching out to your team.')
     else:
         doctor.log.info('Environment passes all checks!')
     return len(doctor.failures)

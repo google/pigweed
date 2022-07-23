@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <span>
 
 #include "pw_chrono/system_clock.h"
 #include "pw_log_rpc/log_service.h"
@@ -23,7 +24,6 @@
 #include "pw_multisink/multisink.h"
 #include "pw_result/result.h"
 #include "pw_rpc/raw/server_reader_writer.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 #include "pw_sync/timed_thread_notification.h"
@@ -40,7 +40,7 @@ class RpcLogDrainThread : public thread::ThreadCore,
  public:
   RpcLogDrainThread(multisink::MultiSink& multisink,
                     RpcLogDrainMap& drain_map,
-                    span<std::byte> encoding_buffer)
+                    std::span<std::byte> encoding_buffer)
       : drain_map_(drain_map),
         multisink_(multisink),
         encoding_buffer_(encoding_buffer) {}
@@ -98,7 +98,7 @@ class RpcLogDrainThread : public thread::ThreadCore,
   sync::TimedThreadNotification ready_to_flush_notification_;
   RpcLogDrainMap& drain_map_;
   multisink::MultiSink& multisink_;
-  span<std::byte> encoding_buffer_;
+  std::span<std::byte> encoding_buffer_;
 };
 
 template <size_t kEncodingBufferSizeBytes>

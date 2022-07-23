@@ -15,8 +15,8 @@
 
 #include <cstdint>
 #include <cstring>
+#include <span>
 
-#include "pw_span/span.h"
 #include "pw_string/util.h"
 #include "pw_thread_threadx/config.h"
 #include "tx_api.h"
@@ -47,7 +47,8 @@ namespace pw::thread::threadx {
 //   }
 class Context {
  public:
-  explicit Context(span<ULONG> stack_span) : tcb_{}, stack_span_(stack_span) {}
+  explicit Context(std::span<ULONG> stack_span)
+      : tcb_{}, stack_span_(stack_span) {}
   Context(const Context&) = delete;
   Context& operator=(const Context&) = delete;
 
@@ -57,7 +58,7 @@ class Context {
  private:
   friend Thread;
 
-  span<ULONG> stack() { return stack_span_; }
+  std::span<ULONG> stack() { return stack_span_; }
 
   bool in_use() const { return in_use_; }
   void set_in_use(bool in_use = true) { in_use_ = in_use; }
@@ -85,7 +86,7 @@ class Context {
   static void DeleteThread(Context& context);
 
   TX_THREAD tcb_;
-  span<ULONG> stack_span_;
+  std::span<ULONG> stack_span_;
 
   ThreadRoutine user_thread_entry_function_ = nullptr;
   void* user_thread_entry_arg_ = nullptr;

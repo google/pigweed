@@ -1,35 +1,19 @@
 {
+  "extends": "./node_modules/gts/tsconfig-google.json",
   "compilerOptions": {
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
-    "outDir": "dist",
-    "baseUrl": ".",
-    "esModuleInterop": true,
-    "target": "es6",
-    "declarationDir": "./types",
-    "moduleResolution": "node",
-    "declaration": true,
-    "allowJs": true,
-    "paths": {
-      "@pigweed/pw_*": [
-        "./pw_*/ts"
-      ],
-      "pigweed/protos/*": [
-        "./dist/protos/*"
-      ]
-    }
-  },
-  "include": [
-    "ts",
-    "pw_status/ts",
-    "pw_hdlc/ts",
-    "pw_tokenizer/ts",
-    "pw_protobuf_compiler/ts",
-    "pw_rpc/ts",
-    "pw_rpc/internal",
-    "dist/protos/**/*"
-  ]
+    "jsx": "react",
+    "plugins": [
+      {
+        "name": "@bazel/tsetse",
+        "disabledRules": [
+          "must-use-promises"
+        ]
+      }
+    ]
+  }
 }

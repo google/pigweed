@@ -21,7 +21,7 @@ namespace pw::hdlc {
 
 Status ReadAndProcessPackets(rpc::Server& server,
                              rpc::ChannelOutput& output,
-                             span<std::byte> decode_buffer,
+                             std::span<std::byte> decode_buffer,
                              unsigned rpc_address) {
   Decoder decoder(decode_buffer);
 

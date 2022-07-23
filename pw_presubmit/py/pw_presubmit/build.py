@@ -104,16 +104,14 @@ def gn_gen(gn_source_dir: Path,
            gn_check: bool = True,
            gn_fail_on_unused: bool = True,
            export_compile_commands: Union[bool, str] = True,
-           preserve_args_gn: bool = False,
            **gn_arguments) -> None:
     """Runs gn gen in the specified directory with optional GN args."""
     args_option = gn_args(**gn_arguments)
 
-    if not preserve_args_gn:
-        # Delete args.gn to ensure this is a clean build.
-        args_gn = gn_output_dir / 'args.gn'
-        if args_gn.is_file():
-            args_gn.unlink()
+    # Delete args.gn to ensure this is a clean build.
+    args_gn = gn_output_dir / 'args.gn'
+    if args_gn.is_file():
+        args_gn.unlink()
 
     export_commands_arg = ''
     if export_compile_commands:
@@ -128,7 +126,7 @@ def gn_gen(gn_source_dir: Path,
          *(['--fail-on-unused-args'] if gn_fail_on_unused else []),
          *([export_commands_arg] if export_commands_arg else []),
          *args,
-         *([args_option] if gn_arguments else []),
+         args_option,
          cwd=gn_source_dir)
 
     if gn_check:
@@ -315,7 +313,7 @@ def check_builds_for_files(
         for path in (p for p in files
                      if p.suffix in bazel_extensions_to_check):
             if path not in bazel_builds:
-                # TODO(b/234883555) Replace this workaround for fuzzers.
+                # TODO(pwbug/176) Replace this workaround for fuzzers.
                 if 'fuzz' not in str(path):
                     missing['Bazel'].append(path)
 

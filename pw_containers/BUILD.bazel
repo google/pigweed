@@ -104,7 +104,7 @@ pw_cc_test(
         ":algorithm",
         ":intrusive_list",
         ":vector",
-        "//pw_span",
+        "//pw_polyfill:span",
     ],
 )
 

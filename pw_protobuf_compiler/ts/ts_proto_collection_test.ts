@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,11 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser */
+/* eslint-env browser, jasmine */
+import 'jasmine';
 
-import {Message} from 'pigweed/protos/pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test_pb';
+import {Message} from 'test_protos_tspb/test_protos_tspb_pb/pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test_pb';
 
-import {ProtoCollection} from 'pigweed/protos/collection';
+import {ProtoCollection} from 'test_proto_collection/generated/ts_proto_collection';
 
 describe('ProtoCollection', () => {
   it('getMessageType returns message', () => {

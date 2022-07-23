@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <span>
 
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method.h"
@@ -22,7 +23,6 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/method_type.h"
-#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {
@@ -100,7 +100,7 @@ class TestMethod : public Method {
   mutable size_t invocations_;
   mutable FakeServerCall* move_to_call_;
 
-  span<const std::byte> response_;
+  std::span<const std::byte> response_;
   Status response_status_;
 };
 

@@ -22,10 +22,9 @@ from typing import Any, Callable, List, Union, Optional
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
 import pw_log_tokenized
 from pw_log.proto import log_pb2
-from pw_metric import metric_parser
 from pw_rpc import callback_client, console_tools
 from pw_status import Status
-from pw_tokenizer import detokenize
+from pw_tokenizer.detokenize import Detokenizer
 from pw_tokenizer.proto import decode_optionally_tokenized
 import pw_unit_test.rpc
 
@@ -45,13 +44,12 @@ class Device:
                  read,
                  write,
                  proto_library: List[Union[ModuleType, Path]],
-                 detokenizer: Optional[detokenize.Detokenizer],
+                 detokenizer: Optional[Detokenizer],
                  timestamp_decoder: Optional[Callable[[int], str]],
                  rpc_timeout_s=5):
         self.channel_id = channel_id
         self.protos = proto_library
         self.detokenizer = detokenizer
-        self.rpc_timeout_s = rpc_timeout_s
 
         self.logger = DEFAULT_DEVICE_LOGGER
         self.logger.setLevel(logging.DEBUG)  # Allow all device logs through.
@@ -59,7 +57,7 @@ class Device:
         self._expected_log_sequence_id = 0
 
         callback_client_impl = callback_client.Impl(
-            default_unary_timeout_s=self.rpc_timeout_s,
+            default_unary_timeout_s=rpc_timeout_s,
             default_stream_timeout_s=None,
         )
         self.client = HdlcRpcClient(
@@ -174,19 +172,3 @@ class Device:
         if self.timestamp_decoder:
             return self.timestamp_decoder(timestamp)
         return str(datetime.timedelta(seconds=timestamp / 1e9))[:-3]
-
-    def get_and_log_metrics(self) -> dict:
-        """Retrieves the parsed metrics and logs them to the console."""
-        metrics = metric_parser.parse_metrics(self.rpcs, self.detokenizer,
-                                              self.rpc_timeout_s)
-
-        def print_metrics(metrics, path):
-            """Traverses dictionaries, until a non-dict value is reached."""
-            for path_name, metric in metrics.items():
-                if isinstance(metric, dict):
-                    print_metrics(metric, path + '/' + path_name)
-                else:
-                    _LOG.info('%s/%s: %s', path, path_name, str(metric))
-
-        print_metrics(metrics, '')
-        return metrics

@@ -21,7 +21,6 @@ import logging
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 from typing import Sequence, IO, Tuple, Optional, Callable, List
@@ -47,23 +46,20 @@ from pw_presubmit import (
     filter_paths,
     inclusive_language,
     plural,
-    presubmit,
     PresubmitContext,
     PresubmitFailure,
     Programs,
     python_checks,
-    shell_checks,
-    npm_presubmit,
 )
-from pw_presubmit.install_hook import install_git_hook
+from pw_presubmit.install_hook import install_hook
 
 _LOG = logging.getLogger(__name__)
 
 pw_package.pigweed_packages.initialize()
 
 # Trigger builds if files with these extensions change.
-_BUILD_FILE_FILTER = presubmit.FileFilter(
-    suffix=(*format_code.C_FORMAT.extensions, '.py', '.rst', '.gn', '.gni'))
+_BUILD_EXTENSIONS = ('.py', '.rst', '.gn', '.gni',
+                     *format_code.C_FORMAT.extensions)
 
 
 def _at_all_optimization_levels(target):
@@ -81,7 +77,7 @@ def gn_clang_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_clang'))
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_gcc_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_gcc'))
@@ -96,13 +92,13 @@ def gn_host_build(ctx: PresubmitContext):
                 *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_quick_build_check(ctx: PresubmitContext):
     """Checks the state of the GN build by running gn gen and gn check."""
     build.gn_gen(ctx.root, ctx.output_dir)
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_full_build_check(ctx: PresubmitContext) -> None:
     build_targets = [
         *_at_all_optimization_levels('stm32f429i'),
@@ -123,7 +119,7 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
     build.ninja(ctx.output_dir, *build_targets)
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_full_qemu_check(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(
@@ -133,20 +129,20 @@ def gn_full_qemu_check(ctx: PresubmitContext):
     )
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_arm_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'))
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def stm32f429i(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir, pw_use_test_server=True)
     with build.test_server('stm32f429i_disc1_test_server', ctx.output_dir):
         build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'))
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'boringssl')
     build.gn_gen(ctx.root,
@@ -160,7 +156,7 @@ def gn_boringssl_build(ctx: PresubmitContext):
     )
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_nanopb_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'nanopb')
     build.gn_gen(ctx.root,
@@ -174,7 +170,7 @@ def gn_nanopb_build(ctx: PresubmitContext):
     )
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_crypto_mbedtls_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'mbedtls')
     build.gn_gen(
@@ -189,7 +185,7 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir)
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'boringssl')
     build.gn_gen(
@@ -206,7 +202,7 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir)
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'micro-ecc')
     build.gn_gen(
@@ -221,7 +217,7 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir)
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_teensy_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'teensy')
     build.gn_gen(ctx.root,
@@ -234,7 +230,7 @@ def gn_teensy_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('arduino'))
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_software_update_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'nanopb')
     build.install_package(ctx.package_root, 'protobuf')
@@ -259,7 +255,7 @@ def gn_software_update_build(ctx: PresubmitContext):
     )
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'freertos')
     build.install_package(ctx.package_root, 'nanopb')
@@ -276,13 +272,13 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'pw_system_demo')
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_qemu_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_gcc'))
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_qemu_clang_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_clang'))
@@ -335,8 +331,8 @@ def cmake_gcc(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
 
 
-# TODO(b/235882003): Slowly remove modules from here that work with bazel until
-# no modules remain.
+# TODO(pwbug/180): Slowly remove modules from here that work with bazel until no
+# modules remain.
 _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'docker',
     'pw_android_toolchain',
@@ -345,6 +341,7 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_assert_zephyr',
     'pw_blob_store',
     'pw_boot',
+    'pw_build_info',
     'pw_build_mcuxpresso',
     'pw_bytes',
     'pw_chrono_zephyr',
@@ -373,6 +370,7 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_software_update',
     'pw_spi',
     'pw_stm32cube_build',
+    'pw_sync',
     'pw_sync_zephyr',
     'pw_sys_io_arduino',
     'pw_sys_io_mcuxpresso',
@@ -386,6 +384,7 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_tls_client',
     'pw_tls_client_boringssl',
     'pw_tls_client_mbedtls',
+    'pw_tokenizer',
     'pw_trace',
     'pw_trace_tokenized',
     'pw_watch',
@@ -393,8 +392,8 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_work_queue',
 )
 
-# TODO(b/235882003): Slowly remove modules from here that work with bazel until
-# no modules remain.
+# TODO(pwbug/180): Slowly remove modules from here that work with bazel until no
+# modules remain.
 _MODULES_THAT_DO_NOT_TEST_WITH_BAZEL = _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL + (
     'pw_malloc_freelist', )
 
@@ -506,11 +505,9 @@ COPYRIGHT_BLOCK_COMMENTS = (
 COPYRIGHT_FIRST_LINE_EXCEPTIONS = (
     '#!',
     '/*',
-    ' */',
     '@echo off',
     '# -*-',
     ':',
-    ' * @jest',
 )
 
 COPYRIGHT_LINES = tuple("""\
@@ -543,9 +540,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bgo.(mod|sum)$',
     r'\bpackage.json$',
     r'\byarn.lock$',
-    r'\bpackage-lock.json$',
     # Data files
-    r'\.bin$',
     r'\.elf$',
     r'\.gif$',
     r'\.jpg$',
@@ -662,14 +657,9 @@ _BAZEL_SOURCES_IN_BUILD = tuple(format_code.C_FORMAT.extensions)
 _GN_SOURCES_IN_BUILD = ('setup.cfg', '.toml', '.rst', '.py',
                         *_BAZEL_SOURCES_IN_BUILD)
 
-SOURCE_FILES_FILTER = presubmit.FileFilter(endswith=_GN_SOURCES_IN_BUILD,
-                                           name=('BUILD', ),
-                                           suffix=('.bzl', '.gn', '.gni'),
-                                           exclude=(r'zephyr.*/',
-                                                    r'android.*/'))
 
-
-@SOURCE_FILES_FILTER.apply_to_check()
+@filter_paths(endswith=(*_GN_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'),
+              exclude=['zephyr.*/', 'android.*/'])
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
     missing = build.check_builds_for_files(
@@ -796,7 +786,7 @@ OTHER_CHECKS = (
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
     # failing.
     oss_fuzz_build,
-    # TODO(b/235277910): Enable all Bazel tests when they're fixed.
+    # TODO(pwbug/346): Enable all Bazel tests when they're fixed.
     bazel_test,
     cmake_clang,
     cmake_gcc,
@@ -816,21 +806,17 @@ OTHER_CHECKS = (
     renode_check,
     static_analysis,
     stm32f429i,
-    npm_presubmit.npm_test,
 )
 
 _LINTFORMAT = (
     commit_message_format,
     copyright_notice,
     format_code.presubmit_checks(),
-    inclusive_language.inclusive_language.with_filter(exclude=(
-        r'\byarn.lock$',
-        r'\bpackage-lock.json$',
-    )),
+    inclusive_language.inclusive_language.with_filter(
+        exclude=(r'\byarn.lock$', )),
     cpp_checks.pragma_once,
     build.bazel_lint,
     source_is_in_build_files,
-    shell_checks.shellcheck if shutil.which('shellcheck') else (),
 )
 
 LINTFORMAT = (
@@ -842,7 +828,7 @@ LINTFORMAT = (
 QUICK = (
     _LINTFORMAT,
     gn_quick_build_check,
-    # TODO(b/34884583): Re-enable CMake and Bazel for Mac after we have fixed
+    # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
     # the clang issues. The problem is that all clang++ invocations need the
     # two extra flags: "-nostdc++" and "${clang_prefix}/../lib/libc++.a".
     cmake_clang if sys.platform != 'darwin' else (),
@@ -897,10 +883,11 @@ def run(install: bool, **presubmit_args) -> int:
     """Entry point for presubmit."""
 
     if install:
-        install_git_hook('pre-push', [
-            'python', '-m', 'pw_presubmit.pigweed_presubmit', '--base',
-            'origin/main..HEAD', '--program', 'quick'
-        ])
+        # TODO(pwbug/209, pwbug/386) inclusive-language: disable
+        install_hook(__file__, 'pre-push',
+                     ['--base', 'origin/master..HEAD', '--program', 'quick'],
+                     Path.cwd())
+        # TODO(pwbug/209, pwbug/386) inclusive-language: enable
         return 0
 
     return cli.run(**presubmit_args)

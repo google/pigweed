@@ -25,7 +25,7 @@
 
 namespace pw::software_update {
 
-// TODO(b/235273688): update documentation for backend api contract
+// TODO(pwbug/478): update documentation for backend api contract
 class BundledUpdateBackend {
  public:
   virtual ~BundledUpdateBackend() = default;
@@ -220,6 +220,9 @@ class BundledUpdateBackend {
   //
   // The updating must be atomic/fail-safe. An invalid or corrupted root
   // metadata will result in permanent OTA failures.
+  //
+  // TODO(pwbug/456): Investigate whether we should get a writer i.e.
+  // GetRootMetadataWriter() instead of passing a reader.
   virtual Status SafelyPersistRootMetadata(
       [[maybe_unused]] stream::IntervalReader root_metadata) {
     return Status::Unimplemented();

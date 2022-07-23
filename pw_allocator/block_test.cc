@@ -15,9 +15,9 @@
 #include "pw_allocator/block.h"
 
 #include <cstring>
+#include <span>
 
 #include "gtest/gtest.h"
-#include "pw_span/span.h"
 
 using std::byte;
 
@@ -28,7 +28,7 @@ TEST(Block, CanCreateSingleBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  auto status = Block::Init(span(bytes, kN), &block);
+  auto status = Block::Init(std::span(bytes, kN), &block);
 
   ASSERT_EQ(status, OkStatus());
   EXPECT_EQ(block->OuterSize(), kN);
@@ -48,7 +48,7 @@ TEST(Block, CannotCreateUnalignedSingleBlock) {
   byte* byte_ptr = bytes;
 
   Block* block = nullptr;
-  auto status = Block::Init(span(byte_ptr + 1, kN - 1), &block);
+  auto status = Block::Init(std::span(byte_ptr + 1, kN - 1), &block);
 
   EXPECT_EQ(status, Status::InvalidArgument());
 }
@@ -57,7 +57,7 @@ TEST(Block, CannotCreateTooSmallBlock) {
   constexpr size_t kN = 2;
   alignas(Block*) byte bytes[kN];
   Block* block = nullptr;
-  auto status = Block::Init(span(bytes, kN), &block);
+  auto status = Block::Init(std::span(bytes, kN), &block);
 
   EXPECT_EQ(status, Status::InvalidArgument());
 }
@@ -68,7 +68,7 @@ TEST(Block, CanSplitBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
@@ -101,7 +101,7 @@ TEST(Block, CanSplitBlockUnaligned) {
   uintptr_t split_len = split_addr - (uintptr_t)&bytes;
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
@@ -133,7 +133,7 @@ TEST(Block, CanSplitMidBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* block2 = nullptr;
   block->Split(kSplit1, &block2)
@@ -156,7 +156,7 @@ TEST(Block, CannotSplitBlockWithoutHeaderSpace) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
@@ -171,7 +171,7 @@ TEST(Block, MustProvideNextBlockPointer) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   auto status = block->Split(kSplitN, nullptr);
   EXPECT_EQ(status, Status::InvalidArgument());
@@ -183,7 +183,7 @@ TEST(Block, CannotMakeBlockLargerInSplit) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   auto status = block->Split(block->InnerSize() + 1, &next_block);
@@ -197,7 +197,7 @@ TEST(Block, CannotMakeSecondBlockLargerInSplit) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   auto status = block->Split(
@@ -214,7 +214,7 @@ TEST(Block, CanMakeZeroSizeFirstBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   auto status = block->Split(0, &next_block);
@@ -229,7 +229,7 @@ TEST(Block, CanMakeZeroSizeSecondBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   auto status = block->Split(
@@ -245,7 +245,7 @@ TEST(Block, CanMarkBlockUsed) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   block->MarkUsed();
   EXPECT_EQ(block->Used(), true);
@@ -263,7 +263,7 @@ TEST(Block, CannotSplitUsedBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   block->MarkUsed();
 
@@ -281,7 +281,7 @@ TEST(Block, CanMergeWithNextBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* block2 = nullptr;
   block->Split(kSplit1, &block2)
@@ -311,7 +311,7 @@ TEST(Block, CannotMergeWithFirstOrLastBlock) {
   // Do a split, just to check that the checks on Next/Prev are
   // different...
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   block->Split(512, &next_block)
@@ -328,7 +328,7 @@ TEST(Block, CannotMergeUsedBlock) {
   // Do a split, just to check that the checks on Next/Prev are
   // different...
   Block* block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
   block->Split(512, &next_block)
@@ -344,7 +344,7 @@ TEST(Block, CanCheckValidBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* first_block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &first_block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &first_block), OkStatus());
 
   Block* second_block = nullptr;
   first_block->Split(512, &second_block)
@@ -364,7 +364,7 @@ TEST(Block, CanCheckInalidBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* first_block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &first_block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &first_block), OkStatus());
 
   Block* second_block = nullptr;
   first_block->Split(512, &second_block)
@@ -405,7 +405,7 @@ TEST(Block, CanPoisonBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* first_block = nullptr;
-  EXPECT_EQ(Block::Init(span(bytes, kN), &first_block), OkStatus());
+  EXPECT_EQ(Block::Init(std::span(bytes, kN), &first_block), OkStatus());
 
   Block* second_block = nullptr;
   first_block->Split(512, &second_block)

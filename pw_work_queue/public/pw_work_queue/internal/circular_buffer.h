@@ -16,8 +16,7 @@
 
 #include <cstdint>
 #include <optional>
-
-#include "pw_span/span.h"
+#include <span>
 
 namespace pw::work_queue::internal {
 
@@ -25,7 +24,7 @@ namespace pw::work_queue::internal {
 template <typename T>
 class CircularBuffer {
  public:
-  explicit constexpr CircularBuffer(span<T> buffer)
+  explicit constexpr CircularBuffer(std::span<T> buffer)
       : buffer_(buffer), head_(0), tail_(0), count_(0) {}
 
   bool empty() const { return count_ == 0; }
@@ -69,7 +68,7 @@ class CircularBuffer {
     }
   }
 
-  span<T> buffer_;
+  std::span<T> buffer_;
 
   size_t head_;
   size_t tail_;

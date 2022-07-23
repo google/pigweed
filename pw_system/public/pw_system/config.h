@@ -24,17 +24,16 @@
 // PW_SYSTEM_MAX_LOG_ENTRY_SIZE limits the proto-encoded log entry size. This
 // value might depend on a target interface's MTU.
 //
-// Defaults to 256B.
+// Defaults to 512B.
 #ifndef PW_SYSTEM_MAX_LOG_ENTRY_SIZE
-#define PW_SYSTEM_MAX_LOG_ENTRY_SIZE 256
+#define PW_SYSTEM_MAX_LOG_ENTRY_SIZE 512
 #endif  // PW_SYSTEM_MAX_LOG_ENTRY_SIZE
 
 // PW_SYSTEM_MAX_TRANSMISSION_UNIT target's MTU.
 //
-// Defaults to 1055 bytes, which is enough to fit 512-byte payloads when using
-// HDLC framing.
+// Defaults to 512B.
 #ifndef PW_SYSTEM_MAX_TRANSMISSION_UNIT
-#define PW_SYSTEM_MAX_TRANSMISSION_UNIT 1055
+#define PW_SYSTEM_MAX_TRANSMISSION_UNIT 512
 #endif  // PW_SYSTEM_MAX_TRANSMISSION_UNIT
 
 // PW_SYSTEM_DEFAULT_CHANNEL_ID RPC channel ID to host.

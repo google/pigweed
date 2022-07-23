@@ -18,15 +18,19 @@ import dev.pigweed.pw_rpc.MethodClient;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-/** @deprecated Manager was renamed to TransferClient; use TransferClient instead. */
-@Deprecated
+/**
+ * Manager was renamed to TransferClient.
+ *
+ * This class will maintain the current API when TransferClient is refactored, then it will be
+ * deprecated.
+ */
 public class Manager extends TransferClient {
   /**
    * Creates a new transfer client for sending and receiving data with pw_transfer.
    *
    * @param readMethod Method client for the pw.transfer.Transfer.Read method.
    * @param writeMethod Method client for the pw.transfer.Transfer.Write method.
-   * @param workDispatcher Deprecated, not used.
+   * @param workDispatcher Will be deprecated when TransferClient is refactored.
    * @param transferTimeoutMillis How long to wait for communication from the server. If the server
    * delays longer than this, retry up to maxRetries times.
    * @param initialTransferTimeoutMillis How long to wait for the initial communication from the
@@ -43,6 +47,7 @@ public class Manager extends TransferClient {
       BooleanSupplier shouldAbortCallback) {
     super(readMethod,
         writeMethod,
+        workDispatcher,
         transferTimeoutMillis,
         initialTransferTimeoutMillis,
         maxRetries,

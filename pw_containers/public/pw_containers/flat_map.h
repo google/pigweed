@@ -21,18 +21,9 @@
 
 namespace pw::containers {
 
-// Define and use a custom Pair object. This is because std::pair does not
-// support constexpr assignment until C++20. The assignment is needed since
-// the array of pairs will be sorted in the constructor (if not already).
-template <typename First, typename Second>
-struct Pair {
-  First first;
-  Second second;
-};
-
 // A simple, fixed-size associative array with lookup by key or value.
 //
-// FlatMaps are initialized with a std::array of Pair<K, V> objects:
+// FlatMaps are initialized with a std::array of FlatMap::Pair objects:
 //   FlatMap<int, int> map({{{1, 2}, {3, 4}}});
 //
 // The keys do not need to be sorted as the constructor will sort the items
@@ -40,6 +31,15 @@ struct Pair {
 template <typename Key, typename Value, size_t kArraySize>
 class FlatMap {
  public:
+  // Define and use a custom Pair object. This is because std::pair does not
+  // support constexpr assignment until C++20. The assignment is needed since
+  // the array of pairs will be sorted in the constructor (if not already).
+  template <typename First, typename Second>
+  struct Pair {
+    First first;
+    Second second;
+  };
+
   using key_type = Key;
   using mapped_type = Value;
   using value_type = Pair<key_type, mapped_type>;
@@ -73,10 +73,7 @@ class FlatMap {
     }
 
     const_iterator it = lower_bound(key);
-    if (it == end() || it->first != key) {
-      return end();
-    }
-    return it;
+    return key == it->first ? it : end();
   }
 
   constexpr const_iterator lower_bound(const key_type& key) const {

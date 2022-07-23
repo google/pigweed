@@ -28,7 +28,6 @@ pw_source_set("pw_ring_buffer") {
   public_deps = [
     "$dir_pw_containers",
     "$dir_pw_result",
-    "$dir_pw_span",
     "$dir_pw_status",
   ]
   sources = [ "prefixed_entry_ring_buffer.cc" ]

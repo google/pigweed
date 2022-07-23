@@ -15,6 +15,7 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
+#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
@@ -26,7 +27,6 @@
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"
 
@@ -111,9 +111,9 @@ class EmptyInitializedKvs : public ::testing::Test {
       buffer[0] = static_cast<byte>(static_cast<uint8_t>(buffer[0]) + 1);
       ASSERT_EQ(OkStatus(),
                 kvs_.Put(key,
-                         span(buffer.data(),
-                              chunk_len - kvs_attr.ChunkHeaderSize() -
-                                  kvs_attr.KeySize())));
+                         std::span(buffer.data(),
+                                   chunk_len - kvs_attr.ChunkHeaderSize() -
+                                       kvs_attr.KeySize())));
       size_to_fill -= chunk_len;
       chunk_len = std::min(size_to_fill, kMaxPutSize);
     }
@@ -129,7 +129,8 @@ TEST_F(EmptyInitializedKvs, Put_SameKeySameValueRepeatedly_AlignedEntries) {
   std::array<char, 8> value{'v', 'a', 'l', 'u', 'e', '6', '7', '\0'};
 
   for (int i = 0; i < 1000; ++i) {
-    ASSERT_EQ(OkStatus(), kvs_.Put("The Key!", as_bytes(span(value))));
+    ASSERT_EQ(OkStatus(),
+              kvs_.Put("The Key!", std::as_bytes(std::span(value))));
   }
 }
 
@@ -137,7 +138,8 @@ TEST_F(EmptyInitializedKvs, Put_SameKeySameValueRepeatedly_UnalignedEntries) {
   std::array<char, 7> value{'v', 'a', 'l', 'u', 'e', '6', '\0'};
 
   for (int i = 0; i < 1000; ++i) {
-    ASSERT_EQ(OkStatus(), kvs_.Put("The Key!", as_bytes(span(value))));
+    ASSERT_EQ(OkStatus(),
+              kvs_.Put("The Key!", std::as_bytes(std::span(value))));
   }
 }
 
@@ -163,7 +165,7 @@ TEST_F(EmptyInitializedKvs, PutAndGetByValue_ConvertibleToSpan) {
 
 TEST_F(EmptyInitializedKvs, PutAndGetByValue_Span) {
   float input[] = {1.0, -3.5};
-  ASSERT_EQ(OkStatus(), kvs_.Put("key", span(input)));
+  ASSERT_EQ(OkStatus(), kvs_.Put("key", std::span(input)));
 
   float output[2] = {};
   ASSERT_EQ(OkStatus(), kvs_.Get("key", &output));
@@ -187,41 +189,48 @@ TEST_F(EmptyInitializedKvs, PutAndGetByValue_NotConvertibleToSpan) {
 }
 
 TEST_F(EmptyInitializedKvs, Get_Simple) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("Charles", as_bytes(span("Mingus"))));
+  ASSERT_EQ(OkStatus(),
+            kvs_.Put("Charles", std::as_bytes(std::span("Mingus"))));
 
   char value[16];
-  auto result = kvs_.Get("Charles", as_writable_bytes(span(value)));
+  auto result = kvs_.Get("Charles", std::as_writable_bytes(std::span(value)));
   EXPECT_EQ(OkStatus(), result.status());
   EXPECT_EQ(sizeof("Mingus"), result.size());
   EXPECT_STREQ("Mingus", value);
 }
 
 TEST_F(EmptyInitializedKvs, Get_WithOffset) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("Charles", as_bytes(span("Mingus"))));
+  ASSERT_EQ(OkStatus(),
+            kvs_.Put("Charles", std::as_bytes(std::span("Mingus"))));
 
   char value[16];
-  auto result = kvs_.Get("Charles", as_writable_bytes(span(value)), 4);
+  auto result =
+      kvs_.Get("Charles", std::as_writable_bytes(std::span(value)), 4);
   EXPECT_EQ(OkStatus(), result.status());
   EXPECT_EQ(sizeof("Mingus") - 4, result.size());
   EXPECT_STREQ("us", value);
 }
 
 TEST_F(EmptyInitializedKvs, Get_WithOffset_FillBuffer) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("Charles", as_bytes(span("Mingus"))));
+  ASSERT_EQ(OkStatus(),
+            kvs_.Put("Charles", std::as_bytes(std::span("Mingus"))));
 
   char value[4] = {};
-  auto result = kvs_.Get("Charles", as_writable_bytes(span(value, 3)), 1);
+  auto result =
+      kvs_.Get("Charles", std::as_writable_bytes(std::span(value, 3)), 1);
   EXPECT_EQ(Status::ResourceExhausted(), result.status());
   EXPECT_EQ(3u, result.size());
   EXPECT_STREQ("ing", value);
 }
 
 TEST_F(EmptyInitializedKvs, Get_WithOffset_PastEnd) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("Charles", as_bytes(span("Mingus"))));
+  ASSERT_EQ(OkStatus(),
+            kvs_.Put("Charles", std::as_bytes(std::span("Mingus"))));
 
   char value[16];
-  auto result =
-      kvs_.Get("Charles", as_writable_bytes(span(value)), sizeof("Mingus") + 1);
+  auto result = kvs_.Get("Charles",
+                         std::as_writable_bytes(std::span(value)),
+                         sizeof("Mingus") + 1);
   EXPECT_EQ(Status::OutOfRange(), result.status());
   EXPECT_EQ(0u, result.size());
 }
@@ -251,7 +260,7 @@ TEST_F(EmptyInitializedKvs, GetValue_TooLarge) {
 }
 
 TEST_F(EmptyInitializedKvs, Delete_GetDeletedKey_ReturnsNotFound) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
   ASSERT_EQ(OkStatus(), kvs_.Delete("kEy"));
 
   EXPECT_EQ(Status::NotFound(), kvs_.Get("kEy", {}).status());
@@ -259,10 +268,10 @@ TEST_F(EmptyInitializedKvs, Delete_GetDeletedKey_ReturnsNotFound) {
 }
 
 TEST_F(EmptyInitializedKvs, Delete_AddBackKey_PersistsAfterInitialization) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
   ASSERT_EQ(OkStatus(), kvs_.Delete("kEy"));
 
-  EXPECT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("45678"))));
+  EXPECT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("45678"))));
   char data[6] = {};
   ASSERT_EQ(OkStatus(), kvs_.Get("kEy", &data));
   EXPECT_STREQ(data, "45678");
@@ -272,14 +281,14 @@ TEST_F(EmptyInitializedKvs, Delete_AddBackKey_PersistsAfterInitialization) {
                                                               default_format);
   ASSERT_EQ(OkStatus(), new_kvs.Init());
 
-  EXPECT_EQ(OkStatus(), new_kvs.Put("kEy", as_bytes(span("45678"))));
+  EXPECT_EQ(OkStatus(), new_kvs.Put("kEy", std::as_bytes(std::span("45678"))));
   char new_data[6] = {};
   EXPECT_EQ(OkStatus(), new_kvs.Get("kEy", &new_data));
   EXPECT_STREQ(data, "45678");
 }
 
 TEST_F(EmptyInitializedKvs, Delete_AllItems_KvsIsEmpty) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
   ASSERT_EQ(OkStatus(), kvs_.Delete("kEy"));
 
   EXPECT_EQ(0u, kvs_.size());
@@ -338,7 +347,7 @@ TEST_F(EmptyInitializedKvs, Iteration_Empty_ByValue) {
 }
 
 TEST_F(EmptyInitializedKvs, Iteration_OneItem) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
 
   for (KeyValueStore::Item entry : kvs_) {
     EXPECT_STREQ(entry.key(), "kEy");  // Make sure null-terminated.
@@ -350,11 +359,11 @@ TEST_F(EmptyInitializedKvs, Iteration_OneItem) {
 }
 
 TEST_F(EmptyInitializedKvs, Iteration_GetWithOffset) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("key", as_bytes(span("not bad!"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("key", std::as_bytes(std::span("not bad!"))));
 
   for (KeyValueStore::Item entry : kvs_) {
     char temp[5];
-    auto result = entry.Get(as_writable_bytes(span(temp)), 4);
+    auto result = entry.Get(std::as_writable_bytes(std::span(temp)), 4);
     EXPECT_EQ(OkStatus(), result.status());
     EXPECT_EQ(5u, result.size());
     EXPECT_STREQ("bad!", temp);
@@ -392,7 +401,7 @@ TEST_F(EmptyInitializedKvs, Iteration_GetValue_TooLarge) {
 }
 
 TEST_F(EmptyInitializedKvs, Iteration_EmptyAfterDeletion) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
   ASSERT_EQ(OkStatus(), kvs_.Delete("kEy"));
 
   for (KeyValueStore::Item entry : kvs_) {
@@ -402,7 +411,7 @@ TEST_F(EmptyInitializedKvs, Iteration_EmptyAfterDeletion) {
 }
 
 TEST_F(EmptyInitializedKvs, Iterator) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
 
   for (KeyValueStore::iterator it = kvs_.begin(); it != kvs_.end(); ++it) {
     EXPECT_STREQ(it->key(), "kEy");
@@ -414,7 +423,7 @@ TEST_F(EmptyInitializedKvs, Iterator) {
 }
 
 TEST_F(EmptyInitializedKvs, Iterator_PostIncrement) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
 
   KeyValueStore::iterator it = kvs_.begin();
   EXPECT_EQ(it++, kvs_.begin());
@@ -422,7 +431,7 @@ TEST_F(EmptyInitializedKvs, Iterator_PostIncrement) {
 }
 
 TEST_F(EmptyInitializedKvs, Iterator_PreIncrement) {
-  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(OkStatus(), kvs_.Put("kEy", std::as_bytes(std::span("123"))));
 
   KeyValueStore::iterator it = kvs_.begin();
   EXPECT_EQ(++it, kvs_.end());
@@ -432,8 +441,9 @@ TEST_F(EmptyInitializedKvs, Iterator_PreIncrement) {
 TEST_F(EmptyInitializedKvs, Basic) {
   // Add some data
   uint8_t value1 = 0xDA;
-  ASSERT_EQ(OkStatus(),
-            kvs_.Put(keys[0], as_bytes(span(&value1, sizeof(value1)))));
+  ASSERT_EQ(
+      OkStatus(),
+      kvs_.Put(keys[0], std::as_bytes(std::span(&value1, sizeof(value1)))));
 
   uint32_t value2 = 0xBAD0301f;
   ASSERT_EQ(OkStatus(), kvs_.Put(keys[1], value2));
@@ -453,10 +463,10 @@ TEST_F(EmptyInitializedKvs, Basic) {
   // Verify it was erased
   EXPECT_EQ(kvs_.Get(keys[0], &test1), Status::NotFound());
   test2 = 0;
-  ASSERT_EQ(
-      OkStatus(),
-      kvs_.Get(keys[1], span(reinterpret_cast<byte*>(&test2), sizeof(test2)))
-          .status());
+  ASSERT_EQ(OkStatus(),
+            kvs_.Get(keys[1],
+                     std::span(reinterpret_cast<byte*>(&test2), sizeof(test2)))
+                .status());
   EXPECT_EQ(test2, value2);
 
   // Delete other key

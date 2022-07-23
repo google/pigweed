@@ -45,7 +45,6 @@ pw_source_set("pw_protobuf") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
-    "$dir_pw_bytes:bit",
     "$dir_pw_containers:vector",
     "$dir_pw_stream:interval_reader",
     "$dir_pw_varint:stream",
@@ -54,7 +53,6 @@ pw_source_set("pw_protobuf") {
     dir_pw_function,
     dir_pw_log,
     dir_pw_result,
-    dir_pw_span,
     dir_pw_status,
     dir_pw_stream,
     dir_pw_varint,
@@ -206,13 +204,11 @@ pw_proto_library("codegen_test_protos") {
     "pw_protobuf_test_protos/imported.proto",
     "pw_protobuf_test_protos/importer.proto",
     "pw_protobuf_test_protos/non_pw_package.proto",
-    "pw_protobuf_test_protos/optional.proto",
     "pw_protobuf_test_protos/proto2.proto",
     "pw_protobuf_test_protos/repeated.proto",
   ]
   inputs = [
     "pw_protobuf_test_protos/full_test.options",
-    "pw_protobuf_test_protos/optional.options",
     "pw_protobuf_test_protos/repeated.options",
   ]
   deps = [ ":common_protos" ]

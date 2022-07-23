@@ -109,6 +109,24 @@ pw_add_module_library(pw_rpc.synchronous_client_api
     pw_sync.timed_thread_notification
 )
 
+#pw_add_module_library(pw_rpc.common
+#  SOURCES
+#    channel.cc
+#    channel_list.cc
+#    packet.cc
+#  PUBLIC_DEPS
+#    pw_assert
+#    pw_bytes
+#    pw_containers
+#    pw_function
+#    pw_rpc.config
+#    pw_rpc.protos.pwpb
+#    pw_span
+#    pw_status
+#    pw_sync.lock_annotations
+#  PRIVATE_DEPS
+#    pw_log
+#)
 add_library(pw_rpc.common)
 target_sources(pw_rpc.common
         PUBLIC
@@ -128,7 +146,6 @@ target_link_libraries(pw_rpc.common
         pw_sync.lock_annotations
         PRIVATE
         pw_log)
-
 if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_COMMON)
   zephyr_link_libraries(pw_rpc.common)
 endif()
@@ -182,7 +199,6 @@ pw_proto_library(pw_rpc.protos
 
 pw_proto_library(pw_rpc.test_protos
   SOURCES
-    pw_rpc_test_protos/no_package.proto
     pw_rpc_test_protos/test.proto
 )
 

@@ -12,10 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <span>
+
 #include "gtest/gtest.h"
 #include "pw_rpc/pwpb/internal/common.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
-#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {
@@ -29,9 +30,12 @@ TEST(PwpbSerde, Encode) {
 
   StatusWithSize result = kTestRequest.Encode(kProto, buffer);
   EXPECT_EQ(OkStatus(), result.status());
-  EXPECT_EQ(result.size(), 2u);
+  EXPECT_EQ(result.size(), 4u);
   EXPECT_EQ(buffer[0], std::byte{1} << 3);
   EXPECT_EQ(buffer[1], std::byte{3});
+  // pw_protobuf encodes zero fields
+  EXPECT_EQ(buffer[2], std::byte{2} << 3);
+  EXPECT_EQ(buffer[3], std::byte{0});
 }
 
 TEST(PwpbSerde, Encode_TooSmall) {

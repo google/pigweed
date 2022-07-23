@@ -15,9 +15,9 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 
 #include "pw_bytes/span.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::dump {
@@ -97,17 +97,17 @@ class FormattedHexDumper {
                  .prefix_mode = AddressMode::kOffset};
 
   FormattedHexDumper() = default;
-  FormattedHexDumper(span<char> dest) {
+  FormattedHexDumper(std::span<char> dest) {
     SetLineBuffer(dest)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
-  FormattedHexDumper(span<char> dest, Flags config_flags)
+  FormattedHexDumper(std::span<char> dest, Flags config_flags)
       : flags(config_flags) {
     SetLineBuffer(dest)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
-  // TODO(b/234892215): Add iterator support.
+  // TODO(pwbug/218): Add iterator support.
 
   // Set the destination buffer that the hex dumper will write to line-by-line.
   //
@@ -116,7 +116,7 @@ class FormattedHexDumper {
   //     current formatting configuration.
   //   INVALID_ARGUMENT - The destination buffer is invalid (nullptr or zero-
   //     length).
-  Status SetLineBuffer(span<char> dest);
+  Status SetLineBuffer(std::span<char> dest);
 
   // Begin dumping the provided data. Does NOT populate the line buffer with
   // a string, simply resets the statefulness to track this buffer.
@@ -151,7 +151,7 @@ class FormattedHexDumper {
   Status PrintFormatHeader();
 
   size_t current_offset_;
-  span<char> dest_;
+  std::span<char> dest_;
   ConstByteSpan source_data_;
 };
 
@@ -169,8 +169,8 @@ class FormattedHexDumper {
 //   OK - Address has been written to the buffer.
 //   INVALID_ARGUMENT - The destination buffer is invalid (nullptr).
 //   RESOURCE_EXHAUSTED - The destination buffer is too small. No data written.
-Status DumpAddr(span<char> dest, uintptr_t addr);
-inline Status DumpAddr(span<char> dest, const void* ptr) {
+Status DumpAddr(std::span<char> dest, uintptr_t addr);
+inline Status DumpAddr(std::span<char> dest, const void* ptr) {
   uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
   return DumpAddr(dest, addr);
 }

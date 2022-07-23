@@ -65,7 +65,7 @@ class PwConsoleEmbed:
                 loggers={
                     'Host Logs': [
                         logging.getLogger(__package__),
-                        logging.getLogger(__name__),
+                        logging.getLogger(__file__),
                     ],
                     'Device Logs': [
                         logging.getLogger('usb_gadget'),

@@ -86,7 +86,7 @@ TEST(Decoder, Decode) {
   };
   // clang-format on
 
-  Decoder decoder(as_bytes(span(encoded_proto)));
+  Decoder decoder(std::as_bytes(std::span(encoded_proto)));
 
   int32_t v1 = 0;
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -148,7 +148,7 @@ TEST(Decoder, Decode_SkipsUnusedFields) {
   };
   // clang-format on
 
-  Decoder decoder(as_bytes(span(encoded_proto)));
+  Decoder decoder(std::as_bytes(std::span(encoded_proto)));
 
   // Don't process any fields except for the fourth. Next should still iterate
   // correctly despite field values not being consumed.
@@ -174,7 +174,7 @@ TEST(Decoder, Decode_BadFieldNumber) {
   };
   // clang-format on
 
-  Decoder decoder(as_bytes(span(encoded_proto)));
+  Decoder decoder(std::as_bytes(std::span(encoded_proto)));
   int32_t value;
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -210,7 +210,8 @@ TEST(CallbackDecoder, Decode) {
   // clang-format on
 
   decoder.set_handler(&handler);
-  EXPECT_EQ(decoder.Decode(as_bytes(span(encoded_proto))), OkStatus());
+  EXPECT_EQ(decoder.Decode(std::as_bytes(std::span(encoded_proto))),
+            OkStatus());
   EXPECT_TRUE(handler.called);
   EXPECT_EQ(handler.test_int32, 42);
   EXPECT_EQ(handler.test_sint32, -13);
@@ -236,7 +237,8 @@ TEST(CallbackDecoder, Decode_OverridesDuplicateFields) {
   // clang-format on
 
   decoder.set_handler(&handler);
-  EXPECT_EQ(decoder.Decode(as_bytes(span(encoded_proto))), OkStatus());
+  EXPECT_EQ(decoder.Decode(std::as_bytes(std::span(encoded_proto))),
+            OkStatus());
   EXPECT_TRUE(handler.called);
   EXPECT_EQ(handler.test_int32, 44);
 }
@@ -246,7 +248,7 @@ TEST(CallbackDecoder, Decode_Empty) {
   TestDecodeHandler handler;
 
   decoder.set_handler(&handler);
-  EXPECT_EQ(decoder.Decode(span<std::byte>()), OkStatus());
+  EXPECT_EQ(decoder.Decode(std::span<std::byte>()), OkStatus());
   EXPECT_FALSE(handler.called);
   EXPECT_EQ(handler.test_int32, 0);
   EXPECT_EQ(handler.test_sint32, 0);
@@ -260,7 +262,8 @@ TEST(CallbackDecoder, Decode_BadData) {
   uint8_t encoded_proto[] = {0x08};
 
   decoder.set_handler(&handler);
-  EXPECT_EQ(decoder.Decode(as_bytes(span(encoded_proto))), Status::DataLoss());
+  EXPECT_EQ(decoder.Decode(std::as_bytes(std::span(encoded_proto))),
+            Status::DataLoss());
 }
 
 // Only processes fields numbered 1 or 3.
@@ -314,7 +317,8 @@ TEST(CallbackDecoder, Decode_SkipsUnprocessedFields) {
   // clang-format on
 
   decoder.set_handler(&handler);
-  EXPECT_EQ(decoder.Decode(as_bytes(span(encoded_proto))), OkStatus());
+  EXPECT_EQ(decoder.Decode(std::as_bytes(std::span(encoded_proto))),
+            OkStatus());
   EXPECT_TRUE(handler.called);
   EXPECT_EQ(handler.field_one, 42);
   EXPECT_EQ(handler.field_three, 99);
@@ -363,7 +367,8 @@ TEST(CallbackDecoder, Decode_StopsOnNonOkStatus) {
   // clang-format on
 
   decoder.set_handler(&handler);
-  EXPECT_EQ(decoder.Decode(as_bytes(span(encoded_proto))), Status::Cancelled());
+  EXPECT_EQ(decoder.Decode(std::as_bytes(std::span(encoded_proto))),
+            Status::Cancelled());
   EXPECT_EQ(handler.field_one, 42);
   EXPECT_EQ(handler.field_three, 1111);
 }

@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -16,7 +16,7 @@
 
 import {Message} from 'google-protobuf';
 import {MethodDescriptorProto} from 'google-protobuf/google/protobuf/descriptor_pb';
-import * as packetPb from 'pigweed/protos/pw_rpc/internal/packet_pb';
+import * as packetPb from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb';
 import {Status} from '@pigweed/pw_status';
 
 // Channel, Service, Method

@@ -47,7 +47,7 @@ constexpr std::array<uint64_t, 20> kPowersOf10{
     10000000000000000000ull,  // 10^19
 };
 
-StatusWithSize HandleExhaustedBuffer(span<char> buffer) {
+StatusWithSize HandleExhaustedBuffer(std::span<char> buffer) {
   if (!buffer.empty()) {
     buffer[0] = '\0';
   }
@@ -60,8 +60,7 @@ uint_fast8_t DecimalDigitCount(uint64_t integer) {
   // This fancy piece of code takes the log base 2, then approximates the
   // change-of-base formula by multiplying by 1233 / 4096.
   // TODO(hepler): Replace __builtin_clzll with std::countl_zeros in C++20.
-  const uint_fast8_t log_10 = static_cast<uint_fast8_t>(
-      (64 - __builtin_clzll(integer | 1)) * 1233 >> 12);
+  const uint_fast8_t log_10 = (64 - __builtin_clzll(integer | 1)) * 1233 >> 12;
 
   // Adjust the estimated log base 10 by comparing against the power of 10.
   return log_10 + (integer < kPowersOf10[log_10] ? 0u : 1u);
@@ -73,7 +72,7 @@ uint_fast8_t DecimalDigitCount(uint64_t integer) {
 // DecimalDigitCount and its table). I didn't measure performance, but I don't
 // think std::to_chars will be faster, so I kept this implementation for now.
 template <>
-StatusWithSize IntToString(uint64_t value, span<char> buffer) {
+StatusWithSize IntToString(uint64_t value, std::span<char> buffer) {
   constexpr uint32_t base = 10;
   constexpr uint32_t max_uint32_base_power = 1'000'000'000;
   constexpr uint_fast8_t max_uint32_base_power_exponent = 9;
@@ -94,7 +93,7 @@ StatusWithSize IntToString(uint64_t value, span<char> buffer) {
     // 64-bit division is slow on 32-bit platforms, so print large numbers in
     // 32-bit chunks to minimize the number of 64-bit divisions.
     if (value <= std::numeric_limits<uint32_t>::max()) {
-      lower_digits = static_cast<uint32_t>(value);
+      lower_digits = value;
       digit_count = remaining;
     } else {
       lower_digits = value % max_uint32_base_power;
@@ -112,7 +111,7 @@ StatusWithSize IntToString(uint64_t value, span<char> buffer) {
 }
 
 StatusWithSize IntToHexString(uint64_t value,
-                              span<char> buffer,
+                              std::span<char> buffer,
                               uint_fast8_t min_width) {
   const uint_fast8_t digits = std::max(HexDigitCount(value), min_width);
 
@@ -130,7 +129,7 @@ StatusWithSize IntToHexString(uint64_t value,
 }
 
 template <>
-StatusWithSize IntToString(int64_t value, span<char> buffer) {
+StatusWithSize IntToString(int64_t value, std::span<char> buffer) {
   if (value >= 0) {
     return IntToString<uint64_t>(value, buffer);
   }
@@ -147,7 +146,7 @@ StatusWithSize IntToString(int64_t value, span<char> buffer) {
   return HandleExhaustedBuffer(buffer);
 }
 
-StatusWithSize FloatAsIntToString(float value, span<char> buffer) {
+StatusWithSize FloatAsIntToString(float value, std::span<char> buffer) {
   // If it's finite and fits in an int64_t, print it as a rounded integer.
   if (std::isfinite(value) &&
       std::abs(value) <
@@ -169,11 +168,11 @@ StatusWithSize FloatAsIntToString(float value, span<char> buffer) {
   return HandleExhaustedBuffer(buffer);
 }
 
-StatusWithSize BoolToString(bool value, span<char> buffer) {
+StatusWithSize BoolToString(bool value, std::span<char> buffer) {
   return CopyEntireStringOrNull(value ? "true" : "false", buffer);
 }
 
-StatusWithSize PointerToString(const void* pointer, span<char> buffer) {
+StatusWithSize PointerToString(const void* pointer, std::span<char> buffer) {
   if (pointer == nullptr) {
     return CopyEntireStringOrNull(kNullPointerString, buffer);
   }
@@ -181,7 +180,7 @@ StatusWithSize PointerToString(const void* pointer, span<char> buffer) {
 }
 
 StatusWithSize CopyEntireStringOrNull(const std::string_view& value,
-                                      span<char> buffer) {
+                                      std::span<char> buffer) {
   if (value.size() >= buffer.size()) {
     return HandleExhaustedBuffer(buffer);
   }

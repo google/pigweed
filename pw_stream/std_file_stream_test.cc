@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <random>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -28,7 +29,6 @@
 #include "pw_bytes/span.h"
 #include "pw_containers/algorithm.h"
 #include "pw_random/xor_shift.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_string/string_builder.h"
@@ -139,7 +139,7 @@ TEST_F(StdFileStreamTest, SeekAtEnd) {
   // Write some data to the temporary file.
   const std::string_view kTestData = kSmallTestData;
   StdFileWriter writer(TempFilename());
-  ASSERT_EQ(writer.Write(as_bytes(span(kTestData))), OkStatus());
+  ASSERT_EQ(writer.Write(std::as_bytes(std::span(kTestData))), OkStatus());
   writer.Close();
 
   StdFileReader reader(TempFilename());
@@ -147,19 +147,20 @@ TEST_F(StdFileStreamTest, SeekAtEnd) {
   size_t read_offset = 0;
   while (read_offset < kTestData.size()) {
     Result<ConstByteSpan> result =
-        reader.Read(as_writable_bytes(span(read_buffer)));
+        reader.Read(std::as_writable_bytes(std::span(read_buffer)));
     ASSERT_EQ(result.status(), OkStatus());
     ASSERT_GT(result.value().size(), 0u);
     ASSERT_LE(result.value().size(), read_buffer.size());
     ASSERT_LE(result.value().size(), kTestData.size() - read_offset);
     ConstByteSpan expect_window =
-        as_bytes(span(kTestData)).subspan(read_offset, result.value().size());
+        std::as_bytes(std::span(kTestData))
+            .subspan(read_offset, result.value().size());
     EXPECT_TRUE(pw::containers::Equal(result.value(), expect_window));
     read_offset += result.value().size();
   }
   // After data has been read, do a final read to trigger EOF.
   Result<ConstByteSpan> result =
-      reader.Read(as_writable_bytes(span(read_buffer)));
+      reader.Read(std::as_writable_bytes(std::span(read_buffer)));
   EXPECT_EQ(result.status(), Status::OutOfRange());
 
   EXPECT_EQ(read_offset, kTestData.size());
@@ -167,7 +168,7 @@ TEST_F(StdFileStreamTest, SeekAtEnd) {
   // Seek backwards and read again to ensure seek at EOF works.
   ASSERT_EQ(reader.Seek(-1 * read_buffer.size(), Stream::Whence::kEnd),
             OkStatus());
-  result = reader.Read(as_writable_bytes(span(read_buffer)));
+  result = reader.Read(std::as_writable_bytes(std::span(read_buffer)));
   EXPECT_EQ(result.status(), OkStatus());
 
   reader.Close();

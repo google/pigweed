@@ -95,18 +95,6 @@ pw_add_facade(pw_sync.timed_mutex
     timed_mutex.cc
 )
 
-pw_add_facade(pw_sync.recursive_mutex
-  HEADERS
-    public/pw_sync/recursive_mutex.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_sync.lock_annotations
-    pw_preprocessor
-  SOURCES
-    recursive_mutex.cc
-)
-
 pw_add_facade(pw_sync.interrupt_spin_lock
   HEADERS
     public/pw_sync/interrupt_spin_lock.h

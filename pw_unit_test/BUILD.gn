@@ -18,7 +18,6 @@ import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
-import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -57,7 +56,15 @@ pw_source_set("config") {
 
 # pw_unit_test facade. This provides a GoogleTest-compatible test framework.
 pw_source_set("pw_unit_test") {
-  public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
+  if (pw_unit_test_PUBLIC_DEPS == []) {
+    # TODO(b/233073669): For now, use pw_unit_test_GOOGLETEST_BACKEND only if
+    #     pw_unit_test_PUBLIC_DEPS is not set. Remove pw_unit_test_PUBLIC_DEPS
+    #     when projects have migrated. There is an assert in test.gni that
+    #     ensures both variables are not set.
+    public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
+  } else {
+    public_deps = pw_unit_test_PUBLIC_DEPS
+  }
 }
 
 # Lightweight unit test backend that implements a subset of GoogleTest.
@@ -71,11 +78,13 @@ pw_source_set("light") {
     ":event_handler",
     dir_pw_polyfill,
     dir_pw_preprocessor,
-    dir_pw_span,
   ]
 
   # If C++17 is supported, depend on StringBuilder.
-  if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX17) {
+  # TODO(pwbug/196): C++ standard should be a target trait.
+  if (current_toolchain != get_label_info(
+          "$dir_pigweed/targets/host/pigweed_internal:pw_strict_host_clang_debug_cpp14",
+          "label_no_toolchain")) {
     public_deps += [ "$dir_pw_string:builder" ]
   }
 
@@ -121,7 +130,6 @@ pw_source_set("simple_printing_main") {
     ":pw_unit_test",
     ":simple_printing_event_handler",
     "$dir_pw_sys_io",
-    dir_pw_span,
   ]
   sources = [ "simple_printing_main.cc" ]
 }
@@ -161,14 +169,6 @@ pw_source_set("logging_main") {
   sources = [ "logging_main.cc" ]
 }
 
-config("rpc_service_backend_light") {
-  include_dirs = [ "rpc_light_public" ]
-}
-
-config("rpc_service_backend_gtest") {
-  include_dirs = [ "rpc_gtest_public" ]
-}
-
 pw_source_set("rpc_service") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
@@ -178,19 +178,14 @@ pw_source_set("rpc_service") {
     "$dir_pw_containers:vector",
   ]
   deps = [ dir_pw_log ]
-  public = [ "public/pw_unit_test/unit_test_service.h" ]
-  sources = [ "unit_test_service.cc" ]
-  defines = []
-
-  if (pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light") {
-    public_configs += [ ":rpc_service_backend_light" ]
-    sources += [ "rpc_light_event_handler.cc" ]
-    public += [ "rpc_light_public/pw_unit_test/internal/rpc_event_handler.h" ]
-  } else {
-    public_configs += [ ":rpc_service_backend_gtest" ]
-    sources += [ "rpc_gtest_event_handler.cc" ]
-    public += [ "rpc_gtest_public/pw_unit_test/internal/rpc_event_handler.h" ]
-  }
+  public = [
+    "public/pw_unit_test/internal/rpc_event_handler.h",
+    "public/pw_unit_test/unit_test_service.h",
+  ]
+  sources = [
+    "rpc_event_handler.cc",
+    "unit_test_service.cc",
+  ]
 }
 
 pw_source_set("rpc_main") {

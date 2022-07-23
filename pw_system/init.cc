@@ -15,9 +15,7 @@
 #include "pw_system/init.h"
 
 #include "pw_log/log.h"
-#include "pw_metric/global.h"
-#include "pw_metric/metric_service_pwpb.h"
-#include "pw_rpc/echo_service_pwpb.h"
+#include "pw_rpc/echo_service_nanopb.h"
 #include "pw_system/rpc_server.h"
 #include "pw_system/target_hooks.h"
 #include "pw_system/work_queue.h"
@@ -26,9 +24,6 @@
 
 namespace pw::system {
 namespace {
-metric::MetricService metric_service(metric::global_metrics,
-                                     metric::global_groups);
-
 rpc::EchoService echo_service;
 
 void InitImpl() {
@@ -45,7 +40,6 @@ void InitImpl() {
   PW_LOG_INFO("Registering RPC services");
   GetRpcServer().RegisterService(echo_service);
   GetRpcServer().RegisterService(GetLogService());
-  GetRpcServer().RegisterService(metric_service);
 
   PW_LOG_INFO("Starting threads");
   // Start threads.

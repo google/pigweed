@@ -123,7 +123,7 @@ config("no_system_libcpp") {
       "-nostdlib++",
 
       # Use the libc++ from CIPD.
-      rebase_path(dir_cipd_pigweed + "/lib/libc++.a", root_build_dir),
+      dir_cipd_pigweed + "/lib/libc++.a",
     ]
   }
 }

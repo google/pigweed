@@ -25,6 +25,71 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL)
   zephyr_link_libraries(pw_polyfill)
 endif()
 
+# TODO(pwbug/602): Remove this overrides target by migrating all users to
+# explicitly depend on the polyfill(s) they require.
+pw_add_module_library(pw_polyfill.overrides
+  PUBLIC_DEPS
+    pw_polyfill.bit
+    pw_polyfill.span
+)
+if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL_OVERRIDES)
+  zephyr_link_libraries(pw_polyfill.overrides)
+endif()
+
+# Provides <bit>'s std::endian.
+pw_add_module_library(pw_polyfill.bit
+  HEADERS
+    public_overrides/bit
+    standard_library_public/pw_polyfill/standard_library/bit.h
+  PUBLIC_INCLUDES
+    public_overrides
+    standard_library_public
+  PUBLIC_DEPS
+    pw_polyfill.standard_library
+)
+
+# Provides <cstddef>'s std::byte.
+pw_add_module_library(pw_polyfill.cstddef
+  HEADERS
+    public_overrides/cstddef
+    standard_library_public/pw_polyfill/standard_library/cstddef.h
+  PUBLIC_INCLUDES
+    public_overrides
+    standard_library_public
+  PUBLIC_DEPS
+    pw_polyfill.standard_library
+)
+
+# TODO(pwbug/603): Remove this polyfill.
+pw_add_module_library(pw_polyfill.iterator
+  HEADERS
+    public_overrides/iterator
+    standard_library_public/pw_polyfill/standard_library/iterator.h
+  PUBLIC_INCLUDES
+    public_overrides
+    standard_library_public
+  PUBLIC_DEPS
+    pw_polyfill.standard_library
+)
+
+# Provides <span>.
+pw_add_module_library(pw_polyfill.span
+  PUBLIC_DEPS
+    pw_span
+)
+
+# TODO(pwbug/603): Remove this polyfill.
+pw_add_module_library(pw_polyfill.type_traits
+  HEADERS
+    public_overrides/type_traits
+    standard_library_public/pw_polyfill/standard_library/type_traits.h
+  PUBLIC_INCLUDES
+    public_overrides
+    standard_library_public
+  PUBLIC_DEPS
+    pw_polyfill.standard_library
+)
+
 pw_add_module_library(pw_polyfill.standard_library
   HEADERS
     standard_library_public/pw_polyfill/standard_library/namespace.h

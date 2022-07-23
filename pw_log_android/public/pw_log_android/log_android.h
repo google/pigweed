@@ -39,9 +39,5 @@
 // #define PW_LOG_LEVEL_FATAL    7
 #define _PW_LOG_ANDROID_LEVEL_7(...) LOG_ALWAYS_FATAL(__VA_ARGS__)
 
-#define _PW_HANDLE_LOG(level, flags, ...) \
+#define PW_HANDLE_LOG(level, flags, ...) \
   _PW_LOG_ANDROID_LEVEL_##level(__VA_ARGS__)
-
-// The indirection through _PW_HANDLE_LOG ensures the `level` argument is
-// expanded.
-#define PW_HANDLE_LOG(...) _PW_HANDLE_LOG(__VA_ARGS__)

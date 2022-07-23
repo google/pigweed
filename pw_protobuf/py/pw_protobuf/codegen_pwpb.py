@@ -256,7 +256,7 @@ class ReadMethod(ProtoMethod):
 
         Defined in subclasses.
 
-        e.g. 'uint32_t', 'pw::span<std::byte>', etc.
+        e.g. 'uint32_t', 'std::span<std::byte>', etc.
         """
         raise NotImplementedError()
 
@@ -306,7 +306,7 @@ class PackedReadMethod(ReadMethod):
         return '::pw::StatusWithSize'
 
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<{}>'.format(self._result_type()), 'out')]
+        return [('std::span<{}>'.format(self._result_type()), 'out')]
 
 
 class PackedReadVectorMethod(ReadMethod):
@@ -328,7 +328,7 @@ class PackedReadVectorMethod(ReadMethod):
 class MessageProperty(ProtoMember):
     """Base class for a C++ property for a field in a protobuf message."""
     def name(self) -> str:
-        return self._field.field_name()
+        return self._field.enum_name().lower()
 
     def should_appear(self) -> bool:
         return True
@@ -354,11 +354,6 @@ class MessageProperty(ProtoMember):
         assert options is not None
         return options.use_callback or (self._field.is_repeated()
                                         and self.max_size() == 0)
-
-    def is_optional(self) -> bool:
-        """Returns whether the decoder should use std::optional."""
-        return (self._field.is_optional() and self.max_size() == 0
-                and self.wire_type() != 'kDelimited')
 
     def max_size(self) -> int:
         """Returns the maximum size of the field."""
@@ -386,11 +381,6 @@ class MessageProperty(ProtoMember):
         if self.use_callback():
             return (f'{PROTOBUF_NAMESPACE}::Callback'
                     '<StreamEncoder, StreamDecoder>', self.name())
-
-        # Optional fields are wrapped in std::optional
-        if self.is_optional():
-            return ('std::optional<{}>'.format(self.type_name(from_root)),
-                    self.name())
 
         # Non-repeated fields have a member of just the type name.
         max_size = self.max_size()
@@ -428,7 +418,6 @@ class MessageProperty(ProtoMember):
             self._varint_type_table_entry(),
             'true' if self.fixed_size() else 'false',
             'true' if self._field.is_repeated() else 'false',
-            'true' if self.is_optional() else 'false',
             'true' if self.use_callback() else 'false',
             'offsetof(Message, {})'.format(self.name()),
             'sizeof(Message::{})'.format(self.name()),
@@ -597,7 +586,7 @@ class DoubleWriteMethod(WriteMethod):
 class PackedDoubleWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of doubles."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const double>', 'values')]
+        return [('std::span<const double>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedDouble'
@@ -663,7 +652,7 @@ class FloatWriteMethod(WriteMethod):
 class PackedFloatWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of floats."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const float>', 'values')]
+        return [('std::span<const float>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFloat'
@@ -729,7 +718,7 @@ class Int32WriteMethod(WriteMethod):
 class PackedInt32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of int32."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const int32_t>', 'values')]
+        return [('std::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedInt32'
@@ -798,7 +787,7 @@ class Sint32WriteMethod(WriteMethod):
 class PackedSint32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of sint32."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const int32_t>', 'values')]
+        return [('std::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSint32'
@@ -867,7 +856,7 @@ class Sfixed32WriteMethod(WriteMethod):
 class PackedSfixed32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of sfixed32."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const int32_t>', 'values')]
+        return [('std::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSfixed32'
@@ -933,7 +922,7 @@ class Int64WriteMethod(WriteMethod):
 class PackedInt64WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of int64."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const int64_t>', 'values')]
+        return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedInt64'
@@ -1002,7 +991,7 @@ class Sint64WriteMethod(WriteMethod):
 class PackedSint64WriteMethod(PackedWriteMethod):
     """Method which writes a packst list of sint64."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const int64_t>', 'values')]
+        return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSint64'
@@ -1071,7 +1060,7 @@ class Sfixed64WriteMethod(WriteMethod):
 class PackedSfixed64WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of sfixed64."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const int64_t>', 'values')]
+        return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSfixed4'
@@ -1137,7 +1126,7 @@ class Uint32WriteMethod(WriteMethod):
 class PackedUint32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of uint32."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const uint32_t>', 'values')]
+        return [('std::span<const uint32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedUint32'
@@ -1206,7 +1195,7 @@ class Fixed32WriteMethod(WriteMethod):
 class PackedFixed32WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of fixed32."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const uint32_t>', 'values')]
+        return [('std::span<const uint32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFixed32'
@@ -1272,7 +1261,7 @@ class Uint64WriteMethod(WriteMethod):
 class PackedUint64WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of uint64."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const uint64_t>', 'values')]
+        return [('std::span<const uint64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedUint64'
@@ -1341,7 +1330,7 @@ class Fixed64WriteMethod(WriteMethod):
 class PackedFixed64WriteMethod(PackedWriteMethod):
     """Method which writes a packed list of fixed64."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const uint64_t>', 'values')]
+        return [('std::span<const uint64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFixed64'
@@ -1407,7 +1396,7 @@ class BoolWriteMethod(WriteMethod):
 class PackedBoolWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of bools."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const bool>', 'values')]
+        return [('std::span<const bool>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedBool'
@@ -1458,7 +1447,7 @@ class BoolProperty(MessageProperty):
 class BytesWriteMethod(WriteMethod):
     """Method which writes a proto bytes value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const std::byte>', 'value')]
+        return [('std::span<const std::byte>', 'value')]
 
     def _encoder_fn(self) -> str:
         return 'WriteBytes'
@@ -1470,7 +1459,7 @@ class BytesReadMethod(ReadMethod):
         return '::pw::StatusWithSize'
 
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<std::byte>', 'out')]
+        return [('std::span<std::byte>', 'out')]
 
     def _decoder_fn(self) -> str:
         return 'ReadBytes'
@@ -1539,7 +1528,7 @@ class StringReadMethod(ReadMethod):
         return '::pw::StatusWithSize'
 
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<char>', 'out')]
+        return [('std::span<char>', 'out')]
 
     def _decoder_fn(self) -> str:
         return 'ReadString'
@@ -1600,14 +1589,14 @@ class EnumWriteMethod(WriteMethod):
 class PackedEnumWriteMethod(PackedWriteMethod):
     """Method which writes a packed list of enum."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('pw::span<const {}>'.format(self._relative_type_namespace()),
+        return [('std::span<const {}>'.format(self._relative_type_namespace()),
                  'values')]
 
     def body(self) -> List[str]:
         value_param = self.params()[0][1]
         line = (
             f'return {self._base_class}::WritePackedUint32('
-            f'{self.field_cast()}, pw::span(reinterpret_cast<const uint32_t*>('
+            f'{self.field_cast()}, std::span(reinterpret_cast<const uint32_t*>('
             f'{value_param}.data()), {value_param}.size()));')
         return [line]
 
@@ -1652,7 +1641,7 @@ class PackedEnumReadMethod(PackedReadMethod):
         value_param = self.params()[0][1]
         return [
             f'return ReadPackedUint32('
-            f'pw::span(reinterpret_cast<uint32_t*>({value_param}.data()), '
+            f'std::span(reinterpret_cast<uint32_t*>({value_param}.data()), '
             f'{value_param}.size()));'
         ]
 
@@ -1871,7 +1860,7 @@ def generate_class_for_message(message: ProtoMessage, root: ProtoNode,
             with output.indent():
                 output.write_line(
                     f'return {base_class}::Read('
-                    'pw::as_writable_bytes(pw::span(&message, 1)), '
+                    'std::as_writable_bytes(std::span(&message, 1)), '
                     'kMessageFields);')
             output.write_line('}')
         elif class_type in (ClassType.STREAMING_ENCODER,
@@ -1881,7 +1870,7 @@ def generate_class_for_message(message: ProtoMessage, root: ProtoNode,
             with output.indent():
                 output.write_line(
                     f'return {base_class}::Write('
-                    'pw::as_bytes(pw::span(&message, 1)), kMessageFields);')
+                    'std::as_bytes(std::span(&message, 1)), kMessageFields);')
             output.write_line('}')
 
         # Generate methods for each of the message's fields.
@@ -2124,10 +2113,9 @@ def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
     output.write_line('};')
     output.write_line('PW_MODIFY_DIAGNOSTICS_POP();')
 
-    output.write_line(
-        'inline constexpr pw::span<const {}::MessageField> '
-        'kMessageFields = {{ _kMessageFields, size_t({}) }};'.format(
-            PROTOBUF_NAMESPACE, len(properties)))
+    output.write_line('inline constexpr std::span<const {}::MessageField> '
+                      'kMessageFields = {{ _kMessageFields, {} }};'.format(
+                          PROTOBUF_NAMESPACE, len(properties)))
 
     output.write_line(f'}}  // namespace {namespace}')
 
@@ -2224,8 +2212,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <array>')
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
-    output.write_line('#include <optional>')
-    output.write_line('#include "pw_span/span.h"')
+    output.write_line('#include <span>')
     output.write_line('#include <string_view>\n')
     output.write_line('#include "pw_assert/assert.h"')
     output.write_line('#include "pw_containers/vector.h"')
@@ -2302,7 +2289,7 @@ def process_proto_file(proto_file, proto_options) -> Iterable[OutputFile]:
     # message/enum nodes, then the second creates the fields in each. This is
     # done as non-primitive fields need pointers to their types, which requires
     # the entire tree to have been parsed into memory.
-    _, package_root = build_node_tree(proto_file, proto_options=proto_options)
+    _, package_root = build_node_tree(proto_file, proto_options)
 
     output_filename = _proto_filename_to_generated_header(proto_file.name)
     output_file = OutputFile(output_filename)

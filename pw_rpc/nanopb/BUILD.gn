@@ -43,7 +43,6 @@ pw_source_set("server_api") {
     "..:config",
     "..:server",
     dir_pw_bytes,
-    dir_pw_span,
   ]
   deps = [
     "..:log_config",
@@ -122,7 +121,7 @@ pw_source_set("client_server_testing_threaded") {
 
 pw_source_set("internal_test_utils") {
   public = [ "pw_rpc_nanopb_private/internal_test_utils.h" ]
-  public_deps = [ dir_pw_span ]
+  public_deps = []
   if (dir_pw_third_party_nanopb != "") {
     public_deps += [ "$dir_pw_third_party/nanopb" ]
   }

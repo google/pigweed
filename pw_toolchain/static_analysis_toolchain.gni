@@ -102,7 +102,6 @@ template("pw_static_analysis_toolchain") {
                               "--export-fixes {{output}}.yaml",
                               "--",
                               invoker.cc,
-                              "END_OF_INVOKER",
                               "-MMD -MF $depfile",  # Write out dependencies.
                               "{{cflags}}",
                               "{{cflags_c}}",  # Must come after {{cflags}}.
@@ -130,7 +129,6 @@ template("pw_static_analysis_toolchain") {
                               "--export-fixes {{output}}.yaml",
                               "--",
                               invoker.cxx,
-                              "END_OF_INVOKER",
                               "-MMD -MF $depfile",  # Write out dependencies.
                               "{{cflags}}",
                               "{{cflags_cc}}",  # Must come after {{cflags}}.

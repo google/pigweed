@@ -21,7 +21,7 @@
 
 namespace pw::allocator {
 
-FreeListHeap::FreeListHeap(span<std::byte> region, FreeList& freelist)
+FreeListHeap::FreeListHeap(std::span<std::byte> region, FreeList& freelist)
     : freelist_(freelist), heap_stats_() {
   Block* block;
   PW_CHECK_OK(

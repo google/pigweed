@@ -99,7 +99,7 @@ pw_test("algorithm_test") {
     ":algorithm",
     ":intrusive_list",
     ":vector",
-    dir_pw_span,
+    "$dir_pw_polyfill:span",
   ]
 }
 
@@ -108,7 +108,6 @@ pw_test("filtered_view_test") {
   deps = [
     ":filtered_view",
     ":intrusive_list",
-    dir_pw_span,
   ]
 }
 

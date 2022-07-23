@@ -52,7 +52,7 @@ Second, a constexpr specialized form is offered where null termination is
 required through :cpp:func:`pw::string::NullTerminatedLength`. This will only
 return a length if the string is null-terminated.
 
-.. cpp:function:: constexpr std::string_view pw::string::ClampedCString(span<const char> str)
+.. cpp:function:: constexpr std::string_view pw::string::ClampedCString(std::span<const char> str)
 .. cpp:function:: constexpr std::string_view pw::string::ClampedCString(const char* str, size_t max_len)
 
    Safe alternative to the string_view constructor to avoid the risk of an
@@ -61,7 +61,7 @@ return a length if the string is null-terminated.
    This is strongly recommended over using something like C11's strnlen_s as
    a string_view does not require null-termination.
 
-.. cpp:function:: constexpr pw::Result<size_t> pw::string::NullTerminatedLength(span<const char> str)
+.. cpp:function:: constexpr pw::Result<size_t> pw::string::NullTerminatedLength(std::span<const char> str)
 .. cpp:function:: pw::Result<size_t> pw::string::NullTerminatedLength(const char* str, size_t max_len)
 
    Safe alternative to strlen to calculate the null-terminated length of the
@@ -80,10 +80,10 @@ The ``pw::string::Copy`` functions provide a safer alternative to
 ``std::strncpy`` as it always null-terminates whenever the destination
 buffer has a non-zero size.
 
-.. cpp:function:: StatusWithSize Copy(const std::string_view& source, span<char> dest)
-.. cpp:function:: StatusWithSize Copy(const char* source, span<char> dest)
+.. cpp:function:: StatusWithSize Copy(const std::string_view& source, std::span<char> dest)
+.. cpp:function:: StatusWithSize Copy(const char* source, std::span<char> dest)
 .. cpp:function:: StatusWithSize Copy(const char* source, char* dest, size_t num)
-.. cpp:function:: StatusWithSize Copy(const pw::Vector<char>& source, span<char> dest)
+.. cpp:function:: StatusWithSize Copy(const pw::Vector<char>& source, std::span<char> dest)
 
    Copies the source string to the dest, truncating if the full string does not
    fit. Always null terminates if dest.size() or num > 0.
@@ -108,7 +108,7 @@ The ``pw::string::PrintableCopy`` function provides a safe printable copy of a
 string. It functions with the same safety of ``pw::string::Copy`` while also
 converting any non-printable characters to a ``.`` char.
 
-.. cpp:function:: StatusWithSize PrintableCopy(const std::string_view& source, span<char> dest)
+.. cpp:function:: StatusWithSize PrintableCopy(const std::string_view& source, std::span<char> dest)
 
 pw::StringBuilder
 =================
@@ -122,7 +122,7 @@ buffer. It is designed to give the flexibility of ``std::string`` and
   #include "pw_string/string_builder.h"
 
   pw::Status LogProducedData(std::string_view func_name,
-                             span<const std::byte> data) {
+                             std::span<const std::byte> data) {
     pw::StringBuffer<42> sb;
 
     // Append a std::string_view to the buffer.
@@ -174,7 +174,7 @@ This example shows how to specialize ``pw::ToString``:
   namespace pw {
 
   template <>
-  StatusWithSize ToString<MyStatus>(MyStatus value, span<char> buffer) {
+  StatusWithSize ToString<MyStatus>(MyStatus value, std::span<char> buffer) {
     return Copy(MyStatusString(value), buffer);
   }
 

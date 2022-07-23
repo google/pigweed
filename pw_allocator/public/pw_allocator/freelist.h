@@ -14,9 +14,9 @@
 #pragma once
 
 #include <array>
+#include <span>
 
 #include "pw_containers/vector.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
@@ -64,19 +64,19 @@ class FreeList {
   //   OK: The chunk was added successfully
   //   OUT_OF_RANGE: The chunk could not be added for size reasons (e.g. if
   //                 the chunk is too small to store the FreeListNode).
-  Status AddChunk(span<std::byte> chunk);
+  Status AddChunk(std::span<std::byte> chunk);
 
   // Finds an eligible chunk for an allocation of size `size`. Note that this
   // will return the first allocation possible within a given bucket, it does
-  // not currently optimize for finding the smallest chunk. Returns a span
+  // not currently optimize for finding the smallest chunk. Returns a std::span
   // representing the chunk. This will be "valid" on success, and will have size
   // = 0 on failure (if there were no chunks available for that allocation).
-  span<std::byte> FindChunk(size_t size) const;
+  std::span<std::byte> FindChunk(size_t size) const;
 
   // Remove a chunk from this freelist. Returns:
   //   OK: The chunk was removed successfully
   //   NOT_FOUND: The chunk could not be found in this freelist.
-  Status RemoveChunk(span<std::byte> chunk);
+  Status RemoveChunk(std::span<std::byte> chunk);
 
  private:
   // For a given size, find which index into chunks_ the node should be written

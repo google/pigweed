@@ -38,8 +38,7 @@ struct NullEq<T, decltype(std::declval<T>() == nullptr)> {
   // nullptr. Silence this warning. (The compiler will optimize out the
   // comparison.)
   PW_MODIFY_DIAGNOSTICS_PUSH();
-  PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Waddress");
-  PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wnonnull-compare");
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Waddress");
   static constexpr bool Test(const T& v) { return v == nullptr; }
   PW_MODIFY_DIAGNOSTICS_POP();
 };

@@ -24,10 +24,7 @@ config("default_config") {
 
 pw_source_set("pw_varint") {
   public_configs = [ ":default_config" ]
-  public_deps = [
-    dir_pw_preprocessor,
-    dir_pw_span,
-  ]
+  public_deps = [ dir_pw_preprocessor ]
   sources = [ "varint.cc" ]
   public = [ "public/pw_varint/varint.h" ]
 }
@@ -40,10 +37,7 @@ pw_source_set("stream") {
   ]
   public = [ "public/pw_varint/stream.h" ]
   sources = [ "stream.cc" ]
-  deps = [
-    ":pw_varint",
-    dir_pw_span,
-  ]
+  deps = [ ":pw_varint" ]
 }
 
 pw_test_group("tests") {

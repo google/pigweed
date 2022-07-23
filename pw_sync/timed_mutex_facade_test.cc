@@ -45,14 +45,13 @@ constexpr SystemClock::duration kRoundedArbitraryDuration =
 constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
     PW_SYSTEM_CLOCK_MS(42);
 
-// TODO(b/235284163): Add real concurrency tests once we have pw::thread.
+// TODO(pwbug/291): Add real concurrency tests once we have pw::thread.
 
 TEST(TimedMutex, LockUnlock) {
   pw::sync::TimedMutex mutex;
   mutex.lock();
   mutex.unlock();
-  // TODO(b/235284163): Ensure it fails to lock when already held by someone
-  // else.
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
   // EXPECT_FALSE(mutex.try_lock());
 }
 
@@ -60,8 +59,7 @@ TimedMutex static_mutex;
 TEST(TimedMutex, LockUnlockStatic) {
   static_mutex.lock();
   static_mutex.unlock();
-  // TODO(b/235284163): Ensure it fails to lock when already held by someone
-  // else.
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
   // EXPECT_FALSE(static_mutex.try_lock());
 }
 
@@ -73,7 +71,7 @@ TEST(TimedMutex, TryLockUnlock) {
     // EXPECT_FALSE(mutex.try_lock());
     mutex.unlock();
   }
-  // TODO(b/235284163): Ensure it fails to lock when already held by someone
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone
   // else.
 }
 
@@ -88,11 +86,11 @@ TEST(TimedMutex, TryLockUnlockFor) {
     EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
     mutex.unlock();
   }
-  // TODO(b/235284163): Ensure it blocks and fails to lock when already held by
+  // TODO(pwbug/291): Ensure it blocks and fails to lock when already held by
   // someone else.
-  // TODO(b/235284163): Ensure it does not block and fails to lock when already
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
   // held by someone else and a zero length duration is used.
-  // TODO(b/235284163): Ensure it does not block and fails to lock when already
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
   // held by someone else and a negative duration is used.
 }
 
@@ -107,19 +105,18 @@ TEST(TimedMutex, TryLockUnlockUntil) {
     EXPECT_LT(SystemClock::now(), deadline);
     mutex.unlock();
   }
-  // TODO(b/235284163): Ensure it blocks and fails to lock when already held by
+  // TODO(pwbug/291): Ensure it blocks and fails to lock when already held by
   // someone else.
-  // TODO(b/235284163): Ensure it does not block and fails to lock when already
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
   // held by someone else and now is used.
-  // TODO(b/235284163): Ensure it does not block and fails to lock when already
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
   // held by someone else and a timestamp in the past is used.
 }
 
 TEST(VirtualTimedMutex, LockUnlock) {
   pw::sync::VirtualTimedMutex mutex;
   mutex.lock();
-  // TODO(b/235284163): Ensure it fails to lock when already held by someone
-  // else.
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
   // EXPECT_FALSE(mutex.try_lock());
   mutex.unlock();
 }
@@ -127,8 +124,7 @@ TEST(VirtualTimedMutex, LockUnlock) {
 VirtualTimedMutex static_virtual_mutex;
 TEST(VirtualTimedMutex, LockUnlockStatic) {
   static_virtual_mutex.lock();
-  // TODO(b/235284163): Ensure it fails to lock when already held by someone
-  // else.
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
   // EXPECT_FALSE(static_virtual_mutex.try_lock());
   static_virtual_mutex.unlock();
 }
@@ -142,8 +138,7 @@ TEST(TimedMutex, LockUnlockInC) {
 TEST(TimedMutex, TryLockUnlockInC) {
   pw::sync::TimedMutex mutex;
   ASSERT_TRUE(pw_sync_TimedMutex_CallTryLock(&mutex));
-  // TODO(b/235284163): Ensure it fails to lock when already held by someone
-  // else.
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
   // EXPECT_FALSE(pw_sync_TimedMutex_CallTryLock(&mutex));
   pw_sync_TimedMutex_CallUnlock(&mutex);
 }
@@ -158,11 +153,11 @@ TEST(TimedMutex, TryLockUnlockForInC) {
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
   EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
   pw_sync_TimedMutex_CallUnlock(&mutex);
-  // TODO(b/235284163): Ensure it blocks and fails to lock when already held by
+  // TODO(pwbug/291): Ensure it blocks and fails to lock when already held by
   // someone else.
-  // TODO(b/235284163): Ensure it does not block and fails to lock when already
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
   // held by someone else and a zero length duration is used.
-  // TODO(b/235284163): Ensure it does not block and fails to lock when already
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
   // held by someone else and a negative duration is used.
 }
 
@@ -176,11 +171,11 @@ TEST(TimedMutex, TryLockUnlockUntilInC) {
   EXPECT_LT(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
   pw_sync_TimedMutex_CallUnlock(&mutex);
-  // TODO(b/235284163): Ensure it blocks and fails to lock when already held by
+  // TODO(pwbug/291): Ensure it blocks and fails to lock when already held by
   // someone else.
-  // TODO(b/235284163): Ensure it does not block and fails to lock when already
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
   // held by someone else and now is used.
-  // TODO(b/235284163): Ensure it does not block and fails to lock when already
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
   // held by someone else and a timestamp in the past is used.
 }
 

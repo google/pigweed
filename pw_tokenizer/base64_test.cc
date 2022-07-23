@@ -15,10 +15,10 @@
 #include "pw_tokenizer/base64.h"
 
 #include <cstring>
+#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
-#include "pw_span/span.h"
 
 namespace pw::tokenizer {
 namespace {
@@ -41,9 +41,10 @@ class PrefixedBase64 : public ::testing::Test {
 const struct TestData {
   template <size_t kSize>
   TestData(const char (&binary_data)[kSize], const char* base64_data)
-      : binary{as_bytes(span(binary_data, kSize - 1))}, base64(base64_data) {}
+      : binary{std::as_bytes(std::span(binary_data, kSize - 1))},
+        base64(base64_data) {}
 
-  span<const byte> binary;
+  std::span<const byte> binary;
   std::string_view base64;
 } kTestData[] = {
     {"", "$"},
@@ -71,26 +72,29 @@ TEST_F(PrefixedBase64, Encode) {
 }
 
 TEST_F(PrefixedBase64, Encode_EmptyInput_WritesPrefix) {
-  EXPECT_EQ(1u, PrefixedBase64Encode(span<byte>(), base64_));
+  EXPECT_EQ(1u, PrefixedBase64Encode(std::span<byte>(), base64_));
   EXPECT_EQ('$', base64_[0]);
   EXPECT_EQ('\0', base64_[1]);
 }
 
 TEST_F(PrefixedBase64, Encode_EmptyOutput_WritesNothing) {
-  EXPECT_EQ(0u, PrefixedBase64Encode(kTestData[5].binary, span(base64_, 0)));
+  EXPECT_EQ(0u,
+            PrefixedBase64Encode(kTestData[5].binary, std::span(base64_, 0)));
   EXPECT_EQ(kUnset, base64_[0]);
 }
 
 TEST_F(PrefixedBase64, Encode_SingleByteOutput_OnlyNullTerminates) {
-  EXPECT_EQ(0u, PrefixedBase64Encode(kTestData[5].binary, span(base64_, 1)));
+  EXPECT_EQ(0u,
+            PrefixedBase64Encode(kTestData[5].binary, std::span(base64_, 1)));
   EXPECT_EQ('\0', base64_[0]);
   EXPECT_EQ(kUnset, base64_[1]);
 }
 
 TEST_F(PrefixedBase64, Encode_NoRoomForNullAfterMessage_OnlyNullTerminates) {
-  EXPECT_EQ(0u,
-            PrefixedBase64Encode(kTestData[5].binary,
-                                 span(base64_, kTestData[5].base64.size())));
+  EXPECT_EQ(
+      0u,
+      PrefixedBase64Encode(kTestData[5].binary,
+                           std::span(base64_, kTestData[5].base64.size())));
   EXPECT_EQ('\0', base64_[0]);
   EXPECT_EQ(kUnset, base64_[1]);
 }
@@ -126,15 +130,16 @@ TEST_F(PrefixedBase64, Decode_OnlyPrefix_WritesNothing) {
 }
 
 TEST_F(PrefixedBase64, Decode_EmptyOutput_WritesNothing) {
-  EXPECT_EQ(0u, PrefixedBase64Decode(kTestData[5].base64, span(binary_, 0)));
+  EXPECT_EQ(0u,
+            PrefixedBase64Decode(kTestData[5].base64, std::span(binary_, 0)));
   EXPECT_EQ(byte{kUnset}, binary_[0]);
 }
 
 TEST_F(PrefixedBase64, Decode_OutputTooSmall_WritesNothing) {
   auto& item = kTestData[5];
-  EXPECT_EQ(
-      0u,
-      PrefixedBase64Decode(item.base64, span(binary_, item.binary.size() - 1)));
+  EXPECT_EQ(0u,
+            PrefixedBase64Decode(item.base64,
+                                 std::span(binary_, item.binary.size() - 1)));
   EXPECT_EQ(byte{kUnset}, binary_[0]);
 }
 
@@ -145,7 +150,7 @@ TEST(PrefixedBase64DecodeInPlace, DecodeInPlace) {
     std::memcpy(buffer, base64.data(), base64.size());
 
     EXPECT_EQ(binary.size(),
-              PrefixedBase64DecodeInPlace(span(buffer, base64.size())));
+              PrefixedBase64DecodeInPlace(std::span(buffer, base64.size())));
     ASSERT_EQ(0, std::memcmp(binary.data(), buffer, binary.size()));
   }
 }

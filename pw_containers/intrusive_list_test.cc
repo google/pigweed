@@ -426,7 +426,7 @@ TEST(IntrusiveList, CompareConstAndNonConstIterator_CompilationFails) {
 
 #endif
 
-// TODO(b/234882063): These tests should fail to compile, enable when no-compile
+// TODO(pwbug/47): These tests should fail to compile, enable when no-compile
 // tests are set up in Pigweed.
 #if defined(PW_COMPILE_FAIL_TEST_cannot_modify_through_const_iterator)
 TEST(IntrusiveList, ConstIteratorModify) {
@@ -447,7 +447,7 @@ TEST(IntrusiveList, ConstIteratorModify) {
 }
 #endif  // Compile failure test
 
-// TODO(b/235289499): These tests should trigger a CHECK failure. This requires
+// TODO(pwbug/88): These tests should trigger a CHECK failure. This requires
 // using a testing version of pw_assert.
 #define TESTING_CHECK_FAILURES_IS_SUPPORTED 0
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED
@@ -675,7 +675,7 @@ TEST(InstrusiveList, ListOfDerivedClassItems) {
 
   EXPECT_EQ(1u, derived_from_compatible_item_type.size());
 
-// TODO(b/234882063): Make these proper automated compilation failure tests.
+// TODO(pwbug/47): Make these proper automated compilation failure tests.
 #if defined(PW_COMPILE_FAIL_TEST_cannot_add_base_class_to_derived_class_list)
   TestItem item2;
   derived_from_compatible_item_type.push_front(item2);

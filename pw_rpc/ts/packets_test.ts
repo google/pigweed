@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,11 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser */
+/* eslint-env browser, jasmine */
+import 'jasmine';
+
 import {
   PacketType,
   RpcPacket,
-} from 'pigweed/protos/pw_rpc/internal/packet_pb';
+} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb';
 import {Status} from '@pigweed/pw_status';
 
 import * as packets from './packets';
@@ -31,7 +33,7 @@ function addTestData(packet: RpcPacket) {
 }
 
 describe('Packets', () => {
-  beforeEach(() => { });
+  beforeEach(() => {});
 
   it('encodeRequest sets packet fields', () => {
     const goldenRequest = new RpcPacket();
@@ -105,7 +107,7 @@ describe('Packets', () => {
     const response = new RpcPacket();
     response.setType(PacketType.RESPONSE);
 
-    expect(packets.forServer(request)).toBe(true);
-    expect(packets.forServer(response)).toBe(false);
+    expect(packets.forServer(request)).toBeTrue();
+    expect(packets.forServer(response)).toBeFalse();
   });
 });

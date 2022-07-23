@@ -85,13 +85,6 @@ Status Client::ProcessPacket(ConstByteSpan data) {
         PW_LOG_DEBUG("Received SERVER_STREAM for RPC without a server stream");
       }
       break;
-
-    case PacketType::REQUEST:
-    case PacketType::CLIENT_STREAM:
-    case PacketType::DEPRECATED_SERVER_STREAM_END:
-    case PacketType::CLIENT_ERROR:
-    case PacketType::DEPRECATED_CANCEL:
-    case PacketType::CLIENT_STREAM_END:
     default:
       internal::rpc_lock().unlock();
       PW_LOG_WARN("pw_rpc client unable to handle packet of type %u",

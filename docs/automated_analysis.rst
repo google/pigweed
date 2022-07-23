@@ -106,8 +106,8 @@ described in this section. For more detail about these sanitizers, see the
   We use the default ``-fsanitize=undefined`` option.
 
 .. note::
-   Pigweed does not currently support msan. See
-   https://issuetracker.google.com/234876100 for details.
+   Pigweed does not currently support msan. See https://bugs.pigweed.dev/560
+   for details.
 
 The exact configurations we use for these sanitizers are in
 `pw_toolchain/host_clang/BUILD.gn <https://cs.opensource.google/pigweed/pigweed/+/main:pw_toolchain/host_clang/BUILD.gn>`_.

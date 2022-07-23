@@ -159,7 +159,7 @@ if _PYTHON_3_8:
                 if user_code1.stdout_check_task:
                     await user_code1.stdout_check_task
                 # Wait for test done callback.
-                user_code_done.wait()
+                user_code_done.wait(timeout=3)
 
                 # Check user_code1 results
                 # NOTE: Avoid using assert_has_calls. Thread timing can make the
@@ -205,7 +205,7 @@ if _PYTHON_3_8:
                 if user_code2.stdout_check_task:
                     await user_code2.stdout_check_task
                 # Wait for test done callback.
-                user_code_done.wait()
+                user_code_done.wait(timeout=3)
 
                 # Check user_code2 results
                 # NOTE: Avoid using assert_has_calls. Thread timing can make the

@@ -16,7 +16,7 @@
 
 namespace pw::sys_io {
 
-StatusWithSize ReadBytes(ByteSpan dest) {
+StatusWithSize ReadBytes(std::span<std::byte> dest) {
   for (size_t i = 0; i < dest.size_bytes(); ++i) {
     Status result = ReadByte(&dest[i]);
     if (!result.ok()) {
@@ -26,7 +26,7 @@ StatusWithSize ReadBytes(ByteSpan dest) {
   return StatusWithSize(dest.size_bytes());
 }
 
-StatusWithSize WriteBytes(ConstByteSpan src) {
+StatusWithSize WriteBytes(std::span<const std::byte> src) {
   for (size_t i = 0; i < src.size_bytes(); ++i) {
     Status result = WriteByte(src[i]);
     if (!result.ok()) {

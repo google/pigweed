@@ -25,30 +25,6 @@ from types import ModuleType
 from typing import (Dict, Generic, Iterable, Iterator, List, NamedTuple, Set,
                     Tuple, TypeVar, Union)
 
-# Temporarily set the root logger level to critical while importing yapf.
-# This silences INFO level messages from
-# .environment/cipd/packages/python/lib/python3.9/lib2to3/driver.py
-# when it writes Grammar3.*.pickle and PatternGrammar3.*.pickle files.
-_original_level = 0
-for handler in logging.getLogger().handlers:
-    if type(handler) == logging.StreamHandler:  # pylint: disable=unidiomatic-typecheck
-        if handler.level > _original_level:
-            _original_level = handler.level
-        handler.level = logging.CRITICAL
-
-try:
-    from yapf.yapflib import yapf_api  # type: ignore[import] # pylint: disable=wrong-import-position
-except ImportError:
-    yapf_api = None
-
-# Restore the original stderr/out log handler level.
-for handler in logging.getLogger().handlers:
-    # Must use type() check here since isinstance returns True for FileHandlers
-    # and StreamHandler: isinstance(logging.FileHandler, logging.StreamHandler)
-    if type(handler) == logging.StreamHandler:  # pylint: disable=unidiomatic-typecheck
-        handler.level = _original_level
-del _original_level
-
 _LOG = logging.getLogger(__name__)
 
 PathOrStr = Union[Path, str]
@@ -418,21 +394,6 @@ def _proto_repr(message) -> Iterator[str]:
             yield f'{field.name}={_field_repr(field, value)}'
 
 
-def proto_repr(message, *, wrap: bool = True) -> str:
-    """Creates a repr-like string for a protobuf.
-
-    In an interactive console that imports proto objects into the namespace, the
-    output of proto_repr() can be used as Python source to create a proto
-    object.
-
-    Args:
-      message: The protobuf message to format
-      wrap: If true and YAPF is available, the output is wrapped according to
-          PEP8 using YAPF.
-    """
-    raw = f'{message.DESCRIPTOR.full_name}({", ".join(_proto_repr(message))})'
-
-    if wrap and yapf_api is not None:
-        return yapf_api.FormatCode(raw, style_config='PEP8')[0].rstrip()
-
-    return raw
+def proto_repr(message) -> str:
+    """Creates a repr-like string for a protobuf."""
+    return f'{message.DESCRIPTOR.full_name}({", ".join(_proto_repr(message))})'

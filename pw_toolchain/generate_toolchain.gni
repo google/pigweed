@@ -35,7 +35,6 @@ declare_args() {
 #   ar: (required) String indicating the archive tool to use.
 #   cc: (required) String indicating the C compiler to use.
 #   cxx: (required) String indicating the C++ compiler to use.
-#   ld: (optional) String indicating the linking binary to use.
 #   is_host_toolchain: (optional) Boolean indicating if the outputs are meant
 #     for the $host_os.
 #   final_binary_extension: (optional) The extension to apply to final linked
@@ -59,7 +58,7 @@ declare_args() {
 #   current_os: The OS of the toolchain. Defaults to "".
 #     Well known values include "win", "mac", "linux", "android", and "ios".
 #
-# TODO(b/234891809): This should be renamed to pw_generate_toolchain.
+# TODO(pwbug/333): This should be renamed to pw_generate_toolchain.
 template("generate_toolchain") {
   assert(defined(invoker.defaults), "toolchain is missing 'defaults'")
 
@@ -243,17 +242,10 @@ template("generate_toolchain") {
       _link_outfile =
           "{{output_dir}}/{{target_output_name}}{{output_extension}}"
       _link_mapfile = "{{output_dir}}/{{target_output_name}}.map"
-      if (defined(invoker.ld)) {
-        _link_flags = [
-          invoker.ld,
-          "{{ldflags}}",
-        ]
-      } else {
-        _link_flags = [
-          invoker.cxx,
-          "{{ldflags}}",
-        ]
-      }
+      _link_flags = [
+        invoker.cxx,
+        "{{ldflags}}",
+      ]
 
       if (toolchain_os == "mac" || toolchain_os == "ios") {
         _link_flags += [

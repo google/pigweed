@@ -22,7 +22,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "pw_span/span.h"
+#include <span>
+
 #include "pw_status/status.h"
 #include "pw_trace_tokenized/config.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
@@ -156,7 +157,8 @@ class CallbacksImpl {
   pw::Status UnregisterSink(SinkHandle handle);
   pw::Status UnregisterAllSinks();
   SinkCallbacks* GetSink(SinkHandle handle);
-  void CallSinks(span<const std::byte> header, span<const std::byte> data);
+  void CallSinks(std::span<const std::byte> header,
+                 std::span<const std::byte> data);
 
   pw::Status RegisterEventCallback(
       EventCallback callback,
@@ -194,7 +196,7 @@ class CallbacksImpl {
 // Example: pw::trace::Callbacks::Instance().UnregisterAllSinks();
 class Callbacks {
  public:
-  static CallbacksImpl& Instance() { return instance_; }
+  static CallbacksImpl& Instance() { return instance_; };
 
  private:
   static CallbacksImpl instance_;

@@ -106,7 +106,6 @@ pw_source_set("tokenized_trace_buffer") {
     "$dir_pw_ring_buffer",
     "$dir_pw_tokenizer",
     "$dir_pw_varint",
-    dir_pw_span,
   ]
   sources = [ "trace_buffer.cc" ]
   public_configs = [
@@ -164,7 +163,6 @@ pw_source_set("core") {
   public_deps = [
     "$dir_pw_status",
     "$dir_pw_tokenizer",
-    dir_pw_span,
   ]
   deps = [
     ":config",

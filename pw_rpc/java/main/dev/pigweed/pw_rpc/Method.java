@@ -41,7 +41,7 @@ public abstract class Method {
 
   public abstract Class<? extends MessageLite> response();
 
-  final int id() {
+  public final int id() {
     return Ids.calculate(name());
   }
 

@@ -37,29 +37,6 @@ compiler defaults. (See Pigweed's ``//BUILDCONFIG.gn``)
 ``pw_build`` also provides several useful GN templates that are used throughout
 Pigweed.
 
-Build system philosophies
--------------------------
-While Pigweed's GN build is not hermetic, it strives to adhere to principles of
-`hermeticity <https://bazel.build/concepts/hermeticity>`_. Some guidelines to
-move towards the ideal of hermeticity include:
-
-* Only rely on pre-compiled tools provided by CIPD (or some other versioned,
-  pre-compiled binary distribution mechanism). This eliminates build artifact
-  differences caused by different tool versions or variations (e.g. same tool
-  version built with slightly different compilation flags).
-* Do not use absolute paths in Ninja commands. Typically, these appear when
-  using ``rebase_path("//path/to/my_script.py")``. Most of the time, Ninja
-  steps should be passed paths rebased relative to the build directory (i.e.
-  ``rebase_path("//path/to/my_script.py", root_build_dir)``). This ensures build
-  commands are the same across different machines.
-* Prevent produced artifacts from relying on or referencing system state. This
-  includes time stamps, writing absolute paths to generated artifacts, or
-  producing artifacts that reference system state in a way that prevents them
-  from working the same way on a different machine.
-* Isolate build actions to the build directory. In general, the build system
-  should not add or modify files outside of the build directory. This can cause
-  confusion to users, and makes the concept of a clean build more ambiguous.
-
 Target types
 ------------
 .. code-block::
@@ -151,13 +128,7 @@ pw_cc_blob_library
 The ``pw_cc_blob_library`` template is useful for embedding binary data into a
 program. The template takes in a mapping of symbol names to file paths, and
 generates a set of C++ source and header files that embed the contents of the
-passed-in files as arrays of ``std::byte``.
-
-The blob byte arrays are constant initialized and are safe to access at any
-time, including before ``main()``.
-
-``pw_cc_blob_library`` is also available in the CMake build. It is provided by
-``pw_build/cc_blob_library.cmake``.
+passed-in files as arrays.
 
 **Arguments**
 
@@ -169,8 +140,6 @@ time, including before ``main()``.
   * ``file_path``: The file path for the binary blob.
   * ``linker_section``: If present, places the byte array in the specified
     linker section.
-  * ``alignas``: If present, uses the specified string or integer verbatim in
-    the ``alignas()`` specifier for the byte array.
 
 * ``out_header``: The header file to generate. Users will include this file
   exactly as it is written here to reference the byte arrays.
@@ -311,8 +280,6 @@ target. Additionally, it has some of its own arguments:
 * ``working_directory``: Optional file path. When provided the current working
   directory will be set to this location before the Python module or script is
   run.
-* ``venv``: Optional gn target of the pw_python_venv that should be used to run
-  this action.
 
 **Expressions**
 
@@ -328,7 +295,7 @@ about converting them to files.
 .. note::
 
   We intend to replace these expressions with native GN features when possible.
-  See `b/234886742 <http://issuetracker.google.com/234886742>`_.
+  See `pwbug/347 <http://bugs.pigweed.dev/347>`_.
 
 The following expressions are supported:
 

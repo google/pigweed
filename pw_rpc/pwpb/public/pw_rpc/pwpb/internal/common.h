@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <span>
+
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_protobuf/encoder.h"
@@ -20,13 +22,12 @@
 #include "pw_protobuf/stream_decoder.h"
 #include "pw_rpc/internal/client_call.h"
 #include "pw_rpc/internal/server_call.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {
 
-using PwpbMessageDescriptor = const span<const protobuf::MessageField>*;
+using PwpbMessageDescriptor = const std::span<const protobuf::MessageField>*;
 
 // Serializer/deserializer for a pw_protobuf message.
 class PwpbSerde {
@@ -39,13 +40,14 @@ class PwpbSerde {
   // Encodes a pw_protobuf struct to the serialized wire format.
   template <typename Message>
   StatusWithSize Encode(const Message& message, ByteSpan buffer) const {
-    return Encoder(buffer).Write(as_bytes(span(&message, 1)), table_);
+    return Encoder(buffer).Write(std::as_bytes(std::span(&message, 1)), table_);
   }
 
   // Decodes a serialized protobuf into a pw_protobuf message struct.
   template <typename Message>
   Status Decode(ConstByteSpan buffer, Message& message) const {
-    return Decoder(buffer).Read(as_writable_bytes(span(&message, 1)), table_);
+    return Decoder(buffer).Read(std::as_writable_bytes(std::span(&message, 1)),
+                                table_);
   }
 
  private:

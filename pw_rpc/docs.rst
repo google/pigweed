@@ -390,10 +390,6 @@ user-defined RPCs are implemented.
 ``pw_rpc`` supports multiple protobuf libraries, and the generated code API
 depends on which is used.
 
-Services must be registered with a server in order to call their methods.
-Services may later be unregistered, which aborts calls for methods in that
-service and prevents future calls to them, until the service is re-registered.
-
 .. _module-pw_rpc-protobuf-library-apis:
 
 Protobuf library APIs
@@ -493,47 +489,11 @@ The C++ service implementation class may append "Service" to the name.
     void List(ConstByteSpan request, RawServerWriter& writer);
   };
 
-  }  // namespace pw::file
+  }
 
 For upstream Pigweed services, this naming style is a requirement. Note that
 some services created before this was established may use non-compliant
 names. For Pigweed users, this naming style is a suggestion.
-
-C++ payload sizing limitations
-===============================
-The individual size of each sent RPC request or response is limited by
-``pw_rpc``'s ``PW_RPC_ENCODING_BUFFER_SIZE_BYTES`` configuration option when
-using Pigweed's C++ implementation. While multiple RPC messages can be enqueued
-(as permitted by the underlying transport), if a single individual sent message
-exceeds the limitations of the statically allocated encode buffer, the packet
-will fail to encode and be dropped.
-
-This applies to all C++ RPC service implementations (nanopb, raw, and pwpb),
-so it's important to ensure request and response message sizes do not exceed
-this limitation.
-
-As ``pw_rpc`` has some additional encoding overhead, a helper,
-``pw::rpc::MaxSafePayloadSize()`` is provided to expose the practical max RPC
-message payload size.
-
-.. code-block:: cpp
-
-  #include "pw_file/file.raw_rpc.pb.h"
-  #include "pw_rpc/channel.h"
-
-  namespace pw::file {
-
-  class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
-   public:
-    void List(ConstByteSpan request, RawServerWriter& writer);
-
-   private:
-    // Allocate a buffer for building proto responses.
-    static constexpr size_t kEncodeBufferSize = pw::rpc::MaxSafePayloadSize();
-    std::array<std::byte, kEncodeBufferSize> encode_buffer_;
-  };
-
-  }  // namespace pw::file
 
 Protocol description
 ====================
@@ -916,51 +876,6 @@ Example
     }
   }
 
-RPC calls introspection
------------------------
-``pw_rpc`` provides ``pw_rpc/method_info.h`` header that allows to obtain
-information about the generated RPC method in compile time.
-
-For now it provides only two types: ``MethodRequestType<RpcMethod>`` and
-``MethodResponseType<RpcMethod>``. They are aliases to the types that are used
-as a request and response respectively for the given RpcMethod.
-
-Example
-^^^^^^^
-We have an RPC service ``SpecialService`` with ``MyMethod`` method:
-
-.. code-block:: protobuf
-
-  package some.package;
-  service SpecialService {
-    rpc MyMethod(MyMethodRequest) returns (MyMethodResponse) {}
-  }
-
-We also have a templated Storage type alias:
-
-.. code-block:: c++
-
-  template <auto kMethod>
-  using Storage =
-     std::pair<MethodRequestType<kMethod>, MethodResponseType<kMethod>>;
-
-``Storage<some::package::pw_rpc::pwpb::SpecialService::MyMethod>`` will
-instantiate as:
-
-.. code-block:: c++
-
-  std::pair<some::package::MyMethodRequest::Message,
-            some::package::MyMethodResponse::Message>;
-
-.. note::
-
-  Only nanopb and pw_protobuf have real types as
-  ``MethodRequestType<RpcMethod>``/``MethodResponseType<RpcMethod>``. Raw has
-  them both set as ``void``. In reality, they are ``pw::ConstByteSpan``. Any
-  helper/trait that wants to use this types for raw methods should do a custom
-  implemenation that copies the bytes under the span instead of copying just the
-  span.
-
 Client Synchronous Call wrappers
 --------------------------------
 If synchronous behavior is desired when making client calls, users can use one
@@ -1254,30 +1169,6 @@ to with a test service implemenation.
     EXPECT_EQ(response.value, value + 1);
   }
 
-SendResponseIfCalled() helper
------------------------------
-``SendResponseIfCalled()`` function waits on ``*ClientTestContext*`` output to
-have a call for the specified method and then responses to it. It supports
-timeout for the waiting part (default timeout is 100ms).
-
-.. code:: c++
-
-  #include "pw_rpc/test_helpers.h"
-
-  pw::rpc::PwpbClientTestContext client_context;
-  other::pw_rpc::pwpb::OtherService::Client other_service_client(
-      client_context.client(), client_context.channel().id());
-
-  PW_PWPB_TEST_METHOD_CONTEXT(MyService, GetData)
-  context(other_service_client);
-  context.call({});
-
-  ASSERT_OK(pw::rpc::test::SendResponseIfCalled<
-            other::pw_rpc::pwpb::OtherService::GetPart>(
-      client_context, {.value = 42}));
-
-  // At this point MyService::GetData handler received the GetPartResponse.
-
 Integration testing with ``pw_rpc``
 -----------------------------------
 ``pw_rpc`` provides utilities to simplify writing integration tests for systems
@@ -1439,7 +1330,7 @@ interface.
     returns :cpp:member:`kUnlimited`, which indicates that there is no MTU
     limit.
 
-  .. cpp:function:: virtual pw::Status Send(span<std::byte> packet)
+  .. cpp:function:: virtual pw::Status Send(std::span<std::byte> packet)
 
     Sends an encoded RPC packet. Returns OK if further packets may be sent, even
     if the current packet could not be sent. Returns any other status if the

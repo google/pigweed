@@ -24,7 +24,7 @@ class Output : public pw::rpc::ChannelOutput {
  public:
   Output() : ChannelOutput("output") {}
 
-  pw::Status Send(pw::span<const std::byte> buffer) override {
+  pw::Status Send(std::span<const std::byte> buffer) override {
     return pw::sys_io::WriteBytes(buffer).status();
   }
 };

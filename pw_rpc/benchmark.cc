@@ -35,7 +35,7 @@ void BenchmarkService::UnaryEcho(ConstByteSpan request,
                                  RawUnaryResponder& responder) {
   std::byte response[32];
   StatusWithSize result = CopyBuffer(request, response);
-  responder.Finish(span(response).first(result.size()), result.status())
+  responder.Finish(std::span(response).first(result.size()), result.status())
       .IgnoreError();
 }
 

@@ -58,35 +58,19 @@ def install_hook(script,
                  hook: str,
                  args: Sequence[str] = (),
                  repository: Union[Path, str] = '.') -> None:
-    """This function is deprecated; use install_git_hook instead.
-
-    This version of the function takes the script separately from the arguments
-    and calculates the relative path to the script from the root of the repo.
-    This does not work well when the path is to a file installed in the virtual
-    environment, since the execute permission may be lost. Instead of using a
-    path to a script, invoke the script from `python -m` or the `pw` command.
-    """
-    root = git_repo_root(repository).resolve()
-    install_git_hook(hook, [os.path.relpath(script, root), *args], repository)
-
-
-def install_git_hook(hook: str,
-                     command: Sequence[Union[Path, str]],
-                     repository: Union[Path, str] = '.') -> None:
-    """Installs a simple Git hook that executes the provided command.
+    """Installs a simple Git hook that calls a script with arguments.
 
     Args:
+      script: Path to the script to run in the hook.
       hook: Git hook to install, e.g. 'pre-push'.
-      command: Command to execute as the hook. The command is executed from the
-          root of the repo. Arguments are sanitised with `shlex.quote`, except
-          for any arguments are equal to f'${stdin_arg}' for some `stdin_arg`
-          that matches a standard-input argument to the git hook.
+      args: Arguments to pass to `script` when it is run in the hook. These will
+        be sanitised with `shlex.quote`, except for any arguments are equal to
+        f'${stdin_arg}' for some `stdin_arg` which matches a standard-input
+        argument to the git hook.
       repository: Repository to install the hook in.
     """
-    if not command:
-        raise ValueError('The command cannot be empty!')
-
     root = git_repo_root(repository).resolve()
+    script = os.path.relpath(script, root)
 
     if root.joinpath('.git').is_dir():
         hook_path = root.joinpath('.git', 'hooks', hook)
@@ -103,9 +87,8 @@ def install_git_hook(hook: str,
     read_stdin_command = 'read ' + ' '.join(hook_stdin_args)
 
     unquoted_args = [f'${arg}' for arg in hook_stdin_args]
-    args = (_replace_arg_in_hook(str(a), unquoted_args) for a in command[1:])
-
-    command_str = ' '.join([shlex.quote(str(command[0])), *args])
+    script_command = ' '.join(
+        _replace_arg_in_hook(arg, unquoted_args) for arg in (script, *args))
 
     with hook_path.open('w') as file:
         line = lambda *args: print(*args, file=file)
@@ -122,11 +105,10 @@ def install_git_hook(hook: str,
         line('# Read the stdin args for the hook, made available by git.')
         line(read_stdin_command)
         line()
-        line(command_str)
+        line(script_command)
 
     hook_path.chmod(0o755)
-    logging.info('Installed %s hook for `%s` at %s', hook, command_str,
-                 hook_path)
+    logging.info('Created %s hook for %s at %s', hook, script, hook_path)
 
 
 def argument_parser(parser=None) -> argparse.ArgumentParser:

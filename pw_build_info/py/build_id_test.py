@@ -40,10 +40,8 @@ class TestGnuBuildId(unittest.TestCase):
                 'build_id.cc',
                 _MODULE_PY_DIR / 'print_build_id.cc',
                 '-Ipublic',
-                '-I../pw_polyfill/public',
                 '-I../pw_preprocessor/public',
-                '-I../pw_span/public',
-                '-std=c++17',
+                '-std=c++20',
                 '-fuse-ld=lld',
                 '-Wl,-Tadd_build_id_to_default_linker_script.ld',
                 '-Wl,--build-id=sha1',
@@ -55,8 +53,7 @@ class TestGnuBuildId(unittest.TestCase):
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT,
                                      cwd=_MODULE_DIR)
-            self.assertEqual(process.returncode, 0,
-                             process.stdout.decode(errors='replace'))
+            self.assertEqual(process.returncode, 0)
 
             # Run the compiled binary so the printed build ID can be read.
             process = subprocess.run([exe_file],

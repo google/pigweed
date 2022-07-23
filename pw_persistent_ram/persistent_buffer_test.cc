@@ -14,12 +14,12 @@
 #include "pw_persistent_ram/persistent_buffer.h"
 
 #include <cstddef>
+#include <span>
 #include <type_traits>
 
 #include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_random/xor_shift.h"
-#include "pw_span/span.h"
 
 namespace pw::persistent_ram {
 namespace {
@@ -59,7 +59,7 @@ TEST_F(PersistentTest, DefaultConstructionAndDestruction) {
     auto writer = persistent.GetWriter();
     EXPECT_EQ(persistent.size(), 0u);
 
-    writer.Write(as_bytes(span(&kExpectedNumber, 1)))
+    writer.Write(std::as_bytes(std::span(&kExpectedNumber, 1)))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     ASSERT_TRUE(persistent.has_value());
 
@@ -133,7 +133,7 @@ TEST_F(PersistentTest, AppendingData) {
     EXPECT_EQ(persistent.size(), 0u);
 
     // Write an integer.
-    writer.Write(as_bytes(span(&kTestNumber, 1)))
+    writer.Write(std::as_bytes(std::span(&kTestNumber, 1)))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     ASSERT_TRUE(persistent.has_value());
 
@@ -148,7 +148,7 @@ TEST_F(PersistentTest, AppendingData) {
     // Write more data.
     auto writer = persistent.GetWriter();
     EXPECT_EQ(persistent.size(), sizeof(kTestNumber));
-    writer.Write(as_bytes(span<const char>(kTestString)))
+    writer.Write(std::as_bytes(std::span<const char>(kTestString)))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     persistent.~PersistentBuffer();  // Emulate shutdown / global destructors.

@@ -44,7 +44,7 @@ int main() {
 
   std::memset((void*)working_buffer, 0x55, sizeof(working_buffer));
 
-  test_partition.Write(0, pw::as_bytes(pw::span(working_buffer)))
+  test_partition.Write(0, std::as_bytes(std::span(working_buffer)))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   bool tmp_bool;
@@ -52,7 +52,7 @@ int main() {
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   is_erased = tmp_bool;
 
-  test_partition.Read(0, as_writable_bytes(pw::span(working_buffer)))
+  test_partition.Read(0, as_writable_bytes(std::span(working_buffer)))
       .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   return 0;

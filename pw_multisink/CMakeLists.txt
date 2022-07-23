@@ -97,7 +97,8 @@ pw_add_test(pw_multisink.multisink_test
   DEPS
     pw_function
     pw_multisink
-    pw_span
+    pw_polyfill.cstddef
+    pw_polyfill.span
     pw_status
   GROUPS
     modules
@@ -116,7 +117,8 @@ pw_add_module_library(pw_multisink.stl_test_thread
 if("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread")
   pw_add_test(pw_multisink.stl_multisink_threaded_test
     DEPS
-      pw_span
+      pw_polyfill.cstddef
+      pw_polyfill.span
       pw_multisink.multisink_threaded_test
       pw_multisink.stl_test_thread
     GROUPS

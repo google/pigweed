@@ -33,8 +33,7 @@
 //       the test has failed. Obviously manually verifying these is a pain
 //       and so this is not a suitable test for production.
 //
-// TODO(b/235289499): Add verification of the actually recorded asserts
-// statements.
+// TODO(pwbug/88): Add verification of the actually recorded asserts statements.
 
 #include "gtest/gtest.h"
 #include "pw_assert/short.h"

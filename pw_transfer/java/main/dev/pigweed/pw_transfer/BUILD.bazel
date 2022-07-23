@@ -23,7 +23,6 @@ java_library(
         "Transfer.java",
         "TransferClient.java",
         "TransferError.java",
-        "TransferEventHandler.java",
         "TransferParameters.java",
         "TransferProgress.java",
         "TransferService.java",

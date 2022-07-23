@@ -97,7 +97,7 @@ public final class StreamObserverMethodClientTest {
 
   @Test
   public void openUnary_startsRpc() {
-    Call call = unaryMethodClient.openUnary(defaultObserver);
+    Call call = unaryMethodClient.openUnary(SomeMessage.getDefaultInstance(), defaultObserver);
     assertThat(rpcManager.getPending(UNARY_RPC)).isSameInstanceAs(call);
   }
 

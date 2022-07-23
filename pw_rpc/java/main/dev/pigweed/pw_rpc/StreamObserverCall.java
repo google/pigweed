@@ -66,23 +66,18 @@ class StreamObserverCall<RequestT extends MessageLite, ResponseT extends Message
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
+      boolean result = super.cancel(mayInterruptIfRunning);
       try {
         call.cancel();
       } catch (ChannelOutputException e) {
         setException(e);
       }
-      return super.cancel(mayInterruptIfRunning);
+      return result;
     }
 
     @Override
     public void cancel() {
-      cancel(false);
-    }
-
-    @Override
-    public void abandon() {
-      call.abandon();
-      super.cancel(false);
+      cancel(true);
     }
 
     @Nullable
@@ -198,14 +193,6 @@ class StreamObserverCall<RequestT extends MessageLite, ResponseT extends Message
     if (active()) {
       error = Status.CANCELLED;
       rpcs.cancel(rpc);
-    }
-  }
-
-  @Override
-  public void abandon() {
-    if (active()) {
-      error = Status.CANCELLED;
-      rpcs.abandon(rpc);
     }
   }
 

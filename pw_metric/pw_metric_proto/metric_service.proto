@@ -13,7 +13,7 @@
 // the License.
 syntax = "proto3";
 
-package pw.metric.proto;
+package pw.metric;
 
 // A metric, described by the name (path + name), and the value.
 //

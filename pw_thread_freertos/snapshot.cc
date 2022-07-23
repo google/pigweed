@@ -16,13 +16,13 @@
 
 #include "pw_thread_freertos/snapshot.h"
 
+#include <span>
 #include <string_view>
 
 #include "FreeRTOS.h"
 #include "pw_function/function.h"
 #include "pw_log/log.h"
 #include "pw_protobuf/encoder.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_thread/snapshot.h"
 #include "pw_thread_freertos/config.h"
@@ -114,20 +114,19 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
   return ctx.thread_capture_status;
 }
 
-Status SnapshotThread(
-    TaskHandle_t thread,
-    eTaskState thread_state,
-    void* running_thread_stack_pointer,
-    Thread::StreamEncoder& encoder,
-    [[maybe_unused]] ProcessThreadStackCallback& thread_stack_callback) {
+Status SnapshotThread(TaskHandle_t thread,
+                      eTaskState thread_state,
+                      void* running_thread_stack_pointer,
+                      Thread::StreamEncoder& encoder,
+                      ProcessThreadStackCallback& thread_stack_callback) {
   const tskTCB& tcb = *reinterpret_cast<tskTCB*>(thread);
 
   PW_LOG_DEBUG("Capturing thread info for %s", tcb.pcTaskName);
-  encoder.WriteName(as_bytes(span(std::string_view(tcb.pcTaskName))));
+  encoder.WriteName(std::as_bytes(std::span(std::string_view(tcb.pcTaskName))));
 
   CaptureThreadState(thread_state, encoder);
 
-  // TODO(b/234890430): Update this once we add support for ascending stacks.
+  // TODO(pwbug/422): Update this once we add support for ascending stacks.
   static_assert(portSTACK_GROWTH < 0, "Ascending stacks are not yet supported");
 
   // If the thread is active, the stack pointer in the TCB is stale.

@@ -68,7 +68,17 @@ void UnitTestService::Run(ConstByteSpan request, RawServerWriter& writer) {
   }
 
   PW_LOG_INFO("Starting unit test run");
-  handler_.ExecuteTests(suites_to_run);
+
+  RegisterEventHandler(&handler_);
+  SetTestSuitesToRun(suites_to_run);
+  PW_LOG_DEBUG("%u test suite filters applied",
+               static_cast<unsigned>(suites_to_run.size()));
+
+  RUN_ALL_TESTS();
+
+  RegisterEventHandler(nullptr);
+  SetTestSuitesToRun({});
+
   PW_LOG_INFO("Unit test run complete");
 
   writer_.Finish().IgnoreError();  // TODO(pwbug/387): Handle Status properly

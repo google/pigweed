@@ -21,6 +21,4 @@ pw.protobuf.test.DeviceInfo.device_name max_size:32
 
 pw.protobuf.test.Pigweed.Protobuf.Compiler.file_name max_size:48
 
-pw.protobuf.test.Function.Message.content max_size:128
-
 pw.protobuf.test.KeyValuePair.* max_size:32

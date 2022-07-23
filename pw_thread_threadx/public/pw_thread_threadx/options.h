@@ -46,9 +46,9 @@ namespace pw::thread::threadx {
 //
 class Options : public thread::Options {
  public:
-  constexpr Options() {}
+  constexpr Options() = default;
   constexpr Options(const Options&) = default;
-  constexpr Options(Options&&) = default;
+  constexpr Options(Options&& other) = default;
 
   // Sets the name for the ThreadX thread, note that this will be deep copied
   // into the context and may be truncated based on
@@ -112,7 +112,7 @@ class Options : public thread::Options {
 
   // Set the pre-allocated context (all memory needed to run a thread). Note
   // that this is required for this thread creation backend! The Context can
-  // either be constructed with an externally provided span<ULONG> stack
+  // either be constructed with an externally provided std::span<ULONG> stack
   // or the templated form of ContextWihtStack<kStackSizeWords> can be used.
   constexpr Options& set_context(Context& context) {
     context_ = &context;

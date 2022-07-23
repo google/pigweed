@@ -14,9 +14,10 @@
 
 #include "pw_protobuf/encoder.h"
 
+#include <span>
+
 #include "gtest/gtest.h"
 #include "pw_bytes/span.h"
-#include "pw_span/span.h"
 #include "pw_stream/memory_stream.h"
 
 namespace pw::protobuf {
@@ -108,7 +109,7 @@ TEST(StreamEncoder, EncodePrimitives) {
             OkStatus());
 
   const std::string_view kReaderMessage = "byreader";
-  stream::MemoryReader msg_reader(as_bytes(span(kReaderMessage)));
+  stream::MemoryReader msg_reader(std::as_bytes(std::span(kReaderMessage)));
   std::byte stream_pipe_buffer[1];
   EXPECT_EQ(encoder.WriteStringFromStream(kTestProtoPayloadFromStreamField,
                                           msg_reader,

@@ -300,10 +300,9 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       if install:
           # '$remote_ref' will be replaced by the actual value of the remote ref
           # at runtime.
-          install_git_hook('pre-push', [
-              'python', '-m', 'tools.presubmit_check', '--base', 'HEAD~',
-              '--remote-ref', '$remote_ref'
-          ])
+          install_hook(__file__, 'pre-push',
+                       ['--base', 'HEAD~', '--remote-ref', '$remote_ref'],
+                       git_repo.root())
           return 0
 
       # Run the checks if either no remote_ref was passed, or if the remote ref
@@ -347,44 +346,3 @@ Code formatting tools
 The ``pw_presubmit.format_code`` module formats supported source files using
 external code format tools. The file ``format_code.py`` can be invoked directly
 from the command line or from ``pw`` as ``pw format``.
-
-Example
-=======
-A simple example of adding support for a custom format. This code wraps the
-built in formatter to add a new format. It could also be used to replace
-a formatter or remove/disable a PigWeed supplied one.
-
-.. code-block:: python
-
-  #!/usr/bin/env python
-  """Formats files in repository. """
-
-  import logging
-  import sys
-
-  import pw_cli.log
-  from pw_presubmit import format_code
-  from your_project import presubmit_checks
-  from your_project import your_check
-
-  YOUR_CODE_FORMAT = CodeFormat('YourFormat',
-                                filter=FileFilter(suffix=('.your', )),
-                                check=your_check.check,
-                                fix=your_check.fix)
-
-  CODE_FORMATS = (*format_code.CODE_FORMATS, YOUR_CODE_FORMAT)
-
-  def _run(exclude, **kwargs) -> int:
-      """Check and fix formatting for source files in the repo."""
-      return format_code.format_paths_in_repo(exclude=exclude,
-                                              code_formats=CODE_FORMATS,
-                                              **kwargs)
-
-
-  def main():
-      return _run(**vars(format_code.arguments(git_paths=True).parse_args()))
-
-
-  if __name__ == '__main__':
-      pw_cli.log.install(logging.INFO)
-      sys.exit(main())

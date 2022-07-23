@@ -85,7 +85,6 @@ pw_source_set("proto_utils") {
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_log_tokenized:metadata",
     "$dir_pw_result",
-    dir_pw_span,
   ]
   deps = [ "$dir_pw_protobuf" ]
   sources = [ "proto_utils.cc" ]

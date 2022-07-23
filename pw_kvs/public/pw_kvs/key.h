@@ -28,8 +28,6 @@ namespace kvs {
 // platforms without C++17.
 class Key {
  public:
-  using value_type = const char;
-
   // Constructors
   constexpr Key() : str_{nullptr}, length_{0} {}
   constexpr Key(const Key&) = default;

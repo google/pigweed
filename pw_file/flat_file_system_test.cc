@@ -17,6 +17,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
@@ -24,7 +25,6 @@
 #include "pw_file/file.pwpb.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_rpc/raw/test_method_context.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
@@ -36,7 +36,7 @@ class FakeFile : public FlatFileSystemService::Entry {
   constexpr FakeFile(std::string_view file_name, size_t size, uint32_t file_id)
       : name_(file_name), size_(size), file_id_(file_id) {}
 
-  StatusWithSize Name(span<char> dest) override {
+  StatusWithSize Name(std::span<char> dest) override {
     if (name_.empty()) {
       return StatusWithSize(Status::NotFound(), 0);
     }
@@ -128,7 +128,7 @@ void ComparePathToEntry(ConstByteSpan serialized_path,
 }
 
 size_t ValidateExpectedPaths(
-    span<FlatFileSystemService::Entry*> flat_file_system,
+    std::span<FlatFileSystemService::Entry*> flat_file_system,
     const rpc::PayloadsView& results) {
   size_t serialized_path_entry_count = 0;
   size_t file_system_index = 0;
@@ -172,7 +172,7 @@ TEST(FlatFileSystem, EncodingBufferSizeBytes) {
 
 TEST(FlatFileSystem, List_NoFiles) {
   PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemServiceWithBuffer<1>, List)
-  ctx{span<FlatFileSystemService::Entry*>()};
+  ctx{std::span<FlatFileSystemService::Entry*>()};
   ctx.call(ConstByteSpan());
 
   EXPECT_TRUE(ctx.done());

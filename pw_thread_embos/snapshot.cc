@@ -112,7 +112,7 @@ Status SnapshotThread(const OS_TASK& thread,
                       ProcessThreadStackCallback& thread_stack_callback) {
 #if OS_TRACKNAME
   PW_LOG_DEBUG("Capturing thread info for %s", thread.Name);
-  encoder.WriteName(as_bytes(span(std::string_view(thread.Name))));
+  encoder.WriteName(std::as_bytes(std::span(std::string_view(thread.Name))));
 #else
   PW_LOG_DEBUG("Capturing thread info for thread at 0x%08x", &thread);
 #endif  // OS_TRACKNAME

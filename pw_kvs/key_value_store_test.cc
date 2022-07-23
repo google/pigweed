@@ -20,8 +20,7 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
-
-#include "pw_span/span.h"
+#include <span>
 
 #if DUMP_KVS_STATE_TO_FILE
 #include <vector>
@@ -35,7 +34,6 @@
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/entry.h"
-#include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 #include "pw_log/shorter.h"
 #include "pw_status/status.h"
@@ -70,7 +68,7 @@ struct FlashWithPartitionFake {
     }
     std::vector<std::byte> out_vec(memory.size_bytes());
     Status status =
-        memory.Read(0, span<std::byte>(out_vec.data(), out_vec.size()));
+        memory.Read(0, std::span<std::byte>(out_vec.data(), out_vec.size()));
     if (status != OkStatus()) {
       fclose(out_file);
       return status;
@@ -317,7 +315,7 @@ TEST(InMemoryKvs, Basic) {
 
   // Add two entries with different keys and values.
   uint8_t value1 = 0xDA;
-  ASSERT_OK(kvs.Put(key1, as_bytes(span(&value1, sizeof(value1)))));
+  ASSERT_OK(kvs.Put(key1, std::as_bytes(std::span(&value1, sizeof(value1)))));
   EXPECT_EQ(kvs.size(), 1u);
 
   uint32_t value2 = 0xBAD0301f;
@@ -415,68 +413,6 @@ TEST_F(LargeEmptyInitializedKvs, FullMaintenance) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
 }
 
-TEST_F(LargeEmptyInitializedKvs, KeyDeletionMaintenance) {
-  const uint8_t kValue1 = 0xDA;
-  const uint8_t kValue2 = 0x12;
-  uint8_t val = 0;
-
-  // Write and delete a key. The key should be gone, but the size should be 1.
-  ASSERT_EQ(OkStatus(), kvs_.Put(keys[0], kValue1));
-  ASSERT_EQ(kvs_.size(), 1u);
-  ASSERT_EQ(OkStatus(), kvs_.Delete(keys[0]));
-
-  // Ensure the key is indeed gone and the size is 1 before continuing.
-  ASSERT_EQ(kvs_.Get(keys[0], &val), Status::NotFound());
-  ASSERT_EQ(kvs_.size(), 0u);
-  ASSERT_EQ(kvs_.total_entries_with_deleted(), 1u);
-
-  KeyValueStore::StorageStats stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.sector_erase_count, 0u);
-  EXPECT_GT(stats.reclaimable_bytes, 0u);
-
-  // Do aggressive FullMaintenance, which should GC the sector with valid data,
-  // resulting in no reclaimable bytes and an erased sector.
-  EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
-  stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.reclaimable_bytes, 0u);
-  ASSERT_EQ(kvs_.size(), 0u);
-
-  if (PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE) {
-    EXPECT_GT(stats.sector_erase_count, 1u);
-    ASSERT_EQ(kvs_.total_entries_with_deleted(), 0u);
-  } else {  // The deleted entries are only removed if that feature is enabled.
-    EXPECT_EQ(stats.sector_erase_count, 1u);
-    ASSERT_EQ(kvs_.total_entries_with_deleted(), 1u);
-  }
-
-  // Do it again but with 2 keys and keep one.
-  ASSERT_EQ(OkStatus(), kvs_.Put(keys[0], kValue1));
-  ASSERT_EQ(OkStatus(), kvs_.Put(keys[1], kValue2));
-  ASSERT_EQ(kvs_.size(), 2u);
-  ASSERT_EQ(OkStatus(), kvs_.Delete(keys[0]));
-
-  // Ensure the key is indeed gone and the size is 1 before continuing.
-  ASSERT_EQ(kvs_.Get(keys[0], &val), Status::NotFound());
-  ASSERT_EQ(kvs_.size(), 1u);
-  ASSERT_EQ(kvs_.total_entries_with_deleted(), 2u);
-
-  // Do aggressive FullMaintenance, which should GC the sector with valid data,
-  // resulting in no reclaimable bytes and an erased sector.
-  EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
-  stats = kvs_.GetStorageStats();
-  ASSERT_EQ(kvs_.size(), 1u);
-
-  if (PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE) {
-    ASSERT_EQ(kvs_.total_entries_with_deleted(), 1u);
-  } else {  // The deleted entries are only removed if that feature is enabled.
-    ASSERT_EQ(kvs_.total_entries_with_deleted(), 2u);
-  }
-
-  // Read back the second key to make sure it is still valid.
-  ASSERT_EQ(kvs_.Get(keys[1], &val), OkStatus());
-  ASSERT_EQ(val, kValue2);
-}
-
 TEST(InMemoryKvs, Put_MaxValueSize) {
   // Create and erase the fake flash.
   Flash flash;
@@ -498,7 +434,7 @@ TEST(InMemoryKvs, Put_MaxValueSize) {
 
   // Use the large_test_flash as a big chunk of data for the Put statement.
   ASSERT_GT(sizeof(large_test_flash), max_value_size + 2 * sizeof(EntryHeader));
-  auto big_data = as_bytes(span(&large_test_flash, 1));
+  auto big_data = std::as_bytes(std::span(&large_test_flash, 1));
 
   EXPECT_EQ(OkStatus(), kvs.Put("K", big_data.subspan(0, max_value_size)));
 

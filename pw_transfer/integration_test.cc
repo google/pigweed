@@ -160,7 +160,7 @@ template <size_t kLengthWithNull>
 ConstByteSpan AsByteSpan(const char (&data)[kLengthWithNull]) {
   constexpr size_t kLength = kLengthWithNull - 1;
   PW_CHECK_INT_EQ('\0', data[kLength], "Expecting null for last character");
-  return as_bytes(span(data, kLength));
+  return std::as_bytes(std::span(data, kLength));
 }
 
 constexpr ConstByteSpan AsByteSpan(ConstByteSpan data) { return data; }
@@ -229,7 +229,8 @@ class TransferIntegration : public ::testing::Test {
     ASSERT_EQ(WaitForCompletion(), OkStatus());
     ASSERT_EQ(expected.size(), read_buffer_.size());
 
-    EXPECT_TRUE(pw::containers::Equal(read_buffer_, as_bytes(span(expected))));
+    EXPECT_TRUE(pw::containers::Equal(read_buffer_,
+                                      std::as_bytes(std::span(expected))));
   }
 
   // Checks that a write transfer succeeded and that the written contents match.
@@ -239,7 +240,7 @@ class TransferIntegration : public ::testing::Test {
     const std::string written = GetContent(resource_id);
     ASSERT_EQ(expected.size(), written.size());
 
-    ConstByteSpan bytes = as_bytes(span(written));
+    ConstByteSpan bytes = std::as_bytes(std::span(written));
     EXPECT_TRUE(pw::containers::Equal(bytes, expected));
   }
 
@@ -337,6 +338,12 @@ TEST_F(TransferIntegration, Write_UnknownId) {
   static_assert(true, "Semicolons are required")
 
 PW_TRANSFER_TEST_WRITE(Empty, "");
+PW_TRANSFER_TEST_WRITE(SingleByte_1, "\0");
+PW_TRANSFER_TEST_WRITE(SingleByte_2, "?");
+PW_TRANSFER_TEST_WRITE(SmallData, "hunter2");
+PW_TRANSFER_TEST_WRITE(LargeData, kData512);
+PW_TRANSFER_TEST_WRITE(HdlcEscape, kDataHdlcEscape);
+PW_TRANSFER_TEST_WRITE(VeryLargeData, kData8192);
 
 }  // namespace
 }  // namespace pw::transfer

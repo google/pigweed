@@ -17,11 +17,11 @@
 #include <cstddef>
 #include <cstring>
 #include <initializer_list>
+#include <span>
 #include <utility>
 
 #include "pw_bytes/span.h"
 #include "pw_kvs/io.h"
-#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw {
@@ -47,7 +47,9 @@ constexpr size_t Padding(size_t length, size_t alignment) {
 // called or the AlignedWriter goes out of scope.
 class AlignedWriter {
  public:
-  AlignedWriter(span<std::byte> buffer, size_t alignment_bytes, Output& writer)
+  AlignedWriter(std::span<std::byte> buffer,
+                size_t alignment_bytes,
+                Output& writer)
       : buffer_(buffer.data()),
         write_size_(AlignDown(buffer.size(), alignment_bytes)),
         alignment_bytes_(alignment_bytes),
@@ -56,9 +58,6 @@ class AlignedWriter {
         bytes_in_buffer_(0) {
     // TODO(hepler): Add DCHECK to ensure that buffer.size() >= alignment_bytes.
   }
-
-  AlignedWriter(const AlignedWriter&) = delete;
-  AlignedWriter& operator=(const AlignedWriter&) = delete;
 
   ~AlignedWriter() {
     Flush().IgnoreError();  // TODO(pwbug/387): Handle Status properly
@@ -72,11 +71,11 @@ class AlignedWriter {
   // successful and failed Write calls. On a failed write call, knowing the
   // bytes attempted may be important when working with flash memory, since it
   // can only be written once between erases.
-  StatusWithSize Write(span<const std::byte> data);
+  StatusWithSize Write(std::span<const std::byte> data);
 
   StatusWithSize Write(const void* data, size_t size) {
     return Write(
-        span<const std::byte>(static_cast<const std::byte*>(data), size));
+        std::span<const std::byte>(static_cast<const std::byte*>(data), size));
   }
 
   // Reads size bytes from the input and writes them to the output.
@@ -117,7 +116,7 @@ class AlignedWriterBuffer : public AlignedWriter {
 template <size_t kBufferSize>
 StatusWithSize AlignedWrite(Output& output,
                             size_t alignment_bytes,
-                            span<const span<const std::byte>> data) {
+                            std::span<const std::span<const std::byte>> data) {
   // TODO: This should convert to PW_CHECK once that is available for use in
   // host tests.
   if (alignment_bytes > kBufferSize) {
@@ -126,7 +125,7 @@ StatusWithSize AlignedWrite(Output& output,
 
   AlignedWriterBuffer<kBufferSize> buffer(alignment_bytes, output);
 
-  for (const span<const std::byte>& chunk : data) {
+  for (const std::span<const std::byte>& chunk : data) {
     StatusWithSize result = buffer.Write(chunk);
     if (!result.ok()) {
       return result;
@@ -138,13 +137,14 @@ StatusWithSize AlignedWrite(Output& output,
 
 // Calls AlignedWrite with an initializer list.
 template <size_t kBufferSize>
-StatusWithSize AlignedWrite(Output& output,
-                            size_t alignment_bytes,
-                            std::initializer_list<span<const std::byte>> data) {
+StatusWithSize AlignedWrite(
+    Output& output,
+    size_t alignment_bytes,
+    std::initializer_list<std::span<const std::byte>> data) {
   return AlignedWrite<kBufferSize>(
       output,
       alignment_bytes,
-      span<const ConstByteSpan>(data.begin(), data.size()));
+      std::span<const ConstByteSpan>(data.begin(), data.size()));
 }
 
 }  // namespace pw

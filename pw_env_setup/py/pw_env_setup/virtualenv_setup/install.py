@@ -24,7 +24,6 @@ import re
 import shutil
 import subprocess
 import sys
-import stat
 import tempfile
 
 # Grabbing datetime string once so it will always be the same for all GnTarget
@@ -131,36 +130,11 @@ def _check_venv(python, version, venv_path, pyvenv_cfg):
             shutil.rmtree(venv_path)
 
 
-def _check_python_install_permissions(python):
-    # These pickle files are not included on windows.
-    # The path on windows is environment/cipd/packages/python/bin/Lib/lib2to3/
-    if platform.system().lower() == 'windows':
-        return
-
-    # Make any existing lib2to3 pickle files read+write. This is needed for
-    # importing yapf.
-    lib2to3_path = os.path.join(os.path.dirname(os.path.dirname(python)),
-                                'lib', 'python3.9', 'lib2to3')
-    pickle_file_paths = []
-    if os.path.isdir(lib2to3_path):
-        pickle_file_paths.extend(file_path
-                                 for file_path in os.listdir(lib2to3_path)
-                                 if '.pickle' in file_path)
-    try:
-        for pickle_file in pickle_file_paths:
-            pickle_full_path = os.path.join(lib2to3_path, pickle_file)
-            os.chmod(pickle_full_path,
-                     stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP)
-    except PermissionError:
-        pass
-
-
-def install(  # pylint: disable=too-many-arguments,too-many-locals
+def install(  # pylint: disable=too-many-arguments
     project_root,
     venv_path,
     full_envsetup=True,
-    requirements=None,
-    constraints=None,
+    requirements=(),
     gn_args=(),
     gn_targets=(),
     gn_out_dir=None,
@@ -173,7 +147,9 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
 
     version = subprocess.check_output(
         (python, '--version'), stderr=subprocess.STDOUT).strip().decode()
-    if ' 3.' not in version:
+    # We expect Python 3.8, but if it came from CIPD let it pass anyway.
+    if ('3.8' not in version and '3.9' not in version
+            and 'chromium' not in version):
         print('=' * 60, file=sys.stderr)
         print('Unexpected Python version:', version, file=sys.stderr)
         print('=' * 60, file=sys.stderr)
@@ -199,7 +175,6 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
 
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
 
-    _check_python_install_permissions(python)
     _check_venv(python, version, venv_path, pyvenv_cfg)
 
     if full_envsetup or not os.path.exists(pyvenv_cfg):
@@ -242,11 +217,6 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
             cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
             return _check_call(cmd)
 
-    constraint_args = []
-    if constraints:
-        constraint_args.extend('--constraint={}'.format(constraint)
-                               for constraint in constraints)
-
     pip_install(
         '--log',
         os.path.join(venv_path, 'pip-upgrade.log'),
@@ -256,23 +226,13 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
         'toml',  # Needed for pyproject.toml package installs.
         # Include wheel so pip installs can be done without build
         # isolation.
-        'wheel',
-        *constraint_args)
-
-    # TODO(tonymd): Remove this when projects have defined requirements.
-    if (not requirements) and constraints:
-        requirements = constraints
+        'wheel')
 
     if requirements:
-        requirement_args = []
-        # Note: --no-build-isolation should be avoided for installing 3rd party
-        # Python packages that use C/C++ extension modules.
-        # https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
-        requirement_args.extend('--requirement={}'.format(req)
-                                for req in requirements)
-        combined_requirement_args = requirement_args + constraint_args
+        requirement_args = tuple('--requirement={}'.format(req)
+                                 for req in requirements)
         pip_install('--log', os.path.join(venv_path, 'pip-requirements.log'),
-                    *combined_requirement_args)
+                    *requirement_args)
 
     def install_packages(gn_target):
         if gn_out_dir is None:

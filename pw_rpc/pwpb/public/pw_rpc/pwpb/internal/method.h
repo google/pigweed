@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <type_traits>
 
 #include "pw_bytes/span.h"
@@ -26,7 +27,6 @@
 #include "pw_rpc/pwpb/internal/common.h"
 #include "pw_rpc/pwpb/server_reader_writer.h"
 #include "pw_rpc/service.h"
-#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {
@@ -70,7 +70,7 @@ class PwpbMethod : public Method {
   }
 
   // Creates a PwpbMethod for a synchronous unary RPC.
-  // TODO(b/234874001): Find a way to reduce the number of monomorphized copies
+  // TODO(pwbug/661): Find a way to reduce the number of monomorphized copies
   // of this method.
   template <auto kMethod>
   static constexpr PwpbMethod SynchronousUnary(uint32_t id,
@@ -97,7 +97,7 @@ class PwpbMethod : public Method {
   }
 
   // Creates a PwpbMethod for an asynchronous unary RPC.
-  // TODO(b/234874001): Find a way to reduce the number of monomorphized copies
+  // TODO(pwbug/661): Find a way to reduce the number of monomorphized copies
   // of this method.
   template <auto kMethod>
   static constexpr PwpbMethod AsynchronousUnary(uint32_t id,
@@ -363,7 +363,7 @@ class PwpbMethod : public Method {
 };
 
 // MethodTraits specialization for a static synchronous unary method.
-// TODO(b/234874320): Further qualify this (and nanopb) definition so that they
+// TODO(pwbug/658): Further qualify this (and nanopb) definition so that they
 // can co-exist in the same project.
 template <typename Req, typename Res>
 struct MethodTraits<PwpbSynchronousUnary<Req, Res>*> {

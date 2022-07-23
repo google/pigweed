@@ -22,26 +22,26 @@
 namespace pw::unit_test {
 
 void LoggingEventHandler::RunAllTestsStart() {
-  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_START);
+  PW_LOG_INFO(GoogleTestStyleEventHandler::kRunAllTestsStart);
 }
 
 void LoggingEventHandler::RunAllTestsEnd(
     const RunTestsSummary& run_tests_summary) {
-  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_END);
-  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_PASSED_SUMMARY,
+  PW_LOG_INFO(GoogleTestStyleEventHandler::kRunAllTestsEnd);
+  PW_LOG_INFO(GoogleTestStyleEventHandler::kPassedSummary,
               run_tests_summary.passed_tests);
   if (run_tests_summary.skipped_tests) {
-    PW_LOG_WARN(PW_UNIT_TEST_GOOGLETEST_SKIPPED_SUMMARY,
+    PW_LOG_WARN(GoogleTestStyleEventHandler::kSkippedSummary,
                 run_tests_summary.skipped_tests);
   }
   if (run_tests_summary.failed_tests) {
-    PW_LOG_ERROR(PW_UNIT_TEST_GOOGLETEST_FAILED_SUMMARY,
+    PW_LOG_ERROR(GoogleTestStyleEventHandler::kFailedSummary,
                  run_tests_summary.failed_tests);
   }
 }
 
 void LoggingEventHandler::TestCaseStart(const TestCase& test_case) {
-  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_CASE_START,
+  PW_LOG_INFO(GoogleTestStyleEventHandler::kCaseStart,
               test_case.suite_name,
               test_case.test_name);
 }
@@ -51,17 +51,17 @@ void LoggingEventHandler::TestCaseEnd(const TestCase& test_case,
   // Use a switch with no default to detect changes in the test result enum.
   switch (result) {
     case TestResult::kSuccess:
-      PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_CASE_OK,
+      PW_LOG_INFO(GoogleTestStyleEventHandler::kCaseOk,
                   test_case.suite_name,
                   test_case.test_name);
       break;
     case TestResult::kFailure:
-      PW_LOG_ERROR(PW_UNIT_TEST_GOOGLETEST_CASE_FAILED,
+      PW_LOG_ERROR(GoogleTestStyleEventHandler::kCaseFailed,
                    test_case.suite_name,
                    test_case.test_name);
       break;
     case TestResult::kSkipped:
-      PW_LOG_WARN(PW_UNIT_TEST_GOOGLETEST_CASE_SKIPPED,
+      PW_LOG_WARN(GoogleTestStyleEventHandler::kCaseSkipped,
                   test_case.suite_name,
                   test_case.test_name);
       break;

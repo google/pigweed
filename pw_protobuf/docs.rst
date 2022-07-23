@@ -253,83 +253,6 @@ than staging information to a mutable datastructure. This means any writes of a
 value are final, and can't be referenced or modified as a later step in the
 encode process.
 
-Casting between generated StreamEncoder types
-=============================================
-pw_protobuf guarantees that all generated ``StreamEncoder`` classes can be
-converted among each other. It's also safe to convert any ``MemoryEncoder`` to
-any other ``StreamEncoder``.
-
-This guarantee exists to facilitate usage of protobuf overlays. Protobuf
-overlays are protobuf message definitions that deliberately ensure that
-fields defined in one message will not conflict with fields defined in other
-messages.
-
-For example:
-
-.. code::
-
-  // The first half of the overlaid message.
-  message BaseMessage {
-    uint32 length = 1;
-    reserved 2;  // Reserved for Overlay
-  }
-
-  // OK: The second half of the overlaid message.
-  message Overlay {
-    reserved 1;  // Reserved for BaseMessage
-    uint32 height = 2;
-  }
-
-  // OK: A message that overlays and bundles both types together.
-  message Both {
-    uint32 length = 1;  // Defined independently by BaseMessage
-    uint32 height = 2;  // Defined independently by Overlay
-  }
-
-  // BAD: Diverges from BaseMessage's definition, and can cause decode
-  // errors/corruption.
-  message InvalidOverlay {
-    fixed32 length = 1;
-  }
-
-The ``StreamEncoderCast<>()`` helper template reduces very messy casting into
-a much easier to read syntax:
-
-.. code:: c++
-
-  #include "pw_protobuf/encoder.h"
-  #include "pw_protobuf_test_protos/full_test.pwpb.h"
-
-  Result<ConstByteSpan> EncodeOverlaid(uint32_t height,
-                                       uint32_t length,
-                                       ConstByteSpan encode_buffer) {
-    BaseMessage::MemoryEncoder base(encode_buffer);
-
-    // Without StreamEncoderCast<>(), this line would be:
-    //   Overlay::StreamEncoder& overlay =
-    //       *static_cast<Overlay::StreamEncoder*>(
-    //           static_cast<pw::protobuf::StreamEncoder*>(&base)
-    Overlay::StreamEncoder& overlay =
-        StreamEncoderCast<Overlay::StreamEncoder>(base);
-    if (!overlay.WriteHeight(height).ok()) {
-      return overlay.status();
-    }
-    if (!base.WriteLength(length).ok()) {
-      return base.status();
-    }
-    return ConstByteSpan(base);
-  }
-
-While this use case is somewhat uncommon, it's a core supported use case of
-pw_protobuf.
-
-.. warning::
-
-  Using this to convert one stream encoder to another when the messages
-  themselves do not safely overlay will result in corrupt protos. Be careful
-  when doing this as there's no compile-time way to detect whether or not two
-  messages are meant to overlay.
-
 Decoding
 --------
 For decoding, in addition to the ``Read()`` method that populates a message
@@ -349,7 +272,7 @@ structure, the following additional methods are also generated in the typed
     // Per-Field Typed Readers.
     pw::Result<int32_t> ReadAge();
 
-    pw::StatusWithSize ReadName(pw::span<char>);
+    pw::StatusWithSize ReadName(std::span<char>);
     BytesReader GetNameReader(); // Read name as a stream of bytes.
 
     pw::Result<Customer::Status> ReadStatus();
@@ -452,7 +375,7 @@ To decode the same message we would use the following parts of the core API:
     Result<int32_t> ReadInt32();
     Result<uint32_t> ReadUint32();
 
-    StatusWithSize ReadString(pw::span<char>);
+    StatusWithSize ReadString(std::span<char>);
 
     // And many other methods, see pw_protobuf/stream_decoder.h
   };
@@ -743,6 +666,7 @@ that can hold the set of values encoded by it, following these rules.
       std::optional<int32_t> points;
     };
 
+
 * Repeated scalar fields are represented by ``pw::Vector`` when the
   ``max_count`` option is set for that field, or by ``std::array`` when both
   ``max_count`` and ``fixed_count:true`` are set.
@@ -849,170 +773,6 @@ structure is moved.
 Message structures can also be compared with each other for equality. This
 includes all repeated and nested fields represented by value types, but does not
 compare any field represented by a callback.
-
-Reserved-Word Conflicts
-=======================
-Generated symbols whose names conflict with reserved C++ keywords or
-standard-library macros are suffixed with underscores to avoid compilation
-failures. This can be seen below in ``Channel.operator``, which is mapped to
-``Channel::Message::operator_`` to avoid conflicting with the ``operator``
-keyword.
-
-.. code::
-
-  message Channel {
-    int32 bitrate = 1;
-    float signal_to_noise_ratio = 2;
-    Company operator = 3;
-  }
-
-.. code:: c++
-
-  struct Channel::Message {
-    int32_t bitrate;
-    float signal_to_noise_ratio;
-    Company::Message operator_;
-  };
-
-Similarly, as shown in the example below, some POSIX-signal names conflict with
-macros defined by the standard-library header ``<csignal>`` and therefore
-require underscore suffixes in the generated code. Note, however, that some
-signal names are left alone. This is because ``<csignal>`` only defines a subset
-of the POSIX signals as macros; the rest are perfectly valid identifiers that
-won't cause any problems unless the user defines custom macros for them. Any
-naming conflicts caused by user-defined macros are the user's responsibility
-(https://google.github.io/styleguide/cppguide.html#Preprocessor_Macros).
-
-.. code::
-
-  enum PosixSignal {
-    NONE = 0;
-    SIGHUP = 1;
-    SIGINT = 2;
-    SIGQUIT = 3;
-    SIGILL = 4;
-    SIGTRAP = 5;
-    SIGABRT = 6;
-    SIGFPE = 8;
-    SIGKILL = 9;
-    SIGSEGV = 11;
-    SIGPIPE = 13;
-    SIGALRM = 14;
-    SIGTERM = 15;
-  }
-
-.. code:: c++
-
-  enum class PosixSignal {
-    NONE = 0,
-    SIGHUP = 1,
-    SIGINT_ = 2,
-    SIGQUIT = 3,
-    SIGILL_ = 4,
-    SIGTRAP = 5,
-    SIGABRT_ = 6,
-    SIGFPE_ = 8,
-    SIGKILL = 9,
-    SIGSEGV_ = 11,
-    SIGPIPE = 13,
-    SIGALRM = 14,
-    SIGTERM_ = 15,
-
-    kNone = NONE,
-    kSighup = SIGHUP,
-    kSigint = SIGINT_,
-    kSigquit = SIGQUIT,
-    kSigill = SIGILL_,
-    kSigtrap = SIGTRAP,
-    kSigabrt = SIGABRT_,
-    kSigfpe = SIGFPE_,
-    kSigkill = SIGKILL,
-    kSigsegv = SIGSEGV_,
-    kSigpipe = SIGPIPE,
-    kSigalrm = SIGALRM,
-    kSigterm = SIGTERM_,
-  };
-
-Much like reserved words and macros, the names ``Message`` and ``Fields`` are
-suffixed with underscores in generated C++ code. This is to prevent name
-conflicts with the codegen internals if they're used in a nested context as in
-the example below.
-
-.. code::
-
-  message Function {
-    message Message {
-      string content = 1;
-    }
-
-    enum Fields {
-      NONE = 0;
-      COMPLEX_NUMBERS = 1;
-      INTEGERS_MOD_5 = 2;
-      MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE = 3;
-      OTHER = 4;
-    }
-
-    Message description = 1;
-    Fields domain = 2;
-    Fields codomain = 3;
-  }
-
-.. code::
-
-  Function.Message.content max_size:128
-
-.. code:: c++
-
-  struct Function::Message_::Message {
-    pw::Vector<char, 128> content;
-  };
-
-  enum class Function::Message_::Fields {
-    CONTENT = 1,
-  };
-
-  enum class Function::Fields_ {
-    NONE = 0,
-    COMPLEX_NUMBERS = 1,
-    INTEGERS_MOD_5 = 2,
-    MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE = 3,
-    OTHER = 4,
-
-    kNone = NONE,
-    kComplexNumbers = COMPLEX_NUMBERS,
-    kIntegersMod5 = INTEGERS_MOD_5,
-    kMeromorphicFunctionsOnComplexPlane =
-        MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE,
-    kOther = OTHER,
-  };
-
-  struct Function::Message {
-    Function::Message_::Message description;
-    Function::Fields_ domain;
-    Function::Fields_ codomain;
-  };
-
-  enum class Function::Fields {
-    DESCRIPTION = 1,
-    DOMAIN = 2,
-    CODOMAIN = 3,
-  };
-
-.. warning::
-  Note that the C++ spec also reserves two categories of identifiers for the
-  compiler to use in ways that may conflict with generated code:
-
-  * Any identifier that contains two consecutive underscores anywhere in it.
-
-  * Any identifier that starts with an underscore followed by a capital letter.
-
-  Appending underscores to symbols in these categories wouldn't change the fact
-  that they match patterns reserved for the compiler, so the codegen does not
-  currently attempt to fix them. Such names will therefore result in
-  non-portable code that may or may not work depending on the compiler. These
-  naming patterns are of course strongly discouraged in any protobufs that will
-  be used with ``pw_protobuf`` codegen.
 
 Overhead
 ========
@@ -1269,37 +1029,37 @@ are provided.
 
   This writes a single unpacked value.
 
-.. cpp:function:: Status MyProto::StreamEncoder::WriteFoos(pw::span<const T>)
+.. cpp:function:: Status MyProto::StreamEncoder::WriteFoos(std::span<const T>)
 .. cpp:function:: Status MyProto::StreamEncoder::WriteFoos(const pw::Vector<T>&)
 
   These write a packed field containing all of the values in the provided span
   or vector.
 
 These too can be freely intermixed with the lower-level API methods, both to
-write a single value, or to write packed values from either a ``pw::span`` or
+write a single value, or to write packed values from either a ``std::span`` or
 ``pw::Vector`` source.
 
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedUint64(uint32_t field_number, pw::span<const uint64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedUint64(uint32_t field_number, std::span<const uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedUint64(uint32_t field_number, const pw::Vector<uint64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedSint64(uint32_t field_number, pw::span<const int64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedSint64(uint32_t field_number, std::span<const int64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedSint64(uint32_t field_number, const pw::Vector<int64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedInt64(uint32_t field_number, pw::span<const int64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedInt64(uint32_t field_number, std::span<const int64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedInt64(uint32_t field_number, const pw::Vector<int64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedUint32(uint32_t field_number, pw::span<const uint32_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedUint32(uint32_t field_number, std::span<const uint32_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedUint32(uint32_t field_number, const pw::Vector<uint32_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedSint32(uint32_t field_number, pw::span<const int32_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedSint32(uint32_t field_number, std::span<const int32_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedSint32(uint32_t field_number, const pw::Vector<int32_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedInt32(uint32_t field_number, pw::span<const int32_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedInt32(uint32_t field_number, std::span<const int32_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedInt32(uint32_t field_number, const pw::Vector<int32_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFixed64(uint32_t field_number, pw::span<const uint64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFixed64(uint32_t field_number, std::span<const uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedFixed64(uint32_t field_number, const pw::Vector<uint64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFixed32(uint32_t field_number, pw::span<const uint64_t>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFixed32(uint32_t field_number, std::span<const uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedFixed32(uint32_t field_number, const pw::Vector<uint64_t>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedDouble(uint32_t field_number, pw::span<const double>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedDouble(uint32_t field_number, std::span<const double>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedDouble(uint32_t field_number, const pw::Vector<double>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFloat(uint32_t field_number, pw::span<const float>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedFloat(uint32_t field_number, std::span<const float>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedFloat(uint32_t field_number, const pw::Vector<float>&)
-.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedBool(uint32_t field_number, pw::span<const bool>)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WritePackedBool(uint32_t field_number, std::span<const bool>)
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteRepeatedBool(uint32_t field_number, const pw::Vector<bool>&)
 
 The following two method calls are equivalent, where the first is using the
@@ -1344,7 +1104,7 @@ are provided.
 
   This writes a single unpacked value.
 
-.. cpp:function:: Status MyProto::StreamEncoder::WriteEnums(pw::span<const MyProto::Enums>)
+.. cpp:function:: Status MyProto::StreamEncoder::WriteEnums(std::span<const MyProto::Enums>)
 .. cpp:function:: Status MyProto::StreamEncoder::WriteEnums(const pw::Vector<MyProto::Enums>&)
 
   These write a packed field containing all of the values in the provided span
@@ -1604,7 +1364,7 @@ are provided.
 
   This reads a single unpacked value.
 
-.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadFoos(pw::span<T>)
+.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadFoos(std::span<T>)
 
   This reads a packed field containing all of the values into the provided span.
 
@@ -1618,30 +1378,30 @@ are provided.
   ``pw::Vector``.
 
 These too can be freely intermixed with the lower-level API methods, to read a
-single value, a field of packed values into a ``pw::span``, or support both
+single value, a field of packed values into a ``std::span``, or support both
 formats appending to a ``pw::Vector`` source.
 
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedUint64(pw::span<uint64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedUint64(std::span<uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedUint64(pw::Vector<uint64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedSint64(pw::span<int64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedSint64(std::span<int64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedSint64(pw::Vector<int64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedInt64(pw::span<int64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedInt64(std::span<int64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedInt64(pw::Vector<int64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedUint32(pw::span<uint32_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedUint32(std::span<uint32_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedUint32(pw::Vector<uint32_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedSint32(pw::span<int32_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedSint32(std::span<int32_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedSint32(pw::Vector<int32_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedInt32(pw::span<int32_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedInt32(std::span<int32_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedInt32(pw::Vector<int32_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFixed64(pw::span<uint64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFixed64(std::span<uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedFixed64(pw::Vector<uint64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFixed32(pw::span<uint64_t>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFixed32(std::span<uint64_t>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedFixed32(pw::Vector<uint64_t>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedDouble(pw::span<double>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedDouble(std::span<double>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedDouble(pw::Vector<double>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFloat(pw::span<float>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedFloat(std::span<float>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedFloat(pw::Vector<float>&)
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedBool(pw::span<bool>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadPackedBool(std::span<bool>)
 .. cpp:function:: Status pw::protobuf::StreamDecoder::ReadRepeatedBool(pw::Vector<bool>&)
 
 The following two code blocks are equivalent, where the first uses the code
@@ -1704,7 +1464,7 @@ are provided.
 
   This reads a single unpacked value.
 
-.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadEnums(pw::span<MyProto::Enums>)
+.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadEnums(std::span<MyProto::Enums>)
 
   This reads a packed field containing all of the checked values into the
   provided span.
@@ -1723,7 +1483,7 @@ provided span. Since the span is updated with the size of the string, the string
 is not automatically null-terminated. :ref:`module-pw_string` provides utility
 methods to copy string data from spans into other targets.
 
-.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadName(pw::span<char>)
+.. cpp:function:: StatusWithSize MyProto::StreamDecoder::ReadName(std::span<char>)
 
 An additional code generated method is provided to return a nested
 ``BytesReader`` to access the data as a stream. As with nested submessage
@@ -1735,7 +1495,7 @@ first.
 
 These can be freely intermixed with the lower-level API method:
 
-.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadString(pw::span<char>)
+.. cpp:function:: StatusWithSize pw::protobuf::StreamDecoder::ReadString(std::span<char>)
 
 The lower-level ``GetBytesReader()`` method can also be used to read string data
 as bytes.
@@ -1806,7 +1566,7 @@ field within the buffer; no data is copied out.
   #include "pw_protobuf/decoder.h"
   #include "pw_status/try.h"
 
-  pw::Status DecodeProtoFromBuffer(pw::span<const std::byte> buffer) {
+  pw::Status DecodeProtoFromBuffer(std::span<const std::byte> buffer) {
     pw::protobuf::Decoder decoder(buffer);
     pw::Status status;
 

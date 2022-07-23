@@ -119,6 +119,8 @@ class Bytes {
   Status status() { return reader_.status(); }
 
   // Check whether the bytes value equals the given `bytes`.
+  // TODO(pwbug/456): Should this return `bool`? In the case of error, is it ok
+  // to just return false?
   Result<bool> Equal(ConstByteSpan bytes);
 
  private:

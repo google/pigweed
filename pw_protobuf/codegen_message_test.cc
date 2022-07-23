@@ -12,13 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #include <array>
+#include <span>
 #include <string_view>
-#include <tuple>
 
 #include "gtest/gtest.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_protobuf/internal/codegen.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
@@ -33,7 +32,6 @@
 // low-level encoder.
 #include "pw_protobuf_test_protos/full_test.pwpb.h"
 #include "pw_protobuf_test_protos/importer.pwpb.h"
-#include "pw_protobuf_test_protos/optional.pwpb.h"
 #include "pw_protobuf_test_protos/repeated.pwpb.h"
 
 namespace pw::protobuf {
@@ -241,78 +239,6 @@ TEST(CodegenMessage, ConstCopyable) {
   EXPECT_TRUE(one == two);
 }
 
-TEST(CodegenMessage, FixReservedIdentifiers) {
-  // This test checks that the code was generated as expected, so it will simply
-  // fail to compile if its expectations are not met.
-
-  // Make sure that the `signed` field was renamed to `signed_`.
-  std::ignore = IntegerMetadata::Message{
-      .bits = 32,
-      .signed_ = true,
-      .null = false,
-  };
-
-  // Make sure that the internal enum describing the struct's fields was
-  // generated as expected:
-  // - `BITS` doesn't need an underscore.
-  // - `SIGNED_` has an underscore to match the corresponding `signed_` field.
-  // - `NULL_` has an underscore to avoid a collision with `NULL` (even though
-  //   the field `null` doesn't have or need an underscore).
-  std::ignore = IntegerMetadata::Fields::BITS;
-  std::ignore = IntegerMetadata::Fields::SIGNED_;
-  std::ignore = IntegerMetadata::Fields::NULL_;
-
-  // Make sure that the `ReservedWord` enum values were renamed as expected.
-  // Specifically, only enum-value names that are reserved in UPPER_SNAKE_CASE
-  // should be modified. Names that are only reserved in lower_snake_case should
-  // be left alone since they'll never appear in that form in the generated
-  // code.
-  std::ignore = ReservedWord::NULL_;    // Add underscore since NULL is a macro.
-  std::ignore = ReservedWord::kNull;    // No underscore necessary.
-  std::ignore = ReservedWord::INT;      // No underscore necessary.
-  std::ignore = ReservedWord::kInt;     // No underscore necessary.
-  std::ignore = ReservedWord::RETURN;   // No underscore necessary.
-  std::ignore = ReservedWord::kReturn;  // No underscore necessary.
-  std::ignore = ReservedWord::BREAK;    // No underscore necessary.
-  std::ignore = ReservedWord::kBreak;   // No underscore necessary.
-  std::ignore = ReservedWord::FOR;      // No underscore necessary.
-  std::ignore = ReservedWord::kFor;     // No underscore necessary.
-  std::ignore = ReservedWord::DO;       // No underscore necessary.
-  std::ignore = ReservedWord::kDo;      // No underscore necessary.
-
-  // Instantiate an extremely degenerately named set of nested types in order to
-  // make sure that name conflicts with the codegen internals are properly
-  // prevented.
-  std::ignore = Function::Message{
-      .description =
-          Function::Message_::Message{
-              .content = "multiplication (mod 5)",
-          },
-      .domain_field = Function::Fields_::INTEGERS_MOD_5,
-      .codomain_field = Function::Fields_::INTEGERS_MOD_5,
-  };
-
-  // Check for expected values of `enum class Function::Fields`:
-  std::ignore = Function::Fields::DESCRIPTION;
-  std::ignore = Function::Fields::DOMAIN_FIELD;
-  std::ignore = Function::Fields::CODOMAIN_FIELD;
-
-  // Check for expected values of `enum class Function::Message_::Fields`:
-  std::ignore = Function::Message_::Fields::CONTENT;
-
-  // Check for expected values of `enum class Function::Fields_`:
-  std::ignore = Function::Fields_::NONE;
-  std::ignore = Function::Fields_::kNone;
-  std::ignore = Function::Fields_::COMPLEX_NUMBERS;
-  std::ignore = Function::Fields_::kComplexNumbers;
-  std::ignore = Function::Fields_::INTEGERS_MOD_5;
-  std::ignore = Function::Fields_::kIntegersMod5;
-  std::ignore = Function::Fields_::MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE;
-  std::ignore = Function::Fields_::kMeromorphicFunctionsOnComplexPlane;
-  std::ignore = Function::Fields_::OTHER;
-  std::ignore = Function::Fields_::kOther;
-}
-
 PW_MODIFY_DIAGNOSTICS_POP();
 
 TEST(CodegenMessage, Read) {
@@ -336,7 +262,7 @@ TEST(CodegenMessage, Read) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -374,7 +300,7 @@ TEST(CodegenMessage, ReadNonPackedScalar) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -410,7 +336,7 @@ TEST(CodegenMessage, ReadPackedScalar) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -458,7 +384,7 @@ TEST(CodegenMessage, ReadPackedScalarRepeated) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -493,7 +419,7 @@ TEST(CodegenMessage, ReadPackedScalarExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // uint32s has max_size=8, so this will exhaust the vector.
@@ -515,7 +441,7 @@ TEST(CodegenMessage, ReadPackedScalarCallback) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // sint32s is a repeated field declared without max_count, so requirses a
@@ -554,7 +480,7 @@ TEST(CodegenMessage, ReadPackedScalarFixedLength) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -581,7 +507,7 @@ TEST(CodegenMessage, ReadPackedScalarFixedLengthShort) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -605,7 +531,7 @@ TEST(CodegenMessage, ReadPackedScalarVarintFixedLengthExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -625,7 +551,7 @@ TEST(CodegenMessage, ReadPackedScalarFixedLengthExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -641,7 +567,7 @@ TEST(CodegenMessage, ReadPackedEnum) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   RepeatedTest::Message message{};
@@ -681,7 +607,7 @@ TEST(CodegenMessage, ReadStringExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -703,7 +629,7 @@ TEST(CodegenMessage, ReadStringCallback) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   // pigweed.description has no max_size specified so a callback must be
@@ -743,7 +669,7 @@ TEST(CodegenMessage, ReadMultipleString) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -777,7 +703,7 @@ TEST(CodegenMessage, ReadRepeatedStrings) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // Repeated strings require a callback to avoid forcing multi-dimensional
@@ -817,7 +743,7 @@ TEST(CodegenMessage, ReadForcedCallback) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   // pigweed.special_property has use_callback=true to force the use of a
@@ -854,7 +780,7 @@ TEST(CodegenMessage, ReadMissingCallback) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // Failing to set a callback will give a DataLoss error if that field is
@@ -872,7 +798,7 @@ TEST(CodegenMessage, ReadFixedLength) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -897,7 +823,7 @@ TEST(CodegenMessage, ReadFixedLengthShort) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -924,7 +850,7 @@ TEST(CodegenMessage, ReadFixedLengthExhausted) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -946,7 +872,7 @@ TEST(CodegenMessage, ReadNested) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   Pigweed::Message message{};
@@ -976,7 +902,7 @@ TEST(CodegenMessage, ReadNestedImported) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Period::StreamDecoder period(reader);
 
   // Messages imported from another file can be directly embedded in a message.
@@ -1008,7 +934,7 @@ TEST(CodegenMessage, ReadNestedRepeated) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   // Repeated nested messages require a callback since there would otherwise be
@@ -1049,7 +975,7 @@ TEST(CodegenMessage, ReadNestedForcedCallback) {
       };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   Pigweed::StreamDecoder pigweed(reader);
 
   // pigweed.device_info has use_callback=true to force the use of a callback.
@@ -1079,118 +1005,14 @@ TEST(CodegenMessage, ReadNestedForcedCallback) {
   ASSERT_EQ(status, OkStatus());
 }
 
-TEST(CodegenMessage, ReadOptionalPresent) {
-  // clang-format off
-  constexpr uint8_t proto_data[] = {
-    // optional.sometimes_present_fixed
-    0x0d, 0x2a, 0x00, 0x00, 0x00,
-    // optional.sometimes_present_varint
-    0x10, 0x2a,
-    // optional.explicitly_present_fixed
-    0x1d, 0x45, 0x00, 0x00, 0x00,
-    // optional.explicitly_present_varint
-    0x20, 0x45,
-    // optional.sometimes_empty_fixed
-    0x2a, 0x04, 0x63, 0x00, 0x00, 0x00,
-    // optional.sometimes_empty_varint
-    0x32, 0x01, 0x63,
-  };
-  // clang-format on
-
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
-  OptionalTest::StreamDecoder optional_test(reader);
-
-  OptionalTest::Message message{};
-  const auto status = optional_test.Read(message);
-  ASSERT_EQ(status, OkStatus());
-
-  EXPECT_EQ(message.sometimes_present_fixed, 0x2a);
-  EXPECT_EQ(message.sometimes_present_varint, 0x2a);
-  EXPECT_TRUE(message.explicitly_present_fixed);
-  EXPECT_EQ(*message.explicitly_present_fixed, 0x45);
-  EXPECT_TRUE(message.explicitly_present_varint);
-  EXPECT_EQ(*message.explicitly_present_varint, 0x45);
-  EXPECT_FALSE(message.sometimes_empty_fixed.empty());
-  EXPECT_EQ(message.sometimes_empty_fixed.size(), 1u);
-  EXPECT_EQ(message.sometimes_empty_fixed[0], 0x63);
-  EXPECT_FALSE(message.sometimes_empty_varint.empty());
-  EXPECT_EQ(message.sometimes_empty_varint.size(), 1u);
-  EXPECT_EQ(message.sometimes_empty_varint[0], 0x63);
-}
-
-TEST(CodegenMessage, ReadOptionalNotPresent) {
-  constexpr std::array<std::byte, 0> proto_data{};
-
-  stream::MemoryReader reader(proto_data);
-  OptionalTest::StreamDecoder optional_test(reader);
-
-  OptionalTest::Message message{};
-  const auto status = optional_test.Read(message);
-  ASSERT_EQ(status, OkStatus());
-
-  // Non-optional fields have their default value.
-  EXPECT_EQ(message.sometimes_present_fixed, 0);
-  EXPECT_EQ(message.sometimes_present_varint, 0);
-  EXPECT_TRUE(message.sometimes_empty_fixed.empty());
-  EXPECT_TRUE(message.sometimes_empty_varint.empty());
-
-  // Optional fields are explicitly not present.
-  EXPECT_FALSE(message.explicitly_present_fixed);
-  EXPECT_FALSE(message.explicitly_present_varint);
-}
-
-TEST(CodegenMessage, ReadOptionalPresentDefaults) {
-  // clang-format off
-  constexpr uint8_t proto_data[] = {
-    // optional.sometimes_present_fixed
-    0x0d, 0x00, 0x00, 0x00, 0x00,
-    // optional.sometimes_present_varint
-    0x10, 0x00,
-    // optional.explicitly_present_fixed
-    0x1d, 0x00, 0x00, 0x00, 0x00,
-    // optional.explicitly_present_varint
-    0x20, 0x00,
-    // optional.sometimes_empty_fixed
-    0x2a, 0x04, 0x00, 0x00, 0x00, 0x00,
-    // optional.sometimes_empty_varint
-    0x32, 0x01, 0x00,
-  };
-  // clang-format on
-
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
-  OptionalTest::StreamDecoder optional_test(reader);
-
-  OptionalTest::Message message{};
-  const auto status = optional_test.Read(message);
-  ASSERT_EQ(status, OkStatus());
-
-  // Non-optional fields have their default value and aren't meaningfully
-  // different from missing.
-  EXPECT_EQ(message.sometimes_present_fixed, 0x00);
-  EXPECT_EQ(message.sometimes_present_varint, 0x00);
-
-  // Optional fields are explicitly present with a default value.
-  EXPECT_TRUE(message.explicitly_present_fixed);
-  EXPECT_EQ(*message.explicitly_present_fixed, 0x00);
-  EXPECT_TRUE(message.explicitly_present_varint);
-  EXPECT_EQ(*message.explicitly_present_varint, 0x00);
-
-  // Repeated fields with a default value are meaningfully non-empty.
-  EXPECT_FALSE(message.sometimes_empty_fixed.empty());
-  EXPECT_EQ(message.sometimes_empty_fixed.size(), 1u);
-  EXPECT_EQ(message.sometimes_empty_fixed[0], 0x00);
-  EXPECT_FALSE(message.sometimes_empty_varint.empty());
-  EXPECT_EQ(message.sometimes_empty_varint.size(), 1u);
-  EXPECT_EQ(message.sometimes_empty_varint[0], 0x00);
-}
-
 class BreakableDecoder : public KeyValuePair::StreamDecoder {
  public:
   constexpr BreakableDecoder(stream::Reader& reader) : StreamDecoder(reader) {}
 
-  Status Read(KeyValuePair::Message& message, span<const MessageField> table) {
+  Status Read(KeyValuePair::Message& message,
+              std::span<const MessageField> table) {
     return ::pw::protobuf::StreamDecoder::Read(
-        as_writable_bytes(span(&message, 1)), table);
+        std::as_writable_bytes(std::span(&message, 1)), table);
   }
 };
 
@@ -1206,7 +1028,6 @@ TEST(CodegenMessage, DISABLED_ReadDoesNotOverrun) {
        false,
        false,
        false,
-       false,
        0,
        sizeof(KeyValuePair::Message) * 2,
        {}},
@@ -1219,7 +1040,7 @@ TEST(CodegenMessage, DISABLED_ReadDoesNotOverrun) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   BreakableDecoder decoder(reader);
 
   KeyValuePair::Message message{};
@@ -1278,15 +1099,21 @@ TEST(CodegenMessage, Write) {
     // pigweed.bin
     0x40, 0x01,
     // pigweed.proto
-    0x4a, 0x15,
+    0x4a, 0x1b,
+    // pigweed.proto.bin
+    0x10, 0x00,
+    // pigweed.proto.pigweed_pigweed_bin
+    0x18, 0x00,
     // pigweed.proto.pigweed_protobuf_bin
     0x20, 0x01,
     // pigweed.proto.meta
-    0x2a, 0x11,
+    0x2a, 0x13,
     // pigweed.proto.meta.file_name
     0x0a, 0x0b, '/', 'e', 't', 'c', '/', 'p', 'a', 's', 's', 'w', 'd',
     // pigweed.proto.meta.status
     0x10, 0x02,
+    // pigweed.proto.meta.protobuf_bin
+    0x18, 0x00,
     // pigweed.proto.meta.pigweed_bin
     0x20, 0x01,
     // pigweed.bytes
@@ -1314,9 +1141,49 @@ TEST(CodegenMessage, WriteDefaults) {
   const auto status = pigweed.Write(message);
   ASSERT_EQ(status, OkStatus());
 
-  // Since all fields are at their default, the output should be zero sized.
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // pigweed.magic_number (default)
+    0x08, 0x00,
+    // pigweed.ziggy (default)
+    0x10, 0x00,
+    // pigweed.cycles (default)
+    0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.ratio (default)
+    0x25, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.pigweed (default)
+    0x3a, 0x02,
+    // pigweed.pigweed.status (default)
+    0x08, 0x00,
+    // pigweed.bin (default)
+    0x40, 0x00,
+    // pigweed.proto (default)
+    0x4a, 0x0e,
+    // pigweed.proto.bin (default)
+    0x10, 0x00,
+    // pigweed.proto.pigweed_pigweed_bin (default)
+    0x18, 0x00,
+    // pigweed.proto.pigweed_protobuf_bin (default)
+    0x20, 0x00,
+    // pigweed.proto.meta (default)
+    0x2a, 0x06,
+    // pigweed.proto.meta.status (default)
+    0x10, 0x00,
+    // pigweed.proto.meta.protobuf_bin (default)
+    0x18, 0x00,
+    // pigweed.proto.meta.pigweed_bin (default)
+    0x20, 0x00,
+    // pigweed.bytes (default)
+    0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.bungle (default)
+    0x70, 0x00,
+  };
+  // clang-format on
+
   ConstByteSpan result = writer.WrittenData();
-  EXPECT_EQ(result.size(), 0u);
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
+            0);
 }
 
 TEST(CodegenMessage, WritePackedScalar) {
@@ -1342,12 +1209,18 @@ TEST(CodegenMessage, WritePackedScalar) {
     0x10,
     0x20,
     0x30,
+    // doubles[], v={0, 0} (default)
+    0x22, 0x10,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // fixed32s[]. v={0, 16, 32, 48}
     0x32, 0x10,
     0x00, 0x00, 0x00, 0x00,
     0x10, 0x00, 0x00, 0x00,
     0x20, 0x00, 0x00, 0x00,
     0x30, 0x00, 0x00, 0x00,
+    // uint64s[]. v={0, 0, 0, 0} (default)
+    0x42, 0x04, 0x00, 0x00, 0x00, 0x00
   };
   // clang-format on
 
@@ -1415,6 +1288,13 @@ TEST(CodegenMessage, WritePackedScalarCallback) {
     0x00,
     0x02,
     0x32,
+    // doubles[], v={0, 0} (default)
+    0x22, 0x10,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // uint64s[]. v={0, 0, 0, 0} (default)
+    0x42, 0x04, 0x00, 0x00, 0x00, 0x00
+
   };
   // clang-format on
 
@@ -1441,6 +1321,12 @@ TEST(CodegenMessage, WritePackedEnum) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
+    // doubles[], v={0, 0} (default)
+    0x22, 0x10,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // uint64s[]. v={0, 0, 0, 0} (default)
+    0x42, 0x04, 0x00, 0x00, 0x00, 0x00,
     // enums[], v={RED, GREEN, AMBER, RED}
     0x4a, 0x04, 0x00, 0x02, 0x01, 0x00,
   };
@@ -1473,6 +1359,38 @@ TEST(CodegenMessage, WriteStringCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
+    // pigweed.magic_number (default)
+    0x08, 0x00,
+    // pigweed.ziggy (default)
+    0x10, 0x00,
+    // pigweed.cycles (default)
+    0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.ratio (default)
+    0x25, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.pigweed (default)
+    0x3a, 0x02,
+    // pigweed.pigweed.status (default)
+    0x08, 0x00,
+    // pigweed.bin (default)
+    0x40, 0x00,
+    // pigweed.proto (default)
+    0x4a, 0x0e,
+    // pigweed.proto.bin (default)
+    0x10, 0x00,
+    // pigweed.proto.pigweed_pigweed_bin (default)
+    0x18, 0x00,
+    // pigweed.proto.pigweed_protobuf_bin (default)
+    0x20, 0x00,
+    // pigweed.proto.meta (default)
+    0x2a, 0x06,
+    // pigweed.proto.meta.status (default)
+    0x10, 0x00,
+    // pigweed.proto.meta.protobuf_bin (default)
+    0x18, 0x00,
+    // pigweed.proto.meta.pigweed_bin (default)
+    0x20, 0x00,
+    // pigweed.bytes (default)
+    0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.description
     0x62, 0x5c, 'a', 'n', ' ', 'o', 'p', 'e', 'n', ' ', 's', 'o', 'u', 'r', 'c',
     'e', ' ', 'c', 'o', 'l', 'l', 'e', 'c', 't', 'i', 'o', 'n', ' ', 'o', 'f',
@@ -1481,6 +1399,8 @@ TEST(CodegenMessage, WriteStringCallback) {
     'r', ' ', 'a', 's', ' ', 'w', 'e', ' ', 'l', 'i', 'k', 'e', ' ', 't', 'o',
     ' ', 'c', 'a', 'l', 'l', ' ', 't', 'h', 'e', 'm', ',', ' ', 'm', 'o', 'd',
     'u', 'l', 'e', 's',
+    // pigweed.bungle (default)
+    0x70, 0x00,
   };
   // clang-format on
 
@@ -1509,8 +1429,42 @@ TEST(CodegenMessage, WriteForcedCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
+    // pigweed.magic_number (default)
+    0x08, 0x00,
+    // pigweed.ziggy (default)
+    0x10, 0x00,
+    // pigweed.cycles (default)
+    0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.ratio (default)
+    0x25, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.pigweed (default)
+    0x3a, 0x02,
+    // pigweed.pigweed.status (default)
+    0x08, 0x00,
+    // pigweed.bin (default)
+    0x40, 0x00,
+    // pigweed.proto (default)
+    0x4a, 0x0e,
+    // pigweed.proto.bin (default)
+    0x10, 0x00,
+    // pigweed.proto.pigweed_pigweed_bin (default)
+    0x18, 0x00,
+    // pigweed.proto.pigweed_protobuf_bin (default)
+    0x20, 0x00,
+    // pigweed.proto.meta (default)
+    0x2a, 0x06,
+    // pigweed.proto.meta.status (default)
+    0x10, 0x00,
+    // pigweed.proto.meta.protobuf_bin (default)
+    0x18, 0x00,
+    // pigweed.proto.meta.pigweed_bin (default)
+    0x20, 0x00,
+    // pigweed.bytes (default)
+    0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // pigweed.special_property
     0x68, 0x2a,
+    // pigweed.bungle (default)
+    0x70, 0x00,
   };
   // clang-format on
 
@@ -1537,13 +1491,17 @@ TEST(CodegenMessage, WriteNestedImported) {
   // clang-format off
   constexpr uint8_t expected_proto[] = {
     // period.start
-    0x0a, 0x06,
+    0x0a, 0x08,
     // period.start.seconds v=1517949900
     0x08, 0xcc, 0xa7, 0xe8, 0xd3, 0x05,
+    // period.start.nanoseconds v=0 (default)
+    0x10, 0x00,
     // period.end
-    0x12, 0x06,
+    0x12, 0x08,
     // period.end.seconds, v=1517950378
     0x08, 0xaa, 0xab, 0xe8, 0xd3, 0x05,
+    // period.end.nanoseconds, v=0 (default)
+    0x10, 0x00,
   };
   // clang-format on
 
@@ -1582,6 +1540,10 @@ TEST(CodegenMessage, WriteNestedRepeated) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
+    // doubles[], v={0, 0} (default)
+    0x22, 0x10,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // repeated.structs
     0x2a, 0x04,
     // repeated.structs.one v=16
@@ -1594,6 +1556,8 @@ TEST(CodegenMessage, WriteNestedRepeated) {
     0x08, 0x30,
     // repeated.structs.two v=64
     0x10, 0x40,
+    // uint64s[]. v={0, 0, 0, 0} (default)
+    0x42, 0x04, 0x00, 0x00, 0x00, 0x00
   };
   // clang-format on
 
@@ -1644,24 +1608,60 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
 
   // clang-format off
   constexpr uint8_t expected_proto[] = {
+    // pigweed.magic_number (default)
+    0x08, 0x00,
+    // pigweed.ziggy (default)
+    0x10, 0x00,
+    // pigweed.cycles (default)
+    0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.ratio (default)
+    0x25, 0x00, 0x00, 0x00, 0x00,
     // pigweed.device_info
-    0x32, 0x30,
+    0x32, 0x32,
     // pigweed.device_info.device_name
     0x0a, 0x05, 'p', 'i', 'x', 'e', 'l',
     // pigweed.device_info.device_id
     0x15, 0x08, 0x08, 0x08, 0x08,
-    // pigweed.device_info.attributes[0]
+    // pigweed.device_info.status
+    0x18, 0x00,
+    // pigweed.proto.nested_pigweed.device_info.attributes[0]
     0x22, 0x10,
-    // pigweed.device_info.attributes[0].key
+    // pigweed.proto.nested_pigweed.device_info.attributes[0].key
     0x0a, 0x07, 'v', 'e', 'r', 's', 'i', 'o', 'n',
-    // pigweed.device_info.attributes[0].value
+    // pigweed.proto.nested_pigweed.device_info.attributes[0].value
     0x12, 0x05, '5', '.', '3', '.', '1',
-    // pigweed.device_info.attributes[1]
+    // pigweed.proto.nested_pigweed.device_info.attributes[1]
     0x22, 0x10,
-    // pigweed.device_info.attributes[1].key
+    // pigweed.proto.nested_pigweed.device_info.attributes[1].key
     0x0a, 0x04, 'c', 'h', 'i', 'p',
-    // pigweed.device_info.attributes[1].value
+    // pigweed.proto.nested_pigweed.device_info.attributes[1].value
     0x12, 0x08, 'l', 'e', 'f', 't', '-', 's', 'o', 'c',
+    // pigweed.pigweed (default)
+    0x3a, 0x02,
+    // pigweed.pigweed.status (default)
+    0x08, 0x00,
+    // pigweed.bin (default)
+    0x40, 0x00,
+    // pigweed.proto (default)
+    0x4a, 0x0e,
+    // pigweed.proto.bin (default)
+    0x10, 0x00,
+    // pigweed.proto.pigweed_pigweed_bin (default)
+    0x18, 0x00,
+    // pigweed.proto.pigweed_protobuf_bin (default)
+    0x20, 0x00,
+    // pigweed.proto.meta (default)
+    0x2a, 0x06,
+    // pigweed.proto.meta.status (default)
+    0x10, 0x00,
+    // pigweed.proto.meta.protobuf_bin (default)
+    0x18, 0x00,
+    // pigweed.proto.meta.pigweed_bin (default)
+    0x20, 0x00,
+    // pigweed.bytes (default)
+    0x5a, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // pigweed.bungle (default)
+    0x70, 0x00,
   };
   // clang-format on
 
@@ -1686,117 +1686,15 @@ TEST(CodegenMessage, EnumAliases) {
   EXPECT_EQ(AlwaysBlue::kBlue, AlwaysBlue::BLUE);
 }
 
-TEST(CodegenMessage, WriteOptionalPresent) {
-  OptionalTest::Message message{};
-  message.sometimes_present_fixed = 0x2a;
-  message.sometimes_present_varint = 0x2a;
-  message.explicitly_present_fixed = 0x45;
-  message.explicitly_present_varint = 0x45;
-  message.sometimes_empty_fixed.push_back(0x63);
-  message.sometimes_empty_varint.push_back(0x63);
-
-  std::byte encode_buffer[512];
-
-  stream::MemoryWriter writer(encode_buffer);
-  OptionalTest::StreamEncoder optional_test(writer, ByteSpan());
-
-  const auto status = optional_test.Write(message);
-  ASSERT_EQ(status, OkStatus());
-
-  // clang-format off
-  constexpr uint8_t expected_proto[] = {
-    // optional.sometimes_present_fixed
-    0x0d, 0x2a, 0x00, 0x00, 0x00,
-    // optional.sometimes_present_varint
-    0x10, 0x2a,
-    // optional.explicitly_present_fixed
-    0x1d, 0x45, 0x00, 0x00, 0x00,
-    // optional.explicitly_present_varint
-    0x20, 0x45,
-    // optional.sometimes_empty_fixed
-    0x2a, 0x04, 0x63, 0x00, 0x00, 0x00,
-    // optional.sometimes_empty_varint
-    0x32, 0x01, 0x63,
-  };
-  // clang-format on
-
-  ConstByteSpan result = writer.WrittenData();
-  EXPECT_EQ(result.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
-            0);
-}
-
-TEST(CodegenMessage, WriteOptionalNotPresent) {
-  OptionalTest::Message message{};
-
-  std::byte encode_buffer[512];
-
-  stream::MemoryWriter writer(encode_buffer);
-  OptionalTest::StreamEncoder optional_test(writer, ByteSpan());
-
-  const auto status = optional_test.Write(message);
-  ASSERT_EQ(status, OkStatus());
-
-  // clang-format off
-  constexpr uint8_t expected_proto[] = {
-  };
-  // clang-format on
-
-  ConstByteSpan result = writer.WrittenData();
-  EXPECT_EQ(result.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
-            0);
-}
-
-TEST(CodegenMessage, WriteOptionalPresentDefaults) {
-  OptionalTest::Message message{};
-  // Non-optional fields with a default value are not explicitly encoded, so
-  // aren't meaningfully different from one that's just ommitted.
-  message.sometimes_present_fixed = 0x00;
-  message.sometimes_present_varint = 0x00;
-  // Optional fields, even with a default value, are explicitly encoded.
-  message.explicitly_present_fixed = 0x00;
-  message.explicitly_present_varint = 0x00;
-  // Repeated fields with a default value are meaningfully non-empty.
-  message.sometimes_empty_fixed.push_back(0x00);
-  message.sometimes_empty_varint.push_back(0x00);
-
-  std::byte encode_buffer[512];
-
-  stream::MemoryWriter writer(encode_buffer);
-  OptionalTest::StreamEncoder optional_test(writer, ByteSpan());
-
-  const auto status = optional_test.Write(message);
-  ASSERT_EQ(status, OkStatus());
-
-  // clang-format off
-  constexpr uint8_t expected_proto[] = {
-    // optional.explicitly_present_fixed
-    0x1d, 0x00, 0x00, 0x00, 0x00,
-    // optional.explicitly_present_varint
-    0x20, 0x00,
-    // optional.sometimes_empty_fixed
-    0x2a, 0x04, 0x00, 0x00, 0x00, 0x00,
-    // optional.sometimes_empty_varint
-    0x32, 0x01, 0x00,
-  };
-  // clang-format on
-
-  ConstByteSpan result = writer.WrittenData();
-  EXPECT_EQ(result.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
-            0);
-}
-
 class BreakableEncoder : public KeyValuePair::MemoryEncoder {
  public:
   constexpr BreakableEncoder(ByteSpan buffer)
       : KeyValuePair::MemoryEncoder(buffer) {}
 
   Status Write(const KeyValuePair::Message& message,
-               span<const MessageField> table) {
-    return ::pw::protobuf::StreamEncoder::Write(as_bytes(span(&message, 1)),
-                                                table);
+               std::span<const MessageField> table) {
+    return ::pw::protobuf::StreamEncoder::Write(
+        std::as_bytes(std::span(&message, 1)), table);
   }
 };
 
@@ -1809,7 +1707,6 @@ TEST(CodegenMessage, DISABLED_WriteDoesNotOverrun) {
        WireType::kDelimited,
        sizeof(std::byte),
        static_cast<VarintType>(0),
-       false,
        false,
        false,
        false,
@@ -1886,7 +1783,7 @@ TEST(CodegenMessage, CallbackInClass) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   StringChecker checker{};
@@ -1941,7 +1838,7 @@ TEST(CodegenMessage, CallbackInSubclass) {
   };
   // clang-format on
 
-  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  stream::MemoryReader reader(std::as_bytes(std::span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
   CustomMessage message{};

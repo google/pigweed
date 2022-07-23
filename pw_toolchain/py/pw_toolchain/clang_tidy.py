@@ -93,6 +93,7 @@ def _parse_args() -> argparse.Namespace:
 
     if parsed_args.extra_args[0] != '--':
         parser.error('arguments not correctly split')
+
     parsed_args.extra_args = parsed_args.extra_args[1:]
     return parsed_args
 
@@ -125,13 +126,10 @@ def run_clang_tidy(clang_tidy: str, verbose: bool, source_file: Path,
     if export_fixes is not None:
         command.extend(['--export-fixes', export_fixes])
 
-    # Append extra compilation flags.  Extra args up to
-    # END_OF_INVOKER are skipped.
+    # Append extra compilation flags. extra_args[0] is skipped as it contains
+    # the compiler binary name.
     command.append('--')
-    end_of_invoker = extra_args.index('END_OF_INVOKER')
-    command.extend(
-        _filter_include_paths(extra_args[end_of_invoker + 1:],
-                              skip_include_path))
+    command.extend(_filter_include_paths(extra_args[1:], skip_include_path))
 
     process = subprocess.run(
         command,
@@ -139,6 +137,7 @@ def run_clang_tidy(clang_tidy: str, verbose: bool, source_file: Path,
         # clang-tidy prints regular information on
         # stderr, even with the option --quiet.
         stderr=subprocess.PIPE)
+
     if process.returncode != 0:
         _LOG.warning('%s', ' '.join(shlex.quote(str(arg)) for arg in command))
 

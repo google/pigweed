@@ -14,65 +14,66 @@
 # the License.
 """Tests the python_packages module."""
 
+import collections
 import io
 import unittest
-import importlib.metadata
 from unittest import mock
 
 from pw_env_setup import python_packages
 
 
+def _subprocess_run_stdout(stdout=b'foo==1.0\nbar==2.0\npw-foo @ file:...\n'):
+    def subprocess_run(*unused_args, **unused_kwargs):
+        CompletedProcess = collections.namedtuple('CompletedProcess', 'stdout')
+        return CompletedProcess(stdout=stdout)
+
+    return subprocess_run
+
+
 class TestPythonPackages(unittest.TestCase):
     """Tests the python_packages module."""
-    def setUp(self):
-        self.existing_pkgs_minus_toml = '\n'.join(
-            pkg for pkg in python_packages._installed_packages()  # pylint: disable=protected-access
-            if not pkg.startswith('toml=='))
+    @mock.patch('pw_env_setup.python_packages.subprocess.run',
+                side_effect=_subprocess_run_stdout())
+    def test_list(self, unused_mock):
+        buf = io.StringIO()
+        python_packages.ls(buf)
+        self.assertIn('foo==1.0', buf.getvalue())
+        self.assertIn('bar==2.0', buf.getvalue())
+        self.assertNotIn('pw-foo', buf.getvalue())
 
-    def test_list(self):
-        pkgs = list(python_packages._installed_packages())  # pylint: disable=protected-access
-        toml_version = importlib.metadata.version('toml')
-
-        self.assertIn(f'toml=={toml_version}', pkgs)
-        self.assertNotIn('pw-foo', pkgs)
-
+    @mock.patch('pw_env_setup.python_packages.subprocess.run',
+                side_effect=_subprocess_run_stdout())
     @mock.patch('pw_env_setup.python_packages._stderr')
-    def test_diff_removed(self, stderr_mock):
+    def test_diff_removed(self, stderr_mock, unused_mock):
         expected = io.StringIO('foo==1.0\nbar==2.0\nbaz==3.0\n')
         expected.name = 'test.name'
-
-        # Removed packages should trigger a failure.
-        self.assertEqual(-1, python_packages.diff(expected))
+        self.assertFalse(python_packages.diff(expected))
 
         stderr_mock.assert_any_call('Removed packages')
-        stderr_mock.assert_any_call('  foo==1.0')
-        stderr_mock.assert_any_call('  bar==2.0')
         stderr_mock.assert_any_call('  baz==3.0')
 
+    @mock.patch('pw_env_setup.python_packages.subprocess.run',
+                side_effect=_subprocess_run_stdout())
     @mock.patch('pw_env_setup.python_packages._stderr')
-    def test_diff_updated(self, stderr_mock):
-        expected = io.StringIO('toml>=0.0.1\n' + self.existing_pkgs_minus_toml)
+    def test_diff_updated(self, stderr_mock, unused_mock):
+        expected = io.StringIO('foo==1.0\nbar==1.9\n')
         expected.name = 'test.name'
-        toml_version = importlib.metadata.version('toml')
-
-        # Updated packages should trigger a failure.
-        self.assertEqual(-1, python_packages.diff(expected))
+        self.assertTrue(python_packages.diff(expected))
 
         stderr_mock.assert_any_call('Updated packages')
-        stderr_mock.assert_any_call(
-            f'  toml=={toml_version} (from toml>=0.0.1)')
+        stderr_mock.assert_any_call('  bar==2.0 (from 1.9)')
+        stderr_mock.assert_any_call("Package versions don't match!")
 
+    @mock.patch('pw_env_setup.python_packages.subprocess.run',
+                side_effect=_subprocess_run_stdout())
     @mock.patch('pw_env_setup.python_packages._stderr')
-    def test_diff_new(self, stderr_mock):
-        expected = io.StringIO(self.existing_pkgs_minus_toml)
+    def test_diff_new(self, stderr_mock, unused_mock):
+        expected = io.StringIO('foo==1.0\n')
         expected.name = 'test.name'
-        toml_version = importlib.metadata.version('toml')
-
-        # New packages should trigger a failure.
-        self.assertEqual(-1, python_packages.diff(expected))
+        self.assertTrue(python_packages.diff(expected))
 
         stderr_mock.assert_any_call('New packages')
-        stderr_mock.assert_any_call(f'  toml=={toml_version}')
+        stderr_mock.assert_any_call('  bar==2.0')
         stderr_mock.assert_any_call("Package versions don't match!")
 
 

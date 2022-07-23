@@ -17,69 +17,58 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 
-config("public_include_path") {
+config("default_config") {
   include_dirs = [ "public" ]
 }
 
-config("check_backend_overrides") {
-  include_dirs = [ "check_backend_public_overrides" ]
+config("backend_config") {
+  include_dirs = [ "public_overrides" ]
 }
 
-config("assert_backend_overrides") {
-  include_dirs = [ "assert_backend_public_overrides" ]
+config("lite_backend_overrides") {
+  include_dirs = [ "assert_lite_public_overrides" ]
 }
 
-# This target provides a backend to pw_assert's check facade
-# (PW_CHECK()/PW_CRASH() macros) and assert compatibility C ABI
-# (the pw_assert_HandleFailure() function) via PW_LOG.
-pw_source_set("check_backend") {
+# This backend to pw_assert's PW_CHECK()/PW_CRASH() macros via PW_LOG.
+pw_source_set("pw_assert_log") {
   public_configs = [
-    ":check_backend_overrides",
-    ":public_include_path",
+    ":backend_config",
+    ":default_config",
   ]
   public_deps = [ "$dir_pw_log" ]
-  public =
-      [ "check_backend_public_overrides/pw_assert_backend/check_backend.h" ]
+  public = [ "public_overrides/pw_assert_backend/assert_backend.h" ]
   deps = [
-    "$dir_pw_assert:assert_compatibility_backend",
     "$dir_pw_assert:config",
     "$dir_pw_assert:facade",
     "$dir_pw_preprocessor",
   ]
   sources = [
-    # TODO(b/235149326): assert_log.cc implements the assert compatibility
-    #     backend, but nothing for check_backend.
     "assert_log.cc",
-    "public/pw_assert_log/check_log.h",
+    "public/pw_assert_log/assert_log.h",
   ]
-}
-
-# TODO(b/235149326): Remove this deprecated alias.
-group("pw_assert_log") {
-  public_deps = [ ":check_backend" ]
 }
 
 # This backend to pw_assert's PW_ASSERT() macros via PW_LOG. It is intended only
 # for use with PW_LOG backends which are constexpr compatible such as
 # pw_log_android.
-pw_source_set("assert_backend") {
+#
+# Warning: The "lite" naming is transitional. assert_lite_backend.h headers
+# will be renamed as the pw_assert API is reassessed. (pwbug/246)
+pw_source_set("lite_backend") {
   public_configs = [
-    ":assert_backend_overrides",
-    ":public_include_path",
+    ":lite_backend_overrides",
+    ":default_config",
   ]
   public_deps = [
     "$dir_pw_log",
     "$dir_pw_preprocessor",
   ]
   public =
-      [ "assert_backend_public_overrides/pw_assert_backend/assert_backend.h" ]
-  sources = [ "public/pw_assert_log/assert_log.h" ]
+      [ "assert_lite_public_overrides/pw_assert_backend/assert_lite_backend.h" ]
+  sources = [ "public/pw_assert_log/assert_lite_log.h" ]
 }
 
-group("assert_backend.impl") {
-}
-
-group("check_backend.impl") {
+group("lite_backend.impl") {
 }
 
 # pw_assert_log doesn't have deps with potential circular dependencies, so this

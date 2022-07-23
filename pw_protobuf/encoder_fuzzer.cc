@@ -15,12 +15,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <span>
 #include <vector>
 
 #include "pw_fuzzer/asan_interface.h"
 #include "pw_fuzzer/fuzzed_data_provider.h"
 #include "pw_protobuf/encoder.h"
-#include "pw_span/span.h"
 
 namespace {
 
@@ -58,7 +58,7 @@ enum FieldType : uint8_t {
   kMaxValue = kPush,
 };
 
-// TODO(b/235289495): Move this to pw_fuzzer/fuzzed_data_provider.h
+// TODO(pwbug/181): Move this to pw_fuzzer/fuzzed_data_provider.h
 
 // Uses the given |provider| to pick and return a number between 0 and the
 // maximum numbers of T that can be generated from the remaining input data.
@@ -69,11 +69,11 @@ size_t ConsumeSize(FuzzedDataProvider* provider) {
 }
 
 // Uses the given |provider| to generate several instances of T, store them in
-// |data|, and then return a pw::span to them. It is the caller's responsbility
-// to ensure |data| remains in scope as long as the returned pw::span.
+// |data|, and then return a std::span to them. It is the caller's responsbility
+// to ensure |data| remains in scope as long as the returned std::span.
 template <typename T>
-pw::span<const T> ConsumeSpan(FuzzedDataProvider* provider,
-                              std::vector<T>* data) {
+std::span<const T> ConsumeSpan(FuzzedDataProvider* provider,
+                               std::vector<T>* data) {
   size_t num = ConsumeSize<T>(provider);
   size_t off = data->size();
   data->reserve(off + num);
@@ -84,7 +84,7 @@ pw::span<const T> ConsumeSpan(FuzzedDataProvider* provider,
       data->push_back(provider->ConsumeIntegral<T>());
     }
   }
-  return pw::span(&((*data)[off]), num);
+  return std::span(&((*data)[off]), num);
 }
 
 // Uses the given |provider| to generate a string, store it in |data|, and
@@ -101,16 +101,16 @@ const char* ConsumeString(FuzzedDataProvider* provider,
 }
 
 // Uses the given |provider| to generate non-arithmetic bytes, store them in
-// |data|, and return a pw::span to them. It is the caller's responsbility to
-// ensure |data| remains in scope as long as the returned pw::span.
-pw::span<const std::byte> ConsumeBytes(FuzzedDataProvider* provider,
-                                       std::vector<std::byte>* data) {
+// |data|, and return a std::span to them. It is the caller's responsbility to
+// ensure |data| remains in scope as long as the returned std::span.
+std::span<const std::byte> ConsumeBytes(FuzzedDataProvider* provider,
+                                        std::vector<std::byte>* data) {
   size_t num = ConsumeSize<std::byte>(provider);
   auto added = provider->ConsumeBytes<std::byte>(num);
   size_t off = data->size();
   num = added.size();
   data->insert(data->end(), added.begin(), added.end());
-  return pw::span(&((*data)[off]), num);
+  return std::span(&((*data)[off]), num);
 }
 
 }  // namespace
@@ -124,7 +124,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // the rest.
   size_t unpoisoned_length =
       provider.ConsumeIntegralInRange<size_t>(0, sizeof(buffer));
-  pw::span<std::byte> unpoisoned(buffer, unpoisoned_length);
+  std::span<std::byte> unpoisoned(buffer, unpoisoned_length);
   void* poisoned = &buffer[unpoisoned_length];
   size_t poisoned_length = sizeof(buffer) - unpoisoned_length;
   ASAN_POISON_MEMORY_REGION(poisoned, poisoned_length);
