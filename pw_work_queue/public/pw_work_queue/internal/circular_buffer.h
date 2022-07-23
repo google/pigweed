@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "pw_assert/assert.h"
 #include "pw_span/span.h"
 
 namespace pw::work_queue::internal {
