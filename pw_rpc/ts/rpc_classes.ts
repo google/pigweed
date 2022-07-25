@@ -13,7 +13,7 @@
 // the License.
 
 import {Message} from 'google-protobuf';
-import {Status} from '@pigweed/pw_status';
+import {Status} from 'pigweedjs/pw_status';
 
 import {Call} from './call';
 import {Channel, Method, Service} from './descriptors';

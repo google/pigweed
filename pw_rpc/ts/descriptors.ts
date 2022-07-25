@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {ProtoCollection} from '@pigweed/pw_protobuf_compiler';
+import {ProtoCollection} from 'pigweedjs/pw_protobuf_compiler';
 import {
   MethodDescriptorProto,
   ServiceDescriptorProto,

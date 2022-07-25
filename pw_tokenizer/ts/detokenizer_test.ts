@@ -14,7 +14,7 @@
 
 /* eslint-env browser */
 
-import {Frame, Encoder, Decoder} from '@pigweed/pw_hdlc';
+import {Frame, Encoder, Decoder} from 'pigweedjs/pw_hdlc';
 import {Detokenizer} from './detokenizer';
 
 const CSV = `

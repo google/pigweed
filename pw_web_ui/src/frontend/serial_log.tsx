@@ -15,7 +15,7 @@
 /* eslint-env browser */
 import {makeStyles, Paper, Box} from '@material-ui/core';
 import * as React from 'react';
-import {FrameStatus, Frame} from '@pigweed/pw_hdlc';
+import {FrameStatus, Frame} from 'pigweedjs/pw_hdlc';
 
 type Props = {
   frames: Frame[];

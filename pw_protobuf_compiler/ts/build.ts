@@ -93,6 +93,6 @@ protoc(protos, outDir).then(() => {
   makeProtoCollection(
     path.join(outDir, 'descriptor.bin'),
     outDir,
-    'pigweed/protos'
+    'pigweedjs/protos'
   );
 });

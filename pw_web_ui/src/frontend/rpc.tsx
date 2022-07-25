@@ -15,9 +15,9 @@
 /* eslint-env browser */
 import {makeStyles, Box} from '@material-ui/core';
 import * as React from 'react';
-import {Status} from '@pigweed/pw_status';
+import {Status} from 'pigweedjs/pw_status';
 import {Message} from 'google-protobuf';
-import {Call} from '@pigweed/pw_rpc';
+import {Call} from 'pigweedjs/pw_rpc';
 
 type Props = {
   calls: Call[];

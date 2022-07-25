@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Status} from '@pigweed/pw_status';
+import {Status} from 'pigweedjs/pw_status';
 import {Message} from 'google-protobuf';
 
 import {

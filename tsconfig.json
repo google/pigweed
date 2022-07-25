@@ -14,13 +14,13 @@
     "declaration": true,
     "allowJs": true,
     "paths": {
-      "@pigweed/pw_*": [
+      "pigweedjs/pw_*": [
         "./pw_*/ts"
       ],
-      "pigweed/protos/*": [
+      "pigweedjs/protos/*": [
         "./dist/protos/*"
       ],
-      "pigweed/types/*": [
+      "pigweedjs/types/*": [
         "./ts/types/*"
       ]
     }

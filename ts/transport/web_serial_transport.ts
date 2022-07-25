@@ -15,7 +15,7 @@
 /* eslint-env browser */
 import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
 import DeviceTransport from './device_transport';
-import type {SerialPort, Serial, SerialOptions, Navigator, SerialPortFilter} from "pigweed/types/serial"
+import type {SerialPort, Serial, SerialOptions, Navigator, SerialPortFilter} from "pigweedjs/types/serial"
 
 const DEFAULT_SERIAL_OPTIONS: SerialOptions & {baudRate: number} = {
   // Some versions of chrome use `baudrate` (linux)

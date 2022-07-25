@@ -26,6 +26,7 @@ import {
 } from "../dist/index.umd";
 
 import {ProtoCollection} from "../dist/protos/collection.umd";
+import * as fs from "fs";
 
 describe('Pigweed Bundle', () => {
 
@@ -64,6 +65,12 @@ describe('Pigweed Bundle', () => {
 
   it('has WebSerialTransport defined', () => {
     expect(WebSerial.WebSerialTransport).toBeDefined();
+  });
+
+  it('is not referring to any outside Pigweed modules', () => {
+    const requireString = "require('pigweedjs";
+    const file = fs.readFileSync(require.resolve("../dist/index.umd"));
+    expect(file.indexOf(requireString)).toBe(-1)
   });
 
 });

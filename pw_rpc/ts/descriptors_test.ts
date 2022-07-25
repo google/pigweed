@@ -14,11 +14,11 @@
 
 /* eslint-env browser */
 
-import {ProtoCollection} from 'pigweed/protos/collection';
+import {ProtoCollection} from 'pigweedjs/protos/collection';
 import {
   Request,
   Response,
-} from 'pigweed/protos/pw_rpc/ts/test_pb';
+} from 'pigweedjs/protos/pw_rpc/ts/test_pb';
 
 import * as descriptors from './descriptors';
 

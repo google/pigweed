@@ -14,9 +14,9 @@
 
 /* eslint-env browser */
 
-import {Message} from 'pigweed/protos/pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test_pb';
+import {Message} from 'pigweedjs/protos/pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test_pb';
 
-import {ProtoCollection} from 'pigweed/protos/collection';
+import {ProtoCollection} from 'pigweedjs/protos/collection';
 
 describe('ProtoCollection', () => {
   it('getMessageType returns message', () => {

@@ -14,7 +14,7 @@
 
 /**  Decodes and detokenizes strings from binary or Base64 input. */
 import {Buffer} from 'buffer';
-import {Frame} from '@pigweed/pw_hdlc';
+import {Frame} from 'pigweedjs/pw_hdlc';
 import {TokenDatabase} from './token_database';
 import {PrintfDecoder} from './printf_decoder';
 

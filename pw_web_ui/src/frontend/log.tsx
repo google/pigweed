@@ -18,8 +18,8 @@ import {makeStyles, Paper, Box} from '@material-ui/core';
 import * as React from 'react';
 import {default as AnsiUp} from 'ansi_up';
 import * as Parser from 'html-react-parser';
-import {Frame} from '@pigweed/pw_hdlc';
-import {Detokenizer} from '@pigweed/pw_tokenizer';
+import {Frame} from 'pigweedjs/pw_hdlc';
+import {Detokenizer} from 'pigweedjs/pw_tokenizer';
 
 type Props = {
   lines: string[];

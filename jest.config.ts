@@ -16,10 +16,10 @@ import {pathsToModuleNameMapper} from "ts-jest";
 import type {InitialOptionsTsJest} from 'ts-jest/dist/types';
 
 const paths = {
-  "@pigweed/pw_*": [
+  "pigweedjs/pw_*": [
     "./pw_*/ts"
   ],
-  "pigweed/protos/*": [
+  "pigweedjs/protos/*": [
     "./dist/protos/*"
   ]
 }

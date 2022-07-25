@@ -17,7 +17,7 @@
 import {
   ProtoCollection as Base,
   ModuleMap,
-} from '@pigweed/pw_protobuf_compiler';
+} from 'pigweedjs/pw_protobuf_compiler';
 import {FileDescriptorSet} from 'google-protobuf/google/protobuf/descriptor_pb';
 import * as base64 from 'base64-js';
 

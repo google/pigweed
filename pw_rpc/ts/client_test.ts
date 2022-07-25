@@ -14,18 +14,18 @@
 
 /* eslint-env browser */
 
-import {Status} from '@pigweed/pw_status';
-import {MessageCreator} from '@pigweed/pw_protobuf_compiler';
+import {Status} from 'pigweedjs/pw_status';
+import {MessageCreator} from 'pigweedjs/pw_protobuf_compiler';
 import {Message} from 'google-protobuf';
 import {
   PacketType,
   RpcPacket,
-} from 'pigweed/protos/pw_rpc/internal/packet_pb';
-import {ProtoCollection} from 'pigweed/protos/collection';
+} from 'pigweedjs/protos/pw_rpc/internal/packet_pb';
+import {ProtoCollection} from 'pigweedjs/protos/collection';
 import {
   Request,
   Response,
-} from 'pigweed/protos/pw_rpc/ts/test_pb';
+} from 'pigweedjs/protos/pw_rpc/ts/test_pb';
 
 import {Client} from './client';
 import {Channel, Method} from './descriptors';

@@ -20,14 +20,14 @@ import {
   decode,
   MethodStub,
   ServiceClient,
-} from '@pigweed/pw_rpc';
-import {Status} from '@pigweed/pw_status';
+} from 'pigweedjs/pw_rpc';
+import {Status} from 'pigweedjs/pw_status';
 import {
   PacketType,
   RpcPacket,
-} from 'pigweed/protos/pw_rpc/internal/packet_pb';
-import {ProtoCollection} from 'pigweed/protos/collection';
-import {Chunk} from 'pigweed/protos/pw_transfer/transfer_pb';
+} from 'pigweedjs/protos/pw_rpc/internal/packet_pb';
+import {ProtoCollection} from 'pigweedjs/protos/collection';
+import {Chunk} from 'pigweedjs/protos/pw_transfer/transfer_pb';
 
 import {Manager} from './client';
 import {ProgressStats} from './transfer';

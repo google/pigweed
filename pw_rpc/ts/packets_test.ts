@@ -16,8 +16,8 @@
 import {
   PacketType,
   RpcPacket,
-} from 'pigweed/protos/pw_rpc/internal/packet_pb';
-import {Status} from '@pigweed/pw_status';
+} from 'pigweedjs/protos/pw_rpc/internal/packet_pb';
+import {Status} from 'pigweedjs/pw_status';
 
 import * as packets from './packets';
 

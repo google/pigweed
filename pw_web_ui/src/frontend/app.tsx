@@ -23,13 +23,13 @@ import {
 } from '@material-ui/core';
 import {ToggleButtonGroup, ToggleButton} from '@material-ui/lab';
 import {WebSerialTransport} from '../transport/web_serial_transport';
-import {Decoder, Frame, Encoder} from '@pigweed/pw_hdlc';
+import {Decoder, Frame, Encoder} from 'pigweedjs/pw_hdlc';
 import {SerialLog} from './serial_log';
 import {Log} from './log';
 import * as React from 'react';
 import {useState, useRef} from 'react';
-import {Channel, Client, UnaryMethodStub} from '@pigweed/pw_rpc';
-import {Status} from '@pigweed/pw_status';
+import {Channel, Client, UnaryMethodStub} from 'pigweedjs/pw_rpc';
+import {Status} from 'pigweedjs/pw_status';
 import {ProtoCollection} from 'web_proto_collection/generated/ts_proto_collection';
 
 const RPC_ADDRESS = 82;

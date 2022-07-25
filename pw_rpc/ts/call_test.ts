@@ -14,7 +14,7 @@
 
 /* eslint-env browser */
 
-import {SomeMessage} from 'pigweed/protos/pw_rpc/ts/test2_pb';
+import {SomeMessage} from 'pigweedjs/protos/pw_rpc/ts/test2_pb';
 
 import {Call} from './call';
 import {Channel, Method, Service} from './descriptors';
