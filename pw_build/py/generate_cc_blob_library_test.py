@@ -40,7 +40,7 @@ COMMON_HEADER_START = COMMENT + """\
 
 COMMON_SOURCE_START = COMMENT + """\
 
-#include "path/to/header.h"
+#include "header.h"
 
 #include <array>
 #include <cstddef>
@@ -166,7 +166,7 @@ class TestSourceFromBlobs(unittest.TestCase):
         ]
 
         source = generate_cc_blob_library.source_from_blobs(
-            blobs, 'path/to/header.h')
+            blobs, 'path/to/header.h', 'path/to/source.cc')
         expected_source = (f'{COMMON_SOURCE_START}'
                            '\n'
                            '\n'
@@ -183,7 +183,7 @@ class TestSourceFromBlobs(unittest.TestCase):
         blobs = [generate_cc_blob_library.Blob('fooBlob', foo_blob, None)]
 
         source = generate_cc_blob_library.source_from_blobs(
-            blobs, 'path/to/header.h', 'pw::foo')
+            blobs, 'path/to/header.h', 'path/to/source.cc', 'pw::foo')
         expected_source = (f'{COMMON_SOURCE_START}'
                            '\n'
                            'namespace pw::foo {\n'
@@ -206,7 +206,7 @@ class TestSourceFromBlobs(unittest.TestCase):
         ]
 
         source = generate_cc_blob_library.source_from_blobs(
-            blobs, 'path/to/header.h')
+            blobs, 'path/to/header.h', 'path/to/source.cc')
         expected_source = (f'{COMMON_SOURCE_START}'
                            '\n'
                            '\n'
@@ -230,7 +230,7 @@ class TestSourceFromBlobs(unittest.TestCase):
         ]
 
         source = generate_cc_blob_library.source_from_blobs(
-            blobs, 'path/to/header.h')
+            blobs, 'path/to/header.h', 'path/to/source.cc')
         expected_source = (f'{COMMON_SOURCE_START}'
                            '\n'
                            '\n'

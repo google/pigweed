@@ -53,9 +53,9 @@ template("pw_cc_blob_library") {
   foreach(blob, invoker.blobs) {
     assert(defined(blob.symbol_name), "Each 'blob' requires a 'symbol_name'")
     assert(defined(blob.file_path), "Each 'blob' requires a 'file_path'")
-    blob.file_path = rebase_path(blob.file_path)
-    _blobs += [ blob ]
     _blob_files += [ blob.file_path ]
+    blob.file_path = rebase_path(blob.file_path, root_build_dir)
+    _blobs += [ blob ]
   }
 
   _out_dir = "$target_gen_dir/$target_name"
@@ -78,7 +78,6 @@ template("pw_cc_blob_library") {
       "--blob-file",
       rebase_path(_blob_json_file, root_build_dir),
       "--namespace=${invoker.namespace}",
-      "--header-include=${invoker.out_header}",
       "--out-header",
       rebase_path(_header, root_build_dir),
       "--out-source",
