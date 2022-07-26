@@ -149,9 +149,10 @@
 
 // PW_LOCKS_EXCLUDED()
 //
-// Documents the locks acquired in the body of the function. These locks
-// cannot be held when calling this function (as Pigweed's default locks are
-// non-reentrant).
+// Documents that the caller must not hold the given lock. This annotation is
+// often used to prevent deadlocks. Pigweed's mutex implementation is not
+// re-entrant, so a deadlock will occur if the function acquires the mutex a
+// second time.
 #if PW_HAVE_ATTRIBUTE(locks_excluded)
 #define PW_LOCKS_EXCLUDED(...) __attribute__((locks_excluded(__VA_ARGS__)))
 #else
