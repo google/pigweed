@@ -48,7 +48,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     void ApplyDualModeDefaults();
     void ApplyLEOnlyDefaults();
     void ApplyLegacyLEConfig();
-    void ApplyLEConfig();
+    void ApplyExtendedLEConfig();
     void ApplyAndroidVendorExtensionDefaults();
 
     void AddBREDRSupportedCommands();

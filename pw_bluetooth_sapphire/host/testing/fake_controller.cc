@@ -150,7 +150,7 @@ void FakeController::Settings::ApplyLegacyLEConfig() {
   SetBit(supported_commands + 26, hci_spec::SupportedCommand::kLESetScanEnable);
 }
 
-void FakeController::Settings::ApplyLEConfig() {
+void FakeController::Settings::ApplyExtendedLEConfig() {
   ApplyLEOnlyDefaults();
 
   SetBit(&le_features, hci_spec::LESupportedFeature::kLEExtendedAdvertising);

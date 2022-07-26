@@ -40,7 +40,7 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
                                           hci::DataBufferInfo(hci_spec::kMaxACLPayloadSize, 10));
 
     FakeController::Settings settings;
-    settings.ApplyLEConfig();
+    settings.ApplyExtendedLEConfig();
     this->test_device()->set_settings(settings);
 
     advertiser_ = std::unique_ptr<T>(CreateAdvertiserInternal());
