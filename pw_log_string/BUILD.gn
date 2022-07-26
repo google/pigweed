@@ -18,6 +18,7 @@ import("$dir_pw_build/error.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
 config("public_include_path") {
@@ -91,4 +92,7 @@ if (pw_log_string_HANDLER_BACKEND != "") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
 }

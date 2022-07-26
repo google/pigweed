@@ -18,6 +18,7 @@ import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/stm32cube/stm32cube.gni")
+import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
   # The build target that overrides the default configuration options for this
@@ -56,4 +57,7 @@ pw_source_set("pw_sys_io_stm32cube") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
 }

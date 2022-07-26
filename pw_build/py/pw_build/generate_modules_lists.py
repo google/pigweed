@@ -28,7 +28,7 @@ import os
 from pathlib import Path
 import sys
 import subprocess
-from typing import Iterator, List, Optional, Sequence, Tuple
+from typing import Iterator, Optional, Sequence
 
 _COPYRIGHT_NOTICE = '''\
 # Copyright 2022 The Pigweed Authors
@@ -98,24 +98,6 @@ def _module_list_warnings(root: Path, modules: Sequence[str]) -> Iterator[str]:
         yield ''
 
 
-# TODO(hepler): Add tests and docs targets to all modules.
-def _find_tests_and_docs(
-        root: Path, modules: Sequence[str]) -> Tuple[List[str], List[str]]:
-    """Lists "tests" and "docs" targets for modules that declare them."""
-    tests = []
-    docs = []
-
-    for module in modules:
-        build_gn_contents = root.joinpath(module, 'BUILD.gn').read_bytes()
-        if b'group("tests")' in build_gn_contents:
-            tests.append(f'"$dir_{module}:tests",')
-
-        if b'group("docs")' in build_gn_contents:
-            docs.append(f'"$dir_{module}:docs",')
-
-    return tests, docs
-
-
 def _generate_modules_gni(root: Path, prefix: Path,
                           modules: Sequence[str]) -> Iterator[str]:
     """Generates a .gni file with variables and lists for Pigweed modules."""
@@ -157,16 +139,20 @@ def _generate_modules_gni(root: Path, prefix: Path,
     yield ']'
     yield ''
 
-    tests, docs = _find_tests_and_docs(root, modules)
-
     yield f'# A list with all Pigweed module test groups. {_DO_NOT_SET}'
     yield 'pw_module_tests = ['
-    yield from tests
+
+    for module in modules:
+        yield f'"$dir_{module}:tests",'
+
     yield ']'
     yield ''
     yield f'# A list with all Pigweed modules docs groups. {_DO_NOT_SET}'
     yield 'pw_module_docs = ['
-    yield from docs
+
+    for module in modules:
+        yield f'"$dir_{module}:docs",'
+
     yield ']'
     yield ''
     yield '}'

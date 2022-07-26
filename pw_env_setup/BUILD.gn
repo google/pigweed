@@ -19,6 +19,7 @@ import("$dir_pw_build/python_dist.gni")
 import("$dir_pw_build/python_gn_args.gni")
 import("$dir_pw_build/python_venv.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
   inputs = [ "doc_resources/pw_env_setup_output.png" ]
@@ -186,4 +187,7 @@ if (pw_build_USE_NEW_PYTHON_BUILD) {
   pw_internal_pip_install("pip_install_pigweed_package") {
     packages = [ ":generate_pigweed_python_package" ]
   }
+}
+
+pw_test_group("tests") {
 }

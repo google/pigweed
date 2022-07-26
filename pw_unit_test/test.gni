@@ -283,6 +283,11 @@ template("pw_test_group") {
     _deps = []
   }
 
+  # Allow empty pw_test_groups with no tests or group_deps.
+  if (!defined(invoker.tests) && !defined(invoker.group_deps)) {
+    not_needed("*")
+  }
+
   _group_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
 
   if (_group_is_enabled) {

@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
@@ -23,4 +24,7 @@ pw_doc_group("docs") {
     "py/pw_presubmit/cli.py",
     "py/pw_presubmit/presubmit.py",
   ]
+}
+
+pw_test_group("tests") {
 }

@@ -15,8 +15,12 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
   inputs = [ "doc_resources/pw_watch_on_device_demo.gif" ]
   sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
 }

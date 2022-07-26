@@ -19,6 +19,7 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_unit_test/test.gni")
+import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
   include_dirs = [ "public" ]
@@ -51,4 +52,7 @@ pw_facade("pw_malloc") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
 }

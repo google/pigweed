@@ -442,6 +442,8 @@ To create a new Pigweed module, follow the below steps.
    - Declare tests in ``pw_test_group("tests")``
    - Declare docs in ``pw_docs_group("docs")``
 
+   Both ``tests`` and ``docs`` are required, even if the module is empty!
+
 6. Add Bazel build support in ``{pw_module_dir}/BUILD.bazel``
 
 7. Add CMake build support in ``{pw_module_dir}/CMakeLists.txt``

@@ -18,6 +18,7 @@ import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
   # Backend for the pw_arduino_init module.
@@ -50,4 +51,7 @@ if (pw_arduino_build_CORE_PATH != "") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
 }
