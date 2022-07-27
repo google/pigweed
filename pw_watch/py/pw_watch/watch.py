@@ -208,7 +208,11 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.restart_on_changes = restart
         self.fullscreen_enabled = fullscreen
         self.watch_app: Optional[WatchApp] = None
-        self._current_build: subprocess.Popen
+
+        # Initialize self._current_build to an empty subprocess.
+        self._current_build = subprocess.Popen('',
+                                               shell=True,
+                                               errors='replace')
 
         self._extra_ninja_args = [] if jobs is None else [f'-j{jobs}']
         if keep_going:
@@ -376,6 +380,12 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                            index, build_ninja)
                 return False
 
+            if not cmd.build_dir.joinpath('args.gn').exists():
+                _LOG.error(
+                    '%s %s does not exist; run GN or CMake in %s to generate '
+                    'it', index, build_ninja, cmd.build_dir)
+                return False
+
             _LOG.warning('%s %s does not exist; running gn gen %s', index,
                          build_ninja, cmd.build_dir)
             if not self._execute_command(['gn', 'gen', cmd.build_dir], env):
@@ -396,7 +406,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         if self.fullscreen_enabled:
             return self._execute_command_watch_app(command, env)
         print()
-        self._current_build = subprocess.Popen(command, env=env)
+        self._current_build = subprocess.Popen(command,
+                                               env=env,
+                                               errors='replace')
         returncode = self._current_build.wait()
         print()
         return returncode == 0
