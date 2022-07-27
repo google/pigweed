@@ -117,6 +117,18 @@ def main() -> int:
 
     # Command starts after the "--".
     command = args.command[1:]
+    # command[0] is the invoker.prog from gn and gn will escape
+    # the various spaces in the command which means when argparse
+    # gets the string argparse believes this as a single argument
+    # and cannot correctly break the string into a list that
+    # subprocess can handle.  By splitting the first element
+    # in the command list, if there is a space, all of the
+    # command[0] elements will be made into a list and if not
+    # then split won't do everything and the old behavior
+    # will continue.
+    front_command = command[0].split(' ')
+    del command[0]
+    command = front_command + command
     extra_kw_args = {}
 
     if args.args_file is not None:
