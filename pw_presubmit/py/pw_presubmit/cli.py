@@ -15,6 +15,7 @@
 
 import argparse
 import logging
+import os
 from pathlib import Path
 import re
 import shutil
@@ -128,7 +129,7 @@ def add_arguments(parser: argparse.ArgumentParser,
     parser.add_argument(
         '--package-root',
         type=Path,
-        help='Package root directory (default: <output directory>/packages)',
+        help='Package root directory (default: <env directory>/packages)',
     )
 
     exclusive = parser.add_mutually_exclusive_group()
@@ -196,7 +197,8 @@ def run(
         _OUTPUT_PATH_README.format(repo=root))
 
     if not package_root:
-        package_root = output_directory / 'packages'
+        package_root = Path(
+            os.environ['_PW_ACTUAL_ENVIRONMENT_ROOT']) / 'packages'
 
     _LOG.debug('Using environment at %s', output_directory)
 
