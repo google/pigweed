@@ -119,6 +119,10 @@ template("pw_executable") {
       public_deps += invoker.public_deps
     }
 
+    if (defined(pw_build_defaults.visibility) && !defined(visibility)) {
+      visibility = pw_build_defaults.visibility
+    }
+
     output_dir = _executable_output_dir
   }
 }

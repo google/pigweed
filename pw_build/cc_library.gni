@@ -102,6 +102,10 @@ template("pw_source_set") {
     if (defined(invoker.public_deps)) {
       public_deps += invoker.public_deps
     }
+
+    if (defined(pw_build_defaults.visibility) && !defined(visibility)) {
+      visibility = pw_build_defaults.visibility
+    }
   }
 }
 
@@ -171,6 +175,10 @@ template("pw_static_library") {
     }
     if (defined(invoker.public_deps)) {
       public_deps += invoker.public_deps
+    }
+
+    if (defined(pw_build_defaults.visibility) && !defined(visibility)) {
+      visibility = pw_build_defaults.visibility
     }
 
     output_dir = _library_output_dir
@@ -243,6 +251,10 @@ template("pw_shared_library") {
     }
     if (defined(invoker.public_deps)) {
       public_deps += invoker.public_deps
+    }
+
+    if (defined(pw_build_defaults.visibility) && !defined(visibility)) {
+      visibility = pw_build_defaults.visibility
     }
 
     output_dir = _library_output_dir

@@ -76,7 +76,10 @@ default arguments to each target, as defined in ``pw_build/default.gni``.
 Arguments may be added or removed globally using the ``default_configs``,
 ``default_public_deps``, and ``remove_default_configs`` build args.
 Additionally, arguments may be removed on a per-target basis with the
-``remove_configs`` and ``remove_public_deps`` variables.
+``remove_configs`` and ``remove_public_deps`` variables. These target types may
+also be set to have restricted visibility by default via
+``pw_build_DEFAULT_VISIBILITY`` for when projects want to selectively control
+which Pigweed libraries are used and where.
 
 The ``pw_executable`` template provides additional functionality around building
 complete binaries. As Pigweed is a collection of libraries, it does not know how
