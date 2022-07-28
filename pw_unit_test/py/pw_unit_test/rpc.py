@@ -13,6 +13,7 @@
 # the License.
 """Utilities for running unit tests over Pigweed RPC."""
 
+import enum
 import abc
 from dataclasses import dataclass
 import logging
@@ -57,6 +58,12 @@ class TestExpectation:
         return f'TestExpectation({str(self)})'
 
 
+class TestCaseResult(enum.IntEnum):
+    SUCCESS = unit_test_pb2.TestCaseResult.SUCCESS
+    FAILURE = unit_test_pb2.TestCaseResult.FAILURE
+    SKIPPED = unit_test_pb2.TestCaseResult.SKIPPED
+
+
 class EventHandler(abc.ABC):
     @abc.abstractmethod
     def run_all_tests_start(self):
@@ -71,7 +78,7 @@ class EventHandler(abc.ABC):
         """Called when a new test case is started."""
 
     @abc.abstractmethod
-    def test_case_end(self, test_case: TestCase, result: int):
+    def test_case_end(self, test_case: TestCase, result: TestCaseResult):
         """Called when a test case completes with its overall result."""
 
     @abc.abstractmethod
@@ -98,8 +105,8 @@ class LoggingEventHandler(EventHandler):
     def test_case_start(self, test_case: TestCase):
         _LOG.info('[ RUN      ] %s', test_case)
 
-    def test_case_end(self, test_case: TestCase, result: int):
-        if result == unit_test_pb2.TestCaseResult.SUCCESS:
+    def test_case_end(self, test_case: TestCase, result: TestCaseResult):
+        if result == TestCaseResult.SUCCESS:
             _LOG.info('[       OK ] %s', test_case)
         else:
             _LOG.info('[  FAILED  ] %s', test_case)
@@ -170,8 +177,8 @@ def run_tests(rpcs: pw_rpc.client.Services,
             elif response.HasField('test_case_start'):
                 event_handler.test_case_start(current_test_case)
             elif response.HasField('test_case_end'):
-                event_handler.test_case_end(current_test_case,
-                                            response.test_case_end)
+                result = TestCaseResult(response.test_case_end)
+                event_handler.test_case_end(current_test_case, result)
             elif response.HasField('test_case_disabled'):
                 event_handler.test_case_disabled(
                     _test_case(response.test_case_disabled))
