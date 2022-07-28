@@ -57,10 +57,6 @@ if (current_os != "mac" && current_os != "win") {
       ":linker_script",
     ]
     public_configs = [ ":public_include_path" ]
-    cflags = [
-      "-Wno-array-bounds",
-      "-Wno-stringop-overflow",
-    ]
     public = [ "public/pw_build_info/build_id.h" ]
     sources = [ "build_id.cc" ]
     deps = [

@@ -30,9 +30,6 @@ if((NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows") AND
       build_id.cc
     PRIVATE_DEPS
       pw_preprocessor
-    PRIVATE_COMPILE_OPTIONS
-      -Wno-array-bounds
-      -Wno-stringop-overflow
   )
 endif()
 
