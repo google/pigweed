@@ -66,56 +66,58 @@ class TestCaseResult(enum.IntEnum):
 
 class EventHandler(abc.ABC):
     @abc.abstractmethod
-    def run_all_tests_start(self):
+    def run_all_tests_start(self) -> None:
         """Called before all tests are run."""
 
     @abc.abstractmethod
-    def run_all_tests_end(self, passed_tests: int, failed_tests: int):
+    def run_all_tests_end(self, passed_tests: int, failed_tests: int) -> None:
         """Called after the test run is complete."""
 
     @abc.abstractmethod
-    def test_case_start(self, test_case: TestCase):
+    def test_case_start(self, test_case: TestCase) -> None:
         """Called when a new test case is started."""
 
     @abc.abstractmethod
-    def test_case_end(self, test_case: TestCase, result: TestCaseResult):
+    def test_case_end(self, test_case: TestCase,
+                      result: TestCaseResult) -> None:
         """Called when a test case completes with its overall result."""
 
     @abc.abstractmethod
-    def test_case_disabled(self, test_case: TestCase):
+    def test_case_disabled(self, test_case: TestCase) -> None:
         """Called when a disabled test case is encountered."""
 
     @abc.abstractmethod
     def test_case_expect(self, test_case: TestCase,
-                         expectation: TestExpectation):
+                         expectation: TestExpectation) -> None:
         """Called after each expect/assert statement within a test case."""
 
 
 class LoggingEventHandler(EventHandler):
     """Event handler that logs test events using Google Test format."""
-    def run_all_tests_start(self):
+    def run_all_tests_start(self) -> None:
         _LOG.info('[==========] Running all tests.')
 
-    def run_all_tests_end(self, passed_tests: int, failed_tests: int):
+    def run_all_tests_end(self, passed_tests: int, failed_tests: int) -> None:
         _LOG.info('[==========] Done running all tests.')
         _LOG.info('[  PASSED  ] %d test(s).', passed_tests)
         if failed_tests:
             _LOG.info('[  FAILED  ] %d test(s).', failed_tests)
 
-    def test_case_start(self, test_case: TestCase):
+    def test_case_start(self, test_case: TestCase) -> None:
         _LOG.info('[ RUN      ] %s', test_case)
 
-    def test_case_end(self, test_case: TestCase, result: TestCaseResult):
+    def test_case_end(self, test_case: TestCase,
+                      result: TestCaseResult) -> None:
         if result == TestCaseResult.SUCCESS:
             _LOG.info('[       OK ] %s', test_case)
         else:
             _LOG.info('[  FAILED  ] %s', test_case)
 
-    def test_case_disabled(self, test_case: TestCase):
+    def test_case_disabled(self, test_case: TestCase) -> None:
         _LOG.info('Skipping disabled test %s', test_case)
 
     def test_case_expect(self, test_case: TestCase,
-                         expectation: TestExpectation):
+                         expectation: TestExpectation) -> None:
         result = 'Success' if expectation.success else 'Failure'
         log = _LOG.info if expectation.success else _LOG.error
         log('%s:%d: %s', test_case.file_name, expectation.line_number, result)
