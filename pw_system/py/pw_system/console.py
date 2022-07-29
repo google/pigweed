@@ -16,7 +16,7 @@
 To start the console, provide a serial port as the --device argument and paths
 or globs for .proto files that define the RPC services to support:
 
-  python -m pw_hdlc.rpc_console --device /dev/ttyUSB0 sample.proto
+  python -m pw_system.console --device /dev/ttyUSB0 --proto-globs pw_rpc/echo.proto
 
 This starts an IPython console for communicating with the connected device. A
 few variables are predefined in the interactive console. These include:
@@ -29,7 +29,7 @@ few variables are predefined in the interactive console. These include:
 An example echo RPC command:
 
   rpcs.pw.rpc.EchoService.Echo(msg="hello!")
-"""
+"""  # pylint: disable=line-too-long
 
 import argparse
 import datetime

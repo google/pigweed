@@ -26,16 +26,17 @@ python pw_trace_tokenized/py/pw_trace_tokenized/get_trace.py -s localhost:33000
 # pylint: enable=line-too-long
 
 import argparse
-import logging
 import glob
+import logging
 from pathlib import Path
+import socket
 import sys
 from typing import Collection, Iterable, Iterator
+
 import serial  # type: ignore
 from pw_tokenizer import database
 from pw_trace import trace
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
-from pw_hdlc.rpc_console import SocketClientImpl
 from pw_trace_tokenized import trace_tokenized
 
 _LOG = logging.getLogger('pw_trace_tokenizer')
@@ -44,6 +45,27 @@ PW_RPC_MAX_PACKET_SIZE = 256
 SOCKET_SERVER = 'localhost'
 SOCKET_PORT = 33000
 MKFIFO_MODE = 0o666
+
+
+class SocketClientImpl:
+    def __init__(self, config: str):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        socket_server = ''
+        socket_port = 0
+
+        if config == 'default':
+            socket_server = SOCKET_SERVER
+            socket_port = SOCKET_PORT
+        else:
+            socket_server, socket_port_str = config.split(':')
+            socket_port = int(socket_port_str)
+        self.socket.connect((socket_server, socket_port))
+
+    def write(self, data: bytes):
+        self.socket.sendall(data)
+
+    def read(self, num_bytes: int = PW_RPC_MAX_PACKET_SIZE):
+        return self.socket.recv(num_bytes)
 
 
 def _expand_globs(globs: Iterable[str]) -> Iterator[Path]:

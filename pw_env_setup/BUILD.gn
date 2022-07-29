@@ -183,6 +183,31 @@ if (pw_build_USE_NEW_PYTHON_BUILD) {
     ]
   }
 
+  _hdlc_proto_rpc_tokenizer = [
+    "$dir_pw_hdlc/py",
+    "$dir_pw_protobuf_compiler/py",
+    "$dir_pw_rpc/py",
+    "$dir_pw_tokenizer/py",
+  ]
+
+  # Create a Python distributeable with just pw_hdlc, pw_protobuf_compiler,
+  # pw_rpc, pw_tokenizer and their dependencies.
+  pw_create_python_source_tree(
+      "generate_pigweed_python_package_with_only_hdlc_proto_rpc_tokenizer") {
+    packages = _hdlc_proto_rpc_tokenizer
+    public_deps = _hdlc_proto_rpc_tokenizer
+
+    generate_setup_cfg = {
+      common_config_file = "pypi_common_setup.cfg"
+      append_date_to_version = true
+    }
+    extra_files = [
+      "$dir_pigweed/LICENSE > LICENSE",
+      "$dir_pigweed/README.md > README.md",
+      "pypi_pyproject.toml > pyproject.toml",
+    ]
+  }
+
   # This pip installs the generate_pigweed_python_package
   pw_internal_pip_install("pip_install_pigweed_package") {
     packages = [ ":generate_pigweed_python_package" ]

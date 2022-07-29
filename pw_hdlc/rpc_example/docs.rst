@@ -52,14 +52,14 @@ replacing ``/dev/ttyACM0`` with the correct serial device for your board.
 
 .. code-block:: text
 
-  $ python -m pw_hdlc.rpc_console --device /dev/ttyACM0
+  $ python -m pw_system.console --device /dev/ttyACM0
 
   Console for interacting with pw_rpc over HDLC.
 
   To start the console, provide a serial port as the --device argument and paths
   or globs for .proto files that define the RPC services to support:
 
-    python -m pw_hdlc.rpc_console --device /dev/ttyUSB0 sample.proto
+    python -m pw_system.console --device /dev/ttyUSB0 --proto-globs pw_rpc/echo.proto
 
   This starts an IPython console for communicating with the connected device. A
   few variables are predefined in the interactive console. These include:
@@ -123,7 +123,7 @@ Run pw_rpc client (i.e. use echo.proto)
 
 .. code-block:: sh
 
-  python -m pw_hdlc.rpc_console path/to/echo.proto -s localhost:33000
+  python -m pw_system.console path/to/echo.proto -s localhost:33000
 
 Run pw_rpc server
 
