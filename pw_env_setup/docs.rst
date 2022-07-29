@@ -468,6 +468,9 @@ The following environment variables are set by env setup.
   all-caps version of the basename of the package file, without the extension.
   (E.g., "path/foo.json" becomes ``PW_FOO_CIPD_INSTALL_DIR``.)
 
+``PW_PACKAGE_ROOT``
+  Location that packages installed by ``pw package`` will be installed to.
+
 ``VIRTUAL_ENV``
   Path to Pigweed's virtualenv.
 
@@ -522,6 +525,7 @@ the GNI file specified in the environment config file.
     dir_cipd_pigweed = "<pigweed-root>/.environment/cipd/packages/pigweed"
     dir_cipd_luci = "<pigweed-root>/.environment/cipd/packages/luci"
     dir_virtual_env = "<pigweed-root>/.environment/pigweed-venv"
+    dir_pw_package_root = "<pigweed-root>/.environment/packages"
   }
 
 It's straightforward to use these variables.

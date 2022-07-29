@@ -625,18 +625,20 @@ Then use `set +x` to go back to normal.
 
         result = result_func()
 
+        pkg_dir = os.path.join(self._install_dir, 'packages')
+        self._env.set('PW_PACKAGE_ROOT', pkg_dir)
+
+        if not os.path.isdir(pkg_dir):
+            os.makedirs(pkg_dir)
+
         if not self._pw_packages:
             return result(_Result.Status.SKIPPED)
-
-        logdir = os.path.join(self._install_dir, 'packages')
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
 
         for pkg in self._pw_packages:
             print('installing {}'.format(pkg))
             cmd = ['pw', 'package', 'install', pkg]
 
-            log = os.path.join(logdir, '{}.log'.format(pkg))
+            log = os.path.join(pkg_dir, '{}.log'.format(pkg))
             try:
                 with open(log, 'w') as outs, self._env():
                     print(*cmd, file=outs)

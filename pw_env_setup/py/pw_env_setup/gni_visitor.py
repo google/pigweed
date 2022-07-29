@@ -80,6 +80,10 @@ class GNIVisitor(object):  # pylint: disable=useless-object-inheritance
             self._lines.append('  dir_virtual_env = "{}"'.format(
                 self._abspath_to_gn_path(set.value)))
 
+        if set.name == 'PW_PACKAGE_ROOT':
+            self._lines.append('  dir_pw_package_root = "{}"'.format(
+                self._abspath_to_gn_path(set.value)))
+
     def visit_clear(self, clear):
         pass
 
