@@ -565,6 +565,19 @@ def main() -> int:
     return format_paths_in_repo(**vars(arguments(git_paths=True).parse_args()))
 
 
+def _pigweed_upstream_main() -> int:
+    """Check and fix formatting for source files in upstream Pigweed.
+
+    Excludes third party sources.
+    """
+    args = arguments(git_paths=True).parse_args()
+
+    # Exclude paths with third party code from formatting.
+    args.exclude.append(re.compile('^third_party/fuchsia/repo/'))
+
+    return format_paths_in_repo(**vars(args))
+
+
 if __name__ == '__main__':
     try:
         # If pw_cli is available, use it to initialize logs.
