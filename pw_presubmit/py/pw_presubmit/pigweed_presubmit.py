@@ -546,6 +546,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bpackage-lock.json$',
     # Data files
     r'\.bin$',
+    r'\.csv$',
     r'\.elf$',
     r'\.gif$',
     r'\.jpg$',
