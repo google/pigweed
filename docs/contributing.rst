@@ -122,6 +122,30 @@ In the future we may support GitHub pull requests, but until that time we will
 close GitHub pull requests and ask that the changes be uploaded to Gerrit
 instead.
 
+Instructions for reviewers
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+#.  Get the `Gerrit Monitor extension
+    <https://chrome.google.com/webstore/detail/gerrit-monitor/leakcdjcdifiihdgalplgkghidmfafoh?hl=en>`_.
+#.  When added to the attention set for a change, respond within 1 business day:
+
+    * Review the change if possible, OR
+    * If you will not be able to review the change within 1 business day (e.g.
+      due to handling P0s), comment on the change stating so, and reassign to
+      another reviewer if possible.
+    * The response time expectation only applies to Googlers working full-time
+      on Pigweed.
+#. Remove yourself from the `attention set
+   <https://gerrit-review.googlesource.com/Documentation/user-attention-set.html>`_
+   for changes where another person (author or reviewer) must take action
+   before you can continue to review. You are encouraged, but not required, to
+   leave a comment when doing so, especially for changes by external
+   contributors who may not be familiar with our process.
+
+SLO
+^^^
+90% of changes on which a Googler working on Pigweed full-time is added to the
+attention set as a reviewer get triaged within 1 business day.
+
 Community Guidelines
 --------------------
 This project follows `Google's Open Source Community Guidelines
