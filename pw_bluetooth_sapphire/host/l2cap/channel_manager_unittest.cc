@@ -4,8 +4,6 @@
 
 #include "channel_manager.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
-
 #include <memory>
 #include <type_traits>
 
@@ -15,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/mock_acl_data_channel.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -2734,6 +2733,7 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
   requests[2].second(fitx::ok());
 }
 
+#ifndef NINSPECT
 TEST_F(ChannelManagerTest, InspectHierarchy) {
   inspect::Inspector inspector;
   chanmgr()->AttachInspect(inspector.GetRoot(), "l2cap");
@@ -2791,6 +2791,7 @@ TEST_F(ChannelManagerTest, InspectHierarchy) {
   // inspector must outlive ChannelManager
   chanmgr()->RemoveConnection(kTestHandle1);
 }
+#endif  // NINSPECT
 
 TEST_F(ChannelManagerTest,
        OutboundChannelWithFlushTimeoutInChannelParametersAndDelayedFlushTimeoutCallback) {

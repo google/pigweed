@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef NINSPECT
+
 #include "inspect_util.h"
 
 #include <lib/fpromise/single_threaded_executor.h>
@@ -19,3 +21,5 @@ inspect::Hierarchy ReadInspect(const inspect::Inspector& inspector) {
 }
 
 }  // namespace bt::testing
+
+#endif  // NINSPECT

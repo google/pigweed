@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "inspectable.h"
+#ifndef NINSPECT
 
-#include <lib/inspect/testing/cpp/inspect.h>
+#include "inspectable.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 
 namespace bt {
 
@@ -143,15 +145,14 @@ TEST(InspectableTest, MakeContainerOfToStringConvertFunction) {
   auto& root = inspector.GetRoot();
 
   std::array values = {StringValue{"fuchsia"}, StringValue{"purple"}, StringValue{"magenta"}};
-  StringInspectable inspectable(std::move(values), root.CreateString(kPropertyName, ""),
-                                MakeContainerOfToStringConvertFunction(
-                                    {.prologue = "👉", .delimiter = "🥺", .epilogue = "👈"}));
+  StringInspectable inspectable(
+      std::move(values), root.CreateString(kPropertyName, ""),
+      MakeContainerOfToStringConvertFunction({.prologue = "👉", .delimiter = "🥺", .epilogue = "👈"}));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
-  EXPECT_THAT(hierarchy.take_value(),
-              AllOf(NodeMatches(PropertyList(
-                  ElementsAre(StringIs(kPropertyName, "👉fuchsia🥺purple🥺magenta👈"))))));
+  EXPECT_THAT(hierarchy.take_value(), AllOf(NodeMatches(PropertyList(ElementsAre(
+                                          StringIs(kPropertyName, "👉fuchsia🥺purple🥺magenta👈"))))));
 }
 
 TEST(InspectableTest, InspectRealStringProperty) {
@@ -176,3 +177,5 @@ TEST(InspectableTest, InspectRealStringProperty) {
 }
 
 }  // namespace bt
+
+#endif  // NINSPECT

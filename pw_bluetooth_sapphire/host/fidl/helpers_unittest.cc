@@ -521,7 +521,6 @@ TEST(HelpersTest, PeerToFidlMandatoryFields) {
   // Required by PeerCache expiry functions.
   async::TestLoop dispatcher;
 
-  inspect::Inspector inspector;
   bt::gap::PeerCache cache;
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
@@ -562,7 +561,6 @@ TEST(HelpersTest, PeerToFidlOptionalFields) {
       );
   const std::vector kBrEdrServices = {bt::UUID(uint16_t{0x110a}), bt::UUID(uint16_t{0x110b})};
 
-  inspect::Inspector inspector;
   bt::gap::PeerCache cache;
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);

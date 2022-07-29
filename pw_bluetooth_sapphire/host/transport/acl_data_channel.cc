@@ -8,7 +8,6 @@
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
 #include <lib/fit/defer.h>
-#include <lib/sys/inspect/cpp/component.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
@@ -16,7 +15,6 @@
 #include <numeric>
 
 #include "lib/fit/function.h"
-#include "lib/inspect/cpp/vmo/types.h"
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"

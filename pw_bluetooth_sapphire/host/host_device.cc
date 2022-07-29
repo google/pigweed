@@ -4,10 +4,10 @@
 
 #include "host_device.h"
 
-#include <lib/inspect/cpp/inspect.h>
 #include <zircon/status.h>
 
 #include "host.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/device_wrapper.h"
 
@@ -61,7 +61,9 @@ zx_status_t HostDevice::Bind() {
       .version = DEVICE_ADD_ARGS_VERSION,
       .proto_id = ZX_PROTOCOL_BT_HOST,
       .flags = DEVICE_ADD_NON_BINDABLE,
+#ifndef NINSPECT
       .inspect_vmo = inspect_.DuplicateVmo().release(),
+#endif  // NINSPECT
   };
   status = DdkAdd("bt_host", args);
 

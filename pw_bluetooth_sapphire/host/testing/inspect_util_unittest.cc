@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef NINSPECT
+
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
 
 #include <gmock/gmock.h>
@@ -36,3 +38,5 @@ TEST(InspectUtil, NodeInPathDoesNotExist) {
 }
 
 }  // namespace bt::testing
+
+#endif  // NINSPECT

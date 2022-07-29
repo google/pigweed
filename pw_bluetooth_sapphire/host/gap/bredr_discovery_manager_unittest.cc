@@ -4,12 +4,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
@@ -1127,6 +1126,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   RunLoopUntilIdle();
 }
 
+#ifndef NINSPECT
 TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
   inspect::Inspector inspector;
   discovery_manager()->AttachInspect(inspector.GetRoot(), "bredr_discovery_manager");
@@ -1210,6 +1210,7 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
                    ->take_properties();
   EXPECT_THAT(properties, discovery_session_counted_matcher);
 }
+#endif  // NINSPECT
 
 TEST_F(BrEdrDiscoveryManagerTest, CommandChannelDestroyedBeforeDestructorDoesNotCrash) {
   size_t closed_cb_count = 0;

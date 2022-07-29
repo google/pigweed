@@ -105,7 +105,6 @@ class PairingStateTest : public TestBase {
   size_t auth_request_count() const { return auth_request_count_; }
 
  private:
-  inspect::Inspector inspector_;
   std::unique_ptr<PeerCache> peer_cache_;
   Peer* peer_;
   size_t auth_request_count_;

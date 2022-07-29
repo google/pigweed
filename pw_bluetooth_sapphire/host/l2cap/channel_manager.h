@@ -6,12 +6,12 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 
 #include <lib/async/dispatcher.h>
-#include <lib/sys/inspect/cpp/component.h>
 #include <zircon/compiler.h>
 
 #include <memory>
 #include <unordered_map>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"

@@ -9,13 +9,12 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
-#include <lib/sys/inspect/cpp/component.h>
 
 #include <atomic>
 #include <memory>
 #include <thread>
 
-#include "lib/inspect/cpp/vmo/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"

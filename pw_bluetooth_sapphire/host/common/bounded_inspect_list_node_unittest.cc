@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bounded_inspect_list_node.h"
+#ifndef NINSPECT
 
-#include <lib/inspect/testing/cpp/inspect.h>
+#include "bounded_inspect_list_node.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt {
@@ -64,3 +65,5 @@ TEST(BoundedInspectListNodeTest, ListEviction) {
 
 }  // namespace
 }  // namespace bt
+
+#endif  // NINSPECT

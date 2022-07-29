@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "windowed_inspect_numeric_property.h"
+#ifndef NINSPECT
 
-#include <lib/inspect/testing/cpp/inspect.h>
+#include "windowed_inspect_numeric_property.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt {
@@ -199,3 +200,5 @@ TEST_F(WindowedInspectNumericPropertyTest, AttachInspectRealIntProperty) {
 }  // namespace
 
 }  // namespace bt
+
+#endif  // NINSPECT

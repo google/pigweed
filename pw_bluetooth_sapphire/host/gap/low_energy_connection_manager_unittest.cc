@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 
 #include <lib/fit/function.h>
-#include <lib/inspect/testing/cpp/inspect.h>
 #include <zircon/assert.h>
 
 #include <cstddef>
@@ -44,6 +43,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt::gap {
@@ -3421,6 +3421,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
   }
 }
 
+#ifndef NINSPECT
 TEST_F(LowEnergyConnectionManagerTest, Inspect) {
   inspect::Inspector inspector;
   conn_mgr()->AttachInspect(inspector.GetRoot(), "low_energy_connection_manager");
@@ -3504,7 +3505,9 @@ TEST_F(LowEnergyConnectionManagerTest, Inspect) {
   // properties (they try to update the inspect VMO, which is deleted on inspector destruction).
   DeleteConnMgr();
 }
+#endif  // NINSPECT
 
+#ifndef NINSPECT
 TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
   inspect::Inspector inspector;
   conn_mgr()->AttachInspect(inspector.GetRoot(), "low_energy_connection_manager");
@@ -3555,6 +3558,7 @@ TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
   // properties (they try to update the inspect VMO, which is deleted on inspector destruction).
   DeleteConnMgr();
 }
+#endif  // NINSPECT
 
 TEST_F(LowEnergyConnectionManagerTest,
        RegisterRemoteInitiatedLinkWithAddressDifferentFromIdentityAddressDoesNotCrash) {

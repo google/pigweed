@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/defer.h>
-#include <lib/sys/inspect/cpp/component.h>
 
 #include <memory>
 #include <queue>

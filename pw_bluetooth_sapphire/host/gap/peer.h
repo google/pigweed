@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
 
 #include <lib/fit/defer.h>
-#include <lib/sys/inspect/cpp/component.h>
 
 #include <string>
 #include <type_traits>

@@ -8,12 +8,12 @@
 #include <lib/async/cpp/task.h>
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
-#include <lib/sys/inspect/cpp/component.h>
 
 #include <optional>
 #include <queue>
 
 #include "lib/zx/time.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 
 namespace bt {
 

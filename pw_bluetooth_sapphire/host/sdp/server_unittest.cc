@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
-
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -15,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 
 namespace bt::sdp {
 
@@ -1144,6 +1143,7 @@ TEST_F(ServerTest, MakeServiceDiscoveryServiceIsValid) {
   EXPECT_EQ(0x0100u, it->Get<uint16_t>());
 }
 
+#ifndef NINSPECT
 // Test:
 // - The inspect hierarchy for the initial server is valid. It should
 // only contain the registered PSM for SDP.
@@ -1172,7 +1172,9 @@ TEST_F(ServerTest, InspectHierarchy) {
   EXPECT_THAT(hierarchy.take_value(), AllOf(NodeMatches(NameMatches("root")),
                                             ChildrenMatch(UnorderedElementsAre(sdp_matcher))));
 }
+#endif  // NINSPECT
 
+#ifndef NINSPECT
 // Test:
 // - The inspect hierarchy is updated correctly after registering another service.
 // - The inspect hierarchy is updated correctly after unregistering a service.
@@ -1234,6 +1236,7 @@ TEST_F(ServerTest, InspectHierarchyAfterUnregisterService) {
               AllOf(NodeMatches(NameMatches("root")),
                     ChildrenMatch(UnorderedElementsAre(sdp_server_matcher2))));
 }
+#endif  // NINSPECT
 
 // Test:
 // Server::HandleRequest() provides expected responses when called without

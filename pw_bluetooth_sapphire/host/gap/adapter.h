@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/sys/inspect/cpp/component.h>
 #include <lib/zx/vmo.h>
 #include <zircon/assert.h>
 
@@ -15,6 +14,7 @@
 #include <string>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"

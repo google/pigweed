@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 #include <lib/async/cpp/task.h>
-#include <lib/inspect/testing/cpp/inspect.h>
 #include <zircon/assert.h>
 
 #include <unordered_map>
@@ -18,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -1338,6 +1338,7 @@ TEST_F(ACLDataChannelTest,
 
   EXPECT_EQ(2u, packet_count);
 
+#ifndef NINSPECT
   using namespace ::inspect::testing;
   auto adc_matcher = NodeMatches(
       PropertyList(AllOf(Contains(UintIs("num_overflow_packets", packet_count)),
@@ -1345,6 +1346,7 @@ TEST_F(ACLDataChannelTest,
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(adc_matcher)));
+#endif  // NINSPECT
 }
 
 TEST_F(ACLDataChannelTest,
@@ -1526,6 +1528,7 @@ TEST_F(ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts
   EXPECT_EQ(2u, packet_count);
 }
 
+#ifndef NINSPECT
 TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
@@ -1589,7 +1592,9 @@ TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(adc_matcher)));
 }
+#endif  // NINSPECT
 
+#ifndef NINSPECT
 TEST_F(ACLDataChannelTest, SendingPacketsUpdatesSendMetrics) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
@@ -1645,6 +1650,7 @@ TEST_F(ACLDataChannelTest, SendingPacketsUpdatesSendMetrics) {
   ASSERT_TRUE(send_size_median_wrapped);
   EXPECT_EQ(kMaxMtu, send_size_median_wrapped->value());
 }
+#endif  // NINSPECT
 
 }  // namespace
 }  // namespace bt::hci

@@ -6,14 +6,13 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_INSPECTABLE_H_
 
 #include <lib/fit/function.h>
-#include <lib/inspect/cpp/vmo/types.h>
-#include <lib/sys/inspect/cpp/component.h>
 #include <zircon/assert.h>
 
 #include <iterator>
 #include <string>
 #include <type_traits>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 
 namespace bt {

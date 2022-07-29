@@ -9,6 +9,7 @@ source_set("testing") {
 
   sources = [
     "controller_test.h",
+    "inspect.h",
     "inspect_util.cc",
     "inspect_util.h",
     "mock_controller.cc",

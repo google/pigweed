@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 
 #include <lib/async/cpp/task.h>
-#include <lib/inspect/testing/cpp/inspect.h>
 
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
@@ -14,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 
@@ -1868,6 +1868,7 @@ TEST_F(
   EXPECT_NE(0u, id);
 }
 
+#ifndef NINSPECT
 TEST_F(CommandChannelTest, InspectHierarchy) {
   cmd_channel()->AttachInspect(inspector_.GetRoot(), "command_channel");
 
@@ -1880,6 +1881,7 @@ TEST_F(CommandChannelTest, InspectHierarchy) {
   EXPECT_THAT(inspect::ReadFromVmo(inspector_.DuplicateVmo()).value(),
               ChildrenMatch(ElementsAre(command_channel_matcher)));
 }
+#endif  // NINSPECT
 
 }  // namespace
 }  // namespace bt::hci

@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 
 #include <lib/async/cpp/task.h>
-#include <lib/inspect/testing/cpp/inspect.h>
 #include <lib/zx/channel.h>
 
 #include <memory>
@@ -22,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 
 namespace bt::gap {
 namespace {
@@ -958,6 +958,7 @@ TEST_F(AdapterTest, IsDiscoverableBredr) {
   EXPECT_FALSE(adapter()->IsDiscoverable());
 }
 
+#ifndef NINSPECT
 TEST_F(AdapterTest, InspectHierarchy) {
   inspect::Inspector inspector;
   auto bt_host_node = inspector.GetRoot().CreateChild("bt-host");
@@ -1042,6 +1043,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
   EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root")),
                                ChildrenMatch(UnorderedElementsAre(bt_host_matcher))));
 }
+#endif  // NINSPECT
 
 TEST_F(AdapterTest, VendorFeatures) {
   FakeController::Settings settings;

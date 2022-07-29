@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -13,18 +11,21 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gap {
 namespace {
 
+#ifndef NINSPECT
 using namespace inspect::testing;
 using bt::testing::GetInspectValue;
 using bt::testing::ReadInspect;
 
 constexpr uint16_t kManufacturer = 0x0001;
 constexpr uint16_t kSubversion = 0x0002;
+#endif  // NINSPECT
 
 const StaticByteBuffer kAdvData(0x05,  // Length
                                 0x09,  // AD type: Complete Local Name
@@ -81,6 +82,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
   }
   Peer& peer() { return *peer_; }
 
+#ifndef NINSPECT
   inspect::Hierarchy ReadPeerInspect() { return ReadInspect(peer_inspector_); }
 
   std::string InspectLowEnergyConnectionState() {
@@ -140,6 +142,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
     ZX_ASSERT(val);
     return *val;
   }
+#endif  // NINSPECT
 
   void set_notify_listeners_cb(Peer::NotifyListenersCallback cb) {
     notify_listeners_cb_ = std::move(cb);
@@ -189,6 +192,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
 
 class PeerDeathTest : public PeerTest {};
 
+#ifndef NINSPECT
 TEST_F(PeerTest, InspectHierarchy) {
   peer().set_version(hci_spec::HCIVersion::k5_0, kManufacturer, kSubversion);
 
@@ -242,6 +246,7 @@ TEST_F(PeerTest, InspectHierarchy) {
   inspect::Hierarchy hierarchy = ReadPeerInspect();
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher))));
 }
+#endif  // NINSPECT
 
 TEST_F(PeerTest, BrEdrDataAddServiceNotifiesListeners) {
   // Initialize BrEdrData.
@@ -493,9 +498,11 @@ TEST_F(PeerTest, RegisterAndUnregisterTwoLowEnergyConnections) {
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
   EXPECT_EQ(MetricsLowEnergyConnections(), 1u);
+#endif  // NINSPECT
 
   std::optional<Peer::ConnectionToken> token_1 = peer().MutLe().RegisterConnection();
   // The second connection should not update expiry or notify.
@@ -503,30 +510,36 @@ TEST_F(PeerTest, RegisterAndUnregisterTwoLowEnergyConnections) {
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
   // Although the second connection does not change the high-level connection state, we track it in
   // metrics to support multiple connections to the same peer.
   EXPECT_EQ(MetricsLowEnergyConnections(), 2u);
   EXPECT_EQ(MetricsLowEnergyDisconnections(), 0u);
+#endif  // NINSPECT
 
   token_0.reset();
   EXPECT_EQ(update_expiry_count, 2);
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
   EXPECT_EQ(MetricsLowEnergyDisconnections(), 1u);
+#endif  // NINSPECT
 
   token_1.reset();
   EXPECT_EQ(update_expiry_count, 3);
   EXPECT_EQ(notify_count, 3);
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
   EXPECT_EQ(MetricsLowEnergyDisconnections(), 2u);
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterAndUnregisterLowEnergyConnectionsWhenIdentityKnown) {
@@ -537,8 +550,10 @@ TEST_F(PeerTest, RegisterAndUnregisterLowEnergyConnectionsWhenIdentityKnown) {
   // The peer's identity is known, so it should stay non-temporary upon disconnection.
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterAndUnregisterInitializingLowEnergyConnectionsWhenIdentityKnown) {
@@ -550,8 +565,10 @@ TEST_F(PeerTest, RegisterAndUnregisterInitializingLowEnergyConnectionsWhenIdenti
   // The peer's identity is known, so it should stay non-temporary upon disconnection.
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterAndUnregisterLowEnergyConnectionDuringInitializingConnection) {
@@ -570,32 +587,40 @@ TEST_F(PeerTest, RegisterAndUnregisterLowEnergyConnectionDuringInitializingConne
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   std::optional<Peer::ConnectionToken> conn_token = peer().MutLe().RegisterConnection();
   EXPECT_EQ(update_expiry_count, 3);
   EXPECT_EQ(notify_count, 3);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+#endif  // NINSPECT
 
   conn_token.reset();
   EXPECT_EQ(update_expiry_count, 4);
   EXPECT_EQ(notify_count, 4);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   init_token.reset();
   EXPECT_EQ(update_expiry_count, 5);
   EXPECT_EQ(notify_count, 5);
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterAndUnregisterInitializingLowEnergyConnectionDuringConnection) {
@@ -613,8 +638,10 @@ TEST_F(PeerTest, RegisterAndUnregisterInitializingLowEnergyConnectionDuringConne
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+#endif  // NINSPECT
 
   std::optional<Peer::InitializingConnectionToken> init_token =
       peer().MutLe().RegisterInitializingConnection();
@@ -624,24 +651,30 @@ TEST_F(PeerTest, RegisterAndUnregisterInitializingLowEnergyConnectionDuringConne
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+#endif  // NINSPECT
 
   init_token.reset();
   EXPECT_EQ(update_expiry_count, 2);
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+#endif  // NINSPECT
 
   conn_token.reset();
   EXPECT_EQ(update_expiry_count, 3);
   EXPECT_EQ(notify_count, 3);
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterAndUnregisterTwoLowEnergyInitializingConnections) {
@@ -660,8 +693,10 @@ TEST_F(PeerTest, RegisterAndUnregisterTwoLowEnergyInitializingConnections) {
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   std::optional<Peer::InitializingConnectionToken> token_1 =
       peer().MutLe().RegisterInitializingConnection();
@@ -670,24 +705,30 @@ TEST_F(PeerTest, RegisterAndUnregisterTwoLowEnergyInitializingConnections) {
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   token_0.reset();
   EXPECT_EQ(update_expiry_count, 2);
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
   token_1.reset();
   EXPECT_EQ(update_expiry_count, 3);
   EXPECT_EQ(notify_count, 3);
   // The peer's identity is not known, so it should become temporary upon disconnection.
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectLowEnergyConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, MovingLowEnergyConnectionTokenWorksAsExpected) {
@@ -734,8 +775,10 @@ TEST_F(PeerTest, SetValidAdvertisingData) {
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(kLocalName, peer().name().value());
   EXPECT_EQ(Peer::NameSource::kAdvertisingDataComplete, peer().name_source());
+#ifndef NINSPECT
   EXPECT_EQ(0, InspectAdvertisingDataParseFailureCount());
   EXPECT_EQ("", InspectLastAdvertisingDataParseFailure());
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, SetShortenedLocalName) {
@@ -755,9 +798,11 @@ TEST_F(PeerTest, SetShortenedLocalName) {
 TEST_F(PeerTest, SetInvalidAdvertisingData) {
   peer().MutLe().SetAdvertisingData(/*rssi=*/32, kInvalidAdvData, zx::time());
 
+#ifndef NINSPECT
   EXPECT_EQ(1, InspectAdvertisingDataParseFailureCount());
   EXPECT_EQ(AdvertisingData::ParseErrorToString(AdvertisingData::ParseError::kUuidsMalformed),
             InspectLastAdvertisingDataParseFailure());
+#endif  // NINSPECT
 }
 
 TEST_F(PeerDeathTest, RegisterTwoBrEdrConnectionsAsserts) {
@@ -777,8 +822,10 @@ TEST_F(PeerTest, RegisterAndUnregisterInitializingBrEdrConnectionLeavesPeerTempo
   token.reset();
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithoutBonding) {
@@ -796,8 +843,10 @@ TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithoutBonding) {
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+#endif  // NINSPECT
 
   conn_token.reset();
   EXPECT_EQ(update_expiry_count, 3);
@@ -805,8 +854,10 @@ TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithoutBonding) {
   // BR/EDR peers should become non-temporary after disconnecting if not bonded.
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithBonding) {
@@ -824,8 +875,10 @@ TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithBonding) {
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+#endif  // NINSPECT
 
   peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
   EXPECT_EQ(update_expiry_count, 2);
@@ -837,8 +890,10 @@ TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithBonding) {
   // Bonded BR/EDR peers should remain non-temporary after disconnecting.
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionDuringInitializingConnection) {
@@ -857,8 +912,10 @@ TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionDuringInitializingConnectio
   EXPECT_EQ(notify_count, 1);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   // The connection state should not change when registering a connection because the peer is still
   // initializing.
@@ -867,24 +924,30 @@ TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionDuringInitializingConnectio
   EXPECT_EQ(notify_count, 1);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   conn_token.reset();
   EXPECT_EQ(update_expiry_count, 2);
   EXPECT_EQ(notify_count, 1);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   init_token.reset();
   EXPECT_EQ(update_expiry_count, 3);
   EXPECT_EQ(notify_count, 1);
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, RegisterBrEdrConnectionDuringInitializingConnectionAndThenCompleteInitialization) {
@@ -903,8 +966,10 @@ TEST_F(PeerTest, RegisterBrEdrConnectionDuringInitializingConnectionAndThenCompl
   EXPECT_EQ(notify_count, 1);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   // The connection state should not change when registering a connection because the peer is still
   // initializing.
@@ -913,8 +978,10 @@ TEST_F(PeerTest, RegisterBrEdrConnectionDuringInitializingConnectionAndThenCompl
   EXPECT_EQ(notify_count, 1);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   // When initialization completes, the connection state should become kConnected.
   init_token.reset();
@@ -922,16 +989,20 @@ TEST_F(PeerTest, RegisterBrEdrConnectionDuringInitializingConnectionAndThenCompl
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+#endif  // NINSPECT
 
   conn_token.reset();
   EXPECT_EQ(update_expiry_count, 4);
   EXPECT_EQ(notify_count, 3);
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerDeathTest, RegisterInitializingBrEdrConnectionDuringConnectionAsserts) {
@@ -949,8 +1020,10 @@ TEST_F(PeerDeathTest, RegisterInitializingBrEdrConnectionDuringConnectionAsserts
   EXPECT_EQ(notify_count, 2);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kConnected);
+#ifndef NINSPECT
   EXPECT_EQ(InspectBrEdrConnectionState(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+#endif  // NINSPECT
 
   // Registering an initializing connection when the peer is already connected should assert.
   ASSERT_DEATH_IF_SUPPORTED(
@@ -975,10 +1048,12 @@ TEST_F(PeerTest, RegisterAndUnregisterTwoBrEdrInitializingConnections) {
   EXPECT_EQ(notify_count, 1);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   std::optional<std::string> inspect_conn_state = InspectBrEdrConnectionState();
   ASSERT_TRUE(inspect_conn_state);
   EXPECT_EQ(inspect_conn_state.value(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   std::optional<Peer::InitializingConnectionToken> token_1 =
       peer().MutBrEdr().RegisterInitializingConnection();
@@ -987,30 +1062,36 @@ TEST_F(PeerTest, RegisterAndUnregisterTwoBrEdrInitializingConnections) {
   EXPECT_EQ(notify_count, 1);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   inspect_conn_state = InspectBrEdrConnectionState();
   ASSERT_TRUE(inspect_conn_state);
   EXPECT_EQ(inspect_conn_state.value(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   token_0.reset();
   EXPECT_EQ(update_expiry_count, 2);
   EXPECT_EQ(notify_count, 1);
   EXPECT_FALSE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+#ifndef NINSPECT
   inspect_conn_state = InspectBrEdrConnectionState();
   ASSERT_TRUE(inspect_conn_state);
   EXPECT_EQ(inspect_conn_state.value(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+#endif  // NINSPECT
 
   token_1.reset();
   EXPECT_EQ(update_expiry_count, 3);
   EXPECT_EQ(notify_count, 1);
   EXPECT_TRUE(peer().temporary());
   EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+#ifndef NINSPECT
   inspect_conn_state = InspectBrEdrConnectionState();
   ASSERT_TRUE(inspect_conn_state);
   EXPECT_EQ(inspect_conn_state.value(),
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+#endif  // NINSPECT
 }
 
 TEST_F(PeerTest, SettingLeAdvertisingDataOfBondedPeerDoesNotUpdateName) {

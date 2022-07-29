@@ -5,9 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_UTIL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_UTIL_H_
 
-#include <lib/inspect/testing/cpp/inspect.h>
+#ifndef NINSPECT
 
 #include <gmock/gmock.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 
 namespace bt::testing {
 
@@ -43,5 +45,7 @@ std::optional<typename PropertyValue::value_type> GetInspectValue(
 }
 
 }  // namespace bt::testing
+
+#endif  // NINSPECT
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_UTIL_H_

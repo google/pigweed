@@ -9,7 +9,6 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>

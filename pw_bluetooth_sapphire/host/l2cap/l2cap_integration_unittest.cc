@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include <lib/async/cpp/task.h>
-#include <lib/inspect/testing/cpp/inspect.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -17,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
@@ -621,6 +621,7 @@ TEST_F(L2capIntegrationTest, RequestConnectionParameterUpdateAndReceiveResponse)
   accepted.reset();
 }
 
+#ifndef NINSPECT
 TEST_F(L2capIntegrationTest, InspectHierarchy) {
   inspect::Inspector inspector;
   l2cap()->AttachInspect(inspector.GetRoot(), ChannelManager::kInspectNodeName);
@@ -632,6 +633,7 @@ TEST_F(L2capIntegrationTest, InspectHierarchy) {
                                                NodeMatches(NameMatches("services")))));
   EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(l2cap_matcher))));
 }
+#endif  // NINSPECT
 
 TEST_F(L2capIntegrationTest, AddLEConnectionReturnsFixedChannels) {
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;

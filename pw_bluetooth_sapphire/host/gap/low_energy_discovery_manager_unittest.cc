@@ -4,7 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
 #include <zircon/assert.h>
 
 #include <unordered_set>
@@ -12,7 +11,6 @@
 
 #include <gmock/gmock.h>
 
-#include "lib/inspect/cpp/reader.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -23,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 
 namespace bt::gap {
 namespace {
@@ -92,6 +91,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   // Deletes |discovery_manager_|.
   void DeleteDiscoveryManager() { discovery_manager_ = nullptr; }
 
+#ifndef NINSPECT
   inspect::Hierarchy InspectHierarchy() const {
     return inspect::ReadFromVmo(inspector_.DuplicateVmo()).take_value();
   }
@@ -102,6 +102,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     ZX_ASSERT(children.size() == 1u);
     return children.front().node_ptr()->take_properties();
   }
+#endif  // NINSPECT
 
   PeerCache* peer_cache() { return &peer_cache_; }
 
@@ -1344,6 +1345,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable
   EXPECT_TRUE(peer->connectable());
 }
 
+#ifndef NINSPECT
 TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
   // Ensure node exists before testing properties.
   ASSERT_THAT(InspectHierarchy(), AllOf(ChildrenMatch(ElementsAre(NodeMatches(
@@ -1394,6 +1396,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
   RunLoopUntilIdle();
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({UintIs("failed_count", 1u)}));
 }
+#endif  // NINSPECT
 
 TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
   auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0);

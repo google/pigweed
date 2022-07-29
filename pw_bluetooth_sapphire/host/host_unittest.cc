@@ -4,11 +4,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/host.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
 #include <lib/zx/channel.h>
 
 #include <memory>
 
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bthost::testing {

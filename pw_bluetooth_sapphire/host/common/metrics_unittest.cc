@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef NINSPECT
+
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
-
 #include <gtest/gtest.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 
 namespace bt {
 namespace {
@@ -45,3 +47,5 @@ TEST(MetrictsTest, PropertyAddSubInt) {
 }  // namespace
 
 }  // namespace bt
+
+#endif  // NINSPECT

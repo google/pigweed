@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_REQUEST_H_
 
 #include <lib/fit/function.h>
-#include <lib/sys/inspect/cpp/component.h>
 
 #include "low_energy_connection_handle.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"

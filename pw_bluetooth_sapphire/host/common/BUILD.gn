@@ -19,10 +19,12 @@ source_set("common") {
     "device_class.h",
     "error.h",
     "expiring_set.h",
+    "fake_inspect.h",
     "host_error.cc",
     "host_error.h",
     "identifier.cc",
     "identifier.h",
+    "inspect.h",
     "inspectable.h",
     "log.cc",
     "log.h",
@@ -96,7 +98,7 @@ source_set("tests") {
 
   deps = [
     ":common",
-    "//sdk/lib/inspect/testing/cpp",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]

@@ -4,13 +4,12 @@
 
 #include "bredr_connection_request.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gap {
@@ -56,6 +55,7 @@ TEST(BrEdrConnectionRequestTests, CallbacksExecuted) {
   EXPECT_TRUE(callback_called);
 }
 
+#ifndef NINSPECT
 TEST(BrEdrConnectionRequestTests, Inspect) {
   // inspector must outlive request
   inspect::Inspector inspector;
@@ -73,6 +73,7 @@ TEST(BrEdrConnectionRequestTests, Inspect) {
                             BoolIs("has_incoming", true),
                             IntIs("first_create_connection_request_timestamp", -1))))))));
 }
+#endif  // NINSPECT
 
 using TestingBase = gtest::TestLoopFixture;
 class BrEdrConnectionRequestLoopTest : public TestingBase {

@@ -5,10 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BOUNDED_INSPECT_LIST_NODE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BOUNDED_INSPECT_LIST_NODE_H_
 
-#include <lib/sys/inspect/cpp/component.h>
+#include <zircon/assert.h>
 
 #include <cstddef>
 #include <queue>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 
 namespace bt {
 

@@ -84,7 +84,6 @@ static_library("gap") {
     "//src/lib/fxl",
     "//src/lib/uuid",
     "//zircon/system/ulib/fbl",
-    "//zircon/system/ulib/inspect",
     "//zircon/system/ulib/zx",
   ]
 
@@ -139,7 +138,6 @@ source_set("tests") {
   deps = [
     ":gap",
     ":testing",
-    "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",

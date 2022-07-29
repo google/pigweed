@@ -122,7 +122,7 @@ source_set("device_tests") {
 
   deps = [
     ":sources",
-    "//sdk/lib/inspect/testing/cpp",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]

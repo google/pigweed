@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_H_
 
 #include <lib/async/dispatcher.h>
-#include <lib/sys/inspect/cpp/component.h>
 
 #include "gap.h"
 #include "low_energy_connection_handle.h"

@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 
-#include <lib/inspect/testing/cpp/inspect.h>
-
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -22,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gap {
@@ -114,6 +113,7 @@ class PeerCacheTest : public ::gtest::TestLoopFixture {
   Peer* peer_;
 };
 
+#ifndef NINSPECT
 TEST_F(PeerCacheTest, InspectHierarchyContainsMetrics) {
   inspect::Inspector inspector;
   cache()->AttachInspect(inspector.GetRoot());
@@ -137,7 +137,9 @@ TEST_F(PeerCacheTest, InspectHierarchyContainsMetrics) {
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher))));
 }
+#endif  // NINSPECT
 
+#ifndef NINSPECT
 TEST_F(PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemovedPeers) {
   inspect::Inspector inspector;
   cache()->AttachInspect(inspector.GetRoot());
@@ -166,6 +168,7 @@ TEST_F(PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemoved
             ChildrenMatch(UnorderedElementsAre(peer1_matcher, metrics_matcher)));
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher1))));
 }
+#endif  // NINSPECT
 
 TEST_F(PeerCacheTest, LookUp) {
   StaticByteBuffer kAdvData0(0x05, 0x09, 'T', 'e', 's', 't');

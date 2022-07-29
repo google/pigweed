@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 
 #include <lib/async/time.h>
-#include <lib/inspect/testing/cpp/inspect.h>
 
 #include <gmock/gmock.h>
 
@@ -22,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
@@ -3760,6 +3760,7 @@ TEST_F(BrEdrConnectionManagerTest, IncomingRequestInitializesPeer) {
   ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kInitializing);
 }
 
+#ifndef NINSPECT
 TEST_F(BrEdrConnectionManagerTest, Inspect) {
   inspect::Inspector inspector;
   connmgr()->AttachInspect(inspector.GetRoot(), "bredr_connection_manager");
@@ -3866,6 +3867,7 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_disconnect_matcher)));
 }
+#endif  // NINSPECT
 
 TEST_F(BrEdrConnectionManagerTest, RoleChangeAfterInboundConnection) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));

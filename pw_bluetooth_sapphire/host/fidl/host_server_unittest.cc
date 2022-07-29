@@ -7,9 +7,9 @@
 #include <fuchsia/bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl_test_base.h>
-#include <lib/inspect/testing/cpp/inspect.h>
 #include <lib/zx/channel.h>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "adapter_test_fixture.h"
@@ -37,8 +37,6 @@ bool operator==(const PeerId& a, const PeerId& b) { return fidl::Equals(a, b); }
 
 namespace bthost {
 namespace {
-
-using namespace inspect::testing;
 
 // Limiting the de-scoped aliases here helps test cases be more specific about whether they're using
 // FIDL names or bt-host internal names.

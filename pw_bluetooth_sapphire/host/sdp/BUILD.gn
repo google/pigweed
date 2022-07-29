@@ -19,7 +19,6 @@ source_set("definitions") {
   ]
 
   public_deps = [
-    "//sdk/lib/sys/inspect/cpp",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/lib/uuid",
   ]
@@ -62,7 +61,6 @@ source_set("tests") {
 
   deps = [
     ":sdp",
-    "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
