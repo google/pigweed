@@ -114,7 +114,7 @@ class LogServiceTest : public ::testing::Test {
   multisink::MultiSink multisink_;
   RpcLogDrainMap drain_map_;
   std::array<std::byte, kMaxLogEntrySize> entry_encode_buffer_;
-  static constexpr size_t kMaxFilterRules = 3;
+  static constexpr size_t kMaxFilterRules = 4;
   std::array<Filter::Rule, kMaxFilterRules> rules1_;
   std::array<Filter::Rule, kMaxFilterRules> rules2_;
   std::array<Filter::Rule, kMaxFilterRules> rules3_;

@@ -38,7 +38,7 @@ class FilterServiceTest : public ::testing::Test {
 
  protected:
   FilterMap filter_map_;
-  static constexpr size_t kMaxFilterRules = 3;
+  static constexpr size_t kMaxFilterRules = 4;
   std::array<Filter::Rule, kMaxFilterRules> rules1_;
   std::array<Filter::Rule, kMaxFilterRules> rules2_;
   std::array<Filter::Rule, kMaxFilterRules> rules3_;
@@ -137,7 +137,7 @@ void VerifyRule(const Filter::Rule& rule, const Filter::Rule& expected_rule) {
 }
 
 TEST_F(FilterServiceTest, SetFilterRules) {
-  const std::array<Filter::Rule, 4> new_rules{{
+  const std::array<Filter::Rule, kMaxFilterRules> new_rules{{
       {
           .action = Filter::Rule::Action::kKeep,
           .level_greater_than_or_equal = log::FilterRule::Level::DEBUG_LEVEL,
@@ -175,8 +175,9 @@ TEST_F(FilterServiceTest, SetFilterRules) {
                          std::byte('R')},
       },
   }};
-  const Filter new_filter(filters_[0].id(),
-                          const_cast<std::array<Filter::Rule, 4>&>(new_rules));
+  const Filter new_filter(
+      filters_[0].id(),
+      const_cast<std::array<Filter::Rule, kMaxFilterRules>&>(new_rules));
 
   std::byte request_buffer[512];
   const auto request = EncodeFilterRequest(new_filter, request_buffer);
@@ -194,7 +195,7 @@ TEST_F(FilterServiceTest, SetFilterRules) {
 }
 
 TEST_F(FilterServiceTest, SetFilterRulesWhenUsedByDrain) {
-  const std::array<Filter::Rule, 4> new_filter_rules{{
+  const std::array<Filter::Rule, kMaxFilterRules> new_filter_rules{{
       {
           .action = Filter::Rule::Action::kKeep,
           .level_greater_than_or_equal = log::FilterRule::Level::CRITICAL_LEVEL,
@@ -238,7 +239,8 @@ TEST_F(FilterServiceTest, SetFilterRulesWhenUsedByDrain) {
   }};
   Filter& filter = filters_[0];
   const Filter new_filter(
-      filter.id(), const_cast<std::array<Filter::Rule, 4>&>(new_filter_rules));
+      filter.id(),
+      const_cast<std::array<Filter::Rule, kMaxFilterRules>&>(new_filter_rules));
 
   std::byte request_buffer[256];
   const auto request = EncodeFilterRequest(new_filter, request_buffer);
@@ -266,7 +268,7 @@ TEST_F(FilterServiceTest, SetFilterRulesWhenUsedByDrain) {
   }
 
   // A new request for logs with a new filter updates filter.
-  const std::array<Filter::Rule, 4> second_filter_rules{{
+  const std::array<Filter::Rule, kMaxFilterRules> second_filter_rules{{
       {
           .action = Filter::Rule::Action::kKeep,
           .level_greater_than_or_equal = log::FilterRule::Level::DEBUG_LEVEL,
@@ -298,7 +300,8 @@ TEST_F(FilterServiceTest, SetFilterRulesWhenUsedByDrain) {
   }};
   const Filter second_filter(
       filter.id(),
-      const_cast<std::array<Filter::Rule, 4>&>(second_filter_rules));
+      const_cast<std::array<Filter::Rule, kMaxFilterRules>&>(
+          second_filter_rules));
 
   std::memset(request_buffer, 0, sizeof(request_buffer));
   const auto second_filter_request =
