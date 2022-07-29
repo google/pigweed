@@ -2550,10 +2550,9 @@ void FakeController::OnVendorCommand(const PacketView<hci_spec::CommandHeader>& 
     case hci_android::kLEGetVendorCapabilities:
       OnAndroidLEGetVendorCapabilities();
       break;
-    case hci_android::kLEMultiAdvt: {
+    case hci_android::kLEMultiAdvt:
       OnAndroidLEMultiAdvt(command_packet);
       break;
-    }
     default:
       bt_log(WARN, "fake-hci", "received unhandled vendor command with opcode: %#.4x", opcode);
       RespondWithCommandComplete(opcode, hci_spec::StatusCode::kUnknownCommand);
