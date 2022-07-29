@@ -50,7 +50,7 @@ Status CaptureMainStack(
     thread_state = thread::ThreadState::Enum::INTERRUPT_HANDLER;
     PW_LOG_DEBUG("Thread state: INTERRUPT_HANDLER");
   } else {  // mode == ProcessorMode::kThreadMode
-    thread_name = kMainStackHandlerModeName;
+    thread_name = kMainStackThreadModeName;
     PW_LOG_DEBUG("Capturing thread info for Main Stack (Thread Mode)");
     thread_state = thread::ThreadState::Enum::RUNNING;
     PW_LOG_DEBUG("Thread state: RUNNING");
