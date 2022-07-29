@@ -107,7 +107,7 @@ void StaticMemoryInit(void) {
 //
 // This function runs immediately at boot because it is at index 1 of the
 // interrupt vector table.
-void pw_boot_Entry() {
+void pw_boot_Entry(void) {
   // Disable interrupts.
   //
   // Until pw_boot_PreStaticMemoryInit() has completed, depending on the
