@@ -20,6 +20,7 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_union.h"
+#include "pw_rpc/service_id.h"
 #include "pw_span/span.h"
 
 namespace pw::rpc {
@@ -38,9 +39,13 @@ class Service : public IntrusiveList<Service>::Item {
   Service& operator=(const Service&) = delete;
   Service& operator=(Service&&) = delete;
 
-  uint32_t id() const { return id_; }
+  ServiceId service_id() const { return internal::WrapServiceId(id_); }
 
  protected:
+  // Note: despite being non-`::internal` and non-`private`, this constructor
+  // is not considered part of pigweed's public API: calling it requires
+  // constructing `methods`, which must have a `.data()` accessor which returns
+  // a `const internal::MethodUnion*`.
   template <typename T, size_t kMethodCount>
   constexpr Service(uint32_t id, const std::array<T, kMethodCount>& methods)
       : id_(id),
@@ -55,6 +60,9 @@ class Service : public IntrusiveList<Service>::Item {
   }
 
   // For use by tests with only one method.
+  //
+  // Note: This constructor is not for direct use outside of pigweed, and
+  // is not considered part of the public API.
   template <typename T>
   constexpr Service(uint32_t id, const T& method)
       : id_(id), methods_(&method), method_size_(sizeof(T)), method_count_(1) {}

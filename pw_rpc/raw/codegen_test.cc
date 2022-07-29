@@ -198,7 +198,8 @@ namespace {
 
 TEST(RawCodegen, Server_CompilesProperly) {
   test::TestService service;
-  EXPECT_EQ(service.id(), internal::Hash("pw.rpc.test.TestService"));
+  EXPECT_EQ(internal::UnwrapServiceId(service.service_id()),
+            internal::Hash("pw.rpc.test.TestService"));
   EXPECT_STREQ(service.name(), "TestService");
 }
 

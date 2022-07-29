@@ -23,6 +23,7 @@
 #include "pw_log/log.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_rpc/service_id.h"
 
 namespace pw::rpc {
 namespace {
@@ -121,7 +122,7 @@ std::tuple<Service*, const internal::Method*> Server::FindMethod(
     const internal::Packet& packet) {
   // Packets always include service and method IDs.
   auto service = std::find_if(services_.begin(), services_.end(), [&](auto& s) {
-    return s.id() == packet.service_id();
+    return internal::UnwrapServiceId(s.service_id()) == packet.service_id();
   });
 
   if (service == services_.end()) {

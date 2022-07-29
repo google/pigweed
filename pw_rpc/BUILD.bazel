@@ -103,6 +103,7 @@ pw_cc_library(
         "public/pw_rpc/method_info.h",
         "public/pw_rpc/server.h",
         "public/pw_rpc/service.h",
+        "public/pw_rpc/service_id.h",
     ],
     includes = ["public"],
     deps = [

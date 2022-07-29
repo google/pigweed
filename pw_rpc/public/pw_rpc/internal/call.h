@@ -219,7 +219,7 @@ class Call : public IntrusiveList<Call>::Item {
       : Call(context.server(),
              context.call_id(),
              context.channel_id(),
-             context.service().id(),
+             UnwrapServiceId(context.service().service_id()),
              context.method().id(),
              type,
              kServerCall) {}

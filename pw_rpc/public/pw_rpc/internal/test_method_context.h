@@ -59,8 +59,10 @@ class InvocationContext {
   // responses is responses().max_size(). responses().back() is always the most
   // recent response, even if total_responses() > responses().max_size().
   auto responses() const {
-    return output().payloads(
-        method_type_, channel_.id(), service().id(), kMethodId);
+    return output().payloads(method_type_,
+                             channel_.id(),
+                             UnwrapServiceId(service().service_id()),
+                             kMethodId);
   }
 
   // True if the RPC has completed.
@@ -77,7 +79,7 @@ class InvocationContext {
     PW_ASSERT(server_
                   .ProcessPacket(Packet(PacketType::CLIENT_ERROR,
                                         channel_.id(),
-                                        service_.id(),
+                                        UnwrapServiceId(service_.service_id()),
                                         kMethodId,
                                         0,
                                         {},
@@ -115,7 +117,7 @@ class InvocationContext {
     PW_ASSERT(server_
                   .ProcessPacket(Packet(PacketType::CLIENT_STREAM,
                                         channel_.id(),
-                                        service_.id(),
+                                        UnwrapServiceId(service_.service_id()),
                                         kMethodId,
                                         0,
                                         payload)
@@ -130,7 +132,7 @@ class InvocationContext {
     PW_ASSERT(server_
                   .ProcessPacket(Packet(PacketType::CLIENT_STREAM_END,
                                         channel_.id(),
-                                        service_.id(),
+                                        UnwrapServiceId(service_.service_id()),
                                         kMethodId)
                                      .Encode(packet)
                                      .value(),

@@ -140,7 +140,7 @@ class NanopbInvocationContext
         kMethodInfo.serde().response(),
         MethodTraits<decltype(kMethod)>::kType,
         Base::channel_id(),
-        Base::service().id(),
+        internal::UnwrapServiceId(Base::service().service_id()),
         kMethodId);
   }
 

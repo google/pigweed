@@ -92,7 +92,7 @@ class Endpoint {
 
   void AbortCallsForService(const Service& service)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    AbortCalls(AbortIdType::kService, service.id());
+    AbortCalls(AbortIdType::kService, UnwrapServiceId(service.service_id()));
   }
 
  private:

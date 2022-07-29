@@ -19,6 +19,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/test_utils.h"
+#include "pw_rpc/service.h"
 #include "pw_rpc_pwpb_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 

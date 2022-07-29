@@ -143,6 +143,7 @@ def generate_package(file_descriptor_proto, proto_package: ProtoNode,
         '#include "pw_rpc/internal/service_client.h"',
         '#include "pw_rpc/method_type.h"',
         '#include "pw_rpc/service.h"',
+        '#include "pw_rpc/service_id.h"',
     ]
     include_lines += gen.includes(file_descriptor_proto.name)
 
@@ -193,6 +194,12 @@ def _generate_service_and_client(gen: CodeGenerator,
 
     with gen.indent():
         gen.line(f'{service.name()}() = delete;')
+        gen.line()
+
+        gen.line('static constexpr ::pw::rpc::ServiceId service_id() {')
+        with gen.indent():
+            gen.line('return ::pw::rpc::internal::WrapServiceId(kServiceId);')
+        gen.line('}')
         gen.line()
 
         _generate_service(gen, service)
