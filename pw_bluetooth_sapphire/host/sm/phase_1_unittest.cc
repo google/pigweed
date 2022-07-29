@@ -12,8 +12,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -31,7 +31,7 @@ struct Phase1Args {
   bool sc_supported = false;
 };
 
-class Phase1Test : public l2cap::testing::FakeChannelTest {
+class Phase1Test : public l2cap::testing::MockChannelTest {
  public:
   Phase1Test() = default;
   ~Phase1Test() override = default;
@@ -50,8 +50,8 @@ class Phase1Test : public l2cap::testing::FakeChannelTest {
     options.link_type = ll_type;
 
     listener_ = std::make_unique<FakeListener>();
-    fake_chan_ = CreateFakeChannel(options);
-    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_->GetWeakPtr());
+    fxl::WeakPtr<l2cap::testing::FakeChannel> fake_chan = CreateFakeChannel(options);
+    sm_chan_ = std::make_unique<PairingChannel>(fake_chan);
     auto complete_cb = [this](PairingFeatures features, PairingRequestParams preq,
                               PairingResponseParams pres) {
       feature_exchange_count_++;
@@ -75,7 +75,6 @@ class Phase1Test : public l2cap::testing::FakeChannelTest {
     }
   }
 
-  l2cap::testing::FakeChannel* fake_chan() const { return fake_chan_.get(); }
   Phase1* phase_1() { return phase_1_.get(); }
   FakeListener* listener() { return listener_.get(); }
 
@@ -86,7 +85,6 @@ class Phase1Test : public l2cap::testing::FakeChannelTest {
 
  private:
   std::unique_ptr<FakeListener> listener_;
-  std::unique_ptr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<Phase1> phase_1_;
 
@@ -107,10 +105,8 @@ TEST_F(Phase1Test, FeatureExchangeStartDefaultParams) {
                                   KeyDistGen::kEncKey,  // initiator keys
                                   KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
   );
-
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
 }
 
 TEST_F(Phase1Test, FeatureExchangeStartCustomParams) {
@@ -128,10 +124,8 @@ TEST_F(Phase1Test, FeatureExchangeStartCustomParams) {
                                   0x00,  // initiator keys: none - non-bondable mode
                                   0x00   // responder keys: none - non-bondable mode
   );
-
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
 }
 
 TEST_F(Phase1Test, FeatureExchangeInitiatorWithIdentityInfo) {
@@ -146,10 +140,8 @@ TEST_F(Phase1Test, FeatureExchangeInitiatorWithIdentityInfo) {
                                   KeyDistGen::kEncKey | KeyDistGen::kIdKey   // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
-
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
   EXPECT_EQ(1, listener()->identity_info_count());
 }
 
@@ -184,13 +176,14 @@ TEST_F(Phase1Test, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
   const StaticByteBuffer kFailure(0x05,  // code: Pairing Failed
                                   0x0A   // reason: Invalid Parameters
   );
-
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
 
   // We should receive a pairing response and reply back with Pairing Failed.
-  EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kInvalidParameters), listener()->last_error());
@@ -219,12 +212,16 @@ TEST_F(Phase1Test, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
                                   0x0A   // reason: Invalid Parameters
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   // We should receive a pairing response and reply back with Pairing Failed.
-  EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kInvalidParameters), listener()->last_error());
@@ -255,12 +252,15 @@ TEST_F(Phase1Test, FeatureExchangeFailureAuthenticationRequirements) {
                                   0x03   // reason: Authentication requirements
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   // We should receive a pairing response and reply back with Pairing Failed.
-  EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kAuthenticationRequirements), listener()->last_error());
@@ -281,7 +281,11 @@ TEST_F(Phase1Test, FeatureExchangeFailureMalformedRequest) {
                                   0x0A   // reason: Invalid Parameters
   );
 
-  EXPECT_TRUE(ReceiveAndExpect(kMalformedResponse, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kMalformedResponse);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kInvalidParameters), listener()->last_error());
 }
@@ -308,9 +312,9 @@ TEST_F(Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
                                    KeyDistGen::kEncKey  // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -348,9 +352,9 @@ TEST_F(Phase1Test, FeatureExchangeScIgnoresEncKeyBit) {
                                           KeyDistGen::kEncKey  // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -392,9 +396,9 @@ TEST_F(Phase1Test, FeatureExchangeLocalSCRemoteNoSCFeaturesNoSc) {
                                           KeyDistGen::kEncKey  // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -428,9 +432,9 @@ TEST_F(Phase1Test, FeatureExchangePairingResponseLegacyJustWorks) {
                                    KeyDistGen::kEncKey   // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -470,9 +474,9 @@ TEST_F(Phase1Test, FeatureExchangePairingResponseLegacyMITM) {
                                    KeyDistGen::kEncKey  // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -512,12 +516,14 @@ TEST_F(Phase1Test, FeatureExchangeEncryptionKeySize) {
                                   0x06   // reason: Encryption Key Size
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
-  // We should receive a pairing response and reply back with Pairing Failed.
-  EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, feature_exchange_count());
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -549,13 +555,16 @@ TEST_F(Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
   );
   const StaticByteBuffer kFailure(kPairingFailed, ErrorCode::kEncryptionKeySize);
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   // We should receive a pairing response and reply back with Pairing Failed; we enforce that all
   // encryption keys are 16 bytes when `level` is set to SecureAuthenticated.
-  EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, feature_exchange_count());
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -586,13 +595,16 @@ TEST_F(Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
   );
   const auto kFailure = StaticByteBuffer(kPairingFailed, ErrorCode::kAuthenticationRequirements);
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   // We should receive a pairing response and reply back with Pairing Failed; we enforce that
   // Secure Connections is used when `level` is set to SecureAuthenticated.
-  EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, feature_exchange_count());
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -620,9 +632,9 @@ TEST_F(Phase1Test, FeatureExchangeBothSupportScLinkKeyAndCt2GenerateH7CtKey) {
                                           KeyDistGen::kLinkKey   // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -652,9 +664,9 @@ TEST_F(Phase1Test, FeatureExchangePeerDoesntSupportCt2GenerateH6CtKey) {
                                    KeyDistGen::kLinkKey   // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -683,9 +695,9 @@ TEST_F(Phase1Test, FeatureExchangePeerDoesntSupportScDoNotGenerateCtKey) {
                                    KeyDistGen::kEncKey   // responder keys
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -716,9 +728,9 @@ TEST_F(Phase1Test, FeatureExchangePeerSupportsCt2ButNotLinkKeyDoNotGenerateCtKey
                                    0x00   // responder keys - none
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -749,9 +761,9 @@ TEST_F(Phase1Test, FeatureExchangePeerOnlyIndicatesOneLinkKeyDoNotGenerateCtKey)
                                    0x00                   // responder keys - none
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -773,7 +785,10 @@ TEST_F(Phase1Test, FeatureExchangeResponderErrorCentral) {
                                   ErrorCode::kUnspecifiedReason);
 
   NewPhase1(Role::kInitiator);
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kRequest);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -792,7 +807,10 @@ TEST_F(Phase1Test, Phase1ResponderRejectsPairingRequest) {
                                   ErrorCode::kUnspecifiedReason);
 
   NewPhase1(Role::kResponder);
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kRequest);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -816,9 +834,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderBothSupportSCFeaturesHaveSC) {
                       },
                   .sc_supported = true};
   NewPhase1(Role::kResponder, args);
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   RunLoopUntilIdle();
 
@@ -849,9 +867,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
                       },
                   .sc_supported = true};
   NewPhase1(Role::kResponder, args);
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   RunLoopUntilIdle();
 
@@ -882,8 +900,9 @@ TEST_F(Phase1Test, FeatureExchangeLocalResponderDoesNotRequestUnsupportedKeys) {
   );
 
   NewPhase1(Role::kResponder, phase_args);
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, feature_exchange_count());
   EXPECT_FALSE(features().initiator);
@@ -910,8 +929,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderDistributesIdKey) {
 
   NewPhase1(Role::kResponder, phase_args);
   listener()->set_identity_info(IdentityInfo());
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, feature_exchange_count());
   EXPECT_FALSE(features().initiator);
@@ -942,8 +962,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderRespectsInitiatorForIdKey) {
 
   NewPhase1(Role::kResponder, phase_args);
   listener()->set_identity_info(IdentityInfo());
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, feature_exchange_count());
   EXPECT_FALSE(features().initiator);
@@ -971,8 +992,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderFailedAuthenticationRequirements) {
                                .io_capability = IOCapability::kNoInputNoOutput};
   NewPhase1(Role::kResponder, phase_args);
 
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kAuthenticationRequirements), listener()->last_error());
 }
@@ -1000,8 +1022,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderJustWorks) {
                                .io_capability = IOCapability::kNoInputNoOutput};
 
   NewPhase1(Role::kResponder, phase_args);
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -1045,8 +1068,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderRequestInitiatorEncKey) {
                                .io_capability = IOCapability::kNoInputNoOutput};
 
   NewPhase1(Role::kResponder, phase_args);
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -1084,9 +1108,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderSendsOnlyRequestedKeys) {
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
                                .io_capability = IOCapability::kNoInputNoOutput};
   NewPhase1(Role::kResponder, phase_args);
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
   ASSERT_EQ(1, feature_exchange_count());
 }
 
@@ -1113,8 +1137,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderMITM) {
                                .io_capability = IOCapability::kDisplayYesNo};
   NewPhase1(Role::kResponder, phase_args);
 
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -1164,8 +1189,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderRespectsDesiredLevel) {
                                .sc_supported = true};
 
   NewPhase1(Role::kResponder, phase_args);
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -1196,11 +1222,12 @@ TEST_F(Phase1Test, FeatureExchangeResponderRejectsMethodOfInsufficientSecurity) 
                                .sc_supported = true};
 
   NewPhase1(Role::kResponder, phase_args);
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   // Both devices have DisplayYesNo IOCap, but the initiator does not support Secure Connections so
   // Numeric Comparison cannot be used. Neither device has a keyboard, so Passkey Entry cannot be
   // used. Thus authenticated pairing, the desired level, cannot be met and we fail.
-  ASSERT_TRUE(Expect(kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kAuthenticationRequirements), listener()->last_error());
@@ -1223,10 +1250,11 @@ TEST_F(Phase1Test, FeatureExchangeResponderSecureAuthenticatedInitiatorNoInputNo
                                .level = SecurityLevel::kSecureAuthenticated,
                                .sc_supported = true};
   NewPhase1(Role::kResponder, phase_args);
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
 
   // Cannot perform SecureAuthenticated pairing with the peer's NoInputNoOutput IOCapabilities.
-  ASSERT_TRUE(Expect(kFailure));
+  EXPECT_PACKET_OUT(kFailure);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kAuthenticationRequirements), listener()->last_error());
@@ -1257,31 +1285,58 @@ TEST_F(Phase1Test, FeatureExchangeResponderDoesntSupportScDoNotGenerateCtKey) {
   auto phase_args =
       Phase1Args{.preq = reader.payload<PairingRequestParams>(), .sc_supported = false};
   NewPhase1(Role::kResponder, phase_args);
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  EXPECT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, feature_exchange_count());
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
 
 TEST_F(Phase1Test, UnsupportedCommandDuringPairing) {
+  const StaticByteBuffer kRequest(0x01,  // code: "Pairing Request"
+                                  0x03,  // IO cap.: NoInputNoOutput
+                                  0x00,  // OOB: not present
+                                  AuthReq::kBondingFlag | AuthReq::kCT2,
+                                  0x10,                 // encr. key size: 16 (default max)
+                                  KeyDistGen::kEncKey,  // initiator keys
+                                  KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  );
+  EXPECT_PACKET_OUT(kRequest);
   phase_1()->Start();
 
-  const StaticByteBuffer kExpected(0x05,  // code: Pairing Failed
-                                   0x07   // reason: Command Not Supported
+  const StaticByteBuffer kFailed(0x05,  // code: Pairing Failed
+                                 0x07   // reason: Command Not Supported
   );
-  ReceiveAndExpect(StaticByteBuffer(0xFF), kExpected);
+  EXPECT_PACKET_OUT(kFailed);
+  fake_chan()->Receive(StaticByteBuffer(0xFF));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kCommandNotSupported), listener()->last_error());
 }
 
 TEST_F(Phase1Test, OnSecurityRequestWhilePairing) {
+  const StaticByteBuffer kPairingRequest(0x01,  // code: "Pairing Request"
+                                         0x03,  // IO cap.: NoInputNoOutput
+                                         0x00,  // OOB: not present
+                                         AuthReq::kBondingFlag | AuthReq::kCT2,
+                                         0x10,                 // encr. key size: 16 (default max)
+                                         KeyDistGen::kEncKey,  // initiator keys
+                                         KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  );
+  EXPECT_PACKET_OUT(kPairingRequest);
   phase_1()->Start();
 
   const StaticByteBuffer kSecurityRequest(0x0B,  // code: Security Request
                                           0x00   // auth_req
   );
 
+  const StaticByteBuffer kFailed(0x05,  // code: Pairing Failed
+                                 0x08   // reason: unspecified reason
+  );
+  EXPECT_PACKET_OUT(kFailed);
   fake_chan()->Receive(kSecurityRequest);
   RunLoopUntilIdle();
 
@@ -1309,9 +1364,9 @@ TEST_F(Phase1Test, FeatureExchangeInitiatorReqBondResNoBond) {
                                           0x00   // responder keys: none due to non-bondable mode
   );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -1344,9 +1399,9 @@ TEST_F(Phase1Test, FeatureExchangeInitiatorReqNoBondResBond) {
                        0x00   // responder keys: none - should not change request field
       );
 
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kRequest));
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
   RunLoopUntilIdle();
@@ -1382,9 +1437,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderReqBondResNoBond) {
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
                                .bondable_mode = BondableMode::NonBondable};
   NewPhase1(Role::kResponder, phase_args);
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   // Should be in non-bondable mode even though the peer requested bondable, as the Bearer was
   // created in non-bondable mode.
@@ -1419,9 +1474,9 @@ TEST_F(Phase1Test, FeatureExchangeResponderReqNoBondResNoBond) {
       .bondable_mode = BondableMode::Bondable,  // local mode is bondable, although peer is not
   };
   NewPhase1(Role::kResponder, phase_args);
-  // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
-  ASSERT_TRUE(Expect(kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
 
   // Should be in non-bondable mode even though Bearer was created in bondable mode as
   // kRequest indicated that peer does not support bonding.
@@ -1444,7 +1499,11 @@ TEST_F(Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
   auto reader = PacketReader(&kRequest);
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>()};
   NewPhase1(Role::kResponder, phase_args);
-  // Initiate the request in a loop task for Expect to detect it.
+
+  const StaticByteBuffer kFailed(0x05,  // code: Pairing Failed
+                                 0x0A   // reason: invalid parameters
+  );
+  EXPECT_PACKET_OUT(kFailed);
   phase_1()->Start();
   RunLoopUntilIdle();
 

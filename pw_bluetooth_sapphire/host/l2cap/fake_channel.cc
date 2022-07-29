@@ -35,8 +35,6 @@ void FakeChannel::Receive(const ByteBuffer& data) {
 }
 
 void FakeChannel::SetSendCallback(SendCallback callback, async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
-
   send_cb_ = std::move(callback);
   send_dispatcher_ = dispatcher;
 }
@@ -103,9 +101,13 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
     return false;
   }
 
-  ZX_DEBUG_ASSERT(send_dispatcher_);
-  async::PostTask(send_dispatcher_,
-                  [cb = send_cb_.share(), sdu = std::move(sdu)]() mutable { cb(std::move(sdu)); });
+  if (send_dispatcher_) {
+    async::PostTask(send_dispatcher_, [cb = send_cb_.share(), sdu = std::move(sdu)]() mutable {
+      cb(std::move(sdu));
+    });
+  } else {
+    send_cb_(std::move(sdu));
+  }
 
   return true;
 }

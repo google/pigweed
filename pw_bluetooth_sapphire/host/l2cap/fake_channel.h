@@ -33,6 +33,7 @@ class FakeChannel : public Channel {
   void Receive(const ByteBuffer& data);
 
   // Sets a delegate to notify when a frame was sent over the channel.
+  // If |dispatcher| is nullptr, |callback| will be called synchronously.
   using SendCallback = fit::function<void(ByteBufferPtr)>;
   void SetSendCallback(SendCallback callback, async_dispatcher_t* dispatcher);
 

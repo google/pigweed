@@ -97,6 +97,8 @@ source_set("testing") {
     "fake_l2cap.h",
     "fake_signaling_channel.cc",
     "fake_signaling_channel.h",
+    "mock_channel_test.cc",
+    "mock_channel_test.h",
     "test_packets.cc",
     "test_packets.h",
   ]
