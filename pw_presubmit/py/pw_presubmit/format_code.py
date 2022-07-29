@@ -353,12 +353,19 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = (
 )
 
 
-def presubmit_check(code_format: CodeFormat,
-                    file_filter: FileFilter = None) -> Callable:
-    """Creates a presubmit check function from a CodeFormat object."""
+def presubmit_check(
+    code_format: CodeFormat,
+    *,
+    exclude: Collection[Union[str, Pattern[str]]] = ()) -> Callable:
+    """Creates a presubmit check function from a CodeFormat object.
 
-    if file_filter is None:
-        file_filter = code_format.filter
+    Args:
+      exclude: Additional exclusion regexes to apply.
+    """
+
+    # Make a copy of the FileFilter and add in any additional excludes.
+    file_filter = FileFilter(**vars(code_format.filter))
+    file_filter.exclude += tuple(re.compile(e) for e in exclude)
 
     @pw_presubmit.filter_paths(file_filter=file_filter)
     def check_code_format(ctx: pw_presubmit.PresubmitContext):
@@ -377,23 +384,16 @@ def presubmit_check(code_format: CodeFormat,
     return check_code_format
 
 
-def presubmit_checks(exclude: Collection[Union[str, Pattern]] = (),
-                     endswith: Collection[str] = (),
-                     file_filter: FileFilter = None) -> Tuple[Callable, ...]:
-    """Returns a tuple with all supported code format presubmit checks."""
+def presubmit_checks(
+    *, exclude: Collection[Union[str,
+                                 Pattern[str]]] = ()) -> Tuple[Callable, ...]:
+    """Returns a tuple with all supported code format presubmit checks.
 
-    # TODO(b/23842636): Remove these argumes and use FileFilter only.
-    if exclude or endswith:
+    Args:
+      exclude: Additional exclusion regexes to apply.
+    """
 
-        if file_filter:
-            raise ValueError('Must specify either file_filter or '
-                             'endswith/exclude args, not both')
-
-        filter_exclude = tuple(re.compile(end)
-                               for end in endswith) if endswith else ()
-        file_filter = FileFilter(exclude=filter_exclude, endswith=endswith)
-
-    return tuple(presubmit_check(fmt, file_filter) for fmt in CODE_FORMATS)
+    return tuple(presubmit_check(fmt, exclude=exclude) for fmt in CODE_FORMATS)
 
 
 class CodeFormatter:

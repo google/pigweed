@@ -40,7 +40,7 @@ class TestFileFilter(unittest.TestCase):
                                  name=('foo', )), '/a/b/c/foo', True),
         TestData(
             presubmit.FileFilter(exclude=(re.compile('a+'), re.compile('b+'))),
-            'cccc', False),
+            'cccc', True),
         TestData(presubmit.FileFilter(name=('foo', )), 'foo', True),
         TestData(presubmit.FileFilter(name=('foo', )), 'food', False),
         TestData(presubmit.FileFilter(name=(re.compile('foo'), )), 'foo',

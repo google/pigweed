@@ -199,21 +199,27 @@ class PresubmitContext:
 
 
 class FileFilter:
-    """Store a description file paths and allow checking if a path matches."""
+    """Allows checking if a path matches a series of filters.
+
+    Positive filters (e.g. the file name matches a regex) and negative filters
+    (path does not match a regular expression) may be applied.
+    """
 
     _StrOrPattern = Union[Pattern, str]
 
     def __init__(
         self,
-        endswith: Collection[str] = (),
-        exclude: Collection[_StrOrPattern] = (),
-        name: Collection[_StrOrPattern] = (),
-        suffix: Collection[str] = ()
+        *,
+        exclude: Iterable[_StrOrPattern] = (),
+        endswith: Iterable[str] = (),
+        name: Iterable[_StrOrPattern] = (),
+        suffix: Iterable[str] = ()
     ) -> None:
-        """
+        """Creates a FileFilter with the provided filters.
+
         Args:
-            endswidth: True if the end of the path is equal to any of the passed
-                       strings
+            endswith: True if the end of the path is equal to any of the passed
+                      strings
             exclude: If any of the passed regular expresion match return False.
                      This overrides and other matches.
             name: Regexs to match with file names(pathlib.Path.name). True if
@@ -221,13 +227,17 @@ class FileFilter:
             suffix: True if final suffix (as determined by pathlib.Path) is
                     matched by any of the passed str.
         """
-        self.endswith = endswith
         self.exclude = tuple(re.compile(i) for i in exclude)
+
+        self.endswith = tuple(endswith)
         self.name = tuple(re.compile(i) for i in name)
-        self.suffix = suffix
+        self.suffix = tuple(suffix)
 
     def matches(self, path: Union[str, Path]) -> bool:
-        """Returns true if file matches any filter but not a exclude.
+        """Returns true if the path matches any filter but not an exclude.
+
+        If no positive filters are specified, any paths that do not match a
+        negative filter are considered to match.
 
         If 'path' is a Path object it is rendered as a posix path (i.e.
         using "/" as the path seperator) before testing with 'exclude' and
@@ -238,8 +248,11 @@ class FileFilter:
         if any(bool(exp.search(posix_path)) for exp in self.exclude):
             return False
 
+        # If there are no positive filters set, accept all paths.
+        no_filters = not self.endswith and not self.name and not self.suffix
+
         path_obj = Path(path)
-        return (path_obj.suffix in self.suffix
+        return (no_filters or path_obj.suffix in self.suffix
                 or any(regex.fullmatch(path_obj.name) for regex in self.name)
                 or any(posix_path.endswith(end) for end in self.endswith))
 
@@ -535,7 +548,7 @@ class Check:
     def __init__(self,
                  check_function: Callable,
                  path_filter: FileFilter = FileFilter(),
-                 always_run: bool = True):
+                 always_run: bool = True) -> None:
         _ensure_is_valid_presubmit_check_function(check_function)
 
         self._check: Callable = check_function
@@ -548,16 +561,11 @@ class Check:
     def with_filter(
         self,
         *,
-        endswith: Sequence[str] = (),
-        exclude: Sequence[Union[Pattern[str], str]] = ()
+        endswith: Iterable[str] = (),
+        exclude: Iterable[Union[Pattern[str], str]] = ()
     ) -> Check:
-
-        filter_endswith = _make_str_tuple(endswith)
-
-        filter_exclude = tuple(re.compile(e) for e in exclude)
-
         return self.with_file_filter(
-            FileFilter(endswith=filter_endswith, exclude=filter_exclude))
+            FileFilter(endswith=_make_str_tuple(endswith), exclude=exclude))
 
     def with_file_filter(self, file_filter: FileFilter) -> Check:
         return Check(check_function=self._check,
@@ -667,9 +675,9 @@ def filter_paths(*,
             raise ValueError('Must specify either file_filter or '
                              'endswith/exclude args, not both')
     else:
-        # TODO(b/23842636): Remove these argumes and use FileFilter only.
-        real_file_filter = FileFilter(_make_str_tuple(endswith),
-                                      tuple(re.compile(e) for e in exclude))
+        # TODO(b/238426363): Remove these arguments and use FileFilter only.
+        real_file_filter = FileFilter(endswith=_make_str_tuple(endswith),
+                                      exclude=exclude)
 
     def filter_paths_for_function(function: Callable):
         return Check(function, real_file_filter, always_run=always_run)

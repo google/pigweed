@@ -152,7 +152,7 @@ for entire blocks by using "inclusive-language: disable" before the block and
 pw_presubmit
 ------------
 .. automodule:: pw_presubmit
-   :members: filter_paths, call, PresubmitFailure, Programs
+   :members: filter_paths, FileFilter, call, PresubmitFailure, Programs
 
 .. _example-script:
 
