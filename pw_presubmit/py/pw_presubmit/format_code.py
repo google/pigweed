@@ -320,11 +320,15 @@ PYTHON_FORMAT: CodeFormat = CodeFormat('Python',
 GN_FORMAT: CodeFormat = CodeFormat('GN', FileFilter(endswith=('.gn', '.gni')),
                                    check_gn_format, fix_gn_format)
 
-# TODO(pwbug/191): Add real code formatting support for Bazel and CMake
 BAZEL_FORMAT: CodeFormat = CodeFormat(
     'Bazel', FileFilter(endswith=('BUILD', '.bazel', '.bzl')),
     check_bazel_format, fix_bazel_format)
 
+COPYBARA_FORMAT: CodeFormat = CodeFormat('Copybara',
+                                         FileFilter(endswith=('.bara.sky', )),
+                                         check_bazel_format, fix_bazel_format)
+
+# TODO(b/234881054): Add real code formatting support for CMake
 CMAKE_FORMAT: CodeFormat = CodeFormat(
     'CMake', FileFilter(endswith=('CMakeLists.txt', '.cmake')),
     check_trailing_space, fix_trailing_space)
@@ -347,6 +351,7 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = (
     PYTHON_FORMAT,
     GN_FORMAT,
     BAZEL_FORMAT,
+    COPYBARA_FORMAT,
     CMAKE_FORMAT,
     RST_FORMAT,
     MARKDOWN_FORMAT,
@@ -407,7 +412,12 @@ class CodeFormatter:
         for path in self.paths:
             for code_format in code_formats:
                 if code_format.filter.matches(path):
+                    _LOG.debug('Formatting %s as %s', path,
+                               code_format.language)
                     self._formats[code_format].append(path)
+                    break
+            else:
+                _LOG.debug('No formatter found for %s', path)
 
     def check(self) -> Dict[Path, str]:
         """Returns {path: diff} for files with incorrect formatting."""
