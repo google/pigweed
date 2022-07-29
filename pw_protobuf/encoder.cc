@@ -65,7 +65,7 @@ StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number,
   return StreamEncoder(*this, nested_buffer, write_when_empty);
 }
 
-StreamEncoder::~StreamEncoder() {
+void StreamEncoder::CloseEncoder() {
   // If this was an invalidated StreamEncoder which cannot be used, permit the
   // object to be cleanly destructed by doing nothing.
   if (nested_field_number_ == kFirstReservedNumber) {

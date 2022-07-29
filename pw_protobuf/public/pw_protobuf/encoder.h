@@ -128,7 +128,7 @@ class StreamEncoder {
   //
   // Postcondition: If this encoder is a nested one, the parent encoder is
   //     unlocked and proto encoding may resume on the parent.
-  ~StreamEncoder();
+  ~StreamEncoder() { CloseEncoder(); }
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   StreamEncoder& operator=(const StreamEncoder& other) = delete;
@@ -137,6 +137,19 @@ class StreamEncoder {
   // It's not safe to move an encoder as it could cause another encoder's
   // parent_ pointer to become invalid.
   StreamEncoder& operator=(StreamEncoder&& other) = delete;
+
+  // Closes this encoder, finalizing its output.
+  //
+  // This method is called automatically by `StreamEncoder`'s destructor, but
+  // may be invoked manually in order to close an encoder before the end of its
+  // lexical scope.
+  //
+  // Precondition: Encoder has no active child encoder.
+  //
+  // Postcondition: If this encoder is a nested one, the parent encoder is
+  //     unlocked and proto encoding may resume on the parent. No more writes
+  //     to this encoder may be performed.
+  void CloseEncoder();
 
   // Forwards the conservative write limit of the underlying
   // pw::stream::Writer.

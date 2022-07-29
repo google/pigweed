@@ -502,5 +502,18 @@ TEST(StreamEncoder, NestedStatusPropagates) {
   ASSERT_EQ(parent.status(), Status::InvalidArgument());
 }
 
+TEST(StreamEncoder, ManualCloseEncoderWrites) {
+  std::byte encode_buffer[32];
+  MemoryEncoder parent(encode_buffer);
+  StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
+  child.CloseEncoder();
+  ASSERT_EQ(parent.status(), OkStatus());
+  const size_t kExpectedSize =
+      varint::EncodedSize(
+          FieldKey(kTestProtoNestedField, WireType::kDelimited)) +
+      varint::EncodedSize(0);
+  ASSERT_EQ(parent.size(), kExpectedSize);
+}
+
 }  // namespace
 }  // namespace pw::protobuf
