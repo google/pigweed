@@ -62,6 +62,7 @@ class LlvmSymbolizer(symbolizer.Symbolizer):
     def __del__(self):
         if self._symbolizer:
             self._symbolizer.terminate()
+            self._symbolizer.wait()
 
     @staticmethod
     def _is_json_compatibile() -> bool:

@@ -53,6 +53,9 @@ class TestSymbolizer(unittest.TestCase):
                 '-gfull',
                 f'-ffile-prefix-map={_MODULE_PY_DIR}=',
                 '-std=c++17',
+                '-fno-pic',
+                '-fno-pie',
+                '-nopie',
                 '-o',
                 exe_file,
             ]
