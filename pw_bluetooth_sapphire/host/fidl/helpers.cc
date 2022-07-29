@@ -31,6 +31,7 @@ namespace fble = fuchsia::bluetooth::le;
 namespace fbredr = fuchsia::bluetooth::bredr;
 namespace fbt = fuchsia::bluetooth;
 namespace fgatt = fuchsia::bluetooth::gatt;
+namespace fgatt2 = fuchsia::bluetooth::gatt2;
 namespace fhost = fuchsia::bluetooth::host;
 namespace fsys = fuchsia::bluetooth::sys;
 namespace faudio = fuchsia::hardware::audio;
@@ -1433,6 +1434,124 @@ fuchsia::bluetooth::bredr::RxPacketStatus ScoPacketStatusToFidl(
     case bt::hci_spec::SynchronousDataPacketStatusFlag::kDataPartiallyLost:
       return fuchsia::bluetooth::bredr::RxPacketStatus::DATA_PARTIALLY_LOST;
   }
+}
+
+bt::att::ErrorCode Gatt2ErrorCodeFromFidl(fgatt2::Error error_code) {
+  switch (error_code) {
+    case fgatt2::Error::INVALID_HANDLE:
+      return bt::att::ErrorCode::kInvalidHandle;
+    case fgatt2::Error::READ_NOT_PERMITTED:
+      return bt::att::ErrorCode::kReadNotPermitted;
+    case fgatt2::Error::WRITE_NOT_PERMITTED:
+      return bt::att::ErrorCode::kWriteNotPermitted;
+    case fgatt2::Error::INVALID_OFFSET:
+      return bt::att::ErrorCode::kInvalidOffset;
+    case fgatt2::Error::INVALID_ATTRIBUTE_VALUE_LENGTH:
+      return bt::att::ErrorCode::kInvalidAttributeValueLength;
+    case fgatt2::Error::INSUFFICIENT_RESOURCES:
+      return bt::att::ErrorCode::kInsufficientResources;
+    case fgatt2::Error::VALUE_NOT_ALLOWED:
+      return bt::att::ErrorCode::kValueNotAllowed;
+    default:
+      break;
+  }
+  return bt::att::ErrorCode::kUnlikelyError;
+}
+
+bt::att::AccessRequirements Gatt2AccessRequirementsFromFidl(
+    const fuchsia::bluetooth::gatt2::SecurityRequirements& reqs) {
+  return bt::att::AccessRequirements(
+      reqs.has_encryption_required() ? reqs.encryption_required() : false,
+      reqs.has_authentication_required() ? reqs.authentication_required() : false,
+      reqs.has_authorization_required() ? reqs.authorization_required() : false);
+}
+
+std::unique_ptr<bt::gatt::Descriptor> Gatt2DescriptorFromFidl(const fgatt2::Descriptor& fidl_desc) {
+  if (!fidl_desc.has_permissions()) {
+    bt_log(WARN, "fidl", "FIDL descriptor missing required `permissions` field");
+    return nullptr;
+  }
+  const fgatt2::AttributePermissions& perm = fidl_desc.permissions();
+  bt::att::AccessRequirements read_reqs = perm.has_read()
+                                              ? Gatt2AccessRequirementsFromFidl(perm.read())
+                                              : bt::att::AccessRequirements();
+  bt::att::AccessRequirements write_reqs = perm.has_write()
+                                               ? Gatt2AccessRequirementsFromFidl(perm.write())
+                                               : bt::att::AccessRequirements();
+
+  if (!fidl_desc.has_type()) {
+    bt_log(WARN, "fidl", "FIDL descriptor missing required `type` field");
+    return nullptr;
+  }
+  bt::UUID type(fidl_desc.type().value);
+
+  if (!fidl_desc.has_handle()) {
+    bt_log(WARN, "fidl", "FIDL characteristic missing required `handle` field");
+    return nullptr;
+  }
+  return std::make_unique<bt::gatt::Descriptor>(fidl_desc.handle().value, type, read_reqs,
+                                                write_reqs);
+}
+
+std::unique_ptr<bt::gatt::Characteristic> Gatt2CharacteristicFromFidl(
+    const fgatt2::Characteristic& fidl_chrc) {
+  if (!fidl_chrc.has_properties()) {
+    bt_log(WARN, "fidl", "FIDL characteristic missing required `properties` field");
+    return nullptr;
+  }
+  if (!fidl_chrc.has_permissions()) {
+    bt_log(WARN, "fidl", "FIDL characteristic missing required `permissions` field");
+    return nullptr;
+  }
+  if (!fidl_chrc.has_type()) {
+    bt_log(WARN, "fidl", "FIDL characteristic missing required `type` field");
+    return nullptr;
+  }
+  if (!fidl_chrc.has_handle()) {
+    bt_log(WARN, "fidl", "FIDL characteristic missing required `handle` field");
+    return nullptr;
+  }
+
+  uint8_t props = fidl_chrc.properties() & 0xFF;
+  uint16_t ext_props = (fidl_chrc.properties() & 0xFF00) >> 8;
+
+  const fgatt2::AttributePermissions& permissions = fidl_chrc.permissions();
+  bool supports_update =
+      (props & bt::gatt::Property::kNotify) || (props & bt::gatt::Property::kIndicate);
+  if (supports_update != permissions.has_update()) {
+    bt_log(WARN, "fidl", "Characteristic update permission %s",
+           supports_update ? "required" : "must be null");
+    return nullptr;
+  }
+
+  bt::att::AccessRequirements read_reqs = permissions.has_read()
+                                              ? Gatt2AccessRequirementsFromFidl(permissions.read())
+                                              : bt::att::AccessRequirements();
+  bt::att::AccessRequirements write_reqs =
+      permissions.has_write() ? Gatt2AccessRequirementsFromFidl(permissions.write())
+                              : bt::att::AccessRequirements();
+  bt::att::AccessRequirements update_reqs =
+      permissions.has_update() ? Gatt2AccessRequirementsFromFidl(permissions.update())
+                               : bt::att::AccessRequirements();
+
+  bt::UUID type(fidl_chrc.type().value);
+
+  auto chrc = std::make_unique<bt::gatt::Characteristic>(
+      fidl_chrc.handle().value, type, props, ext_props, read_reqs, write_reqs, update_reqs);
+  if (fidl_chrc.has_descriptors()) {
+    for (const auto& fidl_desc : fidl_chrc.descriptors()) {
+      std::unique_ptr<bt::gatt::Descriptor> maybe_desc =
+          fidl_helpers::Gatt2DescriptorFromFidl(fidl_desc);
+      if (!maybe_desc) {
+        // Specific failures are logged in Gatt2DescriptorFromFidl
+        return nullptr;
+      }
+
+      chrc->AddDescriptor(std::move(maybe_desc));
+    }
+  }
+
+  return chrc;
 }
 
 }  // namespace bthost::fidl_helpers

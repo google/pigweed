@@ -1301,5 +1301,270 @@ TEST(HelpersTest, ScoPacketStatusToFidl) {
       fuchsia::bluetooth::bredr::RxPacketStatus::DATA_PARTIALLY_LOST);
 }
 
+TEST(HelpersTest, Gatt2DescriptorFromFidlNoPermissions) {
+  fbg2::Descriptor desc;
+  fbt::Uuid fidl_uuid{{}};
+  desc.set_type(fidl_uuid);
+  desc.set_handle(fbg2::Handle{3});
+  EXPECT_EQ(Gatt2DescriptorFromFidl(desc), nullptr);
+}
+
+TEST(HelpersTest, Gatt2DescriptorFromFidlNoType) {
+  fbg2::Descriptor desc;
+  fbg2::AttributePermissions permissions;
+  desc.set_permissions(std::move(permissions));
+  desc.set_handle(fbg2::Handle{3});
+  EXPECT_EQ(Gatt2DescriptorFromFidl(desc), nullptr);
+}
+
+TEST(HelpersTest, Gatt2DescriptorFromFidlNoHandle) {
+  fbg2::Descriptor desc;
+  fbg2::AttributePermissions permissions;
+  desc.set_permissions(std::move(permissions));
+  fbt::Uuid fidl_uuid{{}};
+  desc.set_type(fidl_uuid);
+  EXPECT_EQ(Gatt2DescriptorFromFidl(desc), nullptr);
+}
+
+TEST(HelpersTest, Gatt2DescriptorFromFidlSuccessWithEmptyPermissions) {
+  bt::UInt128 type = {2};
+
+  fbg2::Descriptor desc;
+  fbg2::AttributePermissions permissions;
+  desc.set_permissions(std::move(permissions));
+  fbt::Uuid fidl_uuid{type};
+  desc.set_type(fidl_uuid);
+  desc.set_handle(fbg2::Handle{3});
+
+  std::unique_ptr<bt::gatt::Descriptor> out = Gatt2DescriptorFromFidl(desc);
+  ASSERT_TRUE(out);
+  EXPECT_EQ(out->id(), 3u);
+  EXPECT_EQ(out->type(), bt::UUID(type));
+  EXPECT_FALSE(out->read_permissions().allowed());
+  EXPECT_FALSE(out->write_permissions().allowed());
+}
+
+TEST(HelpersTest, Gatt2DescriptorFromFidlSuccessWithEmptyReadWritePermissions) {
+  fbg2::Descriptor desc;
+  fbg2::AttributePermissions permissions;
+  permissions.set_read(fbg2::SecurityRequirements());
+  permissions.set_write(fbg2::SecurityRequirements());
+  desc.set_permissions(std::move(permissions));
+  fbt::Uuid fidl_uuid{{}};
+  desc.set_type(fidl_uuid);
+  desc.set_handle(fbg2::Handle{3});
+
+  std::unique_ptr<bt::gatt::Descriptor> out = Gatt2DescriptorFromFidl(desc);
+  ASSERT_TRUE(out);
+  EXPECT_TRUE(out->read_permissions().allowed_without_security());
+  EXPECT_TRUE(out->write_permissions().allowed_without_security());
+}
+
+TEST(HelpersTest, Gatt2DescriptorFromFidlSuccessWithReadPermissions) {
+  fbg2::Descriptor desc;
+  fbg2::AttributePermissions permissions;
+  fbg2::SecurityRequirements read_reqs;
+  read_reqs.set_authentication_required(true);
+  read_reqs.set_authorization_required(true);
+  read_reqs.set_encryption_required(true);
+  permissions.set_read(std::move(read_reqs));
+  desc.set_permissions(std::move(permissions));
+  desc.set_type({{}});
+  desc.set_handle(fbg2::Handle{3});
+
+  std::unique_ptr<bt::gatt::Descriptor> out = Gatt2DescriptorFromFidl(desc);
+  ASSERT_TRUE(out);
+  EXPECT_TRUE(out->read_permissions().encryption_required());
+  EXPECT_TRUE(out->read_permissions().authentication_required());
+  EXPECT_TRUE(out->read_permissions().authorization_required());
+  EXPECT_FALSE(out->write_permissions().allowed());
+}
+
+TEST(HelpersTest, Gatt2DescriptorFromFidlSuccessWithWritePermissions) {
+  fbg2::Descriptor desc;
+  fbg2::AttributePermissions permissions;
+  fbg2::SecurityRequirements write_reqs;
+  write_reqs.set_authentication_required(true);
+  write_reqs.set_authorization_required(true);
+  write_reqs.set_encryption_required(true);
+  permissions.set_write(std::move(write_reqs));
+  desc.set_permissions(std::move(permissions));
+  desc.set_type({{}});
+  desc.set_handle(fbg2::Handle{3});
+
+  std::unique_ptr<bt::gatt::Descriptor> out = Gatt2DescriptorFromFidl(desc);
+  ASSERT_TRUE(out);
+  EXPECT_FALSE(out->read_permissions().allowed());
+  EXPECT_TRUE(out->write_permissions().encryption_required());
+  EXPECT_TRUE(out->write_permissions().authentication_required());
+  EXPECT_TRUE(out->write_permissions().authorization_required());
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlNoProperties) {
+  fbg2::Characteristic chrc;
+  chrc.set_permissions(fbg2::AttributePermissions());
+  chrc.set_type(fbt::Uuid{{}});
+  chrc.set_handle(fbg2::Handle{3});
+  EXPECT_FALSE(Gatt2CharacteristicFromFidl(chrc));
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlNoPermissions) {
+  fbg2::Characteristic chrc;
+  chrc.set_properties(0);
+  chrc.set_type(fbt::Uuid{{}});
+  chrc.set_handle(fbg2::Handle{3});
+  EXPECT_FALSE(Gatt2CharacteristicFromFidl(chrc));
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithPropertiesAndEmptyPermissions) {
+  fbg2::Characteristic chrc;
+  chrc.set_properties(static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::WRITE) |
+                      static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::RELIABLE_WRITE));
+  chrc.set_permissions(fbg2::AttributePermissions());
+  bt::UInt128 type = {2};
+  chrc.set_type(fbt::Uuid{type});
+  chrc.set_handle(fbg2::Handle{3});
+  std::unique_ptr<bt::gatt::Characteristic> out = Gatt2CharacteristicFromFidl(chrc);
+  ASSERT_TRUE(out);
+  EXPECT_EQ(out->properties(), bt::gatt::Property::kWrite);
+  EXPECT_EQ(out->extended_properties(), bt::gatt::ExtendedProperty::kReliableWrite);
+  EXPECT_FALSE(out->write_permissions().allowed());
+  EXPECT_FALSE(out->read_permissions().allowed());
+  EXPECT_FALSE(out->update_permissions().allowed());
+  EXPECT_EQ(out->type(), bt::UUID(type));
+  EXPECT_EQ(out->id(), 3u);
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlSupportsNotifyButDoesNotHavePermission) {
+  fbg2::Characteristic chrc;
+  chrc.set_properties(static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::NOTIFY));
+  chrc.set_permissions(fbg2::AttributePermissions());
+  bt::UInt128 type = {2};
+  chrc.set_type(fbt::Uuid{type});
+  chrc.set_handle(fbg2::Handle{3});
+  std::unique_ptr<bt::gatt::Characteristic> out = Gatt2CharacteristicFromFidl(chrc);
+  ASSERT_FALSE(out);
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlDoesNotSupportNotifyButDoesHaveUpdatePermission) {
+  fbg2::Characteristic chrc;
+  chrc.set_properties(0);
+  fbg2::AttributePermissions permissions;
+  permissions.set_update(fbg2::SecurityRequirements());
+  chrc.set_permissions(std::move(permissions));
+  bt::UInt128 type = {2};
+  chrc.set_type(fbt::Uuid{type});
+  chrc.set_handle(fbg2::Handle{3});
+  std::unique_ptr<bt::gatt::Characteristic> out = Gatt2CharacteristicFromFidl(chrc);
+  ASSERT_FALSE(out);
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithEmptySecurityRequirements) {
+  fbg2::Characteristic chrc;
+  chrc.set_properties(static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::NOTIFY));
+  fbg2::AttributePermissions permissions;
+  permissions.set_read(fbg2::SecurityRequirements());
+  permissions.set_write(fbg2::SecurityRequirements());
+  permissions.set_update(fbg2::SecurityRequirements());
+  chrc.set_permissions(std::move(permissions));
+  bt::UInt128 type = {2};
+  chrc.set_type(fbt::Uuid{type});
+  chrc.set_handle(fbg2::Handle{3});
+  std::unique_ptr<bt::gatt::Characteristic> out = Gatt2CharacteristicFromFidl(chrc);
+  ASSERT_TRUE(out);
+  EXPECT_TRUE(out->write_permissions().allowed_without_security());
+  EXPECT_TRUE(out->read_permissions().allowed_without_security());
+  EXPECT_TRUE(out->update_permissions().allowed_without_security());
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithAllSecurityRequirements) {
+  fbg2::Characteristic chrc;
+  chrc.set_properties(static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::NOTIFY));
+  fbg2::AttributePermissions permissions;
+  fbg2::SecurityRequirements read_reqs;
+  read_reqs.set_authentication_required(true);
+  read_reqs.set_authorization_required(true);
+  read_reqs.set_encryption_required(true);
+  permissions.set_read(std::move(read_reqs));
+  fbg2::SecurityRequirements write_reqs;
+  write_reqs.set_authentication_required(true);
+  write_reqs.set_authorization_required(true);
+  write_reqs.set_encryption_required(true);
+  permissions.set_write(std::move(write_reqs));
+  fbg2::SecurityRequirements update_reqs;
+  update_reqs.set_authentication_required(true);
+  update_reqs.set_authorization_required(true);
+  update_reqs.set_encryption_required(true);
+  permissions.set_update(std::move(update_reqs));
+  chrc.set_permissions(std::move(permissions));
+  bt::UInt128 type = {2};
+  chrc.set_type(fbt::Uuid{type});
+  chrc.set_handle(fbg2::Handle{3});
+  std::unique_ptr<bt::gatt::Characteristic> out = Gatt2CharacteristicFromFidl(chrc);
+  ASSERT_TRUE(out);
+  EXPECT_TRUE(out->write_permissions().authentication_required());
+  EXPECT_TRUE(out->write_permissions().authorization_required());
+  EXPECT_TRUE(out->write_permissions().encryption_required());
+  EXPECT_TRUE(out->read_permissions().authentication_required());
+  EXPECT_TRUE(out->read_permissions().authorization_required());
+  EXPECT_TRUE(out->read_permissions().encryption_required());
+  EXPECT_TRUE(out->update_permissions().authentication_required());
+  EXPECT_TRUE(out->update_permissions().authorization_required());
+  EXPECT_TRUE(out->update_permissions().encryption_required());
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlWithInvalidDescriptor) {
+  fbg2::Characteristic chrc;
+  chrc.set_properties(0);
+  chrc.set_permissions(fbg2::AttributePermissions());
+  bt::UInt128 type = {2};
+  chrc.set_type(fbt::Uuid{type});
+  chrc.set_handle(fbg2::Handle{3});
+  std::vector<fbg2::Descriptor> descriptors;
+  descriptors.emplace_back(fbg2::Descriptor());
+  chrc.set_descriptors(std::move(descriptors));
+  std::unique_ptr<bt::gatt::Characteristic> out = Gatt2CharacteristicFromFidl(chrc);
+  ASSERT_FALSE(out);
+}
+
+TEST(HelpersTest, Gatt2CharacteristicFromFidlWith2Descriptors) {
+  fbg2::Characteristic chrc;
+  chrc.set_properties(0);
+  chrc.set_permissions(fbg2::AttributePermissions());
+  bt::UInt128 chrc_type = {2};
+  chrc.set_type(fbt::Uuid{chrc_type});
+  chrc.set_handle(fbg2::Handle{3});
+
+  std::vector<fbg2::Descriptor> descriptors;
+
+  fbg2::Descriptor desc_0;
+  desc_0.set_permissions(fbg2::AttributePermissions());
+  bt::UInt128 desc_type_0 = {4};
+  desc_0.set_type(fbt::Uuid{desc_type_0});
+  desc_0.set_handle(fbg2::Handle{5});
+  descriptors.push_back(std::move(desc_0));
+
+  fbg2::Descriptor desc_1;
+  desc_1.set_permissions(fbg2::AttributePermissions());
+  bt::UInt128 desc_type_1 = {6};
+  desc_1.set_type(fbt::Uuid{desc_type_1});
+  desc_1.set_handle(fbg2::Handle{7});
+  descriptors.push_back(std::move(desc_1));
+
+  chrc.set_descriptors(std::move(descriptors));
+
+  std::unique_ptr<bt::gatt::Characteristic> out = Gatt2CharacteristicFromFidl(chrc);
+  ASSERT_TRUE(out);
+  ASSERT_EQ(out->descriptors().size(), 2u);
+  EXPECT_EQ(out->descriptors()[0]->id(), 5u);
+  EXPECT_EQ(out->descriptors()[0]->type(), bt::UUID(desc_type_0));
+  EXPECT_FALSE(out->descriptors()[0]->read_permissions().allowed());
+  EXPECT_FALSE(out->descriptors()[0]->write_permissions().allowed());
+  EXPECT_EQ(out->descriptors()[1]->id(), 7u);
+  EXPECT_EQ(out->descriptors()[1]->type(), bt::UUID(desc_type_1));
+  EXPECT_FALSE(out->descriptors()[1]->read_permissions().allowed());
+  EXPECT_FALSE(out->descriptors()[1]->write_permissions().allowed());
+}
+
 }  // namespace
 }  // namespace bthost::fidl_helpers

@@ -27,6 +27,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
 
 // Helpers for implementing the Bluetooth FIDL interfaces.
 
@@ -194,6 +195,21 @@ bool IsFidlGattServiceHandleValid(fuchsia::bluetooth::gatt2::ServiceHandle handl
 
 fuchsia::bluetooth::bredr::RxPacketStatus ScoPacketStatusToFidl(
     bt::hci_spec::SynchronousDataPacketStatusFlag status);
+
+bt::att::ErrorCode Gatt2ErrorCodeFromFidl(fuchsia::bluetooth::gatt2::Error error_code);
+
+bt::att::AccessRequirements Gatt2AccessRequirementsFromFidl(
+    const fuchsia::bluetooth::gatt2::SecurityRequirements& reqs);
+
+void FillInAttributePermissionsDefaults(fuchsia::bluetooth::gatt2::AttributePermissions& reqs);
+
+// Returns the bt-host representation of the FIDL descriptor, or nullptr if the conversion fails.
+std::unique_ptr<bt::gatt::Descriptor> Gatt2DescriptorFromFidl(
+    const fuchsia::bluetooth::gatt2::Descriptor& fidl_desc);
+
+// Returns the bt-host representation of the FIDL characteristc, or nullptr if the conversion fails.
+std::unique_ptr<bt::gatt::Characteristic> Gatt2CharacteristicFromFidl(
+    const fuchsia::bluetooth::gatt2::Characteristic& fidl_chrc);
 
 }  // namespace bthost::fidl_helpers
 

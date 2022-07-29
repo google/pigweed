@@ -11,6 +11,9 @@ static_library("fidl") {
     "gatt2_client_server.h",
     "gatt2_remote_service_server.cc",
     "gatt2_remote_service_server.h",
+    "gatt2_server_ids.h",
+    "gatt2_server_server.cc",
+    "gatt2_server_server.h",
     "gatt_client_server.cc",
     "gatt_client_server.h",
     "gatt_remote_service_server.cc",
@@ -99,6 +102,7 @@ source_set("tests") {
   sources = [
     "gatt2_client_server_unittest.cc",
     "gatt2_remote_service_server_unittest.cc",
+    "gatt2_server_server_unittest.cc",
     "gatt_client_server_unittest.cc",
     "gatt_remote_service_server_unittest.cc",
     "helpers_unittest.cc",

@@ -85,21 +85,42 @@ bool FakeLayer::UnregisterPeerMtuListener(PeerMtuListenerId listener_id) {
 void FakeLayer::RegisterService(ServicePtr service, ServiceIdCallback callback,
                                 ReadHandler read_handler, WriteHandler write_handler,
                                 ClientConfigCallback ccc_callback) {
-  // TODO: implement
+  if (register_service_fails_) {
+    callback(kInvalidId);
+    return;
+  }
+
+  IdType id = next_local_service_id_++;
+  local_services_.try_emplace(id, LocalService{std::move(service),
+                                               std::move(read_handler),
+                                               std::move(write_handler),
+                                               std::move(ccc_callback),
+                                               {}});
+  callback(id);
 }
 
-void FakeLayer::UnregisterService(IdType service_id) {
-  // TODO: implement
-}
+void FakeLayer::UnregisterService(IdType service_id) { local_services_.erase(service_id); }
 
 void FakeLayer::SendUpdate(IdType service_id, IdType chrc_id, PeerId peer_id,
                            ::std::vector<uint8_t> value, IndicationCallback indicate_cb) {
-  // TODO: implement
+  auto iter = local_services_.find(service_id);
+  if (iter == local_services_.end()) {
+    indicate_cb(fitx::error(att::ErrorCode::kInvalidHandle));
+    return;
+  }
+  iter->second.updates.push_back(
+      Update{chrc_id, std::move(value), std::move(indicate_cb), peer_id});
 }
 
 void FakeLayer::UpdateConnectedPeers(IdType service_id, IdType chrc_id,
                                      ::std::vector<uint8_t> value, IndicationCallback indicate_cb) {
-  // TODO: implement
+  auto iter = local_services_.find(service_id);
+  if (iter == local_services_.end()) {
+    indicate_cb(fitx::error(att::ErrorCode::kInvalidHandle));
+    return;
+  }
+  iter->second.updates.push_back(
+      Update{chrc_id, std::move(value), std::move(indicate_cb), std::nullopt});
 }
 
 void FakeLayer::SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) {

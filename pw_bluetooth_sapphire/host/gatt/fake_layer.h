@@ -14,6 +14,21 @@ namespace bt::gatt::testing {
 // tests.
 class FakeLayer final : public GATT {
  public:
+  struct Update {
+    IdType chrc_id;
+    std::vector<uint8_t> value;
+    IndicationCallback indicate_cb;
+    std::optional<PeerId> peer;
+  };
+
+  struct LocalService {
+    std::unique_ptr<Service> service;
+    ReadHandler read_handler;
+    WriteHandler write_handler;
+    ClientConfigCallback ccc_callback;
+    std::vector<Update> updates;
+  };
+
   FakeLayer() = default;
   ~FakeLayer() override = default;
 
@@ -59,6 +74,15 @@ class FakeLayer final : public GATT {
   std::optional<ServiceChangedCCCPersistedData> CallRetrieveServiceChangedCCCCallback(
       PeerId peer_id);
 
+  Service* FindLocalServiceById(IdType id) {
+    return local_services_.count(id) ? local_services_[id].service.get() : nullptr;
+  }
+
+  std::map<IdType, LocalService>& local_services() { return local_services_; }
+
+  // If true, cause all calls to RegisterService() to fail.
+  void set_register_service_fails(bool fails) { register_service_fails_ = fails; }
+
   // GATT overrides:
   void AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
                      Server::FactoryFunction server_factory) override;
@@ -82,6 +106,12 @@ class FakeLayer final : public GATT {
   fxl::WeakPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) override;
 
  private:
+  IdType next_local_service_id_ = 100;  // Start at a random large ID to help catch bugs (e.g.
+                                        // FIDL IDs mixed up with internal IDs).
+  std::map<IdType, LocalService> local_services_;
+
+  bool register_service_fails_ = false;
+
   // Test callbacks
   InitializeClientCallback initialize_client_cb_;
   SetPersistServiceChangedCCCCallbackCallback set_persist_service_changed_ccc_cb_cb_;

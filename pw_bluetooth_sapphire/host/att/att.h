@@ -96,6 +96,7 @@ enum class ErrorCode : uint8_t {
   kInsufficientEncryption = 0x0F,
   kUnsupportedGroupType = 0x10,
   kInsufficientResources = 0x11,
+  kValueNotAllowed = 0x13,
 };
 
 // Many ATT protocol PDUs allow using both a 16-bit and a 128-bit representation
