@@ -383,11 +383,23 @@ template("pw_python_package") {
     # Finally, write out the json
     write_file(_package_metadata_json_file, _package_metadata, "json")
 
-    # Create a target group for the Python package metadata only.
-    group("$target_name._package_metadata") {
+    # Create a target group for the Python package metadata only. This is a
+    # python_action so the setup sources can be included as inputs.
+    pw_python_action("$target_name._package_metadata") {
       metadata = {
         pw_python_package_metadata_json = [ _package_metadata_json_file ]
       }
+
+      script = "$dir_pw_build/py/pw_build/nop.py"
+
+      if (_generate_package) {
+        inputs = [ "$_setup_dir/setup.json" ]
+      } else {
+        inputs = _setup_sources
+      }
+
+      _pw_internal_run_in_venv = false
+      stamp = true
 
       # Forward the package_metadata subtarget for all python_deps.
       public_deps = []

@@ -149,7 +149,7 @@ template("pw_python_venv") {
       ]
 
       outputs = [ _generated_requirements_file ]
-      deps = [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
+      deps = _pkg_gn_labels + [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
     }
   } else {
     group("${target_name}._generate_3p_requirements") {
