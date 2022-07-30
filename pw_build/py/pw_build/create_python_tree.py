@@ -175,7 +175,13 @@ def update_config_with_packages(
         # Collect package_data
         if pkg.config.has_section('options.package_data'):
             for key, value in pkg.config['options.package_data'].items():
-                config['options.package_data'][key] = value
+                existing_values = config['options.package_data'].get(
+                    key, '').splitlines()
+                new_value = '\n'.join(
+                    sorted(set(existing_values + value.splitlines())))
+                # Remove any empty lines
+                new_value = new_value.replace('\n\n', '\n')
+                config['options.package_data'][key] = new_value
 
         # Collect entry_points
         if pkg.config.has_section('options.entry_points'):
@@ -257,21 +263,17 @@ def build_python_tree(python_packages: Iterable[PythonPackage],
     shutil.rmtree(destination_path, ignore_errors=True)
     destination_path.mkdir(exist_ok=True)
 
-    # Define a temporary location to run setup.py build in.
-    with tempfile.TemporaryDirectory() as build_base_name:
-        build_base = Path(build_base_name)
+    for pkg in python_packages:
+        # Define a temporary location to run setup.py build in.
+        with tempfile.TemporaryDirectory() as build_base_name:
+            build_base = Path(build_base_name)
 
-        for pkg in python_packages:
             lib_dir_path = setuptools_build_with_base(
                 pkg, build_base, include_tests=include_tests)
 
             # Move installed files from the temp build-base into
             # destination_path.
-            for new_file in lib_dir_path.glob('*'):
-                # Use str(Path) since shutil.move only accepts path-like objects
-                # in Python 3.9 and up:
-                #   https://docs.python.org/3/library/shutil.html#shutil.move
-                shutil.move(str(new_file), str(destination_path))
+            shutil.copytree(lib_dir_path, destination_path, dirs_exist_ok=True)
 
             # Clean build base lib folder for next install
             shutil.rmtree(lib_dir_path, ignore_errors=True)

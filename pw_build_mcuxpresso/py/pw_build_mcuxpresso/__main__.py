@@ -18,7 +18,11 @@ import argparse
 import pathlib
 import sys
 
-from pw_build_mcuxpresso import components
+try:
+    from pw_build_mcuxpresso import components
+except ImportError:
+    # Load from this directory if pw_build_mcuxpresso is not available.
+    import components  # type: ignore
 
 
 def _parse_args() -> argparse.Namespace:

@@ -111,7 +111,9 @@ def main(
         '# Auto-generated requirements.txt from the following packages:\n'
         '#\n')
     output += '\n'.join('# ' + pkg.gn_target_name
-                        for pkg in target_py_packages)
+                        for pkg in sorted(target_py_packages,
+                                          key=lambda pkg: pkg.gn_target_name))
+
     output += config['options']['install_requires']
     output += '\n'
     requirement.write_text(output)

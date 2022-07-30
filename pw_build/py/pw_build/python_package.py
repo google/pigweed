@@ -16,13 +16,17 @@
 import configparser
 from contextlib import contextmanager
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+import io
 import json
 import os
 from pathlib import Path
+import pprint
 import re
 import shutil
-from typing import Dict, List, Optional, Iterable
+from typing import Any, Dict, List, Optional, Iterable
+
+_pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
 
 # List of known environment markers supported by pip.
 # https://peps.python.org/pep-0508/#environment-markers
@@ -132,25 +136,44 @@ class PythonPackage:
             return None
         return setup_cfg[0]
 
+    def as_dict(self) -> Dict[Any, Any]:
+        """Return a dict representation of this class."""
+        self_dict = asdict(self)
+        if self.config:
+            # Expand self.config into text.
+            setup_cfg_text = io.StringIO()
+            self.config.write(setup_cfg_text)
+            self_dict['config'] = setup_cfg_text.getvalue()
+        return self_dict
+
     @property
     def package_name(self) -> str:
+        unknown_package_message = (
+            'Cannot determine the package_name for the Python '
+            f'library/package: {self.gn_target_name}\n\n'
+            'This could be due to a missing python dependency in GN for:\n'
+            f'{self.gn_target_name}\n\n')
+
         if self.config:
-            return self.config['metadata']['name']
+            try:
+                name = self.config['metadata']['name']
+            except KeyError:
+                raise UnknownPythonPackageName(unknown_package_message +
+                                               _pretty_format(self.as_dict()))
+            return name
         top_level_source_dir = self.top_level_source_dir
         if top_level_source_dir:
             return top_level_source_dir.name
 
         actual_gn_target_name = self.gn_target_name.split(':')
         if len(actual_gn_target_name) < 2:
-            raise UnknownPythonPackageName(
-                'Cannot determine the package_name for the Python '
-                f'library/package: {self}')
+            raise UnknownPythonPackageName(unknown_package_message)
 
         return actual_gn_target_name[-1]
 
     @property
     def package_dir(self) -> Path:
-        if self.setup_cfg:
+        if self.setup_cfg and self.setup_cfg.is_file():
             return self.setup_cfg.parent / self.package_name
         root_source_dir = self.top_level_source_dir
         if root_source_dir:

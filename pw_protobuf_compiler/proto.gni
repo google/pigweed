@@ -57,7 +57,23 @@ template("_pw_invoke_protoc") {
       script =
           "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py"
 
-      python_deps = [ "$dir_pw_protobuf_compiler/py" ]
+      if (pw_build_USE_NEW_PYTHON_BUILD) {
+        # NOTE: A python_dep on "$dir_pw_protobuf_compiler/py" should not be
+        # included when using the new Python build. It triggers building that
+        # Python package which requires the build venv to be created. The venv
+        # creation will drag in many unnecessary dependencies that may not be
+        # available when this proto is generated.
+        python_deps = []
+
+        # Add pw_protobuf_compiler and its dependencies to the PYTHONPATH when
+        # running this action.
+        python_metadata_deps =
+            [ "$dir_pw_protobuf_compiler/py:py._package_metadata" ]
+      } else {
+        python_deps = [ "$dir_pw_protobuf_compiler/py" ]
+      }
+
+      python_deps = []
       if (defined(invoker.python_deps)) {
         python_deps += invoker.python_deps
       }
