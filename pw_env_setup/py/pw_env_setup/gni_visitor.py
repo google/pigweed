@@ -83,9 +83,6 @@ class GNIVisitor(object):  # pylint: disable=useless-object-inheritance
         if set.name == 'VIRTUAL_ENV':
             self._lines.append('  pw_env_setup_VIRTUAL_ENV = "{}"'.format(
                 self._abspath_to_gn_path(set.value)))
-            # TODO(b/240726250) Remove dir_virtual_env.
-            self._lines.append('  dir_virtual_env = "{}"'.format(
-                self._abspath_to_gn_path(set.value)))
 
         if set.name == 'PW_PACKAGE_ROOT':
             self._lines.append('  pw_env_setup_PACKAGE_ROOT = "{}"'.format(
