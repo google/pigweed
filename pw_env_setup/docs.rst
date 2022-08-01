@@ -522,10 +522,10 @@ the GNI file specified in the environment config file.
 .. code-block::
 
   declare_args() {
-    dir_cipd_pigweed = "<pigweed-root>/.environment/cipd/packages/pigweed"
-    dir_cipd_luci = "<pigweed-root>/.environment/cipd/packages/luci"
-    dir_virtual_env = "<pigweed-root>/.environment/pigweed-venv"
-    dir_pw_package_root = "<pigweed-root>/.environment/packages"
+    pw_env_setup_CIPD_PIGWEED = "<environment-root>/cipd/packages/pigweed"
+    pw_env_setup_CIPD_LUCI = "<environment-root>/cipd/packages/luci"
+    pw_env_setup_VIRTUAL_ENV = "<environment-root>/pigweed-venv"
+    pw_env_setup_PACKAGE_ROOT = "<environment-root>/packages"
   }
 
 It's straightforward to use these variables.
@@ -534,7 +534,7 @@ It's straightforward to use these variables.
 
     import("//build_overrides/pigweed_environment.gni")
 
-    deps = [ "$dir_cipd_pigweed/..." ]
+    deps = [ "$pw_env_setup_CIPD_PIGWEED/..." ]
 
 Implementation
 **************
