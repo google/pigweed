@@ -6,7 +6,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
 
 namespace bt::gatt {
 namespace {
@@ -48,11 +48,19 @@ const StaticByteBuffer kDiscoverPrimary128ByUUID(
 );
 // clang-format on
 
+auto MakeFindInformation(att::Handle range_start = 0x0001, att::Handle range_end = 0xFFFF) {
+  return StaticByteBuffer(att::kFindInformationRequest,  // opcode
+                          LowerBits(range_start),
+                          UpperBits(range_start),                     // start handle
+                          LowerBits(range_end), UpperBits(range_end)  // end handle
+  );
+}
+
 void NopSvcCallback(const gatt::ServiceData&) {}
 void NopChrcCallback(const gatt::CharacteristicData&) {}
 void NopDescCallback(const gatt::DescriptorData&) {}
 
-class ClientTest : public l2cap::testing::FakeChannelTest {
+class ClientTest : public l2cap::testing::MockChannelTest {
  public:
   ClientTest() = default;
   ~ClientTest() override = default;
@@ -60,8 +68,8 @@ class ClientTest : public l2cap::testing::FakeChannelTest {
  protected:
   void SetUp() override {
     ChannelOptions options(l2cap::kATTChannelId);
-    fake_chan_ = CreateFakeChannel(options);
-    att_ = att::Bearer::Create(fake_chan_->GetWeakPtr());
+    auto fake_chan = CreateFakeChannel(options);
+    att_ = att::Bearer::Create(fake_chan->GetWeakPtr());
     client_ = Client::Create(att_->GetWeakPtr());
   }
 
@@ -73,28 +81,14 @@ class ClientTest : public l2cap::testing::FakeChannelTest {
   // |out_status| must remain valid.
   void SendDiscoverDescriptors(att::Result<>* out_status, Client::DescriptorCallback desc_callback,
                                att::Handle range_start = 0x0001, att::Handle range_end = 0xFFFF) {
-    async::PostTask(dispatcher(), [=, desc_callback = std::move(desc_callback)]() mutable {
-      client()->DiscoverDescriptors(range_start, range_end, std::move(desc_callback),
-                                    [out_status](att::Result<> val) { *out_status = val; });
-    });
-  }
-
-  // Blocks until the fake channel receives a Find Information request with the
-  // given handles
-  bool ExpectFindInformation(att::Handle range_start = 0x0001, att::Handle range_end = 0xFFFF) {
-    return Expect(StaticByteBuffer(0x04,  // opcode
-                                   LowerBits(range_start),
-                                   UpperBits(range_start),                     // start handle
-                                   LowerBits(range_end), UpperBits(range_end)  // end handle
-                                   ));
+    client()->DiscoverDescriptors(range_start, range_end, std::move(desc_callback),
+                                  [out_status](att::Result<> val) { *out_status = val; });
   }
 
   att::Bearer* att() const { return att_.get(); }
   Client* client() const { return client_.get(); }
-  l2cap::testing::FakeChannel* fake_chan() const { return fake_chan_.get(); }
 
  private:
-  std::unique_ptr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Client> client_;
 
@@ -112,10 +106,9 @@ TEST_F(ClientTest, ExchangeMTUMalformedResponse) {
 
   att()->set_preferred_mtu(kPreferredMTU);
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->ExchangeMTU(mtu_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_FALSE(fake_chan()->link_error());
 
   // Respond back with a malformed PDU. This should cause a link error and the
@@ -147,10 +140,9 @@ TEST_F(ClientTest, ExchangeMTUErrorNotSupported) {
   att()->set_mtu(kInitialMTU);
   att()->set_preferred_mtu(kPreferredMTU);
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->ExchangeMTU(mtu_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Respond with "Request Not Supported". This will cause us to switch to the
   // default MTU.
@@ -179,10 +171,9 @@ TEST_F(ClientTest, ExchangeMTUErrorOther) {
   att()->set_preferred_mtu(kPreferredMTU);
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->ExchangeMTU(mtu_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Respond with an error. The MTU should remain unchanged.
   fake_chan()->Receive(StaticByteBuffer(att::kErrorResponse,       // opcode
@@ -212,10 +203,9 @@ TEST_F(ClientTest, ExchangeMTUSelectLocal) {
 
   att()->set_preferred_mtu(kPreferredMTU);
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->ExchangeMTU(mtu_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
@@ -244,10 +234,9 @@ TEST_F(ClientTest, ExchangeMTUSelectRemote) {
 
   att()->set_preferred_mtu(kPreferredMTU);
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->ExchangeMTU(mtu_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
@@ -277,10 +266,9 @@ TEST_F(ClientTest, ExchangeMTUSelectDefault) {
 
   att()->set_preferred_mtu(kPreferredMTU);
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->ExchangeMTU(mtu_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
@@ -299,12 +287,9 @@ TEST_F(ClientTest, DiscoverPrimaryResponseTooShort) {
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Respond back with a malformed payload.
   fake_chan()->Receive(StaticByteBuffer(0x11));
@@ -318,12 +303,9 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedDataLength) {
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Respond back with an unexpected data length. This is 6 for services with a
   // 16-bit UUID (start (2) + end (2) + uuid (2)) and 20 for 128-bit
@@ -343,12 +325,9 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedAttrDataList) {
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(StaticByteBuffer(0x11,              // opcode: read by group type response
                                         6,                 // data length: 6 (16-bit UUIDs)
@@ -365,12 +344,9 @@ TEST_F(ClientTest, DiscoverPrimaryResultsOutOfOrder) {
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
                                         6,           // data length: 6 (16-bit UUIDs)
@@ -394,12 +370,9 @@ TEST_F(ClientTest, DiscoverPrimaryEmptyDataList) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(StaticByteBuffer(0x11,  // opcode: read by group type response
                                         6      // data length: 6 (16-bit UUIDs)
@@ -415,12 +388,9 @@ TEST_F(ClientTest, DiscoverPrimaryAttributeNotFound) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
                                         0x10,        // request: read by group type
@@ -439,12 +409,9 @@ TEST_F(ClientTest, DiscoverPrimaryError) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
                                         0x10,        // request: read by group type
@@ -461,12 +428,9 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedServiceRange) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, res_cb] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Return a service where start > end.
   fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
@@ -489,12 +453,9 @@ TEST_F(ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
                                         0x06,        // data length: 6 (16-bit UUIDs)
@@ -527,12 +488,9 @@ TEST_F(ClientTest, DiscoverPrimary128BitResultSingleRequest) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
+  client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
                                         0x14,        // data length: 20 (128-bit UUIDs)
@@ -559,30 +517,6 @@ TEST_F(ClientTest, DiscoverAllPrimaryMultipleRequests) {
                                                   0xFF, 0xFF,  // end handle: 0xFFFF
                                                   0x00, 0x28   // type: primary service (0x2800)
   );
-  const auto kExpectedRequest1 = StaticByteBuffer(0x10,        // opcode: read by group type request
-                                                  0x08, 0x00,  // start handle: 0x0008
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28   // type: primary service (0x2800)
-  );
-  const auto kExpectedRequest2 = StaticByteBuffer(0x10,        // opcode: read by group type request
-                                                  0x0A, 0x00,  // start handle: 0x000A
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28   // type: primary service (0x2800)
-  );
-
-  att::Result<> status = ToResult(HostError::kFailed);
-  auto res_cb = [&status](att::Result<> val) { status = val; };
-
-  std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest0));
-
   const StaticByteBuffer kResponse0(0x11,        // opcode: read by group type response
                                     0x06,        // data length: 6 (16-bit UUIDs)
                                     0x01, 0x00,  // svc 1 start: 0x0001
@@ -592,11 +526,11 @@ TEST_F(ClientTest, DiscoverAllPrimaryMultipleRequests) {
                                     0x07, 0x00,  // svc 2 end: 0x0007
                                     0xEF, 0xBE   // svc 2 uuid: 0xBEEF
   );
-
-  // The client should follow up with a second request following the last end
-  // handle.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
-
+  const auto kExpectedRequest1 = StaticByteBuffer(0x10,        // opcode: read by group type request
+                                                  0x08, 0x00,  // start handle: 0x0008
+                                                  0xFF, 0xFF,  // end handle: 0xFFFF
+                                                  0x00, 0x28   // type: primary service (0x2800)
+  );
   // Respond with one 128-bit service UUID.
   const StaticByteBuffer kResponse1(0x11,        // opcode: read by group type response
                                     0x14,        // data length: 20 (128-bit UUIDs)
@@ -605,19 +539,30 @@ TEST_F(ClientTest, DiscoverAllPrimaryMultipleRequests) {
 
                                     // UUID matches |kTestUuid3| declared above.
                                     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-
-  // The client should follow up with a third request following the last end
-  // handle.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedRequest2));
-
+  const auto kExpectedRequest2 = StaticByteBuffer(0x10,        // opcode: read by group type request
+                                                  0x0A, 0x00,  // start handle: 0x000A
+                                                  0xFF, 0xFF,  // end handle: 0xFFFF
+                                                  0x00, 0x28   // type: primary service (0x2800)
+  );
   // Terminate the procedure with an error response.
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x10,        // request: read by group type
-                                        0x0A, 0x00,  // handle: 0x000A
-                                        0x0A         // error: Attribute Not Found
-                                        ));
+  const StaticByteBuffer kResponse2(0x01,        // opcode: error response
+                                    0x10,        // request: read by group type
+                                    0x0A, 0x00,  // handle: 0x000A
+                                    0x0A         // error: Attribute Not Found
+  );
 
+  att::Result<> status = ToResult(HostError::kFailed);
+  auto res_cb = [&status](att::Result<> val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+
+  EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
+  EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
+  EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
+  client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
@@ -690,17 +635,12 @@ TEST_F(ClientTest, DiscoverServicesInRangeMultipleRequests) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest0));
-  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedRequest2));
-  fake_chan()->Receive(kNotFoundResponse2);
-
+  EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
+  EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
+  EXPECT_PACKET_OUT(kExpectedRequest2, &kNotFoundResponse2);
+  client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(3u, services.size());
 
@@ -744,14 +684,11 @@ TEST_F(ClientTest, DiscoverServicesInRangeFailsIfServiceResultIsOutOfRange) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
-  });
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
-  ASSERT_TRUE(Expect(kExpectedRequest));
   fake_chan()->Receive(kResponse);
-
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
@@ -762,18 +699,12 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
-
   // Respond back with a malformed payload.
-  fake_chan()->Receive(StaticByteBuffer(0x7, 0x0));
-
+  const StaticByteBuffer kResponse(0x7, 0x0);
+  EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  EXPECT_TRUE(AllExpectedPacketsSent());
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -784,17 +715,12 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsEmptyDataList) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
-
-  fake_chan()->Receive(StaticByteBuffer(0x07  // opcode: find by value type response
-                                              // data list is empty
-                                        ));
-
+  const StaticByteBuffer kResponse(0x07  // opcode: find by value type response
+                                         // data list is empty
+  );
+  EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  EXPECT_TRUE(AllExpectedPacketsSent());
   RunLoopUntilIdle();
   EXPECT_TRUE(status.is_error());
 }
@@ -804,21 +730,16 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsAttributeNotFound) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
-  });
+  const StaticByteBuffer kResponse(0x01,        // opcode: error response
+                                   0x06,        // request: find by type value
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0x0A         // error: Attribute Not Found
+  );
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x06,        // request: find by type value
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x0A         // error: Attribute Not Found
-                                        ));
-
+  EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  EXPECT_TRUE(AllExpectedPacketsSent());
   RunLoopUntilIdle();
-
   // The procedure succeeds with no services.
   EXPECT_EQ(fitx::ok(), status);
 }
@@ -828,21 +749,16 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsError) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
-  });
+  const StaticByteBuffer kResponse(0x01,        // opcode: error response
+                                   0x06,        // request: find by type value
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0x06         // error: Request Not Supported
+  );
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x06,        // request: find by type value
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x06         // error: Request Not Supported
-                                        ));
-
+  EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  EXPECT_TRUE(AllExpectedPacketsSent());
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
 }
 
@@ -850,21 +766,15 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsMalformedServiceRange) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, res_cb] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
-
   // Return a service where start > end.
-  fake_chan()->Receive(StaticByteBuffer(0x07,        // opcode: find by type value response
-                                        0x02, 0x00,  // svc 1 start: 0x0002
-                                        0x01, 0x00   // svc 1 end: 0x0001
-                                        ));
-
+  const StaticByteBuffer kResponse(0x07,        // opcode: find by type value response
+                                   0x02, 0x00,  // svc 1 start: 0x0002
+                                   0x01, 0x00   // svc 1 end: 0x0001
+  );
+  EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   RunLoopUntilIdle();
-
+  EXPECT_TRUE(AllExpectedPacketsSent());
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
@@ -874,22 +784,17 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsServicesOutOfOrder) {
   std::optional<att::Result<>> status;
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, res_cb] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
-
   // Return services out of order.
-  fake_chan()->Receive(StaticByteBuffer(0x07,        // opcode: find by type value response
-                                        0x05, 0x00,  // svc 0 start: 0x0005
-                                        0x06, 0x00,  // svc 0 end: 0x0006
-                                        0x01, 0x00,  // svc 1 start: 0x0001
-                                        0x02, 0x00   // svc 1 end: 0x0002
-                                        ));
-
+  const StaticByteBuffer kResponse(0x07,        // opcode: find by type value response
+                                   0x05, 0x00,  // svc 0 start: 0x0005
+                                   0x06, 0x00,  // svc 0 end: 0x0006
+                                   0x01, 0x00,  // svc 1 start: 0x0001
+                                   0x02, 0x00   // svc 1 end: 0x0002
+  );
+  EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
 }
@@ -901,21 +806,17 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
-  });
+  const StaticByteBuffer kResponse(0x07,        // opcode: find by type value response
+                                   0x01, 0x00,  // svc 1 start: 0x0001
+                                   0x05, 0x00,  // svc 1 end: 0x0005
+                                   0x06, 0x00,  // svc 2 start: 0x0006
+                                   0xFF, 0xFF   // svc 2 end: 0xFFFF
+  );
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
-
-  fake_chan()->Receive(StaticByteBuffer(0x07,        // opcode: find by type value response
-                                        0x01, 0x00,  // svc 1 start: 0x0001
-                                        0x05, 0x00,  // svc 1 end: 0x0005
-                                        0x06, 0x00,  // svc 2 start: 0x0006
-                                        0xFF, 0xFF   // svc 2 end: 0xFFFF
-                                        ));
-
+  EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
@@ -936,18 +837,13 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid3});
-  });
-
-  ASSERT_TRUE(Expect(kDiscoverPrimary128ByUUID));
-
-  fake_chan()->Receive(StaticByteBuffer(0x07,        // opcode: find by type value response
-                                        0x01, 0x00,  // svc 1 start: 0x0008
-                                        0xFF, 0xFF   // svc 1 end: 0xFFFF
-                                        ));
-
+  const StaticByteBuffer kResponse(0x07,        // opcode: find by type value response
+                                   0x01, 0x00,  // svc 1 start: 0x0008
+                                   0xFF, 0xFF   // svc 1 end: 0xFFFF
+  );
+  EXPECT_PACKET_OUT(kDiscoverPrimary128ByUUID, &kResponse);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid3});
+  EXPECT_TRUE(AllExpectedPacketsSent());
   RunLoopUntilIdle();
 
   // The procedure should be over since the last service in the payload has
@@ -989,6 +885,12 @@ TEST_F(ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
                                                   0x00, 0x28,  // type: primary service (0x2800)
                                                   0xAD, 0xDE   // svc 1 uuid: 0xDEAD
   );
+  // Terminate the procedure with an error response.
+  const StaticByteBuffer kResponse2(0x01,        // opcode: error response
+                                    0x06,        // request: find by type value
+                                    0x0A, 0x00,  // handle: 0x000A
+                                    0x0A         // error: Attribute Not Found
+  );
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
@@ -996,32 +898,14 @@ TEST_F(ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest0));
-
-  // The client should follow up with a second request following the last end
-  // handle.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
-
-  // The client should follow up with a third request following the last end
-  // handle.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedRequest2));
-
-  // Terminate the procedure with an error response.
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x06,        // request: find by type value
-                                        0x0A, 0x00,  // handle: 0x000A
-                                        0x0A         // error: Attribute Not Found
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
+  EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
+  EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
-  // The procedure should be over since the last service in the payload has
-  // end handle 0xFFFF.
+  // The procedure should be over since the last service in the payload has end handle 0xFFFF.
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(3u, services.size());
 
@@ -1088,19 +972,14 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb,
-                                        {kTestUuid2, kTestUuid1});
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest0));
-
-  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
-  ASSERT_TRUE(ReceiveAndExpect(kNotFoundResponse1, kExpectedRequest2));
-  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedRequest3));
-  fake_chan()->Receive(kNotFoundResponse3);
+  EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
+  EXPECT_PACKET_OUT(kExpectedRequest1, &kNotFoundResponse1);
+  EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
+  EXPECT_PACKET_OUT(kExpectedRequest3, &kNotFoundResponse3);
+  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb,
+                                      {kTestUuid2, kTestUuid1});
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(2u, services.size());
@@ -1170,19 +1049,14 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
-                                               res_cb, {kTestUuid2, kTestUuid1});
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest0));
-
-  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
-  ASSERT_TRUE(ReceiveAndExpect(kNotFoundResponse1, kExpectedRequest2));
-  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedRequest3));
-  fake_chan()->Receive(kNotFoundResponse3);
+  EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
+  EXPECT_PACKET_OUT(kExpectedRequest1, &kNotFoundResponse1);
+  EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
+  EXPECT_PACKET_OUT(kExpectedRequest3, &kNotFoundResponse3);
+  client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
+                                             res_cb, {kTestUuid2, kTestUuid1});
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(2u, services.size());
@@ -1221,14 +1095,9 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeFailsOnResultNotInRequestedRa
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
-                                               res_cb, {kTestUuid1});
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-  fake_chan()->Receive(kResponse);
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
+                                             res_cb, {kTestUuid1});
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
@@ -1256,22 +1125,14 @@ TEST_F(ClientTest, CharacteristicDiscoveryResponseTooShort) {
                                                  0xFF, 0xFF,  // end handle: 0xFFFF
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kMalformedResponse(0x09);
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  // Respond back with a malformed payload.
-  fake_chan()->Receive(StaticByteBuffer(0x09));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kMalformedResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1284,28 +1145,21 @@ TEST_F(ClientTest, CharacteristicDiscoveryMalformedDataLength) {
                                                  0xFF, 0xFF,  // end handle: 0xFFFF
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  // Respond back with an unexpected data length. This is 7 for characteristics
+  // with a 16-bit UUID (handle (2) + props (1) + value handle (2) + uuid (2))
+  // and 21 for 128-bit (handle (2) + props (1) + value handle (2) + uuid (16)).
+  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
+                                   8,     // data length: 8 (not 7 or 21)
+                                   0, 1, 2, 3, 4, 5, 6,
+                                   7  // one entry of length 8, which will be ignored
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  // Respond back with an unexpected data length. This is 7 for characteristics
-  // with a 16-bit UUID (handle (2) + props (1) + value handle (2) + uuid (2))
-  // and 21 for 128-bit (handle (2) + props (1) + value handle (2) + uuid (16)).
-  fake_chan()->Receive(StaticByteBuffer(0x09,  // opcode: read by type response
-                                        8,     // data length: 8 (not 7 or 21)
-                                        0, 1, 2, 3, 4, 5, 6,
-                                        7  // one entry of length 8, which will be ignored
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1319,27 +1173,22 @@ TEST_F(ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
 
-  att::Result<> status = fitx::ok();
-  auto res_cb = [&status](att::Result<> val) { status = val; };
-
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
   // Respond back with an unexpected data length. This is 7 for characteristics
   // with a 16-bit UUID (handle (2) + props (1) + value handle (2) + uuid (2))
   // and 21 for 128-bit (handle (2) + props (1) + value handle (2) + uuid (16)).
-  fake_chan()->Receive(StaticByteBuffer(0x09,                 // opcode: read by type response
-                                        7,                    // data length: 7 (16-bit UUIDs)
-                                        0, 1, 2, 3, 4, 5, 6,  // entry 1: correct size
-                                        0, 1, 2, 3, 4, 5      // entry 2: incorrect size
-                                        ));
+  const StaticByteBuffer kResponse(0x09,                 // opcode: read by type response
+                                   7,                    // data length: 7 (16-bit UUIDs)
+                                   0, 1, 2, 3, 4, 5, 6,  // entry 1: correct size
+                                   0, 1, 2, 3, 4, 5      // entry 2: incorrect size
+  );
 
+  att::Result<> status = fitx::ok();
+  auto res_cb = [&status](att::Result<> val) { status = val; };
+
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1352,24 +1201,17 @@ TEST_F(ClientTest, CharacteristicDiscoveryEmptyDataList) {
                                                  0xFF, 0xFF,  // end handle: 0xFFFF
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
+                                   7      // data length: 7 (16-bit UUIDs)
+                                          // data list empty
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x09,  // opcode: read by type response
-                                        7      // data length: 7 (16-bit UUIDs)
-                                               // data list empty
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(status, ToResult(HostError::kPacketMalformed));
 }
 
@@ -1382,25 +1224,18 @@ TEST_F(ClientTest, CharacteristicDiscoveryAttributeNotFound) {
                                                  0xFF, 0xFF,  // end handle: 0xFFFF
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kResponse(0x01,        // opcode: error response
+                                   0x08,        // request: read by type
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0x0A         // error: Attribute Not Found
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x08,        // request: read by type
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x0A         // error: Attribute Not Found
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
   RunLoopUntilIdle();
-
   // Attribute Not Found error means the procedure is over.
   EXPECT_EQ(fitx::ok(), status);
 }
@@ -1414,25 +1249,18 @@ TEST_F(ClientTest, CharacteristicDiscoveryError) {
                                                  0xFF, 0xFF,  // end handle: 0xFFFF
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kResponse(0x01,        // opcode: error response
+                                   0x08,        // request: read by type
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0x06         // error: Request Not Supported
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x08,        // request: read by type
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x06         // error: Request Not Supported
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
 }
 
@@ -1445,20 +1273,7 @@ TEST_F(ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
                                                  0x05, 0x00,  // end handle: 0x0005
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
-
-  att::Result<> status = fitx::ok();
-  auto res_cb = [&status](att::Result<> val) { status = val; };
-
-  std::vector<CharacteristicData> chrcs;
-  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
-
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(
+  const StaticByteBuffer kResponse(
       0x09,        // opcode: read by type response
       0x07,        // data length: 7 (16-bit UUIDs)
       0x03, 0x00,  // chrc 1 handle
@@ -1469,10 +1284,17 @@ TEST_F(ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
       0x01,        // chrc 2 properties
       0x06, 0x00,  // chrc 2 value handle
       0xEF, 0xBE   // chrc 2 uuid: 0xBEEF
-      ));
+  );
 
+  att::Result<> status = fitx::ok();
+  auto res_cb = [&status](att::Result<> val) { status = val; };
+
+  std::vector<CharacteristicData> chrcs;
+  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
+
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(2u, chrcs.size());
   EXPECT_EQ(0x0003, chrcs[0].handle);
@@ -1494,6 +1316,14 @@ TEST_F(ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
                                                  0x05, 0x00,  // end handle: 0x0005
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kResponse(0x09,        // opcode: read by type response
+                                   0x15,        // data length: 21 (128-bit UUIDs)
+                                   0x05, 0x00,  // chrc handle
+                                   0x00,        // chrc properties
+                                   0x06, 0x00,  // chrc value handle
+
+                                   // UUID matches |kTestUuid3| declared above.
+                                   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
@@ -1501,23 +1331,9 @@ TEST_F(ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x09,        // opcode: read by type response
-                                        0x15,        // data length: 21 (128-bit UUIDs)
-                                        0x05, 0x00,  // chrc handle
-                                        0x00,        // chrc properties
-                                        0x06, 0x00,  // chrc value handle
-
-                                        // UUID matches |kTestUuid3| declared above.
-                                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(1u, chrcs.size());
   EXPECT_EQ(0x0005, chrcs[0].handle);
@@ -1564,6 +1380,12 @@ TEST_F(ClientTest, CharacteristicDiscoveryMultipleRequests) {
                                                   0xFF, 0xFF,  // end handle: 0xFFFF
                                                   0x03, 0x28  // type: characteristic decl. (0x2803)
   );
+  // Terminate the procedure with an error response.
+  const StaticByteBuffer kResponse2(0x01,        // opcode: error response
+                                    0x08,        // request: read by type
+                                    0x0A, 0x00,  // handle: 0x000A
+                                    0x0A         // error: Attribute Not Found
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
@@ -1571,28 +1393,12 @@ TEST_F(ClientTest, CharacteristicDiscoveryMultipleRequests) {
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest0));
-
-  // The client should follow up with a second request following the last
-  // characteristic declaration handle.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
-
-  // The client should follow up with a third request following the last
-  // characteristic declaration handle.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedRequest2));
-
-  // Terminate the procedure with an error response.
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x08,        // request: read by type
-                                        0x0A, 0x00,  // handle: 0x000A
-                                        0x0A         // error: Attribute Not Found
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
+  EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
+  EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
+  client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_EQ(3u, chrcs.size());
@@ -1624,6 +1430,14 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
                                                  0x05, 0x00,  // end handle: 0x0005
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
+                                   0x07,  // data length: 7 (16-bit UUIDs)
+                                   0x01,
+                                   0x00,        // chrc 1 handle (handle is before the range)
+                                   0x00,        // chrc 1 properties
+                                   0x02, 0x00,  // chrc 1 value handle
+                                   0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
@@ -1631,23 +1445,9 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x09,  // opcode: read by type response
-                                        0x07,  // data length: 7 (16-bit UUIDs)
-                                        0x01,
-                                        0x00,        // chrc 1 handle (handle is before the range)
-                                        0x00,        // chrc 1 properties
-                                        0x02, 0x00,  // chrc 1 value handle
-                                        0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   EXPECT_TRUE(chrcs.empty());
 }
@@ -1663,6 +1463,14 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
                                                  0x05, 0x00,  // end handle: 0x0005
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
+                                   0x07,  // data length: 7 (16-bit UUIDs)
+                                   0x06,
+                                   0x00,        // chrc 1 handle (handle is beyond the range)
+                                   0x00,        // chrc 1 properties
+                                   0x07, 0x00,  // chrc 1 value handle
+                                   0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
@@ -1670,23 +1478,9 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x09,  // opcode: read by type response
-                                        0x07,  // data length: 7 (16-bit UUIDs)
-                                        0x06,
-                                        0x00,        // chrc 1 handle (handle is beyond the range)
-                                        0x00,        // chrc 1 properties
-                                        0x07, 0x00,  // chrc 1 value handle
-                                        0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   EXPECT_TRUE(chrcs.empty());
 }
@@ -1702,6 +1496,13 @@ TEST_F(ClientTest, CharacteristicDiscoveryValueNotContiguous) {
                                                  0x05, 0x00,  // end handle: 0x0005
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kResponse(0x09,        // opcode: read by type response
+                                   0x07,        // data length: 7 (16-bit UUIDs)
+                                   0x02, 0x00,  // chrc 1 handle
+                                   0x00,        // chrc 1 properties
+                                   0x04, 0x00,  // chrc 1 value handle (not immediate)
+                                   0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
@@ -1709,22 +1510,9 @@ TEST_F(ClientTest, CharacteristicDiscoveryValueNotContiguous) {
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x09,        // opcode: read by type response
-                                        0x07,        // data length: 7 (16-bit UUIDs)
-                                        0x02, 0x00,  // chrc 1 handle
-                                        0x00,        // chrc 1 properties
-                                        0x04, 0x00,  // chrc 1 value handle (not immediate)
-                                        0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   EXPECT_TRUE(chrcs.empty());
 }
@@ -1738,6 +1526,17 @@ TEST_F(ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
                                                  0x05, 0x00,  // end handle: 0x0005
                                                  0x03, 0x28   // type: characteristic decl. (0x2803)
   );
+  const StaticByteBuffer kResponse(0x09,        // opcode: read by type response
+                                   0x07,        // data length: 7 (16-bit UUIDs)
+                                   0x02, 0x00,  // chrc 1 handle
+                                   0x00,        // chrc 1 properties
+                                   0x03, 0x00,  // chrc 1 value handle
+                                   0xAD, 0xDE,  // chrc 1 uuid: 0xDEAD
+                                   0x02, 0x00,  // chrc 1 handle (repeated)
+                                   0x00,        // chrc 1 properties
+                                   0x03, 0x00,  // chrc 1 value handle
+                                   0xEF, 0xBE   // chrc 1 uuid: 0xBEEF
+  );
 
   att::Result<> status = fitx::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
@@ -1745,141 +1544,103 @@ TEST_F(ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
 
-  // Initiate the request on the message loop since Expect() below blocks.
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x09,        // opcode: read by type response
-                                        0x07,        // data length: 7 (16-bit UUIDs)
-                                        0x02, 0x00,  // chrc 1 handle
-                                        0x00,        // chrc 1 properties
-                                        0x03, 0x00,  // chrc 1 value handle
-                                        0xAD, 0xDE,  // chrc 1 uuid: 0xDEAD
-                                        0x02, 0x00,  // chrc 1 handle (repeated)
-                                        0x00,        // chrc 1 properties
-                                        0x03, 0x00,  // chrc 1 value handle
-                                        0xEF, 0xBE   // chrc 1 uuid: 0xBEEF
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
-
   // No Characteristics should be reported.
   EXPECT_EQ(0u, chrcs.size());
 }
 
-// Equal handles should result should not short-circuit and result in a request.
+// Equal handles should not short-circuit and should result in a request.
 TEST_F(ClientTest, DescriptorDiscoveryHandlesEqual) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0001;
 
   att::Result<> status = ToResult(HostError::kFailed);  // Initialize as error
+  EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd));
   SendDiscoverDescriptors(&status, NopDescCallback, kStart, kEnd);
-  EXPECT_TRUE(ExpectFindInformation(kStart, kEnd));
+  EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryResponseTooShort) {
   att::Result<> status = fitx::ok();
-  SendDiscoverDescriptors(&status, NopDescCallback);
-  ASSERT_TRUE(ExpectFindInformation());
-
   // Respond back with a malformed payload.
-  fake_chan()->Receive(StaticByteBuffer(0x05));
-
+  const StaticByteBuffer kResponse(0x05);
+  EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
+  SendDiscoverDescriptors(&status, NopDescCallback);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryMalformedDataLength) {
   att::Result<> status = fitx::ok();
+  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
+                                   0x03   // format (must be 1 or 2)
+  );
+  EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  ASSERT_TRUE(ExpectFindInformation());
-
-  fake_chan()->Receive(StaticByteBuffer(0x05,  // opcode: find information response
-                                        0x03   // format (must be 1 or 2)
-                                        ));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
   att::Result<> status = fitx::ok();
+  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
+                                   0x01,  // format: 16-bit. Data length must be 4
+                                   1, 2, 3, 4, 5);
+  EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  ASSERT_TRUE(ExpectFindInformation());
-
-  fake_chan()->Receive(StaticByteBuffer(0x05,  // opcode: find information response
-                                        0x01,  // format: 16-bit. Data length must be 4
-                                        1, 2, 3, 4, 5));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList128) {
   att::Result<> status = fitx::ok();
+  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
+                                   0x02,  // format: 128-bit. Data length must be 18
+                                   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
+  EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  ASSERT_TRUE(ExpectFindInformation());
-
-  fake_chan()->Receive(StaticByteBuffer(0x05,  // opcode: find information response
-                                        0x02,  // format: 128-bit. Data length must be 18
-                                        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryEmptyDataList) {
   att::Result<> status = ToResult(HostError::kFailed);
+  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
+                                   0x01   // format: 16-bit.
+                                          // data list empty
+  );
+  EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  ASSERT_TRUE(ExpectFindInformation());
-
-  fake_chan()->Receive(StaticByteBuffer(0x05,  // opcode: find information response
-                                        0x01   // format: 16-bit.
-                                               // data list empty
-                                        ));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
   att::Result<> status = ToResult(HostError::kFailed);
+  const StaticByteBuffer kResponse(0x01,        // opcode: error response
+                                   0x04,        // request: find information
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0x0A         // error: Attribute Not Found
+  );
+  EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  ASSERT_TRUE(ExpectFindInformation());
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x04,        // request: find information
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x0A         // error: Attribute Not Found
-                                        ));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryError) {
   att::Result<> status = ToResult(HostError::kFailed);
+  const StaticByteBuffer kResponse(0x01,        // opcode: error response
+                                   0x04,        // request: find information
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0x06         // error: Request Not Supported
+  );
+  EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  ASSERT_TRUE(ExpectFindInformation());
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x04,        // request: find information
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x06         // error: Request Not Supported
-                                        ));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
 }
 
@@ -1887,25 +1648,23 @@ TEST_F(ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0003;
 
+  const StaticByteBuffer kResponse(0x05,        // opcode: find information response
+                                   0x01,        // format: 16-bit. Data length must be 4
+                                   0x01, 0x00,  // desc 1 handle
+                                   0xEF, 0xBE,  // desc 1 uuid
+                                   0x02, 0x00,  // desc 2 handle
+                                   0xAD, 0xDE,  // desc 2 uuid
+                                   0x03, 0x00,  // desc 3 handle
+                                   0xFE, 0xFE   // desc 3 uuid
+  );
+
   std::vector<DescriptorData> descrs;
   auto desc_cb = [&descrs](const DescriptorData& desc) { descrs.push_back(desc); };
 
   att::Result<> status = ToResult(HostError::kFailed);
+  EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
   SendDiscoverDescriptors(&status, std::move(desc_cb), kStart, kEnd);
-  ASSERT_TRUE(ExpectFindInformation(kStart, kEnd));
-
-  fake_chan()->Receive(StaticByteBuffer(0x05,        // opcode: find information response
-                                        0x01,        // format: 16-bit. Data length must be 4
-                                        0x01, 0x00,  // desc 1 handle
-                                        0xEF, 0xBE,  // desc 1 uuid
-                                        0x02, 0x00,  // desc 2 handle
-                                        0xAD, 0xDE,  // desc 2 uuid
-                                        0x03, 0x00,  // desc 3 handle
-                                        0xFE, 0xFE   // desc 3 uuid
-                                        ));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(3u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
@@ -1920,15 +1679,7 @@ TEST_F(ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0002;
 
-  std::vector<DescriptorData> descrs;
-  auto desc_cb = [&descrs](const DescriptorData& desc) { descrs.push_back(desc); };
-
-  att::Result<> status = ToResult(HostError::kFailed);
-  SendDiscoverDescriptors(&status, std::move(desc_cb), kStart, kEnd);
-  ASSERT_TRUE(ExpectFindInformation(kStart, kEnd));
-
-  att()->set_mtu(512);
-  fake_chan()->Receive(StaticByteBuffer(
+  const StaticByteBuffer kResponse(
       0x05,        // opcode: find information response
       0x02,        // format: 128-bit. Data length must be 18
       0x01, 0x00,  // desc 1 handle
@@ -1937,10 +1688,16 @@ TEST_F(ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
       0x02, 0x00,  // desc 2 handle
       0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xAD, 0xDE, 0x00,
       0x00  // desc 2 uuid
-      ));
+  );
 
+  std::vector<DescriptorData> descrs;
+  auto desc_cb = [&descrs](const DescriptorData& desc) { descrs.push_back(desc); };
+  att::Result<> status = ToResult(HostError::kFailed);
+  att()->set_mtu(512);
+
+  EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
+  SendDiscoverDescriptors(&status, std::move(desc_cb), kStart, kEnd);
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(2u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
@@ -1951,48 +1708,44 @@ TEST_F(ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
 
 TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
   constexpr att::Handle kEnd = 0x0005;
-  constexpr att::Handle kStart1 = 0x0001;
-  constexpr att::Handle kStart2 = 0x0003;
-  constexpr att::Handle kStart3 = 0x0004;
+  constexpr att::Handle kStart0 = 0x0001;
+  const StaticByteBuffer kRequest0 = MakeFindInformation(kStart0, kEnd);
+  const StaticByteBuffer kResponse0(
+      att::kFindInformationResponse,  // opcode: find information response
+      0x01,                           // format: 16-bit. Data length must be 4
+      0x01, 0x00,                     // desc 1 handle
+      0xEF, 0xBE,                     // desc 1 uuid
+      0x02, 0x00,                     // desc 2 handle
+      0xAD, 0xDE                      // desc 2 uuid
+  );
+  constexpr att::Handle kStart1 = 0x0003;
+  const StaticByteBuffer kRequest1 = MakeFindInformation(kStart1, kEnd);
+  const StaticByteBuffer kResponse1(
+      att::kFindInformationResponse,  // opcode: find information response
+      0x02,                           // format: 128-bit. Data length must be 18
+      0x03, 0x00,                     // desc 3 handle
+      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xFE, 0xFE, 0x00,
+      0x00  // desc 3 uuid
+  );
+  constexpr att::Handle kStart2 = 0x0004;
+  const StaticByteBuffer kRequest2 = MakeFindInformation(kStart2, kEnd);
+  const StaticByteBuffer kResponse2(
+      att::kErrorResponse,           // response opcode
+      att::kFindInformationRequest,  // request opcode that generated error
+      0x04, 0x00,                    // handle: kStart2
+      0x0A                           // error: Attribute Not Found
+  );
 
   std::vector<DescriptorData> descrs;
   auto desc_cb = [&descrs](const DescriptorData& desc) { descrs.push_back(desc); };
-
   att::Result<> status = ToResult(HostError::kFailed);
-  SendDiscoverDescriptors(&status, std::move(desc_cb), kStart1, kEnd);
 
-  // Batch 1
-  ASSERT_TRUE(ExpectFindInformation(kStart1, kEnd));
-  return;
-  fake_chan()->Receive(StaticByteBuffer(0x05,        // opcode: find information response
-                                        0x01,        // format: 16-bit. Data length must be 4
-                                        0x01, 0x00,  // desc 1 handle
-                                        0xEF, 0xBE,  // desc 1 uuid
-                                        0x02, 0x00,  // desc 2 handle
-                                        0xAD, 0xDE   // desc 2 uuid
-                                        ));
+  EXPECT_PACKET_OUT(kRequest0, &kResponse0);
+  EXPECT_PACKET_OUT(kRequest1, &kResponse1);
+  EXPECT_PACKET_OUT(kRequest2, &kResponse2);
+  SendDiscoverDescriptors(&status, std::move(desc_cb), kStart0, kEnd);
   RunLoopUntilIdle();
-
-  // Batch 2
-  ASSERT_TRUE(ExpectFindInformation(kStart2, kEnd));
-  fake_chan()->Receive(StaticByteBuffer(0x05,        // opcode: find information response
-                                        0x02,        // format: 128-bit. Data length must be 18
-                                        0x03, 0x00,  // desc 3 handle
-                                        0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10,
-                                        0x00, 0x00, 0xFE, 0xFE, 0x00,
-                                        0x00  // desc 3 uuid
-                                        ));
-  RunLoopUntilIdle();
-
-  // Batch 3
-  ASSERT_TRUE(ExpectFindInformation(kStart3, kEnd));
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x08,        // request: read by type
-                                        0x04, 0x00,  // handle: kStart3 (0x0004)
-                                        0x0A         // error: Attribute Not Found
-                                        ));
-  RunLoopUntilIdle();
-
+  EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(fitx::ok(), status);
   ASSERT_EQ(3u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
@@ -2005,56 +1758,45 @@ TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
 
 TEST_F(ClientTest, DescriptorDiscoveryResultsBeforeRange) {
   constexpr att::Handle kStart = 0x0002;
-
+  const StaticByteBuffer kResponse(0x05,        // opcode: find information response
+                                   0x01,        // format: 16-bit.
+                                   0x01, 0x00,  // handle is before kStart
+                                   0xEF, 0xBE   // uuid
+  );
   att::Result<> status = fitx::ok();
+  EXPECT_PACKET_OUT(MakeFindInformation(kStart), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback, kStart);
-  ASSERT_TRUE(ExpectFindInformation(kStart));
-
-  fake_chan()->Receive(StaticByteBuffer(0x05,        // opcode: find information response
-                                        0x01,        // format: 16-bit.
-                                        0x01, 0x00,  // handle is before the range
-                                        0xEF, 0xBE   // uuid
-                                        ));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryResultsBeyondRange) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0002;
-
+  const StaticByteBuffer kResponse(0x05,        // opcode: find information response
+                                   0x01,        // format: 16-bit.
+                                   0x03, 0x00,  // handle is beyond kEnd
+                                   0xEF, 0xBE   // uuid
+  );
   att::Result<> status = fitx::ok();
+  EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback, kStart, kEnd);
-  ASSERT_TRUE(ExpectFindInformation(kStart, kEnd));
-
-  fake_chan()->Receive(StaticByteBuffer(0x05,        // opcode: find information response
-                                        0x01,        // format: 16-bit.
-                                        0x03, 0x00,  // handle is beyond the range
-                                        0xEF, 0xBE   // uuid
-                                        ));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
   att::Result<> status = fitx::ok();
+  const StaticByteBuffer kResponse(0x05,        // opcode: find information response
+                                   0x01,        // format: 16-bit.
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0xEF, 0xBE,  // uuid
+                                   0x01, 0x00,  // handle: 0x0001 (repeats)
+                                   0xAD, 0xDE   // uuid
+  );
+  EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  ASSERT_TRUE(ExpectFindInformation());
-
-  fake_chan()->Receive(StaticByteBuffer(0x05,        // opcode: find information response
-                                        0x01,        // format: 16-bit.
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0xEF, 0xBE,  // uuid
-                                        0x01, 0x00,  // handle: 0x0001 (repeats)
-                                        0xAD, 0xDE   // uuid
-                                        ));
-
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -2065,22 +1807,17 @@ TEST_F(ClientTest, WriteRequestMalformedResponse) {
                                           0x01, 0x00,    // handle: 0x0001
                                           'f', 'o', 'o'  // value: "foo"
   );
+  // Respond back with a malformed PDU. This should result in a link error.
+  const StaticByteBuffer kResponse(0x013,  // opcode: write response
+                                   0       // One byte payload. The write request has no parameters.
+  );
 
   att::Result<> status = fitx::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
-  // Initiate the request in a message loop task, as Expect() below blocks on
-  // the message loop.
-  async::PostTask(dispatcher(), [&, this] { client()->WriteRequest(kHandle, kValue, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
   ASSERT_FALSE(fake_chan()->link_error());
-
-  // Respond back with a malformed PDU. This should result in a link error.
-  fake_chan()->Receive(StaticByteBuffer(0x013,  // opcode: write response
-                                        0  // One byte payload. The write request has no parameters.
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->WriteRequest(kHandle, kValue, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   EXPECT_TRUE(fake_chan()->link_error());
@@ -2115,21 +1852,17 @@ TEST_F(ClientTest, WriteRequestError) {
                                           0x01, 0x00,    // handle: 0x0001
                                           'f', 'o', 'o'  // value: "foo"
   );
+  const StaticByteBuffer kResponse(0x01,        // opcode: error response
+                                   0x12,        // request: write request
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0x06         // error: Request Not Supported
+  );
 
   att::Result<> status = fitx::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->WriteRequest(kHandle, kValue, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x12,        // request: write request
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x06         // error: Request Not Supported
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->WriteRequest(kHandle, kValue, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2142,18 +1875,12 @@ TEST_F(ClientTest, WriteRequestSuccess) {
                                           0x01, 0x00,    // handle: 0x0001
                                           'f', 'o', 'o'  // value: "foo"
   );
-
+  const StaticByteBuffer kResponse(0x13  // opcode: write response
+  );
   att::Result<> status = fitx::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->WriteRequest(kHandle, kValue, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x13  // opcode: write response
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->WriteRequest(kHandle, kValue, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2192,24 +1919,18 @@ TEST_F(ClientTest, PrepareWriteRequestError) {
                                           0x05, 0x00,    // offset: 0x0005
                                           'f', 'o', 'o'  // value: "foo"
   );
-
-  att::Result<> status = fitx::ok();
+  const StaticByteBuffer kResponse(0x01,        // opcode: error response
+                                   0x16,        // request: prepare write request
+                                   0x01, 0x00,  // handle: 0x0001
+                                   0x06         // error: Request Not Supported
+  );
+  std::optional<att::Result<>> status;
   auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
-
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x16,        // request: prepare write request
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x06         // error: Request Not Supported
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
+  ASSERT_TRUE(status.has_value());
+  EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status.value());
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2222,22 +1943,15 @@ TEST_F(ClientTest, PrepareWriteRequestSuccess) {
                                           0x00, 0x00,    // offset: 0x0000
                                           'f', 'o', 'o'  // value: "foo"
   );
-
+  const StaticByteBuffer kResponse(0x17,          // opcode: prepare write response
+                                   0x01, 0x00,    // handle: 0x0001
+                                   0x00, 0x00,    // offset: 0x0000
+                                   'f', 'o', 'o'  // value: "foo"
+  );
   att::Result<> status = fitx::ok();
   auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
-
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(),
-                  [&, this] { client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x17,          // opcode: prepare write response
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2248,18 +1962,11 @@ TEST_F(ClientTest, ExecuteWriteRequestPendingSuccess) {
   const StaticByteBuffer kExpectedRequest(0x18,  // opcode: execute write request
                                           0x01   // flag: write pending
   );
-
+  const StaticByteBuffer kResponse(0x19);  // opcode: execute write response
   att::Result<> status = fitx::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ExecuteWriteRequest(kFlag, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
-  );
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->ExecuteWriteRequest(kFlag, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2270,18 +1977,11 @@ TEST_F(ClientTest, ExecuteWriteRequestCancelSuccess) {
   const StaticByteBuffer kExpectedRequest(0x18,  // opcode: execute write request
                                           0x00   // flag: cancel all
   );
-
+  const StaticByteBuffer kResponse(0x19);  // opcode: execute write response
   att::Result<> status = fitx::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ExecuteWriteRequest(kFlag, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
-  );
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->ExecuteWriteRequest(kFlag, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2300,52 +2000,39 @@ TEST_F(ClientTest, ExecutePrepareWritesSuccess) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
   );
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x01   // flag: write pending
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
                                            0x01, 0x00,    // handle: 0x0001
                                            0x00, 0x00,    // offset: 0x0000
                                            'f', 'o', 'o'  // value: "foo"
   );
-
-  // The client should follow up with a second prepare write request
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
-
+  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
+                                        0x01, 0x00,    // handle: 0x0001
+                                        0x03, 0x00,    // offset: 0x0003
+                                        'b', 'a', 'r'  // value: "bar"
+  );
   const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
                                            0x01, 0x00,    // handle: 0x0001
                                            0x03, 0x00,    // offset: 0x0003
                                            'b', 'a', 'r'  // value: "bar"
   );
-
-  // The client should send an execute write request following the prepared
-  // writes
-  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x01   // flag: write pending
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2364,6 +2051,13 @@ TEST_F(ClientTest, ExecutePrepareWritesMalformedFailure) {
                                         0x00, 0x00,  // offset: 0x0000
                                         'f', 'o'     // value: "fo"
   );
+  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
+                                           0x01, 0x00,  // handle: 0x0001
+                                           0x00, 0x00,  // offset: 0x0000
+                                           'f', 'o'     // value: "fo"
+  );
+  // The second request is malformed, the client should send an ExecuteWrite
+  // instead of the malformed PrepareWrite.
   const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
                                         0x01, 0x00,    // handle: 0x0001
                                         0x02, 0x00,    // offset: 0x0002
@@ -2372,6 +2066,7 @@ TEST_F(ClientTest, ExecutePrepareWritesMalformedFailure) {
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
                                        0x00   // flag: kCancelAll
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
   ASSERT_EQ(kMtu, kExpectedPrep1.size());
   ASSERT_EQ(kMtu + 1, kExpectedPrep2.size());
@@ -2381,32 +2076,14 @@ TEST_F(ClientTest, ExecutePrepareWritesMalformedFailure) {
   att::Result<> status = fitx::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
-  });
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
 
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
-  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
-                                           0x01, 0x00,  // handle: 0x0001
-                                           0x00, 0x00,  // offset: 0x0000
-                                           'f', 'o'     // value: "fo"
-  );
-
-  // The second request is malformed, the client should send an ExecuteWrite
-  // instead of the malformed PrepareWrite.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
-  );
-
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -2423,39 +2100,30 @@ TEST_F(ClientTest, ExecutePrepareWritesErrorFailure) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "fo"
   );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x00   // flag: kCancelAll
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x01,        // opcode: error response
                                            0x16,        // request: prepare write request
                                            0x01, 0x00,  // handle: 0x0001
                                            0x06         // error: Request Not Supported
   );
-
   // The first request returned an error, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x00   // flag: kCancelAll
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  // Create the PrepareWriteQueue of requests to pass to the client
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2474,210 +2142,76 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
   );
+  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x00, 0x00,    // offset: 0x0000
+                                           'f', 'o', 'o'  // value: "foo"
+  );
   const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
                                         0x01, 0x00,    // handle: 0x0001
                                         0x03, 0x00,    // offset: 0x0003
                                         'b', 'a', 'r'  // value: "bar"
   );
+  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x03, 0x00,    // offset: 0x0003
+                                           'b', 'a', 'r'  // value: "bar"
+  );
+  // Start second write:
   const StaticByteBuffer kExpectedPrep3(0x16,          // opcode: prepare write request
                                         0x02, 0x00,    // handle: 0x0002
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
+  );
+  const auto kResponse3 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x02, 0x00,    // handle: 0x0002
+                                           0x00, 0x00,    // offset: 0x0000
+                                           'f', 'o', 'o'  // value: "foo"
   );
   const StaticByteBuffer kExpectedPrep4(0x16,          // opcode: prepare write request
                                         0x02, 0x00,    // handle: 0x0002
                                         0x03, 0x00,    // offset: 0x0003
                                         'b', 'a', 'r'  // value: "bar"
   );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x01   // flag: write pending
-  );
-
-  att::Result<> status1 = fitx::ok();
-  auto cb1 = [&status1](att::Result<> cb_status) { status1 = cb_status; };
-
-  att::Result<> status2 = fitx::ok();
-  auto cb2 = [&status2](att::Result<> cb_status) { status2 = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the first PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue1;
-    prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset, kValue1));
-    prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue1), ReliableMode::kDisabled, cb1);
-
-    // Create the second PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue2;
-    prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset, kValue1));
-    prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue2), ReliableMode::kDisabled, cb2);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
-  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x00, 0x00,    // offset: 0x0000
-                                           'f', 'o', 'o'  // value: "foo"
-  );
-
-  // The client should follow up with a second prepare write request
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
-
-  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x03, 0x00,    // offset: 0x0003
-                                           'b', 'a', 'r'  // value: "bar"
-  );
-
-  // The client should send an execute write request following the prepared
-  // writes.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
-
-  // The first request should be fully complete now, and should trigger the
-  // second.
-  EXPECT_EQ(fitx::ok(), status1);
-
-  const auto kExecuteWriteResponse = StaticByteBuffer(0x19);  // opcode: execute write response
-  ASSERT_TRUE(ReceiveAndExpect(kExecuteWriteResponse, kExpectedPrep3));
-
-  const auto kResponse3 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x02, 0x00,    // handle: 0x0002
-                                           0x00, 0x00,    // offset: 0x0000
-                                           'f', 'o', 'o'  // value: "foo"
-  );
-
-  // The client should follow up with a second prepare write request
-  ASSERT_TRUE(ReceiveAndExpect(kResponse3, kExpectedPrep4));
-
   const auto kResponse4 = StaticByteBuffer(0x17,          // opcode: prepare write response
                                            0x02, 0x00,    // handle: 0x0002
                                            0x03, 0x00,    // offset: 0x0003
                                            'b', 'a', 'r'  // value: "bar"
   );
-
-  // The client should send an execute write request following the prepared
-  // writes.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse4, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x01   // flag: write pending
   );
+  const auto kExecuteWriteResponse = StaticByteBuffer(0x19);  // opcode: execute write response
 
+  att::Result<> status1 = fitx::ok();
+  auto cb1 = [&status1](att::Result<> cb_status) { status1 = cb_status; };
+  att::PrepareWriteQueue prep_write_queue1;
+  prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset, kValue1));
+  prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset + kValue1.size(), kValue2));
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue1), ReliableMode::kDisabled, cb1);
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  att::Result<> status2 = fitx::ok();
+  auto cb2 = [&status2](att::Result<> cb_status) { status2 = cb_status; };
+  att::PrepareWriteQueue prep_write_queue2;
+  prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset, kValue1));
+  prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset + kValue1.size(), kValue2));
+  client()->ExecutePrepareWrites(std::move(prep_write_queue2), ReliableMode::kDisabled, cb2);
+
+  EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
+  EXPECT_PACKET_OUT(kExpectedExec);  // Delay sending response so the status can be checked
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status2);
-  EXPECT_FALSE(fake_chan()->link_error());
-}
-
-// ExecutePrepareWrites should enqueue while one is being processed and send
-// both long writes, one after the other.
-TEST_F(ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
-  const auto kHandle1 = 0x0001;
-  const auto kHandle2 = 0x0002;
-  const auto kOffset = 0;
-  const StaticByteBuffer kValue1('f', 'o', 'o');
-  const StaticByteBuffer kValue2('b', 'a', 'r');
-
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
-  );
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const StaticByteBuffer kExpectedPrep3(0x16,          // opcode: prepare write request
-                                        0x02, 0x00,    // handle: 0x0002
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
-  );
-  const StaticByteBuffer kExpectedPrep4(0x16,          // opcode: prepare write request
-                                        0x02, 0x00,    // handle: 0x0002
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x01   // flag: write pending
-  );
-
-  att::Result<> status1 = fitx::ok();
-  auto cb1 = [&status1](att::Result<> cb_status) { status1 = cb_status; };
-
-  att::Result<> status2 = fitx::ok();
-  auto cb2 = [&status2](att::Result<> cb_status) { status2 = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the first PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue1;
-    prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset, kValue1));
-    prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue1), ReliableMode::kDisabled, cb1);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
-  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x00, 0x00,    // offset: 0x0000
-                                           'f', 'o', 'o'  // value: "foo"
-  );
-
-  // Initiate another request while the first one is being processed. It should
-  // be enqueued to be processed afterwards.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create another PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue2;
-    prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset, kValue1));
-    prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue2), ReliableMode::kDisabled, cb2);
-  });
-
-  // The client should follow up with a second prepare write request
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
-
-  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x03, 0x00,    // offset: 0x0003
-                                           'b', 'a', 'r'  // value: "bar"
-  );
-
-  // The client should send an execute write request following the prepared
-  // writes.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
-
-  const auto kExecuteWriteResponse = StaticByteBuffer(0x19);  // opcode: execute write response
-
+  EXPECT_TRUE(AllExpectedPacketsSent());
   // The first request should be fully complete now, and should trigger the
   // second.
   EXPECT_EQ(fitx::ok(), status1);
 
-  ASSERT_TRUE(ReceiveAndExpect(kExecuteWriteResponse, kExpectedPrep3));
-
-  const auto kResponse3 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x02, 0x00,    // handle: 0x0002
-                                           0x00, 0x00,    // offset: 0x0000
-                                           'f', 'o', 'o'  // value: "foo"
-  );
-
-  // The client should follow up with a second prepare write request
-  ASSERT_TRUE(ReceiveAndExpect(kResponse3, kExpectedPrep4));
-
-  const auto kResponse4 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x02, 0x00,    // handle: 0x0002
-                                           0x03, 0x00,    // offset: 0x0003
-                                           'b', 'a', 'r'  // value: "bar"
-  );
-
-  // The client should send an execute write request following the prepared
-  // writes.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse4, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
-  );
-
+  EXPECT_PACKET_OUT(kExpectedPrep3, &kResponse3);
+  EXPECT_PACKET_OUT(kExpectedPrep4, &kResponse4);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecuteWriteResponse);
+  // Responding to the first execute request should start the second write request.
+  fake_chan()->Receive(kExecuteWriteResponse);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status2);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2698,51 +2232,38 @@ TEST_F(ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
   );
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x01   // flag: write pending
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
                                            0x01, 0x00,  // handle: 0x0001
                                            0x00, 0x00,  // offset: 0x0000
                                            'f', 'l'     // value: "fl" -> different, but OK.
   );
-
-  // The client should follow up with a second prepare write request
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
-
+  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
+                                        0x01, 0x00,    // handle: 0x0001
+                                        0x03, 0x00,    // offset: 0x0003
+                                        'b', 'a', 'r'  // value: "bar"
+  );
   const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
                                            0x01, 0x00,    // handle: 0x0001
                                            0x03, 0x00,    // offset: 0x0003
                                            'b', 'a', 'r'  // value: "bar"
   );
-
-  // The client should send an execute write request following the prepared
-  // writes
-  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x01   // flag: write pending
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  // Create the PrepareWriteQueue of requests to pass to the client
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
+  EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2762,51 +2283,38 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
   );
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x01   // flag: write pending
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
                                            0x01, 0x00,    // handle: 0x0001
                                            0x00, 0x00,    // offset: 0x0000
                                            'f', 'o', 'o'  // value: "foo"
   );
-
-  // The client should follow up with a second prepare write request
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
-
+  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
+                                        0x01, 0x00,    // handle: 0x0001
+                                        0x03, 0x00,    // offset: 0x0003
+                                        'b', 'a', 'r'  // value: "bar"
+  );
   const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
                                            0x01, 0x00,    // handle: 0x0001
                                            0x03, 0x00,    // offset: 0x0003
                                            'b', 'a', 'r'  // value: "bar"
   );
-
-  // The client should send an execute write request following the prepared
-  // writes
-  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x01   // flag: write pending
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  // Create the PrepareWriteQueue of requests to pass to the client
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2824,35 +2332,24 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
                                         0x01, 0x00,  // handle: 0x0001
                                         0x00, 0x00   // offset: 0x0000
   );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x01   // flag: write pending
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
                                            0x01, 0x00,  // handle: 0x0001
                                            0x00, 0x00   // offset: 0x0000
   );
-
-  // The client should send an execute write request following the prepared
-  // writes
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x01   // flag: write pending
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2872,37 +2369,28 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
   );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x00   // flag: kCancelAll
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x17,               // opcode: prepare write response
                                            0x01, 0x00,         // handle: 0x0001
                                            0x00, 0x00,         // offset: 0x0000
                                            'f', 'o', 'b', '1'  // value: "fob1" -> invalid
   );
-
-  // The first request returned an error, the client should send an ExecuteWrite
+  // The first response was invalid, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x00   // flag: kCancelAll
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2922,36 +2410,27 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
   );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x00   // flag: kCancelAll
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
                                            0x01, 0x00,  // handle: 0x0001
                                            0x00         // offset: malformed
   );
-
-  // The first request returned an error (malformed), the client should send an ExecuteWrite
+  // The first response was malformed, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x00   // flag: kCancelAll
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2970,36 +2449,27 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
   );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x00   // flag: kCancelAll
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
                                            0x01, 0x00,    // handle: 0x0001
                                            0x01, 0x00,    // offset: incorrect
                                            'f', 'o', 'o'  // value: 'foo'
   );
-
-  // The first request returned an error (malformed), the client should send an ExecuteWrite
+  // The first response was malformed, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x00   // flag: kCancelAll
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3018,35 +2488,26 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
                                         0x00, 0x00,    // offset: 0x0000
                                         'f', 'o', 'o'  // value: "foo"
   );
-  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
-                                       0x00   // flag: kCancelAll
-  );
-
-  att::Result<> status = fitx::ok();
-  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
-
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    // Create the PrepareWriteQueue of requests to pass to the client
-    att::PrepareWriteQueue prep_write_queue;
-    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-    client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedPrep1));
-
   const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
                                            0x01, 0x00,  // handle: 0x0001
                                            0x00, 0x00   // offset: 0x0000
   );
-
-  // The first request returned an error (empty value), the client should
-  // send an ExecuteWrite instead of the second PrepareWrite.
-  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
-
-  fake_chan()->Receive(StaticByteBuffer(0x19)  // opcode: execute write response
+  // The first response was malformed (empty value), the client should send an ExecuteWrite instead
+  // of the second PrepareWrite.
+  const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
+                                       0x00   // flag: kCancelAll
   );
+  const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
+  att::Result<> status = fitx::ok();
+  auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
+
+  att::PrepareWriteQueue prep_write_queue;
+  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+
+  EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
+  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3056,24 +2517,18 @@ TEST_F(ClientTest, WriteWithoutResponseExceedsMtu) {
   const StaticByteBuffer kValue('f', 'o', 'o');
   constexpr att::Handle kHandle = 0x0001;
   constexpr size_t kMtu = 5;
+  att()->set_mtu(kMtu);
   const StaticByteBuffer kExpectedRequest(0x52,          // opcode: write command
                                           0x01, 0x00,    // handle: 0x0001
                                           'f', 'o', 'o'  // value: "foo"
   );
   ASSERT_EQ(kMtu + 1, kExpectedRequest.size());
 
-  att()->set_mtu(kMtu);
-
-  bool called = false;
-  fake_chan()->SetSendCallback([&](auto) { called = true; }, dispatcher());
-
   std::optional<att::Result<>> status;
+  // No packet should be sent.
   client()->WriteWithoutResponse(kHandle, kValue,
                                  [&](att::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
-
-  // No packet should be sent.
-  EXPECT_FALSE(called);
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kFailed), *status);
 }
@@ -3085,15 +2540,10 @@ TEST_F(ClientTest, WriteWithoutResponseSuccess) {
                                           0x01, 0x00,    // handle: 0x0001
                                           'f', 'o', 'o'  // value: "foo"
   );
-
-  // Initiate the request in a loop task, as Expect() below blocks
   std::optional<att::Result<>> status;
-  async::PostTask(dispatcher(), [&] {
-    client()->WriteWithoutResponse(kHandle, kValue,
-                                   [&](att::Result<> cb_status) { status = cb_status; });
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->WriteWithoutResponse(kHandle, kValue,
+                                 [&](att::Result<> cb_status) { status = cb_status; });
   ASSERT_TRUE(status.has_value());
   ASSERT_EQ(fitx::ok(), *status);
 }
@@ -3103,6 +2553,8 @@ TEST_F(ClientTest, ReadRequestEmptyResponse) {
   const StaticByteBuffer kExpectedRequest(0x0A,       // opcode: read request
                                           0x01, 0x00  // handle: 0x0001
   );
+  // ATT Read Response with no payload.
+  const StaticByteBuffer kResponse(0x0B);
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
@@ -3113,16 +2565,9 @@ TEST_F(ClientTest, ReadRequestEmptyResponse) {
     EXPECT_FALSE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadRequest(kHandle, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  // ATT Read Response with no payload.
-  fake_chan()->Receive(StaticByteBuffer(0x0B));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -3144,15 +2589,9 @@ TEST_F(ClientTest, ReadRequestSuccess) {
     EXPECT_FALSE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadRequest(kHandle, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(kExpectedResponse);
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
+  client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -3174,11 +2613,8 @@ TEST_F(ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
     EXPECT_TRUE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadRequest(kHandle, cb); });
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(expected_response);
+  EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
+  client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3197,17 +2633,13 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
   std::optional<att::Result<uint16_t>> result;
   auto mtu_cb = [&](att::Result<uint16_t> cb_result) { result = cb_result; };
 
-  // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
-
-  ASSERT_TRUE(Expect(kExpectedMtuRequest));
+  EXPECT_PACKET_OUT(kExpectedMtuRequest);
+  client()->ExchangeMTU(mtu_cb);
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
-
   fake_chan()->Receive(StaticByteBuffer(0x03,  // opcode: exchange MTU response
                                         LowerBits(kServerRxMTU),
                                         UpperBits(kServerRxMTU)  // server rx mtu
                                         ));
-
   RunLoopUntilIdle();
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(att::Result<uint16_t>(fitx::ok(kPreferredMTU)), *result);
@@ -3230,11 +2662,8 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
     EXPECT_FALSE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadRequest(kHandle, cb); });
-  ASSERT_TRUE(Expect(kExpectedReadRequest));
-
-  fake_chan()->Receive(expected_response);
+  EXPECT_PACKET_OUT(kExpectedReadRequest, &expected_response);
+  client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3244,6 +2673,11 @@ TEST_F(ClientTest, ReadRequestError) {
   constexpr att::Handle kHandle = 0x0001;
   const StaticByteBuffer kExpectedRequest(0x0A,       // opcode: read request
                                           0x01, 0x00  // handle: 0x0001
+  );
+  const StaticByteBuffer kErrorResponse(0x01,        // opcode: error response
+                                        0x0A,        // request: read request
+                                        0x01, 0x00,  // handle: 0x0001
+                                        0x06         // error: Request Not Supported
   );
 
   att::Result<> status = fitx::ok();
@@ -3255,19 +2689,9 @@ TEST_F(ClientTest, ReadRequestError) {
     EXPECT_FALSE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadRequest(kHandle, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x0A,        // request: read request
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x06         // error: Request Not Supported
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kErrorResponse);
+  client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -3306,14 +2730,8 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess16BitUUID) {
     EXPECT_FALSE(values[1].maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] {
-    client()->ReadByTypeRequest(kUuid16, kStartHandle, kEndHandle, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(kExpectedResponse);
+  EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
+  client()->ReadByTypeRequest(kUuid16, kStartHandle, kEndHandle, cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3351,14 +2769,8 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess128BitUUID) {
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x01), values[1].value));
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] {
-    client()->ReadByTypeRequest(kUuid128, kStartHandle, kEndHandle, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(kExpectedResponse);
+  EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
+  client()->ReadByTypeRequest(kUuid128, kStartHandle, kEndHandle, cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3389,17 +2801,9 @@ TEST_F(ClientTest, ReadByTypeRequestError) {
     handle = result.error_value().handle;
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] {
-    client()->ReadByTypeRequest(kTestUuid3, kStartHandle, kEndHandle, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(kErrorResponse);
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kErrorResponse);
+  client()->ReadByTypeRequest(kTestUuid3, kStartHandle, kEndHandle, cb);
   RunLoopUntilIdle();
-
   ASSERT_TRUE(error.has_value());
   EXPECT_EQ(att::Error(att::ErrorCode::kAttributeNotFound), *error);
   ASSERT_TRUE(handle.has_value());
@@ -3481,17 +2885,9 @@ TEST_F(ClientTest, ReadByTypeRequestInvalidResponses) {
       EXPECT_FALSE(result.error_value().handle.has_value());
     };
 
-    // Initiate the request in a loop task, as Expect() below blocks
-    async::PostTask(dispatcher(), [&, this] {
-      client()->ReadByTypeRequest(kTestUuid3, kStartHandle, kEndHandle, cb);
-    });
-
-    ASSERT_TRUE(Expect(kExpectedRequest));
-
-    fake_chan()->Receive(invalid_rsp);
-
+    EXPECT_PACKET_OUT(kExpectedRequest, &invalid_rsp);
+    client()->ReadByTypeRequest(kTestUuid3, kStartHandle, kEndHandle, cb);
     RunLoopUntilIdle();
-
     ASSERT_TRUE(error.has_value());
     EXPECT_EQ(Error(HostError::kPacketMalformed), *error);
     EXPECT_FALSE(fake_chan()->link_error());
@@ -3505,6 +2901,8 @@ TEST_F(ClientTest, ReadBlobRequestEmptyResponse) {
                                           0x01, 0x00,  // handle: 1
                                           0x05, 0x00   // offset: 5
   );
+  // ATT Read Blob Response with no payload.
+  const StaticByteBuffer kResponse(0x0D);
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
@@ -3515,16 +2913,9 @@ TEST_F(ClientTest, ReadBlobRequestEmptyResponse) {
     EXPECT_FALSE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadBlobRequest(kHandle, kOffset, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  // ATT Read Blob Response with no payload.
-  fake_chan()->Receive(StaticByteBuffer(0x0D));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
+  client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -3549,13 +2940,9 @@ TEST_F(ClientTest, ReadBlobRequestSuccess) {
     EXPECT_FALSE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadBlobRequest(kHandle, kOffset, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-  fake_chan()->Receive(kExpectedResponse);
+  EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
+  client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -3579,11 +2966,8 @@ TEST_F(ClientTest, ReadBlobRequestMaybeTruncated) {
     EXPECT_TRUE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadBlobRequest(kHandle, kOffset, cb); });
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(expected_response);
+  EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
+  client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3609,11 +2993,8 @@ TEST_F(ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxV
     EXPECT_FALSE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadBlobRequest(kHandle, kOffset, cb); });
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(expected_response);
+  EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
+  client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
   EXPECT_EQ(fitx::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -3626,6 +3007,11 @@ TEST_F(ClientTest, ReadBlobRequestError) {
                                           0x01, 0x00,  // handle: 1
                                           0x05, 0x00   // offset: 5
   );
+  const StaticByteBuffer kErrorResponse(0x01,        // opcode: error response
+                                        0x0C,        // request: read blob request
+                                        0x01, 0x00,  // handle: 0x0001
+                                        0x07         // error: Invalid Offset
+  );
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
@@ -3636,19 +3022,9 @@ TEST_F(ClientTest, ReadBlobRequestError) {
     EXPECT_FALSE(maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] { client()->ReadBlobRequest(kHandle, kOffset, cb); });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x0C,        // request: read blob request
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x07         // error: Invalid Offset
-                                        ));
-
+  EXPECT_PACKET_OUT(kExpectedRequest, &kErrorResponse);
+  client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
-
   EXPECT_EQ(ToResult(att::ErrorCode::kInvalidOffset), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -3746,7 +3122,8 @@ TEST_F(ClientTest, Indication) {
 
   // Wait until a confirmation gets sent.
   const auto kConfirmation = StaticByteBuffer(0x1E);
-  EXPECT_TRUE(ReceiveAndExpect(kIndication, kConfirmation));
+  EXPECT_PACKET_OUT(kConfirmation);
+  fake_chan()->Receive(kIndication);
   EXPECT_TRUE(called);
 }
 
@@ -3798,14 +3175,8 @@ TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
     EXPECT_TRUE(values[0].maybe_truncated);
   };
 
-  // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&, this] {
-    client()->ReadByTypeRequest(kUuid16, kStartHandle, kEndHandle, cb);
-  });
-
-  ASSERT_TRUE(Expect(kExpectedRequest));
-
-  fake_chan()->Receive(expected_response);
+  EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
+  client()->ReadByTypeRequest(kUuid16, kStartHandle, kEndHandle, cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
