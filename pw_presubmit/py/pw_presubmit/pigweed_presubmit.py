@@ -75,10 +75,14 @@ def _at_all_optimization_levels(target):
 # Build presubmit checks
 #
 def gn_clang_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 pw_RUN_INTEGRATION_TESTS=(sys.platform != 'win32'))
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_clang'))
+    build_targets = list(_at_all_optimization_levels('host_clang'))
+
+    # TODO(b/240982565): SocketStream currently requires Linux.
+    if sys.platform.startswith('linux'):
+        build_targets.append('integration_tests')
+
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -118,6 +122,10 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
     if sys.platform != 'win32':
         build_targets.append('cpp14_compatibility')
         build_targets.append('cpp20_compatibility')
+
+    # TODO(b/240982565): SocketStream currently requires Linux.
+    if sys.platform.startswith('linux'):
+        build_targets.append('integration_tests')
 
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *build_targets)
@@ -180,7 +188,6 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
     build.gn_gen(
         ctx.root,
         ctx.output_dir,
-        pw_RUN_INTEGRATION_TESTS=False,
         dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
                                                'pw_crypto:sha256_mbedtls'),
@@ -195,7 +202,6 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.gn_gen(
         ctx.root,
         ctx.output_dir,
-        pw_RUN_INTEGRATION_TESTS=False,
         dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
                                                    'boringssl'),
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
@@ -212,7 +218,6 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
     build.gn_gen(
         ctx.root,
         ctx.output_dir,
-        pw_RUN_INTEGRATION_TESTS=False,
         dir_pw_third_party_micro_ecc='"{}"'.format(ctx.package_root /
                                                    'micro-ecc'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /

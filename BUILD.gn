@@ -37,10 +37,6 @@ declare_args() {
 
   # List of application image GN targets specific to the Pigweed target.
   pw_TARGET_APPLICATIONS = []
-
-  # Whether to run integration tests, which may involve multiple processes
-  # communicating over a socket. Integration tests require RPC synchronization.
-  pw_RUN_INTEGRATION_TESTS = host_os == "linux"
 }
 
 # Enumerate all of the different targets that upstream Pigweed will build by
@@ -58,10 +54,6 @@ group("default") {
     ":stm32f429i",
     "pw_rpc:test_protos.python.install",
   ]
-
-  if (pw_RUN_INTEGRATION_TESTS) {
-    deps += [ ":integration_tests" ]
-  }
 }
 
 # Verify that this BUILD.gn file is only used by Pigweed itself.
@@ -198,8 +190,7 @@ group("docs") {
   deps = [ "$dir_pigweed/docs($dir_pigweed/targets/docs)" ]
 }
 
-# Tests larger than unit tests, typically run in a specific configuration. Only
-# added if pw_RUN_INTEGRATION_TESTS is true.
+# Tests larger than unit tests, typically run in a specific configuration.
 group("integration_tests") {
   _default_tc = _default_toolchain_prefix + pw_default_optimization_level
   deps = [

@@ -29,6 +29,8 @@ constexpr const char* kLocalhostAddress = "127.0.0.1";
 
 }  // namespace
 
+// TODO(b/240982565): Implement SocketStream for Windows.
+
 // Listen to the port and return after a client is connected
 Status SocketStream::Serve(uint16_t port) {
   listen_port_ = port;
