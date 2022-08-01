@@ -57,7 +57,7 @@ _pw_build_defaults = {
 
   # TODO(b/235237667): Remove this once all uses explicitly depend on polyfills.
   if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
-    public_deps = [ "$dir_pw_span:polyfill" ]
+    public_deps += [ "$dir_pw_span:polyfill" ]
   }
   if (pw_build_DEFAULT_VISIBILITY != "*") {
     visibility = pw_build_DEFAULT_VISIBILITY
