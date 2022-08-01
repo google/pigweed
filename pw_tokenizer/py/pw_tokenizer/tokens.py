@@ -26,6 +26,7 @@ import struct
 from typing import (BinaryIO, Callable, Dict, Iterable, Iterator, List,
                     NamedTuple, Optional, Pattern, TextIO, Tuple, Union,
                     ValuesView)
+from uuid import uuid4
 
 DATE_FORMAT = '%Y-%m-%d'
 DEFAULT_DOMAIN = ''
@@ -317,12 +318,17 @@ def parse_csv(fd: TextIO) -> Iterable[TokenizedStringEntry]:
 def write_csv(database: Database, fd: BinaryIO) -> None:
     """Writes the database as CSV to the provided binary file."""
     for entry in sorted(database.entries()):
-        # Align the CSV output to 10-character columns for improved readability.
-        # Use \n instead of RFC 4180's \r\n.
-        fd.write('{:08x},{:10},"{}"\n'.format(
-            entry.token,
-            entry.date_removed.strftime(DATE_FORMAT) if entry.date_removed else
-            '', entry.string.replace('"', '""')).encode())  # escape " as ""
+        _write_csv_line(fd, entry)
+
+
+def _write_csv_line(fd: BinaryIO, entry: TokenizedStringEntry):
+    """Write a line in CSV format to the provided binary file."""
+    # Align the CSV output to 10-character columns for improved readability.
+    # Use \n instead of RFC 4180's \r\n.
+    fd.write('{:08x},{:10},"{}"\n'.format(
+        entry.token,
+        entry.date_removed.strftime(DATE_FORMAT) if entry.date_removed else '',
+        entry.string.replace('"', '""')).encode())  # escape " as ""
 
 
 class _BinaryFileFormat(NamedTuple):
@@ -455,6 +461,9 @@ class DatabaseFile(Database):
     @staticmethod
     def create(path: Path) -> 'DatabaseFile':
         """Creates a DatabaseFile that coincides to the file type."""
+        if path.is_dir():
+            return _DirectoryDatabase(path)
+
         # Read the path as a packed binary file.
         with path.open('rb') as fd:
             if file_is_binary_database(fd):
@@ -485,6 +494,43 @@ class _CSVDatabase(DatabaseFile):
         super().__init__(path, parse_csv(fd))
 
     def write_to_file(self) -> None:
-        """Exports in the csv format to the original path."""
+        """Exports in the CSV format to the original path."""
         with self.path.open('wb') as fd:
             write_csv(self, fd)
+
+
+def _parse_directory(paths: Iterable[Path]) -> Iterable[TokenizedStringEntry]:
+    """Parses TokenizedStringEntries from files in the directory as a CSV."""
+    for path in paths:
+        with path.open() as fd:
+            yield from parse_csv(fd)
+
+
+class _DirectoryDatabase(DatabaseFile):
+    def __init__(self, directory: Path) -> None:
+        # Create a DatabaseFile using the directory.
+        super().__init__(directory, _parse_directory(directory.iterdir()))
+        self._original_entries = self._database.copy()
+        # TODO(b/239551346): Check whether a CSV exists in
+        # HEAD. Exclude the CSV when loading the database.
+        # Generate a unique filename not in the directory.
+        self._csv_file = directory / f'{uuid4().hex}.csv'
+        while self._csv_file.exists():
+            self._csv_file = directory / f'{uuid4().hex}.csv'
+
+    def write_to_file(self) -> None:
+        """Exports the database in CSV format to the original path."""
+        new_entries = self._get_new_token_entries()
+        if new_entries:
+            with self._csv_file.open('wb') as fd:
+                for entry in new_entries:
+                    _write_csv_line(fd, entry)
+
+    def _get_new_token_entries(self) -> List[TokenizedStringEntry]:
+        """Collects new entries and returns the total new entries found."""
+        new_token_entries = []
+        for entry in sorted(self.entries()):
+            original_entry = self._original_entries.get(entry.key())
+            if original_entry != entry:
+                new_token_entries.append(entry)
+        return new_token_entries

@@ -187,7 +187,7 @@ def _database_from_json(fd) -> tokens.Database:
     return _database_from_strings(json.load(fd))
 
 
-def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:
+def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:  # pylint: disable=too-many-return-statements
     """Loads a Database from supported database types.
 
     Supports Database objects, JSONs, ELFs, CSVs, and binary databases.
@@ -206,6 +206,9 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:
         if not os.path.exists(db):
             raise FileNotFoundError(
                 f'"{db}" is not a path to a token database')
+
+        if Path(db).is_dir():
+            return tokens.DatabaseFile.create(Path(db))
 
         # Read the path as an ELF file.
         with open(db, 'rb') as fd:

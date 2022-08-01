@@ -745,6 +745,19 @@ A CSV token database can be checked into a source repository and updated as code
 changes are made. The build system can invoke ``database.py`` to update the
 database after each build.
 
+Directory database
+^^^^^^^^^^^^^^^^^^
+A directory database is a collection of CSV files with unrepeated filenames.
+The ``add`` command creates a CSV in the database when new token entries exist
+from the supplied database type. The resulting CSV contains only new tokens.
+The filename is unique in the database folder and is named after a universally
+unique identifier (UUID). This is helpful when there are asynchronous additions
+to the database as merge conflicts are avoided.
+
+.. code-block:: sh
+
+   ./database.py add --database DIR_DATABASE_NAME ELF_OR_DATABASE_FILE
+
 GN integration
 ^^^^^^^^^^^^^^
 Token databases may be updated or created as part of a GN build. The

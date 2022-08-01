@@ -18,11 +18,13 @@ import datetime
 import io
 import logging
 from pathlib import Path
+import shutil
 import tempfile
 from typing import Iterator
 import unittest
 
 from pw_tokenizer import tokens
+from pw_tokenizer import database
 from pw_tokenizer.tokens import default_hash, _LOG
 
 CSV_DATABASE = '''\
@@ -89,6 +91,68 @@ INVALID_CSV = """\
 6,"Missing fields"
 """
 
+CSV_DATABASE_2 = '''\
+00000000,          ,""
+141c35d5,          ,"The answer: ""%s"""
+29aef586,          ,"1234"
+2b78825f,          ,"[:-)"
+2e668cd6,          ,"Jello, world!"
+31631781,          ,"%d"
+61fd1e26,          ,"%ld"
+68ab92da,          ,"%s there are %x (%.2f) of them%c"
+7b940e2a,          ,"Hello %s! %hd %e"
+7da55d52,          ,">:-[]"
+7f35a9a5,          ,"TestName"
+851beeb6,          ,"%u %d"
+881436a0,          ,"The answer is: %s"
+88808930,          ,"%u%d%02x%X%hu%hhd%d%ld%lu%lld%llu%c%c%c"
+92723f44,          ,"???"
+a09d6698,          ,"won-won-won-wonderful"
+aa9ffa66,          ,"void pw::tokenizer::{anonymous}::TestName()"
+ad002c97,          ,"%llx"
+b3653e13,          ,"Jello!"
+cc6d3131,          ,"Jello?"
+e13b0f94,          ,"%llu"
+e65aefef,          ,"Won't fit : %s%d"
+'''
+
+CSV_DATABASE_3 = """\
+17fa86d3,          ,"hello"
+18c5017c,          ,"yes"
+59b2701c,          ,"The answer was: %s"
+881436a0,          ,"The answer is: %s"
+d18ada0f,          ,"something"
+"""
+
+CSV_DATABASE_4 = '''\
+00000000,          ,""
+141c35d5,          ,"The answer: ""%s"""
+17fa86d3,          ,"hello"
+18c5017c,          ,"yes"
+29aef586,          ,"1234"
+2b78825f,          ,"[:-)"
+2e668cd6,          ,"Jello, world!"
+31631781,          ,"%d"
+59b2701c,          ,"The answer was: %s"
+61fd1e26,          ,"%ld"
+68ab92da,          ,"%s there are %x (%.2f) of them%c"
+7b940e2a,          ,"Hello %s! %hd %e"
+7da55d52,          ,">:-[]"
+7f35a9a5,          ,"TestName"
+851beeb6,          ,"%u %d"
+881436a0,          ,"The answer is: %s"
+88808930,          ,"%u%d%02x%X%hu%hhd%d%ld%lu%lld%llu%c%c%c"
+92723f44,          ,"???"
+a09d6698,          ,"won-won-won-wonderful"
+aa9ffa66,          ,"void pw::tokenizer::{anonymous}::TestName()"
+ad002c97,          ,"%llx"
+b3653e13,          ,"Jello!"
+cc6d3131,          ,"Jello?"
+d18ada0f,          ,"something"
+e13b0f94,          ,"%llu"
+e65aefef,          ,"Won't fit : %s%d"
+'''
+
 
 def read_db_from_csv(csv_str: str) -> tokens.Database:
     with io.StringIO(csv_str) as csv_db:
@@ -102,14 +166,14 @@ def _entries(*strings: str) -> Iterator[tokens.TokenizedStringEntry]:
 
 class TokenDatabaseTest(unittest.TestCase):
     """Tests the token database class."""
-    def test_csv(self):
+    def test_csv(self) -> None:
         db = read_db_from_csv(CSV_DATABASE)
         self.assertEqual(str(db), CSV_DATABASE)
 
         db = read_db_from_csv('')
         self.assertEqual(str(db), '')
 
-    def test_csv_formatting(self):
+    def test_csv_formatting(self) -> None:
         db = read_db_from_csv('')
         self.assertEqual(str(db), '')
 
@@ -121,7 +185,7 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(str(db), ('00000000,1990-02-01,"Commas,"",,"\n'
                                    '00000001,1990-01-01,"Quotes"""\n'))
 
-    def test_bad_csv(self):
+    def test_bad_csv(self) -> None:
         with self.assertLogs(_LOG, logging.ERROR) as logs:
             db = read_db_from_csv(INVALID_CSV)
 
@@ -135,7 +199,7 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(db.token_to_entries[5][0].string, "I'm %s fine")
         self.assertFalse(db.token_to_entries[6])
 
-    def test_lookup(self):
+    def test_lookup(self) -> None:
         db = read_db_from_csv(CSV_DATABASE)
         self.assertEqual(db.token_to_entries[0x9999], [])
 
@@ -157,7 +221,7 @@ class TokenDatabaseTest(unittest.TestCase):
         answer, = db.token_to_entries[0x141c35d5]
         self.assertEqual(answer.string, 'The answer: "%s"')
 
-    def test_collisions(self):
+    def test_collisions(self) -> None:
         hash_1 = tokens.pw_tokenizer_65599_hash('o000', 96)
         hash_2 = tokens.pw_tokenizer_65599_hash('0Q1Q', 96)
         self.assertEqual(hash_1, hash_2)
@@ -169,7 +233,7 @@ class TokenDatabaseTest(unittest.TestCase):
             [entry.string for entry in db.token_to_entries[hash_1]],
             ['o000', '0Q1Q'])
 
-    def test_purge(self):
+    def test_purge(self) -> None:
         db = read_db_from_csv(CSV_DATABASE)
         original_length = len(db.token_to_entries)
 
@@ -192,7 +256,7 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(db.token_to_entries[0xcc6d3131][0].string, 'Jello?')
         self.assertFalse(db.token_to_entries[0xe65aefef])
 
-    def test_merge(self):
+    def test_merge(self) -> None:
         """Tests the tokens.Database merge method."""
 
         db = tokens.Database()
@@ -271,7 +335,7 @@ class TokenDatabaseTest(unittest.TestCase):
                           for e in db.entries()},
                          {'one', 'two', 'three', 'four', 'five'})
 
-    def test_merge_multiple_datbases_in_one_call(self):
+    def test_merge_multiple_datbases_in_one_call(self) -> None:
         """Tests the merge and merged methods with multiple databases."""
         db = tokens.Database.merged(
             tokens.Database([
@@ -311,7 +375,7 @@ class TokenDatabaseTest(unittest.TestCase):
                           for e in db.entries()},
                          {'one', 'two', 'three', 'four'})
 
-    def test_entry_counts(self):
+    def test_entry_counts(self) -> None:
         self.assertEqual(len(CSV_DATABASE.splitlines()), 16)
 
         db = read_db_from_csv(CSV_DATABASE)
@@ -324,7 +388,7 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(len(db.entries()), 18)
         self.assertEqual(len(db.token_to_entries), 17)
 
-    def test_mark_removed(self):
+    def test_mark_removed(self) -> None:
         """Tests that date_removed field is set by mark_removed."""
         db = tokens.Database.from_strings(
             ['MILK', 'apples', 'oranges', 'CHEESE', 'pears'])
@@ -359,7 +423,7 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertIsNone(
             db.token_to_entries[default_hash('pears')][0].date_removed)
 
-    def test_add(self):
+    def test_add(self) -> None:
         db = tokens.Database()
         db.add(_entries('MILK', 'apples'))
         self.assertEqual({e.string for e in db.entries()}, {'MILK', 'apples'})
@@ -377,7 +441,7 @@ class TokenDatabaseTest(unittest.TestCase):
                               'only this one is new'
                           })
 
-    def test_binary_format_write(self):
+    def test_binary_format_write(self) -> None:
         db = read_db_from_csv(CSV_DATABASE)
 
         with io.BytesIO() as fd:
@@ -386,7 +450,7 @@ class TokenDatabaseTest(unittest.TestCase):
 
         self.assertEqual(BINARY_DATABASE, binary_db)
 
-    def test_binary_format_parse(self):
+    def test_binary_format_parse(self) -> None:
         with io.BytesIO(BINARY_DATABASE) as binary_db:
             db = tokens.Database(tokens.parse_binary(binary_db))
 
@@ -395,15 +459,15 @@ class TokenDatabaseTest(unittest.TestCase):
 
 class TestDatabaseFile(unittest.TestCase):
     """Tests the DatabaseFile class."""
-    def setUp(self):
+    def setUp(self) -> None:
         file = tempfile.NamedTemporaryFile(delete=False)
         file.close()
         self._path = Path(file.name)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self._path.unlink()
 
-    def test_update_csv_file(self):
+    def test_update_csv_file(self) -> None:
         self._path.write_text(CSV_DATABASE)
         db = tokens.DatabaseFile.create(self._path)
         self.assertEqual(str(db), CSV_DATABASE)
@@ -415,19 +479,19 @@ class TestDatabaseFile(unittest.TestCase):
         self.assertEqual(self._path.read_text(),
                          CSV_DATABASE + 'ffffffff,          ,"New entry!"\n')
 
-    def test_csv_file_too_short_raises_exception(self):
+    def test_csv_file_too_short_raises_exception(self) -> None:
         self._path.write_text('1234')
 
         with self.assertRaises(tokens.DatabaseFormatError):
             tokens.DatabaseFile.create(self._path)
 
-    def test_csv_invalid_format_raises_exception(self):
+    def test_csv_invalid_format_raises_exception(self) -> None:
         self._path.write_text('MK34567890')
 
         with self.assertRaises(tokens.DatabaseFormatError):
             tokens.DatabaseFile.create(self._path)
 
-    def test_csv_not_utf8(self):
+    def test_csv_not_utf8(self) -> None:
         self._path.write_bytes(b'\x80' * 20)
 
         with self.assertRaises(tokens.DatabaseFormatError):
@@ -436,7 +500,7 @@ class TestDatabaseFile(unittest.TestCase):
 
 class TestFilter(unittest.TestCase):
     """Tests the filtering functionality."""
-    def setUp(self):
+    def setUp(self) -> None:
         self.db = tokens.Database([
             tokens.TokenizedStringEntry(1, 'Luke'),
             tokens.TokenizedStringEntry(2, 'Leia'),
@@ -448,47 +512,105 @@ class TestFilter(unittest.TestCase):
             tokens.TokenizedStringEntry(6, 'Han Solo'),
         ])
 
-    def test_filter_include_single_regex(self):
+    def test_filter_include_single_regex(self) -> None:
         self.db.filter(include=[' '])  # anything with a space
         self.assertEqual(
             set(e.string for e in self.db.entries()),
             {'Darth Vader', 'Emperor Palpatine', 'Darth Maul', 'Han Solo'})
 
-    def test_filter_include_multiple_regexes(self):
+    def test_filter_include_multiple_regexes(self) -> None:
         self.db.filter(include=['Darth', 'cc', '^Han$'])
         self.assertEqual(set(e.string for e in self.db.entries()),
                          {'Darth Vader', 'Darth Maul', 'Han', 'Chewbacca'})
 
-    def test_filter_include_no_matches(self):
+    def test_filter_include_no_matches(self) -> None:
         self.db.filter(include=['Gandalf'])
         self.assertFalse(self.db.entries())
 
-    def test_filter_exclude_single_regex(self):
+    def test_filter_exclude_single_regex(self) -> None:
         self.db.filter(exclude=['^[^L]'])
         self.assertEqual(set(e.string for e in self.db.entries()),
                          {'Luke', 'Leia'})
 
-    def test_filter_exclude_multiple_regexes(self):
+    def test_filter_exclude_multiple_regexes(self) -> None:
         self.db.filter(exclude=[' ', 'Han', 'Chewbacca'])
         self.assertEqual(set(e.string for e in self.db.entries()),
                          {'Luke', 'Leia'})
 
-    def test_filter_exclude_no_matches(self):
+    def test_filter_exclude_no_matches(self) -> None:
         self.db.filter(exclude=['.*'])
         self.assertFalse(self.db.entries())
 
-    def test_filter_include_and_exclude(self):
+    def test_filter_include_and_exclude(self) -> None:
         self.db.filter(include=[' '], exclude=['Darth', 'Emperor'])
         self.assertEqual(set(e.string for e in self.db.entries()),
                          {'Han Solo'})
 
-    def test_filter_neither_include_nor_exclude(self):
+    def test_filter_neither_include_nor_exclude(self) -> None:
         self.db.filter()
         self.assertEqual(
             set(e.string for e in self.db.entries()), {
                 'Luke', 'Leia', 'Darth Vader', 'Emperor Palpatine', 'Han',
                 'Chewbacca', 'Darth Maul', 'Han Solo'
             })
+
+
+class TestDirectoryDatabase(unittest.TestCase):
+    """Test DirectoryDatabase class is properly loaded."""
+    def setUp(self) -> None:
+        self._dir = Path(tempfile.mkdtemp('_pw_tokenizer_test'))
+        self._db_dir = self._dir / '_dir_database_test'
+        self._db_dir.mkdir(exist_ok=True)
+        self._db_csv = self._db_dir / 'first.csv'
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self._dir)
+
+    def test_loading_empty_directory(self) -> None:
+        self.assertFalse(database.load_token_database(self._db_dir).entries())
+
+    def test_loading_a_single_file(self) -> None:
+        self._db_csv.write_text(CSV_DATABASE)
+        csv = tokens.DatabaseFile.create(self._db_csv)
+        directory_db = database.load_token_database(self._db_dir)
+        self.assertEqual(str(csv), str(directory_db))
+        self.assertEqual(1, len(list(self._db_dir.iterdir())))
+
+    def test_loading_multiples_files(self) -> None:
+        self._db_csv.write_text(CSV_DATABASE_3)
+        first_csv = tokens.DatabaseFile.create(self._db_csv)
+
+        path_to_second_csv = self._db_dir / 'second.csv'
+        path_to_second_csv.write_text(CSV_DATABASE_2)
+        second_csv = tokens.DatabaseFile.create(path_to_second_csv)
+
+        path_to_third_csv = self._db_dir / 'third.csv'
+        path_to_third_csv.write_text(CSV_DATABASE_4)
+        third_csv = tokens.DatabaseFile.create(path_to_third_csv)
+
+        all_databases_merged = tokens.Database.merged(first_csv, second_csv,
+                                                      third_csv)
+        directory_db = database.load_token_database(self._db_dir)
+        self.assertEqual(str(all_databases_merged), str(directory_db))
+        self.assertEqual(3, len(list(self._db_dir.iterdir())))
+
+    def test_loading_multiples_files_with_removal_dates(self) -> None:
+        self._db_csv.write_text(CSV_DATABASE)
+        first_csv = tokens.DatabaseFile.create(self._db_csv)
+
+        path_to_second_csv = self._db_dir / 'second.csv'
+        path_to_second_csv.write_text(CSV_DATABASE_2)
+        second_csv = tokens.DatabaseFile.create(path_to_second_csv)
+
+        path_to_third_csv = self._db_dir / 'third.csv'
+        path_to_third_csv.write_text(CSV_DATABASE_3)
+        third_csv = tokens.DatabaseFile.create(path_to_third_csv)
+
+        all_databases_merged = tokens.Database.merged(first_csv, second_csv,
+                                                      third_csv)
+        directory_db = database.load_token_database(self._db_dir)
+        self.assertEqual(str(all_databases_merged), str(directory_db))
+        self.assertEqual(3, len(list(self._db_dir.iterdir())))
 
 
 if __name__ == '__main__':
