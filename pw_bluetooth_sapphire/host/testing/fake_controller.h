@@ -84,7 +84,26 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     uint8_t total_num_synchronous_data_packets;
 
     // Vendor extensions
-    hci_spec::vendor::android::LEGetVendorCapabilitiesReturnParams android_extension_settings;
+    hci_android::LEGetVendorCapabilitiesReturnParams android_extension_settings;
+  };
+
+  // Congfiguration of an L2CAP channel for A2DP offloading.
+  struct OffloadedA2dpChannel final {
+    hci_android::A2dpCodecType codec = hci_android::A2dpCodecType::kSbc;
+    uint16_t max_latency = 0;
+    hci_android::A2dpScmsTEnable scms_t_enable = {
+        hci_spec::GenericEnableParam::kDisable,
+        0x0,
+    };
+    hci_android::A2dpSamplingFrequency sampling_frequency =
+        hci_android::A2dpSamplingFrequency::k44100Hz;
+    hci_android::A2dpBitsPerSample bits_per_sample =
+        hci_android::A2dpBitsPerSample::k16BitsPerSample;
+    hci_android::A2dpChannelMode channel_mode = hci_android::A2dpChannelMode::kMono;
+    uint32_t encoded_audio_bitrate = 0;
+    hci_spec::ConnectionHandle connection_handle = 0;
+    l2cap::ChannelId l2cap_channel_id = 0;
+    uint16_t l2cap_mtu_size = 0;
   };
 
   // Current device low energy scan state.
@@ -650,6 +669,12 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   void OnAndroidLEGetVendorCapabilities();
 
+  void OnAndroidA2dpOffloadCommand(const PacketView<hci_spec::CommandHeader>& command_packet);
+
+  void OnAndroidStartA2dpOffload(const hci_android::StartA2dpOffloadCommandParams& params);
+
+  void OnAndroidStopA2dpOffload();
+
   void OnAndroidLEMultiAdvt(const PacketView<hci_spec::CommandHeader>& command_packet);
 
   void OnAndroidLEMultiAdvtSetAdvtParam(
@@ -679,6 +704,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) override;
 
   Settings settings_;
+
+  // Value is non-null when A2DP offload is started, and null when it is stopped.
+  std::optional<OffloadedA2dpChannel> offloaded_a2dp_channel_state_;
+
   LEScanState le_scan_state_;
   LEAdvertisingState legacy_advertising_state_;
   std::unordered_map<hci_spec::AdvertisingHandle, LEAdvertisingState> extended_advertising_states_;

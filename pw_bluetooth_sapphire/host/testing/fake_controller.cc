@@ -175,6 +175,9 @@ void FakeController::Settings::ApplyAndroidVendorExtensionDefaults() {
   android_extension_settings.total_scan_results_storage = htole16(1024);
   android_extension_settings.version_supported_major = 0;
   android_extension_settings.version_supported_minor = 0;
+  android_extension_settings.a2dp_source_offload_capability_mask =
+      static_cast<uint8_t>(hci_android::A2dpCodecType::kSbc) |
+      static_cast<uint8_t>(hci_android::A2dpCodecType::kAac);
 }
 
 void FakeController::SetDefaultCommandStatus(hci_spec::OpCode opcode, hci_spec::StatusCode status) {
@@ -2209,6 +2212,145 @@ void FakeController::OnAndroidLEGetVendorCapabilities() {
                              BufferView(&params, sizeof(params)));
 }
 
+void FakeController::OnAndroidStartA2dpOffload(
+    const hci_android::StartA2dpOffloadCommandParams& params) {
+  hci_android::StartA2dpOffloadCommandReturnParams ret;
+  ret.opcode = hci_android::kStartA2dpOffloadCommandSubopcode;
+
+  // return in case A2DP offload already started
+  ret.status = hci_spec::StatusCode::kRepeatedAttempts;
+
+  if (offloaded_a2dp_channel_state_) {
+    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  // SCMS-T is not currently supported
+  ret.status = hci_spec::StatusCode::kUnsupportedFeatureOrParameter;
+
+  hci_android::A2dpScmsTEnable scms_t_enable = params.scms_t_enable;
+  if (scms_t_enable.enabled == hci_spec::GenericEnableParam::kEnable) {
+    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  // return in case any parameter has an invalid value
+  ret.status = hci_spec::StatusCode::kInvalidHCICommandParameters;
+
+  hci_android::A2dpCodecType codec = static_cast<hci_android::A2dpCodecType>(le32toh(params.codec));
+  switch (codec) {
+    case hci_android::A2dpCodecType::kSbc:
+    case hci_android::A2dpCodecType::kAac:
+    case hci_android::A2dpCodecType::kAptx:
+    case hci_android::A2dpCodecType::kAptxhd:
+    case hci_android::A2dpCodecType::kLdac:
+      break;
+    default:
+      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+      return;
+  }
+
+  hci_android::A2dpSamplingFrequency sampling_frequency =
+      static_cast<hci_android::A2dpSamplingFrequency>(le32toh(params.sampling_frequency));
+  switch (sampling_frequency) {
+    case hci_android::A2dpSamplingFrequency::k44100Hz:
+    case hci_android::A2dpSamplingFrequency::k48000Hz:
+    case hci_android::A2dpSamplingFrequency::k88200Hz:
+    case hci_android::A2dpSamplingFrequency::k96000Hz:
+      break;
+    default:
+      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+      return;
+  }
+
+  hci_android::A2dpBitsPerSample bits_per_sample =
+      static_cast<hci_android::A2dpBitsPerSample>(params.bits_per_sample);
+  switch (bits_per_sample) {
+    case hci_android::A2dpBitsPerSample::k16BitsPerSample:
+    case hci_android::A2dpBitsPerSample::k24BitsPerSample:
+    case hci_android::A2dpBitsPerSample::k32BitsPerSample:
+      break;
+    default:
+      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+      return;
+  }
+
+  hci_android::A2dpChannelMode channel_mode =
+      static_cast<hci_android::A2dpChannelMode>(params.channel_mode);
+  switch (channel_mode) {
+    case hci_android::A2dpChannelMode::kMono:
+    case hci_android::A2dpChannelMode::kStereo:
+      break;
+    default:
+      RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+      return;
+  }
+
+  uint32_t encoded_audio_bitrate = le32toh(params.encoded_audio_bitrate);
+  // Bits 0x01000000 to 0xFFFFFFFF are reserved
+  if (encoded_audio_bitrate >= 0x01000000) {
+    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  OffloadedA2dpChannel state;
+  state.codec = codec;
+  state.max_latency = le16toh(params.max_latency);
+  state.scms_t_enable = scms_t_enable;
+  state.sampling_frequency = sampling_frequency;
+  state.bits_per_sample = bits_per_sample;
+  state.channel_mode = channel_mode;
+  state.encoded_audio_bitrate = encoded_audio_bitrate;
+  state.connection_handle = le16toh(params.connection_handle);
+  state.l2cap_channel_id = le16toh(params.l2cap_channel_id);
+  state.l2cap_mtu_size = le16toh(params.l2cap_mtu_size);
+  offloaded_a2dp_channel_state_ = state;
+
+  ret.status = hci_spec::StatusCode::kSuccess;
+  RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+}
+
+void FakeController::OnAndroidStopA2dpOffload() {
+  if (!offloaded_a2dp_channel_state_) {
+    hci_android::StartA2dpOffloadCommandReturnParams ret;
+    ret.status = hci_spec::StatusCode::kRepeatedAttempts;
+    ret.opcode = hci_android::kStopA2dpOffloadCommandSubopcode;
+    RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+    return;
+  }
+
+  offloaded_a2dp_channel_state_ = std::nullopt;
+
+  hci_android::StopA2dpOffloadCommandReturnParams ret;
+  ret.status = hci_spec::StatusCode::kSuccess;
+  ret.opcode = hci_android::kStopA2dpOffloadCommandSubopcode;
+  RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
+}
+
+void FakeController::OnAndroidA2dpOffloadCommand(
+    const PacketView<hci_spec::CommandHeader>& command_packet) {
+  const auto& payload = command_packet.payload_data();
+
+  uint8_t subopcode = payload.To<uint8_t>();
+  switch (subopcode) {
+    case hci_android::kStartA2dpOffloadCommandSubopcode: {
+      auto params = payload.To<hci_android::StartA2dpOffloadCommandParams>();
+      OnAndroidStartA2dpOffload(params);
+      break;
+    }
+    case hci_android::kStopA2dpOffloadCommandSubopcode: {
+      OnAndroidStopA2dpOffload();
+      break;
+    }
+    default: {
+      bt_log(WARN, "fake-hci", "unhandled android A2DP offload command, subopcode: %#.4x",
+             subopcode);
+      RespondWithCommandComplete(subopcode, hci_spec::StatusCode::kUnknownCommand);
+      break;
+    }
+  }
+}
+
 void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
     const hci_android::LEMultiAdvtSetAdvtParamCommandParams& params) {
   hci_spec::AdvertisingHandle handle = params.adv_handle;
@@ -2549,6 +2691,9 @@ void FakeController::OnVendorCommand(const PacketView<hci_spec::CommandHeader>& 
   switch (opcode) {
     case hci_android::kLEGetVendorCapabilities:
       OnAndroidLEGetVendorCapabilities();
+      break;
+    case hci_android::kA2dpOffloadCommand:
+      OnAndroidA2dpOffloadCommand(command_packet);
       break;
     case hci_android::kLEMultiAdvt:
       OnAndroidLEMultiAdvt(command_packet);

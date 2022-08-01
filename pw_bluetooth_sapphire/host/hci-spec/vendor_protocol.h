@@ -246,7 +246,7 @@ union A2dpOffloadCodecInformation {
 static_assert(sizeof(A2dpOffloadCodecInformation) == 32,
               "A2dpOffloadCodecInformation must take up exactly 32 bytes");
 
-struct StartA2dpOffloadCommand {
+struct StartA2dpOffloadCommandParams {
   // Must always be set to kStartA2dpOffloadCommandSubopcode
   uint8_t opcode;
 
