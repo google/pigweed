@@ -169,7 +169,7 @@ Code Listing: ``twenty48_pane.py``
    :linenos:
 
 
-.. _WindowPane: https://cs.opensource.google/pigweed/pigweed/+/main:pw_console/py/pw_console/widgets/window_pane.py
-.. _WindowPaneToolbar: https://cs.opensource.google/pigweed/pigweed/+/main:pw_console/py/pw_console/widgets/window_pane_toolbar.py
+.. _WindowPane: https://cs.pigweed.dev/pigweed/+/main:pw_console/py/pw_console/widgets/window_pane.py
+.. _WindowPaneToolbar: https://cs.pigweed.dev/pigweed/+/main:pw_console/py/pw_console/widgets/window_pane_toolbar.py
 .. _calculator.py example: https://github.com/prompt-toolkit/python-prompt-toolkit/blob/3.0.23/examples/full-screen/calculator.py
 .. _TextArea: https://python-prompt-toolkit.readthedocs.io/en/latest/pages/reference.html#prompt_toolkit.widgets.TextArea

@@ -9,7 +9,7 @@
   docs/getting_started
   docs/concepts/index
   docs/release_notes/index
-  Source Code <https://cs.opensource.google/pigweed/pigweed>
+  Source Code <https://cs.pigweed.dev/pigweed>
   Code Reviews <https://pigweed-review.googlesource.com>
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
   Chat Room <https://discord.gg/M9NSeTA>
@@ -131,7 +131,7 @@ compatible with `Google Test <https://github.com/google/googletest>`_. Unlike
 Google Test, :ref:`module-pw_unit_test` is built on top of embedded friendly
 primitives; for example, it does not use dynamic memory allocation.
 Additionally, it is easy to port to new target platforms by implementing the
-`test event handler interface <https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/public/pw_unit_test/event_handler.h>`_.
+`test event handler interface <https://cs.pigweed.dev/pigweed/+/main:pw_unit_test/public/pw_unit_test/event_handler.h>`_.
 
 Like other modules in Pigweed, ``pw_unit_test`` is designed for use in
 established codebases with their own build system, without the rest of Pigweed

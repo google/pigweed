@@ -11,7 +11,7 @@ For more information please see our website: https://pigweed.dev/.
 ## Links
 
 - [Documentation](https://pigweed.dev/)
-- [Source Code](https://cs.opensource.google/pigweed/pigweed)
+- [Source Code](https://cs.pigweed.dev/pigweed)
 - [Code Reviews](https://pigweed-review.googlesource.com)
 - [Mailing List](https://groups.google.com/forum/#!forum/pigweed)
 - [Chat Room](https://discord.gg/M9NSeTA)

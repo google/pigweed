@@ -9,7 +9,7 @@ Using embed()
 -------------
 ``pw console`` is invoked by calling ``PwConsoleEmbed().embed()`` in your
 own Python script. For a complete example of an embedded device console script see
-:bdg-link-primary-line:`pw_system/py/pw_system/console.py <https://cs.opensource.google/pigweed/pigweed/+/main:pw_system/py/pw_system/console.py>`.
+:bdg-link-primary-line:`pw_system/py/pw_system/console.py <https://cs.pigweed.dev/pigweed/+/main:pw_system/py/pw_system/console.py>`.
 
 .. automodule:: pw_console.embed
     :members: PwConsoleEmbed

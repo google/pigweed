@@ -86,7 +86,7 @@ Interface documentation
 =======================
 Summary documentation for the ``pw_stream`` interfaces is below. See the API
 comments in `pw_stream/public/pw_stream/stream.h
-<https://cs.opensource.google/pigweed/pigweed/+/main:pw_stream/public/pw_stream/stream.h>`_
+<https://cs.pigweed.dev/pigweed/+/main:pw_stream/public/pw_stream/stream.h>`_
 for full details.
 
 .. cpp:class:: Stream

@@ -390,8 +390,8 @@ versions of additional packages your project depends on, run
 ``.gn`` file (see `Pigweed's .gn file`_ for an example).
 
 .. _pip constraints file: https://pip.pypa.io/en/stable/user_guide/#constraints-files
-.. _default constraints: https://cs.opensource.google/pigweed/pigweed/+/main:pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list
-.. _Pigweed's .gn file: https://cs.opensource.google/pigweed/pigweed/+/main:.gn
+.. _default constraints: https://cs.pigweed.dev/pigweed/+/main:pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list
+.. _Pigweed's .gn file: https://cs.pigweed.dev/pigweed/+/main:.gn
 
 To update packages, set ``pw_build_PIP_CONSTRAINTS = []``, delete the
 environment, and bootstrap again. Then run the ``list`` command from above

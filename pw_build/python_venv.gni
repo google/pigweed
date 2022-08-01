@@ -18,7 +18,7 @@ import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
 
 # Defines and creates a Python virtualenv. This template is used by Pigweed in
-# https://cs.opensource.google/pigweed/pigweed/+/main:pw_env_setup/BUILD.gn to
+# https://cs.pigweed.dev/pigweed/+/main:pw_env_setup/BUILD.gn to
 # create a virtualenv for use within the GN build that all Python actions will
 # run in.
 #

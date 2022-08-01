@@ -30,7 +30,7 @@ on-demand system state capturing.
 Life of a Snapshot
 ------------------
 A "snapshot" is just a `proto message
-<https://cs.opensource.google/pigweed/pigweed/+/HEAD:pw_snapshot/pw_snapshot_protos/snapshot.proto>`_
+<https://cs.pigweed.dev/pigweed/+/HEAD:pw_snapshot/pw_snapshot_protos/snapshot.proto>`_
 with many optional fields that describe a device's state at the time the
 snapshot was captured. The serialized proto can then be stored and transfered
 like a file so it can be analyzed at a later time.

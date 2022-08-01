@@ -240,7 +240,7 @@ class ClockPane(WindowPane, PluginMixin):
 
         # These styles are selected using class names and start with the
         # 'class:' prefix. For all classes defined by Pigweed Console see:
-        # https://cs.opensource.google/pigweed/pigweed/+/main:pw_console/py/pw_console/style.py;l=189
+        # https://cs.pigweed.dev/pigweed/+/main:pw_console/py/pw_console/style.py;l=189
 
         # Date in cyan matching the current Pigweed Console theme.
         date_with_color = ('class:theme-fg-cyan', date)
@@ -359,7 +359,7 @@ class ClockPane(WindowPane, PluginMixin):
             ]))
 
         # These themes use Pigweed Console style classes. See full list in:
-        # https://cs.opensource.google/pigweed/pigweed/+/main:pw_console/py/pw_console/style.py;l=189
+        # https://cs.pigweed.dev/pigweed/+/main:pw_console/py/pw_console/style.py;l=189
         fragments.append(HTML('\n\n<u>Current Theme Foreground Colors</u>\n'))
         fragments.append([
             ('class:theme-fg-red', 'class:theme-fg-red'),

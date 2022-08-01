@@ -45,7 +45,7 @@ like ``static_analysis`` and ``python_checks.gn_python_check``.  See the
 your Pigweed-based project.
 
 .. _PyLint: https://pylint.org/
-.. _.pylintrc: https://cs.opensource.google/pigweed/pigweed/+/main:.pylintrc
+.. _.pylintrc: https://cs.pigweed.dev/pigweed/+/main:.pylintrc
 
 Mypy
 ----
@@ -88,7 +88,7 @@ produce any runnable binaries: it simply analyzes the source files.
 
 .. _clang-tidy: https://clang.llvm.org/extra/clang-tidy/
 .. _Abseil: https://abseil.io/
-.. _.clang-tidy: https://cs.opensource.google/pigweed/pigweed/+/main:.clang-tidy
+.. _.clang-tidy: https://cs.pigweed.dev/pigweed/+/main:.clang-tidy
 .. _Clang Static Analyzers: https://clang-analyzer.llvm.org/available_checks.html
 
 
@@ -110,7 +110,7 @@ described in this section. For more detail about these sanitizers, see the
    https://issuetracker.google.com/234876100 for details.
 
 The exact configurations we use for these sanitizers are in
-`pw_toolchain/host_clang/BUILD.gn <https://cs.opensource.google/pigweed/pigweed/+/main:pw_toolchain/host_clang/BUILD.gn>`_.
+`pw_toolchain/host_clang/BUILD.gn <https://cs.pigweed.dev/pigweed/+/main:pw_toolchain/host_clang/BUILD.gn>`_.
 You can see the current status of the sanitizer builds in the `Pigweed CI
 console`_, as ``pigweed-linux-san-*``.
 
@@ -151,7 +151,7 @@ these can be added to individual presubmit steps (`examples`_). You can also
 directly include the `python_checks.gn_python_lint`_ presubmit step.
 
 .. _examples: https://cs.opensource.google/search?q=file:pigweed_presubmit.py%20%22python.lint%22&sq=&ss=pigweed%2Fpigweed
-.. _python_checks.gn_python_lint: https://cs.opensource.google/pigweed/pigweed/+/main:pw_presubmit/py/pw_presubmit/python_checks.py?q=file:python_checks.py%20gn_python_lint&ss=pigweed%2Fpigweed
+.. _python_checks.gn_python_lint: https://cs.pigweed.dev/pigweed/+/main:pw_presubmit/py/pw_presubmit/python_checks.py?q=file:python_checks.py%20gn_python_lint&ss=pigweed%2Fpigweed
 
 clang-tidy
 ==========
@@ -166,7 +166,7 @@ which checks are executed. See the `clang documentation`_ for a discussion of ho
 the tool chooses which ``.clang-tidy`` files to apply when run on a particular
 source file.
 
-.. _pw_toolchain/static_analysis_toolchain.gni: https://cs.opensource.google/pigweed/pigweed/+/main:pw_toolchain/static_analysis_toolchain.gni
+.. _pw_toolchain/static_analysis_toolchain.gni: https://cs.pigweed.dev/pigweed/+/main:pw_toolchain/static_analysis_toolchain.gni
 .. _clang documentation: https://clang.llvm.org/extra/clang-tidy/
 
 Clang sanitizers

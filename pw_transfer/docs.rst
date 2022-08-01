@@ -329,7 +329,7 @@ Integration tests
 -----------------
 The ``pw_transfer`` module has a set of integration tests that verify the
 correctness of implementations in different languages.
-`Test source code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_transfer/integration_test/>`_.
+`Test source code <https://cs.pigweed.dev/pigweed/+/main:pw_transfer/integration_test/>`_.
 
 To run the tests on your machine, run
 
