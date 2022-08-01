@@ -169,6 +169,7 @@ pw_source_set("common") {
   public = [
     "public/pw_rpc/channel.h",
     "public/pw_rpc/method_info.h",
+    "public/pw_rpc/packet_meta.h",
     "public/pw_rpc/service_id.h",
     "public/pw_rpc/writer.h",
   ]
@@ -178,6 +179,7 @@ pw_source_set("common") {
     "channel_list.cc",
     "endpoint.cc",
     "packet.cc",
+    "packet_meta.cc",
     "public/pw_rpc/internal/call.h",
     "public/pw_rpc/internal/call_context.h",
     "public/pw_rpc/internal/channel.h",
@@ -429,6 +431,7 @@ pw_test_group("tests") {
     ":method_test",
     ":ids_test",
     ":packet_test",
+    ":packet_meta_test",
     ":server_test",
     ":service_test",
   ]
@@ -490,6 +493,14 @@ pw_test("packet_test") {
     dir_pw_protobuf,
   ]
   sources = [ "packet_test.cc" ]
+}
+
+pw_test("packet_meta_test") {
+  deps = [
+    ":server",
+    dir_pw_bytes,
+  ]
+  sources = [ "packet_meta_test.cc" ]
 }
 
 pw_test("service_test") {

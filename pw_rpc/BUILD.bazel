@@ -73,6 +73,7 @@ pw_cc_library(
         "client_call.cc",
         "endpoint.cc",
         "packet.cc",
+        "packet_meta.cc",
         "public/pw_rpc/internal/call.h",
         "public/pw_rpc/internal/call_context.h",
         "public/pw_rpc/internal/channel.h",
@@ -101,6 +102,7 @@ pw_cc_library(
         "public/pw_rpc/client.h",
         "public/pw_rpc/internal/service_client.h",
         "public/pw_rpc/method_info.h",
+        "public/pw_rpc/packet_meta.h",
         "public/pw_rpc/server.h",
         "public/pw_rpc/service.h",
         "public/pw_rpc/service_id.h",
@@ -278,6 +280,16 @@ pw_cc_test(
     name = "packet_test",
     srcs = [
         "packet_test.cc",
+    ],
+    deps = [
+        ":pw_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "packet_meta_test",
+    srcs = [
+        "packet_meta_test.cc",
     ],
     deps = [
         ":pw_rpc",

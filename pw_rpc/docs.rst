@@ -849,6 +849,14 @@ client, the client's ``ProcessPacket`` function is called with the packet data.
     my_client.ProcessPacket(packet);
   }
 
+Note that client processing such as callbacks will be invoked within
+the body of ``ProcessPacket``.
+
+If certain packets need to be filtered out, or if certain client processing
+needs to be invoked from a specific thread or context, the ``PacketMeta`` class
+can be used to determine which service or channel a packet is targeting. After
+filtering, ``ProcessPacket`` can be called from the appropriate environment.
+
 .. _module-pw_rpc-making-calls:
 
 Making RPC calls
