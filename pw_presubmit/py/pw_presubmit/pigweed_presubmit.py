@@ -820,6 +820,9 @@ OTHER_CHECKS = (
     npm_presubmit.npm_test,
 )
 
+# Avoid running all checks on specific paths.
+PATH_EXCLUSIONS = (re.compile(r'\bthird_party/fuchsia/repo/'), )
+
 _LINTFORMAT = (
     commit_message_format,
     copyright_notice,
@@ -894,7 +897,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run(install: bool, **presubmit_args) -> int:
+def run(install: bool, exclude: list, **presubmit_args) -> int:
     """Entry point for presubmit."""
 
     if install:
@@ -904,7 +907,8 @@ def run(install: bool, **presubmit_args) -> int:
         ])
         return 0
 
-    return cli.run(**presubmit_args)
+    exclude.extend(PATH_EXCLUSIONS)
+    return cli.run(exclude=exclude, **presubmit_args)
 
 
 def main() -> int:
