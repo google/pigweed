@@ -13,15 +13,17 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/mock_acl_data_channel.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap {
 namespace {
 
-using TestingBase = ::gtest::TestLoopFixture;
+using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 using namespace inspect::testing;
 using LEFixedChannels = ChannelManager::LEFixedChannels;
 
@@ -36,6 +38,10 @@ constexpr hci::AclDataChannel::PacketPriority kLowPriority =
 constexpr hci::AclDataChannel::PacketPriority kHighPriority =
     hci::AclDataChannel::PacketPriority::kHigh;
 constexpr ChannelParameters kChannelParams;
+
+constexpr zx::duration kFlushTimeout = zx::msec(10);
+constexpr uint16_t kExpectedFlushTimeoutParam =
+    16;  // 10ms * kFlushTimeoutMsToCommandParameterConversionFactor(1.6)
 
 void DoNothing() {}
 void NopRxCallback(ByteBufferPtr) {}
@@ -55,6 +61,8 @@ struct PacketExpectation {
 // boilerplate prefilled.
 #define EXPECT_LE_PACKET_OUT(packet_buffer, priority) \
   ExpectOutboundPacket(bt::LinkType::kLE, (priority), (packet_buffer), __FILE__, __LINE__)
+
+#undef EXPECT_ACL_PACKET_OUT  // Defined in MockController, but we want to override.
 #define EXPECT_ACL_PACKET_OUT(packet_buffer, priority) \
   ExpectOutboundPacket(bt::LinkType::kACL, (priority), (packet_buffer), __FILE__, __LINE__)
 
@@ -243,6 +251,7 @@ class ChannelManagerTest : public TestingBase {
 
   void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size) {
     TestingBase::SetUp();
+    StartTestDevice();
 
     acl_data_channel_.set_bredr_buffer_info(
         hci::DataBufferInfo(max_acl_payload_size, /*max_num_packets=*/1));
@@ -251,7 +260,8 @@ class ChannelManagerTest : public TestingBase {
     acl_data_channel_.set_send_packets_cb(fit::bind_member<&ChannelManagerTest::SendPackets>(this));
 
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
-    chanmgr_ = ChannelManager::Create(&acl_data_channel_, /*random_channel_ids=*/false);
+    chanmgr_ = ChannelManager::Create(&acl_data_channel_, transport()->command_channel(),
+                                      /*random_channel_ids=*/false);
     packet_rx_handler_ = [this](std::unique_ptr<hci::ACLDataPacket> packet) {
       acl_data_channel_.ReceivePacket(std::move(packet));
     };
@@ -2795,19 +2805,11 @@ TEST_F(ChannelManagerTest, InspectHierarchy) {
 
 TEST_F(ChannelManagerTest,
        OutboundChannelWithFlushTimeoutInChannelParametersAndDelayedFlushTimeoutCallback) {
-  const zx::duration kFlushTimeout = zx::msec(1);
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   RunLoopUntilIdle();
 
-  int flush_timeout_cb_count = 0;
-  hci::ResultCallback<> flush_timeout_result_cb = nullptr;
-  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
-        flush_timeout_cb_count++;
-        EXPECT_EQ(duration, kFlushTimeout);
-        EXPECT_EQ(handle, kTestHandle1);
-        flush_timeout_result_cb = std::move(cb);
-      });
+  EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::WriteAutomaticFlushTimeoutPacket(
+                                           kTestHandle1, kExpectedFlushTimeoutParam));
 
   ChannelParameters chan_params;
   chan_params.flush_timeout = kFlushTimeout;
@@ -2819,13 +2821,15 @@ TEST_F(ChannelManagerTest,
   SetUpOutboundChannelWithCallback(kLocalId, kRemoteId, /*closed_cb=*/DoNothing, chan_params,
                                    channel_cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(flush_timeout_cb_count, 1);
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   // Channel should not be returned yet because setting flush timeout has not completed yet.
   EXPECT_FALSE(channel);
-  ASSERT_TRUE(flush_timeout_result_cb);
 
-  // Calling result callback should cause channel to be returned.
-  flush_timeout_result_cb(fitx::ok());
+  // Completing the command should cause the channel to be returned.
+  const auto kCommandComplete = bt::testing::CommandCompletePacket(
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
+  test_device()->SendCommandChannelPacket(kCommandComplete);
+  RunLoopUntilIdle();
   ASSERT_TRUE(channel);
   ASSERT_TRUE(channel->info().flush_timeout.has_value());
   EXPECT_EQ(channel->info().flush_timeout.value(), kFlushTimeout);
@@ -2844,24 +2848,22 @@ TEST_F(ChannelManagerTest,
 }
 
 TEST_F(ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFailure) {
-  const zx::duration kFlushTimeout = zx::msec(1);
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   RunLoopUntilIdle();
 
-  int flush_timeout_cb_count = 0;
-  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
-        flush_timeout_cb_count++;
-        EXPECT_EQ(duration, kFlushTimeout);
-        EXPECT_EQ(handle, kTestHandle1);
-        cb(ToResult(hci_spec::StatusCode::kUnspecifiedError));
-      });
+  const auto kCommandCompleteError = bt::testing::CommandCompletePacket(
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnspecifiedError);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
+      &kCommandCompleteError);
 
   ChannelParameters chan_params;
   chan_params.flush_timeout = kFlushTimeout;
 
   auto channel = SetUpOutboundChannel(kLocalId, kRemoteId, /*closed_cb=*/DoNothing, chan_params);
-  EXPECT_EQ(flush_timeout_cb_count, 1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   // Flush timeout should not be set in channel info because setting a flush timeout failed.
   EXPECT_FALSE(channel->info().flush_timeout.has_value());
 
@@ -2879,18 +2881,15 @@ TEST_F(ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFai
 }
 
 TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
-  const zx::duration kFlushTimeout = zx::msec(1);
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
   RunLoopUntilIdle();
 
-  int flush_timeout_cb_count = 0;
-  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
-        flush_timeout_cb_count++;
-        EXPECT_EQ(duration, kFlushTimeout);
-        EXPECT_EQ(handle, kTestHandle1);
-        cb(fitx::ok());
-      });
+  const auto kCommandComplete = bt::testing::CommandCompletePacket(
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
+      &kCommandComplete);
 
   ChannelParameters chan_params;
   chan_params.flush_timeout = kFlushTimeout;
@@ -2916,8 +2915,8 @@ TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(channel);
-  EXPECT_EQ(flush_timeout_cb_count, 1);
   ASSERT_TRUE(channel->info().flush_timeout.has_value());
   EXPECT_EQ(channel->info().flush_timeout.value(), kFlushTimeout);
 
@@ -2940,21 +2939,20 @@ TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
   auto nonflushable_channel = SetUpOutboundChannel();
   auto flushable_channel = SetUpOutboundChannel(kLocalId + 1, kRemoteId + 1);
 
-  int flush_timeout_cb_count = 0;
-  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
-        flush_timeout_cb_count++;
-        EXPECT_EQ(duration, zx::duration(0));
-        EXPECT_EQ(handle, kTestHandle1);
-        cb(fitx::ok());
-      });
+  const auto kCommandComplete = bt::testing::CommandCompletePacket(
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
+      &kCommandComplete);
 
   flushable_channel->SetBrEdrAutomaticFlushTimeout(
-      zx::msec(0), [](auto result) { EXPECT_EQ(fitx::ok(), result); });
-  EXPECT_EQ(flush_timeout_cb_count, 1);
+      kFlushTimeout, [](auto result) { EXPECT_EQ(fitx::ok(), result); });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   EXPECT_FALSE(nonflushable_channel->info().flush_timeout.has_value());
   ASSERT_TRUE(flushable_channel->info().flush_timeout.has_value());
-  EXPECT_EQ(flushable_channel->info().flush_timeout.value(), zx::duration(0));
+  EXPECT_EQ(flushable_channel->info().flush_timeout.value(), kFlushTimeout);
 
   EXPECT_ACL_PACKET_OUT(
       StaticByteBuffer(
@@ -2986,17 +2984,18 @@ TEST_F(ChannelManagerTest, SettingFlushTimeoutFails) {
   RunLoopUntilIdle();
   auto channel = SetUpOutboundChannel();
 
-  int flush_timeout_cb_count = 0;
-  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
-        flush_timeout_cb_count++;
-        cb(ToResult(hci_spec::StatusCode::kUnknownConnectionId));
-      });
+  const auto kCommandComplete = bt::testing::CommandCompletePacket(
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnknownConnectionId);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
+      &kCommandComplete);
 
-  channel->SetBrEdrAutomaticFlushTimeout(zx::msec(0), [](auto result) {
+  channel->SetBrEdrAutomaticFlushTimeout(kFlushTimeout, [](auto result) {
     EXPECT_EQ(ToResult(hci_spec::StatusCode::kUnknownConnectionId), result);
   });
-  EXPECT_EQ(flush_timeout_cb_count, 1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
 
   EXPECT_ACL_PACKET_OUT(
       StaticByteBuffer(

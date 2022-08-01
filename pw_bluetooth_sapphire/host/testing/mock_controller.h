@@ -160,6 +160,9 @@ class MockController : public ControllerTestDoubleBase {
   // Returns true iff all transactions queued with QueueDataTransaction() have been received.
   bool AllExpectedDataPacketsSent() const;
 
+  // Returns true iff all transactions queued with QueueCommandTransaction() have been received.
+  bool AllExpectedCommandPacketsSent() const;
+
   // TODO(benlawson): remove after all MockController tests have been refactored to use data
   // expectations
   void set_data_expectations_enabled(bool enabled) { data_expectations_enabled_ = enabled; }

@@ -891,7 +891,7 @@ void AdapterImpl::InitializeStep3() {
   if (!l2cap_) {
     // Initialize ChannelManager to make it available for the next initialization step. The
     // AclDataChannel must be initialized before creating ChannelManager.
-    l2cap_ = l2cap::ChannelManager::Create(hci_->acl_data_channel(),
+    l2cap_ = l2cap::ChannelManager::Create(hci_->acl_data_channel(), hci_->command_channel(),
                                            /*random_channel_ids=*/true);
     l2cap_->AttachInspect(adapter_node_, l2cap::ChannelManager::kInspectNodeName);
   }

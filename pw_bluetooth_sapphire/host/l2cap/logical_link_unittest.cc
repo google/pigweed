@@ -10,43 +10,51 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/mock_acl_data_channel.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt::l2cap::internal {
 namespace {
 using Conn = hci::Connection;
-class LogicalLinkTest : public ::gtest::TestLoopFixture {
+
+using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+class LogicalLinkTest : public TestingBase {
  public:
   LogicalLinkTest() = default;
   ~LogicalLinkTest() override = default;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLinkTest);
 
  protected:
-  void SetUp() override { NewLogicalLink(); }
+  void SetUp() override {
+    TestingBase::SetUp();
+    InitializeACLDataChannel();
+    StartTestDevice();
+    NewLogicalLink();
+  }
   void TearDown() override {
     if (link_) {
       link_->Close();
       link_ = nullptr;
     }
+
+    TestingBase::TearDown();
   }
   void NewLogicalLink(bt::LinkType type = bt::LinkType::kLE) {
     const hci_spec::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci_spec::ConnectionHandle, PSM) { return std::nullopt; };
-    link_ =
-        std::make_unique<LogicalLink>(kConnHandle, type, hci_spec::ConnectionRole::kCentral,
-                                      kMaxPayload, std::move(query_service_cb), &acl_data_channel_,
-                                      /*random_channel_ids=*/true);
+    link_ = std::make_unique<LogicalLink>(kConnHandle, type, hci_spec::ConnectionRole::kCentral,
+                                          kMaxPayload, std::move(query_service_cb),
+                                          transport()->acl_data_channel(),
+                                          transport()->command_channel(),
+                                          /*random_channel_ids=*/true);
   }
   LogicalLink* link() const { return link_.get(); }
   void DeleteLink() { link_ = nullptr; }
 
-  hci::testing::MockAclDataChannel* acl_data_channel() { return &acl_data_channel_; }
-
  private:
   std::unique_ptr<LogicalLink> link_;
-  hci::testing::MockAclDataChannel acl_data_channel_;
 };
 
 using LogicalLinkDeathTest = LogicalLinkTest;
@@ -106,34 +114,11 @@ TEST_F(LogicalLinkTest, ChannelPriority) {
   EXPECT_LOW_PRIORITY(kATTChannelId);
 }
 
-TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
-  link()->Close();
-  NewLogicalLink(bt::LinkType::kACL);
-  constexpr zx::duration kTimeout(zx::msec(100));
-  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](auto timeout, auto handle, auto cb) {
-        EXPECT_EQ(timeout, kTimeout);
-        EXPECT_EQ(handle, link()->handle());
-        cb(fitx::ok());
-      });
-
-  bool cb_called = false;
-  link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
-    cb_called = true;
-    EXPECT_EQ(fitx::ok(), result);
-  });
-  EXPECT_TRUE(cb_called);
-}
-
+// LE links are unsupported, so result should be an error. No command should be sent.
 TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
   constexpr zx::duration kTimeout(zx::msec(100));
-  // LE links are unsupported, so result should be an error.
   link()->Close();
   NewLogicalLink(bt::LinkType::kLE);
-
-  // No command should be sent.
-  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](auto timeout, auto handle, auto cb) { FAIL(); });
 
   bool cb_called = false;
   link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
@@ -142,6 +127,65 @@ TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
     EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), result.error_value());
   });
   EXPECT_TRUE(cb_called);
+}
+
+TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
+  link()->Close();
+  NewLogicalLink(bt::LinkType::kACL);
+
+  std::optional<hci::Result<>> cb_status;
+  auto result_cb = [&](auto status) { cb_status = status; };
+
+  // Test command complete error
+  const auto kCommandCompleteError = bt::testing::CommandCompletePacket(
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnknownConnectionId);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        bt::testing::WriteAutomaticFlushTimeoutPacket(link()->handle(), 0),
+                        &kCommandCompleteError);
+  link()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  ASSERT_TRUE(cb_status->is_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kUnknownConnectionId), *cb_status);
+  cb_status.reset();
+
+  // Test flush timeout = 0 (no command should be sent)
+  link()->SetBrEdrAutomaticFlushTimeout(zx::msec(0), result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  EXPECT_TRUE(cb_status->is_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
+
+  // Test infinite flush timeout (flush timeout of 0 should be sent).
+  const auto kCommandComplete = bt::testing::CommandCompletePacket(
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        bt::testing::WriteAutomaticFlushTimeoutPacket(link()->handle(), 0),
+                        &kCommandComplete);
+  link()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  EXPECT_EQ(fitx::ok(), *cb_status);
+  cb_status.reset();
+
+  // Test msec to parameter conversion (hci_spec::kMaxAutomaticFlushTimeoutDuration(1279) *
+  // conversion_factor(1.6) = 2046).
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        bt::testing::WriteAutomaticFlushTimeoutPacket(link()->handle(), 2046),
+                        &kCommandComplete);
+  link()->SetBrEdrAutomaticFlushTimeout(hci_spec::kMaxAutomaticFlushTimeoutDuration, result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  EXPECT_EQ(fitx::ok(), *cb_status);
+  cb_status.reset();
+
+  // Test too large flush timeout (no command should be sent).
+  link()->SetBrEdrAutomaticFlushTimeout(hci_spec::kMaxAutomaticFlushTimeoutDuration + zx::msec(1),
+                                        result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  EXPECT_TRUE(cb_status->is_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
 }
 
 }  // namespace

@@ -1204,69 +1204,6 @@ TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
   EXPECT_EQ(request_cb_count, 1u);
 }
 
-TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
-  const DataBufferInfo kBREDRBufferInfo(1024, 50);
-  InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
-  acl_data_channel()->RegisterLink(kLinkHandle, bt::LinkType::kACL);
-
-  std::optional<Result<>> cb_status;
-  auto result_cb = [&](auto status) { cb_status = status; };
-
-  // Test command complete error
-  const auto kCommandCompleteError = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnknownConnectionId);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        bt::testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
-                        &kCommandCompleteError);
-  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), kLinkHandle,
-                                                    result_cb);
-  RunLoopUntilIdle();
-  ASSERT_TRUE(cb_status.has_value());
-  ASSERT_TRUE(cb_status->is_error());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kUnknownConnectionId), *cb_status);
-  cb_status.reset();
-
-  // Test flush timeout = 0 (no command should be sent)
-  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::msec(0), kLinkHandle, result_cb);
-  RunLoopUntilIdle();
-  ASSERT_TRUE(cb_status.has_value());
-  EXPECT_TRUE(cb_status->is_error());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
-
-  // Test infinite flush timeout (flush timeout of 0 should be sent).
-  const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        bt::testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
-                        &kCommandComplete);
-  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), kLinkHandle,
-                                                    result_cb);
-  RunLoopUntilIdle();
-  ASSERT_TRUE(cb_status.has_value());
-  EXPECT_EQ(fitx::ok(), *cb_status);
-  cb_status.reset();
-
-  // Test msec to parameter conversion (hci_spec::kMaxAutomaticFlushTimeoutDuration(1279) *
-  // conversion_factor(1.6) = 2046).
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        bt::testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 2046),
-                        &kCommandComplete);
-  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(hci_spec::kMaxAutomaticFlushTimeoutDuration,
-                                                    kLinkHandle, result_cb);
-  RunLoopUntilIdle();
-  ASSERT_TRUE(cb_status.has_value());
-  EXPECT_EQ(fitx::ok(), *cb_status);
-  cb_status.reset();
-
-  // Test too large flush timeout (no command should be sent).
-  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(
-      hci_spec::kMaxAutomaticFlushTimeoutDuration + zx::msec(1), kLinkHandle, result_cb);
-  RunLoopUntilIdle();
-  ASSERT_TRUE(cb_status.has_value());
-  EXPECT_TRUE(cb_status->is_error());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
-}
-
 TEST_F(ACLDataChannelTest,
        SendingLowPriorityBrEdrPacketsWhenTooManyAreQueuedDropsLeastRecentlySentPduOnSameChannel) {
   constexpr size_t kMaxMtu = 4;

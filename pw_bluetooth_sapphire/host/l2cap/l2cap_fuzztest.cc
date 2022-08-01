@@ -49,6 +49,7 @@ class DataFuzzTest : public TestingBase {
     InitializeACLDataChannel(bredr_buffer_info);
 
     channel_manager_ = l2cap::ChannelManager::Create(transport()->acl_data_channel(),
+                                                     transport()->command_channel(),
                                                      /*random_channel_ids=*/true);
 
     StartTestDevice();

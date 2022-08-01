@@ -111,6 +111,8 @@ bool MockController::AllExpectedScoPacketsSent() const { return sco_transactions
 
 bool MockController::AllExpectedDataPacketsSent() const { return data_transactions_.empty(); }
 
+bool MockController::AllExpectedCommandPacketsSent() const { return cmd_transactions_.empty(); }
+
 void MockController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(dispatcher);

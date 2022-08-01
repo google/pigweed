@@ -28,7 +28,8 @@ class ChannelManagerImpl final : public ChannelManager {
  public:
   using LinkErrorCallback = fit::closure;
 
-  ChannelManagerImpl(hci::AclDataChannel* acl_data_channel, bool random_channel_ids);
+  ChannelManagerImpl(hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
+                     bool random_channel_ids);
   ~ChannelManagerImpl() override;
 
   void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
@@ -89,6 +90,7 @@ class ChannelManagerImpl final : public ChannelManager {
   size_t max_le_payload_size_;
 
   hci::AclDataChannel* acl_data_channel_;
+  hci::CommandChannel* cmd_channel_;
 
   using LinkMap =
       std::unordered_map<hci_spec::ConnectionHandle, std::unique_ptr<internal::LogicalLink>>;
@@ -124,8 +126,9 @@ class ChannelManagerImpl final : public ChannelManager {
 };
 
 ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
-                                       bool random_channel_ids)
+                                       hci::CommandChannel* cmd_channel, bool random_channel_ids)
     : acl_data_channel_(acl_data_channel),
+      cmd_channel_(cmd_channel),
       random_channel_ids_(random_channel_ids),
       weak_ptr_factory_(this) {
   ZX_ASSERT(acl_data_channel_);
@@ -336,7 +339,7 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(hci_spec::Connection
 
   auto ll = std::make_unique<internal::LogicalLink>(
       handle, ll_type, role, max_payload_size,
-      fit::bind_member<&ChannelManagerImpl::QueryService>(this), acl_data_channel_,
+      fit::bind_member<&ChannelManagerImpl::QueryService>(this), acl_data_channel_, cmd_channel_,
       random_channel_ids_);
   if (ll_node_) {
     ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));
@@ -382,8 +385,9 @@ void ChannelManagerImpl::ServiceData::AttachInspect(inspect::Node& parent) {
 }
 
 std::unique_ptr<ChannelManager> ChannelManager::Create(hci::AclDataChannel* acl_data_channel,
+                                                       hci::CommandChannel* cmd_channel,
                                                        bool random_channel_ids) {
-  return std::make_unique<ChannelManagerImpl>(acl_data_channel, random_channel_ids);
+  return std::make_unique<ChannelManagerImpl>(acl_data_channel, cmd_channel, random_channel_ids);
 }
 
 }  // namespace bt::l2cap

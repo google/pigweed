@@ -57,7 +57,7 @@ class L2capIntegrationTest : public TestingBase {
     InitializeACLDataChannel(bredr_buffer_info);
 
     // TODO(63074): Remove assumptions about channel ordering so we can turn random ids on.
-    l2cap_ = ChannelManager::Create(transport()->acl_data_channel(),
+    l2cap_ = ChannelManager::Create(transport()->acl_data_channel(), transport()->command_channel(),
                                     /*random_channel_ids=*/false);
 
     StartTestDevice();

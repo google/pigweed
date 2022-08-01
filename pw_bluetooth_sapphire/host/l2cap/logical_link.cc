@@ -56,7 +56,8 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
                          hci_spec::ConnectionRole role, size_t max_acl_payload_size,
                          QueryServiceCallback query_service_cb,
-                         hci::AclDataChannel* acl_data_channel, bool random_channel_ids)
+                         hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
+                         bool random_channel_ids)
     : handle_(handle),
       type_(type),
       role_(role),
@@ -65,10 +66,12 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
       fragmenter_(handle, max_acl_payload_size),
       recombiner_(handle),
       acl_data_channel_(acl_data_channel),
+      cmd_channel_(cmd_channel),
       query_service_cb_(std::move(query_service_cb)),
       weak_ptr_factory_(this) {
   ZX_ASSERT(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
   ZX_ASSERT(acl_data_channel_);
+  ZX_ASSERT(cmd_channel_);
   ZX_ASSERT(query_service_cb_);
 
   // Set up the signaling channel and dynamic channels.
@@ -569,8 +572,45 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
     cb(result);
   };
 
-  acl_data_channel_->SetBrEdrAutomaticFlushTimeout(flush_timeout, handle_,
-                                                   std::move(callback_wrapper));
+  if (flush_timeout < zx::msec(1) || (flush_timeout > hci_spec::kMaxAutomaticFlushTimeoutDuration &&
+                                      flush_timeout != zx::duration::infinite())) {
+    callback_wrapper(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters));
+    return;
+  }
+
+  uint16_t converted_flush_timeout;
+  if (flush_timeout == zx::duration::infinite()) {
+    // The command treats a flush timeout of 0 as infinite.
+    converted_flush_timeout = 0;
+  } else {
+    // Slight imprecision from casting or converting to ms is fine for the flush timeout (a few
+    // ms difference from the requested value doesn't matter). Overflow is not possible because of
+    // the max value check above.
+    converted_flush_timeout =
+        static_cast<uint16_t>(static_cast<float>(flush_timeout.to_msecs()) *
+                              hci_spec::kFlushTimeoutMsToCommandParameterConversionFactor);
+    ZX_ASSERT(converted_flush_timeout != 0);
+    ZX_ASSERT(converted_flush_timeout <= hci_spec::kMaxAutomaticFlushTimeoutCommandParameterValue);
+  }
+
+  auto packet = hci::CommandPacket::New(hci_spec::kWriteAutomaticFlushTimeout,
+                                        sizeof(hci_spec::WriteAutomaticFlushTimeoutCommandParams));
+  auto packet_view = packet->mutable_payload<hci_spec::WriteAutomaticFlushTimeoutCommandParams>();
+  packet_view->connection_handle = htole16(handle_);
+  packet_view->flush_timeout = htole16(converted_flush_timeout);
+
+  cmd_channel_->SendCommand(std::move(packet), [cb = std::move(callback_wrapper), handle = handle_,
+                                                flush_timeout](
+                                                   auto, const hci::EventPacket& event) mutable {
+    if (event.ToResult().is_error()) {
+      bt_log(WARN, "hci", "WriteAutomaticFlushTimeout command failed (result: %s, handle: %#.4x)",
+             bt_str(event.ToResult()), handle);
+    } else {
+      bt_log(DEBUG, "hci", "automatic flush timeout updated (handle: %#.4x, timeout: %ld ms)",
+             handle, flush_timeout.to_msecs());
+    }
+    cb(event.ToResult());
+  });
 }
 
 void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {

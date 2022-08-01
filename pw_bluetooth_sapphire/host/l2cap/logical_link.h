@@ -59,7 +59,8 @@ class LogicalLink final {
   // starting at the beginning of the dynamic channel range.
   LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type, hci_spec::ConnectionRole role,
               size_t max_payload_size, QueryServiceCallback query_service_cb,
-              hci::AclDataChannel* acl_data_channel, bool random_channel_ids);
+              hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
+              bool random_channel_ids);
 
   // When a logical link is destroyed it notifies all of its channels to close themselves. Data
   // packets will no longer be routed to the associated channels.
@@ -281,6 +282,7 @@ class LogicalLink final {
   std::unique_ptr<DynamicChannelRegistry> dynamic_registry_;
 
   hci::AclDataChannel* acl_data_channel_;
+  hci::CommandChannel* cmd_channel_;
 
   // Search function for inbound service requests. Returns handler that accepts opened channels.
   QueryServiceCallback query_service_cb_;

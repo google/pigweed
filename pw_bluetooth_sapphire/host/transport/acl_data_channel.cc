@@ -48,8 +48,6 @@ class AclDataChannelImpl final : public AclDataChannel {
   const DataBufferInfo& GetLeBufferInfo() const override;
   void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
                           fit::callback<void(fitx::result<fitx::failed>)> callback) override;
-  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
-                                     ResultCallback<> callback) override;
 
  private:
   // Represents a queued ACL data packet.
@@ -492,52 +490,6 @@ void AclDataChannelImpl::RequestAclPriority(
         bt_log(DEBUG, "hci", "acl priority updated (priority: %#.8x)",
                static_cast<uint32_t>(priority));
         cb(fitx::ok());
-      });
-}
-
-void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
-                                                       hci_spec::ConnectionHandle handle,
-                                                       ResultCallback<> callback) {
-  auto link_iter = registered_links_.find(handle);
-  ZX_ASSERT(link_iter != registered_links_.end());
-  ZX_ASSERT(link_iter->second == bt::LinkType::kACL);
-
-  if (flush_timeout < zx::msec(1) || (flush_timeout > hci_spec::kMaxAutomaticFlushTimeoutDuration &&
-                                      flush_timeout != zx::duration::infinite())) {
-    callback(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters));
-    return;
-  }
-
-  uint16_t converted_flush_timeout;
-  if (flush_timeout == zx::duration::infinite()) {
-    // The command treats a flush timeout of 0 as infinite.
-    converted_flush_timeout = 0;
-  } else {
-    // Slight imprecision from casting or converting to ms is fine for the flush timeout (a few
-    // ms difference from the requested value doesn't matter). Overflow is not possible because of
-    // the max value check above.
-    converted_flush_timeout =
-        static_cast<uint16_t>(static_cast<float>(flush_timeout.to_msecs()) *
-                              hci_spec::kFlushTimeoutMsToCommandParameterConversionFactor);
-    ZX_ASSERT(converted_flush_timeout != 0);
-    ZX_ASSERT(converted_flush_timeout <= hci_spec::kMaxAutomaticFlushTimeoutCommandParameterValue);
-  }
-
-  auto packet = CommandPacket::New(hci_spec::kWriteAutomaticFlushTimeout,
-                                   sizeof(hci_spec::WriteAutomaticFlushTimeoutCommandParams));
-  auto packet_view = packet->mutable_payload<hci_spec::WriteAutomaticFlushTimeoutCommandParams>();
-  packet_view->connection_handle = htole16(handle);
-  packet_view->flush_timeout = htole16(converted_flush_timeout);
-
-  transport_->command_channel()->SendCommand(
-      std::move(packet),
-      [cb = std::move(callback), handle, flush_timeout](auto, const EventPacket& event) mutable {
-        if (hci_is_error(event, WARN, "hci", "WriteAutomaticFlushTimeout command failed")) {
-        } else {
-          bt_log(DEBUG, "hci", "automatic flush timeout updated (handle: %#.4x, timeout: %ld ms)",
-                 handle, flush_timeout.to_msecs());
-        }
-        cb(event.ToResult());
       });
 }
 
