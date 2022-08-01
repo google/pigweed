@@ -62,7 +62,7 @@ if (pw_arduino_build_CORE_PATH != "") {
              pw_arduino_build_PACKAGE_NAME + " list-boards")
 
   _compiler_path_override =
-      rebase_path(dir_cipd_pigweed + "/bin", root_build_dir)
+      rebase_path(pw_env_setup_CIPD_PIGWEED + "/bin", root_build_dir)
 
   arduino_core_library_path = "$_arduino_selected_core_path/hardware/" +
                               "$pw_arduino_build_PACKAGE_NAME/libraries"
