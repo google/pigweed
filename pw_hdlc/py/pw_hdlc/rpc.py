@@ -199,9 +199,9 @@ def _try_connect(port: int, attempts: int = 10) -> socket.socket:
     that length of time can vary. This retries with a short delay rather than
     having to wait for the worst case delay every time.
     """
+    timeout_s = 0.001
     while True:
-        attempts -= 1
-        time.sleep(0.001)
+        time.sleep(timeout_s)
 
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -209,8 +209,11 @@ def _try_connect(port: int, attempts: int = 10) -> socket.socket:
             return sock
         except ConnectionRefusedError:
             sock.close()
+            attempts -= 1
             if attempts <= 0:
                 raise
+
+            timeout_s *= 2
 
 
 class SocketSubprocess:
