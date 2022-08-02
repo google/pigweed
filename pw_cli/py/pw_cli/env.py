@@ -65,6 +65,11 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     # TODO(b/231998579) Remove after a week or two.
     parser.add_var('PW_BOOTSTRAP_USE_ROSETTA')
 
+    # RBE environment variables
+    parser.add_var('PW_USE_RBE', default=False)
+    parser.add_var('PW_RBE_DEBUG', default=False)
+    parser.add_var('PW_RBE_CLANG_CONFIG', default='')
+
     return parser
 
 

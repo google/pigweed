@@ -11,6 +11,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+import("//build_overrides/pigweed.gni")
+import("//build_overrides/pigweed_environment.gni")
+import("$dir_pw_toolchain/rbe.gni")
 
 declare_args() {
   # This flag allows you to specify the root directory of the clang, clang++,
@@ -23,15 +26,44 @@ declare_args() {
 pw_toolchain_clang_tools = {
   if (pw_toolchain_CLANG_PREFIX != "") {
     ar = pw_toolchain_CLANG_PREFIX + "/"
+    ld = pw_toolchain_CLANG_PREFIX + "/"
     cc = pw_toolchain_CLANG_PREFIX + "/"
     cxx = pw_toolchain_CLANG_PREFIX + "/"
   } else {
     ar = ""
+    ld = ""
     cc = ""
     cxx = ""
   }
+  _rbe_debug_flag = ""
 
+  # Currently the sysroot is not defined and therefore clang looks at the
+  # system libraries for the default glibc libraries.  Therefore
+  # pigweed cannot be hermetic as long as that is how clang works.  This
+  # variable, _sysroot, will be updated to the cipd installed glibc
+  # libraries, once the cipd package is updated to include those files.
+  # For now, this is a placeholder to make sure it is not lost in the
+  # future.
+  _sysroot = ""
+  if (pw_toolchain_USE_RBE) {
+    if (pw_toolchain_RBE_DEBUG) {
+      _rbe_debug_flag = " -v"
+    }
+    _exec_root = rebase_path("//")
+    _rewrapper_binary = "rewrapper"
+    _pw_rbe_config = pw_rbe_clang_config
+    _rbe_toolchain_prefix =
+        _rewrapper_binary +
+        " --labels=type=compile,lang=cpp,compiler=clang --cfg=" +
+        _pw_rbe_config + " --exec_root=" + _exec_root + " -- " +
+        rebase_path(dir_cipd_pigweed, root_build_dir) + "/bin/"
+
+    cc = _rbe_toolchain_prefix + "clang" + _rbe_debug_flag + _sysroot
+    cxx = _rbe_toolchain_prefix + "clang++" + _rbe_debug_flag + _sysroot
+  } else {
+    cc += "clang"
+    cxx += "clang++"
+  }
   ar += "llvm-ar"
-  cc += "clang"
-  cxx += "clang++"
+  ld += "clang++"
 }
