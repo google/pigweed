@@ -5,7 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
 
 namespace bt::att {
 namespace {
@@ -21,7 +21,7 @@ constexpr OpCode kTestCommand = kWriteCommand;
 
 void NopHandler(Bearer::TransactionId /*unused*/, const PacketReader& /*unused*/) {}
 
-class BearerTest : public l2cap::testing::FakeChannelTest {
+class BearerTest : public l2cap::testing::MockChannelTest {
  public:
   BearerTest() = default;
   ~BearerTest() override = default;
@@ -29,19 +29,17 @@ class BearerTest : public l2cap::testing::FakeChannelTest {
  protected:
   void SetUp() override {
     ChannelOptions options(l2cap::kATTChannelId);
-    fake_att_chan_ = CreateFakeChannel(options);
-    bearer_ = Bearer::Create(fake_att_chan_->GetWeakPtr());
+    bearer_ = Bearer::Create(CreateFakeChannel(options));
   }
 
   void TearDown() override { bearer_ = nullptr; }
 
   Bearer* bearer() const { return bearer_.get(); }
-  l2cap::testing::FakeChannel* fake_att_chan() const { return fake_att_chan_.get(); }
+  l2cap::testing::FakeChannel* fake_att_chan() const { return fake_chan().get(); }
 
   void DeleteBearer() { bearer_ = nullptr; }
 
  private:
-  std::unique_ptr<l2cap::testing::FakeChannel> fake_att_chan_;
   std::unique_ptr<Bearer> bearer_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BearerTest);
@@ -138,7 +136,9 @@ TEST_F(BearerTest, RequestTimeout) {
   };
 
   ASSERT_FALSE(fake_att_chan()->link_error());
-  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
+  MutableByteBufferPtr request = NewBuffer(kTestRequest);
+  EXPECT_PACKET_OUT(*request);
+  bearer()->StartTransaction(std::move(request), cb);
 
   RunLoopFor(kTransactionTimeout);
 
@@ -210,8 +210,9 @@ TEST_F(BearerTest, IndicationTimeout) {
 
     err_cb_called = true;
   };
-
-  bearer()->StartTransaction(NewBuffer(kIndication, 'T', 'e', 's', 't'), cb);
+  MutableByteBufferPtr request = NewBuffer(kIndication, 'T', 'e', 's', 't');
+  EXPECT_PACKET_OUT(*request);
+  bearer()->StartTransaction(std::move(request), cb);
 
   RunLoopFor(kTransactionTimeout);
 
@@ -561,9 +562,17 @@ TEST_F(BearerTest, CloseChannelAndDeleteBearerWhileRequestsArePending) {
     DeleteBearer();
   };
 
-  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
-  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
-  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
+  MutableByteBufferPtr kRequest0 = NewBuffer(kTestRequest);
+  EXPECT_PACKET_OUT(*kRequest0);
+  bearer()->StartTransaction(std::move(kRequest0), cb);
+
+  MutableByteBufferPtr kRequest1 = NewBuffer(kTestRequest);
+  EXPECT_PACKET_OUT(*kRequest1);
+  bearer()->StartTransaction(std::move(kRequest1), cb);
+
+  MutableByteBufferPtr kRequest2 = NewBuffer(kTestRequest);
+  EXPECT_PACKET_OUT(*kRequest2);
+  bearer()->StartTransaction(std::move(kRequest2), cb);
 
   fake_chan()->Close();
   EXPECT_EQ(kExpectedCount, cb_error_count);
@@ -711,12 +720,20 @@ TEST_F(BearerTest, SendWithoutResponseWrongMethodType) {
 }
 
 TEST_F(BearerTest, SendWithoutResponseCorrectMethodType) {
-  EXPECT_TRUE(bearer()->SendWithoutResponse(NewBuffer(kNotification)));
-  EXPECT_TRUE(bearer()->SendWithoutResponse(NewBuffer(kTestCommand)));
-  EXPECT_TRUE(bearer()->SendWithoutResponse(NewBuffer(kTestRequest | kCommandFlag)));
+  MutableByteBufferPtr request_0 = NewBuffer(kNotification);
+  EXPECT_PACKET_OUT(*request_0);
+  EXPECT_TRUE(bearer()->SendWithoutResponse(std::move(request_0)));
+  MutableByteBufferPtr request_1 = NewBuffer(kTestCommand);
+  EXPECT_PACKET_OUT(*request_1);
+  EXPECT_TRUE(bearer()->SendWithoutResponse(std::move(request_1)));
+  MutableByteBufferPtr request_2 = NewBuffer(kTestRequest | kCommandFlag);
+  EXPECT_PACKET_OUT(*request_2);
+  EXPECT_TRUE(bearer()->SendWithoutResponse(std::move(request_2)));
 
   // Any opcode is accepted as long as it has the command flag set.
-  EXPECT_TRUE(bearer()->SendWithoutResponse(NewBuffer(kInvalidOpCode | kCommandFlag)));
+  auto request_3 = NewBuffer(kInvalidOpCode | kCommandFlag);
+  EXPECT_PACKET_OUT(*request_3);
+  EXPECT_TRUE(bearer()->SendWithoutResponse(std::move(request_3)));
 }
 
 TEST_F(BearerTest, SendWithoutResponseMany) {
@@ -1068,8 +1085,12 @@ TEST_F(BearerTest, RequestAndIndication) {
   EXPECT_FALSE(bearer()->Reply(req_id, NewBuffer(kConfirmation)));
 
   // It should be possible to end two distinct transactions.
-  EXPECT_TRUE(bearer()->Reply(req_id, NewBuffer(kTestResponse)));
-  EXPECT_TRUE(bearer()->Reply(ind_id, NewBuffer(kConfirmation)));
+  MutableByteBufferPtr reply_0 = NewBuffer(kTestResponse);
+  EXPECT_PACKET_OUT(*reply_0);
+  EXPECT_TRUE(bearer()->Reply(req_id, std::move(reply_0)));
+  MutableByteBufferPtr reply_1 = NewBuffer(kConfirmation);
+  EXPECT_PACKET_OUT(*reply_1);
+  EXPECT_TRUE(bearer()->Reply(ind_id, std::move(reply_1)));
 }
 
 // Test receipt of non-transactional PDUs.
