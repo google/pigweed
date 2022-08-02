@@ -14,7 +14,7 @@
 # the License.
 """Tests for the tokens module."""
 
-import datetime
+from datetime import datetime
 import io
 import logging
 from pathlib import Path
@@ -209,7 +209,7 @@ class TokenDatabaseTest(unittest.TestCase):
 
         self.assertEqual(jello.token, 0x2e668cd6)
         self.assertEqual(jello.string, 'Jello, world!')
-        self.assertEqual(jello.date_removed, datetime.datetime(2019, 6, 11))
+        self.assertEqual(jello.date_removed, datetime(2019, 6, 11))
 
         matches = db.token_to_entries[0xe13b0f94]
         self.assertEqual(len(matches), 1)
@@ -246,7 +246,7 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(db.token_to_entries[0xe65aefef][0].string,
                          "Won't fit : %s%d")
 
-        db.purge(datetime.datetime(2019, 6, 11))
+        db.purge(datetime(2019, 6, 11))
         self.assertLess(len(db.token_to_entries), original_length)
 
         self.assertFalse(db.token_to_entries[0])
@@ -264,30 +264,30 @@ class TokenDatabaseTest(unittest.TestCase):
         # Test basic merging into an empty database.
         db.merge(
             tokens.Database([
-                tokens.TokenizedStringEntry(
-                    1, 'one', date_removed=datetime.datetime.min),
-                tokens.TokenizedStringEntry(
-                    2, 'two', date_removed=datetime.datetime.min),
+                tokens.TokenizedStringEntry(1,
+                                            'one',
+                                            date_removed=datetime.min),
+                tokens.TokenizedStringEntry(2,
+                                            'two',
+                                            date_removed=datetime.min),
             ]))
         self.assertEqual({str(e) for e in db.entries()}, {'one', 'two'})
-        self.assertEqual(db.token_to_entries[1][0].date_removed,
-                         datetime.datetime.min)
-        self.assertEqual(db.token_to_entries[2][0].date_removed,
-                         datetime.datetime.min)
+        self.assertEqual(db.token_to_entries[1][0].date_removed, datetime.min)
+        self.assertEqual(db.token_to_entries[2][0].date_removed, datetime.min)
 
         # Test merging in an entry with a removal date.
         db.merge(
             tokens.Database([
                 tokens.TokenizedStringEntry(3, 'three'),
-                tokens.TokenizedStringEntry(
-                    4, 'four', date_removed=datetime.datetime.min),
+                tokens.TokenizedStringEntry(4,
+                                            'four',
+                                            date_removed=datetime.min),
             ]))
         self.assertEqual({str(e)
                           for e in db.entries()},
                          {'one', 'two', 'three', 'four'})
         self.assertIsNone(db.token_to_entries[3][0].date_removed)
-        self.assertEqual(db.token_to_entries[4][0].date_removed,
-                         datetime.datetime.min)
+        self.assertEqual(db.token_to_entries[4][0].date_removed, datetime.min)
 
         # Test merging in one entry.
         db.merge(tokens.Database([
@@ -296,24 +296,24 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual({str(e)
                           for e in db.entries()},
                          {'one', 'two', 'three', 'four', 'five'})
-        self.assertEqual(db.token_to_entries[4][0].date_removed,
-                         datetime.datetime.min)
+        self.assertEqual(db.token_to_entries[4][0].date_removed, datetime.min)
         self.assertIsNone(db.token_to_entries[5][0].date_removed)
 
         # Merge in repeated entries different removal dates.
         db.merge(
             tokens.Database([
-                tokens.TokenizedStringEntry(
-                    4, 'four', date_removed=datetime.datetime.max),
-                tokens.TokenizedStringEntry(
-                    5, 'five', date_removed=datetime.datetime.max),
+                tokens.TokenizedStringEntry(4,
+                                            'four',
+                                            date_removed=datetime.max),
+                tokens.TokenizedStringEntry(5,
+                                            'five',
+                                            date_removed=datetime.max),
             ]))
         self.assertEqual(len(db.entries()), 5)
         self.assertEqual({str(e)
                           for e in db.entries()},
                          {'one', 'two', 'three', 'four', 'five'})
-        self.assertEqual(db.token_to_entries[4][0].date_removed,
-                         datetime.datetime.max)
+        self.assertEqual(db.token_to_entries[4][0].date_removed, datetime.max)
         self.assertIsNone(db.token_to_entries[5][0].date_removed)
 
         # Merge in the same repeated entries now without removal dates.
@@ -341,17 +341,17 @@ class TokenDatabaseTest(unittest.TestCase):
             tokens.Database([
                 tokens.TokenizedStringEntry(1,
                                             'one',
-                                            date_removed=datetime.datetime.max)
+                                            date_removed=datetime.max)
             ]),
             tokens.Database([
                 tokens.TokenizedStringEntry(2,
                                             'two',
-                                            date_removed=datetime.datetime.min)
+                                            date_removed=datetime.min)
             ]),
             tokens.Database([
                 tokens.TokenizedStringEntry(1,
                                             'one',
-                                            date_removed=datetime.datetime.min)
+                                            date_removed=datetime.min)
             ]))
         self.assertEqual({str(e) for e in db.entries()}, {'one', 'two'})
 
@@ -359,17 +359,17 @@ class TokenDatabaseTest(unittest.TestCase):
             tokens.Database([
                 tokens.TokenizedStringEntry(4,
                                             'four',
-                                            date_removed=datetime.datetime.max)
+                                            date_removed=datetime.max)
             ]),
             tokens.Database([
                 tokens.TokenizedStringEntry(2,
                                             'two',
-                                            date_removed=datetime.datetime.max)
+                                            date_removed=datetime.max)
             ]),
             tokens.Database([
                 tokens.TokenizedStringEntry(3,
                                             'three',
-                                            date_removed=datetime.datetime.min)
+                                            date_removed=datetime.min)
             ]))
         self.assertEqual({str(e)
                           for e in db.entries()},
@@ -395,7 +395,7 @@ class TokenDatabaseTest(unittest.TestCase):
 
         self.assertTrue(
             all(entry.date_removed is None for entry in db.entries()))
-        date_1 = datetime.datetime(1, 2, 3)
+        date_1 = datetime(1, 2, 3)
 
         db.mark_removed(_entries('apples', 'oranges', 'pears'), date_1)
 
@@ -405,7 +405,7 @@ class TokenDatabaseTest(unittest.TestCase):
             db.token_to_entries[default_hash('CHEESE')][0].date_removed,
             date_1)
 
-        now = datetime.datetime.now()
+        now = datetime.now()
         db.mark_removed(_entries('MILK', 'CHEESE', 'pears'))
 
         # New strings are not added or re-added in mark_removed().
@@ -440,6 +440,27 @@ class TokenDatabaseTest(unittest.TestCase):
                               'MILK', 'apples', 'oranges', 'CHEESE', 'pears',
                               'only this one is new'
                           })
+
+    def test_add_duplicate_entries_keeps_none_as_removal_date(self) -> None:
+        db = tokens.Database()
+        db.add([
+            tokens.TokenizedStringEntry(1, 'Spam', '', datetime.now()),
+            tokens.TokenizedStringEntry(1, 'Spam', ''),
+            tokens.TokenizedStringEntry(1, 'Spam', '', datetime.min),
+        ])
+        self.assertEqual(len(db), 1)
+        self.assertIsNone(db.token_to_entries[1][0].date_removed)
+
+    def test_add_duplicate_entries_keeps_newest_removal_date(self) -> None:
+        db = tokens.Database()
+        db.add([
+            tokens.TokenizedStringEntry(1, 'Spam', '', datetime.now()),
+            tokens.TokenizedStringEntry(1, 'Spam', '', datetime.max),
+            tokens.TokenizedStringEntry(1, 'Spam', '', datetime.now()),
+            tokens.TokenizedStringEntry(1, 'Spam', '', datetime.min),
+        ])
+        self.assertEqual(len(db), 1)
+        self.assertEqual(db.token_to_entries[1][0].date_removed, datetime.max)
 
     def test_binary_format_write(self) -> None:
         db = read_db_from_csv(CSV_DATABASE)
@@ -591,6 +612,25 @@ class TestDirectoryDatabase(unittest.TestCase):
         all_databases_merged = tokens.Database.merged(first_csv, second_csv,
                                                       third_csv)
         directory_db = database.load_token_database(self._db_dir)
+        self.assertEqual(str(all_databases_merged), str(directory_db))
+        self.assertEqual(3, len(list(self._db_dir.iterdir())))
+
+    def test_loading_multiples_files_with_removal_dates(self) -> None:
+        self._db_csv.write_text(CSV_DATABASE)
+        first_csv = tokens.DatabaseFile.create(self._db_csv)
+
+        path_to_second_csv = self._db_dir / 'second.csv'
+        path_to_second_csv.write_text(CSV_DATABASE_2)
+        second_csv = tokens.DatabaseFile.create(path_to_second_csv)
+
+        path_to_third_csv = self._db_dir / 'third.csv'
+        path_to_third_csv.write_text(CSV_DATABASE_3)
+        third_csv = tokens.DatabaseFile.create(path_to_third_csv)
+
+        all_databases_merged = tokens.Database.merged(first_csv, second_csv,
+                                                      third_csv)
+        directory_db = database.load_token_database(self._db_dir)
+
         self.assertEqual(str(all_databases_merged), str(directory_db))
         self.assertEqual(3, len(list(self._db_dir.iterdir())))
 

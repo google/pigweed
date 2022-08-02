@@ -741,6 +741,10 @@ command.
 
    ./database.py add --database DATABASE_NAME ELF_OR_DATABASE_FILE...
 
+This command adds new tokens from ELF files or other databases to the database.
+Adding tokens already present in the database updates the date removed, if any,
+to the latest.
+
 A CSV token database can be checked into a source repository and updated as code
 changes are made. The build system can invoke ``database.py`` to update the
 database after each build.

@@ -119,13 +119,12 @@ class Database:
     def __init__(self, entries: Iterable[TokenizedStringEntry] = ()):
         """Creates a token database."""
         # The database dict stores each unique (token, string) entry.
-        self._database: Dict[_EntryKey, TokenizedStringEntry] = {
-            entry.key(): entry
-            for entry in entries
-        }
+        self._database: Dict[_EntryKey, TokenizedStringEntry] = {}
 
         # This is a cache for fast token lookup that is built as needed.
         self._cache: Optional[Dict[int, List[TokenizedStringEntry]]] = None
+
+        self.add(entries)
 
     @classmethod
     def from_strings(
@@ -204,7 +203,10 @@ class Database:
         return removed
 
     def add(self, entries: Iterable[TokenizedStringEntry]) -> None:
-        """Adds new entries and updates date_removed for existing entries."""
+        """Adds new entries and updates date_removed for existing entries.
+
+        If the added tokens have removal dates, the newest date is used.
+        """
         self._cache = None
 
         for new_entry in entries:
@@ -212,10 +214,17 @@ class Database:
             try:
                 entry = self._database[new_entry.key()]
                 entry.domain = new_entry.domain
-                entry.date_removed = None
+
+                # Keep the latest removal date between the two entries.
+                if new_entry.date_removed is None:
+                    entry.date_removed = None
+                elif (entry.date_removed
+                      and entry.date_removed < new_entry.date_removed):
+                    entry.date_removed = new_entry.date_removed
             except KeyError:
+                # Make a copy to avoid unintentially updating the database.
                 self._database[new_entry.key()] = TokenizedStringEntry(
-                    new_entry.token, new_entry.string, new_entry.domain)
+                    **vars(new_entry))
 
     def purge(
         self,
