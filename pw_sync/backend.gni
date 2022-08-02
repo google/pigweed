@@ -16,6 +16,9 @@ declare_args() {
   # Backend for the pw_sync module's binary semaphore.
   pw_sync_BINARY_SEMAPHORE_BACKEND = ""
 
+  # Backend for the pw_sync module's condition variable.
+  pw_sync_CONDITION_VARIABLE_BACKEND = ""
+
   # Backend for the pw_sync module's counting semaphore.
   pw_sync_COUNTING_SEMAPHORE_BACKEND = ""
 

@@ -388,6 +388,42 @@ pw_cc_library(
     includes = ["public"],
 )
 
+pw_cc_facade(
+    name = "condition_variable_facade",
+    hdrs = [
+        "public/pw_sync/condition_variable.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_sync:mutex",
+    ],
+)
+
+# TODO(b/228998350): This needs to be instantiated for each platform that
+# provides an implementation of $dir_pw_thread:test_threads and
+# $dir_pw_sync:condition_variable.
+# pw_cc_library(
+#     name = "condition_variable_test",
+#     srcs = ["condition_variable_test.cc"],
+#     deps = [
+#         ":condition_variable_facade",
+#         "//pw_containers:vector",
+#         "//pw_sync:mutex",
+#         "//pw_sync:timed_thread_notification",
+#         "//pw_thread:sleep",
+#         "//pw_thread:test_threads_header",
+#         "//pw_thread:thread",
+#         "//pw_unit_test",
+#     ],
+# )
+#
+# Filegroup to mark `condition_variable_test.cc` as used for the linter:
+filegroup(
+    name = "condition_variable_test_filegroup",
+    srcs = ["condition_variable_test.cc"],
+)
+
 pw_cc_test(
     name = "borrow_test",
     srcs = [

@@ -193,3 +193,36 @@ pw_cc_library(
         "//pw_sync:yield_core",
     ],
 )
+
+pw_cc_library(
+    name = "condition_variable_headers",
+    hdrs = [
+        "public/pw_sync_stl/condition_variable_inline.h",
+        "public/pw_sync_stl/condition_variable_native.h",
+        "public_overrides/pw_sync_backend/condition_variable_inline.h",
+        "public_overrides/pw_sync_backend/condition_variable_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+)
+
+pw_cc_library(
+    name = "condition_variable",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":condition_variable_headers",
+        "//pw_sync:condition_variable_facade",
+    ],
+)
+
+# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+# pw_cc_test(
+#     name = "condition_variable_test",
+#     deps = [
+#         "//pw_sync:condition_variable_test",
+#         "//pw_thread_stl:test_threads",
+#     ]
+# )

@@ -1856,11 +1856,7 @@ Examples in C++
 
 Conditional Variables
 =====================
-We've decided for now to skip on conditional variables. These are constructs,
-which are typically not natively available on RTOSes. CVs would have to be
-backed by a multiple hidden semaphore(s) in addition to the explicit public
-mutex. In other words a CV typically ends up as a a composition of
-synchronization primitives on RTOSes. That being said, one could implement them
-using our semaphore and mutex layers and we may consider providing this in the
-future. However for most of our resource constrained customers they will mostly
-likely be using semaphores more often than CVs.
+``pw::sync::ConditionVariable`` provides a condition variable implementation
+that provides semantics and an API very similar to `std::condition_variable
+<https://en.cppreference.com/w/cpp/thread/condition_variable>`_ in the C++
+Standard Library.

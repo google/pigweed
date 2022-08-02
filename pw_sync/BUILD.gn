@@ -185,6 +185,16 @@ pw_source_set("yield_core") {
   public_configs = [ ":public_include_path" ]
 }
 
+pw_facade("condition_variable") {
+  backend = pw_sync_CONDITION_VARIABLE_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/condition_variable.h" ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_sync:mutex",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":borrow_test",
@@ -301,6 +311,23 @@ pw_test("timed_thread_notification_facade_test") {
   deps = [
     ":timed_thread_notification",
     pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND,
+  ]
+}
+
+# This needs to be instantiated per platform that provides
+# an implementation of $dir_pw_thread:test_threads and
+# $dir_pw_sync:condition_variable.
+pw_source_set("condition_variable_test") {
+  sources = [ "condition_variable_test.cc" ]
+  deps = [
+    ":condition_variable",
+    "$dir_pw_containers:vector",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:timed_thread_notification",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:test_threads",
+    "$dir_pw_thread:thread",
+    "$dir_pw_unit_test",
   ]
 }
 

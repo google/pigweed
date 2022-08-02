@@ -173,6 +173,16 @@ pw_add_module_library(pw_sync.yield_core
     public
 )
 
+pw_add_facade(pw_sync.condition_variable
+  HEADERS
+    public/pw_sync/condition_variable.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_chrono.system_clock
+    pw_sync.mutex
+)
+
 pw_add_test(pw_sync.borrow_test
   SOURCES
     borrow_test.cc
@@ -284,3 +294,17 @@ if(NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL
       pw_sync
   )
 endif()
+
+pw_add_module_library(pw_sync.condition_variable_test
+  PUBLIC_DEPS
+    pw_sync.condition_variable
+    pw_containers.vector
+    pw_sync.mutex
+    pw_sync.timed_thread_notification
+    pw_thread.sleep
+    pw_thread.test_threads
+    pw_thread.thread
+    pw_unit_test
+  SOURCES
+    condition_variable_test.cc
+)

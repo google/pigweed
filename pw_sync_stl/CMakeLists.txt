@@ -33,6 +33,19 @@ pw_add_module_library(pw_sync_stl.binary_semaphore_backend
     pw_chrono.system_clock
 )
 
+pw_add_module_library(pw_sync_stl.condition_variable_backend
+  IMPLEMENTS_FACADES
+    pw_sync.condition_variable
+  HEADERS
+    public/pw_sync_stl/condition_variable_inline.h
+    public/pw_sync_stl/condition_variable_native.h
+    public_overrides/pw_sync_backend/condition_variable_inline.h
+    public_overrides/pw_sync_backend/condition_variable_native.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+)
+
 # This target provides the backend for pw::sync::CountingSemaphore.
 pw_add_module_library(pw_sync_stl.counting_semaphore_backend
   IMPLEMENTS_FACADES

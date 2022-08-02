@@ -43,10 +43,12 @@ _host_common = {
   pw_string_CONFIG = "$dir_pw_string:enable_decimal_float_expansion"
 
   # Configure backends for pw_sync's facades.
-  pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = "$dir_pw_sync_stl:interrupt_spin_lock"
   pw_sync_BINARY_SEMAPHORE_BACKEND = "$dir_pw_sync_stl:binary_semaphore_backend"
+  pw_sync_CONDITION_VARIABLE_BACKEND =
+      "$dir_pw_sync_stl:condition_variable_backend"
   pw_sync_COUNTING_SEMAPHORE_BACKEND =
       "$dir_pw_sync_stl:counting_semaphore_backend"
+  pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = "$dir_pw_sync_stl:interrupt_spin_lock"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_stl:mutex_backend"
   pw_sync_RECURSIVE_MUTEX_BACKEND = "$dir_pw_sync_stl:recursive_mutex_backend"
   pw_sync_TIMED_MUTEX_BACKEND = "$dir_pw_sync_stl:timed_mutex_backend"
