@@ -473,6 +473,8 @@ class CommandRunner:
 
         # Actions that launch new command runners, close_dialog should not run.
         for command_text in [
+                '[File] > Insert Repl Snippet',
+                '[File] > Insert Repl History',
                 '[File] > Open Logger',
         ]:
             if command_text in self.selected_item_text:

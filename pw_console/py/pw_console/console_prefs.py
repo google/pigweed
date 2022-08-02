@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import Dict, Callable, List, Union
+from typing import Dict, Callable, List, Tuple, Union
 
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
@@ -54,6 +54,8 @@ _DEFAULT_CONFIG = {
         },
     },
     'key_bindings': DEFAULT_KEY_BINDINGS,
+    'snippets': {},
+    'user_snippets': {},
 }
 
 _DEFAULT_PROJECT_FILE = Path('$PW_PROJECT_ROOT/.pw_console.yaml')
@@ -121,6 +123,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             environment_var='PW_CONSOLE_CONFIG_FILE',
         )
 
+        self._snippet_completions: List[Tuple[str, str]] = []
         self.registered_commands = DEFAULT_KEY_BINDINGS
         self.registered_commands.update(self.user_key_bindings)
 
@@ -295,3 +298,39 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             return handler
 
         return decorator
+
+    @property
+    def snippets(self) -> dict:
+        return self._config.get('snippets', {})
+
+    @property
+    def user_snippets(self) -> dict:
+        return self._config.get('user_snippets', {})
+
+    def snippet_completions(self) -> List[Tuple[str, str]]:
+        if self._snippet_completions:
+            return self._snippet_completions
+
+        all_descriptions: List[str] = []
+        all_descriptions.extend(self.user_snippets.keys())
+        all_descriptions.extend(self.snippets.keys())
+        if not all_descriptions:
+            return []
+        max_description_width = max(
+            len(description) for description in all_descriptions)
+
+        all_snippets: List[Tuple[str, str]] = []
+        all_snippets.extend(self.user_snippets.items())
+        all_snippets.extend(self.snippets.items())
+
+        self._snippet_completions = [
+            (
+                description.ljust(max_description_width) + ' : ' +
+                # Flatten linebreaks in the text.
+                ' '.join([line.lstrip() for line in text.splitlines()]),
+                # Pass original text as the completion result.
+                text,
+            ) for description, text in all_snippets
+        ]
+
+        return self._snippet_completions

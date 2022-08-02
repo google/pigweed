@@ -464,6 +464,36 @@ class ConsoleApp:
             ))
         return completions
 
+    def open_command_runner_history(self) -> None:
+        self.command_runner.set_completions(
+            window_title='History',
+            load_completions=self._create_history_completions)
+        if not self.command_runner_is_open():
+            self.command_runner.open_dialog()
+
+    def _create_history_completions(self) -> List[Tuple[str, Callable]]:
+        return [(
+            description,
+            functools.partial(self.repl_pane.insert_text_into_input_buffer,
+                              text),
+        ) for description, text in self.repl_pane.history_completions()]
+
+    def open_command_runner_snippets(self) -> None:
+        self.command_runner.set_completions(
+            window_title='Snippets',
+            load_completions=self._create_snippet_completions)
+        if not self.command_runner_is_open():
+            self.command_runner.open_dialog()
+
+    def _create_snippet_completions(self) -> List[Tuple[str, Callable]]:
+        completions: List[Tuple[str, Callable]] = [(
+            description,
+            functools.partial(self.repl_pane.insert_text_into_input_buffer,
+                              text),
+        ) for description, text in self.prefs.snippet_completions()]
+
+        return completions
+
     def _create_menu_items(self):
         themes_submenu = [
             MenuItem('Toggle Light/Dark', handler=self.toggle_light_theme),
@@ -511,6 +541,10 @@ class ConsoleApp:
             MenuItem(
                 '[File]',
                 children=[
+                    MenuItem('Insert Repl Snippet',
+                             handler=self.open_command_runner_snippets),
+                    MenuItem('Insert Repl History',
+                             handler=self.open_command_runner_history),
                     MenuItem('Open Logger',
                              handler=self.open_command_runner_loggers),
                     MenuItem(
@@ -590,6 +624,11 @@ class ConsoleApp:
                              handler=self.repl_pane.copy_all_output_text),
                     MenuItem('Copy all Python Input',
                              handler=self.repl_pane.copy_all_input_text),
+                    MenuItem('-'),
+                    MenuItem('Clear Python Input',
+                             self.repl_pane.clear_input_buffer),
+                    MenuItem('Clear Python Output',
+                             self.repl_pane.clear_output_buffer),
                 ],
             ),
         ]

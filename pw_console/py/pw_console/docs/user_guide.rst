@@ -578,6 +578,8 @@ loaded later in the startup sequence.
 
    .. code-block:: yaml
 
+      ---
+      config_title: pw_console
       ui_theme: nord
       code_theme: pigweed-code
       swap_light_and_dark: False
@@ -777,6 +779,23 @@ Example Config
      - z t
      log-pane.shift-line-to-center:
      - z z
+
+   # Python Repl Snippets (Project owned)
+   snippets:
+     Count Ten Times: |
+       for i in range(10):
+           print(i)
+     Local Variables: |
+       locals()
+
+   # Python Repl Snippets (User owned)
+   user_snippets:
+     Pretty print format function: |
+       import pprint
+       _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
+     Global variables: |
+       globals()
+
 
 Changing Keyboard Shortcuts
 ---------------------------

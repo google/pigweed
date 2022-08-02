@@ -84,6 +84,8 @@ DEFAULT_KEY_BINDINGS: Dict[str, List[str]] = {
     'python-repl.copy-all-output': ['escape c-c'],
     'python-repl.copy-clear-or-cancel': ['c-c'],
     'python-repl.paste-to-input': ['c-v'],
+    'python-repl.history-search': ['c-r'],
+    'python-repl.snippet-search': ['c-t'],
     'save-as-dialog.cancel': ['escape', 'c-c', 'c-d'],
     'quit-dialog.no': ['escape', 'n', 'c-c'],
     'quit-dialog.yes': ['y', 'c-d'],
@@ -165,6 +167,20 @@ def create_key_bindings(console_app) -> KeyBindings:
     def paste_into_repl(event):
         """Reset the python repl on Ctrl-c"""
         console_app.repl_pane.paste_system_clipboard_to_input_buffer()
+
+    @register('python-repl.history-search',
+              key_bindings,
+              filter=has_focus(console_app.pw_ptpython_repl))
+    def history_search(event):
+        """Open the repl history search dialog."""
+        console_app.open_command_runner_history()
+
+    @register('python-repl.snippet-search',
+              key_bindings,
+              filter=has_focus(console_app.pw_ptpython_repl))
+    def insert_snippet(event):
+        """Open the repl snippet search dialog."""
+        console_app.open_command_runner_snippets()
 
     @register('python-repl.copy-all-output',
               key_bindings,
