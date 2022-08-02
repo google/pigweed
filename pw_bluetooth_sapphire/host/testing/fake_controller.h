@@ -54,6 +54,15 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     void AddBREDRSupportedCommands();
     void AddLESupportedCommands();
 
+    void AddA2dpOffloadableCodecType(hci_android::A2dpCodecType codec_type) {
+      uint32_t const value = static_cast<uint32_t>(codec_type);
+      android_extension_settings.a2dp_source_offload_capability_mask |= value;
+    }
+
+    void ClearA2dpOffloadableCodecs() {
+      android_extension_settings.a2dp_source_offload_capability_mask = 0;
+    }
+
     // The time elapsed from the receipt of a LE Create Connection command until the resulting LE
     // Connection Complete event.
     zx::duration le_connection_delay;
