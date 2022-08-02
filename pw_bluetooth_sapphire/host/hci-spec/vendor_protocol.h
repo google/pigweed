@@ -251,7 +251,7 @@ struct StartA2dpOffloadCommandParams {
   uint8_t opcode;
 
   // Bitmask: codec types supported (see A2dpCodecType for bitmask values)
-  A2dpCodecType codec;
+  A2dpCodecType codec_type;
 
   // Max latency allowed in ms. A value of zero disables flush.
   uint16_t max_latency;

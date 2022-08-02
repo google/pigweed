@@ -89,7 +89,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Congfiguration of an L2CAP channel for A2DP offloading.
   struct OffloadedA2dpChannel final {
-    hci_android::A2dpCodecType codec = hci_android::A2dpCodecType::kSbc;
+    hci_android::A2dpCodecType codec_type = hci_android::A2dpCodecType::kSbc;
     uint16_t max_latency = 0;
     hci_android::A2dpScmsTEnable scms_t_enable = {
         hci_spec::GenericEnableParam::kDisable,
