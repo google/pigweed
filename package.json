@@ -1,6 +1,6 @@
 {
   "name": "pigweedjs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "An open source collection of embedded-targeted libraries",
   "author": "The Pigweed Authors",
   "license": "Apache-2.0",
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "prebuild": "rimraf dist && npm run build-protos",
-    "build-protos": "ts-node -P tsconfig.json ./pw_protobuf_compiler/ts/build.ts -p pw_transfer/transfer.proto -p pw_rpc/ts/test.proto -p pw_rpc/echo.proto -p pw_rpc/ts/test2.proto -p pw_rpc/internal/packet.proto -p pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test.proto -p pw_protobuf_compiler/pw_protobuf_compiler_protos/test.proto --out dist/protos",
+    "build-protos": "ts-node -P tsconfig.json ts/buildprotos.ts",
     "build": "npm run rollup",
     "rollup": "rollup -c && rimraf dist/types && rimraf dist/**/types && chmod +x ./dist/bin/pw_protobuf_compiler.js",
     "start": "tsc-watch --onSuccess \"rollup -c\"",
