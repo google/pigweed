@@ -110,6 +110,7 @@ def check_auth(cipd, package_files, spin):
             username_part = '({}) '.format(username)
         stderr('Your account {}does not have access to the following '
                'paths'.format(username_part))
+        stderr('(or they do not exist)')
         for path in inaccessible_paths:
             stderr('  {}'.format(path))
         stderr('=' * 60)
