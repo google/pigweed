@@ -50,14 +50,25 @@ export class Detokenizer {
    * returned as string as-is.
    */
   detokenize(tokenizedFrame: Frame): string {
-    const {token, args} = this.decodeTokenFrame(tokenizedFrame);
+    return this.detokenizeUint8Array(tokenizedFrame.data);
+  }
+
+  /**
+   * Detokenize uint8 into actual string messages using the provided
+   * token database.
+   *
+   * If the data doesn't match any token from database, the data will be
+   * returned as string as-is.
+   */
+  detokenizeUint8Array(data: Uint8Array): string {
+    const {token, args} = this.decodeUint8Array(data);
     // Parse arguments if this is printf-style text.
     const format = this.database.get(token);
     if (format) {
       return new PrintfDecoder().decode(String(format), args);
     }
 
-    return new TextDecoder().decode(tokenizedFrame.data);
+    return new TextDecoder().decode(data);
   }
 
   /**
@@ -98,13 +109,13 @@ export class Detokenizer {
     });
   }
 
-  private decodeTokenFrame(frame: Frame): TokenAndArgs {
+  private decodeUint8Array(data: Uint8Array): TokenAndArgs {
     const token = new DataView(
-      frame.data.buffer,
-      frame.data.byteOffset,
+      data.buffer,
+      data.byteOffset,
       4
     ).getUint32(0, true);
-    const args = new Uint8Array(frame.data.buffer.slice(4));
+    const args = new Uint8Array(data.buffer.slice(4));
 
     return {token, args};
   }
