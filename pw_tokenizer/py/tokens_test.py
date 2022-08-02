@@ -594,24 +594,6 @@ class TestDirectoryDatabase(unittest.TestCase):
         self.assertEqual(str(all_databases_merged), str(directory_db))
         self.assertEqual(3, len(list(self._db_dir.iterdir())))
 
-    def test_loading_multiples_files_with_removal_dates(self) -> None:
-        self._db_csv.write_text(CSV_DATABASE)
-        first_csv = tokens.DatabaseFile.create(self._db_csv)
-
-        path_to_second_csv = self._db_dir / 'second.csv'
-        path_to_second_csv.write_text(CSV_DATABASE_2)
-        second_csv = tokens.DatabaseFile.create(path_to_second_csv)
-
-        path_to_third_csv = self._db_dir / 'third.csv'
-        path_to_third_csv.write_text(CSV_DATABASE_3)
-        third_csv = tokens.DatabaseFile.create(path_to_third_csv)
-
-        all_databases_merged = tokens.Database.merged(first_csv, second_csv,
-                                                      third_csv)
-        directory_db = database.load_token_database(self._db_dir)
-        self.assertEqual(str(all_databases_merged), str(directory_db))
-        self.assertEqual(3, len(list(self._db_dir.iterdir())))
-
 
 if __name__ == '__main__':
     unittest.main()
