@@ -60,6 +60,8 @@ core.workflow(
     destination = git.gerrit_destination(
         url = "https://pigweed.googlesource.com/pigweed/pigweed",
         fetch = "main",
+        push_to_refs_for = "main%message=No%2dDocs%2dUpdate%2dReason%3a_copybara_import",
+        labels = ["Commit-Queue+1"],
         checker = leakr.disable_check("Syncing between OSS projects"),
     ),
     origin_files = glob(fuchsia_repo_files),
