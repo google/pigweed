@@ -164,7 +164,7 @@ constexpr OpCode kA2dpOffloadCommand = VendorOpCode(0x15D);
 constexpr uint8_t kStartA2dpOffloadCommandSubopcode = 0x01;
 constexpr uint8_t kStopA2dpOffloadCommandSubopcode = 0x02;
 constexpr uint32_t kLdacVendorId = 0x0000012D;
-constexpr uint16_t kLdacCodeId = 0x00AA;
+constexpr uint16_t kLdacCodecId = 0x00AA;
 
 struct A2dpScmsTEnable {
   GenericEnableParam enabled;
@@ -211,14 +211,14 @@ struct LdacCodecInformation {
   // Must always be set to kLdacVendorId
   uint32_t vendor_id;
 
-  // Must always be set to kLdacCodeId
+  // Must always be set to kLdacCodecId
   // All other values are reserved
   uint16_t codec_id;
 
-  // Bitmask: bitrate index (see BitrateIndex for bitmask values)
+  // Bitmask: bitrate index (see A2dpBitrateIndex for bitmask values)
   A2dpBitrateIndex bitrate_index;
 
-  // Bitmask: LDAC channel mode (see LdacChannelMode for bitmask values)
+  // Bitmask: LDAC channel mode (see A2dpLdacChannelMode for bitmask values)
   A2dpLdacChannelMode ldac_channel_mode;
 
   // Bytes 8 - 31 are reserved
