@@ -377,23 +377,6 @@ std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result
   return out;
 }
 
-// Overload for compatibility with the bt_is_error(status, …) macro where |status| is a
-// fitx::result<Error<…>, …>
-template <typename ProtocolErrorCode, typename... Ts>
-[[gnu::format(printf, 6, 7)]] bool TestForErrorAndLog(
-    const fitx::result<Error<ProtocolErrorCode>, Ts...>& result, LogSeverity severity,
-    const char* tag, const char* file, int line, const char* fmt, ...) {
-  if (!(result.is_error() && IsLogLevelEnabled(severity))) {
-    return result.is_error();
-  }
-  va_list args;
-  va_start(args, fmt);
-  std::string msg = bt_lib_cpp_string::StringVPrintf(fmt, args);
-  LogMessage(file, line, severity, tag, "%s: %s", msg.c_str(), bt_str(result));
-  va_end(args);
-  return true;
-}
-
 }  // namespace internal
 
 namespace detail {
@@ -448,15 +431,19 @@ OStream& operator<<(OStream& os,
 
 // Macro to check and log any non-Success status of an event.
 // Use these like:
-// if (bt_is_error(status, WARN, "gap", "failed to set event mask")) {
+// if (bt_is_error(result, WARN, "gap", "failed to set event mask")) {
 //   ...
 //   return;
 // }
 //
-// It will log with the string prepended to the stringified status if status is
-// a failure. Evaluates to true if the status indicates failure.
-#define bt_is_error(status, flag, tag, fmt...)                            \
-  (::bt::internal::TestForErrorAndLog(status, bt::LogSeverity::flag, tag, \
-                                      bt::internal::BaseName(__FILE__), __LINE__, fmt))
+// It will log with the string prepended to the stringified result if result is
+// a failure. Evaluates to true if the result indicates failure.
+#define bt_is_error(result, level, tag, fmt, args...)          \
+  ({                                                           \
+    auto _result = result;                                     \
+    if (_result.is_error())                                    \
+      bt_log(level, tag, "%s: " fmt, bt_str(_result), ##args); \
+    _result.is_error();                                        \
+  })
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ERROR_H_

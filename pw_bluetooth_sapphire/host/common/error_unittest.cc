@@ -335,6 +335,16 @@ TEST(ErrorTest, BtIsErrorMacroCompiles) {
   EXPECT_TRUE(bt_is_error(error_with_value, ERROR, "ErrorTest", "error message"));
 }
 
+TEST(ErrorTest, BtIsErrorOnlyEvaluatesResultOnce) {
+  int result_count = 0;
+  auto result_func = [&]() {
+    result_count++;
+    return ToResult(TestError::kFail1);
+  };
+  bt_is_error(result_func(), ERROR, "ErrorTest", "error message");
+  EXPECT_EQ(result_count, 1);
+}
+
 TEST(ErrorTest, BtStrMacroOnResult) {
   constexpr fitx::result proto_error_result = ToResult(TestError::kFail2);
   EXPECT_EQ(internal::ToString(proto_error_result), bt_str(proto_error_result));
