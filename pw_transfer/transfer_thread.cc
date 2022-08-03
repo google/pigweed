@@ -336,15 +336,32 @@ void TransferThread::HandleEvent(const internal::Event& event) {
       break;
   }
 
-  if (Context* ctx = FindContextForEvent(event); ctx != nullptr) {
+  Context* ctx = FindContextForEvent(event);
+  if (ctx == nullptr) {
+    // No context was found. For new transfer events, report a
+    // RESOURCE_EXHAUSTED error with starting the transfer.
     if (event.type == EventType::kNewClientTransfer) {
-      // TODO(frolv): This is terrible.
-      static_cast<ClientContext*>(ctx)->set_on_completion(
-          std::move(staged_on_completion_));
+      // On the client, invoke the completion callback directly.
+      staged_on_completion_(Status::ResourceExhausted());
+    } else if (event.type == EventType::kNewServerTransfer) {
+      // On the server, send a status chunk back to the client.
+      SendStatusChunk(
+          {.session_id = event.new_transfer.session_id,
+           .status = Status::ResourceExhausted().code(),
+           .stream = event.new_transfer.type == TransferType::kTransmit
+                         ? TransferStream::kServerRead
+                         : TransferStream::kServerWrite});
     }
-
-    ctx->HandleEvent(event);
+    return;
   }
+
+  if (event.type == EventType::kNewClientTransfer) {
+    // TODO(frolv): This is terrible.
+    static_cast<ClientContext*>(ctx)->set_on_completion(
+        std::move(staged_on_completion_));
+  }
+
+  ctx->HandleEvent(event);
 }
 
 Context* TransferThread::FindContextForEvent(

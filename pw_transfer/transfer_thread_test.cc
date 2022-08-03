@@ -192,5 +192,90 @@ TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
   transfer_thread_.RemoveTransferHandler(handler);
 }
 
+TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
+  auto reader_writer = ctx_.reader_writer();
+  transfer_thread_.SetServerReadStream(reader_writer);
+
+  SimpleReadTransfer handler3(3, kData);
+  SimpleReadTransfer handler4(4, kData);
+  transfer_thread_.AddTransferHandler(handler3);
+  transfer_thread_.AddTransferHandler(handler4);
+
+  transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
+                                       3,
+                                       3,
+                                       max_parameters_,
+                                       std::chrono::seconds(2),
+                                       0);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // First transfer starts correctly.
+  EXPECT_TRUE(handler3.prepare_read_called);
+  EXPECT_FALSE(handler4.prepare_read_called);
+
+  // Try to start a simultaneous transfer to resource 4, for which the thread
+  // does not have an available context.
+  transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
+                                       4,
+                                       4,
+                                       max_parameters_,
+                                       std::chrono::seconds(2),
+                                       0);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_FALSE(handler4.prepare_read_called);
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  auto chunk = DecodeChunk(ctx_.response());
+  EXPECT_EQ(chunk.session_id(), 4u);
+  ASSERT_TRUE(chunk.status().has_value());
+  EXPECT_EQ(chunk.status().value(), Status::ResourceExhausted());
+
+  transfer_thread_.RemoveTransferHandler(handler3);
+  transfer_thread_.RemoveTransferHandler(handler4);
+}
+
+TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
+  rpc::RawClientReaderWriter read_stream = pw_rpc::raw::Transfer::Read(
+      rpc_client_context_.client(), rpc_client_context_.channel().id());
+  transfer_thread_.SetClientReadStream(read_stream);
+
+  Status status3 = Status::Unknown();
+  Status status4 = Status::Unknown();
+
+  stream::MemoryWriterBuffer<16> buffer3;
+  stream::MemoryWriterBuffer<16> buffer4;
+
+  transfer_thread_.StartClientTransfer(
+      internal::TransferType::kReceive,
+      3,
+      3,
+      &buffer3,
+      max_parameters_,
+      [&status3](Status status) { status3 = status; },
+      std::chrono::seconds(2),
+      0);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_EQ(status3, Status::Unknown());
+  EXPECT_EQ(status4, Status::Unknown());
+
+  // Try to start a simultaneous transfer to resource 4, for which the thread
+  // does not have an available context.
+  transfer_thread_.StartClientTransfer(
+      internal::TransferType::kReceive,
+      4,
+      4,
+      &buffer4,
+      max_parameters_,
+      [&status4](Status status) { status4 = status; },
+      std::chrono::seconds(2),
+      0);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_EQ(status3, Status::Unknown());
+  EXPECT_EQ(status4, Status::ResourceExhausted());
+}
+
 }  // namespace
 }  // namespace pw::transfer::test
