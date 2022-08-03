@@ -52,11 +52,6 @@ def plural(items_or_count,
     return f'{prefix}{num}{result}{suffix}'
 
 
-def make_color(*codes: int):
-    start = ''.join(f'\033[{code}m' for code in codes)
-    return f'{start}{{}}\033[0m'.format if os.name == 'posix' else str
-
-
 def make_box(section_alignments: Sequence[str]) -> str:
     indices = [i + 1 for i in range(len(section_alignments))]
     top_sections = '{2}'.join('{1:{1}^{width%d}}' % i for i in indices)

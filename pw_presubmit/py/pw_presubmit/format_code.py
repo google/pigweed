@@ -41,23 +41,25 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
+import pw_cli.color
 import pw_cli.env
 from pw_presubmit.presubmit import FileFilter
 from pw_presubmit import cli, git_repo
 from pw_presubmit.tools import exclude_paths, file_summary, log_run, plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
+_COLOR = pw_cli.color.colors()
 
 
 def _colorize_diff_line(line: str) -> str:
     if line.startswith('--- ') or line.startswith('+++ '):
-        return pw_presubmit.color_bold_white(line)
+        return _COLOR.bold_white(line)
     if line.startswith('-'):
-        return pw_presubmit.color_red(line)
+        return _COLOR.red(line)
     if line.startswith('+'):
-        return pw_presubmit.color_green(line)
+        return _COLOR.green(line)
     if line.startswith('@@ '):
-        return pw_presubmit.color_aqua(line)
+        return _COLOR.cyan(line)
     return line
 
 

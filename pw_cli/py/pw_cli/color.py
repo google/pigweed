@@ -49,6 +49,8 @@ class _Color:
         self.bold_magenta = _make_color(30, 45)
         self.bold_white = _make_color(37, 1)
         self.black_on_white = _make_color(30, 47)  # black fg white bg
+        self.black_on_green = _make_color(30, 42)  # black fg green bg
+        self.black_on_red = _make_color(30, 41)  # black fg red bg
 
 
 class _NoColor:

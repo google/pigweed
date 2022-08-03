@@ -54,20 +54,14 @@ import time
 from typing import (Callable, Collection, Dict, Iterable, Iterator, List,
                     Optional, Pattern, Sequence, Set, Tuple, Union)
 
+import pw_cli.color
 import pw_cli.env
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
-color_red = tools.make_color(31)
-color_bold_red = tools.make_color(31, 1)
-color_black_on_red = tools.make_color(30, 41)
-color_yellow = tools.make_color(33, 1)
-color_green = tools.make_color(32)
-color_black_on_green = tools.make_color(30, 42)
-color_aqua = tools.make_color(36)
-color_bold_white = tools.make_color(37, 1)
+_COLOR = pw_cli.color.colors()
 
 _SUMMARY_BOX = '══╦╗ ║║══╩╝'
 _CHECK_UPPER = '━━━┓       '
@@ -116,11 +110,11 @@ class _Result(enum.Enum):
 
     def colorized(self, width: int, invert: bool = False) -> str:
         if self is _Result.PASS:
-            color = color_black_on_green if invert else color_green
+            color = _COLOR.black_on_green if invert else _COLOR.green
         elif self is _Result.FAIL:
-            color = color_black_on_red if invert else color_red
+            color = _COLOR.black_on_red if invert else _COLOR.red
         elif self is _Result.CANCEL:
-            color = color_yellow
+            color = _COLOR.yellow
         else:
             color = lambda value: value
 
@@ -300,7 +294,7 @@ class Presubmit:
         _print_ui()
 
         if not self._paths:
-            _print_ui(color_yellow('No files are being checked!'))
+            _print_ui(_COLOR.yellow('No files are being checked!'))
 
         _LOG.debug('Checks:\n%s', '\n'.join(c.name for c, _ in checks))
 
