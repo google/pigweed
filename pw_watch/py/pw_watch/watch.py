@@ -594,7 +594,7 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('-k',
                         '--keep-going',
                         action='store_true',
-                        help=('Keep building past the first failure. This is'
+                        help=('Keep building past the first failure. This is '
                               'equivalent to passing "-k 0" to ninja.'))
     parser.add_argument(
         'default_build_targets',
