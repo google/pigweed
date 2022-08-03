@@ -202,9 +202,9 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
  protected:
   using result_type = Result;
 
-  function_base() { initialize_null_target(); }
+  constexpr function_base() : ops_(&null_target_type::ops), bits_({}) {}
 
-  function_base(decltype(nullptr)) { initialize_null_target(); }
+  constexpr function_base(decltype(nullptr)) : function_base() {}
 
   function_base(Result (*target_arg)(Args...)) { initialize_target(target_arg); }
 

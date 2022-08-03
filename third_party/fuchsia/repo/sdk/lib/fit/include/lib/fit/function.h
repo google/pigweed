@@ -186,11 +186,11 @@ class function_impl<inline_target_size, require_inline, Result(Args...)> final
 
   // Initializes an empty (null) function. Attempting to call an empty
   // function will abort the program.
-  function_impl() = default;
+  constexpr function_impl() = default;
 
   // Creates a function with an empty target (same outcome as the default
   // constructor).
-  function_impl(decltype(nullptr)) : base(nullptr) {}
+  constexpr function_impl(decltype(nullptr)) : base(nullptr) {}
 
   // Creates a function bound to the specified function pointer.
   // If target == nullptr, assigns an empty target.
@@ -357,11 +357,11 @@ class callback_impl<inline_target_size, require_inline, Result(Args...)> final
 
   // Initializes an empty (null) callback. Attempting to call an empty
   // callback will abort the program.
-  callback_impl() = default;
+  constexpr callback_impl() = default;
 
   // Creates a callback with an empty target (same outcome as the default
   // constructor).
-  callback_impl(decltype(nullptr)) : base(nullptr) {}
+  constexpr callback_impl(decltype(nullptr)) : base(nullptr) {}
 
   // Creates a callback bound to the specified function pointer.
   // If target == nullptr, assigns an empty target.
