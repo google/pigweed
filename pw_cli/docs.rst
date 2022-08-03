@@ -13,13 +13,13 @@ the Pigweed environment, these commands will be available for use.
 
 .. code-block:: text
 
-  doctor        Check that the environment is set up correctly for Pigweed.
-  format        Check and fix formatting for source files.
-  help          Display detailed information about pw commands.
-  logdemo       Show how logs look at various levels.
-  module-check  Check that a module matches Pigweed's module guidelines.
-  test          Run Pigweed unit tests built using GN.
-  watch         Watch files for changes and rebuild.
+  doctor   Check that the environment is set up correctly for Pigweed.
+  format   Check and fix formatting for source files.
+  help     Display detailed information about pw commands.
+  logdemo  Show how logs look at various levels.
+  module   Utilities for managing modules.
+  test     Run Pigweed unit tests built using GN.
+  watch    Watch files for changes and rebuild.
 
 To see an up-to-date list of ``pw`` subcommands, run ``pw --help``.
 

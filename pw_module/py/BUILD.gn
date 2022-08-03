@@ -24,6 +24,7 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_module/__init__.py",
+    "pw_module/__main__.py",
     "pw_module/check.py",
   ]
   tests = [ "check_test.py" ]

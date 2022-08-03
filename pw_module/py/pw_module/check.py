@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -202,8 +202,7 @@ def check_has_public_or_override_headers(directory):
                     'Perhaps you were looking for public_overrides/?.')
 
 
-def main() -> None:
+def register_subcommand(parser: argparse.ArgumentParser) -> None:
     """Check that a module matches Pigweed's module guidelines."""
-    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('modules', nargs='+', help='The module to check')
-    check_modules(**vars(parser.parse_args()))
+    parser.set_defaults(func=check_modules)

@@ -465,6 +465,6 @@ To create a new Pigweed module, follow the below steps.
 
 11. Run :ref:`module-pw_module-module-check`
 
-    - ``$ pw module-check {pw_module_dir}``
+    - ``$ pw module check {pw_module_dir}``
 
 12. Contribute your module to upstream Pigweed (optional but encouraged!)

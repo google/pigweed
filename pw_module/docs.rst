@@ -12,17 +12,17 @@ Commands
 
 .. _module-pw_module-module-check:
 
-``pw module-check``
+``pw module check``
 ^^^^^^^^^^^^^^^^^^^
-The ``pw module-check`` command exists to ensure that your module conforms to
+The ``pw module check`` command exists to ensure that your module conforms to
 the Pigweed module norms.
 
-For example, at time of writing ``pw module-check pw_module`` is not passing
+For example, at time of writing ``pw module check pw_module`` is not passing
 its own lint:
 
 .. code-block:: none
 
-  $ pw module-check pw_module
+  $ pw module check pw_module
 
    ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
     ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
