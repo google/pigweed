@@ -14,8 +14,50 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+config("fit_public_include_path") {
+  include_dirs = [ "repo/sdk/lib/fit/include" ]
+  visibility = [ ":*" ]
+}
+
+config("stdcompat_public_include_path") {
+  include_dirs = [ "repo/sdk/lib/stdcompat/include" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("fit") {
+  public_configs = [ ":fit_public_include_path" ]
+  public_deps = [ ":stdcompat" ]
+  public = [
+    "repo/sdk/lib/fit/include/lib/fit/function.h",
+    "repo/sdk/lib/fit/include/lib/fit/nullable.h",
+    "repo/sdk/lib/fit/include/lib/fit/traits.h",
+  ]
+  sources = [
+    "repo/sdk/lib/fit/include/lib/fit/function_internal.h",
+    "repo/sdk/lib/fit/include/lib/fit/utility_internal.h",
+  ]
+}
+
+pw_source_set("stdcompat") {
+  public_configs = [ ":stdcompat_public_include_path" ]
+  public = [
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/optional.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/utility.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/version.h",
+  ]
+  sources = [
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/constructors.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/exception.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/storage.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/type_traits.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/utility.h",
+  ]
 }

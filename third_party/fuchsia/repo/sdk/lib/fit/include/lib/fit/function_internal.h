@@ -33,7 +33,9 @@ struct target_ops final {
 template <typename Callable, bool is_inline, bool is_shared, typename Result, typename... Args>
 struct target;
 
-inline const void* unshared_target_type_id(void* bits, const void* impl_ops) { return impl_ops; }
+inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops) {
+  return impl_ops;
+}
 
 // vtable for nullptr (empty target function)
 
@@ -41,14 +43,14 @@ template <typename Result, typename... Args>
 struct target<decltype(nullptr),
               /*is_inline=*/true, /*is_shared=*/false, Result, Args...>
     final {
-  static Result invoke(void* bits, Args... args) { PW_ASSERT(false); }
+  static Result invoke(void* /*bits*/, Args... /*args*/) { PW_ASSERT(false); }
 
   static const target_ops<Result, Args...> ops;
 };
 
-inline void* null_target_get(void* bits) { return nullptr; }
-inline void null_target_move(void* from_bits, void* to_bits) {}
-inline void null_target_destroy(void* bits) {}
+inline void* null_target_get(void* /*bits*/) { return nullptr; }
+inline void null_target_move(void* /*from_bits*/, void* /*to_bits*/) {}
+inline void null_target_destroy(void* /*bits*/) {}
 
 template <typename Result, typename... Args>
 constexpr target_ops<Result, Args...> target<decltype(nullptr),
@@ -74,7 +76,7 @@ struct target<Callable,
   static void move(void* from_bits, void* to_bits) {
     auto& from_target = *static_cast<Callable*>(from_bits);
     new (to_bits) Callable(std::move(from_target));
-    from_target.~Callable();
+    from_target.~Callable();  // NOLINT(bugprone-use-after-move)
   }
   static void destroy(void* bits) {
     auto& target = *static_cast<Callable*>(bits);
@@ -149,7 +151,7 @@ struct target<SharedFunction,
     auto& from_shared_ptr = *static_cast<std::shared_ptr<SharedFunction>*>(from_bits);
     new (to_bits) std::shared_ptr<SharedFunction>(from_shared_ptr);
   }
-  static const void* target_type_id(void* bits, const void* impl_ops) {
+  static const void* target_type_id(void* bits, const void* /*impl_ops*/) {
     auto& function_or_callback = **static_cast<std::shared_ptr<SharedFunction>*>(bits);
     return ::fit::internal::get_target_type_id(function_or_callback);
   }
@@ -204,7 +206,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
 
   function_base(decltype(nullptr)) { initialize_null_target(); }
 
-  function_base(Result (*target)(Args...)) { initialize_target(target); }
+  function_base(Result (*target_arg)(Args...)) { initialize_target(target_arg); }
 
   template <typename Callable,
             typename = std::enable_if_t<std::is_convertible<
@@ -325,6 +327,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   // Used by check_target_type.
   const void* target_type_id() const { return ops_->target_type_id(&bits_, ops_); }
 
+ public:
   // Deleted copy constructor and assign. |function_base| implementations are
   // move-only.
   function_base(const function_base& other) = delete;

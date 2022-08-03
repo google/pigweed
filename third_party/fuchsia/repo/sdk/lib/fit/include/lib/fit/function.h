@@ -194,7 +194,7 @@ class function_impl<inline_target_size, require_inline, Result(Args...)> final
 
   // Creates a function bound to the specified function pointer.
   // If target == nullptr, assigns an empty target.
-  function_impl(Result (*target)(Args...)) : base(target) {}
+  function_impl(Result (*target_arg)(Args...)) : base(target_arg) {}
 
   // Creates a function bound to the specified callable object.
   // If target == nullptr, assigns an empty target.
@@ -210,7 +210,7 @@ class function_impl<inline_target_size, require_inline, Result(Args...)> final
                 std::is_convertible<decltype(std::declval<Callable&>()(std::declval<Args>()...)),
                                     result_type>,
                 not_self_type<Callable>> = true>
-  function_impl(Callable&& target) : base(std::forward<Callable>(target)) {}
+  function_impl(Callable&& target_arg) : base(std::forward<Callable>(target_arg)) {}
 
   // Deletes the specializations of function_impl(Callable) that would allow
   // a |fit::function| to be constructed from a |fit::callback|. This prevents
@@ -246,12 +246,13 @@ class function_impl<inline_target_size, require_inline, Result(Args...)> final
   // Note that specializations of this template method that take fit::callback
   // objects as the target Callable are deleted (see below).
   template <typename Callable>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   assignment_requires_conditions<
       std::is_convertible<decltype(std::declval<Callable&>()(std::declval<Args>()...)),
                           result_type>,
       not_self_type<Callable>>
-  operator=(Callable&& target) {
-    base::assign(std::forward<Callable>(target));
+  operator=(Callable&& target_arg) {
+    base::assign(std::forward<Callable>(target_arg));
     return *this;
   }
 
@@ -364,7 +365,7 @@ class callback_impl<inline_target_size, require_inline, Result(Args...)> final
 
   // Creates a callback bound to the specified function pointer.
   // If target == nullptr, assigns an empty target.
-  callback_impl(Result (*target)(Args...)) : base(target) {}
+  callback_impl(Result (*target_arg)(Args...)) : base(target_arg) {}
 
   // Creates a callback bound to the specified callable object.
   // If target == nullptr, assigns an empty target.
@@ -377,7 +378,7 @@ class callback_impl<inline_target_size, require_inline, Result(Args...)> final
                 std::is_convertible<decltype(std::declval<Callable&>()(std::declval<Args>()...)),
                                     result_type>,
                 not_self_type<Callable>> = true>
-  callback_impl(Callable&& target) : base(std::forward<Callable>(target)) {}
+  callback_impl(Callable&& target_arg) : base(std::forward<Callable>(target_arg)) {}
 
   // Creates a callback with a target moved from another callback,
   // leaving the other callback with an empty target.
@@ -400,12 +401,13 @@ class callback_impl<inline_target_size, require_inline, Result(Args...)> final
   // existence of an appropriate operator () to resolve overloads and implicit
   // casts properly.
   template <typename Callable>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   assignment_requires_conditions<
       std::is_convertible<decltype(std::declval<Callable&>()(std::declval<Args>()...)),
                           result_type>,
       not_self_type<Callable>>
-  operator=(Callable&& target) {
-    base::assign(std::forward<Callable>(target));
+  operator=(Callable&& target_arg) {
+    base::assign(std::forward<Callable>(target_arg));
     return *this;
   }
 
