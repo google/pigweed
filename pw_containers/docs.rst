@@ -99,8 +99,8 @@ whichever object is the current tail.
 
 That means two key things:
 
- - An instantiated ``IntrusiveList<T>::Item`` must remain in scope for the
-   lifetime of the ``IntrusiveList`` it has been added to.
+ - An instantiated ``IntrusiveList<T>::Item`` will be removed from its
+   corresponding ``IntrusiveList`` when it goes out of scope.
  - A linked list item CANNOT be included in two lists. Attempting to do so
    results in an assert failure.
 
