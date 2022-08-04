@@ -35,11 +35,3 @@ pw_cc_library(
         "//pw_span",
     ],
 )
-
-# This is only used for the python tests.
-filegroup(
-    name = "build_id_print_test",
-    srcs = [
-        "py/print_build_id.cc",
-    ],
-)

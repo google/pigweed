@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,6 +12,22 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-package(default_visibility = ["//visibility:public"])
+py_library(
+    name = "pw_log_tokenized",
+    srcs = ["pw_log_tokenized/__init__.py"],
+    visibility = ["//visibility:public"],
+)
 
-licenses(["notice"])
+py_test(
+    name = "format_string_test",
+    size = "small",
+    srcs = ["format_string_test.py"],
+    deps = [":pw_log_tokenized"],
+)
+
+py_test(
+    name = "metadata_test",
+    size = "small",
+    srcs = ["metadata_test.py"],
+    deps = [":pw_log_tokenized"],
+)
