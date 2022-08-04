@@ -27,13 +27,11 @@ pw_python_package("py") {
     "pw_build_info/__init__.py",
     "pw_build_info/build_id.py",
   ]
-  python_deps = [ "$dir_pw_cli/py" ]
 
   # This test will only ever work on Linux as it requires the ability to compile
   # AND run an ELF file.
   if (host_os == "linux") {
     tests = [ "build_id_test.py" ]
-    python_test_deps = [ "$dir_pw_cli/py" ]
   }
 
   pylintrc = "$dir_pigweed/.pylintrc"
