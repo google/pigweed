@@ -56,7 +56,7 @@ class AsyncQueue<T> {
 
 /**
  * SerialPortMock is a mock for Chrome's upcoming SerialPort interface.
- * Since pw_web_ui only depends on a subset of the interface, this mock
+ * Since pw_web only depends on a subset of the interface, this mock
  * only implements that subset.
  */
 class SerialPortMock implements SerialPort {

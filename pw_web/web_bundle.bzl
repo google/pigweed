@@ -26,7 +26,7 @@ def web_bundle(name, deps, entry_point):
             "@npm//rollup-plugin-sourcemaps",
         ],
         entry_point = entry_point,
-        config_file = "//pw_web_ui:rollup.config.js",
+        config_file = "//pw_web:rollup.config.js",
         sourcemap = "inline",
         format = "cjs",
     )

@@ -394,7 +394,7 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_trace',
     'pw_trace_tokenized',
     'pw_watch',
-    'pw_web_ui',
+    'pw_web',
     'pw_work_queue',
 )
 

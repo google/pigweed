@@ -119,5 +119,5 @@ pw_transfer
 pw_unit_test
 pw_varint
 pw_watch
-pw_web_ui
+pw_web
 pw_work_queue

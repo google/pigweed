@@ -1,5 +1,5 @@
 {
-  "name": "@pigweed/pw_web_ui",
+  "name": "@pigweed/pw_web",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",

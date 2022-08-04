@@ -157,7 +157,7 @@ declare_args() {
   dir_pw_unit_test = get_path_info("../pw_unit_test", "abspath")
   dir_pw_varint = get_path_info("../pw_varint", "abspath")
   dir_pw_watch = get_path_info("../pw_watch", "abspath")
-  dir_pw_web_ui = get_path_info("../pw_web_ui", "abspath")
+  dir_pw_web = get_path_info("../pw_web", "abspath")
   dir_pw_work_queue = get_path_info("../pw_work_queue", "abspath")
 }
 
@@ -287,7 +287,7 @@ declare_args() {
     dir_pw_unit_test,
     dir_pw_varint,
     dir_pw_watch,
-    dir_pw_web_ui,
+    dir_pw_web,
     dir_pw_work_queue,
   ]
 
@@ -414,7 +414,7 @@ declare_args() {
     "$dir_pw_unit_test:tests",
     "$dir_pw_varint:tests",
     "$dir_pw_watch:tests",
-    "$dir_pw_web_ui:tests",
+    "$dir_pw_web:tests",
     "$dir_pw_work_queue:tests",
   ]
 
@@ -541,7 +541,7 @@ declare_args() {
     "$dir_pw_unit_test:docs",
     "$dir_pw_varint:docs",
     "$dir_pw_watch:docs",
-    "$dir_pw_web_ui:docs",
+    "$dir_pw_web:docs",
     "$dir_pw_work_queue:docs",
   ]
 }

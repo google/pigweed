@@ -1,7 +1,7 @@
-.. _module-pw_web_ui:
+.. _module-pw_web:
 
 ---------
-pw_web_ui
+pw_web
 ---------
 
 Pigweed provides an NPM package with modules to build web UIs for Pigweed

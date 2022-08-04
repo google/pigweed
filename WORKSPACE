@@ -178,7 +178,7 @@ git_repository(
 
 # Set up NodeJs rules.
 # Required by: pigweed.
-# Used in modules: //pw_web_ui.
+# Used in modules: //pw_web.
 http_archive(
     name = "build_bazel_rules_nodejs",
     sha256 = "b32a4713b45095e9e1921a7fcb1adf584bc05959f3336e7351bcf77f015a2d7c",
@@ -202,7 +202,7 @@ yarn_install(
 
 # Set up web-testing rules.
 # Required by: pigweed.
-# Used in modules: //pw_web_ui.
+# Used in modules: //pw_web.
 http_archive(
     name = "io_bazel_rules_webtesting",
     sha256 = "9bb461d5ef08e850025480bab185fd269242d4e533bca75bfb748001ceb343c3",
