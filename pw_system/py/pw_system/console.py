@@ -80,7 +80,8 @@ MKFIFO_MODE = 0o666
 
 def _parse_args():
     """Parses and returns the command line arguments."""
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(prog="python -m pw_system.console",
+                                     description=__doc__)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-d', '--device', help='the serial port to use')
     parser.add_argument('-b',

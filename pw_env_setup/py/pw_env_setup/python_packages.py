@@ -231,7 +231,8 @@ Please do the following:
 
 def parse(argv: Union[List[str], None] = None) -> argparse.Namespace:
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        prog="python -m pw_env_setup.python_packages")
     subparsers = parser.add_subparsers(dest='cmd')
 
     list_parser = subparsers.add_parser(

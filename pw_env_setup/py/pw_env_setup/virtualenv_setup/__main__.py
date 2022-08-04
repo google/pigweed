@@ -20,12 +20,16 @@ import sys
 # TODO(pwbug/67) switch back to 'from pw_env_setup import virtualenv_setup'.
 # from pw_env_setup import virtualenv_setup
 # pylint: disable=import-error
-import install as virtualenv_setup  # type: ignore
+try:
+    from pw_env_setup import virtualenv_setup
+except ImportError:
+    import install as virtualenv_setup  # type: ignore
 # pylint: enable=import-error
 
 
 def _main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        prog="python -m pw_env_setup.virtualenv_setup", description=__doc__)
 
     project_root = os.environ.get('PW_PROJECT_ROOT', None)
 

@@ -671,7 +671,7 @@ Then use `set +x` to go back to normal.
 
 def parse(argv=None):
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="python -m pw_env_setup.env_setup")
 
     pw_root = os.environ.get('PW_ROOT', None)
     if not pw_root:

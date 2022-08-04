@@ -39,7 +39,8 @@ def create_temp_log_file():
 
 def _build_argument_parser() -> argparse.ArgumentParser:
     """Setup argparse."""
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(prog="python -m pw_console",
+                                     description=__doc__)
 
     parser.add_argument('-l',
                         '--loglevel',

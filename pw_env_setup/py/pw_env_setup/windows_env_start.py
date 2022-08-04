@@ -69,7 +69,8 @@ def print_banner(bootstrap, no_shell_file):
 
 def parse():
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        prog="python -m pw_env_setup.windows_env_start")
     parser.add_argument('--bootstrap', action='store_true')
     parser.add_argument('--no-shell-file', action='store_true')
     return parser.parse_args()

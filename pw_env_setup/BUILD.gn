@@ -163,6 +163,30 @@ pw_create_python_source_tree("pypi_pigweed_python_source_tree") {
   ]
 }
 
+pw_create_python_source_tree("pypi_pw_env_setup") {
+  packages = [ "$dir_pw_env_setup/py" ]
+  generate_setup_cfg = {
+    common_config_file = "pypi_common_setup.cfg"
+  }
+  extra_files = [
+    "$dir_pigweed/LICENSE > LICENSE",
+    "$dir_pigweed/README.md > README.md",
+    "pypi_pyproject.toml > pyproject.toml",
+  ]
+}
+
+pw_create_python_source_tree("pypi_pw_system") {
+  packages = [ "$dir_pw_system/py" ]
+  generate_setup_cfg = {
+    common_config_file = "pypi_common_setup.cfg"
+  }
+  extra_files = [
+    "$dir_pigweed/LICENSE > LICENSE",
+    "$dir_pigweed/README.md > README.md",
+    "pypi_pyproject.toml > pyproject.toml",
+  ]
+}
+
 if (pw_build_USE_NEW_PYTHON_BUILD) {
   # This target is creates the 'pigweed' Python package installed to the user's
   # dev environment. It's similar to the source tree for PyPI but it appends the
