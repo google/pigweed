@@ -306,6 +306,8 @@ pw_target_toolchain_host_list = [
 # Additional configuration intended only for upstream Pigweed use.
 _pigweed_internal = {
   pw_status_CONFIG = "$dir_pw_status:check_if_used"
+
+  pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = true
 }
 
 # Host toolchains exclusively for upstream Pigweed use. To give upstream Pigweed
@@ -397,6 +399,10 @@ pw_internal_host_toolchains = [
 
       # Set the C++ standard to C++14 instead of the default (C++17).
       pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX14
+
+      # Do not do negative compilation testing with C++14 since the code may
+      # fail to compile for different reasons than in C++17 or newer.
+      pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = false
 
       # Select C++14-compatible backends.
       pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_check_backend"

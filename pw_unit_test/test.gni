@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_compilation_testing/negative_compilation_test.gni")
 
 declare_args() {
   # The GoogleTest implementation to use for Pigweed unit tests. This library
@@ -118,6 +119,7 @@ template("_pw_disableable_target") {
     forward_variables_from(invoker,
                            "*",
                            [
+                             "negative_compilation_tests",
                              "enable_if",
                              "target_type",
                            ])
@@ -181,10 +183,18 @@ template("pw_test") {
     enable_if = _test_is_enabled
     forward_variables_from(invoker, "*", [ "metadata" ])
 
-    if (!defined(public_deps)) {
-      public_deps = []
+    if (!defined(deps)) {
+      deps = []
     }
-    public_deps += [ dir_pw_unit_test ]
+    deps += [ dir_pw_unit_test ]
+
+    if (defined(invoker.negative_compilation_tests) &&
+        invoker.negative_compilation_tests) {
+      deps += [
+        ":$_test_target_name.nc_test",
+        "$dir_pw_compilation_testing:internal_pigweed_use_only",
+      ]
+    }
   }
 
   _pw_disableable_target(_test_target_name) {
@@ -210,6 +220,20 @@ template("pw_test") {
     output_dir = _test_output_dir
   }
 
+  if (defined(invoker.negative_compilation_tests) &&
+      invoker.negative_compilation_tests) {
+    pw_cc_negative_compilation_test("$target_name.nc_test") {
+      forward_variables_from(invoker, "*")
+
+      # Add a dependency on pw_unit_test since it is implied for pw_unit_test
+      # targets.
+      if (!defined(deps)) {
+        deps = []
+      }
+      deps += [ dir_pw_unit_test ]
+    }
+  }
+
   if (pw_unit_test_AUTOMATIC_RUNNER != "") {
     # When the automatic runner is set, create an action which runs the unit
     # test executable using the test runner script.
@@ -219,13 +243,13 @@ template("pw_test") {
       # Create a run target for the .DISABLED version of the test.
       _test_to_run = _test_target_name + ".DISABLED"
 
-      # Create a placeholder _run target for the regular version of the test.
+      # Create a placeholder .run target for the regular version of the test.
       group(_test_target_name + ".run") {
         deps = [ ":$_test_target_name" ]
       }
     }
 
-    pw_python_action(_test_to_run + ".run") {
+    pw_python_action(_test_to_run + "._run") {
       # Optionally limit max test runner concurrency.
       if (pw_unit_test_POOL_DEPTH != 0) {
         _pool_toolchain = current_toolchain
@@ -259,8 +283,13 @@ template("pw_test") {
       }
       stamp = true
     }
+
+    group(_test_to_run + ".run") {
+      public_deps = [ ":$_test_to_run._run" ]
+    }
   } else {
     group(_test_target_name + ".run") {
+      public_deps = [ ":$_test_target_name" ]
     }
   }
 }

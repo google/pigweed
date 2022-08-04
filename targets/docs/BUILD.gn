@@ -36,6 +36,9 @@ generate_toolchain("docs") {
 
     # This is the docs target.
     pw_docgen_BUILD_DOCS = true
+
+    # Disable NC tests in case the base toolchain has them enabled.
+    pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = false
   }
 }
 
