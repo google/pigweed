@@ -31,3 +31,11 @@ filegroup(
     srcs = ["build_id_test.py"],
     # deps = [":pw_build_info"],
 )
+
+# This is only used for the tests.
+filegroup(
+    name = "print_build_id_cc",
+    srcs = [
+        "print_build_id.cc",
+    ],
+)
