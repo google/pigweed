@@ -67,6 +67,14 @@ pw_bold_white() {
   echo -e "\033[1;37m$*\033[0m"
 }
 
+pw_error() {
+  echo -e "\033[1;31m$*\033[0m" >& /dev/stderr
+}
+
+pw_error_info() {
+  echo -e "\033[0;31m$*\033[0m" >& /dev/stderr
+}
+
 pw_eval_sourced() {
   if [ "$1" -eq 0 ]; then
     # TODO(pwbug/354) Remove conditional after all downstream projects have
@@ -76,14 +84,15 @@ pw_eval_sourced() {
     else
       _PW_NAME=$(basename "$_BOOTSTRAP_PATH" .sh)
     fi
-    pw_bold_red "Error: Attempting to $_PW_NAME in a subshell"
-    pw_red "  Since $_PW_NAME.sh modifies your shell's environment variables,"
-    pw_red "  it must be sourced rather than executed. In particular, "
-    pw_red "  'bash $_PW_NAME.sh' will not work since the modified "
-    pw_red "  environment will get destroyed at the end of the script. "
-    pw_red "  Instead, source the script's contents in your shell:"
-    pw_red ""
-    pw_red "    \$ source $_PW_NAME.sh"
+    pw_error "Error: Attempting to $_PW_NAME in a subshell"
+    pw_error_info "  Since $_PW_NAME.sh modifies your shell's environment"
+    pw_error_info "  variables, it must be sourced rather than executed. In"
+    pw_error_info "  particular, 'bash $_PW_NAME.sh' will not work since the "
+    pw_error_info "  modified environment will get destroyed at the end of the"
+    pw_error_info "  script. Instead, source the script's contents in your"
+    pw_error_info "  shell:"
+    pw_error_info ""
+    pw_error_info "    \$ source $_PW_NAME.sh"
     exit 1
   fi
 }
@@ -91,11 +100,11 @@ pw_eval_sourced() {
 pw_check_root() {
   _PW_ROOT="$1"
   if [[ "$_PW_ROOT" = *" "* ]]; then
-    pw_bold_red "Error: The Pigweed path contains spaces\n"
-    pw_red "  The path '$_PW_ROOT' contains spaces. "
-    pw_red "  Pigweed's Python environment currently requires Pigweed to be "
-    pw_red "  at a path without spaces. Please checkout Pigweed in a "
-    pw_red "  directory without spaces and retry running bootstrap."
+    pw_error "Error: The Pigweed path contains spaces\n"
+    pw_error_info "  The path '$_PW_ROOT' contains spaces. "
+    pw_error_info "  Pigweed's Python environment currently requires Pigweed to"
+    pw_error_info "  be at a path without spaces. Please checkout Pigweed in a"
+    pw_error_info "  directory without spaces and retry running bootstrap."
     return
   fi
 }
@@ -209,14 +218,15 @@ pw_bootstrap() {
   local _pw_alias_check=0
   alias python > /dev/null 2> /dev/null || _pw_alias_check=$?
   if [ "$_pw_alias_check" -eq 0 ]; then
-    pw_bold_red "Error: 'python' is an alias"
-    pw_red "The shell has a 'python' alias set. This causes many obscure"
-    pw_red "Python-related issues both in and out of Pigweed. Please remove"
-    pw_red "the Python alias from your shell init file or at least run the"
-    pw_red "following command before bootstrapping Pigweed."
-    pw_red
-    pw_red "  unalias python"
-    pw_red
+    pw_error "Error: 'python' is an alias"
+    pw_error_info "The shell has a 'python' alias set. This causes many obscure"
+    pw_error_info "Python-related issues both in and out of Pigweed. Please"
+    pw_error_info "remove the Python alias from your shell init file or at"
+    pw_error_info "least run the following command before bootstrapping"
+    pw_error_info "Pigweed."
+    pw_error_info
+    pw_error_info "  unalias python"
+    pw_error_info
     return
   fi
 
@@ -230,10 +240,10 @@ pw_bootstrap() {
   elif command -v python > /dev/null 2> /dev/null; then
     _PW_PYTHON=python
   else
-    pw_bold_red "Error: No system Python present\n"
-    pw_red "  Pigweed's bootstrap process requires a local system Python."
-    pw_red "  Please install Python on your system, add it to your PATH"
-    pw_red "  and re-try running bootstrap."
+    pw_error "Error: No system Python present\n"
+    pw_error_info "  Pigweed's bootstrap process requires a local system"
+    pw_error_info "  Python. Please install Python on your system, add it to "
+    pw_error_info "  your PATH and re-try running bootstrap."
     return
   fi
 
@@ -278,10 +288,10 @@ pw_finalize() {
         echo
       fi
     else
-      pw_red "Error during $_PW_NAME--see messages above."
+      pw_error "Error during $_PW_NAME--see messages above."
     fi
   else
-    pw_red "Error during $_PW_NAME--see messages above."
+    pw_error "Error during $_PW_NAME--see messages above."
   fi
 }
 
@@ -318,4 +328,6 @@ pw_cleanup() {
   unset -f pw_finalize
   unset -f pw_cleanup
   unset -f _pw_hello
+  unset -f pw_error
+  unset -f pw_error_info
 }
