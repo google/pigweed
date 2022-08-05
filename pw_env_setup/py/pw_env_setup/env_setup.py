@@ -378,6 +378,9 @@ class EnvSetup(object):
             raise MissingSubmodulesError(', '.join(sorted(missing)))
 
     def _write_gni_file(self):
+        if self._cipd_only:
+            return
+
         gni_file = os.path.join(self._project_root, 'build_overrides',
                                 'pigweed_environment.gni')
         if self._gni_file:
