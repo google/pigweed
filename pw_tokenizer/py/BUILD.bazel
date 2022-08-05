@@ -140,7 +140,10 @@ filegroup(
 
 py_test(
     name = "encode_test",
-    srcs = ["encode_test.py"],
+    srcs = [
+        "encode_test.py",
+        "varint_test_data.py",
+    ],
     deps = [":pw_tokenizer"],
 )
 
