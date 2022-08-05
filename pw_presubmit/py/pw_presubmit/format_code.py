@@ -392,15 +392,18 @@ def presubmit_check(
 
 
 def presubmit_checks(
-    *, exclude: Collection[Union[str,
-                                 Pattern[str]]] = ()) -> Tuple[Callable, ...]:
+    *,
+    exclude: Collection[Union[str, Pattern[str]]] = (),
+    code_formats: Collection[CodeFormat] = CODE_FORMATS
+) -> Tuple[Callable, ...]:
     """Returns a tuple with all supported code format presubmit checks.
 
     Args:
       exclude: Additional exclusion regexes to apply.
+      code_formats: A list of CodeFormat objects to run checks with.
     """
 
-    return tuple(presubmit_check(fmt, exclude=exclude) for fmt in CODE_FORMATS)
+    return tuple(presubmit_check(fmt, exclude=exclude) for fmt in code_formats)
 
 
 class CodeFormatter:
