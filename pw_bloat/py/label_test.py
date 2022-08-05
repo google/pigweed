@@ -17,7 +17,13 @@
 import unittest
 import os
 
-from pw_bloat.label import from_bloaty_csv, DataSourceMap
+from pw_bloat.label import from_bloaty_csv, DataSourceMap, Label
+
+LIST_LABELS = [
+    Label(name='main()', size=30, parents=tuple(['FLASH', '.code'])),
+    Label(name='foo()', size=100, parents=tuple(['RAM', '.heap'])),
+    Label(name='bar()', size=220, parents=tuple(['RAM', '.heap']))
+]
 
 
 def get_test_map():
@@ -34,19 +40,100 @@ def get_test_map():
 class LabelStructTest(unittest.TestCase):
     """Testing class for the label structs."""
     def test_data_source_total_size(self):
-        ds_map = DataSourceMap(["a", "b", "c"])
+        ds_map = DataSourceMap(['a', 'b', 'c'])
         self.assertEqual(ds_map.get_total_size(), 0)
 
     def test_data_source_single_insert_total_size(self):
-        ds_map = DataSourceMap(["a", "b", "c"])
-        ds_map.insert_label_hierachy(["FLASH", ".code", "main()"], 30)
+        ds_map = DataSourceMap(['a', 'b', 'c'])
+        ds_map.insert_label_hierachy(['FLASH', '.code', 'main()'], 30)
         self.assertEqual(ds_map.get_total_size(), 30)
 
     def test_data_source_multiple_insert_total_size(self):
-        ds_map = DataSourceMap(["a", "b", "c"])
-        ds_map.insert_label_hierachy(["FLASH", ".code", "main()"], 30)
-        ds_map.insert_label_hierachy(["RAM", ".code", "foo()"], 100)
+        ds_map = DataSourceMap(['a', 'b', 'c'])
+        ds_map.insert_label_hierachy(['FLASH', '.code', 'main()'], 30)
+        ds_map.insert_label_hierachy(['RAM', '.code', 'foo()'], 100)
         self.assertEqual(ds_map.get_total_size(), 130)
+
+    def test_parsing_generator_three_datasource_names(self):
+        ds_map = DataSourceMap(['a', 'b', 'c'])
+        for label in LIST_LABELS:
+            ds_map.insert_label_hierachy(
+                [label.parents[0], label.parents[1], label.name], label.size)
+        list_labels_three = [*LIST_LABELS, Label(name='total', size=350)]
+        for label_hiearchy in ds_map.labels():
+            self.assertIn(label_hiearchy, list_labels_three)
+        self.assertEqual(ds_map.get_total_size(), 350)
+
+    def test_parsing_generator_two_datasource_names(self):
+        ds_map = DataSourceMap(['a', 'b'])
+        ds_label_list = [
+            Label(name='main()', size=30, parents=tuple(['FLASH'])),
+            Label(name='foo()', size=100, parents=tuple(['RAM'])),
+            Label(name='bar()', size=220, parents=tuple(['RAM']))
+        ]
+        for label in ds_label_list:
+            ds_map.insert_label_hierachy([label.parents[0], label.name],
+                                         label.size)
+        list_labels_two = [*ds_label_list, Label(name='total', size=350)]
+        for label_hiearchy in ds_map.labels():
+            self.assertIn(label_hiearchy, list_labels_two)
+        self.assertEqual(ds_map.get_total_size(), 350)
+
+    def test_parsing_generator_specified_datasource_1(self):
+        ds_map = DataSourceMap(['a', 'b', 'c'])
+        for label in LIST_LABELS:
+            ds_map.insert_label_hierachy(
+                [label.parents[0], label.parents[1], label.name], label.size)
+        list_labels_ds_b = [
+            Label(name='.code', size=30, parents=tuple(['FLASH'])),
+            Label(name='.heap', size=320, parents=tuple(['RAM']))
+        ]
+        list_labels_ds_b += [Label(name='total', size=350)]
+        for label_hiearchy in ds_map.labels(1):
+            self.assertIn(label_hiearchy, list_labels_ds_b)
+        self.assertEqual(ds_map.get_total_size(), 350)
+
+    def test_parsing_generator_specified_datasource_str_2(self):
+        ds_map = DataSourceMap(['a', 'b', 'c'])
+        for label in LIST_LABELS:
+            ds_map.insert_label_hierachy(
+                [label.parents[0], label.parents[1], label.name], label.size)
+        list_labels_ds_a = [
+            Label(name='FLASH', size=30, parents=tuple([])),
+            Label(name='RAM', size=320, parents=tuple([]))
+        ]
+        list_labels_ds_a += [Label(name='total', size=350)]
+        for label_hiearchy in ds_map.labels(0):
+            self.assertIn(label_hiearchy, list_labels_ds_a)
+        self.assertEqual(ds_map.get_total_size(), 350)
+
+    def test_parsing_generator_specified_datasource_int(self):
+        ds_map = DataSourceMap(['a', 'b', 'c'])
+        for label in LIST_LABELS:
+            ds_map.insert_label_hierachy(
+                [label.parents[0], label.parents[1], label.name], label.size)
+        list_labels_ds_a = [
+            Label(name='FLASH', size=30, parents=tuple([])),
+            Label(name='RAM', size=320, parents=tuple([]))
+        ]
+        list_labels_ds_a += [Label(name='total', size=350)]
+        for label_hiearchy in ds_map.labels(0):
+            self.assertIn(label_hiearchy, list_labels_ds_a)
+        self.assertEqual(ds_map.get_total_size(), 350)
+
+    def test_parsing_generator_specified_datasource_int_2(self):
+        ds_map = DataSourceMap(['a', 'b', 'c'])
+        for label in LIST_LABELS:
+            ds_map.insert_label_hierachy(
+                [label.parents[0], label.parents[1], label.name], label.size)
+        list_labels_ds_b = [
+            Label(name='.code', size=30, parents=tuple(['FLASH'])),
+            Label(name='.heap', size=320, parents=tuple(['RAM']))
+        ]
+        list_labels_ds_b += [Label(name='total', size=350)]
+        for label_hiearchy in ds_map.labels(1):
+            self.assertIn(label_hiearchy, list_labels_ds_b)
+        self.assertEqual(ds_map.get_total_size(), 350)
 
 
 if __name__ == '__main__':
