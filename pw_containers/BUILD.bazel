@@ -51,7 +51,10 @@ pw_cc_library(
         "public/pw_containers/intrusive_list.h",
     ],
     includes = ["public"],
-    deps = ["//pw_assert"],
+    deps = [
+        "//pw_assert",
+        "//pw_compilation_testing:negative_compilation_testing",
+    ],
 )
 
 pw_cc_library(

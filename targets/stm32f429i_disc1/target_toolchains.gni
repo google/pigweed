@@ -25,7 +25,8 @@ declare_args() {
 }
 
 _target_config = {
-  pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = true
+  # TODO(b/241565082): Enable NC testing in GN Windows when it is fixed.
+  pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = host_os != "win"
 
   # Use the logging main.
   pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"

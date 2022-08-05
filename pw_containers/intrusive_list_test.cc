@@ -19,6 +19,7 @@
 #include <cstdint>
 
 #include "gtest/gtest.h"
+#include "pw_compilation_testing/negative_compilation.h"
 #include "pw_preprocessor/util.h"
 
 namespace pw {
@@ -414,7 +415,8 @@ TEST(IntrusiveList, CompareConstAndNonConstIterator) {
   EXPECT_EQ(list.end(), list.cend());
 }
 
-#if defined(PW_COMPILE_FAIL_TEST_incompatible_iterator_types)
+#if PW_NC_TEST(IncompatibleIteratorTypes)
+PW_NC_EXPECT("comparison (of|between) distinct pointer types");
 
 struct OtherItem : public IntrusiveList<OtherItem>::Item {};
 
@@ -424,11 +426,11 @@ TEST(IntrusiveList, CompareConstAndNonConstIterator_CompilationFails) {
   static_cast<void>(list.end() == list2.end());
 }
 
-#endif
+#endif  // PW_NC_TEST
 
-// TODO(b/234882063): These tests should fail to compile, enable when no-compile
-// tests are set up in Pigweed.
-#if defined(PW_COMPILE_FAIL_TEST_cannot_modify_through_const_iterator)
+#if PW_NC_TEST(CannotModifyThroughConstIterator)
+PW_NC_EXPECT("function is not marked const|discards qualifiers");
+
 TEST(IntrusiveList, ConstIteratorModify) {
   TestItem item1(1);
   TestItem item2(99);
@@ -445,7 +447,7 @@ TEST(IntrusiveList, ConstIteratorModify) {
     it++;
   }
 }
-#endif  // Compile failure test
+#endif  // PW_NC_TEST
 
 // TODO(b/235289499): These tests should trigger a CHECK failure. This requires
 // using a testing version of pw_assert.
@@ -675,14 +677,17 @@ TEST(InstrusiveList, ListOfDerivedClassItems) {
 
   EXPECT_EQ(1u, derived_from_compatible_item_type.size());
 
-// TODO(b/234882063): Make these proper automated compilation failure tests.
-#if defined(PW_COMPILE_FAIL_TEST_cannot_add_base_class_to_derived_class_list)
+#if PW_NC_TEST(CannotAddBaseClassToDerivedClassList)
+  PW_NC_EXPECT_CLANG("cannot bind to a value of unrelated type");
+  PW_NC_EXPECT_GCC("cannot convert");
+
   TestItem item2;
   derived_from_compatible_item_type.push_front(item2);
 #endif
 }
 
-#if defined(PW_COMPILE_FAIL_TEST_incompatibile_item_type)
+#if PW_NC_TEST(IncompatibileItemType)
+PW_NC_EXPECT("IntrusiveList items must be derived from IntrusiveList<T>::Item");
 
 struct Foo {};
 
@@ -690,13 +695,14 @@ class BadItem : public IntrusiveList<Foo>::Item {};
 
 [[maybe_unused]] IntrusiveList<BadItem> derived_from_incompatible_item_type;
 
-#elif defined(PW_COMPILE_FAIL_TEST_does_not_inherit_from_item)
+#elif PW_NC_TEST(DoesNotInheritFromItem)
+PW_NC_EXPECT("IntrusiveList items must be derived from IntrusiveList<T>::Item");
 
 struct NotAnItem {};
 
 [[maybe_unused]] IntrusiveList<NotAnItem> list;
 
-#endif
+#endif  // PW_NC_TEST
 
 }  // namespace
 }  // namespace pw

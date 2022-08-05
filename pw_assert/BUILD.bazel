@@ -101,6 +101,7 @@ pw_cc_test(
     deps = [
         ":facade",
         "//pw_assert",
+        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
         "//pw_span",
         "//pw_string",

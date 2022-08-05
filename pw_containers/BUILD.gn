@@ -138,6 +138,7 @@ pw_test("intrusive_list_test") {
     ":intrusive_list",
     "$dir_pw_preprocessor",
   ]
+  negative_compilation_tests = true
 }
 
 pw_doc_group("docs") {

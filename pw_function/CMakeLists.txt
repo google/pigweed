@@ -44,6 +44,7 @@ pw_add_test(pw_function.function_test
   SOURCES
     function_test.cc
   DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
     pw_function
     pw_polyfill
   GROUPS

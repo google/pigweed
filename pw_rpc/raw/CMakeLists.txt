@@ -21,6 +21,7 @@ pw_auto_add_simple_module(pw_rpc.raw
     pw_rpc.common
     pw_rpc.server
   TEST_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
     pw_rpc.test_protos.pwpb
     pw_rpc.test_protos.raw_rpc
     pw_rpc.test_utils

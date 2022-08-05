@@ -14,7 +14,9 @@ scenarios, for example:
 - For a ``constexpr`` function, testing that a ``PW_ASSERT`` is triggered as
   expected.
 
-Negative compilation tests are only supported in GN currently.
+Negative compilation tests are only supported in GN currently. Negative
+compilation tests are not currently supported in GN on Windows due to
+`b/241565082 <bugs.pigweed.dev/241565082>`_.
 
 .. warning::
 

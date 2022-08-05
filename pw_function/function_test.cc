@@ -15,31 +15,35 @@
 #include "pw_function/function.h"
 
 #include "gtest/gtest.h"
+#include "pw_compilation_testing/negative_compilation.h"
 #include "pw_polyfill/language_feature_macros.h"
 
 namespace pw {
 namespace {
 
-// TODO(b/234882063): Convert this to a compilation failure test.
-#if defined(PW_COMPILE_FAIL_TEST_CannotInstantiateWithNonFunction)
+#if PW_NC_TEST(CannotInstantiateWithNonFunction)
+PW_NC_EXPECT("pw::Function may only be instantiated for a function type");
 
 [[maybe_unused]] Function<int> function_pointer;
 
-#elif defined(PW_COMPILE_FAIL_TEST_CannotInstantiateWithFunctionPointer1)
+#elif PW_NC_TEST(CannotInstantiateWithFunctionPointer1)
+PW_NC_EXPECT("pw::Function may only be instantiated for a function type");
 
 [[maybe_unused]] Function<void (*)()> function_pointer;
 
-#elif defined(PW_COMPILE_FAIL_TEST_CannotInstantiateWithFunctionPointer2)
+#elif PW_NC_TEST(CannotInstantiateWithFunctionPointer2)
+PW_NC_EXPECT("pw::Function may only be instantiated for a function type");
 
 [[maybe_unused]] void SomeFunction(int);
 
 [[maybe_unused]] Function<decltype(&SomeFunction)> function_pointer;
 
-#elif defined(PW_COMPILE_FAIL_TEST_CannotInstantiateWithFunctionReference)
+#elif PW_NC_TEST(CannotInstantiateWithFunctionReference)
+PW_NC_EXPECT("pw::Function may only be instantiated for a function type");
 
 [[maybe_unused]] Function<void (&)()> function_pointer;
 
-#endif  // compile fail tests
+#endif  // PW_NC_TEST
 
 // Ensure that Function can be constant initialized.
 [[maybe_unused]] PW_CONSTINIT Function<void()> can_be_constant_initialized;

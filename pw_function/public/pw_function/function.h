@@ -46,7 +46,7 @@ namespace pw {
 template <typename Callable>
 class Function {
   static_assert(std::is_function_v<Callable>,
-                "pw::Function may only be instantianted for a function type, "
+                "pw::Function may only be instantiated for a function type, "
                 "such as pw::Function<void(int)>.");
 };
 

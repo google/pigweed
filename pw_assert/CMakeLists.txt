@@ -122,6 +122,7 @@ pw_add_test(pw_assert.assert_facade_test
     pw_assert_test/fake_backend.h
   DEPS
     pw_assert
+    pw_compilation_testing._pigweed_only_negative_compilation
     pw_status
     pw_string
   GROUPS

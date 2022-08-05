@@ -41,15 +41,17 @@ class CheckThatTestsRanWhenDestructed {
   }
 } check_that_tests_ran;
 
-// TODO(b/234882063): Convert this to a compilation failure test.
-#if defined(PW_COMPILE_FAIL_TEST_FailsToLinkInvalidTestSuite)
+// Test that linking fails if these macros refer to tests that do not exist.
+// These cannot be a negative compilation tests because they compile
+// successfully, but fail to link.
+#if 0
 
 PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST(NotARealSuite, NotARealTest);
 
-#elif defined(PW_COMPILE_FAIL_TEST_FailsToLinkInvalidTestName)
+#elif 0
 
 PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST(StaticLibraryArchivedTest, NotARealTest);
 
-#endif  // compile fail tests
+#endif  // negative linking tests
 
 }  // namespace pw::unit_test

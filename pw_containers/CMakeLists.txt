@@ -162,6 +162,7 @@ pw_add_test(pw_containers.intrusive_list_test
   SOURCES
     intrusive_list_test.cc
   DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers.intrusive_list
     pw_preprocessor
   GROUPS

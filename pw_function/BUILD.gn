@@ -68,6 +68,7 @@ pw_test("function_test") {
     dir_pw_polyfill,
   ]
   sources = [ "function_test.cc" ]
+  negative_compilation_tests = true
 }
 
 pw_size_report("function_size") {
