@@ -461,17 +461,21 @@ using std::is_constant_evaluated;
 
 #else  // Provide polyfill for std::is_constant_evaluated
 
-#if defined(__has_builtin) && __has_builtin(__builtin_is_constant_evaluated)
+#ifdef __has_builtin
+#if __has_builtin(__builtin_is_constant_evaluated)
 
 #define LIB_STDCOMPAT_CONSTEVAL_SUPPORT 1
 inline constexpr bool is_constant_evaluated() noexcept { return __builtin_is_constant_evaluated(); }
 
-#else
+#endif  // __has_builtin(__builtin_is_constant_evaluated)
+#endif  // __has_builtin
+
+#ifndef LIB_STDCOMPAT_CONSTEVAL_SUPPORT
 
 #define LIB_STDCOMPAT_CONSTEVAL_SUPPORT 0
 inline constexpr bool is_constant_evaluated() noexcept { return false; }
 
-#endif  // __has_builtin(__builtin_is_constant_evaluated)
+#endif  // LIB_STDCOMPAT_CONSTEVAL_SUPPORT
 
 #endif  // __cpp_lib_is_constant_evaluated >= 201811L && !defined(LIB_STDCOMPAT_USE_POLYFILLS)
 
