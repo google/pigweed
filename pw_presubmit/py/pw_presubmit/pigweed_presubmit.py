@@ -364,7 +364,6 @@ _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     'pw_kvs',
     'pw_log_android',
     'pw_log_null',
-    'pw_log_rpc',
     'pw_log_string',
     'pw_log_tokenized',
     'pw_log_zephyr',
