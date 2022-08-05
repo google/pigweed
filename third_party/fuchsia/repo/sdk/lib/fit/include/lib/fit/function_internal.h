@@ -15,8 +15,8 @@
 #include <utility>
 
 #include "nullable.h"
-
 #include "pw_assert/assert.h"
+#include "pw_preprocessor/compiler.h"
 
 namespace fit {
 namespace internal {
@@ -281,7 +281,10 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   // Note that fit::callback will release the target immediately after
   // invoke() (also affecting any share()d copies).
   // Aborts if the function's target is empty.
-  Result invoke(Args... args) const { return ops_->invoke(&bits_, std::forward<Args>(args)...); }
+  // TODO(b/241567321): Remove "no sanitize" after pw_protobuf is fixed.
+  Result invoke(Args... args) const PW_NO_SANITIZE("function") {
+    return ops_->invoke(&bits_, std::forward<Args>(args)...);
+  }
 
   // Used by derived "impl" classes to implement operator=().
   // Assigns an empty target.
