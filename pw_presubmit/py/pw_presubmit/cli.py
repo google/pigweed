@@ -197,8 +197,7 @@ def run(
         _OUTPUT_PATH_README.format(repo=root))
 
     if not package_root:
-        package_root = Path(
-            os.environ['_PW_ACTUAL_ENVIRONMENT_ROOT']) / 'packages'
+        package_root = Path(os.environ['PW_PACKAGE_ROOT'])
 
     _LOG.debug('Using environment at %s', output_directory)
 
