@@ -16,7 +16,15 @@
 import functools
 import logging
 import re
-from typing import Any, List, Optional, Union, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Tuple,
+    Union,
+)
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.filters import (
@@ -548,7 +556,8 @@ class LogPane(WindowPane):
         # Return log content control keybindings
         return [self.log_content_control.get_key_bindings()]
 
-    def get_all_menu_options(self) -> List:
+    def get_window_menu_options(
+            self) -> List[Tuple[str, Union[Callable, None]]]:
         """Return all menu options for the log pane."""
 
         options = [

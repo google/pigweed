@@ -23,5 +23,9 @@ from pw_console.widgets.checkbox import (
     to_checkbox_text,
 )
 from pw_console.widgets.mouse_handlers import on_click
-from pw_console.widgets.window_pane import WindowPane, WindowPaneHSplit
+from pw_console.widgets.window_pane import (
+    FloatingWindowPane,
+    WindowPane,
+    WindowPaneHSplit,
+)
 from pw_console.widgets.window_pane_toolbar import WindowPaneToolbar

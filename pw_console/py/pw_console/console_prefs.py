@@ -193,7 +193,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         self._config[name] = not existing_setting
 
     @property
-    def column_order(self) -> list:
+    def column_order(self) -> List:
         return self._config.get('column_order', [])
 
     def column_style(self,
@@ -223,7 +223,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return self._config.get('windows', {})
 
     @property
-    def window_column_modes(self) -> list:
+    def window_column_modes(self) -> List:
         return list(column_type for column_type in self.windows.keys())
 
     @property

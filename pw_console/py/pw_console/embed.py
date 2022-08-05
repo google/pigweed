@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Iterable, Optional, Union
+from typing import Any, Dict, List, Iterable, Optional, Tuple, Union
 
 from prompt_toolkit.completion import WordCompleter
 
@@ -24,7 +24,11 @@ from pw_console.console_app import ConsoleApp
 from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
 from pw_console.plugin_mixin import PluginMixin
 import pw_console.python_logging
-from pw_console.widgets import WindowPane, WindowPaneToolbar
+from pw_console.widgets import (
+    FloatingWindowPane,
+    WindowPane,
+    WindowPaneToolbar,
+)
 
 
 def _set_console_app_instance(plugin: Any, console_app: ConsoleApp) -> None:
@@ -124,6 +128,8 @@ class PwConsoleEmbed:
         self.setup_python_logging_called = False
         self.hidden_by_default_windows: List[str] = []
         self.window_plugins: List[WindowPane] = []
+        self.floating_window_plugins: List[Tuple[FloatingWindowPane,
+                                                 Dict]] = []
         self.top_toolbar_plugins: List[WindowPaneToolbar] = []
         self.bottom_toolbar_plugins: List[WindowPaneToolbar] = []
 
@@ -134,6 +140,41 @@ class PwConsoleEmbed:
             window_pane: Any instance of the WindowPane class.
         """
         self.window_plugins.append(window_pane)
+
+    def add_floating_window_plugin(self, window_pane: FloatingWindowPane,
+                                   **float_args) -> None:
+        """Include a custom floating window pane plugin.
+
+        This adds a FloatingWindowPane class to the pw_console UI. The first
+        argument should be the window to add and the remaining keyword arguments
+        are passed to the prompt_toolkit Float() class. This allows positioning
+        of the floating window. By default the floating window will be
+        centered. To anchor the window to a side or corner of the screen set the
+        ``left``, ``right``, ``top``, or ``bottom`` keyword args.
+
+        For example:
+
+        .. code-block:: python
+
+           from pw_console import PwConsoleEmbed
+
+           console = PwConsoleEmbed(...)
+           my_plugin = MyPlugin()
+           # Anchor this floating window 2 rows away from the top and 4 columns
+           # away from the left edge of the screen.
+           console.add_floating_window_plugin(my_plugin, top=2, left=4)
+
+        See all possible keyword args in the prompt_toolkit documentation:
+        https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html#prompt_toolkit.layout.Float
+
+        Args:
+            window_pane: Any instance of the FloatingWindowPane class.
+            left: Distance to the left edge of the screen
+            right: Distance to the right edge of the screen
+            top: Distance to the top edge of the screen
+            bottom: Distance to the bottom edge of the screen
+        """
+        self.floating_window_plugins.append((window_pane, float_args))
 
     def add_top_toolbar(self, toolbar: WindowPaneToolbar) -> None:
         """Include a toolbar plugin to display on the top of the screen.
@@ -251,6 +292,7 @@ class PwConsoleEmbed:
             help_text=self.help_text,
             app_title=self.app_title,
             extra_completers=self.extra_completers,
+            floating_window_plugins=self.floating_window_plugins,
         )
         PW_CONSOLE_APP_CONTEXTVAR.set(self.console_app)  # type: ignore
         # Setup Python logging and log panes.
@@ -273,6 +315,10 @@ class PwConsoleEmbed:
         for toolbar in self.bottom_toolbar_plugins:
             _set_console_app_instance(toolbar, self.console_app)
             self.console_app.window_manager.add_bottom_toolbar(toolbar)
+
+        # Init floating window plugins.
+        for floating_window, _ in self.floating_window_plugins:
+            _set_console_app_instance(floating_window, self.console_app)
 
         # Rebuild prompt_toolkit containers, menu items, and help content with
         # any new plugins added above.

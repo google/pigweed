@@ -27,6 +27,7 @@ from typing import (
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 from prompt_toolkit.filters import (
@@ -328,8 +329,21 @@ class ReplPane(WindowPane):
             'Show history.': ['F3'],
         }]
 
-    def get_all_menu_options(self):
-        return []
+    def get_window_menu_options(
+            self) -> List[Tuple[str, Union[Callable, None]]]:
+        return [
+            ('Python Input > Paste',
+             self.paste_system_clipboard_to_input_buffer),
+            ('Python Input > Copy or Clear', self.copy_or_clear_input_buffer),
+            ('Python Input > Run', self.run_code),
+            # Menu separator
+            ('-', None),
+            ('Python Output > Toggle Wrap lines',
+             self.toggle_wrap_output_lines),
+            ('Python Output > Copy All', self.copy_all_output_text),
+            ('Python Output > Copy Selection', self.copy_output_selection),
+            ('Python Output > Clear', self.clear_output_buffer),
+        ]
 
     def run_code(self):
         """Trigger a repl code execution on mouse click."""

@@ -27,6 +27,7 @@ import pw_console.python_logging
 from pw_console.log_store import LogStore
 from pw_console.plugins.calc_pane import CalcPane
 from pw_console.plugins.clock_pane import ClockPane
+from pw_console.plugins.twenty48_pane import Twenty48Pane
 
 _LOG = logging.getLogger(__package__)
 _ROOT_LOG = logging.getLogger('')
@@ -135,6 +136,8 @@ def main() -> int:
         _ROOT_LOG.debug('Adding plugins...')
         console.add_window_plugin(ClockPane())
         console.add_window_plugin(CalcPane())
+        console.add_floating_window_plugin(
+            Twenty48Pane(include_resize_handle=False), left=4)
         _ROOT_LOG.debug('Starting prompt_toolkit full-screen application...')
 
     console.embed()

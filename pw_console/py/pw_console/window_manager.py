@@ -974,7 +974,7 @@ class WindowManager:
         # Focus on the first visible pane.
         self.focus_first_visible_pane()
 
-    def create_window_menu(self):
+    def create_window_menu_items(self) -> List[MenuItem]:
         """Build the [Window] menu for the current set of window lists."""
         root_menu_items = []
         for window_list_index, window_list in enumerate(self.window_lists):
@@ -1015,16 +1015,11 @@ class WindowManager:
                                  handler=functools.partial(
                                      self.application.run_pane_menu_option,
                                      handler))
-                        for text, handler in pane.get_all_menu_options()
+                        for text, handler in pane.get_window_menu_options()
                     ],
                 ) for pane_index, pane in enumerate(window_list.active_panes))
             if window_list_index + 1 < len(self.window_lists):
                 menu_items.append(MenuItem('-'))
             root_menu_items.extend(menu_items)
 
-        menu = MenuItem(
-            '[Windows]',
-            children=root_menu_items,
-        )
-
-        return [menu]
+        return root_menu_items

@@ -14,24 +14,35 @@
 """Example Plugin that displays some dynamic content: a game of 2048."""
 
 from random import choice
-from typing import Any, Iterable, List, Tuple
+from typing import Iterable, List, Tuple, TYPE_CHECKING
 import time
 
 from prompt_toolkit.filters import has_focus
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout import (
+    AnyContainer,
     Dimension,
     FormattedTextControl,
+    HSplit,
     Window,
     WindowAlign,
     VSplit,
 )
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.widgets import MenuItem
 
-from pw_console.widgets import ToolbarButton, WindowPane, WindowPaneToolbar
+import pw_console.widgets.border
+from pw_console.widgets import (
+    FloatingWindowPane,
+    ToolbarButton,
+    WindowPaneToolbar,
+)
 from pw_console.plugin_mixin import PluginMixin
 from pw_console.get_pw_console_app import get_pw_console_app
+
+if TYPE_CHECKING:
+    from pw_console.console_app import ConsoleApp
 
 Twenty48Cell = Tuple[int, int, int]
 
@@ -347,7 +358,7 @@ class Twenty48Control(FormattedTextControl):
         return NotImplemented
 
 
-class Twenty48Pane(WindowPane, PluginMixin):
+class Twenty48Pane(FloatingWindowPane, PluginMixin):
     """Example Pigweed Console plugin to play 2048.
 
     The Twenty48Pane is a WindowPane based plugin that displays an interactive
@@ -359,22 +370,16 @@ class Twenty48Pane(WindowPane, PluginMixin):
     For an example see:
     https://pigweed.dev/pw_console/embedding.html#adding-plugins
     """
-    def __init__(self,
-                 application: Any,
-                 include_resize_handle: bool = True,
-                 **kwargs):
+    def __init__(self, include_resize_handle: bool = True, **kwargs):
 
         super().__init__(pane_title='2048',
-                         height=Dimension(preferred=15),
-                         width=Dimension(preferred=48),
+                         height=Dimension(preferred=17),
+                         width=Dimension(preferred=50),
                          **kwargs)
-        # Reference to the parent pw_console app.
-        self.application = application
         self.game = Twenty48Game()
 
-        # Tracks the last focused container, to enable restoring focus after
-        # closing the dialog.
-        self.last_focused_pane = None
+        # Hide by default.
+        self.show_pane = False
 
         # Create a toolbar for display at the bottom of the 2048 window. It
         # will show the window title and buttons.
@@ -440,6 +445,25 @@ class Twenty48Pane(WindowPane, PluginMixin):
         # self.container is the root container that contains objects to be
         # rendered in the UI, one on top of the other.
         self.container = self._create_pane_container(
+            pw_console.widgets.border.create_border(
+                HSplit([
+                    # Vertical split content
+                    VSplit([
+                        # Left side will show the game board.
+                        self.twenty48_game_window,
+                        # Stats will be shown on the right.
+                        self.twenty48_stats_window,
+                    ]),
+                    # The bottom_toolbar is shown below the VSplit.
+                    self.bottom_toolbar,
+                ]),
+                title='2048',
+                border_style='class:command-runner-border',
+                # left_margin_columns=1,
+                # right_margin_columns=1,
+            ))
+
+        self.dialog_content: List[AnyContainer] = [
             # Vertical split content
             VSplit([
                 # Left side will show the game board.
@@ -449,7 +473,20 @@ class Twenty48Pane(WindowPane, PluginMixin):
             ]),
             # The bottom_toolbar is shown below the VSplit.
             self.bottom_toolbar,
+        ]
+        # Wrap the dialog content in a border
+        self.bordered_dialog_content = pw_console.widgets.border.create_border(
+            HSplit(self.dialog_content),
+            title='2048',
+            border_style='class:command-runner-border',
         )
+        # self.container is the root container that contains objects to be
+        # rendered in the UI, one on top of the other.
+        if include_resize_handle:
+            self.container = self._create_pane_container(*self.dialog_content)
+        else:
+            self.container = self._create_pane_container(
+                self.bordered_dialog_content)
 
         # This plugin needs to run a task in the background periodically and
         # uses self.plugin_init() to set which function to run, and how often.
@@ -462,25 +499,28 @@ class Twenty48Pane(WindowPane, PluginMixin):
             plugin_logger_name='pw_console_example_2048_plugin',
         )
 
-    def focus_self(self) -> None:
-        self.application.focus_on_container(self)
+    def get_top_level_menus(self) -> List[MenuItem]:
+        return [
+            MenuItem(
+                '[2048]',
+                children=[
+                    MenuItem('Example Top Level Menu',
+                             handler=None,
+                             disabled=True),
+                    # Menu separator
+                    MenuItem('-', None),
+                    MenuItem('Restart', handler=self.game.reset_game),
+                ],
+            ),
+        ]
 
-    def close_dialog(self) -> None:
-        """Close runner dialog box."""
-        self.show_pane = False
+    def pw_console_init(self, app: 'ConsoleApp') -> None:
+        """Set the Pigweed Console application instance.
 
-        # Restore original focus if possible.
-        if self.last_focused_pane:
-            self.application.focus_on_container(self.last_focused_pane)
-        else:
-            # Fallback to focusing on the main menu.
-            self.application.focus_main_menu()
-
-    def open_dialog(self) -> None:
-        self.show_pane = True
-        self.last_focused_pane = self.application.focused_window()
-        self.focus_self()
-        self.application.redraw_ui()
+        This function is called after the Pigweed Console starts up and allows
+        access to the user preferences. Prefs is required for creating new
+        user-remappable keybinds."""
+        self.application = app
 
     def _background_task(self) -> bool:
         """Function run in the background for the ClockPane plugin."""

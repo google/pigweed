@@ -738,7 +738,7 @@ class LogView:
         """Get pre-formatted table header."""
         return self.log_store.render_table_header()
 
-    def render_content(self) -> list:
+    def render_content(self) -> List:
         """Return logs to display on screen as a list of FormattedText tuples.
 
         This function determines when the log screen requires re-rendeing based

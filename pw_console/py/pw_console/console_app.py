@@ -22,9 +22,9 @@ import os
 from pathlib import Path
 import sys
 from threading import Thread
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-from jinja2 import Environment, FileSystemLoader, make_logging_undefined
+from jinja2 import Environment, DictLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output import ColorDepth
@@ -61,13 +61,13 @@ from pw_console.help_window import HelpWindow
 import pw_console.key_bindings
 from pw_console.log_pane import LogPane
 from pw_console.log_store import LogStore
-from pw_console.plugins.twenty48_pane import Twenty48Pane
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.python_logging import all_loggers
 from pw_console.quit_dialog import QuitDialog
 from pw_console.repl_pane import ReplPane
 import pw_console.style
 import pw_console.widgets.checkbox
+from pw_console.widgets import FloatingWindowPane
 import pw_console.widgets.mouse_handlers
 from pw_console.window_manager import WindowManager
 
@@ -137,6 +137,8 @@ class ConsoleApp:
         color_depth=None,
         extra_completers=None,
         prefs=None,
+        floating_window_plugins: Optional[List[Tuple[FloatingWindowPane,
+                                                     Dict]]] = None,
     ):
         self.prefs = prefs if prefs else ConsolePrefs()
         self.color_depth = get_default_colordepth(color_depth)
@@ -154,11 +156,16 @@ class ConsoleApp:
 
         local_vars = local_vars or global_vars
 
+        jinja_templates = {
+            t: importlib.resources.read_text('pw_console.templates', t)
+            for t in importlib.resources.contents('pw_console.templates')
+            if t.endswith('.jinja')
+        }
+
         # Setup the Jinja environment
         self.jinja_env = Environment(
             # Load templates automatically from pw_console/templates
-            loader=FileSystemLoader(
-                importlib.resources.files('pw_console.templates')),
+            loader=DictLoader(jinja_templates),
             # Raise errors if variables are undefined in templates
             undefined=make_logging_undefined(
                 logger=logging.getLogger(__package__), ),
@@ -214,8 +221,11 @@ class ConsoleApp:
         self.prefs_file_window.load_yaml_text(
             self.prefs.current_config_as_yaml())
 
-        self.game_2048 = Twenty48Pane(self, include_resize_handle=False)
-        self.game_2048.show_pane = False
+        self.floating_window_plugins = None
+        if floating_window_plugins:
+            self.floating_window_plugins = [
+                plugin for plugin, _ in floating_window_plugins
+            ]
 
         # Used for tracking which pane was in focus before showing help window.
         self.last_focused_pane = None
@@ -298,11 +308,15 @@ class ConsoleApp:
                 # Callable to get width
                 width=self.keybind_help_window.content_width,
             ),
-            Float(
-                content=self.game_2048,
-                top=3,
-                left=4,
-            ),
+        ]
+
+        if floating_window_plugins:
+            self.floats.extend([
+                Float(content=plugin_container, **float_args)
+                for plugin_container, float_args in floating_window_plugins
+            ])
+
+        self.floats.extend([
             # Completion menu that can overlap other panes since it lives in
             # the top level Float container.
             Float(
@@ -331,7 +345,7 @@ class ConsoleApp:
                 top=2,
                 left=2,
             ),
-        ]
+        ])
 
         # prompt_toolkit root container.
         self.root_container = MenuContainer(
@@ -392,9 +406,9 @@ class ConsoleApp:
         # Run the function for a particular menu item.
         return_value = function_to_run()
         # It's return value dictates if the main menu should close or not.
-        # - True: The main menu stays open. This is the default prompt_toolkit
+        # - False: The main menu stays open. This is the default prompt_toolkit
         #   menu behavior.
-        # - False: The main menu closes.
+        # - True: The main menu closes.
 
         # Update menu content. This will refresh checkboxes and add/remove
         # items.
@@ -599,13 +613,6 @@ class ConsoleApp:
                         'Themes',
                         children=themes_submenu,
                     ),
-                    MenuItem('Games',
-                             children=[
-                                 MenuItem(
-                                     '2048',
-                                     handler=self.game_2048.open_dialog,
-                                 ),
-                             ]),
                     MenuItem('-'),
                     MenuItem('Exit', handler=self.exit_console),
                 ],
@@ -700,7 +707,43 @@ class ConsoleApp:
             ),
         ]
 
-        window_menu = self.window_manager.create_window_menu()
+        window_menu_items = self.window_manager.create_window_menu_items()
+
+        floating_window_items = []
+        if self.floating_window_plugins:
+            floating_window_items.append(MenuItem('-', None))
+            floating_window_items.extend(
+                MenuItem(
+                    'Floating Window {index}: {title}'.format(
+                        index=pane_index + 1,
+                        title=pane.menu_title(),
+                    ),
+                    children=[
+                        MenuItem(
+                            '{check} Show/Hide Window'.format(
+                                check=pw_console.widgets.checkbox.
+                                to_checkbox_text(pane.show_pane, end='')),
+                            handler=functools.partial(
+                                self.run_pane_menu_option, pane.toggle_dialog),
+                        ),
+                    ] + [
+                        MenuItem(text,
+                                 handler=functools.partial(
+                                     self.run_pane_menu_option, handler))
+                        for text, handler in pane.get_window_menu_options()
+                    ],
+                ) for pane_index, pane in enumerate(
+                    self.floating_window_plugins))
+            window_menu_items.extend(floating_window_items)
+
+        window_menu = [MenuItem('[Windows]', children=window_menu_items)]
+
+        top_level_plugin_menus = []
+        for pane in self.window_manager.active_panes():
+            top_level_plugin_menus.extend(pane.get_top_level_menus())
+        if self.floating_window_plugins:
+            for pane in self.floating_window_plugins:
+                top_level_plugin_menus.extend(pane.get_top_level_menus())
 
         help_menu_items = [
             MenuItem(self.user_guide_window.menu_title(),
@@ -727,7 +770,8 @@ class ConsoleApp:
             ),
         ]
 
-        return file_menu + edit_menu + view_menu + window_menu + help_menu
+        return (file_menu + edit_menu + view_menu + top_level_plugin_menus +
+                window_menu + help_menu)
 
     def focus_main_menu(self):
         """Set application focus to the main menu."""
@@ -874,18 +918,20 @@ class ConsoleApp:
 
     def modal_window_is_open(self):
         """Return true if any modal window or dialog is open."""
+        floating_window_is_open = (self.keybind_help_window.show_window
+                                   or self.prefs_file_window.show_window
+                                   or self.user_guide_window.show_window
+                                   or self.quit_dialog.show_dialog
+                                   or self.command_runner.show_dialog)
+
         if self.app_help_text:
-            return (self.app_help_window.show_window
-                    or self.keybind_help_window.show_window
-                    or self.prefs_file_window.show_window
-                    or self.user_guide_window.show_window
-                    or self.quit_dialog.show_dialog or self.game_2048.show_pane
-                    or self.command_runner.show_dialog)
-        return (self.keybind_help_window.show_window
-                or self.prefs_file_window.show_window
-                or self.user_guide_window.show_window
-                or self.quit_dialog.show_dialog or self.game_2048.show_pane
-                or self.command_runner.show_dialog)
+            floating_window_is_open = (self.app_help_window.show_window
+                                       or floating_window_is_open)
+
+        floating_plugin_is_open = any(
+            plugin.show_pane for plugin in self.floating_window_plugins)
+
+        return floating_window_is_open or floating_plugin_is_open
 
     def exit_console(self):
         """Quit the console prompt_toolkit application UI."""

@@ -31,8 +31,8 @@ User plugin instances are created before starting-up and passed to the Pigweed
 Console embed instance. Typically, a console is started by creating a
 ``PwConsoleEmbed()`` instance, calling customization functions, then calling
 ``.embed()`` as shown in `Using embed()`_. Adding plugins functions similarly by
-calling ``add_top_toolbar``, ``add_bottom_toolbar`` or
-``add_window_plugin``. For example:
+calling ``add_top_toolbar``, ``add_bottom_toolbar``,
+``add_floating_window_plugin`` or ``add_window_plugin``. For example:
 
 .. code-block:: python
 

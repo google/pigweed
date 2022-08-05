@@ -14,7 +14,7 @@
 """Window pane base class."""
 
 from abc import ABC
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, Callable, List, Optional, Tuple, TYPE_CHECKING, Union
 import functools
 
 from prompt_toolkit.layout.dimension import AnyDimension
@@ -27,6 +27,7 @@ from prompt_toolkit.layout import (
     HSplit,
     walk,
 )
+from prompt_toolkit.widgets import MenuItem
 
 from pw_console.get_pw_console_app import get_pw_console_app
 
@@ -145,7 +146,7 @@ class WindowPane(ABC):
         object."""
         return self.container  # pylint: disable=no-member
 
-    def get_all_key_bindings(self) -> list:
+    def get_all_key_bindings(self) -> List:
         """Return keybinds for display in the help window.
 
         For example:
@@ -167,12 +168,18 @@ class WindowPane(ABC):
         # pylint: disable=no-self-use
         return []
 
-    def get_all_menu_options(self) -> list:
+    def get_window_menu_options(
+            self) -> List[Tuple[str, Union[Callable, None]]]:
         """Return menu options for the window pane.
 
         Should return a list of tuples containing with the display text and
         callable to invoke on click.
         """
+        # pylint: disable=no-self-use
+        return []
+
+    def get_top_level_menus(self) -> List[MenuItem]:
+        """Return MenuItems to be displayed on the main pw_console menu bar."""
         # pylint: disable=no-self-use
         return []
 
@@ -209,3 +216,44 @@ class WindowPane(ABC):
             if container == child_container:
                 return True
         return False
+
+
+class FloatingWindowPane(WindowPane):
+    """The Pigweed Console FloatingWindowPane class."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Tracks the last focused container, to enable restoring focus after
+        # closing the dialog.
+        self.last_focused_pane = None
+
+    def close_dialog(self) -> None:
+        """Close runner dialog box."""
+        self.show_pane = False
+
+        # Restore original focus if possible.
+        if self.last_focused_pane:
+            self.application.focus_on_container(self.last_focused_pane)
+        else:
+            # Fallback to focusing on the main menu.
+            self.application.focus_main_menu()
+
+        self.application.update_menu_items()
+
+    def open_dialog(self) -> None:
+        self.show_pane = True
+        self.last_focused_pane = self.application.focused_window()
+        self.focus_self()
+        self.application.redraw_ui()
+
+        self.application.update_menu_items()
+
+    def toggle_dialog(self) -> bool:
+        if self.show_pane:
+            self.close_dialog()
+        else:
+            self.open_dialog()
+        # The focused window has changed. Return true so
+        # ConsoleApp.run_pane_menu_option does not set the focus to the main
+        # menu.
+        return True

@@ -491,6 +491,7 @@ class CommandRunner:
                 '[Help] > ',
                 # This focuses on a save dialog bor.
                 'Save/Export a copy',
+                '[Windows] > Floating ',
         ]:
             if command_text in self.selected_item_text:
                 close_dialog_first = True
