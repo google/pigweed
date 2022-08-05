@@ -44,6 +44,9 @@ has several subcommands.
 ``pw package remove <package-name>``
   Removes ``<package-name>``.
 
+By default ``pw package`` operates on the directory referenced by
+``PW_PACKAGE_ROOT``.
+
 -----------
 Configuring
 -----------

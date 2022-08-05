@@ -178,9 +178,7 @@ def parse_args(argv: List[str] = None) -> argparse.Namespace:
         '-e',
         dest='pkg_root',
         type=pathlib.Path,
-        # TODO(b/240707084) Replace with PW_PACKAGE_ROOT.
-        default=(pathlib.Path(os.environ['_PW_ACTUAL_ENVIRONMENT_ROOT']) /
-                 'packages'),
+        default=pathlib.Path(os.environ['PW_PACKAGE_ROOT']),
     )
     subparsers = parser.add_subparsers(dest='command', required=True)
     install = subparsers.add_parser('install')
