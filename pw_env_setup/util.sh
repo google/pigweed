@@ -295,6 +295,10 @@ pw_finalize() {
   fi
 }
 
+pw_install_post_checkout_hook() {
+  cp "$PW_ROOT/pw_env_setup/post-checkout-hook.sh" "$PW_PROJECT_ROOT/.git/hooks/post-checkout"
+}
+
 pw_cleanup() {
   unset _PW_BANNER
   unset _PW_BANNER_FUNC
@@ -326,6 +330,7 @@ pw_cleanup() {
   unset -f pw_bootstrap
   unset -f pw_activate
   unset -f pw_finalize
+  unset -f pw_install_post_checkout_hook
   unset -f pw_cleanup
   unset -f _pw_hello
   unset -f pw_error
