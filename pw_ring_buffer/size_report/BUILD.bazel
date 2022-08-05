@@ -24,9 +24,17 @@ licenses(["notice"])
 pw_cc_binary(
     name = "ring_buffer_simple",
     srcs = ["ring_buffer_simple.cc"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_ring_buffer",
+    ],
 )
 
 pw_cc_binary(
     name = "ring_buffer_multi",
     srcs = ["ring_buffer_multi.cc"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_ring_buffer",
+    ],
 )

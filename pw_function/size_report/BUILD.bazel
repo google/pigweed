@@ -42,6 +42,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "callable_size",
     srcs = ["callable_size.cc"],
+    copts = ["-Wno-unused-private-field"],
     defines = ["_BASE=1"],
     deps = [
         "//pw_bloat:bloat_this_binary",

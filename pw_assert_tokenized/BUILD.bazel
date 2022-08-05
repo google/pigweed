@@ -40,8 +40,9 @@ pw_cc_library(
     ],
     deps = [
         "//pw_assert",
+        "//pw_base64",
         "//pw_bytes",
-        "//pw_log_tokenized,",
+        "//pw_log_tokenized",
         "//pw_preprocessor",
         "//pw_tokenizer",
     ],

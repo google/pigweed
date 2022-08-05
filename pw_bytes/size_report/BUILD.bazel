@@ -22,8 +22,19 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_binary(
-    name = "build_byte_buffer",
+    name = "with_byte_builder",
     srcs = ["byte_builder_size_report.cc"],
+    local_defines = ["USE_BYTE_BUILDER=1"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_bytes",
+    ],
+)
+
+pw_cc_binary(
+    name = "without_byte_builder",
+    srcs = ["byte_builder_size_report.cc"],
+    local_defines = ["USE_BYTE_BUILDER=0"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_bytes",

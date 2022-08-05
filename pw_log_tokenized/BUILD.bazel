@@ -35,7 +35,9 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
+        "//pw_log:facade",
         "//pw_tokenizer",
+        "//pw_tokenizer:global_handler_with_payload",
     ],
 )
 
@@ -53,9 +55,10 @@ pw_cc_library(
     hdrs = ["public/pw_log_tokenized/base64_over_hdlc.h"],
     includes = ["public"],
     deps = [
-        "//pw_hdlc:encoder",
+        "//pw_hdlc",
+        "//pw_stream:sys_io_stream",
         "//pw_tokenizer:base64",
-        "//pw_tokenizer:global_handler_with_payload.facade",
+        "//pw_tokenizer:global_handler_with_payload",
     ],
 )
 
