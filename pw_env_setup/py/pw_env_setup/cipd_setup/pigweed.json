@@ -100,6 +100,18 @@
       "version_file": ".versions/clang.cipd_version"
     },
     {
+      "path": "fuchsia/third_party/rust/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64"
+      ],
+      "tags": [
+        "git_revision:116819f54f062a2f425deac4ec29245038c26613"
+      ],
+      "version_file": ".versions/rust.cipd_version"
+    },
+    {
       "path": "infra/3pp/tools/go/${platform}",
       "platforms": [
         "linux-amd64",

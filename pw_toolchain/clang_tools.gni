@@ -21,6 +21,9 @@ declare_args() {
   # This is useful for debugging toolchain-related issues by building with an
   # externally-provided toolchain.
   pw_toolchain_CLANG_PREFIX = ""
+
+  # This flag allows you to specify the root directory of the rustc binary.
+  pw_toolchain_RUST_PREFIX = ""
 }
 
 pw_toolchain_clang_tools = {
@@ -34,6 +37,13 @@ pw_toolchain_clang_tools = {
     ld = ""
     cc = ""
     cxx = ""
+    rustc = ""
+  }
+
+  if (pw_toolchain_RUST_PREFIX != "") {
+    rustc = pw_toolchain_RUST_PREFIX + "/"
+  } else {
+    rustc = ""
   }
   _rbe_debug_flag = ""
 
@@ -66,4 +76,5 @@ pw_toolchain_clang_tools = {
   }
   ar += "llvm-ar"
   ld += "clang++"
+  rustc += "rustc"
 }

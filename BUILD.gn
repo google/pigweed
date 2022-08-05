@@ -20,6 +20,7 @@ import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_rpc/config.gni")
+import("$dir_pw_rust/rust.gni")
 import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -269,6 +270,12 @@ group("host_tools") {
     "$dir_pw_target_runner/go:simple_client",
     "$dir_pw_target_runner/go:simple_server",
   ]
+
+  if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
+    deps += [
+      "$dir_pw_rust/example:hello($dir_pigweed/targets/host:host_clang_debug)",
+    ]
+  }
 }
 
 # By default, Pigweed will build this target when invoking ninja.

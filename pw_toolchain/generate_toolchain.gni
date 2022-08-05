@@ -370,6 +370,29 @@ template("generate_toolchain") {
         }
         forward_variables_from(invoker_toolchain_args, "*")
       }
+      _generate_rust_tools = defined(invoker.rustc)
+
+      if (_generate_rust_tools) {
+        tool("rust_bin") {
+          _outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+
+          description = "rustc {{output}}"
+          command =
+              string_join(" ",
+                          [
+                            # TODO(b/234872510): Ensure this works with Windows.
+                            "RUST_BACKTRACE=1",
+                            invoker.rustc,
+                            "{{source}}",
+                            "-o $_outfile",
+                            "--color always",
+                            "-D warnings",
+                          ])
+
+          outputs = [ _outfile ]
+          default_output_dir = "{{target_out_dir}}/bin"
+        }
+      }
     }
 
     _generate_static_analysis_toolchain =

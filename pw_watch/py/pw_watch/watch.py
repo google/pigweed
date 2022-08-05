@@ -563,9 +563,11 @@ _WATCH_PATTERNS = (
     '*.options',
     '*.proto',
     '*.py',
+    '*.rs',
     '*.rst',
     '*.s',
     '*.S',
+    '*.toml',
 )
 
 
