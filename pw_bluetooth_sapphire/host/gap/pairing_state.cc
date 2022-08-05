@@ -187,24 +187,27 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
   // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
   ZX_ASSERT(pairing_delegate());
   state_ = State::kWaitPairingComplete;
-  bt_log_scope("%#.4x, id: %s", handle(), bt_str(peer_id()));
 
   if (current_pairing_->action == PairingAction::kAutomatic) {
     if (!outgoing_connection_) {
-      bt_log(ERROR, "gap-bredr", "automatically rejecting incoming link pairing");
+      bt_log(ERROR, "gap-bredr",
+             "automatically rejecting incoming link pairing (peer: %s, handle: %#.4x)",
+             bt_str(peer_id()), handle());
     } else {
-      bt_log(DEBUG, "gap-bredr", "automatically confirming outgoing link pairing");
+      bt_log(DEBUG, "gap-bredr",
+             "automatically confirming outgoing link pairing (peer: %s, handle: %#.4x)",
+             bt_str(peer_id()), handle());
     }
     cb(outgoing_connection_);
     return;
   }
-  auto confirm_cb = [cb = std::move(cb), log_ctx = capture_log_context(),
-                     pairing = current_pairing_->GetWeakPtr()](bool confirm) mutable {
+  auto confirm_cb = [cb = std::move(cb), pairing = current_pairing_->GetWeakPtr(),
+                     peer_id = peer_id(), handle = handle()](bool confirm) mutable {
     if (!pairing) {
       return;
     }
-    add_parent_context(log_ctx);
-    bt_log(DEBUG, "gap-bredr", "%sing User Confirmation Request", confirm ? "Confirm" : "Cancel");
+    bt_log(DEBUG, "gap-bredr", "%sing User Confirmation Request (peer: %s, handle: %#.4x)",
+           confirm ? "Confirm" : "Cancel", bt_str(peer_id), handle);
     cb(confirm);
   };
   // PairingAction::kDisplayPasskey indicates that this device has a display and performs "Numeric

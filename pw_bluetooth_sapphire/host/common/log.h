@@ -112,10 +112,6 @@ bool IsLogLevelEnabled(LogSeverity severity);
 
 void UsePrintf(LogSeverity min_severity);
 
-struct LogContext {
-  std::string context;
-};
-
 namespace internal {
 
 // Returns the part of a path following the final '/', or the whole path if there is no '/'.
@@ -131,36 +127,6 @@ constexpr const char* BaseName(const char* path) {
 // No-op function used to check consistency between format string and arguments.
 [[gnu::format(printf, 1, 2)]] constexpr void CheckFormat([[maybe_unused]] const char* fmt, ...) {}
 
-// LogScope is a helper class that manages the lifetime of a log scope in the global thread-local
-// list of log scopes. LogScope should only be created through the bt_log_scope() macro in order to
-// guarantee that the the correct scope is removed when a LogScope is destroyed.
-class LogScopeGuard final {
- public:
-  // Push log scope.
-  // The "format" attribute counts arguments starting at 1, including implicit |this|.
-  [[gnu::format(printf, 2, 3)]] explicit LogScopeGuard(const char* fmt, ...);
-
-  // Pop log scope.
-  ~LogScopeGuard();
-};
-
-// Like LogScopeGuard, but for LogContext.
-class LogContextGuard final {
- public:
-  // Restore log context.
-  explicit LogContextGuard(LogContext);
-
-  // Pop log context.
-  ~LogContextGuard();
-
- private:
-  bool empty_;
-};
-
-// Returns a snapshot of the current registered log scopes that can be restored with
-// LogContextGuard::LogContextGuard(LogContext).
-LogContext SaveLogContext();
-
 }  // namespace internal
 }  // namespace bt
 
@@ -173,38 +139,5 @@ LogContext SaveLogContext();
   ::bt::internal::CheckFormat(tag)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {}
-
-#define __BT_CONCAT_(x, y) x##y
-// This level of indirection is required for concatenating the results of macros.
-#define __BT_CONCAT(x, y) __BT_CONCAT_(x, y)
-
-// bt_log_scope() is a helper macro for defining a uniquely named LogScope variable that will remove
-// the log scope at the end of the current scope. capture_log_context() and add_parent_context() can
-// be used to save and restore scopes in async callbacks.
-//
-// Example:
-//
-// void MyFunction(int value) {
-//   bt_log_scope("MyFunction value=%d", value);
-//   bt_log(INFO, "tag", "A");
-//   auto callback = [ctx = capture_log_context()] {
-//     add_parent_context(ctx);
-//     bt_log(INFO, "tag", "B");
-//   };
-//   callback();
-//   async::PostTask(async_get_default_dispatcher(), callback);
-// }
-//
-// Myfunction(5) will log the following:
-// [tag:file.cc:line][MyFunction value=5] A
-// [tag:file.cc:line]{[MyFunction value=5]}[MyFunction value=5] B
-// [tag:file.cc:line]{[MyFunction value=5]} B
-#define bt_log_scope(fmt...) bt::internal::LogScopeGuard __BT_CONCAT(log_scope_, __LINE__)(fmt)
-
-// Returns a LogContext containing all of the current scopes and contexts.
-#define capture_log_context() bt::internal::SaveLogContext()
-
-// Prepend a saved context to the current context to indicate causality (e.g. in an async callback).
-#define add_parent_context(ctx) bt::internal::LogContextGuard __BT_CONCAT(log_ctx_, __LINE__)(ctx)
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_

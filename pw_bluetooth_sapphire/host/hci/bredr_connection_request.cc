@@ -56,7 +56,6 @@ void BrEdrConnectionRequest::CreateConnection(
     std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode, zx::duration timeout,
     OnCompleteDelegate on_command_fail) {
   ZX_DEBUG_ASSERT(timeout > zx::msec(0));
-  bt_log_scope("peer=%s", bt_str(peer_id_));
 
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_ptr_factory_.GetWeakPtr();
@@ -87,15 +86,15 @@ void BrEdrConnectionRequest::CreateConnection(
 
   auto packet = CreateConnectionPacket(peer_address_, page_scan_repetition_mode, clock_offset);
 
-  bt_log(INFO, "hci-bredr", "initiating connection request");
+  bt_log(INFO, "hci-bredr", "initiating connection request (peer: %s)", bt_str(peer_id_));
   command_channel->SendCommand(std::move(packet), std::move(complete_cb),
                                hci_spec::kCommandStatusEventCode);
 }
 
 // Status is either a Success or an Error value
 Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
-  bt_log_scope("peer=%s", bt_str(peer_id_));
-  bt_log(INFO, "hci-bredr", "connection complete (status: %s)", bt_str(status));
+  bt_log(INFO, "hci-bredr", "connection complete (status: %s, peer: %s)", bt_str(status),
+         bt_str(peer_id_));
   timeout_task_.Cancel();
 
   if (status.is_error()) {
@@ -117,24 +116,23 @@ Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
 void BrEdrConnectionRequest::Timeout() {
   // If the request was cancelled, this handler will have been removed
   ZX_ASSERT(state_ == RequestState::kPending);
-  bt_log_scope("peer=%s", bt_str(peer_id_));
-  bt_log(INFO, "hci-bredr", "create connection timed out: canceling request");
+  bt_log(INFO, "hci-bredr", "create connection timed out: canceling request (peer: %s)",
+         bt_str(peer_id_));
   state_ = RequestState::kTimedOut;
   timeout_task_.Cancel();
 }
 
 bool BrEdrConnectionRequest::Cancel() {
-  bt_log_scope("peer=%s", bt_str(peer_id_));
   if (state_ == RequestState::kSuccess) {
-    bt_log(DEBUG, "hci-bredr", "connection has already succeeded");
+    bt_log(DEBUG, "hci-bredr", "connection has already succeeded (peer: %s)", bt_str(peer_id_));
     return false;
   } else if (state_ != RequestState::kPending) {
-    bt_log(WARN, "hci-bredr", "connection attempt already canceled!");
+    bt_log(WARN, "hci-bredr", "connection attempt already canceled! (peer: %s)", bt_str(peer_id_));
     return false;
   }
   // TODO(fxbug.dev/65157) - We should correctly handle cancels due to a disconnect call during a
   // pending connection creation attempt
-  bt_log(INFO, "hci-bredr", "canceling connection request");
+  bt_log(INFO, "hci-bredr", "canceling connection request (peer: %s)", bt_str(peer_id_));
   state_ = RequestState::kCanceled;
   timeout_task_.Cancel();
   return true;

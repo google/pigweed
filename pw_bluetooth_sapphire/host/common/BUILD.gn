@@ -83,7 +83,6 @@ source_set("tests") {
     "expiring_set_unittest.cc",
     "identifier_unittest.cc",
     "inspectable_unittest.cc",
-    "log_unittest.cc",
     "manufacturer_names_unittest.cc",
     "metrics_unittest.cc",
     "packet_view_unittest.cc",
