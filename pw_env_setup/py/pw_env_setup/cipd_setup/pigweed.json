@@ -165,7 +165,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:07a61ccf0226a5a370bf93a3f275e561f07beb44"
+        "git_revision:05b8e4e0567085a2442ebc14720295c6b63bf3de"
       ],
       "version_file": ".versions/host_tools.cipd_version"
     },
