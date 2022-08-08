@@ -372,7 +372,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
         "Alignment of Callable must be <= alignment of max_align_t.");
     static_assert(!require_inline || sizeof(DecayedCallable) <= inline_target_size,
                   "Callable too large to store inline as requested.");
-    if (is_null(target)) {
+    if (::fit::is_null(target)) {
       initialize_null_target();
     } else {
       ops_ = &target_type<DecayedCallable>::ops;
