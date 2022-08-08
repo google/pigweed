@@ -24,19 +24,19 @@ static int global;
 static int IncrementGlobal(void) { return ++global; }
 
 bool CTest(void) {
-  PW_LOG(1, 2, "3");
-  PW_LOG(1, 2, "whoa");
-  PW_LOG(1, 2, "%s", "hello");
-  PW_LOG(1, 2, "%d + %s == %p", 1, "two", NULL);
+  PW_HANDLE_LOG(1, 2, "3");
+  PW_HANDLE_LOG(1, 2, "whoa");
+  PW_HANDLE_LOG(1, 2, "%s", "hello");
+  PW_HANDLE_LOG(1, 2, "%d + %s == %p", 1, "two", NULL);
 
   global = 0;
   bool local = true;
 
-  PW_LOG(1,
-         2,
-         "You are number%s %d!",
-         (local = false) ? "" : " not",
-         IncrementGlobal());
+  PW_HANDLE_LOG(1,
+                2,
+                "You are number%s %d!",
+                (local = false) ? "" : " not",
+                IncrementGlobal());
 
   return global == 1 && !local;
 }

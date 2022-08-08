@@ -22,13 +22,13 @@ extern "C" bool CTest();
 namespace {
 
 TEST(LogNull, NoArguments) {
-  PW_LOG(1, 2, "3");
-  PW_LOG(1, 2, "whoa");
+  PW_HANDLE_LOG(1, 2, "3");
+  PW_HANDLE_LOG(1, 2, "whoa");
 }
 
 TEST(LogNull, WithArguments) {
-  PW_LOG(1, 2, "%s", "hello");
-  PW_LOG(1, 2, "%d + %s == %p", 1, "two", nullptr);
+  PW_HANDLE_LOG(1, 2, "%s", "hello");
+  PW_HANDLE_LOG(1, 2, "%d + %s == %p", 1, "two", nullptr);
 }
 
 TEST(LogNull, ExpressionsAreEvaluated) {
@@ -37,10 +37,11 @@ TEST(LogNull, ExpressionsAreEvaluated) {
   global = 0;
   bool local = true;
 
-  PW_LOG(1, 2, "You are number%s %d!", (local = false) ? "" : " not", []() {
-    global = 1;
-    return global;
-  }());
+  PW_HANDLE_LOG(
+      1, 2, "You are number%s %d!", (local = false) ? "" : " not", []() {
+        global = 1;
+        return global;
+      }());
 
   EXPECT_EQ(1, global);
   EXPECT_FALSE(local);

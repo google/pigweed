@@ -49,8 +49,8 @@ static inline void pw_log_Ignored(int level,
 
 PW_EXTERN_C_END
 
-#define PW_LOG(level, flags, message, ...) \
-  pw_log_Ignored((level),                  \
-                 (flags),                  \
-                 PW_LOG_MODULE_NAME,       \
+#define PW_HANDLE_LOG(level, flags, message, ...) \
+  pw_log_Ignored((level),                         \
+                 (flags),                         \
+                 PW_LOG_MODULE_NAME,              \
                  message PW_COMMA_ARGS(__VA_ARGS__))
