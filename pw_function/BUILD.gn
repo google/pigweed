@@ -43,11 +43,11 @@ pw_source_set("pw_function") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
+    "$dir_pw_third_party/fuchsia:fit",
     dir_pw_assert,
     dir_pw_preprocessor,
   ]
   public = [ "public/pw_function/function.h" ]
-  sources = [ "public/pw_function/internal/function.h" ]
 }
 
 pw_doc_group("docs") {

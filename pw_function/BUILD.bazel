@@ -30,13 +30,13 @@ pw_cc_library(
 
 pw_cc_library(
     name = "pw_function",
-    srcs = ["public/pw_function/internal/function.h"],
     hdrs = ["public/pw_function/function.h"],
     includes = ["public"],
     deps = [
         ":config",
         "//pw_assert",
         "//pw_preprocessor",
+        "//third_party/fuchsia:fit",
     ],
 )
 

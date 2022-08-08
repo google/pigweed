@@ -13,11 +13,12 @@
 // the License.
 #pragma once
 
-#include "pw_function/internal/function.h"
+#include "lib/fit/function.h"
+#include "pw_function/config.h"
 
 namespace pw {
 
-// pw::Function is a wrapper for an aribtrary callable object. It can be used by
+// pw::Function is a wrapper for an arbitrary callable object. It can be used by
 // callback-based APIs to allow callers to provide any type of callable.
 //
 // Example:
@@ -33,7 +34,7 @@ namespace pw {
 //     return true;
 //   }
 //
-//   bool ElementsArePostive(const pw::Vector<int>& items) {
+//   bool ElementsArePositive(const pw::Vector<int>& items) {
 //     return All(items, [](const int& i) { return i > 0; });
 //   }
 //
@@ -43,119 +44,15 @@ namespace pw {
 //     return All(items, IsEven);
 //   }
 //
-template <typename Callable>
-class Function {
-  static_assert(std::is_function_v<Callable>,
-                "pw::Function may only be instantiated for a function type, "
-                "such as pw::Function<void(int)>.");
-};
+
+template <typename Callable,
+          size_t inline_target_size =
+              function_internal::config::kInlineCallableSize>
+using Function = fit::function_impl<
+    inline_target_size,
+    /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
+    Callable>;
 
 using Closure = Function<void()>;
-
-template <typename Return, typename... Args>
-class Function<Return(Args...)> {
- public:
-  constexpr Function() = default;
-  constexpr Function(std::nullptr_t) : Function() {}
-
-  Function(const Function&) = delete;
-  Function& operator=(const Function&) = delete;
-
-  template <typename Callable>
-  Function(Callable&& callable) {
-    if (function_internal::IsNull(callable)) {
-      holder_.InitializeNullTarget();
-    } else {
-      holder_.InitializeInlineTarget(std::forward<Callable>(callable));
-    }
-  }
-
-  Function(Function&& other) {
-    holder_.MoveInitializeTargetFrom(other.holder_);
-    other.holder_.InitializeNullTarget();
-  }
-
-  Function& operator=(Function&& other) {
-    holder_.DestructTarget();
-    holder_.MoveInitializeTargetFrom(other.holder_);
-    other.holder_.InitializeNullTarget();
-    return *this;
-  }
-
-  Function& operator=(std::nullptr_t) {
-    holder_.DestructTarget();
-    holder_.InitializeNullTarget();
-    return *this;
-  }
-
-  template <typename Callable>
-  Function& operator=(Callable&& callable) {
-    holder_.DestructTarget();
-    if (function_internal::IsNull(callable)) {
-      holder_.InitializeNullTarget();
-    } else {
-      holder_.InitializeInlineTarget(std::forward<Callable>(callable));
-    }
-    return *this;
-  }
-
-  ~Function() { holder_.DestructTarget(); }
-
-  template <typename... PassedArgs>
-  Return operator()(PassedArgs&&... args) const {
-    return holder_.target()(std::forward<PassedArgs>(args)...);
-  }
-
-  explicit operator bool() const { return !holder_.target().IsNull(); }
-
- private:
-  // TODO(frolv): This is temporarily private while the API is worked out.
-  template <typename Callable, size_t kSizeBytes>
-  Function(Callable&& callable,
-           function_internal::FunctionStorage<kSizeBytes>& storage)
-      : Function(callable, &storage) {
-    static_assert(sizeof(Callable) <= kSizeBytes,
-                  "pw::Function callable does not fit into provided storage");
-  }
-
-  // Constructs a function that stores its callable at the provided location.
-  // Public constructors wrapping this must ensure that the memory region is
-  // capable of storing the callable in terms of both size and alignment.
-  template <typename Callable>
-  Function(Callable&& callable, void* storage) {
-    if (function_internal::IsNull(callable)) {
-      holder_.InitializeNullTarget();
-    } else {
-      holder_.InitializeMemoryTarget(std::forward(callable), storage);
-    }
-  }
-
-  function_internal::FunctionTargetHolder<
-      function_internal::config::kInlineCallableSize,
-      Return,
-      Args...>
-      holder_;
-};
-
-// nullptr comparisions for functions.
-template <typename T>
-bool operator==(const Function<T>& f, std::nullptr_t) {
-  return !static_cast<bool>(f);
-}
-
-template <typename T>
-bool operator!=(const Function<T>& f, std::nullptr_t) {
-  return static_cast<bool>(f);
-}
-
-template <typename T>
-bool operator==(std::nullptr_t, const Function<T>& f) {
-  return !static_cast<bool>(f);
-}
-
-template <typename T>
-bool operator!=(std::nullptr_t, const Function<T>& f) {
-  return static_cast<bool>(f);
-}
 
 }  // namespace pw

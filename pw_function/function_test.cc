@@ -22,24 +22,24 @@ namespace pw {
 namespace {
 
 #if PW_NC_TEST(CannotInstantiateWithNonFunction)
-PW_NC_EXPECT("pw::Function may only be instantiated for a function type");
+PW_NC_EXPECT("incomplete type|undefined template");
 
 [[maybe_unused]] Function<int> function_pointer;
 
 #elif PW_NC_TEST(CannotInstantiateWithFunctionPointer1)
-PW_NC_EXPECT("pw::Function may only be instantiated for a function type");
+PW_NC_EXPECT("incomplete type|undefined template");
 
 [[maybe_unused]] Function<void (*)()> function_pointer;
 
 #elif PW_NC_TEST(CannotInstantiateWithFunctionPointer2)
-PW_NC_EXPECT("pw::Function may only be instantiated for a function type");
+PW_NC_EXPECT("incomplete type|undefined template");
 
 [[maybe_unused]] void SomeFunction(int);
 
 [[maybe_unused]] Function<decltype(&SomeFunction)> function_pointer;
 
 #elif PW_NC_TEST(CannotInstantiateWithFunctionReference)
-PW_NC_EXPECT("pw::Function may only be instantiated for a function type");
+PW_NC_EXPECT("incomplete type|undefined template");
 
 [[maybe_unused]] Function<void (&)()> function_pointer;
 
@@ -236,9 +236,9 @@ class MoveTracker {
 
 TEST(Function, Move_CustomObject) {
   Function<int()> moved((MoveTracker()));
-  EXPECT_EQ(moved(), 2);  // internally moves twice on construction
+  EXPECT_EQ(moved(), 1);
   Function<int()> tracker(std::move(moved));
-  EXPECT_EQ(tracker(), 3);
+  EXPECT_EQ(tracker(), 2);
 
 // Ignore use-after-move.
 #ifndef __clang_analyzer__
@@ -248,9 +248,9 @@ TEST(Function, Move_CustomObject) {
 
 TEST(Function, MoveAssign_CustomObject) {
   Function<int()> moved((MoveTracker()));
-  EXPECT_EQ(moved(), 2);  // internally moves twice on construction
+  EXPECT_EQ(moved(), 1);
   Function<int()> tracker = std::move(moved);
-  EXPECT_EQ(tracker(), 3);
+  EXPECT_EQ(tracker(), 2);
 
 // Ignore use-after-move.
 #ifndef __clang_analyzer__

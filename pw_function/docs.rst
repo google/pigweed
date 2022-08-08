@@ -79,7 +79,7 @@ through the build system. The size of a ``Function`` object is equivalent to its
 inline storage size.
 
 Attempting to construct a function from a callable larger than its inline size
-is a compile-time error.
+is a compile-time error unless dynamic allocation is enabled.
 
 .. admonition:: Inline storage size
 
@@ -105,26 +105,10 @@ is a compile-time error.
   // Compiler error: sizeof(MyCallable) exceeds function's inline storage size.
   pw::Function<int(int)> function((MyCallable()));
 
-..
-  For larger callables, a ``Function`` can be constructed with an external buffer
-  in which the callable should be stored. The user must ensure that the lifetime
-  of the buffer exceeds that of the function object.
+.. admonition:: Dynamic allocation
 
-  .. code-block:: c++
-
-    // Initialize a function with an external 16-byte buffer in which to store its
-    // callable. The callable will be stored in the buffer regardless of whether
-    // it fits inline.
-    pw::FunctionStorage<16> storage;
-    pw::Function<int()> get_random_number([]() { return 4; }, storage);
-
-  .. admonition:: External storage
-
-    Functions which use external storage still take up the configured inline
-    storage size, which should be accounted for when storing function objects.
-
-In the future, ``pw::Function`` may support dynamic allocation of callable
-storage using the system allocator. This operation will always be explicit.
+  When ``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION`` is enabled, a ``Function``
+  will use dynamic allocation to store callables that exceed the inline size.
 
 API usage
 =========
@@ -237,15 +221,9 @@ be used as a reference when sizing external buffers for ``Function`` objects.
 
 Design
 ======
-``pw::Function`` is based largely on
-`fbl::Function <https://cs.opensource.google/fuchsia/fuchsia/+/main:zircon/system/ulib/fbl/include/fbl/function.h;drc=eb7f31a1264b2443e9d3108b359969253e251c07>`_
-from Fuchsia with some changes to make it more suitable for embedded
-development.
-
-Functions are movable, but not copyable. This allows them to store and manage
-callables without having to perform bookkeeping such as reference counting, and
-avoids any reliance on dynamic memory management. The result is a simpler
-implementation which is easy to conceptualize and use in an embedded context.
+``pw::Function`` is an alias of
+`fit::function <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_
+.
 
 Zephyr
 ======

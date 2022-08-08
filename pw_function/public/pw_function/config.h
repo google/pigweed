@@ -21,10 +21,10 @@
 // also the size of the Function object itself. Callables larger than this are
 // stored externally to the function.
 //
-// This defaults to 2 pointers, which is capable of storing common callables
-// such as function pointers and simple lambdas.
+// This defaults to 1 pointer, which is capable of storing common callables
+// such as function pointers and lambdas with a single capture.
 #ifndef PW_FUNCTION_INLINE_CALLABLE_SIZE
-#define PW_FUNCTION_INLINE_CALLABLE_SIZE (2 * sizeof(void*))
+#define PW_FUNCTION_INLINE_CALLABLE_SIZE (sizeof(void*))
 #endif  // PW_FUNCTION_INLINE_CALLABLE_SIZE
 
 static_assert(PW_FUNCTION_INLINE_CALLABLE_SIZE > 0 &&
@@ -32,8 +32,6 @@ static_assert(PW_FUNCTION_INLINE_CALLABLE_SIZE > 0 &&
 
 // Whether functions should allocate memory dynamically (using operator new) if
 // a callable is larger than the inline size.
-//
-// NOTE: This is not currently used.
 #ifndef PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION
 #define PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION 0
 #endif  // PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION
