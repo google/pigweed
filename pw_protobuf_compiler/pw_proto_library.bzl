@@ -112,7 +112,7 @@ def pw_proto_library(
     def is_plugin_enabled(plugin):
         return (enabled_targets == None or plugin in enabled_targets)
 
-    if is_plugin_enabled("nanobp"):
+    if is_plugin_enabled("nanopb"):
         # Use nanopb to generate the pb.h and pb.c files, and the target
         # exposing them.
         pw_nanopb_cc_library(name + ".nanopb", deps, options = nanopb_options)
