@@ -693,6 +693,7 @@ compatible with only a host os;
     target_compatible_with = select({
       "@platforms//os:windows": [],
       "@platforms//os:linux": [],
+      "@platforms//os:ios": [],
       "@platforms//os:macos": [],
       "//conditions:default": ["@platforms//:incompatible"],
     }),
