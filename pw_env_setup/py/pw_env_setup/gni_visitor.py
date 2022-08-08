@@ -75,10 +75,6 @@ class GNIVisitor(object):  # pylint: disable=useless-object-inheritance
             name = 'pw_env_setup_CIPD_{}'.format(match.group(1))
             self._lines.append('  {} = "{}"'.format(
                 name, self._abspath_to_gn_path(set.value)))
-            # TODO(b/240726250) Remove dir_cipd_{}.
-            name = 'dir_cipd_{}'.format(match.group(1).lower())
-            self._lines.append('  {} = "{}"'.format(
-                name, self._abspath_to_gn_path(set.value)))
 
         if set.name == 'VIRTUAL_ENV':
             self._lines.append('  pw_env_setup_VIRTUAL_ENV = "{}"'.format(
