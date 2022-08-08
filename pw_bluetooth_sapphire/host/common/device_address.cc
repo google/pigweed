@@ -6,7 +6,7 @@
 
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+#include "pw_string/format.h"
 
 namespace bt {
 namespace {
@@ -40,8 +40,14 @@ DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
 }
 
 std::string DeviceAddressBytes::ToString() const {
-  return bt_lib_cpp_string::StringPrintf("%02X:%02X:%02X:%02X:%02X:%02X", bytes_[5], bytes_[4],
-                                         bytes_[3], bytes_[2], bytes_[1], bytes_[0]);
+  constexpr size_t out_size = sizeof("00:00:00:00:00:00");
+  char out[out_size] = "";
+  // Ignore errors. If an error occurs, an empty string will be returned.
+  pw::StatusWithSize result =
+      pw::string::Format({out, sizeof(out)}, "%02X:%02X:%02X:%02X:%02X:%02X", bytes_[5], bytes_[4],
+                         bytes_[3], bytes_[2], bytes_[1], bytes_[0]);
+  ZX_DEBUG_ASSERT(result.ok());
+  return out;
 }
 
 void DeviceAddressBytes::SetToZero() { bytes_.fill(0); }
