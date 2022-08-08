@@ -14,9 +14,10 @@
 # the License.
 """Tests the python_packages module."""
 
-import io
-import unittest
 import importlib.metadata
+from pathlib import Path
+import tempfile
+import unittest
 from unittest import mock
 
 from pw_env_setup import python_packages
@@ -28,6 +29,11 @@ class TestPythonPackages(unittest.TestCase):
         self.existing_pkgs_minus_toml = '\n'.join(
             pkg for pkg in python_packages._installed_packages()  # pylint: disable=protected-access
             if not pkg.startswith('toml=='))
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_path = Path(self.temp_dir.name)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
 
     def test_list(self):
         pkgs = list(python_packages._installed_packages())  # pylint: disable=protected-access
@@ -38,11 +44,12 @@ class TestPythonPackages(unittest.TestCase):
 
     @mock.patch('pw_env_setup.python_packages._stderr')
     def test_diff_removed(self, stderr_mock):
-        expected = io.StringIO('foo==1.0\nbar==2.0\nbaz==3.0\n')
-        expected.name = 'test.name'
+        expected = 'foo==1.0\nbar==2.0\nbaz==3.0\n'
+        expected_file = self.temp_path / 'test_diff_removed_expected'
+        expected_file.write_text(expected, encoding='utf-8')
 
         # Removed packages should trigger a failure.
-        self.assertEqual(-1, python_packages.diff(expected))
+        self.assertEqual(-1, python_packages.diff(expected_file))
 
         stderr_mock.assert_any_call('Removed packages')
         stderr_mock.assert_any_call('  foo==1.0')
@@ -51,12 +58,14 @@ class TestPythonPackages(unittest.TestCase):
 
     @mock.patch('pw_env_setup.python_packages._stderr')
     def test_diff_updated(self, stderr_mock):
-        expected = io.StringIO('toml>=0.0.1\n' + self.existing_pkgs_minus_toml)
-        expected.name = 'test.name'
+        expected = 'toml>=0.0.1\n' + self.existing_pkgs_minus_toml
+        expected_file = self.temp_path / 'test_diff_updated_expected'
+        expected_file.write_text(expected, encoding='utf-8')
+
         toml_version = importlib.metadata.version('toml')
 
         # Updated packages should trigger a failure.
-        self.assertEqual(-1, python_packages.diff(expected))
+        self.assertEqual(-1, python_packages.diff(expected_file))
 
         stderr_mock.assert_any_call('Updated packages')
         stderr_mock.assert_any_call(
@@ -64,12 +73,14 @@ class TestPythonPackages(unittest.TestCase):
 
     @mock.patch('pw_env_setup.python_packages._stderr')
     def test_diff_new(self, stderr_mock):
-        expected = io.StringIO(self.existing_pkgs_minus_toml)
-        expected.name = 'test.name'
+        expected = self.existing_pkgs_minus_toml
+        expected_file = self.temp_path / 'test_diff_new_expected'
+        expected_file.write_text(expected, encoding='utf-8')
+
         toml_version = importlib.metadata.version('toml')
 
         # New packages should trigger a failure.
-        self.assertEqual(-1, python_packages.diff(expected))
+        self.assertEqual(-1, python_packages.diff(expected_file))
 
         stderr_mock.assert_any_call('New packages')
         stderr_mock.assert_any_call(f'  toml=={toml_version}')

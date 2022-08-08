@@ -3,7 +3,6 @@ appdirs==1.4.4
 astroid==2.6.6
 Babel==2.9.1
 backcall==0.2.0
-beautifulsoup4==4.10.0
 build==0.7.0
 cachetools==5.0.0
 certifi==2021.10.8
@@ -14,7 +13,6 @@ coverage==6.3
 cryptography==36.0.1
 decorator==5.1.1
 docutils==0.17.1
-furo==2022.1.2
 google-api-core==2.7.1
 google-auth==2.6.3
 google-cloud-core==2.2.3
@@ -47,7 +45,6 @@ pexpect==4.8.0
 pickleshare==0.7.5
 prompt-toolkit==3.0.26
 protobuf==3.19.1
-psutil==5.9.0
 ptpython==3.0.20
 ptyprocess==0.7.0
 pyasn1==0.4.8
@@ -64,14 +61,11 @@ pyserial==3.5
 pytz==2021.3
 PyYAML==6.0
 requests==2.27.1
-robotframework==3.1
 rsa==4.8
 scan-build==2.0.19
 six==1.16.0
 snowballstemmer==2.2.0
-soupsieve==2.3.1
 Sphinx==4.3.2
-sphinx-design==0.0.13
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-applehelp==1.0.2
 sphinxcontrib-devhelp==1.0.2

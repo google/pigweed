@@ -164,10 +164,14 @@ def check_python_versions(ctx: PresubmitContext):
 
     build.gn_gen(ctx.root, ctx.output_dir)
     constraint_file: Optional[str] = None
+    requirement_file: Optional[str] = None
     try:
         for arg in build.get_gn_args(ctx.output_dir):
             if arg['name'] == 'pw_build_PIP_CONSTRAINTS':
                 constraint_file = json.loads(
+                    arg['current']['value'])[0].strip('/')
+            if arg['name'] == 'pw_build_PIP_REQUIREMENTS':
+                requirement_file = json.loads(
                     arg['current']['value'])[0].strip('/')
     except json.JSONDecodeError:
         _LOG.warning('failed to parse GN args json')
@@ -176,7 +180,11 @@ def check_python_versions(ctx: PresubmitContext):
     if not constraint_file:
         _LOG.warning('could not find pw_build_PIP_CONSTRAINTS GN arg')
         return
+    ignored_requirements_arg = None
+    if requirement_file:
+        ignored_requirements_arg = [(ctx.root / requirement_file)]
 
-    with (ctx.root / constraint_file).open('r') as ins:
-        if python_packages.diff(ins) != 0:
-            raise PresubmitFailure
+    if python_packages.diff(
+            expected=(ctx.root / constraint_file),
+            ignore_requirements_file=ignored_requirements_arg) != 0:
+        raise PresubmitFailure

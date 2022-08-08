@@ -16,9 +16,10 @@
 """Save list of installed packages and versions."""
 
 import argparse
+import itertools
 import sys
 from pathlib import Path
-from typing import Dict, Iterator, List, Optional, TextIO, Union
+from typing import Dict, Iterator, List, Optional, Union
 
 import pkg_resources
 
@@ -105,10 +106,24 @@ def _stderr(*args, **kwargs):
     return print(*args, file=sys.stderr, **kwargs)
 
 
-def diff(expected: TextIO) -> int:
+def _load_requirements_lines(*req_files: Path) -> Iterator[str]:
+    for req_file in req_files:
+        for line in req_file.read_text().splitlines():
+            # Ignore comments and blank lines
+            if line.startswith('#') or line == '':
+                continue
+            yield line
+
+
+def diff(expected: Path,
+         ignore_requirements_file: Optional[List[Path]] = None) -> int:
     """Report on differences between installed and expected versions."""
     actual_lines = set(_installed_packages())
-    expected_lines = set(expected.read().splitlines())
+    expected_lines = set(_load_requirements_lines(expected))
+    ignored_lines = set()
+    if ignore_requirements_file:
+        ignored_lines = set(
+            _load_requirements_lines(*ignore_requirements_file))
 
     if actual_lines == expected_lines:
         _stderr('package versions are identical')
@@ -118,6 +133,8 @@ def diff(expected: TextIO) -> int:
         pkg_resources.Requirement.parse(line) for line in actual_lines)
     expected_requirements = frozenset(
         pkg_resources.Requirement.parse(line) for line in expected_lines)
+    ignored_requirements = frozenset(
+        pkg_resources.Requirement.parse(line) for line in ignored_lines)
 
     removed_requirements = expected_requirements - actual_requirements
     added_requirements = actual_requirements - expected_requirements
@@ -180,10 +197,46 @@ def diff(expected: TextIO) -> int:
         if requirement.specs != found_package.as_requirement().specs:
             updated_packages[found_package.as_requirement()] = line
 
+    ignored_distributions = list(
+        distribution for distribution in pkg_resources.working_set  # pylint: disable=not-an-iterable
+        if distribution.as_requirement() in ignored_requirements)
+    expected_distributions = list(
+        distribution for distribution in pkg_resources.working_set  # pylint: disable=not-an-iterable
+        if distribution.as_requirement() in expected_requirements)
+
+    def get_requirements(
+        dist_info: pkg_resources.Distribution
+    ) -> Iterator[pkg_resources.Distribution]:
+        """Return requirement that are not in expected_distributions."""
+        for req in dist_info.requires():
+            req_dist_info = pkg_resources.working_set.find(req)
+            if not req_dist_info:
+                continue
+            if req_dist_info in expected_distributions:
+                continue
+            yield req_dist_info
+
+    def expand_requirements(
+        reqs: List[pkg_resources.Distribution]
+    ) -> Iterator[List[pkg_resources.Distribution]]:
+        """Recursively expand requirements."""
+        for dist_info in reqs:
+            deps = list(get_requirements(dist_info))
+            if deps:
+                yield deps
+            yield from expand_requirements(deps)
+
+    ignored_transitive_deps = set(
+        itertools.chain.from_iterable(
+            expand_requirements(ignored_distributions)))
+
     # Check for new packages
     for requirement in added_requirements - removed_requirements:
         if requirement in updated_packages:
             continue
+        if requirement in ignored_requirements or ignored_transitive_deps:
+            continue
+
         new_packages[requirement] = str(requirement)
 
     # Print status messages to stderr
@@ -243,7 +296,10 @@ def parse(argv: Union[List[str], None] = None) -> argparse.Namespace:
         'diff',
         help='Show differences between expected and actual package versions.',
     )
-    diff_parser.add_argument('expected', type=argparse.FileType('r'))
+    diff_parser.add_argument('expected', type=Path)
+    diff_parser.add_argument('--ignore-requirements-file',
+                             type=Path,
+                             action='append')
 
     return parser.parse_args(argv)
 
