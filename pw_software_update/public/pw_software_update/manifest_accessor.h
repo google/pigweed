@@ -62,7 +62,7 @@ class ManifestAccessor {
   ManifestAccessor(Status status) : targets_metadata_(status) {}
   ManifestAccessor(protobuf::Message targets_metadata,
                    protobuf::Bytes user_manifest)
-      : targets_metadata_(targets_metadata), user_manifest_(user_manifest){};
+      : targets_metadata_(targets_metadata), user_manifest_(user_manifest) {}
 
   // Constructs a `ManifestAccessor` from an update bundle.
   static ManifestAccessor FromBundle(protobuf::Message bundle);

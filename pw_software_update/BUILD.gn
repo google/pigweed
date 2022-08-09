@@ -161,6 +161,34 @@ if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
   }
 }
 
+if (dir_pw_third_party_protobuf != "") {
+  pw_source_set("bundled_update_service_pwpb") {
+    public_configs = [ ":public_include_path" ]
+    public_deps = [
+      ":protos.pwpb_rpc",
+      ":update_bundle",
+      dir_pw_result,
+      dir_pw_status,
+      dir_pw_work_queue,
+    ]
+    deps = [
+      ":config",
+      ":protos.pwpb",
+      "$dir_pw_sync:borrow",
+      "$dir_pw_sync:lock_annotations",
+      "$dir_pw_sync:mutex",
+      dir_pw_log,
+      dir_pw_string,
+      dir_pw_tokenizer,
+    ]
+    public = [ "public/pw_software_update/bundled_update_service_pwpb.h" ]
+    sources = [ "bundled_update_service_pwpb.cc" ]
+  }
+} else {
+  group("bundled_update_service_pwpb") {
+  }
+}
+
 pw_python_action("generate_test_bundle") {
   header_output = "$target_gen_dir/$target_name/test_bundles.h"
   script = "py/pw_software_update/generate_test_bundle.py"
@@ -199,6 +227,7 @@ pw_test("update_bundle_test") {
 
 pw_test_group("tests") {
   tests = [
+    ":bundled_update_service_pwpb_test",
     ":bundled_update_service_test",
     ":update_bundle_test",
   ]
@@ -208,4 +237,12 @@ pw_test("bundled_update_service_test") {
   enable_if = all_dependency_met
   sources = [ "bundled_update_service_test.cc" ]
   public_deps = [ ":bundled_update_service" ]
+}
+
+pw_test("bundled_update_service_pwpb_test") {
+  enable_if =
+      pw_thread_THREAD_BACKEND != "" && pw_crypto_SHA256_BACKEND != "" &&
+      pw_crypto_ECDSA_BACKEND != "" && dir_pw_third_party_protobuf != ""
+  sources = [ "bundled_update_service_pwpb_test.cc" ]
+  public_deps = [ ":bundled_update_service_pwpb" ]
 }

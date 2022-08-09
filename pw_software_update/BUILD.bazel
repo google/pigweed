@@ -98,6 +98,26 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "bundled_update_service_pwpb",
+    srcs = ["bundled_update_service_pwpb.cc"],
+    hdrs = ["public/pw_software_update/bundled_update_service_pwpb.h"],
+    includes = ["public"],
+    deps = [
+        ":update_bundle",
+        ":update_bundle_proto",
+        "//pw_log",
+        "//pw_result",
+        "//pw_status",
+        "//pw_sync:borrow",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_sync:string",
+        "//pw_tokenizer",
+        "//pw_work_queue",
+    ],
+)
+
 pw_cc_test(
     name = "update_bundle_test",
     srcs = ["update_bundle_test.cc"],
@@ -111,6 +131,15 @@ pw_cc_test(
 pw_cc_test(
     name = "bundled_update_service_test",
     srcs = ["bundled_update_service_test.cc"],
+    deps = [
+        ":bundled_update_service",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "bundled_update_service_pwpb_test",
+    srcs = ["bundled_update_service_pwpb_test.cc"],
     deps = [
         ":bundled_update_service",
         "//pw_unit_test",
