@@ -43,7 +43,8 @@ def find_cc_rule(toolchain_ninja_file: Path) -> Optional[str]:
         for line in fd:
             if found_rule:
                 if line.startswith(cmd_prefix):
-                    return line[len(cmd_prefix):].strip()
+                    return line[len(cmd_prefix):].strip().removeprefix(
+                        'ccache ')
 
                 if not line.startswith('  '):
                     break
