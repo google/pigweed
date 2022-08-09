@@ -340,95 +340,70 @@ def cmake_gcc(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
 
 
-# TODO(b/235882003): Slowly remove modules from here that work with bazel until
-# no modules remain.
-_MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL = (
-    'docker',
-    'pw_android_toolchain',
-    'pw_arduino_build',
-    'pw_assert_zephyr',
-    'pw_blob_store',
-    'pw_boot',
-    'pw_build_mcuxpresso',
-    'pw_chrono_zephyr',
-    'pw_console',
-    'pw_cpu_exception_cortex_m',
-    'pw_crypto',
-    'pw_file',
-    'pw_function',
-    'pw_hdlc',  # Only pw_hdlc/rpc_example (b/241575924)
-    'pw_i2c_mcuxpresso',
-    'pw_interrupt_zephyr',
-    'pw_kvs',
-    'pw_log_android',
-    'pw_log_null',
-    'pw_log_string',
-    'pw_log_zephyr',
-    'pw_metric',
-    'pw_minimal_cpp_stdlib',
-    'pw_module',
-    'pw_package',
-    'pw_persistent_ram',
-    'pw_presubmit',
-    'pw_software_update',
-    'pw_spi',
-    'pw_stm32cube_build',
-    'pw_sync_zephyr',
-    'pw_sys_io_arduino',
-    'pw_sys_io_mcuxpresso',
-    'pw_sys_io_stm32cube',
-    'pw_sys_io_zephyr',
-    'pw_system',
-    'pw_target_runner',
-    'pw_thread_embos',
-    'pw_thread_freertos',
-    'pw_thread_threadx',
-    'pw_tls_client',
-    'pw_tls_client_boringssl',
-    'pw_tls_client_mbedtls',
-    'pw_trace',
-    'pw_trace_tokenized',
-    'pw_watch',
-    'pw_web',
-    'pw_work_queue',
+# TODO(b/235882003): Slowly remove targets from here that work with bazel until
+# none remain.
+_TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
+    '-//pw_arduino_build',
+    '-//pw_blob_store/...:all',
+    '-//pw_boot/...:all',
+    '-//pw_cpu_exception_cortex_m/...:all',
+    '-//pw_crypto/...:all',  # TODO(b/236321905)
+    '-//pw_file/...:all',
+    '-//pw_function:function_test',  # TODO(b/241821115)
+    '-//pw_hdlc/rpc_example',  # TODO(b/241575924)
+    '-//pw_i2c_mcuxpresso/...:all',
+    '-//pw_kvs/...:all',
+    '-//pw_log_null/...:all',
+    '-//pw_log_string/...:all',
+    '-//pw_metric/...:all',
+    '-//pw_minimal_cpp_stdlib/...:all',
+    '-//pw_persistent_ram/...:all',
+    '-//pw_software_update/...:all',
+    '-//pw_spi/...:all',
+    '-//pw_sys_io_arduino/...:all',
+    '-//pw_sys_io_mcuxpresso/...:all',
+    '-//pw_sys_io_stm32cube/...:all',
+    '-//pw_system/...:all',
+    '-//pw_thread_embos/...:all',
+    '-//pw_thread_freertos/...:all',
+    '-//pw_thread_threadx/...:all',
+    '-//pw_tls_client/...:all',
+    '-//pw_tls_client_boringssl/...:all',
+    '-//pw_tls_client_mbedtls/...:all',
+    '-//pw_trace/...:all',
+    '-//pw_trace_tokenized/...:all',
+    '-//pw_work_queue/...:all',
+    '-//targets/arduino/...:all',
+    '-//targets/emcraft_sf2_som/...:all',
+    '-//targets/lm3s6965evb_qemu/...:all',
+    '-//targets/mimxrt595_evk/...:all',
+    '-//targets/stm32f429i_disc1/...:all',
+    '-//targets/stm32f429i_disc1_stm32cube/...:all',
+    '-//targets/rp2040/...:all',
+    '-//third_party/boringssl/...:all',
+    '-//third_party/micro_ecc/...:all',
 )
 
-# TODO(b/235882003): Slowly remove modules from here that work with bazel until
-# no modules remain.
-_MODULES_THAT_DO_NOT_TEST_WITH_BAZEL = _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL + (
-    'pw_malloc_freelist', )
-
-
-def all_modules():
-    return Path(os.environ['PW_ROOT'],
-                'PIGWEED_MODULES').read_text().splitlines()
+# TODO(b/235882003): Slowly remove targets from here that work with bazel until
+# none remain.
+_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL = _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL + (
+    '-//pw_malloc_freelist/...:all', )
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
                         'BUILD'))
 def bazel_test(ctx: PresubmitContext) -> None:
     """Runs bazel test on each bazel compatible module"""
-    # TODO(b/231256840): Instead of relying on PIGWEED_MODULES it would be nicer
-    # to do something like `bazel build //... -//pw_boot -//pw_system`. This
-    # doesn't quite work; see bug.
-    modules = list()
-    for module in all_modules():
-        if module in _MODULES_THAT_DO_NOT_TEST_WITH_BAZEL:
-            continue
-        modules.append(f'//{module}/...:all')
-    build.bazel(ctx, 'test', *modules, '--test_output=errors')
+    build.bazel(ctx, 'test', '--test_output=errors', '--', '//...',
+                *_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL)
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
                         'BUILD'))
 def bazel_build(ctx: PresubmitContext) -> None:
     """Runs Bazel build on each Bazel compatible module."""
-    modules = list()
-    for module in all_modules():
-        if module in _MODULES_THAT_DO_NOT_BUILD_WITH_BAZEL:
-            continue
-        modules.append(f'//{module}/...:all')
-    build.bazel(ctx, 'build', *modules)
+    build.bazel(ctx, 'build', '--', '//...',
+                *_TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL)
 
 
 def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
