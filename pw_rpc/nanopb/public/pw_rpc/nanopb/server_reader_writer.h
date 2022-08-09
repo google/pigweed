@@ -378,8 +378,5 @@ class NanopbUnaryResponder : private internal::NanopbServerCall {
   NanopbUnaryResponder(const internal::CallContext& context)
       : internal::NanopbServerCall(context, MethodType::kUnary) {}
 };
-// TODO(hepler): "pw::rpc::ServerWriter" should not be specific to Nanopb.
-template <typename T>
-using ServerWriter = NanopbServerWriter<T>;
 
 }  // namespace pw::rpc
