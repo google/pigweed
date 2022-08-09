@@ -643,9 +643,20 @@ def copyright_notice(ctx: PresubmitContext):
 
             for expected, actual in zip(expected_lines, file):
                 if end_block_comment:
-                    expected_line = expected + '\n'
+                    expected_line = expected.strip()
                 elif comment:
-                    expected_line = (comment + ' ' + expected).rstrip() + '\n'
+                    expected_line = (comment + ' ' + expected).strip()
+
+                    # 'go fmt' sometimes insists repeated spaces in a comment
+                    # be replaced with a tab. In general, ignore the whitespace
+                    # content between the comment and the actual content, and
+                    # at the end of the line.
+                    if path.suffix == '.go' and actual.startswith(comment):
+                        actual = comment + ' ' + actual[len(comment):].strip()
+                        expected_line = (comment + ' ' +
+                                         expected.strip()).strip()
+
+                actual = actual.strip()
 
                 if expected_line != actual:
                     _LOG.warning('  bad line: %r', actual)
