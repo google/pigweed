@@ -323,7 +323,8 @@ GN_FORMAT: CodeFormat = CodeFormat('GN', FileFilter(endswith=('.gn', '.gni')),
                                    check_gn_format, fix_gn_format)
 
 BAZEL_FORMAT: CodeFormat = CodeFormat(
-    'Bazel', FileFilter(endswith=('BUILD', '.bazel', '.bzl')),
+    'Bazel',
+    FileFilter(endswith=('BUILD', '.bazel', '.bzl'), name=('WORKSPACE')),
     check_bazel_format, fix_bazel_format)
 
 COPYBARA_FORMAT: CodeFormat = CodeFormat('Copybara',
