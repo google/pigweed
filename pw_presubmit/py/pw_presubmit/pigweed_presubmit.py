@@ -24,7 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import Sequence, IO, Tuple, Optional, Callable, List
+from typing import Callable, Iterable, List, Sequence, TextIO
 
 try:
     import pw_presubmit
@@ -468,41 +468,6 @@ def edit_compile_commands(in_path: Path, out_path: Path,
         json.dump(compile_commands, out_file, indent=2)
 
 
-# The first line must be regex because of the '20\d\d' date
-COPYRIGHT_FIRST_LINE = r'Copyright 20\d\d The Pigweed Authors'
-COPYRIGHT_COMMENTS = r'(#|//| \*|REM|::)'
-COPYRIGHT_BLOCK_COMMENTS = (
-    # HTML comments
-    (r'<!--', r'-->'),
-    # Jinja comments
-    (r'{#', r'#}'),
-)
-
-COPYRIGHT_FIRST_LINE_EXCEPTIONS = (
-    '#!',
-    '/*',
-    ' */',
-    '@echo off',
-    '# -*-',
-    ':',
-    ' * @jest',
-)
-
-COPYRIGHT_LINES = tuple("""\
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not
-use this file except in compliance with the License. You may obtain a copy of
-the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-""".splitlines())
-
 _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # Configuration
     r'^(?:.+/)?\..+$',
@@ -541,47 +506,52 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.patch$',
 )
 
+# Regular expression for the copyright comment. "\1" refers to the comment
+# characters and "\2" refers to space after the comment characters, if any.
+# All period characters are escaped using a replace call.
+_COPYRIGHT = re.compile(
+r"""(#|//|::| \*|)( ?)Copyright 2\d{3} The Pigweed Authors
+\1
+\1\2Licensed under the Apache License, Version 2.0 \(the "License"\); you may not
+\1\2use this file except in compliance with the License. You may obtain a copy of
+\1\2the License at
+\1
+\1(?:\2    |\t)https://www.apache.org/licenses/LICENSE-2.0
+\1
+\1\2Unless required by applicable law or agreed to in writing, software
+\1\2distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+\1\2WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+\1\2License for the specific language governing permissions and limitations under
+\1\2the License.
+""".replace('.', r'\.'), re.MULTILINE)  # pylint: disable=line-too-long # yapf: disable
 
-def match_block_comment_start(line: str) -> Optional[str]:
-    """Matches the start of a block comment and returns the end."""
-    for block_comment in COPYRIGHT_BLOCK_COMMENTS:
-        if re.match(block_comment[0], line):
-            # Return the end of the block comment
-            return block_comment[1]
-    return None
+_SKIP_LINE_PREFIXES = (
+    '#!',
+    '@echo off',
+    ':<<',
+    '/*',
+    ' * @jest-environment jsdom',
+    ' */',
+    '{#',  # Jinja comment block
+    '# -*- coding: utf-8 -*-',
+    '<!--',
+)
 
 
-def copyright_read_first_line(
-        file: IO) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Reads the file until it reads a valid first copyright line.
+def _read_notice_lines(file: TextIO) -> Iterable[str]:
+    lines = iter(file)
+    try:
+        # Read until the first line of the copyright notice.
+        line = next(lines)
+        while line.isspace() or line.startswith(_SKIP_LINE_PREFIXES):
+            line = next(lines)
 
-    Returns (comment, block_comment, line). comment and block_comment are
-    mutually exclusive and refer to the comment character sequence and whether
-    they form a block comment or a line comment. line is the first line of
-    the copyright, and is used for error reporting.
-    """
-    line = file.readline()
-    first_line_matcher = re.compile(COPYRIGHT_COMMENTS + ' ' +
-                                    COPYRIGHT_FIRST_LINE)
-    while line:
-        end_block_comment = match_block_comment_start(line)
-        if end_block_comment:
-            next_line = file.readline()
-            copyright_line = re.match(COPYRIGHT_FIRST_LINE, next_line)
-            if not copyright_line:
-                return (None, None, line)
-            return (None, end_block_comment, line)
+        yield line
 
-        first_line = first_line_matcher.match(line)
-        if first_line:
-            return (first_line.group(1), None, line)
-
-        if (line.strip()
-                and not line.startswith(COPYRIGHT_FIRST_LINE_EXCEPTIONS)):
-            return (None, None, line)
-
-        line = file.readline()
-    return (None, None, None)
+        for _ in range(12):  # The notice is 13 lines; read the remaining 12.
+            yield next(lines)
+    except StopIteration:
+        return
 
 
 @filter_paths(exclude=_EXCLUDE_FROM_COPYRIGHT_NOTICE)
@@ -590,54 +560,12 @@ def copyright_notice(ctx: PresubmitContext):
     errors = []
 
     for path in ctx.paths:
-
         if path.stat().st_size == 0:
             continue  # Skip empty files
 
-        if path.is_dir():
-            continue  # Skip submodules which are included in ctx.paths.
-
         with path.open() as file:
-            (comment, end_block_comment,
-             line) = copyright_read_first_line(file)
-
-            if not line:
-                _LOG.warning('%s: invalid first line', path)
+            if not _COPYRIGHT.match(''.join(_read_notice_lines(file))):
                 errors.append(path)
-                continue
-
-            if not (comment or end_block_comment):
-                _LOG.warning('%s: invalid first line %r', path, line)
-                errors.append(path)
-                continue
-
-            if end_block_comment:
-                expected_lines = COPYRIGHT_LINES + (end_block_comment, )
-            else:
-                expected_lines = COPYRIGHT_LINES
-
-            for expected, actual in zip(expected_lines, file):
-                if end_block_comment:
-                    expected_line = expected.strip()
-                elif comment:
-                    expected_line = (comment + ' ' + expected).strip()
-
-                    # 'go fmt' sometimes insists repeated spaces in a comment
-                    # be replaced with a tab. In general, ignore the whitespace
-                    # content between the comment and the actual content, and
-                    # at the end of the line.
-                    if path.suffix == '.go' and actual.startswith(comment):
-                        actual = comment + ' ' + actual[len(comment):].strip()
-                        expected_line = (comment + ' ' +
-                                         expected.strip()).strip()
-
-                actual = actual.strip()
-
-                if expected_line != actual:
-                    _LOG.warning('  bad line: %r', actual)
-                    _LOG.warning('  expected: %r', expected_line)
-                    errors.append(path)
-                    break
 
     if errors:
         _LOG.warning('%s with a missing or incorrect copyright notice:\n%s',
