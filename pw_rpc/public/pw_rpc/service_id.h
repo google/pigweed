@@ -48,6 +48,18 @@ constexpr bool operator!=(ServiceId lhs, ServiceId rhs) {
   return !(lhs == rhs);
 }
 
+// Comparisons are provided to enable sorting by `ServiceId`.
+
+constexpr bool operator<(ServiceId lhs, ServiceId rhs) {
+  return internal::UnwrapServiceId(lhs) < internal::UnwrapServiceId(rhs);
+}
+
+constexpr bool operator>(ServiceId lhs, ServiceId rhs) { return rhs < lhs; }
+
+constexpr bool operator<=(ServiceId lhs, ServiceId rhs) { return !(lhs > rhs); }
+
+constexpr bool operator>=(ServiceId lhs, ServiceId rhs) { return !(lhs < rhs); }
+
 namespace internal {
 
 constexpr ServiceId WrapServiceId(uint32_t id) { return ServiceId(id); }
