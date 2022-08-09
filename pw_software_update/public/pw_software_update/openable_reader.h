@@ -21,17 +21,15 @@ namespace pw::software_update {
 // decouples pw_software_update from pw_blob_store.
 class OpenableReader {
  public:
-  explicit constexpr OpenableReader(stream::SeekableReader& reader)
-      : reader_(reader) {}
-
   virtual Status Open() = 0;
   virtual Status Close() = 0;
   virtual bool IsOpen() = 0;
 
-  stream::SeekableReader& reader() const { return reader_; }
+  // Returns the underlying SeekableReader. Must only be called after a
+  // successful call to Open, before the matching call to Close.
+  virtual stream::SeekableReader& reader() = 0;
 
- private:
-  stream::SeekableReader& reader_;
+  virtual ~OpenableReader() = default;
 };
 
 }  // namespace pw::software_update
