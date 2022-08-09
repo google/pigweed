@@ -154,8 +154,9 @@ def from_bloaty_csv(raw_csv: Iterable[str]) -> DataSourceMap:
     """Read in Bloaty CSV output and store in DataSourceMap."""
     reader = csv.reader(raw_csv)
     top_row = next(reader)
-    ds_map_csv = DataSourceMap(top_row[:-2])
     vmsize_index = top_row.index('vmsize')
+    ds_map_csv = DataSourceMap(top_row[:vmsize_index])
     for row in reader:
-        ds_map_csv.insert_label_hierachy(row[:-2], int(row[vmsize_index]))
+        ds_map_csv.insert_label_hierachy(row[:vmsize_index],
+                                         int(row[vmsize_index]))
     return ds_map_csv

@@ -64,6 +64,74 @@ base for the size diff can be specified either globally through the top-level
     ]
   }
 
+Single Binary Sizes Reports
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Argument**
+
+* ``target``: Binary target to run size report on.
+
+.. code::
+
+  import("$dir_pw_bloat/bloat.gni")
+
+  executable("hello_world_iostream") {
+    sources = [ "hello_iostream.cc" ]
+  }
+
+  pw_size_report("hello_world_iostream_size_report") {
+    target = ":hello_iostream"
+  }
+
+ASCII Table Generated
+
+.. code-block:: rst
+
+  +-------------+-----------------------------------------------+------+
+  |segment_names|                  fullsymbols                  | sizes|
+  +=============+===============================================+======+
+  |FLASH        |                                               |20,416|
+  |             |[147 Others]                                   | 6,976|
+  |             |_dtoa_r                                        | 3,036|
+  |             |[section .code]                                | 2,985|
+  |             |_printf_float                                  | 1,132|
+  |             |__adddf3                                       |   630|
+  |             |_vfiprintf_r                                   |   608|
+  |             |__aeabi_dmul                                   |   596|
+  |             |_printf_i                                      |   588|
+  |             |_svfprintf_r                                   |   512|
+  |             |__aeabi_ddiv                                   |   464|
+  |             |pw_assert_basic_HandleFailure                  |   388|
+  |             |__multiply                                     |   340|
+  |             |quorem                                         |   278|
+  |             |__mdiff                                        |   276|
+  |             |__sflush_r                                     |   268|
+  |             |_ctype_                                        |   257|
+  |             |__lshift                                       |   224|
+  |             |__swsetup_r                                    |   220|
+  |             |pw::allocator::FreeListHeap::Free(void*)       |   220|
+  |             |_printf_common                                 |   218|
+  |             |__mprec_tens                                   |   200|
+  +-------------+-----------------------------------------------+------+
+  |RAM          |                                               |   672|
+  |             |__global_locale                                |   364|
+  |             |(anonymous namespace)::buf                     |   104|
+  |             |impure_data                                    |    96|
+  |             |kCrashBanner                                   |    48|
+  |             |object.0                                       |    24|
+  |             |[section .zero_init_ram]                       |     9|
+  |             |[section .static_init_ram]                     |     4|
+  |             |_impure_ptr                                    |     4|
+  |             |errno                                          |     4|
+  |             |pw::log_basic::(anonymous namespace)::write_log|     4|
+  |             |pw_freelist_heap                               |     4|
+  |             |unoptimizable                                  |     4|
+  |             |__lock___sfp_recursive_mutex                   |     1|
+  |             |__lock___sinit_recursive_mutex                 |     1|
+  +-------------+-----------------------------------------------+------+
+  |Total        |                                               |21,088|
+  +-------------+-----------------------------------------------+------+
+
+
 Size reports are typically included in ReST documentation, as described in
 `Documentation integration`_. Size reports may also be printed in the build
 output if desired. To enable this in the GN build, set the

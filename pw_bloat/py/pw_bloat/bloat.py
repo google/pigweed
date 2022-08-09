@@ -26,8 +26,12 @@ import pw_cli.log
 
 from pw_bloat.binary_diff import BinaryDiff
 from pw_bloat import bloat_output
+from pw_bloat.label import from_bloaty_csv
+from pw_bloat.label_output import BloatTableOutput, LineCharset, RstOutput
 
 _LOG = logging.getLogger(__name__)
+
+MAX_COL_WIDTH = 50
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,9 +77,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--source-filter',
                         type=str,
                         help='Bloaty data source filter')
+    parser.add_argument('--single-target',
+                        type=str,
+                        help='Single executable target')
     parser.add_argument('diff_targets',
                         type=delimited_list(';', 2),
-                        nargs='+',
+                        nargs='*',
                         metavar='DIFF_TARGET',
                         help='Binary;base pairs to process')
 
@@ -126,10 +133,41 @@ def run_bloaty(
     return subprocess.check_output(cmd)
 
 
+def write_file(filename: str, contents: str, out_dir_file: str) -> None:
+    path = os.path.join(out_dir_file, filename)
+    with open(path, 'w') as output_file:
+        output_file.write(contents)
+    _LOG.debug('Output written to %s', path)
+
+
+def single_target_output(target: str, bloaty_config: str, target_out_file: str,
+                         out_dir: str) -> int:
+    single_output = run_bloaty(target,
+                               bloaty_config,
+                               data_sources=['segment_names', 'fullsymbols'],
+                               extra_args=['--csv'])
+    single_csv = single_output.decode().splitlines()
+    single_report = BloatTableOutput(from_bloaty_csv(single_csv),
+                                     MAX_COL_WIDTH, LineCharset)
+    rst_single_report = RstOutput(from_bloaty_csv(single_csv), MAX_COL_WIDTH)
+
+    single_report_table = single_report.create_table()
+
+    print(single_report_table)
+    write_file(target_out_file, rst_single_report.create_table(), out_dir)
+    write_file(f'{target_out_file}.txt', single_report_table, out_dir)
+
+    return 0
+
+
 def main() -> int:
     """Program entry point."""
 
     args = parse_args()
+
+    if args.single_target is not None:
+        return single_target_output(args.single_target, args.bloaty_config[0],
+                                    args.target, args.out_dir)
 
     base_binaries: List[str] = []
     diff_binaries: List[str] = []
@@ -179,12 +217,6 @@ def main() -> int:
             _LOG.error('%s: failed to run diff on %s', sys.argv[0], binary)
             return 1
 
-    def write_file(filename: str, contents: str) -> None:
-        path = os.path.join(args.out_dir, filename)
-        with open(path, 'w') as output_file:
-            output_file.write(contents)
-        _LOG.debug('Output written to %s', path)
-
     # TODO(frolv): Remove when custom output for full mode is added.
     if not args.full:
         out = bloat_output.TableOutput(args.title,
@@ -193,15 +225,15 @@ def main() -> int:
         report.append(out.diff())
 
         rst = bloat_output.RstOutput(diffs)
-        write_file(f'{args.target}', rst.diff())
+        write_file(f'{args.target}', rst.diff(), args.out_dir)
 
     complete_output = '\n'.join(report) + '\n'
-    write_file(f'{args.target}.txt', complete_output)
+    write_file(f'{args.target}.txt', complete_output, args.out_dir)
     print(complete_output)
 
     # TODO(frolv): Remove when custom output for full mode is added.
     if args.full:
-        write_file(f'{args.target}', complete_output)
+        write_file(f'{args.target}', complete_output, args.out_dir)
 
     return 0
 

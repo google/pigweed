@@ -95,6 +95,9 @@ class BloatTableOutput:
             new_labels: List[Tuple[str, int]]) -> List[Tuple[str, int]]:
         """Return difference between arrays of labels."""
 
+        if old_labels == []:
+            return new_labels
+
         diff_list: List[Tuple[str, int]] = []
         for (new_lb, old_lb) in zip(new_labels, old_labels):
             if new_lb == old_lb:
@@ -297,3 +300,10 @@ class BloatTableOutput:
 
             row_div += f"{l_div}{self._col_widths[col] * h_div}{r_div}"
         return row_div
+
+
+class RstOutput(BloatTableOutput):
+    """Tabular output in ASCII format, which is also valid RST."""
+    def __init__(self, ds_map: DataSourceMap, col_width: int):
+
+        super().__init__(ds_map, col_width, AsciiCharset)

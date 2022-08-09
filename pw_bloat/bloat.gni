@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -37,6 +37,88 @@ declare_args() {
 
   # Controls whether to display size reports in the build output.
   pw_bloat_SHOW_SIZE_REPORTS = false
+}
+
+# Creates a size report for a single binary.
+#
+# Args:
+#   target: Build target for executable. Required.
+#
+# Example:
+#   pw_size_report("foo_bloat") {
+#      target = ":foo_static"
+#   }
+#
+template("pw_size_report") {
+  if (pw_bloat_BLOATY_CONFIG != "") {
+    assert(defined(invoker.target),
+           "Size report must defined a 'target' variable")
+    _all_target_dependencies = [ invoker.target ]
+    _bloat_script_args = [
+      "--bloaty-config",
+      rebase_path(pw_bloat_BLOATY_CONFIG, root_build_dir),
+      "--out-dir",
+      rebase_path(target_gen_dir, root_build_dir),
+      "--target",
+      target_name,
+      "--single-target",
+      "<TARGET_FILE(${invoker.target})>",
+    ]
+
+    if (defined(invoker.source_filter)) {
+      _bloat_script_args += [
+        "--source-filter",
+        invoker.source_filter,
+      ]
+    }
+
+    _doc_rst_output = "$target_gen_dir/${target_name}"
+
+    if (host_os == "win") {
+      # Bloaty is not yet packaged for Windows systems; display a message
+      # indicating this.
+      not_needed("*")
+      not_needed(invoker, "*")
+
+      pw_python_action(target_name) {
+        metadata = {
+          pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
+        }
+        script = "$dir_pw_bloat/py/pw_bloat/no_bloaty.py"
+        python_deps = [ "$dir_pw_bloat/py" ]
+        args = [ rebase_path(_doc_rst_output, root_build_dir) ]
+        outputs = [ _doc_rst_output ]
+      }
+
+      group(target_name + "_UNUSED_DEPS") {
+        deps = _all_target_dependencies
+      }
+    } else {
+      # Create an action which runs the size report script on the provided
+      # targets.
+      pw_python_action(target_name) {
+        metadata = {
+          pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
+        }
+        script = "$dir_pw_bloat/py/pw_bloat/bloat.py"
+        python_deps = [ "$dir_pw_bloat/py" ]
+        inputs = [ pw_bloat_BLOATY_CONFIG ]
+        outputs = [
+          "${_doc_rst_output}.txt",
+          _doc_rst_output,
+        ]
+        deps = _all_target_dependencies
+        args = _bloat_script_args
+
+        # Print size reports to stdout when they are generated, if requested.
+        capture_output = !pw_bloat_SHOW_SIZE_REPORTS
+      }
+    }
+  } else {
+    not_needed(invoker, "*")
+    group(target_name) {
+    }
+  }
 }
 
 # Creates a target which runs a size report diff on a set of executables.
