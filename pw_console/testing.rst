@@ -356,6 +356,39 @@ Help Windows
      - Window is hidden
      - |checkbox|
 
+Floating Windows
+^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - Start ``pw-console --test-mode`` press ``Ctrl-p``
+     - The :guilabel:`Menu Items` command runner dialog appears.
+     - |checkbox|
+
+   * - 2
+     - Type :kbd:`exit` and press :kbd:`enter`.
+     - The console exits.
+     - |checkbox|
+
+   * - 3
+     - Restart ``pw-console`` but without the ``--test-mode`` option.
+     - Console starts up with ONLY the Python Results and Repl windows.
+     - |checkbox|
+
+   * - 4
+     - Press ``Ctrl-p``
+     - The :guilabel:`Menu Items` command runner dialog appears.
+     - |checkbox|
+
+
 Window Management
 ^^^^^^^^^^^^^^^^^
 

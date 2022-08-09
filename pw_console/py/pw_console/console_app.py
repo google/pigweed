@@ -221,7 +221,7 @@ class ConsoleApp:
         self.prefs_file_window.load_yaml_text(
             self.prefs.current_config_as_yaml())
 
-        self.floating_window_plugins = None
+        self.floating_window_plugins: List[FloatingWindowPane] = []
         if floating_window_plugins:
             self.floating_window_plugins = [
                 plugin for plugin, _ in floating_window_plugins
