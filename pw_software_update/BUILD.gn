@@ -41,38 +41,27 @@ pw_source_set("config") {
   public_deps = [ pw_software_update_CONFIG ]
 }
 
-if (dir_pw_third_party_protobuf != "") {
-  pw_proto_library("protos") {
-    deps = [
-      "$dir_pw_protobuf:common_protos",
-      "$dir_pw_third_party/protobuf:wellknown_types",
-      "$dir_pw_tokenizer:proto",
-    ]
-    sources = [
-      "bundled_update.proto",
-      "tuf.proto",
-      "update_bundle.proto",
-    ]
-    inputs = [ "bundled_update.options" ]
-    prefix = "pw_software_update"
-    python_package = "py"
+pw_proto_library("protos") {
+  deps = [
+    "$dir_pw_protobuf:common_protos",
+    "$dir_pw_tokenizer:proto",
+  ]
+
+  if (dir_pw_third_party_protobuf != "") {
+    # nanopb does not automatically generate the well-known types. If we have
+    # a checkout of the protobuf repo, add it here so we can enable the nanopb
+    # targets.
+    deps += [ "$dir_pw_third_party/protobuf:wellknown_types" ]
   }
-} else {
-  # placeholder target to allow py package to build
-  pw_proto_library("protos") {
-    deps = [
-      "$dir_pw_protobuf:common_protos",
-      "$dir_pw_tokenizer:proto",
-    ]
-    sources = [
-      "bundled_update.proto",
-      "tuf.proto",
-      "update_bundle.proto",
-    ]
-    inputs = [ "bundled_update.options" ]
-    prefix = "pw_software_update"
-    python_package = "py"
-  }
+
+  sources = [
+    "bundled_update.proto",
+    "tuf.proto",
+    "update_bundle.proto",
+  ]
+  inputs = [ "bundled_update.options" ]
+  prefix = "pw_software_update"
+  python_package = "py"
 }
 
 pw_doc_group("docs") {
@@ -161,32 +150,27 @@ if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
   }
 }
 
-if (dir_pw_third_party_protobuf != "") {
-  pw_source_set("bundled_update_service_pwpb") {
-    public_configs = [ ":public_include_path" ]
-    public_deps = [
-      ":protos.pwpb_rpc",
-      ":update_bundle",
-      dir_pw_result,
-      dir_pw_status,
-      dir_pw_work_queue,
-    ]
-    deps = [
-      ":config",
-      ":protos.pwpb",
-      "$dir_pw_sync:borrow",
-      "$dir_pw_sync:lock_annotations",
-      "$dir_pw_sync:mutex",
-      dir_pw_log,
-      dir_pw_string,
-      dir_pw_tokenizer,
-    ]
-    public = [ "public/pw_software_update/bundled_update_service_pwpb.h" ]
-    sources = [ "bundled_update_service_pwpb.cc" ]
-  }
-} else {
-  group("bundled_update_service_pwpb") {
-  }
+pw_source_set("bundled_update_service_pwpb") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":protos.pwpb_rpc",
+    ":update_bundle",
+    dir_pw_result,
+    dir_pw_status,
+    dir_pw_work_queue,
+  ]
+  deps = [
+    ":config",
+    ":protos.pwpb",
+    "$dir_pw_sync:borrow",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    dir_pw_log,
+    dir_pw_string,
+    dir_pw_tokenizer,
+  ]
+  public = [ "public/pw_software_update/bundled_update_service_pwpb.h" ]
+  sources = [ "bundled_update_service_pwpb.cc" ]
 }
 
 pw_python_action("generate_test_bundle") {
@@ -240,9 +224,8 @@ pw_test("bundled_update_service_test") {
 }
 
 pw_test("bundled_update_service_pwpb_test") {
-  enable_if =
-      pw_thread_THREAD_BACKEND != "" && pw_crypto_SHA256_BACKEND != "" &&
-      pw_crypto_ECDSA_BACKEND != "" && dir_pw_third_party_protobuf != ""
+  enable_if = pw_thread_THREAD_BACKEND != "" &&
+              pw_crypto_SHA256_BACKEND != "" && pw_crypto_ECDSA_BACKEND != ""
   sources = [ "bundled_update_service_pwpb_test.cc" ]
   public_deps = [ ":bundled_update_service_pwpb" ]
 }
