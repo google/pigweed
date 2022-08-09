@@ -21,7 +21,7 @@ declare_args() {
   # capacities for the target binaries.
   pw_bloat_BLOATY_CONFIG = ""
 
-  # List of toolchains to use in pw_toolchain_size_report templates.
+  # List of toolchains to use in pw_toolchain_size_diff templates.
   #
   # Each entry is a scope containing the following variables:
   #
@@ -32,7 +32,7 @@ declare_args() {
   #   bloaty_config: Optional Bloaty confirugation file defining the memory
   #     layout of the binaries as specified in the linker script.
   #
-  # If this list is empty, pw_toolchain_size_report targets become no-ops.
+  # If this list is empty, pw_toolchain_size_diff targets become no-ops.
   pw_bloat_TOOLCHAINS = []
 
   # Controls whether to display size reports in the build output.
@@ -55,7 +55,7 @@ declare_args() {
 #     symbol size breakdown or a summary.
 #
 # Example:
-#   pw_size_report("foo_bloat") {
+#   pw_size_diff("foo_bloat") {
 #     base = ":foo_base"
 #     binaries = [
 #       {
@@ -70,7 +70,7 @@ declare_args() {
 #     title = "static vs. dynamic foo"
 #   }
 #
-template("pw_size_report") {
+template("pw_size_diff") {
   if (pw_bloat_BLOATY_CONFIG != "") {
     if (defined(invoker.base)) {
       _global_base = invoker.base
@@ -111,7 +111,7 @@ template("pw_size_report") {
       } else if (defined(_global_base)) {
         _binary_base = _global_base
       } else {
-        assert(false, "pw_size_report requires a 'base' file")
+        assert(false, "pw_size_diff requires a 'base' file")
       }
 
       # Allow each binary to override the global bloaty config.
@@ -216,7 +216,7 @@ template("pw_size_report") {
 #
 # Example:
 #
-#   pw_toolchain_size_report("my_size_report") {
+#   pw_toolchain_size_diff("my_size_report") {
 #     base_executable = {
 #       sources = [ "base.cc" ]
 #     }
@@ -227,11 +227,11 @@ template("pw_size_report") {
 #     }
 #   }
 #
-template("pw_toolchain_size_report") {
+template("pw_toolchain_size_diff") {
   assert(defined(invoker.base_executable),
-         "pw_toolchain_size_report requires a base_executable")
+         "pw_toolchain_size_diff requires a base_executable")
   assert(defined(invoker.diff_executable),
-         "pw_toolchain_size_report requires a diff_executable")
+         "pw_toolchain_size_diff requires a diff_executable")
 
   _size_report_binaries = []
 
@@ -241,7 +241,7 @@ template("pw_toolchain_size_report") {
 
   # Create a base and diff executable for each toolchain, adding the toolchain's
   # linker script to the link flags for the executable, and add them all to a
-  # list of binaries for the pw_size_report template.
+  # list of binaries for the pw_size_diff template.
   foreach(_toolchain, pw_bloat_TOOLCHAINS) {
     _prefix = "_${target_name}_${i}_pw_size"
 
@@ -290,7 +290,7 @@ template("pw_toolchain_size_report") {
     _diff_label = get_label_info(":$_diff_target_name", "label_no_toolchain")
     _diff_with_toolchain = "$_diff_label(${_toolchain.target})"
 
-    # Append a pw_size_report binary scope to the list comparing the toolchain's
+    # Append a pw_size_diff binary scope to the list comparing the toolchain's
     # diff and base executables.
     _size_report_binaries += [
       {
@@ -310,7 +310,7 @@ template("pw_toolchain_size_report") {
   # TODO(frolv): Have a way of indicating that a toolchain should build docs.
   if (current_toolchain == default_toolchain && _size_report_binaries != []) {
     # Create the size report which runs on the binaries.
-    pw_size_report(target_name) {
+    pw_size_diff(target_name) {
       forward_variables_from(invoker, [ "title" ])
       binaries = _size_report_binaries
     }
@@ -334,7 +334,7 @@ template("pw_toolchain_size_report") {
   }
 }
 
-# A base_executable for the pw_toolchain_size_report template which contains a
+# A base_executable for the pw_toolchain_size_diff template which contains a
 # main() function that loads the bloat_this_binary library and does nothing
 # else.
 pw_bloat_empty_base = {

@@ -16,7 +16,7 @@ largest size impact.
 
 Defining size reports
 =====================
-Size reports are defined using the GN template ``pw_size_report``. The template
+Size reports are defined using the GN template ``pw_size_diff``. The template
 requires at least two executable targets on which to perform a size diff. The
 base for the size diff can be specified either globally through the top-level
 ``base`` argument, or individually per-binary within the ``binaries`` list.
@@ -49,7 +49,7 @@ base for the size diff can be specified either globally through the top-level
     sources = [ "hello_iostream.cc" ]
   }
 
-  pw_size_report("my_size_report") {
+  pw_size_diff("my_size_report") {
     title = "Hello world program using printf vs. iostream"
     base = ":empty_base"
     binaries = [
@@ -71,7 +71,7 @@ output if desired. To enable this in the GN build, set the
 
 Documentation integration
 =========================
-Bloat reports are easy to add to documentation files. All ``pw_size_report``
+Bloat reports are easy to add to documentation files. All ``pw_size_diff``
 targets output a file containing a tabular report card. This file can be
 imported directly into a ReST documentation file using the ``include``
 directive.

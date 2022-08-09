@@ -93,7 +93,7 @@ pw_doc_group("docs") {
   report_deps = [ ":byte_builder_size_report" ]
 }
 
-pw_size_report("byte_builder_size_report") {
+pw_size_diff("byte_builder_size_report") {
   title = "Using pw::ByteBuilder"
 
   binaries = [

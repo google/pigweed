@@ -44,7 +44,7 @@ pw_doc_group("docs") {
   report_deps = [ ":size_report" ]
 }
 
-pw_size_report("size_report") {
+pw_size_diff("size_report") {
   title = "pw::crypto Size Report"
   base = "$dir_pw_bloat:bloat_base"
 

@@ -176,7 +176,7 @@ pw_doc_group("docs") {
   ]
 }
 
-pw_size_report("format_size_report") {
+pw_size_diff("format_size_report") {
   title = "Using pw::string::Format instead of snprintf"
 
   binaries = [
@@ -198,7 +198,7 @@ pw_size_report("format_size_report") {
   ]
 }
 
-pw_size_report("string_builder_size_report") {
+pw_size_diff("string_builder_size_report") {
   title = "Using pw::StringBuilder instead of snprintf"
 
   binaries = [

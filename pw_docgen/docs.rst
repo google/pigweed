@@ -69,7 +69,7 @@ groups, causing them to be built with it.
 * ``inputs``: Additional resources required for the docs (images, data files,
   etc.)
 * ``group_deps``: Other ``pw_doc_group`` targets required by this one.
-* ``report_deps``: Report card generating targets (e.g. ``pw_size_report``) on
+* ``report_deps``: Report card generating targets (e.g. ``pw_size_diff``) on
   which the docs depend.
 
 **Example**

@@ -82,7 +82,7 @@ pw_test("static_router_test") {
   sources = [ "static_router_test.cc" ]
 }
 
-pw_size_report("static_router_size") {
+pw_size_diff("static_router_size") {
   title = "pw::router::StaticRouter size report"
   binaries = [
     {

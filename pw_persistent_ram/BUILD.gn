@@ -69,7 +69,7 @@ pw_doc_group("docs") {
   report_deps = [ ":persistent_size" ]
 }
 
-pw_size_report("persistent_size") {
+pw_size_diff("persistent_size") {
   title = "pw::persistent_ram::Persistent"
 
   # To see all the symbols, uncomment the following:

@@ -56,7 +56,7 @@ pw_doc_group("docs") {
   report_deps = [ ":ring_buffer_size" ]
 }
 
-pw_size_report("ring_buffer_size") {
+pw_size_diff("ring_buffer_size") {
   title = "pw::ring_buffer::PrefixedEntryRingBuffer"
 
   binaries = [

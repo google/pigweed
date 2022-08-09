@@ -25,13 +25,13 @@ _decoder_full = {
   sources = [ "decoder_full.cc" ]
 }
 
-pw_toolchain_size_report("decoder_full") {
+pw_toolchain_size_diff("decoder_full") {
   base_executable = pw_bloat_empty_base
   diff_executable = _decoder_full
   title = "Size of all decoder methods"
 }
 
-pw_toolchain_size_report("decoder_incremental") {
+pw_toolchain_size_diff("decoder_incremental") {
   base_executable = _decoder_full
   diff_executable = {
     deps = [

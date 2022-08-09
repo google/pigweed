@@ -142,7 +142,7 @@ pw_doc_group("docs") {
   report_deps = [ ":blob_size" ]
 }
 
-pw_size_report("blob_size") {
+pw_size_diff("blob_size") {
   title = "Pigweed BlobStore size report"
 
   # To see all the symbols, uncomment the following:

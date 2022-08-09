@@ -23,7 +23,7 @@ import("$dir_pw_toolchain/generate_toolchain.gni")
 
 # Toolchain for generating upstream Pigweed documentation.
 generate_toolchain("docs") {
-  # Use the stm32f429i-disc1 toolchain for pw_size_report targets.
+  # Use the stm32f429i-disc1 toolchain for pw_size_diff targets.
   _base_toolchain = pw_target_toolchain_stm32f429i_disc1.size_optimized
   forward_variables_from(_base_toolchain,
                          "*",

@@ -400,7 +400,7 @@ pw_doc_group("docs") {
   report_deps = [ ":server_size" ]
 }
 
-pw_size_report("server_size") {
+pw_size_diff("server_size") {
   title = "Pigweed RPC server size report"
 
   binaries = [

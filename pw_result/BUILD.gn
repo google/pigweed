@@ -54,7 +54,7 @@ pw_doc_group("docs") {
   report_deps = [ ":result_size" ]
 }
 
-pw_size_report("result_size") {
+pw_size_diff("result_size") {
   title = "pw::Result vs. pw::Status and out pointer"
 
   binaries = [

@@ -71,7 +71,7 @@ pw_test("function_test") {
   negative_compilation_tests = true
 }
 
-pw_size_report("function_size") {
+pw_size_diff("function_size") {
   title = "Pigweed function size report"
 
   binaries = [
@@ -83,7 +83,7 @@ pw_size_report("function_size") {
   ]
 }
 
-pw_size_report("callable_size") {
+pw_size_diff("callable_size") {
   title = "Size comparison of callable objects"
 
   binaries = [

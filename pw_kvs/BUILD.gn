@@ -607,7 +607,7 @@ pw_doc_group("docs") {
   report_deps = [ ":kvs_size" ]
 }
 
-pw_size_report("kvs_size") {
+pw_size_diff("kvs_size") {
   title = "Pigweed KVS size report"
 
   # To see all the symbols, uncomment the following:
