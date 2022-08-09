@@ -38,7 +38,15 @@ more details.
   The port that the USART peripheral TX/RX pins are on. (e.g. to use A9/A10
   pins for TX and RX, respectively, set this to A)
 
-  This defaults to 64 Bytes.
+.. c:macro:: PW_SYS_IO_STM32CUBE_GPIO_TX_PORT
+
+  The port for the USART peripheral TX pin, if different from
+  PW_SYS_IO_STM32CUBE_GPIO_PORT.
+
+.. c:macro:: PW_SYS_IO_STM32CUBE_GPIO_RX_PORT
+
+  The port for the USART peripheral RX pin, if different from
+  PW_SYS_IO_STM32CUBE_GPIO_PORT.
 
 .. c:macro:: PW_SYS_IO_STM32CUBE_GPIO_TX_PIN
 
@@ -54,6 +62,11 @@ more details.
 
   The alternate function index to use for USART reception within the port set by
   ``PW_SYS_IO_STM32CUBE_GPIO_PORT``.
+
+.. c:macro:: PW_SYS_IO_STM32CUBE_USART_PREFIX
+
+  The peripheral name prefix (either UART or USART) for the peripheral selected
+  by ``PW_SYS_IO_STM32CUBE_USART_NUM``. Defaults to USART.
 
 Module usage
 ============

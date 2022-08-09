@@ -27,6 +27,15 @@
 #define PW_SYS_IO_STM32CUBE_GPIO_PORT A
 #endif  // PW_SYS_IO_STM32CUBE_GPIO_PORT
 
+// The ports the USART peripheral TX and RX pins are on (if different ports).
+#ifndef PW_SYS_IO_STM32CUBE_GPIO_TX_PORT
+#define PW_SYS_IO_STM32CUBE_GPIO_TX_PORT PW_SYS_IO_STM32CUBE_GPIO_PORT
+#endif  // PW_SYS_IO_STM32CUBE_GPIO_TX_PORT
+
+#ifndef PW_SYS_IO_STM32CUBE_GPIO_RX_PORT
+#define PW_SYS_IO_STM32CUBE_GPIO_RX_PORT PW_SYS_IO_STM32CUBE_GPIO_PORT
+#endif  // PW_SYS_IO_STM32CUBE_GPIO_RX_PORT
+
 // The pin index to use for USART transmission within the port set by
 // PW_SYS_IO_STM32CUBE_GPIO_PORT.
 #ifndef PW_SYS_IO_STM32CUBE_GPIO_TX_PIN
@@ -42,4 +51,9 @@
 // The Alternate Function to use for configuring USART pins.
 #ifndef PW_SYS_IO_STM32CUBE_GPIO_AF
 #define PW_SYS_IO_STM32CUBE_GPIO_AF 7
+#endif  // PW_SYS_IO_STM32CUBE_GPIO_AF
+
+// The type of this peripheral. "USART" or "UART".
+#ifndef PW_SYS_IO_STM32CUBE_USART_PREFIX
+#define PW_SYS_IO_STM32CUBE_USART_PREFIX USART
 #endif  // PW_SYS_IO_STM32CUBE_GPIO_AF
