@@ -144,6 +144,60 @@ return type of provided function.
 
   Result<Bar> bar = CreateFoo().and_then(CreateBarFromFoo);
 
+``pw::Result<T>::or_else``
+--------------------------
+The ``pw::Result<T>::or_else`` member function will return ``*this`` if it
+contains a value. Otherwise, it will return the result of the provided function.
+The function must return a type convertible to a ``pw::Result<T>`` or ``void``.
+This is particularly useful for handling errors.
+
+.. code-block:: cpp
+
+  // Expositional prototype of or_else:
+  template <typename T>
+  class Result {
+    template <typename U>
+      requires std::is_convertible_v<U, Result<T>>
+    Result<T> or_else(Function<U(Status)> func);
+
+    Result<T> or_else(Function<void(Status)> func);
+  };
+
+  // Without or_else:
+  Result<Image> GetCuteCat(const Image& image) {
+    Result<Image> cropped = CropToCat(image);
+    if (!cropped.ok()) {
+      PW_LOG_ERROR("Failed to crop cat: %d", cropped.status().code());
+      return cropped.status();
+    }
+    return cropped;
+  }
+
+  // With or_else:
+  Result<Image> GetCuteCat(const Image& image) {
+    return CropToCat(image).or_else(
+        [](Status s) { PW_LOG_ERROR("Failed to crop cat: %d", s.code()); });
+  }
+
+Another useful scenario for ``pw::Result<T>::or_else`` is providing a default
+value that is expensive to compute. Typically, default values are provided by
+using ``pw::Result<T>::value_or``, but that requires the default value to be
+constructed regardless of whether we actually need it.
+
+.. code-block:: cpp
+
+  // With value_or:
+  Image GetCuteCat(const Image& image) {
+    // GenerateCuteCat() must execute regardless of the success of CropToCat
+    return CropToCat(image).value_or(GenerateCuteCat());
+  }
+
+  // With or_else:
+  Image GetCuteCat(const Image& image) {
+    // GenerateCuteCat() only executes if CropToCat fails.
+    return *CropToCat(image).or_else([](Status) { return GenerateCuteCat(); });
+  }
+
 -----------
 Size report
 -----------

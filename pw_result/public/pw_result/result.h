@@ -602,6 +602,63 @@ class Result : private internal_result::StatusOrData<T>,
                 : Ret(status());
   }
 
+  // Result<T>::or_else()
+  //
+  // template <typename U>
+  //   requires std::is_convertible_v<U, Result<T>>
+  // Result<T> or_else(Function<U(Status)> func);
+  //
+  // Result<T> or_else(Function<void(Status)> func);
+  //
+  // Returns a Result if it has a value, otherwise it invokes the given
+  // function. The function must return a type convertible to a Result<T> or a
+  // void.
+  //
+  //   Result<Foo> CreateFoo();
+  //
+  //   Result<Foo> foo = CreateFoo().or_else(
+  //       [](Status s) { PW_LOG_ERROR("Status: %d", s.code()); });
+  template <typename Fn,
+            typename Ret = internal_result::InvokeResultType<Fn, const Status&>,
+            std::enable_if_t<!std::is_void_v<Ret>, int> = 0>
+  constexpr Result<T> or_else(Fn&& function) const& {
+    static_assert(std::is_convertible_v<Ret, Result<T>>,
+                  "Fn must be convertible to a pw::Result");
+    return ok() ? *this : std::invoke(std::forward<Fn>(function), status());
+  }
+
+  template <typename Fn,
+            typename Ret = internal_result::InvokeResultType<Fn, const Status&>,
+            std::enable_if_t<std::is_void_v<Ret>, int> = 0>
+  constexpr Result<T> or_else(Fn&& function) const& {
+    if (ok()) {
+      return *this;
+    }
+    std::invoke(std::forward<Fn>(function), status());
+    return *this;
+  }
+
+  template <typename Fn,
+            typename Ret = internal_result::InvokeResultType<Fn, Status&&>,
+            std::enable_if_t<!std::is_void_v<Ret>, int> = 0>
+  constexpr Result<T> or_else(Fn&& function) && {
+    static_assert(std::is_convertible_v<Ret, Result<T>>,
+                  "Fn must be convertible to a pw::Result");
+    return ok() ? std::move(*this)
+                : std::invoke(std::forward<Fn>(function), std::move(status()));
+  }
+
+  template <typename Fn,
+            typename Ret = internal_result::InvokeResultType<Fn, Status&&>,
+            std::enable_if_t<std::is_void_v<Ret>, int> = 0>
+  constexpr Result<T> or_else(Fn&& function) && {
+    if (ok()) {
+      return *this;
+    }
+    std::invoke(std::forward<Fn>(function), status());
+    return std::move(*this);
+  }
+
  private:
   using Base::Assign;
   template <typename U>
