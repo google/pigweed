@@ -23,6 +23,7 @@
 #include "pw_result/result.h"
 
 #include "gtest/gtest.h"
+#include "pw_status/status.h"
 #include "pw_status/try.h"
 
 namespace pw {
@@ -178,6 +179,101 @@ TEST(Result, ConstexprNotOkCopy) {
 
   static_assert(kResultCopy.value_or(Value{99}).number == 99);
   static_assert(std::move(kResultCopy).value_or(Value{99}).number == 99);
+}
+
+auto multiply = [](int x) -> Result<int> { return x * 2; };
+auto add_two = [](int x) -> Result<int> { return x + 2; };
+auto fail_unknown = [](int) -> Result<int> { return Status::Unknown(); };
+
+TEST(Result, AndThenNonConstLValueRefInvokeSuccess) {
+  Result<int> r = 32;
+  auto ret = r.and_then(multiply);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 64);
+}
+
+TEST(Result, AndThenNonConstLValueRefInvokeFail) {
+  Result<int> r = 32;
+  auto ret = r.and_then(fail_unknown);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::Unknown());
+}
+
+TEST(Result, AndThenNonConstLValueRefSkips) {
+  Result<int> r = Status::NotFound();
+  auto ret = r.and_then(multiply);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::NotFound());
+}
+
+TEST(Result, AndThenNonConstRvalueRefInvokeSuccess) {
+  Result<int> r = 32;
+  auto ret = std::move(r).and_then(multiply);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 64);
+}
+
+TEST(Result, AndThenNonConstRvalueRefInvokeFails) {
+  Result<int> r = 64;
+  auto ret = std::move(r).and_then(fail_unknown);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::Unknown());
+}
+
+TEST(Result, AndThenNonConstRvalueRefSkips) {
+  Result<int> r = Status::NotFound();
+  auto ret = std::move(r).and_then(multiply);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::NotFound());
+}
+
+TEST(Result, AndThenConstLValueRefInvokeSuccess) {
+  const Result<int> r = 32;
+  auto ret = r.and_then(multiply);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 64);
+}
+
+TEST(Result, AndThenConstLValueRefInvokeFail) {
+  const Result<int> r = 32;
+  auto ret = r.and_then(fail_unknown);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::Unknown());
+}
+
+TEST(Result, AndThenConstLValueRefSkips) {
+  const Result<int> r = Status::NotFound();
+  auto ret = r.and_then(multiply);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::NotFound());
+}
+
+TEST(Result, AndThenConstRValueRefInvokeSuccess) {
+  const Result<int> r = 32;
+  auto ret = std::move(r).and_then(multiply);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 64);
+}
+
+TEST(Result, AndThenConstRValueRefInvokeFail) {
+  const Result<int> r = 32;
+  auto ret = std::move(r).and_then(fail_unknown);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::Unknown());
+}
+
+TEST(Result, AndThenConstRValueRefSkips) {
+  const Result<int> r = Status::NotFound();
+  auto ret = std::move(r).and_then(multiply);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::NotFound());
+}
+
+TEST(Result, AndThenMultipleChained) {
+  Result<int> r = 32;
+  auto ret = r.and_then(multiply).and_then(add_two).and_then(multiply);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 132);
 }
 
 }  // namespace

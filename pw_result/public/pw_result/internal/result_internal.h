@@ -124,6 +124,18 @@ using IsForwardingAssignmentValid = std::disjunction<
                      std::remove_cv_t<std::remove_reference_t<U>>>,
         IsForwardingAssignmentAmbiguous<T, U>>>>;
 
+// This trait is for determining if a given type is a Result.
+template <typename T>
+constexpr bool IsResult = false;
+template <typename T>
+constexpr bool IsResult<Result<T>> = true;
+
+// This trait determines the return type of a given function without const,
+// volatile or reference qualifiers.
+template <typename Fn, typename T>
+using InvokeResultType =
+    std::remove_cv_t<std::remove_reference_t<std::invoke_result_t<Fn, T>>>;
+
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
 

@@ -89,6 +89,61 @@ and attempting to access the value is an error.
   This module is experimental. Its impact on code size and stack usage has not
   yet been profiled. Use at your own risk.
 
+Monadic Operations
+==================
+``pw::Result<T>`` also supports monadic operations, similar to the additions
+made to ``std::optional<T>`` in C++23. These operations allow functions to be
+applied to a ``pw::Result<T>`` that would perform additional computation.
+
+.. code-block:: cpp
+
+  // Without monads
+  pw::Result<Image> GetCuteCat(const Image& img) {
+     pw::Result<Image> cropped = CropToCat(img);
+     if (!cropped.ok()) {
+       return cropped.status();
+     }
+     pw::Result<Image> with_tie = AddBowTie(*cropped);
+     if (!with_tie.ok()) {
+       return with_tie.status();
+     }
+     pw::Result<Image> with_sparkles = MakeEyesSparkle(*with_tie);
+     if (!with_sparkles.ok()) {
+       return with_parkes.status();
+     }
+     return AddRainbow(MakeSmaller(*with_sparkles));
+  }
+
+  // With monads
+  pw::Result<Image> GetCuteCat(const Image& img) {
+    return CropToCat(img)
+           .and_then(AddBoeTie)
+           .and_then(MakeEyesSparkle)
+           .transform(MakeSmaller)
+           .transform(AddRainbow);
+  }
+
+``pw::Result<T>::and_then``
+---------------------------
+The ``pw::Result<T>::and_then`` member function will return the result of the
+invocation of the provided function on the contained value if it exists.
+Otherwise, returns the contained status in a ``pw::Result<U>``, which is the
+return type of provided function.
+
+.. code-block:: cpp
+
+  // Expositional prototype of and_then:
+  template <typename T>
+  class Result {
+    template <typename U>
+    Result<U> and_then(Function<Result<U>(T)> func);
+  };
+
+  Result<Foo> CreateFoo();
+  Result<Bar> CreateBarFromFoo(const Foo& foo);
+
+  Result<Bar> bar = CreateFoo().and_then(CreateBarFromFoo);
+
 -----------
 Size report
 -----------
