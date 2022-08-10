@@ -356,6 +356,8 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_hdlc/rpc_example',  # TODO(b/241575924)
     '-//pw_i2c_mcuxpresso/...:all',
     '-//pw_kvs/...:all',
+    '-//pw_log:log_proto_py_pb2',  # TODO(b/241456982)
+    '-//pw_log:log_proto_py_pb2_genproto',
     '-//pw_log_null/...:all',
     '-//pw_log_string/...:all',
     '-//pw_metric/...:all',
@@ -373,6 +375,8 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_tls_client/...:all',
     '-//pw_tls_client_boringssl/...:all',
     '-//pw_tls_client_mbedtls/...:all',
+    '-//pw_tokenizer:tokenizer_proto_py_pb2',  # TODO(b/241456982)
+    '-//pw_tokenizer:tokenizer_proto_py_pb2_genproto',
     '-//pw_trace/...:all',
     '-//pw_trace_tokenized/...:all',
     '-//pw_work_queue/...:all',
