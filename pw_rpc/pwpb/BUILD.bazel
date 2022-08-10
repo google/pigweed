@@ -76,8 +76,10 @@ pw_cc_library(
     deps = [
         ":common",
         ":server_api",
+        "//pw_assert",
         "//pw_containers",
         "//pw_rpc:internal_test_utils",
+        "//pw_span",
     ],
 )
 

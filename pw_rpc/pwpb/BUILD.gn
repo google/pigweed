@@ -85,6 +85,7 @@ pw_source_set("test_method_context") {
     "..:test_utils",
     dir_pw_assert,
     dir_pw_containers,
+    dir_pw_span,
   ]
 }
 

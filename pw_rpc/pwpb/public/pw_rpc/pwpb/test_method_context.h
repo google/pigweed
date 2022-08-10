@@ -26,6 +26,7 @@
 #include "pw_rpc/pwpb/fake_channel_output.h"
 #include "pw_rpc/pwpb/internal/method.h"
 #include "pw_rpc/pwpb/server_reader_writer.h"
+#include "pw_span/span.h"
 
 namespace pw::rpc {
 
@@ -160,7 +161,9 @@ class PwpbInvocationContext
   template <size_t kEncodingBufferSizeBytes = 128>
   void SendClientStream(const Request& request) PW_LOCKS_EXCLUDED(rpc_lock()) {
     std::array<std::byte, kEncodingBufferSizeBytes> buffer;
-    Base::SendClientStream(span(buffer).first(
+    // Clang 10.0.1 issue requires separate span variable declaration.
+    span buffer_span(buffer);
+    Base::SendClientStream(buffer_span.first(
         kMethodInfo.serde().EncodeRequest(request, buffer).size()));
   }
 

@@ -124,8 +124,10 @@ pw_add_module_library(pw_rpc.test_utils
   PUBLIC_DEPS
     pw_assert
     pw_bytes
+    pw_containers
     pw_rpc.client
     pw_rpc.server
+    pw_span
   PRIVATE_DEPS
     pw_log
 )
