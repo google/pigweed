@@ -445,5 +445,103 @@ TEST(Result, OrElseMultipleChained) {
   EXPECT_EQ(ret.status(), Status::Internal());
 }
 
+auto multiply_int = [](int x) { return x * 2; };
+auto add_two_int = [](int x) { return x + 2; };
+auto make_value = [](int x) { return Value{.number = x}; };
+
+TEST(Result, TransformNonConstLValueRefInvokeSuccess) {
+  Result<int> r = 32;
+  auto ret = r.transform(multiply_int);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 64);
+}
+
+TEST(Result, TransformNonConstLValueRefInvokeDifferentType) {
+  Result<int> r = 32;
+  auto ret = r.transform(make_value);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(ret->number, 32);
+}
+
+TEST(Result, TransformNonConstLValueRefSkips) {
+  Result<int> r = Status::NotFound();
+  auto ret = r.transform(multiply_int);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::NotFound());
+}
+
+TEST(Result, TransformNonConstRValueRefInvokeSuccess) {
+  Result<int> r = 32;
+  auto ret = std::move(r).transform(multiply_int);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 64);
+}
+
+TEST(Result, TransformNonConstRValueRefInvokeDifferentType) {
+  Result<int> r = 32;
+  auto ret = std::move(r).transform(make_value);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(ret->number, 32);
+}
+
+TEST(Result, TransformNonConstRValueRefSkips) {
+  Result<int> r = Status::NotFound();
+  auto ret = std::move(r).transform(multiply_int);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::NotFound());
+}
+
+TEST(Result, TransformConstLValueRefInvokeSuccess) {
+  const Result<int> r = 32;
+  auto ret = r.transform(multiply_int);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 64);
+}
+
+TEST(Result, TransformConstLValueRefInvokeDifferentType) {
+  const Result<int> r = 32;
+  auto ret = r.transform(make_value);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(ret->number, 32);
+}
+
+TEST(Result, TransformConstLValueRefSkips) {
+  const Result<int> r = Status::NotFound();
+  auto ret = r.transform(multiply_int);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::NotFound());
+}
+
+TEST(Result, TransformConstRValueRefInvokeSuccess) {
+  const Result<int> r = 32;
+  auto ret = std::move(r).transform(multiply_int);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(*ret, 64);
+}
+
+TEST(Result, TransformConstRValueRefInvokeDifferentType) {
+  const Result<int> r = 32;
+  auto ret = std::move(r).transform(make_value);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(ret->number, 32);
+}
+
+TEST(Result, TransformConstRValueRefSkips) {
+  const Result<int> r = Status::NotFound();
+  auto ret = std::move(r).transform(multiply_int);
+  ASSERT_FALSE(ret.ok());
+  EXPECT_EQ(ret.status(), Status::NotFound());
+}
+
+TEST(Result, TransformMultipleChained) {
+  Result<int> r = 32;
+  auto ret = r.transform(multiply_int)
+                 .transform(add_two_int)
+                 .transform(multiply_int)
+                 .transform(make_value);
+  ASSERT_TRUE(ret.ok());
+  EXPECT_EQ(ret->number, 132);
+}
+
 }  // namespace
 }  // namespace pw

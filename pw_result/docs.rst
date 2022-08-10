@@ -198,6 +198,34 @@ constructed regardless of whether we actually need it.
     return *CropToCat(image).or_else([](Status) { return GenerateCuteCat(); });
   }
 
+``pw::Result<T>::transform``
+----------------------------
+The ``pw::Result<T>::transform`` member method will return a ``pw::Result<U>``
+which contains the result of the invocation of the given function if ``*this``
+contains a value. Otherwise, it returns a ``pw::Result<U>`` with the same
+``pw::Status`` value as ``*this``.
+
+The monadic methods for ``and_then`` and ``transform`` are fairly similar. The
+primary difference is that ``and_then`` requires the provided function to return
+a ``pw::Result``, whereas ``transform`` functions can return any type. Users
+should be aware that if they provide a function that returns a ``pw::Result`` to
+``transform``, this will return a ``pw::Result<pw::Result<U>>``.
+
+.. code-block:: cpp
+
+  // Expositional prototype of transform:
+  template <typename T>
+  class Result {
+    template <typename U>
+    Result<U> transform(Function<U(T)> func);
+  };
+
+  Result<int> ConvertStringToInteger(std::string_view);
+  int MultiplyByTwo(int x);
+
+  Result<int> x = ConvertStringToInteger("42")
+                    .transform(MultiplyByTwo);
+
 -----------
 Size report
 -----------

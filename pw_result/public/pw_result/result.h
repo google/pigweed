@@ -659,6 +659,54 @@ class Result : private internal_result::StatusOrData<T>,
     return std::move(*this);
   }
 
+  // Result<T>::transform()
+  //
+  // template <typename U>
+  // Result<U> transform(Function<U(T)> func);
+  //
+  // Returns a Result<U> which contains the result of the invocation of the
+  // given function if *this contains a value. Otherwise, it returns a Result<U>
+  // with the same Status as *this.
+  template <typename Fn,
+            typename Ret = internal_result::InvokeResultType<Fn, T&>,
+            std::enable_if_t<std::is_copy_constructible_v<Ret>, int> = 0>
+  constexpr Result<Ret> transform(Fn&& function) & {
+    if (!ok()) {
+      return status();
+    }
+    return std::invoke(std::forward<Fn>(function), value());
+  }
+
+  template <typename Fn,
+            typename Ret = internal_result::InvokeResultType<Fn, T&&>,
+            std::enable_if_t<std::is_move_constructible_v<Ret>, int> = 0>
+  constexpr Result<Ret> transform(Fn&& function) && {
+    if (!ok()) {
+      return std::move(status());
+    }
+    return std::invoke(std::forward<Fn>(function), std::move(value()));
+  }
+
+  template <typename Fn,
+            typename Ret = internal_result::InvokeResultType<Fn, T&>,
+            std::enable_if_t<std::is_copy_constructible_v<Ret>, int> = 0>
+  constexpr Result<Ret> transform(Fn&& function) const& {
+    if (!ok()) {
+      return status();
+    }
+    return std::invoke(std::forward<Fn>(function), value());
+  }
+
+  template <typename Fn,
+            typename Ret = internal_result::InvokeResultType<Fn, T&&>,
+            std::enable_if_t<std::is_move_constructible_v<Ret>, int> = 0>
+  constexpr Result<Ret> transform(Fn&& function) const&& {
+    if (!ok()) {
+      return std::move(status());
+    }
+    return std::invoke(std::forward<Fn>(function), std::move(value()));
+  }
+
  private:
   using Base::Assign;
   template <typename U>
