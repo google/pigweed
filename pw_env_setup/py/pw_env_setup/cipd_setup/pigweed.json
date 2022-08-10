@@ -41,17 +41,18 @@
       ]
     },
     {
-      "path": "fuchsia/third_party/cmake/${platform}",
+      "path": "infra/3pp/tools/cmake/${platform}",
       "platforms": [
         "mac-amd64",
+        "mac-arm64",
         "linux-amd64",
         "linux-arm64",
         "windows-amd64"
       ],
       "tags": [
-        "version:3.24.20220806-g40db0c3"
+        "version:2@3.24.0"
       ],
-      "version_file": ".versions/cmake.cipd_version"
+      "_comment": {"version_file": ".versions/cmake.cipd_version"}
     },
     {
       "path": "pigweed/third_party/bloaty-embedded/${platform}",
