@@ -73,5 +73,20 @@ pw_size_diff("result_size") {
       base = "size_report:pointer_read"
       label = "Returning a larger object (std::span)"
     },
+    {
+      target = "size_report:monadic_and_then"
+      base = "size_report:ladder_and_then"
+      label = "Using and_then instead of if ladder"
+    },
+    {
+      target = "size_report:monadic_or_else"
+      base = "size_report:ladder_or_else"
+      label = "Using or_else instead of if ladder"
+    },
+    {
+      target = "size_report:monadic_transform"
+      base = "size_report:ladder_transform"
+      label = "Using transform instead of if ladder"
+    },
   ]
 }

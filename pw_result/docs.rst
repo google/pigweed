@@ -95,6 +95,9 @@ Monadic Operations
 made to ``std::optional<T>`` in C++23. These operations allow functions to be
 applied to a ``pw::Result<T>`` that would perform additional computation.
 
+These operations do not incur any additional FLASH or RAM cost compared to a
+traditional if/else ladder, as can be seen in the `Size report`_.
+
 .. code-block:: cpp
 
   // Without monads

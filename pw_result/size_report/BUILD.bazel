@@ -78,3 +78,39 @@ pw_cc_binary(
         "//pw_span",
     ],
 )
+
+pw_cc_binary(
+    name = "ladder_and_then",
+    srcs = ["ladder_and_then.cc"],
+    deps = ["//pw_result"],
+)
+
+pw_cc_binary(
+    name = "monadic_and_then",
+    srcs = ["monadic_and_then.cc"],
+    deps = ["//pw_result"],
+)
+
+pw_cc_binary(
+    name = "ladder_or_else",
+    srcs = ["ladder_or_else.cc"],
+    deps = ["//pw_result"],
+)
+
+pw_cc_binary(
+    name = "monadic_or_else",
+    srcs = ["monadic_or_else.cc"],
+    deps = ["//pw_result"],
+)
+
+pw_cc_binary(
+    name = "ladder_transform",
+    srcs = ["ladder_transform.cc"],
+    deps = ["//pw_result"],
+)
+
+pw_cc_binary(
+    name = "monadic_transform",
+    srcs = ["monadic_transform.cc"],
+    deps = ["//pw_result"],
+)

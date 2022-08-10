@@ -69,3 +69,33 @@ pw_executable("result_read") {
     dir_pw_preprocessor,
   ]
 }
+
+pw_executable("ladder_and_then") {
+  sources = [ "ladder_and_then.cc" ]
+  deps = [ ".." ]
+}
+
+pw_executable("monadic_and_then") {
+  sources = [ "monadic_and_then.cc" ]
+  deps = [ ".." ]
+}
+
+pw_executable("ladder_or_else") {
+  sources = [ "ladder_or_else.cc" ]
+  deps = [ ".." ]
+}
+
+pw_executable("monadic_or_else") {
+  sources = [ "monadic_or_else.cc" ]
+  deps = [ ".." ]
+}
+
+pw_executable("ladder_transform") {
+  sources = [ "ladder_transform.cc" ]
+  deps = [ ".." ]
+}
+
+pw_executable("monadic_transform") {
+  sources = [ "monadic_transform.cc" ]
+  deps = [ ".." ]
+}
