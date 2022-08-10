@@ -127,7 +127,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(pwbug/507): Add the client integration test to the build.
+# TODO(b/242059613): Add the client integration test to the build.
 filegroup(
     name = "integration_test",
     srcs = ["integration_test.cc"],
