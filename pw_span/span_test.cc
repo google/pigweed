@@ -21,6 +21,8 @@
 // In order to minimize changes from the original, this file does NOT fully
 // adhere to Pigweed's style guide.
 
+// NOLINTBEGIN(modernize-unary-static-assert)
+
 #ifndef PW_SPAN_TEST_INCLUDE
 #error "The PW_SPAN_TEST_INCLUDE macro must be defined to compile this test."
 #endif  // PW_SPAN_TEST_INCLUDE
@@ -1652,5 +1654,7 @@ TEST(SpanTest, IteratorConversions) {
                                      span<int>::iterator>::value,
                 "Error: const iterator should not be convertible to iterator");
 }
+
+// NOLINTEND(modernize-unary-static-assert)
 
 }  // namespace PW_SPAN_TEST_NAMESPACE

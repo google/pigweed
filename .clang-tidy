@@ -38,6 +38,7 @@ Checks: >
     modernize-replace-disallow-copy-and-assign-macro,
     modernize-replace-random-shuffle,
     modernize-shrink-to-fit,
+    modernize-unary-static-assert,
     modernize-use-bool-literals,
     modernize-use-equals-delete,
     modernize-use-noexcept,
@@ -88,9 +89,6 @@ HeaderFilterRegex: '.*'
 #   Note: added in c++11
 # @ modernize-redundant-void-arg:
 # modernize-return-braced-init-list:
-# @ modernize-unary-static-assert:
-#   Note: added in c++17
-#   The message argument can be omitted when it is empty
 # @ modernize-use-auto:
 #   Advises to use auto when initializing with a cast to
 #   avoid duplicating the type name

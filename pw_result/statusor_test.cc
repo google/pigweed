@@ -120,8 +120,8 @@ pw::Result<std::unique_ptr<int>> ReturnUniquePtr() {
 }
 
 TEST(Result, ElementType) {
-  static_assert(std::is_same<pw::Result<int>::value_type, int>(), "");
-  static_assert(std::is_same<pw::Result<char>::value_type, char>(), "");
+  static_assert(std::is_same<pw::Result<int>::value_type, int>());
+  static_assert(std::is_same<pw::Result<char>::value_type, char>());
 }
 
 TEST(Result, TestMoveOnlyInitialization) {
@@ -1345,7 +1345,7 @@ TEST(Result, TestPointerValueConst) {
 
 TEST(Result, ResultVectorOfUniquePointerCanReserveAndResize) {
   using EvilType = std::vector<std::unique_ptr<int>>;
-  static_assert(std::is_copy_constructible<EvilType>::value, "");
+  static_assert(std::is_copy_constructible<EvilType>::value);
   std::vector<::pw::Result<EvilType>> v(5);
   v.reserve(v.capacity() + 10);
   v.resize(v.capacity() + 10);
