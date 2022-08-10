@@ -18,7 +18,6 @@ from pw_presubmit import (
     Check,
     format_code,
     PresubmitContext,
-    PresubmitFailure,
     filter_paths,
 )
 
@@ -33,7 +32,7 @@ def pragma_once(ctx: PresubmitContext) -> None:
                 if line.startswith('#pragma once'):
                     break
             else:
-                raise PresubmitFailure('#pragma once is missing!', path=path)
+                ctx.fail('#pragma once is missing!', path=path)
 
 
 @Check

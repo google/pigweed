@@ -98,7 +98,7 @@ def _box(style, left, middle, right, box=tools.make_box('><>')) -> str:
 
 class PresubmitFailure(Exception):
     """Optional exception to use for presubmit failures."""
-    def __init__(self, description: str = '', path=None):
+    def __init__(self, description: str = '', path: Path = None):
         super().__init__(f'{path}: {description}' if path else description)
 
 
@@ -170,7 +170,7 @@ class Programs(collections.abc.Mapping):
         return len(self._programs)
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class PresubmitContext:
     """Context passed into presubmit checks."""
     root: Path
@@ -178,18 +178,20 @@ class PresubmitContext:
     output_dir: Path
     paths: Tuple[Path, ...]
     package_root: Path
+    _failed: bool = False
 
-    def relative_paths(self, start: Optional[Path] = None) -> Tuple[Path, ...]:
-        return tuple(
-            tools.relative_paths(self.paths, start if start else self.root))
+    @property
+    def failed(self) -> bool:
+        return self._failed
 
-    def paths_by_repo(self) -> Dict[Path, List[Path]]:
-        repos = collections.defaultdict(list)
+    def fail(self, description: str, path: Path = None):
+        """Add a failure to this presubmit step.
 
-        for path in self.paths:
-            repos[git_repo.root(path)].append(path)
-
-        return repos
+        If this is called at least once the step fails, but not immediately—the
+        check is free to continue and possibly call this method again.
+        """
+        _LOG.warning('%s', PresubmitFailure(description, path))
+        self._failed = True
 
 
 class FileFilter:
@@ -604,6 +606,9 @@ class Check:
         except KeyboardInterrupt:
             _print_ui()
             return _Result.CANCEL
+
+        if ctx.failed:
+            return _Result.FAIL
 
         return _Result.PASS
 
