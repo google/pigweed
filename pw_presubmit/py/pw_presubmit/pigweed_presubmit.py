@@ -721,9 +721,6 @@ OTHER_CHECKS = (
     gn_boringssl_build,
     build.gn_gen_check,
     gn_nanopb_build,
-    gn_crypto_mbedtls_build,
-    gn_crypto_boringssl_build,
-    gn_crypto_micro_ecc_build,
     gn_software_update_build,
     gn_full_build_check,
     gn_full_qemu_check,
@@ -735,6 +732,12 @@ OTHER_CHECKS = (
     static_analysis,
     stm32f429i,
     npm_presubmit.npm_test,
+)
+
+CRYPTO = (
+    gn_crypto_mbedtls_build,
+    gn_crypto_boringssl_build,
+    gn_crypto_micro_ecc_build,
 )
 
 # Avoid running all checks on specific paths.
@@ -798,6 +801,7 @@ PROGRAMS = Programs(
     lintformat=LINTFORMAT,
     other_checks=OTHER_CHECKS,
     quick=QUICK,
+    crypto=CRYPTO,
 )
 
 
