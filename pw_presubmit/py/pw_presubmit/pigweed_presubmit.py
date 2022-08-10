@@ -193,7 +193,8 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
                                                'pw_crypto:sha256_mbedtls'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_mbedtls'))
-    build.ninja(ctx.output_dir)
+    build.ninja(ctx.output_dir,
+                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -209,7 +210,8 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_boringssl'),
     )
-    build.ninja(ctx.output_dir)
+    build.ninja(ctx.output_dir,
+                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -223,7 +225,8 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_uecc'),
     )
-    build.ninja(ctx.output_dir)
+    build.ninja(ctx.output_dir,
+                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
