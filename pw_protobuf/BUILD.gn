@@ -200,6 +200,11 @@ pw_proto_library("common_protos") {
   ]
 }
 
+pw_proto_library("codegen_test_deps_protos") {
+  sources = [ "pw_protobuf_test_deps_protos/imported.proto" ]
+  inputs = [ "pw_protobuf_test_deps_protos/imported.options" ]
+}
+
 pw_proto_library("codegen_test_protos") {
   sources = [
     "pw_protobuf_test_protos/full_test.proto",
@@ -213,9 +218,13 @@ pw_proto_library("codegen_test_protos") {
   inputs = [
     "pw_protobuf_test_protos/full_test.options",
     "pw_protobuf_test_protos/optional.options",
+    "pw_protobuf_test_protos/imported.options",
     "pw_protobuf_test_protos/repeated.options",
   ]
-  deps = [ ":common_protos" ]
+  deps = [
+    ":codegen_test_deps_protos",
+    ":common_protos",
+  ]
 }
 
 pw_fuzzer("encoder_fuzzer") {

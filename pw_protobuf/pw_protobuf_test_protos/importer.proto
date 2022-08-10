@@ -13,6 +13,7 @@
 // the License.
 syntax = "proto3";
 
+import 'pw_protobuf_test_deps_protos/imported.proto';
 import 'pw_protobuf_test_protos/imported.proto';
 import 'pw_protobuf_protos/common.proto';
 
@@ -29,4 +30,11 @@ message Nothing {
 
 message TestResult {
   imported.Status status = 1;
+}
+
+message TestMessage {
+  oneof level {
+    imported.Notice notice = 1;
+    imported.Debug debug = 2;
+  }
 }

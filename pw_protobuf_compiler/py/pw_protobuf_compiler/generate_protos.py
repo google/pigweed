@@ -65,17 +65,20 @@ def _argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def protoc_pwpb_args(args: argparse.Namespace) -> Tuple[str, ...]:
+def protoc_pwpb_args(args: argparse.Namespace,
+                     include_paths: List[str]) -> Tuple[str, ...]:
     return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
-        f'--custom_opt=-I{args.compile_dir.as_posix()}',
+        f'--custom_opt=-I{args.compile_dir}',
+        *[f'--custom_opt=-I{include_path}' for include_path in include_paths],
         '--custom_out',
         args.out_dir,
     )
 
 
-def protoc_pwpb_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
+def protoc_pwpb_rpc_args(args: argparse.Namespace,
+                         _include_paths: List[str]) -> Tuple[str, ...]:
     return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
@@ -84,14 +87,16 @@ def protoc_pwpb_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
     )
 
 
-def protoc_go_args(args: argparse.Namespace) -> Tuple[str, ...]:
+def protoc_go_args(args: argparse.Namespace,
+                   _include_paths: List[str]) -> Tuple[str, ...]:
     return _COMMON_FLAGS + (
         '--go_out',
         f'plugins=grpc:{args.out_dir}',
     )
 
 
-def protoc_nanopb_args(args: argparse.Namespace) -> Tuple[str, ...]:
+def protoc_nanopb_args(args: argparse.Namespace,
+                       _include_paths: List[str]) -> Tuple[str, ...]:
     # nanopb needs to know of the include path to parse *.options files
     return _COMMON_FLAGS + (
         '--plugin',
@@ -105,7 +110,8 @@ def protoc_nanopb_args(args: argparse.Namespace) -> Tuple[str, ...]:
     )
 
 
-def protoc_nanopb_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
+def protoc_nanopb_rpc_args(args: argparse.Namespace,
+                           _include_paths: List[str]) -> Tuple[str, ...]:
     return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
@@ -114,7 +120,8 @@ def protoc_nanopb_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
     )
 
 
-def protoc_raw_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
+def protoc_raw_rpc_args(args: argparse.Namespace,
+                        _include_paths: List[str]) -> Tuple[str, ...]:
     return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
@@ -123,7 +130,8 @@ def protoc_raw_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
     )
 
 
-def protoc_python_args(args: argparse.Namespace) -> Tuple[str, ...]:
+def protoc_python_args(args: argparse.Namespace,
+                       _include_paths: List[str]) -> Tuple[str, ...]:
     return _COMMON_FLAGS + (
         '--python_out',
         args.out_dir,
@@ -132,7 +140,8 @@ def protoc_python_args(args: argparse.Namespace) -> Tuple[str, ...]:
     )
 
 
-_DefaultArgsFunction = Callable[[argparse.Namespace], Tuple[str, ...]]
+_DefaultArgsFunction = Callable[[argparse.Namespace, List[str]], Tuple[str,
+                                                                       ...]]
 
 # Default additional protoc arguments for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
@@ -164,7 +173,7 @@ def main() -> int:
 
     include_paths: List[str] = []
     if args.include_file:
-        include_paths = [f'-I{line.strip()}' for line in args.include_file]
+        include_paths = [line.strip() for line in args.include_file]
 
     wrapper_script: Optional[Path] = None
 
@@ -185,8 +194,8 @@ def main() -> int:
     cmd: Tuple[Union[str, Path], ...] = (
         'protoc',
         f'-I{args.compile_dir}',
-        *include_paths,
-        *DEFAULT_PROTOC_ARGS[args.language](args),
+        *[f'-I{include_path}' for include_path in include_paths],
+        *DEFAULT_PROTOC_ARGS[args.language](args, include_paths),
         *args.sources,
     )
 

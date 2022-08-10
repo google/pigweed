@@ -1184,6 +1184,62 @@ TEST(CodegenMessage, ReadOptionalPresentDefaults) {
   EXPECT_EQ(message.sometimes_empty_varint[0], 0x00);
 }
 
+TEST(CodegenMessage, ReadImportedOptions) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // notice
+    0x0a, 0x0f,
+    // notice.message
+    0x0a, 0x0d, 'P', 'r', 'e', 's', 's', ' ', 'a', 'n', 'y', ' ', 'k', 'e', 'y'
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  TestMessage::StreamDecoder test_message(reader);
+
+  // The options file for the imported proto is applied, making the string
+  // field a vector rather than requiring a callback.
+  TestMessage::Message message{};
+  const auto status = test_message.Read(message);
+  ASSERT_EQ(status, OkStatus());
+
+  constexpr std::string_view kExpectedMessage{"Press any key"};
+
+  EXPECT_EQ(message.notice.message.size(), kExpectedMessage.size());
+  EXPECT_EQ(std::memcmp(message.notice.message.data(),
+                        kExpectedMessage.data(),
+                        kExpectedMessage.size()),
+            0);
+}
+
+TEST(CodegenMessage, ReadImportedFromDepsOptions) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // debug
+    0x12, 0x0f,
+    // debug.message
+    0x0a, 0x0d, 'P', 'r', 'e', 's', 's', ' ', 'a', 'n', 'y', ' ', 'k', 'e', 'y'
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  TestMessage::StreamDecoder test_message(reader);
+
+  // The options file for the imported proto is applied, making the string
+  // field a vector rather than requiring a callback.
+  TestMessage::Message message{};
+  const auto status = test_message.Read(message);
+  ASSERT_EQ(status, OkStatus());
+
+  constexpr std::string_view kExpectedMessage{"Press any key"};
+
+  EXPECT_EQ(message.debug.message.size(), kExpectedMessage.size());
+  EXPECT_EQ(std::memcmp(message.debug.message.data(),
+                        kExpectedMessage.data(),
+                        kExpectedMessage.size()),
+            0);
+}
+
 class BreakableDecoder : public KeyValuePair::StreamDecoder {
  public:
   constexpr BreakableDecoder(stream::Reader& reader) : StreamDecoder(reader) {}
