@@ -218,7 +218,7 @@ def _generate_service_and_client(gen: CodeGenerator,
 
 
 def _check_method_name(method: ProtoServiceMethod) -> None:
-    if method.name() in ('Service', 'Client'):
+    if method.name() in ('Service', 'ServiceInfo', 'Client'):
         raise ValueError(
             f'"{method.service().proto_path()}.{method.name()}" is not a '
             f'valid method name! The name "{method.name()}" is reserved '
@@ -235,6 +235,8 @@ def _generate_client(gen: CodeGenerator, service: ProtoService) -> None:
         gen.line(f'constexpr Client({RPC_NAMESPACE}::Client& client,'
                  ' uint32_t channel_id)')
         gen.line('    : ServiceClient(client, channel_id) {}')
+        gen.line()
+        gen.line(f'using ServiceInfo = {service.name()};')
 
         for method in service.methods():
             gen.line()
@@ -308,7 +310,8 @@ def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
         gen.line()
         gen.line(f'static constexpr const char* name() '
                  f'{{ return "{service.name()}"; }}')
-
+        gen.line()
+        gen.line(f'using ServiceInfo = {service.name()};')
         gen.line()
 
     gen.line(' protected:')
