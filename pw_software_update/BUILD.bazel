@@ -18,18 +18,52 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
 proto_library(
+    name = "tuf_proto",
+    srcs = [
+        "tuf.proto",
+    ],
+    deps = [
+        "@com_google_protobuf//:timestamp_proto",
+    ],
+)
+
+proto_library(
     name = "update_bundle_proto",
     srcs = [
-        "pw_software_update_protos/tuf.proto",
-        "pw_software_update_protos/update_bundle.proto",
+        "update_bundle.proto",
     ],
-    strip_import_prefix = "//pw_software_update",
+    deps = [
+        ":tuf_proto",
+    ],
+)
+
+pw_proto_library(
+    name = "update_bundle_proto_cc",
+    deps = [":update_bundle_proto"],
+)
+
+proto_library(
+    name = "bundled_update_proto",
+    srcs = [
+        "bundled_update.proto",
+    ],
+    deps = [
+        "//pw_protobuf:common_proto",
+        "//pw_tokenizer:tokenizer_proto",
+        "@com_google_protobuf//:any_proto",
+    ],
+)
+
+pw_proto_library(
+    name = "bundled_update_proto_cc",
+    deps = [":bundled_update_proto"],
 )
 
 pw_cc_library(
@@ -68,6 +102,7 @@ pw_cc_library(
     deps = [
         ":blob_store_openable_reader",
         ":openable_reader",
+        ":update_bundle_proto_cc.pwpb",
         "//pw_blob_store",
         "//pw_kvs",
         "//pw_log",
@@ -84,15 +119,17 @@ pw_cc_library(
     hdrs = ["public/pw_software_update/bundled_update_service.h"],
     includes = ["public"],
     deps = [
+        ":bundled_update_proto_cc.nanopb_rpc",
+        ":bundled_update_proto_cc.pwpb",
         ":update_bundle",
-        ":update_bundle_proto",
+        ":update_bundle_proto_cc.nanopb_rpc",
+        ":update_bundle_proto_cc.pwpb",
         "//pw_log",
         "//pw_result",
         "//pw_status",
         "//pw_sync:borrow",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
-        "//pw_sync:string",
         "//pw_tokenizer",
         "//pw_work_queue",
     ],
@@ -104,15 +141,18 @@ pw_cc_library(
     hdrs = ["public/pw_software_update/bundled_update_service_pwpb.h"],
     includes = ["public"],
     deps = [
+        ":bundled_update_proto_cc.pwpb",
+        ":bundled_update_proto_cc.pwpb_rpc",
         ":update_bundle",
-        ":update_bundle_proto",
+        ":update_bundle_proto_cc.pwpb",
+        ":update_bundle_proto_cc.pwpb_rpc",
         "//pw_log",
         "//pw_result",
         "//pw_status",
+        "//pw_string:util",
         "//pw_sync:borrow",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
-        "//pw_sync:string",
         "//pw_tokenizer",
         "//pw_work_queue",
     ],
@@ -141,7 +181,7 @@ pw_cc_test(
     name = "bundled_update_service_pwpb_test",
     srcs = ["bundled_update_service_pwpb_test.cc"],
     deps = [
-        ":bundled_update_service",
+        ":bundled_update_service_pwpb",
         "//pw_unit_test",
     ],
 )
