@@ -183,8 +183,11 @@ _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
 # Make sure to invoke gn clean out when any relevant .clang-tidy
 # file is updated.
 group("static_analysis") {
-  _toolchain = "$_internal_toolchains:pw_strict_host_clang_debug"
-  deps = [ ":pigweed_default($_toolchain.static_analysis)" ]
+  # Static analysis is only supported on Linux and macOS using clang-tidy.
+  if (host_os != "win") {
+    _toolchain = "$_internal_toolchains:pw_strict_host_clang_debug"
+    deps = [ ":pigweed_default($_toolchain.static_analysis)" ]
+  }
 }
 
 group("docs") {
