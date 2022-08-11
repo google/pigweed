@@ -115,14 +115,43 @@ pw_get_env_root() {
   # store the result of this function. This separation allows scripts to assume
   # PW_ENVIRONMENT_ROOT came from the developer and not from a previous
   # bootstrap possibly from another workspace.
-  if [ -z "$PW_ENVIRONMENT_ROOT" ]; then
-    if [ -n "$PW_PROJECT_ROOT" ]; then
-      echo "$PW_PROJECT_ROOT/.environment"
-    else
-      echo "$PW_ROOT/.environment"
-    fi
-  else
+  if [ -n "$PW_ENVIRONMENT_ROOT" ]; then
     echo "$PW_ENVIRONMENT_ROOT"
+    return
+  fi
+
+  # Determine project-level root directory.
+  if [ -n "$PW_PROJECT_ROOT" ]; then
+    _PW_ENV_PREFIX="$PW_PROJECT_ROOT"
+  else
+    _PW_ENV_PREFIX="$PW_ROOT"
+  fi
+
+  # If <root>/environment exists, use it. Otherwise, if <root>/.environment
+  # exists, use it. Finally, use <root>/environment.
+  _PW_DOTENV="$_PW_ENV_PREFIX/.environment"
+  _PW_ENV="$_PW_ENV_PREFIX/environment"
+
+  if [ -d "$_PW_DOTENV" ]; then
+    if [ -d "$_PW_ENV" ]; then
+      pw_error "Error: both possible environment directories exist."
+      pw_error_info "  $_PW_DOTENV"
+      pw_error_info "  $_PW_ENV"
+      pw_error_info "  If only one of these folders exists it will be used for"
+      pw_error_info "  the Pigweed environment. If neither exists"
+      pw_error_info "  '<...>/environment' will be used. Since both exist,"
+      pw_error_info "  bootstrap doesn't know which to use. Please delete one"
+      pw_error_info "  or both and rerun bootstrap."
+      exit 1
+    fi
+  fi
+
+  if [ -d "$_PW_ENV" ]; then
+    echo "$_PW_ENV"
+  elif [ -d "$_PW_DOTENV" ]; then
+    echo "$_PW_DOTENV"
+  else
+    echo "$_PW_ENV"
   fi
 }
 
@@ -311,6 +340,9 @@ pw_cleanup() {
   unset _NEW_PW_ROOT
   unset _PW_ENV_SETUP_STATUS
   unset PW_ENVIRONMENT_ROOT
+  unset _PW_ENV_PREFIX
+  unset _PW_ENV
+  unset _PW_DOTENV
 
   unset -f pw_none
   unset -f pw_red
