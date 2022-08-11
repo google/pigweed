@@ -236,6 +236,17 @@
       "tags": [
         "version:2@5.1.0"
       ]
+    },
+    {
+      "path": "fuchsia/third_party/sysroot/linux",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64"
+      ],
+      "subdir": "clang_sysroot",
+      "tags": [
+        "git_revision:db18eec0b4f14b6b16174aa2b91e016663157376"
+      ]
     }
   ]
 }

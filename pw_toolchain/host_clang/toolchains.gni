@@ -54,6 +54,7 @@ _defaults = {
     "$dir_pw_build:extra_debugging",
     "$dir_pw_toolchain/host_clang:no_system_libcpp",
     "$dir_pw_toolchain/host_clang:xcode_sysroot",
+    "$dir_pw_toolchain/host_clang:linux_sysroot",
   ]
 }
 

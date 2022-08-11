@@ -46,15 +46,6 @@ pw_toolchain_clang_tools = {
     rustc = ""
   }
   _rbe_debug_flag = ""
-
-  # Currently the sysroot is not defined and therefore clang looks at the
-  # system libraries for the default glibc libraries.  Therefore
-  # pigweed cannot be hermetic as long as that is how clang works.  This
-  # variable, _sysroot, will be updated to the cipd installed glibc
-  # libraries, once the cipd package is updated to include those files.
-  # For now, this is a placeholder to make sure it is not lost in the
-  # future.
-  _sysroot = ""
   if (pw_toolchain_USE_RBE) {
     if (pw_toolchain_RBE_DEBUG) {
       _rbe_debug_flag = " -v"
@@ -66,10 +57,10 @@ pw_toolchain_clang_tools = {
         _rewrapper_binary +
         " --labels=type=compile,lang=cpp,compiler=clang --cfg=" +
         _pw_rbe_config + " --exec_root=" + _exec_root + " -- " +
-        rebase_path(dir_cipd_pigweed, root_build_dir) + "/bin/"
+        rebase_path(pw_env_setup_CIPD_PIGWEED, root_build_dir) + "/bin/"
 
-    cc = _rbe_toolchain_prefix + "clang" + _rbe_debug_flag + _sysroot
-    cxx = _rbe_toolchain_prefix + "clang++" + _rbe_debug_flag + _sysroot
+    cc = _rbe_toolchain_prefix + "clang" + _rbe_debug_flag
+    cxx = _rbe_toolchain_prefix + "clang++" + _rbe_debug_flag
   } else {
     cc += "clang"
     cxx += "clang++"

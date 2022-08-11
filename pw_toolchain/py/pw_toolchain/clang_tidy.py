@@ -109,6 +109,13 @@ def _filter_include_paths(args: Iterable[str],
                     for f in filters):
                 yield '-isystem' + arg[2:]
                 continue
+        if arg.startswith('--sysroot'):
+            path = Path(arg[9:]).as_posix()
+            if any(
+                    path.endswith(f) or re.match(f, str(path))
+                    for f in filters):
+                yield '-isysroot' + arg[9:]
+                continue
 
         yield arg
 

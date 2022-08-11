@@ -106,6 +106,15 @@ config("xcode_sysroot") {
   }
 }
 
+config("linux_sysroot") {
+  if (current_os == "linux") {
+    cflags = [ "--sysroot=" +
+               rebase_path(pw_env_setup_CIPD_PIGWEED, root_build_dir) +
+               "/clang_sysroot/" ]
+    ldflags = cflags
+  }
+}
+
 # The CIPD provided Clang/LLVM toolchain must link against the matched
 # libc++ which is also from CIPD. However, by default, Clang on Mac (but
 # not on Linux) will fall back to the system libc++, which is
