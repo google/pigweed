@@ -46,16 +46,21 @@ class TransferThread : public thread::ThreadCore {
         encode_buffer_(encode_buffer) {}
 
   void StartClientTransfer(TransferType type,
-                           uint32_t session_id,
+                           ProtocolVersion version,
                            uint32_t resource_id,
                            stream::Stream* stream,
                            const TransferParameters& max_parameters,
                            Function<void(Status)>&& on_completion,
                            chrono::SystemClock::duration timeout,
                            uint8_t max_retries) {
+    uint32_t session_id = version == ProtocolVersion::kLegacy
+                              ? resource_id
+                              : Context::kUnassignedSessionId;
     StartTransfer(type,
+                  version,
                   session_id,
                   resource_id,
+                  /*raw_chunk=*/{},
                   stream,
                   max_parameters,
                   std::move(on_completion),
@@ -64,14 +69,18 @@ class TransferThread : public thread::ThreadCore {
   }
 
   void StartServerTransfer(TransferType type,
+                           ProtocolVersion version,
                            uint32_t session_id,
                            uint32_t resource_id,
+                           ConstByteSpan raw_chunk,
                            const TransferParameters& max_parameters,
                            chrono::SystemClock::duration timeout,
                            uint8_t max_retries) {
     StartTransfer(type,
+                  version,
                   session_id,
                   resource_id,
+                  raw_chunk,
                   /*stream=*/nullptr,
                   max_parameters,
                   /*on_completion=*/nullptr,
@@ -160,10 +169,10 @@ class TransferThread : public thread::ThreadCore {
   // Finds an active server or client transfer.
   template <typename T>
   static Context* FindActiveTransfer(const span<T>& transfers,
-                                     uint32_t session_id) {
-    auto transfer =
-        std::find_if(transfers.begin(), transfers.end(), [session_id](auto& c) {
-          return c.initialized() && c.session_id() == session_id;
+                                     uint32_t context_identifier) {
+    auto transfer = std::find_if(
+        transfers.begin(), transfers.end(), [context_identifier](auto& c) {
+          return c.initialized() && c.id() == context_identifier;
         });
     return transfer != transfers.end() ? &*transfer : nullptr;
   }
@@ -218,8 +227,10 @@ class TransferThread : public thread::ThreadCore {
   chrono::SystemClock::time_point GetNextTransferTimeout() const;
 
   void StartTransfer(TransferType type,
+                     ProtocolVersion version,
                      uint32_t session_id,
                      uint32_t resource_id,
+                     ConstByteSpan raw_chunk,
                      stream::Stream* stream,
                      const TransferParameters& max_parameters,
                      Function<void(Status)>&& on_completion,

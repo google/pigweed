@@ -25,6 +25,7 @@
 #include "pw_stream/stream.h"
 #include "pw_transfer/internal/chunk.h"
 #include "pw_transfer/internal/event.h"
+#include "pw_transfer/internal/protocol.h"
 #include "pw_transfer/rate_estimate.h"
 
 namespace pw::transfer::internal {
@@ -69,12 +70,15 @@ class TransferParameters {
 // Information about a single transfer.
 class Context {
  public:
+  static constexpr uint32_t kUnassignedSessionId = 0;
+
   Context(const Context&) = delete;
   Context(Context&&) = delete;
   Context& operator=(const Context&) = delete;
   Context& operator=(Context&&) = delete;
 
   constexpr uint32_t session_id() const { return session_id_; }
+  constexpr uint32_t resource_id() const { return resource_id_; }
 
   // True if the context has been used for a transfer (it has an ID).
   bool initialized() const {
@@ -82,7 +86,7 @@ class Context {
   }
 
   // True if the transfer is active.
-  bool active() const { return transfer_state_ >= TransferState::kWaiting; }
+  bool active() const { return transfer_state_ >= TransferState::kInitiating; }
 
   std::optional<chrono::SystemClock::time_point> timeout() const {
     return active() && next_timeout_ != kNoTimeout
@@ -104,7 +108,10 @@ class Context {
   ~Context() = default;
 
   constexpr Context()
-      : session_id_(0),
+      : session_id_(kUnassignedSessionId),
+        resource_id_(0),
+        desired_protocol_version_(ProtocolVersion::kUnknown),
+        configured_protocol_version_(ProtocolVersion::kUnknown),
         flags_(0),
         transfer_state_(TransferState::kInactive),
         retries_(0),
@@ -117,6 +124,7 @@ class Context {
         max_chunk_size_bytes_(std::numeric_limits<uint32_t>::max()),
         max_parameters_(nullptr),
         thread_(nullptr),
+        last_chunk_sent_(Chunk::Type::kData),
         last_chunk_offset_(0),
         chunk_timeout_(chrono::SystemClock::duration::zero()),
         interchunk_delay_(chrono::SystemClock::for_at_least(
@@ -132,18 +140,23 @@ class Context {
     // This ServerContext has never been used for a transfer. It is available
     // for use for a transfer.
     kInactive,
-    // A transfer completed and the final status chunk was sent. The Context
-    // is
-    // available for use for a new transfer. A receive transfer uses this
-    // state
-    // to allow a transmitter to retry its last chunk if the final status
-    // chunk
+
+    // A transfer completed and the final status chunk was sent. The Context is
+    // available for use for a new transfer. A receive transfer uses this state
+    // to allow a transmitter to retry its last chunk if the final status chunk
     // was dropped.
     kCompleted,
+
+    // Transfer is starting. The server and client are performing an initial
+    // handshake and negotiating protocol and feature flags.
+    kInitiating,
+
     // Waiting for the other end to send a chunk.
     kWaiting,
+
     // Transmitting a window of data to a receiver.
     kTransmitting,
+
     // Recovering after one or more chunks was dropped in an active transfer.
     kRecovery,
   };
@@ -215,6 +228,11 @@ class Context {
   // Processes a chunk in either a transfer or receive transfer.
   void HandleChunkEvent(const ChunkEvent& event);
 
+  // Runs the initial three-way handshake when starting a new transfer.
+  void PerformInitialHandshake(const Chunk& chunk);
+
+  void UpdateLocalProtocolConfigurationFromPeer(const Chunk& chunk);
+
   // Processes a chunk in a transmit transfer.
   void HandleTransmitChunk(const Chunk& chunk);
 
@@ -233,12 +251,18 @@ class Context {
   // Sends the first chunk in a transmit transfer.
   void SendInitialTransmitChunk();
 
+  // Updates the current receive transfer parameters based on the context's
+  // configuration.
+  void UpdateTransferParameters();
+
+  // Populates the transfer parameters fields on a chunk object.
+  void SetTransferParameters(Chunk& parameters);
+
   // In a receive transfer, sends a parameters chunk telling the transmitter
   // how much data they can send.
   void SendTransferParameters(TransmitAction action);
 
-  // Updates the current receive transfer parameters from the provided object,
-  // then sends them.
+  // Updates the current receive transfer parameters, then sends them.
   void UpdateAndSendTransferParameters(TransmitAction action);
 
   // Sends a final status chunk of a completed transfer without updating the
@@ -264,6 +288,7 @@ class Context {
   // Resends the last packet or aborts the transfer if the maximum retries has
   // been exceeded.
   void Retry();
+  void RetryHandshake();
 
   void LogTransferConfiguration();
 
@@ -283,6 +308,15 @@ class Context {
       chrono::SystemClock::time_point(chrono::SystemClock::duration(0));
 
   uint32_t session_id_;
+  uint32_t resource_id_;
+
+  // The version of the transfer protocol that this node wants to run.
+  ProtocolVersion desired_protocol_version_;
+
+  // The version of the transfer protocol that the context is actually running,
+  // following negotiation with the transfer peer.
+  ProtocolVersion configured_protocol_version_;
+
   uint8_t flags_;
   TransferState transfer_state_;
   uint8_t retries_;
@@ -299,6 +333,8 @@ class Context {
 
   const TransferParameters* max_parameters_;
   TransferThread* thread_;
+
+  Chunk::Type last_chunk_sent_;
 
   union {
     Status status_;               // Used when state is kCompleted.

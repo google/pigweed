@@ -23,8 +23,10 @@ namespace pw::transfer {
 Status Client::Read(uint32_t resource_id,
                     stream::Writer& output,
                     CompletionFunc&& on_completion,
-                    chrono::SystemClock::duration timeout) {
-  if (on_completion == nullptr) {
+                    chrono::SystemClock::duration timeout,
+                    ProtocolVersion protocol_version) {
+  if (on_completion == nullptr ||
+      protocol_version == ProtocolVersion::kUnknown) {
     return Status::InvalidArgument();
   }
 
@@ -40,10 +42,9 @@ Status Client::Read(uint32_t resource_id,
     has_read_stream_ = true;
   }
 
-  // TODO(frolv): Only send the resource ID. The server should assign a session.
   transfer_thread_.StartClientTransfer(internal::TransferType::kReceive,
-                                       /*session_id=*/resource_id,
-                                       /*resource_id=*/resource_id,
+                                       protocol_version,
+                                       resource_id,
                                        &output,
                                        max_parameters_,
                                        std::move(on_completion),
@@ -55,8 +56,10 @@ Status Client::Read(uint32_t resource_id,
 Status Client::Write(uint32_t resource_id,
                      stream::Reader& input,
                      CompletionFunc&& on_completion,
-                     chrono::SystemClock::duration timeout) {
-  if (on_completion == nullptr) {
+                     chrono::SystemClock::duration timeout,
+                     ProtocolVersion protocol_version) {
+  if (on_completion == nullptr ||
+      protocol_version == ProtocolVersion::kUnknown) {
     return Status::InvalidArgument();
   }
 
@@ -72,10 +75,9 @@ Status Client::Write(uint32_t resource_id,
     has_write_stream_ = true;
   }
 
-  // TODO(frolv): Only send the resource ID. The server should assign a session.
   transfer_thread_.StartClientTransfer(internal::TransferType::kTransmit,
-                                       /*session_id=*/resource_id,
-                                       /*resource_id=*/resource_id,
+                                       protocol_version,
+                                       resource_id,
                                        &input,
                                        max_parameters_,
                                        std::move(on_completion),

@@ -3,6 +3,8 @@
 ===========
 pw_transfer
 ===========
+``pw_transfer`` is a reliable data transfer protocol which runs on top of
+Pigweed RPC.
 
 .. attention::
 
@@ -14,8 +16,83 @@ Usage
 
 C++
 ===
-The transfer service is defined and registered with an RPC server like any other
-RPC service.
+
+Transfer thread
+---------------
+To run transfers as either a client or server (or both), a dedicated thread is
+required. The transfer thread is used to process all transfer-related events
+safely. The same transfer thread can be shared by a transfer client and service
+running on the same system.
+
+.. note::
+
+   All user-defined transfer callbacks (i.e. the virtual interface of a
+   ``TransferHandler`` or completion function in a transfer client) will be
+   invoked from the transfer thread's context.
+
+In order to operate, a transfer thread requires two buffers:
+
+- The first is a *chunk buffer*. This is used to stage transfer packets received
+  by the RPC system to be processed by the transfer thread. It must be large
+  enough to store the largest possible chunk the system supports.
+
+- The second is an *encode buffer*. This is used by the transfer thread to
+  encode outgoing RPC packets. It is necessarily larger than the chunk buffer.
+  Typically, this is sized to the system's maximum transmission unit at the
+  transport layer.
+
+A transfer thread is created by instantiating a ``pw::transfer::Thread``. This
+class derives from ``pw::thread::ThreadCore``, allowing it to directly be used
+when creating a system thread. Refer to :ref:`module-pw_thread-thread-creation`
+for additional information.
+
+**Example thread configuration**
+
+.. code-block:: cpp
+
+   #include "pw_transfer/transfer_thread.h"
+
+   namespace {
+
+   // The maximum number of concurrent transfers the thread should support as
+   // either a client or a server. These can be set to 0 (if only using one or
+   // the other).
+   constexpr size_t kMaxConcurrentClientTransfers = 5;
+   constexpr size_t kMaxConcurrentServerTransfers = 3;
+
+   // The maximum payload size that can be transmitted by the system's
+   // transport stack. This would typically be defined within some transport
+   // header.
+   constexpr size_t kMaxTransmissionUnit = 512;
+
+   // The maximum amount of data that should be sent within a single transfer
+   // packet. By necessity, this should be less than the max transmission unit.
+   //
+   // pw_transfer requires some additional per-packet overhead, so the actual
+   // amount of data it sends may be lower than this.
+   constexpr size_t kMaxTransferChunkSizeBytes = 480;
+
+   // Buffers for storing and encoding chunks (see documentation above).
+   std::array<std::byte, kMaxTransferChunkSizeBytes> chunk_buffer;
+   std::array<std::byte, kMaxTransmissionUnit> encode_buffer;
+
+   pw::transfer::Thread<kMaxConcurrentClientTransfers,
+                        kMaxConcurrentServerTransfers>
+       transfer_thread(chunk_buffer, encode_buffer);
+
+   }  // namespace
+
+   // pw::transfer::TransferThread is the generic, non-templated version of the
+   // Thread class. A Thread can implicitly convert to a TransferThread.
+   pw::transfer::TransferThread& GetSystemTransferThread() {
+     return transfer_thread;
+   }
+
+
+Transfer server
+---------------
+``pw_transfer`` provides an RPC service for running transfers through an RPC
+server.
 
 To know how to read data from or write data to device, a ``TransferHandler``
 interface is defined (``pw_transfer/public/pw_transfer/handler.h``). Transfer
@@ -25,19 +102,22 @@ implementations should derive from ``ReadOnlyHandler``, ``WriteOnlyHandler``,
 or ``ReadWriteHandler`` as appropriate and override Prepare and Finalize methods
 if necessary.
 
-A transfer handler should be implemented and instantiated for each unique data
-transfer to or from a device. These handlers are then registered with the
-transfer service using their resource IDs.
+A transfer handler should be implemented and instantiated for each unique
+resource that can be transferred to or from a device. Each instantiated handler
+must have a globally-unique integer ID used to identify the resource.
 
-**Example**
+Handlers are registered with the transfer service. This may be done during
+system initialization (for static resources), or dynamically at runtime to
+support ephemeral transfer resources.
+
+**Example transfer handler implementation**
 
 .. code-block:: cpp
 
+  #include "pw_stream/memory_stream.h"
   #include "pw_transfer/transfer.h"
 
-  namespace {
-
-  // Simple transfer handler which reads data from an in-memory buffer.
+  // A simple transfer handler which reads data from an in-memory buffer.
   class SimpleBufferReadHandler : public pw::transfer::ReadOnlyHandler {
    public:
     SimpleReadTransfer(uint32_t resource_id, pw::ConstByteSpan data)
@@ -49,35 +129,109 @@ transfer service using their resource IDs.
     pw::stream::MemoryReader reader_;
   };
 
-  // The maximum amount of data that can be sent in a single chunk, excluding
-  // transport layer overhead.
-  constexpr size_t kMaxChunkSizeBytes = 256;
+The transfer service is instantiated with a reference to the system's transfer
+thread and registered with the system's RPC server.
 
-  // In a write transfer, the maximum number of bytes to receive at one time,
+**Example transfer service initialization**
+
+.. code-block:: cpp
+
+  #include "pw_transfer/transfer.h"
+
+  namespace {
+
+  // In a write transfer, the maximum number of bytes to receive at one time
   // (potentially across multiple chunks), unless specified otherwise by the
   // transfer handler's stream::Writer.
   constexpr size_t kDefaultMaxBytesToReceive = 1024;
 
-  // Instantiate a static transfer service.
-  // The service requires a work queue, and a buffer to store data from a chunk.
-  // The helper class TransferServiceBuffer comes with a builtin buffer.
-  pw::transfer::TransferServiceBuffer<kMaxChunkSizeBytes> transfer_service(
-      GetSystemWorkQueue(), kDefaultMaxBytesToReceive);
+  pw::transfer::TransferService transfer_service(
+      GetSystemTransferThread(), kDefaultMaxBytesToReceive);
 
   // Instantiate a handler for the data to be transferred. The resource ID will
   // be used by the transfer client and server to identify the handler.
-  constexpr uint32_t kBufferResourceId = 1;
-  char buffer_to_transfer[256] = { /* ... */ };
-  SimpleBufferReadHandler buffer_handler(kBufferResourceId, buffer_to_transfer);
+  constexpr uint32_t kMagicBufferResourceId = 1;
+  char magic_buffer_to_transfer[256] = { /* ... */ };
+  SimpleBufferReadHandler magic_buffer_handler(
+      kMagicBufferResourceId, magic_buffer_to_transfer);
 
   }  // namespace
 
-  void InitTransfer() {
+  void InitTransferService() {
     // Register the handler with the transfer service, then the transfer service
     // with an RPC server.
-    transfer_service.RegisterHandler(buffer_handler);
+    transfer_service.RegisterHandler(magic_buffer_handler);
     GetSystemRpcServer().RegisterService(transfer_service);
   }
+
+Transfer client
+---------------
+``pw_transfer`` provides a transfer client capable of running transfers through
+an RPC client.
+
+.. note::
+
+   Currently, a transfer client is only capable of running transfers on a single
+   RPC channel. This may be expanded in the future.
+
+The transfer client provides the following two APIs for starting data transfers:
+
+.. cpp:function:: pw::Status pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
+
+  Reads data from a transfer server to the specified ``pw::stream::Writer``.
+  Invokes the provided callback function with the overall status of the
+  transfer.
+
+  Due to the asynchronous nature of transfer operations, this function will only
+  return a non-OK status if it is called with bad arguments. Otherwise, it will
+  return OK and errors will be reported through the completion callback.
+
+.. cpp:function:: pw::Status pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
+
+  Writes data from a source ``pw::stream::Reader`` to a transfer server.
+  Invokes the provided callback function with the overall status of the
+  transfer.
+
+  Due to the asynchronous nature of transfer operations, this function will only
+  return a non-OK status if it is called with bad arguments. Otherwise, it will
+  return OK and errors will be reported through the completion callback.
+
+**Example client setup**
+
+.. code-block:: cpp
+
+   #include "pw_transfer/client.h"
+
+   namespace {
+
+   // RPC channel on which transfers should be run.
+   constexpr uint32_t kChannelId = 42;
+
+   pw::transfer::Client transfer_client(
+       GetSystemRpcClient(), kChannelId, GetSystemTransferThread());
+
+   }  // namespace
+
+   Status ReadMagicBufferSync(pw::ByteSpan sink) {
+     pw::stream::Writer writer(sink);
+
+     struct {
+       pw::sync::ThreadNotification notification;
+       pw::Status status;
+     } transfer_state;
+
+     transfer_client.Read(
+         kMagicBufferResourceId,
+         writer,
+         [&transfer_state](pw::Status status) {
+           transfer_state.status = status;
+           transfer_state.notification.release();
+         });
+
+     // Block until the transfer completes.
+     transfer_state.notification.acquire();
+     return transfer_state.status;
+   }
 
 Module Configuration Options
 ----------------------------

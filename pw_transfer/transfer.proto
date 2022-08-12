@@ -204,4 +204,14 @@ message Chunk {
   // Write → ID of transfer session
   // Write ← ID of transfer session
   optional uint32 session_id = 12;
+
+  // The protocol version to use for this transfer. Only sent during the initial
+  // handshake phase of a version 2 or higher transfer to negotiate a common
+  // protocol version between the client and server.
+  //
+  //  Read → Desired (START) or configured (START_ACK_CONFIRMATION) version.
+  //  Read ← Configured protocol version (START_ACK).
+  // Write → Desired (START) or configured (START_ACK_CONFIRMATION) version.
+  // Write ← Configured protocol version (START_ACK).
+  optional uint32 protocol_version = 13;
 }

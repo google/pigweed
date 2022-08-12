@@ -13,7 +13,9 @@
 // the License.
 #pragma once
 
-namespace pw::transfer::internal {
+#include <cstdint>
+
+namespace pw::transfer {
 
 enum class ProtocolVersion {
   // Protocol version not know or not set.
@@ -32,4 +34,13 @@ enum class ProtocolVersion {
   kLatest = kVersionTwo,
 };
 
-}  // namespace pw::transfer::internal
+constexpr bool ValidProtocolVersion(ProtocolVersion version) {
+  return version > ProtocolVersion::kUnknown &&
+         version <= ProtocolVersion::kLatest;
+}
+
+constexpr bool ValidProtocolVersion(uint32_t version) {
+  return ValidProtocolVersion(static_cast<ProtocolVersion>(version));
+}
+
+}  // namespace pw::transfer

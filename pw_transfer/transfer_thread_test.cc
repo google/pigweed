@@ -106,8 +106,10 @@ TEST_F(TransferThreadTest, AddTransferHandler) {
   transfer_thread_.AddTransferHandler(handler);
 
   transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
+                                       ProtocolVersion::kLegacy,
                                        3,
                                        3,
+                                       {},
                                        max_parameters_,
                                        std::chrono::seconds(2),
                                        0);
@@ -128,8 +130,10 @@ TEST_F(TransferThreadTest, RemoveTransferHandler) {
   transfer_thread_.RemoveTransferHandler(handler);
 
   transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
+                                       ProtocolVersion::kLegacy,
                                        3,
                                        3,
+                                       {},
                                        max_parameters_,
                                        std::chrono::seconds(2),
                                        0);
@@ -154,21 +158,21 @@ TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
   SimpleReadTransfer handler(3, kData);
   transfer_thread_.AddTransferHandler(handler);
 
-  transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
-                                       3,
-                                       3,
-                                       max_parameters_,
-                                       std::chrono::seconds(2),
-                                       0);
-
   rpc::test::WaitForPackets(ctx_.output(), 2, [this] {
-    transfer_thread_.ProcessServerChunk(
-        EncodeChunk(Chunk(internal::ProtocolVersion::kLegacy,
-                          Chunk::Type::kParametersRetransmit)
-                        .set_session_id(3)
-                        .set_window_end_offset(16)
-                        .set_max_chunk_size_bytes(8)
-                        .set_offset(0)));
+    transfer_thread_.StartServerTransfer(
+        internal::TransferType::kTransmit,
+        ProtocolVersion::kLegacy,
+        3,
+        3,
+        EncodeChunk(
+            Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
+                .set_session_id(3)
+                .set_window_end_offset(16)
+                .set_max_chunk_size_bytes(8)
+                .set_offset(0)),
+        max_parameters_,
+        std::chrono::seconds(2),
+        0);
   });
 
   ASSERT_EQ(ctx_.total_responses(), 2u);
@@ -201,31 +205,48 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
   transfer_thread_.AddTransferHandler(handler3);
   transfer_thread_.AddTransferHandler(handler4);
 
-  transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
-                                       3,
-                                       3,
-                                       max_parameters_,
-                                       std::chrono::seconds(2),
-                                       0);
+  transfer_thread_.StartServerTransfer(
+      internal::TransferType::kTransmit,
+      ProtocolVersion::kLegacy,
+      3,
+      3,
+      EncodeChunk(
+          Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
+              .set_session_id(3)
+              .set_window_end_offset(16)
+              .set_max_chunk_size_bytes(8)
+              .set_offset(0)),
+      max_parameters_,
+      std::chrono::seconds(2),
+      0);
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer starts correctly.
   EXPECT_TRUE(handler3.prepare_read_called);
   EXPECT_FALSE(handler4.prepare_read_called);
+  ASSERT_EQ(ctx_.total_responses(), 1u);
 
   // Try to start a simultaneous transfer to resource 4, for which the thread
   // does not have an available context.
-  transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
-                                       4,
-                                       4,
-                                       max_parameters_,
-                                       std::chrono::seconds(2),
-                                       0);
+  transfer_thread_.StartServerTransfer(
+      internal::TransferType::kTransmit,
+      ProtocolVersion::kLegacy,
+      4,
+      4,
+      EncodeChunk(
+          Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
+              .set_session_id(4)
+              .set_window_end_offset(16)
+              .set_max_chunk_size_bytes(8)
+              .set_offset(0)),
+      max_parameters_,
+      std::chrono::seconds(2),
+      0);
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_FALSE(handler4.prepare_read_called);
 
-  ASSERT_EQ(ctx_.total_responses(), 1u);
+  ASSERT_EQ(ctx_.total_responses(), 2u);
   auto chunk = DecodeChunk(ctx_.response());
   EXPECT_EQ(chunk.session_id(), 4u);
   ASSERT_TRUE(chunk.status().has_value());
@@ -248,7 +269,7 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
 
   transfer_thread_.StartClientTransfer(
       internal::TransferType::kReceive,
-      3,
+      ProtocolVersion::kLegacy,
       3,
       &buffer3,
       max_parameters_,
@@ -264,7 +285,7 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
   // does not have an available context.
   transfer_thread_.StartClientTransfer(
       internal::TransferType::kReceive,
-      4,
+      ProtocolVersion::kLegacy,
       4,
       &buffer4,
       max_parameters_,
@@ -275,6 +296,9 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
 
   EXPECT_EQ(status3, Status::Unknown());
   EXPECT_EQ(status4, Status::ResourceExhausted());
+
+  transfer_thread_.EndClientTransfer(3, Status::Cancelled());
+  transfer_thread_.EndClientTransfer(4, Status::Cancelled());
 }
 
 }  // namespace

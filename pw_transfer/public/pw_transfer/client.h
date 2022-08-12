@@ -71,11 +71,11 @@ class Client {
   // the server is written to the provided writer. Returns OK if the transfer is
   // successfully started. When the transfer finishes (successfully or not), the
   // completion callback is invoked with the overall status.
-  Status Read(
-      uint32_t resource_id,
-      stream::Writer& output,
-      CompletionFunc&& on_completion,
-      chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout);
+  Status Read(uint32_t resource_id,
+              stream::Writer& output,
+              CompletionFunc&& on_completion,
+              chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout,
+              ProtocolVersion version = kDefaultProtocolVersion);
 
   // Begins a new write transfer for the given resource ID. Data from the
   // provided reader is sent to the server. When the transfer finishes
@@ -85,7 +85,8 @@ class Client {
       uint32_t resource_id,
       stream::Reader& input,
       CompletionFunc&& on_completion,
-      chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout);
+      chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout,
+      ProtocolVersion version = kDefaultProtocolVersion);
 
   // Terminates an ongoing transfer for the specified resource ID.
   //
@@ -103,6 +104,11 @@ class Client {
   }
 
  private:
+  // TODO(frolv): This should be switched to default to kLatest once
+  // implementation of protocol v2 is complete.
+  static constexpr ProtocolVersion kDefaultProtocolVersion =
+      ProtocolVersion::kLegacy;
+
   using Transfer = pw_rpc::raw::Transfer;
 
   void OnRpcError(Status status, internal::TransferType type);

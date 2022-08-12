@@ -24,12 +24,14 @@ namespace pw::transfer::internal {
 class Chunk {
  public:
   enum class Type {
-    kTransferData = 0,
-    kTransferStart = 1,
+    kData = 0,
+    kStart = 1,
     kParametersRetransmit = 2,
     kParametersContinue = 3,
-    kTransferCompletion = 4,
-    kTransferCompletionAck = 5,  // Currently unused.
+    kCompletion = 4,
+    kCompletionAck = 5,  // Currently unused.
+    kStartAck = 6,
+    kStartAckConfirmation = 7,
   };
 
   // Constructs a new chunk with the given transfer protocol version. All fields
@@ -40,14 +42,16 @@ class Chunk {
   // Parses a chunk from a serialized protobuf message.
   static Result<Chunk> Parse(ConstByteSpan message);
 
-  // Partially decodes a transfer chunk to find its session ID field.
-  static Result<uint32_t> ExtractSessionId(ConstByteSpan message);
+  // Partially decodes a transfer chunk to find its transfer context identifier.
+  // Depending on the protocol version and type of chunk, this may be one of
+  // several proto fields.
+  static Result<uint32_t> ExtractIdentifier(ConstByteSpan message);
 
   // Creates a terminating status chunk within a transfer.
   static Chunk Final(ProtocolVersion version,
                      uint32_t session_id,
                      Status status) {
-    return Chunk(version, Type::kTransferCompletion)
+    return Chunk(version, Type::kCompletion)
         .set_session_id(session_id)
         .set_status(status);
   }
@@ -67,6 +71,11 @@ class Chunk {
 
   constexpr Chunk& set_resource_id(uint32_t resource_id) {
     resource_id_ = resource_id;
+    return *this;
+  }
+
+  constexpr Chunk& set_protocol_version(ProtocolVersion version) {
+    protocol_version_ = version;
     return *this;
   }
 
@@ -137,6 +146,10 @@ class Chunk {
     return remaining_bytes_;
   }
 
+  constexpr ProtocolVersion protocol_version() const {
+    return protocol_version_;
+  }
+
   constexpr bool is_legacy() const {
     return protocol_version_ == ProtocolVersion::kLegacy;
   }
@@ -152,11 +165,11 @@ class Chunk {
     // continuation parameters. Therefore, there are only three possible chunk
     // types: start, data, and retransmit.
     if (IsInitialChunk()) {
-      return Type::kTransferStart;
+      return Type::kStart;
     }
 
     if (has_payload()) {
-      return Type::kTransferData;
+      return Type::kData;
     }
 
     return Type::kParametersRetransmit;
@@ -170,24 +183,39 @@ class Chunk {
     }
 
     return type_.value() == Type::kParametersRetransmit ||
-           type_.value() == Type::kTransferStart;
+           type_.value() == Type::kStartAckConfirmation ||
+           type_.value() == Type::kStart;
   }
 
   constexpr bool IsInitialChunk() const {
     if (protocol_version_ >= ProtocolVersion::kVersionTwo) {
-      return type_ == Type::kTransferStart;
+      return type_ == Type::kStart;
     }
 
     // In legacy versions of the transfer protocol, the chunk type is not always
     // set. Infer that a chunk is initial if it has an offset of 0 and no data
     // or status.
-    return type_ == Type::kTransferStart ||
+    return type_ == Type::kStart ||
            (offset_ == 0 && !has_payload() && !status_.has_value());
+  }
+
+  constexpr bool IsTerminatingChunk() const {
+    if (is_legacy()) {
+      return status_.has_value();
+    }
+
+    return type_ == Type::kCompletion || type_ == Type::kCompletionAck;
   }
 
   // The final chunk from the transmitter sets remaining_bytes to 0 in both Read
   // and Write transfers.
   constexpr bool IsFinalTransmitChunk() const { return remaining_bytes_ == 0u; }
+
+  // Returns true if this chunk is part of an initial transfer handshake.
+  constexpr bool IsInitialHandshakeChunk() const {
+    return type_ == Type::kStart || type_ == Type::kStartAck ||
+           type_ == Type::kStartAckConfirmation;
+  }
 
  private:
   constexpr Chunk(ProtocolVersion version, std::optional<Type> type)
@@ -214,7 +242,7 @@ class Chunk {
   // chunk is processable. Following a response, the common protocol version
   // will be determined and fields omitted as necessary.
   constexpr bool ShouldEncodeLegacyFields() const {
-    return is_legacy() || type_ == Chunk::Type::kTransferStart;
+    return is_legacy() || type_ == Type::kStart;
   }
 
   uint32_t session_id_;

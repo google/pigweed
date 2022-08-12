@@ -24,30 +24,45 @@ namespace pw::transfer::internal {
 
 namespace ProtoChunk = transfer::Chunk;
 
-Result<uint32_t> Chunk::ExtractSessionId(ConstByteSpan message) {
+Result<uint32_t> Chunk::ExtractIdentifier(ConstByteSpan message) {
   protobuf::Decoder decoder(message);
 
   uint32_t session_id = 0;
+  uint32_t resource_id = 0;
+
+  // During the initial handshake, a START_ACK chunk sent from the server
+  // to a client identifies its transfer context using a resource_id, as
+  // the client does not yet know its session_id.
+  bool should_use_resource_id = false;
 
   while (decoder.Next().ok()) {
     ProtoChunk::Fields field =
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
 
     if (field == ProtoChunk::Fields::TRANSFER_ID) {
-      // Interpret a legacy transfer_id field as a session ID, but don't
-      // return immediately. Instead, check to see if the message also
-      // contains a newer session_id field.
-      PW_TRY(decoder.ReadUint32(&session_id));
-
+      // Interpret a legacy transfer_id field as a session ID if an explicit
+      // session_id field has not already been seen.
+      if (session_id == 0) {
+        PW_TRY(decoder.ReadUint32(&session_id));
+      }
     } else if (field == ProtoChunk::Fields::SESSION_ID) {
-      // A session_id field always takes precedence over transfer_id, so
-      // return it immediately when encountered.
+      // A session_id field always takes precedence over transfer_id.
       PW_TRY(decoder.ReadUint32(&session_id));
-      return session_id;
+    } else if (field == ProtoChunk::Fields::TYPE) {
+      // Check if the chunk is a START_ACK.
+      uint32_t type;
+      PW_TRY(decoder.ReadUint32(&type));
+      should_use_resource_id = static_cast<Type>(type) == Type::kStartAck;
+    } else if (field == ProtoChunk::Fields::RESOURCE_ID) {
+      PW_TRY(decoder.ReadUint32(&resource_id));
     }
   }
 
-  if (session_id != 0) {
+  if (should_use_resource_id) {
+    if (resource_id != 0) {
+      return resource_id;
+    }
+  } else if (session_id != 0) {
     return session_id;
   }
 
@@ -61,9 +76,9 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
 
   Chunk chunk;
 
-  // Assume the legacy protocol by default. Field presence in the serialized
-  // message may change this.
-  chunk.protocol_version_ = ProtocolVersion::kLegacy;
+  // Determine the protocol version of the chunk depending on field presence in
+  // the serialized message.
+  chunk.protocol_version_ = ProtocolVersion::kUnknown;
 
   // Some older versions of the protocol set the deprecated pending_bytes field
   // in their chunks. The newer transfer handling code does not process this
@@ -88,8 +103,12 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
 
       case ProtoChunk::Fields::SESSION_ID:
         // The existence of a session_id field indicates that a newer protocol
-        // is running.
-        chunk.protocol_version_ = ProtocolVersion::kVersionTwo;
+        // is running. Update the deduced protocol unless it was explicitly
+        // specified.
+        if (chunk.protocol_version_ == ProtocolVersion::kUnknown) {
+          chunk.protocol_version_ = ProtocolVersion::kVersionTwo;
+        }
+
         PW_TRY(decoder.ReadUint32(&chunk.session_id_));
         break;
 
@@ -141,14 +160,27 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
       case ProtoChunk::Fields::RESOURCE_ID:
         PW_TRY(decoder.ReadUint32(&value));
         chunk.set_resource_id(value);
+        break;
 
-        // The existence of a resource_id field indicates that a newer protocol
-        // is running.
-        chunk.protocol_version_ = ProtocolVersion::kVersionTwo;
+      case ProtoChunk::Fields::PROTOCOL_VERSION:
+        // The protocol_version field is added as part of the initial handshake
+        // starting from version 2. If provided, it should override any deduced
+        // protocol version.
+        PW_TRY(decoder.ReadUint32(&value));
+        if (!ValidProtocolVersion(value)) {
+          return Status::DataLoss();
+        }
+        chunk.protocol_version_ = static_cast<ProtocolVersion>(value);
         break;
 
         // Silently ignore any unrecognized fields.
     }
+  }
+
+  if (chunk.protocol_version_ == ProtocolVersion::kUnknown) {
+    // If no fields in the chunk specified its protocol version, assume it is a
+    // legacy chunk.
+    chunk.protocol_version_ = ProtocolVersion::kLegacy;
   }
 
   if (pending_bytes != 0) {
@@ -186,6 +218,13 @@ Result<ConstByteSpan> Chunk::Encode(ByteSpan buffer) const {
     }
   }
 
+  // During the initial handshake, the chunk's configured protocol version is
+  // explicitly serialized to the wire.
+  if (IsInitialHandshakeChunk()) {
+    encoder.WriteProtocolVersion(static_cast<uint32_t>(protocol_version_))
+        .IgnoreError();
+  }
+
   if (type_.has_value()) {
     encoder.WriteType(static_cast<ProtoChunk::Type>(type_.value()))
         .IgnoreError();
@@ -197,8 +236,13 @@ Result<ConstByteSpan> Chunk::Encode(ByteSpan buffer) const {
 
   // Encode additional fields from the legacy protocol.
   if (ShouldEncodeLegacyFields()) {
-    // The legacy protocol uses the transfer_id field instead of session_id.
-    encoder.WriteTransferId(session_id_).IgnoreError();
+    // The legacy protocol uses the transfer_id field instead of session_id or
+    // resource_id.
+    if (resource_id_.has_value()) {
+      encoder.WriteTransferId(resource_id_.value()).IgnoreError();
+    } else {
+      encoder.WriteTransferId(session_id_).IgnoreError();
+    }
 
     // In the legacy protocol, the pending_bytes field must be set alongside
     // window_end_offset, as some transfer implementations require it.
@@ -241,9 +285,20 @@ size_t Chunk::EncodedSize() const {
     }
 
     if (ShouldEncodeLegacyFields()) {
-      size += protobuf::SizeOfVarintField(ProtoChunk::Fields::TRANSFER_ID,
-                                          session_id_);
+      if (resource_id_.has_value()) {
+        size += protobuf::SizeOfVarintField(ProtoChunk::Fields::TRANSFER_ID,
+                                            resource_id_.value());
+      } else {
+        size += protobuf::SizeOfVarintField(ProtoChunk::Fields::TRANSFER_ID,
+                                            session_id_);
+      }
     }
+  }
+
+  if (IsInitialHandshakeChunk()) {
+    size +=
+        protobuf::SizeOfVarintField(ProtoChunk::Fields::PROTOCOL_VERSION,
+                                    static_cast<uint32_t>(protocol_version_));
   }
 
   if (protocol_version_ >= ProtocolVersion::kVersionTwo) {

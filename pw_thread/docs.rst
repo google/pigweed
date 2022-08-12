@@ -145,6 +145,9 @@ Example
     const pw::thread::Id my_id = pw::this_thread::get_id();
   }
 
+
+.. _module-pw_thread-thread-creation:
+
 ---------------
 Thread Creation
 ---------------

@@ -36,7 +36,7 @@ void TransferThread::SimulateTimeout(EventType type, uint32_t session_id) {
 
   next_event_.type = type;
   next_event_.chunk = {};
-  next_event_.chunk.session_id = session_id;
+  next_event_.chunk.context_identifier = session_id;
 
   event_notification_.release();
 
@@ -99,8 +99,10 @@ chrono::SystemClock::time_point TransferThread::GetNextTransferTimeout() const {
 }
 
 void TransferThread::StartTransfer(TransferType type,
+                                   ProtocolVersion version,
                                    uint32_t session_id,
                                    uint32_t resource_id,
+                                   ConstByteSpan raw_chunk,
                                    stream::Stream* stream,
                                    const TransferParameters& max_parameters,
                                    Function<void(Status)>&& on_completion,
@@ -113,14 +115,22 @@ void TransferThread::StartTransfer(TransferType type,
 
   next_event_.type = is_client_transfer ? EventType::kNewClientTransfer
                                         : EventType::kNewServerTransfer;
+
+  if (!raw_chunk.empty()) {
+    std::memcpy(chunk_buffer_.data(), raw_chunk.data(), raw_chunk.size());
+  }
+
   next_event_.new_transfer = {
       .type = type,
+      .protocol_version = version,
       .session_id = session_id,
       .resource_id = resource_id,
       .max_parameters = &max_parameters,
       .timeout = timeout,
       .max_retries = max_retries,
       .transfer_thread = this,
+      .raw_chunk_data = chunk_buffer_.data(),
+      .raw_chunk_size = raw_chunk.size(),
   };
 
   staged_on_completion_ = std::move(on_completion);
@@ -147,6 +157,7 @@ void TransferThread::StartTransfer(TransferType type,
       next_event_.type = EventType::kSendStatusChunk;
       next_event_.send_status_chunk = {
           .session_id = session_id,
+          .protocol_version = version,
           .status = Status::NotFound().code(),
           .stream = type == TransferType::kTransmit
                         ? TransferStream::kServerRead
@@ -165,9 +176,9 @@ void TransferThread::ProcessChunk(EventType type, ConstByteSpan chunk) {
   PW_CHECK(chunk.size() <= chunk_buffer_.size(),
            "Transfer received a larger chunk than it can handle.");
 
-  Result<uint32_t> session_id = Chunk::ExtractSessionId(chunk);
-  if (!session_id.ok()) {
-    PW_LOG_ERROR("Received a malformed chunk without a session ID");
+  Result<uint32_t> identifier = Chunk::ExtractIdentifier(chunk);
+  if (!identifier.ok()) {
+    PW_LOG_ERROR("Received a malformed chunk without a context identifier");
     return;
   }
 
@@ -178,7 +189,7 @@ void TransferThread::ProcessChunk(EventType type, ConstByteSpan chunk) {
 
   next_event_.type = type;
   next_event_.chunk = {
-      .session_id = *session_id,
+      .context_identifier = *identifier,
       .data = chunk_buffer_.data(),
       .size = chunk.size(),
   };
@@ -347,6 +358,7 @@ void TransferThread::HandleEvent(const internal::Event& event) {
       // On the server, send a status chunk back to the client.
       SendStatusChunk(
           {.session_id = event.new_transfer.session_id,
+           .protocol_version = event.new_transfer.protocol_version,
            .status = Status::ResourceExhausted().code(),
            .stream = event.new_transfer.type == TransferType::kTransmit
                          ? TransferStream::kServerRead
@@ -373,14 +385,18 @@ Context* TransferThread::FindContextForEvent(
       return FindNewTransfer(server_transfers_, event.new_transfer.session_id);
 
     case EventType::kClientChunk:
-      return FindActiveTransfer(client_transfers_, event.chunk.session_id);
+      return FindActiveTransfer(client_transfers_,
+                                event.chunk.context_identifier);
     case EventType::kServerChunk:
-      return FindActiveTransfer(server_transfers_, event.chunk.session_id);
+      return FindActiveTransfer(server_transfers_,
+                                event.chunk.context_identifier);
 
     case EventType::kClientTimeout:  // Manually triggered client timeout
-      return FindActiveTransfer(client_transfers_, event.chunk.session_id);
+      return FindActiveTransfer(client_transfers_,
+                                event.chunk.context_identifier);
     case EventType::kServerTimeout:  // Manually triggered server timeout
-      return FindActiveTransfer(server_transfers_, event.chunk.session_id);
+      return FindActiveTransfer(server_transfers_,
+                                event.chunk.context_identifier);
 
     case EventType::kClientEndTransfer:
       return FindActiveTransfer(client_transfers_,
@@ -404,7 +420,7 @@ void TransferThread::SendStatusChunk(
   rpc::Writer& destination = stream_for(event.stream);
 
   Result<ConstByteSpan> result =
-      Chunk::Final(ProtocolVersion::kLegacy, event.session_id, event.status)
+      Chunk::Final(event.protocol_version, event.session_id, event.status)
           .Encode(chunk_buffer_);
 
   if (!result.ok()) {

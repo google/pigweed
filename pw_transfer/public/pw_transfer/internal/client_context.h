@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -25,6 +25,13 @@ class ClientContext final : public Context {
 
   void set_on_completion(Function<void(Status)>&& on_completion) {
     on_completion_ = std::move(on_completion);
+  }
+
+  // In client-side transfer contexts, a session ID may not yet have been
+  // assigned by the server, in which case resource_id is used as the context
+  // identifier.
+  constexpr uint32_t id() const {
+    return session_id() == kUnassignedSessionId ? resource_id() : session_id();
   }
 
  private:

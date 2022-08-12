@@ -63,7 +63,8 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
                         extend_window_divisor),
         thread_(transfer_thread),
         chunk_timeout_(chunk_timeout),
-        max_retries_(max_retries) {}
+        max_retries_(max_retries),
+        next_session_id_(1) {}
 
   TransferService(const TransferService&) = delete;
   TransferService(TransferService&&) = delete;
@@ -121,11 +122,16 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
  private:
   void HandleChunk(ConstByteSpan message, internal::TransferType type);
 
+  // TODO(frolv): This could be more sophisticated and less predictable.
+  uint32_t GenerateNewSessionId() { return next_session_id_++; }
+
   internal::TransferParameters max_parameters_;
   TransferThread& thread_;
 
   chrono::SystemClock::duration chunk_timeout_;
   uint8_t max_retries_;
+
+  uint32_t next_session_id_;
 };
 
 }  // namespace pw::transfer
