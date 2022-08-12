@@ -284,6 +284,11 @@ pw_bootstrap() {
     _PW_ENV_SETUP_STATUS="$?"
   fi
 
+  # Write the directory path at bootstrap time into the directory. This helps
+  # us double-check things are still in the same space when calling activate.
+  _PW_ENV_ROOT_TXT="$_PW_ACTUAL_ENVIRONMENT_ROOT/env_root.txt"
+  echo "$_PW_ACTUAL_ENVIRONMENT_ROOT" > "$_PW_ENV_ROOT_TXT"
+
   # Create the environment README file. Use quotes to prevent alias expansion.
   "cp" "$PW_ROOT/pw_env_setup/destination.md" "$_PW_ACTUAL_ENVIRONMENT_ROOT/README.md"
 }
@@ -296,6 +301,28 @@ pw_activate() {
 pw_finalize() {
   _PW_NAME="$1"
   _PW_SETUP_SH="$2"
+
+  # Check that the environment directory agrees that the path it's at matches
+  # where it thinks it should be. If not, bail.
+  _PW_ENV_ROOT_TXT="$_PW_ACTUAL_ENVIRONMENT_ROOT/env_root.txt"
+  if [ -f "$_PW_ENV_ROOT_TXT" ]; then
+    _PW_PREV_ENV_ROOT="$(cat $_PW_ENV_ROOT_TXT)"
+    if [ "$_PW_ACTUAL_ENVIRONMENT_ROOT" != "$_PW_PREV_ENV_ROOT" ]; then
+      pw_error "Error: Environment directory moved"
+      pw_error_info "This Pigweed environment was created at"
+      pw_error_info
+      pw_error_info "    $_PW_PREV_ENV_ROOT"
+      pw_error_info
+      pw_error_info "But it is now being activated from"
+      pw_error_info
+      pw_error_info "    $_PW_ACTUAL_ENVIRONMENT_ROOT"
+      pw_error_info
+      pw_error_info "This is likely because the checkout moved. After moving "
+      pw_error_info "the checkout a full '. ./bootstrap.sh' is required."
+      pw_error_info
+      _PW_ENV_SETUP_STATUS=1
+    fi
+  fi
 
   if [ "$_PW_ENV_SETUP_STATUS" -ne 0 ]; then
      return
@@ -335,6 +362,8 @@ pw_cleanup() {
   unset _PW_ENV_SETUP
   unset _PW_NAME
   unset _PW_PYTHON
+  unset _PW_ENV_ROOT_TXT
+  unset _PW_PREV_ENV_ROOT
   unset _PW_SETUP_SH
   unset _PW_DEACTIVATE_SH
   unset _NEW_PW_ROOT
