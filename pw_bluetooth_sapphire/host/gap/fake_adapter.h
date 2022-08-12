@@ -17,6 +17,8 @@ class FakeAdapter final : public Adapter {
   FakeAdapter();
   ~FakeAdapter() override = default;
 
+  AdapterState& mutable_state() { return state_; }
+
   // Adapter overrides:
 
   AdapterId identifier() const override { return AdapterId(0); }
@@ -29,8 +31,6 @@ class FakeAdapter final : public Adapter {
 
   bool IsInitialized() const override { return init_state_ == InitState::kInitialized; }
 
-  // TODO(fxbug.dev/62791): Refactor AdapterState so that FakeAdapter can set member variables (or
-  // remove AdapterState altogether).
   const AdapterState& state() const override { return state_; }
 
   class FakeLowEnergy final : public LowEnergy {

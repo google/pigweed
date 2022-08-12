@@ -311,13 +311,13 @@ class AdapterImpl final : public Adapter {
   std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser() {
     constexpr hci_spec::LESupportedFeature feature =
         hci_spec::LESupportedFeature::kLEExtendedAdvertising;
-    if (state().low_energy_state().IsFeatureSupported(feature)) {
+    if (state().low_energy_state.IsFeatureSupported(feature)) {
       bt_log(INFO, "gap", "controller supports extended advertising, using extended LE commands");
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
     }
 
     if (state().IsVendorFeatureSupported(hci::VendorFeaturesBits::kAndroidVendorExtensions)) {
-      uint8_t max_advt = state().android_vendor_capabilities().max_simultaneous_advertisements();
+      uint8_t max_advt = state().android_vendor_capabilities.max_simultaneous_advertisements();
       bt_log(INFO, "gap",
              "controller supports android vendor extensions, max simultaneous advertisements: %d",
              max_advt);
@@ -518,7 +518,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
   init_cb_ = std::move(callback);
   transport_closed_cb_ = std::move(transport_closed_cb);
 
-  state_.vendor_features_ = hci_->GetVendorFeatures();
+  state_.vendor_features = hci_->GetVendorFeatures();
 
   // Start by resetting the controller to a clean state and then send
   // informational parameter commands that are not specific to LE or BR/EDR. The
@@ -539,7 +539,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
           return;
         }
         auto params = cmd_complete.return_params<hci_spec::ReadLocalVersionInfoReturnParams>();
-        state_.hci_version_ = params->hci_version;
+        state_.hci_version = params->hci_version;
       });
 
   // HCI_Read_Local_Supported_Commands
@@ -551,7 +551,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
         }
         auto params =
             cmd_complete.return_params<hci_spec::ReadLocalSupportedCommandsReturnParams>();
-        std::memcpy(state_.supported_commands_, params->supported_commands,
+        std::memcpy(state_.supported_commands, params->supported_commands,
                     sizeof(params->supported_commands));
       });
 
@@ -564,7 +564,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
         }
         auto params =
             cmd_complete.return_params<hci_spec::ReadLocalSupportedFeaturesReturnParams>();
-        state_.features_.SetPage(0, le64toh(params->lmp_features));
+        state_.features.SetPage(0, le64toh(params->lmp_features));
       });
 
   // HCI_Read_BD_ADDR
@@ -574,7 +574,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
           return;
         }
         auto params = cmd_complete.return_params<hci_spec::ReadBDADDRReturnParams>();
-        state_.controller_address_ = params->bd_addr;
+        state_.controller_address = params->bd_addr;
       });
 
   if (state().IsVendorFeatureSupported(hci::VendorFeaturesBits::kAndroidVendorExtensions)) {
@@ -588,7 +588,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
           }
 
           auto params = event.return_params<hci_android::LEGetVendorCapabilitiesReturnParams>();
-          state_.android_vendor_capabilities_.Initialize(*params);
+          state_.android_vendor_capabilities.Initialize(*params);
         });
   }
 
@@ -649,7 +649,7 @@ void AdapterImpl::SetLocalName(std::string name, hci::ResultFunction<> callback)
       std::move(name),
       [this, cb = std::move(callback), local_name = std::move(name_copy)](auto status) {
         if (!bt_is_error(status, WARN, "gap", "set local name failed")) {
-          state_.local_name_ = local_name;
+          state_.local_name = local_name;
         }
         cb(status);
       });
@@ -711,9 +711,9 @@ void AdapterImpl::InitializeStep2() {
 
   // Check the HCI version. We officially only support 4.2+ only but for now we
   // just log a warning message if the version is legacy.
-  if (state_.hci_version() < hci_spec::HCIVersion::k4_2) {
+  if (state_.hci_version < hci_spec::HCIVersion::k4_2) {
     bt_log(WARN, "gap", "controller is using legacy HCI version %s",
-           hci_spec::HCIVersionToString(state_.hci_version()).c_str());
+           hci_spec::HCIVersionToString(state_.hci_version).c_str());
   }
 
   ZX_DEBUG_ASSERT(init_seq_runner_->IsReady());
@@ -732,12 +732,12 @@ void AdapterImpl::InitializeStep2() {
           uint16_t acl_mtu = le16toh(params->hc_acl_data_packet_length);
           uint16_t acl_max_count = le16toh(params->hc_total_num_acl_data_packets);
           if (acl_mtu && acl_max_count) {
-            state_.bredr_data_buffer_info_ = hci::DataBufferInfo(acl_mtu, acl_max_count);
+            state_.bredr_data_buffer_info = hci::DataBufferInfo(acl_mtu, acl_max_count);
           }
           uint16_t sco_mtu = le16toh(params->hc_synchronous_data_packet_length);
           uint16_t sco_max_count = le16toh(params->hc_total_num_synchronous_data_packets);
           if (sco_mtu && sco_max_count) {
-            state_.sco_buffer_info_ = hci::DataBufferInfo(sco_mtu, sco_max_count);
+            state_.sco_buffer_info = hci::DataBufferInfo(sco_mtu, sco_max_count);
           }
         });
   }
@@ -751,7 +751,7 @@ void AdapterImpl::InitializeStep2() {
         }
         auto params =
             cmd_complete.return_params<hci_spec::LEReadLocalSupportedFeaturesReturnParams>();
-        state_.le_state_.supported_features_ = le64toh(params->le_features);
+        state_.low_energy_state.supported_features_ = le64toh(params->le_features);
       });
 
   // HCI_LE_Read_Supported_States
@@ -762,7 +762,7 @@ void AdapterImpl::InitializeStep2() {
           return;
         }
         auto params = cmd_complete.return_params<hci_spec::LEReadSupportedStatesReturnParams>();
-        state_.le_state_.supported_states_ = le64toh(params->le_states);
+        state_.low_energy_state.supported_states_ = le64toh(params->le_states);
       });
 
   // HCI_LE_Read_Buffer_Size
@@ -776,11 +776,11 @@ void AdapterImpl::InitializeStep2() {
         uint16_t mtu = le16toh(params->hc_le_acl_data_packet_length);
         uint8_t max_count = params->hc_total_num_le_acl_data_packets;
         if (mtu && max_count) {
-          state_.le_state_.data_buffer_info_ = hci::DataBufferInfo(mtu, max_count);
+          state_.low_energy_state.data_buffer_info_ = hci::DataBufferInfo(mtu, max_count);
         }
       });
 
-  if (state_.features().HasBit(0u, hci_spec::LMPFeature::kSecureSimplePairing)) {
+  if (state_.features.HasBit(0u, hci_spec::LMPFeature::kSecureSimplePairing)) {
     // HCI_Write_Simple_Pairing_Mode
     auto write_ssp = hci::CommandPacket::New(hci_spec::kWriteSimplePairingMode,
                                              sizeof(hci_spec::WriteSimplePairingModeCommandParams));
@@ -794,7 +794,7 @@ void AdapterImpl::InitializeStep2() {
 
   // If there are extended features then try to read the first page of the
   // extended features.
-  if (state_.features().HasBit(0u, hci_spec::LMPFeature::kExtendedFeatures)) {
+  if (state_.features.HasBit(0u, hci_spec::LMPFeature::kExtendedFeatures)) {
     // Page index 1 must be available.
     max_lmp_feature_page_index_ = 1;
 
@@ -814,7 +814,7 @@ void AdapterImpl::InitializeStep2() {
           }
           auto params =
               cmd_complete.return_params<hci_spec::ReadLocalExtendedFeaturesReturnParams>();
-          state_.features_.SetPage(1, le64toh(params->extended_lmp_features));
+          state_.features.SetPage(1, le64toh(params->extended_lmp_features));
           max_lmp_feature_page_index_ = params->maximum_page_number;
         });
   }
@@ -834,8 +834,8 @@ void AdapterImpl::InitializeStep3() {
   ZX_ASSERT(init_seq_runner_->IsReady());
   ZX_ASSERT(!init_seq_runner_->HasQueuedCommands());
 
-  if (!state_.bredr_data_buffer_info().IsAvailable() &&
-      !state_.low_energy_state().data_buffer_info().IsAvailable()) {
+  if (!state_.bredr_data_buffer_info.IsAvailable() &&
+      !state_.low_energy_state.data_buffer_info().IsAvailable()) {
     bt_log(ERROR, "gap", "Both BR/EDR and LE buffers are unavailable");
     CompleteInitialization(/*success=*/false);
     return;
@@ -843,8 +843,8 @@ void AdapterImpl::InitializeStep3() {
 
   // Now that we have all the ACL data buffer information it's time to
   // initialize the ACLDataChannel.
-  if (!hci_->InitializeACLDataChannel(state_.bredr_data_buffer_info(),
-                                      state_.low_energy_state().data_buffer_info())) {
+  if (!hci_->InitializeACLDataChannel(state_.bredr_data_buffer_info,
+                                      state_.low_energy_state.data_buffer_info())) {
     bt_log(ERROR, "gap", "Failed to initialize ACLDataChannel (step 3)");
     CompleteInitialization(/*success=*/false);
     return;
@@ -856,7 +856,7 @@ void AdapterImpl::InitializeStep3() {
   // TODO(fxbug.dev/89689): Support controllers that don't support SCO flow control.
   bool sco_flow_control_supported = state_.IsCommandSupported(
       /*octet=*/10, hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
-  if (state_.sco_buffer_info().IsAvailable() && sco_flow_control_supported) {
+  if (state_.sco_buffer_info.IsAvailable() && sco_flow_control_supported) {
     // Enable SCO flow control.
     auto cmd_packet =
         hci::CommandPacket::New(hci_spec::kWriteSynchronousFlowControlEnable,
@@ -871,7 +871,7 @@ void AdapterImpl::InitializeStep3() {
         return;
       }
 
-      if (!hci_->InitializeScoDataChannel(state_.sco_buffer_info())) {
+      if (!hci_->InitializeScoDataChannel(state_.sco_buffer_info)) {
         bt_log(WARN, "gap",
                "Failed to initialize ScoDataChannel, proceeding without HCI SCO support");
         return;
@@ -881,7 +881,7 @@ void AdapterImpl::InitializeStep3() {
   } else {
     bt_log(INFO, "gap",
            "HCI SCO not supported (SCO buffer available: %d, SCO flow control supported: %d)",
-           state_.sco_buffer_info().IsAvailable(), sco_flow_control_supported);
+           state_.sco_buffer_info.IsAvailable(), sco_flow_control_supported);
   }
 
   hci_->AttachInspect(adapter_node_);
@@ -922,7 +922,7 @@ void AdapterImpl::InitializeStep3() {
 
   // HCI_Write_LE_Host_Support if the appropriate feature bit is not set AND if
   // the controller supports this command.
-  if (!state_.features().HasBit(1, hci_spec::LMPFeature::kLESupportedHost) &&
+  if (!state_.features.HasBit(1, hci_spec::LMPFeature::kLESupportedHost) &&
       state_.IsCommandSupported(24, hci_spec::SupportedCommand::kWriteLEHostSupport)) {
     auto cmd_packet = hci::CommandPacket::New(hci_spec::kWriteLEHostSupport,
                                               sizeof(hci_spec::WriteLEHostSupportCommandParams));
@@ -953,7 +953,7 @@ void AdapterImpl::InitializeStep3() {
           }
           auto params =
               cmd_complete.return_params<hci_spec::ReadLocalExtendedFeaturesReturnParams>();
-          state_.features_.SetPage(2, le64toh(params->extended_lmp_features));
+          state_.features.SetPage(2, le64toh(params->extended_lmp_features));
           max_lmp_feature_page_index_ = params->maximum_page_number;
         });
   }
@@ -973,7 +973,7 @@ void AdapterImpl::InitializeStep4() {
   ZX_DEBUG_ASSERT(IsInitializing());
 
   // We use the public controller address as the local LE identity address.
-  DeviceAddress adapter_identity(DeviceAddress::Type::kLEPublic, state_.controller_address());
+  DeviceAddress adapter_identity(DeviceAddress::Type::kLEPublic, state_.controller_address);
 
   // Initialize the LE local address manager.
   le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
@@ -1005,17 +1005,17 @@ void AdapterImpl::InitializeStep4() {
 
   // Initialize the BR/EDR manager objects if the controller supports BR/EDR.
   if (state_.IsBREDRSupported()) {
-    DeviceAddress local_bredr_address(DeviceAddress::Type::kBREDR, state_.controller_address());
+    DeviceAddress local_bredr_address(DeviceAddress::Type::kBREDR, state_.controller_address);
 
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         hci_, &peer_cache_, local_bredr_address, l2cap_.get(),
-        state_.features().HasBit(0, hci_spec::LMPFeature::kInterlacedPageScan));
+        state_.features.HasBit(0, hci_spec::LMPFeature::kInterlacedPageScan));
     bredr_connection_manager_->AttachInspect(adapter_node_, kInspectBrEdrConnectionManagerNodeName);
 
     hci_spec::InquiryMode mode = hci_spec::InquiryMode::kStandard;
-    if (state_.features().HasBit(0, hci_spec::LMPFeature::kExtendedInquiryResponse)) {
+    if (state_.features.HasBit(0, hci_spec::LMPFeature::kExtendedInquiryResponse)) {
       mode = hci_spec::InquiryMode::kExtended;
-    } else if (state_.features().HasBit(0, hci_spec::LMPFeature::kRSSIwithInquiryResults)) {
+    } else if (state_.features.HasBit(0, hci_spec::LMPFeature::kRSSIwithInquiryResults)) {
       mode = hci_spec::InquiryMode::kRSSI;
     }
 
@@ -1072,28 +1072,28 @@ bool AdapterImpl::CompleteInitialization(bool success) {
 void AdapterImpl::UpdateInspectProperties() {
   inspect_properties_.adapter_id = adapter_node_.CreateString("adapter_id", identifier_.ToString());
   inspect_properties_.hci_version =
-      adapter_node_.CreateString("hci_version", hci_spec::HCIVersionToString(state_.hci_version()));
+      adapter_node_.CreateString("hci_version", hci_spec::HCIVersionToString(state_.hci_version));
 
   inspect_properties_.bredr_max_num_packets = adapter_node_.CreateUint(
-      "bredr_max_num_packets", state_.bredr_data_buffer_info().max_num_packets());
+      "bredr_max_num_packets", state_.bredr_data_buffer_info.max_num_packets());
   inspect_properties_.bredr_max_data_length = adapter_node_.CreateUint(
-      "bredr_max_data_length", state_.bredr_data_buffer_info().max_data_length());
+      "bredr_max_data_length", state_.bredr_data_buffer_info.max_data_length());
 
   inspect_properties_.le_max_num_packets = adapter_node_.CreateUint(
-      "le_max_num_packets", state_.low_energy_state().data_buffer_info().max_num_packets());
+      "le_max_num_packets", state_.low_energy_state.data_buffer_info().max_num_packets());
   inspect_properties_.le_max_data_length = adapter_node_.CreateUint(
-      "le_max_data_length", state_.low_energy_state().data_buffer_info().max_data_length());
+      "le_max_data_length", state_.low_energy_state.data_buffer_info().max_data_length());
 
   inspect_properties_.sco_max_num_packets =
-      adapter_node_.CreateUint("sco_max_num_packets", state_.sco_buffer_info().max_num_packets());
+      adapter_node_.CreateUint("sco_max_num_packets", state_.sco_buffer_info.max_num_packets());
   inspect_properties_.sco_max_data_length =
-      adapter_node_.CreateUint("sco_max_data_length", state_.sco_buffer_info().max_data_length());
+      adapter_node_.CreateUint("sco_max_data_length", state_.sco_buffer_info.max_data_length());
 
   inspect_properties_.lmp_features =
-      adapter_node_.CreateString("lmp_features", state_.features().ToString());
+      adapter_node_.CreateString("lmp_features", state_.features.ToString());
 
   auto le_features =
-      bt_lib_cpp_string::StringPrintf("0x%016lx", state_.low_energy_state().supported_features());
+      bt_lib_cpp_string::StringPrintf("0x%016lx", state_.low_energy_state.supported_features());
   inspect_properties_.le_features = adapter_node_.CreateString("le_features", le_features);
 }
 

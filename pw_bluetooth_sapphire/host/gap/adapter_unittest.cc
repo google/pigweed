@@ -178,7 +178,7 @@ TEST_F(AdapterTest, InitializeQueriesAndroidExtensionsCapabilitiesIfSupported) {
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
   EXPECT_EQ(1, init_cb_count);
-  EXPECT_TRUE(adapter()->state().android_vendor_capabilities().IsInitialized());
+  EXPECT_TRUE(adapter()->state().android_vendor_capabilities.IsInitialized());
 }
 
 TEST_F(AdapterTest, InitializeQueryAndroidExtensionsCapabilitiesFailureHandled) {
@@ -203,7 +203,7 @@ TEST_F(AdapterTest, InitializeQueryAndroidExtensionsCapabilitiesFailureHandled) 
   InitializeAdapter(std::move(init_cb));
   EXPECT_FALSE(success);
   EXPECT_EQ(1, init_cb_count);
-  EXPECT_FALSE(adapter()->state().android_vendor_capabilities().IsInitialized());
+  EXPECT_FALSE(adapter()->state().android_vendor_capabilities.IsInitialized());
 }
 
 TEST_F(AdapterTest, InitializeSuccess) {
@@ -396,7 +396,7 @@ TEST_F(AdapterTest, SetNameLargerThanMax) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(fitx::ok(), result);
-  EXPECT_EQ(long_name, adapter()->state().local_name());
+  EXPECT_EQ(long_name, adapter()->state().local_name);
 }
 
 // Tests that SetLocalName results in BrEdrDiscoveryManager updating it's local name.
@@ -416,7 +416,7 @@ TEST_F(AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(fitx::ok(), result);
-  EXPECT_EQ(kNewName, adapter()->state().local_name());
+  EXPECT_EQ(kNewName, adapter()->state().local_name);
   EXPECT_EQ(kNewName, adapter()->local_name());
 }
 
@@ -439,7 +439,7 @@ TEST_F(AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
 
   EXPECT_EQ(fitx::ok(), result);
   // Both the adapter & discovery manager local name should be the original (untruncated) name.
-  EXPECT_EQ(long_name, adapter()->state().local_name());
+  EXPECT_EQ(long_name, adapter()->state().local_name);
   EXPECT_EQ(long_name, adapter()->local_name());
 }
 
@@ -465,7 +465,7 @@ TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
   // kWriteLocalName will succeed, but kWriteExtendedInquiryResponse will fail
   EXPECT_EQ(ToResult(hci_spec::StatusCode::kConnectionTerminatedByLocalHost), result);
   // The |local_name_| should not be set.
-  EXPECT_NE(kNewName, adapter()->state().local_name());
+  EXPECT_NE(kNewName, adapter()->state().local_name);
   EXPECT_NE(kNewName, adapter()->local_name());
 }
 
@@ -480,7 +480,7 @@ TEST_F(AdapterTest, DefaultName) {
     // completed.
     EXPECT_TRUE(success);
     EXPECT_EQ(kDefaultLocalName, test_device()->local_name());
-    EXPECT_EQ(kDefaultLocalName, adapter()->state().local_name());
+    EXPECT_EQ(kDefaultLocalName, adapter()->state().local_name);
 
     initialized = true;
   });
@@ -1014,23 +1014,22 @@ TEST_F(AdapterTest, InspectHierarchy) {
           NameMatches("adapter"),
           PropertyList(UnorderedElementsAre(
               StringIs("adapter_id", adapter()->identifier().ToString()),
-              StringIs("hci_version",
-                       hci_spec::HCIVersionToString(adapter()->state().hci_version())),
+              StringIs("hci_version", hci_spec::HCIVersionToString(adapter()->state().hci_version)),
               UintIs("bredr_max_num_packets",
-                     adapter()->state().bredr_data_buffer_info().max_num_packets()),
+                     adapter()->state().bredr_data_buffer_info.max_num_packets()),
               UintIs("bredr_max_data_length",
-                     adapter()->state().bredr_data_buffer_info().max_data_length()),
+                     adapter()->state().bredr_data_buffer_info.max_data_length()),
               UintIs("le_max_num_packets",
-                     adapter()->state().low_energy_state().data_buffer_info().max_num_packets()),
+                     adapter()->state().low_energy_state.data_buffer_info().max_num_packets()),
               UintIs("le_max_data_length",
-                     adapter()->state().low_energy_state().data_buffer_info().max_data_length()),
-              UintIs("sco_max_num_packets", adapter()->state().sco_buffer_info().max_num_packets()),
-              UintIs("sco_max_data_length", adapter()->state().sco_buffer_info().max_data_length()),
-              StringIs("lmp_features", adapter()->state().features().ToString()),
+                     adapter()->state().low_energy_state.data_buffer_info().max_data_length()),
+              UintIs("sco_max_num_packets", adapter()->state().sco_buffer_info.max_num_packets()),
+              UintIs("sco_max_data_length", adapter()->state().sco_buffer_info.max_data_length()),
+              StringIs("lmp_features", adapter()->state().features.ToString()),
               StringIs(
                   "le_features",
                   bt_lib_cpp_string::StringPrintf(
-                      "0x%016lx", adapter()->state().low_energy_state().supported_features())))))),
+                      "0x%016lx", adapter()->state().low_energy_state.supported_features())))))),
       ChildrenMatch(UnorderedElementsAre(
           peer_cache_matcher, sdp_server_matcher, le_connection_manager_matcher,
           bredr_connection_manager_matcher, le_discovery_manager_matcher, metrics_node_matcher,
@@ -1054,7 +1053,7 @@ TEST_F(AdapterTest, VendorFeatures) {
   auto init_cb = [&](bool cb_success) { success = cb_success; };
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
-  EXPECT_EQ(adapter()->state().vendor_features(), kVendorFeaturesBits);
+  EXPECT_EQ(adapter()->state().vendor_features, kVendorFeaturesBits);
 }
 
 TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) {
@@ -1209,12 +1208,12 @@ TEST_F(AdapterTest, BufferSizesRecordedInState) {
 
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
-  EXPECT_EQ(adapter()->state().low_energy_state().data_buffer_info().max_data_length(), 1u);
-  EXPECT_EQ(adapter()->state().low_energy_state().data_buffer_info().max_num_packets(), 2u);
-  EXPECT_EQ(adapter()->state().bredr_data_buffer_info().max_data_length(), 3u);
-  EXPECT_EQ(adapter()->state().bredr_data_buffer_info().max_num_packets(), 4u);
-  EXPECT_EQ(adapter()->state().sco_buffer_info().max_data_length(), 5u);
-  EXPECT_EQ(adapter()->state().sco_buffer_info().max_num_packets(), 6u);
+  EXPECT_EQ(adapter()->state().low_energy_state.data_buffer_info().max_data_length(), 1u);
+  EXPECT_EQ(adapter()->state().low_energy_state.data_buffer_info().max_num_packets(), 2u);
+  EXPECT_EQ(adapter()->state().bredr_data_buffer_info.max_data_length(), 3u);
+  EXPECT_EQ(adapter()->state().bredr_data_buffer_info.max_num_packets(), 4u);
+  EXPECT_EQ(adapter()->state().sco_buffer_info.max_data_length(), 5u);
+  EXPECT_EQ(adapter()->state().sco_buffer_info.max_num_packets(), 6u);
 }
 
 TEST_F(AdapterTest, ScoDataChannelInitializedSuccessfully) {

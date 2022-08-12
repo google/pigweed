@@ -19,21 +19,10 @@
 
 namespace bt::gap {
 
-// Stores controller settings and state information.
-class AdapterState final {
- public:
-  // The HCI version supported by the controller.
-  hci_spec::HCIVersion hci_version() const { return hci_version_; }
-
-  // This returns Bluetooth Controller address. This address has the following
-  // meaning based on the controller capabilities:
-  //   - On BR/EDR this is the Bluetooth Controller Address, or BD_ADDR.
-  //   - On LE this is the Public Device Address. This value can be used as the
-  //     device's identity address. This value can be zero if a Public Device
-  //     Address is not used.
-  //   - On BR/EDR/LE this is the LE Public Device Address AND the BD_ADDR.
-  const DeviceAddressBytes& controller_address() const { return controller_address_; }
-
+// The member variables in this class consist of controller settings that are
+// shared between LE and BR/EDR controllers. LE and BR/EDR specific state is
+// stored in corresponding data structures.
+struct AdapterState final {
   TechnologyType type() const {
     // Note: we don't support BR/EDR only controllers.
     if (IsBREDRSupported()) {
@@ -42,96 +31,65 @@ class AdapterState final {
     return TechnologyType::kLowEnergy;
   }
 
-  // The features that are supported by this controller.
-  const hci_spec::LMPFeatureSet& features() const { return features_; }
-
-  // Features reported by vendor driver.
-  hci::VendorFeaturesBits vendor_features() const { return vendor_features_; }
-
   // Returns true if the indicated feature is supported by the vendor driver.
   bool IsVendorFeatureSupported(hci::VendorFeaturesBits feature) const {
-    return feature & vendor_features_;
+    return feature & vendor_features;
   }
 
   // Helpers for querying LMP capabilities.
   inline bool IsBREDRSupported() const {
-    return !features().HasBit(0u, hci_spec::LMPFeature::kBREDRNotSupported);
+    return !features.HasBit(0u, hci_spec::LMPFeature::kBREDRNotSupported);
   }
 
   inline bool IsLowEnergySupported() const {
-    return features().HasBit(0u, hci_spec::LMPFeature::kLESupported);
+    return features.HasBit(0u, hci_spec::LMPFeature::kLESupported);
   }
 
   // Returns true if |command_bit| in the given |octet| is set in the supported
   // command list.
   inline bool IsCommandSupported(size_t octet, hci_spec::SupportedCommand command_bit) const {
-    ZX_DEBUG_ASSERT(octet < sizeof(supported_commands_));
-    return supported_commands_[octet] & static_cast<uint8_t>(command_bit);
+    ZX_DEBUG_ASSERT(octet < sizeof(supported_commands));
+    return supported_commands[octet] & static_cast<uint8_t>(command_bit);
   }
-
-  // Returns Bluetooth Low Energy specific state information.
-  const LowEnergyState& low_energy_state() const { return le_state_; }
-
-  // Returns the android vendor extensions capabilities that the controller supports.
-  //
-  // NOTE: callers must separately check that the controller actually supports android vendor
-  // extensions in the first place.
-  const AndroidVendorCapabilities& android_vendor_capabilities() const {
-    return android_vendor_capabilities_;
-  }
-
-  // Returns the BR/EDR ACL data buffer capacity.
-  const hci::DataBufferInfo& bredr_data_buffer_info() const { return bredr_data_buffer_info_; }
-
-  // Returns the SCO buffer capacity.
-  const hci::DataBufferInfo& sco_buffer_info() const { return sco_buffer_info_; }
-
-  // Returns the BR/EDR local name
-  const std::string& local_name() const { return local_name_; }
-
- private:
-  // Let Adapter directly write to the private members.
-  friend class Adapter;
-  friend class AdapterImpl;
-
-  // The member variables in this class consist of controller settings that are
-  // shared between LE and BR/EDR controllers. LE and BR/EDR specific state is
-  // stored in corresponding data structures.
-  // TODO(armansito): Actually do this and update the comment to refer to the
-  // variables.
 
   // HCI version supported by the controller.
-  hci_spec::HCIVersion hci_version_;
+  hci_spec::HCIVersion hci_version;
 
   // The Features that are supported by this adapter.
-  hci_spec::LMPFeatureSet features_;
+  hci_spec::LMPFeatureSet features;
 
   // Features reported by vendor driver.
-  hci::VendorFeaturesBits vendor_features_ = static_cast<hci::VendorFeaturesBits>(0);
+  hci::VendorFeaturesBits vendor_features = static_cast<hci::VendorFeaturesBits>(0);
 
   // Bitmask list of HCI commands that the controller supports.
-  uint8_t supported_commands_[64] = {0};
+  uint8_t supported_commands[64] = {0};
 
-  // BD_ADDR (for classic) and Public Device Address (for LE).
-  DeviceAddressBytes controller_address_;
+  // This returns Bluetooth Controller address. This address has the following
+  // meaning based on the controller capabilities:
+  //   - On BR/EDR this is the Bluetooth Controller Address, or BD_ADDR.
+  //   - On LE this is the Public Device Address. This value can be used as the
+  //     device's identity address. This value can be zero if a Public Device
+  //     Address is not used.
+  //   - On BR/EDR/LE this is the LE Public Device Address AND the BD_ADDR.
+  DeviceAddressBytes controller_address;
 
   // The BR/EDR ACL data buffer size. We store this here as it is needed on
   // dual-mode controllers even if the host stack is compiled for LE-only.
-  hci::DataBufferInfo bredr_data_buffer_info_;
+  hci::DataBufferInfo bredr_data_buffer_info;
 
   // The SCO buffer size.
-  hci::DataBufferInfo sco_buffer_info_;
+  hci::DataBufferInfo sco_buffer_info;
 
   // BLE-specific state.
-  LowEnergyState le_state_;
+  LowEnergyState low_energy_state;
 
   // Android vendor extensions capabilities
-  AndroidVendorCapabilities android_vendor_capabilities_;
+  // NOTE: callers should separately check that the controller actually supports android vendor
+  // extensions first.
+  AndroidVendorCapabilities android_vendor_capabilities;
 
   // Local name
-  std::string local_name_;
-
-  // TODO(armansito): Add BREDRState class.
+  std::string local_name;
 };
 
 }  // namespace bt::gap

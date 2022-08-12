@@ -543,7 +543,7 @@ TEST_F(HostServerTest, WatchState) {
   EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, info->technology());
   EXPECT_EQ(fbt::AddressType::PUBLIC, info->address().type);
   EXPECT_TRUE(
-      ContainersEqual(adapter()->state().controller_address().bytes(), info->address().bytes));
+      ContainersEqual(adapter()->state().controller_address.bytes(), info->address().bytes));
   EXPECT_EQ("fuchsia", info->local_name());
   EXPECT_FALSE(info->discoverable());
   EXPECT_FALSE(info->discovering());

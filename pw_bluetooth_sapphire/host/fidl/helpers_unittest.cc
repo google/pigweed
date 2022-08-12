@@ -922,7 +922,7 @@ TEST_F(HelpersAdapterTest, HostInfoToFidl) {
   EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
   EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
   EXPECT_TRUE(
-      ContainersEqual(adapter()->state().controller_address().bytes(), host_info.address().bytes));
+      ContainersEqual(adapter()->state().controller_address.bytes(), host_info.address().bytes));
   EXPECT_EQ("fuchsia", host_info.local_name());
   EXPECT_FALSE(host_info.discoverable());
   EXPECT_FALSE(host_info.discovering());
