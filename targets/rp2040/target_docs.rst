@@ -19,9 +19,8 @@ manually configured to point to the location of the downloaded SDK.
   pw package install pico_sdk
 
   gn args out
-    # Add these lines, replacing ${PW_ROOT} with the path to the location that
-    # Pigweed is checked out at.
-    PICO_SRC_DIR = "${PW_ROOT}/.environment/packages/pico_sdk"
+    # Add this line.
+    PICO_SRC_DIR = pw_env_setup_PACKAGE_ROOT + "/pico_sdk"
 
 Usage
 =====

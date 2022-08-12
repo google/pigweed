@@ -21,9 +21,8 @@ manually configured to point to the location the repository was downloaded to.
   pw package install nanopb
 
   gn args out
-    # Add this line, replacing ${PW_ROOT} with the path to the location that
-    # Pigweed is checked out at.
-    dir_pw_third_party_nanopb = "${PW_ROOT}/.environment/packages/nanopb"
+    # Add this line.
+    dir_pw_third_party_nanopb = pw_env_setup_PACKAGE_ROOT + "/nanopb"
 
 -----------------------------
 Building and running the demo

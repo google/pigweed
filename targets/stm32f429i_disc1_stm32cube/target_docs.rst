@@ -29,11 +29,10 @@ locations the repositories were downloaded to.
   pw package install nanopb
 
   gn args out
-    # Add these lines, replacing ${PW_ROOT} with the path to the location that
-    # Pigweed is checked out at.
-    dir_pw_third_party_freertos = "${PW_ROOT}/.environment/packages/freertos"
-    dir_pw_third_party_stm32cube_f4 = "${PW_ROOT}/.environment/packages/stm32cube_f4"
-    dir_pw_third_party_nanopb = "${PW_ROOT}/.environment/packages/nanopb"
+    # Add these lines.
+    dir_pw_third_party_freertos = pw_env_setup_PACKAGE_ROOT + "/freertos"
+    dir_pw_third_party_stm32cube_f4 = pw_env_setup_PACKAGE_ROOT + "/stm32cube_f4"
+    dir_pw_third_party_nanopb = pw_env_setup_PACKAGE_ROOT + "/nanopb"
 
 Building and running the demo
 =============================
