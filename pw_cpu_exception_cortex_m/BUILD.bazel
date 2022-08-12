@@ -110,7 +110,7 @@ pw_cc_library(
         ":proto_dump",
         ":support",
         ":util",
-        # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
+        # TODO(b/242183021): Need to add support for facades/backends to Bazel.
         "//pw_cpu_exception",
         "//pw_preprocessor",
         "//pw_preprocessor:arch",

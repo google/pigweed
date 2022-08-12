@@ -23,7 +23,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
+# TODO(b/242183150): Need to add support for facades/backends to Bazel.
 
 pw_cc_library(
     name = "facade",
