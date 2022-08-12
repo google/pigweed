@@ -27,15 +27,15 @@ arm_gcc_toolchain_tools = {
     _exec_root = rebase_path("//")
     _rewrapper_binary = "rewrapper"
     _pw_rbe_config = pw_rbe_arm_gcc_config
-    _inputs = rebase_path(dir_cipd_arm, _exec_root) + "/"
+    _inputs = rebase_path(pw_env_setup_CIPD_ARM, _exec_root) + "/"
     _rbe_tool_name_root =
         _rewrapper_binary +
         " --labels=type=compile,lang=cpp,compiler=clang --cfg=" +
         _pw_rbe_config + " --exec_root=" + _exec_root + " --inputs=" + _inputs +
-        " -- " + rebase_path(dir_cipd_arm, root_build_dir) +
+        " -- " + rebase_path(pw_env_setup_CIPD_ARM, root_build_dir) +
         "/bin/arm-none-eabi-"
-    cc = _rbe_tool_name_root + "gcc" + _rbe_debug_flag + _sysroot
-    cxx = _rbe_tool_name_root + "g++" + _rbe_debug_flag + _sysroot
+    cc = _rbe_tool_name_root + "gcc" + _rbe_debug_flag
+    cxx = _rbe_tool_name_root + "g++" + _rbe_debug_flag
   } else {
     cc = _local_tool_name_root + "gcc"
     cxx = _local_tool_name_root + "g++"
