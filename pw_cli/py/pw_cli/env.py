@@ -66,6 +66,7 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_USE_RBE', default=False)
     parser.add_var('PW_RBE_DEBUG', default=False)
     parser.add_var('PW_RBE_CLANG_CONFIG', default='')
+    parser.add_var('PW_RBE_ARM_GCC_CONFIG', default='')
 
     return parser
 

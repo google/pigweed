@@ -27,4 +27,5 @@ declare_args() {
   }
 
   pw_rbe_clang_config = getenv("PW_RBE_CLANG_CONFIG")
+  pw_rbe_arm_gcc_config = getenv("PW_RBE_ARM_GCC_CONFIG")
 }

@@ -13,6 +13,7 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
+import("//build_overrides/pigweed_environment.gni")
 
 # Disable obnoxious ABI warning.
 #
@@ -37,6 +38,7 @@ config("cortex_common") {
     "-mthumb",
   ]
   cflags = asmflags + [
+             "--sysroot=" + rebase_path(pw_env_setup_CIPD_ARM, root_build_dir),
              "-specs=nano.specs",
              "-specs=nosys.specs",
            ]
