@@ -17,8 +17,6 @@ import argparse
 import os
 import sys
 
-# TODO(pwbug/67) switch back to 'from pw_env_setup import virtualenv_setup'.
-# from pw_env_setup import virtualenv_setup
 # pylint: disable=import-error
 try:
     from pw_env_setup import virtualenv_setup

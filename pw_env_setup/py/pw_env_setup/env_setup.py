@@ -35,11 +35,6 @@ import subprocess
 import sys
 import time
 
-# TODO(pwbug/67): Remove import hacks once the oxidized prebuilt binaries are
-# proven stable for first-time bootstrapping. For now, continue to support
-# running directly from source without assuming a functioning Python
-# environment when running for the first time.
-
 # If we're running oxidized, filesystem-centric import hacks won't work. In that
 # case, jump straight to the imports and assume oxidation brought in the deps.
 if not getattr(sys, 'oxidized', False):
@@ -76,7 +71,6 @@ from pw_env_setup import virtualenv_setup
 from pw_env_setup import windows_env_start
 
 
-# TODO(pwbug/67, pwbug/68) switch to shutil.which().
 def _which(executable,
            pathsep=os.pathsep,
            use_pathext=None,

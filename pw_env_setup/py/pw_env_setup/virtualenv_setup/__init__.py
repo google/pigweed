@@ -13,5 +13,4 @@
 # the License.
 """Sets up a Python 3 virtualenv for Pigweed."""
 
-# TODO(pwbug/67) move install.py contents to this file.
 from .install import *
