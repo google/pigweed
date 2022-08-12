@@ -34,8 +34,11 @@ import("$dir_pw_toolchain/generate_toolchain.gni")
 #
 #  cflags: Flags to pass to the C compiler.
 #
+#  includes: Include these files when running the C preprocessor.
+#
 #  inputs: Files that, when changed, should trigger a re-build of the linker
-#    script. linker_script is implicitly added to this by the template.
+#    script. linker_script and includes are implicitly added to this by the
+#    template.
 #
 # Example:
 #
@@ -76,9 +79,22 @@ template("pw_linker_script") {
       rebase_path(invoker.linker_script, root_build_dir),
     ]
 
-    # Include any explicitly listed c flags.
+    # Trigger a re-generation of the linker script when these inputs change.
+    if (defined(invoker.inputs)) {
+      inputs += invoker.inputs
+    }
+
+    # Include any explicitly listed C flags.
     if (defined(invoker.cflags)) {
-      args += cflags
+      args += invoker.cflags
+    }
+
+    # Include files from the command line.
+    if (defined(invoker.includes)) {
+      inputs += invoker.includes
+      foreach(include_file, invoker.includes) {
+        args += [ "-include" + rebase_path(include_file, root_build_dir) ]
+      }
     }
 
     # Add defines.
@@ -110,9 +126,6 @@ template("pw_linker_script") {
   # that depends on it.
   pw_source_set(target_name) {
     inputs = [ _final_linker_script ]
-    if (defined(invoker.inputs)) {
-      inputs += invoker.inputs
-    }
     all_dependent_configs = [ ":${target_name}_config" ]
     deps = [ ":${target_name}_preprocess" ]
   }
