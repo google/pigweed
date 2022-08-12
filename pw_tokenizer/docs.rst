@@ -633,6 +633,32 @@ masking`_). 16 bits might be acceptable when tokenizing a small set of strings,
 such as module names, but won't be suitable for large sets of strings, like log
 messages.
 
+Using tokenization in expressions
+---------------------------------
+The tokenization macros above cannot be used inside expressions. For example,
+the following code snippet will fail to compile:
+
+.. code-block:: cpp
+
+   DoSomething(PW_TOKENIZE_STRING("Fail"));
+
+An alternate set of macros are provided for use inside expressions. These make
+use of lambda functions, so while they can be used inside expressions, they
+cannot be assigned to constexpr variables or be used with special function
+variables like ``__func__``.
+
+The following tokenization macros may be used inside epxressions:
+
+* ``PW_TOKENIZE_STRING_EXPR``
+* ``PW_TOKENIZE_STRING_DOMAIN_EXPR``
+* ``PW_TOKENIZE_STRING_MASK_EXPR``
+
+For example, the following code snippet will work:
+
+.. code-block:: cpp
+
+   DoSomething(PW_TOKENIZE_STRING_EXPR("Succeed"));
+
 Token databases
 ===============
 Token databases store a mapping of tokens to the strings they represent. An ELF

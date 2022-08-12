@@ -50,8 +50,15 @@ typedef uint32_t pw_tokenizer_Token;
 // a string literal. In either case, the string must be null terminated, but may
 // contain any characters (including '\0').
 //
-// This expression can be assigned to a local or global variable, but cannot be
-// used in another expression. For example:
+// Two different versions are provided, PW_TOKENIZE_STRING and
+// PW_TOKENIZE_STRING_EXPR. PW_TOKENIZE_STRING can be assigned to a local or
+// global variable, including constexpr variables. PW_TOKENIZE_STRING can be
+// used with special function variables like __func__.
+//
+// PW_TOKENIZE_STRING_EXPR can be used inside an expression.
+// PW_TOKENIZE_STRING_EXPR is implemented using a lambda function, so it will
+// not work as expected with special function variables like __func__. It is
+// also only usable with C++.
 //
 //   constexpr uint32_t global = PW_TOKENIZE_STRING("Wow!");  // This works.
 //
@@ -59,14 +66,31 @@ typedef uint32_t pw_tokenizer_Token;
 //     constexpr uint32_t token = PW_TOKENIZE_STRING("Cool!");  // This works.
 //
 //     DoSomethingElse(PW_TOKENIZE_STRING("Lame!"));  // This does NOT work.
+//     DoSomethingElse(PW_TOKENIZE_STRING_EXPR("Yay!"));  // This works.
+//
+//     constexpr uint32_t token2 = PW_TOKENIZE_STRING(__func__);  // This works.
+//     DoSomethingElse(PW_TOKENIZE_STRING_EXPR(__func__));  // Does NOT work.
 //   }
 //
 #define PW_TOKENIZE_STRING(string_literal) \
   PW_TOKENIZE_STRING_DOMAIN(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
 
+#define PW_TOKENIZE_STRING_EXPR(string_literal)                               \
+  [] {                                                                        \
+    constexpr uint32_t lambda_ret_token = PW_TOKENIZE_STRING(string_literal); \
+    return lambda_ret_token;                                                  \
+  }()
+
 // Same as PW_TOKENIZE_STRING, but tokenizes to the specified domain.
 #define PW_TOKENIZE_STRING_DOMAIN(domain, string_literal) \
   PW_TOKENIZE_STRING_MASK(domain, UINT32_MAX, string_literal)
+
+#define PW_TOKENIZE_STRING_DOMAIN_EXPR(domain, string_literal) \
+  [] {                                                         \
+    constexpr uint32_t lambda_ret_token =                      \
+        PW_TOKENIZE_STRING_DOMAIN(domain, string_literal);     \
+    return lambda_ret_token;                                   \
+  }()
 
 // Same as PW_TOKENIZE_STRING_DOMAIN, but applies a mask to the token.
 #define PW_TOKENIZE_STRING_MASK(domain, mask, string_literal)                \
@@ -77,6 +101,13 @@ typedef uint32_t pw_tokenizer_Token;
                                                                              \
   _PW_TOKENIZER_RECORD_ORIGINAL_STRING(                                      \
       _PW_TOKENIZER_MASK_TOKEN(mask, string_literal), domain, string_literal)
+
+#define PW_TOKENIZE_STRING_MASK_EXPR(domain, mask, string_literal) \
+  [] {                                                             \
+    constexpr uint32_t lambda_ret_token =                          \
+        PW_TOKENIZE_STRING_MASK(domain, mask, string_literal);     \
+    return lambda_ret_token;                                       \
+  }()
 
 #define _PW_TOKENIZER_MASK_TOKEN(mask, string_literal) \
   ((pw_tokenizer_Token)(mask)&PW_TOKENIZER_STRING_TOKEN(string_literal))
