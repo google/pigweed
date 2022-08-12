@@ -30,6 +30,7 @@ from pw_package import package_manager
 from pw_presubmit import (
     call,
     Check,
+    FileFilter,
     filter_paths,
     format_code,
     log_run,
@@ -355,7 +356,8 @@ def test_server(executable: str, output_dir: Path):
             proc.terminate()
 
 
-@filter_paths(endswith=('.bzl', '.bazel'))
+@filter_paths(file_filter=FileFilter(endswith=('.bzl', '.bazel'),
+                                     name=('WORKSPACE', )))
 def bazel_lint(ctx: PresubmitContext):
     """Runs buildifier with lint on Bazel files.
 
