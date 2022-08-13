@@ -69,6 +69,10 @@ core.workflow(
     authoring = authoring.pass_thru("Fuchsia Authors <noreply@google.com>"),
     transformations = replace_builtin_abort + [
         core.move("", "third_party/fuchsia/repo"),
-        metadata.replace_message("third_party/fuchsia: Copybara import of fit library"),
+        # Show all commits but exclude the author to reduce line length.
+        metadata.squash_notes(
+            "third_party/fuchsia: Copybara import of the fit library\n\n",
+            show_author = False,
+        ),
     ],
 )
