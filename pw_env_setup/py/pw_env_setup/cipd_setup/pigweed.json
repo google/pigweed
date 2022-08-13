@@ -41,6 +41,9 @@
       ]
     },
     {
+      "_comment": {
+        "version_file": ".versions/cmake.cipd_version"
+      },
       "path": "infra/3pp/tools/cmake/${platform}",
       "platforms": [
         "mac-amd64",
@@ -51,8 +54,7 @@
       ],
       "tags": [
         "version:2@3.24.0"
-      ],
-      "_comment": {"version_file": ".versions/cmake.cipd_version"}
+      ]
     },
     {
       "path": "pigweed/third_party/bloaty-embedded/${platform}",
@@ -108,7 +110,7 @@
         "mac-amd64"
       ],
       "tags": [
-        "git_revision:5651759746e6eefa691f61522d19b46d07cf9244"
+        "git_revision:75b7e52e92c3b00fc891b47f5b2efdff0a2be55a"
       ],
       "version_file": ".versions/rust.cipd_version"
     },
