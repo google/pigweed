@@ -662,16 +662,16 @@ def commit_message_format(_: PresubmitContext):
     for line in lines:
         _LOG.debug(line)
 
+    if not lines:
+        _LOG.error('The commit message is too short!')
+        raise PresubmitFailure
+
     # Ignore Gerrit-generated reverts.
     if ('Revert' in lines[0]
             and 'This reverts commit ' in git_repo.commit_message()
             and 'Reason for revert: ' in git_repo.commit_message()):
         _LOG.warning('Ignoring apparent Gerrit-generated revert')
         return
-
-    if not lines:
-        _LOG.error('The commit message is too short!')
-        raise PresubmitFailure
 
     errors = 0
 
@@ -693,6 +693,13 @@ def commit_message_format(_: PresubmitContext):
         _LOG.warning('The second line has %d characters:\n  %s', len(lines[1]),
                      lines[1])
         errors += 1
+
+    # Ignore the line length check for Copybara imports so they can include the
+    # commit hash and description for imported commits.
+    if not errors and ('Copybara import' in lines[0]
+                       and 'GitOrigin-RevId:' in git_repo.commit_message()):
+        _LOG.warning('Ignoring Copybara import')
+        return
 
     # Check that the lines are 72 characters or less, but skip any lines that
     # might possibly have a URL, path, or metadata in them. Also skip any lines
