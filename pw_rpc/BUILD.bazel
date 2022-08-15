@@ -433,6 +433,11 @@ proto_library(
     ],
 )
 
+py_proto_library(
+    name = "echo_py_pb2",
+    srcs = ["echo.proto"],
+)
+
 pw_proto_library(
     name = "echo_cc",
     deps = [":echo_proto"],
