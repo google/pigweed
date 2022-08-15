@@ -124,6 +124,19 @@ There's a ``pragma_once`` check that confirms the first non-comment line of
 C/C++ headers is ``#pragma once``. This is enabled by adding
 ``pw_presubmit.pragma_once`` to a presubmit program.
 
+.. todo-check: disable
+
+TODO(b/###) Formatting
+^^^^^^^^^^^^^^^^^^^^^^^^^
+There's a check that confirms ``TODO`` lines match a given format. Upstream
+Pigweed expects these to look like ``TODO(b/###): Explanation``, but makes it
+easy for projects to define their own pattern instead.
+
+To use this check add ``todo_check.create(todo_check.BUGS_OR_USERNAMES)`` to a
+presubmit program.
+
+.. todo-check: enable
+
 Python Checks
 ^^^^^^^^^^^^^
 There are two checks in the ``pw_presubmit.python_checks`` module, ``gn_pylint``

@@ -36,6 +36,7 @@ pw_python_package("py") {
     "pw_presubmit/presubmit.py",
     "pw_presubmit/python_checks.py",
     "pw_presubmit/shell_checks.py",
+    "pw_presubmit/todo_check.py",
     "pw_presubmit/tools.py",
   ]
   tests = [

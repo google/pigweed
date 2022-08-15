@@ -46,6 +46,7 @@ from pw_presubmit import (
     call,
     filter_paths,
     inclusive_language,
+    npm_presubmit,
     plural,
     presubmit,
     PresubmitContext,
@@ -53,7 +54,7 @@ from pw_presubmit import (
     Programs,
     python_checks,
     shell_checks,
-    npm_presubmit,
+    todo_check,
 )
 from pw_presubmit.install_hook import install_git_hook
 
@@ -350,13 +351,13 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_blob_store/...:all',
     '-//pw_boot/...:all',
     '-//pw_cpu_exception_cortex_m/...:all',
-    '-//pw_crypto/...:all',  # TODO(b/236321905)
+    '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
     '-//pw_file/...:all',
-    '-//pw_function:function_test',  # TODO(b/241821115)
-    '-//pw_hdlc/rpc_example',  # TODO(b/241575924)
+    '-//pw_function:function_test',  # TODO(b/241821115) Remove when passing.
+    '-//pw_hdlc/rpc_example',  # TODO(b/241575924) Remove when passing.
     '-//pw_i2c_mcuxpresso/...:all',
     '-//pw_kvs/...:all',
-    '-//pw_log:log_proto_py_pb2',  # TODO(b/241456982)
+    '-//pw_log:log_proto_py_pb2',  # TODO(b/241456982) Remove when passing.
     '-//pw_log:log_proto_py_pb2_genproto',
     '-//pw_log_null/...:all',
     '-//pw_log_string/...:all',
@@ -389,7 +390,8 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_tls_client/...:all',
     '-//pw_tls_client_boringssl/...:all',
     '-//pw_tls_client_mbedtls/...:all',
-    '-//pw_tokenizer:tokenizer_proto_py_pb2',  # TODO(b/241456982)
+    # TODO(b/241456982) Remove when passing.
+    '-//pw_tokenizer:tokenizer_proto_py_pb2',
     '-//pw_tokenizer:tokenizer_proto_py_pb2_genproto',
     '-//pw_trace/...:all',
     '-//pw_trace_tokenized/...:all',
@@ -750,6 +752,7 @@ OTHER_CHECKS = (
     static_analysis,
     stm32f429i,
     npm_presubmit.npm_test,
+    todo_check.create(todo_check.BUGS_OR_USERNAMES),
 )
 
 CRYPTO = (
