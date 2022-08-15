@@ -31,11 +31,11 @@ config("linker_script") {
     # default linker script instead of overriding it.
     ldflags = [
       "-T",
-      rebase_path("add_build_id_to_default_script.ld", root_build_dir),
+      rebase_path("add_build_id_to_default_linker_script.ld", root_build_dir),
     ]
     lib_dirs = [ "." ]
 
-    inputs += [ "add_build_id_to_default_script.ld" ]
+    inputs += [ "add_build_id_to_default_linker_script.ld" ]
   }
   visibility = [ ":*" ]
 }
@@ -68,8 +68,21 @@ if (current_os != "mac" && current_os != "win") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
-  inputs = [ "build_id_linker_snippet.ld" ]
+  inputs = [
+    "add_build_id_to_default_linker_script.ld",
+    "build_id_linker_snippet.ld",
+  ]
 }
 
 pw_test_group("tests") {
+  tests = [ ":build_id_test" ]
+}
+
+pw_test("build_id_test") {
+  enable_if = current_os == "linux"
+  deps = [
+    ":build_id",
+    "$dir_pw_span",
+  ]
+  sources = [ "build_id_test.cc" ]
 }

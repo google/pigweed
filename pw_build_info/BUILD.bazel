@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -30,8 +31,25 @@ pw_cc_library(
         "public/pw_build_info/build_id.h",
     ],
     includes = ["public"],
+    linkopts = [
+        "-Lpw_build_info",
+        "-T$(location add_build_id_to_default_linker_script.ld)",
+        "-Wl,--build-id=sha1",
+    ],
     deps = [
+        ":add_build_id_to_default_linker_script.ld",
+        ":build_id_linker_snippet.ld",
         "//pw_preprocessor",
         "//pw_span",
+    ],
+)
+
+pw_cc_test(
+    name = "build_id_test",
+    srcs = ["build_id_test.cc"],
+    deps = [
+        ":build_id",
+        "//pw_span",
+        "//pw_unit_test",
     ],
 )
