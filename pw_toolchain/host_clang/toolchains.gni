@@ -54,8 +54,13 @@ _defaults = {
     "$dir_pw_build:extra_debugging",
     "$dir_pw_toolchain/host_clang:no_system_libcpp",
     "$dir_pw_toolchain/host_clang:xcode_sysroot",
-    "$dir_pw_toolchain/host_clang:linux_sysroot",
   ]
+
+  # OSS-Fuzz uses -stdlib=libc++, which isn't included in the CIPD-provided
+  # Linux sysroot (it instead provides libstdc++).
+  if (!pw_toolchain_OSS_FUZZ_ENABLED) {
+    default_configs += [ "$dir_pw_toolchain/host_clang:linux_sysroot" ]
+  }
 }
 
 pw_toolchain_host_clang = {
