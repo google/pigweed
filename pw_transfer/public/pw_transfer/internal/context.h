@@ -137,14 +137,16 @@ class Context {
 
  private:
   enum class TransferState : uint8_t {
-    // This ServerContext has never been used for a transfer. It is available
-    // for use for a transfer.
+    // The context is available for use for a new transfer.
     kInactive,
 
     // A transfer completed and the final status chunk was sent. The Context is
     // available for use for a new transfer. A receive transfer uses this state
     // to allow a transmitter to retry its last chunk if the final status chunk
     // was dropped.
+    //
+    // Only used by the legacy protocol. Starting from version 2, transfer
+    // completions are acknowledged, for which the TERMINATING state is used.
     kCompleted,
 
     // Transfer is starting. The server and client are performing an initial
@@ -159,6 +161,17 @@ class Context {
 
     // Recovering after one or more chunks was dropped in an active transfer.
     kRecovery,
+
+    // Transfer has completed locally and is waiting for the peer to acknowledge
+    // its final status. Only entered by the terminating side of the transfer.
+    //
+    // The context remains in a TERMINATING state until it receives an
+    // acknowledgement from the peer or times out. Either way, the context
+    // transitions to INACTIVE afterwards, fully cleaning it up for reuse.
+    //
+    // Used instead of COMPLETED starting from version 2. Unlike COMPLETED,
+    // contexts in a TERMINATING state cannot be used to start new transfers.
+    kTerminating,
   };
 
   enum class TransmitAction {
@@ -186,6 +199,19 @@ class Context {
   stream::Writer& writer() {
     PW_DASSERT(active() && type() == TransferType::kReceive);
     return static_cast<stream::Writer&>(*stream_);
+  }
+
+  bool DataTransferComplete() const {
+    return transfer_state_ == TransferState::kTerminating ||
+           transfer_state_ == TransferState::kCompleted;
+  }
+
+  bool ShouldSkipCompletionHandshake() const {
+    // Completion handshakes are not part of the legacy protocol. Additionally,
+    // transfers which have not yet fully established should not handshake and
+    // simply time out.
+    return configured_protocol_version_ <= ProtocolVersion::kLegacy ||
+           transfer_state_ == TransferState::kInitiating;
   }
 
   // Calculates the maximum size of actual data that can be sent within a
@@ -218,7 +244,7 @@ class Context {
 
   // Starts a new transfer on the server after receiving a request from a
   // client.
-  void StartTransferAsServer(const NewTransferEvent& new_transfer);
+  bool StartTransferAsServer(const NewTransferEvent& new_transfer);
 
   // Does final cleanup specific to the server or client. Returns whether the
   // cleanup succeeded. An error in cleanup indicates that the transfer
@@ -265,9 +291,25 @@ class Context {
   // Updates the current receive transfer parameters, then sends them.
   void UpdateAndSendTransferParameters(TransmitAction action);
 
+  // Processes a chunk in a terminating state.
+  void HandleTerminatingChunk(const Chunk& chunk);
+
+  // Ends the transfer with the specified status, sending a completion chunk to
+  // the peer.
+  void TerminateTransfer(Status status);
+
+  // Ends a transfer following notification of completion from the peer.
+  void HandleTermination(Status status);
+
+  // Forcefully ends a transfer locally without contacting the peer.
+  void Abort(Status status) {
+    Finish(status);
+    set_transfer_state(TransferState::kCompleted);
+  }
+
   // Sends a final status chunk of a completed transfer without updating the
-  // the transfer. Sends status_, which MUST have been set by a previous
-  // Finish() call.
+  // transfer. Sends status_, which MUST have been set by a previous Finish()
+  // call.
   void SendFinalStatusChunk();
 
   // Marks the transfer as completed and calls FinalCleanup(). Sets status_ to

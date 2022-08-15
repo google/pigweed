@@ -18,21 +18,13 @@
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_transfer/internal/protocol.h"
+#include "pw_transfer/transfer.pwpb.h"
 
 namespace pw::transfer::internal {
 
 class Chunk {
  public:
-  enum class Type {
-    kData = 0,
-    kStart = 1,
-    kParametersRetransmit = 2,
-    kParametersContinue = 3,
-    kCompletion = 4,
-    kCompletionAck = 5,  // Currently unused.
-    kStartAck = 6,
-    kStartAckConfirmation = 7,
-  };
+  using Type = transfer::Chunk::Type;
 
   // Constructs a new chunk with the given transfer protocol version. All fields
   // are initialized to their zero values.
@@ -200,11 +192,7 @@ class Chunk {
   }
 
   constexpr bool IsTerminatingChunk() const {
-    if (is_legacy()) {
-      return status_.has_value();
-    }
-
-    return type_ == Type::kCompletion || type_ == Type::kCompletionAck;
+    return type_ == Type::kCompletion || (is_legacy() && status_.has_value());
   }
 
   // The final chunk from the transmitter sets remaining_bytes to 0 in both Read

@@ -18,7 +18,6 @@
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/serialized_size.h"
 #include "pw_status/try.h"
-#include "pw_transfer/transfer.pwpb.h"
 
 namespace pw::transfer::internal {
 

@@ -2008,6 +2008,14 @@ TEST_F(WriteTransfer, Version2_SimpleTransfer) {
   ASSERT_TRUE(chunk.status().has_value());
   EXPECT_EQ(chunk.status().value(), OkStatus());
 
+  // Send the completion acknowledgement.
+  ctx_.SendClientStream(EncodeChunk(
+      Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kCompletionAck)
+          .set_session_id(1)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+
   EXPECT_TRUE(handler_.finalize_write_called);
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());
   EXPECT_EQ(std::memcmp(buffer.data(), kData.data(), kData.size()), 0);
@@ -2072,6 +2080,14 @@ TEST_F(WriteTransfer, Version2_Multichunk) {
   EXPECT_EQ(chunk.session_id(), 1u);
   ASSERT_TRUE(chunk.status().has_value());
   EXPECT_EQ(chunk.status().value(), OkStatus());
+
+  // Send the completion acknowledgement.
+  ctx_.SendClientStream(EncodeChunk(
+      Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kCompletionAck)
+          .set_session_id(1)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 3u);
 
   EXPECT_TRUE(handler_.finalize_write_called);
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());
@@ -2174,6 +2190,14 @@ TEST_F(WriteTransfer, Version2_ContinueParameters) {
   ASSERT_TRUE(chunk.status().has_value());
   EXPECT_EQ(chunk.status().value(), OkStatus());
 
+  // Send the completion acknowledgement.
+  ctx_.SendClientStream(EncodeChunk(
+      Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kCompletionAck)
+          .set_session_id(1)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 5u);
+
   EXPECT_TRUE(handler_.finalize_write_called);
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());
   EXPECT_EQ(std::memcmp(buffer.data(), kData.data(), kData.size()), 0);
@@ -2203,7 +2227,6 @@ TEST_F(WriteTransfer, Version2_ClientTerminatesDuringHandshake) {
       ProtocolVersion::kVersionTwo, 1, Status::FailedPrecondition())));
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  ASSERT_EQ(ctx_.total_responses(), 1u);
   EXPECT_TRUE(handler_.finalize_write_called);
   EXPECT_EQ(handler_.finalize_write_status, Status::FailedPrecondition());
 }
@@ -2262,6 +2285,14 @@ TEST_F(WriteTransfer, Version2_ClientSendsWrongProtocolVersion) {
   EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
   EXPECT_EQ(chunk.type(), Chunk::Type::kCompletion);
   EXPECT_EQ(chunk.status().value(), Status::Internal());
+
+  // Send the completion acknowledgement.
+  ctx_.SendClientStream(EncodeChunk(
+      Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kCompletionAck)
+          .set_session_id(1)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 3u);
 }
 
 TEST_F(WriteTransfer, Version2_InvalidResourceId) {

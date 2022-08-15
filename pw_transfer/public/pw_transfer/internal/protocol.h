@@ -18,7 +18,7 @@
 namespace pw::transfer {
 
 enum class ProtocolVersion {
-  // Protocol version not know or not set.
+  // Protocol version not known or not set.
   kUnknown,
 
   // The original transfer protocol, prior to transfer start/end handshakes.

@@ -325,11 +325,77 @@ Provides a simple interface for transferring bulk data over pw_rpc.
 Protocol
 --------
 
-Protocol buffer definition
-==========================
-.. literalinclude:: transfer.proto
-  :language: protobuf
-  :lines: 14-
+Chunks
+======
+Transfers run as a series of *chunks* exchanged over an RPC stream. Chunks can
+contain transferable data, metadata, and control parameters. Each chunk has an
+associated type, which determines what information it holds and the semantics of
+its fields.
+
+The chunk is a protobuf message, whose definition can be found
+:ref:`here <module-pw_transfer-proto-definition>`.
+
+Resources and sessions
+======================
+Transfers are run for a specific *resource* --- a stream of data which can be
+read from or written to. Resources have a system-specific integral identifier
+defined by the implementers of the server-side transfer node.
+
+The series of chunks exchanged in an individual transfer operation for a
+resource constitute a transfer *session*. The session runs from its opening
+chunk until either a terminating chunk is received or the transfer times out.
+Sessions are assigned unique IDs by the transfer server in response to an
+initiating chunk from the client.
+
+Reliability
+===========
+``pw_transfer`` attempts to be a reliable data transfer protocol.
+
+As Pigweed RPC is considered an unreliable communications system,
+``pw_transfer`` implements its own mechanisms for reliability. These include
+timeouts, data retransmissions, and handshakes.
+
+.. note::
+
+   A transfer can only be reliable if its underlying data stream is seekable.
+   A non-seekable stream could prematurely terminate a transfer following a
+   packet drop.
+
+Opening handshake
+=================
+Transfers begin with a three-way handshake, whose purpose is to identify the
+resource being transferred, assign a session ID, and synchronize the protocol
+version to use.
+
+A read or write transfer for a resource is initiated by a transfer client. The
+client sends the ID of the resource to the server in a ``START`` chunk,
+indicating that it wishes to begin a new transfer. This chunk additionally
+encodes the protocol version which the client is configured to use.
+
+Upon receiving a ``START`` chunk, the transfer server checks whether the
+requested resource is available. If so, it prepares the resource for the
+operation, which typically involves opening a data stream, alongside any
+additional user-specified setup. The server generates a session ID, then
+responds to the client with a ``START_ACK`` chunk containing the resource,
+session, and configured protocol version for the transfer.
+
+Transfer completion
+===================
+Either side of a transfer can terminate the operation at any time by sending a
+``COMPLETION`` chunk containing the final status of the transfer. When a
+``COMPLETION`` chunk is sent, the terminator of the transfer performs local
+cleanup, then waits for its peer to acknowledge the completion.
+
+Upon receving a ``COMPLETION`` chunk, the transfer peer cancels any pending
+operations, runs its set of cleanups, and responds with a ``COMPLETION_ACK``,
+fully ending the session from the peer's side.
+
+The terminator's session remains active waiting for a ``COMPLETION_ACK``. If not
+received after a timeout, it re-sends its ``COMPLETION`` chunk. The session ends
+either following receipt of the acknowledgement or if a maximum number of
+retries is hit.
+
+.. _module-pw_transfer-proto-definition:
 
 Server to client transfer (read)
 ================================
@@ -339,15 +405,17 @@ Client to server transfer (write)
 =================================
 .. image:: write.svg
 
+Protocol buffer definition
+==========================
+.. literalinclude:: transfer.proto
+  :language: protobuf
+  :lines: 14-
+
 Errors
 ======
 
 Protocol errors
 ---------------
-At any point, either the client or server may terminate the transfer with a
-status code. The transfer chunk with the status is the final chunk of the
-transfer.
-
 The following table describes the meaning of each status code when sent by the
 sender or the receiver (see `Transfer roles`_).
 
@@ -398,23 +466,6 @@ sender or the receiver (see `Transfer roles`_).
 +-------------------------+-------------------------+-------------------------+
 
 .. cpp:namespace-pop::
-
-Client errors
--------------
-``pw_transfer`` clients may immediately return certain errors if they cannot
-start a transfer.
-
-.. list-table::
-
-  * - **Status**
-    - **Reason**
-  * - ``ALREADY_EXISTS``
-    - A transfer with the requested ID is already pending on this client.
-  * - ``DATA_LOSS``
-    - Sending the initial transfer chunk failed.
-  * - ``RESOURCE_EXHAUSTED``
-    - The client has insufficient resources to start an additional transfer at
-      this time.
 
 
 Transfer roles
@@ -476,6 +527,32 @@ Receiver flow
     signal_completion[Signal completion]-->done
 
     done([Transfer complete])
+
+Legacy protocol
+===============
+``pw_transfer`` was initially released into production prior to several of the
+reliability improvements of its modern protocol. As a result of this, transfer
+implementations support a "legacy" protocol mode, in which transfers run without
+utilizing these features.
+
+The primary differences between the legacy and modern protocols are listed
+below.
+
+- There is no distinction between a transfer resource and session --- a single
+  ``transfer_id`` field represents both. Only one transfer for a given resource
+  can run at a time, and it is not possible to determine where one transfer for
+  a resource ends and the next begins.
+- The legacy protocol has no opening handshake phase. The client initiates with
+  a transfer ID and starting transfer parameters (during a read), and the data
+  transfer phase begins immediately.
+- The legacy protocol has no terminating handshake phase. When either end
+  completes a transfer by sending a status chunk, it does not wait for the peer
+  to acknowledge. Resources used by the transfer are immediately freed, and
+  there is no guarantee that the peer is notified of completion.
+
+Modern transfer server and client implementations will detect if their transfer
+peer is running the legacy protocol and automatically switch to it if required.
+It is **strongly** unadvised to use the legacy protocol in new code.
 
 
 -----------------

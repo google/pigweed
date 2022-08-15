@@ -78,6 +78,7 @@ pw_source_set("core") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
+    ":proto.pwpb",
     "$dir_pw_chrono:system_clock",
     "$dir_pw_preprocessor",
     "$dir_pw_rpc:client",
@@ -94,7 +95,6 @@ pw_source_set("core") {
     dir_pw_stream,
   ]
   deps = [
-    ":proto.pwpb",
     dir_pw_log,
     dir_pw_protobuf,
     dir_pw_varint,
