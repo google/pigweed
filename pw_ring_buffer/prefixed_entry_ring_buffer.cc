@@ -227,7 +227,7 @@ void PrefixedEntryRingBufferMulti::InternalPopFrontAll() {
   for (Reader& reader : readers_) {
     if (reader.entry_count_ == entry_count) {
       reader.PopFront()
-          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+          .IgnoreError();  // TODO(b/242598609): Handle Status properly
     }
   }
 }

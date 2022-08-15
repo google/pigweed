@@ -112,7 +112,7 @@ Status RegisterDevice::WriteRegisters(const uint32_t register_address,
 
     case 4:
       PutRegisterData32InByteBuilder(builder, register_data, data_order_)
-          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+          .IgnoreError();  // TODO(b/242598609): Handle Status properly
       break;
 
     default:

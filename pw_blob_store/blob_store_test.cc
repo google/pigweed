@@ -41,8 +41,7 @@ class BlobStoreTest : public ::testing::Test {
   BlobStoreTest() : flash_(kFlashAlignment), partition_(&flash_) {}
 
   void InitFlashTo(span<const std::byte> contents) {
-    partition_.Erase()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    ASSERT_EQ(OkStatus(), partition_.Erase());
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
@@ -54,8 +53,8 @@ class BlobStoreTest : public ::testing::Test {
     std::memset(source_buffer_.data(),
                 static_cast<int>(flash_.erased_memory_content()),
                 source_buffer_.size());
-    rng.Get(span(source_buffer_).first(init_size_bytes))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    ASSERT_EQ(OkStatus(),
+              rng.Get(span(source_buffer_).first(init_size_bytes)).status());
   }
 
   void InitSourceBufferToFill(char fill,

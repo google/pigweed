@@ -719,16 +719,16 @@ class StreamEncoder {
     }
 
     WriteVarint(FieldKey(field_number, WireType::kDelimited))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
     WriteVarint(payload_size)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
     for (T value : values) {
       if (encode_type == VarintType::kZigZag) {
         WriteZigzagVarint(static_cast<std::make_signed_t<T>>(value))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
       } else {
         WriteVarint(value)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
       }
     }
 

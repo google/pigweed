@@ -510,7 +510,7 @@ class PrefixedEntryRingBuffer : public PrefixedEntryRingBufferMulti,
   PrefixedEntryRingBuffer(bool user_preamble = false)
       : PrefixedEntryRingBufferMulti(user_preamble) {
     AttachReader(*this)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }
 };
 

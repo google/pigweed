@@ -45,7 +45,7 @@ void TraceService::GetTraceData(
   while (trace_buffer->PeekFront(as_writable_bytes(span(buffer.data.bytes)),
                                  &size) != pw::Status::OutOfRange()) {
     trace_buffer->PopFront()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
     buffer.data.size = size;
     pw::Status status = writer.Write(buffer);
     if (!status.ok()) {
@@ -54,6 +54,6 @@ void TraceService::GetTraceData(
       break;
     }
   }
-  writer.Finish().IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  writer.Finish().IgnoreError();  // TODO(b/242598609): Handle Status properly
 }
 }  // namespace pw::trace

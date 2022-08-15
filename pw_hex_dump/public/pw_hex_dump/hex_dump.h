@@ -99,12 +99,12 @@ class FormattedHexDumper {
   FormattedHexDumper() = default;
   FormattedHexDumper(span<char> dest) {
     SetLineBuffer(dest)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }
   FormattedHexDumper(span<char> dest, Flags config_flags)
       : flags(config_flags) {
     SetLineBuffer(dest)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }
 
   // TODO(b/234892215): Add iterator support.

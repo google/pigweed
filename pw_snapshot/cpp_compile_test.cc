@@ -30,15 +30,15 @@ TEST(Status, CompileTest) {
   {
     Metadata::StreamEncoder metadata_encoder =
         snapshot_encoder.GetMetadataEncoder();
-    metadata_encoder
-        .WriteReason(as_bytes(span("It just died, I didn't do anything")))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    metadata_encoder.WriteFatal(true)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    metadata_encoder.WriteProjectName(as_bytes(span("smart-shoe")))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    metadata_encoder.WriteDeviceName(as_bytes(span("smart-shoe-p1")))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    ASSERT_EQ(OkStatus(),
+              metadata_encoder.WriteReason(
+                  as_bytes(span("It just died, I didn't do anything"))));
+    ASSERT_EQ(OkStatus(), metadata_encoder.WriteFatal(true));
+    ASSERT_EQ(OkStatus(),
+              metadata_encoder.WriteProjectName(as_bytes(span("smart-shoe"))));
+    ASSERT_EQ(
+        OkStatus(),
+        metadata_encoder.WriteDeviceName(as_bytes(span("smart-shoe-p1"))));
   }
   ASSERT_TRUE(snapshot_encoder.status().ok());
 }

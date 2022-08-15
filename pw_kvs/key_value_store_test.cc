@@ -206,8 +206,7 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
              sizeof(fname_buf),
              "WriteOneKeyMultipleTimes_%d.bin",
              reload);
-    flash.Dump(fname_buf)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    ASSERT_EQ(OkStatus(), flash.Dump(fname_buf));
   }
 }
 
@@ -236,8 +235,7 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
     EXPECT_OK(kvs.Put(key.view(), value));
     EXPECT_EQ(kvs.size(), i + 1);
   }
-  flash.Dump("WritingMultipleKeysIncreasesSize.bin")
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), flash.Dump("WritingMultipleKeysIncreasesSize.bin"));
 }
 
 TEST(InMemoryKvs, WriteAndReadOneKey) {

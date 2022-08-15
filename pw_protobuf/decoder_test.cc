@@ -28,28 +28,22 @@ class TestDecodeHandler : public DecodeHandler {
 
     switch (field_number) {
       case 1:
-        decoder.ReadInt32(&test_int32)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        EXPECT_EQ(OkStatus(), decoder.ReadInt32(&test_int32));
         break;
       case 2:
-        decoder.ReadSint32(&test_sint32)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        EXPECT_EQ(OkStatus(), decoder.ReadSint32(&test_sint32));
         break;
       case 3:
-        decoder.ReadBool(&test_bool)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        EXPECT_EQ(OkStatus(), decoder.ReadBool(&test_bool));
         break;
       case 4:
-        decoder.ReadDouble(&test_double)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        EXPECT_EQ(OkStatus(), decoder.ReadDouble(&test_double));
         break;
       case 5:
-        decoder.ReadFixed32(&test_fixed32)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        EXPECT_EQ(OkStatus(), decoder.ReadFixed32(&test_fixed32));
         break;
       case 6:
-        decoder.ReadString(&str)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        EXPECT_EQ(OkStatus(), decoder.ReadString(&str));
         std::memcpy(test_string, str.data(), str.size());
         test_string[str.size()] = '\0';
         break;

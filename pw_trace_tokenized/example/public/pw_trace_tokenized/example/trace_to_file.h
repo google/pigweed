@@ -35,14 +35,14 @@ class TraceToFile {
                       TraceSinkEndBlock,
                       &out_,
                       &sink_handle_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
     out_.open(file_name, std::ios::out | std::ios::binary);
   }
 
   ~TraceToFile() {
     Callbacks::Instance()
         .UnregisterSink(sink_handle_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
     out_.close();
   }
 

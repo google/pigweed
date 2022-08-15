@@ -152,163 +152,163 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         encoder
             .WriteUint32(provider.ConsumeIntegral<uint32_t>(),
                          provider.ConsumeIntegral<uint32_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedUint32:
         encoder
             .WritePackedUint32(provider.ConsumeIntegral<uint32_t>(),
                                ConsumeSpan<uint32_t>(&provider, &u32s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kUint64:
         encoder
             .WriteUint64(provider.ConsumeIntegral<uint32_t>(),
                          provider.ConsumeIntegral<uint64_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedUint64:
         encoder
             .WritePackedUint64(provider.ConsumeIntegral<uint32_t>(),
                                ConsumeSpan<uint64_t>(&provider, &u64s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kInt32:
         encoder
             .WriteInt32(provider.ConsumeIntegral<uint32_t>(),
                         provider.ConsumeIntegral<int32_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedInt32:
         encoder
             .WritePackedInt32(provider.ConsumeIntegral<uint32_t>(),
                               ConsumeSpan<int32_t>(&provider, &s32s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kInt64:
         encoder
             .WriteInt64(provider.ConsumeIntegral<uint32_t>(),
                         provider.ConsumeIntegral<int64_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedInt64:
         encoder
             .WritePackedInt64(provider.ConsumeIntegral<uint32_t>(),
                               ConsumeSpan<int64_t>(&provider, &s64s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kSint32:
         encoder
             .WriteSint32(provider.ConsumeIntegral<uint32_t>(),
                          provider.ConsumeIntegral<int32_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedSint32:
         encoder
             .WritePackedSint32(provider.ConsumeIntegral<uint32_t>(),
                                ConsumeSpan<int32_t>(&provider, &s32s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kSint64:
         encoder
             .WriteSint64(provider.ConsumeIntegral<uint32_t>(),
                          provider.ConsumeIntegral<int64_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedSint64:
         encoder
             .WritePackedSint64(provider.ConsumeIntegral<uint32_t>(),
                                ConsumeSpan<int64_t>(&provider, &s64s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kBool:
         encoder
             .WriteBool(provider.ConsumeIntegral<uint32_t>(),
                        provider.ConsumeBool())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kFixed32:
         encoder
             .WriteFixed32(provider.ConsumeIntegral<uint32_t>(),
                           provider.ConsumeIntegral<uint32_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedFixed32:
         encoder
             .WritePackedFixed32(provider.ConsumeIntegral<uint32_t>(),
                                 ConsumeSpan<uint32_t>(&provider, &u32s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kFixed64:
         encoder
             .WriteFixed64(provider.ConsumeIntegral<uint32_t>(),
                           provider.ConsumeIntegral<uint64_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedFixed64:
         encoder
             .WritePackedFixed64(provider.ConsumeIntegral<uint32_t>(),
                                 ConsumeSpan<uint64_t>(&provider, &u64s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kSfixed32:
         encoder
             .WriteSfixed32(provider.ConsumeIntegral<uint32_t>(),
                            provider.ConsumeIntegral<int32_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedSfixed32:
         encoder
             .WritePackedSfixed32(provider.ConsumeIntegral<uint32_t>(),
                                  ConsumeSpan<int32_t>(&provider, &s32s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kSfixed64:
         encoder
             .WriteSfixed64(provider.ConsumeIntegral<uint32_t>(),
                            provider.ConsumeIntegral<int64_t>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedSfixed64:
         encoder
             .WritePackedSfixed64(provider.ConsumeIntegral<uint32_t>(),
                                  ConsumeSpan<int64_t>(&provider, &s64s))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kFloat:
         encoder
             .WriteFloat(provider.ConsumeIntegral<uint32_t>(),
                         provider.ConsumeFloatingPoint<float>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedFloat:
         encoder
             .WritePackedFloat(provider.ConsumeIntegral<uint32_t>(),
                               ConsumeSpan<float>(&provider, &floats))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kDouble:
         encoder
             .WriteDouble(provider.ConsumeIntegral<uint32_t>(),
                          provider.ConsumeFloatingPoint<double>())
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPackedDouble:
         encoder
             .WritePackedDouble(provider.ConsumeIntegral<uint32_t>(),
                                ConsumeSpan<double>(&provider, &doubles))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kBytes:
         encoder
             .WriteBytes(provider.ConsumeIntegral<uint32_t>(),
                         ConsumeBytes(&provider, &bytes))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kString:
         encoder
             .WriteString(provider.ConsumeIntegral<uint32_t>(),
                          ConsumeString(&provider, &strings))
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+            .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
       case kPush:
         // Special "field". The marks the start of a nested message.

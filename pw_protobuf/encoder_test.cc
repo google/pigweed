@@ -261,8 +261,7 @@ TEST(StreamEncoder, RepeatedField) {
   // repeated uint32 values = 1;
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
   for (int i = 0; i < 5; ++i) {
-    encoder.WriteUint32(1, values[i])
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    ASSERT_EQ(OkStatus(), encoder.WriteUint32(1, values[i]));
   }
 
   constexpr uint8_t encoded_proto[] = {
@@ -281,8 +280,7 @@ TEST(StreamEncoder, PackedVarint) {
 
   // repeated uint32 values = 1;
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
-  encoder.WritePackedUint32(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WritePackedUint32(1, values));
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x07, 0x00, 0x32, 0x64, 0x96, 0x01, 0xc8, 0x01};
@@ -300,8 +298,7 @@ TEST(StreamEncoder, PackedVarintInsufficientSpace) {
   MemoryEncoder encoder(encode_buffer);
 
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
-  encoder.WritePackedUint32(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(Status::ResourceExhausted(), encoder.WritePackedUint32(1, values));
 
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
 }
@@ -312,8 +309,7 @@ TEST(StreamEncoder, PackedVarintVector) {
 
   // repeated uint32 values = 1;
   const pw::Vector<uint32_t, 5> values = {0, 50, 100, 150, 200};
-  encoder.WriteRepeatedUint32(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WriteRepeatedUint32(1, values));
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x07, 0x00, 0x32, 0x64, 0x96, 0x01, 0xc8, 0x01};
@@ -331,8 +327,8 @@ TEST(StreamEncoder, PackedVarintVectorInsufficientSpace) {
   MemoryEncoder encoder(encode_buffer);
 
   const pw::Vector<uint32_t, 5> values = {0, 50, 100, 150, 200};
-  encoder.WriteRepeatedUint32(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(Status::ResourceExhausted(),
+            encoder.WriteRepeatedUint32(1, values));
 
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
 }
@@ -343,8 +339,7 @@ TEST(StreamEncoder, PackedBool) {
 
   // repeated bool values = 1;
   constexpr bool values[] = {true, false, true, true, false};
-  encoder.WritePackedBool(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WritePackedBool(1, values));
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x05, 0x01, 0x00, 0x01, 0x01, 0x00};
@@ -363,13 +358,11 @@ TEST(StreamEncoder, PackedFixed) {
 
   // repeated fixed32 values = 1;
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
-  encoder.WritePackedFixed32(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WritePackedFixed32(1, values));
 
   // repeated fixed64 values64 = 2;
   constexpr uint64_t values64[] = {0x0102030405060708};
-  encoder.WritePackedFixed64(2, values64)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WritePackedFixed64(2, values64));
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x14, 0x00, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x64,
@@ -389,13 +382,11 @@ TEST(StreamEncoder, PackedFixedVector) {
 
   // repeated fixed32 values = 1;
   const pw::Vector<uint32_t, 5> values = {0, 50, 100, 150, 200};
-  encoder.WriteRepeatedFixed32(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WriteRepeatedFixed32(1, values));
 
   // repeated fixed64 values64 = 2;
   const pw::Vector<uint64_t, 1> values64 = {0x0102030405060708};
-  encoder.WriteRepeatedFixed64(2, values64)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WriteRepeatedFixed64(2, values64));
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x14, 0x00, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x64,
@@ -415,8 +406,7 @@ TEST(StreamEncoder, PackedZigzag) {
 
   // repeated sint32 values = 1;
   constexpr int32_t values[] = {-100, -25, -1, 0, 1, 25, 100};
-  encoder.WritePackedSint32(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WritePackedSint32(1, values));
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x09, 0xc7, 0x01, 0x31, 0x01, 0x00, 0x02, 0x32, 0xc8, 0x01};
@@ -434,8 +424,7 @@ TEST(StreamEncoder, PackedZigzagVector) {
 
   // repeated sint32 values = 1;
   const pw::Vector<int32_t, 7> values = {-100, -25, -1, 0, 1, 25, 100};
-  encoder.WriteRepeatedSint32(1, values)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), encoder.WriteRepeatedSint32(1, values));
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x09, 0xc7, 0x01, 0x31, 0x01, 0x00, 0x02, 0x32, 0xc8, 0x01};

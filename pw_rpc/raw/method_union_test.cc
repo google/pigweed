@@ -83,12 +83,10 @@ class FakeGeneratedServiceImpl
 
       switch (field) {
         case TestRequest::Fields::INTEGER:
-          decoder.ReadInt64(&last_request.integer)
-              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+          ASSERT_EQ(OkStatus(), decoder.ReadInt64(&last_request.integer));
           break;
         case TestRequest::Fields::STATUS_CODE:
-          decoder.ReadUint32(&last_request.status_code)
-              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+          ASSERT_EQ(OkStatus(), decoder.ReadUint32(&last_request.status_code));
           break;
       }
     }
@@ -99,10 +97,8 @@ TEST(RawMethodUnion, InvokesUnary) {
   std::byte buffer[16];
 
   TestRequest::MemoryEncoder test_request(buffer);
-  test_request.WriteInteger(456)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  test_request.WriteStatusCode(7)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), test_request.WriteInteger(456));
+  ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(7));
 
   const Method& method =
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
@@ -127,10 +123,8 @@ TEST(RawMethodUnion, InvokesServerStreaming) {
   std::byte buffer[16];
 
   TestRequest::MemoryEncoder test_request(buffer);
-  test_request.WriteInteger(777)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  test_request.WriteStatusCode(2)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), test_request.WriteInteger(777));
+  ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(2));
 
   const Method& method =
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();

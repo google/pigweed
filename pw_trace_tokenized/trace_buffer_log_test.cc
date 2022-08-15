@@ -19,6 +19,9 @@
 #include "gtest/gtest.h"
 #include "pw_trace/trace.h"
 
+namespace pw::trace {
+namespace {
+
 TEST(TokenizedTrace, DumpSmallBuffer) {
   // TODO(b/235283406): This test only verifies that the dump function does not
   // crash, and requires manual inspection to confirm that the log output is
@@ -27,8 +30,7 @@ TEST(TokenizedTrace, DumpSmallBuffer) {
   PW_TRACE_SET_ENABLED(true);
   PW_TRACE_INSTANT("test1");
   PW_TRACE_INSTANT("test2");
-  pw::trace::DumpTraceBufferToLog()
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), pw::trace::DumpTraceBufferToLog());
 }
 
 TEST(TokenizedTrace, DumpLargeBuffer) {
@@ -40,6 +42,8 @@ TEST(TokenizedTrace, DumpLargeBuffer) {
   for (int i = 0; i < 100; i++) {
     PW_TRACE_INSTANT("test");
   }
-  pw::trace::DumpTraceBufferToLog()
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), pw::trace::DumpTraceBufferToLog());
 }
+
+}  // namespace
+}  // namespace pw::trace

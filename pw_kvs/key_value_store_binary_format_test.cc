@@ -174,8 +174,7 @@ class KvsErrorHandling : public ::testing::Test {
         kvs_(&partition_, default_format, kNoGcOptions) {}
 
   void InitFlashTo(span<const byte> contents) {
-    partition_.Erase()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    ASSERT_EQ(OkStatus(), partition_.Erase());
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
@@ -383,8 +382,7 @@ class KvsErrorRecovery : public ::testing::Test {
              kRecoveryNoGcOptions) {}
 
   void InitFlashTo(span<const byte> contents) {
-    partition_.Erase()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    ASSERT_EQ(OkStatus(), partition_.Erase());
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
@@ -641,8 +639,7 @@ class InitializedRedundantMultiMagicKvs : public ::testing::Test {
                  {.magic = kNoChecksumMagic, .checksum = nullptr},
              }},
              kRecoveryNoGcOptions) {
-    partition_.Erase()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    EXPECT_EQ(OkStatus(), partition_.Erase());
     std::memcpy(flash_.buffer().data(),
                 kInitialContents.data(),
                 kInitialContents.size());
@@ -876,8 +873,7 @@ class InitializedMultiMagicKvs : public ::testing::Test {
                  {.magic = kNoChecksumMagic, .checksum = nullptr},
              }},
              kRecoveryNoGcOptions) {
-    partition_.Erase()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    EXPECT_EQ(OkStatus(), partition_.Erase());
     std::memcpy(flash_.buffer().data(),
                 kInitialContents.data(),
                 kInitialContents.size());
@@ -930,8 +926,7 @@ class InitializedRedundantLazyRecoveryKvs : public ::testing::Test {
         kvs_(&partition_,
              {.magic = kMagic, .checksum = &default_checksum},
              kRecoveryLazyGcOptions) {
-    partition_.Erase()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    EXPECT_EQ(OkStatus(), partition_.Erase());
     std::memcpy(flash_.buffer().data(),
                 kInitialContents.data(),
                 kInitialContents.size());
@@ -1023,8 +1018,7 @@ class InitializedLazyRecoveryKvs : public ::testing::Test {
         kvs_(&partition_,
              {.magic = kMagic, .checksum = &default_checksum},
              kRecoveryLazyGcOptions) {
-    partition_.Erase()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    EXPECT_EQ(OkStatus(), partition_.Erase());
     std::memcpy(flash_.buffer().data(),
                 kInitialContents.data(),
                 kInitialContents.size());

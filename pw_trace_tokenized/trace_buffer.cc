@@ -27,11 +27,11 @@ class TraceBuffer {
  public:
   TraceBuffer() {
     ring_buffer_.SetBuffer(raw_buffer_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
     Callbacks::Instance()
         .RegisterSink(
             TraceSinkStartBlock, TraceSinkAddBytes, TraceSinkEndBlock, this)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }
 
   static void TraceSinkStartBlock(void* user_data, size_t size) {
@@ -64,7 +64,7 @@ class TraceBuffer {
     buffer->ring_buffer_
         .PushBack(span<const std::byte>(&buffer->current_block_[0],
                                         buffer->block_size_))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }
 
   pw::ring_buffer::PrefixedEntryRingBuffer& RingBuffer() {
@@ -73,7 +73,7 @@ class TraceBuffer {
 
   ConstByteSpan DeringAndViewRawBuffer() {
     ring_buffer_.Dering()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
     return ByteSpan(raw_buffer_, ring_buffer_.TotalUsedBytes());
   }
 

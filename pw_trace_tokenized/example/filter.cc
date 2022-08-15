@@ -57,7 +57,7 @@ int main(int argc, char** argv) {  // Take filename as arg
   // Register filter callback
   pw::trace::Callbacks::Instance()
       .RegisterEventCallback(TraceEventCallback)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+      .IgnoreError();  // TODO(b/242598609): Handle Status properly
 
   PW_TRACE_SET_ENABLED(true);  // Start with tracing enabled
 

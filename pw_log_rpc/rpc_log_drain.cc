@@ -123,7 +123,7 @@ RpcLogDrain::LogDrainState RpcLogDrain::SendLogs(size_t max_num_bundles,
     }
 
     encoder.WriteFirstEntrySequenceId(sequence_id_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // TODO(b/242598609): Handle Status properly
     sequence_id_ += packed_entry_count;
     const Status status = server_writer_.Write(encoder);
     sent_bundle_count++;
