@@ -594,8 +594,8 @@ class TestDirectoryDatabase(unittest.TestCase):
         self._db_csv.write_text(CSV_DATABASE)
         csv = tokens.DatabaseFile.create(self._db_csv)
         directory_db = database.load_token_database(self._db_dir)
-        self.assertEqual(str(csv), str(directory_db))
         self.assertEqual(1, len(list(self._db_dir.iterdir())))
+        self.assertEqual(str(csv), str(directory_db))
 
     def test_loading_multiples_files(self) -> None:
         self._db_csv.write_text(CSV_DATABASE_3)
@@ -612,8 +612,8 @@ class TestDirectoryDatabase(unittest.TestCase):
         all_databases_merged = tokens.Database.merged(first_csv, second_csv,
                                                       third_csv)
         directory_db = database.load_token_database(self._db_dir)
-        self.assertEqual(str(all_databases_merged), str(directory_db))
         self.assertEqual(3, len(list(self._db_dir.iterdir())))
+        self.assertEqual(str(all_databases_merged), str(directory_db))
 
     def test_loading_multiples_files_with_removal_dates(self) -> None:
         self._db_csv.write_text(CSV_DATABASE)
@@ -630,9 +630,8 @@ class TestDirectoryDatabase(unittest.TestCase):
         all_databases_merged = tokens.Database.merged(first_csv, second_csv,
                                                       third_csv)
         directory_db = database.load_token_database(self._db_dir)
-
-        self.assertEqual(str(all_databases_merged), str(directory_db))
         self.assertEqual(3, len(list(self._db_dir.iterdir())))
+        self.assertEqual(str(all_databases_merged), str(directory_db))
 
 
 if __name__ == '__main__':

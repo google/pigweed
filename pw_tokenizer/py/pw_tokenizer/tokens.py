@@ -23,6 +23,7 @@ import logging
 from pathlib import Path
 import re
 import struct
+import subprocess
 from typing import (BinaryIO, Callable, Dict, Iterable, Iterator, List,
                     NamedTuple, Optional, Pattern, TextIO, Tuple, Union,
                     ValuesView)
@@ -487,6 +488,16 @@ class DatabaseFile(Database):
     def write_to_file(self) -> None:
         """Exports in the original format to the original path."""
 
+    @abstractmethod
+    def add_and_discard_temporary(self,
+                                  entries: Iterable[TokenizedStringEntry],
+                                  commit: str) -> None:
+        """Discards and adds entries to export in the original format.
+
+        Adds entries after removing temporary entries from the Database
+        to exclusively write re-occurring entries into memory and disk.
+        """
+
 
 class _BinaryDatabase(DatabaseFile):
     def __init__(self, path: Path, fd: BinaryIO) -> None:
@@ -496,6 +507,13 @@ class _BinaryDatabase(DatabaseFile):
         """Exports in the binary format to the original path."""
         with self.path.open('wb') as fd:
             write_binary(self, fd)
+
+    def add_and_discard_temporary(self,
+                                  entries: Iterable[TokenizedStringEntry],
+                                  commit: str) -> None:
+        # TODO(b/241471465): Implement adding new tokens and removing
+        # temporary entries for binary databases.
+        raise NotImplementedError
 
 
 class _CSVDatabase(DatabaseFile):
@@ -507,6 +525,13 @@ class _CSVDatabase(DatabaseFile):
         with self.path.open('wb') as fd:
             write_csv(self, fd)
 
+    def add_and_discard_temporary(self,
+                                  entries: Iterable[TokenizedStringEntry],
+                                  commit: str) -> None:
+        # TODO(b/241471465): Implement adding new tokens and removing
+        # temporary entries for CSV databases.
+        raise NotImplementedError
+
 
 def _parse_directory(paths: Iterable[Path]) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries from files in the directory as a CSV."""
@@ -515,31 +540,137 @@ def _parse_directory(paths: Iterable[Path]) -> Iterable[TokenizedStringEntry]:
             yield from parse_csv(fd)
 
 
+def _git_stdout(commands: List, cwd: Path) -> str:
+    """Runs the git commands in the provided cwd and captures the output."""
+    return subprocess.run(['git'] + commands,
+                          capture_output=True,
+                          check=True,
+                          cwd=cwd,
+                          text=True).stdout.strip()
+
+
+def _new_entries(
+    entries: Iterable[TokenizedStringEntry],
+    database: Dict[_EntryKey,
+                   TokenizedStringEntry]) -> List[TokenizedStringEntry]:
+    """Retrieves the entries not in the database."""
+    return [entry for entry in entries if entry.key() not in database]
+
+
 class _DirectoryDatabase(DatabaseFile):
     def __init__(self, directory: Path) -> None:
-        # Create a DatabaseFile using the directory.
         super().__init__(directory, _parse_directory(directory.iterdir()))
-        self._original_entries = self._database.copy()
-        # TODO(b/239551346): Check whether a CSV exists in
-        # HEAD. Exclude the CSV when loading the database.
-        # Generate a unique filename not in the directory.
-        self._csv_file = directory / f'{uuid4().hex}.csv'
-        while self._csv_file.exists():
-            self._csv_file = directory / f'{uuid4().hex}.csv'
 
     def write_to_file(self) -> None:
         """Exports the database in CSV format to the original path."""
-        new_entries = self._get_new_token_entries()
+        database = Database(_parse_directory(self.path.iterdir()))._database  # pylint: disable=protected-access
+        new_entries = _new_entries(self.entries(), database)
         if new_entries:
-            with self._csv_file.open('wb') as fd:
-                for entry in new_entries:
-                    _write_csv_line(fd, entry)
+            with self._create_filename().open('wb') as fd:
+                write_csv(Database(new_entries), fd)
 
-    def _get_new_token_entries(self) -> List[TokenizedStringEntry]:
-        """Collects new entries and returns the total new entries found."""
-        new_token_entries = []
-        for entry in sorted(self.entries()):
-            original_entry = self._original_entries.get(entry.key())
-            if original_entry != entry:
-                new_token_entries.append(entry)
-        return new_token_entries
+    def _path_to_repo(self) -> Path:
+        """Creates a path to the repository the database is within."""
+        return Path(_git_stdout(['rev-parse', '--show-toplevel'],
+                                self.path)).resolve()
+
+    def _git_paths(self, commands: List, path_to_repo: Path) -> List[Path]:
+        """Creates a list of complete paths to the repo."""
+        try:
+            changes = _git_stdout(commands + [self.path],
+                                  path_to_repo).splitlines()
+            return [path_to_repo / path for path in changes]
+        except subprocess.CalledProcessError:
+            return []
+
+    def _find_latest_csv(self, commit: str) -> Path:
+        """Finds or creates a CSV to utilize for new entries.
+
+        - Searches for untracked files in the repo to re-use.
+        - When no untracked files exists, a difference between commit
+          and HEAD searches for a filename in the commit to re-use.
+        - Multiple differences between HEAD~ and HEAD causes a search
+          for a CSV in the latest commit.
+        - When nothing is yielded from the previous searches or no git repo
+          exists, then a new filename is created.
+        """
+        # Finds the repository the database is within.
+        try:
+            path_to_repo = self._path_to_repo()
+        except subprocess.CalledProcessError:
+            return self._create_filename()
+
+        # Find untracked_changes in directory.
+        untracked_changes = self._git_paths(
+            ['ls-files', '--others', '--exclude-standard'], path_to_repo)
+
+        if untracked_changes:
+            # TODO(b/241297219): Handle multiple paths in the commit
+            # There are uncommitted files in the repo.
+            assert len(untracked_changes) < 2
+            return untracked_changes.pop()
+
+        # TODO(b/241297219): Create an argument to specify what to run
+        # the git difference on.
+        # Find differences between origin/HEAD and HEAD commit in directory.
+        tracked_changes = self._git_paths(
+            ['diff', '--name-only', '--diff-filter=A', commit], path_to_repo)
+
+        if tracked_changes:
+            # If a single change exists in the comparison, the filename will
+            # utilized. Otherwise, when multiple files exists in a commit and
+            # a filename exist in the latest commit, use the latest commit to
+            # retrieve a CSV.
+            if len(tracked_changes) == 1:
+                return tracked_changes.pop()
+
+            tracked_changes_from_latest_commit = self._git_paths(
+                ['diff', '--name-only', '--diff-filter=A', 'HEAD~'],
+                path_to_repo)
+            # TODO(b/241297219): Handle multiple paths in the commit.
+            assert len(tracked_changes_from_latest_commit) < 2
+            return tracked_changes_from_latest_commit.pop()
+
+        return self._create_filename()
+
+    def _create_filename(self) -> Path:
+        """Generates a unique filename not in the directory."""
+        # Tracked and untracked files do not exist in the repo.
+        path = self.path / f'{uuid4().hex}.csv'
+        while path.exists():
+            path = self.path / f'{uuid4().hex}.csv'
+        return path
+
+    def add_and_discard_temporary(self,
+                                  entries: Iterable[TokenizedStringEntry],
+                                  commit: str) -> None:
+        """Adds and updates entries to export in the CSV format.
+
+        - New entries are collected from the incoming entries.
+        - When no CSV exists, the new entries are loaded into a database and
+          written to disk.
+        - When a CSV exists and incoming entries do not exist within the CSV
+          database, the temporary entries are removed from the directory and
+          CSV database.
+        - New entries are added to the CSV database and re-written to disk.
+        """
+        db = Database(entries)._database  # pylint: disable=protected-access
+        new_entries = _new_entries(db.values(), self._database)
+        csv_path = self._find_latest_csv(commit)
+
+        if csv_path.exists():
+            # Loading the CSV as a DatabaseFile.
+            csv_db = DatabaseFile.create(csv_path)
+            # Collects the keys to delete from the CSV database.
+            keys_to_delete = (e.key()
+                              for e in _new_entries(csv_db.entries(), db))
+            for key in keys_to_delete:
+                del self._database[key]
+                del csv_db._database[key]  # pylint: disable=protected-access
+            csv_db.add(new_entries)
+            csv_db.write_to_file()
+        elif new_entries:
+            with csv_path.open('wb') as fd:
+                write_csv(Database(new_entries), fd)
+
+        self.add(new_entries)

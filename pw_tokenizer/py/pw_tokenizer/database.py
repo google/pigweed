@@ -21,6 +21,7 @@ maintaining token databases.
 import argparse
 from datetime import datetime
 import glob
+import itertools
 import json
 import logging
 import os
@@ -323,18 +324,24 @@ def _handle_create(databases, database, force, output_type, include, exclude,
 
 
 def _handle_add(token_database: tokens.DatabaseFile,
-                databases: List[tokens.Database]) -> None:
+                databases: List[tokens.Database],
+                commit: Optional[str]) -> None:
     initial = len(token_database)
+    if commit:
+        entries = itertools.chain.from_iterable(db.entries()
+                                                for db in databases)
+        token_database.add_and_discard_temporary(entries, commit)
+    else:
+        for source in databases:
+            token_database.add(source.entries())
 
-    for source in databases:
-        token_database.add(source.entries())
+        token_database.write_to_file()
 
-    number_of_entries_added = len(token_database) - initial
+    number_of_changes = len(token_database) - initial
 
-    token_database.write_to_file()
-
-    _LOG.info('Added %d entries to %s', number_of_entries_added,
-              token_database.path)
+    if number_of_changes:
+        _LOG.info('Added %d entries to %s', number_of_changes,
+                  token_database.path)
 
 
 def _handle_mark_removed(token_database: tokens.DatabaseFile,
@@ -564,6 +571,14 @@ def _parse_args():
             'of ELF files or other token databases. Missing entries are NOT '
             'marked as removed.'))
     subparser.set_defaults(handler=_handle_add)
+    subparser.add_argument(
+        '--discard-temporary',
+        dest='commit',
+        help=
+        ('Deletes temporary tokens in memory and on disk when a CSV exists '
+         'within a commit. Afterwards, new strings are added to the database '
+         'from a set of ELF files or other token databases. Missing entries '
+         'are NOT marked as removed.'))
 
     # The 'mark_removed' command marks removed entries to match a set of ELFs.
     subparser = subparsers.add_parser(

@@ -780,13 +780,30 @@ Directory database
 A directory database is a collection of CSV files with unrepeated filenames.
 The ``add`` command creates a CSV in the database when new token entries exist
 from the supplied database type. The resulting CSV contains only new tokens.
-The filename is unique in the database folder and is named after a universally
-unique identifier (UUID). This is helpful when there are asynchronous additions
-to the database as merge conflicts are avoided.
+Every filename in the database folder is named after a universally unique
+identifier (UUID). This is helpful when there are asynchronous additions to
+the database as merge conflicts are avoided.
 
 .. code-block:: sh
 
    ./database.py add --database DIR_DATABASE_NAME ELF_OR_DATABASE_FILE
+
+The ``discard-temporary`` argument allows developers to input a git commit
+hash or alias to maintain a single CSV file since such commit. After the
+initial CSV is created with new tokens, passing a git commit hash or alias
+allows for a single CSV to be maintained in the latest commit with new entries
+that appear after each build. When a git repository does not exists or commit
+is not provided, the same functionality as ``add`` is invoked.
+
+.. code-block:: sh
+
+   ./database.py add --discard-temporary COMMIT --database DIR_DATABASE_NAME
+   ELF_OR_DATABASE_FILE
+
+Assuming a CSV file exists in the provided commit within the directory database.
+The ``add`` command with ``discard-temporary`` adds new token entries and discards
+any entries from the retrieved CSV that exist in the current build and not in the
+previous build. The CSV is retrieved by using the provided commit.
 
 GN integration
 ^^^^^^^^^^^^^^

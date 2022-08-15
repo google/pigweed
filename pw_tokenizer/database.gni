@@ -102,6 +102,12 @@ template("pw_tokenizer_database") {
 
     if (_create == "") {
       args = [ "add" ]
+      if (defined(invoker.commit)) {
+        args += [
+          "--discard-temporary",
+          invoker.commit,
+        ]
+      }
       inputs += [ _database ]
       stamp = true
     } else {

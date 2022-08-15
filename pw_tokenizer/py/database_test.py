@@ -16,8 +16,11 @@
 
 import json
 import io
+import os
 from pathlib import Path
 import shutil
+import stat
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -156,6 +159,16 @@ def _mock_output() -> io.TextIOWrapper:
     output = io.BytesIO()
     output.name = '<fake stdout>'
     return io.TextIOWrapper(output, write_through=True)
+
+
+def _remove_readonly(func, path, excinfo) -> None:  # pylint: disable=unused-argument
+    """Changes file permission and recalls the calling function."""
+    print('Path attempted to be deleted:', path)
+    if not os.access(path, os.W_OK):
+        # Change file permissions.
+        os.chmod(path, stat.S_IWUSR)
+        # Call the calling function again.
+        func(path)
 
 
 class DatabaseCommandLineTest(unittest.TestCase):
@@ -318,9 +331,10 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         self._csv_test_domain = CSV_TEST_DOMAIN
 
     def tearDown(self) -> None:
-        shutil.rmtree(self._dir)
+        shutil.rmtree(self._dir, onerror=_remove_readonly)
 
     def test_add_csv_to_dir(self) -> None:
+        """Tests a CSV can be created within the database."""
         run_cli('add', '--database', self._db_dir, f'{self._elf}#TEST_DOMAIN')
         directory = list(self._db_dir.iterdir())
 
@@ -332,6 +346,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
                          self._db_csv.read_text().splitlines())
 
     def test_add_all_domains_to_dir(self) -> None:
+        """Tests a CSV with all domains can be added to the database."""
         run_cli('add', '--database', self._db_dir, f'{self._elf}#.*')
         directory = list(self._db_dir.iterdir())
 
@@ -343,6 +358,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
                          self._db_csv.read_text().splitlines())
 
     def test_not_adding_existing_tokens(self) -> None:
+        """Tests duplicate tokens are not added to the database."""
         run_cli('add', '--database', self._db_dir, f'{self._elf}#TEST_DOMAIN')
         run_cli('add', '--database', self._db_dir, f'{self._elf}#TEST_DOMAIN')
         directory = list(self._db_dir.iterdir())
@@ -353,6 +369,155 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
 
         self.assertEqual(self._csv_test_domain.splitlines(),
                          self._db_csv.read_text().splitlines())
+
+    def test_adding_tokens_without_git_repo(self):
+        """Tests creating new files with new entries when no repo exists."""
+        # Add CSV_TEST_DOMAIN to a new CSV in the directory database.
+        run_cli('add', '--database', self._db_dir, f'{self._elf}#TEST_DOMAIN')
+        directory = list(self._db_dir.iterdir())
+
+        self.assertEqual(1, len(directory))
+
+        first_csv_in_db = directory.pop()
+
+        self.assertEqual(self._csv_test_domain.splitlines(),
+                         first_csv_in_db.read_text().splitlines())
+        # Add CSV_ALL_DOMAINS to a new CSV in the directory database.
+        run_cli('add', '--database', self._db_dir, f'{self._elf}#.*')
+        directory = list(self._db_dir.iterdir())
+        # Assert two different CSVs were created to store new tokens.
+        self.assertEqual(2, len(directory))
+        # Retrieve the other CSV in the directory.
+        second_csv_in_db = directory[
+            0] if directory[0] != first_csv_in_db else directory[1]
+
+        self.assertNotEqual(first_csv_in_db, second_csv_in_db)
+        self.assertEqual(self._csv_test_domain.splitlines(),
+                         first_csv_in_db.read_text().splitlines())
+
+        # Retrieve entries that exclusively exist in CSV_ALL_DOMAINS
+        # as CSV_ALL_DOMAINS contains all entries in TEST_DOMAIN.
+        entries_exclusively_in_all_domain = (
+            set(CSV_ALL_DOMAINS.splitlines()) -
+            set(self._csv_test_domain.splitlines()))
+        # Ensure only new tokens not in CSV_TEST_DOMAIN were added to
+        # the second CSV added to the directory database.
+        self.assertEqual(entries_exclusively_in_all_domain,
+                         set(second_csv_in_db.read_text().splitlines()))
+
+    def test_untracked_files_in_dir(self):
+        """Tests untracked CSVs are reused by the database."""
+        subprocess.run(['git', 'init'], cwd=self._dir)
+        # Add CSV_TEST_DOMAIN to a new CSV in the directory database.
+        run_cli('add', '--database', self._db_dir, '--discard-temporary',
+                'HEAD', f'{self._elf}#TEST_DOMAIN')
+        directory = list(self._db_dir.iterdir())
+
+        self.assertEqual(1, len(directory))
+
+        first_path_in_db = directory.pop()
+
+        self.assertEqual(self._csv_test_domain.splitlines(),
+                         first_path_in_db.read_text().splitlines())
+        # Retrieve the untracked CSV in the Git repository and discard
+        # tokens that do not exist in CSV_DEFAULT_DOMAIN.
+        run_cli('add', '--database', self._db_dir, '--discard-temporary',
+                'HEAD', self._elf)
+        directory = list(self._db_dir.iterdir())
+
+        self.assertEqual(1, len(directory))
+
+        reused_path_in_db = directory.pop()
+        # Ensure the first path created is the same being reused. Also,
+        # the CSV content is the same as CSV_DEFAULT_DOMAIN.
+        self.assertEqual(first_path_in_db, reused_path_in_db)
+        self.assertEqual(CSV_DEFAULT_DOMAIN.splitlines(),
+                         reused_path_in_db.read_text().splitlines())
+
+    def test_adding_multiple_elf_files(self) -> None:
+        """Tests adding multiple elf files to a file in the database."""
+        # Add CSV_TEST_DOMAIN to a new CSV in the directory database.
+        run_cli('add', '--database', self._db_dir, f'{self._elf}#TEST_DOMAIN',
+                self._elf)
+        directory = list(self._db_dir.iterdir())
+
+        self.assertEqual(1, len(directory))
+        # Combines CSV_DEFAULT_DOMAIN and TEST_DOMAIN into a unique set
+        # of token entries.
+        entries_from_default_and_test_domain = set(
+            CSV_DEFAULT_DOMAIN.splitlines()).union(
+                set(self._csv_test_domain.splitlines()))
+        # Multiple ELF files were added at once to a single CSV.
+        self.assertEqual(entries_from_default_and_test_domain,
+                         set(directory.pop().read_text().splitlines()))
+
+    def test_discarding_old_entries(self) -> None:
+        """Tests discarding old entries for new entries when re-adding."""
+        subprocess.run(['git', 'init'], cwd=self._dir)
+        # Add CSV_ALL_DOMAINS to a new CSV in the directory database.
+        run_cli('add', '--database', self._db_dir, '--discard-temporary',
+                'HEAD', f'{self._elf}#.*')
+        directory = list(self._db_dir.iterdir())
+
+        self.assertEqual(1, len(directory))
+
+        untracked_path_in_db = directory.pop()
+
+        self.assertEqual(CSV_ALL_DOMAINS.splitlines(),
+                         untracked_path_in_db.read_text().splitlines())
+        # Add CSV_DEFAULT_DOMAIN and CSV_TEST_DOMAIN to a CSV in the
+        # directory database, while replacing entries in CSV_ALL_DOMAINS
+        # that no longer exist.
+        run_cli('add', '--database', self._db_dir, '--discard-temporary',
+                'HEAD', f'{self._elf}#TEST_DOMAIN', self._elf)
+        directory = list(self._db_dir.iterdir())
+
+        self.assertEqual(1, len(directory))
+
+        reused_path_in_db = directory.pop()
+        # Combines CSV_DEFAULT_DOMAIN and TEST_DOMAIN.
+        entries_from_default_and_test_domain = set(
+            CSV_DEFAULT_DOMAIN.splitlines()).union(
+                set(self._csv_test_domain.splitlines()))
+
+        self.assertEqual(untracked_path_in_db, reused_path_in_db)
+        self.assertEqual(entries_from_default_and_test_domain,
+                         set(reused_path_in_db.read_text().splitlines()))
+
+    def test_retrieving_csv_from_commit(self) -> None:
+        """Tests retrieving a CSV from a commit and removing temp tokens."""
+        subprocess.run(['git', 'init'], cwd=self._dir)
+        subprocess.run(
+            ['git', 'commit', '--allow-empty', '-m', 'First Commit'],
+            cwd=self._dir)
+        # Add CSV_ALL_DOMAINS to a new CSV in the directory database.
+        run_cli('add', '--database', self._db_dir, f'{self._elf}#.*')
+        directory = list(self._db_dir.iterdir())
+
+        self.assertEqual(1, len(directory))
+
+        tracked_path_in_db = directory.pop()
+
+        self.assertEqual(CSV_ALL_DOMAINS.splitlines(),
+                         tracked_path_in_db.read_text().splitlines())
+        # Commit the CSV to avoid retrieving the CSV with the checks
+        # for untracked changes.
+        subprocess.run(['git', 'add', '--all'], cwd=self._dir)
+        subprocess.run(
+            ['git', 'commit', '-m', 'Adding a CSV to a new commit.'],
+            cwd=self._dir)
+        # Retrieve the CSV in HEAD and discard tokens that exist in
+        # CSV_ALL_DOMAINS and do not exist in CSV_TEST_DOMAIN.
+        run_cli('add', '--database', self._db_dir, '--discard-temporary',
+                'HEAD~', f'{self._elf}#TEST_DOMAIN')
+        directory = list(self._db_dir.iterdir())
+
+        self.assertEqual(1, len(directory))
+
+        reused_path_in_db = directory.pop()
+
+        self.assertEqual(self._csv_test_domain.splitlines(),
+                         reused_path_in_db.read_text().splitlines())
 
 
 if __name__ == '__main__':
