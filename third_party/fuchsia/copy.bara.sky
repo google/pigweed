@@ -32,24 +32,6 @@ fuchsia_repo_files = [
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/utility.h",
 ]
 
-# Replace __builtin_abort with PW_ASSERT.
-replace_builtin_abort_paths = glob([
-    "sdk/lib/fit/include/lib/fit/function_internal.h",
-])
-
-replace_builtin_abort = [
-    core.replace(
-        paths = replace_builtin_abort_paths,
-        before = "namespace fit {",
-        after = "#include \"pw_assert/assert.h\"\n\nnamespace fit {",
-    ),
-    core.replace(
-        paths = replace_builtin_abort_paths,
-        before = "__builtin_abort()",
-        after = "PW_ASSERT(false)",
-    ),
-]
-
 core.workflow(
     name = "default",
     description = "Imports files from Fuchsia's fit library",
@@ -67,8 +49,9 @@ core.workflow(
     origin_files = glob(fuchsia_repo_files),
     destination_files = glob(["third_party/fuchsia/repo/**"]),
     authoring = authoring.pass_thru("Fuchsia Authors <noreply@google.com>"),
-    transformations = replace_builtin_abort + [
+    transformations = [
         core.move("", "third_party/fuchsia/repo"),
+        patch.apply(["function.patch"]),
         # Show all commits but exclude the author to reduce line length.
         metadata.squash_notes(
             "third_party/fuchsia: Copybara import of the fit library\n\n",

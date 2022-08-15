@@ -52,4 +52,6 @@ script:
 That creates a Gerrit change with updates from the Fuchsia repo, if any.
 
 Files are synced from Fuchsia repository to their original paths under the
-``third_party/fuchsia/repo`` directory in Pigweed.
+``third_party/fuchsia/repo`` directory in Pigweed. The Copybara script applies
+patches to adapt the sources for use in Pigweed. For example,
+``__builtin_abort`` is replaced with ``PW_ASSERT``.
