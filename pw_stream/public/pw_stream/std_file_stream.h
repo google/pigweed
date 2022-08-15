@@ -30,6 +30,7 @@ class StdFileReader final : public stream::SeekableReader {
   StatusWithSize DoRead(ByteSpan dest) override;
   Status DoSeek(ptrdiff_t offset, Whence origin) override;
   size_t DoTell() override;
+  size_t ConservativeLimit(LimitType limit) const override;
 
   std::ifstream stream_;
 };

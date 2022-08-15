@@ -63,6 +63,30 @@ size_t StdFileReader::DoTell() {
   return pos < 0 ? kUnknownPosition : pos;
 }
 
+size_t StdFileReader::ConservativeLimit(LimitType limit) const {
+  if (limit == LimitType::kWrite) {
+    return 0;
+  }
+
+  // Attempt to determine the number of bytes left in the file by seeking
+  // to the end and checking where we end up.
+  if (stream_.eof()) {
+    return 0;
+  }
+  auto stream = const_cast<std::ifstream*>(&this->stream_);
+  auto start = stream->tellg();
+  if (start == -1) {
+    return 0;
+  }
+  stream->seekg(0, std::ios::end);
+  auto end = stream->tellg();
+  if (end == -1) {
+    return 0;
+  }
+  stream->seekg(start, std::ios::beg);
+  return end - start;
+}
+
 Status StdFileWriter::DoWrite(ConstByteSpan data) {
   if (stream_.eof()) {
     return Status::OutOfRange();
