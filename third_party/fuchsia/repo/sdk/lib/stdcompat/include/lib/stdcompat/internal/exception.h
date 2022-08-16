@@ -6,7 +6,8 @@
 #define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_EXCEPTION_H_
 
 #include <exception>
-#include <type_traits>
+
+#include "../type_traits.h"
 
 namespace cpp17 {
 namespace internal {
@@ -24,6 +25,29 @@ template <typename T,
 #else
   __builtin_abort();
 #endif
+}
+
+template <typename T>
+inline constexpr void throw_or_abort_if_any_impl(const char* reason, bool should_abort) {
+  if (should_abort) {
+    throw_or_abort<T>(reason);
+  }
+}
+
+template <typename T, typename... AbortIf>
+inline constexpr void throw_or_abort_if_any_impl(const char* reason, bool head, AbortIf... tail) {
+  if (head) {
+    throw_or_abort<T>(reason);
+  }
+  throw_or_abort_if_any_impl<T>(reason, tail...);
+}
+
+template <typename T, typename... AbortIf>
+inline constexpr void throw_or_abort_if_any(const char* reason, AbortIf... abort_if) {
+  static_assert(sizeof...(AbortIf) > 0, "Must provide an |abort_if| clause.");
+  static_assert(cpp17::conjunction_v<std::is_same<bool, AbortIf>...>,
+                "|abort_if| arguments must be boolean.");
+  throw_or_abort_if_any_impl<T>(reason, abort_if...);
 }
 
 }  // namespace internal

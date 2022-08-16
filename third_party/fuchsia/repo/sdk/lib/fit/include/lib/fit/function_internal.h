@@ -199,14 +199,23 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
                                     /*is_shared=*/true, Result, Args...>;
   using null_target_type = target_type<decltype(nullptr)>;
 
+ public:
+  // Deleted copy constructor and assign. |function_base| implementations are
+  // move-only.
+  function_base(const function_base& other) = delete;
+  function_base& operator=(const function_base& other) = delete;
+
+  // Move assignment must be provided by subclasses.
+  function_base& operator=(function_base&& other) = delete;
+
  protected:
   using result_type = Result;
 
-  constexpr function_base() : ops_(&null_target_type::ops), bits_({}) {}
+  constexpr function_base() : ops_(&null_target_type::ops), null_bits_() {}
 
   constexpr function_base(decltype(nullptr)) : function_base() {}
 
-  function_base(Result (*target_arg)(Args...)) { initialize_target(target_arg); }
+  function_base(Result (*function_target)(Args...)) { initialize_target(function_target); }
 
   template <typename Callable,
             typename = std::enable_if_t<std::is_convertible<
@@ -330,15 +339,6 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   // Used by check_target_type.
   const void* target_type_id() const { return ops_->target_type_id(&bits_, ops_); }
 
- public:
-  // Deleted copy constructor and assign. |function_base| implementations are
-  // move-only.
-  function_base(const function_base& other) = delete;
-  function_base& operator=(const function_base& other) = delete;
-
-  // Move assignment must be provided by subclasses.
-  function_base& operator=(function_base&& other) = delete;
-
  private:
   // Implements the move operation, used by move construction and move
   // assignment. Leaves other target initialized to null.
@@ -372,7 +372,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
         "Alignment of Callable must be <= alignment of max_align_t.");
     static_assert(!require_inline || sizeof(DecayedCallable) <= inline_target_size,
                   "Callable too large to store inline as requested.");
-    if (::fit::is_null(target)) {
+    if (is_null(target)) {
       initialize_null_target();
     } else {
       ops_ = &target_type<DecayedCallable>::ops;
@@ -404,7 +404,15 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   }
 
   ops_type ops_;
-  mutable storage_type bits_;
+
+  // Union the real storage with the empty null_bits_ object. The default
+  // constructor initializes null_bits_ instead of bits_, which allows it to be
+  // constexpr without initializing the actual storage.
+  union {
+    mutable storage_type bits_;
+    struct {
+    } null_bits_;
+  };
 };
 
 }  // namespace internal
