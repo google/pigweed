@@ -113,8 +113,6 @@ class Bytes {
   Bytes(stream::IntervalReader reader) : reader_(reader) {}
   stream::IntervalReader GetBytesReader() { return reader_; }
 
-  // TODO(pwbug/363): Migrate this to Result<> once we have StatusOr like
-  // support.
   bool ok() { return reader_.ok(); }
   Status status() { return reader_.status(); }
 
@@ -395,8 +393,6 @@ class Message {
   // message.
   Bytes ToBytes() { return Bytes(reader_.Reset()); }
 
-  // TODO(pwbug/363): Migrate this to Result<> once we have StatusOr like
-  // support.
   bool ok() { return reader_.ok(); }
   Status status() { return reader_.status(); }
 
@@ -550,8 +546,6 @@ class RepeatedFieldParser {
 
   RepeatedFieldParser(Status status) : message_(status) {}
 
-  // TODO(pwbug/363): Migrate this to Result<> once we have StatusOr like
-  // support.
   bool ok() { return message_.ok(); }
   Status status() { return message_.status(); }
 

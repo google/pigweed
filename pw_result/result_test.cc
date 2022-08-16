@@ -125,10 +125,6 @@ Status TryResultAssign(Result<bool> result) {
   return result.status();
 }
 
-// TODO(pwbug/363): Once pw::Result has been refactored to properly support
-// non-default move and/or copy assignment operators and/or constructors, we
-// should add explicit tests to confirm this is properly handled by
-// PW_TRY_ASSIGN.
 TEST(Result, TryAssign) {
   EXPECT_EQ(TryResultAssign(Status::Cancelled()), Status::Cancelled());
   EXPECT_EQ(TryResultAssign(Status::DataLoss()), Status::DataLoss());

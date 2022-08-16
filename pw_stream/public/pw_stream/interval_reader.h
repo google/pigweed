@@ -29,13 +29,8 @@ namespace pw::stream {
 // A reader wrapper that reads from a sub-interval of a given seekable
 // source reader. The IntervalReader tracks and maintains its own read offset.
 // It seeks the source reader to its current read offset before reading. In
-// this way, multiple IntervalReader can share the same source reader without
-// interfereing each other.
-//
-// The reader additionally embedds a `Status` to indicate whether itself
-// is valid. This is a workaround for Reader not being compatibile with
-// Result<>. TODO(pwbug/363): Migrate this to Result<> once we have StatusOr
-// like support.
+// this way, multiple IntervalReaders can share the same source reader without
+// interfering with each other.
 class IntervalReader : public SeekableReader {
  public:
   constexpr IntervalReader() : status_(Status::Unavailable()) {}
@@ -62,7 +57,7 @@ class IntervalReader : public SeekableReader {
     return *this;
   }
 
-  // Move the read offset to the end of the intetrval;
+  // Move the read offset to the end of the interval;
   IntervalReader& Exhaust() {
     current_ = end_;
     return *this;
