@@ -187,9 +187,14 @@ class function_base;
 template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
 class function_base<inline_target_size, require_inline, Result(Args...)> {
   using ops_type = const target_ops<Result, Args...>*;
-  using storage_type = typename std::aligned_storage<(
-      inline_target_size >= sizeof(void*) ? inline_target_size : sizeof(void*))>::
-      type;  // avoid including <algorithm> for max
+  // storage_type is required to have an alignment of max_align_t, however if we
+  // add alignas() on storage_type, padding will be added inside this struct to
+  // reach a size multiple of max_align_t. Instead, whenever the type is used to
+  // declare a variable or data member you must add "alignas(max_align_t)" at
+  // that point.
+  struct storage_type {
+    uint8_t data[inline_target_size >= sizeof(void*) ? inline_target_size : sizeof(void*)];
+  };  // avoid including <algorithm> for max
   template <typename Callable>
   using target_type = target<Callable, (sizeof(Callable) <= sizeof(storage_type)),
                              /*is_shared=*/false, Result, Args...>;
@@ -211,7 +216,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
  protected:
   using result_type = Result;
 
-  constexpr function_base() : ops_(&null_target_type::ops), null_bits_() {}
+  constexpr function_base() : null_bits_(), ops_(&null_target_type::ops) {}
 
   constexpr function_base(decltype(nullptr)) : function_base() {}
 
@@ -325,7 +330,9 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
     if (&other == this)
       return;
     ops_type temp_ops = ops_;
-    storage_type temp_bits;
+    // Note: storage_type is not declared with alignas(max_align_t), alignment
+    // must be specified when using it.
+    alignas(max_align_t) storage_type temp_bits;
     ops_->move(&bits_, &temp_bits);
 
     ops_ = other.ops_;
@@ -368,7 +375,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
     // Convert function or function references to function pointer.
     using DecayedCallable = std::decay_t<Callable>;
     static_assert(
-        std::alignment_of<DecayedCallable>::value <= std::alignment_of<storage_type>::value,
+        std::alignment_of<DecayedCallable>::value <= std::alignment_of<max_align_t>::value,
         "Alignment of Callable must be <= alignment of max_align_t.");
     static_assert(!require_inline || sizeof(DecayedCallable) <= inline_target_size,
                   "Callable too large to store inline as requested.");
@@ -403,16 +410,30 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
     }
   }
 
-  ops_type ops_;
-
   // Union the real storage with the empty null_bits_ object. The default
   // constructor initializes null_bits_ instead of bits_, which allows it to be
   // constexpr without initializing the actual storage.
   union {
-    mutable storage_type bits_;
+    // bits_ must have an alignment of max_align_t but the storage_type struct
+    // doesn't have this requirement specified. This allows the bits_ field to
+    // be aligned to max_align_t with an explicit alignas() here while leaving
+    // the padding in the function_base class avaiable for other fields. In
+    // particular, when inline_target_size is not a multiple of max_align_t the
+    // ops_ field (which only has a pointer size alignment) can be placed in
+    // the space that otherwise would be used for storage_type padding, reducing
+    // the overall size of the function_base class.
+    // Moving the alignas(max_align_t) requirement to the storage_type
+    // declaration would require the storage_type to have a size multiple of
+    // max_align_t wasting the padding inside the storage_type.
+    alignas(max_align_t) mutable storage_type bits_;
     struct {
     } null_bits_;
   };
+
+  // The target_ops pointer for this function. This field has lower alignment
+  // requirement than bits_, so placing ops_ after bits_ allows for better
+  // packing reducing the padding needed in some cases.
+  ops_type ops_;
 };
 
 }  // namespace internal
