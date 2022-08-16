@@ -99,6 +99,24 @@ def gn_args(**kwargs) -> str:
     return '--args=' + ' '.join(transformed_args)
 
 
+# TODO(b/242739116) Remove "_2" function after transitioning.
+def gn_gen_2(ctx: PresubmitContext,
+             *args: str,
+             gn_check: bool = True,
+             gn_fail_on_unused: bool = True,
+             export_compile_commands: Union[bool, str] = True,
+             preserve_args_gn: bool = False,
+             **gn_arguments) -> None:
+    return gn_gen(ctx.root,
+                  ctx.output_dir,
+                  *args,
+                  gn_check=gn_check,
+                  gn_fail_on_unused=gn_fail_on_unused,
+                  export_compile_commands=export_compile_commands,
+                  preserve_args_gn=preserve_args_gn,
+                  **gn_arguments)
+
+
 def gn_gen(gn_source_dir: Path,
            gn_output_dir: Path,
            *args: str,
@@ -141,12 +159,21 @@ def gn_gen(gn_source_dir: Path,
              cwd=gn_source_dir)
 
 
-def ninja(directory: Path,
+# TODO(b/242739116) Remove Union after transitioning.
+def ninja(ctx: Union[Path, PresubmitContext],
           *args,
           save_compdb=True,
           save_graph=True,
           **kwargs) -> None:
     """Runs ninja in the specified directory."""
+
+    if isinstance(ctx, PresubmitContext):
+        directory = ctx.output_dir
+    elif isinstance(ctx, Path):
+        directory = ctx
+    else:
+        raise TypeError(f'unexpected type for ctx: {type(ctx)}')
+
     if save_compdb:
         proc = subprocess.run(
             ['ninja', '-C', directory, '-t', 'compdb', *args],
@@ -169,6 +196,13 @@ def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
     proc = subprocess.run(['gn', 'args', directory, '--list', '--json'],
                           stdout=subprocess.PIPE)
     return json.loads(proc.stdout)
+
+
+# TODO(b/242739116) Remove "_2" function after transitioning.
+def cmake_2(ctx: PresubmitContext,
+            *args: str,
+            env: Mapping['str', 'str'] = None) -> None:
+    return cmake(ctx.root, ctx.output_dir, *args, env=env)
 
 
 def cmake(source_dir: Path,
@@ -379,5 +413,4 @@ def bazel_lint(ctx: PresubmitContext):
 @Check
 def gn_gen_check(ctx: PresubmitContext):
     """Runs gn gen --check to enforce correct header dependencies."""
-    pw_project_root = Path(os.environ['PW_PROJECT_ROOT'])
-    gn_gen(pw_project_root, ctx.output_dir, gn_check=True)
+    gn_gen_2(ctx, gn_check=True)

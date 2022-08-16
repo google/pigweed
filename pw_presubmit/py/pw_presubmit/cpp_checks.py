@@ -37,32 +37,32 @@ def pragma_once(ctx: PresubmitContext) -> None:
 
 @Check
 def asan(ctx: PresubmitContext) -> None:
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'asan')
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, 'asan')
 
 
 @Check
 def msan(ctx: PresubmitContext) -> None:
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'msan')
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, 'msan')
 
 
 @Check
 def tsan(ctx: PresubmitContext) -> None:
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'tsan')
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, 'tsan')
 
 
 @Check
 def ubsan(ctx: PresubmitContext) -> None:
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'ubsan')
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, 'ubsan')
 
 
 @Check
 def runtime_sanitizers(ctx: PresubmitContext) -> None:
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'runtime_sanitizers')
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, 'runtime_sanitizers')
 
 
 def all_sanitizers():

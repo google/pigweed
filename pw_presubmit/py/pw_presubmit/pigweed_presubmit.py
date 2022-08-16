@@ -82,29 +82,28 @@ def gn_clang_build(ctx: PresubmitContext):
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *build_targets)
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_gcc_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_gcc'))
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, *_at_all_optimization_levels('host_gcc'))
 
 
 _HOST_COMPILER = 'gcc' if sys.platform == 'win32' else 'clang'
 
 
 def gn_host_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir,
-                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_quick_build_check(ctx: PresubmitContext):
     """Checks the state of the GN build by running gn gen and gn check."""
-    build.gn_gen(ctx.root, ctx.output_dir)
+    build.gn_gen_2(ctx)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -128,15 +127,15 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *build_targets)
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_full_qemu_check(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
+    build.gn_gen_2(ctx)
     build.ninja(
-        ctx.output_dir,
+        ctx,
         *_at_all_optimization_levels('qemu_gcc'),
         *_at_all_optimization_levels('qemu_clang'),
     )
@@ -144,26 +143,25 @@ def gn_full_qemu_check(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_arm_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'))
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def stm32f429i(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, pw_use_test_server=True)
+    build.gn_gen_2(ctx, pw_use_test_server=True)
     with build.test_server('stm32f429i_disc1_test_server', ctx.output_dir):
-        build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'))
+        build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'boringssl')
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
-                                                            'boringssl'))
+    build.gn_gen_2(ctx,
+                   dir_pw_third_party_boringssl='"{}"'.format(
+                       ctx.package_root / 'boringssl'))
     build.ninja(
-        ctx.output_dir,
+        ctx,
         *_at_all_optimization_levels('stm32f429i'),
         *_at_all_optimization_levels('host_clang'),
     )
@@ -172,12 +170,11 @@ def gn_boringssl_build(ctx: PresubmitContext):
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_nanopb_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'nanopb')
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
-                                                         'nanopb'))
+    build.gn_gen_2(ctx,
+                   dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
+                                                           'nanopb'))
     build.ninja(
-        ctx.output_dir,
+        ctx,
         *_at_all_optimization_levels('stm32f429i'),
         *_at_all_optimization_levels('host_clang'),
     )
@@ -186,24 +183,21 @@ def gn_nanopb_build(ctx: PresubmitContext):
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_mbedtls_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'mbedtls')
-    build.gn_gen(
-        ctx.root,
-        ctx.output_dir,
+    build.gn_gen_2(
+        ctx,
         dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
                                                'pw_crypto:sha256_mbedtls'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_mbedtls'))
-    build.ninja(ctx.output_dir,
-                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
+    build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'boringssl')
-    build.gn_gen(
-        ctx.root,
-        ctx.output_dir,
+    build.gn_gen_2(
+        ctx,
         dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
                                                    'boringssl'),
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
@@ -211,36 +205,32 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_boringssl'),
     )
-    build.ninja(ctx.output_dir,
-                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
+    build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'micro-ecc')
-    build.gn_gen(
-        ctx.root,
-        ctx.output_dir,
+    build.gn_gen_2(
+        ctx,
         dir_pw_third_party_micro_ecc='"{}"'.format(ctx.package_root /
                                                    'micro-ecc'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_uecc'),
     )
-    build.ninja(ctx.output_dir,
-                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
+    build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_teensy_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'teensy')
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 pw_arduino_build_CORE_PATH='"{}"'.format(str(
-                     ctx.package_root)),
-                 pw_arduino_build_CORE_NAME='teensy',
-                 pw_arduino_build_PACKAGE_NAME='teensy/avr',
-                 pw_arduino_build_BOARD='teensy40')
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('arduino'))
+    build.gn_gen_2(ctx,
+                   pw_arduino_build_CORE_PATH='"{}"'.format(
+                       str(ctx.package_root)),
+                   pw_arduino_build_CORE_NAME='teensy',
+                   pw_arduino_build_PACKAGE_NAME='teensy/avr',
+                   pw_arduino_build_BOARD='teensy40')
+    build.ninja(ctx, *_at_all_optimization_levels('arduino'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -249,9 +239,8 @@ def gn_software_update_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'protobuf')
     build.install_package(ctx.package_root, 'mbedtls')
     build.install_package(ctx.package_root, 'micro-ecc')
-    build.gn_gen(
-        ctx.root,
-        ctx.output_dir,
+    build.gn_gen_2(
+        ctx,
         dir_pw_third_party_protobuf='"{}"'.format(ctx.package_root /
                                                   'protobuf'),
         dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
@@ -263,7 +252,7 @@ def gn_software_update_build(ctx: PresubmitContext):
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
                                                'pw_crypto:sha256_mbedtls'))
     build.ninja(
-        ctx.output_dir,
+        ctx,
         *_at_all_optimization_levels('host_clang'),
     )
 
@@ -273,44 +262,43 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'freertos')
     build.install_package(ctx.package_root, 'nanopb')
     build.install_package(ctx.package_root, 'stm32cube_f4')
-    build.gn_gen(
-        ctx.root,
-        ctx.output_dir,
+    build.gn_gen_2(
+        ctx,
         dir_pw_third_party_freertos='"{}"'.format(ctx.package_root /
                                                   'freertos'),
         dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
         dir_pw_third_party_stm32cube_f4='"{}"'.format(ctx.package_root /
                                                       'stm32cube_f4'),
     )
-    build.ninja(ctx.output_dir, 'pw_system_demo')
+    build.ninja(ctx, 'pw_system_demo')
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_qemu_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_gcc'))
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, *_at_all_optimization_levels('qemu_gcc'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_qemu_clang_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_clang'))
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, *_at_all_optimization_levels('qemu_clang'))
 
 
 def gn_docs_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'docs')
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, 'docs')
 
 
 def gn_host_tools(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'host_tools')
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, 'host_tools')
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def oss_fuzz_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, pw_toolchain_OSS_FUZZ_ENABLED=True)
-    build.ninja(ctx.output_dir, "fuzzers")
+    build.gn_gen_2(ctx, pw_toolchain_OSS_FUZZ_ENABLED=True)
+    build.ninja(ctx, "fuzzers")
 
 
 def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
@@ -321,27 +309,26 @@ def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
         env = build.env_with_clang_vars()
 
     toolchain_path = ctx.root / 'pw_toolchain' / toolchain / 'toolchain.cmake'
-    build.cmake(ctx.root,
-                ctx.output_dir,
-                f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
-                '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
-                f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
-                '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
-                env=env)
+    build.cmake_2(ctx,
+                  f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
+                  '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
+                  f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
+                  '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
+                  env=env)
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_clang(ctx: PresubmitContext):
     _run_cmake(ctx, toolchain='host_clang')
-    build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
+    build.ninja(ctx, 'pw_apps', 'pw_run_tests.modules')
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_gcc(ctx: PresubmitContext):
     _run_cmake(ctx, toolchain='host_gcc')
-    build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
+    build.ninja(ctx, 'pw_apps', 'pw_run_tests.modules')
 
 
 # TODO(b/235882003): Slowly remove targets from here that work with bazel until
@@ -723,8 +710,8 @@ def commit_message_format(_: PresubmitContext):
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.py'))
 def static_analysis(ctx: PresubmitContext):
     """Runs all available static analysis tools."""
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'python.lint', 'static_analysis')
+    build.gn_gen_2(ctx)
+    build.ninja(ctx, 'python.lint', 'static_analysis')
 
 
 def renode_check(ctx: PresubmitContext):
