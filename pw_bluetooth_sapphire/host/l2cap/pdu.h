@@ -79,10 +79,8 @@ class PDU final {
   // this is called, the PDU will become invalid.
   FragmentList ReleaseFragments();
 
-#ifndef NTRACE
   void set_trace_id(trace_flow_id_t id) { trace_id_ = id; }
   trace_flow_id_t trace_id() { return trace_id_; }
-#endif
 
  private:
   friend class Reader;
@@ -101,9 +99,7 @@ class PDU final {
   // is equal to the length of the frame (i.e. length() + sizeof(BasicHeader)).
   FragmentList fragments_;
 
-#ifndef NTRACE
   trace_flow_id_t trace_id_;
-#endif
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PDU);
 };

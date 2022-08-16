@@ -8,7 +8,6 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
-#include <lib/trace/event.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
@@ -19,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::socket {
@@ -126,12 +126,10 @@ class SocketChannelRelay final {
   // Clears |wait|'s handler, and cancels |wait|.
   void UnbindAndCancelWait(async::Wait* wait);
 
-#ifndef NTRACE
   // Get a trace_flow_id given a counter. Used to make sure trace flows are unique while they are
   // active.
   // Composed of channel UniqueId and the given counter, with the unique_id taking the top 32 bits.
   trace_flow_id_t GetTraceId(uint32_t id);
-#endif
 
   RelayState state_;  // Initial state is kActivating.
 

@@ -4,13 +4,13 @@
 
 #include "client.h"
 
-#include <lib/trace/event.h>
 #include <zircon/assert.h>
 
 #include "gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 
 using bt::HostError;
 

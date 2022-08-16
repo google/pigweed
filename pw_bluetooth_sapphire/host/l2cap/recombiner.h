@@ -90,12 +90,10 @@ class Recombiner final {
   // enforce that this Recombiner is used with ACL fragments from the correct link.
   const hci_spec::ConnectionHandle handle_;
 
-#ifndef NTRACE
   // Trace flow IDs for the fragments being recombined into a single PDU.
   // Flows track from AddFragment to Release, only when there is fragmentation.
   // (PDUs are expected to be released immediately when there is no recombining)
   std::vector<trace_flow_id_t> trace_ids_;
-#endif
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Recombiner);
 };

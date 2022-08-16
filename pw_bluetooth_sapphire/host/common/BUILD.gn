@@ -47,6 +47,7 @@ source_set("common") {
     "test_helpers.cc",
     "test_helpers.h",
     "to_string.h",
+    "trace.h",
     "uint128.h",
     "uint256.h",
     "uuid.cc",

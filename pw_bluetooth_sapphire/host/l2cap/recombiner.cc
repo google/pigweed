@@ -126,22 +126,22 @@ void Recombiner::ClearRecombination() {
 }
 
 void Recombiner::BeginTrace() {
-#ifndef NTRACE
+  if (!TRACE_ENABLED()) {
+    return;
+  }
   trace_flow_id_t flow_id = TRACE_NONCE();
   TRACE_FLOW_BEGIN("bluetooth", "Recombiner buffered ACL data fragment", flow_id);
   trace_ids_.push_back(flow_id);
-#endif
 }
 
 void Recombiner::EndTraces() {
-#ifndef NTRACE
-  if (TRACE_ENABLED()) {
-    for (auto flow_id : trace_ids_) {
-      TRACE_FLOW_END("bluetooth", "Recombiner buffered ACL data fragment", flow_id);
-    }
-    trace_ids_.clear();
+  if (!TRACE_ENABLED()) {
+    return;
   }
-#endif
+  for ([[maybe_unused]] auto flow_id : trace_ids_) {
+    TRACE_FLOW_END("bluetooth", "Recombiner buffered ACL data fragment", flow_id);
+  }
+  trace_ids_.clear();
 }
 
 }  // namespace bt::l2cap

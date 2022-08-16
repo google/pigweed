@@ -7,12 +7,12 @@
 #include <endian.h>
 #include <lib/async/default.h>
 #include <lib/fit/defer.h>
-#include <lib/trace/event.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::hci {

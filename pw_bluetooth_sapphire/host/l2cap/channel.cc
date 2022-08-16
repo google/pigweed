@@ -5,7 +5,6 @@
 #include "channel.h"
 
 #include <lib/async/default.h>
-#include <lib/trace/event.h>
 #include <zircon/assert.h>
 
 #include <functional>
@@ -14,6 +13,7 @@
 #include "lib/fitx/result.h"
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_tx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_engines.h"

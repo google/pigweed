@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/trace/event.h>
 #include <zircon/compiler.h>
 
 #include <list>

@@ -5,7 +5,6 @@
 #include "server.h"
 
 #include <lib/fit/function.h>
-#include <lib/trace/event.h>
 #include <zircon/assert.h>
 
 #include "gatt_defs.h"
@@ -13,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
 namespace bt::gatt {

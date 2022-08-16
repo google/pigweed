@@ -6,13 +6,13 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ACL_DATA_PACKET_H_
 
 #include <lib/fit/function.h>
-#include <lib/trace/event.h>
 
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
 
@@ -47,11 +47,9 @@ class Packet<hci_spec::ACLDataHeader> : public PacketBase<hci_spec::ACLDataHeade
   // underlying buffer.
   void InitializeFromBuffer();
 
-#ifndef NTRACE
   // ID to trace packet flow
   void set_trace_id(trace_flow_id_t id) { async_id_ = id; }
   trace_flow_id_t trace_id() { return async_id_; }
-#endif
 
  protected:
   using PacketBase<hci_spec::ACLDataHeader, ACLDataPacket>::PacketBase;
@@ -62,9 +60,7 @@ class Packet<hci_spec::ACLDataHeader> : public PacketBase<hci_spec::ACLDataHeade
                    hci_spec::ACLPacketBoundaryFlag packet_boundary_flag,
                    hci_spec::ACLBroadcastFlag broadcast_flag);
 
-#ifndef NTRACE
   trace_flow_id_t async_id_;
-#endif
 };
 
 }  // namespace bt::hci
