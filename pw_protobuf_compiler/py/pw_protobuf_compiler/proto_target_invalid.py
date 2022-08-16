@@ -19,9 +19,6 @@ import sys
 
 from typing import Optional
 
-from pw_cli.color import colors
-import pw_cli.log
-
 _LOG = logging.getLogger(__name__)
 
 
@@ -52,7 +49,7 @@ def main() -> int:
 
     _LOG.error('')
     _LOG.error('The target %s is not a compiled protobuf library.',
-               colors().bold_white(args.target))
+               args.target)
     _LOG.error('')
     _LOG.error('A different target is generated for each active generator.')
     _LOG.error('Depend on one of the following targets instead:')
@@ -65,5 +62,13 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    pw_cli.log.install()
+    try:
+        # If pw_cli is available, use it to initialize logs.
+        from pw_cli import log
+
+        log.install(logging.INFO)
+    except ImportError:
+        # If pw_cli isn't available, display log messages like a simple print.
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+
     sys.exit(main())
