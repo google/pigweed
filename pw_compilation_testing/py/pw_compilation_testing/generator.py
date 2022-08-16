@@ -57,7 +57,7 @@ class Compiler(Enum):
 
     @staticmethod
     def from_command(command: str) -> 'Compiler':
-        if command in ('clang', 'clang++'):
+        if command.endswith(('clang', 'clang++')):
             return Compiler.CLANG
 
         if command.endswith(('gcc', 'g++')):

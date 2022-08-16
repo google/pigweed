@@ -20,33 +20,34 @@ declare_args() {
   # and llvm-ar binaries to use when compiling with a clang-based toolchain.
   # This is useful for debugging toolchain-related issues by building with an
   # externally-provided toolchain.
-  pw_toolchain_CLANG_PREFIX = ""
+  pw_toolchain_CLANG_PREFIX =
+      rebase_path(pw_env_setup_CIPD_PIGWEED + "/bin/", root_build_dir)
 
   # This flag allows you to specify the root directory of the rustc binary.
-  pw_toolchain_RUST_PREFIX = ""
+  pw_toolchain_RUST_PREFIX =
+      rebase_path(pw_env_setup_CIPD_PIGWEED + "/bin/", root_build_dir)
 }
 
 pw_toolchain_clang_tools = {
+  ar = "llvm-ar"
+  cc = "clang"
+  cxx = "clang++"
+  ld = cxx
+  rustc = "rustc"
+
   if (pw_toolchain_CLANG_PREFIX != "") {
-    ar = pw_toolchain_CLANG_PREFIX + "/"
-    ld = pw_toolchain_CLANG_PREFIX + "/"
-    cc = pw_toolchain_CLANG_PREFIX + "/"
-    cxx = pw_toolchain_CLANG_PREFIX + "/"
-  } else {
-    ar = ""
-    ld = ""
-    cc = ""
-    cxx = ""
-    rustc = ""
+    ar = pw_toolchain_CLANG_PREFIX + ar
+    cc = pw_toolchain_CLANG_PREFIX + cc
+    cxx = pw_toolchain_CLANG_PREFIX + cxx
+    ld = pw_toolchain_CLANG_PREFIX + ld
   }
 
   if (pw_toolchain_RUST_PREFIX != "") {
-    rustc = pw_toolchain_RUST_PREFIX + "/"
-  } else {
-    rustc = ""
+    rustc = pw_toolchain_RUST_PREFIX + rustc
   }
-  _rbe_debug_flag = ""
+
   if (pw_toolchain_USE_RBE) {
+    _rbe_debug_flag = ""
     if (pw_toolchain_RBE_DEBUG) {
       _rbe_debug_flag = " -v"
     }
@@ -56,16 +57,9 @@ pw_toolchain_clang_tools = {
     _rbe_toolchain_prefix =
         _rewrapper_binary +
         " --labels=type=compile,lang=cpp,compiler=clang --cfg=" +
-        _pw_rbe_config + " --exec_root=" + _exec_root + " -- " +
-        rebase_path(pw_env_setup_CIPD_PIGWEED, root_build_dir) + "/bin/"
+        _pw_rbe_config + " --exec_root=" + _exec_root + " -- "
 
-    cc = _rbe_toolchain_prefix + "clang" + _rbe_debug_flag
-    cxx = _rbe_toolchain_prefix + "clang++" + _rbe_debug_flag
-  } else {
-    cc += "clang"
-    cxx += "clang++"
+    cc = _rbe_toolchain_prefix + cc + _rbe_debug_flag
+    cxx = _rbe_toolchain_prefix + cxx + _rbe_debug_flag
   }
-  ar += "llvm-ar"
-  ld += "clang++"
-  rustc += "rustc"
 }
