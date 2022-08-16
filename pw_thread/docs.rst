@@ -446,6 +446,23 @@ function without arguments. For example:
   implements the ThreadCore MUST meet or exceed the lifetime of its thread of
   execution!
 
+----------------
+Thread Iteration
+----------------
+C++
+===
+.. cpp:function:: Status ForEachThread(const ThreadCallback& cb)
+
+   Calls the provided callback for each thread that has not been joined/deleted.
+
+   This function provides a generalized subset of information that a TCB might
+   contain to make it easier to introspect system state. Depending on the RTOS
+   and its configuration, some of these fields may not be populated, so it is
+   important to check that they have values before attempting to access them.
+
+   **Warning:**  The function may disable the scheduler to perform
+   a runtime capture of thread information.
+
 -----------------------
 pw_snapshot integration
 -----------------------

@@ -52,6 +52,32 @@ pw_cc_library(
     }),
 )
 
+pw_cc_library(
+    name = "thread_info",
+    hdrs = ["public/pw_thread/thread_info.h"],
+    includes = ["public"],
+    deps = ["//pw_span"],
+)
+
+pw_cc_facade(
+    name = "thread_iteration_facade",
+    hdrs = [
+        "public/pw_thread/thread_iteration.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_library(
+    name = "thread_iteration",
+    deps = [
+        ":thread_info",
+        ":thread_iteration_facade",
+        "//pw_function",
+        "//pw_status",
+        "@pigweed_config//:pw_thread_thread_backend",
+    ],
+)
+
 pw_cc_facade(
     name = "sleep_facade",
     hdrs = [
@@ -236,6 +262,17 @@ pw_cc_test(
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "thread_info_test",
+    srcs = [
+        "thread_info_test.cc",
+    ],
+    deps = [
+        ":thread_info",
+        "//pw_span",
     ],
 )
 

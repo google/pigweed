@@ -77,6 +77,17 @@ pw_source_set("thread_core") {
   public = [ "public/pw_thread/thread_core.h" ]
 }
 
+pw_facade("thread_iteration") {
+  backend = pw_thread_THREAD_ITERATION_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_thread/thread_iteration.h" ]
+  public_deps = [
+    ":thread_info",
+    "$dir_pw_function",
+    "$dir_pw_status",
+  ]
+}
+
 pw_facade("yield") {
   backend = pw_thread_YIELD_BACKEND
   public_configs = [ ":public_include_path" ]
@@ -102,10 +113,18 @@ pw_source_set("snapshot") {
   ]
 }
 
+pw_source_set("thread_info") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ dir_pw_span ]
+  public = [ "public/pw_thread/thread_info.h" ]
+  deps = [ ":config" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":id_facade_test",
     ":sleep_facade_test",
+    ":thread_info_test",
     ":yield_facade_test",
   ]
 }
@@ -148,6 +167,14 @@ pw_source_set("thread_facade_test") {
     ":thread",
     "$dir_pw_sync:binary_semaphore",
     dir_pw_unit_test,
+  ]
+}
+
+pw_test("thread_info_test") {
+  sources = [ "thread_info_test.cc" ]
+  deps = [
+    ":thread_info",
+    dir_pw_span,
   ]
 }
 
