@@ -187,6 +187,11 @@ SECTIONS
     KEEP(*(.ARM.extab*))
   }
 
+  /* The unused_space symbols do not currently work in clang/lld and result in
+   * binary bloat by several orders of magnitude. Allow disabling them until a
+   * proper workaround is in place.
+   */
+  #if !PW_BOOT_WORKAROUND_DISABLE_UNUSED_SPACE
   /*
    * Do not declare any output sections after this comment. This area is
    * reserved only for declaring unused sections of memory. These sections are
@@ -207,6 +212,7 @@ SECTIONS
   {
     . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));
   } >RAM
+  #endif /*PW_BOOT_WORKAROUND_DISABLE_UNUSED_SPACE*/
 }
 
 /* Symbols used by core_init.c: */
