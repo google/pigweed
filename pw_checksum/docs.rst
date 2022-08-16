@@ -54,6 +54,14 @@ pw_checksum/crc32.h
     uint32_t crc = Crc32(my_data);
     crc = Crc32(more_data, crc);
 
+Size report
+===========
+The CRC module currently optimizes for speed instead of binary size, by using
+pre-computed 256-entry tables to reduce the CPU cycles per byte CRC
+calculation.
+
+.. include:: size_report
+
 Compatibility
 =============
 * C
