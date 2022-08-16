@@ -166,7 +166,9 @@ class KvsTester {
       label << ((options == kReinitWithPartialGC) ? "PartialGC" : "");
       label << ((kvs_.redundancy() > 1) ? "Redundant" : "");
 
-      ASSERT_EQ(OkStatus(), partition_.SaveStorageStats(kvs_, label.data()));
+      // Ignore error to allow test to pass on platforms where writing out the
+      // stats is not possible.
+      partition_.SaveStorageStats(kvs_, label.data()).IgnoreError();
     }
   }
 

@@ -70,8 +70,10 @@ TEST_F(EmptyInitializedKvs, Put_VaryingKeysAndValues) {
     }
   }
 
-  ASSERT_EQ(OkStatus(),
-            test_partition.SaveStorageStats(kvs_, "Put_VaryingKeysAndValues"));
+  // Ignore error to allow test to pass on platforms where writing out the stats
+  // is not possible.
+  test_partition.SaveStorageStats(kvs_, "Put_VaryingKeysAndValues")
+      .IgnoreError();
 }
 
 }  // namespace
