@@ -34,9 +34,9 @@ lazy-object-proxy==1.7.1
 MarkupSafe==2.0.1
 matplotlib-inline==0.1.3
 mccabe==0.6.1
-mypy==0.910
+mypy==0.971
 mypy-extensions==0.4.3
-mypy-protobuf==2.9
+mypy-protobuf==3.2.0
 packaging==21.3
 parameterized==0.8.1
 parso==0.8.3
@@ -44,7 +44,7 @@ pep517==0.12.0
 pexpect==4.8.0
 pickleshare==0.7.5
 prompt-toolkit==3.0.26
-protobuf==3.19.1
+protobuf==3.20.1
 ptpython==3.0.20
 ptyprocess==0.7.0
 pyasn1==0.4.8
@@ -79,7 +79,7 @@ tomli==2.0.0
 traitlets==5.1.1
 types-docutils==0.17.4
 types-futures==3.3.2
-types-protobuf==3.18.4
+types-protobuf==3.19.22
 types-Pygments==2.9.13
 types-PyYAML==6.0.7
 types-setuptools==57.4.14

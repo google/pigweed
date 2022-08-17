@@ -67,8 +67,8 @@ pw_proto_library("test_protos") {
 pw_python_requirements("protobuf_requirements") {
   requirements = [
     # NOTE: mypy needs to stay in sync with mypy-protobuf
-    # Currently using mypy 0.910 and mypy-protobuf 2.9
+    # Currently using mypy 0.971 and mypy-protobuf 3.2.0
     # This must also be specified in //pw_protobuf_compiler/py/setup.cfg
-    "mypy-protobuf==2.9",
+    "mypy-protobuf==3.2.0",
   ]
 }

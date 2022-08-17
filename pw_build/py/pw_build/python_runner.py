@@ -643,9 +643,6 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
              existing_env.get('PYTHONPATH', '')] if path_str)
 
         new_env['PYTHONPATH'] = new_python_path
-        # mypy doesn't use PYTHONPATH for analyzing imports so module
-        # directories must be added to the MYPYPATH environment variable.
-        new_env['MYPYPATH'] = new_python_path
 
     if 'env' not in run_args:
         run_args['env'] = {}
