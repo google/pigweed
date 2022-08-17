@@ -32,13 +32,21 @@ class PacketMeta {
   static Result<PacketMeta> FromBuffer(ConstByteSpan data);
   constexpr uint32_t channel_id() const { return channel_id_; }
   constexpr ServiceId service_id() const { return service_id_; }
+  constexpr bool destination_is_client() const {
+    return destination_ == internal::Packet::kClient;
+  }
+  constexpr bool destination_is_server() const {
+    return destination_ == internal::Packet::kServer;
+  }
 
  private:
   constexpr explicit PacketMeta(const internal::Packet packet)
       : channel_id_(packet.channel_id()),
-        service_id_(internal::WrapServiceId(packet.service_id())) {}
+        service_id_(internal::WrapServiceId(packet.service_id())),
+        destination_(packet.destination()) {}
   uint32_t channel_id_;
   ServiceId service_id_;
+  internal::Packet::Destination destination_;
 };
 
 }  // namespace pw::rpc

@@ -28,6 +28,7 @@ TEST(PacketMeta, FromBufferDecodesValidMinimalPacket) {
   internal::Packet packet;
   packet.set_channel_id(kChannelId);
   packet.set_service_id(internal::UnwrapServiceId(kServiceId));
+  packet.set_type(internal::PacketType::RESPONSE);
   packet.set_method_id(kMethodId);
 
   std::byte buffer[128];
@@ -38,6 +39,7 @@ TEST(PacketMeta, FromBufferDecodesValidMinimalPacket) {
   ASSERT_EQ(decode_result.status(), OkStatus());
   EXPECT_EQ(decode_result->channel_id(), kChannelId);
   EXPECT_EQ(decode_result->service_id(), kServiceId);
+  EXPECT_TRUE(decode_result->destination_is_client());
 }
 
 TEST(PacketMeta, FromBufferFailsOnIncompletePacket) {
