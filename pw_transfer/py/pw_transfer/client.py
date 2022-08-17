@@ -74,9 +74,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._write_stream: Optional[BidirectionalStreamingCall] = None
 
         self._loop = asyncio.new_event_loop()
-        # If constructed from non-main thread, set the event loop.
-        if threading.current_thread() is not threading.main_thread():
-            asyncio.set_event_loop(self._loop)
+        # Set the event loop for the current thread.
+        asyncio.set_event_loop(self._loop)
 
         # Queues are used for communication between the Manager context and the
         # dedicated asyncio transfer thread.
