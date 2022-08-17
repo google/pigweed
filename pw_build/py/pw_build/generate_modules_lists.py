@@ -98,10 +98,11 @@ def _module_list_warnings(root: Path, modules: Sequence[str]) -> Iterator[str]:
         yield ''
 
 
-def _generate_modules_gni(root: Path, prefix: Path,
+def _generate_modules_gni(prefix: Path,
                           modules: Sequence[str]) -> Iterator[str]:
     """Generates a .gni file with variables and lists for Pigweed modules."""
-    script = Path(__file__).resolve().relative_to(root.resolve()).as_posix()
+    script_path = Path(__file__).resolve()
+    script = script_path.relative_to(script_path.parent.parent).as_posix()
 
     yield _COPYRIGHT_NOTICE
     yield ''
@@ -180,8 +181,9 @@ def _parse_args() -> dict:
     return vars(parser.parse_args())
 
 
-def _main(root: Path, modules_list: Path, modules_gni_file: Path,
-          warn_only: Optional[Path]) -> int:
+def main(root: Path, modules_list: Path, modules_gni_file: Path,
+         warn_only: Optional[Path]) -> int:
+    """Manages the list of Pigweed modules."""
     prefix = Path(os.path.relpath(root, modules_gni_file.parent))
     modules = modules_list.read_text().splitlines()
 
@@ -194,7 +196,7 @@ def _main(root: Path, modules_list: Path, modules_gni_file: Path,
     # Check if the contents of the .gni file are out of date.
     if warn_only:
         text = io.StringIO()
-        for line in _generate_modules_gni(root, prefix, modules):
+        for line in _generate_modules_gni(prefix, modules):
             print(line, file=text)
 
         process = subprocess.run(['gn', 'format', '--stdin'],
@@ -205,16 +207,17 @@ def _main(root: Path, modules_list: Path, modules_gni_file: Path,
 
         # Make a diff of required changes
         modules_gni_relpath = os.path.relpath(modules_gni_file, root)
-        diff = difflib.unified_diff(
-            modules_gni_file.read_text().splitlines(),
-            process.stdout.decode('utf-8', errors='replace').splitlines(),
-            fromfile=os.path.join('a', modules_gni_relpath),
-            tofile=os.path.join('b', modules_gni_relpath),
-            lineterm='',
-            n=1,
-        )
+        diff = list(
+            difflib.unified_diff(
+                modules_gni_file.read_text().splitlines(),
+                process.stdout.decode('utf-8', errors='replace').splitlines(),
+                fromfile=os.path.join('a', modules_gni_relpath),
+                tofile=os.path.join('b', modules_gni_relpath),
+                lineterm='',
+                n=1,
+            ))
         # If any differences were found, print the error and the diff.
-        if len(list(diff)) > 0:
+        if diff:
             errors.append(
                 _OUT_OF_DATE_WARNING.format(
                     out_dir=os.path.relpath(os.curdir, root),
@@ -225,7 +228,7 @@ def _main(root: Path, modules_list: Path, modules_gni_file: Path,
 
     elif not warnings:  # Update the modules .gni file.
         with modules_gni_file.open('w', encoding='utf-8') as file:
-            for line in _generate_modules_gni(root, prefix, modules):
+            for line in _generate_modules_gni(prefix, modules):
                 print(line, file=file)
 
         process = subprocess.run(['gn', 'format', modules_gni_file],
@@ -253,4 +256,4 @@ def _main(root: Path, modules_list: Path, modules_gni_file: Path,
 
 
 if __name__ == '__main__':
-    sys.exit(_main(**_parse_args()))
+    sys.exit(main(**_parse_args()))
