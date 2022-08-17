@@ -159,6 +159,21 @@ pw_cc_library(
     includes = ["public"],
 )
 
+pw_cc_library(
+    name = "functional_thread",
+    srcs = ["functional_thread.cc"],
+    hdrs = [
+        "public/pw_thread/functional_thread.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":id",
+        ":thread",
+        ":thread_core",
+        "//pw_function",
+    ],
+)
+
 pw_cc_facade(
     name = "yield_facade",
     hdrs = [
@@ -231,6 +246,7 @@ pw_cc_library(
         "thread_facade_test.cc",
     ],
     deps = [
+        ":functional_thread",
         ":id",
         ":test_threads_header",
         ":thread",
