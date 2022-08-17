@@ -241,13 +241,13 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
   # Presubmit checks
   #
   def release_build(ctx: PresubmitContext):
-      build.gn_gen(PROJECT_ROOT, ctx.output_dir, build_type='release')
-      build.ninja(ctx.output_dir)
+      build.gn_gen(ctx, build_type='release')
+      build.ninja(ctx)
 
 
   def host_tests(ctx: PresubmitContext):
-      build.gn_gen(PROJECT_ROOT, ctx.output_dir, run_host_tests='true')
-      build.ninja(ctx.output_dir)
+      build.gn_gen(ctx, run_host_tests='true')
+      build.ninja(ctx)
 
 
   # Avoid running some checks on certain paths.

@@ -55,7 +55,7 @@ _PYTHON_IS_3_9_OR_HIGHER = sys.version_info >= (
 
 @filter_paths(endswith=_PYTHON_EXTENSIONS)
 def gn_python_check(ctx: PresubmitContext):
-    build.gn_gen_2(ctx)
+    build.gn_gen(ctx)
     build.ninja(ctx, 'python.tests', 'python.lint')
 
 
@@ -105,7 +105,7 @@ def _transform_lcov_file_paths(lcov_file: Path, repo_root: Path) -> str:
 @filter_paths(endswith=_PYTHON_EXTENSIONS)
 def gn_python_test_coverage(ctx: PresubmitContext):
     """Run Python tests with coverage and create reports."""
-    build.gn_gen_2(ctx, pw_build_PYTHON_TEST_COVERAGE=True)
+    build.gn_gen(ctx, pw_build_PYTHON_TEST_COVERAGE=True)
     build.ninja(ctx, 'python.tests')
 
     # Find coverage data files
@@ -154,7 +154,7 @@ def gn_python_test_coverage(ctx: PresubmitContext):
 
 @filter_paths(endswith=_PYTHON_EXTENSIONS + ('.pylintrc', ))
 def gn_python_lint(ctx: pw_presubmit.PresubmitContext) -> None:
-    build.gn_gen_2(ctx)
+    build.gn_gen(ctx)
     build.ninja(ctx, 'python.lint')
 
 
@@ -162,7 +162,7 @@ def gn_python_lint(ctx: pw_presubmit.PresubmitContext) -> None:
 def check_python_versions(ctx: PresubmitContext):
     """Checks that the list of installed packages is as expected."""
 
-    build.gn_gen_2(ctx)
+    build.gn_gen(ctx)
     constraint_file: Optional[str] = None
     requirement_file: Optional[str] = None
     try:

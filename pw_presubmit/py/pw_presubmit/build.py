@@ -99,7 +99,6 @@ def gn_args(**kwargs) -> str:
     return '--args=' + ' '.join(transformed_args)
 
 
-# TODO(b/242739116) Remove "_2" function after transitioning.
 def gn_gen_2(ctx: PresubmitContext,
              *args: str,
              gn_check: bool = True,
@@ -107,8 +106,7 @@ def gn_gen_2(ctx: PresubmitContext,
              export_compile_commands: Union[bool, str] = True,
              preserve_args_gn: bool = False,
              **gn_arguments) -> None:
-    return gn_gen(ctx.root,
-                  ctx.output_dir,
+    return gn_gen(ctx,
                   *args,
                   gn_check=gn_check,
                   gn_fail_on_unused=gn_fail_on_unused,
@@ -117,8 +115,7 @@ def gn_gen_2(ctx: PresubmitContext,
                   **gn_arguments)
 
 
-def gn_gen(gn_source_dir: Path,
-           gn_output_dir: Path,
+def gn_gen(ctx: PresubmitContext,
            *args: str,
            gn_check: bool = True,
            gn_fail_on_unused: bool = True,
@@ -130,7 +127,7 @@ def gn_gen(gn_source_dir: Path,
 
     if not preserve_args_gn:
         # Delete args.gn to ensure this is a clean build.
-        args_gn = gn_output_dir / 'args.gn'
+        args_gn = ctx.output_dir / 'args.gn'
         if args_gn.is_file():
             args_gn.unlink()
 
@@ -142,53 +139,46 @@ def gn_gen(gn_source_dir: Path,
 
     call('gn',
          'gen',
-         gn_output_dir,
+         ctx.output_dir,
          '--color=always',
          *(['--fail-on-unused-args'] if gn_fail_on_unused else []),
          *([export_commands_arg] if export_commands_arg else []),
          *args,
          *([args_option] if gn_arguments else []),
-         cwd=gn_source_dir)
+         cwd=ctx.root)
 
     if gn_check:
         call('gn',
              'check',
-             gn_output_dir,
+             ctx.output_dir,
              '--check-generated',
              '--check-system',
-             cwd=gn_source_dir)
+             cwd=ctx.root)
 
 
-# TODO(b/242739116) Remove Union after transitioning.
-def ninja(ctx: Union[Path, PresubmitContext],
+def ninja(ctx: PresubmitContext,
           *args,
           save_compdb=True,
           save_graph=True,
           **kwargs) -> None:
     """Runs ninja in the specified directory."""
 
-    if isinstance(ctx, PresubmitContext):
-        directory = ctx.output_dir
-    elif isinstance(ctx, Path):
-        directory = ctx
-    else:
-        raise TypeError(f'unexpected type for ctx: {type(ctx)}')
-
     if save_compdb:
         proc = subprocess.run(
-            ['ninja', '-C', directory, '-t', 'compdb', *args],
+            ['ninja', '-C', ctx.output_dir, '-t', 'compdb', *args],
             capture_output=True,
             **kwargs)
-        (directory / 'ninja.compdb').write_bytes(proc.stdout)
+        (ctx.output_dir / 'ninja.compdb').write_bytes(proc.stdout)
 
     if save_graph:
-        proc = subprocess.run(['ninja', '-C', directory, '-t', 'graph', *args],
-                              capture_output=True,
-                              **kwargs)
-        (directory / 'ninja.graph').write_bytes(proc.stdout)
+        proc = subprocess.run(
+            ['ninja', '-C', ctx.output_dir, '-t', 'graph', *args],
+            capture_output=True,
+            **kwargs)
+        (ctx.output_dir / 'ninja.graph').write_bytes(proc.stdout)
 
-    call('ninja', '-C', directory, *args, **kwargs)
-    (directory / '.ninja_log').rename(directory / 'ninja.log')
+    call('ninja', '-C', ctx.output_dir, *args, **kwargs)
+    (ctx.output_dir / '.ninja_log').rename(ctx.output_dir / 'ninja.log')
 
 
 def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
@@ -198,23 +188,21 @@ def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
     return json.loads(proc.stdout)
 
 
-# TODO(b/242739116) Remove "_2" function after transitioning.
 def cmake_2(ctx: PresubmitContext,
             *args: str,
             env: Mapping['str', 'str'] = None) -> None:
-    return cmake(ctx.root, ctx.output_dir, *args, env=env)
+    return cmake(ctx, *args, env=env)
 
 
-def cmake(source_dir: Path,
-          output_dir: Path,
+def cmake(ctx: PresubmitContext,
           *args: str,
           env: Mapping['str', 'str'] = None) -> None:
     """Runs CMake for Ninja on the given source and output directories."""
     call('cmake',
          '-B',
-         output_dir,
+         ctx.output_dir,
          '-S',
-         source_dir,
+         ctx.root,
          '-G',
          'Ninja',
          *args,
