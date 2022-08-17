@@ -1206,6 +1206,9 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
     return true;
   }
 
+  // Actively trying to connect to this peer means we can remove it from the denylist.
+  deny_incoming_.remove(peer->address());
+
   // If we are already waiting to connect to |peer_id| then we store
   // |on_connection_result| to be processed after the connection attempt
   // completes (in either success of failure).

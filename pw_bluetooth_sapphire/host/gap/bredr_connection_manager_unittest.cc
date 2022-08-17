@@ -3039,6 +3039,58 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   QueueDisconnection(kConnectionHandle);
 }
 
+TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownCancelOnOutgoing) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
+
+  // Peer successfully connects to us.
+  QueueSuccessfulIncomingConn(kTestDevAddr);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_FALSE(IsNotConnected(peer));
+
+  // Disconnect locally from an API Request.
+  QueueDisconnection(kConnectionHandle);
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(IsNotConnected(peer));
+
+  // Peer tries to connect to us. We should reject the connection.
+  auto status_event = testing::CommandStatusPacket(hci_spec::kRejectConnectionRequest,
+                                                   hci_spec::StatusCode::kSuccess);
+  auto reject_packet = testing::RejectConnectionRequestPacket(
+      kTestDevAddr, hci_spec::StatusCode::kConnectionRejectedBadBdAddr);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), reject_packet, &status_event);
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(IsNotConnected(peer));
+
+  // If we initiate a connection out, then an incoming connection can succeed, even if
+  // we fail to make the connection out.
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRspError);
+
+  // Initialize as ok to verify that |callback| assigns failure
+  hci::Result<> status = fitx::ok();
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), CALLBACK_EXPECT_FAILURE(status)));
+  EXPECT_TRUE(IsInitializing(peer));
+  RunLoopUntilIdle();
+
+  // The outgoing connection failed to succeed
+  EXPECT_TRUE(IsNotConnected(peer));
+
+  // but an incoming connection can now succeed, since our intent is to connect now
+  QueueRepeatIncomingConn(kTestDevAddr);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_FALSE(IsNotConnected(peer));
+
+  // Queue disconnection for teardown.
+  QueueDisconnection(kConnectionHandle);
+}
+
 // If SDP channel creation fails, null channel should be caught and
 // not be dereferenced. Search should fail to return results.
 TEST_F(BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
