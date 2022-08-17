@@ -62,8 +62,7 @@ template("pw_python_venv") {
   _generated_requirements_file =
       "$target_gen_dir/$target_name/generated_requirements.txt"
 
-  # pw_build/py is always needed for venv creation and Python lint checks.
-  _source_packages = [ "$dir_pw_build/py" ]
+  _source_packages = []
   if (defined(invoker.source_packages)) {
     _source_packages += invoker.source_packages
   } else {
@@ -134,10 +133,14 @@ template("pw_python_venv") {
       _pkg_gn_labels = []
       foreach(pkg, _source_packages) {
         _pkg_gn_labels += [ get_label_info(pkg, "label_no_toolchain") +
-                            "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
+                            "($pw_build_PYTHON_TOOLCHAIN)" ]
       }
 
-      python_metadata_deps = _pkg_gn_labels
+      # pw_build/py is always needed for venv creation and Python lint checks.
+      python_metadata_deps =
+          [ get_label_info("$dir_pw_build/py", "label_no_toolchain") +
+            "($pw_build_PYTHON_TOOLCHAIN)" ]
+      python_metadata_deps += _pkg_gn_labels
 
       args = [
         "--requirement",
@@ -149,7 +152,7 @@ template("pw_python_venv") {
       ]
 
       outputs = [ _generated_requirements_file ]
-      deps = _pkg_gn_labels + [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
+      deps = [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
     }
   } else {
     group("${target_name}._generate_3p_requirements") {

@@ -163,8 +163,11 @@ template("pw_python_action") {
     foreach(dep, invoker.python_deps) {
       _deps += [ get_label_info(dep, "label_no_toolchain") + ".install(" +
                  get_label_info(dep, "toolchain") + ")" ]
+
+      # Ensure each python_dep is added to the PYTHONPATH by depinding on the
+      # ._package_metadata subtarget.
       _py_metadata_deps += [ get_label_info(dep, "label_no_toolchain") +
-                             "($pw_build_PYTHON_TOOLCHAIN)" ]
+                             "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
     }
 
     # Add the base target as a dep so the action reruns when any source files
@@ -173,12 +176,13 @@ template("pw_python_action") {
     _deps += _py_metadata_deps
   }
 
+  # Check for additional PYTHONPATH dependencies.
   _extra_python_metadata_deps = []
   if (defined(invoker.python_metadata_deps)) {
     foreach(dep, invoker.python_metadata_deps) {
       _extra_python_metadata_deps +=
           [ get_label_info(dep, "label_no_toolchain") +
-            "($pw_build_PYTHON_TOOLCHAIN)" ]
+            "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
     }
   }
 

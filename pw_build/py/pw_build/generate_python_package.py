@@ -118,7 +118,7 @@ def _collect_all_files(
             # This allows imports with the same name to live in multiple
             # separate PYTHONPATH locations.
             initpy.write_text(
-                'from pkgutil import extend_path\n'
+                'from pkgutil import extend_path  # type: ignore\n'
                 '__path__ = extend_path(__path__, __name__)  # type: ignore\n')
         files.append(initpy)
 

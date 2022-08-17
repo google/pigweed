@@ -13,8 +13,7 @@
 # the License.
 """Package for calling Pigweed RPCs from Python."""
 
-# TODO(667): Remove this pkgutil snippet
-from pkgutil import extend_path
+from pkgutil import extend_path  # type: ignore
 
 __path__ = extend_path(__path__, __name__)  # type: ignore
 

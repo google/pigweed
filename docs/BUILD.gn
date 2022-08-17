@@ -110,8 +110,5 @@ pw_doc_gen("docs") {
 
   # Required to set the PYTHONPATH so automodule, autoclass or autofunction RST
   # directives work.
-  python_metadata_deps = [
-    "$dir_pw_console/py",
-    "$dir_pw_hdlc/py",
-  ]
+  python_metadata_deps = [ "$dir_pw_env_setup:core_pigweed_python_packages" ]
 }

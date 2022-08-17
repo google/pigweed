@@ -768,7 +768,7 @@ template("pw_python_package") {
         stamp = true
 
         # Make sure the python test deps are added to the PYTHONPATH.
-        python_metadata_deps = _test_install_deps
+        python_metadata_deps = _python_test_deps
 
         # If this is a test for a package, add it to PYTHONPATH as well. This is
         # required if the test source file isn't in the same directory as the
