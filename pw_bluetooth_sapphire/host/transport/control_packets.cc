@@ -4,9 +4,8 @@
 
 #include "control_packets.h"
 
-#include <zircon/assert.h>
-
 #include "slab_allocators.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::hci {
@@ -35,7 +34,7 @@ using EventAllocator = fbl::SlabAllocator<EventTraits>;
 namespace {
 
 std::unique_ptr<CommandPacket> NewCommandPacket(size_t payload_size) {
-  ZX_DEBUG_ASSERT(payload_size <= slab_allocators::kLargeControlPayloadSize);
+  BT_DEBUG_ASSERT(payload_size <= slab_allocators::kLargeControlPayloadSize);
 
   if (payload_size <= slab_allocators::kSmallControlPayloadSize) {
     auto buffer = slab_allocators::SmallCommandAllocator::New(payload_size);
@@ -53,7 +52,7 @@ std::unique_ptr<CommandPacket> NewCommandPacket(size_t payload_size) {
 // |status| member of type hci_spec::StatusCode for this to compile.
 template <typename T>
 bool StatusCodeFromEvent(const EventPacket& event, hci_spec::StatusCode* out_code) {
-  ZX_DEBUG_ASSERT(out_code);
+  BT_DEBUG_ASSERT(out_code);
 
   if (event.view().payload_size() < sizeof(T))
     return false;
@@ -68,7 +67,7 @@ bool StatusCodeFromEvent(const EventPacket& event, hci_spec::StatusCode* out_cod
 // a |status| member of type hci_spec::StatusCode for this to compile.
 template <typename T>
 bool StatusCodeFromSubevent(const EventPacket& event, hci_spec::StatusCode* out_code) {
-  ZX_ASSERT(out_code);
+  BT_ASSERT(out_code);
 
   if (event.view().payload_size() < sizeof(hci_spec::LEMetaEventParams) + sizeof(T))
     return false;
@@ -81,7 +80,7 @@ bool StatusCodeFromSubevent(const EventPacket& event, hci_spec::StatusCode* out_
 template <>
 bool StatusCodeFromEvent<hci_spec::CommandCompleteEventParams>(const EventPacket& event,
                                                                hci_spec::StatusCode* out_code) {
-  ZX_DEBUG_ASSERT(out_code);
+  BT_DEBUG_ASSERT(out_code);
 
   const auto* params = event.return_params<hci_spec::SimpleReturnParams>();
   if (!params)
@@ -107,7 +106,7 @@ std::unique_ptr<CommandPacket> CommandPacket::New(hci_spec::OpCode opcode, size_
 
 void CommandPacket::WriteHeader(hci_spec::OpCode opcode) {
   mutable_view()->mutable_header()->opcode = htole16(opcode);
-  ZX_ASSERT(view().payload_size() < std::numeric_limits<uint8_t>::max());
+  BT_ASSERT(view().payload_size() < std::numeric_limits<uint8_t>::max());
   mutable_view()->mutable_header()->parameter_total_size =
       static_cast<uint8_t>(view().payload_size());
 }
@@ -154,7 +153,7 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
         CASE_SUBEVENT_STATUS(LEConnectionComplete);
         CASE_SUBEVENT_STATUS(LEReadRemoteFeaturesComplete);
         default:
-          ZX_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);
+          BT_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);
           break;
       }
     }
@@ -163,7 +162,7 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
       switch (subevent_code) {
         CASE_ANDROID_SUBEVENT_STATUS(LEMultiAdvtStateChange);
         default:
-          ZX_PANIC("Vendor subevent (%#.2x) not implemented!", subevent_code);
+          BT_PANIC("Vendor subevent (%#.2x) not implemented!", subevent_code);
           break;
       }
     }
@@ -171,7 +170,7 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
       // TODO(armansito): Complete this list.
 
     default:
-      ZX_PANIC("event (%#.2x) not implemented!", event_code());
+      BT_PANIC("event (%#.2x) not implemented!", event_code());
       break;
   }
   return false;

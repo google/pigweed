@@ -7,7 +7,6 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
-#include <zircon/assert.h>
 
 #include <map>
 #include <memory>
@@ -16,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
@@ -67,7 +67,7 @@ class Bearer final {
   // procedures.
   uint16_t preferred_mtu() const { return preferred_mtu_; }
   void set_preferred_mtu(uint16_t value) {
-    ZX_DEBUG_ASSERT(value >= kLEMinMTU);
+    BT_DEBUG_ASSERT(value >= kLEMinMTU);
     preferred_mtu_ = value;
   }
 

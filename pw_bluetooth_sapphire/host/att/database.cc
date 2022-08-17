@@ -5,12 +5,12 @@
 #include "database.h"
 
 #include <lib/fit/defer.h>
-#include <zircon/assert.h>
 
 #include <algorithm>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::att {
@@ -29,7 +29,7 @@ bool EndLessThan(const AttributeGrouping& grp, const Handle handle) {
 Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end, const UUID* type,
                              bool groups_only)
     : start_(start), end_(end), grp_only_(groups_only), attr_offset_(0u) {
-  ZX_DEBUG_ASSERT(list);
+  BT_DEBUG_ASSERT(list);
   grp_end_ = list->end();
 
   if (type)
@@ -67,7 +67,7 @@ const Attribute* Database::Iterator::get() const {
   if (AtEnd() || !grp_iter_->active())
     return nullptr;
 
-  ZX_DEBUG_ASSERT(attr_offset_ < grp_iter_->attributes().size());
+  BT_DEBUG_ASSERT(attr_offset_ < grp_iter_->attributes().size());
   return &grp_iter_->attributes()[attr_offset_];
 }
 
@@ -80,7 +80,7 @@ void Database::Iterator::Advance() {
       // If this grouping has more attributes to look at.
       if (attr_offset_ < grp_iter_->attributes().size() - 1) {
         size_t end_offset = grp_iter_->end_handle() - grp_iter_->start_handle();
-        ZX_DEBUG_ASSERT(end_offset < grp_iter_->attributes().size());
+        BT_DEBUG_ASSERT(end_offset < grp_iter_->attributes().size());
 
         // Advance.
         attr_offset_++;
@@ -106,7 +106,7 @@ void Database::Iterator::Advance() {
       // next group below.
       attr_offset_ = 0u;
     } else {
-      ZX_DEBUG_ASSERT(attr_offset_ == 0u);
+      BT_DEBUG_ASSERT(attr_offset_ == 0u);
     }
 
     // Advance the group.
@@ -132,16 +132,16 @@ void Database::Iterator::Advance() {
 
 Database::Database(Handle range_start, Handle range_end)
     : range_start_(range_start), range_end_(range_end), weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(range_start_ < range_end_);
-  ZX_DEBUG_ASSERT(range_start_ >= kHandleMin);
-  ZX_DEBUG_ASSERT(range_end_ <= kHandleMax);
+  BT_DEBUG_ASSERT(range_start_ < range_end_);
+  BT_DEBUG_ASSERT(range_start_ >= kHandleMin);
+  BT_DEBUG_ASSERT(range_end_ <= kHandleMax);
 }
 
 Database::Iterator Database::GetIterator(Handle start, Handle end, const UUID* type,
                                          bool groups_only) {
-  ZX_DEBUG_ASSERT(start >= range_start_);
-  ZX_DEBUG_ASSERT(end <= range_end_);
-  ZX_DEBUG_ASSERT(start <= end);
+  BT_DEBUG_ASSERT(start >= range_start_);
+  BT_DEBUG_ASSERT(end <= range_end_);
+  BT_DEBUG_ASSERT(start <= end);
 
   return Iterator(&groupings_, start, end, type, groups_only);
 }
@@ -190,7 +190,7 @@ AttributeGrouping* Database::NewGrouping(const UUID& group_type, size_t attr_cou
   }
 
   auto iter = groupings_.emplace(pos, group_type, start_handle, attr_count, decl_value);
-  ZX_DEBUG_ASSERT(iter != groupings_.end());
+  BT_DEBUG_ASSERT(iter != groupings_.end());
 
   return &*iter;
 }
@@ -218,14 +218,14 @@ const Attribute* Database::FindAttribute(Handle handle) {
     return nullptr;
 
   size_t index = handle - iter->start_handle();
-  ZX_DEBUG_ASSERT(index < iter->attributes().size());
+  BT_DEBUG_ASSERT(index < iter->attributes().size());
 
   return &iter->attributes()[index];
 }
 
 void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
                                  const sm::SecurityProperties& security, WriteCallback callback) {
-  ZX_ASSERT(callback);
+  BT_ASSERT(callback);
 
   // When destroyed, invokes |callback| with success if it hasn't already been called
   auto deferred_succcess = fit::defer([client_cb = callback.share()]() mutable {

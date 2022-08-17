@@ -5,10 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PACKET_VIEW_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PACKET_VIEW_H_
 
-#include <zircon/assert.h>
-
 #include <cstdint>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {
@@ -26,13 +25,13 @@ class PacketViewBase {
 
   size_t size() const { return size_; }
   size_t payload_size() const {
-    ZX_ASSERT(size() >= header_size());
+    BT_ASSERT(size() >= header_size());
     return size() - header_size();
   }
 
   template <typename PayloadType>
   const PayloadType& payload() const {
-    ZX_ASSERT(sizeof(PayloadType) <= payload_size());
+    BT_ASSERT(sizeof(PayloadType) <= payload_size());
     return *reinterpret_cast<const PayloadType*>(payload_data().data());
   }
 
@@ -45,8 +44,8 @@ class PacketViewBase {
  protected:
   PacketViewBase(size_t header_size, const ByteBuffer* buffer, size_t payload_size)
       : header_size_(header_size), buffer_(buffer), size_(header_size_ + payload_size) {
-    ZX_ASSERT(buffer_);
-    ZX_ASSERT_MSG(buffer_->size() >= size_, "view size %zu exceeds buffer size %zu", size_,
+    BT_ASSERT(buffer_);
+    BT_ASSERT_MSG(buffer_->size() >= size_, "view size %zu exceeds buffer size %zu", size_,
                   buffer_->size());
   }
 
@@ -59,8 +58,8 @@ class PacketViewBase {
   PacketViewBase& operator=(const PacketViewBase&) = delete;
 
   void set_size(size_t size) {
-    ZX_ASSERT(buffer_->size() >= size);
-    ZX_ASSERT(size >= header_size());
+    BT_ASSERT(buffer_->size() >= size);
+    BT_ASSERT(size >= header_size());
     size_ = size;
   }
 
@@ -164,7 +163,7 @@ class MutablePacketView : public PacketView<HeaderType> {
 
   template <typename PayloadType>
   PayloadType* mutable_payload() const {
-    ZX_ASSERT(sizeof(PayloadType) <= this->payload_size());
+    BT_ASSERT(sizeof(PayloadType) <= this->payload_size());
     return reinterpret_cast<PayloadType*>(mutable_payload_bytes());
   }
 };

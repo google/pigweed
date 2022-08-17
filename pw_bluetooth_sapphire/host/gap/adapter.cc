@@ -97,7 +97,7 @@ class AdapterImpl final : public Adapter {
                           AdvertisingStatusCallback status_callback) override {
       LowEnergyAdvertisingManager::ConnectionCallback advertisement_connect_cb = nullptr;
       if (connectable) {
-        ZX_ASSERT(connectable->connection_cb);
+        BT_ASSERT(connectable->connection_cb);
 
         // All advertisement connections are first registered with LowEnergyConnectionManager before
         // being reported to higher layers.
@@ -450,9 +450,9 @@ AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GA
       l2cap_(std::move(l2cap)),
       gatt_(gatt),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(hci_);
-  ZX_DEBUG_ASSERT(gatt_);
-  ZX_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
+  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(gatt_);
+  BT_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
 
   init_seq_runner_ = std::make_unique<hci::SequentialCommandRunner>(hci_);
 
@@ -502,17 +502,17 @@ AdapterImpl::~AdapterImpl() {
 }
 
 bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport_closed_cb) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(transport_closed_cb);
+  BT_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(transport_closed_cb);
 
   if (IsInitialized()) {
     bt_log(WARN, "gap", "Adapter already initialized");
     return false;
   }
 
-  ZX_DEBUG_ASSERT(!IsInitializing());
-  ZX_DEBUG_ASSERT(init_seq_runner_->IsReady());
-  ZX_DEBUG_ASSERT(!init_seq_runner_->HasQueuedCommands());
+  BT_DEBUG_ASSERT(!IsInitializing());
+  BT_DEBUG_ASSERT(init_seq_runner_->IsReady());
+  BT_DEBUG_ASSERT(!init_seq_runner_->HasQueuedCommands());
 
   init_state_ = State::kInitializing;
   init_cb_ = std::move(callback);
@@ -609,7 +609,7 @@ void AdapterImpl::ShutDown() {
   bt_log(DEBUG, "gap", "adapter shutting down");
 
   if (IsInitializing()) {
-    ZX_DEBUG_ASSERT(!init_seq_runner_->IsReady());
+    BT_DEBUG_ASSERT(!init_seq_runner_->IsReady());
     init_seq_runner_->Cancel();
   }
 
@@ -700,7 +700,7 @@ void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
 }
 
 void AdapterImpl::InitializeStep2() {
-  ZX_DEBUG_ASSERT(IsInitializing());
+  BT_DEBUG_ASSERT(IsInitializing());
 
   // Low Energy MUST be supported. We don't support BR/EDR-only controllers.
   if (!state_.IsLowEnergySupported()) {
@@ -716,7 +716,7 @@ void AdapterImpl::InitializeStep2() {
            hci_spec::HCIVersionToString(state_.hci_version).c_str());
   }
 
-  ZX_DEBUG_ASSERT(init_seq_runner_->IsReady());
+  BT_DEBUG_ASSERT(init_seq_runner_->IsReady());
 
   // If the controller supports the Read Buffer Size command then send it.
   // Otherwise we'll default to 0 when initializing the ACLDataChannel.
@@ -830,9 +830,9 @@ void AdapterImpl::InitializeStep2() {
 }
 
 void AdapterImpl::InitializeStep3() {
-  ZX_ASSERT(IsInitializing());
-  ZX_ASSERT(init_seq_runner_->IsReady());
-  ZX_ASSERT(!init_seq_runner_->HasQueuedCommands());
+  BT_ASSERT(IsInitializing());
+  BT_ASSERT(init_seq_runner_->IsReady());
+  BT_ASSERT(!init_seq_runner_->HasQueuedCommands());
 
   if (!state_.bredr_data_buffer_info.IsAvailable() &&
       !state_.low_energy_state.data_buffer_info().IsAvailable()) {
@@ -970,7 +970,7 @@ void AdapterImpl::InitializeStep3() {
 
 void AdapterImpl::InitializeStep4() {
   // Initialize the scan manager and low energy adapters based on current feature support
-  ZX_DEBUG_ASSERT(IsInitializing());
+  BT_DEBUG_ASSERT(IsInitializing());
 
   // We use the public controller address as the local LE identity address.
   DeviceAddress adapter_identity(DeviceAddress::Type::kLEPublic, state_.controller_address);
@@ -1138,9 +1138,9 @@ void AdapterImpl::OnTransportClosed() {
 }
 
 void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
-  ZX_DEBUG_ASSERT(le_connection_manager_);
-  ZX_DEBUG_ASSERT(peer);
-  ZX_DEBUG_ASSERT(peer->le());
+  BT_DEBUG_ASSERT(le_connection_manager_);
+  BT_DEBUG_ASSERT(peer);
+  BT_DEBUG_ASSERT(peer->le());
 
   PeerId peer_id = peer->identifier();
 
@@ -1169,7 +1169,7 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
         }
 
         auto conn = std::move(result).value();
-        ZX_ASSERT(conn);
+        BT_ASSERT(conn);
         bt_log(INFO, "gap", "peer auto-connected (peer: %s)", bt_str(peer_id));
         if (self->auto_conn_cb_) {
           self->auto_conn_cb_(std::move(conn));

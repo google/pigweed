@@ -6,12 +6,12 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_PDU_H_
 
 #include <endian.h>
-#include <zircon/assert.h>
 
 #include <list>
 
 #include <fbl/intrusive_double_list.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
@@ -56,7 +56,7 @@ class PDU final {
   // The connection handle that identifies the logical link this PDU is intended
   // for.
   hci_spec::ConnectionHandle connection_handle() const {
-    ZX_DEBUG_ASSERT(is_valid());
+    BT_DEBUG_ASSERT(is_valid());
     return (*fragments_.begin())->connection_handle();
   }
 

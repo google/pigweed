@@ -4,8 +4,7 @@
 
 #include "dynamic_channel.h"
 
-#include <zircon/assert.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
@@ -20,7 +19,7 @@ DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, PSM psm, Channe
       local_cid_(local_cid),
       remote_cid_(remote_cid),
       opened_(false) {
-  ZX_DEBUG_ASSERT(registry_);
+  BT_DEBUG_ASSERT(registry_);
 }
 
 bool DynamicChannel::SetRemoteChannelId(ChannelId remote_cid) {

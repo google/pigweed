@@ -15,7 +15,7 @@ std::pair<fxl::WeakPtr<RemoteService>, fxl::WeakPtr<FakeClient>> FakeLayer::AddP
   auto [iter, _] = peers_.try_emplace(peer_id);
   auto& peer = iter->second;
 
-  ZX_ASSERT(info.range_start <= info.range_end);
+  BT_ASSERT(info.range_start <= info.range_end);
   auto service = std::make_unique<RemoteService>(info, peer.fake_client.AsWeakPtr());
   fxl::WeakPtr<RemoteService> service_weak = service->GetWeakPtr();
 
@@ -75,11 +75,11 @@ void FakeLayer::AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
 void FakeLayer::RemoveConnection(PeerId peer_id) { peers_.erase(peer_id); }
 
 GATT::PeerMtuListenerId FakeLayer::RegisterPeerMtuListener(PeerMtuListener listener) {
-  ZX_PANIC("TODO: implement fake behavior if needed");
+  BT_PANIC("TODO: implement fake behavior if needed");
 }
 
 bool FakeLayer::UnregisterPeerMtuListener(PeerMtuListenerId listener_id) {
-  ZX_PANIC("TODO: implement fake behavior if needed");
+  BT_PANIC("TODO: implement fake behavior if needed");
 }
 
 void FakeLayer::RegisterService(ServicePtr service, ServiceIdCallback callback,
@@ -171,7 +171,7 @@ void FakeLayer::InitializeClient(PeerId peer_id, std::vector<UUID> services_to_d
 
 GATT::RemoteServiceWatcherId FakeLayer::RegisterRemoteServiceWatcherForPeer(
     PeerId peer_id, RemoteServiceWatcher watcher) {
-  ZX_ASSERT(remote_service_watchers_.count(peer_id) == 0);
+  BT_ASSERT(remote_service_watchers_.count(peer_id) == 0);
   remote_service_watchers_[peer_id] = std::move(watcher);
   // Use the PeerId as the watcher ID because FakeLayer only needs to support 1 watcher per peer.
   return peer_id.value();

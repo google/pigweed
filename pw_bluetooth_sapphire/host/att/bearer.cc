@@ -174,8 +174,8 @@ Bearer::PendingTransaction::PendingTransaction(OpCode opcode, TransactionCallbac
       callback(std::move(callback)),
       pdu(std::move(pdu)),
       security_retry_level(sm::SecurityLevel::kNoSecurity) {
-  ZX_ASSERT(this->callback);
-  ZX_ASSERT(this->pdu);
+  BT_ASSERT(this->callback);
+  BT_ASSERT(this->pdu);
 }
 
 Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id, OpCode opcode)
@@ -189,8 +189,8 @@ Bearer::TransactionQueue::TransactionQueue(TransactionQueue&& other)
 }
 
 Bearer::PendingTransactionPtr Bearer::TransactionQueue::ClearCurrent() {
-  ZX_DEBUG_ASSERT(current_);
-  ZX_DEBUG_ASSERT(timeout_task_.is_pending());
+  BT_DEBUG_ASSERT(current_);
+  BT_DEBUG_ASSERT(timeout_task_.is_pending());
 
   timeout_task_.Cancel();
 
@@ -203,7 +203,7 @@ void Bearer::TransactionQueue::Enqueue(PendingTransactionPtr transaction) {
 
 void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Handler timeout_cb,
                                            zx::duration timeout) {
-  ZX_DEBUG_ASSERT(chan);
+  BT_DEBUG_ASSERT(chan);
 
   // Abort if a transaction is currently pending or there are no transactions queued.
   if (current_ || queue_.empty()) {
@@ -214,8 +214,8 @@ void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Ha
   current_ = std::move(queue_.front());
   queue_.pop();
   while (current()) {
-    ZX_DEBUG_ASSERT(!timeout_task_.is_pending());
-    ZX_DEBUG_ASSERT(current()->pdu);
+    BT_DEBUG_ASSERT(!timeout_task_.is_pending());
+    BT_DEBUG_ASSERT(current()->pdu);
 
     // We copy the PDU payload in case it needs to be retried following a
     // security upgrade.
@@ -267,7 +267,7 @@ Bearer::Bearer(fxl::WeakPtr<l2cap::Channel> chan)
       next_remote_transaction_id_(1u),
       next_handler_id_(1u),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(chan_);
+  BT_DEBUG_ASSERT(chan_);
 
   if (chan_->link_type() == bt::LinkType::kLE) {
     min_mtu_ = kLEMinMTU;
@@ -302,7 +302,7 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
   if (shut_down_) {
     return;
   }
-  ZX_ASSERT(is_open());
+  BT_ASSERT(is_open());
   shut_down_ = true;
 
   bt_log(DEBUG, "att", "bearer shutting down");
@@ -330,21 +330,21 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
 }
 
 void Bearer::StartTransaction(ByteBufferPtr pdu, TransactionCallback callback) {
-  ZX_ASSERT(pdu);
-  ZX_ASSERT(callback);
+  BT_ASSERT(pdu);
+  BT_ASSERT(callback);
 
   [[maybe_unused]] bool _ = SendInternal(std::move(pdu), std::move(callback));
 }
 
 bool Bearer::SendWithoutResponse(ByteBufferPtr pdu) {
-  ZX_ASSERT(pdu);
+  BT_ASSERT(pdu);
   return SendInternal(std::move(pdu), {});
 }
 
 bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   auto _check_callback_empty = fit::defer([&callback]() {
     // Ensure that callback was either never present or called/moved before SendInternal returns
-    ZX_ASSERT(!callback);
+    BT_ASSERT(!callback);
   });
 
   if (!is_open()) {
@@ -355,7 +355,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
     return false;
   }
 
-  ZX_ASSERT_MSG(IsPacketValid(*pdu), "packet has bad length!");
+  BT_ASSERT_MSG(IsPacketValid(*pdu), "packet has bad length!");
 
   PacketReader reader(pdu.get());
   MethodType type = GetMethodType(reader.opcode());
@@ -365,7 +365,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   switch (type) {
     case MethodType::kCommand:
     case MethodType::kNotification:
-      ZX_ASSERT_MSG(!callback, "opcode %#.2x has no response but callback was provided",
+      BT_ASSERT_MSG(!callback, "opcode %#.2x has no response but callback was provided",
                     reader.opcode());
 
       // Send the command. No flow control is necessary.
@@ -379,10 +379,10 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
       tq = &indication_queue_;
       break;
     default:
-      ZX_PANIC("unsupported opcode: %#.2x", reader.opcode());
+      BT_PANIC("unsupported opcode: %#.2x", reader.opcode());
   }
 
-  ZX_ASSERT_MSG(callback, "transaction with opcode %#.2x has response that requires callback!",
+  BT_ASSERT_MSG(callback, "transaction with opcode %#.2x has response that requires callback!",
                 reader.opcode());
 
   tq->Enqueue(
@@ -393,7 +393,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
 }
 
 Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
-  ZX_DEBUG_ASSERT(handler);
+  BT_DEBUG_ASSERT(handler);
 
   if (!is_open())
     return kInvalidHandlerId;
@@ -408,7 +408,7 @@ Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
     return kInvalidHandlerId;
 
   auto res = handler_id_map_.emplace(id, opcode);
-  ZX_ASSERT_MSG(res.second, "handler ID got reused (id: %zu)", id);
+  BT_ASSERT_MSG(res.second, "handler ID got reused (id: %zu)", id);
 
   handlers_[opcode] = std::move(handler);
 
@@ -416,7 +416,7 @@ Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
 }
 
 void Bearer::UnregisterHandler(HandlerId id) {
-  ZX_DEBUG_ASSERT(id != kInvalidHandlerId);
+  BT_DEBUG_ASSERT(id != kInvalidHandlerId);
 
   auto iter = handler_id_map_.find(id);
   if (iter == handler_id_map_.end()) {
@@ -429,7 +429,7 @@ void Bearer::UnregisterHandler(HandlerId id) {
 }
 
 bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
-  ZX_DEBUG_ASSERT(pdu);
+  BT_DEBUG_ASSERT(pdu);
 
   if (tid == kInvalidTransactionId)
     return false;
@@ -489,7 +489,7 @@ bool Bearer::IsPacketValid(const ByteBuffer& packet) {
 }
 
 void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
-  ZX_DEBUG_ASSERT(tq);
+  BT_DEBUG_ASSERT(tq);
 
   if (!is_open()) {
     bt_log(TRACE, "att", "Cannot process transactions; bearer is closed");
@@ -508,7 +508,7 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
 void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
                                ErrorCode error_code) {
   auto buffer = NewSlabBuffer(sizeof(Header) + sizeof(ErrorResponseParams));
-  ZX_ASSERT(buffer);
+  BT_ASSERT(buffer);
 
   PacketWriter packet(kErrorResponse, buffer.get());
   auto* payload = packet.mutable_payload<ErrorResponseParams>();
@@ -520,8 +520,8 @@ void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
 }
 
 void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& packet) {
-  ZX_DEBUG_ASSERT(is_open());
-  ZX_DEBUG_ASSERT(tq);
+  BT_DEBUG_ASSERT(is_open());
+  BT_DEBUG_ASSERT(tq);
 
   if (!tq->current()) {
     bt_log(DEBUG, "att", "received unexpected transaction PDU (opcode: %#.2x)", packet.opcode());
@@ -534,7 +534,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
 
   if (packet.opcode() == kErrorResponse) {
     // We should never hit this branch for indications.
-    ZX_DEBUG_ASSERT(tq->current()->opcode != kIndication);
+    BT_DEBUG_ASSERT(tq->current()->opcode != kIndication);
 
     if (packet.payload_size() == sizeof(ErrorResponseParams)) {
       const auto& payload = packet.payload<ErrorResponseParams>();
@@ -552,7 +552,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
     target_opcode = MatchingTransactionCode(packet.opcode());
   }
 
-  ZX_DEBUG_ASSERT(tq->current()->opcode != kInvalidOpCode);
+  BT_DEBUG_ASSERT(tq->current()->opcode != kInvalidOpCode);
 
   if (tq->current()->opcode != target_opcode) {
     bt_log(DEBUG, "att", "received bad transaction PDU (opcode: %#.2x)", packet.opcode());
@@ -562,7 +562,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
 
   // The transaction is complete.
   auto transaction = tq->ClearCurrent();
-  ZX_DEBUG_ASSERT(transaction);
+  BT_DEBUG_ASSERT(transaction);
 
   const sm::SecurityLevel security_requirement =
       error.has_value() ? CheckSecurity(error->first.protocol_error(), chan_->security())
@@ -581,7 +581,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
     return;
   }
 
-  ZX_ASSERT(error.has_value());
+  BT_ASSERT(error.has_value());
   bt_log(TRACE, "att",
          "Received security error %s for transaction; requesting upgrade to level: %s",
          bt_str(error->first), sm::LevelToString(security_requirement));
@@ -603,7 +603,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
         // Re-send the request as described in Vol 3, Part G, 8.1. Since |t| was
         // originally resolved with an Error Response, it must have come out of
         // |request_queue_|.
-        ZX_DEBUG_ASSERT(GetMethodType(t->opcode) == MethodType::kRequest);
+        BT_DEBUG_ASSERT(GetMethodType(t->opcode) == MethodType::kRequest);
         t->security_retry_level = security_requirement;
         self->request_queue_.Enqueue(std::move(t));
         self->TryStartNextTransaction(&self->request_queue_);
@@ -637,7 +637,7 @@ Bearer::TransactionId Bearer::NextRemoteTransactionId() {
 
 void Bearer::HandleBeginTransaction(RemoteTransaction* currently_pending,
                                     const PacketReader& packet) {
-  ZX_DEBUG_ASSERT(currently_pending);
+  BT_DEBUG_ASSERT(currently_pending);
 
   if (currently_pending->has_value()) {
     bt_log(DEBUG, "att", "A transaction is already pending! (opcode: %#.2x)", packet.opcode());
@@ -687,8 +687,8 @@ void Bearer::OnChannelClosed() {
 }
 
 void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
-  ZX_DEBUG_ASSERT(sdu);
-  ZX_DEBUG_ASSERT(is_open());
+  BT_DEBUG_ASSERT(sdu);
+  BT_DEBUG_ASSERT(is_open());
 
   TRACE_DURATION("bluetooth", "att::Bearer::OnRxBFrame", "length", sdu->size());
 

@@ -4,17 +4,16 @@
 
 #include "advertising_report_parser.h"
 
-#include <zircon/assert.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 
 namespace bt::hci {
 
 AdvertisingReportParser::AdvertisingReportParser(const EventPacket& event)
     : encountered_error_(false) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
   const auto& params = event.params<hci_spec::LEMetaEventParams>();
-  ZX_DEBUG_ASSERT(params.subevent_code == hci_spec::kLEAdvertisingReportSubeventCode);
+  BT_DEBUG_ASSERT(params.subevent_code == hci_spec::kLEAdvertisingReportSubeventCode);
 
   auto subevent_params = event.subevent_params<hci_spec::LEAdvertisingReportSubeventParams>();
 
@@ -26,8 +25,8 @@ AdvertisingReportParser::AdvertisingReportParser(const EventPacket& event)
 
 bool AdvertisingReportParser::GetNextReport(const hci_spec::LEAdvertisingReportData** out_data,
                                             int8_t* out_rssi) {
-  ZX_DEBUG_ASSERT(out_data);
-  ZX_DEBUG_ASSERT(out_rssi);
+  BT_DEBUG_ASSERT(out_data);
+  BT_DEBUG_ASSERT(out_rssi);
 
   if (encountered_error_ || !HasMoreReports())
     return false;

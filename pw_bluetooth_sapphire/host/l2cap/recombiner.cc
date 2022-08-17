@@ -4,15 +4,14 @@
 
 #include "recombiner.h"
 
-#include <zircon/assert.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::l2cap {
 namespace {
 
 const BasicHeader& GetBasicHeader(const hci::ACLDataPacket& fragment) {
-  ZX_DEBUG_ASSERT(fragment.packet_boundary_flag() !=
+  BT_DEBUG_ASSERT(fragment.packet_boundary_flag() !=
                   hci_spec::ACLPacketBoundaryFlag::kContinuingFragment);
   return fragment.view().payload<BasicHeader>();
 }
@@ -22,8 +21,8 @@ const BasicHeader& GetBasicHeader(const hci::ACLDataPacket& fragment) {
 Recombiner::Recombiner(hci_spec::ConnectionHandle handle) : handle_(handle) {}
 
 Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
-  ZX_DEBUG_ASSERT(fragment);
-  ZX_DEBUG_ASSERT(fragment->connection_handle() == handle_);
+  BT_DEBUG_ASSERT(fragment);
+  BT_DEBUG_ASSERT(fragment->connection_handle() == handle_);
   TRACE_DURATION("bluetooth", "Recombiner::AddFragment");
 
   if (!recombination_) {
@@ -69,8 +68,8 @@ Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
 }
 
 Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragment) {
-  ZX_DEBUG_ASSERT(fragment);
-  ZX_DEBUG_ASSERT(!recombination_);
+  BT_DEBUG_ASSERT(fragment);
+  BT_DEBUG_ASSERT(!recombination_);
 
   // The first fragment needs to at least contain the Basic L2CAP header and
   // should not be a continuation fragment.
@@ -113,7 +112,7 @@ Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragme
 }
 
 void Recombiner::ClearRecombination() {
-  ZX_DEBUG_ASSERT(recombination_);
+  BT_DEBUG_ASSERT(recombination_);
   if (recombination_->pdu.is_valid()) {
     bt_log(DEBUG, "l2cap",
            "recombiner dropped packet (fragments: %zu, expected length: %zu, accumulated length: "

@@ -30,7 +30,7 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
     bt::gap::Peer *const peer =
         adapter()->peer_cache()->NewPeer(bt::testing::MakePublicDeviceAddress(fuzzed_data_provider),
                                          /*connectable=*/true);
-    ZX_ASSERT(peer);
+    BT_ASSERT(peer);
     bt::gap::testing::PeerFuzzer peer_fuzzer(fuzzed_data_provider, *peer);
     while (fuzzed_data_provider.remaining_bytes() != 0) {
       peer_fuzzer.FuzzOneField();
@@ -40,15 +40,15 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
     // lot of peers, even though fuzzing multiple peers would be helpful.
     int watch_peers_responses = 0;
     host_client()->WatchPeers([this, peer, &watch_peers_responses](auto updated, auto removed) {
-      ZX_ASSERT_MSG(updated.size() == 1, "peer %s: peers updated = %zu", bt_str(*peer),
+      BT_ASSERT_MSG(updated.size() == 1, "peer %s: peers updated = %zu", bt_str(*peer),
                     updated.size());
-      ZX_ASSERT_MSG(removed.size() == 0, "peer %s: peers removed = %zu", bt_str(*peer),
+      BT_ASSERT_MSG(removed.size() == 0, "peer %s: peers removed = %zu", bt_str(*peer),
                     removed.size());
       HandleWatchPeersResponse(*host_client(), watch_peers_responses, /*max_call_depth=*/1,
                                std::move(updated), std::move(removed));
     });
     RunLoopUntilIdle();
-    ZX_ASSERT_MSG(watch_peers_responses == 1, "peer %s: WatchPeers returned %d times",
+    BT_ASSERT_MSG(watch_peers_responses == 1, "peer %s: WatchPeers returned %d times",
                   bt_str(*peer), watch_peers_responses);
   }
 
@@ -73,7 +73,7 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
                                 std::vector<fuchsia::bluetooth::sys::Peer> updated,
                                 std::vector<fuchsia::bluetooth::PeerId> removed) {
     call_counter++;
-    ZX_ASSERT_MSG(call_counter <= max_call_depth, "max depth (%d) exceeded", call_counter);
+    BT_ASSERT_MSG(call_counter <= max_call_depth, "max depth (%d) exceeded", call_counter);
     host.WatchPeers([this, &host, &call_counter, max_call_depth](auto updated, auto removed) {
       this->HandleWatchPeersResponse(host, call_counter, max_call_depth, std::move(updated),
                                      std::move(removed));

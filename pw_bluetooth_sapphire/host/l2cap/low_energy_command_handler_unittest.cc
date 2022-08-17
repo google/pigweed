@@ -40,7 +40,7 @@ class LowEnergyCommandHandlerTest : public TestBase {
   size_t failed_requests() const { return failed_requests_; }
 
   void set_request_fail_callback(fit::closure request_fail_callback) {
-    ZX_ASSERT(!request_fail_callback_);
+    BT_ASSERT(!request_fail_callback_);
     request_fail_callback_ = std::move(request_fail_callback);
   }
 

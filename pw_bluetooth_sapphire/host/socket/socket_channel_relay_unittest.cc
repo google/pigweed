@@ -6,7 +6,6 @@
 
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
-#include <zircon/assert.h>
 #include <zircon/compiler.h>
 
 #include <memory>
@@ -14,6 +13,7 @@
 
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
@@ -131,7 +131,7 @@ class SocketChannelRelayLifetimeTest : public SocketChannelRelayTest {
  protected:
   bool was_deactivation_callback_invoked() { return was_deactivation_callback_invoked_; }
   RelayT* relay() {
-    ZX_DEBUG_ASSERT(relay_);
+    BT_DEBUG_ASSERT(relay_);
     return relay_.get();
   }
   void DestroyRelay() { relay_ = nullptr; }

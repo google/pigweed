@@ -21,7 +21,7 @@ LowEnergyInterrogator::LowEnergyInterrogator(fxl::WeakPtr<Peer> peer,
       weak_ptr_factory_(this) {}
 
 void LowEnergyInterrogator::Start(ResultCallback callback) {
-  ZX_ASSERT(!callback_);
+  BT_ASSERT(!callback_);
   callback_ = std::move(callback);
 
   if (!peer_) {
@@ -29,7 +29,7 @@ void LowEnergyInterrogator::Start(ResultCallback callback) {
     return;
   }
 
-  ZX_ASSERT(peer_->le().has_value());
+  BT_ASSERT(peer_->le().has_value());
 
   // Always read remote version information as a test of whether the connection was *actually*
   // successfully established. If the connection failed to be established, the command status of the

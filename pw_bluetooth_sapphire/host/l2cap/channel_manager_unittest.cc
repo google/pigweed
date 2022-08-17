@@ -445,7 +445,7 @@ class ChannelManagerTest : public TestingBase {
 
   void ReceiveAclDataPacket(const ByteBuffer& packet) {
     const size_t payload_size = packet.size() - sizeof(hci_spec::ACLDataHeader);
-    ZX_ASSERT(payload_size <= std::numeric_limits<uint16_t>::max());
+    BT_ASSERT(payload_size <= std::numeric_limits<uint16_t>::max());
     hci::ACLDataPacketPtr acl_packet = hci::ACLDataPacket::New(static_cast<uint16_t>(payload_size));
     auto mutable_acl_packet_data = acl_packet->mutable_view()->mutable_data();
     packet.Copy(&mutable_acl_packet_data);
@@ -727,13 +727,13 @@ TEST_F(ChannelManagerTest, ReceiveData) {
   // quit the message loop.
   std::vector<std::string> sdus;
   auto att_rx_cb = [&sdus](ByteBufferPtr sdu) {
-    ZX_DEBUG_ASSERT(sdu);
+    BT_DEBUG_ASSERT(sdu);
     sdus.push_back(sdu->ToString());
   };
 
   bool smp_cb_called = false;
   auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
-    ZX_DEBUG_ASSERT(sdu);
+    BT_DEBUG_ASSERT(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
   };
@@ -789,7 +789,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
 
   bool smp_cb_called = false;
   auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
-    ZX_DEBUG_ASSERT(sdu);
+    BT_DEBUG_ASSERT(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
   };
@@ -871,7 +871,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
 
   bool smp_cb_called = false;
   auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
-    ZX_DEBUG_ASSERT(sdu);
+    BT_DEBUG_ASSERT(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
   };
@@ -961,14 +961,14 @@ TEST_F(ChannelManagerTest, ActivateChannelProcessesCallbacksSynchronously) {
 
 TEST_F(ChannelManagerTest, RemovingLinkInvalidatesChannelPointer) {
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  ZX_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+  BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   chanmgr()->RemoveConnection(kTestHandle1);
   EXPECT_FALSE(fixed_channels.att);
 }
 
 TEST_F(ChannelManagerTest, SendBasicSdu) {
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
-  ZX_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+  BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   EXPECT_LE_PACKET_OUT(StaticByteBuffer(
                            // ACL data header (handle: 1, length 7)
@@ -1379,7 +1379,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   bool sdu_received = false;
   auto data_rx_cb = [&sdu_received](ByteBufferPtr sdu) {
     sdu_received = true;
-    ZX_DEBUG_ASSERT(sdu);
+    BT_DEBUG_ASSERT(sdu);
     EXPECT_EQ("Test", sdu->AsString());
   };
 

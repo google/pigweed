@@ -18,7 +18,7 @@ PacketReader::PacketReader(const ByteBuffer* buffer)
 ValidPacketReader::ValidPacketReader(const ByteBuffer* buffer) : PacketReader(buffer) {}
 
 fitx::result<ErrorCode, ValidPacketReader> ValidPacketReader::ParseSdu(const ByteBufferPtr& sdu) {
-  ZX_ASSERT(sdu);
+  BT_ASSERT(sdu);
   size_t length = sdu->size();
   if (length < sizeof(Header)) {
     bt_log(DEBUG, "sm", "PDU too short!");

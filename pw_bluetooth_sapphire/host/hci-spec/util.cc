@@ -5,7 +5,8 @@
 #include "util.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 
 namespace bt::hci_spec {
 

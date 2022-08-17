@@ -5,10 +5,10 @@
 #include "uuid.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
 #include <cinttypes>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
@@ -35,7 +35,7 @@ constexpr char kScanUuidFormatString[] =
 // place, I've decided that it sucks. I'm explicitly naming this using the
 // "Uuid" style as a reminder to fix style elsewhere.
 bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
-  ZX_DEBUG_ASSERT(out_bytes);
+  BT_DEBUG_ASSERT(out_bytes);
 
   if (uuid_string.length() == 4) {
     // Possibly a 16-bit short UUID, parse it in context of the Base UUID.
@@ -86,7 +86,7 @@ bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
 
 UUID::UUID(const ByteBuffer& bytes) {
   bool result = FromBytes(bytes, this);
-  ZX_ASSERT_MSG(result, "|bytes| must contain a 16, 32, or 128-bit UUID");
+  BT_ASSERT_MSG(result, "|bytes| must contain a 16, 32, or 128-bit UUID");
 }
 
 bool UUID::operator==(const UUID& uuid) const { return value_ == uuid.value_; }
@@ -137,7 +137,7 @@ UUIDElemSize UUID::CompactSize(bool allow_32bit) const {
     case Type::k128Bit:
       return UUIDElemSize::k128Bit;
   };
-  ZX_PANIC("uuid type of %du is invalid", static_cast<uint8_t>(type_));
+  BT_PANIC("uuid type of %du is invalid", static_cast<uint8_t>(type_));
 }
 
 size_t UUID::ToBytes(MutableByteBuffer* bytes, bool allow_32bit) const {
@@ -176,13 +176,13 @@ std::optional<uint16_t> UUID::As16Bit() const {
 }
 
 uint16_t UUID::ValueAs16Bit() const {
-  ZX_DEBUG_ASSERT(type_ == Type::k16Bit);
+  BT_DEBUG_ASSERT(type_ == Type::k16Bit);
 
   return le16toh(*reinterpret_cast<const uint16_t*>(value_.data() + kBaseOffset));
 }
 
 uint32_t UUID::ValueAs32Bit() const {
-  ZX_DEBUG_ASSERT(type_ != Type::k128Bit);
+  BT_DEBUG_ASSERT(type_ != Type::k128Bit);
 
   return le32toh(*reinterpret_cast<const uint32_t*>(value_.data() + kBaseOffset));
 }
@@ -193,7 +193,7 @@ bool IsStringValidUuid(const std::string& uuid_string) {
 }
 
 bool StringToUuid(const std::string& uuid_string, UUID* out_uuid) {
-  ZX_DEBUG_ASSERT(out_uuid);
+  BT_DEBUG_ASSERT(out_uuid);
 
   UInt128 bytes;
   if (!ParseUuidString(uuid_string, &bytes))

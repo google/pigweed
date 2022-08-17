@@ -6,11 +6,11 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ERROR_H_
 
 #include <lib/fitx/result.h>
-#include <zircon/assert.h>
 
 #include <type_traits>
 #include <variant>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
@@ -48,7 +48,7 @@ template <>
 struct ProtocolErrorTraits<NoProtocolError> {
   // This won't be called but still needs to be stubbed out to link correctly.
   static std::string ToString(NoProtocolError) {
-    ZX_ASSERT(false);
+    BT_ASSERT(false);
     return std::string();
   }
 };
@@ -188,12 +188,12 @@ class [[nodiscard]] Error {
   }
 
   [[nodiscard]] constexpr HostError host_error() const {
-    ZX_ASSERT_MSG(is_host_error(), "Does not hold HostError");
+    BT_ASSERT_MSG(is_host_error(), "Does not hold HostError");
     return std::get<HostError>(error_);
   }
 
   [[nodiscard]] constexpr ProtocolErrorCode protocol_error() const {
-    ZX_ASSERT_MSG(is_protocol_error(), "Does not hold protocol error");
+    BT_ASSERT_MSG(is_protocol_error(), "Does not hold protocol error");
     return std::get<ProtocolErrorCode>(error_);
   }
 
@@ -251,7 +251,7 @@ class [[nodiscard]] Error {
   template <typename T = ProtocolErrorCode,
             std::enable_if_t<detail::CanRepresentSuccessV<T>, int> = 0>
   constexpr explicit Error(const ProtocolErrorCode& proto_error) : error_(proto_error) {
-    ZX_ASSERT(!ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error));
+    BT_ASSERT(!ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error));
   }
 
   std::variant<HostError, ProtocolErrorCode> error_;

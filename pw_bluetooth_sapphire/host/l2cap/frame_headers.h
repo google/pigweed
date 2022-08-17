@@ -6,11 +6,12 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_
 
 #include <endian.h>
-#include <zircon/assert.h>
 #include <zircon/compiler.h>
 
 #include <cstdint>
 #include <type_traits>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 
 namespace bt::l2cap::internal {
 
@@ -70,7 +71,7 @@ struct EnhancedControlField {
   }
 
   void set_receive_seq_num(uint8_t seq_num) {
-    ZX_DEBUG_ASSERT(seq_num <= kMaxSeqNum);
+    BT_DEBUG_ASSERT(seq_num <= kMaxSeqNum);
     // "Receive Sequence Number - ReqSeq" Vol 3, Part A, Section 3.3.2, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | (seq_num << 8));
   }
@@ -106,12 +107,12 @@ struct SimpleInformationFrameHeader : public EnhancedControlField {
   SimpleInformationFrameHeader() = default;
 
   explicit SimpleInformationFrameHeader(uint8_t tx_seq) {
-    ZX_DEBUG_ASSERT(tx_seq <= kMaxSeqNum);
+    BT_DEBUG_ASSERT(tx_seq <= kMaxSeqNum);
     raw_value = htole16(le16toh(raw_value) | (tx_seq << 1));
   }
 
   uint8_t tx_seq() const {
-    ZX_DEBUG_ASSERT(!designates_supervisory_frame());
+    BT_DEBUG_ASSERT(!designates_supervisory_frame());
     return (le16toh(raw_value) & (0b0111'1110)) >> 1;
   }
 } __PACKED;
@@ -151,7 +152,7 @@ struct SimpleSupervisoryFrame : public EnhancedControlField {
   SimpleSupervisoryFrame() = default;
 
   explicit SimpleSupervisoryFrame(SupervisoryFunction sfunc) {
-    ZX_DEBUG_ASSERT(sfunc <= SupervisoryFunction::SelectiveReject);
+    BT_DEBUG_ASSERT(sfunc <= SupervisoryFunction::SelectiveReject);
     set_supervisory_frame();
     // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | (static_cast<uint8_t>(sfunc) << 2));

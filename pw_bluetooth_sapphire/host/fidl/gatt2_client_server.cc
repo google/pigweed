@@ -55,7 +55,7 @@ Gatt2ClientServer::Gatt2ClientServer(bt::gatt::PeerId peer_id,
 }
 
 Gatt2ClientServer::~Gatt2ClientServer() {
-  ZX_ASSERT(gatt()->UnregisterRemoteServiceWatcher(service_watcher_id_));
+  BT_ASSERT(gatt()->UnregisterRemoteServiceWatcher(service_watcher_id_));
 }
 
 void Gatt2ClientServer::OnWatchServicesResult(const std::vector<bt::att::Handle>& removed,
@@ -180,7 +180,7 @@ void Gatt2ClientServer::WatchServices(std::vector<fb::Uuid> fidl_uuids,
           bt_log(DEBUG, "fidl", "WatchServices: ListServices complete (peer: %s)",
                  bt_str(self->peer_id_));
 
-          ZX_ASSERT(self->watch_services_request_);
+          BT_ASSERT(self->watch_services_request_);
           self->list_services_complete_ = true;
           self->OnWatchServicesResult(/*removed=*/{}, /*added=*/services, /*modified=*/{});
         });
@@ -220,7 +220,7 @@ void Gatt2ClientServer::ConnectToService(fbg::ServiceHandle handle,
     request.Close(ZX_ERR_NOT_FOUND);
     return;
   }
-  ZX_ASSERT(service_handle == service->handle());
+  BT_ASSERT(service_handle == service->handle());
 
   // This removed handler may be called long after the service is removed from the service map or
   // this server is destroyed, since removed handlers are not unregistered. If the FIDL client
@@ -248,7 +248,7 @@ void Gatt2ClientServer::ConnectToService(fbg::ServiceHandle handle,
   // The only reason RemoteService::AddRemovedHandler() can fail is if the service is already
   // shut down, but that should not be possible in this synchronous callback (the service
   // would not have been returned in the first place).
-  ZX_ASSERT_MSG(service->AddRemovedHandler(std::move(removed_handler)),
+  BT_ASSERT_MSG(service->AddRemovedHandler(std::move(removed_handler)),
                 "adding service removed handler failed (service may be shut down) (peer: %s, "
                 "handle: %#.4x)",
                 bt_str(peer_id_), service_handle);
@@ -266,7 +266,7 @@ void Gatt2ClientServer::ConnectToService(fbg::ServiceHandle handle,
   });
 
   // Error handler should not have been called yet.
-  ZX_ASSERT(services_.count(service_handle) == 1);
+  BT_ASSERT(services_.count(service_handle) == 1);
   services_[service_handle] = std::move(remote_service_server);
 }
 

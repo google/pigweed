@@ -6,12 +6,12 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_SERVER_BASE_H_
 
 #include <lib/fit/function.h>
-#include <zircon/assert.h>
 
 #include <fbl/ref_ptr.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -48,7 +48,7 @@ class ServerBase : public Server, public Interface {
 
   // Constructs a FIDL server by binding a zx::channel.
   ServerBase(Interface* impl, zx::channel channel) : binding_(impl, std::move(channel)) {
-    ZX_DEBUG_ASSERT(binding_.is_bound());
+    BT_DEBUG_ASSERT(binding_.is_bound());
   }
 
   ~ServerBase() override = default;
@@ -79,7 +79,7 @@ class AdapterServerBase : public ServerBase<Interface> {
 
   AdapterServerBase(fxl::WeakPtr<bt::gap::Adapter> adapter, Interface* impl, zx::channel channel)
       : ServerBase<Interface>(impl, std::move(channel)), adapter_(adapter) {
-    ZX_DEBUG_ASSERT(adapter_);
+    BT_DEBUG_ASSERT(adapter_);
   }
 
   ~AdapterServerBase() override = default;
@@ -101,7 +101,7 @@ class GattServerBase : public ServerBase<Interface> {
   GattServerBase(fxl::WeakPtr<bt::gatt::GATT> gatt, Interface* impl,
                  fidl::InterfaceRequest<Interface> request)
       : ServerBase<Interface>(impl, std::move(request)), gatt_(gatt) {
-    ZX_DEBUG_ASSERT(gatt_);
+    BT_DEBUG_ASSERT(gatt_);
   }
 
   ~GattServerBase() override = default;

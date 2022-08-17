@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RETIRE_LOG_H_
 
 #include <lib/async/cpp/time.h>
-#include <zircon/assert.h>
 
 #include <algorithm>
 #include <array>
@@ -15,6 +14,8 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 
 namespace bt::internal {
 
@@ -106,12 +107,12 @@ class RetireLog final {
     std::array<ElementT, NumQuantiles> quantiles;  // output
     auto unsorted_begin = elements.begin();
     for (auto [partition, index] : partitions_and_indexes) {
-      ZX_ASSERT(partition >= 0.);
-      ZX_ASSERT(partition <= 1.);
+      BT_ASSERT(partition >= 0.);
+      BT_ASSERT(partition <= 1.);
       // Even though the last element is at index depth()-1, use depth() here instead to ensure the
       // final (max) element has sufficient range representation.
       const size_t cut_point = static_cast<size_t>(static_cast<double>(depth()) * partition);
-      ZX_ASSERT(cut_point <= depth());
+      BT_ASSERT(cut_point <= depth());
 
       // In the case that partition = 1.0, cut_point = depth(). Saturate to the final (max) element.
       const size_t selection_offset = std::min(cut_point, depth() - 1);

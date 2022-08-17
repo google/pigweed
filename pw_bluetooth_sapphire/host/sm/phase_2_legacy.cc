@@ -4,10 +4,9 @@
 
 #include "phase_2_legacy.h"
 
-#include <zircon/assert.h>
-
 #include <optional>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -47,29 +46,29 @@ Phase2Legacy::Phase2Legacy(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Liste
       on_stk_ready_(std::move(cb)),
       weak_ptr_factory_(this) {
   // Cache |preq| and |pres|. These are used for confirm value generation.
-  ZX_ASSERT(preq.size() == preq_.size());
-  ZX_ASSERT(pres.size() == pres_.size());
-  ZX_ASSERT_MSG(IsSupportedLegacyMethod(features.method), "unsupported legacy pairing method!");
+  BT_ASSERT(preq.size() == preq_.size());
+  BT_ASSERT(pres.size() == pres_.size());
+  BT_ASSERT_MSG(IsSupportedLegacyMethod(features.method), "unsupported legacy pairing method!");
   preq.Copy(&preq_);
   pres.Copy(&pres_);
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
 void Phase2Legacy::Start() {
-  ZX_ASSERT(!has_failed());
-  ZX_ASSERT(!features_.secure_connections);
-  ZX_ASSERT(!tk_.has_value());
-  ZX_ASSERT(!peer_confirm_.has_value());
-  ZX_ASSERT(!peer_rand_.has_value());
-  ZX_ASSERT(!sent_local_confirm_);
-  ZX_ASSERT(!sent_local_rand_);
+  BT_ASSERT(!has_failed());
+  BT_ASSERT(!features_.secure_connections);
+  BT_ASSERT(!tk_.has_value());
+  BT_ASSERT(!peer_confirm_.has_value());
+  BT_ASSERT(!peer_rand_.has_value());
+  BT_ASSERT(!sent_local_confirm_);
+  BT_ASSERT(!sent_local_rand_);
   MakeTemporaryKeyRequest();
 }
 
 void Phase2Legacy::MakeTemporaryKeyRequest() {
   bt_log(DEBUG, "sm", "TK request - method: %s",
          sm::util::PairingMethodToString(features_.method).c_str());
-  ZX_ASSERT(listener());
+  BT_ASSERT(listener());
   auto self = weak_ptr_factory_.GetWeakPtr();
   if (features_.method == sm::PairingMethod::kPasskeyEntryInput) {
     // The TK will be provided by the user.
@@ -100,7 +99,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
   }
 
   // TODO(fxbug.dev/601): Support providing a TK out of band.
-  ZX_ASSERT(features_.method == sm::PairingMethod::kJustWorks);
+  BT_ASSERT(features_.method == sm::PairingMethod::kJustWorks);
   listener()->ConfirmPairing([self](bool confirm) {
     if (!self) {
       return;
@@ -142,8 +141,8 @@ void Phase2Legacy::HandleTemporaryKey(std::optional<uint32_t> maybe_tk) {
 }
 
 void Phase2Legacy::SendConfirmValue() {
-  ZX_ASSERT(!sent_local_confirm_);
-  ZX_ASSERT(local_confirm_.has_value());
+  BT_ASSERT(!sent_local_confirm_);
+  BT_ASSERT(local_confirm_.has_value());
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG, "sm", "attempted to send confirm value over BR/EDR, not sending");
@@ -165,8 +164,8 @@ void Phase2Legacy::OnPairingConfirm(PairingConfirmValue confirm) {
   if (role() == Role::kInitiator) {
     // We MUST have a TK and have previously generated an Mconfirm - this was implicitly checked in
     // CanReceivePairingConfirm by checking whether we've sent the confirm value.
-    ZX_ASSERT(tk_.has_value());
-    ZX_ASSERT(sent_local_confirm_);
+    BT_ASSERT(tk_.has_value());
+    BT_ASSERT(sent_local_confirm_);
 
     // We have sent Mconfirm and just received Sconfirm. We now send Mrand for the peer to compare.
     SendRandomValue();
@@ -178,10 +177,10 @@ void Phase2Legacy::OnPairingConfirm(PairingConfirmValue confirm) {
 }
 
 void Phase2Legacy::SendRandomValue() {
-  ZX_ASSERT(!sent_local_rand_);
+  BT_ASSERT(!sent_local_rand_);
   // This is always generated in the TK callback, which must have been called by now as the random
   // are sent after the confirm values, and the TK must exist in order to send the confirm.
-  ZX_ASSERT(local_rand_.has_value());
+  BT_ASSERT(local_rand_.has_value());
 
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
@@ -199,9 +198,9 @@ void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
     return;
   }
   // These should have been checked in CanReceivePairingRandom
-  ZX_ASSERT(local_rand_.has_value());
-  ZX_ASSERT(tk_.has_value());
-  ZX_ASSERT(peer_confirm_.has_value());
+  BT_ASSERT(local_rand_.has_value());
+  BT_ASSERT(tk_.has_value());
+  BT_ASSERT(peer_confirm_.has_value());
 
   peer_rand_ = rand;
 
@@ -305,7 +304,7 @@ fitx::result<ErrorCode> Phase2Legacy::CanReceivePairingRandom() const {
     }
   } else {
     // We know we have not received Mrand, and should not have sent Srand without receiving Mrand.
-    ZX_ASSERT(!sent_local_rand_);
+    BT_ASSERT(!sent_local_rand_);
 
     // We need to send Sconfirm before the initiator sends Mrand.
     if (!sent_local_confirm_) {

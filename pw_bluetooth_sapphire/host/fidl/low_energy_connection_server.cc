@@ -17,7 +17,7 @@ LowEnergyConnectionServer::LowEnergyConnectionServer(
       closed_handler_(std::move(closed_cb)),
       peer_id_(conn_->peer_identifier()),
       gatt_(std::move(gatt)) {
-  ZX_DEBUG_ASSERT(conn_);
+  BT_DEBUG_ASSERT(conn_);
 
   set_error_handler([this](zx_status_t) { OnClosed(); });
   conn_->set_closed_callback(fit::bind_member<&LowEnergyConnectionServer::OnClosed>(this));

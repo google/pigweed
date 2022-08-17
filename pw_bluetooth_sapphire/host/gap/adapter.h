@@ -8,11 +8,11 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <lib/zx/vmo.h>
-#include <zircon/assert.h>
 
 #include <memory>
 #include <string>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"

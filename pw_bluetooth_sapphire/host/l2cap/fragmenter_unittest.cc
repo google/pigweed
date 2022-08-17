@@ -266,7 +266,7 @@ TEST(FragmenterTest, TwoFragmentsOffByOne) {
 
 TEST(FragmenterTest, TwoFragmentsExact) {
   StaticByteBuffer payload('T', 'e', 's', 't');
-  ZX_DEBUG_ASSERT_MSG(payload.size() % 2 == 0, "test payload size should be even");
+  BT_DEBUG_ASSERT_MSG(payload.size() % 2 == 0, "test payload size should be even");
 
   StaticByteBuffer expected_fragment0(
       // ACL data header

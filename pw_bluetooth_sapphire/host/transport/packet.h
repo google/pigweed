@@ -5,10 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_PACKET_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_PACKET_H_
 
-#include <zircon/assert.h>
-
 #include <memory>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"

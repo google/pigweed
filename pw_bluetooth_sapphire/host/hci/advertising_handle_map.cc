@@ -17,7 +17,7 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
   }
 
   std::optional<hci_spec::AdvertisingHandle> handle = NextHandle();
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   addr_to_handle_[address] = handle.value();
   handle_to_addr_[handle.value()] = address;
@@ -65,12 +65,12 @@ void AdvertisingHandleMap::RemoveAddress(const DeviceAddress& address) {
 }
 
 std::size_t AdvertisingHandleMap::Size() const {
-  ZX_ASSERT(addr_to_handle_.size() == handle_to_addr_.size());
+  BT_ASSERT(addr_to_handle_.size() == handle_to_addr_.size());
   return addr_to_handle_.size();
 }
 
 bool AdvertisingHandleMap::Empty() const {
-  ZX_ASSERT(addr_to_handle_.empty() == handle_to_addr_.empty());
+  BT_ASSERT(addr_to_handle_.empty() == handle_to_addr_.empty());
   return addr_to_handle_.empty();
 }
 

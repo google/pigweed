@@ -9,11 +9,11 @@ namespace bt::hci {
 void FakeScoDataChannel::RegisterConnection(fxl::WeakPtr<ConnectionInterface> connection) {
   auto [iter, inserted] =
       connections_.emplace(connection->handle(), RegisteredConnection{connection});
-  ZX_ASSERT(inserted);
+  BT_ASSERT(inserted);
 }
 
 void FakeScoDataChannel::UnregisterConnection(hci_spec::ConnectionHandle handle) {
-  ZX_ASSERT(connections_.erase(handle) == 1);
+  BT_ASSERT(connections_.erase(handle) == 1);
 }
 
 void FakeScoDataChannel::OnOutboundPacketReadable() { readable_count_++; }

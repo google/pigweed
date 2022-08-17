@@ -20,7 +20,7 @@ const char* kDeviceName = "bt_host";
 
 HostDevice::HostDevice(zx_device_t* parent)
     : HostDeviceType(parent), loop_(&kAsyncLoopConfigNoAttachToCurrentThread) {
-  ZX_DEBUG_ASSERT(parent);
+  BT_DEBUG_ASSERT(parent);
 
   inspect_.GetRoot().CreateString("name", kDeviceName, &inspect_);
 }
@@ -93,7 +93,7 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
     std::lock_guard<std::mutex> lock(mtx_);
     // host_ must be defined here as Bind() must have been called and the runloop has not
     // yet been been drained in Unbind().
-    ZX_DEBUG_ASSERT(host_);
+    BT_DEBUG_ASSERT(host_);
 
     if (!success) {
       bt_log(ERROR, "bt-host", "failed to initialize adapter; cleaning up");
@@ -159,7 +159,7 @@ void HostDevice::Open(OpenRequestView request, OpenCompleter::Sync& completer) {
   // This is called from the fidl operation OpenChannelOp.  No fidl calls will be delivered to the
   // driver before host_ is initialized by Init(), and no fidl calls
   // will be delivered after the DDK calls Unbind() and host_ is removed.
-  ZX_DEBUG_ASSERT(host_);
+  BT_DEBUG_ASSERT(host_);
 
   // Tell Host to start processing messages on this handle.
   async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(request->channel)]() mutable {

@@ -5,9 +5,9 @@
 #include "acl_data_packet.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
 #include "slab_allocators.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::hci {
@@ -36,7 +36,7 @@ using LargeACLDataPacket =
                                                slab_allocators::kLargeACLDataPacketSize>;
 
 ACLDataPacketPtr NewACLDataPacket(size_t payload_size) {
-  ZX_ASSERT_MSG(payload_size <= slab_allocators::kLargeACLDataPayloadSize,
+  BT_ASSERT_MSG(payload_size <= slab_allocators::kLargeACLDataPayloadSize,
                 "payload size %zu too large (allowed = %zu)", payload_size,
                 slab_allocators::kLargeACLDataPayloadSize);
 
@@ -115,11 +115,11 @@ void ACLDataPacket::WriteHeader(hci_spec::ConnectionHandle connection_handle,
                                 hci_spec::ACLPacketBoundaryFlag packet_boundary_flag,
                                 hci_spec::ACLBroadcastFlag broadcast_flag) {
   // Must fit inside 12-bits.
-  ZX_DEBUG_ASSERT(connection_handle <= 0x0FFF);
+  BT_DEBUG_ASSERT(connection_handle <= 0x0FFF);
 
   // Must fit inside 2-bits.
-  ZX_DEBUG_ASSERT(static_cast<uint8_t>(packet_boundary_flag) <= 0x03);
-  ZX_DEBUG_ASSERT(static_cast<uint8_t>(broadcast_flag) <= 0x03);
+  BT_DEBUG_ASSERT(static_cast<uint8_t>(packet_boundary_flag) <= 0x03);
+  BT_DEBUG_ASSERT(static_cast<uint8_t>(broadcast_flag) <= 0x03);
 
   // Bitwise OR causes int promotion, so the result must be explicitly casted.
   uint16_t handle_and_flags = static_cast<uint16_t>(

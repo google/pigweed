@@ -59,7 +59,7 @@ void ScoDataPacket::InitializeFromBuffer() {
 
 void ScoDataPacket::WriteHeader(hci_spec::ConnectionHandle connection_handle) {
   // Handle must fit inside 12-bits.
-  ZX_ASSERT(connection_handle <= 0x0FFF);
+  BT_ASSERT(connection_handle <= 0x0FFF);
   // This sets the Packet Status Flag (upper bits of handle_and_flags) to 0, which is required for
   // Host->Controller SCO packets.
   mutable_view()->mutable_header()->handle_and_flags = htole16(connection_handle);

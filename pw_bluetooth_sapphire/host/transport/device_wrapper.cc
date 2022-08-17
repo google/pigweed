@@ -5,11 +5,11 @@
 #include "device_wrapper.h"
 
 #include <fuchsia/hardware/bluetooth/c/fidl.h>
-#include <zircon/assert.h>
 #include <zircon/device/bt-hci.h>
 #include <zircon/status.h>
 #include <zircon/types.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::hci {
@@ -17,7 +17,7 @@ namespace bt::hci {
 // ================= FidlDeviceWrapper =================
 
 FidlDeviceWrapper::FidlDeviceWrapper(zx::channel device) : device_(std::move(device)) {
-  ZX_DEBUG_ASSERT(device_.is_valid());
+  BT_DEBUG_ASSERT(device_.is_valid());
 }
 
 zx::channel FidlDeviceWrapper::GetCommandChannel() {

@@ -185,7 +185,7 @@ void FakeController::ClearDefaultCommandStatus(hci_spec::OpCode opcode) {
 
 void FakeController::SetDefaultResponseStatus(hci_spec::OpCode opcode,
                                               hci_spec::StatusCode status) {
-  ZX_DEBUG_ASSERT(status != hci_spec::StatusCode::kSuccess);
+  BT_DEBUG_ASSERT(status != hci_spec::StatusCode::kSuccess);
   default_status_map_[opcode] = status;
 }
 
@@ -194,7 +194,7 @@ void FakeController::ClearDefaultResponseStatus(hci_spec::OpCode opcode) {
 }
 
 bool FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
-  ZX_DEBUG_ASSERT(peer);
+  BT_DEBUG_ASSERT(peer);
   if (peers_.count(peer->address()) != 0u) {
     return false;
   }
@@ -285,7 +285,7 @@ void FakeController::SendVendorEvent(hci_spec::EventCode subevent_code, const By
 }
 
 void FakeController::SendACLPacket(hci_spec::ConnectionHandle handle, const ByteBuffer& payload) {
-  ZX_DEBUG_ASSERT(payload.size() <= hci_spec::kMaxACLPayloadSize);
+  BT_DEBUG_ASSERT(payload.size() <= hci_spec::kMaxACLPayloadSize);
 
   DynamicByteBuffer buffer(sizeof(hci_spec::ACLDataHeader) + payload.size());
   MutablePacketView<hci_spec::ACLDataHeader> acl(&buffer, payload.size());
@@ -299,7 +299,7 @@ void FakeController::SendACLPacket(hci_spec::ConnectionHandle handle, const Byte
 
 void FakeController::SendL2CAPBFrame(hci_spec::ConnectionHandle handle, l2cap::ChannelId channel_id,
                                      const ByteBuffer& payload) {
-  ZX_DEBUG_ASSERT(payload.size() <= hci_spec::kMaxACLPayloadSize - sizeof(l2cap::BasicHeader));
+  BT_DEBUG_ASSERT(payload.size() <= hci_spec::kMaxACLPayloadSize - sizeof(l2cap::BasicHeader));
 
   DynamicByteBuffer buffer(sizeof(l2cap::BasicHeader) + payload.size());
   MutablePacketView<l2cap::BasicHeader> bframe(&buffer, payload.size());
@@ -388,7 +388,7 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr, hci_spec::Conne
 void FakeController::SendConnectionRequest(const DeviceAddress& addr,
                                            hci_spec::LinkType link_type) {
   FakePeer* peer = FindPeer(addr);
-  ZX_ASSERT(peer);
+  BT_ASSERT(peer);
   peer->set_last_connection_request_link_type(link_type);
 
   bt_log(DEBUG, "fake-hci", "sending connection request (addr: %s, link: %s)", bt_str(addr),
@@ -414,7 +414,7 @@ void FakeController::L2CAPConnectionParameterUpdate(
       return;
     }
 
-    ZX_DEBUG_ASSERT(!peer->logical_links().empty());
+    BT_DEBUG_ASSERT(!peer->logical_links().empty());
 
     l2cap::ConnectionParameterUpdateRequestPayload payload;
     payload.interval_min = htole16(params.min_interval());
@@ -453,8 +453,8 @@ void FakeController::Disconnect(const DeviceAddress& addr, hci_spec::StatusCode 
     }
 
     auto links = peer->Disconnect();
-    ZX_DEBUG_ASSERT(!peer->connected());
-    ZX_DEBUG_ASSERT(!links.empty());
+    BT_DEBUG_ASSERT(!peer->connected());
+    BT_DEBUG_ASSERT(!links.empty());
 
     for (auto link : links) {
       NotifyConnectionState(addr, link, /*connected=*/false);
@@ -692,7 +692,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
   }
 
   DeviceAddress::Type addr_type = hci::AddressTypeFromHCI(params.peer_address_type);
-  ZX_DEBUG_ASSERT(addr_type != DeviceAddress::Type::kBREDR);
+  BT_DEBUG_ASSERT(addr_type != DeviceAddress::Type::kBREDR);
 
   const DeviceAddress peer_address(addr_type, params.peer_address);
   hci_spec::StatusCode status = hci_spec::StatusCode::kSuccess;
@@ -802,7 +802,7 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
     return;
   }
 
-  ZX_DEBUG_ASSERT(peer->connected());
+  BT_DEBUG_ASSERT(peer->connected());
 
   uint16_t min_interval = le16toh(params.conn_interval_min);
   uint16_t max_interval = le16toh(params.conn_interval_max);
@@ -852,7 +852,7 @@ void FakeController::OnDisconnectCommandReceived(const hci_spec::DisconnectComma
     return;
   }
 
-  ZX_DEBUG_ASSERT(peer->connected());
+  BT_DEBUG_ASSERT(peer->connected());
 
   RespondWithCommandStatus(hci_spec::kDisconnect, hci_spec::StatusCode::kSuccess);
 
@@ -1022,7 +1022,7 @@ void FakeController::OnLECreateConnectionCancel() {
 
   le_connect_pending_ = false;
   le_connect_rsp_task_.Cancel();
-  ZX_DEBUG_ASSERT(le_connect_params_);
+  BT_DEBUG_ASSERT(le_connect_params_);
 
   NotifyConnectionState(le_connect_params_->peer_address, 0, /*connected=*/false,
                         /*canceled=*/true);
@@ -1439,7 +1439,7 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
   RespondWithCommandStatus(hci_spec::kLinkKeyRequestReply, hci_spec::StatusCode::kSuccess);
   RespondWithCommandComplete(hci_spec::kLinkKeyRequestReply, hci_spec::StatusCode::kSuccess);
 
-  ZX_ASSERT(!peer->logical_links().empty());
+  BT_ASSERT(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {
     hci_spec::AuthenticationCompleteEventParams auth_complete;
     auth_complete.status = hci_spec::kSuccess;
@@ -1511,7 +1511,7 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
   SendEvent(hci_spec::kLinkKeyNotificationEventCode,
             BufferView(&link_key_event, sizeof(link_key_event)));
 
-  ZX_ASSERT(!peer->logical_links().empty());
+  BT_ASSERT(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {
     hci_spec::AuthenticationCompleteEventParams auth_complete;
     auth_complete.status = hci_spec::kSuccess;
@@ -1865,8 +1865,8 @@ void FakeController::OnLESetExtendedAdvertisingData(
     const hci_spec::LESetExtendedAdvertisingDataCommandParams& params) {
   // controller currently doesn't support fragmented advertising, assert so we fail if we ever use
   // it in host code without updating the controller for tests
-  ZX_ASSERT(params.operation == hci_spec::LESetExtendedAdvDataOp::kComplete);
-  ZX_ASSERT(params.fragment_preference ==
+  BT_ASSERT(params.operation == hci_spec::LESetExtendedAdvDataOp::kComplete);
+  BT_ASSERT(params.fragment_preference ==
             hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment);
 
   hci_spec::AdvertisingHandle handle = params.adv_handle;
@@ -1926,8 +1926,8 @@ void FakeController::OnLESetExtendedScanResponseData(
     const hci_spec::LESetExtendedScanResponseDataCommandParams& params) {
   // controller currently doesn't support fragmented advertising, assert so we fail if we ever use
   // it in host code without updating the controller for tests
-  ZX_ASSERT(params.operation == hci_spec::LESetExtendedAdvDataOp::kComplete);
-  ZX_ASSERT(params.fragment_preference ==
+  BT_ASSERT(params.operation == hci_spec::LESetExtendedAdvDataOp::kComplete);
+  BT_ASSERT(params.fragment_preference ==
             hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment);
 
   hci_spec::AdvertisingHandle handle = params.adv_handle;
@@ -2038,7 +2038,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
   }
 
   // rest of the function deals with enabling advertising for a given set of advertising sets
-  ZX_ASSERT(params.enable == hci_spec::GenericEnableParam::kEnable);
+  BT_ASSERT(params.enable == hci_spec::GenericEnableParam::kEnable);
 
   if (params.number_of_sets == 0) {
     bt_log(INFO, "fake-hci", "cannot enable with an empty advertising set list");
@@ -2051,8 +2051,8 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
     // FakeController currently doesn't support testing with duration and max events. When those are
     // used in the host, these checks will fail and remind us to add the necessary code to
     // FakeController.
-    ZX_ASSERT(params.data[i].duration == 0);
-    ZX_ASSERT(params.data[i].max_extended_adv_events == 0);
+    BT_ASSERT(params.data[i].duration == 0);
+    BT_ASSERT(params.data[i].max_extended_adv_events == 0);
 
     hci_spec::AdvertisingHandle handle = params.data[i].adv_handle;
     LEAdvertisingState& state = extended_advertising_states_[handle];
@@ -3111,10 +3111,10 @@ void FakeController::OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) 
 }
 
 void FakeController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(dispatcher);
-  ZX_DEBUG_ASSERT(!acl_data_callback_);
-  ZX_DEBUG_ASSERT(!data_dispatcher_);
+  BT_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(dispatcher);
+  BT_DEBUG_ASSERT(!acl_data_callback_);
+  BT_DEBUG_ASSERT(!data_dispatcher_);
 
   acl_data_callback_ = std::move(callback);
   data_dispatcher_ = dispatcher;

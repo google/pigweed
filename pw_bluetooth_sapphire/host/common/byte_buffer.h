@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 
-#include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
 #include <array>
@@ -18,6 +17,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/lib/cpp-type/member_pointer_traits.h"
 #include "src/connectivity/bluetooth/lib/cpp-type/to_std_array.h"
@@ -85,7 +85,7 @@ class ByteBuffer {
 
   // Read-only random access operator.
   inline const uint8_t& operator[](size_t pos) const {
-    ZX_ASSERT_MSG(pos < size(), "invalid offset (pos = %zu)", pos);
+    BT_ASSERT_MSG(pos < size(), "invalid offset (pos = %zu)", pos);
     return data()[pos];
   }
 
@@ -130,7 +130,7 @@ class ByteBuffer {
   template <auto PointerToMember>
   auto ReadMember() const {
     using ClassT = typename bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::ClassType;
-    ZX_ASSERT_MSG(sizeof(ClassT) <= this->size(),
+    BT_ASSERT_MSG(sizeof(ClassT) <= this->size(),
                   "insufficient buffer (class size: %zu, buffer size: %zu)", sizeof(ClassT),
                   this->size());
     using MemberT = typename bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::MemberType;
@@ -171,7 +171,7 @@ class ByteBuffer {
   auto ReadMember(size_t index) const {
     // From the ReadMember<&Foo::bar>(2) example, ClassT = Foo
     using ClassT = typename bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::ClassType;
-    ZX_ASSERT_MSG(sizeof(ClassT) <= this->size(),
+    BT_ASSERT_MSG(sizeof(ClassT) <= this->size(),
                   "insufficient buffer (class size: %zu, buffer size: %zu)", sizeof(ClassT),
                   this->size());
 
@@ -191,11 +191,11 @@ class ByteBuffer {
       // the technically possible but unlikely case that it contains additional bytes, we can't use
       // its size for array indexing calculations.
       static_assert(sizeof(MemberAsStdArrayT) == sizeof(MemberT));
-      ZX_ASSERT_MSG(index < kArraySize, "index past array bounds (index: %zu, array size: %zu)",
+      BT_ASSERT_MSG(index < kArraySize, "index past array bounds (index: %zu, array size: %zu)",
                     index, kArraySize);
     } else {
       // Allow flexible array members (at the end of structs) that have zero length
-      ZX_ASSERT_MSG(base_offset == sizeof(ClassT), "read from zero-length array");
+      BT_ASSERT_MSG(base_offset == sizeof(ClassT), "read from zero-length array");
     }
 
     // From the ReadMember<&Foo::bar>(2) example, ElementT = float
@@ -244,7 +244,7 @@ class MutableByteBuffer : public ByteBuffer {
 
   // Random access operator that allows mutations.
   inline uint8_t& operator[](size_t pos) {
-    ZX_ASSERT_MSG(pos < size(), "invalid offset (pos = %zu)", pos);
+    BT_ASSERT_MSG(pos < size(), "invalid offset (pos = %zu)", pos);
     return mutable_data()[pos];
   }
 
@@ -258,7 +258,7 @@ class MutableByteBuffer : public ByteBuffer {
   template <typename T>
   T& AsMutable() __attribute__((no_sanitize("alignment"))) {
     static_assert(std::is_trivially_copyable_v<T>, "Can not reinterpret bytes");
-    ZX_ASSERT(size() >= sizeof(T));
+    BT_ASSERT(size() >= sizeof(T));
     return *reinterpret_cast<T*>(mutable_data());
   }
 
@@ -350,7 +350,7 @@ class StaticByteBuffer : public MutableByteBuffer {
 
       // This is a runtime assert because this class was written to work with non-constant values
       // but most uses of StaticByteBuffer are in tests so this is an acceptable cost.
-      ZX_DEBUG_ASSERT((is_byte_storable(bytes) && ...));
+      BT_DEBUG_ASSERT((is_byte_storable(bytes) && ...));
     }
   }
 

@@ -6,13 +6,13 @@
 
 #include <fuchsia/mem/cpp/fidl.h>
 #include <lib/fpromise/result.h>
-#include <zircon/assert.h>
 
 #include "gatt_server_server.h"
 #include "helpers.h"
 #include "low_energy_central_server.h"
 #include "low_energy_peripheral_server.h"
 #include "profile_server.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
@@ -50,7 +50,7 @@ std::pair<PeerTracker::Updated, PeerTracker::Removed> PeerTracker::ToFidl(
     auto* peer = peer_cache->FindById(id);
 
     // All ids in |updated_| are assumed to be valid as they would otherwise be in |removed_|.
-    ZX_ASSERT(peer);
+    BT_ASSERT(peer);
 
     updated_fidl.push_back(fidl_helpers::PeerToFidl(*peer));
   }
@@ -74,7 +74,7 @@ void PeerTracker::Remove(bt::PeerId id) {
 }
 
 WatchPeersGetter::WatchPeersGetter(bt::gap::PeerCache* peer_cache) : peer_cache_(peer_cache) {
-  ZX_DEBUG_ASSERT(peer_cache_);
+  BT_DEBUG_ASSERT(peer_cache_);
 }
 
 void WatchPeersGetter::Notify(std::queue<Callback> callbacks, PeerTracker peers) {
@@ -97,7 +97,7 @@ HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapt
       io_capability_(IOCapability::kNoInputNoOutput),
       watch_peers_getter_(adapter->peer_cache()),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(gatt_);
+  BT_ASSERT(gatt_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   peer_updated_callback_id_ =
@@ -149,7 +149,7 @@ void HostServer::WatchPeers(WatchPeersCallback callback) {
 }
 
 void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback callback) {
-  ZX_DEBUG_ASSERT(!local_name.empty());
+  BT_DEBUG_ASSERT(!local_name.empty());
   adapter()->SetLocalName(std::move(local_name), [self = weak_ptr_factory_.GetWeakPtr(),
                                                   callback = std::move(callback)](auto status) {
     // Send adapter state update on success and if the connection is still open.
@@ -218,7 +218,7 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
 
 void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
   bt_log(DEBUG, "fidl", "%s", __FUNCTION__);
-  ZX_DEBUG_ASSERT(adapter());
+  BT_DEBUG_ASSERT(adapter());
 
   if (le_discovery_session_ || requesting_discovery_) {
     bt_log(DEBUG, "fidl", "discovery already in progress");
@@ -250,7 +250,7 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
 
           fpromise::result<void, fsys::Error> fidl_result = ResultToFidl(result);
           if (result.is_ok()) {
-            ZX_ASSERT(session == nullptr);
+            BT_ASSERT(session == nullptr);
             fidl_result = fpromise::error(fsys::Error::FAILED);
           }
           self->requesting_discovery_ = false;
@@ -349,7 +349,7 @@ void HostServer::OnPeerBonded(const bt::gap::Peer& peer) {
 
 void HostServer::RegisterLowEnergyConnection(
     std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref, bool auto_connect) {
-  ZX_DEBUG_ASSERT(conn_ref);
+  BT_DEBUG_ASSERT(conn_ref);
 
   bt::PeerId id = conn_ref->peer_identifier();
   auto iter = le_connections_.find(id);
@@ -404,7 +404,7 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
           bt_log(ERROR, "fidl", "%s: failed (result: %s)", func, bt_str(result));
           fpromise::result<void, fsys::Error> fidl_result = ResultToFidl(result);
           if (result.is_ok()) {
-            ZX_ASSERT(session == nullptr);
+            BT_ASSERT(session == nullptr);
             fidl_result = fpromise::error(fsys::Error::FAILED);
           }
           self->requesting_discoverable_ = false;
@@ -559,8 +559,8 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
 
     // We must be connected and to the right peer
     auto connection = std::move(result).value();
-    ZX_ASSERT(connection);
-    ZX_ASSERT(peer_id == connection->peer_identifier());
+    BT_ASSERT(connection);
+    BT_ASSERT(peer_id == connection->peer_identifier());
 
     callback(fpromise::ok());
 
@@ -577,7 +577,7 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
   auto on_complete = [callback = std::move(callback), peer_id, func = __FUNCTION__](
                          auto status, auto connection) {
     if (status.is_error()) {
-      ZX_ASSERT(!connection);
+      BT_ASSERT(!connection);
       bt_log(INFO, "fidl", "%s: failed to connect BR/EDR transport to peer (peer: %s)", func,
              bt_str(peer_id));
       callback(fpromise::error(HostErrorToFidl(status.error_value())));
@@ -585,8 +585,8 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
     }
 
     // We must be connected and to the right peer
-    ZX_ASSERT(connection);
-    ZX_ASSERT(peer_id == connection->peer_id());
+    BT_ASSERT(connection);
+    BT_ASSERT(peer_id == connection->peer_id());
 
     callback(fpromise::ok());
   };
@@ -620,7 +620,7 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
                                                          bredr_disconnected ? "" : " BR/EDR");
     callback(fpromise::error(fsys::Error::FAILED));
   } else {
-    ZX_ASSERT(peer_removed);
+    BT_ASSERT(peer_removed);
     callback(fpromise::ok());
   }
 }
@@ -674,7 +674,7 @@ void HostServer::PairLowEnergy(PeerId peer_id, fsys::PairingOptions options,
       callback(fpromise::ok());
     }
   };
-  ZX_ASSERT(adapter()->le());
+  BT_ASSERT(adapter()->le());
   adapter()->le()->Pair(peer_id, *security_level, bondable_mode, std::move(on_complete));
 }
 
@@ -691,7 +691,7 @@ void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
   // TODO(fxbug.dev/57991): Add security parameter to Pair and use that here instead of hardcoding
   // default.
   bt::gap::BrEdrSecurityRequirements security{.authentication = false, .secure_connections = false};
-  ZX_ASSERT(adapter()->bredr());
+  BT_ASSERT(adapter()->bredr());
   adapter()->bredr()->Pair(peer_id, security, std::move(on_complete));
 }
 
@@ -773,7 +773,7 @@ bt::sm::IOCapability HostServer::io_capability() const {
 
 void HostServer::CompletePairing(PeerId id, bt::sm::Result<> status) {
   bt_log(DEBUG, "fidl", "pairing complete for peer: %s, status: %s", bt_str(id), bt_str(status));
-  ZX_DEBUG_ASSERT(pairing_delegate_);
+  BT_DEBUG_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingComplete(fbt::PeerId{id.value()}, status.is_ok());
 }
 
@@ -797,10 +797,10 @@ void HostServer::DisplayPasskey(PeerId id, uint32_t passkey, DisplayMethod metho
 void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
   bt_log(DEBUG, "fidl", "passkey request for peer: %s", bt_str(id));
   auto found_peer = adapter()->peer_cache()->FindById(id);
-  ZX_ASSERT(found_peer);
+  BT_ASSERT(found_peer);
   auto peer = fidl_helpers::PeerToFidl(*found_peer);
 
-  ZX_ASSERT(pairing_delegate_);
+  BT_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingRequest(
       std::move(peer), fsys::PairingMethod::PASSKEY_ENTRY, 0u,
       [respond = std::move(respond), id, func = __FUNCTION__](const bool accept,
@@ -827,10 +827,10 @@ void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
 void HostServer::DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> passkey,
                                        fsys::PairingMethod method, ConfirmCallback confirm) {
   auto found_peer = adapter()->peer_cache()->FindById(id);
-  ZX_ASSERT(found_peer);
+  BT_ASSERT(found_peer);
   auto peer = fidl_helpers::PeerToFidl(*found_peer);
 
-  ZX_ASSERT(pairing_delegate_);
+  BT_ASSERT(pairing_delegate_);
   uint32_t displayed_passkey = passkey ? *passkey : 0u;
   pairing_delegate_->OnPairingRequest(
       std::move(peer), method, displayed_passkey,
@@ -851,7 +851,7 @@ void HostServer::DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> pa
 }
 
 void HostServer::OnConnectionError(Server* server) {
-  ZX_DEBUG_ASSERT(server);
+  BT_DEBUG_ASSERT(server);
   servers_.erase(server);
 }
 

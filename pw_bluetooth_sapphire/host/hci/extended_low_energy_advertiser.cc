@@ -42,7 +42,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacket(
   payload->number_of_sets = 1;
 
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   // TODO(fxbug.dev/77614): advertising currently continues until disabled. We should provide
   // options to the user to advertise only a set amount of times. Duration can already be controlled
@@ -134,7 +134,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingD
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
@@ -160,7 +160,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisin
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
@@ -189,7 +189,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
@@ -215,7 +215,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetScanRespon
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
@@ -234,15 +234,15 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisi
   auto payload = packet->mutable_payload<hci_spec::LERemoveAdvertisingSetCommandParams>();
 
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
   payload->adv_handle = handle.value();
 
   return packet;
 }
 
 void ExtendedLowEnergyAdvertiser::OnSetAdvertisingParamsComplete(const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kCommandCompleteEventCode);
-  ZX_ASSERT(event.params<hci_spec::CommandCompleteEventParams>().command_opcode ==
+  BT_ASSERT(event.event_code() == hci_spec::kCommandCompleteEventCode);
+  BT_ASSERT(event.params<hci_spec::CommandCompleteEventParams>().command_opcode ==
             hci_spec::kLESetExtendedAdvertisingParameters);
 
   Result<> result = event.ToResult();
@@ -252,7 +252,7 @@ void ExtendedLowEnergyAdvertiser::OnSetAdvertisingParamsComplete(const EventPack
   }
 
   auto params = event.return_params<hci_spec::LESetExtendedAdvertisingParametersReturnParams>();
-  ZX_ASSERT(params);
+  BT_ASSERT(params);
 
   if (staged_advertising_parameters_.include_tx_power_level) {
     staged_advertising_parameters_.selected_tx_power_level = params->selected_tx_power;
@@ -353,8 +353,8 @@ void ExtendedLowEnergyAdvertiser::OnIncomingConnection(
 // information necessary to create a connection object within the Host layer.
 CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
     const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  ZX_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+  BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  BT_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
             hci_spec::kLEAdvertisingSetTerminatedSubeventCode);
 
   Result<> result = event.ToResult();
@@ -364,7 +364,7 @@ CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSe
   }
 
   auto params = event.subevent_params<hci_spec::LEAdvertisingSetTerminatedSubeventParams>();
-  ZX_ASSERT(params);
+  BT_ASSERT(params);
 
   hci_spec::ConnectionHandle connection_handle = params->connection_handle;
   auto staged_parameters_node = staged_connections_map_.extract(connection_handle);

@@ -14,7 +14,7 @@ LowEnergyAdvertiser::LowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
 fitx::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
     const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
     const AdvertisingOptions& options) const {
-  ZX_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
+  BT_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
   if (options.anonymous) {
     bt_log(WARN, "hci-le", "anonymous advertising not supported");

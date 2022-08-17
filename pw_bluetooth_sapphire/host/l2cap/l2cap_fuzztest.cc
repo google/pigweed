@@ -110,7 +110,7 @@ class DataFuzzTest : public TestingBase {
     packet_view.AsMutable<hci_spec::ACLDataHeader>().handle_and_flags = handle_and_flags;
 
     auto status = test_device()->SendACLDataChannelPacket(packet_view);
-    ZX_ASSERT(status == ZX_OK);
+    BT_ASSERT(status == ZX_OK);
     return true;
   }
 

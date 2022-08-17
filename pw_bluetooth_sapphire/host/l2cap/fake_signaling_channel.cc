@@ -79,7 +79,7 @@ class RejectInvalidChannelIdExpecter : public Expecter {
 
 FakeSignalingChannel::FakeSignalingChannel(async_dispatcher_t* dispatcher)
     : dispatcher_(dispatcher) {
-  ZX_DEBUG_ASSERT(dispatcher_);
+  BT_DEBUG_ASSERT(dispatcher_);
 }
 
 FakeSignalingChannel::~FakeSignalingChannel() {

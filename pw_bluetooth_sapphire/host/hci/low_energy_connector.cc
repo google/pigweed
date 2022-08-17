@@ -6,8 +6,8 @@
 
 #include <endian.h>
 #include <lib/async/default.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -30,10 +30,10 @@ LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci,
       local_addr_delegate_(local_addr_delegate),
       delegate_(std::move(delegate)),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(dispatcher_);
-  ZX_DEBUG_ASSERT(hci_);
-  ZX_DEBUG_ASSERT(local_addr_delegate_);
-  ZX_DEBUG_ASSERT(delegate_);
+  BT_DEBUG_ASSERT(dispatcher_);
+  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(local_addr_delegate_);
+  BT_DEBUG_ASSERT(delegate_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   event_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
@@ -57,13 +57,13 @@ bool LowEnergyConnector::CreateConnection(
     bool use_accept_list, const DeviceAddress& peer_address, uint16_t scan_interval,
     uint16_t scan_window, const hci_spec::LEPreferredConnectionParameters& initial_parameters,
     StatusCallback status_callback, zx::duration timeout) {
-  ZX_DEBUG_ASSERT(status_callback);
-  ZX_DEBUG_ASSERT(timeout.get() > 0);
+  BT_DEBUG_ASSERT(status_callback);
+  BT_DEBUG_ASSERT(timeout.get() > 0);
 
   if (request_pending())
     return false;
 
-  ZX_DEBUG_ASSERT(!request_timeout_task_.is_pending());
+  BT_DEBUG_ASSERT(!request_timeout_task_.is_pending());
   pending_request_ = PendingRequest(peer_address, std::move(status_callback));
 
   local_addr_delegate_->EnsureLocalAddress(
@@ -91,7 +91,7 @@ void LowEnergyConnector::CreateConnectionInternal(
     return;
   }
 
-  ZX_DEBUG_ASSERT(!pending_request_->initiating);
+  BT_DEBUG_ASSERT(!pending_request_->initiating);
 
   pending_request_->initiating = true;
   pending_request_->local_address = local_address;
@@ -122,7 +122,7 @@ void LowEnergyConnector::CreateConnectionInternal(
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto complete_cb = [self, timeout](auto id, const EventPacket& event) {
-    ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
+    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self)
       return;
@@ -147,7 +147,7 @@ void LowEnergyConnector::CreateConnectionInternal(
 void LowEnergyConnector::Cancel() { CancelInternal(false); }
 
 void LowEnergyConnector::CancelInternal(bool timed_out) {
-  ZX_DEBUG_ASSERT(request_pending());
+  BT_DEBUG_ASSERT(request_pending());
 
   if (pending_request_->canceled) {
     bt_log(WARN, "hci-le", "connection attempt already canceled!");
@@ -186,12 +186,12 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
 
 CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEvent(
     const EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  ZX_DEBUG_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  BT_DEBUG_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
                   hci_spec::kLEConnectionCompleteSubeventCode);
 
   auto params = event.subevent_params<hci_spec::LEConnectionCompleteSubeventParams>();
-  ZX_ASSERT(params);
+  BT_ASSERT(params);
 
   // First check if this event is related to the currently pending request.
   const bool matches_pending_request =
@@ -252,7 +252,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
 
 void LowEnergyConnector::OnCreateConnectionComplete(Result<> result,
                                                     std::unique_ptr<LowEnergyConnection> link) {
-  ZX_DEBUG_ASSERT(pending_request_);
+  BT_DEBUG_ASSERT(pending_request_);
 
   bt_log(DEBUG, "hci-le", "connection complete - status: %s", bt_str(result));
 
@@ -265,7 +265,7 @@ void LowEnergyConnector::OnCreateConnectionComplete(Result<> result,
 }
 
 void LowEnergyConnector::OnCreateConnectionTimeout() {
-  ZX_DEBUG_ASSERT(pending_request_);
+  BT_DEBUG_ASSERT(pending_request_);
   bt_log(INFO, "hci-le", "create connection timed out: canceling request");
 
   // TODO(armansito): This should cancel the connection attempt only if the connection attempt isn't

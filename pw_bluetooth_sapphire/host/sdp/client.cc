@@ -156,20 +156,20 @@ void Impl::ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
   TransactionId next = GetNextId();
 
   auto [iter, placed] = pending_.try_emplace(next, next, std::move(req), std::move(result_cb));
-  ZX_DEBUG_ASSERT_MSG(placed, "Should not have repeat transaction ID %u", next);
+  BT_DEBUG_ASSERT_MSG(placed, "Should not have repeat transaction ID %u", next);
 
   TrySendNextTransaction();
 }
 
 void Impl::Finish(TransactionId id) {
   auto node = pending_.extract(id);
-  ZX_DEBUG_ASSERT(node);
+  BT_DEBUG_ASSERT(node);
   auto& state = node.mapped();
   pending_timeout_.reset();
   if (!state.callback) {
     return;
   }
-  ZX_DEBUG_ASSERT_MSG(state.response.complete(), "Finished without complete response");
+  BT_DEBUG_ASSERT_MSG(state.response.complete(), "Finished without complete response");
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 
@@ -258,7 +258,7 @@ void Impl::OnChannelClosed() {
 
 TransactionId Impl::GetNextId() {
   TransactionId next = next_tid_++;
-  ZX_DEBUG_ASSERT(pending_.size() < std::numeric_limits<TransactionId>::max());
+  BT_DEBUG_ASSERT(pending_.size() < std::numeric_limits<TransactionId>::max());
   while (pending_.count(next)) {
     next = next_tid_++;  // Note: overflow is fine
   }
@@ -268,7 +268,7 @@ TransactionId Impl::GetNextId() {
 }  // namespace
 
 std::unique_ptr<Client> Client::Create(fxl::WeakPtr<l2cap::Channel> channel) {
-  ZX_DEBUG_ASSERT(channel);
+  BT_DEBUG_ASSERT(channel);
   return std::make_unique<Impl>(std::move(channel));
 }
 

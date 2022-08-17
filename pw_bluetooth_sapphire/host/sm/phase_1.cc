@@ -4,8 +4,7 @@
 
 #include "phase_1.h"
 
-#include <zircon/assert.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -52,29 +51,29 @@ Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
       bondable_mode_(bondable_mode),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(!(role == Role::kInitiator && preq_.has_value()));
-  ZX_ASSERT(!(role == Role::kResponder && !preq_.has_value()));
-  ZX_ASSERT(requested_level_ >= SecurityLevel::kEncrypted);
+  BT_ASSERT(!(role == Role::kInitiator && preq_.has_value()));
+  BT_ASSERT(!(role == Role::kResponder && !preq_.has_value()));
+  BT_ASSERT(requested_level_ >= SecurityLevel::kEncrypted);
   if (requested_level_ > SecurityLevel::kEncrypted) {
-    ZX_ASSERT(io_capability != IOCapability::kNoInputNoOutput);
+    BT_ASSERT(io_capability != IOCapability::kNoInputNoOutput);
   }
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
 void Phase1::Start() {
-  ZX_ASSERT(!has_failed());
+  BT_ASSERT(!has_failed());
   if (role() == Role::kResponder) {
-    ZX_ASSERT(preq_.has_value());
+    BT_ASSERT(preq_.has_value());
     RespondToPairingRequest(*preq_);
     return;
   }
-  ZX_ASSERT(!preq_.has_value());
+  BT_ASSERT(!preq_.has_value());
   InitiateFeatureExchange();
 }
 
 void Phase1::InitiateFeatureExchange() {
   // Only the initiator can initiate the feature exchange.
-  ZX_ASSERT(role() == Role::kInitiator);
+  BT_ASSERT(role() == Role::kInitiator);
   LocalPairingParams preq_values = BuildPairingParameters();
   preq_ = PairingRequestParams{.io_capability = preq_values.io_capability,
                                .oob_data_flag = preq_values.oob_data_flag,
@@ -88,7 +87,7 @@ void Phase1::InitiateFeatureExchange() {
 void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   // We should only be in this state when pairing is initiated by the remote i.e. we are the
   // responder.
-  ZX_ASSERT(role() == Role::kResponder);
+  BT_ASSERT(role() == Role::kResponder);
 
   LocalPairingParams pres_values = BuildPairingParameters();
   pres_ = PairingResponseParams{.io_capability = pres_values.io_capability,
@@ -136,7 +135,7 @@ LocalPairingParams Phase1::BuildPairingParameters() {
     // We always request identity information from the remote.
     local_params.remote_keys = KeyDistGen::kIdKey;
 
-    ZX_ASSERT(listener());
+    BT_ASSERT(listener());
     if (listener()->OnIdentityRequest().has_value()) {
       local_params.local_keys |= KeyDistGen::kIdKey;
     }
@@ -225,8 +224,8 @@ fitx::result<ErrorCode, PairingFeatures> Phase1::ResolveFeatures(
     remote_keys = pres.initiator_key_dist_gen;
 
     // When we are the responder we always respect the initiator's wishes.
-    ZX_ASSERT((preq.initiator_key_dist_gen & remote_keys) == remote_keys);
-    ZX_ASSERT((preq.responder_key_dist_gen & local_keys) == local_keys);
+    BT_ASSERT((preq.initiator_key_dist_gen & remote_keys) == remote_keys);
+    BT_ASSERT((preq.responder_key_dist_gen & local_keys) == local_keys);
   }
   // v5.1 Vol 3 Part C Section 9.4.2.2 says that bonding information shall not be exchanged or
   // stored in non-bondable mode. This check ensures that we avoid a situation where, if we were in

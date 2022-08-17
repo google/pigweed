@@ -4,8 +4,7 @@
 
 #include "low_energy_scanner.h"
 
-#include <zircon/assert.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
@@ -24,8 +23,8 @@ LowEnergyScanner::LowEnergyScanner(fxl::WeakPtr<Transport> hci, async_dispatcher
       delegate_(nullptr),
       dispatcher_(dispatcher),
       transport_(std::move(hci)) {
-  ZX_DEBUG_ASSERT(transport_);
-  ZX_DEBUG_ASSERT(dispatcher_);
+  BT_DEBUG_ASSERT(transport_);
+  BT_DEBUG_ASSERT(dispatcher_);
 
   hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(transport_);
 }

@@ -4,10 +4,9 @@
 
 #include "client.h"
 
-#include <zircon/assert.h>
-
 #include "gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
@@ -30,7 +29,7 @@ bool ProcessDescriptorDiscoveryResponse(att::Handle range_start, att::Handle ran
                                         BufferView entries,
                                         Client::DescriptorCallback desc_callback,
                                         att::Handle* out_last_handle) {
-  ZX_DEBUG_ASSERT(out_last_handle);
+  BT_DEBUG_ASSERT(out_last_handle);
 
   if (entries.size() % sizeof(EntryType)) {
     bt_log(DEBUG, "gatt", "malformed information data list");
@@ -77,10 +76,10 @@ class Impl final : public Client {
  public:
   explicit Impl(fxl::WeakPtr<att::Bearer> bearer)
       : att_(std::move(bearer)), weak_ptr_factory_(this) {
-    ZX_DEBUG_ASSERT(att_);
+    BT_DEBUG_ASSERT(att_);
 
     auto handler = [this](auto txn_id, const att::PacketReader& pdu) {
-      ZX_DEBUG_ASSERT(pdu.opcode() == att::kNotification || pdu.opcode() == att::kIndication);
+      BT_DEBUG_ASSERT(pdu.opcode() == att::kNotification || pdu.opcode() == att::kIndication);
 
       if (pdu.payload_size() < sizeof(att::NotificationParams)) {
         // Received a malformed notification. Disconnect the link.
@@ -149,7 +148,7 @@ class Impl final : public Client {
                    mtu_cb = std::move(mtu_cb)](att::Bearer::TransactionResult result) mutable {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        ZX_DEBUG_ASSERT(rsp.opcode() == att::kExchangeMTUResponse);
+        BT_DEBUG_ASSERT(rsp.opcode() == att::kExchangeMTUResponse);
 
         if (rsp.payload_size() != sizeof(att::ExchangeMTUResponseParams)) {
           // Received a malformed response. Disconnect the link.
@@ -198,7 +197,7 @@ class Impl final : public Client {
   void DiscoverServicesInRange(ServiceKind kind, att::Handle range_start, att::Handle range_end,
                                ServiceCallback svc_callback,
                                att::ResultFunction<> status_callback) override {
-    ZX_ASSERT(range_start <= range_end);
+    BT_ASSERT(range_start <= range_end);
 
     auto pdu = NewPDU(sizeof(att::ReadByGroupTypeRequestParams16));
     if (!pdu) {
@@ -231,7 +230,7 @@ class Impl final : public Client {
       }
 
       const att::PacketReader& rsp = result.value();
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
+      BT_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
       TRACE_DURATION("bluetooth", "gatt::Client::DiscoverServicesInRange rsp_cb", "size",
                      rsp.size());
 
@@ -333,8 +332,8 @@ class Impl final : public Client {
                                         att::Handle range_end, ServiceCallback svc_callback,
                                         att::ResultFunction<> status_callback,
                                         std::vector<UUID> uuids) override {
-    ZX_ASSERT(range_start <= range_end);
-    ZX_ASSERT(!uuids.empty());
+    BT_ASSERT(range_start <= range_end);
+    BT_ASSERT(!uuids.empty());
     UUID uuid = uuids.back();
     uuids.pop_back();
 
@@ -394,7 +393,7 @@ class Impl final : public Client {
       }
 
       const att::PacketReader& rsp = result.value();
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
+      BT_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
 
       size_t payload_size = rsp.payload_size();
       if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
@@ -464,9 +463,9 @@ class Impl final : public Client {
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                att::ResultFunction<> status_callback) override {
-    ZX_ASSERT(range_start <= range_end);
-    ZX_ASSERT(chrc_callback);
-    ZX_ASSERT(status_callback);
+    BT_ASSERT(range_start <= range_end);
+    BT_ASSERT(chrc_callback);
+    BT_ASSERT(status_callback);
 
     if (range_start == range_end) {
       status_callback(fitx::ok());
@@ -495,7 +494,7 @@ class Impl final : public Client {
 
       // ReadByTypeRequest() should return an error result if there are no attributes in a success
       // response.
-      ZX_ASSERT(!attributes.empty());
+      BT_ASSERT(!attributes.empty());
 
       for (auto& char_attr : attributes) {
         Properties properties = 0u;
@@ -559,9 +558,9 @@ class Impl final : public Client {
   void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                            DescriptorCallback desc_callback,
                            att::ResultFunction<> status_callback) override {
-    ZX_DEBUG_ASSERT(range_start <= range_end);
-    ZX_DEBUG_ASSERT(desc_callback);
-    ZX_DEBUG_ASSERT(status_callback);
+    BT_DEBUG_ASSERT(range_start <= range_end);
+    BT_DEBUG_ASSERT(desc_callback);
+    BT_DEBUG_ASSERT(status_callback);
 
     auto pdu = NewPDU(sizeof(att::FindInformationRequestParams));
     if (!pdu) {
@@ -591,7 +590,7 @@ class Impl final : public Client {
         return;
       }
       const att::PacketReader& rsp = result.value();
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindInformationResponse);
+      BT_DEBUG_ASSERT(rsp.opcode() == att::kFindInformationResponse);
       TRACE_DURATION("bluetooth", "gatt::Client::DiscoverDescriptors rsp_cb", "size", rsp.size());
 
       if (rsp.payload_size() < sizeof(att::FindInformationResponseParams)) {
@@ -654,7 +653,7 @@ class Impl final : public Client {
     auto rsp_cb = [this, callback = std::move(callback)](att::Bearer::TransactionResult result) {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
+        BT_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
         bool maybe_truncated = (rsp.payload_size() != att::kMaxAttributeValueLength) &&
                                (rsp.payload_size() == (mtu() - sizeof(rsp.opcode())));
         callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
@@ -671,7 +670,7 @@ class Impl final : public Client {
   void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
                          ReadByTypeCallback callback) override {
     size_t type_size = type.CompactSize(/*allow_32bit=*/false);
-    ZX_ASSERT(type_size == sizeof(uint16_t) || type_size == sizeof(UInt128));
+    BT_ASSERT(type_size == sizeof(uint16_t) || type_size == sizeof(UInt128));
     auto pdu = NewPDU(type_size == sizeof(uint16_t) ? sizeof(att::ReadByTypeRequestParams16)
                                                     : sizeof(att::ReadByTypeRequestParams128));
     if (!pdu) {
@@ -706,7 +705,7 @@ class Impl final : public Client {
         return;
       }
       const att::PacketReader& rsp = result.value();
-      ZX_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
+      BT_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
         callback(fitx::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
         return;
@@ -765,7 +764,7 @@ class Impl final : public Client {
         // Advance list view to next pair (or end of list).
         attr_list_view = attr_list_view.view(pair_size);
       }
-      ZX_ASSERT(attr_list_view.size() == 0);
+      BT_ASSERT(attr_list_view.size() == 0);
 
       callback(fitx::ok(std::move(attributes)));
     };
@@ -789,7 +788,7 @@ class Impl final : public Client {
                    callback = std::move(callback)](att::Bearer::TransactionResult result) {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
+        BT_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
         bool maybe_truncated =
             (static_cast<size_t>(offset) + rsp.payload_size() != att::kMaxAttributeValueLength) &&
             (rsp.payload_data().size() == (mtu() - sizeof(att::OpCode)));
@@ -834,7 +833,7 @@ class Impl final : public Client {
         return;
       }
       const att::PacketReader& rsp = result.value();
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kWriteResponse);
+      BT_DEBUG_ASSERT(rsp.opcode() == att::kWriteResponse);
 
       if (rsp.payload_size()) {
         att_->ShutDown();
@@ -911,7 +910,7 @@ class Impl final : public Client {
             callback(prep_write_status);
             // Now that this request is complete, remove it from the overall
             // queue.
-            ZX_DEBUG_ASSERT(!long_write_queue_.empty());
+            BT_DEBUG_ASSERT(!long_write_queue_.empty());
             long_write_queue_.pop();
 
             if (long_write_queue_.size() > 0) {
@@ -937,7 +936,7 @@ class Impl final : public Client {
             callback(status);
             // Now that this request is complete, remove it from the overall
             // queue.
-            ZX_DEBUG_ASSERT(!long_write_queue_.empty());
+            BT_DEBUG_ASSERT(!long_write_queue_.empty());
             long_write_queue_.pop();
 
             // If the super queue still has any long writes left to execute,
@@ -978,7 +977,7 @@ class Impl final : public Client {
     auto rsp_cb = [callback = std::move(callback)](att::Bearer::TransactionResult result) {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        ZX_DEBUG_ASSERT(rsp.opcode() == att::kPrepareWriteResponse);
+        BT_DEBUG_ASSERT(rsp.opcode() == att::kPrepareWriteResponse);
         callback(fitx::ok(), rsp.payload_data());
         return;
       }
@@ -1016,7 +1015,7 @@ class Impl final : public Client {
     auto rsp_cb = [this, callback = std::move(callback)](att::Bearer::TransactionResult result) {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
-        ZX_DEBUG_ASSERT(rsp.opcode() == att::kExecuteWriteResponse);
+        BT_DEBUG_ASSERT(rsp.opcode() == att::kExecuteWriteResponse);
 
         if (rsp.payload_size()) {
           att_->ShutDown();

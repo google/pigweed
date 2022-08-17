@@ -14,7 +14,7 @@ FakeBrEdrConnection::FakeBrEdrConnection(hci_spec::ConnectionHandle handle,
     : BrEdrConnection(handle, local_address, peer_address, role, hci) {}
 
 void FakeBrEdrConnection::TriggerEncryptionChangeCallback(hci::Result<bool> result) {
-  ZX_ASSERT(encryption_change_callback());
+  BT_ASSERT(encryption_change_callback());
   encryption_change_callback()(result);
 }
 

@@ -4,8 +4,7 @@
 
 #include "bredr_interrogator.h"
 
-#include <zircon/assert.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
@@ -20,7 +19,7 @@ BrEdrInterrogator::BrEdrInterrogator(fxl::WeakPtr<Peer> peer, hci_spec::Connecti
       handle_(handle),
       cmd_runner_(hci_),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(peer_);
+  BT_ASSERT(peer_);
 }
 
 void BrEdrInterrogator::Start(ResultCallback callback) {

@@ -13,6 +13,7 @@
 #include <queue>
 
 #include "lib/zx/time.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 
 namespace bt {
@@ -56,7 +57,7 @@ class WindowedInspectNumericProperty {
   //
   // AttachInspect is only supported for the convenience types declared below.
   virtual void AttachInspect(::inspect::Node& node, std::string name) {
-    ZX_ASSERT_MSG(false, "AttachInspect not implemented for NumericPropertyT");
+    BT_ASSERT_MSG(false, "AttachInspect not implemented for NumericPropertyT");
   }
 
   // Add the given value to the value of this numeric metric.
@@ -90,7 +91,7 @@ class WindowedInspectNumericProperty {
   }
 
   void OnExpiryTimeout() {
-    ZX_ASSERT(!values_.empty());
+    BT_ASSERT(!values_.empty());
     auto oldest_value = values_.front();
     // Undo expiring value.
     property_.Subtract(oldest_value.second);

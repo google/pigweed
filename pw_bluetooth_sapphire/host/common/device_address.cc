@@ -4,9 +4,8 @@
 
 #include "device_address.h"
 
-#include <zircon/assert.h>
-
 #include "pw_string/format.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 
 namespace bt {
 namespace {
@@ -35,7 +34,7 @@ DeviceAddressBytes::DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> b
 }
 
 DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
-  ZX_DEBUG_ASSERT(bytes.size() == bytes_.size());
+  BT_DEBUG_ASSERT(bytes.size() == bytes_.size());
   std::copy(bytes.cbegin(), bytes.cend(), bytes_.begin());
 }
 
@@ -46,7 +45,7 @@ std::string DeviceAddressBytes::ToString() const {
   pw::StatusWithSize result =
       pw::string::Format({out, sizeof(out)}, "%02X:%02X:%02X:%02X:%02X:%02X", bytes_[5], bytes_[4],
                          bytes_[3], bytes_[2], bytes_[1], bytes_[0]);
-  ZX_DEBUG_ASSERT(result.ok());
+  BT_DEBUG_ASSERT(result.ok());
   return out;
 }
 

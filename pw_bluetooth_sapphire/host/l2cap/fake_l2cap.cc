@@ -6,8 +6,8 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt {
@@ -126,7 +126,7 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM p
   LinkData& link_data = ConnectedLinkData(handle);
   auto psm_it = link_data.expected_outbound_conns.find(psm);
 
-  ZX_DEBUG_ASSERT_MSG(psm_it != link_data.expected_outbound_conns.end() && !psm_it->second.empty(),
+  BT_DEBUG_ASSERT_MSG(psm_it != link_data.expected_outbound_conns.end() && !psm_it->second.empty(),
                       "Unexpected outgoing L2CAP connection (PSM %#.4x)", psm);
 
   auto chan_data = psm_it->second.front();
@@ -135,7 +135,7 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM p
   auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
   auto max_rx_sdu_size = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
-  ZX_ASSERT_MSG(chan_data.params == params,
+  BT_ASSERT_MSG(chan_data.params == params,
                 "Didn't receive expected L2CAP channel parameters (expected: %s, found: %s)",
                 bt_str(chan_data.params), bt_str(params));
 
@@ -156,7 +156,7 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM p
 
 bool FakeL2cap::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                                 l2cap::ChannelCallback channel_callback) {
-  ZX_DEBUG_ASSERT(registered_services_.count(psm) == 0);
+  BT_DEBUG_ASSERT(registered_services_.count(psm) == 0);
   registered_services_.emplace(psm, ServiceInfo(params, std::move(channel_callback)));
   return true;
 }
@@ -166,7 +166,7 @@ void FakeL2cap::UnregisterService(l2cap::PSM psm) { registered_services_.erase(p
 FakeL2cap::~FakeL2cap() {
   for (auto& link_it : links_) {
     for (auto& psm_it : link_it.second.expected_outbound_conns) {
-      ZX_DEBUG_ASSERT_MSG(psm_it.second.empty(), "didn't receive expected connection on PSM %#.4x",
+      BT_DEBUG_ASSERT_MSG(psm_it.second.empty(), "didn't receive expected connection on PSM %#.4x",
                           psm_it.first);
     }
   }
@@ -177,7 +177,7 @@ FakeL2cap::LinkData* FakeL2cap::RegisterInternal(hci_spec::ConnectionHandle hand
                                                  bt::LinkType link_type,
                                                  l2cap::LinkErrorCallback link_error_cb) {
   auto& data = GetLinkData(handle);
-  ZX_DEBUG_ASSERT_MSG(!data.connected, "connection handle re-used (handle: %#.4x)", handle);
+  BT_DEBUG_ASSERT_MSG(!data.connected, "connection handle re-used (handle: %#.4x)", handle);
 
   data.connected = true;
   data.role = role;
@@ -221,8 +221,8 @@ FakeL2cap::LinkData& FakeL2cap::GetLinkData(hci_spec::ConnectionHandle handle) {
 
 FakeL2cap::LinkData& FakeL2cap::ConnectedLinkData(hci_spec::ConnectionHandle handle) {
   auto link_iter = links_.find(handle);
-  ZX_DEBUG_ASSERT_MSG(link_iter != links_.end(), "fake link not found (handle: %#.4x)", handle);
-  ZX_DEBUG_ASSERT_MSG(link_iter->second.connected, "fake link not connected yet (handle: %#.4x)",
+  BT_DEBUG_ASSERT_MSG(link_iter != links_.end(), "fake link not found (handle: %#.4x)", handle);
+  BT_DEBUG_ASSERT_MSG(link_iter->second.connected, "fake link not connected yet (handle: %#.4x)",
                       handle);
   return link_iter->second;
 }

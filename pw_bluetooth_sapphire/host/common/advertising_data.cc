@@ -5,10 +5,10 @@
 #include "advertising_data.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
 #include <type_traits>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -26,7 +26,7 @@ using UuidFunction = fit::function<bool(const UUID&)>;
 // Returns false without further parsing if `uuid_size` does not evenly divide `data.size()` or
 // `func` returns false for any UUID, otherwise returns true.
 bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func) {
-  ZX_ASSERT(func);
+  BT_ASSERT(func);
 
   if (data.size() % uuid_size) {
     return false;
@@ -62,7 +62,7 @@ UUIDElemSize SizeForType(DataType type) {
       break;
   };
 
-  ZX_PANIC("called SizeForType with non-UUID DataType %du", static_cast<uint8_t>(type));
+  BT_PANIC("called SizeForType with non-UUID DataType %du", static_cast<uint8_t>(type));
   return UUIDElemSize::k16Bit;
 }
 
@@ -78,7 +78,7 @@ DataType ServiceUuidTypeForUuidSize(UUIDElemSize size, bool complete) {
       return complete ? DataType::kComplete128BitServiceUuids
                       : DataType::kIncomplete128BitServiceUuids;
     default:
-      ZX_PANIC("called ServiceUuidTypeForUuidSize with unknown UUIDElemSize %du", size);
+      BT_PANIC("called ServiceUuidTypeForUuidSize with unknown UUIDElemSize %du", size);
   }
 }
 
@@ -91,7 +91,7 @@ DataType ServiceDataTypeForUuidSize(UUIDElemSize size) {
     case UUIDElemSize::k128Bit:
       return DataType::kServiceData128Bit;
     default:
-      ZX_PANIC("called ServiceDataTypeForUuidSize with unknown UUIDElemSize %du", size);
+      BT_PANIC("called ServiceDataTypeForUuidSize with unknown UUIDElemSize %du", size);
   };
 }
 
@@ -227,7 +227,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
   while (reader.GetNextField(&type, &field)) {
     // While parsing through the advertising data fields, we do not need to validate that per-field
     // sizes do not overflow a uint8_t because they, by construction, are obtained from a uint8_t.
-    ZX_ASSERT(field.size() <= std::numeric_limits<uint8_t>::max());
+    BT_ASSERT(field.size() <= std::numeric_limits<uint8_t>::max());
     switch (type) {
       case DataType::kTxPowerLevel: {
         if (field.size() != kTxPowerLevelSize) {
@@ -280,7 +280,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
         const BufferView manuf_data(field.data() + kManufacturerIdSize,
                                     field.size() - kManufacturerIdSize);
 
-        ZX_ASSERT(out_ad.SetManufacturerData(id, manuf_data));
+        BT_ASSERT(out_ad.SetManufacturerData(id, manuf_data));
         break;
       }
       case DataType::kServiceData16Bit:
@@ -299,7 +299,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
           return fitx::error(ParseError::kServiceDataUuidMalformed);
         }
         const BufferView service_data(field.data() + uuid_size, field.size() - uuid_size);
-        ZX_ASSERT(out_ad.SetServiceData(uuid, service_data));
+        BT_ASSERT(out_ad.SetServiceData(uuid, service_data));
         break;
       }
       case DataType::kAppearance: {
@@ -315,7 +315,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
       }
       case DataType::kURI: {
         // Assertion is safe as AddUri only fails when field size > uint8_t, which is impossible.
-        ZX_ASSERT(out_ad.AddUri(DecodeUri(field.ToString())));
+        BT_ASSERT(out_ad.AddUri(DecodeUri(field.ToString())));
         break;
       }
       case DataType::kFlags: {
@@ -334,7 +334,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
 
 void AdvertisingData::Copy(AdvertisingData* out) const {
   if (local_name_) {
-    ZX_ASSERT(out->SetLocalName(*local_name_));
+    BT_ASSERT(out->SetLocalName(*local_name_));
   }
 
   if (tx_power_) {
@@ -348,21 +348,21 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
   out->service_uuids_ = service_uuids_;
 
   for (const auto& it : manufacturer_data_) {
-    ZX_ASSERT(out->SetManufacturerData(it.first, it.second.view()));
+    BT_ASSERT(out->SetManufacturerData(it.first, it.second.view()));
   }
 
   for (const auto& it : service_data_) {
-    ZX_ASSERT(out->SetServiceData(it.first, it.second.view()));
+    BT_ASSERT(out->SetServiceData(it.first, it.second.view()));
   }
 
   for (const auto& it : uris_) {
-    ZX_ASSERT_MSG(out->AddUri(it), "Copying invalid AD with too-long URI");
+    BT_ASSERT_MSG(out->AddUri(it), "Copying invalid AD with too-long URI");
   }
 }
 
 [[nodiscard]] bool AdvertisingData::AddServiceUuid(const UUID& uuid) {
   auto iter = service_uuids_.find(uuid.CompactSize());
-  ZX_ASSERT(iter != service_uuids_.end());
+  BT_ASSERT(iter != service_uuids_.end());
   BoundedUuids& uuids = iter->second;
   return uuids.AddUuid(uuid);
 }
@@ -513,7 +513,7 @@ size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
 }
 
 bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFlags> flags) const {
-  ZX_DEBUG_ASSERT(buffer);
+  BT_DEBUG_ASSERT(buffer);
 
   size_t min_buf_size = CalculateBlockSize(flags.has_value());
   if (buffer->size() < min_buf_size) {
@@ -541,7 +541,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
   }
 
   if (local_name_) {
-    ZX_ASSERT(local_name_->name.size() <= kMaxNameLength);
+    BT_ASSERT(local_name_->name.size() <= kMaxNameLength);
     (*buffer)[pos++] = static_cast<uint8_t>(local_name_->name.size()) + 1;  // 1 for null char
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kCompleteLocalName);
     buffer->Write(reinterpret_cast<const uint8_t*>(local_name_->name.c_str()),
@@ -551,7 +551,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
 
   for (const auto& manuf_pair : manufacturer_data_) {
     size_t data_size = manuf_pair.second.size();
-    ZX_ASSERT(data_size <= kMaxManufacturerDataLength);
+    BT_ASSERT(data_size <= kMaxManufacturerDataLength);
     (*buffer)[pos++] = 1 + 2 + static_cast<uint8_t>(data_size);  // 1 for type, 2 for Manuf. Code
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kManufacturerSpecificData);
     pos += BufferWrite(buffer, pos, manuf_pair.first);
@@ -563,7 +563,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
     UUID uuid = service_data_pair.first;
     size_t encoded_service_data_size =
         EncodedServiceDataSize(uuid, service_data_pair.second.view());
-    ZX_ASSERT(encoded_service_data_size <= kMaxEncodedServiceDataLength);
+    BT_ASSERT(encoded_service_data_size <= kMaxEncodedServiceDataLength);
     (*buffer)[pos++] = 1 + static_cast<uint8_t>(encoded_service_data_size);  // 1 for type
     (*buffer)[pos++] = static_cast<uint8_t>(ServiceDataTypeForUuidSize(uuid.CompactSize()));
     auto target = buffer->mutable_view(pos);
@@ -574,7 +574,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
 
   for (const auto& uri : uris_) {
     std::string s = EncodeUri(uri);
-    ZX_ASSERT(s.size() <= kMaxEncodedUriLength);
+    BT_ASSERT(s.size() <= kMaxEncodedUriLength);
     (*buffer)[pos++] = 1 + static_cast<uint8_t>(s.size());  // 1 for type
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kURI);
     buffer->Write(reinterpret_cast<const uint8_t*>(s.c_str()), s.length(), pos);
@@ -587,12 +587,12 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
     }
 
     // 1 for type
-    ZX_ASSERT(1 + uuid_width * bounded_uuids.set().size() <= std::numeric_limits<uint8_t>::max());
+    BT_ASSERT(1 + uuid_width * bounded_uuids.set().size() <= std::numeric_limits<uint8_t>::max());
     (*buffer)[pos++] = 1 + uuid_width * static_cast<uint8_t>(bounded_uuids.set().size());
     (*buffer)[pos++] =
         static_cast<uint8_t>(ServiceUuidTypeForUuidSize(uuid_width, /*complete=*/false));
     for (const auto& uuid : bounded_uuids.set()) {
-      ZX_ASSERT_MSG(uuid.CompactSize() == uuid_width, "UUID: %s - Expected Width: %d", bt_str(uuid),
+      BT_ASSERT_MSG(uuid.CompactSize() == uuid_width, "UUID: %s - Expected Width: %d", bt_str(uuid),
                     uuid_width);
       auto target = buffer->mutable_view(pos);
       pos += uuid.ToBytes(&target);
@@ -651,7 +651,7 @@ bool AdvertisingData::operator==(const AdvertisingData& other) const {
 bool AdvertisingData::operator!=(const AdvertisingData& other) const { return !(*this == other); }
 
 bool AdvertisingData::BoundedUuids::AddUuid(UUID uuid) {
-  ZX_ASSERT(set_.size() <= bound_);
+  BT_ASSERT(set_.size() <= bound_);
   if (set_.size() < bound_) {
     if (!set_.insert(uuid).second) {
       bt_log(INFO, "gap-le", "Skipping addition of duplicate UUID %s to AD", bt_str(uuid));

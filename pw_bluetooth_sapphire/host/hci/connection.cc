@@ -27,8 +27,8 @@ Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& l
       conn_state_(State::kConnected),
       hci_(hci),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(handle_);
-  ZX_ASSERT(hci_);
+  BT_ASSERT(handle_);
+  BT_ASSERT(hci_);
 
   auto disconn_complete_handler = [self = weak_ptr_factory_.GetWeakPtr(), handle, hci = hci_,
                                    on_disconnection_complete =
@@ -54,7 +54,7 @@ std::string Connection::ToString() const {
 CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
     fxl::WeakPtr<Connection> self, hci_spec::ConnectionHandle handle, const EventPacket& event,
     fit::callback<void()> on_disconnection_complete) {
-  ZX_ASSERT(event.event_code() == hci_spec::kDisconnectionCompleteEventCode);
+  BT_ASSERT(event.event_code() == hci_spec::kDisconnectionCompleteEventCode);
 
   if (event.view().payload_size() != sizeof(hci_spec::DisconnectionCompleteEventParams)) {
     bt_log(WARN, "hci", "malformed disconnection complete event");
@@ -92,13 +92,13 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
 }
 
 void Connection::Disconnect(hci_spec::StatusCode reason) {
-  ZX_ASSERT(conn_state_ == Connection::State::kConnected);
+  BT_ASSERT(conn_state_ == Connection::State::kConnected);
 
   conn_state_ = Connection::State::kWaitingForDisconnectionComplete;
 
   // Here we send a HCI_Disconnect command without waiting for it to complete.
   auto status_cb = [](auto id, const EventPacket& event) {
-    ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
+    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
     hci_is_error(event, TRACE, "hci", "ignoring disconnection failure");
   };
 

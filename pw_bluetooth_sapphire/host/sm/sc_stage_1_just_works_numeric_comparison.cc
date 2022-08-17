@@ -28,7 +28,7 @@ ScStage1JustWorksNumericComparison::ScStage1JustWorksNumericComparison(
       sm_chan_(std::move(sm_chan)),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(method == PairingMethod::kJustWorks || method == PairingMethod::kNumericComparison);
+  BT_ASSERT(method == PairingMethod::kJustWorks || method == PairingMethod::kNumericComparison);
 }
 
 void ScStage1JustWorksNumericComparison::Run() {
@@ -70,10 +70,10 @@ void ScStage1JustWorksNumericComparison::OnPairingConfirm(PairingConfirmValue co
 
 void ScStage1JustWorksNumericComparison::SendPairingRandom() {
   // The random value is always sent after the confirm exchange (Vol 3, Part H, 2.3.5.6.2).
-  ZX_ASSERT(responder_confirm_.has_value());
-  ZX_ASSERT(!sent_local_rand_);
+  BT_ASSERT(responder_confirm_.has_value());
+  BT_ASSERT(!sent_local_rand_);
   if (role_ == Role::kResponder) {
-    ZX_ASSERT(peer_rand_.has_value());
+    BT_ASSERT(peer_rand_.has_value());
   }
   sm_chan_->SendMessage(kPairingRandom, local_rand_);
   sent_local_rand_ = true;
@@ -120,9 +120,9 @@ void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand
 }
 
 void ScStage1JustWorksNumericComparison::CompleteStage1() {
-  ZX_ASSERT(responder_confirm_.has_value());
-  ZX_ASSERT(peer_rand_.has_value());
-  ZX_ASSERT(sent_local_rand_);
+  BT_ASSERT(responder_confirm_.has_value());
+  BT_ASSERT(peer_rand_.has_value());
+  BT_ASSERT(sent_local_rand_);
   const auto& [initiator_rand, responder_rand] = util::MapToRoles(local_rand_, *peer_rand_, role_);
   const auto& [initiator_pub_key_x, responder_pub_key_x] =
       util::MapToRoles(local_public_key_x_, peer_public_key_x_, role_);

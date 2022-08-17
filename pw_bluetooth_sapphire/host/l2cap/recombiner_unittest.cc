@@ -19,7 +19,7 @@ constexpr ChannelId kTestChannelId = 0xFFFF;
 template <typename... T>
 hci::ACLDataPacketPtr PacketFromBytes(T... data) {
   StaticByteBuffer bytes(std::forward<T>(data)...);
-  ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+  BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
   auto packet = hci::ACLDataPacket::New(bytes.size() - sizeof(hci_spec::ACLDataHeader));
   packet->mutable_view()->mutable_data().Write(bytes);
@@ -92,7 +92,7 @@ void ValidatePdu(PDU pdu, std::string expected_payload, ChannelId expected_cid =
     ValidatePdu(__VA_ARGS__); \
   } while (false)
 
-// The following test exercises a ZX_DEBUG_ASSERT and thus only works in DEBUG builds.
+// The following test exercises a BT_DEBUG_ASSERT and thus only works in DEBUG builds.
 #ifdef DEBUG
 TEST(RecombinerTest, WrongHandle) {
   Recombiner recombiner(kTestHandle);

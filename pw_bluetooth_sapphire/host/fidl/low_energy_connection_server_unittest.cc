@@ -58,7 +58,7 @@ class LowEnergyConnectionServerTest : public bthost::testing::AdapterTestFixture
               [&](const bt::gap::Peer& peer) { peer_id = peer.identifier(); });
         });
     RunLoopUntilIdle();
-    ZX_ASSERT(peer_id);
+    BT_ASSERT(peer_id);
     peer_id_ = *peer_id;
 
     std::optional<bt::gap::LowEnergyConnectionManager::ConnectionResult> conn_result;
@@ -69,8 +69,8 @@ class LowEnergyConnectionServerTest : public bthost::testing::AdapterTestFixture
         },
         bt::gap::LowEnergyConnectionOptions());
     RunLoopUntilIdle();
-    ZX_ASSERT(conn_result);
-    ZX_ASSERT(conn_result->is_ok());
+    BT_ASSERT(conn_result);
+    BT_ASSERT(conn_result->is_ok());
     return std::move(*conn_result).value();
   }
 

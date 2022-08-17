@@ -5,10 +5,10 @@
 #include "local_service_manager.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
 #include <algorithm>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -22,10 +22,10 @@ att::Handle InsertCharacteristicAttributes(att::AttributeGrouping* grouping,
                                            const Characteristic& chrc,
                                            att::Attribute::ReadHandler read_handler,
                                            att::Attribute::WriteHandler write_handler) {
-  ZX_DEBUG_ASSERT(grouping);
-  ZX_DEBUG_ASSERT(!grouping->complete());
-  ZX_DEBUG_ASSERT(read_handler);
-  ZX_DEBUG_ASSERT(write_handler);
+  BT_DEBUG_ASSERT(grouping);
+  BT_DEBUG_ASSERT(!grouping->complete());
+  BT_DEBUG_ASSERT(read_handler);
+  BT_DEBUG_ASSERT(write_handler);
 
   // Characteristic Declaration (Vol 3, Part G, 3.3.1).
   auto* decl_attr = grouping->AddAttribute(
@@ -33,18 +33,18 @@ att::Handle InsertCharacteristicAttributes(att::AttributeGrouping* grouping,
       att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
                               /*authorization=*/false),  // read (no security)
       att::AccessRequirements());                        // write (not allowed)
-  ZX_DEBUG_ASSERT(decl_attr);
+  BT_DEBUG_ASSERT(decl_attr);
 
   // Characteristic Value Declaration (Vol 3, Part G, 3.3.2)
   auto* value_attr =
       grouping->AddAttribute(chrc.type(), chrc.read_permissions(), chrc.write_permissions());
-  ZX_DEBUG_ASSERT(value_attr);
+  BT_DEBUG_ASSERT(value_attr);
 
   value_attr->set_read_handler(std::move(read_handler));
   value_attr->set_write_handler(std::move(write_handler));
 
   size_t uuid_size = chrc.type().CompactSize(/*allow_32bit=*/false);
-  ZX_DEBUG_ASSERT(uuid_size == 2 || uuid_size == 16);
+  BT_DEBUG_ASSERT(uuid_size == 2 || uuid_size == 16);
 
   // The characteristic declaration value contains:
   // 1 octet: properties
@@ -68,14 +68,14 @@ void InsertDescriptorAttribute(att::AttributeGrouping* grouping, const UUID& typ
                                const att::AccessRequirements& write_reqs,
                                att::Attribute::ReadHandler read_handler,
                                att::Attribute::WriteHandler write_handler) {
-  ZX_DEBUG_ASSERT(grouping);
-  ZX_DEBUG_ASSERT(!grouping->complete());
-  ZX_DEBUG_ASSERT(read_handler);
-  ZX_DEBUG_ASSERT(write_handler);
+  BT_DEBUG_ASSERT(grouping);
+  BT_DEBUG_ASSERT(!grouping->complete());
+  BT_DEBUG_ASSERT(read_handler);
+  BT_DEBUG_ASSERT(write_handler);
 
   // There is no special declaration attribute type for descriptors.
   auto* attr = grouping->AddAttribute(type, read_reqs, write_reqs);
-  ZX_DEBUG_ASSERT(attr);
+  BT_DEBUG_ASSERT(attr);
 
   attr->set_read_handler(std::move(read_handler));
   attr->set_write_handler(std::move(write_handler));
@@ -85,7 +85,7 @@ void InsertDescriptorAttribute(att::AttributeGrouping* grouping, const UUID& typ
 // Returns the number of attributes that will be in the service attribute group
 // (exluding the service declaration) in |out_attrs|.
 bool ValidateService(const Service& service, size_t* out_attr_count) {
-  ZX_DEBUG_ASSERT(out_attr_count);
+  BT_DEBUG_ASSERT(out_attr_count);
 
   size_t attr_count = 0u;
   std::unordered_set<IdType> ids;
@@ -150,10 +150,10 @@ class LocalServiceManager::ServiceData final {
         write_handler_(std::forward<WriteHandler>(write_handler)),
         ccc_callback_(std::forward<ClientConfigCallback>(ccc_callback)),
         weak_ptr_factory_(this) {
-    ZX_DEBUG_ASSERT(read_handler_);
-    ZX_DEBUG_ASSERT(write_handler_);
-    ZX_DEBUG_ASSERT(ccc_callback_);
-    ZX_DEBUG_ASSERT(grouping);
+    BT_DEBUG_ASSERT(read_handler_);
+    BT_DEBUG_ASSERT(write_handler_);
+    BT_DEBUG_ASSERT(ccc_callback_);
+    BT_DEBUG_ASSERT(grouping);
 
     start_handle_ = grouping->start_handle();
     end_handle_ = grouping->end_handle();
@@ -175,7 +175,7 @@ class LocalServiceManager::ServiceData final {
 
   bool GetCharacteristicConfig(IdType chrc_id, PeerId peer_id,
                                ClientCharacteristicConfig* out_config) {
-    ZX_DEBUG_ASSERT(out_config);
+    BT_DEBUG_ASSERT(out_config);
 
     auto iter = chrc_configs_.find(chrc_id);
     if (iter == chrc_configs_.end())
@@ -350,7 +350,7 @@ class LocalServiceManager::ServiceData final {
           att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
                                   /*authorization=*/false),  // read (no security)
           att::AccessRequirements());                        // write (not allowed)
-      ZX_DEBUG_ASSERT(decl_attr);
+      BT_DEBUG_ASSERT(decl_attr);
       decl_attr->SetValue(
           StaticByteBuffer((uint8_t)(ext_props & 0x00FF), (uint8_t)((ext_props & 0xFF00) >> 8)));
     }
@@ -406,7 +406,7 @@ class LocalServiceManager::ServiceData final {
 
   void AddCCCDescriptor(att::AttributeGrouping* grouping, const Characteristic& chrc,
                         att::Handle chrc_handle) {
-    ZX_DEBUG_ASSERT(chrc.update_permissions().allowed());
+    BT_DEBUG_ASSERT(chrc.update_permissions().allowed());
 
     // Readable with no authentication or authorization (Vol 3, Part G,
     // 3.3.3.3). We let the service determine the encryption permission.
@@ -463,7 +463,7 @@ class LocalServiceManager::ServiceData final {
 
 LocalServiceManager::LocalServiceManager()
     : db_(std::make_unique<att::Database>()), next_service_id_(1ull), weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(db_);
+  BT_DEBUG_ASSERT(db_);
 }
 
 LocalServiceManager::~LocalServiceManager() {}
@@ -471,10 +471,10 @@ LocalServiceManager::~LocalServiceManager() {}
 IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read_handler,
                                             WriteHandler write_handler,
                                             ClientConfigCallback ccc_callback) {
-  ZX_DEBUG_ASSERT(service);
-  ZX_DEBUG_ASSERT(read_handler);
-  ZX_DEBUG_ASSERT(write_handler);
-  ZX_DEBUG_ASSERT(ccc_callback);
+  BT_DEBUG_ASSERT(service);
+  BT_DEBUG_ASSERT(read_handler);
+  BT_DEBUG_ASSERT(write_handler);
+  BT_DEBUG_ASSERT(ccc_callback);
 
   if (services_.find(next_service_id_) != services_.end()) {
     bt_log(TRACE, "gatt", "server: Ran out of service IDs");
@@ -503,7 +503,7 @@ IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read
   auto service_data = std::make_unique<ServiceData>(
       next_service_id_, grouping, service.get(), std::move(read_handler), std::move(write_handler),
       std::move(ccc_callback));
-  ZX_DEBUG_ASSERT(grouping->complete());
+  BT_DEBUG_ASSERT(grouping->complete());
   grouping->set_active(true);
 
   // TODO(armansito): Handle potential 64-bit unsigned overflow?
@@ -535,7 +535,7 @@ bool LocalServiceManager::UnregisterService(IdType service_id) {
 
 bool LocalServiceManager::GetCharacteristicConfig(IdType service_id, IdType chrc_id, PeerId peer_id,
                                                   ClientCharacteristicConfig* out_config) {
-  ZX_DEBUG_ASSERT(out_config);
+  BT_DEBUG_ASSERT(out_config);
 
   auto iter = services_.find(service_id);
   if (iter == services_.end())

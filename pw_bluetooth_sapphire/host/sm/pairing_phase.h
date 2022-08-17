@@ -85,7 +85,7 @@ class PairingPhase {
   void HandleChannelClosed();
 
   PairingChannel& sm_chan() const {
-    ZX_ASSERT(sm_chan_);
+    BT_ASSERT(sm_chan_);
     return *sm_chan_;
   }
 
@@ -96,7 +96,7 @@ class PairingPhase {
   // weak pointers to help enforce this.
   virtual fxl::WeakPtr<PairingChannel::Handler> AsChannelHandler() = 0;
 
-  // To ZX_ASSERT that methods are not called on a phase that has already failed.
+  // To BT_ASSERT that methods are not called on a phase that has already failed.
   bool has_failed() const { return has_failed_; }
 
   // For subclasses to provide more detailed inspect information.

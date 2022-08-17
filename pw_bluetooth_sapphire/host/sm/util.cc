@@ -5,7 +5,6 @@
 #include "util.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
 #include <algorithm>
 #include <optional>
@@ -13,6 +12,7 @@
 #include <openssl/aes.h>
 #include <openssl/cmac.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -35,7 +35,7 @@ const auto kF5KeyId = std::array<uint8_t, 4>{0x65, 0x6C, 0x74, 0x62};
 // Swap the endianness of a 128-bit integer. |in| and |out| should not be backed
 // by the same buffer.
 void Swap128(const UInt128& in, UInt128* out) {
-  ZX_DEBUG_ASSERT(out);
+  BT_DEBUG_ASSERT(out);
   for (size_t i = 0; i < in.size(); ++i) {
     (*out)[i] = in[in.size() - i - 1];
   }
@@ -44,7 +44,7 @@ void Swap128(const UInt128& in, UInt128* out) {
 // XOR two 128-bit integers and return the result in |out|. It is possible to
 // pass a pointer to one of the inputs as |out|.
 void Xor128(const UInt128& int1, const UInt128& int2, UInt128* out) {
-  ZX_DEBUG_ASSERT(out);
+  BT_DEBUG_ASSERT(out);
 
   for (size_t i = 0; i < kUInt128Size; ++i) {
     out->at(i) = int1.at(i) ^ int2.at(i);
@@ -236,9 +236,9 @@ void Encrypt(const UInt128& key, const UInt128& plaintext_data, UInt128* out_enc
 void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const ByteBuffer& pres,
         const DeviceAddress& initiator_addr, const DeviceAddress& responder_addr,
         UInt128* out_confirm_value) {
-  ZX_DEBUG_ASSERT(preq.size() == kPreqSize);
-  ZX_DEBUG_ASSERT(pres.size() == kPreqSize);
-  ZX_DEBUG_ASSERT(out_confirm_value);
+  BT_DEBUG_ASSERT(preq.size() == kPreqSize);
+  BT_DEBUG_ASSERT(pres.size() == kPreqSize);
+  BT_DEBUG_ASSERT(out_confirm_value);
 
   UInt128 p1, p2;
 
@@ -267,7 +267,7 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const By
 }
 
 void S1(const UInt128& tk, const UInt128& r1, const UInt128& r2, UInt128* out_stk) {
-  ZX_DEBUG_ASSERT(out_stk);
+  BT_DEBUG_ASSERT(out_stk);
 
   UInt128 r_prime;
 
@@ -282,7 +282,7 @@ void S1(const UInt128& tk, const UInt128& r1, const UInt128& r2, UInt128* out_st
 }
 
 uint32_t Ah(const UInt128& k, uint32_t r) {
-  ZX_DEBUG_ASSERT(r <= k24BitMax);
+  BT_DEBUG_ASSERT(r <= k24BitMax);
 
   // r' = padding || r.
   UInt128 r_prime;
@@ -394,7 +394,7 @@ std::optional<UInt128> F4(const UInt256& u, const UInt256& v, const UInt128& x, 
   current_view = WriteToBuffer(u, current_view);
 
   // Ensures |current_view| is at the end of data_to_encrypt
-  ZX_DEBUG_ASSERT(current_view.size() == 0);
+  BT_DEBUG_ASSERT(current_view.size() == 0);
   return AesCmac(x, data_to_encrypt);
 }
 
@@ -427,7 +427,7 @@ std::optional<F5Results> F5(const UInt256& dhkey, const UInt128& initiator_nonce
   current_view = WriteToBuffer(counter, current_view);
 
   // Ensures |current_view| is at the end of data_to_encrypt
-  ZX_DEBUG_ASSERT(current_view.size() == 0);
+  BT_DEBUG_ASSERT(current_view.size() == 0);
   maybe_cmac = AesCmac(t_key, data_to_encrypt);
   if (!maybe_cmac.has_value()) {
     return std::nullopt;
@@ -461,7 +461,7 @@ std::optional<UInt128> F6(const UInt128& mackey, const UInt128& n1, const UInt12
   current_view = WriteToBuffer(n2, current_view);
   current_view = WriteToBuffer(n1, current_view);
   // Ensures |current_view| is at the end of data_to_encrypt
-  ZX_DEBUG_ASSERT(current_view.size() == 0);
+  BT_DEBUG_ASSERT(current_view.size() == 0);
   return AesCmac(mackey, data_to_encrypt);
 }
 
@@ -473,7 +473,7 @@ std::optional<uint32_t> G2(const UInt256& initiator_pubkey_x, const UInt256& res
   MutableBufferView current_view = WriteToBuffer(responder_nonce, data_to_encrypt.mutable_view());
   current_view = WriteToBuffer(responder_pubkey_x, current_view);
   current_view = WriteToBuffer(initiator_pubkey_x, current_view);
-  ZX_DEBUG_ASSERT(current_view.size() == 0);
+  BT_DEBUG_ASSERT(current_view.size() == 0);
   std::optional<UInt128> maybe_cmac = AesCmac(initiator_nonce, data_to_encrypt);
   if (!maybe_cmac.has_value()) {
     return std::nullopt;

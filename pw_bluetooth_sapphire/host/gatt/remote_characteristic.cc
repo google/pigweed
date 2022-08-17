@@ -4,9 +4,8 @@
 
 #include "remote_characteristic.h"
 
-#include <zircon/assert.h>
-
 #include "client.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
@@ -15,8 +14,8 @@ namespace bt::gatt {
 RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(ValueCallback value_cb,
                                                                  NotifyStatusCallback status_cb)
     : value_callback(std::move(value_cb)), status_callback(std::move(status_cb)) {
-  ZX_DEBUG_ASSERT(value_callback);
-  ZX_DEBUG_ASSERT(status_callback);
+  BT_DEBUG_ASSERT(value_callback);
+  BT_DEBUG_ASSERT(status_callback);
 }
 
 RemoteCharacteristic::RemoteCharacteristic(fxl::WeakPtr<Client> client,
@@ -28,7 +27,7 @@ RemoteCharacteristic::RemoteCharacteristic(fxl::WeakPtr<Client> client,
       next_notify_handler_id_(1u),
       client_(std::move(client)),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_);
 }
 
 RemoteCharacteristic::~RemoteCharacteristic() {
@@ -58,9 +57,9 @@ void RemoteCharacteristic::UpdateDataWithExtendedProperties(ExtendedProperties e
 
 void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
                                                att::ResultFunction<> callback) {
-  ZX_DEBUG_ASSERT(client_);
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(range_end >= info().value_handle);
+  BT_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(range_end >= info().value_handle);
 
   discovery_error_ = false;
   descriptors_.clear();
@@ -103,7 +102,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
 
     // As descriptors must be strictly increasing, this emplace should always succeed
     auto [_unused, success] = self->descriptors_.try_emplace(DescriptorHandle(desc.handle), desc);
-    ZX_DEBUG_ASSERT(success);
+    BT_DEBUG_ASSERT(success);
   };
 
   auto status_cb = [self, cb = std::move(callback)](att::Result<> status) mutable {
@@ -159,9 +158,9 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
 
 void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
                                                NotifyStatusCallback status_callback) {
-  ZX_DEBUG_ASSERT(client_);
-  ZX_DEBUG_ASSERT(value_callback);
-  ZX_DEBUG_ASSERT(status_callback);
+  BT_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(value_callback);
+  BT_DEBUG_ASSERT(status_callback);
 
   if (!(info().properties & (Property::kNotify | Property::kIndicate))) {
     bt_log(DEBUG, "gatt", "characteristic does not support notifications");
@@ -171,7 +170,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 
   // If notifications are already enabled then succeed right away.
   if (!notify_handlers_.empty()) {
-    ZX_DEBUG_ASSERT(pending_notify_reqs_.empty());
+    BT_DEBUG_ASSERT(pending_notify_reqs_.empty());
 
     IdType id = next_notify_handler_id_++;
     notify_handlers_[id] = std::move(value_callback);
@@ -217,7 +216,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 }
 
 bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
-  ZX_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_);
 
   auto handler_iter = notify_handlers_.find(handler_id);
   if (handler_iter == notify_handlers_.end()) {
@@ -283,7 +282,7 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Result<> status) {
 }
 
 void RemoteCharacteristic::HandleNotification(const ByteBuffer& value, bool maybe_truncated) {
-  ZX_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_);
 
   notifying_handlers_ = true;
   for (auto& iter : notify_handlers_) {

@@ -7,10 +7,10 @@
 #include <endian.h>
 #include <lib/async/default.h>
 #include <lib/fit/defer.h>
-#include <zircon/assert.h>
 #include <zircon/status.h>
 
 #include "slab_allocators.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
@@ -35,8 +35,8 @@ static std::string EventTypeToString(CommandChannel::EventType event_type) {
 CommandChannel::QueuedCommand::QueuedCommand(std::unique_ptr<CommandPacket> command_packet,
                                              std::unique_ptr<TransactionData> transaction_data)
     : packet(std::move(command_packet)), data(std::move(transaction_data)) {
-  ZX_DEBUG_ASSERT(data);
-  ZX_DEBUG_ASSERT(packet);
+  BT_DEBUG_ASSERT(data);
+  BT_DEBUG_ASSERT(packet);
 }
 
 CommandChannel::TransactionData::TransactionData(
@@ -50,7 +50,7 @@ CommandChannel::TransactionData::TransactionData(
       exclusions_(std::move(exclusions)),
       callback_(std::move(callback)),
       handler_id_(0u) {
-  ZX_DEBUG_ASSERT(transaction_id != 0u);
+  BT_DEBUG_ASSERT(transaction_id != 0u);
   exclusions_.insert(opcode_);
 }
 
@@ -62,7 +62,7 @@ CommandChannel::TransactionData::~TransactionData() {
 
 void CommandChannel::TransactionData::Start(fit::closure timeout_cb, zx::duration timeout) {
   // Transactions should only ever be started once.
-  ZX_DEBUG_ASSERT(!timeout_task_.is_pending());
+  BT_DEBUG_ASSERT(!timeout_task_.is_pending());
 
   timeout_task_.set_handler(std::move(timeout_cb));
   timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
@@ -144,8 +144,8 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     const hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
-  ZX_ASSERT(command_packet);
-  ZX_ASSERT_MSG(
+  BT_ASSERT(command_packet);
+  BT_ASSERT_MSG(
       (complete_event_code == hci_spec::kLEMetaEventCode) == le_meta_subevent_code.has_value(),
       "only LE Meta Event subevents are supported");
 
@@ -434,7 +434,7 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   EventHandlerId handler_id =
       NewEventHandler(code, event_type, data->opcode(), data->MakeCallback());
 
-  ZX_ASSERT(handler_id != 0u);
+  BT_ASSERT(handler_id != 0u);
   data->set_handler_id(handler_id);
   handlers->emplace(code, handler_id);
   bt_log(TRACE, "hci", "async command %zu assigned handler %zu", data->id(), handler_id);
@@ -444,8 +444,8 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCo
                                                                EventType event_type,
                                                                hci_spec::OpCode pending_opcode,
                                                                EventCallback event_callback) {
-  ZX_DEBUG_ASSERT(event_code);
-  ZX_DEBUG_ASSERT(event_callback);
+  BT_DEBUG_ASSERT(event_code);
+  BT_DEBUG_ASSERT(event_callback);
 
   auto handler_id = next_event_handler_id_.value();
   next_event_handler_id_.Set(handler_id + 1);
@@ -458,7 +458,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCo
 
   bt_log(TRACE, "hci", "adding event handler %zu for %s event code %#.2x", handler_id,
          EventTypeToString(event_type).c_str(), event_code);
-  ZX_DEBUG_ASSERT(event_handler_id_map_.find(handler_id) == event_handler_id_map_.end());
+  BT_DEBUG_ASSERT(event_handler_id_map_.find(handler_id) == event_handler_id_map_.end());
   event_handler_id_map_[handler_id] = std::move(data);
 
   return handler_id;
@@ -467,7 +467,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCo
 void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   hci_spec::EventCode event_code = event->event_code();
 
-  ZX_DEBUG_ASSERT(event_code == hci_spec::kCommandStatusEventCode ||
+  BT_DEBUG_ASSERT(event_code == hci_spec::kCommandStatusEventCode ||
                   event_code == hci_spec::kCommandCompleteEventCode);
 
   hci_spec::OpCode matching_opcode;
@@ -501,7 +501,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   }
 
   std::unique_ptr<TransactionData>& transaction_ref = it->second;
-  ZX_DEBUG_ASSERT(transaction_ref->opcode() == matching_opcode);
+  BT_DEBUG_ASSERT(transaction_ref->opcode() == matching_opcode);
 
   // If the command is synchronous or there's no handler to cleanup, we're done.
   if (transaction_ref->handler_id() == 0u) {
@@ -571,10 +571,10 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     EventHandlerId event_id = iter->second;
     bt_log(TRACE, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
     auto handler_iter = event_handler_id_map_.find(event_id);
-    ZX_DEBUG_ASSERT(handler_iter != event_handler_id_map_.end());
+    BT_DEBUG_ASSERT(handler_iter != event_handler_id_map_.end());
 
     EventHandlerData& handler = handler_iter->second;
-    ZX_DEBUG_ASSERT(handler.event_code == event_code);
+    BT_DEBUG_ASSERT(handler.event_code == event_code);
 
     EventCallback callback = handler.event_callback.share();
 

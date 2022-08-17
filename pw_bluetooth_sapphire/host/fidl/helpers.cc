@@ -534,7 +534,7 @@ fsys::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
     case bt::gap::TechnologyType::kDualMode:
       return fsys::TechnologyType::DUAL_MODE;
     default:
-      ZX_PANIC("invalid technology type: %u", static_cast<unsigned int>(type));
+      BT_PANIC("invalid technology type: %u", static_cast<unsigned int>(type));
       break;
   }
 
@@ -777,7 +777,7 @@ bool IsScanFilterValid(const fble::ScanFilter& fidl_filter) {
 
 bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
                              bt::gap::DiscoveryFilter* out_filter) {
-  ZX_DEBUG_ASSERT(out_filter);
+  BT_DEBUG_ASSERT(out_filter);
 
   if (fidl_filter.service_uuids) {
     std::vector<bt::UUID> uuids;
@@ -1055,7 +1055,7 @@ fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(const bt::Adverti
 }
 
 fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
-  ZX_ASSERT(peer.le());
+  BT_ASSERT(peer.le());
 
   fble::Peer output;
   output.set_id(fbt::PeerId{peer.identifier().value()});
@@ -1143,7 +1143,7 @@ ServiceDefinitionToServiceRecord(const fuchsia::bluetooth::bredr::ServiceDefinit
     // It's safe to iterate through this list with a ProtocolListId as ProtocolListId = uint8_t,
     // and std::numeric_limits<uint8_t>::max() == 255 == the MAX_SEQUENCE_LENGTH vector limit from
     // fuchsia.bluetooth.bredr/ServiceDefinition.additional_protocol_descriptor_lists.
-    ZX_ASSERT(definition.additional_protocol_descriptor_lists().size() <=
+    BT_ASSERT(definition.additional_protocol_descriptor_lists().size() <=
               std::numeric_limits<bt::sdp::ServiceRecord::ProtocolListId>::max());
     bt::sdp::ServiceRecord::ProtocolListId protocol_list_id = 1;
     for (const auto& descriptor_list : definition.additional_protocol_descriptor_lists()) {

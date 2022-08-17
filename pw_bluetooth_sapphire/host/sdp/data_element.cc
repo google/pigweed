@@ -44,7 +44,7 @@ DataElement::Size SizeToSizeType(size_t size) {
     case 16:
       return DataElement::Size::kSixteenBytes;
     default:
-      ZX_PANIC("invalid data element size: %zu", size);
+      BT_PANIC("invalid data element size: %zu", size);
   }
   return DataElement::Size::kNextFour;
 }
@@ -479,7 +479,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       }
       BufferView sequence_buf = cursor.view(0, data_bytes);
       size_t remaining = data_bytes;
-      ZX_DEBUG_ASSERT(sequence_buf.size() == data_bytes);
+      BT_DEBUG_ASSERT(sequence_buf.size() == data_bytes);
 
       std::vector<DataElement> seq;
       while (remaining > 0) {
@@ -491,7 +491,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
         seq.push_back(std::move(next));
         remaining -= used;
       }
-      ZX_DEBUG_ASSERT(remaining == 0);
+      BT_DEBUG_ASSERT(remaining == 0);
       if (type_desc == Type::kAlternative) {
         elem->SetAlternative(std::move(seq));
       } else {
@@ -590,7 +590,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
     }
     case Type::kUuid: {
       size_t written = uuid_.ToBytes(&cursor);
-      ZX_DEBUG_ASSERT(written);
+      BT_DEBUG_ASSERT(written);
       // SDP is big-endian, so reverse.
       std::reverse(cursor.mutable_data(), cursor.mutable_data() + written);
       pos += written;
@@ -599,7 +599,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
     case Type::kString:
     case Type::kUrl: {
       size_t used = WriteLength(&cursor, string_.size());
-      ZX_DEBUG_ASSERT(used);
+      BT_DEBUG_ASSERT(used);
       pos += used;
       cursor.Write(reinterpret_cast<const uint8_t*>(string_.c_str()), string_.size(), used);
       pos += string_.size();
@@ -608,12 +608,12 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
     case Type::kSequence:
     case Type::kAlternative: {
       size_t used = WriteLength(&cursor, AggregateSize(aggregate_));
-      ZX_DEBUG_ASSERT(used);
+      BT_DEBUG_ASSERT(used);
       pos += used;
       cursor = cursor.mutable_view(used);
       for (const auto& elem : aggregate_) {
         used = elem.Write(&cursor);
-        ZX_DEBUG_ASSERT(used);
+        BT_DEBUG_ASSERT(used);
         pos += used;
         cursor = cursor.mutable_view(used);
       }

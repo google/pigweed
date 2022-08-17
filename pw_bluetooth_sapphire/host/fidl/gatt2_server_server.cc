@@ -152,7 +152,7 @@ void Gatt2ServerServer::OnReadRequest(bt::PeerId peer_id, bt::gatt::IdType servi
                                       btg::ReadResponder responder) {
   auto svc_iter = services_.find(InternalServiceId(service_id));
   // GATT must only send read requests for registered services.
-  ZX_ASSERT(svc_iter != services_.end());
+  BT_ASSERT(svc_iter != services_.end());
 
   auto cb = [responder = std::move(responder)](LocalService_ReadValue_Result res) mutable {
     if (res.is_err()) {
@@ -170,7 +170,7 @@ void Gatt2ServerServer::OnWriteRequest(bt::PeerId peer_id, bt::gatt::IdType serv
                                        btg::WriteResponder responder) {
   auto svc_iter = services_.find(InternalServiceId(service_id));
   // GATT must only send write requests for registered services.
-  ZX_ASSERT(svc_iter != services_.end());
+  BT_ASSERT(svc_iter != services_.end());
 
   auto cb = [responder = std::move(responder)](LocalService_WriteValue_Result result) mutable {
     // If this was a Write Without Response request, the response callback will be null.
@@ -197,7 +197,7 @@ void Gatt2ServerServer::OnClientCharacteristicConfiguration(bt::gatt::IdType ser
                                                             bool indicate) {
   auto svc_iter = services_.find(InternalServiceId(service_id));
   // GATT must only send CCC updates for registered services.
-  ZX_ASSERT(svc_iter != services_.end());
+  BT_ASSERT(svc_iter != services_.end());
 
   auto cb = []() { bt_log(TRACE, "fidl", "characteristic configuration acknowledged"); };
   svc_iter->second.local_svc_ptr->CharacteristicConfiguration(
@@ -214,7 +214,7 @@ bool Gatt2ServerServer::ValidateValueChangedEvent(
     const char* update_type) {
   auto iter = services_.find(service_id);
   // It is impossible for clients to send events to a closed service.
-  ZX_ASSERT(iter != services_.end());
+  BT_ASSERT(iter != services_.end());
   // Subtract credit before validating parameters so that credits aren't permanently lost from the
   // client's perspective.
   SubtractCredit(iter->second);
@@ -298,7 +298,7 @@ void Gatt2ServerServer::SubtractCredit(Service& svc) {
   // It is impossible for clients to violate the credit system from the server's
   // perspective because new credits are granted before the count reaches 0 (excessive events will
   // fill the FIDL channel and eventually crash the client).
-  ZX_ASSERT(svc.credits > 0);
+  BT_ASSERT(svc.credits > 0);
   svc.credits--;
   if (svc.credits <= REFRESH_CREDITS_AT) {
     // Static cast OK because current_credits > 0 and we never add more than

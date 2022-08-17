@@ -6,11 +6,11 @@
 
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
-#include <zircon/assert.h>
 
 #include <iomanip>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
@@ -35,7 +35,7 @@ std::string Peer::ConnectionStateToString(Peer::ConnectionState state) {
       return "connected";
   }
 
-  ZX_PANIC("invalid connection state %u", static_cast<unsigned int>(state));
+  BT_PANIC("invalid connection state %u", static_cast<unsigned int>(state));
   return "(unknown)";
 }
 
@@ -57,7 +57,7 @@ std::string Peer::NameSourceToString(Peer::NameSource name_source) {
       return "Unknown source";
   }
 
-  ZX_PANIC("invalid peer name source %u", static_cast<unsigned int>(name_source));
+  BT_PANIC("invalid peer name source %u", static_cast<unsigned int>(name_source));
   return "(unknown)";
 }
 
@@ -71,7 +71,7 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
                   return f ? bt_lib_cpp_string::StringPrintf("%#.16lx", f->le_features) : "";
                 }),
       service_changed_gatt_data_({.notify = false, .indicate = false}) {
-  ZX_DEBUG_ASSERT(peer_);
+  BT_DEBUG_ASSERT(peer_);
 }
 
 void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name) {
@@ -175,13 +175,13 @@ Peer::ConnectionToken Peer::LowEnergyData::RegisterConnection() {
 }
 
 void Peer::LowEnergyData::SetConnectionParameters(const hci_spec::LEConnectionParameters& params) {
-  ZX_DEBUG_ASSERT(peer_->connectable());
+  BT_DEBUG_ASSERT(peer_->connectable());
   conn_params_ = params;
 }
 
 void Peer::LowEnergyData::SetPreferredConnectionParameters(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  ZX_DEBUG_ASSERT(peer_->connectable());
+  BT_DEBUG_ASSERT(peer_->connectable());
   preferred_conn_params_ = params;
 }
 
@@ -190,8 +190,8 @@ bool Peer::LowEnergyData::StoreBond(const sm::PairingData& bond_data) {
 }
 
 void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
-  ZX_DEBUG_ASSERT(peer_->connectable());
-  ZX_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
+  BT_DEBUG_ASSERT(peer_->connectable());
+  BT_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
 
   // Make sure the peer is non-temporary.
   peer_->TryMakeNonTemporary();
@@ -210,7 +210,7 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
 }
 
 void Peer::LowEnergyData::ClearBondData() {
-  ZX_ASSERT(bond_data_->has_value());
+  BT_ASSERT(bond_data_->has_value());
   if (bond_data_->value().irk) {
     peer_->set_identity_known(false);
   }
@@ -246,12 +246,12 @@ Peer::BrEdrData::BrEdrData(Peer* owner)
       eir_len_(0u),
       link_key_(std::nullopt, [](const std::optional<sm::LTK>& l) { return l.has_value(); }),
       services_({}, MakeContainerOfToStringConvertFunction()) {
-  ZX_DEBUG_ASSERT(peer_);
-  ZX_DEBUG_ASSERT(peer_->identity_known());
+  BT_DEBUG_ASSERT(peer_);
+  BT_DEBUG_ASSERT(peer_->identity_known());
 
   // Devices that are capable of BR/EDR and use a LE random device address will
   // end up with separate entries for the BR/EDR and LE addresses.
-  ZX_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLERandom &&
+  BT_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLERandom &&
                   peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
   address_ = {DeviceAddress::Type::kBREDR, peer_->address().value()};
 }
@@ -265,26 +265,26 @@ void Peer::BrEdrData::AttachInspect(inspect::Node& parent, std::string name) {
 }
 
 void Peer::BrEdrData::SetInquiryData(const hci_spec::InquiryResult& value) {
-  ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
+  BT_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(value.class_of_device, value.clock_offset, value.page_scan_repetition_mode);
 }
 
 void Peer::BrEdrData::SetInquiryData(const hci_spec::InquiryResultRSSI& value) {
-  ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
+  BT_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(value.class_of_device, value.clock_offset, value.page_scan_repetition_mode,
                  value.rssi);
 }
 
 void Peer::BrEdrData::SetInquiryData(const hci_spec::ExtendedInquiryResultEventParams& value) {
-  ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
+  BT_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(
       value.class_of_device, value.clock_offset, value.page_scan_repetition_mode, value.rssi,
       BufferView(value.extended_inquiry_response, sizeof(value.extended_inquiry_response)));
 }
 
 Peer::InitializingConnectionToken Peer::BrEdrData::RegisterInitializingConnection() {
-  ZX_ASSERT(peer_->connectable());
-  ZX_ASSERT(!connected());
+  BT_ASSERT(peer_->connectable());
+  BT_ASSERT(!connected());
 
   ConnectionState prev_state = connection_state();
   initializing_tokens_count_++;
@@ -302,8 +302,8 @@ Peer::InitializingConnectionToken Peer::BrEdrData::RegisterInitializingConnectio
 }
 
 Peer::ConnectionToken Peer::BrEdrData::RegisterConnection() {
-  ZX_ASSERT(peer_->connectable());
-  ZX_ASSERT_MSG(
+  BT_ASSERT(peer_->connectable());
+  BT_ASSERT_MSG(
       !connected(),
       "attempt to register BR/EDR connection when a connection is already registered (peer: %s)",
       bt_str(peer_->identifier()));
@@ -387,7 +387,7 @@ void Peer::BrEdrData::SetInquiryData(DeviceClass device_class, uint16_t clock_of
 }
 
 bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
-  ZX_DEBUG_ASSERT(eir.size());
+  BT_DEBUG_ASSERT(eir.size());
 
   // TODO(armansito): Validate that the EIR data is not malformed?
   if (eir_buffer_.size() < eir.size()) {
@@ -416,7 +416,7 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
 }
 
 void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
-  ZX_DEBUG_ASSERT(peer_->connectable());
+  BT_DEBUG_ASSERT(peer_->connectable());
 
   // Make sure the peer is non-temporary.
   peer_->TryMakeNonTemporary();
@@ -429,7 +429,7 @@ void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
 }
 
 void Peer::BrEdrData::ClearBondData() {
-  ZX_ASSERT(link_key_->has_value());
+  BT_ASSERT(link_key_->has_value());
   link_key_.Set(std::nullopt);
 }
 
@@ -474,10 +474,10 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
       peer_metrics_(peer_metrics),
       last_updated_(async::Now(async_get_default_dispatcher())),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(notify_listeners_callback_);
-  ZX_DEBUG_ASSERT(update_expiry_callback_);
-  ZX_DEBUG_ASSERT(dual_mode_callback_);
-  ZX_DEBUG_ASSERT(identifier.IsValid());
+  BT_DEBUG_ASSERT(notify_listeners_callback_);
+  BT_DEBUG_ASSERT(update_expiry_callback_);
+  BT_DEBUG_ASSERT(dual_mode_callback_);
+  BT_DEBUG_ASSERT(identifier.IsValid());
 
   if (address.type() == DeviceAddress::Type::kBREDR ||
       address.type() == DeviceAddress::Type::kLEPublic) {
@@ -627,24 +627,24 @@ bool Peer::TryMakeTemporary() {
 }
 
 void Peer::UpdateExpiry() {
-  ZX_DEBUG_ASSERT(update_expiry_callback_);
+  BT_DEBUG_ASSERT(update_expiry_callback_);
   update_expiry_callback_(*this);
 }
 
 void Peer::NotifyListeners(NotifyListenersChange change) {
-  ZX_DEBUG_ASSERT(notify_listeners_callback_);
+  BT_DEBUG_ASSERT(notify_listeners_callback_);
   notify_listeners_callback_(*this, change);
 }
 
 void Peer::MakeDualMode() {
   technology_.Set(TechnologyType::kDualMode);
   if (bredr_cross_transport_key_) {
-    ZX_ASSERT(bredr_data_);  // Should only be hit after BR/EDR is already created.
+    BT_ASSERT(bredr_data_);  // Should only be hit after BR/EDR is already created.
     bredr_data_->SetBondData(*bredr_cross_transport_key_);
     bt_log(DEBUG, "gap-bredr", "restored cross-transport-generated br/edr link key");
     bredr_cross_transport_key_ = std::nullopt;
   }
-  ZX_DEBUG_ASSERT(dual_mode_callback_);
+  BT_DEBUG_ASSERT(dual_mode_callback_);
   dual_mode_callback_(*this);
 }
 

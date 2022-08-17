@@ -13,7 +13,7 @@ namespace bt::gatt::internal {
 RemoteServiceManager::ServiceListRequest::ServiceListRequest(ServiceListCallback callback,
                                                              const std::vector<UUID>& uuids)
     : callback_(std::move(callback)), uuids_(uuids) {
-  ZX_DEBUG_ASSERT(callback_);
+  BT_DEBUG_ASSERT(callback_);
 }
 
 void RemoteServiceManager::ServiceListRequest::Complete(att::Result<> status,
@@ -44,8 +44,8 @@ RemoteServiceManager::RemoteServiceManager(std::unique_ptr<Client> client,
       client_(std::move(client)),
       initialized_(false),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(gatt_dispatcher_);
-  ZX_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(gatt_dispatcher_);
+  BT_DEBUG_ASSERT(client_);
 
   client_->SetNotificationHandler(fit::bind_member<&RemoteServiceManager::OnNotification>(this));
 }
@@ -178,7 +178,7 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(RemoteService* g
         }
 
         RemoteService* gatt_profile_service = self->GattProfileService();
-        ZX_ASSERT(gatt_profile_service);
+        BT_ASSERT(gatt_profile_service);
 
         auto svc_changed_char_iter =
             std::find_if(characteristics.begin(), characteristics.end(),
@@ -241,7 +241,7 @@ void RemoteServiceManager::InitializeGattProfileService(att::ResultFunction<> ca
     }
 
     RemoteService* gatt_svc = self->GattProfileService();
-    ZX_ASSERT(gatt_svc);
+    BT_ASSERT(gatt_svc);
     self->ConfigureServiceChangedNotifications(
         std::move(gatt_svc), [self, callback = std::move(callback)](att::Result<> status) {
           // The Client's Bearer may outlive this object.
@@ -285,7 +285,7 @@ void RemoteServiceManager::DiscoverGattProfileService(att::ResultFunction<> call
     UUID uuid = self->services_.begin()->second->uuid();
     // The service UUID is filled in by Client based on the service discovery request, so it should
     // be the same as the requested UUID.
-    ZX_ASSERT(uuid == types::kGenericAttributeService);
+    BT_ASSERT(uuid == types::kGenericAttributeService);
 
     callback(fitx::ok());
   };
@@ -437,7 +437,7 @@ void RemoteServiceManager::OnNotification(bool /*indication*/, att::Handle value
 
   // If |value_handle| is within the previous service then we found it.
   auto& svc = iter->second;
-  ZX_DEBUG_ASSERT(value_handle >= svc->handle());
+  BT_DEBUG_ASSERT(value_handle >= svc->handle());
 
   if (svc->info().range_end >= value_handle) {
     svc->HandleNotification(value_handle, value, maybe_truncated);
@@ -505,11 +505,11 @@ void RemoteServiceManager::MaybeHandleNextServiceChangedNotification(
   auto self = weak_ptr_factory_.GetWeakPtr();
   ServiceCallback svc_cb = [self](const ServiceData& service_data) {
     if (self) {
-      ZX_ASSERT(self->current_service_change_.has_value());
+      BT_ASSERT(self->current_service_change_.has_value());
       // gatt::Client verifies that service discovery results are in the requested range.
-      ZX_ASSERT(service_data.range_start >=
+      BT_ASSERT(service_data.range_start >=
                 self->current_service_change_->value.range_start_handle);
-      ZX_ASSERT(service_data.range_start <= self->current_service_change_->value.range_end_handle);
+      BT_ASSERT(service_data.range_start <= self->current_service_change_->value.range_end_handle);
       self->current_service_change_->services.emplace(service_data.range_start, service_data);
     }
   };
@@ -521,7 +521,7 @@ void RemoteServiceManager::MaybeHandleNextServiceChangedNotification(
 
     if (!bt_is_error(status, WARN, "gatt",
                      "service discovery for service changed notification failed")) {
-      ZX_ASSERT(self->current_service_change_.has_value());
+      BT_ASSERT(self->current_service_change_.has_value());
       self->ProcessServiceChangedDiscoveryResults(self->current_service_change_.value());
     }
 
@@ -576,7 +576,7 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
     service_iter->second.reset();
 
     auto new_service = std::make_unique<RemoteService>(new_service_data, client_->AsWeakPtr());
-    ZX_ASSERT(new_service->handle() == service_iter->first);
+    BT_ASSERT(new_service->handle() == service_iter->first);
     modified_services.push_back(new_service->GetWeakPtr());
     service_iter->second = std::move(new_service);
   }
@@ -587,7 +587,7 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
     auto service = std::make_unique<RemoteService>(service_data, client_->AsWeakPtr());
     added_services.push_back(service->GetWeakPtr());
     auto [_, inserted] = services_.try_emplace(service->handle(), std::move(service));
-    ZX_ASSERT_MSG(inserted, "service with handle (%#.4x) already exists", service->handle());
+    BT_ASSERT_MSG(inserted, "service with handle (%#.4x) already exists", service->handle());
   }
 
   // Skip notifying the service watcher callback during initialization as it will be notified in the

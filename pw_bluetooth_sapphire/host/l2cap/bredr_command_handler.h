@@ -69,20 +69,20 @@ class BrEdrCommandHandler final : public CommandHandler {
     InformationResult result() const { return result_; }
 
     uint16_t connectionless_mtu() const {
-      ZX_ASSERT(result() == InformationResult::kSuccess);
-      ZX_ASSERT(type() == InformationType::kConnectionlessMTU);
+      BT_ASSERT(result() == InformationResult::kSuccess);
+      BT_ASSERT(type() == InformationType::kConnectionlessMTU);
       return data_.To<uint16_t>();
     }
 
     ExtendedFeatures extended_features() const {
-      ZX_ASSERT(result() == InformationResult::kSuccess);
-      ZX_ASSERT(type() == InformationType::kExtendedFeaturesSupported);
+      BT_ASSERT(result() == InformationResult::kSuccess);
+      BT_ASSERT(type() == InformationType::kExtendedFeaturesSupported);
       return data_.To<ExtendedFeatures>();
     }
 
     FixedChannelsSupported fixed_channels() const {
-      ZX_ASSERT(result() == InformationResult::kSuccess);
-      ZX_ASSERT(type() == InformationType::kFixedChannelsSupported);
+      BT_ASSERT(result() == InformationResult::kSuccess);
+      BT_ASSERT(type() == InformationType::kFixedChannelsSupported);
       return data_.To<FixedChannelsSupported>();
     }
 

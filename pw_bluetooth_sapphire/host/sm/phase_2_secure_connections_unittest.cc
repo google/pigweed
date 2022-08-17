@@ -106,9 +106,9 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
   }
 
   static std::pair<Code, UInt128> ExtractCodeAnd128BitCmd(ByteBufferPtr sdu) {
-    ZX_ASSERT_MSG(sdu, "Tried to ExtractCodeAnd128BitCmd from nullptr in test");
+    BT_ASSERT_MSG(sdu, "Tried to ExtractCodeAnd128BitCmd from nullptr in test");
     auto maybe_reader = ValidPacketReader::ParseSdu(sdu);
-    ZX_ASSERT_MSG(maybe_reader.is_ok(), "Tried to ExtractCodeAnd128BitCmd from invalid SMP packet");
+    BT_ASSERT_MSG(maybe_reader.is_ok(), "Tried to ExtractCodeAnd128BitCmd from invalid SMP packet");
     return {maybe_reader.value().code(), maybe_reader.value().payload<UInt128>()};
   }
 
@@ -132,29 +132,29 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
     if (phase_2_sc_->role() == Role::kInitiator) {
       phase_2_sc_->Start();
       RunLoopUntilIdle();
-      ZX_ASSERT_MSG(local_key_.has_value(), "initiator did not send ecdh key upon starting");
+      BT_ASSERT_MSG(local_key_.has_value(), "initiator did not send ecdh key upon starting");
       ReceiveCmd(kPairingPublicKey, peer_key_.GetSerializedPublicKey());
       RunLoopUntilIdle();
     } else {
       phase_2_sc_->Start();
       ReceiveCmd(kPairingPublicKey, peer_key_.GetSerializedPublicKey());
       RunLoopUntilIdle();
-      ZX_ASSERT_MSG(local_key_.has_value(), "responder did not send ecdh key upon peer key");
+      BT_ASSERT_MSG(local_key_.has_value(), "responder did not send ecdh key upon peer key");
       if (features_.method == PairingMethod::kJustWorks ||
           features_.method == PairingMethod::kNumericComparison) {
-        ZX_ASSERT(responder_jw_nc_confirm.has_value());
+        BT_ASSERT(responder_jw_nc_confirm.has_value());
         return responder_jw_nc_confirm;
       }
     }
     // We should only send confirm value immediately after ECDH key as responder in Numeric
     // Comparison/Just Works pairing, in which case we would've already returned.
-    ZX_ASSERT(!responder_jw_nc_confirm.has_value());
+    BT_ASSERT(!responder_jw_nc_confirm.has_value());
     return responder_jw_nc_confirm;
   }
 
   UInt128 GenerateConfirmValue(const UInt128& random, bool gen_initiator_confirm,
                                uint8_t r = 0) const {
-    ZX_ASSERT_MSG(local_key_.has_value(), "cannot compute confirm, missing key!");
+    BT_ASSERT_MSG(local_key_.has_value(), "cannot compute confirm, missing key!");
     UInt256 pka = local_key_->GetPublicKeyX(), pkb = peer_key_.GetPublicKeyX();
     if (phase_2_sc_->role() == Role::kResponder) {
       std::swap(pka, pkb);
@@ -198,7 +198,7 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
   }
 
   LtkAndChecks FastForwardToDhKeyCheck() {
-    ZX_ASSERT_MSG(features_.method == PairingMethod::kJustWorks,
+    BT_ASSERT_MSG(features_.method == PairingMethod::kJustWorks,
                   "Fast forward to DHKey check only implemented for JustWorks method");
     return phase_2_sc_->role() == Role::kInitiator ? FastForwardToDhKeyCheckInitiatorJustWorks()
                                                    : FastForwardToDhKeyCheckResponderJustWorks();
@@ -226,7 +226,7 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
     MatchingPair stage1_vals = GenerateMatchingConfirmAndRandom();
     ReceiveCmd<PairingConfirmValue>(kPairingConfirm, stage1_vals.confirm);
     RunLoopUntilIdle();
-    ZX_ASSERT_MSG(kPairingRandom == sent_code, "did not send pairing random when expected!");
+    BT_ASSERT_MSG(kPairingRandom == sent_code, "did not send pairing random when expected!");
 
     ReceiveCmd(kPairingRandom, stage1_vals.random);
     RunLoopUntilIdle();
@@ -246,8 +246,8 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
     ReceiveCmd(kPairingRandom, initiator_rand);
     RunLoopUntilIdle();
 
-    ZX_ASSERT_MSG(kPairingRandom == sent_code, "did not send pairing random when expected!");
-    ZX_ASSERT_MSG(GenerateConfirmValue(rsp_rand, /*gen_initiator_confirm=*/false) == rsp_confirm,
+    BT_ASSERT_MSG(kPairingRandom == sent_code, "did not send pairing random when expected!");
+    BT_ASSERT_MSG(GenerateConfirmValue(rsp_rand, /*gen_initiator_confirm=*/false) == rsp_confirm,
                   "send invalid confirm value as JustWorks responder");
     return GenerateLtkAndChecks(initiator_rand, rsp_rand);
   }

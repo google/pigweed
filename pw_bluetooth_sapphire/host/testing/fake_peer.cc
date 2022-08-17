@@ -5,10 +5,10 @@
 #include "fake_peer.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
 #include "fake_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -53,19 +53,19 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
 }
 
 void FakePeer::SetAdvertisingData(const ByteBuffer& data) {
-  ZX_DEBUG_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
+  BT_DEBUG_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
   adv_data_ = DynamicByteBuffer(data);
 }
 
 void FakePeer::SetScanResponse(bool should_batch_reports, const ByteBuffer& data) {
-  ZX_DEBUG_ASSERT(scannable_);
-  ZX_DEBUG_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
+  BT_DEBUG_ASSERT(scannable_);
+  BT_DEBUG_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
   scan_rsp_ = DynamicByteBuffer(data);
   should_batch_reports_ = should_batch_reports;
 }
 
 DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(hci_spec::InquiryMode mode) const {
-  ZX_DEBUG_ASSERT(address_.type() == DeviceAddress::Type::kBREDR);
+  BT_DEBUG_ASSERT(address_.type() == DeviceAddress::Type::kBREDR);
 
   size_t param_size;
   if (mode == hci_spec::InquiryMode::kStandard) {
@@ -111,7 +111,7 @@ DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(bool include_scan_rsp) 
                       sizeof(hci_spec::LEAdvertisingReportSubeventParams) +
                       sizeof(hci_spec::LEAdvertisingReportData) + adv_data_.size() + sizeof(int8_t);
   if (include_scan_rsp) {
-    ZX_DEBUG_ASSERT(scannable_);
+    BT_DEBUG_ASSERT(scannable_);
     param_size += sizeof(hci_spec::LEAdvertisingReportData) + scan_rsp_.size() + sizeof(int8_t);
   }
 
@@ -159,7 +159,7 @@ DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(bool include_scan_rsp) 
 }
 
 DynamicByteBuffer FakePeer::CreateScanResponseReportEvent() const {
-  ZX_DEBUG_ASSERT(scannable_);
+  BT_DEBUG_ASSERT(scannable_);
   size_t param_size = sizeof(hci_spec::LEMetaEventParams) +
                       sizeof(hci_spec::LEAdvertisingReportSubeventParams) +
                       sizeof(hci_spec::LEAdvertisingReportData) + scan_rsp_.size() + sizeof(int8_t);
@@ -183,7 +183,7 @@ DynamicByteBuffer FakePeer::CreateScanResponseReportEvent() const {
 }
 
 void FakePeer::AddLink(hci_spec::ConnectionHandle handle) {
-  ZX_DEBUG_ASSERT(!HasLink(handle));
+  BT_DEBUG_ASSERT(!HasLink(handle));
   logical_links_.insert(handle);
 
   if (logical_links_.size() == 1u) {
@@ -192,7 +192,7 @@ void FakePeer::AddLink(hci_spec::ConnectionHandle handle) {
 }
 
 void FakePeer::RemoveLink(hci_spec::ConnectionHandle handle) {
-  ZX_DEBUG_ASSERT(HasLink(handle));
+  BT_DEBUG_ASSERT(HasLink(handle));
   logical_links_.erase(handle);
   if (logical_links_.empty())
     set_connected(false);
@@ -208,7 +208,7 @@ FakePeer::HandleSet FakePeer::Disconnect() {
 }
 
 void FakePeer::WriteScanResponseReport(hci_spec::LEAdvertisingReportData* report) const {
-  ZX_DEBUG_ASSERT(scannable_);
+  BT_DEBUG_ASSERT(scannable_);
   report->event_type = hci_spec::LEAdvertisingEventType::kScanRsp;
   report->address_type = (address_.type() == DeviceAddress::Type::kLERandom)
                              ? hci_spec::LEAddressType::kRandom

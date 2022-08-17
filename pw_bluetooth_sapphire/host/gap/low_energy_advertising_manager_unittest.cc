@@ -4,12 +4,12 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 
-#include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
 #include <map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -53,7 +53,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   FakeLowEnergyAdvertiser(const fxl::WeakPtr<hci::Transport>& hci, size_t max_ad_size,
                           std::unordered_map<DeviceAddress, AdvertisementStatus>* ad_store)
       : hci::LowEnergyAdvertiser(hci), max_ad_size_(max_ad_size), ads_(ad_store), hci_(hci) {
-    ZX_ASSERT(ads_);
+    BT_ASSERT(ads_);
   }
 
   ~FakeLowEnergyAdvertiser() override = default;

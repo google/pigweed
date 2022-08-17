@@ -4,8 +4,7 @@
 
 #include "generic_attribute_service.h"
 
-#include <zircon/assert.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
@@ -18,8 +17,8 @@ GenericAttributeService::GenericAttributeService(
     SendIndicationCallback send_indication_callback)
     : local_service_manager_(std::move(local_service_manager)),
       send_indication_callback_(std::move(send_indication_callback)) {
-  ZX_ASSERT(local_service_manager_);
-  ZX_DEBUG_ASSERT(send_indication_callback_);
+  BT_ASSERT(local_service_manager_);
+  BT_DEBUG_ASSERT(send_indication_callback_);
 
   Register();
 }
@@ -47,7 +46,7 @@ void GenericAttributeService::Register() {
 
   ClientConfigCallback ccc_callback = [this](IdType service_id, IdType chrc_id, PeerId peer_id,
                                              bool notify, bool indicate) {
-    ZX_DEBUG_ASSERT(chrc_id == 0u);
+    BT_DEBUG_ASSERT(chrc_id == 0u);
 
     // Discover the handle assigned to this characteristic if necessary.
     if (svc_changed_handle_ == att::kInvalidHandle) {
@@ -70,7 +69,7 @@ void GenericAttributeService::Register() {
 
   service_id_ = local_service_manager_->RegisterService(std::move(service), NopReadHandler,
                                                         NopWriteHandler, std::move(ccc_callback));
-  ZX_DEBUG_ASSERT(service_id_ != kInvalidId);
+  BT_DEBUG_ASSERT(service_id_ != kInvalidId);
 
   local_service_manager_->set_service_changed_callback(
       fit::bind_member<&GenericAttributeService::OnServiceChanged>(this));

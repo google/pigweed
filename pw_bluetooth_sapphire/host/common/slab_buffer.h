@@ -5,10 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_BUFFER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_BUFFER_H_
 
-#include <zircon/assert.h>
-
 #include <fbl/slab_allocator.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 
@@ -18,8 +17,8 @@ template <size_t BackingBufferSize>
 class SlabBuffer : public MutableByteBuffer {
  public:
   explicit SlabBuffer(size_t size) : size_(size) {
-    ZX_ASSERT(size);
-    ZX_ASSERT(size_ <= buffer_.size());
+    BT_ASSERT(size);
+    BT_ASSERT(size_ <= buffer_.size());
   }
 
   // ByteBuffer overrides:

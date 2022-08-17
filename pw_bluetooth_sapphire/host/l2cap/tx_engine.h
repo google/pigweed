@@ -6,8 +6,8 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TX_ENGINE_H_
 
 #include <lib/fit/function.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
@@ -37,7 +37,7 @@ class TxEngine {
       : channel_id_(channel_id),
         max_tx_sdu_size_(max_tx_sdu_size),
         send_frame_callback_(std::move(send_frame_callback)) {
-    ZX_ASSERT(max_tx_sdu_size_);
+    BT_ASSERT(max_tx_sdu_size_);
   }
   virtual ~TxEngine() = default;
 

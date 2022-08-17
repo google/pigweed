@@ -62,7 +62,7 @@ TEST(ByteBufferTest, StaticByteBufferPackConstructor) {
   EXPECT_TRUE(ContainersEqual(buffer1, buffer2));
   EXPECT_TRUE(ContainersEqual(buffer1, buffer3));
 
-  // The corresponding check is a ZX_DEBUG_ASSERT runtime check
+  // The corresponding check is a BT_DEBUG_ASSERT runtime check
   EXPECT_DEBUG_DEATH(StaticByteBuffer(-257), "ASSERT");
 }
 

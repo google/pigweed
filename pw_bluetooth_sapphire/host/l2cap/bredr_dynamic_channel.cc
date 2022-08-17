@@ -5,8 +5,8 @@
 #include "bredr_dynamic_channel.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -34,7 +34,7 @@ BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterfa
                              std::move(service_request_cb), random_channel_ids),
       state_(0u),
       sig_(sig) {
-  ZX_DEBUG_ASSERT(sig_);
+  BT_DEBUG_ASSERT(sig_);
   BrEdrCommandHandler cmd_handler(sig_);
   cmd_handler.ServeConnectionRequest(
       fit::bind_member<&BrEdrDynamicChannelRegistry::OnRxConnReq>(this));
@@ -295,7 +295,7 @@ void BrEdrDynamicChannel::Open(fit::closure open_result_cb) {
 }
 
 void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
-  ZX_ASSERT(done_cb);
+  BT_ASSERT(done_cb);
   if (!IsConnected()) {
     done_cb();
     return;
@@ -359,8 +359,8 @@ bool BrEdrDynamicChannel::IsOpen() const {
 }
 
 ChannelInfo BrEdrDynamicChannel::info() const {
-  ZX_ASSERT(local_config().retransmission_flow_control_option().has_value());
-  ZX_ASSERT(local_config().mtu_option().has_value());
+  BT_ASSERT(local_config().retransmission_flow_control_option().has_value());
+  BT_ASSERT(local_config().mtu_option().has_value());
 
   const auto max_rx_sdu_size = local_config().mtu_option()->mtu();
   const auto peer_mtu = remote_config().mtu_option()->mtu();
@@ -596,8 +596,8 @@ BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
       state_(0u),
       peer_supports_ertm_(peer_supports_ertm),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(signaling_channel_);
-  ZX_DEBUG_ASSERT(local_cid != kInvalidChannelId);
+  BT_DEBUG_ASSERT(signaling_channel_);
+  BT_DEBUG_ASSERT(local_cid != kInvalidChannelId);
 
   UpdateLocalConfigForErtm();
 }
@@ -615,7 +615,7 @@ void BrEdrDynamicChannel::PassOpenResult() {
 // client. The channel may still be connected, in case it's useful to perform
 // channel configuration at this point.
 void BrEdrDynamicChannel::PassOpenError() {
-  ZX_ASSERT(!IsOpen());
+  BT_ASSERT(!IsOpen());
   PassOpenResult();
 }
 
@@ -675,7 +675,7 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
     return;
   }
 
-  ZX_ASSERT(!IsWaitingForPeerErtmSupport());
+  BT_ASSERT(!IsWaitingForPeerErtmSupport());
 
   SendLocalConfig();
 }
@@ -723,7 +723,7 @@ bool BrEdrDynamicChannel::BothConfigsAccepted() const {
 }
 
 bool BrEdrDynamicChannel::AcceptedChannelModesAreConsistent() const {
-  ZX_ASSERT(BothConfigsAccepted());
+  BT_ASSERT(BothConfigsAccepted());
   auto local_mode = local_config_.retransmission_flow_control_option()->mode();
   auto remote_mode = remote_config_.retransmission_flow_control_option()->mode();
   return local_mode == remote_mode;
@@ -802,9 +802,9 @@ ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
 
 std::optional<ChannelConfiguration::RetransmissionAndFlowControlOption>
 BrEdrDynamicChannel::CheckForUnacceptableErtmOptions(const ChannelConfiguration& config) const {
-  ZX_ASSERT(config.retransmission_flow_control_option()->mode() ==
+  BT_ASSERT(config.retransmission_flow_control_option()->mode() ==
             ChannelMode::kEnhancedRetransmission);
-  ZX_ASSERT(local_config().retransmission_flow_control_option()->mode() ==
+  BT_ASSERT(local_config().retransmission_flow_control_option()->mode() ==
             ChannelMode::kEnhancedRetransmission);
 
   std::optional<ChannelConfiguration::RetransmissionAndFlowControlOption> unacceptable_rfc_option;

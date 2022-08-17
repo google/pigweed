@@ -19,10 +19,10 @@ ServiceDiscoverer::SearchId ServiceDiscoverer::AddSearch(const UUID& uuid,
   s.uuid = uuid;
   s.attributes = std::move(attributes);
   s.callback = std::move(callback);
-  ZX_DEBUG_ASSERT(next_id_ < std::numeric_limits<ServiceDiscoverer::SearchId>::max());
+  BT_DEBUG_ASSERT(next_id_ < std::numeric_limits<ServiceDiscoverer::SearchId>::max());
   ServiceDiscoverer::SearchId id = next_id_++;
   auto [it, placed] = searches_.emplace(id, std::move(s));
-  ZX_DEBUG_ASSERT_MSG(placed, "Should always be able to place new search");
+  BT_DEBUG_ASSERT_MSG(placed, "Should always be able to place new search");
   return id;
 }
 

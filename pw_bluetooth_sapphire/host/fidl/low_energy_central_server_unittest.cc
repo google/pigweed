@@ -85,7 +85,7 @@ class LowEnergyCentralServerTest : public TestingBase {
   // loop finishes processing. Returns false if the handle was not closed.
   // Ownership of |handle| remains with the caller when this method returns.
   bool IsClientHandleClosedAfterLoop(fidl::InterfaceHandle<fgatt::Client>* handle) {
-    ZX_ASSERT(handle);
+    BT_ASSERT(handle);
 
     fgatt::ClientPtr proxy;
     proxy.Bind(std::move(*handle));

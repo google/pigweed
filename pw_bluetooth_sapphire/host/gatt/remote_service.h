@@ -7,9 +7,9 @@
 
 #include <lib/fit/function.h>
 #include <lib/fitx/result.h>
-#include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_characteristic.h"

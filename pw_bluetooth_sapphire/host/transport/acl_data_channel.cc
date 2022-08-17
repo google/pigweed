@@ -8,7 +8,6 @@
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
 #include <lib/fit/defer.h>
-#include <zircon/assert.h>
 #include <zircon/status.h>
 
 #include <iterator>
@@ -16,6 +15,7 @@
 
 #include "lib/fit/function.h"
 #include "slab_allocators.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/pipeline_monitor.h"
@@ -263,20 +263,20 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, HciWrapper* hci,
       send_monitor_(fit::nullable(io_dispatcher_),
                     // Buffer depth for ~3 minutes of audio assuming ~50 ACL fragments/s send rate
                     internal::RetireLog(/*min_depth=*/100, /*max_depth=*/1 << 13)) {
-  ZX_DEBUG_ASSERT(transport_);
-  ZX_ASSERT(hci_);
+  BT_DEBUG_ASSERT(transport_);
+  BT_ASSERT(hci_);
 
-  ZX_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() || le_buffer_info.IsAvailable());
+  BT_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() || le_buffer_info.IsAvailable());
 
   num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       hci_spec::kNumberOfCompletedPacketsEventCode,
       fit::bind_member<&AclDataChannelImpl::NumberOfCompletedPacketsCallback>(this));
-  ZX_DEBUG_ASSERT(num_completed_packets_event_handler_id_);
+  BT_DEBUG_ASSERT(num_completed_packets_event_handler_id_);
 
   data_buffer_overflow_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       hci_spec::kDataBufferOverflowEventCode,
       fit::bind_member<&AclDataChannelImpl::DataBufferOverflowCallback>(this));
-  ZX_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
+  BT_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
 
   bt_log(INFO, "hci", "initialized");
 }
@@ -314,14 +314,14 @@ void AclDataChannelImpl::AttachInspect(inspect::Node& parent, const std::string&
 }
 
 void AclDataChannelImpl::SetDataRxHandler(ACLPacketHandler rx_callback) {
-  ZX_ASSERT(rx_callback);
+  BT_ASSERT(rx_callback);
   rx_callback_ = std::move(rx_callback);
   hci_->SetAclCallback(fit::bind_member<&AclDataChannelImpl::OnRxPacket>(this));
 }
 
 bool AclDataChannelImpl::SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                                     PacketPriority priority) {
-  ZX_ASSERT(data_packet);
+  BT_ASSERT(data_packet);
   std::list<ACLDataPacketPtr> packets;
   packets.push_back(std::move(data_packet));
   return SendPackets(std::move(packets), channel_id, priority);
@@ -346,13 +346,13 @@ bool AclDataChannelImpl::SendPackets(std::list<ACLDataPacketPtr> packets,
   // continuing fragment at the head. There is no check for whether |packets| have enough data to
   // form whole PDUs because queue management doesn't require that and it would break abstraction
   // even more.
-  ZX_ASSERT_MSG(packets.front()->packet_boundary_flag() !=
+  BT_ASSERT_MSG(packets.front()->packet_boundary_flag() !=
                     hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
                 "expected full PDU");
 
   for (const auto& packet : packets) {
     // This call assumes that all packets in each call are for the same connection
-    ZX_ASSERT_MSG(packet->connection_handle() == handle,
+    BT_ASSERT_MSG(packet->connection_handle() == handle,
                   "expected only fragments for one connection (%#.4x, got %#.4x)", handle,
                   packet->connection_handle());
 
@@ -387,7 +387,7 @@ bool AclDataChannelImpl::SendPackets(std::list<ACLDataPacketPtr> packets,
 
 void AclDataChannelImpl::RegisterLink(hci_spec::ConnectionHandle handle, bt::LinkType ll_type) {
   bt_log(DEBUG, "hci", "ACL register link (handle: %#.4x)", handle);
-  ZX_DEBUG_ASSERT(registered_links_.find(handle) == registered_links_.end());
+  BT_DEBUG_ASSERT(registered_links_.find(handle) == registered_links_.end());
   registered_links_[handle] = ll_type;
 }
 
@@ -422,7 +422,7 @@ void AclDataChannelImpl::DropQueuedPackets(AclPacketPredicate predicate) {
 void AclDataChannelImpl::ClearControllerPacketCount(hci_spec::ConnectionHandle handle) {
   // Ensure link has already been unregistered. Otherwise, queued packets for this handle
   // could be sent after clearing packet count, and the packet count could become corrupted.
-  ZX_ASSERT(registered_links_.find(handle) == registered_links_.end());
+  BT_ASSERT(registered_links_.find(handle) == registered_links_.end());
 
   bt_log(DEBUG, "hci", "clearing pending packets (handle: %#.4x)", handle);
 
@@ -501,8 +501,8 @@ size_t AclDataChannelImpl::GetBufferMtu(bt::LinkType ll_type) const {
 
 CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPacketsCallback(
     const EventPacket& event) {
-  ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kNumberOfCompletedPacketsEventCode);
+  BT_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kNumberOfCompletedPacketsEventCode);
 
   const auto& payload = event.params<hci_spec::NumberOfCompletedPacketsEventParams>();
   size_t total_comp_packets = 0;
@@ -532,7 +532,7 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
 
     uint16_t comp_packets = le16toh(data->hc_num_of_completed_packets);
 
-    ZX_DEBUG_ASSERT(iter->second.count);
+    BT_DEBUG_ASSERT(iter->second.count);
     if (iter->second.count < comp_packets) {
       bt_log(WARN, "hci", "packet tx count mismatch! (handle: %#.4x, expected: %zu, actual : %u)",
              le16toh(data->connection_handle), iter->second.count, comp_packets);
@@ -542,7 +542,7 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
       // On debug builds it's better to assert and crash so that we can catch
       // controller bugs. On release builds we log the warning message above and
       // continue.
-      ZX_PANIC("controller reported incorrect packet count!");
+      BT_PANIC("controller reported incorrect packet count!");
     } else {
       iter->second.count -= comp_packets;
     }
@@ -593,7 +593,7 @@ void AclDataChannelImpl::DropOverflowPacket(const QueuedDataPacket& archetypal_p
 
   const auto to_drop_iter =
       std::find_if(send_queue_->begin(), send_queue_->end(), is_similar_and_head);
-  ZX_ASSERT(to_drop_iter != send_queue_->end());
+  BT_ASSERT(to_drop_iter != send_queue_->end());
   const auto next_packet_iter = std::find_if(std::next(to_drop_iter), send_queue_->end(), is_head);
 
   const size_t num_dropped = std::distance(to_drop_iter, next_packet_iter);
@@ -706,7 +706,7 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
 }
 
 size_t AclDataChannelImpl::GetNumFreeBREDRPackets() const {
-  ZX_DEBUG_ASSERT(bredr_buffer_info_.max_num_packets() >= *num_sent_packets_);
+  BT_DEBUG_ASSERT(bredr_buffer_info_.max_num_packets() >= *num_sent_packets_);
   return bredr_buffer_info_.max_num_packets() - *num_sent_packets_;
 }
 
@@ -714,12 +714,12 @@ size_t AclDataChannelImpl::GetNumFreeLEPackets() const {
   if (!le_buffer_info_.IsAvailable())
     return GetNumFreeBREDRPackets();
 
-  ZX_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >= *le_num_sent_packets_);
+  BT_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >= *le_num_sent_packets_);
   return le_buffer_info_.max_num_packets() - *le_num_sent_packets_;
 }
 
 void AclDataChannelImpl::DecrementTotalNumPackets(size_t count) {
-  ZX_DEBUG_ASSERT(*num_sent_packets_ >= count);
+  BT_DEBUG_ASSERT(*num_sent_packets_ >= count);
   *num_sent_packets_.Mutable() -= count;
 }
 
@@ -729,12 +729,12 @@ void AclDataChannelImpl::DecrementLETotalNumPackets(size_t count) {
     return;
   }
 
-  ZX_DEBUG_ASSERT(*le_num_sent_packets_ >= count);
+  BT_DEBUG_ASSERT(*le_num_sent_packets_ >= count);
   *le_num_sent_packets_.Mutable() -= count;
 }
 
 void AclDataChannelImpl::IncrementTotalNumPackets(size_t count) {
-  ZX_DEBUG_ASSERT(*num_sent_packets_ + count <= bredr_buffer_info_.max_num_packets());
+  BT_DEBUG_ASSERT(*num_sent_packets_ + count <= bredr_buffer_info_.max_num_packets());
   *num_sent_packets_.Mutable() += count;
 }
 
@@ -744,12 +744,12 @@ void AclDataChannelImpl::IncrementLETotalNumPackets(size_t count) {
     return;
   }
 
-  ZX_DEBUG_ASSERT(*le_num_sent_packets_ + count <= le_buffer_info_.max_num_packets());
+  BT_DEBUG_ASSERT(*le_num_sent_packets_ + count <= le_buffer_info_.max_num_packets());
   *le_num_sent_packets_.Mutable() += count;
 }
 
 void AclDataChannelImpl::OnRxPacket(std::unique_ptr<ACLDataPacket> packet) {
-  ZX_ASSERT(rx_callback_);
+  BT_ASSERT(rx_callback_);
   {
     TRACE_DURATION("bluetooth", "AclDataChannelImpl->rx_callback_");
     rx_callback_(std::move(packet));
@@ -798,12 +798,12 @@ AclDataChannelImpl::SendQueueInsertLocationForPriority(PacketPriority priority) 
 
 CommandChannel::EventCallbackResult AclDataChannelImpl::DataBufferOverflowCallback(
     const EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kDataBufferOverflowEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kDataBufferOverflowEventCode);
 
   const auto& params = event.params<hci_spec::ConnectionRequestEventParams>();
 
   // Internal buffer state must be invalid and no further transmissions are possible.
-  ZX_PANIC("controller data buffer overflow event received (link type: %hhu)", params.link_type);
+  BT_PANIC("controller data buffer overflow event received (link type: %hhu)", params.link_type);
 
   return CommandChannel::EventCallbackResult::kContinue;
 }

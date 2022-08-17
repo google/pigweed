@@ -4,14 +4,13 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 
-#include <zircon/assert.h>
-
 #include <unordered_set>
 #include <vector>
 
 #include <gmock/gmock.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -99,7 +98,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   std::vector<inspect::PropertyValue> InspectProperties() const {
     auto hierarchy = InspectHierarchy();
     auto children = hierarchy.take_children();
-    ZX_ASSERT(children.size() == 1u);
+    BT_ASSERT(children.size() == 1u);
     return children.front().node_ptr()->take_properties();
   }
 #endif  // NINSPECT
@@ -211,12 +210,12 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   std::unique_ptr<LowEnergyDiscoverySession> StartDiscoverySession(bool active = true) {
     std::unique_ptr<LowEnergyDiscoverySession> session;
     discovery_manager()->StartDiscovery(active, [&](auto cb_session) {
-      ZX_ASSERT(cb_session);
+      BT_ASSERT(cb_session);
       session = std::move(cb_session);
     });
 
     RunLoopUntilIdle();
-    ZX_ASSERT(session);
+    BT_ASSERT(session);
     return session;
   }
 
@@ -935,7 +934,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScanQuickly) {
 
   // Session will be destroyed in callback, stopping scan.
   discovery_manager()->StartDiscovery(/*active=*/false,
-                                      [&](auto cb_session) { ZX_ASSERT(cb_session); });
+                                      [&](auto cb_session) { BT_ASSERT(cb_session); });
   RunLoopUntilIdle();
 
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
@@ -944,10 +943,10 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScanQuickly) {
   // This should not result in a request to stop scan because both pending requests will be
   // processed at the same time, and second call to StartDiscovery() retains its session.
   discovery_manager()->StartDiscovery(/*active=*/false,
-                                      [&](auto cb_session) { ZX_ASSERT(cb_session); });
+                                      [&](auto cb_session) { BT_ASSERT(cb_session); });
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(/*active=*/false, [&](auto cb_session) {
-    ZX_ASSERT(cb_session);
+    BT_ASSERT(cb_session);
     session = std::move(cb_session);
   });
   RunLoopUntilIdle();
@@ -1035,14 +1034,14 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
 TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanWhileStartingPassiveScan) {
   std::unique_ptr<LowEnergyDiscoverySession> passive_session;
   discovery_manager()->StartDiscovery(/*active=*/false, [&](auto cb_session) {
-    ZX_ASSERT(cb_session);
+    BT_ASSERT(cb_session);
     passive_session = std::move(cb_session);
   });
   ASSERT_FALSE(passive_session);
 
   std::unique_ptr<LowEnergyDiscoverySession> active_session;
   discovery_manager()->StartDiscovery(/*active=*/true, [&](auto cb_session) {
-    ZX_ASSERT(cb_session);
+    BT_ASSERT(cb_session);
     active_session = std::move(cb_session);
   });
   ASSERT_FALSE(active_session);
@@ -1357,7 +1356,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
 
   std::unique_ptr<LowEnergyDiscoverySession> passive_session;
   discovery_manager()->StartDiscovery(/*active=*/false, [&](auto cb_session) {
-    ZX_ASSERT(cb_session);
+    BT_ASSERT(cb_session);
     passive_session = std::move(cb_session);
   });
   EXPECT_THAT(InspectProperties(),

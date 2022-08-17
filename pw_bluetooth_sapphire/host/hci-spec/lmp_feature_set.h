@@ -5,11 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LMP_FEATURE_SET_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LMP_FEATURE_SET_H_
 
-#include <zircon/assert.h>
-
 #include <cstdint>
 #include <string>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
@@ -43,7 +42,7 @@ class LMPFeatureSet {
 
   // Sets |page| features to |features|
   inline void SetPage(size_t page, uint64_t features) {
-    ZX_ASSERT(page < kMaxPages);
+    BT_ASSERT(page < kMaxPages);
     features_[page] = features;
     valid_pages_[page] = true;
   }

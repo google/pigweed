@@ -7,7 +7,6 @@
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
 #include <lib/async/time.h>
-#include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
 #include <optional>
@@ -17,6 +16,7 @@
 #include "pairing_delegate.h"
 #include "peer.h"
 #include "peer_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/generic_access_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -104,13 +104,13 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
       hci_connector_(connector),
       local_address_delegate_(addr_delegate),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(dispatcher_);
-  ZX_DEBUG_ASSERT(peer_cache_);
-  ZX_DEBUG_ASSERT(l2cap_);
-  ZX_DEBUG_ASSERT(gatt_);
-  ZX_DEBUG_ASSERT(hci_);
-  ZX_DEBUG_ASSERT(hci_connector_);
-  ZX_DEBUG_ASSERT(local_address_delegate_);
+  BT_DEBUG_ASSERT(dispatcher_);
+  BT_DEBUG_ASSERT(peer_cache_);
+  BT_DEBUG_ASSERT(l2cap_);
+  BT_DEBUG_ASSERT(gatt_);
+  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(hci_connector_);
+  BT_DEBUG_ASSERT(local_address_delegate_);
 }
 
 LowEnergyConnectionManager::~LowEnergyConnectionManager() {
@@ -206,7 +206,7 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id, LowEnergyDisconnectR
 
   auto request_iter = pending_requests_.find(peer_id);
   if (request_iter != pending_requests_.end()) {
-    ZX_ASSERT(current_request_->request.peer_id() != peer_id);
+    BT_ASSERT(current_request_->request.peer_id() != peer_id);
     request_iter->second.NotifyCallbacks(fitx::error(HostError::kCanceled));
     pending_requests_.erase(request_iter);
   }
@@ -321,7 +321,7 @@ void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent, std::strin
 void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
     std::unique_ptr<hci::LowEnergyConnection> link, sm::BondableMode bondable_mode,
     ConnectionResultCallback callback) {
-  ZX_ASSERT(link);
+  BT_ASSERT(link);
 
   Peer* peer = UpdatePeerWithLink(*link);
   auto peer_id = peer->identifier();
@@ -379,10 +379,10 @@ void LowEnergyConnectionManager::SetDisconnectCallbackForTesting(DisconnectCallb
 }
 
 void LowEnergyConnectionManager::ReleaseReference(LowEnergyConnectionHandle* handle) {
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   auto iter = connections_.find(handle->peer_identifier());
-  ZX_ASSERT(iter != connections_.end());
+  BT_ASSERT(iter != connections_.end());
 
   iter->second->DropRef(handle);
   if (iter->second->ref_count() != 0u)
@@ -439,7 +439,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
 
 void LowEnergyConnectionManager::OnLocalInitiatedConnectResult(
     hci::Result<std::unique_ptr<internal::LowEnergyConnection>> result) {
-  ZX_ASSERT(current_request_.has_value());
+  BT_ASSERT(current_request_.has_value());
 
   internal::LowEnergyConnectionRequest request = std::move(current_request_->request);
   current_request_.reset();
@@ -460,7 +460,7 @@ void LowEnergyConnectionManager::OnLocalInitiatedConnectResult(
 void LowEnergyConnectionManager::OnRemoteInitiatedConnectResult(
     PeerId peer_id, hci::Result<std::unique_ptr<internal::LowEnergyConnection>> result) {
   auto remote_connector_node = remote_connectors_.extract(peer_id);
-  ZX_ASSERT(!remote_connector_node.empty());
+  BT_ASSERT(!remote_connector_node.empty());
 
   internal::LowEnergyConnectionRequest request = std::move(remote_connector_node.mapped().request);
 
@@ -512,7 +512,7 @@ void LowEnergyConnectionManager::ProcessConnectResult(
 bool LowEnergyConnectionManager::InitializeConnection(
     std::unique_ptr<internal::LowEnergyConnection> connection,
     internal::LowEnergyConnectionRequest request) {
-  ZX_ASSERT(connection);
+  BT_ASSERT(connection);
 
   auto peer_id = connection->peer_id();
 
@@ -531,7 +531,7 @@ bool LowEnergyConnectionManager::InitializeConnection(
   }
 
   Peer* peer = peer_cache_->FindById(peer_id);
-  ZX_ASSERT(peer);
+  BT_ASSERT(peer);
 
   connection->AttachInspect(inspect_connections_node_,
                             inspect_connections_node_.UniqueName(kInspectConnectionNodePrefix));
@@ -542,7 +542,7 @@ bool LowEnergyConnectionManager::InitializeConnection(
       [this, peer_id]() { Disconnect(peer_id, LowEnergyDisconnectReason::kError); });
 
   auto [conn_iter, inserted] = connections_.try_emplace(peer_id, std::move(connection));
-  ZX_ASSERT(inserted);
+  BT_ASSERT(inserted);
 
   conn_iter->second->set_peer_conn_token(peer->MutLe().RegisterConnection());
 
@@ -562,11 +562,11 @@ bool LowEnergyConnectionManager::InitializeConnection(
 
 void LowEnergyConnectionManager::CleanUpConnection(
     std::unique_ptr<internal::LowEnergyConnection> conn) {
-  ZX_ASSERT(conn);
+  BT_ASSERT(conn);
 
   // Mark the peer peer as no longer connected.
   Peer* peer = peer_cache_->FindById(conn->peer_id());
-  ZX_ASSERT_MSG(peer, "A connection was active for an unknown peer! (id: %s)",
+  BT_ASSERT_MSG(peer, "A connection was active for an unknown peer! (id: %s)",
                 bt_str(conn->peer_id()));
   conn.reset();
 }

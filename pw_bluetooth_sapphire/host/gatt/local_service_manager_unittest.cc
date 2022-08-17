@@ -4,11 +4,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 
-#include <zircon/assert.h>
-
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
@@ -900,9 +899,9 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
 
   bool ReadCcc(const att::Attribute* attr, PeerId peer_id, fitx::result<att::ErrorCode>* out_status,
                uint16_t* out_value) {
-    ZX_ASSERT(attr);
-    ZX_ASSERT(out_status);
-    ZX_ASSERT(out_value);
+    BT_ASSERT(attr);
+    BT_ASSERT(out_status);
+    BT_ASSERT(out_value);
 
     auto result_cb = [&out_status, &out_value](auto cb_status, const auto& value) {
       *out_status = cb_status;
@@ -918,8 +917,8 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
 
   bool WriteCcc(const att::Attribute* attr, PeerId peer_id, uint16_t ccc_value,
                 fitx::result<att::ErrorCode>* out_status) {
-    ZX_ASSERT(attr);
-    ZX_ASSERT(out_status);
+    BT_ASSERT(attr);
+    BT_ASSERT(out_status);
 
     auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
     uint16_t value = htole16(ccc_value);

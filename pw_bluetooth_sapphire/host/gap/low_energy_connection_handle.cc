@@ -20,8 +20,8 @@ LowEnergyConnectionHandle::LowEnergyConnectionHandle(
       release_cb_(std::move(release_cb)),
       bondable_cb_(std::move(bondable_cb)),
       security_cb_(std::move(security_cb)) {
-  ZX_ASSERT(peer_id_.IsValid());
-  ZX_ASSERT(handle_);
+  BT_ASSERT(peer_id_.IsValid());
+  BT_ASSERT(handle_);
 }
 
 LowEnergyConnectionHandle::~LowEnergyConnectionHandle() {
@@ -31,7 +31,7 @@ LowEnergyConnectionHandle::~LowEnergyConnectionHandle() {
 }
 
 void LowEnergyConnectionHandle::Release() {
-  ZX_ASSERT(active_);
+  BT_ASSERT(active_);
   active_ = false;
   if (release_cb_) {
     release_cb_(this);
@@ -49,12 +49,12 @@ void LowEnergyConnectionHandle::MarkClosed() {
 }
 
 sm::BondableMode LowEnergyConnectionHandle::bondable_mode() const {
-  ZX_ASSERT(active_);
+  BT_ASSERT(active_);
   return bondable_cb_();
 }
 
 sm::SecurityProperties LowEnergyConnectionHandle::security() const {
-  ZX_ASSERT(active_);
+  BT_ASSERT(active_);
   return security_cb_();
 }
 

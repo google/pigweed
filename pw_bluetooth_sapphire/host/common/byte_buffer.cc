@@ -7,17 +7,17 @@
 namespace bt {
 
 void ByteBuffer::Copy(MutableByteBuffer* out_buffer) const {
-  ZX_ASSERT(out_buffer);
+  BT_ASSERT(out_buffer);
   CopyRaw(out_buffer->mutable_data(), out_buffer->size(), 0, size());
 }
 
 void ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
-  ZX_ASSERT(out_buffer);
+  BT_ASSERT(out_buffer);
   CopyRaw(out_buffer->mutable_data(), out_buffer->size(), pos, size);
 }
 
 BufferView ByteBuffer::view(size_t pos, size_t size) const {
-  ZX_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
+  BT_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
   return BufferView(data() + pos, std::min(size, this->size() - pos));
 }
 
@@ -36,18 +36,18 @@ std::vector<uint8_t> ByteBuffer::ToVector() const {
 
 void ByteBuffer::CopyRaw(void* dst_data, size_t dst_capacity, size_t src_offset,
                          size_t copy_size) const {
-  ZX_ASSERT_MSG(copy_size == 0 || dst_data != nullptr, "%zu byte write to pointer %p", copy_size,
+  BT_ASSERT_MSG(copy_size == 0 || dst_data != nullptr, "%zu byte write to pointer %p", copy_size,
                 dst_data);
-  ZX_ASSERT_MSG(copy_size <= dst_capacity,
+  BT_ASSERT_MSG(copy_size <= dst_capacity,
                 "destination not large enough (required: %zu, available: %zu)", copy_size,
                 dst_capacity);
-  ZX_ASSERT_MSG(src_offset <= this->size(),
+  BT_ASSERT_MSG(src_offset <= this->size(),
                 "offset exceeds source range (begin: %zu, copy_size: %zu)", src_offset,
                 this->size());
-  ZX_ASSERT_MSG(std::numeric_limits<size_t>::max() - copy_size >= src_offset,
+  BT_ASSERT_MSG(std::numeric_limits<size_t>::max() - copy_size >= src_offset,
                 "end of source range overflows size_t (src_offset: %zu, copy_size: %zu)",
                 src_offset, copy_size);
-  ZX_ASSERT_MSG(src_offset + copy_size <= this->size(),
+  BT_ASSERT_MSG(src_offset + copy_size <= this->size(),
                 "end exceeds source range (end: %zu, copy_size: %zu)", src_offset + copy_size,
                 this->size());
 
@@ -72,7 +72,7 @@ void MutableByteBuffer::FillWithRandomBytes() {
 }
 
 MutableBufferView MutableByteBuffer::mutable_view(size_t pos, size_t size) {
-  ZX_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
+  BT_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
   return MutableBufferView(mutable_data() + pos, std::min(size, this->size() - pos));
 }
 
@@ -85,13 +85,13 @@ DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size) : buffer_size_(buffer_s
 
   // TODO(armansito): For now this is dumb but we should properly handle the
   // case when we're out of memory.
-  ZX_ASSERT_MSG(buffer_.get(), "failed to allocate buffer");
+  BT_ASSERT_MSG(buffer_.get(), "failed to allocate buffer");
 }
 
 DynamicByteBuffer::DynamicByteBuffer(const ByteBuffer& buffer)
     : buffer_size_(buffer.size()),
       buffer_(buffer.size() ? std::make_unique<uint8_t[]>(buffer.size()) : nullptr) {
-  ZX_ASSERT_MSG(!buffer_size_ || buffer_.get(),
+  BT_ASSERT_MSG(!buffer_size_ || buffer_.get(),
                 "|buffer| cannot be nullptr when |buffer_size| is non-zero");
   buffer.Copy(this);
 }
@@ -101,7 +101,7 @@ DynamicByteBuffer::DynamicByteBuffer(const DynamicByteBuffer& buffer)
 
 DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size, std::unique_ptr<uint8_t[]> buffer)
     : buffer_size_(buffer_size), buffer_(std::move(buffer)) {
-  ZX_ASSERT_MSG(!buffer_size_ || buffer_.get(),
+  BT_ASSERT_MSG(!buffer_size_ || buffer_.get(),
                 "|buffer| cannot be nullptr when |buffer_size| is non-zero");
 }
 
@@ -142,7 +142,7 @@ BufferView::BufferView(const std::vector<uint8_t>& vec) : BufferView(vec.data(),
 BufferView::BufferView(const void* bytes, size_t size)
     : size_(size), bytes_(static_cast<const uint8_t*>(bytes)) {
   // If |size| non-zero then |bytes| cannot be nullptr.
-  ZX_ASSERT_MSG(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
+  BT_ASSERT_MSG(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
 }
 
 BufferView::BufferView() = default;
@@ -156,7 +156,7 @@ ByteBuffer::const_iterator BufferView::cbegin() const { return bytes_; }
 ByteBuffer::const_iterator BufferView::cend() const { return bytes_ + size_; }
 
 MutableBufferView::MutableBufferView(MutableByteBuffer* buffer) {
-  ZX_ASSERT(buffer);
+  BT_ASSERT(buffer);
   size_ = buffer->size();
   bytes_ = buffer->mutable_data();
 }
@@ -164,7 +164,7 @@ MutableBufferView::MutableBufferView(MutableByteBuffer* buffer) {
 MutableBufferView::MutableBufferView(void* bytes, size_t size)
     : size_(size), bytes_(static_cast<uint8_t*>(bytes)) {
   // If |size| non-zero then |bytes| cannot be nullptr.
-  ZX_ASSERT_MSG(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
+  BT_ASSERT_MSG(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
 }
 
 MutableBufferView::MutableBufferView() = default;

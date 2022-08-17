@@ -7,10 +7,10 @@
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
-#include <zircon/assert.h>
 
 #include "peer.h"
 #include "peer_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
@@ -29,7 +29,7 @@ const char* kInspectScanWindowPropertyName = "scan_window_ms";
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     bool active, fxl::WeakPtr<LowEnergyDiscoveryManager> manager)
     : alive_(true), active_(active), manager_(manager) {
-  ZX_ASSERT(manager_);
+  BT_ASSERT(manager_);
 }
 
 LowEnergyDiscoverySession::~LowEnergyDiscoverySession() {
@@ -55,7 +55,7 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
 }
 
 void LowEnergyDiscoverySession::Stop() {
-  ZX_DEBUG_ASSERT(alive_);
+  BT_DEBUG_ASSERT(alive_);
   if (manager_) {
     manager_->RemoveSession(this);
   }
@@ -63,7 +63,7 @@ void LowEnergyDiscoverySession::Stop() {
 }
 
 void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
-  ZX_ASSERT(peer.le());
+  BT_ASSERT(peer.le());
 
   if (!alive_ || !peer_found_callback_) {
     return;
@@ -91,10 +91,10 @@ LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::WeakPtr<hci::Transport
       paused_count_(0),
       scanner_(scanner),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(hci);
-  ZX_DEBUG_ASSERT(dispatcher_);
-  ZX_DEBUG_ASSERT(peer_cache_);
-  ZX_DEBUG_ASSERT(scanner_);
+  BT_DEBUG_ASSERT(hci);
+  BT_DEBUG_ASSERT(dispatcher_);
+  BT_DEBUG_ASSERT(peer_cache_);
+  BT_DEBUG_ASSERT(scanner_);
 
   scanner_->set_delegate(this);
 }
@@ -106,7 +106,7 @@ LowEnergyDiscoveryManager::~LowEnergyDiscoveryManager() {
 }
 
 void LowEnergyDiscoveryManager::StartDiscovery(bool active, SessionCallback callback) {
-  ZX_ASSERT(callback);
+  BT_ASSERT(callback);
   bt_log(INFO, "gap-le", "start %s discovery", active ? "active" : "passive");
 
   // If a request to start or stop is currently pending then this one will
@@ -118,7 +118,7 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active, SessionCallback call
   // the HCI request completes.
   if (!pending_.empty() ||
       (scanner_->state() == hci::LowEnergyScanner::State::kStopping && sessions_.empty())) {
-    ZX_ASSERT(!scanner_->IsScanning());
+    BT_ASSERT(!scanner_->IsScanning());
     pending_.push_back(DiscoveryRequest{.active = active, .callback = std::move(callback)});
     return;
   }
@@ -169,7 +169,7 @@ LowEnergyDiscoveryManager::PauseToken LowEnergyDiscoveryManager::PauseDiscovery(
       return;
     }
 
-    ZX_ASSERT(paused());
+    BT_ASSERT(paused());
     paused_count_.Set(*paused_count_ - 1);
     if (*paused_count_ == 0) {
       ResumeDiscovery();
@@ -215,14 +215,14 @@ std::unique_ptr<LowEnergyDiscoverySession> LowEnergyDiscoveryManager::AddSession
 }
 
 void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session) {
-  ZX_ASSERT(session);
+  BT_ASSERT(session);
 
   // Only alive sessions are allowed to call this method. If there is at least
   // one alive session object out there, then we MUST be scanning.
-  ZX_ASSERT(session->alive());
+  BT_ASSERT(session->alive());
 
   auto iter = std::find(sessions_.begin(), sessions_.end(), session);
-  ZX_ASSERT(iter != sessions_.end());
+  BT_ASSERT(iter != sessions_.end());
 
   bool active = session->active();
 
@@ -260,7 +260,7 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
   // Create a new entry if we found the device during general discovery.
   if (!peer) {
     peer = peer_cache_->NewPeer(result.address, result.connectable);
-    ZX_ASSERT(peer);
+    BT_ASSERT(peer);
   } else if (!peer->connectable() && result.connectable) {
     bt_log(DEBUG, "gap-le",
            "received connectable advertisement from previously non-connectable peer (address: %s, "
@@ -441,7 +441,7 @@ void LowEnergyDiscoveryManager::NotifyPending() {
       cb(std::move(new_sessions[i]));
     }
   }
-  ZX_ASSERT(pending_.empty());
+  BT_ASSERT(pending_.empty());
 }
 
 void LowEnergyDiscoveryManager::StartScan(bool active) {
@@ -493,7 +493,7 @@ void LowEnergyDiscoveryManager::StopScan() {
 }
 
 void LowEnergyDiscoveryManager::ResumeDiscovery() {
-  ZX_ASSERT(!paused());
+  BT_ASSERT(!paused());
 
   if (!scanner_->IsIdle()) {
     bt_log(TRACE, "gap-le", "attempt to resume discovery when it is not idle");
@@ -531,7 +531,7 @@ void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {
   // Due to the move, sessions_ should be empty before the loop and any
   // callbacks will add sessions to pending_ so it should be empty
   // afterwards as well.
-  ZX_ASSERT(sessions_.empty());
+  BT_ASSERT(sessions_.empty());
 }
 
 }  // namespace bt::gap

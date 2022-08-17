@@ -78,7 +78,7 @@ class BrEdrConnectionRequest final {
   const std::optional<hci_spec::ConnectionRole>& role_change() const { return role_change_; }
 
   Peer::InitializingConnectionToken take_peer_init_token() {
-    ZX_ASSERT(peer_init_conn_token_);
+    BT_ASSERT(peer_init_conn_token_);
     return std::exchange(peer_init_conn_token_, std::nullopt).value();
   }
 

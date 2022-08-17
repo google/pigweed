@@ -4,10 +4,9 @@
 
 #include "generic_attribute_service.h"
 
-#include <zircon/assert.h>
-
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
 
@@ -24,10 +23,10 @@ class GenericAttributeServiceTest : public ::testing::Test {
  protected:
   bool WriteServiceChangedCcc(PeerId peer_id, uint16_t ccc_value,
                               fitx::result<att::ErrorCode>* out_status) {
-    ZX_ASSERT(out_status);
+    BT_ASSERT(out_status);
 
     auto* attr = mgr.database()->FindAttribute(kCCCHandle);
-    ZX_ASSERT(attr);
+    BT_ASSERT(attr);
     auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
     uint16_t value = htole16(ccc_value);
     return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);

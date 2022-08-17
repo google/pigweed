@@ -4,7 +4,7 @@
 
 #include "link_type.h"
 
-#include <zircon/assert.h>
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 
 namespace bt {
 
@@ -20,7 +20,7 @@ std::string LinkTypeToString(LinkType type) {
       return "LE";
   }
 
-  ZX_PANIC("invalid link type: %u", static_cast<unsigned int>(type));
+  BT_PANIC("invalid link type: %u", static_cast<unsigned int>(type));
   return "(invalid)";
 }
 

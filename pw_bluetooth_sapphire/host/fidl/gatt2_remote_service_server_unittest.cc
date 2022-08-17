@@ -58,7 +58,7 @@ class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
 
  protected:
   bt::gatt::testing::FakeClient* fake_client() const {
-    ZX_ASSERT(fake_client_);
+    BT_ASSERT(fake_client_);
     return fake_client_.get();
   }
 

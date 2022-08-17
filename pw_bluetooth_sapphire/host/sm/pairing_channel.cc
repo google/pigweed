@@ -4,9 +4,8 @@
 
 #include "pairing_channel.h"
 
-#include <zircon/assert.h>
-
 #include "lib/async/default.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
@@ -17,14 +16,14 @@ namespace bt::sm {
 
 PairingChannel::PairingChannel(fxl::WeakPtr<l2cap::Channel> chan, fit::closure timer_resetter)
     : chan_(std::move(chan)), reset_timer_(std::move(timer_resetter)), weak_ptr_factory_(this) {
-  ZX_ASSERT(chan_);
-  ZX_ASSERT(async_get_default_dispatcher());
+  BT_ASSERT(chan_);
+  BT_ASSERT(async_get_default_dispatcher());
   if (chan_->link_type() == bt::LinkType::kLE) {
-    ZX_ASSERT(chan_->id() == l2cap::kLESMPChannelId);
+    BT_ASSERT(chan_->id() == l2cap::kLESMPChannelId);
   } else if (chan_->link_type() == bt::LinkType::kACL) {
-    ZX_ASSERT(chan_->id() == l2cap::kSMPChannelId);
+    BT_ASSERT(chan_->id() == l2cap::kSMPChannelId);
   } else {
-    ZX_PANIC("unsupported link type for SMP!");
+    BT_PANIC("unsupported link type for SMP!");
   }
   auto self = weak_ptr_factory_.GetWeakPtr();
   chan_->Activate(
@@ -44,7 +43,7 @@ PairingChannel::PairingChannel(fxl::WeakPtr<l2cap::Channel> chan, fit::closure t
   // Part H 3.2. As SMP operates on a fixed channel, there is no way to configure this MTU, so we
   // expect that L2CAP always provides a channel with a sufficiently large MTU. This assertion
   // serves as an explicit acknowledgement of that contract between L2CAP and SMP.
-  ZX_ASSERT(chan_->max_tx_sdu_size() >= kNoSecureConnectionsMtu &&
+  BT_ASSERT(chan_->max_tx_sdu_size() >= kNoSecureConnectionsMtu &&
             chan_->max_rx_sdu_size() >= kNoSecureConnectionsMtu);
 }
 
@@ -52,7 +51,7 @@ PairingChannel::PairingChannel(fxl::WeakPtr<l2cap::Channel> chan)
     : PairingChannel(std::move(chan), []() {}) {}
 
 void PairingChannel::SetChannelHandler(fxl::WeakPtr<Handler> new_handler) {
-  ZX_ASSERT(new_handler);
+  BT_ASSERT(new_handler);
   bt_log(TRACE, "sm", "changing pairing channel handler");
   handler_ = std::move(new_handler);
 }

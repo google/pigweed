@@ -15,14 +15,14 @@ SequentialCommandRunner::SequentialCommandRunner(fxl::WeakPtr<Transport> transpo
       sequence_number_(0u),
       running_commands_(0u),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(transport_);
+  BT_DEBUG_ASSERT(transport_);
 }
 
 void SequentialCommandRunner::QueueCommand(std::unique_ptr<CommandPacket> command_packet,
                                            CommandCompleteCallback callback, bool wait,
                                            hci_spec::EventCode complete_event_code,
                                            std::unordered_set<hci_spec::OpCode> exclusions) {
-  ZX_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <= command_packet->view().size());
+  BT_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <= command_packet->view().size());
 
   command_queue_.emplace(QueuedCommand{.packet = std::move(command_packet),
                                        .complete_event_code = complete_event_code,
@@ -52,9 +52,9 @@ void SequentialCommandRunner::QueueLeAsyncCommand(std::unique_ptr<CommandPacket>
 }
 
 void SequentialCommandRunner::RunCommands(ResultFunction<> status_callback) {
-  ZX_DEBUG_ASSERT(!status_callback_);
-  ZX_DEBUG_ASSERT(status_callback);
-  ZX_DEBUG_ASSERT(!command_queue_.empty());
+  BT_DEBUG_ASSERT(!status_callback_);
+  BT_DEBUG_ASSERT(status_callback);
+  BT_DEBUG_ASSERT(!command_queue_.empty());
 
   status_callback_ = std::move(status_callback);
   sequence_number_++;
@@ -69,7 +69,7 @@ void SequentialCommandRunner::Cancel() { NotifyStatusAndReset(ToResult(HostError
 bool SequentialCommandRunner::HasQueuedCommands() const { return !command_queue_.empty(); }
 
 void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
-  ZX_DEBUG_ASSERT(status_callback_);
+  BT_DEBUG_ASSERT(status_callback_);
 
   // If an error occurred or we're done, reset.
   if (status.is_error() || (command_queue_.empty() && running_commands_ == 0)) {
@@ -117,7 +117,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
       }
     }
 
-    ZX_DEBUG_ASSERT(self->running_commands_ > 0);
+    BT_DEBUG_ASSERT(self->running_commands_ > 0);
     self->running_commands_--;
     self->TryRunNextQueuedCommand(status);
   };
@@ -151,7 +151,7 @@ void SequentialCommandRunner::Reset() {
 }
 
 void SequentialCommandRunner::NotifyStatusAndReset(Result<> status) {
-  ZX_DEBUG_ASSERT(status_callback_);
+  BT_DEBUG_ASSERT(status_callback_);
   auto status_cb = std::move(status_callback_);
   Reset();
   status_cb(status);

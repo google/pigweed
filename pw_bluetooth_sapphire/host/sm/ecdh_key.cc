@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h"
 
-#include <zircon/assert.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <memory>
@@ -17,6 +15,7 @@
 #include "openssl/ec.h"
 #include "openssl/ecdh.h"
 #include "openssl/nid.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
@@ -33,8 +32,8 @@ std::optional<EcdhKey> EcdhKey::ParseFromPublicKey(sm::PairingPublicKeyParams pu
   BN_init(&y);
   // Assert on le2bn output. le2bn "returns NULL on allocation failure", but allocation should
   // never fail on Fuchsia per overcommit semantics.
-  ZX_ASSERT(BN_le2bn(pub_key.x, sizeof(pub_key.x), &x));
-  ZX_ASSERT(BN_le2bn(pub_key.y, sizeof(pub_key.y), &y));
+  BT_ASSERT(BN_le2bn(pub_key.x, sizeof(pub_key.x), &x));
+  BT_ASSERT(BN_le2bn(pub_key.y, sizeof(pub_key.y), &y));
 
   // One potential cause of failure is if pub_key is not a valid ECDH key on the P-256 curve.
   int success = (EC_KEY_set_public_key_affine_coordinates(new_key.key_, &x, &y) == 1);
@@ -59,10 +58,10 @@ sm::PairingPublicKeyParams EcdhKey::GetSerializedPublicKey() const {
   BIGNUM x, y;
   BN_init(&x);
   BN_init(&y);
-  ZX_ASSERT(EC_POINT_get_affine_coordinates_GFp(
+  BT_ASSERT(EC_POINT_get_affine_coordinates_GFp(
                 EC_KEY_get0_group(key_), EC_KEY_get0_public_key(key_), &x, &y, nullptr) == 1);
-  ZX_ASSERT(BN_bn2le_padded(params.x, sizeof(params.x), &x) == 1);
-  ZX_ASSERT(BN_bn2le_padded(params.y, sizeof(params.y), &y) == 1);
+  BT_ASSERT(BN_bn2le_padded(params.x, sizeof(params.x), &x) == 1);
+  BT_ASSERT(BN_bn2le_padded(params.y, sizeof(params.y), &y) == 1);
   BN_free(&x);
   BN_free(&y);
   return params;
@@ -74,10 +73,10 @@ UInt256 EcdhKey::GetPublicKeyX() const {
   bool success =
       EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(key_), EC_KEY_get0_public_key(key_), &x,
                                           /*y=*/nullptr, /*ctx=*/nullptr) == 1;
-  ZX_ASSERT(success);
+  BT_ASSERT(success);
   UInt256 out{};
   success = BN_bn2le_padded(out.data(), out.size(), &x) == 1;
-  ZX_ASSERT(success);
+  BT_ASSERT(success);
   BN_free(&x);
   return out;
 }
@@ -88,10 +87,10 @@ UInt256 EcdhKey::GetPublicKeyY() const {
   bool success =
       EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(key_), EC_KEY_get0_public_key(key_),
                                           /*x=*/nullptr, &y, /*ctx=*/nullptr) == 1;
-  ZX_ASSERT(success);
+  BT_ASSERT(success);
   UInt256 out{};
   success = BN_bn2le_padded(out.data(), out.size(), &y) == 1;
-  ZX_ASSERT(success);
+  BT_ASSERT(success);
   BN_free(&y);
   return out;
 }
@@ -130,7 +129,7 @@ UInt256 LocalEcdhKey::CalculateDhKey(const EcdhKey& peer_public_key) const {
   bool success = ECDH_compute_key(out.data(), out.size(),
                                   EC_KEY_get0_public_key(peer_public_key.boringssl_key()),
                                   boringssl_key(), /*kdf=*/nullptr) == out.size();
-  ZX_ASSERT(success);
+  BT_ASSERT(success);
   std::reverse(out.begin(), out.end());
   return out;
 }
@@ -139,7 +138,7 @@ void LocalEcdhKey::SetPrivateKeyForTesting(const UInt256& private_key) {
   BIGNUM pkey;
   BN_init(&pkey);
   BN_le2bn(private_key.data(), private_key.size(), &pkey);
-  ZX_ASSERT_MSG(EC_KEY_set_private_key(mut_boringssl_key(), &pkey) == 1,
+  BT_ASSERT_MSG(EC_KEY_set_private_key(mut_boringssl_key(), &pkey) == 1,
                 "Could not set private key in test");
   BN_free(&pkey);
 }

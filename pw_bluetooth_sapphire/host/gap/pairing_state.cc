@@ -25,9 +25,9 @@ PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::BrEdrConnection* link, 
       state_(State::kIdle),
       send_auth_request_callback_(std::move(auth_cb)),
       status_callback_(std::move(status_cb)) {
-  ZX_ASSERT(link_);
-  ZX_ASSERT(send_auth_request_callback_);
-  ZX_ASSERT(status_callback_);
+  BT_ASSERT(link_);
+  BT_ASSERT(send_auth_request_callback_);
+  BT_ASSERT(status_callback_);
   link_->set_encryption_change_callback(fit::bind_member<&PairingState::OnEncryptionChange>(this));
   cleanup_cb_ = [](PairingState* self) {
     self->link_->set_encryption_change_callback(nullptr);
@@ -52,7 +52,7 @@ PairingState::~PairingState() {
 void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requirements,
                                    StatusCallback status_cb) {
   if (state() == State::kIdle) {
-    ZX_ASSERT(!is_pairing());
+    BT_ASSERT(!is_pairing());
 
     // If the current link key already meets the security requirements, skip pairing and report
     // success.
@@ -83,7 +83,7 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
   // but each should wait for the results of any ongoing pairing procedure instead of sending their
   // own Authentication Request.
   if (is_pairing()) {
-    ZX_ASSERT(state() != State::kIdle);
+    BT_ASSERT(state() != State::kIdle);
     bt_log(INFO, "gap-bredr", "Already pairing %#.4x (id: %s); blocking callback on completion",
            handle(), bt_str(peer_id()));
     PairingRequest request{.security_requirements = security_requirements,
@@ -92,14 +92,14 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
   } else {
     // In the error state, we should expect no pairing to be created and cancel this particular
     // request immediately.
-    ZX_ASSERT(state() == State::kFailed);
+    BT_ASSERT(state() == State::kFailed);
     status_cb(handle(), ToResult(HostError::kCanceled));
   }
 }
 
 void PairingState::InitiateNextPairingRequest() {
-  ZX_ASSERT(state() == State::kIdle);
-  ZX_ASSERT(!is_pairing());
+  BT_ASSERT(state() == State::kIdle);
+  BT_ASSERT(!is_pairing());
 
   if (request_queue_.empty()) {
     return;
@@ -136,11 +136,11 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
 
   current_pairing_->local_iocap = sm::util::IOCapabilityForHci(pairing_delegate()->io_capability());
   if (state() == State::kInitiatorWaitIoCapRequest) {
-    ZX_ASSERT(initiator());
+    BT_ASSERT(initiator());
     state_ = State::kInitiatorWaitIoCapResponse;
   } else {
-    ZX_ASSERT(is_pairing());
-    ZX_ASSERT(!initiator());
+    BT_ASSERT(is_pairing());
+    BT_ASSERT(!initiator());
     current_pairing_->ComputePairingData();
 
     state_ = GetStateForPairingEvent(current_pairing_->expected_event);
@@ -153,19 +153,19 @@ void PairingState::OnIoCapabilityResponse(IOCapability peer_iocap) {
   // If we preivously provided a key for peer to pair, but that didn't work, they may try to
   // re-pair.  Cancel the previous pairing if they try to restart.
   if (state() == State::kWaitEncryption) {
-    ZX_ASSERT(is_pairing());
+    BT_ASSERT(is_pairing());
     current_pairing_ = nullptr;
     state_ = State::kIdle;
   }
   if (state() == State::kIdle) {
-    ZX_ASSERT(!is_pairing());
+    BT_ASSERT(!is_pairing());
     current_pairing_ = Pairing::MakeResponder(peer_iocap, outgoing_connection_);
 
     // Defer gathering local IO Capability until OnIoCapabilityRequest, where
     // the pairing can be rejected if there's no pairing delegate.
     state_ = State::kResponderWaitIoCapRequest;
   } else if (state() == State::kInitiatorWaitIoCapResponse) {
-    ZX_ASSERT(initiator());
+    BT_ASSERT(initiator());
 
     current_pairing_->peer_iocap = peer_iocap;
     current_pairing_->ComputePairingData();
@@ -182,10 +182,10 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
     cb(false);
     return;
   }
-  ZX_ASSERT(is_pairing());
+  BT_ASSERT(is_pairing());
 
   // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
-  ZX_ASSERT(pairing_delegate());
+  BT_ASSERT(pairing_delegate());
   state_ = State::kWaitPairingComplete;
 
   if (current_pairing_->action == PairingAction::kAutomatic) {
@@ -220,7 +220,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
   } else if (current_pairing_->action == PairingAction::kGetConsent) {
     pairing_delegate()->ConfirmPairing(peer_id(), std::move(confirm_cb));
   } else {
-    ZX_PANIC("%#.4x (id: %s): unexpected action %d", handle(), bt_str(peer_id()),
+    BT_PANIC("%#.4x (id: %s): unexpected action %d", handle(), bt_str(peer_id()),
              current_pairing_->action);
   }
 }
@@ -231,13 +231,13 @@ void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
     cb(std::nullopt);
     return;
   }
-  ZX_ASSERT(is_pairing());
+  BT_ASSERT(is_pairing());
 
   // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
-  ZX_ASSERT(pairing_delegate());
+  BT_ASSERT(pairing_delegate());
   state_ = State::kWaitPairingComplete;
 
-  ZX_ASSERT_MSG(current_pairing_->action == PairingAction::kRequestPasskey,
+  BT_ASSERT_MSG(current_pairing_->action == PairingAction::kRequestPasskey,
                 "%#.4x (id: %s): unexpected action %d", handle(), bt_str(peer_id()),
                 current_pairing_->action);
   auto pairing = current_pairing_->GetWeakPtr();
@@ -261,10 +261,10 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
     FailWithUnexpectedEvent(__func__);
     return;
   }
-  ZX_ASSERT(is_pairing());
+  BT_ASSERT(is_pairing());
 
   // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
-  ZX_ASSERT(pairing_delegate());
+  BT_ASSERT(pairing_delegate());
   state_ = State::kWaitPairingComplete;
 
   auto pairing = current_pairing_->GetWeakPtr();
@@ -299,7 +299,7 @@ void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
     FailWithUnexpectedEvent(__func__);
     return;
   }
-  ZX_ASSERT(is_pairing());
+  BT_ASSERT(is_pairing());
 
   pairing_delegate()->CompletePairing(peer_id(), fitx::ok());
   state_ = State::kWaitLinkKey;
@@ -311,7 +311,7 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
     return std::nullopt;
   }
 
-  ZX_ASSERT(peer_);
+  BT_ASSERT(peer_);
 
   std::optional<sm::LTK> link_key;
 
@@ -320,12 +320,12 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
   } else if (peer_->bredr() && peer_->bredr()->bonded()) {
     bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s", bt_str(peer_->identifier()));
 
-    ZX_ASSERT(peer_->bredr()->link_key().has_value());
+    BT_ASSERT(peer_->bredr()->link_key().has_value());
     link_key = peer_->bredr()->link_key();
-    ZX_ASSERT(link_key->security().enc_key_size() == hci_spec::kBrEdrLinkKeySize);
+    BT_ASSERT(link_key->security().enc_key_size() == hci_spec::kBrEdrLinkKeySize);
 
     const auto link_key_type = link_key->security().GetLinkKeyType();
-    ZX_ASSERT(link_key_type.has_value());
+    BT_ASSERT(link_key_type.has_value());
 
     link_->set_link_key(link_key->key(), link_key_type.value());
   } else {
@@ -336,7 +336,7 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
   // the authentication procedure).
   if (state() == State::kIdle) {
     if (link_key.has_value()) {
-      ZX_ASSERT(!is_pairing());
+      BT_ASSERT(!is_pairing());
       current_pairing_ = Pairing::MakeResponderForBonded();
       state_ = State::kWaitEncryption;
       return link_key->key();
@@ -344,7 +344,7 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
     return std::optional<hci_spec::LinkKey>();
   }
 
-  ZX_ASSERT(is_pairing());
+  BT_ASSERT(is_pairing());
 
   if (link_key.has_value() && SecurityPropertiesMeetRequirements(
                                   link_key->security(), current_pairing_->preferred_security)) {
@@ -361,7 +361,7 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
 void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type) {
   // TODO(fxbug.dev/36360): We assume the controller is never in pairing debug mode because it's a
   // security hazard to pair and bond using Debug Combination link keys.
-  ZX_ASSERT_MSG(key_type != hci_spec::LinkKeyType::kDebugCombination,
+  BT_ASSERT_MSG(key_type != hci_spec::LinkKeyType::kDebugCombination,
                 "Pairing on link %#.4x (id: %s) resulted in insecure Debug Combination link key",
                 handle(), bt_str(peer_id()));
 
@@ -389,7 +389,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
 
   // The association model and resulting link security properties are computed by both the Link
   // Manager (controller) and the host subsystem, so check that they agree.
-  ZX_ASSERT(is_pairing());
+  BT_ASSERT(is_pairing());
   const sm::SecurityProperties sec_props = sm::SecurityProperties(key_type);
   current_pairing_->security_properties = sec_props;
 
@@ -454,7 +454,7 @@ void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
     FailWithUnexpectedEvent(__func__);
     return;
   }
-  ZX_ASSERT(initiator());
+  BT_ASSERT(initiator());
   EnableEncryption();
 }
 
@@ -525,7 +525,7 @@ void PairingState::Pairing::ComputePairingData() {
     action = PairingAction::kGetConsent;
   }
   expected_event = GetExpectedEvent(local_iocap, peer_iocap);
-  ZX_DEBUG_ASSERT(GetStateForPairingEvent(expected_event) != State::kFailed);
+  BT_DEBUG_ASSERT(GetStateForPairingEvent(expected_event) != State::kFailed);
   authenticated = IsPairingAuthenticated(local_iocap, peer_iocap);
   bt_log(DEBUG, "gap-bredr",
          "As %s with local %hhu/peer %hhu capabilities, expecting an %sauthenticated %u pairing "
@@ -602,7 +602,7 @@ std::vector<fit::closure> PairingState::CompletePairingRequests(hci::Result<> st
   std::vector<fit::closure> callbacks_to_signal;
 
   if (!is_pairing()) {
-    ZX_ASSERT(request_queue_.empty());
+    BT_ASSERT(request_queue_.empty());
     return callbacks_to_signal;
   }
 
@@ -619,8 +619,8 @@ std::vector<fit::closure> PairingState::CompletePairingRequests(hci::Result<> st
     return callbacks_to_signal;
   }
 
-  ZX_ASSERT(state_ == State::kIdle);
-  ZX_ASSERT(link_->ltk_type().has_value());
+  BT_ASSERT(state_ == State::kIdle);
+  BT_ASSERT(link_->ltk_type().has_value());
 
   auto security_properties = sm::SecurityProperties(link_->ltk_type().value());
 

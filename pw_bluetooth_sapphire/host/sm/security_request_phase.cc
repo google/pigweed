@@ -4,10 +4,9 @@
 
 #include "security_request_phase.h"
 
-#include <zircon/assert.h>
-
 #include <type_traits>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -34,7 +33,7 @@ void SecurityRequestPhase::Start() {
 
 void SecurityRequestPhase::MakeSecurityRequest(SecurityLevel desired_level,
                                                BondableMode bondable_mode) {
-  ZX_ASSERT(desired_level >= SecurityLevel::kEncrypted);
+  BT_ASSERT(desired_level >= SecurityLevel::kEncrypted);
   AuthReqField security_req_payload = 0u;
   if (desired_level >= SecurityLevel::kAuthenticated) {
     security_req_payload |= AuthReq::kMITM;

@@ -55,7 +55,7 @@ void AclConnection::OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
 
 CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
     const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kEncryptionChangeEventCode);
+  BT_ASSERT(event.event_code() == hci_spec::kEncryptionChangeEventCode);
 
   if (event.view().payload_size() != sizeof(hci_spec::EncryptionChangeEventParams)) {
     bt_log(WARN, "hci", "malformed encryption change event");
@@ -88,7 +88,7 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
 
 CommandChannel::EventCallbackResult AclConnection::OnEncryptionKeyRefreshCompleteEvent(
     const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kEncryptionKeyRefreshCompleteEventCode);
+  BT_ASSERT(event.event_code() == hci_spec::kEncryptionKeyRefreshCompleteEventCode);
 
   if (event.view().payload_size() != sizeof(hci_spec::EncryptionKeyRefreshCompleteEventParams)) {
     bt_log(WARN, "hci", "malformed encryption key refresh complete event");

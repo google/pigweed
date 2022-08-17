@@ -6,10 +6,10 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_H_
 
 #include <lib/async/cpp/task.h>
-#include <zircon/assert.h>
 
 #include <memory>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
@@ -117,8 +117,8 @@ class ControllerTest : public ::gtest::TestLoopFixture {
 
   // Wires up MockHciWrapper to the controller test double so that packets can be exchanged.
   void StartTestDevice() {
-    ZX_ASSERT(mock_hci_);
-    ZX_ASSERT(test_device_);
+    BT_ASSERT(mock_hci_);
+    BT_ASSERT(test_device_);
 
     mock_hci_->set_send_acl_cb([this](std::unique_ptr<hci::ACLDataPacket> packet) {
       if (test_device_) {
@@ -167,7 +167,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
 
   // Set the vendor features that the transport will be configured to return.
   void set_vendor_features(hci::VendorFeaturesBits features) {
-    ZX_ASSERT(!transport_);
+    BT_ASSERT(!transport_);
     vendor_features_ = features;
   }
 

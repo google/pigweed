@@ -23,9 +23,9 @@ LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_add
       needs_refresh_(false),
       refreshing_(false),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(public_.type() == DeviceAddress::Type::kLEPublic);
-  ZX_DEBUG_ASSERT(delegate_);
-  ZX_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(public_.type() == DeviceAddress::Type::kLEPublic);
+  BT_DEBUG_ASSERT(delegate_);
+  BT_DEBUG_ASSERT(hci_);
 }
 
 LowEnergyAddressManager::~LowEnergyAddressManager() { CancelExpiry(); }
@@ -50,7 +50,7 @@ void LowEnergyAddressManager::EnablePrivacy(bool enabled) {
 }
 
 void LowEnergyAddressManager::EnsureLocalAddress(AddressCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(callback);
 
   // Report the address right away if it doesn't need refreshing.
   if (!needs_refresh_) {
@@ -140,7 +140,7 @@ void LowEnergyAddressManager::CleanUpPrivacyState() {
 void LowEnergyAddressManager::CancelExpiry() { random_address_expiry_task_.Cancel(); }
 
 bool LowEnergyAddressManager::CanUpdateRandomAddress() const {
-  ZX_DEBUG_ASSERT(delegate_);
+  BT_DEBUG_ASSERT(delegate_);
   return delegate_();
 }
 

@@ -4,10 +4,9 @@
 
 #include "database.h"
 
-#include <zircon/assert.h>
-
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt::att {
@@ -32,7 +31,7 @@ const StaticByteBuffer kTestValue2('x', 'x', 'x');
 // Returns the handles of each attribute visited by advancing |iter| until the
 // end.
 std::vector<Handle> IterHandles(Database::Iterator* iter) {
-  ZX_DEBUG_ASSERT(iter);
+  BT_DEBUG_ASSERT(iter);
 
   std::vector<Handle> handles;
   for (; !iter->AtEnd(); iter->Advance()) {

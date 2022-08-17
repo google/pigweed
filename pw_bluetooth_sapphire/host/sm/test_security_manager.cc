@@ -3,10 +3,9 @@
 // found in the LICENSE file.
 #include "src/connectivity/bluetooth/core/bt-host/sm/test_security_manager.h"
 
-#include <zircon/assert.h>
-
 #include <memory>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -57,7 +56,7 @@ std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
 fxl::WeakPtr<TestSecurityManager> TestSecurityManagerFactory::GetTestSm(
     hci_spec::ConnectionHandle conn_handle) {
   auto iter = test_sms_.find(conn_handle);
-  ZX_ASSERT(iter != test_sms_.end());
+  BT_ASSERT(iter != test_sms_.end());
   return iter->second;
 }
 

@@ -55,14 +55,14 @@ void BrEdrConnectionRequest::CreateConnection(
     std::optional<uint16_t> clock_offset,
     std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode, zx::duration timeout,
     OnCompleteDelegate on_command_fail) {
-  ZX_DEBUG_ASSERT(timeout > zx::msec(0));
+  BT_DEBUG_ASSERT(timeout > zx::msec(0));
 
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto complete_cb = [self, timeout, peer_id = peer_id_,
                       on_command_fail = std::move(on_command_fail)](auto,
                                                                     const EventPacket& event) {
-    ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
+    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self)
       return;
@@ -115,7 +115,7 @@ Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
 
 void BrEdrConnectionRequest::Timeout() {
   // If the request was cancelled, this handler will have been removed
-  ZX_ASSERT(state_ == RequestState::kPending);
+  BT_ASSERT(state_ == RequestState::kPending);
   bt_log(INFO, "hci-bredr", "create connection timed out: canceling request (peer: %s)",
          bt_str(peer_id_));
   state_ = RequestState::kTimedOut;

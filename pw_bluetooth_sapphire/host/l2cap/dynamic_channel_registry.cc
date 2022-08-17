@@ -4,9 +4,8 @@
 
 #include "dynamic_channel_registry.h"
 
-#include <zircon/assert.h>
-
 #include "lib/zx/channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
@@ -44,7 +43,7 @@ void DynamicChannelRegistry::CloseChannel(ChannelId local_cid, fit::closure clos
     return;
   }
 
-  ZX_DEBUG_ASSERT(channel->IsConnected());
+  BT_DEBUG_ASSERT(channel->IsConnected());
   auto disconn_done_cb = [self = weak_ptr_factory_.GetWeakPtr(), close_cb = std::move(close_cb),
                           channel] {
     if (!self) {
@@ -65,10 +64,10 @@ DynamicChannelRegistry::DynamicChannelRegistry(uint16_t max_num_channels,
       close_cb_(std::move(close_cb)),
       service_request_cb_(std::move(service_request_cb)),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(max_num_channels > 0);
-  ZX_DEBUG_ASSERT(max_num_channels < 65473);
-  ZX_DEBUG_ASSERT(close_cb_);
-  ZX_DEBUG_ASSERT(service_request_cb_);
+  BT_DEBUG_ASSERT(max_num_channels > 0);
+  BT_DEBUG_ASSERT(max_num_channels < 65473);
+  BT_DEBUG_ASSERT(close_cb_);
+  BT_DEBUG_ASSERT(service_request_cb_);
   if (random_channel_ids) {
     rng_ = std::default_random_engine(Random<uint64_t>());
   }
@@ -76,7 +75,7 @@ DynamicChannelRegistry::DynamicChannelRegistry(uint16_t max_num_channels,
 
 DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_cid,
                                                        ChannelId remote_cid) {
-  ZX_DEBUG_ASSERT(local_cid != kInvalidChannelId);
+  BT_DEBUG_ASSERT(local_cid != kInvalidChannelId);
 
   auto service_info = service_request_cb_(psm);
   if (!service_info) {
@@ -183,8 +182,8 @@ void DynamicChannelRegistry::OnChannelDisconnected(DynamicChannel* channel) {
 }
 
 void DynamicChannelRegistry::RemoveChannel(DynamicChannel* channel) {
-  ZX_DEBUG_ASSERT(channel);
-  ZX_DEBUG_ASSERT(!channel->IsConnected());
+  BT_DEBUG_ASSERT(channel);
+  BT_DEBUG_ASSERT(!channel->IsConnected());
 
   auto iter = channels_.find(channel->local_cid());
   if (iter == channels_.end()) {

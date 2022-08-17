@@ -15,15 +15,15 @@ PairingPhase::PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Liste
     : sm_chan_(std::move(chan)), listener_(std::move(listener)), role_(role), has_failed_(false) {}
 
 void PairingPhase::OnFailure(Error error) {
-  ZX_ASSERT(!has_failed());
+  BT_ASSERT(!has_failed());
   bt_log(WARN, "sm", "pairing failed: %s", bt_str(error));
   has_failed_ = true;
-  ZX_ASSERT(listener_);
+  BT_ASSERT(listener_);
   listener_->OnPairingFailed(error);
 }
 
 void PairingPhase::Abort(ErrorCode ecode) {
-  ZX_ASSERT(!has_failed());
+  BT_ASSERT(!has_failed());
   Error error(ecode);
   bt_log(INFO, "sm", "abort pairing: %s", bt_str(error));
 

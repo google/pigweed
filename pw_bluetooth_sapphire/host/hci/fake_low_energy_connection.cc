@@ -15,7 +15,7 @@ FakeLowEnergyConnection::FakeLowEnergyConnection(hci_spec::ConnectionHandle hand
                           role, hci) {}
 
 void FakeLowEnergyConnection::TriggerEncryptionChangeCallback(hci::Result<bool> result) {
-  ZX_ASSERT(encryption_change_callback());
+  BT_ASSERT(encryption_change_callback());
   encryption_change_callback()(result);
 }
 

@@ -5,11 +5,11 @@
 #include "fragmenter.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
 #include <limits>
 #include <optional>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fcs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
@@ -48,7 +48,7 @@ void OutboundFrame::WriteToFragment(MutableBufferView fragment_payload, size_t o
                               size()};
   static_assert(pages.size() == offsets.size());
 
-  ZX_ASSERT(offset <= size());
+  BT_ASSERT(offset <= size());
   size_t output_offset = 0;
 
   // Find the last page whose offset is not greater than the current offset.
@@ -63,14 +63,14 @@ void OutboundFrame::WriteToFragment(MutableBufferView fragment_payload, size_t o
     offset += bytes_copied;
     output_offset += bytes_copied;
   }
-  ZX_ASSERT(output_offset <= fragment_payload.size());
+  BT_ASSERT(output_offset <= fragment_payload.size());
 }
 
 OutboundFrame::BasicHeaderBuffer OutboundFrame::MakeBasicHeader() const {
   // Length is "the length of the entire L2CAP PDU in octets, excluding the Length and CID field"
   // (v5.0 Vol 3, Part A, Section 3.3.1)
   const size_t pdu_content_length = size() - sizeof(BasicHeader);
-  ZX_ASSERT_MSG(pdu_content_length <= std::numeric_limits<decltype(BasicHeader::length)>::max(),
+  BT_ASSERT_MSG(pdu_content_length <= std::numeric_limits<decltype(BasicHeader::length)>::max(),
                 "PDU payload is too large to be encoded");
   BasicHeader header = {};
   header.length = htole16(pdu_content_length);
@@ -81,7 +81,7 @@ OutboundFrame::BasicHeaderBuffer OutboundFrame::MakeBasicHeader() const {
 }
 
 OutboundFrame::FrameCheckSequenceBuffer OutboundFrame::MakeFcs() const {
-  ZX_ASSERT(include_fcs());
+  BT_ASSERT(include_fcs());
   const BasicHeaderBuffer header = MakeBasicHeader();
   const FrameCheckSequence header_fcs = l2cap::ComputeFcs(header.view());
   const FrameCheckSequence whole_fcs = l2cap::ComputeFcs(data_.view(), header_fcs);
@@ -92,10 +92,10 @@ OutboundFrame::FrameCheckSequenceBuffer OutboundFrame::MakeFcs() const {
 
 Fragmenter::Fragmenter(hci_spec::ConnectionHandle connection_handle, uint16_t max_acl_payload_size)
     : connection_handle_(connection_handle), max_acl_payload_size_(max_acl_payload_size) {
-  ZX_ASSERT(connection_handle_);
-  ZX_ASSERT(connection_handle_ <= hci_spec::kConnectionHandleMax);
-  ZX_ASSERT(max_acl_payload_size_);
-  ZX_ASSERT(max_acl_payload_size_ >= sizeof(BasicHeader));
+  BT_ASSERT(connection_handle_);
+  BT_ASSERT(connection_handle_ <= hci_spec::kConnectionHandleMax);
+  BT_ASSERT(max_acl_payload_size_);
+  BT_ASSERT(max_acl_payload_size_ >= sizeof(BasicHeader));
 }
 
 // NOTE(armansito): The following method copies the contents of |data| into ACL
@@ -125,8 +125,8 @@ Fragmenter::Fragmenter(hci_spec::ConnectionHandle connection_handle, uint16_t ma
 //       3. bt-hci driver -> transport driver
 PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
                            FrameCheckSequenceOption fcs_option, bool flushable) const {
-  ZX_DEBUG_ASSERT(data.size() <= kMaxBasicFramePayloadSize);
-  ZX_DEBUG_ASSERT(channel_id);
+  BT_DEBUG_ASSERT(data.size() <= kMaxBasicFramePayloadSize);
+  BT_DEBUG_ASSERT(channel_id);
 
   OutboundFrame frame(channel_id, data, fcs_option);
   const size_t frame_size = frame.size();
@@ -136,7 +136,7 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
   PDU pdu;
   size_t processed = 0;
   for (size_t i = 0; i < num_fragments; i++) {
-    ZX_DEBUG_ASSERT(frame_size > processed);
+    BT_DEBUG_ASSERT(frame_size > processed);
 
     const size_t fragment_size =
         std::min(frame_size - processed, static_cast<size_t>(max_acl_payload_size_));
@@ -147,7 +147,7 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
     // TODO(armansito): allow passing Active Peripheral Broadcast flag when we support it.
     auto acl_packet = hci::ACLDataPacket::New(
         connection_handle_, pbf, hci_spec::ACLBroadcastFlag::kPointToPoint, fragment_size);
-    ZX_DEBUG_ASSERT(acl_packet);
+    BT_DEBUG_ASSERT(acl_packet);
 
     frame.WriteToFragment(acl_packet->mutable_view()->mutable_payload_data(), processed);
     processed += fragment_size;
@@ -156,7 +156,7 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
   }
 
   // The PDU should have been completely processed if we got here.
-  ZX_DEBUG_ASSERT(processed == frame_size);
+  BT_DEBUG_ASSERT(processed == frame_size);
 
   return pdu;
 }

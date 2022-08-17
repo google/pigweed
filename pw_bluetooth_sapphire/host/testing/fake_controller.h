@@ -375,8 +375,8 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // This value can change over time.
   uint8_t num_supported_advertising_sets() const { return num_supported_advertising_sets_; }
   void set_num_supported_advertising_sets(uint8_t value) {
-    ZX_ASSERT(value >= extended_advertising_states_.size());
-    ZX_ASSERT(value <= hci_spec::kAdvertisingHandleMax + 1);  // support advertising handle of 0
+    BT_ASSERT(value >= extended_advertising_states_.size());
+    BT_ASSERT(value <= hci_spec::kAdvertisingHandleMax + 1);  // support advertising handle of 0
     num_supported_advertising_sets_ = value;
   }
 

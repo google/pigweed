@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 
 #include <lib/fit/function.h>
-#include <zircon/assert.h>
 
 #include <cstddef>
 #include <limits>
@@ -15,6 +14,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -182,10 +182,10 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     if (canceled) {
       canceled_peers_.insert(address);
     } else if (connected) {
-      ZX_DEBUG_ASSERT(connected_peers_.find(address) == connected_peers_.end());
+      BT_DEBUG_ASSERT(connected_peers_.find(address) == connected_peers_.end());
       connected_peers_.insert(address);
     } else {
-      ZX_DEBUG_ASSERT(connected_peers_.find(address) != connected_peers_.end());
+      BT_DEBUG_ASSERT(connected_peers_.find(address) != connected_peers_.end());
       connected_peers_.erase(address);
     }
   }
@@ -461,7 +461,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
 
 struct TestObject final {
   explicit TestObject(bool* d) : deleted(d) {
-    ZX_DEBUG_ASSERT(deleted);
+    BT_DEBUG_ASSERT(deleted);
     *deleted = false;
   }
 

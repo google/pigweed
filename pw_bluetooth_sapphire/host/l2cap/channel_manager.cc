@@ -5,9 +5,9 @@
 #include "channel_manager.h"
 
 #include <lib/async/default.h>
-#include <zircon/assert.h>
 
 #include "logical_link.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
@@ -131,7 +131,7 @@ ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
       cmd_channel_(cmd_channel),
       random_channel_ids_(random_channel_ids),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(acl_data_channel_);
+  BT_ASSERT(acl_data_channel_);
   max_acl_payload_size_ = acl_data_channel_->GetBufferInfo().max_data_length();
   max_le_payload_size_ = acl_data_channel_->GetLeBufferInfo().max_data_length();
   acl_data_channel_->SetDataRxHandler(MakeInboundDataHandler());
@@ -180,8 +180,8 @@ ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(
 
   fxl::WeakPtr<Channel> att = OpenFixedChannel(handle, kATTChannelId);
   fxl::WeakPtr<Channel> smp = OpenFixedChannel(handle, kLESMPChannelId);
-  ZX_ASSERT(att);
-  ZX_ASSERT(smp);
+  BT_ASSERT(att);
+  BT_ASSERT(smp);
   return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
 }
 
@@ -335,7 +335,7 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(hci_spec::Connection
   // TODO(armansito): Return nullptr instead of asserting. Callers shouldn't
   // assume this will succeed.
   auto iter = ll_map_.find(handle);
-  ZX_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
+  BT_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
 
   auto ll = std::make_unique<internal::LogicalLink>(
       handle, ll_type, role, max_payload_size,

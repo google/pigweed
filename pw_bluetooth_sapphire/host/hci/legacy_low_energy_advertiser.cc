@@ -6,9 +6,9 @@
 
 #include <endian.h>
 #include <lib/async/default.h>
-#include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
@@ -180,7 +180,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
   // reset or the |result_callback| was moved), return early.
   if (options.include_tx_power_level) {
     auto power_cb = [this](auto, const hci::EventPacket& event) mutable {
-      ZX_ASSERT(staged_params_.has_value());
+      BT_ASSERT(staged_params_.has_value());
       if (!starting_ || !staged_params_.value().result_callback) {
         bt_log(INFO, "hci-le", "Advertising canceled during TX Power Level read.");
         return;

@@ -20,7 +20,7 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::Connection
       link_error_(false),
       acl_priority_fails_(false),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(handle_);
+  BT_DEBUG_ASSERT(handle_);
 }
 
 void FakeChannel::Receive(const ByteBuffer& data) {
@@ -45,7 +45,7 @@ void FakeChannel::SetLinkErrorCallback(LinkErrorCallback callback) {
 
 void FakeChannel::SetSecurityCallback(SecurityUpgradeCallback callback,
                                       async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
+  BT_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
 
   security_cb_ = std::move(callback);
   security_dispatcher_ = dispatcher;
@@ -57,10 +57,10 @@ void FakeChannel::Close() {
 }
 
 bool FakeChannel::Activate(RxCallback rx_callback, ClosedCallback closed_callback) {
-  ZX_DEBUG_ASSERT(rx_callback);
-  ZX_DEBUG_ASSERT(closed_callback);
-  ZX_DEBUG_ASSERT(!rx_cb_);
-  ZX_DEBUG_ASSERT(!closed_cb_);
+  BT_DEBUG_ASSERT(rx_callback);
+  BT_DEBUG_ASSERT(closed_callback);
+  BT_DEBUG_ASSERT(!rx_cb_);
+  BT_DEBUG_ASSERT(!closed_cb_);
 
   if (activate_fails_)
     return false;
@@ -90,7 +90,7 @@ void FakeChannel::SignalLinkError() {
 }
 
 bool FakeChannel::Send(ByteBufferPtr sdu) {
-  ZX_DEBUG_ASSERT(sdu);
+  BT_DEBUG_ASSERT(sdu);
 
   if (!send_cb_)
     return false;
@@ -113,7 +113,7 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
 }
 
 void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
-  ZX_ASSERT(security_dispatcher_);
+  BT_ASSERT(security_dispatcher_);
   async::PostTask(security_dispatcher_,
                   [cb = std::move(callback), f = security_cb_.share(), handle = handle_,
                    level]() mutable { f(handle, level, std::move(cb)); });

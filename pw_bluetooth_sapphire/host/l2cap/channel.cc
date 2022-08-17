@@ -5,13 +5,13 @@
 #include "channel.h"
 
 #include <lib/async/default.h>
-#include <zircon/assert.h>
 
 #include <functional>
 #include <memory>
 
 #include "lib/fitx/result.h"
 #include "logical_link.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
@@ -31,8 +31,8 @@ Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
       link_handle_(link_handle),
       info_(info),
       requested_acl_priority_(hci::AclPriority::kNormal) {
-  ZX_DEBUG_ASSERT(id_);
-  ZX_DEBUG_ASSERT(link_type_ == bt::LinkType::kLE || link_type_ == bt::LinkType::kACL);
+  BT_DEBUG_ASSERT(id_);
+  BT_DEBUG_ASSERT(link_type_ == bt::LinkType::kLE || link_type_ == bt::LinkType::kACL);
 }
 
 namespace internal {
@@ -68,8 +68,8 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
       active_(false),
       link_(link),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(link_);
-  ZX_ASSERT_MSG(
+  BT_ASSERT(link_);
+  BT_ASSERT_MSG(
       info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
       "Channel constructed with unsupported mode: %hhu\n", info.mode);
 
@@ -99,15 +99,15 @@ const sm::SecurityProperties ChannelImpl::security() {
 }
 
 bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callback) {
-  ZX_ASSERT(rx_callback);
-  ZX_ASSERT(closed_callback);
+  BT_ASSERT(rx_callback);
+  BT_ASSERT(closed_callback);
 
   // Activating on a closed link has no effect. We also clear this on
   // deactivation to prevent a channel from being activated more than once.
   if (!link_)
     return false;
 
-  ZX_ASSERT(!active_);
+  BT_ASSERT(!active_);
   active_ = true;
   rx_cb_ = std::move(rx_callback);
   closed_cb_ = std::move(closed_callback);
@@ -117,7 +117,7 @@ bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callbac
     // Add reference to |rx_cb_| in case channel is destroyed as a result of handling an SDU.
     auto rx_cb = rx_cb_.share();
     auto pending = std::move(pending_rx_sdus_);
-    ZX_ASSERT(pending_rx_sdus_.empty());
+    BT_ASSERT(pending_rx_sdus_.empty());
     TRACE_DURATION("bluetooth", "ChannelImpl::Activate pending drain");
     while (!pending.empty()) {
       TRACE_FLOW_END("bluetooth", "ChannelImpl::HandleRxPdu queued", pending.size());
@@ -156,7 +156,7 @@ void ChannelImpl::SignalLinkError() {
 }
 
 bool ChannelImpl::Send(ByteBufferPtr sdu) {
-  ZX_DEBUG_ASSERT(sdu);
+  BT_DEBUG_ASSERT(sdu);
 
   TRACE_DURATION("bluetooth", "l2cap:channel_send", "handle", link_->handle(), "id", id());
 
@@ -173,7 +173,7 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
 }
 
 void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
-  ZX_ASSERT(callback);
+  BT_ASSERT(callback);
 
   if (!link_ || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring security request on inactive channel");
@@ -203,7 +203,7 @@ void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
 
 void ChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                                 hci::ResultCallback<> callback) {
-  ZX_ASSERT(link_type_ == bt::LinkType::kACL);
+  BT_ASSERT(link_type_ == bt::LinkType::kACL);
 
   // Channel may be inactive if this method is called before activation.
   if (!link_) {
@@ -249,7 +249,7 @@ void ChannelImpl::OnClosed() {
     return;
   }
 
-  ZX_ASSERT(closed_cb_);
+  BT_ASSERT(closed_cb_);
   auto closed_cb = std::move(closed_cb_);
 
   CleanUp();
@@ -268,7 +268,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
     return;
   }
 
-  ZX_ASSERT(rx_engine_);
+  BT_ASSERT(rx_engine_);
 
   ByteBufferPtr sdu = rx_engine_->ProcessPdu(std::move(pdu));
   if (!sdu) {
@@ -291,7 +291,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
     return;
   }
 
-  ZX_ASSERT(rx_cb_);
+  BT_ASSERT(rx_cb_);
   {
     TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu callback");
     rx_cb_(std::move(sdu));

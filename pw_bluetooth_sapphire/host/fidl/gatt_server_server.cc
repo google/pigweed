@@ -136,8 +136,8 @@ class GattServerServer::LocalServiceImpl
         owner_(owner),
         id_(id),
         delegate_(std::move(delegate)) {
-    ZX_DEBUG_ASSERT(owner_);
-    ZX_DEBUG_ASSERT(delegate_);
+    BT_DEBUG_ASSERT(owner_);
+    BT_DEBUG_ASSERT(delegate_);
   }
 
   // The destructor removes the GATT service
@@ -288,7 +288,7 @@ void GattServerServer::PublishService(ServiceInfo service_info,
       return;
     }
 
-    ZX_DEBUG_ASSERT(self->services_.find(id) == self->services_.end());
+    BT_DEBUG_ASSERT(self->services_.find(id) == self->services_.end());
 
     // This will be called if either the delegate or the service connection
     // closes.
@@ -333,7 +333,7 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdTy
   };
 
   auto* delegate = iter->second->delegate();
-  ZX_DEBUG_ASSERT(delegate);
+  BT_DEBUG_ASSERT(delegate);
   delegate->OnReadValue(id, offset, std::move(cb));
 }
 
@@ -349,7 +349,7 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdT
 
   auto fidl_value = fidl::To<std::vector<uint8_t>>(value);
   auto* delegate = iter->second->delegate();
-  ZX_DEBUG_ASSERT(delegate);
+  BT_DEBUG_ASSERT(delegate);
 
   if (!responder) {
     delegate->OnWriteWithoutResponse(id, offset, std::move(fidl_value));
@@ -373,7 +373,7 @@ void GattServerServer::OnCharacteristicConfig(bt::gatt::IdType service_id, bt::g
   }
 
   auto* delegate = iter->second->delegate();
-  ZX_DEBUG_ASSERT(delegate);
+  BT_DEBUG_ASSERT(delegate);
   delegate->OnCharacteristicConfiguration(chrc_id, peer_id.ToString(), notify, indicate);
 }
 

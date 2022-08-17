@@ -165,7 +165,7 @@ zx_status_t HciWrapperImpl::SendCommand(std::unique_ptr<CommandPacket> packet) {
 }
 
 void HciWrapperImpl::SetEventCallback(EventPacketFunction callback) {
-  ZX_ASSERT(callback);
+  BT_ASSERT(callback);
   event_cb_ = std::move(callback);
   InitializeWait(command_wait_, command_channel_);
 }
@@ -190,8 +190,8 @@ zx_status_t HciWrapperImpl::SendScoPacket(std::unique_ptr<ScoDataPacket> packet)
 }
 
 void HciWrapperImpl::SetScoCallback(ScoPacketFunction callback) {
-  ZX_ASSERT(sco_channel_.is_valid());
-  ZX_ASSERT(callback);
+  BT_ASSERT(sco_channel_.is_valid());
+  BT_ASSERT(callback);
   sco_cb_ = std::move(callback);
   InitializeWait(sco_wait_, sco_channel_);
 }
@@ -233,11 +233,11 @@ HciWrapper::StatusCallback HciWrapperImpl::ThreadSafeCallbackWrapper(StatusCallb
 }
 
 void HciWrapperImpl::InitializeWait(async::WaitBase& wait, zx::channel& channel) {
-  ZX_ASSERT(channel.is_valid());
+  BT_ASSERT(channel.is_valid());
   wait.Cancel();
   wait.set_object(channel.get());
   wait.set_trigger(ZX_CHANNEL_READABLE | ZX_CHANNEL_PEER_CLOSED);
-  ZX_ASSERT(wait.Begin(dispatcher_) == ZX_OK);
+  BT_ASSERT(wait.Begin(dispatcher_) == ZX_OK);
 }
 
 void HciWrapperImpl::ConfigureSco(ScoCodingFormat coding_format, ScoEncoding encoding,
@@ -341,7 +341,7 @@ void HciWrapperImpl::OnAclSignal(async_dispatcher_t* dispatcher, async::WaitBase
     OnError(ZX_ERR_PEER_CLOSED);
     return;
   }
-  ZX_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
+  BT_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
   // Allocate a buffer for the packet. Since we don't know the size beforehand
   // we allocate the largest possible buffer.
@@ -378,7 +378,7 @@ void HciWrapperImpl::OnCommandSignal(async_dispatcher_t* dispatcher, async::Wait
     OnError(ZX_ERR_PEER_CLOSED);
     return;
   }
-  ZX_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
+  BT_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
   // Allocate a buffer for the packet. Since we don't know the size beforehand
   // we allocate the largest possible buffer.
@@ -418,7 +418,7 @@ void HciWrapperImpl::OnScoSignal(async_dispatcher_t* dispatcher, async::WaitBase
     OnError(ZX_ERR_PEER_CLOSED);
     return;
   }
-  ZX_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
+  BT_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
   // Allocate a buffer for the packet. Since we don't know the size beforehand
   // we allocate the largest possible buffer.

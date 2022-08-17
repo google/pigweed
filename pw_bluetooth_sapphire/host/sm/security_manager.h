@@ -5,12 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SECURITY_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SECURITY_MANAGER_H_
 
-#include <zircon/assert.h>
-
 #include <memory>
 #include <queue>
 #include <variant>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"

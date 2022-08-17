@@ -6,10 +6,10 @@
 
 #include <lib/async/default.h>
 #include <lib/zx/channel.h>
-#include <zircon/assert.h>
 #include <zircon/status.h>
 
 #include "device_wrapper.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
@@ -25,7 +25,7 @@ std::unique_ptr<Transport> Transport::Create(std::unique_ptr<HciWrapper> hci) {
 
 Transport::Transport(std::unique_ptr<HciWrapper> hci)
     : hci_(std::move(hci)), weak_ptr_factory_(this) {
-  ZX_ASSERT(hci_);
+  BT_ASSERT(hci_);
 
   bt_log(INFO, "hci", "initializing HCI");
 
@@ -75,8 +75,8 @@ bool Transport::InitializeScoDataChannel(const DataBufferInfo& buffer_info) {
 VendorFeaturesBits Transport::GetVendorFeatures() { return hci_->GetVendorFeatures(); }
 
 void Transport::SetTransportClosedCallback(fit::closure callback) {
-  ZX_ASSERT(callback);
-  ZX_ASSERT(!closed_cb_);
+  BT_ASSERT(callback);
+  BT_ASSERT(!closed_cb_);
   closed_cb_ = std::move(callback);
 }
 
@@ -108,7 +108,7 @@ void Transport::ResetChannels() {
 }
 
 void Transport::AttachInspect(inspect::Node& parent, const std::string& name) {
-  ZX_ASSERT(acl_data_channel_);
+  BT_ASSERT(acl_data_channel_);
   hci_node_ = parent.CreateChild(name);
 
   if (command_channel_) {

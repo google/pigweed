@@ -32,7 +32,7 @@ bt::l2cap::ChannelParameters FidlToChannelParameters(const fidlbredr::ChannelPar
         params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
         break;
       default:
-        ZX_PANIC("FIDL channel parameter contains invalid mode");
+        BT_PANIC("FIDL channel parameter contains invalid mode");
     }
   }
   if (fidl.has_max_rx_sdu_size()) {
@@ -53,7 +53,7 @@ fidlbredr::ChannelMode ChannelModeToFidl(bt::l2cap::ChannelMode mode) {
       return fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION;
       break;
     default:
-      ZX_PANIC("Could not convert channel parameter mode to unsupported FIDL mode");
+      BT_PANIC("Could not convert channel parameter mode to unsupported FIDL mode");
   }
 }
 
@@ -72,7 +72,7 @@ fidlbredr::ChannelParameters ChannelInfoToFidlChannelParameters(
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   auto elem = std::make_unique<fidlbredr::DataElement>();
   bt_log(TRACE, "fidl", "DataElementToFidl: %s", in->ToString().c_str());
-  ZX_DEBUG_ASSERT(in);
+  BT_DEBUG_ASSERT(in);
   switch (in->type()) {
     case bt::sdp::DataElement::Type::kUnsignedInt: {
       switch (in->size()) {
@@ -116,7 +116,7 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
     }
     case bt::sdp::DataElement::Type::kUuid: {
       auto uuid = in->Get<bt::UUID>();
-      ZX_DEBUG_ASSERT(uuid);
+      BT_DEBUG_ASSERT(uuid);
       elem->set_uuid(fidl_helpers::UuidToFidl(*uuid));
       return elem;
     }
@@ -340,8 +340,8 @@ void ProfileServer::Advertise(
     registering.emplace_back(std::move(rec.value()));
   }
 
-  ZX_ASSERT(adapter());
-  ZX_ASSERT(adapter()->bredr());
+  BT_ASSERT(adapter());
+  BT_ASSERT(adapter()->bredr());
 
   uint64_t next = advertised_total_ + 1;
 
@@ -377,7 +377,7 @@ void ProfileServer::Search(
     attributes.insert(bt::sdp::kBluetoothProfileDescriptorList);
   }
 
-  ZX_DEBUG_ASSERT(adapter());
+  BT_DEBUG_ASSERT(adapter());
 
   auto next = searches_total_ + 1;
 
@@ -438,7 +438,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
     cb(fpromise::ok(std::move(fidl_chan)));
   };
-  ZX_DEBUG_ASSERT(adapter());
+  BT_DEBUG_ASSERT(adapter());
 
   adapter()->bredr()->OpenL2capChannel(
       id, psm, fidl_helpers::FidlToBrEdrSecurityRequirements(parameters),
@@ -528,17 +528,17 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, fxl::WeakPtr<bt::l2cap::C
     return;
   }
 
-  ZX_DEBUG_ASSERT(adapter());
+  BT_DEBUG_ASSERT(adapter());
   auto handle = channel->link_handle();
   auto id = adapter()->bredr()->GetPeerId(handle);
 
   // The protocol that is connected should be L2CAP, because that is the only thing that
   // we can connect. We can't say anything about what the higher level protocols will be.
   auto prot_seq = protocol_list.At(0);
-  ZX_ASSERT(prot_seq);
+  BT_ASSERT(prot_seq);
 
   fidlbredr::ProtocolDescriptorPtr desc = DataElementToProtocolDescriptor(prot_seq);
-  ZX_ASSERT(desc);
+  BT_ASSERT(desc);
 
   fuchsia::bluetooth::PeerId peer_id{id.value()};
 
@@ -661,7 +661,7 @@ void ProfileServer::OnScoConnectionResult(
   // Activate after adding the connection to the map in case on_closed is called synchronously.
   auto on_closed = [this, conn = connection.get()] {
     auto iter = sco_connection_servers_.find(conn);
-    ZX_ASSERT(iter != sco_connection_servers_.end());
+    BT_ASSERT(iter != sco_connection_servers_.end());
     sco_connection_servers_.erase(iter);
   };
   server_iter->second->Activate(std::move(on_closed));
@@ -671,7 +671,7 @@ void ProfileServer::OnScoConnectionResult(
   }
 
   size_t parameter_index = result.value().second;
-  ZX_ASSERT_MSG(parameter_index < request->parameters.size(),
+  BT_ASSERT_MSG(parameter_index < request->parameters.size(),
                 "parameter_index (%zu)  >= request->parameters.size() (%zu)", parameter_index,
                 request->parameters.size());
   fidlbredr::ScoConnectionParameters parameters = std::move(request->parameters[parameter_index]);
@@ -712,7 +712,7 @@ void ProfileServer::OnL2capParametersExtError(L2capParametersExt* ext_server, zx
   bt_log(DEBUG, "fidl", "fidl parameters ext server closed (reason: %s)",
          zx_status_get_string(status));
   auto handle = l2cap_parameters_ext_servers_.extract(ext_server);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 }
 
 fidl::InterfaceHandle<fidlbredr::L2capParametersExt> ProfileServer::BindL2capParametersExtServer(
@@ -732,7 +732,7 @@ fidl::InterfaceHandle<fidlbredr::L2capParametersExt> ProfileServer::BindL2capPar
 
 fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
     fxl::WeakPtr<bt::l2cap::Channel> channel) {
-  ZX_ASSERT(channel);
+  BT_ASSERT(channel);
   fidlbredr::Channel fidl_chan;
   fidl_chan.set_channel_mode(ChannelModeToFidl(channel->mode()));
   fidl_chan.set_max_tx_sdu_size(channel->max_tx_sdu_size());

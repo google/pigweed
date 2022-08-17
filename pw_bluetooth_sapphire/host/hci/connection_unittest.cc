@@ -79,7 +79,7 @@ class LinkTypeConnectionTest : public ConnectionTest,
       default:
         break;
     }
-    ZX_PANIC("Invalid link type: %u", static_cast<unsigned>(ll_type));
+    BT_PANIC("Invalid link type: %u", static_cast<unsigned>(ll_type));
     return nullptr;
   }
 

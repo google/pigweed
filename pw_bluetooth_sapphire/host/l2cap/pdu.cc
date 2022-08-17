@@ -21,12 +21,12 @@ PDU& PDU::operator=(PDU&& other) {
 }
 
 size_t PDU::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
-  ZX_DEBUG_ASSERT(out_buffer);
-  ZX_DEBUG_ASSERT(pos <= length());
-  ZX_DEBUG_ASSERT(is_valid());
+  BT_DEBUG_ASSERT(out_buffer);
+  BT_DEBUG_ASSERT(pos <= length());
+  BT_DEBUG_ASSERT(is_valid());
 
   size_t remaining = std::min(size, length() - pos);
-  ZX_DEBUG_ASSERT(out_buffer->size() >= remaining);
+  BT_DEBUG_ASSERT(out_buffer->size() >= remaining);
   if (!remaining) {
     return 0;
   }
@@ -74,22 +74,22 @@ size_t PDU::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
 PDU::FragmentList PDU::ReleaseFragments() {
   auto out_list = std::move(fragments_);
 
-  ZX_DEBUG_ASSERT(!is_valid());
+  BT_DEBUG_ASSERT(!is_valid());
   return out_list;
 }
 
 const BasicHeader& PDU::basic_header() const {
-  ZX_DEBUG_ASSERT(!fragments_.empty());
+  BT_DEBUG_ASSERT(!fragments_.empty());
   const auto& fragment = *fragments_.begin();
 
-  ZX_DEBUG_ASSERT(fragment->packet_boundary_flag() !=
+  BT_DEBUG_ASSERT(fragment->packet_boundary_flag() !=
                   hci_spec::ACLPacketBoundaryFlag::kContinuingFragment);
   return fragment->view().payload<BasicHeader>();
 }
 
 void PDU::AppendFragment(hci::ACLDataPacketPtr fragment) {
-  ZX_DEBUG_ASSERT(fragment);
-  ZX_DEBUG_ASSERT(!is_valid() ||
+  BT_DEBUG_ASSERT(fragment);
+  BT_DEBUG_ASSERT(!is_valid() ||
                   (*fragments_.begin())->connection_handle() == fragment->connection_handle());
   fragments_.push_back(std::move(fragment));
 }

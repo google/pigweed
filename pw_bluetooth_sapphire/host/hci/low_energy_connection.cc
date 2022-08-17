@@ -17,8 +17,8 @@ LowEnergyConnection::LowEnergyConnection(hci_spec::ConnectionHandle handle,
     : AclConnection(handle, local_address, peer_address, role, hci),
       parameters_(params),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
-  ZX_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
+  BT_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
+  BT_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
 
   le_ltk_request_id_ = hci->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLELongTermKeyRequestSubeventCode,
@@ -91,8 +91,8 @@ void LowEnergyConnection::HandleEncryptionStatus(Result<bool> result, bool /*key
 
 CommandChannel::EventCallbackResult LowEnergyConnection::OnLELongTermKeyRequestEvent(
     const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  ZX_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+  BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  BT_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
             hci_spec::kLELongTermKeyRequestSubeventCode);
 
   auto* params = event.subevent_params<hci_spec::LELongTermKeyRequestSubeventParams>();

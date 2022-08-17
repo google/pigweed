@@ -76,19 +76,19 @@ LowEnergyConnector::LowEnergyConnector(
       transport_(transport),
       le_connection_manager_(conn_mgr),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(le_connection_manager_);
-  ZX_ASSERT(transport_);
-  ZX_ASSERT(peer_cache_);
+  BT_ASSERT(le_connection_manager_);
+  BT_ASSERT(transport_);
+  BT_ASSERT(peer_cache_);
 
   auto peer = peer_cache_->FindById(peer_id_);
-  ZX_ASSERT(peer);
+  BT_ASSERT(peer);
   peer_address_ = peer->address();
 
   if (is_outbound_) {
-    ZX_ASSERT(discovery_manager_);
-    ZX_ASSERT(!connection);
-    ZX_ASSERT(hci_connector_);
-    ZX_ASSERT(hci_request_timeout_.get() != 0);
+    BT_ASSERT(discovery_manager_);
+    BT_ASSERT(!connection);
+    BT_ASSERT(hci_connector_);
+    BT_ASSERT(hci_request_timeout_.get() != 0);
 
     if (options.auto_connect) {
       RequestCreateConnection();
@@ -96,11 +96,11 @@ LowEnergyConnector::LowEnergyConnector(
       StartScanningForPeer();
     }
   } else {
-    ZX_ASSERT(connection);
+    BT_ASSERT(connection);
     // Connection address should resolve to same peer as the given peer ID.
     Peer* conn_peer = peer_cache_->FindByAddress(connection->peer_address());
-    ZX_ASSERT(conn_peer);
-    ZX_ASSERT_MSG(peer_id_ == conn_peer->identifier(), "peer_id_ (%s) != connection peer (%s)",
+    BT_ASSERT(conn_peer);
+    BT_ASSERT_MSG(peer_id_ == conn_peer->identifier(), "peer_id_ (%s) != connection peer (%s)",
                   bt_str(peer_id_), bt_str(conn_peer->identifier()));
 
     InitializeConnection(std::move(connection));
@@ -157,7 +157,7 @@ void LowEnergyConnector::Cancel() {
       break;
     case State::kIdle:
       // It should not be possible to cancel during kIdle as the state is immediately changed.
-      ZX_PANIC("Cancel called during kIdle");
+      BT_PANIC("Cancel called during kIdle");
   }
 }
 
@@ -210,7 +210,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   if (*state_ == State::kFailed) {
     return;
   }
-  ZX_ASSERT(*state_ == State::kStartingScanning);
+  BT_ASSERT(*state_ == State::kStartingScanning);
 
   // Failed to start scan, abort connection procedure.
   if (!session) {
@@ -224,7 +224,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   scan_timeout_task_.emplace([this] {
-    ZX_ASSERT(*state_ == State::kScanning);
+    BT_ASSERT(*state_ == State::kScanning);
     bt_log(INFO, "gap-le", "scan for pending connection timed out (peer: %s)", bt_str(peer_id_));
     NotifyFailure(ToResult(HostError::kTimedOut));
   });
@@ -237,7 +237,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   // The error callback must be set before the result callback in case the result callback is called
   // synchronously.
   discovery_session_->set_error_callback([self] {
-    ZX_ASSERT(self->state_.value() == State::kScanning);
+    BT_ASSERT(self->state_.value() == State::kScanning);
     bt_log(INFO, "gap-le", "discovery error while scanning for peer (peer: %s)",
            bt_str(self->peer_id_));
     self->scan_timeout_task_.reset();
@@ -245,7 +245,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   });
 
   discovery_session_->SetResultCallback([self](auto& peer) {
-    ZX_ASSERT(self->state_.value() == State::kScanning);
+    BT_ASSERT(self->state_.value() == State::kScanning);
 
     if (peer.identifier() != self->peer_id_) {
       return;
@@ -264,7 +264,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
 void LowEnergyConnector::RequestCreateConnection() {
   // Scanning may be skipped. When the peer disconnects during/after interrogation, a retry may be
   // initiated by calling this method.
-  ZX_ASSERT(*state_ == State::kIdle || *state_ == State::kScanning ||
+  BT_ASSERT(*state_ == State::kIdle || *state_ == State::kScanning ||
             *state_ == State::kPauseBeforeConnectionRetry);
 
   // Pause discovery until connection complete.
@@ -280,7 +280,7 @@ void LowEnergyConnector::RequestCreateConnection() {
   state_.Set(State::kConnecting);
 
   // TODO(fxbug.dev/70199): Use slow interval & window for auto connections during background scan.
-  ZX_ASSERT(hci_connector_->CreateConnection(
+  BT_ASSERT(hci_connector_->CreateConnection(
       /*use_accept_list=*/false, peer_address_, kLEScanFastInterval, kLEScanFastWindow,
       kInitialConnectionParameters, std::move(status_cb), hci_request_timeout_));
 }
@@ -294,7 +294,7 @@ void LowEnergyConnector::OnConnectResult(hci::Result<> status,
     NotifyFailure(status);
     return;
   }
-  ZX_ASSERT(link);
+  BT_ASSERT(link);
 
   bt_log(INFO, "gap-le", "connection request successful (peer: %s)", bt_str(peer_id_));
 
@@ -304,13 +304,13 @@ void LowEnergyConnector::OnConnectResult(hci::Result<> status,
 }
 
 bool LowEnergyConnector::InitializeConnection(std::unique_ptr<hci::LowEnergyConnection> link) {
-  ZX_ASSERT(link);
+  BT_ASSERT(link);
 
   auto peer_disconnect_cb = fit::bind_member<&LowEnergyConnector::OnPeerDisconnect>(this);
   auto error_cb = [this]() { NotifyFailure(); };
 
   Peer* peer = peer_cache_->FindById(peer_id_);
-  ZX_ASSERT(peer);
+  BT_ASSERT(peer);
   auto connection =
       LowEnergyConnection::Create(peer->GetWeakPtr(), std::move(link), options_, peer_disconnect_cb,
                                   error_cb, le_connection_manager_, l2cap_, gatt_, transport_);
@@ -325,13 +325,13 @@ bool LowEnergyConnector::InitializeConnection(std::unique_ptr<hci::LowEnergyConn
 }
 
 void LowEnergyConnector::StartInterrogation() {
-  ZX_ASSERT((is_outbound_ && *state_ == State::kConnecting) ||
+  BT_ASSERT((is_outbound_ && *state_ == State::kConnecting) ||
             (!is_outbound_ && *state_ == State::kIdle));
-  ZX_ASSERT(connection_);
+  BT_ASSERT(connection_);
 
   state_.Set(State::kInterrogating);
   auto peer = peer_cache_->FindById(peer_id_);
-  ZX_ASSERT(peer);
+  BT_ASSERT(peer);
   interrogator_.emplace(peer->GetWeakPtr(), connection_->handle(), transport_);
   interrogator_->Start(fit::bind_member<&LowEnergyConnector::OnInterrogationComplete>(this));
 }
@@ -339,13 +339,13 @@ void LowEnergyConnector::StartInterrogation() {
 void LowEnergyConnector::OnInterrogationComplete(hci::Result<> status) {
   // If a disconnect event is received before interrogation completes, state_ will be either kFailed
   // or kPauseBeforeConnectionRetry depending on the status of the disconnect.
-  ZX_ASSERT(*state_ == State::kInterrogating || *state_ == State::kFailed ||
+  BT_ASSERT(*state_ == State::kInterrogating || *state_ == State::kFailed ||
             *state_ == State::kPauseBeforeConnectionRetry);
   if (*state_ == State::kFailed || *state_ == State::kPauseBeforeConnectionRetry) {
     return;
   }
 
-  ZX_ASSERT(connection_);
+  BT_ASSERT(connection_);
 
   // If the controller responds to an interrogation command with the 0x3e
   // "kConnectionFailedToBeEstablished" error, it will send a Disconnection Complete event soon
@@ -373,7 +373,7 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Result<> status) {
 void LowEnergyConnector::OnPeerDisconnect(hci_spec::StatusCode status_code) {
   // The peer can't disconnect while scanning or connecting, and we unregister from
   // disconnects after kFailed & kComplete.
-  ZX_ASSERT_MSG(*state_ == State::kInterrogating ||
+  BT_ASSERT_MSG(*state_ == State::kInterrogating ||
                     *state_ == State::kAwaitingConnectionFailedToBeEstablishedDisconnect,
                 "Received peer disconnect during invalid state (state: %s, status: %s)",
                 StateToString(*state_), bt_str(ToResult(status_code)));
@@ -409,19 +409,19 @@ bool LowEnergyConnector::MaybeRetryConnection() {
 }
 
 void LowEnergyConnector::NotifySuccess() {
-  ZX_ASSERT(*state_ == State::kInterrogating);
-  ZX_ASSERT(connection_);
-  ZX_ASSERT(result_cb_);
+  BT_ASSERT(*state_ == State::kInterrogating);
+  BT_ASSERT(connection_);
+  BT_ASSERT(result_cb_);
 
   state_.Set(State::kComplete);
 
   // LowEnergyConnectionManager should immediately set handlers to replace these ones.
   connection_->set_peer_disconnect_callback([peer_id = peer_id_](auto) {
-    ZX_PANIC("Peer disconnected without handler set (peer: %s)", bt_str(peer_id));
+    BT_PANIC("Peer disconnected without handler set (peer: %s)", bt_str(peer_id));
   });
 
   connection_->set_error_callback([peer_id = peer_id_]() {
-    ZX_PANIC("connection error without handler set (peer: %s)", bt_str(peer_id));
+    BT_PANIC("connection error without handler set (peer: %s)", bt_str(peer_id));
   });
 
   result_cb_(fitx::ok(std::move(connection_)));

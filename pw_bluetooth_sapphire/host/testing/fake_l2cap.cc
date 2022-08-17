@@ -5,8 +5,8 @@
 #include "fake_l2cap.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::testing {
@@ -19,7 +19,7 @@ FakeL2cap::FakeL2cap(SendFrameCallback send_frame_callback,
       largest_channel_id_(largest_channel_id) {}
 
 void FakeL2cap::RegisterHandler(l2cap::ChannelId cid, ChannelReceiveCallback callback) {
-  ZX_ASSERT(cid < l2cap::kFirstDynamicChannelId);
+  BT_ASSERT(cid < l2cap::kFirstDynamicChannelId);
   if (callbacks_.find(cid) != callbacks_.end()) {
     bt_log(WARN, "fake-hci", "Overwriting previous handler for Channel ID %hu", cid);
   }
@@ -35,7 +35,7 @@ void FakeL2cap::RegisterService(l2cap::PSM psm, FakeDynamicChannelCallback callb
 
 bool FakeL2cap::RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::PSM psm,
                                        l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid) {
-  ZX_ASSERT(local_cid >= l2cap::kFirstDynamicChannelId);
+  BT_ASSERT(local_cid >= l2cap::kFirstDynamicChannelId);
   auto channel_map = dynamic_channels_.find(conn);
   if (channel_map != dynamic_channels_.end()) {
     if (channel_map->second.find(local_cid) == channel_map->second.end()) {
@@ -61,7 +61,7 @@ bool FakeL2cap::RegisterDynamicChannelWithPsm(hci_spec::ConnectionHandle conn,
                                               l2cap::ChannelId local_cid) {
   auto channel = FindDynamicChannelByLocalId(conn, local_cid);
   if (channel) {
-    ZX_ASSERT(channel->opened());
+    BT_ASSERT(channel->opened());
     auto psm_iter = registered_services_.find(channel->psm());
     if (psm_iter == registered_services_.end()) {
       bt_log(ERROR, "fake-hci", "No service registered for psm %hu", channel->psm());

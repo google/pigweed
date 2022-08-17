@@ -69,7 +69,7 @@ fuchsia::bluetooth::Status ResultToFidlDeprecated(
             error->error_code = fuchsia::bluetooth::ErrorCode::PROTOCOL_ERROR;
             error->protocol_error_code = static_cast<uint32_t>(c);
           } else {
-            ZX_PANIC("Protocol branch visited by bt::Error<NoProtocolError>");
+            BT_PANIC("Protocol branch visited by bt::Error<NoProtocolError>");
           }
         });
   }

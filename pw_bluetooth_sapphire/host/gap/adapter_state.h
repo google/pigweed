@@ -5,10 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_
 
-#include <zircon/assert.h>
-
 #include <cstdint>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/android_vendor_capabilities.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -48,7 +47,7 @@ struct AdapterState final {
   // Returns true if |command_bit| in the given |octet| is set in the supported
   // command list.
   inline bool IsCommandSupported(size_t octet, hci_spec::SupportedCommand command_bit) const {
-    ZX_DEBUG_ASSERT(octet < sizeof(supported_commands));
+    BT_DEBUG_ASSERT(octet < sizeof(supported_commands));
     return supported_commands[octet] & static_cast<uint8_t>(command_bit);
   }
 

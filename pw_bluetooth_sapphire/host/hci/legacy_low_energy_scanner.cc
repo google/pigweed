@@ -6,8 +6,8 @@
 
 #include <endian.h>
 #include <lib/async/default.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
@@ -36,7 +36,7 @@ std::string ScanStateToString(LowEnergyScanner::State state) {
       break;
   }
 
-  ZX_PANIC("invalid scanner state: %u", static_cast<unsigned int>(state));
+  BT_PANIC("invalid scanner state: %u", static_cast<unsigned int>(state));
   return "(unknown)";
 }
 
@@ -53,7 +53,7 @@ LegacyLowEnergyScanner::PendingScanResult::PendingScanResult(LowEnergyScanResult
 }
 
 void LegacyLowEnergyScanner::PendingScanResult::Append(const ByteBuffer& data) {
-  ZX_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
+  BT_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
   buffer_.Write(data, data_size_);
   data_size_ += data.size();
 }
@@ -62,7 +62,7 @@ LegacyLowEnergyScanner::LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_
                                                fxl::WeakPtr<Transport> hci,
                                                async_dispatcher_t* dispatcher)
     : LowEnergyScanner(std::move(hci), dispatcher), local_addr_delegate_(local_addr_delegate) {
-  ZX_DEBUG_ASSERT(local_addr_delegate_);
+  BT_DEBUG_ASSERT(local_addr_delegate_);
   event_handler_id_ = transport()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingReportSubeventCode,
       fit::bind_member<&LegacyLowEnergyScanner::OnAdvertisingReportEvent>(this));
@@ -77,13 +77,13 @@ LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {
 }
 
 bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options, ScanStatusCallback callback) {
-  ZX_ASSERT(callback);
-  ZX_ASSERT(options.period == kPeriodInfinite || options.period.get() > 0);
-  ZX_ASSERT(options.interval <= hci_spec::kLEScanIntervalMax &&
+  BT_ASSERT(callback);
+  BT_ASSERT(options.period == kPeriodInfinite || options.period.get() > 0);
+  BT_ASSERT(options.interval <= hci_spec::kLEScanIntervalMax &&
             options.interval >= hci_spec::kLEScanIntervalMin);
-  ZX_ASSERT(options.window <= hci_spec::kLEScanIntervalMax &&
+  BT_ASSERT(options.window <= hci_spec::kLEScanIntervalMax &&
             options.window >= hci_spec::kLEScanIntervalMin);
-  ZX_ASSERT(options.window < options.interval);
+  BT_ASSERT(options.window < options.interval);
 
   if (state() != State::kIdle) {
     bt_log(ERROR, "hci-le", "cannot start scan while in state: %s",
@@ -91,10 +91,10 @@ bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options, ScanStatusCal
     return false;
   }
 
-  ZX_ASSERT(!scan_cb_);
-  ZX_ASSERT(!scan_timeout_task_.is_pending());
-  ZX_ASSERT(hci_cmd_runner()->IsReady());
-  ZX_ASSERT(pending_results_.empty());
+  BT_ASSERT(!scan_cb_);
+  BT_ASSERT(!scan_timeout_task_.is_pending());
+  BT_ASSERT(hci_cmd_runner()->IsReady());
+  BT_ASSERT(pending_results_.empty());
 
   set_state(State::kInitiating);
   set_active_scan_requested(options.active);
@@ -152,8 +152,8 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
 
   hci_cmd_runner()->QueueCommand(std::move(command));
   hci_cmd_runner()->RunCommands([this, period = options.period](Result<> status) {
-    ZX_DEBUG_ASSERT(scan_cb_);
-    ZX_DEBUG_ASSERT(state() == State::kInitiating);
+    BT_DEBUG_ASSERT(scan_cb_);
+    BT_DEBUG_ASSERT(state() == State::kInitiating);
 
     if (status.is_error()) {
       if (status == ToResult(HostError::kCanceled)) {
@@ -163,7 +163,7 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
 
       auto cb = std::move(scan_cb_);
 
-      ZX_DEBUG_ASSERT(!scan_cb_);
+      BT_DEBUG_ASSERT(!scan_cb_);
       set_state(State::kIdle);
 
       bt_log(ERROR, "hci-le", "failed to start scan: %s", bt_str(status));
@@ -207,7 +207,7 @@ bool LegacyLowEnergyScanner::StopScan() {
 }
 
 void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
-  ZX_DEBUG_ASSERT(scan_cb_);
+  BT_DEBUG_ASSERT(scan_cb_);
 
   scan_timeout_task_.Cancel();
   set_state(State::kStopping);
@@ -223,7 +223,7 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   // Either way clear all results from the previous scan period.
   pending_results_.clear();
 
-  ZX_DEBUG_ASSERT(hci_cmd_runner()->IsReady());
+  BT_DEBUG_ASSERT(hci_cmd_runner()->IsReady());
 
   // Tell the controller to stop scanning.
   auto command = CommandPacket::New(hci_spec::kLESetScanEnable,
@@ -234,8 +234,8 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
 
   hci_cmd_runner()->QueueCommand(std::move(command));
   hci_cmd_runner()->RunCommands([this, stopped](Result<> status) {
-    ZX_DEBUG_ASSERT(scan_cb_);
-    ZX_DEBUG_ASSERT(state() == State::kStopping);
+    BT_DEBUG_ASSERT(scan_cb_);
+    BT_DEBUG_ASSERT(state() == State::kStopping);
 
     bt_is_error(status, WARN, "hci-le", "failed to stop scan: %s", bt_str(status));
     // Something went wrong but there isn't really a meaningful way to recover, so we just fall
@@ -333,7 +333,7 @@ void LegacyLowEnergyScanner::HandleScanResponse(const hci_spec::LEAdvertisingRep
     return;
   }
   auto& pending = iter->second;
-  ZX_DEBUG_ASSERT(address == pending->result().address);
+  BT_DEBUG_ASSERT(address == pending->result().address);
 
   // Append the scan response to the pending advertising data.
   pending->Append(BufferView(report.data, report.length_data));

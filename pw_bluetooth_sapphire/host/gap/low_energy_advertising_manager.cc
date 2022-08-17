@@ -4,10 +4,9 @@
 
 #include "low_energy_advertising_manager.h"
 
-#include <zircon/assert.h>
-
 #include "low_energy_address_manager.h"
 #include "peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
@@ -29,7 +28,7 @@ hci::AdvertisingIntervalRange GetIntervalRange(AdvertisingInterval interval) {
       return {kLEAdvertisingSlowIntervalMin, kLEAdvertisingSlowIntervalMax};
   }
 
-  ZX_PANIC("unexpected advertising interval value");
+  BT_PANIC("unexpected advertising interval value");
   return {kLEAdvertisingSlowIntervalMin, kLEAdvertisingSlowIntervalMax};
 }
 
@@ -40,8 +39,8 @@ AdvertisementInstance::AdvertisementInstance() : id_(kInvalidAdvertisementId) {}
 AdvertisementInstance::AdvertisementInstance(AdvertisementId id,
                                              fxl::WeakPtr<LowEnergyAdvertisingManager> owner)
     : id_(id), owner_(owner) {
-  ZX_DEBUG_ASSERT(id_ != kInvalidAdvertisementId);
-  ZX_DEBUG_ASSERT(owner_);
+  BT_DEBUG_ASSERT(id_ != kInvalidAdvertisementId);
+  BT_DEBUG_ASSERT(owner_);
 }
 
 AdvertisementInstance::~AdvertisementInstance() { Reset(); }
@@ -88,8 +87,8 @@ class LowEnergyAdvertisingManager::ActiveAdvertisement final {
 LowEnergyAdvertisingManager::LowEnergyAdvertisingManager(
     hci::LowEnergyAdvertiser* advertiser, hci::LocalAddressDelegate* local_addr_delegate)
     : advertiser_(advertiser), local_addr_delegate_(local_addr_delegate), weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(advertiser_);
-  ZX_DEBUG_ASSERT(local_addr_delegate_);
+  BT_DEBUG_ASSERT(advertiser_);
+  BT_DEBUG_ASSERT(local_addr_delegate_);
 }
 
 LowEnergyAdvertisingManager::~LowEnergyAdvertisingManager() {

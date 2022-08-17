@@ -16,8 +16,8 @@ ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
       channel_(channel),
       parameters_(parameters),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(connection_);
-  ZX_ASSERT(!channel_ ||
+  BT_ASSERT(connection_);
+  BT_ASSERT(!channel_ ||
             channel_->max_data_length() <= hci_spec::kMaxSynchronousDataPacketPayloadSize);
 
   handle_ = connection_->handle();
@@ -46,7 +46,7 @@ void ScoConnection::Close() {
     return;
   }
 
-  ZX_ASSERT(activator_closed_cb_);
+  BT_ASSERT(activator_closed_cb_);
   // Move cb out of this, since cb may destroy this.
   auto cb = std::move(activator_closed_cb_);
   cb();
@@ -54,9 +54,9 @@ void ScoConnection::Close() {
 
 bool ScoConnection::Activate(fit::closure rx_callback, fit::closure closed_callback) {
   // TODO(fxbug.dev/58458): Handle Activate() called on a connection that has been closed already.
-  ZX_ASSERT(closed_callback);
-  ZX_ASSERT(!active_);
-  ZX_ASSERT(rx_callback);
+  BT_ASSERT(closed_callback);
+  BT_ASSERT(!active_);
+  BT_ASSERT(rx_callback);
   activator_closed_cb_ = std::move(closed_callback);
   rx_callback_ = std::move(rx_callback);
   active_ = true;
@@ -139,7 +139,7 @@ std::unique_ptr<hci::ScoDataPacket> ScoConnection::GetNextOutboundPacket() {
 }
 
 void ScoConnection::ReceiveInboundPacket(std::unique_ptr<hci::ScoDataPacket> packet) {
-  ZX_ASSERT(packet->connection_handle() == handle_);
+  BT_ASSERT(packet->connection_handle() == handle_);
 
   if (!active_ || !rx_callback_) {
     bt_log(TRACE, "gap-sco", "dropping inbound SCO packet");

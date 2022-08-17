@@ -79,7 +79,7 @@ void CommandHandler::ServeDisconnectionRequest(DisconnectionRequestCallback cb) 
 
 CommandHandler::CommandHandler(SignalingChannelInterface* sig, fit::closure request_fail_callback)
     : sig_(sig), request_fail_callback_(std::move(request_fail_callback)) {
-  ZX_ASSERT(sig_);
+  BT_ASSERT(sig_);
 }
 
 }  // namespace bt::l2cap::internal

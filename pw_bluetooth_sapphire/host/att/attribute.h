@@ -7,12 +7,12 @@
 
 #include <lib/fit/function.h>
 #include <lib/fitx/result.h>
-#include <zircon/assert.h>
 
 #include <memory>
 #include <vector>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -201,14 +201,14 @@ class AttributeGrouping final {
   bool complete() const { return attributes_.size() == (end_handle_ - start_handle_ + 1); }
 
   const UUID& group_type() const {
-    ZX_DEBUG_ASSERT(!attributes_.empty());
+    BT_DEBUG_ASSERT(!attributes_.empty());
     return attributes_[0].type();
   }
 
   // Value of the group declaration attribute.
   BufferView decl_value() const {
-    ZX_DEBUG_ASSERT(!attributes_.empty());
-    ZX_DEBUG_ASSERT(attributes_[0].value());
+    BT_DEBUG_ASSERT(!attributes_.empty());
+    BT_DEBUG_ASSERT(attributes_[0].value());
     return attributes_[0].value()->view();
   }
 
@@ -218,7 +218,7 @@ class AttributeGrouping final {
 
   bool active() const { return active_; }
   void set_active(bool active) {
-    ZX_DEBUG_ASSERT_MSG(complete(), "set_active() called on incomplete grouping!");
+    BT_DEBUG_ASSERT_MSG(complete(), "set_active() called on incomplete grouping!");
     active_ = active;
   }
 

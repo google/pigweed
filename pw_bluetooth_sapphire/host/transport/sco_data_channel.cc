@@ -65,7 +65,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
       return false;
     }
     auto iter = connections_.find(active_connection_->handle());
-    ZX_ASSERT(iter != connections_.end());
+    BT_ASSERT(iter != connections_.end());
     return (iter->second.config_state == HciConfigState::kConfigured);
   }
 
@@ -99,12 +99,12 @@ ScoDataChannelImpl::ScoDataChannelImpl(const DataBufferInfo& buffer_info,
       dispatcher_(async_get_default_dispatcher()) {
   // ScoDataChannel shouldn't be used if the buffer is unavailable (implying the controller
   // doesn't support SCO).
-  ZX_ASSERT(buffer_info_.IsAvailable());
+  BT_ASSERT(buffer_info_.IsAvailable());
 
   num_completed_packets_event_handler_id_ = command_channel_->AddEventHandler(
       hci_spec::kNumberOfCompletedPacketsEventCode,
       fit::bind_member<&ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent>(this));
-  ZX_ASSERT(num_completed_packets_event_handler_id_);
+  BT_ASSERT(num_completed_packets_event_handler_id_);
 
   hci_->SetScoCallback(fit::bind_member<&ScoDataChannelImpl::OnRxPacket>(this));
 }
@@ -114,10 +114,10 @@ ScoDataChannelImpl::~ScoDataChannelImpl() {
 }
 
 void ScoDataChannelImpl::RegisterConnection(fxl::WeakPtr<ConnectionInterface> connection) {
-  ZX_ASSERT(connection->parameters().output_data_path == hci_spec::ScoDataPath::kHci);
+  BT_ASSERT(connection->parameters().output_data_path == hci_spec::ScoDataPath::kHci);
   ConnectionData conn_data{.connection = connection};
   auto [_, inserted] = connections_.emplace(connection->handle(), std::move(conn_data));
-  ZX_ASSERT_MSG(inserted, "connection with handle %#.4x already registered", connection->handle());
+  BT_ASSERT_MSG(inserted, "connection with handle %#.4x already registered", connection->handle());
   MaybeUpdateActiveConnection();
 }
 
@@ -132,7 +132,7 @@ void ScoDataChannelImpl::UnregisterConnection(hci_spec::ConnectionHandle handle)
 
 void ScoDataChannelImpl::ClearControllerPacketCount(hci_spec::ConnectionHandle handle) {
   bt_log(DEBUG, "hci", "clearing pending packets (handle: %#.4x)", handle);
-  ZX_ASSERT(connections_.find(handle) == connections_.end());
+  BT_ASSERT(connections_.find(handle) == connections_.end());
 
   auto iter = pending_packet_counts_.find(handle);
   if (iter == pending_packet_counts_.end()) {
@@ -160,7 +160,7 @@ void ScoDataChannelImpl::OnRxPacket(std::unique_ptr<ScoDataPacket> packet) {
 
 CommandChannel::EventCallbackResult ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent(
     const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kNumberOfCompletedPacketsEventCode);
+  BT_ASSERT(event.event_code() == hci_spec::kNumberOfCompletedPacketsEventCode);
   const auto& payload = event.params<hci_spec::NumberOfCompletedPacketsEventParams>();
 
   const size_t handles_in_packet =
@@ -189,8 +189,8 @@ CommandChannel::EventCallbackResult ScoDataChannelImpl::OnNumberOfCompletedPacke
 
     const uint16_t comp_packets = le16toh(data->hc_num_of_completed_packets);
 
-    ZX_ASSERT(iter->second != 0u);
-    ZX_ASSERT_MSG(
+    BT_ASSERT(iter->second != 0u);
+    BT_ASSERT_MSG(
         iter->second >= comp_packets,
         "pending/completed packet count mismatch! (handle: %#.4x, pending: %zu, completed : %u)",
         le16toh(data->connection_handle), iter->second, comp_packets);
@@ -311,7 +311,7 @@ void ScoDataChannelImpl::ConfigureHci() {
   }
 
   auto conn = connections_.find(active_connection_->handle());
-  ZX_ASSERT(conn != connections_.end());
+  BT_ASSERT(conn != connections_.end());
 
   auto callback = [self = weak_ptr_factory_.GetWeakPtr(),
                    handle = conn->first](zx_status_t status) {

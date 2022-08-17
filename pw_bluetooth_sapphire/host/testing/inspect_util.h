@@ -9,6 +9,7 @@
 
 #include <gmock/gmock.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 
 namespace bt::testing {

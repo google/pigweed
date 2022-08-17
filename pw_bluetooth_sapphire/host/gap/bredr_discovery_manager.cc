@@ -8,8 +8,8 @@
 #include <lib/async/time.h>
 #include <lib/fit/defer.h>
 #include <lib/stdcompat/functional.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -26,10 +26,10 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
   bt_log(TRACE, "gap-bredr", "inquiry result received");
 
   const size_t event_payload_size = event.view().payload_size();
-  ZX_ASSERT_MSG(event_payload_size >= sizeof(EventParamType), "undersized (%zu) inquiry event",
+  BT_ASSERT_MSG(event_payload_size >= sizeof(EventParamType), "undersized (%zu) inquiry event",
                 event_payload_size);
   size_t result_size = event_payload_size - sizeof(EventParamType);
-  ZX_ASSERT_MSG(result_size % sizeof(ResultType) == 0, "wrong size result (%zu %% %zu != 0)",
+  BT_ASSERT_MSG(result_size % sizeof(ResultType) == 0, "wrong size result (%zu %% %zu != 0)",
                 result_size, sizeof(ResultType));
 
   const auto params_data = event.view().payload_data();
@@ -41,7 +41,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
     if (!peer) {
       peer = cache->NewPeer(addr, /*connectable=*/true);
     }
-    ZX_ASSERT(peer);
+    BT_ASSERT(peer);
 
     peer->MutBrEdr().SetInquiryData(response);
     updated.insert(peer);
@@ -82,22 +82,22 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
       desired_inquiry_mode_(mode),
       current_inquiry_mode_(hci_spec::InquiryMode::kStandard),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(cache_);
-  ZX_DEBUG_ASSERT(hci_);
-  ZX_DEBUG_ASSERT(dispatcher_);
+  BT_DEBUG_ASSERT(cache_);
+  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(dispatcher_);
 
   result_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci_spec::kInquiryResultEventCode,
       fit::bind_member<&BrEdrDiscoveryManager::InquiryResult>(this));
-  ZX_DEBUG_ASSERT(result_handler_id_);
+  BT_DEBUG_ASSERT(result_handler_id_);
   rssi_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci_spec::kInquiryResultWithRSSIEventCode,
       cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResult, this));
-  ZX_DEBUG_ASSERT(rssi_handler_id_);
+  BT_DEBUG_ASSERT(rssi_handler_id_);
   eir_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci_spec::kExtendedInquiryResultEventCode,
       cpp20::bind_front(&BrEdrDiscoveryManager::ExtendedInquiryResult, this));
-  ZX_DEBUG_ASSERT(eir_handler_id_);
+  BT_DEBUG_ASSERT(eir_handler_id_);
 
   // Set the Inquiry Scan Settings
   WriteInquiryScanSettings(kInquiryScanInterval, kInquiryScanWindow, /*interlaced=*/true);
@@ -113,7 +113,7 @@ BrEdrDiscoveryManager::~BrEdrDiscoveryManager() {
 }
 
 void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(callback);
 
   bt_log(INFO, "gap-bredr", "RequestDiscovery");
 
@@ -200,7 +200,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
           return;
         }
 
-        ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kInquiryCompleteEventCode);
+        BT_DEBUG_ASSERT(event.event_code() == hci_spec::kInquiryCompleteEventCode);
         self->zombie_discovering_.clear();
 
         if (bt_is_error(status, TRACE, "gap", "inquiry complete error")) {
@@ -216,7 +216,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
 // Stops the inquiry procedure.
 void BrEdrDiscoveryManager::StopInquiry() {
-  ZX_DEBUG_ASSERT(result_handler_id_);
+  BT_DEBUG_ASSERT(result_handler_id_);
   bt_log(TRACE, "gap-bredr", "cancelling inquiry");
 
   auto inq_cancel = hci::CommandPacket::New(hci_spec::kInquiryCancel);
@@ -253,7 +253,7 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
 
 hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryResult(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kExtendedInquiryResultEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kExtendedInquiryResultEventCode);
 
   bt_log(TRACE, "gap-bredr", "ExtendedInquiryResult received");
   if (event.view().payload_size() != sizeof(hci_spec::ExtendedInquiryResultEventParams)) {
@@ -267,7 +267,7 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryR
   if (!peer) {
     peer = cache_->NewPeer(addr, /*connectable=*/true);
   }
-  ZX_DEBUG_ASSERT(peer);
+  BT_DEBUG_ASSERT(peer);
 
   peer->MutBrEdr().SetInquiryData(result);
 
@@ -406,8 +406,8 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
                                         sizeof(hci_spec::RemoteNameRequestCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
   auto params = packet->mutable_payload<hci_spec::RemoteNameRequestCommandParams>();
-  ZX_DEBUG_ASSERT(peer->bredr());
-  ZX_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
+  BT_DEBUG_ASSERT(peer->bredr());
+  BT_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
   params->bd_addr = peer->address().value();
   params->page_scan_repetition_mode = *(peer->bredr()->page_scan_repetition_mode());
   if (peer->bredr()->clock_offset()) {
@@ -427,7 +427,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
       return;
     }
 
-    ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kRemoteNameRequestCompleteEventCode);
+    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kRemoteNameRequestCompleteEventCode);
 
     self->requesting_names_.erase(id);
     const auto& params =
@@ -450,7 +450,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
 }
 
 void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(callback);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto result_cb = [self, cb = callback.share()](const hci::Result<>& result) {
@@ -582,7 +582,7 @@ std::unique_ptr<BrEdrDiscoverySession> BrEdrDiscoveryManager::AddDiscoverySessio
   // constructor.
   std::unique_ptr<BrEdrDiscoverySession> session(
       new BrEdrDiscoverySession(weak_ptr_factory_.GetWeakPtr()));
-  ZX_DEBUG_ASSERT(discovering_.find(session.get()) == discovering_.end());
+  BT_DEBUG_ASSERT(discovering_.find(session.get()) == discovering_.end());
   discovering_.insert(session.get());
   bt_log(INFO, "gap-bredr", "new discovery session: %lu sessions active", discovering_.size());
   UpdateInspectProperties();
@@ -607,7 +607,7 @@ std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverable
   // constructor.
   std::unique_ptr<BrEdrDiscoverableSession> session(
       new BrEdrDiscoverableSession(weak_ptr_factory_.GetWeakPtr()));
-  ZX_DEBUG_ASSERT(discoverable_.find(session.get()) == discoverable_.end());
+  BT_DEBUG_ASSERT(discoverable_.find(session.get()) == discoverable_.end());
   discoverable_.insert(session.get());
   bt_log(INFO, "gap-bredr", "new discoverable session: %lu sessions active", discoverable_.size());
   return session;

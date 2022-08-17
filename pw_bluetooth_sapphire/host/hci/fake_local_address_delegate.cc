@@ -10,7 +10,7 @@
 namespace bt::hci {
 
 void FakeLocalAddressDelegate::EnsureLocalAddress(AddressCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(callback);
   if (!async_) {
     callback(local_address_);
     return;

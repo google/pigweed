@@ -5,8 +5,8 @@
 #include "bredr_connection_manager.h"
 
 #include <lib/async/time.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/expiring_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
@@ -69,7 +69,7 @@ std::string ReasonAsString(DisconnectReason reason) {
 // BrEdrConnectionManager instance, which will begin to disable Page Scan as it shuts down.
 void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
                         async_dispatcher_t* dispatcher, hci::ResultFunction<> cb) {
-  ZX_DEBUG_ASSERT(cb);
+  BT_DEBUG_ASSERT(cb);
   auto read_enable = hci::CommandPacket::New(hci_spec::kReadScanEnable);
   auto finish_enable_cb = [enabled, hci, finish_cb = std::move(cb)](
                               auto, const hci::EventPacket& event) mutable {
@@ -100,7 +100,7 @@ void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
 
 // An event signifying that a connection was completed by the controller
 BrEdrConnectionManager::ConnectionComplete::ConnectionComplete(const hci::EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kConnectionCompleteEventCode);
+  BT_ASSERT(event.event_code() == hci_spec::kConnectionCompleteEventCode);
   const auto& params = event.params<hci_spec::ConnectionCompleteEventParams>();
   handle = letoh16(params.connection_handle);
   addr = DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr);
@@ -111,7 +111,7 @@ BrEdrConnectionManager::ConnectionComplete::ConnectionComplete(const hci::EventP
 // An event signifying that an incoming connection is being requested by a peer
 BrEdrConnectionManager::ConnectionRequestEvent::ConnectionRequestEvent(
     const hci::EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kConnectionRequestEventCode);
+  BT_ASSERT(event.event_code() == hci_spec::kConnectionRequestEventCode);
   const auto& params = event.params<hci_spec::ConnectionRequestEventParams>();
   addr = DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr);
   link_type = params.link_type;
@@ -128,7 +128,7 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
         }
         return hci::CommandChannel::EventCallbackResult::kRemove;
       });
-  ZX_DEBUG_ASSERT(event_id);
+  BT_DEBUG_ASSERT(event_id);
   event_handler_ids_.push_back(event_id);
   return event_id;
 }
@@ -147,10 +147,10 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
       request_timeout_(kBrEdrCreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(hci_);
-  ZX_DEBUG_ASSERT(cache_);
-  ZX_DEBUG_ASSERT(l2cap_);
-  ZX_DEBUG_ASSERT(dispatcher_);
+  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(cache_);
+  BT_DEBUG_ASSERT(l2cap_);
+  BT_DEBUG_ASSERT(dispatcher_);
 
   hci_cmd_runner_ = std::make_unique<hci::SequentialCommandRunner>(hci_);
 
@@ -256,7 +256,7 @@ PeerId BrEdrConnectionManager::GetPeerId(hci_spec::ConnectionHandle handle) cons
   }
 
   auto* peer = cache_->FindByAddress(it->second.link().peer_address());
-  ZX_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle %#.4x", handle);
+  BT_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle %#.4x", handle);
   return peer->identifier();
 }
 
@@ -312,7 +312,7 @@ BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
                                 client_cb = std::move(callback)](PeerId peer_id, auto& attributes) {
     if (self) {
       Peer* const peer = self->cache_->FindById(peer_id);
-      ZX_ASSERT(peer);
+      BT_ASSERT(peer);
       peer->MutBrEdr().AddService(uuid);
     }
     client_cb(peer_id, attributes);
@@ -431,12 +431,12 @@ void BrEdrConnectionManager::AttachInspect(inspect::Node& parent, std::string na
 }
 
 void BrEdrConnectionManager::WritePageTimeout(zx::duration page_timeout, hci::ResultFunction<> cb) {
-  ZX_ASSERT(page_timeout >= hci_spec::kMinPageTimeoutDuration);
-  ZX_ASSERT(page_timeout <= hci_spec::kMaxPageTimeoutDuration);
+  BT_ASSERT(page_timeout >= hci_spec::kMinPageTimeoutDuration);
+  BT_ASSERT(page_timeout <= hci_spec::kMaxPageTimeoutDuration);
 
   const int64_t raw_page_timeout = page_timeout / hci_spec::kDurationPerPageTimeoutUnit;
-  ZX_ASSERT(raw_page_timeout >= hci_spec::kMinPageTimeoutCommandParameterValue);
-  ZX_ASSERT(raw_page_timeout <= hci_spec::kMaxPageTimeoutCommandParameterValue);
+  BT_ASSERT(raw_page_timeout >= hci_spec::kMinPageTimeoutCommandParameterValue);
+  BT_ASSERT(raw_page_timeout <= hci_spec::kMaxPageTimeoutCommandParameterValue);
 
   auto write_page_timeout_cmd = hci::CommandPacket::New(
       hci_spec::kWritePageTimeout, sizeof(hci_spec::WritePageTimeoutCommandParams));
@@ -542,7 +542,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   bt_log(INFO, "gap-bredr", "Beginning interrogation for peer %s", bt_str(peer_id));
 
   // We should never have more than one link to a given peer
-  ZX_DEBUG_ASSERT(!FindConnectionById(peer_id));
+  BT_DEBUG_ASSERT(!FindConnectionById(peer_id));
 
   // The controller has completed the HCI connection procedure, so the connection request can no
   // longer be failed by a lower layer error. Now tie error reporting of the request to the lifetime
@@ -562,7 +562,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   auto [conn_iter, success] = connections_.try_emplace(
       handle, peer->GetWeakPtr(), std::move(link), std::move(send_auth_request_cb),
       std::move(disconnect_cb), std::move(on_peer_disconnect_cb), l2cap_, hci_, std::move(request));
-  ZX_ASSERT(success);
+  BT_ASSERT(success);
 
   BrEdrConnection& connection = conn_iter->second;
   connection.pairing_state().SetPairingDelegate(pairing_delegate_);
@@ -662,7 +662,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticationComplete(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kAuthenticationCompleteEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kAuthenticationCompleteEventCode);
   const auto& params = event.params<hci_spec::AuthenticationCompleteEventParams>();
   auto connection_handle = params.connection_handle;
 
@@ -911,7 +911,7 @@ void BrEdrConnectionManager::CleanUpConnection(hci_spec::ConnectionHandle handle
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityRequest(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kIOCapabilityRequestEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kIOCapabilityRequestEventCode);
   const auto& params = event.params<hci_spec::IOCapabilityRequestEventParams>();
 
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
@@ -945,7 +945,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityResponse(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kIOCapabilityResponseEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kIOCapabilityResponseEventCode);
   const auto& params = event.params<hci_spec::IOCapabilityResponseEventParams>();
 
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
@@ -959,7 +959,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyRequest(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kLinkKeyRequestEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLinkKeyRequestEventCode);
   const auto& params = event.params<hci_spec::LinkKeyRequestParams>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
@@ -992,7 +992,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyReques
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotification(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kLinkKeyNotificationEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLinkKeyNotificationEventCode);
   const auto& params = event.params<hci_spec::LinkKeyNotificationEventParams>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
@@ -1020,7 +1020,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
     }
 
     // Reuse current properties
-    ZX_DEBUG_ASSERT(peer->bredr()->link_key());
+    BT_DEBUG_ASSERT(peer->bredr()->link_key());
     sec_props = peer->bredr()->link_key()->security();
     key_type = *sec_props.GetLinkKeyType();
   } else {
@@ -1060,7 +1060,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnSimplePairingComplete(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kSimplePairingCompleteEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kSimplePairingCompleteEventCode);
   const auto& params = event.params<hci_spec::SimplePairingCompleteEventParams>();
 
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
@@ -1075,7 +1075,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnSimplePairing
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserConfirmationRequest(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kUserConfirmationRequestEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kUserConfirmationRequestEventCode);
   const auto& params = event.params<hci_spec::UserConfirmationRequestEventParams>();
 
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
@@ -1104,7 +1104,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserConfirmat
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserPasskeyRequest(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kUserPasskeyRequestEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kUserPasskeyRequestEventCode);
   const auto& params = event.params<hci_spec::UserPasskeyRequestEventParams>();
 
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
@@ -1132,7 +1132,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserPasskeyRe
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserPasskeyNotification(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kUserPasskeyNotificationEventCode);
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kUserPasskeyNotificationEventCode);
   const auto& params = event.params<hci_spec::UserPasskeyNotificationEventParams>();
 
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
@@ -1146,7 +1146,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserPasskeyNo
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
     const hci::EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kRoleChangeEventCode);
+  BT_ASSERT(event.event_code() == hci_spec::kRoleChangeEventCode);
   const auto& params = event.params<hci_spec::RoleChangeEventParams>();
 
   DeviceAddress address(DeviceAddress::Type::kBREDR, params.bd_addr);
@@ -1197,7 +1197,7 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
   }
 
   // Br/Edr peers should always be connectable by definition
-  ZX_ASSERT(peer->connectable());
+  BT_ASSERT(peer->connectable());
 
   // Succeed immediately or after interrogation if there is already an active connection.
   auto conn = FindConnectionById(peer_id);
@@ -1233,7 +1233,7 @@ BrEdrConnectionManager::NextCreateConnectionParams() {
     // The peer should still be in PeerCache because it was marked "initializing" when the
     // connection was requested.
     const Peer* peer = cache_->FindById(peer_id);
-    ZX_ASSERT(peer);
+    BT_ASSERT(peer);
     if (peer->bredr() && !request.HasIncoming()) {
       return std::optional(CreateConnectionParams{peer->identifier(), request.address(),
                                                   peer->bredr()->clock_offset(),

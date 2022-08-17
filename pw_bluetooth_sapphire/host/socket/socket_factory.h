@@ -7,13 +7,13 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/zx/socket.h>
-#include <zircon/assert.h>
 #include <zircon/status.h>
 
 #include <memory>
 #include <unordered_map>
 
 #include "socket_channel_relay.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -98,9 +98,9 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fxl::WeakPtr<ChannelT> 
       std::move(local_socket), channel,
       typename RelayT::DeactivationCallback(
           [self = weak_ptr_factory_.GetWeakPtr(), id = unique_id]() mutable {
-            ZX_DEBUG_ASSERT_MSG(self, "(unique_id=%u)", id);
+            BT_DEBUG_ASSERT_MSG(self, "(unique_id=%u)", id);
             size_t n_erased = self->channel_to_relay_.erase(id);
-            ZX_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%u)", n_erased, id);
+            BT_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%u)", n_erased, id);
           }));
 
   // Note: Activate() may abort, if |channel| has been Activated() without

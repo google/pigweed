@@ -6,7 +6,6 @@
 
 #include <lib/async/default.h>
 #include <lib/fit/defer.h>
-#include <zircon/assert.h>
 
 #include <unordered_map>
 
@@ -15,6 +14,7 @@
 #include "remote_service.h"
 #include "server.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/generic_attribute_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
@@ -190,7 +190,7 @@ class Impl final : public GATT {
 
   RemoteServiceWatcherId RegisterRemoteServiceWatcherForPeer(
       PeerId peer_id, RemoteServiceWatcher watcher) override {
-    ZX_ASSERT(watcher);
+    BT_ASSERT(watcher);
 
     RemoteServiceWatcherId id = next_watcher_id_++;
     peer_remote_service_watchers_.emplace(peer_id, std::make_pair(id, std::move(watcher)));
@@ -211,7 +211,7 @@ class Impl final : public GATT {
 
   void ListServices(PeerId peer_id, std::vector<UUID> uuids,
                     ServiceListCallback callback) override {
-    ZX_ASSERT(callback);
+    BT_ASSERT(callback);
     auto iter = connections_.find(peer_id);
     if (iter == connections_.end()) {
       // Connection not found.

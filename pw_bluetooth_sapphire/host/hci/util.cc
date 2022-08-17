@@ -5,16 +5,16 @@
 #include "util.h"
 
 #include <endian.h>
-#include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::hci {
 
 bool DeviceAddressFromAdvReport(const hci_spec::LEAdvertisingReportData& report,
                                 DeviceAddress* out_address, bool* out_resolved) {
-  ZX_DEBUG_ASSERT(out_address);
-  ZX_DEBUG_ASSERT(out_resolved);
+  BT_DEBUG_ASSERT(out_address);
+  BT_DEBUG_ASSERT(out_resolved);
 
   DeviceAddress::Type type;
   switch (report.address_type) {
@@ -92,7 +92,7 @@ hci_spec::LEAddressType AddressTypeToHCI(DeviceAddress::Type type) {
       result = hci_spec::LEAddressType::kAnonymous;
       break;
     default:
-      ZX_PANIC("invalid address type: %u", static_cast<unsigned int>(type));
+      BT_PANIC("invalid address type: %u", static_cast<unsigned int>(type));
       break;
   }
   return result;

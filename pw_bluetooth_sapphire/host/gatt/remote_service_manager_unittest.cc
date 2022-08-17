@@ -81,7 +81,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
 
     RunLoopUntilIdle();
 
-    ZX_DEBUG_ASSERT(services.size() == 1u);
+    BT_DEBUG_ASSERT(services.size() == 1u);
     return services[0];
   }
 
@@ -97,7 +97,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
   void SetupCharacteristics(
       fxl::WeakPtr<RemoteService> service, std::vector<CharacteristicData> fake_chrs,
       std::vector<DescriptorData> fake_descrs = std::vector<DescriptorData>()) {
-    ZX_DEBUG_ASSERT(service);
+    BT_DEBUG_ASSERT(service);
 
     SetCharacteristicsAndDescriptors(std::move(fake_chrs), std::move(fake_descrs));
 
@@ -133,8 +133,8 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
   void EnableNotifications(fxl::WeakPtr<RemoteService> service, CharacteristicHandle chr_id,
                            att::Result<>* out_status, IdType* out_id,
                            RemoteService::ValueCallback callback = NopValueCallback) {
-    ZX_DEBUG_ASSERT(out_status);
-    ZX_DEBUG_ASSERT(out_id);
+    BT_DEBUG_ASSERT(out_status);
+    BT_DEBUG_ASSERT(out_id);
     service->EnableNotifications(chr_id, std::move(callback),
                                  [&](att::Result<> cb_status, IdType cb_id) {
                                    *out_status = cb_status;

@@ -4,11 +4,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_tx_engine.h"
 
-#include <zircon/assert.h>
-
 #include <limits>
 
 #include "lib/async/default.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
 
@@ -44,7 +43,7 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
       retransmitted_range_during_poll_(false),
       n_receiver_ready_polls_sent_(0),
       remote_is_busy_(false) {
-  ZX_DEBUG_ASSERT(n_frames_in_tx_window_);
+  BT_DEBUG_ASSERT(n_frames_in_tx_window_);
   receiver_ready_poll_task_.set_handler([this] {
     SendReceiverReadyPoll();
     StartMonitorTimer();
@@ -60,7 +59,7 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
 }
 
 bool Engine::QueueSdu(ByteBufferPtr sdu) {
-  ZX_ASSERT(sdu);
+  BT_ASSERT(sdu);
   // TODO(fxbug.dev/1033): Add support for segmentation
   if (sdu->size() > max_tx_sdu_size_) {
     bt_log(DEBUG, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
@@ -82,7 +81,7 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
 
 void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
   // TODO(quiche): Reconsider this assertion if we allow reconfiguration of the TX window.
-  ZX_DEBUG_ASSERT_MSG(NumUnackedFrames() <= n_frames_in_tx_window_,
+  BT_DEBUG_ASSERT_MSG(NumUnackedFrames() <= n_frames_in_tx_window_,
                       "(NumUnackedFrames() = %u, n_frames_in_tx_window_ = %u, "
                       "expected_ack_seq_ = %u, last_tx_seq_ = %u)",
                       NumUnackedFrames(), n_frames_in_tx_window_, expected_ack_seq_, last_tx_seq_);
@@ -104,7 +103,7 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
     monitor_task_.Cancel();
   }
 
-  ZX_ASSERT(!(range_request_.has_value() && single_request_.has_value()));
+  BT_ASSERT(!(range_request_.has_value() && single_request_.has_value()));
   if (ProcessSingleRetransmitRequest(new_seq, is_poll_response) ==
       UpdateAckSeqAction::kConsumeAckSeq) {
     return;
@@ -112,7 +111,7 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
 
   auto n_frames_to_discard = n_frames_acked;
   while (n_frames_to_discard) {
-    ZX_DEBUG_ASSERT(!pending_pdus_.empty());
+    BT_DEBUG_ASSERT(!pending_pdus_.empty());
     pending_pdus_.pop_front();
     --n_frames_to_discard;
   }
@@ -126,7 +125,7 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
 
   // RemoteBusy is cleared as the first action to take when receiving a REJ per Core Spec v5.0 Vol
   // 3, Part A, Sec 8.6.5.9–11, so their corresponding member variables shouldn't be both set.
-  ZX_ASSERT(!(range_request.has_value() && remote_is_busy_));
+  BT_ASSERT(!(range_request.has_value() && remote_is_busy_));
   bool should_retransmit = range_request.has_value();
 
   // This implements the logic for RejActioned in the Recv {I,RR,REJ} (F=1) event for all of the
@@ -178,15 +177,15 @@ void Engine::SetRemoteBusy() {
 }
 
 void Engine::SetSingleRetransmit(bool is_poll_request) {
-  ZX_ASSERT(!single_request_.has_value());
-  ZX_ASSERT(!range_request_.has_value());
+  BT_ASSERT(!single_request_.has_value());
+  BT_ASSERT(!range_request_.has_value());
   // Store SREJ state for UpdateAckSeq to handle.
   single_request_ = SingleRetransmitRequest{.is_poll_request = is_poll_request};
 }
 
 void Engine::SetRangeRetransmit(bool is_poll_request) {
-  ZX_ASSERT(!single_request_.has_value());
-  ZX_ASSERT(!range_request_.has_value());
+  BT_ASSERT(!single_request_.has_value());
+  BT_ASSERT(!range_request_.has_value());
   // Store REJ state for UpdateAckSeq to handle.
   range_request_ = RangeRetransmitRequest{.is_poll_request = is_poll_request};
 }
@@ -208,7 +207,7 @@ void Engine::MaybeSendQueuedData() {
                          [](const auto& pending_pdu) { return pending_pdu.tx_count == 0; });
 
   while (it != pending_pdus_.end() && NumUnackedFrames() < n_frames_in_tx_window_) {
-    ZX_DEBUG_ASSERT(it->tx_count == 0);
+    BT_DEBUG_ASSERT(it->tx_count == 0);
     SendPdu(&*it);
     last_tx_seq_ = it->buf.To<SimpleInformationFrameHeader>().tx_seq();
     ++it;
@@ -218,7 +217,7 @@ void Engine::MaybeSendQueuedData() {
 Engine::UpdateAckSeqAction Engine::ProcessSingleRetransmitRequest(uint8_t new_seq,
                                                                   bool is_poll_response) {
   const auto single_request = std::exchange(single_request_, std::nullopt);
-  ZX_ASSERT(!(single_request.has_value() && remote_is_busy_));
+  BT_ASSERT(!(single_request.has_value() && remote_is_busy_));
   if (!single_request.has_value()) {
     return UpdateAckSeqAction::kDiscardAcknowledged;
   }
@@ -257,7 +256,7 @@ Engine::UpdateAckSeqAction Engine::ProcessSingleRetransmitRequest(uint8_t new_se
 }
 
 void Engine::StartReceiverReadyPollTimer() {
-  ZX_DEBUG_ASSERT(!monitor_task_.is_pending());
+  BT_DEBUG_ASSERT(!monitor_task_.is_pending());
   n_receiver_ready_polls_sent_ = 0;
   receiver_ready_poll_task_.Cancel();
   receiver_ready_poll_task_.PostDelayed(async_get_default_dispatcher(),
@@ -265,7 +264,7 @@ void Engine::StartReceiverReadyPollTimer() {
 }
 
 void Engine::StartMonitorTimer() {
-  ZX_DEBUG_ASSERT(!receiver_ready_poll_task_.is_pending());
+  BT_DEBUG_ASSERT(!receiver_ready_poll_task_.is_pending());
   monitor_task_.Cancel();
   monitor_task_.PostDelayed(async_get_default_dispatcher(), kErtmMonitorTimerDuration);
 }
@@ -275,7 +274,7 @@ void Engine::SendReceiverReadyPoll() {
   frame.set_receive_seq_num(req_seqnum_);
   frame.set_is_poll_request();
   ++n_receiver_ready_polls_sent_;
-  ZX_ASSERT_MSG(max_transmissions_ == 0 || n_receiver_ready_polls_sent_ <= max_transmissions_,
+  BT_ASSERT_MSG(max_transmissions_ == 0 || n_receiver_ready_polls_sent_ <= max_transmissions_,
                 "(n_receiver_ready_polls_sent_ = %u, "
                 "max_transmissions = %u)",
                 n_receiver_ready_polls_sent_, max_transmissions_);
@@ -310,7 +309,7 @@ uint8_t Engine::NumUnackedFrames() {
 }
 
 void Engine::SendPdu(PendingPdu* pdu) {
-  ZX_DEBUG_ASSERT(pdu);
+  BT_DEBUG_ASSERT(pdu);
   pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_receive_seq_num(req_seqnum_);
 
   // Prevent tx_count from overflowing to zero, as that would be indistinguishable from "never
@@ -329,7 +328,7 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
   // calling any method that would cause us (the transmit engine) to retransmit
   // unacked data. See, e.g., Core Spec v5.0, Volume 3, Part A, Table 8.6, row
   // "Recv REJ (F=0)".
-  ZX_DEBUG_ASSERT(!remote_is_busy_);
+  BT_DEBUG_ASSERT(!remote_is_busy_);
 
   // Any peer actions that cause retransmission indicate the peer is alive. This is in conflict with
   // Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.8, which only stops the MonitorTimer when a poll
@@ -341,13 +340,13 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
   monitor_task_.Cancel();
 
   const auto n_to_send = NumUnackedFrames();
-  ZX_ASSERT(n_to_send <= n_frames_in_tx_window_);
-  ZX_DEBUG_ASSERT(n_to_send <= pending_pdus_.size());
+  BT_ASSERT(n_to_send <= n_frames_in_tx_window_);
+  BT_DEBUG_ASSERT(n_to_send <= pending_pdus_.size());
 
   auto cur_frame = pending_pdus_.begin();
   auto last_frame = std::next(cur_frame, n_to_send);
   for (; cur_frame != last_frame; cur_frame++) {
-    ZX_DEBUG_ASSERT(cur_frame != pending_pdus_.end());
+    BT_DEBUG_ASSERT(cur_frame != pending_pdus_.end());
 
     const auto control_field = cur_frame->buf.To<SimpleInformationFrameHeader>();
     if (only_with_seq.has_value() && control_field.tx_seq() != *only_with_seq) {
@@ -357,7 +356,7 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
     // Core Spec v5.0, Vol 3, Part A, Sec 5.4: "In Enhanced Retransmission mode a value of zero for
     // MaxTransmit means infinite retransmissions."
     if (max_transmissions_ != 0 && cur_frame->tx_count >= max_transmissions_) {
-      ZX_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
+      BT_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
                     max_transmissions_);
       connection_failure_callback_();
       return false;

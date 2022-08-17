@@ -4,12 +4,11 @@
 
 #include "phase_2_secure_connections.h"
 
-#include <zircon/assert.h>
-
 #include <memory>
 #include <optional>
 #include <type_traits>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
@@ -45,31 +44,31 @@ Phase2SecureConnections::Phase2SecureConnections(
       responder_addr_(responder_addr),
       weak_ptr_factory_(this),
       on_ltk_ready_(std::move(cb)) {
-  ZX_ASSERT(features_.secure_connections);
+  BT_ASSERT(features_.secure_connections);
   local_ecdh_ = LocalEcdhKey::Create();
-  ZX_ASSERT_MSG(local_ecdh_.has_value(), "failed to generate ecdh key");
-  ZX_ASSERT(sm_chan().SupportsSecureConnections());
+  BT_ASSERT_MSG(local_ecdh_.has_value(), "failed to generate ecdh key");
+  BT_ASSERT(sm_chan().SupportsSecureConnections());
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
 void Phase2SecureConnections::Start() {
-  ZX_ASSERT(!has_failed());
+  BT_ASSERT(!has_failed());
   if (role() == Role::kInitiator) {
     SendLocalPublicKey();
   }
 }
 
 void Phase2SecureConnections::SendLocalPublicKey() {
-  ZX_ASSERT(!sent_local_ecdh_);
+  BT_ASSERT(!sent_local_ecdh_);
   // If in the responder role (i.e. not in the initiator role), attempting to send our Public Key
   // before we've received the peer's is a programmer error.
-  ZX_ASSERT(role() == Role::kInitiator || peer_ecdh_.has_value());
+  BT_ASSERT(role() == Role::kInitiator || peer_ecdh_.has_value());
 
   sm_chan().SendMessage(kPairingPublicKey, local_ecdh_->GetSerializedPublicKey());
   sent_local_ecdh_ = true;
   bt_log(DEBUG, "sm", "sent ecdh public key to peer");
   if (role() == Role::kResponder) {
-    ZX_ASSERT(ecdh_exchange_complete());
+    BT_ASSERT(ecdh_exchange_complete());
     StartAuthenticationStage1();
   }
 }
@@ -104,7 +103,7 @@ void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_ke
   }
 
   EcdhKey peer_key = std::move(*maybe_peer_key);
-  ZX_ASSERT(local_ecdh_.has_value());
+  BT_ASSERT(local_ecdh_.has_value());
   if (peer_key.GetPublicKeyX() == local_ecdh_->GetPublicKeyX() &&
       peer_key.GetPublicKeyY() == local_ecdh_->GetPublicKeyY()) {
     // NOTE(fxbug.dev/80650): When passkey entry is used, the non-initiating device can reflect
@@ -121,13 +120,13 @@ void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_ke
   if (role() == Role::kResponder) {
     SendLocalPublicKey();
   } else {
-    ZX_ASSERT(ecdh_exchange_complete());
+    BT_ASSERT(ecdh_exchange_complete());
     StartAuthenticationStage1();
   }
 }
 
 void Phase2SecureConnections::StartAuthenticationStage1() {
-  ZX_ASSERT(peer_ecdh_);
+  BT_ASSERT(peer_ecdh_);
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto complete_cb = [self](fitx::result<ErrorCode, ScStage1::Output> result) {
     if (self) {
@@ -156,11 +155,11 @@ void Phase2SecureConnections::StartAuthenticationStage1() {
 
 void Phase2SecureConnections::OnAuthenticationStage1Complete(
     fitx::result<ErrorCode, ScStage1::Output> result) {
-  ZX_ASSERT(peer_ecdh_.has_value());
-  ZX_ASSERT(stage_1_);
-  ZX_ASSERT(!ltk_.has_value());
-  ZX_ASSERT(!expected_peer_dhkey_check_.has_value());
-  ZX_ASSERT(!local_dhkey_check_.has_value());
+  BT_ASSERT(peer_ecdh_.has_value());
+  BT_ASSERT(stage_1_);
+  BT_ASSERT(!ltk_.has_value());
+  BT_ASSERT(!expected_peer_dhkey_check_.has_value());
+  BT_ASSERT(!local_dhkey_check_.has_value());
   // The presence of Stage 1 determines whether to accept PairingConfirm/Random packets, so as it
   // is now over, it should be reset.
   stage_1_ = nullptr;
@@ -174,7 +173,7 @@ void Phase2SecureConnections::OnAuthenticationStage1Complete(
 }
 
 void Phase2SecureConnections::StartAuthenticationStage2() {
-  ZX_ASSERT(stage_1_results_.has_value());
+  BT_ASSERT(stage_1_results_.has_value());
   std::optional<util::F5Results> maybe_f5 =
       util::F5(local_ecdh_->CalculateDhKey(peer_ecdh_.value()), stage_1_results_->initiator_rand,
                stage_1_results_->responder_rand, initiator_addr_, responder_addr_);
@@ -217,10 +216,10 @@ void Phase2SecureConnections::StartAuthenticationStage2() {
 }
 
 void Phase2SecureConnections::SendDhKeyCheckE() {
-  ZX_ASSERT(stage_1_results_.has_value());
-  ZX_ASSERT(!sent_local_dhkey_check_);
-  ZX_ASSERT(ltk_.has_value());
-  ZX_ASSERT(local_dhkey_check_.has_value());
+  BT_ASSERT(stage_1_results_.has_value());
+  BT_ASSERT(!sent_local_dhkey_check_);
+  BT_ASSERT(ltk_.has_value());
+  BT_ASSERT(local_dhkey_check_.has_value());
 
   // Send local DHKey Check
   sm_chan().SendMessage(kPairingDHKeyCheck, *local_dhkey_check_);
@@ -228,7 +227,7 @@ void Phase2SecureConnections::SendDhKeyCheckE() {
   if (role() == Role::kResponder) {
     // As responder, we should only send the local DHKey check after receiving and validating the
     // peer's. The presence of `peer_dhkey_check` verifies this invariant.
-    ZX_ASSERT(actual_peer_dhkey_check_.has_value());
+    BT_ASSERT(actual_peer_dhkey_check_.has_value());
     on_ltk_ready_(ltk_.value());
   }
 }
@@ -264,16 +263,16 @@ void Phase2SecureConnections::OnDhKeyCheck(PairingDHKeyCheckValueE check) {
   // As responder, it's possible to receive the DHKey check from the peer while waiting for user
   // input in Stage 1 - if that happens, we validate the peer DhKey check when Stage 1 completes.
   if (!stage_1_results_.has_value()) {
-    ZX_ASSERT(role() == Role::kResponder);
-    ZX_ASSERT(stage_1_);
+    BT_ASSERT(role() == Role::kResponder);
+    BT_ASSERT(stage_1_);
     return;
   }
   ValidatePeerDhKeyCheck();
 }
 
 void Phase2SecureConnections::ValidatePeerDhKeyCheck() {
-  ZX_ASSERT(actual_peer_dhkey_check_.has_value());
-  ZX_ASSERT(expected_peer_dhkey_check_.has_value());
+  BT_ASSERT(actual_peer_dhkey_check_.has_value());
+  BT_ASSERT(expected_peer_dhkey_check_.has_value());
   if (*expected_peer_dhkey_check_ != *actual_peer_dhkey_check_) {
     bt_log(WARN, "sm", "DHKey check value failed - possible attempt to hijack pairing!");
     Abort(ErrorCode::kDHKeyCheckFailed);

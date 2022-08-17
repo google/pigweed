@@ -6,12 +6,12 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_INSPECTABLE_H_
 
 #include <lib/fit/function.h>
-#include <zircon/assert.h>
 
 #include <iterator>
 #include <string>
 #include <type_traits>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 
@@ -119,7 +119,7 @@ class Inspectable {
   }
 
   virtual void AttachInspect(inspect::Node& node, std::string name) {
-    ZX_ASSERT_MSG(false, "AttachInspect not implemented for PropertyT");
+    BT_ASSERT_MSG(false, "AttachInspect not implemented for PropertyT");
   }
 
   // Returns a InspectableGuard wrapper around the contained value that allows for non-const methods

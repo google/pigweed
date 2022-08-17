@@ -41,7 +41,7 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallb
     return false;
 
   gap_->AttachInspect(root_node, "adapter");
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
+  BT_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   // Called when the GAP layer is ready. We initialize the GATT profile after
   // initial setup in GAP. The data domain will be initialized by GAP because it
@@ -63,7 +63,7 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallb
 }
 
 void Host::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
+  BT_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "bt-host", "shutting down");
 
   if (!gap_) {
@@ -87,19 +87,19 @@ void Host::ShutDown() {
 }
 
 void Host::BindHostInterface(zx::channel channel) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
+  BT_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   if (host_server_) {
     bt_log(WARN, "bt-host", "Host interface channel already open!");
     return;
   }
 
-  ZX_DEBUG_ASSERT(gap_);
-  ZX_DEBUG_ASSERT(gatt_);
+  BT_DEBUG_ASSERT(gap_);
+  BT_DEBUG_ASSERT(gatt_);
 
   host_server_ =
       std::make_unique<HostServer>(std::move(channel), gap_->AsWeakPtr(), gatt_->AsWeakPtr());
   host_server_->set_error_handler([this](zx_status_t status) {
-    ZX_DEBUG_ASSERT(host_server_);
+    BT_DEBUG_ASSERT(host_server_);
     bt_log(DEBUG, "bt-host", "Host interface disconnected");
     host_server_ = nullptr;
   });

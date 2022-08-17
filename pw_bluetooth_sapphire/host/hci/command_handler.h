@@ -47,12 +47,12 @@ class CommandHandler {
     // EventT should be the command complete event code. Use SendCommandFinishOnStatus to only
     // handle the command status event.
     static_assert(CommandT::EventT::kEventCode != hci_spec::kCommandStatusEventCode);
-    ZX_ASSERT(event_cb);
+    BT_ASSERT(event_cb);
 
     auto encoded = command.Encode();
     auto event_packet_cb = [event_cb = std::move(event_cb)](
                                auto id, const EventPacket& event_packet) mutable {
-      ZX_ASSERT_MSG(event_cb, "SendCommand event callback already called (opcode: %#.4x)",
+      BT_ASSERT_MSG(event_cb, "SendCommand event callback already called (opcode: %#.4x)",
                     CommandT::opcode());
 
       auto status = event_packet.ToResult();
@@ -69,7 +69,7 @@ class CommandHandler {
         return;
       }
 
-      ZX_ASSERT(event_packet.event_code() == CommandT::EventT::kEventCode);
+      BT_ASSERT(event_packet.event_code() == CommandT::EventT::kEventCode);
 
       auto event_result = CommandT::EventT::Decode(event_packet);
       if (event_result.is_error()) {
@@ -104,12 +104,12 @@ class CommandHandler {
   template <typename CommandT>
   CommandChannel::TransactionId SendCommandFinishOnStatus(CommandT command,
                                                           hci::ResultCallback<> status_cb) {
-    ZX_ASSERT(status_cb);
+    BT_ASSERT(status_cb);
 
     auto encoded = command.Encode();
     auto event_packet_cb = [status_cb = std::move(status_cb)](
                                auto id, const EventPacket& event_packet) mutable {
-      ZX_ASSERT(event_packet.event_code() == hci_spec::kCommandStatusEventCode);
+      BT_ASSERT(event_packet.event_code() == hci_spec::kCommandStatusEventCode);
 
       status_cb(event_packet.ToResult());
     };
@@ -125,7 +125,7 @@ class CommandHandler {
   template <typename EventT>
   CommandChannel::EventHandlerId AddEventHandler(
       fit::function<CommandChannel::EventCallbackResult(EventT)> handler) {
-    ZX_ASSERT(handler);
+    BT_ASSERT(handler);
 
     auto event_packet_cb = [handler = std::move(handler)](const EventPacket& event_packet) {
       auto event_result = EventT::Decode(event_packet);

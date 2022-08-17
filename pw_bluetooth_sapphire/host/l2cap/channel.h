@@ -216,7 +216,7 @@ struct ChannelSocket {
   ChannelSocket() : socket(zx::socket()), params(std::nullopt) {}
   ChannelSocket(zx::socket socket, std::optional<ChannelInfo> params)
       : socket(std::move(socket)), params(params) {
-    ZX_ASSERT(this->socket.is_valid() && this->params.has_value() ||
+    BT_ASSERT(this->socket.is_valid() && this->params.has_value() ||
               !this->socket.is_valid() && !this->params.has_value());
   }
   ChannelSocket(ChannelSocket&&) = default;

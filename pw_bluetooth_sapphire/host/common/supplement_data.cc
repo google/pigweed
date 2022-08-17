@@ -4,8 +4,7 @@
 
 #include "supplement_data.h"
 
-#include <zircon/assert.h>
-
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {
@@ -38,15 +37,15 @@ SupplementDataReader::SupplementDataReader(const ByteBuffer& data)
 }
 
 bool SupplementDataReader::GetNextField(DataType* out_type, BufferView* out_data) {
-  ZX_DEBUG_ASSERT(out_type);
-  ZX_DEBUG_ASSERT(out_data);
+  BT_DEBUG_ASSERT(out_type);
+  BT_DEBUG_ASSERT(out_data);
 
   if (!HasMoreData())
     return false;
 
   size_t tlv_len = remaining_[0];
   size_t cur_struct_size = tlv_len + 1;
-  ZX_DEBUG_ASSERT(cur_struct_size <= remaining_.size());
+  BT_DEBUG_ASSERT(cur_struct_size <= remaining_.size());
 
   *out_type = static_cast<DataType>(remaining_[1]);
   *out_data = remaining_.view(2, tlv_len - 1);
@@ -67,7 +66,7 @@ bool SupplementDataReader::HasMoreData() const {
 
 SupplementDataWriter::SupplementDataWriter(MutableByteBuffer* buffer)
     : buffer_(buffer), bytes_written_(0u) {
-  ZX_DEBUG_ASSERT(buffer_);
+  BT_DEBUG_ASSERT(buffer_);
 }
 
 bool SupplementDataWriter::WriteField(DataType type, const ByteBuffer& data) {

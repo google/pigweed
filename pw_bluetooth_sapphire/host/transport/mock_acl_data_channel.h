@@ -35,14 +35,14 @@ class MockAclDataChannel final : public AclDataChannel {
   }
 
   void ReceivePacket(std::unique_ptr<ACLDataPacket> packet) {
-    ZX_ASSERT(data_rx_handler_);
+    BT_ASSERT(data_rx_handler_);
     data_rx_handler_(std::move(packet));
   }
 
   // AclDataChannel overrides:
   void AttachInspect(inspect::Node& /*unused*/, const std::string& /*unused*/) override {}
   void SetDataRxHandler(ACLPacketHandler rx_callback) override {
-    ZX_ASSERT(rx_callback);
+    BT_ASSERT(rx_callback);
     data_rx_handler_ = std::move(rx_callback);
   }
   bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,

@@ -25,7 +25,7 @@ static constexpr const char* kInspectRecordName = "record";
 l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
   bt_log(TRACE, "sdp", "Trying to find PSM from %s", protocol_list.ToString().c_str());
   const auto* l2cap_protocol = protocol_list.At(0);
-  ZX_DEBUG_ASSERT(l2cap_protocol);
+  BT_DEBUG_ASSERT(l2cap_protocol);
   const auto* prot_uuid = l2cap_protocol->At(0);
   if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid ||
       *prot_uuid->Get<UUID>() != protocol::kL2CAP) {
@@ -129,7 +129,7 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
 
 Server::Server(l2cap::ChannelManager* l2cap)
     : l2cap_(l2cap), next_handle_(kFirstUnreservedHandle), db_state_(0), weak_ptr_factory_(this) {
-  ZX_ASSERT(l2cap_);
+  BT_ASSERT(l2cap_);
 
   records_.emplace(kSDPHandle, Server::MakeServiceDiscoveryService());
 
@@ -158,7 +158,7 @@ void Server::AttachInspect(inspect::Node& parent, std::string name) {
 }
 
 bool Server::AddConnection(fxl::WeakPtr<l2cap::Channel> channel) {
-  ZX_ASSERT(channel);
+  BT_ASSERT(channel);
   hci_spec::ConnectionHandle handle = channel->link_handle();
   bt_log(DEBUG, "sdp", "add connection handle %#.4x", handle);
 
@@ -292,7 +292,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     assigned_handles.emplace(next);
   }
 
-  ZX_ASSERT(assigned_handles.size() == records.size());
+  BT_ASSERT(assigned_handles.size() == records.size());
 
   // The RegistrationHandle is the smallest ServiceHandle that was assigned.
   RegistrationHandle reg_handle = *assigned_handles.begin();
@@ -330,7 +330,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
   // Store the complete records.
   for (auto& record : records) {
     auto placement = records_.emplace(record.handle(), std::move(record));
-    ZX_DEBUG_ASSERT(placement.second);
+    BT_DEBUG_ASSERT(placement.second);
     bt_log(TRACE, "sdp", "registered service %#.8x, classes: %s", placement.first->second.handle(),
            placement.first->second.GetAttribute(kServiceClassIdList).ToString().c_str());
   }
@@ -355,8 +355,8 @@ bool Server::UnregisterService(RegistrationHandle handle) {
   }
 
   for (const auto& svc_h : handles_it.mapped()) {
-    ZX_ASSERT(svc_h != kSDPHandle);
-    ZX_ASSERT(records_.find(svc_h) != records_.end());
+    BT_ASSERT(svc_h != kSDPHandle);
+    BT_ASSERT(records_.find(svc_h) != records_.end());
     bt_log(DEBUG, "sdp", "unregistering service (handle: %#.8x)", svc_h);
 
     // Unregister any service callbacks from L2CAP
@@ -446,7 +446,7 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
 void Server::OnChannelClosed(l2cap::Channel::UniqueId channel_id) { channels_.erase(channel_id); }
 
 cpp17::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
-  ZX_DEBUG_ASSERT(sdu);
+  BT_DEBUG_ASSERT(sdu);
   TRACE_DURATION("bluetooth", "sdp::Server::HandleRequest");
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {

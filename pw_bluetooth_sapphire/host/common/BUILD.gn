@@ -9,6 +9,7 @@ source_set("common") {
   sources = [
     "advertising_data.cc",
     "advertising_data.h",
+    "assert.h",
     "bounded_inspect_list_node.cc",
     "bounded_inspect_list_node.h",
     "byte_buffer.cc",

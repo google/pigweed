@@ -24,7 +24,7 @@ class FakeLayerTest : public ::gtest::TestLoopFixture {
  protected:
   FakeLayer* gatt() const {
     auto* ptr = static_cast<FakeLayer*>(weak_gatt_.get());
-    ZX_ASSERT_MSG(ptr, "fake GATT layer accessed after it was destroyed!");
+    BT_ASSERT_MSG(ptr, "fake GATT layer accessed after it was destroyed!");
     return ptr;
   }
 

@@ -4,17 +4,16 @@
 
 #include "fake_client.h"
 
-#include <zircon/assert.h>
-
 #include <unordered_set>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 
 namespace bt::gatt::testing {
 
 FakeClient::FakeClient(async_dispatcher_t* dispatcher)
     : dispatcher_(dispatcher), weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(dispatcher_);
+  BT_DEBUG_ASSERT(dispatcher_);
 }
 
 uint16_t FakeClient::mtu() const {

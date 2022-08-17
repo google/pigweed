@@ -6,11 +6,11 @@
 
 #include <endian.h>
 #include <lib/fit/function.h>
-#include <zircon/assert.h>
 
 #include "fake_controller.h"
 #include "fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
@@ -18,7 +18,7 @@
 namespace bt::testing {
 
 FakeGattServer::FakeGattServer(FakePeer* dev) : dev_(dev) {
-  ZX_ASSERT(dev_);
+  BT_ASSERT(dev_);
 
   // Initialize services
   services_.insert(
@@ -94,7 +94,7 @@ void FakeGattServer::HandleReadByGrpType(hci_spec::ConnectionHandle conn, const 
 
   for (auto& [_, service] : services_) {
     // FakeGattServer only supports 16bit UUIDs currently.
-    ZX_ASSERT(service.type.CompactSize(/*allow_32bit=*/false) == UUIDElemSize::k16Bit);
+    BT_ASSERT(service.type.CompactSize(/*allow_32bit=*/false) == UUIDElemSize::k16Bit);
     att::AttributeGroupDataEntry& entry = next_entry.AsMutable<att::AttributeGroupDataEntry>();
     entry.start_handle = htole16(service.start_handle);
     entry.group_end_handle = htole16(service.end_handle);

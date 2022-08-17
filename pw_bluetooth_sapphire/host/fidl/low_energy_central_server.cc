@@ -4,13 +4,13 @@
 
 #include "low_energy_central_server.h"
 
-#include <zircon/assert.h>
 #include <zircon/types.h>
 
 #include <measure_tape/hlcpp/hlcpp_measure_tape_for_peer.h>
 
 #include "gatt_client_server.h"
 #include "helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -54,7 +54,7 @@ LowEnergyCentralServer::LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> ad
       gatt_(gatt),
       requesting_scan_deprecated_(false),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(gatt_);
+  BT_ASSERT(gatt_);
 }
 
 LowEnergyCentralServer::~LowEnergyCentralServer() {
@@ -82,7 +82,7 @@ LowEnergyCentralServer::ScanResultWatcherServer::ScanResultWatcherServer(
       error_callback_(std::move(error_cb)) {
   set_error_handler([this](auto) {
     bt_log(DEBUG, "fidl", "ScanResultWatcher client closed, stopping scan");
-    ZX_ASSERT(error_callback_);
+    BT_ASSERT(error_callback_);
     error_callback_();
   });
 }
@@ -110,7 +110,7 @@ void LowEnergyCentralServer::ScanResultWatcherServer::Watch(WatchCallback callba
   if (watch_callback_) {
     bt_log(WARN, "fidl", "%s: called before previous call completed", __FUNCTION__);
     Close(ZX_ERR_CANCELED);
-    ZX_ASSERT(error_callback_);
+    BT_ASSERT(error_callback_);
     error_callback_();
     return;
   }
@@ -140,7 +140,7 @@ void LowEnergyCentralServer::ScanResultWatcherServer::MaybeSendPeers() {
 
     fble::Peer fidl_peer = fidl_helpers::PeerToFidlLe(*peer);
     measure_fble::Size peer_size = measure_fble::Measure(fidl_peer);
-    ZX_ASSERT_MSG(peer_size.num_handles == 0,
+    BT_ASSERT_MSG(peer_size.num_handles == 0,
                   "Expected fuchsia.bluetooth.le/Peer to not have handles, but %zu handles found",
                   peer_size.num_handles);
     bytes_used += peer_size.num_bytes;
@@ -305,8 +305,8 @@ void LowEnergyCentralServer::Connect(fuchsia::bluetooth::PeerId id, fble::Connec
       return;
 
     auto conn_iter = self->connections_.find(peer_id);
-    ZX_ASSERT(conn_iter != self->connections_.end());
-    ZX_ASSERT(conn_iter->second == nullptr);
+    BT_ASSERT(conn_iter != self->connections_.end());
+    BT_ASSERT(conn_iter->second == nullptr);
 
     if (result.is_error()) {
       bt_log(INFO, "fidl", "Connect: failed to connect to peer (peer: %s)", bt_str(peer_id));
@@ -316,8 +316,8 @@ void LowEnergyCentralServer::Connect(fuchsia::bluetooth::PeerId id, fble::Connec
     }
 
     auto conn_ref = std::move(result).value();
-    ZX_ASSERT(conn_ref);
-    ZX_ASSERT(peer_id == conn_ref->peer_identifier());
+    BT_ASSERT(conn_ref);
+    BT_ASSERT(peer_id == conn_ref->peer_identifier());
 
     auto closed_cb = [self, peer_id] {
       if (self) {
@@ -327,7 +327,7 @@ void LowEnergyCentralServer::Connect(fuchsia::bluetooth::PeerId id, fble::Connec
     auto server = std::make_unique<LowEnergyConnectionServer>(
         self->gatt_, std::move(conn_ref), request.TakeChannel(), std::move(closed_cb));
 
-    ZX_ASSERT(!conn_iter->second);
+    BT_ASSERT(!conn_iter->second);
     conn_iter->second = std::move(server);
   };
 
@@ -474,8 +474,8 @@ void LowEnergyCentralServer::ConnectPeripheral(
     }
 
     auto conn_ref = std::move(result).value();
-    ZX_ASSERT(conn_ref);
-    ZX_ASSERT(peer_id == conn_ref->peer_identifier());
+    BT_ASSERT(conn_ref);
+    BT_ASSERT(peer_id == conn_ref->peer_identifier());
 
     if (self->gatt_client_servers_.find(peer_id) != self->gatt_client_servers_.end()) {
       bt_log(WARN, "fidl", "only 1 gatt.Client FIDL handle allowed per peer (%s)", bt_str(peer_id));
@@ -500,7 +500,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
       }
     });
 
-    ZX_ASSERT(!iter->second);
+    BT_ASSERT(!iter->second);
     iter->second = std::move(conn_ref);
     callback(Status());
   };

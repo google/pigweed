@@ -93,7 +93,7 @@ void MockController::QueueCommandTransaction(hci_spec::OpCode expected_opcode,
 }
 
 void MockController::QueueDataTransaction(DataTransaction transaction) {
-  ZX_ASSERT(data_expectations_enabled_);
+  BT_ASSERT(data_expectations_enabled_);
   data_transactions_.push(std::move(transaction));
 }
 
@@ -114,10 +114,10 @@ bool MockController::AllExpectedDataPacketsSent() const { return data_transactio
 bool MockController::AllExpectedCommandPacketsSent() const { return cmd_transactions_.empty(); }
 
 void MockController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(dispatcher);
-  ZX_DEBUG_ASSERT(!data_callback_);
-  ZX_DEBUG_ASSERT(!data_dispatcher_);
+  BT_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(dispatcher);
+  BT_DEBUG_ASSERT(!data_callback_);
+  BT_DEBUG_ASSERT(!data_dispatcher_);
 
   data_callback_ = std::move(callback);
   data_dispatcher_ = dispatcher;
@@ -134,10 +134,10 @@ void MockController::SetTransactionCallback(fit::closure callback, async_dispatc
 
 void MockController::SetTransactionCallback(TransactionCallback callback,
                                             async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(dispatcher);
-  ZX_DEBUG_ASSERT(!transaction_callback_);
-  ZX_DEBUG_ASSERT(!transaction_dispatcher_);
+  BT_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(dispatcher);
+  BT_DEBUG_ASSERT(!transaction_callback_);
+  BT_DEBUG_ASSERT(!transaction_dispatcher_);
 
   transaction_callback_ = std::move(callback);
   transaction_dispatcher_ = dispatcher;

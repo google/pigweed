@@ -45,7 +45,7 @@ class TestSignalingChannel : public SignalingChannel {
  private:
   // SignalingChannel overrides
   void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) override {
-    ZX_ASSERT(sdu);
+    BT_ASSERT(sdu);
     if (sdu->size()) {
       cb(SignalingPacket(sdu.get(), sdu->size() - sizeof(CommandHeader)));
     } else {

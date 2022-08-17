@@ -45,7 +45,7 @@ void ServiceRecord::SetAttribute(AttributeId id, DataElement value) {
 
 const DataElement& ServiceRecord::GetAttribute(AttributeId id) const {
   auto it = attributes_.find(id);
-  ZX_DEBUG_ASSERT_MSG(it != attributes_.end(), "attribute %#.4x not set!", id);
+  BT_DEBUG_ASSERT_MSG(it != attributes_.end(), "attribute %#.4x not set!", id);
   return it->second;
 }
 
@@ -211,7 +211,7 @@ bool ServiceRecord::AddInfo(const std::string& language_code, const std::string&
   if (it != attributes_.end()) {
     auto v = it->second.Get<std::vector<DataElement>>();
     base_attr_list = std::move(*v);
-    ZX_DEBUG_ASSERT(base_attr_list.size() % 3 == 0);
+    BT_DEBUG_ASSERT(base_attr_list.size() % 3 == 0);
     // 0x0100 is guaranteed to be taken, start counting from higher.
     base_attrid = 0x9000;
   }

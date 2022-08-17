@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_MANAGER_H_
 
 #include <lib/async/dispatcher.h>
-#include <zircon/assert.h>
 
 #include <map>
 #include <memory>
@@ -15,6 +14,7 @@
 #include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"

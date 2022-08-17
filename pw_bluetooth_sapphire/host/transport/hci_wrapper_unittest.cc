@@ -26,14 +26,14 @@ class HciWrapperTest : public ::gtest::TestLoopFixture {
   void InitializeHci(bool sco_supported = true, bt_vendor_features_t features = kVendorFeatures) {
     zx::channel cmd;
     zx::channel acl;
-    ZX_ASSERT(zx::channel::create(/*flags=*/0, &cmd_, &cmd) == ZX_OK);
-    ZX_ASSERT(zx::channel::create(/*flags=*/0, &acl_, &acl) == ZX_OK);
+    BT_ASSERT(zx::channel::create(/*flags=*/0, &cmd_, &cmd) == ZX_OK);
+    BT_ASSERT(zx::channel::create(/*flags=*/0, &acl_, &acl) == ZX_OK);
     auto device = std::make_unique<DummyDeviceWrapper>(std::move(cmd), std::move(acl), features);
     device_ = device.get();
 
     if (sco_supported) {
       zx::channel sco;
-      ZX_ASSERT(zx::channel::create(/*flags=*/0, &sco_, &sco) == ZX_OK);
+      BT_ASSERT(zx::channel::create(/*flags=*/0, &sco_, &sco) == ZX_OK);
       device->set_sco_channel(std::move(sco));
     }
 
@@ -77,7 +77,7 @@ TEST_F(HciWrapperTest, InitializeFailureCommandChannelInvalid) {
   zx::channel cmd;
   zx::channel acl0;
   zx::channel acl1;
-  ZX_ASSERT(zx::channel::create(/*flags=*/0, &acl0, &acl1) == ZX_OK);
+  BT_ASSERT(zx::channel::create(/*flags=*/0, &acl0, &acl1) == ZX_OK);
   auto device = std::make_unique<DummyDeviceWrapper>(
       zx::channel(), std::move(acl1), kVendorFeatures, [](auto, auto) { return std::nullopt; });
   auto hci = HciWrapper::Create(std::move(device), dispatcher());
@@ -88,7 +88,7 @@ TEST_F(HciWrapperTest, InitializeFailureAclChannelInvalid) {
   zx::channel cmd0;
   zx::channel cmd1;
   zx::channel acl;
-  ZX_ASSERT(zx::channel::create(/*flags=*/0, &cmd0, &cmd1) == ZX_OK);
+  BT_ASSERT(zx::channel::create(/*flags=*/0, &cmd0, &cmd1) == ZX_OK);
   auto device = std::make_unique<DummyDeviceWrapper>(
       std::move(cmd1), std::move(acl), kVendorFeatures, [](auto, auto) { return std::nullopt; });
   auto hci = HciWrapper::Create(std::move(device), dispatcher());

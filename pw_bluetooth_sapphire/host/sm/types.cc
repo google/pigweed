@@ -73,7 +73,7 @@ SecurityProperties::SecurityProperties(SecurityLevel level, size_t enc_key_size,
 SecurityProperties::SecurityProperties(hci_spec::LinkKeyType lk_type)
     : SecurityProperties(IsEncryptedKey(lk_type), IsAuthenticatedKey(lk_type),
                          IsSecureConnectionsKey(lk_type), kMaxEncryptionKeySize) {
-  ZX_DEBUG_ASSERT_MSG(lk_type != hci_spec::LinkKeyType::kChangedCombination,
+  BT_DEBUG_ASSERT_MSG(lk_type != hci_spec::LinkKeyType::kChangedCombination,
                       "Can't infer security information from a Changed Combination Key");
 }
 

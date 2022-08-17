@@ -18,7 +18,7 @@ LESignalingChannel::LESignalingChannel(fxl::WeakPtr<Channel> chan, hci_spec::Con
 void LESignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) {
   // "[O]nly one command per C-frame shall be sent over [the LE] Fixed Channel"
   // (v5.0, Vol 3, Part A, Section 4).
-  ZX_DEBUG_ASSERT(sdu);
+  BT_DEBUG_ASSERT(sdu);
   if (sdu->size() < sizeof(CommandHeader)) {
     bt_log(DEBUG, "l2cap-le", "sig: dropped malformed LE signaling packet");
     return;

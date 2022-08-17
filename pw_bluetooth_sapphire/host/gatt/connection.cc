@@ -4,12 +4,11 @@
 
 #include "connection.h"
 
-#include <zircon/assert.h>
-
 #include <numeric>
 
 #include "client.h"
 #include "server.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 
@@ -18,7 +17,7 @@ namespace bt::gatt::internal {
 Connection::Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> server,
                        RemoteServiceWatcher svc_watcher, async_dispatcher_t* gatt_dispatcher)
     : server_(std::move(server)), weak_ptr_factory_(this) {
-  ZX_ASSERT(svc_watcher);
+  BT_ASSERT(svc_watcher);
 
   remote_service_manager_ =
       std::make_unique<RemoteServiceManager>(std::move(client), gatt_dispatcher);
@@ -26,7 +25,7 @@ Connection::Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> s
 }
 
 void Connection::Initialize(std::vector<UUID> service_uuids, fit::callback<void(uint16_t)> mtu_cb) {
-  ZX_ASSERT(remote_service_manager_);
+  BT_ASSERT(remote_service_manager_);
 
   auto uuids_count = service_uuids.size();
   // status_cb must not capture att_ in order to prevent reference cycle.

@@ -122,7 +122,7 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
           state = kSearching;
         } else if (state == kCorrectChrcUuidFound &&
                    attr.type() == types::kClientCharacteristicConfig) {
-          ZX_ASSERT(matching_chrc_value_handle != att::kInvalidHandle);
+          BT_ASSERT(matching_chrc_value_handle != att::kInvalidHandle);
           DynamicByteBuffer new_ccc(sizeof(ccc_val));
           new_ccc.WriteObj(ccc_val);
           fitx::result<att::ErrorCode> write_status =

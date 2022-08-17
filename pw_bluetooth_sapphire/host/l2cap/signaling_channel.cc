@@ -6,9 +6,9 @@
 
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
-#include <zircon/assert.h>
 
 #include "channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
@@ -20,8 +20,8 @@ SignalingChannel::SignalingChannel(fxl::WeakPtr<Channel> chan, hci_spec::Connect
       role_(role),
       next_cmd_id_(0x01),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(chan_);
-  ZX_DEBUG_ASSERT(chan_->id() == kSignalingChannelId || chan_->id() == kLESignalingChannelId);
+  BT_DEBUG_ASSERT(chan_);
+  BT_DEBUG_ASSERT(chan_->id() == kSignalingChannelId || chan_->id() == kLESignalingChannelId);
 
   // Note: No need to guard against out-of-thread access as these callbacks are
   // called on the L2CAP thread.
@@ -39,7 +39,7 @@ SignalingChannel::SignalingChannel(fxl::WeakPtr<Channel> chan, hci_spec::Connect
 
 bool SignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& payload,
                                    ResponseHandler cb) {
-  ZX_ASSERT(cb);
+  BT_ASSERT(cb);
 
   // Command identifiers for pending requests are assumed to be unique across
   // all types of requests and reused by order of least recent use. See v5.0
@@ -72,18 +72,18 @@ bool SignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& paylo
 }
 
 void SignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
-  ZX_ASSERT(!IsSupportedResponse(req_code));
-  ZX_ASSERT(cb);
+  BT_ASSERT(!IsSupportedResponse(req_code));
+  BT_ASSERT(cb);
   inbound_handlers_[req_code] = std::move(cb);
 }
 
 void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet, CommandId id,
                                        CommandCode response_code, ResponseHandler cb) {
-  ZX_ASSERT(IsSupportedResponse(response_code));
+  BT_ASSERT(IsSupportedResponse(response_code));
 
   const auto [iter, inserted] =
       pending_commands_.try_emplace(id, request_packet, response_code, std::move(cb));
-  ZX_ASSERT(inserted);
+  BT_ASSERT(inserted);
 
   // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which will call
   // OnResponseTimeout when it expires. This timer is canceled if the response is received before
@@ -102,7 +102,7 @@ bool SignalingChannel::IsCommandPending(CommandId id) const {
 SignalingChannel::ResponderImpl::ResponderImpl(SignalingChannel* sig, CommandCode code,
                                                CommandId id)
     : sig_(sig), code_(code), id_(id) {
-  ZX_DEBUG_ASSERT(sig_);
+  BT_DEBUG_ASSERT(sig_);
 }
 
 void SignalingChannel::ResponderImpl::Send(const ByteBuffer& rsp_payload) {
@@ -190,7 +190,7 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
 
 void SignalingChannel::OnResponseTimeout(CommandId id, bool retransmit) {
   auto iter = pending_commands_.find(id);
-  ZX_ASSERT(iter != pending_commands_.end());
+  BT_ASSERT(iter != pending_commands_.end());
 
   if (!retransmit || iter->second.transmit_count == kMaxSignalingChannelTransmissions) {
     auto node = pending_commands_.extract(iter);
@@ -203,8 +203,8 @@ void SignalingChannel::OnResponseTimeout(CommandId id, bool retransmit) {
 }
 
 bool SignalingChannel::Send(ByteBufferPtr packet) {
-  ZX_DEBUG_ASSERT(packet);
-  ZX_DEBUG_ASSERT(packet->size() >= sizeof(CommandHeader));
+  BT_DEBUG_ASSERT(packet);
+  BT_DEBUG_ASSERT(packet->size() >= sizeof(CommandHeader));
 
   if (!is_open())
     return false;
@@ -214,19 +214,19 @@ bool SignalingChannel::Send(ByteBufferPtr packet) {
   // 0 as the identifier, we reject the command and use that identifier in the
   // response rather than assert and crash.
   __UNUSED SignalingPacket reply(packet.get(), packet->size() - sizeof(CommandHeader));
-  ZX_DEBUG_ASSERT(reply.header().code);
-  ZX_DEBUG_ASSERT(reply.payload_size() == le16toh(reply.header().length));
-  ZX_DEBUG_ASSERT(chan_);
+  BT_DEBUG_ASSERT(reply.header().code);
+  BT_DEBUG_ASSERT(reply.payload_size() == le16toh(reply.header().length));
+  BT_DEBUG_ASSERT(chan_);
 
   return chan_->Send(std::move(packet));
 }
 
 ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code, uint8_t identifier,
                                             const ByteBuffer& data) {
-  ZX_DEBUG_ASSERT(data.size() <= std::numeric_limits<uint16_t>::max());
+  BT_DEBUG_ASSERT(data.size() <= std::numeric_limits<uint16_t>::max());
 
   auto buffer = NewSlabBuffer(sizeof(CommandHeader) + data.size());
-  ZX_ASSERT(buffer);
+  BT_ASSERT(buffer);
 
   MutableSignalingPacket packet(buffer.get(), data.size());
   packet.mutable_header()->code = code;
@@ -239,7 +239,7 @@ ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code, uint8_t identifier
 
 bool SignalingChannel::SendCommandReject(uint8_t identifier, RejectReason reason,
                                          const ByteBuffer& data) {
-  ZX_DEBUG_ASSERT(data.size() <= kCommandRejectMaxDataLength);
+  BT_DEBUG_ASSERT(data.size() <= kCommandRejectMaxDataLength);
 
   constexpr size_t kMaxPayloadLength = sizeof(CommandRejectPayload) + kCommandRejectMaxDataLength;
   StaticByteBuffer<kMaxPayloadLength> rej_buf;
@@ -263,7 +263,7 @@ CommandId SignalingChannel::GetNextCommandId() {
 }
 
 void SignalingChannel::OnChannelClosed() {
-  ZX_DEBUG_ASSERT(is_open());
+  BT_DEBUG_ASSERT(is_open());
 
   is_open_ = false;
 }

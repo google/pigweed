@@ -10,7 +10,6 @@
 #include <lib/fit/function.h>
 #include <lib/fit/nullable.h>
 #include <lib/stdcompat/type_traits.h>
-#include <zircon/assert.h>
 
 #include <functional>
 #include <limits>
@@ -20,6 +19,7 @@
 #include <utility>
 #include <variant>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/retire_log.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -49,7 +49,7 @@ class PipelineMonitor final {
     Token(Token&& other) noexcept : parent_(other.parent_) { *this = std::move(other); }
 
     Token& operator=(Token&& other) noexcept {
-      ZX_ASSERT(parent_.get() == other.parent_.get());
+      BT_ASSERT(parent_.get() == other.parent_.get());
       id_ = std::exchange(other.id_, kInvalidTokenId);
       return *this;
     }
@@ -110,11 +110,11 @@ class PipelineMonitor final {
   [[nodiscard]] int64_t tokens_issued() const { return tokens_issued_; }
   [[nodiscard]] size_t bytes_in_flight() const { return bytes_in_flight_; }
   [[nodiscard]] int64_t tokens_in_flight() const {
-    ZX_ASSERT(issued_tokens_.size() <= std::numeric_limits<int64_t>::max());
+    BT_ASSERT(issued_tokens_.size() <= std::numeric_limits<int64_t>::max());
     return issued_tokens_.size();
   }
   [[nodiscard]] size_t bytes_retired() const {
-    ZX_ASSERT(bytes_issued() >= bytes_in_flight());
+    BT_ASSERT(bytes_issued() >= bytes_in_flight());
     return bytes_issued() - bytes_in_flight();
   }
   [[nodiscard]] int64_t tokens_retired() const { return tokens_issued() - tokens_in_flight(); }
@@ -233,9 +233,9 @@ class PipelineMonitor final {
 
   void Retire(Token* token) {
     // For consistency, complete all token map and counter modifications before processing alerts.
-    ZX_ASSERT(this == token->parent_.get());
+    BT_ASSERT(this == token->parent_.get());
     auto node = issued_tokens_.extract(token->id_);
-    ZX_ASSERT(bool{node});
+    BT_ASSERT(bool{node});
     TokenInfo& packet_info = node.mapped();
     bytes_in_flight_ -= packet_info.byte_count;
     const zx::duration age = async::Now(dispatcher_) - packet_info.issue_time;

@@ -5,11 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BOUNDED_INSPECT_LIST_NODE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BOUNDED_INSPECT_LIST_NODE_H_
 
-#include <zircon/assert.h>
-
 #include <cstddef>
 #include <queue>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 
 namespace bt {
@@ -48,7 +47,7 @@ class BoundedInspectListNode {
   };
 
   explicit BoundedInspectListNode(size_t capacity) : capacity_(capacity) {
-    ZX_ASSERT(capacity_ > 0u);
+    BT_ASSERT(capacity_ > 0u);
   }
   ~BoundedInspectListNode() = default;
 

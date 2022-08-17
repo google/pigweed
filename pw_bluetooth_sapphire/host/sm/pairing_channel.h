@@ -55,8 +55,8 @@ class PairingChannel {
   template <typename PayloadType>
   void SendMessageNoTimerReset(Code message_code, const PayloadType& payload) {
     auto kExpectedSize = kCodeToPayloadSize.find(message_code);
-    ZX_ASSERT(kExpectedSize != kCodeToPayloadSize.end());
-    ZX_ASSERT(sizeof(PayloadType) == kExpectedSize->second);
+    BT_ASSERT(kExpectedSize != kCodeToPayloadSize.end());
+    BT_ASSERT(sizeof(PayloadType) == kExpectedSize->second);
     auto pdu = util::NewPdu(sizeof(PayloadType));
     PacketWriter writer(message_code, pdu.get());
     *writer.mutable_payload<PayloadType>() = payload;

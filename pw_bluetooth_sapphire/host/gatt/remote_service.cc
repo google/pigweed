@@ -48,7 +48,7 @@ RemoteService::RemoteService(const ServiceData& service_data, fxl::WeakPtr<Clien
     : service_data_(service_data),
       client_(std::move(client)),
       remaining_descriptor_requests_(kSentinel) {
-  ZX_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_);
 }
 
 RemoteService::~RemoteService() {
@@ -133,7 +133,7 @@ bool RemoteService::IsDiscovered() const {
 void RemoteService::ReadCharacteristic(CharacteristicHandle id, ReadValueCallback callback) {
   RemoteCharacteristic* chrc;
   fitx::result status = GetCharacteristic(id, &chrc);
-  ZX_DEBUG_ASSERT(chrc || status.is_error());
+  BT_DEBUG_ASSERT(chrc || status.is_error());
   if (status.is_error()) {
     ReportReadValueError(status, std::move(callback));
     return;
@@ -152,7 +152,7 @@ void RemoteService::ReadLongCharacteristic(CharacteristicHandle id, uint16_t off
                                            size_t max_bytes, ReadValueCallback callback) {
   RemoteCharacteristic* chrc;
   fitx::result status = GetCharacteristic(id, &chrc);
-  ZX_DEBUG_ASSERT(chrc || status.is_error());
+  BT_DEBUG_ASSERT(chrc || status.is_error());
   if (status.is_error()) {
     ReportReadValueError(status, std::move(callback));
     return;
@@ -198,7 +198,7 @@ void RemoteService::WriteCharacteristic(CharacteristicHandle id, std::vector<uin
                                         att::ResultFunction<> cb) {
   RemoteCharacteristic* chrc;
   fitx::result status = GetCharacteristic(id, &chrc);
-  ZX_DEBUG_ASSERT(chrc || status.is_error());
+  BT_DEBUG_ASSERT(chrc || status.is_error());
   if (status.is_error()) {
     cb(status);
     return;
@@ -219,7 +219,7 @@ void RemoteService::WriteLongCharacteristic(CharacteristicHandle id, uint16_t of
                                             att::ResultFunction<> callback) {
   RemoteCharacteristic* chrc;
   fitx::result status = GetCharacteristic(id, &chrc);
-  ZX_DEBUG_ASSERT(chrc || status.is_error());
+  BT_DEBUG_ASSERT(chrc || status.is_error());
   if (status.is_error()) {
     callback(status);
     return;
@@ -247,7 +247,7 @@ void RemoteService::WriteCharacteristicWithoutResponse(CharacteristicHandle id,
                                                        att::ResultFunction<> cb) {
   RemoteCharacteristic* chrc;
   fitx::result status = GetCharacteristic(id, &chrc);
-  ZX_DEBUG_ASSERT(chrc || status.is_error());
+  BT_DEBUG_ASSERT(chrc || status.is_error());
   if (status.is_error()) {
     cb(status);
     return;
@@ -266,7 +266,7 @@ void RemoteService::WriteCharacteristicWithoutResponse(CharacteristicHandle id,
 void RemoteService::ReadDescriptor(DescriptorHandle id, ReadValueCallback callback) {
   const DescriptorData* desc;
   fitx::result status = GetDescriptor(id, &desc);
-  ZX_DEBUG_ASSERT(desc || status.is_error());
+  BT_DEBUG_ASSERT(desc || status.is_error());
   if (status.is_error()) {
     ReportReadValueError(status, std::move(callback));
     return;
@@ -279,7 +279,7 @@ void RemoteService::ReadLongDescriptor(DescriptorHandle id, uint16_t offset, siz
                                        ReadValueCallback callback) {
   const DescriptorData* desc;
   att::Result<> status = GetDescriptor(id, &desc);
-  ZX_DEBUG_ASSERT(desc || status.is_error());
+  BT_DEBUG_ASSERT(desc || status.is_error());
   if (status.is_error()) {
     ReportReadValueError(status, std::move(callback));
     return;
@@ -305,7 +305,7 @@ void RemoteService::WriteDescriptor(DescriptorHandle id, std::vector<uint8_t> va
                                     att::ResultFunction<> callback) {
   const DescriptorData* desc;
   fitx::result status = GetDescriptor(id, &desc);
-  ZX_DEBUG_ASSERT(desc || status.is_error());
+  BT_DEBUG_ASSERT(desc || status.is_error());
   if (status.is_error()) {
     callback(status);
     return;
@@ -326,7 +326,7 @@ void RemoteService::WriteLongDescriptor(DescriptorHandle id, uint16_t offset,
                                         att::ResultFunction<> callback) {
   const DescriptorData* desc;
   fitx::result status = GetDescriptor(id, &desc);
-  ZX_DEBUG_ASSERT(desc || status.is_error());
+  BT_DEBUG_ASSERT(desc || status.is_error());
   if (status.is_error()) {
     callback(status);
     return;
@@ -349,7 +349,7 @@ void RemoteService::EnableNotifications(CharacteristicHandle id, ValueCallback c
                                         NotifyStatusCallback status_callback) {
   RemoteCharacteristic* chrc;
   fitx::result status = GetCharacteristic(id, &chrc);
-  ZX_DEBUG_ASSERT(chrc || status.is_error());
+  BT_DEBUG_ASSERT(chrc || status.is_error());
   if (status.is_error()) {
     status_callback(status, kInvalidId);
     return;
@@ -362,7 +362,7 @@ void RemoteService::DisableNotifications(CharacteristicHandle id, IdType handler
                                          att::ResultFunction<> status_callback) {
   RemoteCharacteristic* chrc;
   fitx::result status = GetCharacteristic(id, &chrc);
-  ZX_DEBUG_ASSERT(chrc || status.is_error());
+  BT_DEBUG_ASSERT(chrc || status.is_error());
   if (status.is_ok() && !chrc->DisableNotifications(handler_id)) {
     status = ToResult(HostError::kNotFound);
   }
@@ -370,9 +370,9 @@ void RemoteService::DisableNotifications(CharacteristicHandle id, IdType handler
 }
 
 void RemoteService::StartDescriptorDiscovery() {
-  ZX_DEBUG_ASSERT(!pending_discov_reqs_.empty());
+  BT_DEBUG_ASSERT(!pending_discov_reqs_.empty());
 
-  ZX_ASSERT(!characteristics_.empty());
+  BT_ASSERT(!characteristics_.empty());
   remaining_descriptor_requests_ = characteristics_.size();
 
   auto self = GetWeakPtr();
@@ -400,11 +400,11 @@ void RemoteService::StartDescriptorDiscovery() {
       }
 
       // HasCharacteristics() should return true now.
-      ZX_DEBUG_ASSERT(self->HasCharacteristics());
+      BT_DEBUG_ASSERT(self->HasCharacteristics());
 
       // Fall through and notify clients below.
     } else {
-      ZX_DEBUG_ASSERT(!self->HasCharacteristics());
+      BT_DEBUG_ASSERT(!self->HasCharacteristics());
       bt_log(DEBUG, "gatt", "descriptor discovery failed %s", bt_str(status));
       self->characteristics_.clear();
 
@@ -428,14 +428,14 @@ void RemoteService::StartDescriptorDiscovery() {
       end_handle = next->second.info().handle - 1;
     }
 
-    ZX_DEBUG_ASSERT(client_);
+    BT_DEBUG_ASSERT(client_);
     iter->second.DiscoverDescriptors(end_handle, desc_done_callback);
   }
 }
 
 fitx::result<Error<>> RemoteService::GetCharacteristic(CharacteristicHandle id,
                                                        RemoteCharacteristic** out_char) {
-  ZX_DEBUG_ASSERT(out_char);
+  BT_DEBUG_ASSERT(out_char);
 
   if (!HasCharacteristics()) {
     *out_char = nullptr;
@@ -454,7 +454,7 @@ fitx::result<Error<>> RemoteService::GetCharacteristic(CharacteristicHandle id,
 
 fitx::result<Error<>> RemoteService::GetDescriptor(DescriptorHandle id,
                                                    const DescriptorData** out_desc) {
-  ZX_DEBUG_ASSERT(out_desc);
+  BT_DEBUG_ASSERT(out_desc);
 
   if (!HasCharacteristics()) {
     *out_desc = nullptr;
@@ -479,8 +479,8 @@ fitx::result<Error<>> RemoteService::GetDescriptor(DescriptorHandle id,
 }
 
 void RemoteService::CompleteCharacteristicDiscovery(att::Result<> status) {
-  ZX_DEBUG_ASSERT(!pending_discov_reqs_.empty());
-  ZX_DEBUG_ASSERT(status.is_error() || remaining_descriptor_requests_ == 0u);
+  BT_DEBUG_ASSERT(!pending_discov_reqs_.empty());
+  BT_DEBUG_ASSERT(status.is_error() || remaining_descriptor_requests_ == 0u);
 
   // We return a new copy of only the immutable data of our characteristics and their
   // descriptors. This requires a copy, which *could* be expensive in the (unlikely) case
@@ -519,8 +519,8 @@ void RemoteService::SendLongWriteRequest(att::Handle handle, uint16_t offset, Bu
 void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
                                    MutableByteBufferPtr buffer, size_t bytes_read,
                                    ReadValueCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(buffer);
+  BT_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(buffer);
 
   auto self = GetWeakPtr();
   auto read_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
@@ -548,7 +548,7 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
 
     // Copy the blob into our |buffer|. |blob| may be truncated depending on the
     // size of |buffer|.
-    ZX_ASSERT(bytes_read < buffer->size());
+    BT_ASSERT(bytes_read < buffer->size());
     size_t copy_size = std::min(blob.size(), buffer->size() - bytes_read);
     bool truncated_by_max_bytes = (blob.size() != copy_size);
     buffer->Write(blob.view(0, copy_size), bytes_read);
@@ -556,7 +556,7 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
 
     // We are done if the read was not truncated by the MTU or we have read the maximum number
     // of bytes requested.
-    ZX_ASSERT(bytes_read <= buffer->size());
+    BT_ASSERT(bytes_read <= buffer->size());
     if (!maybe_truncated_by_mtu || bytes_read == buffer->size()) {
       cb(fitx::ok(), buffer->view(0, bytes_read), maybe_truncated_by_mtu || truncated_by_max_bytes);
       return;
@@ -647,7 +647,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
     const std::vector<Client::ReadByTypeValue>& values = result.value();
     // Client already checks for invalid response where status is success but no values are
     // returned.
-    ZX_ASSERT(!values.empty());
+    BT_ASSERT(!values.empty());
 
     // Convert and accumulate values.
     for (const auto& result : values) {

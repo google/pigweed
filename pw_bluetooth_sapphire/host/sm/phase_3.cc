@@ -4,12 +4,11 @@
 
 #include "phase_3.h"
 
-#include <zircon/assert.h>
-
 #include <optional>
 #include <type_traits>
 
 #include "lib/fit/function.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -34,18 +33,18 @@ Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
   // LTKs may not be distributed during Secure Connections.
-  ZX_ASSERT_MSG(!(features_.secure_connections && (ShouldSendLtk() || ShouldReceiveLtk())),
+  BT_ASSERT_MSG(!(features_.secure_connections && (ShouldSendLtk() || ShouldReceiveLtk())),
                 "Phase 3 may not distribute the LTK in Secure Connections pairing");
 
-  ZX_ASSERT(HasKeysToDistribute(features_));
+  BT_ASSERT(HasKeysToDistribute(features_));
   // The link must be encrypted with at least an STK in order for Phase 3 to take place.
-  ZX_ASSERT(le_sec.level() != SecurityLevel::kNoSecurity);
+  BT_ASSERT(le_sec.level() != SecurityLevel::kNoSecurity);
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
 void Phase3::Start() {
-  ZX_ASSERT(!has_failed());
-  ZX_ASSERT(!KeyExchangeComplete());
+  BT_ASSERT(!has_failed());
+  BT_ASSERT(!KeyExchangeComplete());
 
   if (role() == Role::kInitiator && !RequestedKeysObtained()) {
     bt_log(DEBUG, "sm", "waiting to receive keys from the responder");
@@ -95,7 +94,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   // Check that the received key has 0s at all locations more significant than
   // negotiated key_size
   uint8_t key_size = features_.encryption_key_size;
-  ZX_DEBUG_ASSERT(key_size <= ltk.size());
+  BT_DEBUG_ASSERT(key_size <= ltk.size());
   for (auto i = key_size; i < ltk.size(); i++) {
     if (ltk[i] != 0) {
       bt_log(WARN, "sm", "received LTK is larger than max keysize! aborting");
@@ -104,7 +103,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
     }
   }
 
-  ZX_DEBUG_ASSERT(!(obtained_remote_keys_ & KeyDistGen::kEncKey));
+  BT_DEBUG_ASSERT(!(obtained_remote_keys_ & KeyDistGen::kEncKey));
   peer_ltk_bytes_ = ltk;
 
   // Wait to receive EDiv and Rand
@@ -169,7 +168,7 @@ void Phase3::OnIdentityInformation(const IRK& irk) {
     return;
   }
 
-  ZX_DEBUG_ASSERT(!(obtained_remote_keys_ & KeyDistGen::kIdKey));
+  BT_DEBUG_ASSERT(!(obtained_remote_keys_ & KeyDistGen::kIdKey));
   irk_ = irk;
 
   // Wait to receive identity address
@@ -228,7 +227,7 @@ void Phase3::OnExpectedKeyReceived() {
 }
 
 bool Phase3::SendLocalKeys() {
-  ZX_DEBUG_ASSERT(!LocalKeysSent());
+  BT_DEBUG_ASSERT(!LocalKeysSent());
 
   if (ShouldSendLtk() && !SendEncryptionKey()) {
     return false;
@@ -243,7 +242,7 @@ bool Phase3::SendLocalKeys() {
 }
 
 bool Phase3::SendEncryptionKey() {
-  ZX_ASSERT(!features_.secure_connections);
+  BT_ASSERT(!features_.secure_connections);
 
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
@@ -302,7 +301,7 @@ bool Phase3::SendIdentityInfo() {
 }
 
 void Phase3::SignalComplete() {
-  ZX_ASSERT(KeyExchangeComplete());
+  BT_ASSERT(KeyExchangeComplete());
 
   // The security properties of all keys are determined by the security properties of the link used
   // to distribute them. This is already reflected by |le_sec_|.
@@ -312,7 +311,7 @@ void Phase3::SignalComplete() {
 
   if (irk_.has_value()) {
     // If there is an IRK there must also be an identity address.
-    ZX_ASSERT(identity_address_.has_value());
+    BT_ASSERT(identity_address_.has_value());
     pairing_data.irk = Key(le_sec_, *irk_);
     pairing_data.identity_address = identity_address_;
   }

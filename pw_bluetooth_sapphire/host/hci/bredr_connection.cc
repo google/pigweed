@@ -13,10 +13,10 @@ BrEdrConnection::BrEdrConnection(hci_spec::ConnectionHandle handle,
                                  const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
                                  const fxl::WeakPtr<Transport>& hci)
     : AclConnection(handle, local_address, peer_address, role, hci), weak_ptr_factory_(this) {
-  ZX_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
-  ZX_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
-  ZX_ASSERT(hci);
-  ZX_ASSERT(hci->acl_data_channel());
+  BT_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
+  BT_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
+  BT_ASSERT(hci);
+  BT_ASSERT(hci->acl_data_channel());
 
   // Allow packets to be sent on this link immediately.
   hci->acl_data_channel()->RegisterLink(handle, bt::LinkType::kACL);
@@ -28,7 +28,7 @@ bool BrEdrConnection::StartEncryption() {
     return false;
   }
 
-  ZX_ASSERT(ltk().has_value() == ltk_type_.has_value());
+  BT_ASSERT(ltk().has_value() == ltk_type_.has_value());
   if (!ltk().has_value()) {
     bt_log(DEBUG, "hci", "connection link key type has not been set; not starting encryption");
     return false;
@@ -93,7 +93,7 @@ void BrEdrConnection::HandleEncryptionStatusValidated(Result<bool> result) {
 }
 
 void BrEdrConnection::ValidateEncryptionKeySize(hci::ResultFunction<> key_size_validity_cb) {
-  ZX_ASSERT(state() == Connection::State::kConnected);
+  BT_ASSERT(state() == Connection::State::kConnected);
 
   auto cmd = CommandPacket::New(hci_spec::kReadEncryptionKeySize,
                                 sizeof(hci_spec::ReadEncryptionKeySizeParams));

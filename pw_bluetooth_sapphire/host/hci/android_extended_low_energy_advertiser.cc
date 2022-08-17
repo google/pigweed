@@ -38,7 +38,7 @@ AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
 std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address, hci_spec::GenericEnableParam enable) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   std::unique_ptr<CommandPacket> packet = CommandPacket::New(
       hci_android::kLEMultiAdvt, sizeof(hci_android::LEMultiAdvtEnableCommandParams));
@@ -84,7 +84,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdver
 std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   std::unique_ptr<CommandPacket> packet = CommandPacket::New(
       hci_android::kLEMultiAdvt, sizeof(hci_android::LEMultiAdvtSetAdvtDataCommandParams));
@@ -104,7 +104,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdver
 std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   std::unique_ptr<CommandPacket> packet = CommandPacket::New(
       hci_android::kLEMultiAdvt, sizeof(hci_android::LEMultiAdvtSetAdvtDataCommandParams));
@@ -121,7 +121,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdv
 std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address, const AdvertisingData& scan_rsp) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   std::unique_ptr<CommandPacket> packet = CommandPacket::New(
       hci_android::kLEMultiAdvt, sizeof(hci_android::LEMultiAdvtSetScanRespCommandParams));
@@ -140,7 +140,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetScanR
 std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   std::unique_ptr<CommandPacket> packet = CommandPacket::New(
       hci_android::kLEMultiAdvt, sizeof(hci_android::LEMultiAdvtSetScanRespCommandParams));
@@ -157,7 +157,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildUnsetSca
 std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
-  ZX_ASSERT(handle);
+  BT_ASSERT(handle);
 
   std::unique_ptr<CommandPacket> packet = CommandPacket::New(
       hci_android::kLEMultiAdvt, sizeof(hci_android::LEMultiAdvtEnableCommandParams));
@@ -248,8 +248,8 @@ void AndroidExtendedLowEnergyAdvertiser::OnIncomingConnection(
 // information necessary to create a connection object within the Host layer.
 CommandChannel::EventCallbackResult
 AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kVendorDebugEventCode);
-  ZX_ASSERT(event.params<hci_spec::VendorEventParams>().subevent_code ==
+  BT_ASSERT(event.event_code() == hci_spec::kVendorDebugEventCode);
+  BT_ASSERT(event.params<hci_spec::VendorEventParams>().subevent_code ==
             hci_android::kLEMultiAdvtStateChangeSubeventCode);
 
   Result<> result = event.ToResult();
@@ -259,7 +259,7 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(const Even
   }
 
   auto params = event.subevent_params<hci_android::LEMultiAdvtStateChangeSubeventParams>();
-  ZX_ASSERT(params);
+  BT_ASSERT(params);
 
   hci_spec::ConnectionHandle connection_handle = params->connection_handle;
   auto staged_parameters_node = staged_connections_map_.extract(connection_handle);

@@ -144,7 +144,7 @@ DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci_spec::ConnectionHandle h
           LowerBits(l2cap::kMaxInboundPduPayloadSize),
           UpperBits(l2cap::kMaxInboundPduPayloadSize)));
     default:
-      ZX_ASSERT_MSG(false, "unsupported mode");
+      BT_ASSERT_MSG(false, "unsupported mode");
   }
 }
 
@@ -186,7 +186,7 @@ DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci_spec::ConnectionHandle l
           UpperBits(l2cap::kMaxInboundPduPayloadSize)));
     }
     default:
-      ZX_ASSERT_MSG(false, "unsupported mode");
+      BT_ASSERT_MSG(false, "unsupported mode");
   }
 }
 

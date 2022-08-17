@@ -72,13 +72,13 @@ LowEnergyConnection::LowEnergyConnection(
       error_callback_(std::move(error_cb)),
       refs_(/*convert=*/[](const auto& refs) { return refs.size(); }),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(peer_);
-  ZX_ASSERT(link_);
-  ZX_ASSERT(conn_mgr_);
-  ZX_ASSERT(gatt_);
-  ZX_ASSERT(transport_);
-  ZX_ASSERT(peer_disconnect_callback_);
-  ZX_ASSERT(error_callback_);
+  BT_ASSERT(peer_);
+  BT_ASSERT(link_);
+  BT_ASSERT(conn_mgr_);
+  BT_ASSERT(gatt_);
+  BT_ASSERT(transport_);
+  BT_ASSERT(peer_disconnect_callback_);
+  BT_ASSERT(error_callback_);
 
   link_->set_peer_disconnect_callback(
       [this](auto, auto reason) { peer_disconnect_callback_(reason); });
@@ -108,16 +108,16 @@ std::unique_ptr<bt::gap::LowEnergyConnectionHandle> LowEnergyConnection::AddRef(
     }
   };
   auto bondable_cb = [self] {
-    ZX_ASSERT(self);
+    BT_ASSERT(self);
     return self->bondable_mode();
   };
   auto security_cb = [self] {
-    ZX_ASSERT(self);
+    BT_ASSERT(self);
     return self->security();
   };
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref(new LowEnergyConnectionHandle(
       peer_id(), handle(), std::move(release_cb), std::move(bondable_cb), std::move(security_cb)));
-  ZX_ASSERT(conn_ref);
+  BT_ASSERT(conn_ref);
 
   refs_.Mutable()->insert(conn_ref.get());
 
@@ -128,10 +128,10 @@ std::unique_ptr<bt::gap::LowEnergyConnectionHandle> LowEnergyConnection::AddRef(
 }
 
 void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
-  ZX_DEBUG_ASSERT(ref);
+  BT_DEBUG_ASSERT(ref);
 
   size_t res = refs_.Mutable()->erase(ref);
-  ZX_ASSERT_MSG(res == 1u, "DropRef called with wrong connection reference");
+  BT_ASSERT_MSG(res == 1u, "DropRef called with wrong connection reference");
   bt_log(DEBUG, "gap-le", "dropped ref (peer: %s, handle: %#.4x, count: %lu)", bt_str(peer_id()),
          handle(), ref_count());
 }
@@ -160,7 +160,7 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
         INFO, "gap-le",
         "received security upgrade request on L2CAP channel (level: %s, peer: %s, handle: %#.4x)",
         sm::LevelToString(level), bt_str(self->peer_id()), handle);
-    ZX_ASSERT(self->handle() == handle);
+    BT_ASSERT(self->handle() == handle);
     self->OnSecurityRequest(level, std::move(cb));
   };
   l2cap::ChannelManager::LEFixedChannels fixed_channels =
@@ -173,7 +173,7 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
 
 // Used to respond to protocol/service requests for increased security.
 void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level, sm::ResultFunction<> cb) {
-  ZX_ASSERT(sm_);
+  BT_ASSERT(sm_);
   sm_->UpgradeSecurity(level, [cb = std::move(cb), peer_id = peer_id(), handle = handle()](
                                   sm::Result<> status, const auto& sp) {
     bt_log(INFO, "gap-le", "pairing status: %s, properties: %s (peer: %s, handle: %#.4x)",
@@ -187,7 +187,7 @@ void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level, sm::ResultF
 // in the context of testing. May only be called on an already-established connection.
 void LowEnergyConnection::UpgradeSecurity(sm::SecurityLevel level, sm::BondableMode bondable_mode,
                                           sm::ResultFunction<> cb) {
-  ZX_ASSERT(sm_);
+  BT_ASSERT(sm_);
   sm_->set_bondable_mode(bondable_mode);
   OnSecurityRequest(level, std::move(cb));
 }
@@ -197,7 +197,7 @@ void LowEnergyConnection::UpgradeSecurity(sm::SecurityLevel level, sm::BondableM
 void LowEnergyConnection::ResetSecurityManager(sm::IOCapability ioc) { sm_->Reset(ioc); }
 
 void LowEnergyConnection::OnInterrogationComplete() {
-  ZX_ASSERT(!interrogation_completed_);
+  BT_ASSERT(!interrogation_completed_);
   interrogation_completed_ = true;
   MaybeUpdateConnectionParameters();
 }
@@ -237,7 +237,7 @@ void LowEnergyConnection::RegisterEventHandlers() {
 // TODO(fxbug.dev/79491): Wait to update connection parameters until all initialization
 // procedures have completed.
 void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
-  ZX_ASSERT(!conn_pause_peripheral_timeout_.has_value());
+  BT_ASSERT(!conn_pause_peripheral_timeout_.has_value());
   conn_pause_peripheral_timeout_.emplace([this]() {
     // Destroying this task will invalidate the capture list, so we need to save a self pointer.
     auto self = this;
@@ -254,7 +254,7 @@ void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
 // TODO(fxbug.dev/79491): Wait to update connection parameters until all initialization
 // procedures have completed.
 void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
-  ZX_ASSERT(!conn_pause_central_timeout_.has_value());
+  BT_ASSERT(!conn_pause_central_timeout_.has_value());
   conn_pause_central_timeout_.emplace([this]() {
     // Destroying this task will invalidate the capture list, so we need to save a self pointer.
     auto self = this;
@@ -310,7 +310,7 @@ void LowEnergyConnection::OnNewLEConnectionParams(
   bt_log(INFO, "gap-le", "LE connection parameters received (peer: %s, handle: %#.4x)",
          bt_str(peer_id()), link_->handle());
 
-  ZX_ASSERT(peer_);
+  BT_ASSERT(peer_);
 
   peer_->MutLe().SetPreferredConnectionParameters(params);
 
@@ -319,12 +319,12 @@ void LowEnergyConnection::OnNewLEConnectionParams(
 
 void LowEnergyConnection::RequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  ZX_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::kPeripheral,
+  BT_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::kPeripheral,
                 "tried to send connection parameter update request as central");
 
-  ZX_ASSERT(peer_);
+  BT_ASSERT(peer_);
   // Ensure interrogation has completed.
-  ZX_ASSERT(peer_->le()->features().has_value());
+  BT_ASSERT(peer_->le()->features().has_value());
 
   // TODO(fxbug.dev/49714): check local controller support for LL Connection Parameters Request
   // procedure (mask is currently in Adapter le state, consider propagating down)
@@ -383,7 +383,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
 
 void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  ZX_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::kPeripheral,
+  BT_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::kPeripheral,
                 "tried to send l2cap connection parameter update request as central");
 
   bt_log(DEBUG, "gap-le", "sending l2cap connection parameter update request (peer: %s)",
@@ -424,7 +424,7 @@ void LowEnergyConnection::UpdateConnectionParams(
 
   auto status_cb_wrapper = [handle = handle(), cb = std::move(status_cb)](
                                auto id, const hci::EventPacket& event) mutable {
-    ZX_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
+    BT_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
     hci_is_error(event, TRACE, "gap-le",
                  "controller rejected connection parameters (handle: %#.4x)", handle);
     if (cb) {
@@ -437,12 +437,12 @@ void LowEnergyConnection::UpdateConnectionParams(
 }
 
 void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  ZX_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+  BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  BT_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
             hci_spec::kLEConnectionUpdateCompleteSubeventCode);
 
   auto payload = event.subevent_params<hci_spec::LEConnectionUpdateCompleteSubeventParams>();
-  ZX_ASSERT(payload);
+  BT_ASSERT(payload);
   hci_spec::ConnectionHandle handle = le16toh(payload->connection_handle);
 
   // Ignore events for other connections.
@@ -471,7 +471,7 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
                                           le16toh(payload->supervision_timeout));
   link_->set_low_energy_parameters(params);
 
-  ZX_ASSERT(peer_);
+  BT_ASSERT(peer_);
   peer_->MutLe().SetConnectionParameters(params);
 }
 
@@ -487,7 +487,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
     // If the GAP service preferred connection parameters characteristic has not been read by now,
     // just use the default parameters.
     // TODO(fxbug.dev/66031): Wait for preferred connection parameters to be read.
-    ZX_ASSERT(peer_);
+    BT_ASSERT(peer_);
     auto conn_params = peer_->le()->preferred_connection_parameters().value_or(
         kDefaultPreferredConnectionParameters);
     UpdateConnectionParams(conn_params);

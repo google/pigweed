@@ -11,14 +11,14 @@ namespace bt::hci {
 void fuzz(const uint8_t* data, size_t size) {
   zx::channel cmd0, cmd1;
   zx::channel acl0, acl1;
-  ZX_ASSERT(zx::channel::create(/*flags=*/0, &cmd0, &cmd1) == ZX_OK);
-  ZX_ASSERT(zx::channel::create(/*flags=*/0, &acl0, &acl1) == ZX_OK);
+  BT_ASSERT(zx::channel::create(/*flags=*/0, &cmd0, &cmd1) == ZX_OK);
+  BT_ASSERT(zx::channel::create(/*flags=*/0, &acl0, &acl1) == ZX_OK);
   auto device =
       std::make_unique<DummyDeviceWrapper>(std::move(cmd1), std::move(acl1), /*features=*/0);
 
   async::TestLoop loop;
   auto hci = HciWrapper::Create(std::move(device), loop.dispatcher());
-  ZX_ASSERT(hci->Initialize([](zx_status_t error) {}));
+  BT_ASSERT(hci->Initialize([](zx_status_t error) {}));
 
   hci->SetAclCallback([](auto) {});
   hci->SetEventCallback([](auto) {});

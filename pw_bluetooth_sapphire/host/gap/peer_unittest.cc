@@ -88,7 +88,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
   std::string InspectLowEnergyConnectionState() {
     std::optional<std::string> val = GetInspectValue<inspect::StringPropertyValue>(
         peer_inspector_, {"peer", "le_data", Peer::LowEnergyData::kInspectConnectionStateName});
-    ZX_ASSERT(val);
+    BT_ASSERT(val);
     return *val;
   }
 
@@ -96,7 +96,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
     std::optional<int64_t> val = GetInspectValue<inspect::IntPropertyValue>(
         peer_inspector_,
         {"peer", "le_data", Peer::LowEnergyData::kInspectAdvertisingDataParseFailureCountName});
-    ZX_ASSERT(val);
+    BT_ASSERT(val);
     return *val;
   }
 
@@ -104,42 +104,42 @@ class PeerTest : public ::gtest::TestLoopFixture {
     std::optional<std::string> val = GetInspectValue<inspect::StringPropertyValue>(
         peer_inspector_,
         {"peer", "le_data", Peer::LowEnergyData::kInspectLastAdvertisingDataParseFailureName});
-    ZX_ASSERT(val);
+    BT_ASSERT(val);
     return *val;
   }
 
   uint64_t MetricsLowEnergyConnections() {
     std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
         metrics_inspector_, {"metrics", "le", "connection_events"});
-    ZX_ASSERT(val);
+    BT_ASSERT(val);
     return *val;
   }
 
   uint64_t MetricsLowEnergyDisconnections() {
     std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
         metrics_inspector_, {"metrics", "le", "disconnection_events"});
-    ZX_ASSERT(val);
+    BT_ASSERT(val);
     return *val;
   }
 
   std::string InspectBrEdrConnectionState() {
     std::optional<std::string> val = GetInspectValue<inspect::StringPropertyValue>(
         peer_inspector_, {"peer", "bredr_data", Peer::BrEdrData::kInspectConnectionStateName});
-    ZX_ASSERT(val);
+    BT_ASSERT(val);
     return *val;
   }
 
   uint64_t MetricsBrEdrConnections() {
     std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
         metrics_inspector_, {"metrics", "bredr", "connection_events"});
-    ZX_ASSERT(val);
+    BT_ASSERT(val);
     return *val;
   }
 
   uint64_t MetricsBrEdrDisconnections() {
     std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
         metrics_inspector_, {"metrics", "bredr", "disconnection_events"});
-    ZX_ASSERT(val);
+    BT_ASSERT(val);
     return *val;
   }
 #endif  // NINSPECT

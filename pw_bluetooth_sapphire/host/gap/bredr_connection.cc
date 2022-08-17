@@ -57,7 +57,7 @@ void BrEdrConnection::Interrogate(BrEdrInterrogator::ResultCallback callback) {
 }
 
 void BrEdrConnection::OnInterrogationComplete() {
-  ZX_ASSERT_MSG(!interrogation_complete(), "%s on a connection that's already been interrogated",
+  BT_ASSERT_MSG(!interrogation_complete(), "%s on a connection that's already been interrogated",
                 __FUNCTION__);
 
   // Fulfill and clear request so that the dtor does not signal requester(s) with errors.
@@ -72,7 +72,7 @@ void BrEdrConnection::AddRequestCallback(BrEdrConnection::Request::OnComplete cb
     return;
   }
 
-  ZX_ASSERT(request_);
+  BT_ASSERT(request_);
   request_->AddCallback(std::move(cb));
 }
 

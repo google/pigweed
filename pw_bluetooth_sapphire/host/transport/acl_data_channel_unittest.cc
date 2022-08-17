@@ -5,12 +5,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 #include <lib/async/cpp/task.h>
-#include <zircon/assert.h>
 
 #include <unordered_map>
 
 #include <gmock/gmock.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
@@ -92,7 +92,7 @@ TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
 
   // Callback invoked by TestDevice when it receive a data packet from us.
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
@@ -164,7 +164,7 @@ TEST_F(ACLDataChannelTest, SendPacketLEBuffer) {
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
@@ -246,7 +246,7 @@ TEST_F(ACLDataChannelTest, SendLEPacketBothBuffers) {
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
@@ -319,7 +319,7 @@ TEST_F(ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
@@ -442,7 +442,7 @@ TEST_F(ACLDataChannelTest, SendPackets) {
   bool pass = true;
   int seq_no = 0;
   auto data_cb = [&pass, &seq_no](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
     EXPECT_EQ(1u, packet.payload_size());
@@ -570,7 +570,7 @@ TEST_F(ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
   int handle1_packet_count = 0;
   int handle2_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
@@ -789,7 +789,7 @@ TEST_F(ACLDataChannelTest, ReceiveData) {
     } else if (num_rx_packets == 2) {
       packet1_handle = packet->connection_handle();
     } else {
-      ZX_PANIC("|num_rx_packets| has unexpected value: %zu", num_rx_packets);
+      BT_PANIC("|num_rx_packets| has unexpected value: %zu", num_rx_packets);
     }
   };
   set_data_received_callback(std::move(data_rx_cb));
@@ -871,7 +871,7 @@ TEST_F(ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueu
 
   // Callback invoked by TestDevice when it receive a data packet from us.
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
@@ -957,7 +957,7 @@ TEST_F(ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSe
 
   // Callback invoked by TestDevice when it receive a data packet from us.
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));
@@ -1040,7 +1040,7 @@ TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
 
   // Callback invoked by TestDevice when it receive a data packet from us.
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
     PacketView<hci_spec::ACLDataHeader> packet(&bytes,
                                                bytes.size() - sizeof(hci_spec::ACLDataHeader));

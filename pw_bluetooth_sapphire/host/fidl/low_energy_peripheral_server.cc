@@ -5,11 +5,11 @@
 #include "low_energy_peripheral_server.h"
 
 #include <lib/async/default.h>
-#include <zircon/assert.h>
 #include <zircon/status.h>
 
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
@@ -31,7 +31,7 @@ namespace bthost {
 namespace {
 
 fble::PeripheralError FidlErrorFromStatus(bt::hci::Result<> status) {
-  ZX_ASSERT_MSG(status.is_error(), "FidlErrorFromStatus called on success status");
+  BT_ASSERT_MSG(status.is_error(), "FidlErrorFromStatus called on success status");
   return status.error_value().Visit(
       [](bt::HostError host_error) {
         switch (host_error) {
@@ -65,7 +65,7 @@ LowEnergyPeripheralServer::AdvertisementInstance::AdvertisementInstance(
       parameters_(std::move(parameters)),
       advertise_complete_cb_(std::move(complete_cb)),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(advertise_complete_cb_);
+  BT_ASSERT(advertise_complete_cb_);
   advertised_peripheral_.Bind(std::move(handle));
   advertised_peripheral_.set_error_handler([this, peripheral_server, id](zx_status_t /*status*/) {
     CloseWith(fpromise::ok());
@@ -103,14 +103,14 @@ void LowEnergyPeripheralServer::AdvertisementInstance::StartAdvertising() {
 
 void LowEnergyPeripheralServer::AdvertisementInstance::Register(
     bt::gap::AdvertisementInstance instance) {
-  ZX_ASSERT(!instance_);
+  BT_ASSERT(!instance_);
   instance_ = std::move(instance);
 }
 
 void LowEnergyPeripheralServer::AdvertisementInstance::OnConnected(
     bt::gap::AdvertisementId advertisement_id,
     bt::gap::Adapter::LowEnergy::ConnectionResult result) {
-  ZX_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
+  BT_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
 
   // HCI advertising ends when a connection is received (even for error results), so clear the
   // stale advertisement handle.
@@ -128,7 +128,7 @@ void LowEnergyPeripheralServer::AdvertisementInstance::OnConnected(
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn = std::move(result).value();
   bt::PeerId peer_id = conn->peer_identifier();
   bt::gap::Peer* peer = peripheral_server_->adapter()->peer_cache()->FindById(peer_id);
-  ZX_ASSERT(peer);
+  BT_ASSERT(peer);
 
   bt_log(INFO, LOG_TAG,
          "peripheral received connection to advertisement (peer: %s, adv id: %s, adv "
@@ -160,7 +160,7 @@ void LowEnergyPeripheralServer::AdvertisementInstance::CloseWith(
 LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::AdvertisementInstanceDeprecated(
     fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> handle)
     : handle_(std::move(handle)) {
-  ZX_DEBUG_ASSERT(handle_);
+  BT_DEBUG_ASSERT(handle_);
 }
 
 LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::~AdvertisementInstanceDeprecated() {
@@ -169,7 +169,7 @@ LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::~AdvertisementInstan
 
 zx_status_t LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::Register(
     bt::gap::AdvertisementInstance instance) {
-  ZX_DEBUG_ASSERT(!instance_);
+  BT_DEBUG_ASSERT(!instance_);
 
   instance_ = std::move(instance);
 
@@ -198,7 +198,7 @@ LowEnergyPeripheralServer::LowEnergyPeripheralServer(fxl::WeakPtr<bt::gap::Adapt
       gatt_(std::move(gatt)),
       weak_ptr_factory_(this) {}
 
-LowEnergyPeripheralServer::~LowEnergyPeripheralServer() { ZX_ASSERT(adapter()->bredr()); }
+LowEnergyPeripheralServer::~LowEnergyPeripheralServer() { BT_ASSERT(adapter()->bredr()); }
 
 void LowEnergyPeripheralServer::Advertise(
     fble::AdvertisingParameters parameters,
@@ -224,7 +224,7 @@ void LowEnergyPeripheralServer::Advertise(
   auto [iter, inserted] =
       advertisements_.try_emplace(instance_id, this, instance_id, std::move(parameters),
                                   std::move(advertised_peripheral), std::move(callback));
-  ZX_ASSERT(inserted);
+  BT_ASSERT(inserted);
   iter->second.StartAdvertising();
 }
 
@@ -262,8 +262,8 @@ void LowEnergyPeripheralServer::StartAdvertising(
       return;
     }
 
-    ZX_ASSERT(self->advertisement_deprecated_);
-    ZX_ASSERT(self->advertisement_deprecated_->id() == bt::gap::kInvalidAdvertisementId);
+    BT_ASSERT(self->advertisement_deprecated_);
+    BT_ASSERT(self->advertisement_deprecated_->id() == bt::gap::kInvalidAdvertisementId);
 
     fble::Peripheral_StartAdvertising_Result result;
     if (status.is_error()) {
@@ -312,7 +312,7 @@ const bt::gap::LowEnergyConnectionHandle* LowEnergyPeripheralServer::FindConnect
 void LowEnergyPeripheralServer::OnConnectedDeprecated(
     bt::gap::AdvertisementId advertisement_id,
     bt::gap::Adapter::LowEnergy::ConnectionResult result) {
-  ZX_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
+  BT_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
 
   // Abort connection procedure if advertisement was canceled by the client.
   if (!advertisement_deprecated_ || advertisement_deprecated_->id() != advertisement_id) {
@@ -338,7 +338,7 @@ void LowEnergyPeripheralServer::OnConnectedDeprecated(
   auto conn = std::move(result).value();
   auto peer_id = conn->peer_identifier();
   auto* peer = adapter()->peer_cache()->FindById(peer_id);
-  ZX_ASSERT(peer);
+  BT_ASSERT(peer);
 
   bt_log(INFO, LOG_TAG, "central connected (peer: %s, advertisement id: %s)",
          bt_str(peer->identifier()), bt_str(advertisement_id));
@@ -354,7 +354,7 @@ LowEnergyPeripheralServer::CreateConnectionServer(
     std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection) {
   zx::channel local, remote;
   zx_status_t status = zx::channel::create(0, &local, &remote);
-  ZX_ASSERT(status == ZX_OK);
+  BT_ASSERT(status == ZX_OK);
 
   auto conn_server_id = next_connection_server_id_++;
   auto conn_server = std::make_unique<LowEnergyConnectionServer>(
@@ -448,7 +448,7 @@ void LowEnergyPeripheralServer::StartAdvertisingInternal(
                                             : BondableMode::NonBondable;
   }
 
-  ZX_ASSERT(adapter()->le());
+  BT_ASSERT(adapter()->le());
   adapter()->le()->StartAdvertising(std::move(adv_data), std::move(scan_rsp), interval,
                                     /*anonymous=*/false, include_tx_power_level,
                                     std::move(connectable_params), std::move(status_cb));
