@@ -115,7 +115,7 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
         'python.lint',
         'docs',
         'fuzzers',
-        'pw_env_setup:build_pigweed_python_source_tree',
+        'pw_env_setup:pypi_pigweed_python_source_tree',
     ]
 
     # TODO(b/234645359): Re-enable on Windows when compatibility tests build.
