@@ -574,12 +574,11 @@ class _DirectoryDatabase(DatabaseFile):
         return Path(_git_stdout(['rev-parse', '--show-toplevel'],
                                 self.path)).resolve()
 
-    def _git_paths(self, commands: List, path_to_repo: Path) -> List[Path]:
+    def _git_paths(self, commands: List) -> List[Path]:
         """Creates a list of complete paths to the repo."""
         try:
-            changes = _git_stdout(commands + [self.path],
-                                  path_to_repo).splitlines()
-            return [path_to_repo / path for path in changes]
+            changes = _git_stdout(commands, self.path).splitlines()
+            return [self.path / path for path in changes]
         except subprocess.CalledProcessError:
             return []
 
@@ -594,15 +593,10 @@ class _DirectoryDatabase(DatabaseFile):
         - When nothing is yielded from the previous searches or no git repo
           exists, then a new filename is created.
         """
-        # Finds the repository the database is within.
-        try:
-            path_to_repo = self._path_to_repo()
-        except subprocess.CalledProcessError:
-            return self._create_filename()
 
         # Find untracked_changes in directory.
         untracked_changes = self._git_paths(
-            ['ls-files', '--others', '--exclude-standard'], path_to_repo)
+            ['ls-files', '--others', '--exclude-standard'])
 
         if untracked_changes:
             # TODO(b/241297219): Handle multiple paths in the commit
@@ -614,7 +608,7 @@ class _DirectoryDatabase(DatabaseFile):
         # the git difference on.
         # Find differences between origin/HEAD and HEAD commit in directory.
         tracked_changes = self._git_paths(
-            ['diff', '--name-only', '--diff-filter=A', commit], path_to_repo)
+            ['diff', '--name-only', '--diff-filter=A', '--relative', commit])
 
         if tracked_changes:
             # If a single change exists in the comparison, the filename will
@@ -624,9 +618,9 @@ class _DirectoryDatabase(DatabaseFile):
             if len(tracked_changes) == 1:
                 return tracked_changes.pop()
 
-            tracked_changes_from_latest_commit = self._git_paths(
-                ['diff', '--name-only', '--diff-filter=A', 'HEAD~'],
-                path_to_repo)
+            tracked_changes_from_latest_commit = self._git_paths([
+                'diff', '--name-only', '--diff-filter=A', '--relative', 'HEAD~'
+            ])
             # TODO(b/241297219): Handle multiple paths in the commit.
             assert len(tracked_changes_from_latest_commit) < 2
             return tracked_changes_from_latest_commit.pop()
@@ -657,7 +651,6 @@ class _DirectoryDatabase(DatabaseFile):
         db = Database(entries)._database  # pylint: disable=protected-access
         new_entries = _new_entries(db.values(), self._database)
         csv_path = self._find_latest_csv(commit)
-
         if csv_path.exists():
             # Loading the CSV as a DatabaseFile.
             csv_db = DatabaseFile.create(csv_path)
