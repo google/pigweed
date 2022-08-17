@@ -26,7 +26,7 @@ import pw_cli.log
 
 from pw_bloat.binary_diff import BinaryDiff
 from pw_bloat import bloat_output
-from pw_bloat.label import from_bloaty_csv
+from pw_bloat.label import from_bloaty_tsv
 from pw_bloat.label_output import BloatTableOutput, LineCharset, RstOutput
 
 _LOG = logging.getLogger(__name__)
@@ -145,11 +145,11 @@ def single_target_output(target: str, bloaty_config: str, target_out_file: str,
     single_output = run_bloaty(target,
                                bloaty_config,
                                data_sources=['segment_names', 'fullsymbols'],
-                               extra_args=['--csv'])
-    single_csv = single_output.decode().splitlines()
-    single_report = BloatTableOutput(from_bloaty_csv(single_csv),
+                               extra_args=['--tsv'])
+    single_tsv = single_output.decode().splitlines()
+    single_report = BloatTableOutput(from_bloaty_tsv(single_tsv),
                                      MAX_COL_WIDTH, LineCharset)
-    rst_single_report = RstOutput(from_bloaty_csv(single_csv), MAX_COL_WIDTH)
+    rst_single_report = RstOutput(from_bloaty_tsv(single_tsv), MAX_COL_WIDTH)
 
     single_report_table = single_report.create_table()
 
