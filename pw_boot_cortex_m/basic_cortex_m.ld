@@ -151,7 +151,7 @@ SECTIONS
 
   /* Zero initialized global/static data. (.bss)
    * This section is zero initialized in pw_boot_Entry(). */
-  .zero_init_ram : ALIGN(8)
+  .zero_init_ram (NOLOAD) : ALIGN(8)
   {
     *(.bss)
     *(.bss*)
@@ -159,7 +159,7 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  .heap : ALIGN(8)
+  .heap (NOLOAD) : ALIGN(8)
   {
     pw_boot_heap_low_addr = .;
     . = . + PW_BOOT_HEAP_SIZE;
