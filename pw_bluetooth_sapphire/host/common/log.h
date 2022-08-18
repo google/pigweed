@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <string>
 
+#include "pw_log/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/to_string.h"
 
 // Logging utilities for the host library. This provides a common abstraction
@@ -85,44 +86,34 @@ namespace bt {
 
 // Log severity levels used by the host library, following the convention of
 // <lib/ddk/debug.h>
-enum class LogSeverity {
+enum class LogSeverity : int {
   // Indicates unexpected failures.
-  ERROR = 0,
+  ERROR = PW_LOG_LEVEL_ERROR,
 
   // Indicates a situation that is not an error but may be indicative of an
   // impending problem.
-  WARN = 1,
+  WARN = PW_LOG_LEVEL_WARN,
 
   // Terse information messages for startup, shutdown, or other infrequent state
   // changes.
-  INFO = 2,
+  INFO = PW_LOG_LEVEL_INFO,
 
   // Verbose messages for transactions and state changes
-  DEBUG = 3,
+  DEBUG = PW_LOG_LEVEL_DEBUG,
 
-  // Very verbose messages.
-  TRACE = 4,
+  // Legacy. Pigweed doesn't support TRACE, so we map it to DEBUG.
+  TRACE = PW_LOG_LEVEL_DEBUG,
 };
 
 constexpr size_t kNumLogSeverities = 5;
 
-bool IsLogLevelEnabled(LogSeverity severity);
-[[gnu::format(printf, 5, 6)]] void LogMessage(const char* file, int line, LogSeverity severity,
-                                              const char* tag, const char* fmt, ...);
+bool IsPrintfLogLevelEnabled(LogSeverity severity);
+
+unsigned int GetPwLogFlags(LogSeverity level);
 
 void UsePrintf(LogSeverity min_severity);
 
 namespace internal {
-
-// Returns the part of a path following the final '/', or the whole path if there is no '/'.
-constexpr const char* BaseName(const char* path) {
-  for (const char* c = path; c && (*c != '\0'); c++) {
-    if (*c == '/') {
-      path = c + 1;
-    }
-  }
-  return path;
-}
 
 // No-op function used to check consistency between format string and arguments.
 [[gnu::format(printf, 1, 2)]] constexpr void CheckFormat([[maybe_unused]] const char* fmt, ...) {}
@@ -134,8 +125,9 @@ constexpr const char* BaseName(const char* path) {
 // This macro should not wrap its contents in a lambda, as it breaks logs using __FUNCTION__.
 // TODO(fxbug.dev/1390): Due to limitations, |tag| is processed by printf-style formatters as a
 // format string, so check that |tag| does not specify any additional args.
-#define bt_log(flag, tag, fmt...)                                        \
-  ::bt::LogMessage(__FILE__, __LINE__, bt::LogSeverity::flag, tag, fmt); \
+#define bt_log(level, tag, fmt...)                                                        \
+  PW_LOG(static_cast<int>(bt::LogSeverity::level), GetPwLogFlags(bt::LogSeverity::level), \
+         "[" tag "] " fmt);                                                               \
   ::bt::internal::CheckFormat(tag)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {}
