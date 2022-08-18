@@ -709,15 +709,10 @@ void ProfileServer::OnScoConnectionResult(
 void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status) {
   bt_log(DEBUG, "fidl", "audio direction ext server closed (reason: %s)",
          zx_status_get_string(status));
-
-  // TODO(fxbug.dev/106895): Change find() function to extract() so lookup is done only once
-  auto it = audio_direction_ext_servers_.find(ext_server);
-  if (it == audio_direction_ext_servers_.end()) {
+  auto handle = audio_direction_ext_servers_.extract(ext_server);
+  if (handle.empty()) {
     bt_log(WARN, "fidl", "could not find ext server in audio direction ext error callback");
-    return;
   }
-
-  audio_direction_ext_servers_.erase(it);
 }
 
 fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDirectionExtServer(
@@ -740,7 +735,9 @@ void ProfileServer::OnL2capParametersExtError(L2capParametersExt* ext_server, zx
   bt_log(DEBUG, "fidl", "fidl parameters ext server closed (reason: %s)",
          zx_status_get_string(status));
   auto handle = l2cap_parameters_ext_servers_.extract(ext_server);
-  BT_ASSERT(handle);
+  if (handle.empty()) {
+    bt_log(WARN, "fidl", "could not find ext server in l2cap parameters ext error callback");
+  }
 }
 
 fidl::InterfaceHandle<fidlbredr::L2capParametersExt> ProfileServer::BindL2capParametersExtServer(
@@ -762,7 +759,9 @@ void ProfileServer::OnAudioOffloadExtError(AudioOffloadExt* ext_server, zx_statu
   bt_log(DEBUG, "fidl", "audio offload ext server closed (reason: %s)",
          zx_status_get_string(status));
   auto handle = audio_offload_ext_servers_.extract(ext_server);
-  ZX_DEBUG_ASSERT_MSG(handle, "could not find ext server in audio offload ext error callback");
+  if (handle.empty()) {
+    bt_log(WARN, "fidl", "could not find ext server in audio offload ext error callback");
+  }
 }
 
 fidl::InterfaceHandle<fidlbredr::AudioOffloadExt> ProfileServer::BindAudioOffloadExtServer(
