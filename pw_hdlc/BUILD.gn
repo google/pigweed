@@ -119,6 +119,23 @@ pw_source_set("packet_parser") {
   ]
 }
 
+# A backend for pw_rpc's `system_server` that sends and receives HDLC-framed RPC
+# packets over pw_sys_io.
+#
+# Warning: This system server is polling and blocking, so it's not
+# production-ready. This exists for simplifying initial bringup/testing, and
+# should not be used in any performance-sensitive application.
+pw_source_set("hdlc_sys_io_system_server") {
+  deps = [
+    "$dir_pw_hdlc:pw_rpc",
+    "$dir_pw_hdlc:rpc_channel_output",
+    "$dir_pw_rpc/system_server:facade",
+    "$dir_pw_stream:sys_io_stream",
+    dir_pw_log,
+  ]
+  sources = [ "hdlc_sys_io_system_server.cc" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":encoder_test",

@@ -98,17 +98,6 @@ if (pw_arduino_build_CORE_PATH != "") {
         "$dir_pw_preprocessor",
       ]
     }
-
-    pw_source_set("system_rpc_server") {
-      deps = [
-        "$dir_pw_hdlc:pw_rpc",
-        "$dir_pw_hdlc:rpc_channel_output",
-        "$dir_pw_rpc/system_server:facade",
-        "$dir_pw_stream:sys_io_stream",
-        dir_pw_log,
-      ]
-      sources = [ "system_rpc_server.cc" ]
-    }
   }
 } else {
   config("arduino_build") {

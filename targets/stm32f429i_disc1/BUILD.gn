@@ -47,17 +47,6 @@ if (current_toolchain != default_toolchain) {
       "vector_table.c",
     ]
   }
-
-  pw_source_set("system_rpc_server") {
-    deps = [
-      "$dir_pw_hdlc:pw_rpc",
-      "$dir_pw_hdlc:rpc_channel_output",
-      "$dir_pw_rpc/system_server:facade",
-      "$dir_pw_stream:sys_io_stream",
-      dir_pw_log,
-    ]
-    sources = [ "system_rpc_server.cc" ]
-  }
 }
 
 pw_doc_group("target_docs") {

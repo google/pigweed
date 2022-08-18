@@ -14,23 +14,156 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_hdlc
+add_subdirectory(rpc_example)
+
+pw_add_module_library(pw_hdlc
   PUBLIC_DEPS
-    pw_assert
+    pw_hdlc.decoder
+    pw_hdlc.encoded_size
+    pw_hdlc.encoder
+)
+
+pw_add_module_library(pw_hdlc.common
+  HEADERS
+    public/pw_hdlc/internal/protocol.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_varint
+)
+
+pw_add_module_library(pw_hdlc.encoded_size
+  HEADERS
+    public/pw_hdlc/encoded_size.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_hdlc.common
+    pw_bytes
+    pw_span
+    pw_varint
+)
+
+pw_add_module_library(pw_hdlc.decoder
+  HEADERS
+    public/pw_hdlc/decoder.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_hdlc.common
     pw_bytes
     pw_checksum
     pw_result
-    pw_router.packet_parser
-    pw_rpc.common
+    pw_span
     pw_status
-    pw_stream
-    pw_sys_io
   PRIVATE_DEPS
     pw_log
+  SOURCES
+    decoder.cc
 )
 
-add_subdirectory(rpc_example)
+pw_add_module_library(pw_hdlc.encoder
+  HEADERS
+    public/pw_hdlc/encoder.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_hdlc.common
+    pw_bytes
+    pw_checksum
+    pw_span
+    pw_status
+    pw_stream
+  PRIVATE_DEPS
+    pw_hdlc.encoded_size
+  SOURCES
+    encoder.cc
+    public/pw_hdlc/internal/encoder.h
+)
+
+pw_add_module_library(pw_hdlc.rpc_channel_output
+  HEADERS
+    public/pw_hdlc/rpc_channel.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_hdlc
+    pw_rpc.server
+    pw_span
+)
+
+pw_add_module_library(pw_hdlc.pw_rpc
+  HEADERS
+    public/pw_hdlc/rpc_packets.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_hdlc
+    pw_rpc.server
+    pw_sys_io
+  SOURCES
+    rpc_packets.cc
+)
+
+pw_add_module_library(pw_hdlc.packet_parser
+  HEADERS
+    public/pw_hdlc/wire_packet_parser.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_hdlc
+    pw_router.packet_parser
+    PRIVATE_DEPS
+    pw_bytes
+    pw_checksum
+  SOURCES
+    wire_packet_parser.cc
+)
+
+pw_add_module_library(pw_hdlc.hdlc_sys_io_system_server
+  PRIVATE_DEPS
+    pw_hdlc.pw_rpc
+    pw_hdlc.rpc_channel_output
+    pw_rpc.system_server.facade
+    pw_stream.sys_io_stream
+    pw_log
+  SOURCES
+    hdlc_sys_io_system_server.cc
+)
 
 if(Zephyr_FOUND AND CONFIG_PIGWEED_HDLC)
   zephyr_link_libraries(pw_hdlc)
 endif()
+
+pw_add_test(pw_hdlc.decoder_test
+  SOURCES
+    decoder_test.cc
+  DEPS
+    pw_bytes
+    pw_hdlc
+  GROUPS
+    modules
+    pw_hdlc
+)
+
+pw_add_test(pw_hdlc.rpc_channel_test
+  SOURCES
+    rpc_channel_test.cc
+  DEPS
+    pw_hdlc
+    pw_hdlc.rpc_channel_output
+  GROUPS
+    modules
+    pw_hdlc
+)
+
+pw_add_test(pw_hdlc.wire_packet_parser_test
+  SOURCES
+    wire_packet_parser_test.cc
+  DEPS
+    pw_bytes
+    pw_hdlc.packet_parser
+  GROUPS
+    modules
+    pw_hdlc
+)

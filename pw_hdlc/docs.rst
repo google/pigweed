@@ -305,6 +305,15 @@ HdlcRpcClient
 .. autoclass:: pw_hdlc.rpc.HdlcRpcLocalServerAndClient
   :members:
 
+
+Example pw::rpc::system_server backend
+--------------------------------------
+This module includes an example implementation of ``pw_rpc``'s ``system_server``
+facade. This implementation sends HDLC encoded RPC packets via ``pw_sys_io``,
+and has blocking sends/reads, so it is hardly performance-oriented and
+unsuitable for performance-sensitive applications. This mostly servers as a
+simplistic example for quickly bringing up RPC over HDLC on bare-metal targets.
+
 Roadmap
 =======
 - **Expanded protocol support** - ``pw_hdlc`` currently only supports
