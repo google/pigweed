@@ -1232,23 +1232,60 @@ Limitations and future work
 
 GCC bug: tokenization in template functions
 -------------------------------------------
-GCC incorrectly ignores the section attribute for template
-`functions <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70435>`_ and
-`variables <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88061>`_. Due to this
-bug, tokenized strings in template functions may be emitted into ``.rodata``
-instead of the special tokenized string section. This causes two problems:
+GCC incorrectly ignores the section attribute for template `functions
+<https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70435>`_ and `variables
+<https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88061>`_. For example, the
+following won't work when compiling with GCC and tokenized logging:
+
+.. code-block:: cpp
+
+   template <...>
+   void DoThings() {
+     int value = GetValue();
+     // This log won't work with tokenized logs due to the templated context.
+     PW_LOG_INFO("Got value: %d", value);
+     ...
+   }
+
+The bug causes tokenized strings in template functions to be emitted into
+``.rodata`` instead of the special tokenized string section. This causes two
+problems:
 
 1. Tokenized strings will not be discovered by the token database tools.
 2. Tokenized strings may not be removed from the final binary.
 
-clang does **not** have this issue! Use clang to avoid this.
+There are two workarounds.
 
-It is possible to work around this bug in GCC. One approach would be to tag
-format strings so that the database tools can find them in ``.rodata``. Then, to
-remove the strings, compile two binaries: one metadata binary with all tokenized
-strings and a second, final binary that removes the strings. The strings could
-be removed by providing the appropriate linker flags or by removing the ``used``
-attribute from the tokenized string character array declaration.
+#. **Use Clang.** Clang puts the string data in the requested section, as
+   expected. No extra steps are required.
+
+#. **Move tokenization calls to a non-templated context.** Creating a separate
+   non-templated function and invoking it from the template resolves the issue.
+   This enables tokenizing in most cases encountered in practice with
+   templates.
+
+   .. code-block:: cpp
+
+      // In .h file:
+      void LogThings(value);
+
+      template <...>
+      void DoThings() {
+        int value = GetValue();
+        // This log will work: calls non-templated helper.
+        LogThings(value);
+        ...
+      }
+
+      // In .cc file:
+      void LogThings(int value) {
+        // Tokenized logging works as expected in this non-templated context.
+        PW_LOG_INFO("Got value %d", value);
+      }
+
+There is a third option, which isn't implemented yet, which is to compile the
+binary twice: once to extract the tokens, and once for the production binary
+(without tokens). If this is interesting to you please get in touch.
 
 64-bit tokenization
 -------------------
