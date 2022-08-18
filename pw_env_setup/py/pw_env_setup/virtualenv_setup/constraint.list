@@ -3,7 +3,7 @@ appdirs==1.4.4
 astroid==2.6.6
 Babel==2.9.1
 backcall==0.2.0
-build==0.7.0
+build==0.8.0
 cachetools==5.0.0
 certifi==2021.10.8
 cffi==1.15.0

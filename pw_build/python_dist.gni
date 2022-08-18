@@ -331,7 +331,6 @@ template("pw_create_python_source_tree") {
       pw_python_package_wheels = [ "$target_out_dir/$target_name" ]
     }
     module = "build"
-    _pw_internal_run_in_venv = false
     args = [
              rebase_path(_output_dir, root_build_dir),
              "--wheel",
