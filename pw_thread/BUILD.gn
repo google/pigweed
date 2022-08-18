@@ -88,18 +88,6 @@ pw_facade("thread_iteration") {
   ]
 }
 
-pw_source_set("functional_thread") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_thread/functional_thread.h" ]
-  public_deps = [
-    ":id",
-    ":thread",
-    ":thread_core",
-    dir_pw_function,
-  ]
-  sources = [ "functional_thread.cc" ]
-}
-
 pw_facade("yield") {
   backend = pw_thread_YIELD_BACKEND
   public_configs = [ ":public_include_path" ]
@@ -173,13 +161,11 @@ pw_source_set("test_threads") {
 pw_source_set("thread_facade_test") {
   sources = [ "thread_facade_test.cc" ]
   deps = [
-    ":functional_thread",
     ":id",
     ":sleep",
     ":test_threads",
     ":thread",
     "$dir_pw_sync:binary_semaphore",
-    dir_pw_function,
     dir_pw_unit_test,
   ]
 }

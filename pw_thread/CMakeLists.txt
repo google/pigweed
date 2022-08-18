@@ -64,20 +64,6 @@ pw_add_module_library(pw_thread.thread_core
     public
 )
 
-pw_add_module_library(pw_thread.functional_thread
-  HEADERS
-    public/pw_thread/functional_thread.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_function
-    pw_thread.id
-    pw_thread.thread_core
-    pw_thread.thread
-  SOURCES
-    functional_thread.cc
-)
-
 pw_add_facade(pw_thread.yield
   HEADERS
     public/pw_thread/yield.h
@@ -159,7 +145,6 @@ pw_add_module_library(pw_thread.thread_facade_test
   SOURCES
     thread_facade_test.cc
   PRIVATE_DEPS
-    pw_thread.functional_thread
     pw_thread.id
     pw_thread.sleep
     pw_thread.test_threads

@@ -14,7 +14,6 @@
 
 #include "gtest/gtest.h"
 #include "pw_sync/binary_semaphore.h"
-#include "pw_thread/functional_thread.h"
 #include "pw_thread/id.h"
 #include "pw_thread/test_threads.h"
 #include "pw_thread/thread.h"
@@ -164,18 +163,5 @@ TEST(Thread, ThreadCore) {
 
   WaitUntilDetachedThreadsCleanedUp();
 }
-
-#if PW_THREAD_JOINING_ENABLED
-TEST(Thread, FunctionalThread) {
-  pw::sync::BinarySemaphore sem;
-  FunctionalThread thread(TestOptionsThread0(), [&sem]() { sem.release(); });
-  EXPECT_NE(thread.get_id(), Id());
-  EXPECT_TRUE(thread.joinable());
-  thread.join();
-  EXPECT_EQ(thread.get_id(), Id());
-  EXPECT_TRUE(sem.try_acquire());
-}
-#endif  // PW_THREAD_JOINING_ENABLED
-
 }  // namespace
 }  // namespace pw::thread

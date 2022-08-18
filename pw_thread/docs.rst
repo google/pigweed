@@ -323,7 +323,6 @@ something like:
 
   }  // namespace my_app
 
-.. _module-pw_thread-detach-join:
 
 Detaching & Joining
 ===================
@@ -446,24 +445,6 @@ function without arguments. For example:
   Because the thread may start after the pw::Thread creation, an object which
   implements the ThreadCore MUST meet or exceed the lifetime of its thread of
   execution!
-
-FunctionalThread
-================
-While raw ``pw::thread::Thread`` allows only pointers to functions and it omits
-lambdas with capture lists, it still can be handy sometimes to start the thread
-from the lambda with the capture list (especially in the environments where
-``pw::Function`` dynamic allocation is enabled). For these cases
-``FunctionalThread`` class exists.
-
-This class keeps the same API as ``pw::thread::Thread`` except detaching - it
-doesn't allow it. It is also not available in toolchains where thread joining is
-not enabled - refer to :ref:`module-pw_thread-detach-join` for more information.
-
-.. code-block:: cpp
-
-  FunctionalThread thread([my_var1, my_var2, this](){
-    // ...
-  });
 
 ----------------
 Thread Iteration
