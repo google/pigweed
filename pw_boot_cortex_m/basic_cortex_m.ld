@@ -149,6 +149,12 @@ SECTIONS
     . = ALIGN(8);
   } >RAM AT> FLASH
 
+  /* The .zero_init_ram and .heap sections below require (NOLOAD) annotations
+   * for lld, but not ld, because lld intentionally interprets the linker file
+   * differently from ld:
+   * https://discourse.llvm.org/t/lld-vs-ld-section-type-progbits-vs-nobits/5999/3
+   */
+
   /* Zero initialized global/static data. (.bss)
    * This section is zero initialized in pw_boot_Entry(). */
   .zero_init_ram (NOLOAD) : ALIGN(8)
