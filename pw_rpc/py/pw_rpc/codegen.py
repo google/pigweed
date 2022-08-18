@@ -218,6 +218,15 @@ def _generate_service_and_client(gen: CodeGenerator,
 
 
 def _check_method_name(method: ProtoServiceMethod) -> None:
+    # Methods with the same name as their enclosing service will fail
+    # to compile because the generated method will be indistinguishable
+    # from a constructor.
+    if method.name() == method.service().name():
+        raise ValueError(
+            f'Attempted to compile `pw_rpc` for proto with method '
+            f'`{method.name()}` inside a service of the same name. '
+            '`pw_rpc` does not yet support methods with the same name as their '
+            'enclosing service.')
     if method.name() in ('Service', 'ServiceInfo', 'Client'):
         raise ValueError(
             f'"{method.service().proto_path()}.{method.name()}" is not a '
