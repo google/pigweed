@@ -140,7 +140,7 @@ def has_pw_assert_dep(deps):
         True if the list contains a pw_assert dependency.
     """
     pw_assert_targets = ["//pw_assert", "//pw_assert:pw_assert"]
-    pw_assert_targets.append(["@pigweed" + t for t in pw_assert_targets])
+    pw_assert_targets.extend(["@pigweed" + t for t in pw_assert_targets])
     for dep in deps:
         if dep in pw_assert_targets:
             return True
