@@ -26,7 +26,7 @@ def pw_cc_binary(**kwargs):
     # way to handle the facades without introducing a circular dependency into
     # the build.
     if not _has_pw_assert_dep(kwargs["deps"]):
-        kwargs["deps"].append("@pigweed//pw_assert")
+        kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
     _add_cc_and_c_targets(native.cc_binary, kwargs)
 
 def pw_cc_library(**kwargs):
@@ -40,7 +40,7 @@ def pw_cc_test(**kwargs):
     # way to handle the facades without introducing a circular dependency into
     # the build.
     if not _has_pw_assert_dep(kwargs["deps"]):
-        kwargs["deps"].append("@pigweed//pw_assert")
+        kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
     _add_cc_and_c_targets(native.cc_test, kwargs)
 
 def pw_cc_facade(**kwargs):
