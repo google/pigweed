@@ -506,10 +506,10 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         subprocess.run(
             ['git', 'commit', '-m', 'Adding a CSV to a new commit.'],
             cwd=self._dir)
-        # Retrieve the CSV in HEAD and discard tokens that exist in
-        # CSV_ALL_DOMAINS and do not exist in CSV_TEST_DOMAIN.
+        # Retrieve the CSV in HEAD~ and discard tokens that exist in
+        # CSV_ALL_DOMAINS and not exist in CSV_TEST_DOMAIN.
         run_cli('add', '--database', self._db_dir, '--discard-temporary',
-                'HEAD~', f'{self._elf}#TEST_DOMAIN')
+                'HEAD~2', f'{self._elf}#TEST_DOMAIN')
         directory = list(self._db_dir.iterdir())
 
         self.assertEqual(1, len(directory))

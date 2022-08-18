@@ -587,10 +587,10 @@ class _DirectoryDatabase(DatabaseFile):
         """Finds or creates a CSV to utilize for new entries.
 
         - Searches for untracked files in the repo to re-use.
-        - When no untracked files exists, a difference between commit
+        - When no untracked files exists, a difference between HEAD~
           and HEAD searches for a filename in the commit to re-use.
-        - Multiple differences between HEAD~ and HEAD causes a search
-          for a CSV in the latest commit.
+        - The filename is reused if HEAD~ is not merged with the provided
+          commit.
         - When nothing is yielded from the previous searches or no git repo
           exists, then a new filename is created.
         """
@@ -600,31 +600,27 @@ class _DirectoryDatabase(DatabaseFile):
             ['ls-files', '--others', '--exclude-standard'])
 
         if untracked_changes:
-            # TODO(b/241297219): Handle multiple paths in the commit
-            # There are uncommitted files in the repo.
+            # TODO(b/243040287): Handle multiple paths in the commit.
             assert len(untracked_changes) < 2
             return untracked_changes.pop()
+        # Find differences between HEAD~ and HEAD commit in directory.
+        tracked_changes_from_latest_commit = self._git_paths(
+            ['diff', '--name-only', '--diff-filter=A', '--relative', 'HEAD~'])
 
-        # TODO(b/241297219): Create an argument to specify what to run
-        # the git difference on.
-        # Find differences between origin/HEAD and HEAD commit in directory.
-        tracked_changes = self._git_paths(
-            ['diff', '--name-only', '--diff-filter=A', '--relative', commit])
-
-        if tracked_changes:
-            # If a single change exists in the comparison, the filename will
-            # utilized. Otherwise, when multiple files exists in a commit and
-            # a filename exist in the latest commit, use the latest commit to
-            # retrieve a CSV.
-            if len(tracked_changes) == 1:
-                return tracked_changes.pop()
-
-            tracked_changes_from_latest_commit = self._git_paths([
-                'diff', '--name-only', '--diff-filter=A', '--relative', 'HEAD~'
-            ])
-            # TODO(b/241297219): Handle multiple paths in the commit.
-            assert len(tracked_changes_from_latest_commit) < 2
-            return tracked_changes_from_latest_commit.pop()
+        if tracked_changes_from_latest_commit:
+            # If changes exists in the comparison between HEAD~ and HEAD
+            # and the filename is unmerged with the provided commit, the
+            # retrieved filename will be reused. Otherwise, create a CSV.
+            # Find differences between commit and HEAD~ in directory.
+            returncode = subprocess.run(
+                ['git', 'merge-base', '--is-ancestor', 'HEAD~', commit],
+                cwd=self.path,
+                stderr=subprocess.DEVNULL).returncode
+            # A zero return code indicates that HEAD~ is in the commit,
+            # while a non-zero return code indicates that HEAD~ is not
+            # in commit.
+            if returncode != 0:
+                return tracked_changes_from_latest_commit.pop()
 
         return self._create_filename()
 
