@@ -578,7 +578,8 @@ class _DirectoryDatabase(DatabaseFile):
         """Creates a list of complete paths to the repo."""
         try:
             changes = _git_stdout(commands, self.path).splitlines()
-            return [self.path / path for path in changes]
+            files = [self.path / path for path in changes]
+            return [path for path in files if path.suffix == '.csv']
         except subprocess.CalledProcessError:
             return []
 
