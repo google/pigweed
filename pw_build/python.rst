@@ -273,9 +273,9 @@ Arguments
     file would be overwritten an error is raised.
 
 - ``generate_setup_cfg`` - If included, create a merged ``setup.cfg`` for all
-  python Packages using a ``common_config_file`` as a base. That file should
-  contain the required fields in the ``metadata`` and ``options`` sections as
-  shown in
+  python Packages using either a ``common_config_file`` as a base or ``name``
+  and ``version`` strings. The ``common_config_file`` should contain the
+  required fields in the ``metadata`` and ``options`` sections as shown in
   `Configuring setup() using setup.cfg files <https://setuptools.pypa.io/en/latest/userguide/declarative_config.html>`_.
   ``append_git_sha_to_version`` and ``append_date_to_version`` will optionally
   append the current git SHA or date to the package version string after a ``+``
@@ -283,8 +283,19 @@ Arguments
 
   .. code-block::
 
+     # Example using a common setup.cfg file.
      generate_setup_cfg = {
        common_config_file = "pypi_common_setup.cfg"
+       append_git_sha_to_version = true
+       append_date_to_version = true
+     }
+
+  .. code-block::
+
+     # Example using name and version strings.
+     generate_setup_cfg = {
+       name = "awesome"
+       version = "1.0.0"
        append_git_sha_to_version = true
        append_date_to_version = true
      }

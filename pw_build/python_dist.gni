@@ -156,6 +156,14 @@ template("pw_python_zip_with_setup") {
 #   extra_files: A list of extra files that should be included in the output. The
 #     format of each item in this list follows this convention:
 #       //some/nested/source_file > nested/destination_file
+#
+#   generate_setup_cfg: A scope containing either common_config_file or 'name'
+#     and 'version' If included this creates a merged setup.cfg for all python
+#     Packages using either a common_config_file as a base or name and version
+#     strings. This scope can optionally include: 'append_git_sha_to_version' or
+#     'append_date_to_version' whic append the current git SHA or date to the
+#     package version string after a + sign.
+#
 template("pw_create_python_source_tree") {
   _metadata_path_list_suffix =
       "_pw_create_python_source_tree_metadata_path_list.txt"
@@ -166,8 +174,11 @@ template("pw_create_python_source_tree") {
   # If generating a setup.cfg file a common base file must be provided.
   if (defined(invoker.generate_setup_cfg)) {
     generate_setup_cfg = invoker.generate_setup_cfg
-    assert(defined(generate_setup_cfg.common_config_file),
-           "'common_config_file' is required in generate_setup_cfg")
+    assert(
+        defined(generate_setup_cfg.common_config_file) ||
+            (defined(generate_setup_cfg.name) &&
+                 defined(generate_setup_cfg.version)),
+        "Either 'common_config_file' or ('name' + 'version') are required in generate_setup_cfg")
   }
 
   _extra_file_inputs = []
@@ -306,6 +317,18 @@ template("pw_create_python_source_tree") {
       }
       if (defined(generate_setup_cfg.append_date_to_version)) {
         args += [ "--setupcfg-version-append-date" ]
+      }
+      if (defined(generate_setup_cfg.name)) {
+        args += [
+          "--setupcfg-override-name",
+          generate_setup_cfg.name,
+        ]
+      }
+      if (defined(generate_setup_cfg.version)) {
+        args += [
+          "--setupcfg-override-version",
+          generate_setup_cfg.version,
+        ]
       }
     }
 

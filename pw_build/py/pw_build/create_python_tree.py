@@ -22,7 +22,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from typing import Iterable
+from typing import Iterable, Optional
 
 import setuptools  # type: ignore
 
@@ -56,6 +56,10 @@ def _parse_args():
                         action='store_true',
                         help='Append the current date to the setup.cfg '
                         'version.')
+    parser.add_argument('--setupcfg-override-name',
+                        help='Override metadata.name in setup.cfg')
+    parser.add_argument('--setupcfg-override-version',
+                        help='Override metadata.version in setup.cfg')
 
     parser.add_argument(
         '--extra-files',
@@ -99,12 +103,26 @@ class UnexpectedConfigSection(Exception):
     "Exception thrown when the common configparser contains unexpected values."
 
 
-def load_common_config(common_config: Path,
+def load_common_config(common_config: Optional[Path] = None,
+                       package_name_override: Optional[str] = None,
+                       package_version_override: Optional[str] = None,
                        append_git_sha: bool = False,
                        append_date: bool = False) -> configparser.ConfigParser:
     """Load an existing ConfigParser file and update metadata.version."""
     config = configparser.ConfigParser()
-    config.read(common_config)
+    if common_config:
+        config.read(common_config)
+
+    # Metadata and option sections need to exist.
+    if not config.has_section('metadata'):
+        config['metadata'] = {}
+    if not config.has_section('options'):
+        config['options'] = {}
+
+    if package_name_override:
+        config['metadata']['name'] = package_name_override
+    if package_version_override:
+        config['metadata']['version'] = package_version_override
 
     # Check for existing values that should not be present
     if config.has_option('options', 'packages'):
@@ -121,10 +139,6 @@ def load_common_config(common_config: Path,
         raise UnexpectedConfigSection(
             '[options.entry_points] already defined as:\n' +
             str(dict(config['options.entry_points'].items())))
-
-    # Metadata and option sections should already be defined.
-    assert config.has_section('metadata')
-    assert config.has_section('options')
 
     # Append build metadata if applicable.
     build_metadata = []
@@ -195,17 +209,19 @@ def update_config_with_packages(
 
 
 def write_config(
-    common_config: Path,
     final_config: configparser.ConfigParser,
     tree_destination_dir: Path,
+    common_config: Optional[Path] = None,
 ) -> None:
     """Write a the final setup.cfg file with license comment block."""
-    # Get the license comment block from the common_config.
     comment_block_text = ''
-    comment_block_match = re.search(r'((^#.*?[\r\n])*)([^#])',
-                                    common_config.read_text(), re.MULTILINE)
-    if comment_block_match:
-        comment_block_text = comment_block_match.group(1)
+    if common_config:
+        # Get the license comment block from the common_config.
+        comment_block_match = re.search(r'((^#.*?[\r\n])*)([^#])',
+                                        common_config.read_text(),
+                                        re.MULTILINE)
+        if comment_block_match:
+            comment_block_text = comment_block_match.group(1)
 
     setup_cfg_file = tree_destination_dir.resolve() / 'setup.cfg'
     setup_cfg_text = io.StringIO()
@@ -307,6 +323,10 @@ def copy_extra_files(extra_file_strings: Iterable[str]) -> None:
 def main():
     args = _parse_args()
 
+    # Check the common_config file exists if provided.
+    if args.setupcfg_common_file:
+        assert args.setupcfg_common_file.is_file()
+
     py_packages = load_packages(args.input_list_files)
 
     build_python_tree(python_packages=py_packages,
@@ -314,9 +334,13 @@ def main():
                       include_tests=args.include_tests)
     copy_extra_files(args.extra_files)
 
-    if args.setupcfg_common_file:
+    if (args.setupcfg_common_file or
+        (args.setupcfg_override_name and args.setupcfg_override_version)):
+
         config = load_common_config(
             common_config=args.setupcfg_common_file,
+            package_name_override=args.setupcfg_override_name,
+            package_version_override=args.setupcfg_override_version,
             append_git_sha=args.setupcfg_version_append_git_sha,
             append_date=args.setupcfg_version_append_date)
 
