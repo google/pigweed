@@ -99,22 +99,6 @@ def gn_args(**kwargs) -> str:
     return '--args=' + ' '.join(transformed_args)
 
 
-def gn_gen_2(ctx: PresubmitContext,
-             *args: str,
-             gn_check: bool = True,
-             gn_fail_on_unused: bool = True,
-             export_compile_commands: Union[bool, str] = True,
-             preserve_args_gn: bool = False,
-             **gn_arguments) -> None:
-    return gn_gen(ctx,
-                  *args,
-                  gn_check=gn_check,
-                  gn_fail_on_unused=gn_fail_on_unused,
-                  export_compile_commands=export_compile_commands,
-                  preserve_args_gn=preserve_args_gn,
-                  **gn_arguments)
-
-
 def gn_gen(ctx: PresubmitContext,
            *args: str,
            gn_check: bool = True,
@@ -186,12 +170,6 @@ def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
     proc = subprocess.run(['gn', 'args', directory, '--list', '--json'],
                           stdout=subprocess.PIPE)
     return json.loads(proc.stdout)
-
-
-def cmake_2(ctx: PresubmitContext,
-            *args: str,
-            env: Mapping['str', 'str'] = None) -> None:
-    return cmake(ctx, *args, env=env)
 
 
 def cmake(ctx: PresubmitContext,
@@ -401,4 +379,4 @@ def bazel_lint(ctx: PresubmitContext):
 @Check
 def gn_gen_check(ctx: PresubmitContext):
     """Runs gn gen --check to enforce correct header dependencies."""
-    gn_gen_2(ctx, gn_check=True)
+    gn_gen(ctx, gn_check=True)
