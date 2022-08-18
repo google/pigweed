@@ -28,6 +28,7 @@ namespace bthost {
 namespace {
 
 namespace fidlbredr = fuchsia::bluetooth::bredr;
+namespace hci_android = bt::hci_spec::vendor::android;
 
 namespace {
 
@@ -1275,6 +1276,92 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersFails) {
   l2cap_client.Unbind();
   RunLoopUntilIdle();
 }
+
+class AndroidSupportedFeaturesTest
+    : public ProfileServerTestFakeAdapter,
+      public ::testing::WithParamInterface<
+          std::pair<bool /*android_vendor_support*/, uint32_t /*android_vendor_capabilities*/>> {};
+
+TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtGetSupportedFeatures) {
+  const bool android_vendor_ext_support = GetParam().first;
+  const uint32_t a2dp_offload_capabilities = GetParam().second;
+
+  if (android_vendor_ext_support) {
+    adapter()->mutable_state().vendor_features |=
+        bt::hci::VendorFeaturesBits::kAndroidVendorExtensions;
+
+    hci_android::LEGetVendorCapabilitiesReturnParams params;
+    memset(&params, 0, sizeof(params));
+    params.a2dp_source_offload_capability_mask = htole32(a2dp_offload_capabilities);
+    params.status = bt::hci_spec::StatusCode::kSuccess;
+    adapter()->mutable_state().android_vendor_capabilities.Initialize(params);
+  }
+
+  const bt::PeerId peer_id(1);
+  const fuchsia::bluetooth::PeerId fidl_peer_id{peer_id.value()};
+
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+
+  fidlbredr::ChannelParameters chan_params;
+  l2cap_params.set_parameters(std::move(chan_params));
+
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(fidl_peer_id, std::move(conn_params),
+                    [&response_channel](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(response_channel.has_value());
+  if (!android_vendor_ext_support || !a2dp_offload_capabilities) {
+    EXPECT_FALSE(response_channel->has_ext_audio_offload());
+    return;
+  }
+  ASSERT_TRUE(response_channel->has_ext_audio_offload());
+
+  std::optional<fidlbredr::AudioOffloadExtGetSupportedFeaturesResponse> result_features;
+  fidl::InterfacePtr<fuchsia::bluetooth::bredr::AudioOffloadExt> audio_offload_client =
+      response_channel->mutable_ext_audio_offload()->Bind();
+  audio_offload_client->GetSupportedFeatures(
+      [&result_features](fidlbredr::AudioOffloadExtGetSupportedFeaturesResponse features) {
+        result_features = std::move(features);
+      });
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(result_features->has_audio_offload_features());
+  const std::vector<fidlbredr::AudioOffloadFeatures>& audio_offload_features =
+      result_features->audio_offload_features();
+  const uint32_t audio_offload_features_size =
+      std::bitset<std::numeric_limits<uint32_t>::digits>(a2dp_offload_capabilities).count();
+  EXPECT_EQ(audio_offload_features_size, audio_offload_features.size());
+
+  uint32_t capabilities = 0;
+  const uint32_t sbc_capability = static_cast<uint32_t>(hci_android::A2dpCodecType::kSbc);
+  const uint32_t aac_capability = static_cast<uint32_t>(hci_android::A2dpCodecType::kAac);
+  for (const fidlbredr::AudioOffloadFeatures& feature : audio_offload_features) {
+    if (feature.is_sbc()) {
+      capabilities |= sbc_capability;
+    }
+    if (feature.is_aac()) {
+      capabilities |= aac_capability;
+    }
+  }
+  EXPECT_EQ(capabilities, a2dp_offload_capabilities);
+}
+
+const std::vector<std::pair<bool, uint32_t>> kVendorCapabilitiesParams = {
+    {{true, static_cast<uint32_t>(hci_android::A2dpCodecType::kSbc)},
+     {true, static_cast<uint32_t>(hci_android::A2dpCodecType::kAac)},
+     {true, static_cast<uint32_t>(hci_android::A2dpCodecType::kSbc) |
+                static_cast<uint32_t>(hci_android::A2dpCodecType::kAac)},
+     {true, 0},
+     {false, 0}}};
+INSTANTIATE_TEST_SUITE_P(ProfileServerTestFakeAdapter, AndroidSupportedFeaturesTest,
+                         ::testing::ValuesIn(kVendorCapabilitiesParams));
 
 TEST_F(ProfileServerTestFakeAdapter, ServiceFoundRelayedToFidlClient) {
   fidl::InterfaceHandle<fidlbredr::SearchResults> search_results_handle;

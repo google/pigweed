@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace fidlbredr = fuchsia::bluetooth::bredr;
+namespace hci_android = bt::hci_spec::vendor::android;
 using fidlbredr::DataElement;
 using fidlbredr::Profile;
 
@@ -211,11 +212,6 @@ ProfileServer::~ProfileServer() {
   }
 }
 
-ProfileServer::L2capParametersExt::L2capParametersExt(
-    fidl::InterfaceRequest<fuchsia::bluetooth::bredr::L2capParametersExt> request,
-    fxl::WeakPtr<bt::l2cap::Channel> channel)
-    : ServerBase(this, std::move(request)), channel_(std::move(channel)) {}
-
 void ProfileServer::L2capParametersExt::RequestParameters(
     fuchsia::bluetooth::bredr::ChannelParameters requested, RequestParametersCallback callback) {
   if (requested.has_flush_timeout()) {
@@ -239,6 +235,37 @@ void ProfileServer::L2capParametersExt::RequestParameters(
   // No other channel parameters are  supported, so just return the current parameters.
   // TODO(fxb/73039): set current security requirements in returned channel parameters
   callback(ChannelInfoToFidlChannelParameters(channel_->info()));
+}
+
+void ProfileServer::AudioOffloadExt::GetSupportedFeatures(GetSupportedFeaturesCallback callback) {
+  fidlbredr::AudioOffloadExtGetSupportedFeaturesResponse response;
+  std::vector<fidlbredr::AudioOffloadFeatures>* mutable_audio_offload_features =
+      response.mutable_audio_offload_features();
+  const bt::gap::AdapterState& adapter_state = adapter_->state();
+
+  if (!adapter_state.IsVendorFeatureSupported(
+          bt::hci::VendorFeaturesBits::kAndroidVendorExtensions)) {
+    callback(std::move(response));
+    return;
+  }
+
+  const uint32_t a2dp_offload_capabilities =
+      adapter_state.android_vendor_capabilities.a2dp_source_offload_capability_mask();
+  const uint32_t sbc_capability = static_cast<uint32_t>(hci_android::A2dpCodecType::kSbc);
+  const uint32_t aac_capability = static_cast<uint32_t>(hci_android::A2dpCodecType::kAac);
+
+  if (a2dp_offload_capabilities & sbc_capability) {
+    fidlbredr::AudioSbcSupport audio_sbc_support;
+    mutable_audio_offload_features->push_back(
+        fidlbredr::AudioOffloadFeatures::WithSbc(std::move(audio_sbc_support)));
+  }
+  if (a2dp_offload_capabilities & aac_capability) {
+    fidlbredr::AudioAacSupport audio_aac_support;
+    mutable_audio_offload_features->push_back(
+        fidlbredr::AudioOffloadFeatures::WithAac(std::move(audio_aac_support)));
+  }
+
+  callback(std::move(response));
 }
 
 ProfileServer::ScoConnectionServer::ScoConnectionServer(
@@ -683,6 +710,7 @@ void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_s
   bt_log(DEBUG, "fidl", "audio direction ext server closed (reason: %s)",
          zx_status_get_string(status));
 
+  // TODO(fxbug.dev/106895): Change find() function to extract() so lookup is done only once
   auto it = audio_direction_ext_servers_.find(ext_server);
   if (it == audio_direction_ext_servers_.end()) {
     bt_log(WARN, "fidl", "could not find ext server in audio direction ext error callback");
@@ -730,6 +758,28 @@ fidl::InterfaceHandle<fidlbredr::L2capParametersExt> ProfileServer::BindL2capPar
   return client;
 }
 
+void ProfileServer::OnAudioOffloadExtError(AudioOffloadExt* ext_server, zx_status_t status) {
+  bt_log(DEBUG, "fidl", "audio offload ext server closed (reason: %s)",
+         zx_status_get_string(status));
+  auto handle = audio_offload_ext_servers_.extract(ext_server);
+  ZX_DEBUG_ASSERT_MSG(handle, "could not find ext server in audio offload ext error callback");
+}
+
+fidl::InterfaceHandle<fidlbredr::AudioOffloadExt> ProfileServer::BindAudioOffloadExtServer(
+    fxl::WeakPtr<bt::l2cap::Channel> channel) {
+  fidl::InterfaceHandle<fidlbredr::AudioOffloadExt> client;
+
+  std::unique_ptr<bthost::ProfileServer::AudioOffloadExt> audio_offload_ext_server =
+      std::make_unique<AudioOffloadExt>(client.NewRequest(), std::move(channel), adapter_);
+  AudioOffloadExt* server_ptr = audio_offload_ext_server.get();
+
+  audio_offload_ext_server->set_error_handler(
+      [this, server_ptr](zx_status_t status) { OnAudioOffloadExtError(server_ptr, status); });
+
+  audio_offload_ext_servers_[server_ptr] = std::move(audio_offload_ext_server);
+  return client;
+}
+
 fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
     fxl::WeakPtr<bt::l2cap::Channel> channel) {
   BT_ASSERT(channel);
@@ -745,6 +795,12 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
   if (adapter()->state().IsVendorFeatureSupported(
           bt::hci::VendorFeaturesBits::kSetAclPriorityCommand)) {
     fidl_chan.set_ext_direction(BindAudioDirectionExtServer(channel));
+  }
+
+  if (adapter()->state().IsVendorFeatureSupported(
+          bt::hci::VendorFeaturesBits::kAndroidVendorExtensions) &&
+      adapter()->state().android_vendor_capabilities.a2dp_source_offload_capability_mask()) {
+    fidl_chan.set_ext_audio_offload(BindAudioOffloadExtServer(channel));
   }
 
   fidl_chan.set_ext_l2cap(BindL2capParametersExtServer(std::move(channel)));

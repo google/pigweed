@@ -36,12 +36,28 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
    public:
     L2capParametersExt(
         fidl::InterfaceRequest<fuchsia::bluetooth::bredr::L2capParametersExt> request,
-        fxl::WeakPtr<bt::l2cap::Channel> channel);
+        fxl::WeakPtr<bt::l2cap::Channel> channel)
+        : ServerBase(this, std::move(request)), channel_(std::move(channel)) {}
     void RequestParameters(fuchsia::bluetooth::bredr::ChannelParameters requested,
                            RequestParametersCallback callback) override;
 
    private:
     fxl::WeakPtr<bt::l2cap::Channel> channel_;
+  };
+
+  class AudioOffloadExt final : public ServerBase<fuchsia::bluetooth::bredr::AudioOffloadExt> {
+   public:
+    AudioOffloadExt(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioOffloadExt> request,
+                    fxl::WeakPtr<bt::l2cap::Channel> channel,
+                    fxl::WeakPtr<bt::gap::Adapter> adapter)
+        : ServerBase(this, std::move(request)),
+          channel_(std::move(channel)),
+          adapter_(std::move(adapter)) {}
+    void GetSupportedFeatures(GetSupportedFeaturesCallback callback) override;
+
+   private:
+    fxl::WeakPtr<bt::l2cap::Channel> channel_;
+    fxl::WeakPtr<bt::gap::Adapter> adapter_;
   };
 
   class ScoConnectionServer final : public ServerBase<fuchsia::bluetooth::bredr::ScoConnection> {
@@ -118,6 +134,14 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   fidl::InterfaceHandle<fuchsia::bluetooth::bredr::L2capParametersExt> BindL2capParametersExtServer(
       fxl::WeakPtr<bt::l2cap::Channel> channel);
 
+  // Callback when clients close their audio offload extension.
+  void OnAudioOffloadExtError(AudioOffloadExt* ext_server, zx_status_t status);
+
+  // Create an AudioOffloadExt server for the given channel and set up callbacks.
+  // Returns the client end of the channel.
+  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::AudioOffloadExt> BindAudioOffloadExtServer(
+      fxl::WeakPtr<bt::l2cap::Channel> channel);
+
   // Create a FIDL Channel from an l2cap::Channel. A socket channel relay is created from |channel|
   // and returned in the FIDL Channel.
   fuchsia::bluetooth::bredr::Channel ChannelToFidl(fxl::WeakPtr<bt::l2cap::Channel> channel);
@@ -171,6 +195,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
   std::unordered_map<L2capParametersExt*, std::unique_ptr<L2capParametersExt>>
       l2cap_parameters_ext_servers_;
+
+  std::unordered_map<AudioOffloadExt*, std::unique_ptr<AudioOffloadExt>> audio_offload_ext_servers_;
 
   fxl::WeakPtr<bt::gap::Adapter> adapter_;
 
