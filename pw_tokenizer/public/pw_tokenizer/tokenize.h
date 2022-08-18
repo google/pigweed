@@ -76,7 +76,7 @@ typedef uint32_t pw_tokenizer_Token;
   PW_TOKENIZE_STRING_DOMAIN(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
 
 #define PW_TOKENIZE_STRING_EXPR(string_literal)                               \
-  [] {                                                                        \
+  [&] {                                                                       \
     constexpr uint32_t lambda_ret_token = PW_TOKENIZE_STRING(string_literal); \
     return lambda_ret_token;                                                  \
   }()
@@ -86,7 +86,7 @@ typedef uint32_t pw_tokenizer_Token;
   PW_TOKENIZE_STRING_MASK(domain, UINT32_MAX, string_literal)
 
 #define PW_TOKENIZE_STRING_DOMAIN_EXPR(domain, string_literal) \
-  [] {                                                         \
+  [&] {                                                        \
     constexpr uint32_t lambda_ret_token =                      \
         PW_TOKENIZE_STRING_DOMAIN(domain, string_literal);     \
     return lambda_ret_token;                                   \
@@ -103,7 +103,7 @@ typedef uint32_t pw_tokenizer_Token;
       _PW_TOKENIZER_MASK_TOKEN(mask, string_literal), domain, string_literal)
 
 #define PW_TOKENIZE_STRING_MASK_EXPR(domain, mask, string_literal) \
-  [] {                                                             \
+  [&] {                                                            \
     constexpr uint32_t lambda_ret_token =                          \
         PW_TOKENIZE_STRING_MASK(domain, mask, string_literal);     \
     return lambda_ret_token;                                       \

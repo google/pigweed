@@ -56,6 +56,16 @@ TEST(TokenizeString, String_MatchesHashExpr) {
   EXPECT_EQ(Hash("[:-)"), PW_TOKENIZE_STRING_EXPR("[:-)"));
 }
 
+TEST(TokenizeString, ExpressionWithStringVariable) {
+  constexpr char kTestString[] = "test";
+  EXPECT_EQ(Hash(kTestString), PW_TOKENIZE_STRING_EXPR(kTestString));
+  EXPECT_EQ(Hash(kTestString),
+            PW_TOKENIZE_STRING_DOMAIN_EXPR("TEST_DOMAIN", kTestString));
+  EXPECT_EQ(
+      Hash(kTestString) & 0xAAAAAAAA,
+      PW_TOKENIZE_STRING_MASK_EXPR("TEST_DOMAIN", 0xAAAAAAAA, kTestString));
+}
+
 constexpr uint32_t kGlobalToken = PW_TOKENIZE_STRING(">:-[]");
 
 TEST(TokenizeString, GlobalVariable_MatchesHash) {
