@@ -72,6 +72,8 @@ source_set("common") {
     "//zircon/system/ulib/zx",
     "//zircon/system/ulib/zxc",
   ]
+
+  deps = [ "//third_party/pigweed:pw_assert" ]
 }
 
 source_set("tests") {
