@@ -357,6 +357,8 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_snapshot:snapshot_proto_py_pb2',
     '-//pw_snapshot:snapshot_proto_py_pb2_genproto',
     # TODO(b/232427554): Get pw_software_update to build.
+    '-//pw_software_update:bundled_update_py_pb2',
+    '-//pw_software_update:bundled_update_py_pb2_genproto',
     '-//pw_software_update:bundled_update_service',
     '-//pw_software_update:bundled_update_service_test',
     '-//pw_software_update:bundled_update_service_pwpb',

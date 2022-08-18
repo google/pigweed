@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//pw_build:pigweed.bzl",
@@ -59,6 +60,12 @@ proto_library(
         "//pw_tokenizer:tokenizer_proto",
         "@com_google_protobuf//:any_proto",
     ],
+)
+
+# TODO(b/241456982): Not expected to build yet.
+py_proto_library(
+    name = "bundled_update_py_pb2",
+    srcs = ["bundled_update.proto"],
 )
 
 pw_proto_library(
