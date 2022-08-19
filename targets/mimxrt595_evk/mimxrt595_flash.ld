@@ -81,6 +81,26 @@ MEMORY
   USB_SRAM(rw) : \
     ORIGIN = 0x40140000, \
     LENGTH = 0x00004000
+
+  /* Each memory region above has an associated .*.unused_space section that
+   * overlays the unused space at the end of the memory segment. These segments
+   * are used by pw_bloat.bloaty_config to create the utilization data source
+   * for bloaty size reports.
+   *
+   * These sections MUST be located immediately after the last section that is
+   * placed in the respective memory region or lld will issue a warning like:
+   *
+   *   warning: ignoring memory region assignment for non-allocatable section
+   *      '.VECTOR_TABLE.unused_space'
+   *
+   * If this warning occurs, it's also likely that LLD will have created quite
+   * large padded regions in the ELF file due to bad cursor operations. This
+   * can cause ELF files to balloon from hundreds of kilobytes to hundreds of
+   * megabytes.
+   *
+   * Attempting to add sections to the memory region AFTER the unused_space
+   * section will cause the region to overflow.
+   */
 }
 
 SECTIONS
@@ -95,12 +115,21 @@ SECTIONS
    * Register) MUST point to this memory location in order to be used. This can
    * be done by ensuring this section exists at the default location of the VTOR
    * so it's used on reset, or by explicitly setting the VTOR in a bootloader
-   * manually to point to &pw_boot_vector_table_addr before interrupts are enabled.
+   * manually to point to &pw_boot_vector_table_addr before interrupts are
+   * enabled.
    */
   .vector_table : ALIGN(512)
   {
     pw_boot_vector_table_addr = .;
     KEEP(*(.vector_table))
+  } >VECTOR_TABLE
+
+  /* Represents unused space in the VECTOR_TABLE segment. This MUST be the last
+   * section assigned to the VECTOR_TABLE region.
+   */
+  .VECTOR_TABLE.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(VECTOR_TABLE) + LENGTH(VECTOR_TABLE));
   } >VECTOR_TABLE
 
   /* Main executable code. */
@@ -164,9 +193,27 @@ SECTIONS
     . = ALIGN(8);
   } >RAM AT> FLASH
 
-  /* Zero initialized global/static data. (.bss)
-   * This section is zero initialized in pw_boot_Entry(). */
-  .zero_init_ram : ALIGN(8)
+  /* Represents unused space in the FLASH segment. This MUST be the last section
+   * assigned to the FLASH region.
+   */
+  .FLASH.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(FLASH) + LENGTH(FLASH));
+  } >FLASH
+
+  /* The .zero_init_ram, .heap, and .stack sections below require (NOLOAD)
+   * annotations for LLVM lld, but not GNU ld, because LLVM's lld intentionally
+   * interprets the linker file differently from ld:
+   *
+   * https://discourse.llvm.org/t/lld-vs-ld-section-type-progbits-vs-nobits/5999/3
+   *
+   * Zero initialized global/static data (.bss) is initialized in
+   * pw_boot_Entry() via memset(), so the section doesn't need to be loaded from
+   * flash. The .heap and .stack sections don't require any initialization,
+   * as they only represent allocated memory regions, so they also do not need
+   * to be loaded.
+   */
+  .zero_init_ram (NOLOAD) : ALIGN(8)
   {
     *(.bss)
     *(.bss*)
@@ -174,7 +221,7 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  .heap : ALIGN(8)
+  .heap (NOLOAD) : ALIGN(8)
   {
     pw_boot_heap_low_addr = .;
     . = . + PW_BOOT_HEAP_SIZE;
@@ -196,6 +243,14 @@ SECTIONS
     pw_boot_stack_high_addr = .;
   } >RAM
 
+  /* Represents unused space in the RAM segment. This MUST be the last section
+   * assigned to the RAM region.
+   */
+  .RAM.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));
+  } >RAM
+
   m_usb_bdt (NOLOAD) :
   {
     . = ALIGN(512);
@@ -205,6 +260,14 @@ SECTIONS
   m_usb_global (NOLOAD) :
   {
     *(m_usb_global)
+  } >USB_SRAM
+
+  /* Represents unused space in the USB_SRAM segment. This MUST be the last
+   * section assigned to the USB_SRAM region.
+   */
+  .USB_SRAM.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(USB_SRAM) + LENGTH(USB_SRAM));
   } >USB_SRAM
 
   /* Discard unwind info. */

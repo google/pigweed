@@ -81,6 +81,26 @@ MEMORY
   RAM(rwx) : \
     ORIGIN = PW_BOOT_RAM_BEGIN, \
     LENGTH = PW_BOOT_RAM_SIZE
+
+  /* Each memory region above has an associated .*.unused_space section that
+   * overlays the unused space at the end of the memory segment. These segments
+   * are used by pw_bloat.bloaty_config to create the utilization data source
+   * for bloaty size reports.
+   *
+   * These sections MUST be located immediately after the last section that is
+   * placed in the respective memory region or lld will issue a warning like:
+   *
+   *   warning: ignoring memory region assignment for non-allocatable section
+   *      '.VECTOR_TABLE.unused_space'
+   *
+   * If this warning occurs, it's also likely that LLD will have created quite
+   * large padded regions in the ELF file due to bad cursor operations. This
+   * can cause ELF files to balloon from hundreds of kilobytes to hundreds of
+   * megabytes.
+   *
+   * Attempting to add sections to the memory region AFTER the unused_space
+   * section will cause the region to overflow.
+   */
 }
 
 SECTIONS
@@ -89,12 +109,21 @@ SECTIONS
    * Register) MUST point to this memory location in order to be used. This can
    * be done by ensuring this section exists at the default location of the VTOR
    * so it's used on reset, or by explicitly setting the VTOR in a bootloader
-   * manually to point to &pw_boot_vector_table_addr before interrupts are enabled.
+   * manually to point to &pw_boot_vector_table_addr before interrupts are
+   * enabled.
    */
   .vector_table : ALIGN(512)
   {
     pw_boot_vector_table_addr = .;
     KEEP(*(.vector_table))
+  } >VECTOR_TABLE
+
+  /* Represents unused space in the VECTOR_TABLE segment. This MUST be the last
+   * section assigned to the VECTOR_TABLE region.
+   */
+  .VECTOR_TABLE.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(VECTOR_TABLE) + LENGTH(VECTOR_TABLE));
   } >VECTOR_TABLE
 
   /* Main executable code. */
@@ -149,14 +178,26 @@ SECTIONS
     . = ALIGN(8);
   } >RAM AT> FLASH
 
-  /* The .zero_init_ram and .heap sections below require (NOLOAD) annotations
-   * for lld, but not ld, because lld intentionally interprets the linker file
-   * differently from ld:
-   * https://discourse.llvm.org/t/lld-vs-ld-section-type-progbits-vs-nobits/5999/3
+  /* Represents unused space in the FLASH segment. This MUST be the last section
+   * assigned to the FLASH region.
    */
+  .FLASH.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(FLASH) + LENGTH(FLASH));
+  } >FLASH
 
-  /* Zero initialized global/static data. (.bss)
-   * This section is zero initialized in pw_boot_Entry(). */
+  /* The .zero_init_ram, .heap, and .stack sections below require (NOLOAD)
+   * annotations for LLVM lld, but not GNU ld, because LLVM's lld intentionally
+   * interprets the linker file differently from ld:
+   *
+   * https://discourse.llvm.org/t/lld-vs-ld-section-type-progbits-vs-nobits/5999/3
+   *
+   * Zero initialized global/static data (.bss) is initialized in
+   * pw_boot_Entry() via memset(), so the section doesn't need to be loaded from
+   * flash. The .heap and .stack sections don't require any initialization,
+   * as they only represent allocated memory regions, so they also do not need
+   * to be loaded.
+   */
   .zero_init_ram (NOLOAD) : ALIGN(8)
   {
     *(.bss)
@@ -187,38 +228,19 @@ SECTIONS
     pw_boot_stack_high_addr = .;
   } >RAM
 
+  /* Represents unused space in the RAM segment. This MUST be the last section
+   * assigned to the RAM region.
+   */
+  .RAM.unused_space (NOLOAD) : ALIGN(8)
+  {
+    . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));
+  } >RAM
+
   /* Discard unwind info. */
   .ARM.extab 0x0 (INFO) :
   {
     KEEP(*(.ARM.extab*))
   }
-
-  /* The unused_space symbols do not currently work in clang/lld and result in
-   * binary bloat by several orders of magnitude. Allow disabling them until a
-   * proper workaround is in place.
-   */
-  #if !PW_BOOT_WORKAROUND_DISABLE_UNUSED_SPACE
-  /*
-   * Do not declare any output sections after this comment. This area is
-   * reserved only for declaring unused sections of memory. These sections are
-   * used by pw_bloat.bloaty_config to create the utilization data source for
-   * bloaty.
-   */
-  .VECTOR_TABLE.unused_space (NOLOAD) : ALIGN(8)
-  {
-    . = ABSOLUTE(ORIGIN(VECTOR_TABLE) + LENGTH(VECTOR_TABLE));
-  } >VECTOR_TABLE
-
-  .FLASH.unused_space (NOLOAD) : ALIGN(8)
-  {
-    . = ABSOLUTE(ORIGIN(FLASH) + LENGTH(FLASH));
-  } >FLASH
-
-  .RAM.unused_space (NOLOAD) : ALIGN(8)
-  {
-    . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));
-  } >RAM
-  #endif /*PW_BOOT_WORKAROUND_DISABLE_UNUSED_SPACE*/
 }
 
 /* Symbols used by core_init.c: */

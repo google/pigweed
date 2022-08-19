@@ -258,7 +258,7 @@ For example imagine this partial example GNU LD linker script:
     } >RAM AT> FLASH
 
     /* Zero initialized global/static data. (.bss) */
-    .zero_init_ram : ALIGN(8)
+    .zero_init_ram (NOLOAD) : ALIGN(8)
     {
       *(.bss)
       *(.bss*)
@@ -275,6 +275,26 @@ Could be modified as follows enable ``Free Space`` reporting:
   {
     FLASH(rx) : ORIGIN = PW_BOOT_FLASH_BEGIN, LENGTH = PW_BOOT_FLASH_SIZE
     RAM(rwx) : ORIGIN = PW_BOOT_RAM_BEGIN, LENGTH = PW_BOOT_RAM_SIZE
+
+    /* Each memory region above has an associated .*.unused_space section that
+     * overlays the unused space at the end of the memory segment. These
+     * segments are used by pw_bloat.bloaty_config to create the utilization
+     * data source for bloaty size reports.
+     *
+     * These sections MUST be located immediately after the last section that is
+     * placed in the respective memory region or lld will issue a warning like:
+     *
+     *   warning: ignoring memory region assignment for non-allocatable section
+     *      '.VECTOR_TABLE.unused_space'
+     *
+     * If this warning occurs, it's also likely that LLD will have created quite
+     * large padded regions in the ELF file due to bad cursor operations. This
+     * can cause ELF files to balloon from hundreds of kilobytes to hundreds of
+     * megabytes.
+     *
+     * Attempting to add sections to the memory region AFTER the unused_space
+     * section will cause the region to overflow.
+     */
   }
 
   SECTIONS
@@ -302,8 +322,16 @@ Could be modified as follows enable ``Free Space`` reporting:
       . = ALIGN(8);
     } >RAM AT> FLASH
 
+    /* Represents unused space in the FLASH segment. This MUST be the last
+     * section assigned to the FLASH region.
+     */
+    .FLASH.unused_space (NOLOAD) : ALIGN(8)
+    {
+      . = ABSOLUTE(ORIGIN(FLASH) + LENGTH(FLASH));
+    } >FLASH
+
     /* Zero initialized global/static data. (.bss). */
-    .zero_init_ram : ALIGN(8)
+    .zero_init_ram (NOLOAD) : ALIGN(8)
     {
       *(.bss)
       *(.bss*)
@@ -311,17 +339,9 @@ Could be modified as follows enable ``Free Space`` reporting:
       . = ALIGN(8);
     } >RAM
 
-    /*
-     * Do not declare any output sections after this comment. This area is
-     * reserved only for declaring unused sections of memory. These sections are
-     * used by pw_bloat.bloaty_config to create the utilization data source for
-     * bloaty.
+    /* Represents unused space in the RAM segment. This MUST be the last section
+     * assigned to the RAM region.
      */
-    .FLASH.unused_space (NOLOAD) : ALIGN(8)
-    {
-      . = ABSOLUTE(ORIGIN(FLASH) + LENGTH(FLASH));
-    } >FLASH
-
     .RAM.unused_space (NOLOAD) : ALIGN(8)
     {
       . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));

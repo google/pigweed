@@ -214,11 +214,6 @@ the MCU to operate as expected.
 ``PW_BOOT_VECTOR_TABLE_SIZE`` (required):
 Number of bytes to reserve for the ARMv7-M vector table.
 
-``PW_BOOT_WORKAROUND_DISABLE_UNUSED_SPACE`` (optional):
-Set to ``1`` to disabled the "unused" segments in the linker script, used by
-bloaty. This is useful as a workaround to enable linking with lld which is not
-currently compatible with those sections.
-
 Alternatively the linker script can be replaced by setting
 ``pw_boot_cortex_m_LINKER_SCRIPT`` to a valid ``pw_linker_script`` target
 as part of a Pigweed target configuration.
