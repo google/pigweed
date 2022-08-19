@@ -28,7 +28,7 @@ pw_executable("noop_checksum") {
   defines = [ "USE_NOOP_CHECKSUM=1" ]
 }
 
-pw_executable("crc32_checksum") {
+pw_executable("crc32_8bit_checksum") {
   sources = [ "run_checksum.cc" ]
   deps = [
     "$dir_pw_bloat:bloat_this_binary",
@@ -37,7 +37,31 @@ pw_executable("crc32_checksum") {
     "$dir_pw_span",
     "..",
   ]
-  defines = [ "USE_CRC32_CHECKSUM=1" ]
+  defines = [ "USE_CRC32_8BIT_CHECKSUM=1" ]
+}
+
+pw_executable("crc32_4bit_checksum") {
+  sources = [ "run_checksum.cc" ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_log",
+    "$dir_pw_preprocessor",
+    "$dir_pw_span",
+    "..",
+  ]
+  defines = [ "USE_CRC32_4BIT_CHECKSUM=1" ]
+}
+
+pw_executable("crc32_1bit_checksum") {
+  sources = [ "run_checksum.cc" ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_log",
+    "$dir_pw_preprocessor",
+    "$dir_pw_span",
+    "..",
+  ]
+  defines = [ "USE_CRC32_1BIT_CHECKSUM=1" ]
 }
 
 pw_executable("crc16_checksum") {

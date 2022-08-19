@@ -54,6 +54,52 @@ pw_checksum/crc32.h
     uint32_t crc = Crc32(my_data);
     crc = Crc32(more_data, crc);
 
+.. _CRC32 Implementations:
+
+Implementations
+---------------
+Pigweed provides 3 different CRC32 implementations with different size and
+runtime tradeoffs.  The below table summarizes the variants.  For more detailed
+size information see the :ref:`Size report` below.  Instructions counts were
+calculated by hand by analyzing the
+`assembly <https://godbolt.org/z/nY1bbb5Pb>`_.
+
+
+.. list-table::
+   :header-rows: 1
+
+   * - Variant
+     - Relative size (see Size Report below)
+     - Speed
+     - Lookup table size (entries)
+     - Instructions/byte (M33/-Os)
+   * - 8 bits per iteration (default)
+     - large
+     - fastest
+     - 256
+     - 8
+   * - 4 bits per iteration
+     - small
+     - fast
+     - 16
+     - 13
+   * - 1 bit per iteration
+     - smallest
+     - slow
+     - 0
+     - 43
+
+The default implementation provided by the APIs above can be selected through
+:ref:`Module Configuration Options`.  Additionally ``pw_checksum`` provides
+variants of the C++ API to explicitly use each of the implementations.  These
+classes provide the same API as ``Crc32``:
+
+* ``Crc32EightBit``
+* ``Crc32FourBit``
+* ``Crc32OneBit``
+
+.. _Size report:
+
 Size report
 ===========
 The CRC module currently optimizes for speed instead of binary size, by using
@@ -70,6 +116,24 @@ Compatibility
 Dependencies
 ============
 * ``pw_span``
+
+.. _Module Configuration Options:
+
+Module Configuration Options
+============================
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. c:macro:: PW_CHECKSUM_CRC32_DEFAULT_IMPL
+
+  Selects which of the :ref:`CRC32 Implementations` the default CRC32 APIs
+  use.  Set to one of the following values:
+
+  * ``PW_CHECKSUM_CRC32_8BITS``
+  * ``PW_CHECKSUM_CRC32_4BITS``
+  * ``PW_CHECKSUM_CRC32_1BITS``
 
 Zephyr
 ======

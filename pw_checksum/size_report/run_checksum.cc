@@ -24,9 +24,19 @@
 using TheChecksum = pw::checksum::Crc16Ccitt;
 #endif
 
-#ifdef USE_CRC32_CHECKSUM
+#ifdef USE_CRC32_8BIT_CHECKSUM
 #include "pw_checksum/crc32.h"
-using TheChecksum = pw::checksum::Crc32;
+using TheChecksum = pw::checksum::Crc32EightBit;
+#endif
+
+#ifdef USE_CRC32_4BIT_CHECKSUM
+#include "pw_checksum/crc32.h"
+using TheChecksum = pw::checksum::Crc32FourBit;
+#endif
+
+#ifdef USE_CRC32_1BIT_CHECKSUM
+#include "pw_checksum/crc32.h"
+using TheChecksum = pw::checksum::Crc32OneBit;
 #endif
 
 namespace pw::checksum {

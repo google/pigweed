@@ -16,6 +16,7 @@
 #include <string_view>
 
 #include "gtest/gtest.h"
+#include "public/pw_checksum/crc32.h"
 #include "pw_bytes/array.h"
 #include "pw_span/span.h"
 
@@ -40,41 +41,84 @@ constexpr uint32_t kStringCrc = 0x9EC87F88;
 
 TEST(Crc32, Empty) {
   EXPECT_EQ(Crc32::Calculate(span<std::byte>()), PW_CHECKSUM_EMPTY_CRC32);
+  EXPECT_EQ(Crc32EightBit::Calculate(span<std::byte>()),
+            PW_CHECKSUM_EMPTY_CRC32);
+  EXPECT_EQ(Crc32FourBit::Calculate(span<std::byte>()),
+            PW_CHECKSUM_EMPTY_CRC32);
+  EXPECT_EQ(Crc32OneBit::Calculate(span<std::byte>()), PW_CHECKSUM_EMPTY_CRC32);
 }
 
 TEST(Crc32, Buffer) {
   EXPECT_EQ(Crc32::Calculate(as_bytes(span(kBytes))), kBufferCrc);
+  EXPECT_EQ(Crc32EightBit::Calculate(as_bytes(span(kBytes))), kBufferCrc);
+  EXPECT_EQ(Crc32FourBit::Calculate(as_bytes(span(kBytes))), kBufferCrc);
+  EXPECT_EQ(Crc32OneBit::Calculate(as_bytes(span(kBytes))), kBufferCrc);
 }
 
 TEST(Crc32, String) {
   EXPECT_EQ(Crc32::Calculate(as_bytes(span(kString))), kStringCrc);
+  EXPECT_EQ(Crc32EightBit::Calculate(as_bytes(span(kString))), kStringCrc);
+  EXPECT_EQ(Crc32FourBit::Calculate(as_bytes(span(kString))), kStringCrc);
+  EXPECT_EQ(Crc32OneBit::Calculate(as_bytes(span(kString))), kStringCrc);
 }
 
-TEST(Crc32Class, ByteByByte) {
-  Crc32 crc;
+template <typename CrcVariant>
+void TestByByte() {
+  CrcVariant crc;
   for (std::byte b : kBytes) {
     crc.Update(b);
   }
   EXPECT_EQ(crc.value(), kBufferCrc);
 }
 
-TEST(Crc32Class, Buffer) {
-  Crc32 crc32;
+TEST(Crc32Class, ByteByByte) {
+  TestByByte<Crc32>();
+  TestByByte<Crc32EightBit>();
+  TestByByte<Crc32FourBit>();
+  TestByByte<Crc32OneBit>();
+}
+
+template <typename CrcVariant>
+void TestBuffer() {
+  CrcVariant crc32;
   crc32.Update(as_bytes(span(kBytes)));
   EXPECT_EQ(crc32.value(), kBufferCrc);
 }
 
-TEST(Crc32Class, BufferAppend) {
-  Crc32 crc32;
+TEST(Crc32Class, Buffer) {
+  TestBuffer<Crc32>();
+  TestBuffer<Crc32EightBit>();
+  TestBuffer<Crc32FourBit>();
+  TestBuffer<Crc32OneBit>();
+}
+
+template <typename CrcVariant>
+void TestBufferAppend() {
+  CrcVariant crc32;
   crc32.Update(kBytesPart0);
   crc32.Update(kBytesPart1);
   EXPECT_EQ(crc32.value(), kBufferCrc);
 }
 
-TEST(Crc32Class, String) {
-  Crc32 crc32;
+TEST(Crc32Class, BufferAppend) {
+  TestBufferAppend<Crc32>();
+  TestBufferAppend<Crc32EightBit>();
+  TestBufferAppend<Crc32FourBit>();
+  TestBufferAppend<Crc32OneBit>();
+}
+
+template <typename CrcVariant>
+void TestString() {
+  CrcVariant crc32;
   crc32.Update(as_bytes(span(kString)));
   EXPECT_EQ(crc32.value(), kStringCrc);
+}
+
+TEST(Crc32Class, String) {
+  TestString<Crc32>();
+  TestString<Crc32EightBit>();
+  TestString<Crc32FourBit>();
+  TestString<Crc32OneBit>();
 }
 
 extern "C" uint32_t CallChecksumCrc32(const void* data, size_t size_bytes);

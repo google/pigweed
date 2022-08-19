@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "pw_checksum/internal/config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -33,9 +35,24 @@ extern "C" {
 #define _PW_CHECKSUM_CRC32_INITIAL_STATE 0xFFFFFFFFu
 
 // Internal implementation function for CRC32. Do not call it directly.
-uint32_t _pw_checksum_InternalCrc32(const void* data,
-                                    size_t size_bytes,
-                                    uint32_t state);
+uint32_t _pw_checksum_InternalCrc32EightBit(const void* data,
+                                            size_t size_bytes,
+                                            uint32_t state);
+
+uint32_t _pw_checksum_InternalCrc32FourBit(const void* data,
+                                           size_t size_bytes,
+                                           uint32_t state);
+uint32_t _pw_checksum_InternalCrc32OneBit(const void* data,
+                                          size_t size_bytes,
+                                          uint32_t state);
+
+#if PW_CHECKSUM_CRC32_DEFAULT_IMPL == PW_CHECKSUM_CRC32_8BITS
+#define _pw_checksum_InternalCrc32 _pw_checksum_InternalCrc32EightBit
+#elif PW_CHECKSUM_CRC32_DEFAULT_IMPL == PW_CHECKSUM_CRC32_4BITS
+#define _pw_checksum_InternalCrc32 _pw_checksum_InternalCrc32FourBit
+#elif PW_CHECKSUM_CRC32_DEFAULT_IMPL == PW_CHECKSUM_CRC32_1BITS
+#define _pw_checksum_InternalCrc32 _pw_checksum_InternalCrc32OneBit
+#endif
 
 // Calculates the CRC32 for the provided data.
 static inline uint32_t pw_checksum_Crc32(const void* data, size_t size_bytes) {
@@ -65,18 +82,20 @@ namespace pw::checksum {
 //
 // This class is more efficient than the CRC32 C functions since it doesn't
 // finalize the value each time it is appended to.
-class Crc32 {
+template <uint32_t (*kChecksumFunction)(const void*, size_t, uint32_t)>
+class Crc32Impl {
  public:
   // Calculates the CRC32 for the provided data and returns it as a uint32_t.
   // To update a CRC in multiple pieces, use an instance of the Crc32 class.
   static uint32_t Calculate(span<const std::byte> data) {
-    return pw_checksum_Crc32(data.data(), data.size_bytes());
+    return ~kChecksumFunction(
+        data.data(), data.size_bytes(), _PW_CHECKSUM_CRC32_INITIAL_STATE);
   }
 
-  constexpr Crc32() : state_(kInitialValue) {}
+  constexpr Crc32Impl() : state_(kInitialValue) {}
 
   void Update(span<const std::byte> data) {
-    state_ = _pw_checksum_InternalCrc32(data.data(), data.size(), state_);
+    state_ = kChecksumFunction(data.data(), data.size(), state_);
   }
 
   void Update(std::byte data) { Update(span(&data, 1)); }
@@ -92,6 +111,11 @@ class Crc32 {
 
   uint32_t state_;
 };
+
+using Crc32 = Crc32Impl<_pw_checksum_InternalCrc32>;
+using Crc32EightBit = Crc32Impl<_pw_checksum_InternalCrc32EightBit>;
+using Crc32FourBit = Crc32Impl<_pw_checksum_InternalCrc32FourBit>;
+using Crc32OneBit = Crc32Impl<_pw_checksum_InternalCrc32OneBit>;
 
 }  // namespace pw::checksum
 

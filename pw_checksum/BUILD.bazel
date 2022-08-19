@@ -31,6 +31,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_checksum/crc16_ccitt.h",
         "public/pw_checksum/crc32.h",
+        "public/pw_checksum/internal/config.h",
     ],
     includes = ["public"],
     deps = [
