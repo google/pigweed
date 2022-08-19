@@ -7,6 +7,7 @@
 #include <fuchsia/mem/cpp/fidl.h>
 #include <lib/fpromise/result.h>
 
+#include "gatt2_server_server.h"
 #include "gatt_server_server.h"
 #include "helpers.h"
 #include "low_energy_central_server.h"
@@ -712,6 +713,19 @@ void HostServer::RequestGattServer(
   server->set_error_handler([self, server = server.get()](zx_status_t status) {
     if (self) {
       bt_log(DEBUG, "bt-host", "GATT server disconnected");
+      self->servers_.erase(server);
+    }
+  });
+  servers_[server.get()] = std::move(server);
+}
+
+void HostServer::RequestGatt2Server(
+    fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> request) {
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto server = std::make_unique<Gatt2ServerServer>(gatt_->AsWeakPtr(), std::move(request));
+  server->set_error_handler([self, server = server.get()](zx_status_t status) {
+    if (self) {
+      bt_log(DEBUG, "bt-host", "GATT2 server disconnected");
       self->servers_.erase(server);
     }
   });

@@ -108,6 +108,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> peripheral) override;
   void RequestGattServer(
       ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> server) override;
+  void RequestGatt2Server(
+      ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> server) override;
   void RequestProfile(
       ::fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> profile) override;
   void Close() override;
