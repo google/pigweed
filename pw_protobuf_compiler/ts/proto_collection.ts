@@ -15,41 +15,42 @@
 /** Tools for compiling and importing Javascript protos on the fly. */
 
 import {Message} from 'google-protobuf';
-import {FileDescriptorSet} from 'google-protobuf/google/protobuf/descriptor_pb';
+import {DescriptorProto, FileDescriptorSet} from 'google-protobuf/google/protobuf/descriptor_pb';
 
 export type MessageCreator = new () => Message;
 class MessageMap extends Map<string, MessageCreator> {}
+class MessageDescriptorMap extends Map<string, DescriptorProto> { }
 export class ModuleMap extends Map<string, any> {}
 
 /**
  * A wrapper class of protocol buffer modules to provide convenience methods.
  */
 export class ProtoCollection {
-  private messages: MessageMap;
+  private messages: MessageMap = new MessageMap();
+  private messageDescriptors: MessageDescriptorMap = new MessageDescriptorMap();
 
   constructor(
     readonly fileDescriptorSet: FileDescriptorSet,
     modules: ModuleMap
   ) {
-    this.messages = this.mapMessages(fileDescriptorSet, modules);
+    this.mapMessages(fileDescriptorSet, modules);
   }
 
   /**
    * Creates a map between message identifier "{packageName}.{messageName}"
-   * and the Message class.
+   * and the Message class and also the associated DescriptorProto.
    */
-  private mapMessages(set: FileDescriptorSet, mods: ModuleMap): MessageMap {
-    const messages = new MessageMap();
+  private mapMessages(set: FileDescriptorSet, mods: ModuleMap): void {
     for (const fileDescriptor of set.getFileList()) {
       const mod = mods.get(fileDescriptor.getName()!)!;
       for (const messageType of fileDescriptor.getMessageTypeList()) {
         const fullName =
           fileDescriptor.getPackage()! + '.' + messageType.getName();
         const message = mod[messageType.getName()!];
-        messages.set(fullName, message);
+        this.messages.set(fullName, message);
+        this.messageDescriptors.set(fullName, messageType);
       }
     }
-    return messages;
   }
 
   /**
@@ -60,5 +61,15 @@ export class ProtoCollection {
    */
   getMessageCreator(identifier: string): MessageCreator | undefined {
     return this.messages.get(identifier);
+  }
+
+  /**
+   * Finds the DescriptorProto referenced by the identifier.
+   *
+   *  @param identifier String identifier of the form
+   *  "{packageName}.{messageName}" i.e: "pw.rpc.test.NewMessage".
+   */
+  getDescriptorProto(identifier: string): DescriptorProto | undefined {
+    return this.messageDescriptors.get(identifier);
   }
 }

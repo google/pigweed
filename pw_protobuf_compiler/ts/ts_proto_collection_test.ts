@@ -34,4 +34,20 @@ describe('ProtoCollection', () => {
     fetched = lib.getMessageCreator('pw.test1.Garbage');
     expect(fetched).toBeUndefined();
   });
+
+  it('getDescriptorProto returns descriptor', () => {
+    const lib = new ProtoCollection();
+
+    const fetched = lib.getDescriptorProto('pw.protobuf_compiler.test.Message');
+    expect(fetched.getFieldList()[0].getName()).toEqual("field");
+  });
+
+  it('getDescriptorProto for invalid identifier returns undefined', () => {
+    const lib = new ProtoCollection();
+
+    let fetched = lib.getMessageCreator('pw');
+    expect(fetched).toBeUndefined();
+    fetched = lib.getMessageCreator('pw.test1.Garbage');
+    expect(fetched).toBeUndefined();
+  });
 });
