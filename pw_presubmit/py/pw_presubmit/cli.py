@@ -70,7 +70,7 @@ def add_path_arguments(parser) -> None:
               "which are interpreted relative to each Git repository's root."))
 
 
-def _add_programs_arguments(exclusive: argparse.ArgumentParser,
+def _add_programs_arguments(parser: argparse.ArgumentParser,
                             programs: presubmit.Programs, default: str):
     def presubmit_program(arg: str) -> presubmit.Program:
         if arg not in programs:
@@ -79,12 +79,12 @@ def _add_programs_arguments(exclusive: argparse.ArgumentParser,
 
         return programs[arg]
 
-    exclusive.add_argument('-p',
-                           '--program',
-                           choices=programs.values(),
-                           type=presubmit_program,
-                           default=default,
-                           help='Which presubmit program to run')
+    parser.add_argument('-p',
+                        '--program',
+                        choices=programs.values(),
+                        type=presubmit_program,
+                        default=default,
+                        help='Which presubmit program to run')
 
     all_steps = programs.all_steps()
 
@@ -103,11 +103,27 @@ def _add_programs_arguments(exclusive: argparse.ArgumentParser,
 
             namespace.program.append(all_steps[values])
 
-    exclusive.add_argument(
+    parser.add_argument(
         '--step',
         action=AddToCustomProgram,
         default=argparse.SUPPRESS,  # Don't create a "step" argument.
         help='Provide explicit steps instead of running a predefined program.',
+    )
+
+    def gn_arg(argument):
+        key, value = argument.split('=', 1)
+        return (key, value)
+
+    # Recipe code for handling builds with pre-release toolchains requires the
+    # ability to pass through GN args. This ability is not expected to be used
+    # directly outside of this case, so the option is hidden. Values passed in
+    # to this argument should be of the form 'key=value'.
+    parser.add_argument(
+        '--override-gn-arg',
+        dest='override_gn_args',
+        action='append',
+        type=gn_arg,
+        help=argparse.SUPPRESS,
     )
 
 

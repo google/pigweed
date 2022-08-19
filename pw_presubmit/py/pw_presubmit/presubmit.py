@@ -178,6 +178,9 @@ class PresubmitContext:
     output_dir: Path
     paths: Tuple[Path, ...]
     package_root: Path
+    # TODO(b/233808334): Remove default value after updating downstream
+    # projects to use this new value.
+    override_gn_args: Dict[str, str] = dataclasses.field(default_factory=dict)
     _failed: bool = False
 
     @property
@@ -270,7 +273,7 @@ class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
     def __init__(self, root: Path, repos: Sequence[Path],
                  output_directory: Path, paths: Sequence[Path],
-                 package_root: Path):
+                 package_root: Path, override_gn_args: Dict[str, str]):
         self._root = root.resolve()
         self._repos = tuple(repos)
         self._output_directory = output_directory.resolve()
@@ -278,6 +281,7 @@ class Presubmit:
         self._relative_paths = tuple(
             tools.relative_paths(self._paths, self._root))
         self._package_root = package_root.resolve()
+        self._override_gn_args = override_gn_args
 
     def run(self, program: Program, keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
@@ -386,6 +390,7 @@ class Presubmit:
                 output_dir=output_directory,
                 paths=paths,
                 package_root=self._package_root,
+                override_gn_args=self._override_gn_args,
             )
 
         finally:
@@ -443,7 +448,8 @@ def _process_pathspecs(repos: Iterable[Path],
     return pathspecs_by_repo
 
 
-def run(program: Sequence[Callable],
+def run(  # pylint: disable=too-many-arguments
+        program: Sequence[Callable],
         root: Path,
         repos: Collection[Path] = (),
         base: Optional[str] = None,
@@ -452,6 +458,7 @@ def run(program: Sequence[Callable],
         output_directory: Optional[Path] = None,
         package_root: Path = None,
         only_list_steps: bool = False,
+        override_gn_args: Sequence[Tuple[str, str]] = (),
         keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
@@ -476,6 +483,7 @@ def run(program: Sequence[Callable],
         output_directory: where to place output files
         package_root: where to place package files
         only_list_steps: print step names instead of running them
+        override_gn_args: additional GN args to set on steps
         keep_going: whether to continue running checks if an error occurs
 
     Returns:
@@ -518,6 +526,7 @@ def run(program: Sequence[Callable],
         output_directory=output_directory,
         paths=files,
         package_root=package_root,
+        override_gn_args=dict(override_gn_args or {}),
     )
 
     if only_list_steps:
