@@ -9,9 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.1.0",
+    "@codemirror/lang-javascript": "^6.0.2",
+    "@codemirror/language": "^6.2.1",
+    "@codemirror/theme-one-dark": "^6.0.0",
     "@emotion/react": "^11.10.0",
     "@emotion/styled": "^11.10.0",
     "@mui/material": "^5.9.3",
+    "codemirror": "^6.0.1",
     "next": "12.2.3",
     "pigweedjs": "^0.0.4",
     "react": "18.2.0",
