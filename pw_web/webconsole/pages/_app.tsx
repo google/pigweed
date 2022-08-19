@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,10 +12,24 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/* eslint-env browser */
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import {App} from './app';
+import '../styles/globals.css'
+import type {AppProps} from 'next/app'
+import {ThemeProvider, createTheme} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
-// Bootstrap the app and append it to the DOM
-ReactDOM.render(<App />, document.getElementById('react-root'));
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
+
+function MyApp({Component, pageProps}: AppProps) {
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <Component {...pageProps} />
+    </ThemeProvider>
+  )
+}
+
+export default MyApp
