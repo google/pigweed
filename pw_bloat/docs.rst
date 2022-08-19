@@ -235,7 +235,7 @@ For example imagine this partial example GNU LD linker script:
   SECTIONS
   {
     /* Main executable code. */
-    .code : ALIGN(8)
+    .code : ALIGN(4)
     {
       /* Application code. */
       *(.text)
@@ -243,27 +243,27 @@ For example imagine this partial example GNU LD linker script:
       KEEP(*(.init))
       KEEP(*(.fini))
 
-      . = ALIGN(8);
+      . = ALIGN(4);
       /* Constants.*/
       *(.rodata)
       *(.rodata*)
     } >FLASH
 
     /* Explicitly initialized global and static data. (.data)*/
-    .static_init_ram : ALIGN(8)
+    .static_init_ram : ALIGN(4)
     {
       *(.data)
       *(.data*)
-      . = ALIGN(8);
+      . = ALIGN(4);
     } >RAM AT> FLASH
 
     /* Zero initialized global/static data. (.bss) */
-    .zero_init_ram (NOLOAD) : ALIGN(8)
+    .zero_init_ram (NOLOAD) : ALIGN(4)
     {
       *(.bss)
       *(.bss*)
       *(COMMON)
-      . = ALIGN(8);
+      . = ALIGN(4);
     } >RAM
   }
 
@@ -300,7 +300,7 @@ Could be modified as follows enable ``Free Space`` reporting:
   SECTIONS
   {
     /* Main executable code. */
-    .code : ALIGN(8)
+    .code : ALIGN(4)
     {
       /* Application code. */
       *(.text)
@@ -308,41 +308,41 @@ Could be modified as follows enable ``Free Space`` reporting:
       KEEP(*(.init))
       KEEP(*(.fini))
 
-      . = ALIGN(8);
+      . = ALIGN(4);
       /* Constants.*/
       *(.rodata)
       *(.rodata*)
     } >FLASH
 
     /* Explicitly initialized global and static data. (.data)*/
-    .static_init_ram : ALIGN(8)
+    .static_init_ram : ALIGN(4)
     {
       *(.data)
       *(.data*)
-      . = ALIGN(8);
+      . = ALIGN(4);
     } >RAM AT> FLASH
 
     /* Represents unused space in the FLASH segment. This MUST be the last
      * section assigned to the FLASH region.
      */
-    .FLASH.unused_space (NOLOAD) : ALIGN(8)
+    .FLASH.unused_space (NOLOAD) : ALIGN(4)
     {
       . = ABSOLUTE(ORIGIN(FLASH) + LENGTH(FLASH));
     } >FLASH
 
     /* Zero initialized global/static data. (.bss). */
-    .zero_init_ram (NOLOAD) : ALIGN(8)
+    .zero_init_ram (NOLOAD) : ALIGN(4)
     {
       *(.bss)
       *(.bss*)
       *(COMMON)
-      . = ALIGN(8);
+      . = ALIGN(4);
     } >RAM
 
     /* Represents unused space in the RAM segment. This MUST be the last section
      * assigned to the RAM region.
      */
-    .RAM.unused_space (NOLOAD) : ALIGN(8)
+    .RAM.unused_space (NOLOAD) : ALIGN(4)
     {
       . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));
     } >RAM

@@ -111,6 +111,11 @@ SECTIONS
    * so it's used on reset, or by explicitly setting the VTOR in a bootloader
    * manually to point to &pw_boot_vector_table_addr before interrupts are
    * enabled.
+   *
+   * The ARMv7-M architecture requires this is at least aligned to 128 bytes,
+   * and aligned to a power of two that is greater than 4 times the number of
+   * supported exceptions. 512 has been selected as it accommodates this
+   * device's vector table.
    */
   .vector_table : ALIGN(512)
   {
@@ -121,13 +126,13 @@ SECTIONS
   /* Represents unused space in the VECTOR_TABLE segment. This MUST be the last
    * section assigned to the VECTOR_TABLE region.
    */
-  .VECTOR_TABLE.unused_space (NOLOAD) : ALIGN(8)
+  .VECTOR_TABLE.unused_space (NOLOAD) : ALIGN(4)
   {
     . = ABSOLUTE(ORIGIN(VECTOR_TABLE) + LENGTH(VECTOR_TABLE));
   } >VECTOR_TABLE
 
   /* Main executable code. */
-  .code : ALIGN(0x10)
+  .code : ALIGN(4)
   {
    CREATE_OBJECT_SYMBOLS
     __text_load = LOADADDR(.code);
@@ -137,7 +142,7 @@ SECTIONS
     KEEP(*(.init))
     KEEP(*(.fini))
 
-    . = ALIGN(0x10);
+    . = ALIGN(4);
     /* Constants.*/
     *(.rodata)
     *(.rodata*)
@@ -148,7 +153,7 @@ SECTIONS
      * Since the region isn't explicitly referenced, specify KEEP to prevent
      * link-time garbage collection. SORT is used for sections that have strict
      * init/de-init ordering requirements. */
-    . = ALIGN(0x10);
+    . = ALIGN(4);
     PROVIDE_HIDDEN(__preinit_array_start = .);
     KEEP(*(.preinit_array*))
     PROVIDE_HIDDEN(__preinit_array_end = .);
@@ -165,24 +170,24 @@ SECTIONS
   } >TEXT_EXTERNAL_RAM
 
   /* Used by unwind-arm/ */
-  .ARM : ALIGN(0x10) {
+  .ARM : ALIGN(4) {
     __exidx_start = .;
     *(.ARM.exidx*)
     __exidx_end = .;
   } >TEXT_EXTERNAL_RAM
 
   /* Explicitly initialized global and static data. (.data)*/
-  .static_init_ram : ALIGN(0x10)
+  .static_init_ram : ALIGN(4)
   {
     *(.data)
     *(.data*)
-    . = ALIGN(0x10);
+    . = ALIGN(4);
   } >EXTERNAL_RAM AT> TEXT_EXTERNAL_RAM
 
   /* Represents unused space in the TEXT_EXTERNAL_RAM segment. This MUST be the
    * last section assigned to the TEXT_EXTERNAL_RAM region.
    */
-  .TEXT_EXTERNAL_RAM.unused_space (NOLOAD) : ALIGN(8)
+  .TEXT_EXTERNAL_RAM.unused_space (NOLOAD) : ALIGN(4)
   {
     . = ABSOLUTE(ORIGIN(TEXT_EXTERNAL_RAM) + LENGTH(TEXT_EXTERNAL_RAM));
   } >TEXT_EXTERNAL_RAM
@@ -199,23 +204,29 @@ SECTIONS
    * as they only represent allocated memory regions, so they also do not need
    * to be loaded.
    */
-  .zero_init_ram (NOLOAD) : ALIGN(0x10)
+  .zero_init_ram (NOLOAD) : ALIGN(4)
   {
     *(.bss)
     *(.bss*)
     *(COMMON)
-    . = ALIGN(0x10);
+    . = ALIGN(4);
   } >EXTERNAL_RAM
 
-  .heap (NOLOAD) : ALIGN(8)
+  .heap (NOLOAD) : ALIGN(4)
   {
     pw_boot_heap_low_addr = .;
     . = . + PW_BOOT_HEAP_SIZE;
-    . = ALIGN(8);
+    . = ALIGN(4);
     pw_boot_heap_high_addr = .;
   } >EXTERNAL_RAM
 
-  /* Link-time check for stack overlaps. */
+  /* Link-time check for stack overlaps.
+   *
+   * The ARMv7-M architecture may require 8-byte alignment of the stack pointer
+   * rather than 4 in some contexts and implementations, so this region is
+   * 8-byte aligned (see ARMv7-M Architecture Reference Manual DDI0403E
+   * section B1.5.7).
+   */
   .stack (NOLOAD) : ALIGN(8)
   {
     /* Set the address that the main stack pointer should be initialized to. */
@@ -232,7 +243,7 @@ SECTIONS
   /* Represents unused space in the EXTERNAL_RAM segment. This MUST be the last
    * section assigned to the EXTERNAL_RAM region.
    */
-  .EXTERNAL_RAM.unused_space (NOLOAD) : ALIGN(8)
+  .EXTERNAL_RAM.unused_space (NOLOAD) : ALIGN(4)
   {
     . = ABSOLUTE(ORIGIN(EXTERNAL_RAM) + LENGTH(EXTERNAL_RAM));
   } >EXTERNAL_RAM

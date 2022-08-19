@@ -143,16 +143,22 @@ MEMORY
 
 SECTIONS
 {{
+
+  /* The ARMv8-M architecture requires this is at least aligned to 128 bytes,
+   * and aligned to a power of two that is greater than 4 times the number of
+   * supported exceptions. 512 has been selected as it accommodates most vector
+   * tables.
+   */
   .isr_vector :
   {{
-    . = ALIGN(8);
+    . = ALIGN(512);
     KEEP(*(.isr_vector))
-    . = ALIGN(8);
+    . = ALIGN(4);
   }} >FLASH
 
   .text :
   {{
-    . = ALIGN(8);
+    . = ALIGN(4);
     *(.text)
     *(.text*)
     *(.glue_7)
@@ -162,73 +168,73 @@ SECTIONS
     KEEP (*(.init))
     KEEP (*(.fini))
 
-    . = ALIGN(8);
+    . = ALIGN(4);
     _etext = .;
   }} >FLASH
 
   .rodata :
   {{
-    . = ALIGN(8);
+    . = ALIGN(4);
     *(.rodata)
     *(.rodata*)
-    . = ALIGN(8);
+    . = ALIGN(4);
   }} >FLASH
 
   .ARM.extab   : {{
-    . = ALIGN(8);
+    . = ALIGN(4);
     *(.ARM.extab* .gnu.linkonce.armextab.*)
-    . = ALIGN(8);
+    . = ALIGN(4);
   }} >FLASH
 
   .ARM : {{
-    . = ALIGN(8);
+    . = ALIGN(4);
     __exidx_start = .;
     *(.ARM.exidx*)
     __exidx_end = .;
-    . = ALIGN(8);
+    . = ALIGN(4);
   }} >FLASH
 
   .preinit_array     :
   {{
-    . = ALIGN(8);
+    . = ALIGN(4);
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array*))
     PROVIDE_HIDDEN (__preinit_array_end = .);
-    . = ALIGN(8);
+    . = ALIGN(4);
   }} >FLASH
 
   .init_array :
   {{
-    . = ALIGN(8);
+    . = ALIGN(4);
     PROVIDE_HIDDEN (__init_array_start = .);
     KEEP (*(SORT(.init_array.*)))
     KEEP (*(.init_array*))
     PROVIDE_HIDDEN (__init_array_end = .);
-    . = ALIGN(8);
+    . = ALIGN(4);
   }} >FLASH
 
   .fini_array :
   {{
-    . = ALIGN(8);
+    . = ALIGN(4);
     PROVIDE_HIDDEN (__fini_array_start = .);
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
-    . = ALIGN(8);
+    . = ALIGN(4);
   }} >FLASH
 
   _sidata = LOADADDR(.data);
   .data :
   {{
-    . = ALIGN(8);
+    . = ALIGN(4);
     _sdata = .;
     *(.data)
     *(.data*)
-    . = ALIGN(8);
+    . = ALIGN(4);
     _edata = .;
   }} >RAM AT> FLASH
 
-  . = ALIGN(8);
+  . = ALIGN(4);
   .bss :
   {{
     _sbss = .;
@@ -237,11 +243,16 @@ SECTIONS
     *(.bss*)
     *(COMMON)
 
-    . = ALIGN(8);
+    . = ALIGN(4);
     _ebss = .;
     __bss_end__ = _ebss;
   }} >RAM
 
+  /* The ARMv7-M architecture may require 8-byte alignment of the stack pointer
+   * rather than 4 in some contexts and implementations, so this region is
+   * 8-byte aligned (see ARMv7-M Architecture Reference Manual DDI0403E
+   * section B1.5.7).
+   */
   ._user_heap_stack :
   {{
     . = ALIGN(8);

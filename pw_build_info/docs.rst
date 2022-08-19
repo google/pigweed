@@ -43,9 +43,9 @@ alongside the ``.text`` and ``.rodata`` sections, and named
 .. code-block:: none
 
   /* Main executable code. */
-  .code : ALIGN(8)
+  .code : ALIGN(4)
   {
-    . = ALIGN(8);
+    . = ALIGN(4);
     /* Application code. */
     *(.text)
     *(.text*)
@@ -63,7 +63,7 @@ alongside the ``.text`` and ``.rodata`` sections, and named
   } >FLASH
 
   /* Explicitly initialized global and static data. (.data) */
-  .static_init_ram : ALIGN(8)
+  .static_init_ram : ALIGN(4)
   {
     *(.data)
     *(.data*)
@@ -83,9 +83,9 @@ provided below:
 .. code-block:: none
 
   /* Main executable code. */
-  .code : ALIGN(8)
+  .code : ALIGN(4)
   {
-    . = ALIGN(8);
+    . = ALIGN(4);
     /* Application code. */
     *(.text)
     *(.text*)
