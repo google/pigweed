@@ -32,6 +32,7 @@ config("polyfill_config") {
     defines = [ "_PW_SPAN_POLYFILL_ENABLED" ]
   }
 
+  cflags = [ "-Wno-gnu-include-next" ]
   visibility = [ ":*" ]
 }
 

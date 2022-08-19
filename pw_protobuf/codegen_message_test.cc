@@ -1793,15 +1793,10 @@ TEST(CodegenMessage, WriteOptionalNotPresent) {
   const auto status = optional_test.Write(message);
   ASSERT_EQ(status, OkStatus());
 
-  // clang-format off
-  constexpr uint8_t expected_proto[] = {
-  };
-  // clang-format on
+  // The expected proto is empty; no bytes should be written.
 
   ConstByteSpan result = writer.WrittenData();
-  EXPECT_EQ(result.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
-            0);
+  EXPECT_TRUE(result.empty());
 }
 
 TEST(CodegenMessage, WriteOptionalPresentDefaults) {

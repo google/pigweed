@@ -2112,22 +2112,34 @@ def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
                           '{}::MessageField::kMaxFieldSize);'.format(
                               prop.name(), PROTOBUF_NAMESPACE))
 
-    output.write_line('inline constexpr {}::MessageField _kMessageFields[] '
-                      '= {{'.format(PROTOBUF_NAMESPACE, ))
+    # Zero-length C arrays are not permitted by the C++ standard, so only
+    # generate the message fields array if it is non-empty. Zero-length
+    # std::arrays are valid, but older toolchains may not support constexpr
+    # std::arrays, even with -std=c++17.
+    #
+    # The kMessageFields span is generated whether the message has fields or
+    # not. Only the span is referenced elsewhere.
+    if properties:
+        output.write_line(
+            f'inline constexpr {PROTOBUF_NAMESPACE}::MessageField '
+            ' _kMessageFields[] = {')
 
-    # Generate members for each of the message's fields.
-    with output.indent():
-        for prop in properties:
-            table = ', '.join(prop.table_entry())
-            output.write_line(f'{{{table}}},')
+        # Generate members for each of the message's fields.
+        with output.indent():
+            for prop in properties:
+                table = ', '.join(prop.table_entry())
+                output.write_line(f'{{{table}}},')
 
-    output.write_line('};')
-    output.write_line('PW_MODIFY_DIAGNOSTICS_POP();')
+        output.write_line('};')
+        output.write_line('PW_MODIFY_DIAGNOSTICS_POP();')
 
-    output.write_line(
-        'inline constexpr pw::span<const {}::MessageField> '
-        'kMessageFields = {{ _kMessageFields, size_t({}) }};'.format(
-            PROTOBUF_NAMESPACE, len(properties)))
+        output.write_line(
+            f'inline constexpr pw::span<const {PROTOBUF_NAMESPACE}::'
+            'MessageField> kMessageFields = _kMessageFields;')
+    else:
+        output.write_line(
+            f'inline constexpr pw::span<const {PROTOBUF_NAMESPACE}::'
+            'MessageField> kMessageFields;')
 
     output.write_line(f'}}  // namespace {namespace}')
 
@@ -2225,7 +2237,6 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
     output.write_line('#include <optional>')
-    output.write_line('#include "pw_span/span.h"')
     output.write_line('#include <string_view>\n')
     output.write_line('#include "pw_assert/assert.h"')
     output.write_line('#include "pw_containers/vector.h"')
@@ -2235,6 +2246,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include "pw_protobuf/serialized_size.h"')
     output.write_line('#include "pw_protobuf/stream_decoder.h"')
     output.write_line('#include "pw_result/result.h"')
+    output.write_line('#include "pw_span/span.h"')
     output.write_line('#include "pw_status/status.h"')
     output.write_line('#include "pw_status/status_with_size.h"')
 

@@ -24,7 +24,7 @@
 void pw_Base64CallEncode(const void* binary_data,
                          const size_t binary_size_bytes,
                          char* output) {
-  return pw_Base64Encode(binary_data, binary_size_bytes, output);
+  pw_Base64Encode(binary_data, binary_size_bytes, output);
 }
 
 size_t pw_Base64CallDecode(const char* base64,

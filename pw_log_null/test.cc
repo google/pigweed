@@ -28,7 +28,7 @@ TEST(LogNull, NoArguments) {
 
 TEST(LogNull, WithArguments) {
   PW_HANDLE_LOG(1, 2, "%s", "hello");
-  PW_HANDLE_LOG(1, 2, "%d + %s == %p", 1, "two", nullptr);
+  PW_HANDLE_LOG(1, 2, "%d + %s == %p", 1, "two", static_cast<void*>(nullptr));
 }
 
 TEST(LogNull, ExpressionsAreEvaluated) {

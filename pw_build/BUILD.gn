@@ -123,6 +123,31 @@ config("extra_strict_warnings") {
 config("internal_strict_warnings") {
   cflags = [ "-Wswitch-enum" ]
   cflags_cc = [ "-Wextra-semi" ]
+
+  # TODO(b/243069432): Enable pedantic warnings on Windows when they pass.
+  if (host_os != "win") {
+    configs = [ ":pedantic_warnings" ]
+  }
+}
+
+config("pedantic_warnings") {
+  cflags = [
+    # Enable -Wpedantic, but disable a few warnings.
+    "-Wpedantic",
+
+    # Allow designated initializers, which were added in C++20 but widely
+    # supported prior and permitted by the Google style guide.
+    "-Wno-c++20-designator",
+
+    # Allow empty ... arguments in macros, which are permitted in C++20 but
+    # widely supported prior.
+    "-Wno-gnu-zero-variadic-macro-arguments",
+  ]
+
+  if (pw_toolchain_CXX_STANDARD < pw_toolchain_STANDARD.CXX17) {
+    # Allow C++17 attributes in C++14, since Pigweed targets C++17 or newer.
+    cflags += [ "-Wno-c++17-attribute-extensions" ]
+  }
 }
 
 config("cpp14") {

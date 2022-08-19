@@ -31,8 +31,17 @@ config("stdcompat_public_include_path") {
   visibility = [ ":*" ]
 }
 
+# TODO(b/243045403): Fix this warning and remove the flag that disables it.
+config("disable_nested_anon_types") {
+  cflags = [ "-Wno-nested-anon-types" ]
+  visibility = [ ":*" ]
+}
+
 pw_source_set("fit") {
-  public_configs = [ ":fit_public_include_path" ]
+  public_configs = [
+    ":fit_public_include_path",
+    ":disable_nested_anon_types",
+  ]
   public_deps = [ ":stdcompat" ]
   public = [
     "repo/sdk/lib/fit/include/lib/fit/function.h",

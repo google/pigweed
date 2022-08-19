@@ -171,25 +171,28 @@ void Block::CrashIfInvalid() {
     case VALID:
       break;
     case MISALIGNED:
-      PW_DCHECK(false, "The block at address %p is not aligned.", this);
+      PW_DCHECK(false,
+                "The block at address %p is not aligned.",
+                static_cast<void*>(this));
       break;
     case NEXT_MISMATCHED:
       PW_DCHECK(false,
                 "The 'prev' field in the next block (%p) does not match the "
                 "address of the current block (%p).",
-                Next()->Prev(),
-                this);
+                static_cast<void*>(Next()->Prev()),
+                static_cast<void*>(this));
       break;
     case PREV_MISMATCHED:
       PW_DCHECK(false,
                 "The 'next' field in the previous block (%p) does not match "
                 "the address of the current block (%p).",
-                Prev()->Next(),
-                this);
+                static_cast<void*>(Prev()->Next()),
+                static_cast<void*>(this));
       break;
     case POISON_CORRUPTED:
-      PW_DCHECK(
-          false, "The poisoned pattern in the block at %p is corrupted.", this);
+      PW_DCHECK(false,
+                "The poisoned pattern in the block at %p is corrupted.",
+                static_cast<void*>(this));
       break;
   }
 }

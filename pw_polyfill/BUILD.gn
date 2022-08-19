@@ -35,11 +35,13 @@ pw_source_set("pw_polyfill") {
 
 config("cstddef_overrides_config") {
   include_dirs = [ "cstddef_public_overrides" ]
+  cflags = [ "-Wno-gnu-include-next" ]
   visibility = [ ":*" ]
 }
 
 config("iterator_overrides_config") {
   include_dirs = [ "iterator_public_overrides" ]
+  cflags = [ "-Wno-gnu-include-next" ]
   visibility = [ ":*" ]
 }
 
