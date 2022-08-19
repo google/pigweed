@@ -305,7 +305,6 @@ HdlcRpcClient
 .. autoclass:: pw_hdlc.rpc.HdlcRpcLocalServerAndClient
   :members:
 
-
 Example pw::rpc::system_server backend
 --------------------------------------
 This module includes an example implementation of ``pw_rpc``'s ``system_server``
@@ -313,6 +312,20 @@ facade. This implementation sends HDLC encoded RPC packets via ``pw_sys_io``,
 and has blocking sends/reads, so it is hardly performance-oriented and
 unsuitable for performance-sensitive applications. This mostly servers as a
 simplistic example for quickly bringing up RPC over HDLC on bare-metal targets.
+
+Size report
+===========
+The HDLC module currently optimizes for robustness and flexibility instead of
+binary size or performance.
+
+There are two size reports: the first shows the cost of everything needed to
+use HDLC, including the dependencies on common modules like CRC32 from
+pw_checksum and variable-length integer handling from pw_varint. The other is
+the cost if your application is already linking those functions. pw_varint is
+commonly used since it's necessary for protocol buffer handling, so is often
+already present.
+
+.. include:: size_report
 
 Roadmap
 =======
