@@ -536,8 +536,9 @@ class _CSVDatabase(DatabaseFile):
 def _parse_directory(paths: Iterable[Path]) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries from files in the directory as a CSV."""
     for path in paths:
-        with path.open() as fd:
-            yield from parse_csv(fd)
+        if path.suffix == '.csv':
+            with path.open() as fd:
+                yield from parse_csv(fd)
 
 
 def _git_stdout(commands: List, cwd: Path) -> str:
