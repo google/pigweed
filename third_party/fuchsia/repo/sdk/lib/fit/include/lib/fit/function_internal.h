@@ -179,7 +179,7 @@ constexpr target_ops<Result, Args...> target<SharedFunction,
                                              /*is_shared=*/true, Result, Args...>::ops = {
     &target::target_type_id, &target::get, &target::invoke, &target::move, &target::destroy};
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
+template <size_t inline_target_size, bool require_inline, typename Callable>
 class function_base;
 
 // Function implementation details.

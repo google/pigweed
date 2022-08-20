@@ -22,24 +22,24 @@ namespace pw {
 namespace {
 
 #if PW_NC_TEST(CannotInstantiateWithNonFunction)
-PW_NC_EXPECT("incomplete type|undefined template");
+PW_NC_EXPECT("must be instantiated with a function type");
 
 [[maybe_unused]] Function<int> function_pointer;
 
 #elif PW_NC_TEST(CannotInstantiateWithFunctionPointer1)
-PW_NC_EXPECT("incomplete type|undefined template");
+PW_NC_EXPECT("must be instantiated with a function type");
 
 [[maybe_unused]] Function<void (*)()> function_pointer;
 
 #elif PW_NC_TEST(CannotInstantiateWithFunctionPointer2)
-PW_NC_EXPECT("incomplete type|undefined template");
+PW_NC_EXPECT("must be instantiated with a function type");
 
 [[maybe_unused]] void SomeFunction(int);
 
 [[maybe_unused]] Function<decltype(&SomeFunction)> function_pointer;
 
 #elif PW_NC_TEST(CannotInstantiateWithFunctionReference)
-PW_NC_EXPECT("incomplete type|undefined template");
+PW_NC_EXPECT("must be instantiated with a function type");
 
 [[maybe_unused]] Function<void (&)()> function_pointer;
 

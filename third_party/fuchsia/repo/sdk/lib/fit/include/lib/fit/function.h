@@ -5,17 +5,27 @@
 #ifndef LIB_FIT_INCLUDE_LIB_FIT_FUNCTION_H_
 #define LIB_FIT_INCLUDE_LIB_FIT_FUNCTION_H_
 
+#include <type_traits>
+
 #include "function_internal.h"
 #include "traits.h"
 #include "utility_internal.h"
 
 namespace fit {
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-class function_impl;
+template <size_t inline_target_size, bool require_inline, typename Callable>
+class function_impl {
+  static_assert(std::is_function<Callable>::value,
+                "fit::function must be instantiated with a function type, such as void() or "
+                "int(char*, bool)");
+};
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-class callback_impl;
+template <size_t inline_target_size, bool require_inline, typename Callable>
+class callback_impl {
+  static_assert(std::is_function<Callable>::value,
+                "fit::callback must be instantiated with a function type, such as void() or "
+                "int(char*, bool)");
+};
 
 // The default size allowance for storing a target inline within a function
 // object, in bytes.  This default allows for inline storage of targets
@@ -302,30 +312,30 @@ class function_impl<inline_target_size, require_inline, Result(Args...)> final
   }
 };
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-void swap(function_impl<inline_target_size, require_inline, Result, Args...>& a,
-          function_impl<inline_target_size, require_inline, Result, Args...>& b) {
+template <size_t inline_target_size, bool require_inline, typename Callable>
+void swap(function_impl<inline_target_size, require_inline, Callable>& a,
+          function_impl<inline_target_size, require_inline, Callable>& b) {
   a.swap(b);
 }
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-bool operator==(const function_impl<inline_target_size, require_inline, Result, Args...>& f,
+template <size_t inline_target_size, bool require_inline, typename Callable>
+bool operator==(const function_impl<inline_target_size, require_inline, Callable>& f,
                 decltype(nullptr)) {
   return !f;
 }
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
+template <size_t inline_target_size, bool require_inline, typename Callable>
 bool operator==(decltype(nullptr),
-                const function_impl<inline_target_size, require_inline, Result, Args...>& f) {
+                const function_impl<inline_target_size, require_inline, Callable>& f) {
   return !f;
 }
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-bool operator!=(const function_impl<inline_target_size, require_inline, Result, Args...>& f,
+template <size_t inline_target_size, bool require_inline, typename Callable>
+bool operator!=(const function_impl<inline_target_size, require_inline, Callable>& f,
                 decltype(nullptr)) {
   return !!f;
 }
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
+template <size_t inline_target_size, bool require_inline, typename Callable>
 bool operator!=(decltype(nullptr),
-                const function_impl<inline_target_size, require_inline, Result, Args...>& f) {
+                const function_impl<inline_target_size, require_inline, Callable>& f) {
   return !!f;
 }
 
@@ -458,30 +468,30 @@ class callback_impl<inline_target_size, require_inline, Result(Args...)> final
   }
 };
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-void swap(callback_impl<inline_target_size, require_inline, Result, Args...>& a,
-          callback_impl<inline_target_size, require_inline, Result, Args...>& b) {
+template <size_t inline_target_size, bool require_inline, typename Callable>
+void swap(callback_impl<inline_target_size, require_inline, Callable>& a,
+          callback_impl<inline_target_size, require_inline, Callable>& b) {
   a.swap(b);
 }
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-bool operator==(const callback_impl<inline_target_size, require_inline, Result, Args...>& f,
+template <size_t inline_target_size, bool require_inline, typename Callable>
+bool operator==(const callback_impl<inline_target_size, require_inline, Callable>& f,
                 decltype(nullptr)) {
   return !f;
 }
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
+template <size_t inline_target_size, bool require_inline, typename Callable>
 bool operator==(decltype(nullptr),
-                const callback_impl<inline_target_size, require_inline, Result, Args...>& f) {
+                const callback_impl<inline_target_size, require_inline, Callable>& f) {
   return !f;
 }
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-bool operator!=(const callback_impl<inline_target_size, require_inline, Result, Args...>& f,
+template <size_t inline_target_size, bool require_inline, typename Callable>
+bool operator!=(const callback_impl<inline_target_size, require_inline, Callable>& f,
                 decltype(nullptr)) {
   return !!f;
 }
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
+template <size_t inline_target_size, bool require_inline, typename Callable>
 bool operator!=(decltype(nullptr),
-                const callback_impl<inline_target_size, require_inline, Result, Args...>& f) {
+                const callback_impl<inline_target_size, require_inline, Callable>& f) {
   return !!f;
 }
 
