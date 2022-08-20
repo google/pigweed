@@ -4,10 +4,12 @@
 
 #include "error.h"
 
+#include "pw_string/format.h"
+
 namespace bt {
 namespace {
 
-std::string ErrorToString(att::ErrorCode ecode) {
+constexpr const char* ErrorToString(att::ErrorCode ecode) {
   switch (ecode) {
     case att::ErrorCode::kInvalidHandle:
       return "invalid handle";
@@ -53,7 +55,12 @@ std::string ErrorToString(att::ErrorCode ecode) {
 }  // namespace
 
 std::string ProtocolErrorTraits<att::ErrorCode>::ToString(att::ErrorCode ecode) {
-  return bt_lib_cpp_string::StringPrintf("%s (ATT %#.2hhx)", ErrorToString(ecode).c_str(), ecode);
+  constexpr size_t out_size = sizeof("invalid attribute value length (ATT 0x0d)");
+  char out[out_size] = "";
+  pw::StatusWithSize status =
+      pw::string::Format({out, sizeof(out)}, "%s (ATT %#.2hhx)", ErrorToString(ecode), ecode);
+  BT_DEBUG_ASSERT(status.ok());
+  return out;
 }
 
 }  // namespace bt

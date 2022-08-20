@@ -43,6 +43,8 @@ static_library("att") {
     "//src/connectivity/bluetooth/core/bt-host/sm:definitions",
     "//src/lib/fxl",
   ]
+
+  deps = [ "//third_party/pigweed:pw_string" ]
 }
 
 source_set("tests") {
@@ -52,6 +54,7 @@ source_set("tests") {
     "attribute_unittest.cc",
     "bearer_unittest.cc",
     "database_unittest.cc",
+    "error_unittest.cc",
     "permissions_unittest.cc",
   ]
 
