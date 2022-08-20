@@ -110,7 +110,7 @@
         "mac-amd64"
       ],
       "tags": [
-        "git_revision:75b7e52e92c3b00fc891b47f5b2efdff0a2be55a"
+        "git_revision:dd01122b5c62a04e64b4109c5576eeea9ae4145b"
       ],
       "version_file": ".versions/rust.cipd_version"
     },
