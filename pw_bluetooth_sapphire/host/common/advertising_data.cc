@@ -12,7 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/utf_codecs.h"
 
 namespace bt {
@@ -200,8 +199,7 @@ std::string AdvertisingData::ParseErrorToString(ParseError e) {
     case ParseError::kTxPowerLevelMalformed:
       return "malformed tx power level";
     case ParseError::kLocalNameTooLong:
-      return bt_lib_cpp_string::StringPrintf("local name field of exceeds BT spec limit of %u",
-                                             kMaxNameLength);
+      return "local name exceeds max length (248)";
     case ParseError::kUuidsMalformed:
       return "malformed service UUIDs list";
     case ParseError::kManufacturerSpecificDataTooSmall:
