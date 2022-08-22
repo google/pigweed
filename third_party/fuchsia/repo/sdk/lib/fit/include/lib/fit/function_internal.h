@@ -186,17 +186,43 @@ class function_base;
 // See |fit::function| and |fit::callback| documentation for more information.
 template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
 class function_base<inline_target_size, require_inline, Result(Args...)> {
+  static constexpr size_t storage_size =
+      (inline_target_size >= sizeof(void*) ? inline_target_size : sizeof(void*));
+  // avoid including <algorithm> for max
+
   using ops_type = const target_ops<Result, Args...>*;
-  // storage_type is required to have an alignment of max_align_t, however if we
-  // add alignas() on storage_type, padding will be added inside this struct to
-  // reach a size multiple of max_align_t. Instead, whenever the type is used to
-  // declare a variable or data member you must add "alignas(max_align_t)" at
-  // that point.
-  struct storage_type {
-    uint8_t data[inline_target_size >= sizeof(void*) ? inline_target_size : sizeof(void*)];
-  };  // avoid including <algorithm> for max
+  struct alignas(max_align_t) storage_type {
+    union {
+      // Function context data, placed first in the struct since is has a more
+      // strict alignment requirement than ops.
+      mutable uint8_t bits[storage_size];
+
+      // Empty struct used when initializing the storage in the constrexpr
+      // constructor.
+      struct {
+      } null_bits;
+    };
+
+    // The target_ops pointer for this function. This field has lower alignment
+    // requirement than bits, so placing ops after bits allows for better
+    // packing reducing the padding needed in some cases.
+    ops_type ops;
+  };
+
+  // bits field should have a max_align_t alignment, but adding the alignas()
+  // at the field declaration increases the padding. Make sure the alignment is
+  // correct nevertheless.
+  static_assert(offsetof(storage_type, bits) % std::alignment_of<max_align_t>::value == 0);
+
+  // Check that there's no unexpected extra padding.
+  static_assert(sizeof(storage_type) ==
+                    (storage_size + sizeof(ops_type) + std::alignment_of<max_align_t>::value - 1u) /
+                        std::alignment_of<max_align_t>::value *
+                        std::alignment_of<max_align_t>::value,
+                "storage_type is not minimal in size");
+
   template <typename Callable>
-  using target_type = target<Callable, (sizeof(Callable) <= sizeof(storage_type)),
+  using target_type = target<Callable, (sizeof(Callable) <= storage_size),
                              /*is_shared=*/false, Result, Args...>;
   template <typename SharedFunction>
   using shared_target_type = target<SharedFunction,
@@ -216,7 +242,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
  protected:
   using result_type = Result;
 
-  constexpr function_base() : null_bits_(), ops_(&null_target_type::ops) {}
+  constexpr function_base() : storage_({.null_bits = {}, .ops = &null_target_type::ops}) {}
 
   constexpr function_base(decltype(nullptr)) : function_base() {}
 
@@ -234,7 +260,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   ~function_base() { destroy_target(); }
 
   // Returns true if the function has a non-empty target.
-  explicit operator bool() const { return ops_->get(&bits_) != nullptr; }
+  explicit operator bool() const { return storage_.ops->get(&storage_.bits) != nullptr; }
 
   // Returns a pointer to the function's target.
   // If |check| is true (the default), the function _may_ abort if the
@@ -246,7 +272,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   Callable* target(bool check = true) {
     if (check)
       check_target_type<Callable>();
-    return static_cast<Callable*>(ops_->get(&bits_));
+    return static_cast<Callable*>(storage_.ops->get(&storage_.bits));
   }
 
   // Returns a pointer to the function's target (const version).
@@ -259,7 +285,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   const Callable* target(bool check = true) const {
     if (check)
       check_target_type<Callable>();
-    return static_cast<Callable*>(ops_->get(&bits_));
+    return static_cast<Callable*>(storage_.ops->get(&storage_.bits));
   }
 
   // Used by the derived "impl" classes to implement share().
@@ -267,11 +293,11 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   // The caller creates a new object of the same type as itself, and passes in
   // the empty object. This function first checks if |this| is already shared,
   // and if not, creates a new version of itself containing a
-  // |std::shared_ptr| to its original self, and updates |ops_| to the vtable
-  // for the shared version.
+  // |std::shared_ptr| to its original self, and updates |storage_.ops| to the
+  // vtable for the shared version.
   //
-  // Then it copies its |shared_ptr| to the |bits_| of the given |copy|,
-  // and assigns the same shared pointer vtable to the copy's |ops_|.
+  // Then it copies its |shared_ptr| to the |storage_.bits| of the given |copy|,
+  // and assigns the same shared pointer vtable to the copy's |storage_.ops|.
   //
   // The target itself is not copied; it is moved to the heap and its
   // lifetime is extended until all references have been released.
@@ -282,8 +308,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   template <typename SharedFunction>
   void share_with(SharedFunction& copy) {
     static_assert(!require_inline, "Inline functions cannot be shared.");
-    if (ops_->get(&bits_) != nullptr) {
-      if (ops_ != &shared_target_type<SharedFunction>::ops) {
+    if (storage_.ops->get(&storage_.bits) != nullptr) {
+      if (storage_.ops != &shared_target_type<SharedFunction>::ops) {
         convert_to_shared_target<SharedFunction>();
       }
       copy_shared_target_to(copy);
@@ -297,7 +323,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   // Aborts if the function's target is empty.
   // TODO(b/241567321): Remove "no sanitize" after pw_protobuf is fixed.
   Result invoke(Args... args) const PW_NO_SANITIZE("function") {
-    return ops_->invoke(&bits_, std::forward<Args>(args)...);
+    return storage_.ops->invoke(&storage_.bits, std::forward<Args>(args)...);
   }
 
   // Used by derived "impl" classes to implement operator=().
@@ -329,29 +355,30 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   void swap(function_base& other) {
     if (&other == this)
       return;
-    ops_type temp_ops = ops_;
-    // Note: storage_type is not declared with alignas(max_align_t), alignment
-    // must be specified when using it.
-    alignas(max_align_t) storage_type temp_bits;
-    ops_->move(&bits_, &temp_bits);
-
-    ops_ = other.ops_;
-    other.ops_->move(&other.bits_, &bits_);
-
-    other.ops_ = temp_ops;
-    temp_ops->move(&temp_bits, &other.bits_);
+    storage_type temp_storage;
+    move_storage(storage_, temp_storage);
+    move_storage(other.storage_, storage_);
+    move_storage(temp_storage, other.storage_);
   }
 
   // returns an opaque ID unique to the |Callable| type of the target.
   // Used by check_target_type.
-  const void* target_type_id() const { return ops_->target_type_id(&bits_, ops_); }
+  const void* target_type_id() const {
+    return storage_.ops->target_type_id(&storage_.bits, storage_.ops);
+  }
 
  private:
+  // Moves the storage_type from one to another using the source's ops move()
+  // operation. The source storage is unnafected.
+  static void move_storage(const storage_type& from_storage, storage_type& to_storage) {
+    to_storage.ops = from_storage.ops;
+    from_storage.ops->move(&from_storage.bits, &to_storage.bits);
+  }
+
   // Implements the move operation, used by move construction and move
   // assignment. Leaves other target initialized to null.
   void move_target_from(function_base&& other) {
-    ops_ = other.ops_;
-    other.ops_->move(&other.bits_, &bits_);
+    move_storage(other.storage_, storage_);
     other.initialize_null_target();
   }
 
@@ -361,13 +388,13 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   template <typename SharedFunction>
   void copy_shared_target_to(SharedFunction& copy) {
     copy.destroy_target();
-    assert(ops_ == &shared_target_type<SharedFunction>::ops);
-    shared_target_type<SharedFunction>::copy_shared_ptr(&bits_, &copy.bits_);
-    copy.ops_ = ops_;
+    assert(storage_.ops == &shared_target_type<SharedFunction>::ops);
+    shared_target_type<SharedFunction>::copy_shared_ptr(&storage_.bits, &copy.storage_.bits);
+    copy.storage_.ops = storage_.ops;
   }
 
   // assumes target is uninitialized
-  void initialize_null_target() { ops_ = &null_target_type::ops; }
+  void initialize_null_target() { storage_.ops = &null_target_type::ops; }
 
   // target may or may not be initialized.
   template <typename Callable>
@@ -382,21 +409,21 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
     if (is_null(target)) {
       initialize_null_target();
     } else {
-      ops_ = &target_type<DecayedCallable>::ops;
-      target_type<DecayedCallable>::initialize(&bits_, std::forward<Callable>(target));
+      storage_.ops = &target_type<DecayedCallable>::ops;
+      target_type<DecayedCallable>::initialize(&storage_.bits, std::forward<Callable>(target));
     }
   }
 
   // assumes target is uninitialized
   template <typename SharedFunction>
   void convert_to_shared_target() {
-    shared_target_type<SharedFunction>::initialize(&bits_,
+    shared_target_type<SharedFunction>::initialize(&storage_.bits,
                                                    std::move(*static_cast<SharedFunction*>(this)));
-    ops_ = &shared_target_type<SharedFunction>::ops;
+    storage_.ops = &shared_target_type<SharedFunction>::ops;
   }
 
   // leaves target uninitialized
-  void destroy_target() { ops_->destroy(&bits_); }
+  void destroy_target() { storage_.ops->destroy(&storage_.bits); }
 
   // Called by target() if |check| is true.
   // Checks the template parameter, usually inferred from the context of
@@ -410,30 +437,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
     }
   }
 
-  // Union the real storage with the empty null_bits_ object. The default
-  // constructor initializes null_bits_ instead of bits_, which allows it to be
-  // constexpr without initializing the actual storage.
-  union {
-    // bits_ must have an alignment of max_align_t but the storage_type struct
-    // doesn't have this requirement specified. This allows the bits_ field to
-    // be aligned to max_align_t with an explicit alignas() here while leaving
-    // the padding in the function_base class avaiable for other fields. In
-    // particular, when inline_target_size is not a multiple of max_align_t the
-    // ops_ field (which only has a pointer size alignment) can be placed in
-    // the space that otherwise would be used for storage_type padding, reducing
-    // the overall size of the function_base class.
-    // Moving the alignas(max_align_t) requirement to the storage_type
-    // declaration would require the storage_type to have a size multiple of
-    // max_align_t wasting the padding inside the storage_type.
-    alignas(max_align_t) mutable storage_type bits_;
-    struct {
-    } null_bits_;
-  };
-
-  // The target_ops pointer for this function. This field has lower alignment
-  // requirement than bits_, so placing ops_ after bits_ allows for better
-  // packing reducing the padding needed in some cases.
-  ops_type ops_;
+  // The combined context data and target_ops storage.
+  storage_type storage_;
 };
 
 }  // namespace internal

@@ -11,6 +11,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "pw_assert/assert.h"
+
 namespace fit {
 
 // Determines whether a type can be compared with nullptr.
@@ -130,28 +132,28 @@ class nullable<T, true> final {
     if (has_value()) {
       return value_;
     } else {
-      __builtin_abort();
+      PW_ASSERT(false);
     }
   }
   constexpr const T& value() const& {
     if (has_value()) {
       return value_;
     } else {
-      __builtin_abort();
+      PW_ASSERT(false);
     }
   }
   constexpr T&& value() && {
     if (has_value()) {
       return std::move(value_);
     } else {
-      __builtin_abort();
+      PW_ASSERT(false);
     }
   }
   constexpr const T&& value() const&& {
     if (has_value()) {
       return std::move(value_);
     } else {
-      __builtin_abort();
+      PW_ASSERT(false);
     }
   }
 
