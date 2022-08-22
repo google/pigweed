@@ -142,6 +142,35 @@ def gn_full_qemu_check(ctx: PresubmitContext):
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
+def gn_combined_build_check(ctx: PresubmitContext) -> None:
+    build_targets = [
+        *_at_all_optimization_levels('stm32f429i'),
+        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+        'python.tests',
+        'python.lint',
+        'docs',
+        'fuzzers',
+        'pw_env_setup:pypi_pigweed_python_source_tree',
+    ]
+
+    # TODO(b/234645359): Re-enable on Windows when compatibility tests build.
+    if sys.platform != 'win32':
+        build_targets.append('cpp14_compatibility')
+        build_targets.append('cpp20_compatibility')
+
+    if sys.platform != 'win32':
+        build_targets.extend(_at_all_optimization_levels('qemu_gcc'))
+        build_targets.extend(_at_all_optimization_levels('qemu_clang'))
+
+    # TODO(b/240982565): SocketStream currently requires Linux.
+    if sys.platform.startswith('linux'):
+        build_targets.append('integration_tests')
+
+    build.gn_gen(ctx)
+    build.ninja(ctx, *build_targets)
+
+
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_arm_build(ctx: PresubmitContext):
     build.gn_gen(ctx)
     build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
@@ -739,6 +768,7 @@ OTHER_CHECKS = (
     gn_nanopb_build,
     gn_full_build_check,
     gn_full_qemu_check,
+    gn_combined_build_check,
     gn_clang_build,
     gn_gcc_build,
     gn_pw_system_demo_build,
