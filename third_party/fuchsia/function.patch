@@ -38,22 +38,65 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_inter
 
    static const target_ops<Result, Args...> ops;
  };
-@@ -288,7 +290,10 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
+@@ -319,7 +321,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
    // Note that fit::callback will release the target immediately after
    // invoke() (also affecting any share()d copies).
    // Aborts if the function's target is empty.
--  Result invoke(Args... args) const { return ops_->invoke(&bits_, std::forward<Args>(args)...); }
+-  Result invoke(Args... args) const {
 +  // TODO(b/241567321): Remove "no sanitize" after pw_protobuf is fixed.
 +  Result invoke(Args... args) const PW_NO_SANITIZE("function") {
-+    return ops_->invoke(&bits_, std::forward<Args>(args)...);
-+  }
+     return storage_.ops->invoke(&storage_.bits, std::forward<Args>(args)...);
+   }
 
-   // Used by derived "impl" classes to implement operator=().
-   // Assigns an empty target.
-@@ -394,7 +399,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
+@@ -430,7 +433,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
    void check_target_type() const {
      if (target_type<Callable>::ops.target_type_id(nullptr, &target_type<Callable>::ops) !=
          target_type_id()) {
+-      __builtin_abort();
++      PW_ASSERT(false);
+     }
+   }
+
+diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h
+--- a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h
++++ b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h
+@@ -11,6 +11,8 @@
+ #include <type_traits>
+ #include <utility>
+
++#include "pw_assert/assert.h"
++
+ namespace fit {
+
+ // Determines whether a type can be compared with nullptr.
+@@ -130,28 +132,28 @@ class nullable<T, true> final {
+     if (has_value()) {
+       return value_;
+     } else {
+-      __builtin_abort();
++      PW_ASSERT(false);
+     }
+   }
+   constexpr const T& value() const& {
+     if (has_value()) {
+       return value_;
+     } else {
+-      __builtin_abort();
++      PW_ASSERT(false);
+     }
+   }
+   constexpr T&& value() && {
+     if (has_value()) {
+       return std::move(value_);
+     } else {
+-      __builtin_abort();
++      PW_ASSERT(false);
+     }
+   }
+   constexpr const T&& value() const&& {
+     if (has_value()) {
+       return std::move(value_);
+     } else {
 -      __builtin_abort();
 +      PW_ASSERT(false);
      }
