@@ -737,7 +737,6 @@ OTHER_CHECKS = (
     gn_boringssl_build,
     build.gn_gen_check,
     gn_nanopb_build,
-    gn_software_update_build,
     gn_full_build_check,
     gn_full_qemu_check,
     gn_clang_build,
@@ -751,10 +750,16 @@ OTHER_CHECKS = (
     todo_check.create(todo_check.BUGS_OR_USERNAMES),
 )
 
+# TODO(b/243380637) Merge into SECURITY.
 CRYPTO = (
     gn_crypto_mbedtls_build,
     gn_crypto_boringssl_build,
     gn_crypto_micro_ecc_build,
+)
+
+SECURITY = (
+    CRYPTO,
+    gn_software_update_build,
 )
 
 # Avoid running all checks on specific paths.
@@ -819,6 +824,7 @@ PROGRAMS = Programs(
     other_checks=OTHER_CHECKS,
     quick=QUICK,
     crypto=CRYPTO,
+    security=SECURITY,
 )
 
 
