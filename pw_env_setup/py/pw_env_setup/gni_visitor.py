@@ -30,13 +30,13 @@ class GNIVisitor(object):  # pylint: disable=useless-object-inheritance
     Example gni file:
 
     declare_args() {
-      dir_cipd_default = "//<ENVIRONMENT_DIR>/cipd/packages/default"
-      dir_cipd_pigweed = "//<ENVIRONMENT_DIR>/cipd/packages/pigweed"
-      dir_cipd_arm = "//<ENVIRONMENT_DIR>/cipd/packages/arm"
-      dir_cipd_python = "//<ENVIRONMENT_DIR>/cipd/packages/python"
-      dir_cipd_bazel = "//<ENVIRONMENT_DIR>/cipd/packages/bazel"
-      dir_cipd_luci = "//<ENVIRONMENT_DIR>/cipd/packages/luci"
-      dir_virtual_env = "//<ENVIRONMENT_DIR>/pigweed-venv"
+      pw_env_setup_CIPD_DEFAULT = "//<ENVIRONMENT_DIR>/cipd/packages/default"
+      pw_env_setup_CIPD_PIGWEED = "//<ENVIRONMENT_DIR>/cipd/packages/pigweed"
+      pw_env_setup_CIPD_ARM = "//<ENVIRONMENT_DIR>/cipd/packages/arm"
+      pw_env_setup_CIPD_PYTHON = "//<ENVIRONMENT_DIR>/cipd/packages/python"
+      pw_env_setup_CIPD_BAZEL = "//<ENVIRONMENT_DIR>/cipd/packages/bazel"
+      pw_env_setup_CIPD_LUCI = "//<ENVIRONMENT_DIR>/cipd/packages/luci"
+      pw_env_setup_VIRTUAL_ENV = "//<ENVIRONMENT_DIR>/pigweed-venv"
     }
     """
     def __init__(self, project_root, *args, **kwargs):
