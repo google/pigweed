@@ -171,9 +171,7 @@ From Python, ``baz.proto`` is imported as follows:
 Proto file structure
 --------------------
 Protobuf source files must be nested under another directory when they are
-compiled. This ensures that they can be packaged properly in Python. The first
-directory is used as the Python package name, so must be unique across the
-build. The ``prefix`` option may be used to set this directory.
+compiled. This ensures that they can be packaged properly in Python.
 
 Using ``prefix`` and ``strip_prefix`` together allows remapping proto files to
 a completely different path. This can be useful when working with protos defined

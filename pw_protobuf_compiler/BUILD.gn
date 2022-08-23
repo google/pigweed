@@ -28,6 +28,7 @@ pw_test_group("tests") {
   tests = [
     ":nanopb_test",
     ":pwpb_test",
+    ":nested_packages_test",
   ]
 }
 
@@ -60,6 +61,11 @@ pw_proto_library("test_protos") {
     "pw_protobuf_compiler_protos/nested/more_nesting/test.proto",
     "pw_protobuf_compiler_protos/test.proto",
   ]
+}
+
+pw_test("nested_packages_test") {
+  deps = [ "pw_nested_packages:aggregate_wrapper.pwpb" ]
+  sources = [ "nested_packages_test.cc" ]
 }
 
 # TODO(b/232800695): Remove when all projects are on the new Python build.

@@ -391,7 +391,7 @@ template("_pw_python_proto_library") {
       forward_variables_from(invoker, _forwarded_vars)
       generate_setup = {
         metadata = {
-          name = invoker._package_dir
+          name = invoker.base_target
 
           # The package name should match where the __init__.py lives. If
           # module_as_package is specified use that for the Python package name.
@@ -475,7 +475,7 @@ template("pw_proto_library") {
     _prefix = ""
   }
 
-  _package_dir = ""
+  _root_dir_name = ""
   _source_names = []
 
   # Determine the Python package name to use for these protos. If there is no
@@ -484,10 +484,10 @@ template("pw_proto_library") {
     _path_components = []
     _path_components = string_split(source, "/")
 
-    if (_package_dir == "") {
-      _package_dir = _path_components[0]
+    if (_root_dir_name == "") {
+      _root_dir_name = _path_components[0]
     } else {
-      assert(_prefix != "" || _path_components[0] == _package_dir,
+      assert(_prefix != "" || _path_components[0] == _root_dir_name,
              "Unless 'prefix' is supplied, all .proto sources in a " +
                  "pw_proto_library must be in the same directory tree")
     }
@@ -499,30 +499,13 @@ template("pw_proto_library") {
   # If the 'prefix' was supplied, use that for the package directory.
   if (_prefix != "") {
     _prefix_path_components = string_split(_prefix, "/")
-    _package_dir = _prefix_path_components[0]
+    _root_dir_name = _prefix_path_components[0]
   }
 
-  assert(_package_dir != "" && _package_dir != "." && _package_dir != "..",
-         "Either a 'prefix' must be specified or all sources must be nested " +
-             "under a common directory")
-
-  # Define an action that is never executed to prevent duplicate proto packages
-  # from being declared. The target name and the output file include only the
-  # package directory, so different targets that use the same proto package name
-  # will conflict.
-  action("pw_proto_library.$_package_dir") {
-    script = "$dir_pw_build/py/pw_build/nop.py"
-    visibility = []
-
-    # Place an error message in the output path (which is never created). If the
-    # package name conflicts occur in different BUILD.gn files, this results in
-    # an otherwise cryptic Ninja error, rather than a GN error.
-    outputs = [ "$root_out_dir/ " +
-                "ERROR - Multiple pw_proto_library targets create the " +
-                "'$_package_dir' package. Change the package name by setting " +
-                "the \"prefix\" arg or move the protos to a different " +
-                "directory, then re-run gn gen." ]
-  }
+  assert(
+      _root_dir_name != "" && _root_dir_name != "." && _root_dir_name != "..",
+      "Either a 'prefix' must be specified or all sources must be nested " +
+          "under a common directory")
 
   if (defined(invoker.deps)) {
     _deps = invoker.deps
@@ -548,7 +531,7 @@ template("pw_proto_library") {
       sources += [ "$compile_dir/$_prefix/$file" ]
     }
 
-    package = _package_dir
+    package = _root_dir_name
   }
 
   # For each proto target, create a file which collects the base directories of
