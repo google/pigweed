@@ -67,8 +67,6 @@ using stream::MemoryWriter;
 // smaller receive buffer size.
 constexpr int kMaxSocketSendBufferSize = 1;
 
-// TODO(tpudlik): This is copy-pasted from test_rpc_server.cc, break it out into
-// a shared library.
 class FileTransferHandler final : public ReadWriteHandler {
  public:
   FileTransferHandler(uint32_t resource_id,

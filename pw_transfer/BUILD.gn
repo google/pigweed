@@ -122,6 +122,26 @@ pw_source_set("core") {
   visibility = [ ":*" ]
 }
 
+pw_source_set("atomic_file_transfer_handler") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_transfer/atomic_file_transfer_handler.h" ]
+  sources = [ "atomic_file_transfer_handler.cc" ]
+  public_deps = [
+    ":core",
+    "$dir_pw_stream:std_file_stream",
+  ]
+  deps = [
+    ":atomic_file_transfer_handler_internal",
+    dir_pw_log,
+  ]
+}
+
+pw_source_set("atomic_file_transfer_handler_internal") {
+  sources = [ "pw_transfer_private/filename_generator.h" ]
+  friend = [ ":*" ]
+  visibility = [ ":*" ]
+}
+
 pw_source_set("test_helpers") {
   public_deps = [
     ":core",
@@ -153,6 +173,7 @@ pw_test_group("tests") {
         pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
       tests += [
         ":handler_test",
+        ":atomic_file_transfer_handler_test",
         ":transfer_test",
       ]
     }
@@ -162,6 +183,17 @@ pw_test_group("tests") {
 pw_test("handler_test") {
   sources = [ "handler_test.cc" ]
   deps = [ ":pw_transfer" ]
+}
+
+pw_test("atomic_file_transfer_handler_test") {
+  sources = [ "atomic_file_transfer_handler_test.cc" ]
+  deps = [
+    ":atomic_file_transfer_handler",
+    ":atomic_file_transfer_handler_internal",
+    ":pw_transfer",
+    "$dir_pw_random",
+    "$dir_pw_string",
+  ]
 }
 
 pw_test("transfer_test") {
@@ -222,6 +254,7 @@ pw_proto_library("test_server_proto") {
 pw_executable("test_rpc_server") {
   sources = [ "test_rpc_server.cc" ]
   deps = [
+    ":atomic_file_transfer_handler",
     ":pw_transfer",
     ":test_server_proto.raw_rpc",
     "$dir_pw_rpc/system_server",

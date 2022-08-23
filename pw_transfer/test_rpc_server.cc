@@ -30,56 +30,25 @@
 #include "pw_stream/std_file_stream.h"
 #include "pw_thread/detached_thread.h"
 #include "pw_thread_stl/options.h"
+#include "pw_transfer/atomic_file_transfer_handler.h"
 #include "pw_transfer/transfer.h"
 #include "pw_transfer_test/test_server.raw_rpc.pb.h"
 
 namespace pw::transfer {
 namespace {
-
-class FileTransferHandler final : public ReadWriteHandler {
- public:
-  FileTransferHandler(TransferService& service,
-                      uint32_t resource_id,
-                      const char* path)
-      : ReadWriteHandler(resource_id), service_(service), path_(path) {
-    service_.RegisterHandler(*this);
-  }
-
-  ~FileTransferHandler() { service_.UnregisterHandler(*this); }
-
-  Status PrepareRead() final {
-    PW_LOG_DEBUG("Preparing read for file %s", path_.c_str());
-    set_reader(stream_.emplace<stream::StdFileReader>(path_.c_str()));
-    return OkStatus();
-  }
-
-  void FinalizeRead(Status) final {
-    std::get<stream::StdFileReader>(stream_).Close();
-  }
-
-  Status PrepareWrite() final {
-    PW_LOG_DEBUG("Preparing write for file %s", path_.c_str());
-    set_writer(stream_.emplace<stream::StdFileWriter>(path_.c_str()));
-    return OkStatus();
-  }
-
-  Status FinalizeWrite(Status) final {
-    std::get<stream::StdFileWriter>(stream_).Close();
-    return OkStatus();
-  }
-
- private:
-  TransferService& service_;
-  std::string path_;
-  std::variant<std::monostate, stream::StdFileReader, stream::StdFileWriter>
-      stream_;
-};
-
 class TestServerService
     : public pw_rpc::raw::TestServer::Service<TestServerService> {
  public:
   TestServerService(TransferService& transfer_service)
       : transfer_service_(transfer_service) {}
+
+  ~TestServerService() { UnregisterHandlers(); }
+
+  void UnregisterHandlers() {
+    for (auto handler : file_transfer_handlers_) {
+      transfer_service_.UnregisterHandler(*handler);
+    }
+  }
 
   void set_directory(const char* directory) { directory_ = directory; }
 
@@ -89,6 +58,7 @@ class TestServerService
 
   void LoadFileHandlers() {
     PW_LOG_INFO("Reloading file handlers from %s", directory_.c_str());
+    UnregisterHandlers();
     file_transfer_handlers_.clear();
 
     for (const auto& entry : std::filesystem::directory_iterator(directory_)) {
@@ -99,9 +69,10 @@ class TestServerService
       int resource_id = std::atoi(entry.path().filename().c_str());
       if (resource_id > 0) {
         PW_LOG_DEBUG("Found transfer file %d", resource_id);
-        file_transfer_handlers_.emplace_back(
-            std::make_shared<FileTransferHandler>(
-                transfer_service_, resource_id, entry.path().c_str()));
+        auto handler = std::make_shared<AtomicFileTransferHandler>(
+            resource_id, entry.path().c_str());
+        transfer_service_.RegisterHandler(*handler);
+        file_transfer_handlers_.emplace_back(handler);
       }
     }
   }
@@ -109,7 +80,8 @@ class TestServerService
  private:
   TransferService& transfer_service_;
   std::string directory_;
-  std::vector<std::shared_ptr<FileTransferHandler>> file_transfer_handlers_;
+  std::vector<std::shared_ptr<AtomicFileTransferHandler>>
+      file_transfer_handlers_;
 };
 
 constexpr size_t kChunkSizeBytes = 256;

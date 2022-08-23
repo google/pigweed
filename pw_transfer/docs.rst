@@ -233,6 +233,15 @@ The transfer client provides the following two APIs for starting data transfers:
      return transfer_state.status;
    }
 
+Atomic File Transfer Handler
+----------------------------
+Transfers are handled using the generic `Handler` interface. A specialized
+`Handler`, `AtomicFileTransferHandler` is available to handle file transfers
+with atomic semantics. It guarantees that the target file of the transfer is
+always in a correct state. A temporary file is written to prior to updating the
+target file. If any transfer failure occurs, the transfer is aborted and the
+target file is either not created or not updated.
+
 Module Configuration Options
 ----------------------------
 The following configurations can be adjusted via compile-time configuration of
