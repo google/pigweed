@@ -99,7 +99,7 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // bytes added to the encoded LogEntry. This constant and kMinEntryBufferSize
   // can be used to calculate the minimum RPC ChannelOutput buffer size.
   static constexpr size_t kLogEntriesEncodeFrameSize =
-      protobuf::FieldNumberSizeBytes(log::LogEntries::Fields::ENTRIES) +
+      protobuf::TagSizeBytes(log::LogEntries::Fields::ENTRIES) +
       protobuf::kMaxSizeOfLength +
       protobuf::SizeOfFieldUint32(
           log::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID);

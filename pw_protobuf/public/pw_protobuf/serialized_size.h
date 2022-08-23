@@ -46,19 +46,17 @@ inline constexpr size_t kMaxSizeOfFieldNumber = varint::kMaxVarint32SizeBytes;
 
 inline constexpr size_t kMaxSizeOfLength = varint::kMaxVarint32SizeBytes;
 
-// Calculate the size of a proto field key in wire format, including the key
-// field number + wire type.
-// type).
+// Calculate the serialized size of a proto tag (field number + wire type).
 //
 // Args:
 //   field_number: The field number for the field.
 //
 // Returns:
-//   The size of the field key.
+//   The size of the field's encoded tag.
 //
 // Precondition: The field_number must be a ValidFieldNumber.
 template <typename T>
-constexpr size_t FieldNumberSizeBytes(T field_number) {
+constexpr size_t TagSizeBytes(T field_number) {
   static_assert((std::is_enum<T>() || std::is_integral<T>()) &&
                     sizeof(T) <= sizeof(uint32_t),
                 "Field numbers must be 32-bit enums or integers");
@@ -71,7 +69,7 @@ constexpr size_t FieldNumberSizeBytes(T field_number) {
 // Calculates the size of a varint field (uint32/64, int32/64, sint32/64, enum).
 template <typename T, typename U>
 constexpr size_t SizeOfVarintField(T field_number, U value) {
-  return FieldNumberSizeBytes(field_number) + varint::EncodedSize(value);
+  return TagSizeBytes(field_number) + varint::EncodedSize(value);
 }
 
 // Calculates the size of a delimited field (string, bytes, nested message,
@@ -82,7 +80,7 @@ template <typename T>
 constexpr size_t SizeOfDelimitedFieldWithoutValue(
     T field_number,
     uint32_t length_bytes = std::numeric_limits<uint32_t>::max()) {
-  return FieldNumberSizeBytes(field_number) + varint::EncodedSize(length_bytes);
+  return TagSizeBytes(field_number) + varint::EncodedSize(length_bytes);
 }
 
 // Calculates the total size of a delimited field (string, bytes, nested
@@ -115,7 +113,7 @@ constexpr size_t SizeOfField(T field_number,
   if (type == WireType::kDelimited) {
     return SizeOfDelimitedField(field_number, data_size_bytes);
   }
-  return FieldNumberSizeBytes(field_number) + data_size_bytes;
+  return TagSizeBytes(field_number) + data_size_bytes;
 }
 
 // Functions for calculating the size of each type of protobuf field. Varint
@@ -123,11 +121,11 @@ constexpr size_t SizeOfField(T field_number,
 // largest-to-encode value for the type.
 template <typename T>
 constexpr size_t SizeOfFieldFloat(T field_number) {
-  return FieldNumberSizeBytes(field_number) + sizeof(float);
+  return TagSizeBytes(field_number) + sizeof(float);
 }
 template <typename T>
 constexpr size_t SizeOfFieldDouble(T field_number) {
-  return FieldNumberSizeBytes(field_number) + sizeof(double);
+  return TagSizeBytes(field_number) + sizeof(double);
 }
 template <typename T>
 constexpr size_t SizeOfFieldInt32(T field_number, int32_t value = -1) {
@@ -159,23 +157,23 @@ constexpr size_t SizeOfFieldUint64(
 }
 template <typename T>
 constexpr size_t SizeOfFieldFixed32(T field_number) {
-  return FieldNumberSizeBytes(field_number) + sizeof(uint32_t);
+  return TagSizeBytes(field_number) + sizeof(uint32_t);
 }
 template <typename T>
 constexpr size_t SizeOfFieldFixed64(T field_number) {
-  return FieldNumberSizeBytes(field_number) + sizeof(uint64_t);
+  return TagSizeBytes(field_number) + sizeof(uint64_t);
 }
 template <typename T>
 constexpr size_t SizeOfFieldSfixed32(T field_number) {
-  return FieldNumberSizeBytes(field_number) + sizeof(uint32_t);
+  return TagSizeBytes(field_number) + sizeof(uint32_t);
 }
 template <typename T>
 constexpr size_t SizeOfFieldSfixed64(T field_number) {
-  return FieldNumberSizeBytes(field_number) + sizeof(uint64_t);
+  return TagSizeBytes(field_number) + sizeof(uint64_t);
 }
 template <typename T>
 constexpr size_t SizeOfFieldBool(T field_number) {
-  return FieldNumberSizeBytes(field_number) + 1;
+  return TagSizeBytes(field_number) + 1;
 }
 template <typename T>
 constexpr size_t SizeOfFieldString(T field_number, uint32_t length_bytes) {

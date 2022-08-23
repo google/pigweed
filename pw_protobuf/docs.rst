@@ -2039,6 +2039,10 @@ the specified type, given a particular key and, for variable length fields
 (varint or delimited), a value. The ``SizeOf*Field`` functions calculate the
 encoded size of fields with a particular wire format (delimited, varint).
 
+In the rare event that you need to know the serialized size of a field's tag
+(field number and wire type), you can use ``TagSizeBytes()`` to calculate the
+tag size for a given field number.
+
 --------------------------
 Available protobuf modules
 --------------------------

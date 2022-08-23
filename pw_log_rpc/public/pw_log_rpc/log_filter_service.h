@@ -52,7 +52,7 @@ class FilterService final
   static constexpr size_t kMinSupportedFilters = 4;
 
   static constexpr size_t kFilterResponseBufferSize =
-      protobuf::FieldNumberSizeBytes(log::Filter::Fields::RULE) +
+      protobuf::TagSizeBytes(log::Filter::Fields::RULE) +
       protobuf::kMaxSizeOfLength +
       kMinSupportedFilters *
           (protobuf::SizeOfFieldEnum(
