@@ -118,8 +118,8 @@ if (dir_pw_third_party_mbedtls != "") {
       "-Wno-error=redundant-decls",
       "-w",
     ]
-
-    config_header_file = rebase_path(pw_third_party_mbedtls_CONFIG_HEADER)
+    config_header_file = rebase_path(pw_third_party_mbedtls_CONFIG_HEADER,
+                                     get_label_info(":mbedtls", "dir"))
     defines = [ "MBEDTLS_CONFIG_FILE=\"$config_header_file\"" ]
   }
 
