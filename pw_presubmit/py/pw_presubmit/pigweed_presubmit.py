@@ -755,7 +755,6 @@ def renode_check(ctx: PresubmitContext):
 #
 
 OTHER_CHECKS = (
-    cpp_checks.all_sanitizers(),
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
     # failing.
     oss_fuzz_build,
@@ -779,6 +778,8 @@ OTHER_CHECKS = (
     npm_presubmit.npm_test,
     todo_check.create(todo_check.BUGS_OR_USERNAMES),
 )
+
+SANITIZERS = (cpp_checks.all_sanitizers(), )
 
 # TODO(b/243380637) Merge into SECURITY.
 CRYPTO = (
@@ -854,6 +855,7 @@ PROGRAMS = Programs(
     other_checks=OTHER_CHECKS,
     quick=QUICK,
     crypto=CRYPTO,
+    sanitizers=SANITIZERS,
     security=SECURITY,
 )
 
