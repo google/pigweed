@@ -508,11 +508,11 @@ class DetokenizeBase64(unittest.TestCase):
 
     RECURSION_STRING = f'The secret message is "{JELLO.decode()}"'
     RECURSION = b'$' + base64.b64encode(
-        struct.pack('I', tokens.default_hash(RECURSION_STRING)))
+        struct.pack('I', tokens.c_hash(RECURSION_STRING)))
 
     RECURSION_STRING_2 = f"'{RECURSION.decode()}', said the spy."
     RECURSION_2 = b'$' + base64.b64encode(
-        struct.pack('I', tokens.default_hash(RECURSION_STRING_2)))
+        struct.pack('I', tokens.c_hash(RECURSION_STRING_2)))
 
     TEST_CASES = (
         (b'', b''),
@@ -539,7 +539,7 @@ class DetokenizeBase64(unittest.TestCase):
         db = database.load_token_database(
             io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
         db.add(
-            tokens.TokenizedStringEntry(tokens.default_hash(s), s)
+            tokens.TokenizedStringEntry(tokens.c_hash(s), s)
             for s in [self.RECURSION_STRING, self.RECURSION_STRING_2])
         self.detok = detokenize.Detokenizer(db)
 

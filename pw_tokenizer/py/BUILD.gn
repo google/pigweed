@@ -60,7 +60,6 @@ pw_python_package("py") {
   inputs = [
     "elf_reader_test_binary.elf",
     "example_binary_with_tokenized_strings.elf",
-    "example_legacy_binary_with_tokenized_strings.elf",
   ]
   proto_library = "..:proto"
   pylintrc = "$dir_pigweed/.pylintrc"

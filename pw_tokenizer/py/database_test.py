@@ -36,8 +36,6 @@ from pw_tokenizer import database
 #
 TOKENIZED_ENTRIES_ELF = Path(
     __file__).parent / 'example_binary_with_tokenized_strings.elf'
-LEGACY_PLAIN_STRING_ELF = Path(
-    __file__).parent / 'example_legacy_binary_with_tokenized_strings.elf'
 
 CSV_DEFAULT_DOMAIN = '''\
 00000000,          ,""
@@ -288,36 +286,6 @@ class DatabaseCommandLineTest(unittest.TestCase):
         run_cli('create', '--force', '--database', self._csv, strings_file)
         self.assertEqual(CSV_STRINGS.splitlines(),
                          self._csv.read_text().splitlines())
-
-
-class LegacyDatabaseCommandLineTest(DatabaseCommandLineTest):
-    """Test an ELF with the legacy plain string storage format."""
-    def setUp(self) -> None:
-        super().setUp()
-        self._elf = LEGACY_PLAIN_STRING_ELF
-
-        # The legacy approach for storing tokenized strings in an ELF always
-        # adds an entry for "", even if the empty string was never tokenized.
-        self._csv_test_domain = '00000000,          ,""\n' + CSV_TEST_DOMAIN
-
-    @mock.patch('sys.stdout', new_callable=_mock_output)
-    def test_report(self, mock_stdout):
-        run_cli('report', self._elf)
-
-        report = EXPECTED_REPORT[str(TOKENIZED_ENTRIES_ELF)].copy()
-
-        # Count the implicitly added "" entry in TEST_DOMAIN.
-        report['TEST_DOMAIN']['present_entries'] += 1
-        report['TEST_DOMAIN']['present_size_bytes'] += 1
-        report['TEST_DOMAIN']['total_entries'] += 1
-        report['TEST_DOMAIN']['total_size_bytes'] += 1
-
-        # Rename "" to the legacy name "default"
-        report['default'] = report['']
-        del report['']
-
-        self.assertEqual({str(LEGACY_PLAIN_STRING_ELF): report},
-                         json.loads(mock_stdout.buffer.getvalue()))
 
 
 class TestDirectoryDatabaseCommandLine(unittest.TestCase):

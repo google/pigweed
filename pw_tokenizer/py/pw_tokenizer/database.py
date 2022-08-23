@@ -56,9 +56,6 @@ _ENTRY = struct.Struct('<4I')
 _TOKENIZED_ENTRY_SECTIONS = re.compile(
     r'^\.pw_tokenizer.entries(?:\.[_\d]+)?$')
 
-_LEGACY_STRING_SECTIONS = re.compile(
-    r'^\.pw_tokenized\.(?P<domain>[^.]+)(?:\.\d+)?$')
-
 _ERROR_HANDLER = 'surrogateescape'  # How to deal with UTF-8 decoding errors
 
 
@@ -101,21 +98,6 @@ def _read_tokenized_entries(
             yield entry
 
 
-def _read_tokenized_strings(sections: Dict[str, bytes],
-                            domain: Pattern[str]) -> Iterator[tokens.Database]:
-    # Legacy ELF files used "default" as the default domain instead of "". Remap
-    # the default if necessary.
-    if domain.pattern == tokens.DEFAULT_DOMAIN:
-        domain = re.compile('default')
-
-    for section, data in sections.items():
-        match = _LEGACY_STRING_SECTIONS.match(section)
-        if match and domain.match(match.group('domain')):
-            yield tokens.Database.from_strings(
-                (s.decode(errors=_ERROR_HANDLER) for s in data.split(b'\0')),
-                match.group('domain'))
-
-
 def _database_from_elf(elf, domain: Pattern[str]) -> tokens.Database:
     """Reads the tokenized strings from an elf_reader.Elf or ELF file object."""
     _LOG.debug('Reading tokenized strings in domain "%s" from %s', domain, elf)
@@ -126,12 +108,6 @@ def _database_from_elf(elf, domain: Pattern[str]) -> tokens.Database:
     section_data = reader.dump_section_contents(_TOKENIZED_ENTRY_SECTIONS)
     if section_data is not None:
         return tokens.Database(_read_tokenized_entries(section_data, domain))
-
-    # Read legacy null-terminated string entries.
-    sections = reader.dump_sections(_LEGACY_STRING_SECTIONS)
-    if sections:
-        return tokens.Database.merged(
-            *_read_tokenized_strings(sections, domain))
 
     return tokens.Database([])
 
@@ -144,11 +120,6 @@ def tokenization_domains(elf) -> Iterator[str]:
         yield from frozenset(
             e.domain
             for e in _read_tokenized_entries(section_data, re.compile('.*')))
-    else:  # Check for the legacy domain sections
-        for section in reader.sections:
-            match = _LEGACY_STRING_SECTIONS.match(section.name)
-            if match:
-                yield match.group('domain')
 
 
 def read_tokenizer_metadata(elf) -> Dict[str, int]:
@@ -169,11 +140,8 @@ def read_tokenizer_metadata(elf) -> Dict[str, int]:
 
 def _database_from_strings(strings: List[str]) -> tokens.Database:
     """Generates a C and C++ compatible database from untokenized strings."""
-    # Generate a C compatible database from the fixed length hash.
-    c_db = tokens.Database.from_strings(
-        strings,
-        tokenize=lambda string: tokens.pw_tokenizer_65599_hash(
-            string, tokens.DEFAULT_C_HASH_LENGTH))
+    # Generate a C-compatible database from the fixed length hash.
+    c_db = tokens.Database.from_strings(strings, tokenize=tokens.c_hash)
 
     # Generate a C++ compatible database by allowing the hash to follow the
     # string length.

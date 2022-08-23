@@ -32,9 +32,9 @@ from uuid import uuid4
 DATE_FORMAT = '%Y-%m-%d'
 DEFAULT_DOMAIN = ''
 
-# The default hash length to use. This value only applies when hashing strings
-# from a legacy-style ELF with plain strings. New tokenized string entries
-# include the token alongside the string.
+# The default hash length to use for C-style hashes. This value only applies
+# when manually hashing strings to recreate token calculations in C. The C++
+# hash function does not have a maximum length.
 #
 # This MUST match the default value of PW_TOKENIZER_CFG_C_HASH_LENGTH in
 # pw_tokenizer/public/pw_tokenizer/config.h.
@@ -50,11 +50,13 @@ def _value(char: Union[int, str]) -> int:
 
 
 def pw_tokenizer_65599_hash(string: Union[str, bytes],
+                            *,
                             hash_length: int = None) -> int:
-    """Hashes the provided string.
+    """Hashes the string with the hash function used to generate tokens in C++.
 
-    This hash function is only used when adding tokens from legacy-style
-    tokenized strings in an ELF, which do not include the token.
+    This hash function is used calculate tokens from strings in Python. It is
+    not used when extracting tokens from an ELF, since the token is stored in
+    the ELF as part of tokenization.
     """
     hash_value = len(string)
     coefficient = TOKENIZER_HASH_CONSTANT
@@ -66,8 +68,10 @@ def pw_tokenizer_65599_hash(string: Union[str, bytes],
     return hash_value
 
 
-def default_hash(string: Union[str, bytes]) -> int:
-    return pw_tokenizer_65599_hash(string, DEFAULT_C_HASH_LENGTH)
+def c_hash(string: Union[str, bytes],
+           hash_length: int = DEFAULT_C_HASH_LENGTH) -> int:
+    """Hashes the string with the hash function used in C."""
+    return pw_tokenizer_65599_hash(string, hash_length=hash_length)
 
 
 class _EntryKey(NamedTuple):
@@ -129,10 +133,11 @@ class Database:
 
     @classmethod
     def from_strings(
-            cls,
-            strings: Iterable[str],
-            domain: str = DEFAULT_DOMAIN,
-            tokenize: Callable[[str], int] = default_hash) -> 'Database':
+        cls,
+        strings: Iterable[str],
+        domain: str = DEFAULT_DOMAIN,
+        tokenize: Callable[[str],
+                           int] = pw_tokenizer_65599_hash) -> 'Database':
         """Creates a Database from an iterable of strings."""
         return cls((TokenizedStringEntry(tokenize(string), string, domain)
                     for string in strings))

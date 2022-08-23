@@ -23,9 +23,8 @@ import tempfile
 from typing import Iterator
 import unittest
 
-from pw_tokenizer import tokens
-from pw_tokenizer import database
-from pw_tokenizer.tokens import default_hash, _LOG
+from pw_tokenizer import database, tokens
+from pw_tokenizer.tokens import c_hash, _LOG
 
 CSV_DATABASE = '''\
 00000000,2019-06-10,""
@@ -161,7 +160,7 @@ def read_db_from_csv(csv_str: str) -> tokens.Database:
 
 def _entries(*strings: str) -> Iterator[tokens.TokenizedStringEntry]:
     for string in strings:
-        yield tokens.TokenizedStringEntry(default_hash(string), string)
+        yield tokens.TokenizedStringEntry(c_hash(string), string)
 
 
 class TokenDatabaseTest(unittest.TestCase):
@@ -222,8 +221,8 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(answer.string, 'The answer: "%s"')
 
     def test_collisions(self) -> None:
-        hash_1 = tokens.pw_tokenizer_65599_hash('o000', 96)
-        hash_2 = tokens.pw_tokenizer_65599_hash('0Q1Q', 96)
+        hash_1 = tokens.c_hash('o000', 96)
+        hash_2 = tokens.c_hash('0Q1Q', 96)
         self.assertEqual(hash_1, hash_2)
 
         db = tokens.Database.from_strings(['o000', '0Q1Q'])
@@ -399,29 +398,26 @@ class TokenDatabaseTest(unittest.TestCase):
 
         db.mark_removed(_entries('apples', 'oranges', 'pears'), date_1)
 
-        self.assertEqual(
-            db.token_to_entries[default_hash('MILK')][0].date_removed, date_1)
-        self.assertEqual(
-            db.token_to_entries[default_hash('CHEESE')][0].date_removed,
-            date_1)
+        self.assertEqual(db.token_to_entries[c_hash('MILK')][0].date_removed,
+                         date_1)
+        self.assertEqual(db.token_to_entries[c_hash('CHEESE')][0].date_removed,
+                         date_1)
 
         now = datetime.now()
         db.mark_removed(_entries('MILK', 'CHEESE', 'pears'))
 
         # New strings are not added or re-added in mark_removed().
         self.assertGreaterEqual(
-            db.token_to_entries[default_hash('MILK')][0].date_removed, date_1)
+            db.token_to_entries[c_hash('MILK')][0].date_removed, date_1)
         self.assertGreaterEqual(
-            db.token_to_entries[default_hash('CHEESE')][0].date_removed,
-            date_1)
+            db.token_to_entries[c_hash('CHEESE')][0].date_removed, date_1)
 
         # These strings were removed.
         self.assertGreaterEqual(
-            db.token_to_entries[default_hash('apples')][0].date_removed, now)
+            db.token_to_entries[c_hash('apples')][0].date_removed, now)
         self.assertGreaterEqual(
-            db.token_to_entries[default_hash('oranges')][0].date_removed, now)
-        self.assertIsNone(
-            db.token_to_entries[default_hash('pears')][0].date_removed)
+            db.token_to_entries[c_hash('oranges')][0].date_removed, now)
+        self.assertIsNone(db.token_to_entries[c_hash('pears')][0].date_removed)
 
     def test_add(self) -> None:
         db = tokens.Database()

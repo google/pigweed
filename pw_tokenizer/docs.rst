@@ -1338,29 +1338,6 @@ Another possibility: encode strings with arguments to a ``uint64_t`` and send
 them as an integer. This would be efficient and simple, but only support a small
 number of arguments.
 
-Legacy tokenized string ELF format
-==================================
-The original version of ``pw_tokenizer`` stored tokenized stored as plain C
-strings in the ELF file instead of structured tokenized string entries. Strings
-in different domains were stored in different linker sections. The Python script
-that parsed the ELF file would re-calculate the tokens.
-
-In the current version of ``pw_tokenizer``, tokenized strings are stored in a
-structured entry containing a token, domain, and length-delimited string. This
-has several advantages over the legacy format:
-
-* The Python script does not have to recalculate the token, so any hash
-  algorithm may be used in the firmware.
-* In C++, the tokenization hash no longer has a length limitation.
-* Strings with null terminators in them are properly handled.
-* Only one linker section is required in the linker script, instead of a
-  separate section for each domain.
-
-To migrate to the new format, all that is required is update the linker sections
-to match those in ``pw_tokenizer_linker_sections.ld``. Replace all
-``pw_tokenized.<DOMAIN>`` sections with one ``pw_tokenizer.entries`` section.
-The Python tooling continues to support the legacy tokenized string ELF format.
-
 Compatibility
 =============
 * C11
