@@ -78,6 +78,7 @@ template("pw_cc_blob_library") {
       "--blob-file",
       rebase_path(_blob_json_file, root_build_dir),
       "--namespace=${invoker.namespace}",
+      "--header-include=${invoker.out_header}",
       "--out-header",
       rebase_path(_header, root_build_dir),
       "--out-source",

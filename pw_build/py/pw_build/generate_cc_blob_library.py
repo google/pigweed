@@ -16,7 +16,6 @@
 import argparse
 import itertools
 import json
-import os
 from pathlib import Path
 from string import Template
 import textwrap
@@ -91,6 +90,9 @@ def parse_args() -> dict:
                         required=True,
                         help=('Path to json file containing the list of blobs '
                               'to generate.'))
+    parser.add_argument('--header-include',
+                        required=True,
+                        help='Path to use in #includes for the header')
     parser.add_argument('--out-source',
                         type=Path,
                         required=True,
@@ -145,6 +147,7 @@ def array_def_from_blob_data(blob: Blob, blob_data: bytes) -> str:
         section_attr = ''
 
     byte_strs = ['std::byte{{0x{:02X}}}'.format(b) for b in blob_data]
+
     lines = []
     for byte_strs_for_line in split_into_chunks(byte_strs, BYTES_PER_LINE):
         bytes_segment = ', '.join(byte_strs_for_line)
@@ -159,13 +162,9 @@ def array_def_from_blob_data(blob: Blob, blob_data: bytes) -> str:
 
 
 def source_from_blobs(blobs: Iterable[Blob],
-                      header_path: Path,
-                      source_path: Path,
+                      header_path: str,
                       namespace: Optional[str] = None) -> str:
     """Generate the contents of a C++ source file from blobs."""
-    header_path = Path(
-        os.path.relpath(header_path,
-                        os.path.commonprefix([header_path, source_path])))
     lines = [SOURCE_PREFIX_TEMPLATE.substitute(header_path=header_path)]
     if namespace:
         lines.append(NAMESPACE_OPEN_TEMPLATE.substitute(namespace=namespace))
@@ -184,6 +183,7 @@ def load_blobs(blob_file: Path) -> Sequence[Blob]:
 
 
 def main(blob_file: Path,
+         header_include: str,
          out_source: Path,
          out_header: Path,
          namespace: Optional[str] = None) -> None:
@@ -191,9 +191,9 @@ def main(blob_file: Path,
 
     out_header.parent.mkdir(parents=True, exist_ok=True)
     out_header.write_text(header_from_blobs(blobs, namespace))
+
     out_source.parent.mkdir(parents=True, exist_ok=True)
-    out_source.write_text(
-        source_from_blobs(blobs, out_header, out_source, namespace))
+    out_source.write_text(source_from_blobs(blobs, header_include, namespace))
 
 
 if __name__ == '__main__':
