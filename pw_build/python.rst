@@ -277,26 +277,29 @@ Arguments
   and ``version`` strings. The ``common_config_file`` should contain the
   required fields in the ``metadata`` and ``options`` sections as shown in
   `Configuring setup() using setup.cfg files <https://setuptools.pypa.io/en/latest/userguide/declarative_config.html>`_.
-  ``append_git_sha_to_version`` and ``append_date_to_version`` will optionally
-  append the current git SHA or date to the package version string after a ``+``
-  sign.
+  ``append_git_sha_to_version = true`` and ``append_date_to_version = true``
+  will optionally append the current git SHA or date to the package version
+  string after a ``+`` sign. You can also opt to include a generated
+  ``pyproject.toml`` file by setting ``include_default_pyproject_file = true``.
 
   .. code-block::
+     :caption: :octicon:`file;1em` Example using a common setup.cfg and pyproject.toml files.
 
-     # Example using a common setup.cfg file.
      generate_setup_cfg = {
        common_config_file = "pypi_common_setup.cfg"
-       append_git_sha_to_version = true
        append_date_to_version = true
      }
+     extra_files = [
+       "//source/pyproject.toml > pyproject.toml"
+     ]
 
   .. code-block::
+     :caption: :octicon:`file;1em` Example using name and version strings and a default pyproject.toml file.
 
-     # Example using name and version strings.
      generate_setup_cfg = {
        name = "awesome"
        version = "1.0.0"
-       append_git_sha_to_version = true
+       include_default_pyproject_file = true
        append_date_to_version = true
      }
 
@@ -312,9 +315,8 @@ resulting targets that get created will be:
 Example
 -------
 
-:octicon:`file;1em` ./pw_env_setup/BUILD.gn
-
 .. code-block::
+   :caption: :octicon:`file;1em` ./pw_env_setup/BUILD.gn
 
    import("//build_overrides/pigweed.gni")
 
@@ -338,9 +340,9 @@ Example
      }
    }
 
-:octicon:`file-directory;1em` ./out/obj/pw_env_setup/build_python_source_tree/
 
 .. code-block:: text
+   :caption: :octicon:`file-directory;1em` ./out/obj/pw_env_setup/build_python_source_tree/
 
    $ tree ./out/obj/pw_env_setup/build_python_source_tree/
    ├── README.md

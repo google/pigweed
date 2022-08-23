@@ -29,7 +29,7 @@ from pw_build.create_python_tree import (
     load_common_config,
     update_config_with_packages,
 )
-from pw_build.generate_python_package import _PYPROJECT_FILE as PYPROJECT_TEXT
+from pw_build.generate_python_package import PYPROJECT_FILE
 
 
 def _setup_cfg(package_name: str, install_requires: str = '') -> str:
@@ -64,7 +64,7 @@ def _create_fake_python_package(location: Path,
             text = _setup_cfg(package_name, install_requires)
         elif str(destination).endswith('pyproject.toml'):
             # Make sure pyproject.toml file has valid syntax.
-            text = PYPROJECT_TEXT
+            text = PYPROJECT_FILE
         destination.write_text(text)
 
 

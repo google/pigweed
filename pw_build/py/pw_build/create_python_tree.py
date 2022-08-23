@@ -29,10 +29,13 @@ import setuptools  # type: ignore
 try:
     from pw_build.python_package import (PythonPackage, load_packages,
                                          change_working_dir)
+    from pw_build.generate_python_package import PYPROJECT_FILE
+
 except ImportError:
     # Load from python_package from this directory if pw_build is not available.
     from python_package import (  # type: ignore
         PythonPackage, load_packages, change_working_dir)
+    from generate_python_package import PYPROJECT_FILE  # type: ignore
 
 
 def _parse_args():
@@ -60,6 +63,9 @@ def _parse_args():
                         help='Override metadata.name in setup.cfg')
     parser.add_argument('--setupcfg-override-version',
                         help='Override metadata.version in setup.cfg')
+    parser.add_argument('--create-default-pyproject-toml',
+                        action='store_true',
+                        help='Generate a default pyproject.toml file')
 
     parser.add_argument(
         '--extra-files',
@@ -320,7 +326,7 @@ def copy_extra_files(extra_file_strings: Iterable[str]) -> None:
         shutil.copy(source_file, dest_file)
 
 
-def main():
+def _main():
     args = _parse_args()
 
     # Check the common_config file exists if provided.
@@ -333,6 +339,10 @@ def main():
                       tree_destination_dir=args.tree_destination_dir,
                       include_tests=args.include_tests)
     copy_extra_files(args.extra_files)
+
+    if args.create_default_pyproject_toml:
+        pyproject_path = args.tree_destination_dir / 'pyproject.toml'
+        pyproject_path.write_text(PYPROJECT_FILE)
 
     if (args.setupcfg_common_file or
         (args.setupcfg_override_name and args.setupcfg_override_version)):
@@ -352,4 +362,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    _main()

@@ -330,6 +330,10 @@ template("pw_create_python_source_tree") {
           generate_setup_cfg.version,
         ]
       }
+      if (defined(generate_setup_cfg.include_default_pyproject_file) &&
+          generate_setup_cfg.include_default_pyproject_file == true) {
+        args += [ "--create-default-pyproject-toml" ]
+      }
     }
 
     if (_extra_file_args == []) {

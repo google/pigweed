@@ -134,7 +134,7 @@ def _collect_all_files(
     return pkg_data
 
 
-_PYPROJECT_FILE = '''\
+PYPROJECT_FILE = '''\
 # Generated file. Do not modify.
 [build-system]
 requires = ['setuptools', 'wheel']
@@ -256,7 +256,7 @@ def main(generated_root: Path, files: List[Path], module_as_package: bool,
         _import_module_in_package_init(files)
 
     # Create the pyproject.toml and setup.cfg files for this package.
-    generated_root.joinpath('pyproject.toml').write_text(_PYPROJECT_FILE)
+    generated_root.joinpath('pyproject.toml').write_text(PYPROJECT_FILE)
     _generate_setup_cfg(pkg_data,
                         setup_keywords,
                         config_file_path=generated_root.joinpath('setup.cfg'))
