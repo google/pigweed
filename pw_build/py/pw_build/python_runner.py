@@ -111,6 +111,11 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _abspath(path: Path) -> Path:
+    """Turns a path into an absolute path, not resolving symlinks."""
+    return Path(os.path.abspath(path))
+
+
 class GnPaths(NamedTuple):
     """The set of paths needed to resolve GN paths to filesystem paths."""
     root: Path
@@ -123,9 +128,9 @@ class GnPaths(NamedTuple):
     def resolve(self, gn_path: str) -> Path:
         """Resolves a GN path to a filesystem path."""
         if gn_path.startswith('//'):
-            return self.root.joinpath(gn_path.lstrip('/')).resolve()
+            return _abspath(self.root.joinpath(gn_path.lstrip('/')))
 
-        return self.cwd.joinpath(gn_path).resolve()
+        return _abspath(self.cwd.joinpath(gn_path))
 
     def resolve_paths(self, gn_paths: str, sep: str = ';') -> str:
         """Resolves GN paths to filesystem paths in a delimited string."""
@@ -166,7 +171,7 @@ class Label:
 
         # Resolve the directory to an absolute path
         set_attr('dir', paths.resolve(directory))
-        set_attr('relative_dir', self.dir.relative_to(paths.root.resolve()))
+        set_attr('relative_dir', self.dir.relative_to(_abspath(paths.root)))
 
         set_attr(
             'out_dir',
@@ -571,7 +576,7 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
             init_py_files = top_level_source_dir.parent.glob('*/__init__.py')
             if not any(init_py_files):
                 continue
-            python_paths_list.append(top_level_source_dir.parent.resolve())
+            python_paths_list.append(_abspath(top_level_source_dir.parent))
 
         # Sort the PYTHONPATH list, it will be in a different order each build.
         python_paths_list = sorted(python_paths_list)
@@ -581,12 +586,12 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
         return 1
 
     # GN build scripts are executed from the root build directory.
-    root_build_dir = Path.cwd().resolve()
+    root_build_dir = _abspath(Path.cwd())
 
     tool = current_toolchain if current_toolchain != default_toolchain else ''
-    paths = GnPaths(root=gn_root.resolve(),
+    paths = GnPaths(root=_abspath(gn_root),
                     build=root_build_dir,
-                    cwd=current_path.resolve(),
+                    cwd=_abspath(current_path),
                     toolchain=tool)
 
     command = [sys.executable]
