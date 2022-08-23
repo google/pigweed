@@ -63,6 +63,7 @@ PyYAML==6.0
 requests==2.27.1
 rsa==4.8
 scan-build==2.0.19
+setuptools==63.4.3
 six==1.16.0
 snowballstemmer==2.2.0
 Sphinx==4.3.2
@@ -82,7 +83,7 @@ types-futures==3.3.2
 types-protobuf==3.19.22
 types-Pygments==2.9.13
 types-PyYAML==6.0.7
-types-setuptools==57.4.14
+types-setuptools==63.4.1
 types-six==1.16.9
 typing-extensions==4.1.1
 urllib3==1.26.8
