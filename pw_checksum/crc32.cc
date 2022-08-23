@@ -17,6 +17,13 @@
 namespace pw::checksum {
 namespace {
 
+// Calculates the partial CRC32 of the low order kBits of value using
+// the reversed polynomial kPolynomial.  This is a building block for
+// both implementing a tableless CRC32 implementation as well as generating
+// look up tables for tables based implementations.
+//
+// Information on CRC32 can be found at:
+//   https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 template <std::size_t kBits, uint32_t kPolynomial>
 constexpr uint32_t Crc32ProcessDataChunk(uint32_t value) {
   for (uint32_t j = 0; j < kBits; j++)
@@ -25,6 +32,10 @@ constexpr uint32_t Crc32ProcessDataChunk(uint32_t value) {
   return value;
 }
 
+// Generates a lookup table for a table based CRC32 implementation.
+// The table pre-computes the CRC for every value representable by
+// kBits of data.  kPolynomial is used as the reversed polynomial
+// for the computation.  The returned table will have 2^kBits entries.
 template <std::size_t kBits, uint32_t kPolynomial>
 constexpr std::array<uint32_t, (1 << kBits)> GenerateCrc32Table() {
   std::array<uint32_t, (1 << kBits)> table{};
@@ -34,6 +45,8 @@ constexpr std::array<uint32_t, (1 << kBits)> GenerateCrc32Table() {
   return table;
 }
 
+// Reversed polynomial for the commonly used CRC32 variant.  See:
+// https://en.wikipedia.org/wiki/Cyclic_redundancy_check#Polynomial_representations_of_cyclic_redundancy_checks
 constexpr uint32_t kCrc32Polynomial = 0xEDB88320;
 
 }  // namespace
