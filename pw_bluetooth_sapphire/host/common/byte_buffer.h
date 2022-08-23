@@ -41,7 +41,7 @@ class ByteBuffer {
   // undefined if the buffer has size 0.
   virtual const uint8_t* data() const = 0;
 
-  // Returns the number of bytes contained in this packet.
+  // Returns the number of bytes contained in this buffer.
   virtual size_t size() const = 0;
 
   // Returns a BufferView that points to the region of this buffer starting at
@@ -76,6 +76,13 @@ class ByteBuffer {
   // Copies |size| bytes of this buffer into |out_buffer| starting at offset |pos|. |out_buffer|
   // must be large enough to accommodate the result of this operation.
   void Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const;
+
+  // Creates a new std::string that contains a printable representation of a range of this
+  // buffer starting at |pos|.  The string is checked to see if it is UTF-8.  If not, each
+  // byte in the range to be converted is checked to see if it is printable ASCII.  If so,
+  // the character is used as is. If not, it is replaced by '.'.  The returned std::string
+  // will have size |size| + 1 to fit a terminating '\0'.
+  std::string Printable(size_t pos, size_t size) const;
 
   // Iterator functions.
   iterator begin() const { return cbegin(); }
@@ -391,6 +398,8 @@ class DynamicByteBuffer : public MutableByteBuffer {
   // Copies the contents of |buffer|.
   explicit DynamicByteBuffer(const ByteBuffer& buffer);
   DynamicByteBuffer(const DynamicByteBuffer& buffer);
+  // Copies the contensts of |string|.
+  explicit DynamicByteBuffer(const std::string& string);
 
   // Takes ownership of |buffer| and avoids allocating a new buffer. Since this
   // constructor performs a simple assignment, the caller must make sure that

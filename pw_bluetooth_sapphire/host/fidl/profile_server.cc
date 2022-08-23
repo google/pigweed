@@ -4,6 +4,7 @@
 
 #include "profile_server.h"
 
+#include <string.h>
 #include <zircon/status.h>
 
 #include "helpers.h"
@@ -122,7 +123,10 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
       return elem;
     }
     case bt::sdp::DataElement::Type::kString: {
-      elem->set_str(*in->Get<std::string>());
+      auto bytes = in->Get<bt::DynamicByteBuffer>();
+      ZX_DEBUG_ASSERT(bytes);
+      std::vector<uint8_t> data(bytes->size(), *bytes->data());
+      elem->set_str(data);
       return elem;
     }
     case bt::sdp::DataElement::Type::kBoolean: {

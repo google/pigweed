@@ -132,6 +132,17 @@ TEST(ByteBufferTest, DynamicByteBufferConstructFromBytes) {
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
 }
 
+TEST(ByteBufferTest, DynamicByteBufferConstructFromString) {
+  constexpr size_t kBufferSize = 3;
+  std::array<uint8_t, kBufferSize> kExpected{{0x41, 0x42, 0x43}};
+
+  auto string = std::string("ABC");
+  DynamicByteBuffer buffer(string);
+
+  EXPECT_EQ(std::string("ABC"), string);
+  EXPECT_TRUE(ContainersEqual(kExpected, buffer));
+}
+
 TEST(ByteBufferTest, BufferViewTest) {
   constexpr size_t kBufferSize = 5;
   DynamicByteBuffer buffer(kBufferSize);

@@ -4,6 +4,8 @@
 
 #include "byte_buffer.h"
 
+#include "src/connectivity/bluetooth/lib/cpp-string/utf_codecs.h"
+
 namespace bt {
 
 void ByteBuffer::Copy(MutableByteBuffer* out_buffer) const {
@@ -14,6 +16,25 @@ void ByteBuffer::Copy(MutableByteBuffer* out_buffer) const {
 void ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
   BT_ASSERT(out_buffer);
   CopyRaw(out_buffer->mutable_data(), out_buffer->size(), pos, size);
+}
+
+std::string ByteBuffer::Printable(size_t pos, size_t size) const {
+  std::string ret(size, '\0');
+  // TODO(fxb/107512)
+  CopyRaw(&ret[0], size, pos, size);
+
+  std::string_view view(&ret[0], size);
+  // If the string isn't valid UTF-8, convert it to ASCII with nonprintable characters
+  // converted to '.'.
+  if (!bt_lib_cpp_string::IsStringUTF8(view)) {
+    for (size_t i = 0; i < size; i++) {
+      if (!std::isprint(ret[i])) {
+        ret[i] = '.';
+      }
+    }
+  }
+
+  return ret;
 }
 
 BufferView ByteBuffer::view(size_t pos, size_t size) const {
@@ -98,6 +119,12 @@ DynamicByteBuffer::DynamicByteBuffer(const ByteBuffer& buffer)
 
 DynamicByteBuffer::DynamicByteBuffer(const DynamicByteBuffer& buffer)
     : DynamicByteBuffer(static_cast<const ByteBuffer&>(buffer)) {}
+
+DynamicByteBuffer::DynamicByteBuffer(const std::string& string) {
+  buffer_size_ = string.length();
+  buffer_ = std::make_unique<uint8_t[]>(buffer_size_);
+  memcpy(buffer_.get(), string.data(), buffer_size_);
+}
 
 DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size, std::unique_ptr<uint8_t[]> buffer)
     : buffer_size_(buffer_size), buffer_(std::move(buffer)) {

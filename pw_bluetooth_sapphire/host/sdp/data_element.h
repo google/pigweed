@@ -99,15 +99,15 @@ class DataElement {
 
   // Sets the value of this element to |value|.
   // Defined specializations:
-  // typename                 - type()
-  // std::nullptr_t           - kNull
-  // uint8_t, .., uint64_t    - kUnsignedInt
-  // int8_t .. int64_t        - kSignedInt
-  // const UUID&              - kUuid
-  // const std::string&       - kString
-  // bool                     - kBoolean
-  // std::vector<DataElement> - kSequence
-  // (Use SetUrl())           - kUrl
+  // typename                                     - type()
+  // std::nullptr_t                               - kNull
+  // uint8_t, .., uint64_t                        - kUnsignedInt
+  // int8_t .. int64_t                            - kSignedInt
+  // const UUID&                                  - kUuid
+  // const bt::DynamicByteBuffer or std::string   - kString
+  // bool                                         - kBoolean
+  // std::vector<DataElement>                     - kSequence
+  // (Use SetUrl())                               - kUrl
   template <typename T>
   void Set(T value);
 
@@ -161,7 +161,7 @@ class DataElement {
   int64_t int_value_;
   uint64_t uint_value_;
   UUID uuid_;
-  std::string string_;
+  bt::DynamicByteBuffer bytes_;
   std::vector<DataElement> aggregate_;
 };
 

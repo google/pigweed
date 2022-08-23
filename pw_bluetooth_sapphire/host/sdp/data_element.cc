@@ -92,7 +92,7 @@ DataElement::DataElement(const DataElement& other) : type_(other.type_), size_(o
       return;
     case Type::kString:
     case Type::kUrl:
-      string_ = other.string_;
+      bytes_ = DynamicByteBuffer(other.bytes_);
       return;
     case Type::kSequence:
     case Type::kAlternative:
@@ -180,10 +180,18 @@ void DataElement::Set<UUID>(UUID value) {
 }
 
 template <>
-void DataElement::Set<std::string>(std::string value) {
+void DataElement::Set<bt::DynamicByteBuffer>(bt::DynamicByteBuffer value) {
   type_ = Type::kString;
   SetVariableSize(value.size());
-  string_ = value;
+  bytes_ = DynamicByteBuffer(value);
+}
+
+template <>
+void DataElement::Set<std::string>(std::string string) {
+  type_ = Type::kString;
+
+  SetVariableSize(string.size());
+  bytes_ = DynamicByteBuffer(string);
 }
 
 template <>
@@ -198,10 +206,10 @@ void DataElement::SetUrl(std::string url) {
     bt_log(WARN, "sdp", "Invalid URL in SetUrl: %s", url.c_str());
     return;
   }
-
   type_ = Type::kUrl;
+
   SetVariableSize(url.size());
-  string_ = url;
+  bytes_ = DynamicByteBuffer(url);
 }
 
 void DataElement::SetAlternative(std::vector<DataElement> items) {
@@ -301,10 +309,19 @@ std::optional<std::nullptr_t> DataElement::Get<std::nullptr_t>() const {
 }
 
 template <>
+std::optional<bt::DynamicByteBuffer> DataElement::Get<bt::DynamicByteBuffer>() const {
+  std::optional<bt::DynamicByteBuffer> ret;
+  if (type_ == Type::kString) {
+    ret = std::optional(DynamicByteBuffer(bytes_));
+  }
+  return ret;
+}
+
+template <>
 std::optional<std::string> DataElement::Get<std::string>() const {
   std::optional<std::string> ret;
   if (type_ == Type::kString) {
-    ret = string_;
+    ret = std::optional(std::string(reinterpret_cast<const char*>(bytes_.data()), bytes_.size()));
   }
   return ret;
 }
@@ -334,7 +351,7 @@ std::optional<std::vector<DataElement>> DataElement::Get<std::vector<DataElement
 std::optional<std::string> DataElement::GetUrl() const {
   std::optional<std::string> ret;
   if (type_ == Type::kUrl) {
-    ret = string_;
+    ret = std::optional(std::string(reinterpret_cast<const char*>(bytes_.data()), bytes_.size()));
   }
   return ret;
 }
@@ -468,7 +485,8 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (static_cast<uint8_t>(size_desc) < 5) {
         return 0;
       }
-      std::string str(cursor.data(), cursor.data() + data_bytes);
+      bt::DynamicByteBuffer str(data_bytes);
+      str.Write(cursor.data(), data_bytes);
       elem->Set(str);
       return bytes_read + data_bytes;
     }
@@ -523,7 +541,7 @@ size_t DataElement::WriteSize() const {
       return 1 + (1 << static_cast<uint8_t>(size_));
     case Type::kString:
     case Type::kUrl:
-      return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) + string_.size();
+      return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) + bytes_.size();
     case Type::kSequence:
     case Type::kAlternative:
       return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) + AggregateSize(aggregate_);
@@ -598,11 +616,11 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
     }
     case Type::kString:
     case Type::kUrl: {
-      size_t used = WriteLength(&cursor, string_.size());
-      BT_DEBUG_ASSERT(used);
+      size_t used = WriteLength(&cursor, bytes_.size());
+      ZX_DEBUG_ASSERT(used);
       pos += used;
-      cursor.Write(reinterpret_cast<const uint8_t*>(string_.c_str()), string_.size(), used);
-      pos += string_.size();
+      cursor.Write(bytes_.data(), bytes_.size(), used);
+      pos += bytes_.size();
       return pos;
     }
     case Type::kSequence:
@@ -643,9 +661,10 @@ std::string DataElement::ToString() const {
     case Type::kUuid:
       return bt_lib_cpp_string::StringPrintf("UUID(%s)", uuid_.ToString().c_str());
     case Type::kString:
-      return bt_lib_cpp_string::StringPrintf("String(%s)", string_.c_str());
+      return bt_lib_cpp_string::StringPrintf("String(%s)",
+                                             bytes_.Printable(0, bytes_.size()).c_str());
     case Type::kUrl:
-      return bt_lib_cpp_string::StringPrintf("Url(%s)", string_.c_str());
+      return bt_lib_cpp_string::StringPrintf("Url(%s)", bytes_.Printable(0, bytes_.size()).c_str());
     case Type::kSequence: {
       std::string str;
       for (const auto& it : aggregate_) {

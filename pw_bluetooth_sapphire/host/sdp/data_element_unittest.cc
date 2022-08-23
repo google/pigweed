@@ -13,6 +13,13 @@
 namespace bt::sdp {
 namespace {
 
+template <std::size_t N>
+DynamicByteBuffer make_dynamic_byte_buffer(std::array<uint8_t, N> bytes) {
+  DynamicByteBuffer ret(N);
+  ret.Write(bytes.data(), N);
+  return ret;
+}
+
 TEST(DataElementTest, CreateIsNull) {
   DataElement elem;
   EXPECT_EQ(DataElement::Type::kNull, elem.type());
@@ -279,9 +286,18 @@ TEST(DataElementTest, ToString) {
   EXPECT_EQ("SignedInt:4(-54321)", DataElement(int32_t{-54321}).ToString());
   EXPECT_EQ("UUID(00000100-0000-1000-8000-00805f9b34fb)", DataElement(protocol::kL2CAP).ToString());
   EXPECT_EQ("String(fuchsia💖)", DataElement(std::string("fuchsia💖")).ToString());
+  // This test and the following one print invalid unicode strings by replacing nonASCII characters
+  //  with '.'.  Somewhat confusingly, individual bytes of invalid unicode sequences can be valid
+  // ASCII bytes.  In particular, the '\x28' in the invalid unicode sequences below is a perfectly
+  // valid '(' in ASCII, so it prints as that.
+  EXPECT_EQ("String(ABC.(XYZ)",
+            DataElement(std::string("ABC\xc3\x28XYZ")).ToString());  // Invalid UTF8.
+  EXPECT_EQ("String(ABC.(XYZ....)",
+            DataElement(std::string("ABC\xc3\x28XYZ💖"))
+                .ToString());  // Invalid UTF8 means the whole string must be treated as ASCII.
   DataElement elem;
-  elem.SetUrl(std::string("http://foobar.dev"));
-  EXPECT_EQ("Url(http://foobar.dev)", elem.ToString());
+  elem.SetUrl(std::string("http://example.com"));
+  EXPECT_EQ("Url(http://example.com)", elem.ToString());
   std::vector<DataElement> strings;
   strings.emplace_back(std::string("hello"));
   strings.emplace_back(std::string("sapphire🔷"));
@@ -344,6 +360,28 @@ TEST(DataElementTest, WriteUrlToBuffer) {
   EXPECT_EQ(expected.size(), written);
   EXPECT_EQ(written, url_elem.WriteSize());
   EXPECT_TRUE(ContainersEqual(expected, write_buf));
+}
+
+TEST(DataElementTest, SetAndGetStrings) {
+  auto buffer_set_string =
+      make_dynamic_byte_buffer<10>({'s', 'e', 't', ' ', 's', 't', 'r', 'i', 'n', 'g'});
+  std::string string_set_string("set string");
+
+  auto buffer_set_buffer =
+      make_dynamic_byte_buffer<10>({'s', 'e', 't', ' ', 'b', 'u', 'f', 'f', 'e', 'r'});
+  std::string string_set_buffer("set buffer");
+
+  DataElement elem_set_string;
+  elem_set_string.Set(string_set_string);
+
+  EXPECT_EQ(elem_set_string.Get<std::string>(), string_set_string);
+  EXPECT_EQ(elem_set_string.Get<DynamicByteBuffer>(), buffer_set_string);
+
+  DataElement elem_set_buffer;
+  elem_set_buffer.Set(string_set_buffer);
+
+  EXPECT_EQ(elem_set_buffer.Get<DynamicByteBuffer>(), buffer_set_buffer);
+  EXPECT_EQ(elem_set_buffer.Get<std::string>(), string_set_buffer);
 }
 
 }  // namespace
