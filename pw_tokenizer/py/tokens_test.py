@@ -462,6 +462,20 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(len(db), 1)
         self.assertEqual(db.token_to_entries[1][0].date_removed, datetime.max)
 
+    def test_difference(self) -> None:
+        first = tokens.Database([
+            tokens.TokenizedStringEntry(1, 'one'),
+            tokens.TokenizedStringEntry(2, 'two'),
+            tokens.TokenizedStringEntry(3, 'three'),
+        ])
+        second = tokens.Database([
+            tokens.TokenizedStringEntry(1, 'one'),
+            tokens.TokenizedStringEntry(3, 'three'),
+            tokens.TokenizedStringEntry(4, 'four'),
+        ])
+        difference = first.difference(second)
+        self.assertEqual({e.string for e in difference.entries()}, {'two'})
+
     def test_binary_format_write(self) -> None:
         db = read_db_from_csv(CSV_DATABASE)
 
@@ -490,7 +504,7 @@ class TestDatabaseFile(unittest.TestCase):
 
     def test_update_csv_file(self) -> None:
         self._path.write_text(CSV_DATABASE)
-        db = tokens.DatabaseFile.create(self._path)
+        db = tokens.DatabaseFile.load(self._path)
         self.assertEqual(str(db), CSV_DATABASE)
 
         db.add([tokens.TokenizedStringEntry(0xffffffff, 'New entry!')])
@@ -504,19 +518,19 @@ class TestDatabaseFile(unittest.TestCase):
         self._path.write_text('1234')
 
         with self.assertRaises(tokens.DatabaseFormatError):
-            tokens.DatabaseFile.create(self._path)
+            tokens.DatabaseFile.load(self._path)
 
     def test_csv_invalid_format_raises_exception(self) -> None:
         self._path.write_text('MK34567890')
 
         with self.assertRaises(tokens.DatabaseFormatError):
-            tokens.DatabaseFile.create(self._path)
+            tokens.DatabaseFile.load(self._path)
 
     def test_csv_not_utf8(self) -> None:
         self._path.write_bytes(b'\x80' * 20)
 
         with self.assertRaises(tokens.DatabaseFormatError):
-            tokens.DatabaseFile.create(self._path)
+            tokens.DatabaseFile.load(self._path)
 
 
 class TestFilter(unittest.TestCase):
@@ -582,7 +596,7 @@ class TestDirectoryDatabase(unittest.TestCase):
         self._dir = Path(tempfile.mkdtemp('_pw_tokenizer_test'))
         self._db_dir = self._dir / '_dir_database_test'
         self._db_dir.mkdir(exist_ok=True)
-        self._db_csv = self._db_dir / 'first.csv'
+        self._db_csv = self._db_dir / 'first.pw_tokenizer.csv'
 
     def tearDown(self) -> None:
         shutil.rmtree(self._dir)
@@ -592,22 +606,22 @@ class TestDirectoryDatabase(unittest.TestCase):
 
     def test_loading_a_single_file(self) -> None:
         self._db_csv.write_text(CSV_DATABASE)
-        csv = tokens.DatabaseFile.create(self._db_csv)
+        csv = tokens.DatabaseFile.load(self._db_csv)
         directory_db = database.load_token_database(self._db_dir)
         self.assertEqual(1, len(list(self._db_dir.iterdir())))
         self.assertEqual(str(csv), str(directory_db))
 
     def test_loading_multiples_files(self) -> None:
         self._db_csv.write_text(CSV_DATABASE_3)
-        first_csv = tokens.DatabaseFile.create(self._db_csv)
+        first_csv = tokens.DatabaseFile.load(self._db_csv)
 
-        path_to_second_csv = self._db_dir / 'second.csv'
+        path_to_second_csv = self._db_dir / 'second.pw_tokenizer.csv'
         path_to_second_csv.write_text(CSV_DATABASE_2)
-        second_csv = tokens.DatabaseFile.create(path_to_second_csv)
+        second_csv = tokens.DatabaseFile.load(path_to_second_csv)
 
-        path_to_third_csv = self._db_dir / 'third.csv'
+        path_to_third_csv = self._db_dir / 'third.pw_tokenizer.csv'
         path_to_third_csv.write_text(CSV_DATABASE_4)
-        third_csv = tokens.DatabaseFile.create(path_to_third_csv)
+        third_csv = tokens.DatabaseFile.load(path_to_third_csv)
 
         all_databases_merged = tokens.Database.merged(first_csv, second_csv,
                                                       third_csv)
@@ -617,15 +631,15 @@ class TestDirectoryDatabase(unittest.TestCase):
 
     def test_loading_multiples_files_with_removal_dates(self) -> None:
         self._db_csv.write_text(CSV_DATABASE)
-        first_csv = tokens.DatabaseFile.create(self._db_csv)
+        first_csv = tokens.DatabaseFile.load(self._db_csv)
 
-        path_to_second_csv = self._db_dir / 'second.csv'
+        path_to_second_csv = self._db_dir / 'second.pw_tokenizer.csv'
         path_to_second_csv.write_text(CSV_DATABASE_2)
-        second_csv = tokens.DatabaseFile.create(path_to_second_csv)
+        second_csv = tokens.DatabaseFile.load(path_to_second_csv)
 
-        path_to_third_csv = self._db_dir / 'third.csv'
+        path_to_third_csv = self._db_dir / 'third.pw_tokenizer.csv'
         path_to_third_csv.write_text(CSV_DATABASE_3)
-        third_csv = tokens.DatabaseFile.create(path_to_third_csv)
+        third_csv = tokens.DatabaseFile.load(path_to_third_csv)
 
         all_databases_merged = tokens.Database.merged(first_csv, second_csv,
                                                       third_csv)

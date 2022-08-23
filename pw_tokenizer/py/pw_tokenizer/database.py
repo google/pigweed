@@ -209,7 +209,7 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:  # pylint
                 f'"{db}" is not a path to a token database')
 
         if Path(db).is_dir():
-            return tokens.DatabaseFile.create(Path(db))
+            return tokens.DatabaseFile.load(Path(db))
 
         # Read the path as an ELF file.
         with open(db, 'rb') as fd:
@@ -222,7 +222,7 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:  # pylint
                 return _database_from_json(json_fd)
 
         # Read the path as a packed binary or CSV file.
-        return tokens.DatabaseFile.create(Path(db))
+        return tokens.DatabaseFile.load(Path(db))
 
     # Assume that it's a file object and check if it's an ELF.
     if elf_reader.compatible_file(db):
@@ -234,7 +234,7 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:  # pylint
         if db.name.endswith('.json'):
             return _database_from_json(db)
 
-        return tokens.DatabaseFile.create(Path(db.name))
+        return tokens.DatabaseFile.load(Path(db.name))
 
     # Read CSV directly from the file object.
     return tokens.Database(tokens.parse_csv(db))
@@ -479,7 +479,7 @@ def _parse_args():
         '-d',
         '--database',
         dest='token_database',
-        type=lambda arg: tokens.DatabaseFile.create(Path(arg)),
+        type=lambda arg: tokens.DatabaseFile.load(Path(arg)),
         required=True,
         help='The database file to update.')
 

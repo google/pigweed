@@ -297,9 +297,18 @@ class Database:
             for value in self._database.values():
                 value.string = search.sub(replacement, value.string)
 
+    def difference(self, other: 'Database') -> 'Database':
+        """Returns a new Database with entries in this DB not in the other."""
+        return Database(e for k, e in self._database.items()
+                        if k not in other._database)  # pylint: disable=protected-access
+
     def __len__(self) -> int:
         """Returns the number of entries in the database."""
         return len(self.entries())
+
+    def __bool__(self) -> bool:
+        """True if the database is non-empty."""
+        return bool(self._database)
 
     def __str__(self) -> str:
         """Outputs the database as CSV."""
@@ -469,7 +478,7 @@ class DatabaseFile(Database):
         self.path = path
 
     @staticmethod
-    def create(path: Path) -> 'DatabaseFile':
+    def load(path: Path) -> 'DatabaseFile':
         """Creates a DatabaseFile that coincides to the file type."""
         if path.is_dir():
             return _DirectoryDatabase(path)
@@ -533,135 +542,118 @@ class _CSVDatabase(DatabaseFile):
         raise NotImplementedError
 
 
-def _parse_directory(paths: Iterable[Path]) -> Iterable[TokenizedStringEntry]:
-    """Parses TokenizedStringEntries from files in the directory as a CSV."""
-    for path in paths:
-        if path.suffix == '.csv':
+_DIR_DB_SUFFIX = '.pw_tokenizer.csv'
+_DIR_DB_GLOB = '*' + _DIR_DB_SUFFIX
+
+
+def _parse_directory(directory: Path) -> Iterable[TokenizedStringEntry]:
+    """Parses TokenizedStringEntries tokenizer CSV files in the directory."""
+    for path in directory.iterdir():
+        if path.name.endswith(_DIR_DB_SUFFIX):
             with path.open() as fd:
                 yield from parse_csv(fd)
 
 
-def _git_stdout(commands: List, cwd: Path) -> str:
-    """Runs the git commands in the provided cwd and captures the output."""
-    return subprocess.run(['git'] + commands,
-                          capture_output=True,
-                          check=True,
-                          cwd=cwd,
-                          text=True).stdout.strip()
-
-
-def _new_entries(
-    entries: Iterable[TokenizedStringEntry],
-    database: Dict[_EntryKey,
-                   TokenizedStringEntry]) -> List[TokenizedStringEntry]:
-    """Retrieves the entries not in the database."""
-    return [entry for entry in entries if entry.key() not in database]
+def _most_recently_modified_file(paths: Iterable[Path]) -> Path:
+    return max(paths, key=lambda path: path.stat().st_mtime)
 
 
 class _DirectoryDatabase(DatabaseFile):
     def __init__(self, directory: Path) -> None:
-        super().__init__(directory, _parse_directory(directory.iterdir()))
+        super().__init__(directory, _parse_directory(directory))
 
     def write_to_file(self) -> None:
-        """Exports the database in CSV format to the original path."""
-        database = Database(_parse_directory(self.path.iterdir()))._database  # pylint: disable=protected-access
-        new_entries = _new_entries(self.entries(), database)
+        """Creates a new CSV file in the directory with any new tokens."""
+        # Re-read the tokens from disk.
+        current_tokens = Database(_parse_directory(self.path))
+        new_entries = self.difference(current_tokens)
         if new_entries:
             with self._create_filename().open('wb') as fd:
-                write_csv(Database(new_entries), fd)
-
-    def _path_to_repo(self) -> Path:
-        """Creates a path to the repository the database is within."""
-        return Path(_git_stdout(['rev-parse', '--show-toplevel'],
-                                self.path)).resolve()
+                write_csv(new_entries, fd)
 
     def _git_paths(self, commands: List) -> List[Path]:
-        """Creates a list of complete paths to the repo."""
+        """Returns a list of files from a Git command, filtered to matc."""
         try:
-            changes = _git_stdout(commands, self.path).splitlines()
-            files = [self.path / path for path in changes]
-            return [path for path in files if path.suffix == '.csv']
+            output = subprocess.run(['git', *commands, _DIR_DB_GLOB],
+                                    capture_output=True,
+                                    check=True,
+                                    cwd=self.path,
+                                    text=True).stdout.strip()
+            return [self.path / repo_path for repo_path in output.splitlines()]
         except subprocess.CalledProcessError:
             return []
 
     def _find_latest_csv(self, commit: str) -> Path:
-        """Finds or creates a CSV to utilize for new entries.
+        """Finds or creates a CSV to which to write new entries.
 
-        - Searches for untracked files in the repo to re-use.
-        - When no untracked files exists, a difference between HEAD~
-          and HEAD searches for a filename in the commit to re-use.
-        - The filename is reused if HEAD~ is not merged with the provided
-          commit.
-        - When nothing is yielded from the previous searches or no git repo
-          exists, then a new filename is created.
+        - Check for untracked CSVs. Use the most recently modified file, if any.
+        - Check for CSVs added in HEAD, if HEAD is not an ancestor of commit.
+          Use the most recently modified file, if any.
+        - If no untracked or committed files were found, create a new file.
         """
 
-        # Find untracked_changes in directory.
+        # Prioritize untracked files in the directory database.
         untracked_changes = self._git_paths(
             ['ls-files', '--others', '--exclude-standard'])
-
         if untracked_changes:
-            # TODO(b/243040287): Handle multiple paths in the commit.
-            assert len(untracked_changes) < 2
-            return untracked_changes.pop()
-        # Find differences between HEAD~ and HEAD commit in directory.
-        tracked_changes_from_latest_commit = self._git_paths(
-            ['diff', '--name-only', '--diff-filter=A', '--relative', 'HEAD~'])
+            return _most_recently_modified_file(untracked_changes)
 
-        if tracked_changes_from_latest_commit:
-            # If changes exists in the comparison between HEAD~ and HEAD
-            # and the filename is unmerged with the provided commit, the
-            # retrieved filename will be reused. Otherwise, create a CSV.
-            # Find differences between commit and HEAD~ in directory.
-            returncode = subprocess.run(
-                ['git', 'merge-base', '--is-ancestor', 'HEAD~', commit],
-                cwd=self.path,
-                stderr=subprocess.DEVNULL).returncode
-            # A zero return code indicates that HEAD~ is in the commit,
-            # while a non-zero return code indicates that HEAD~ is not
-            # in commit.
-            if returncode != 0:
-                return tracked_changes_from_latest_commit.pop()
+        # Check if HEAD is an ancestor of the base commit. This checks whether
+        # the top commit has been merged or not. If it has been merged, create a
+        # new CSV to use. Otherwise, check if a CSV was added in the commit.
+        head_is_not_merged = subprocess.run(
+            ['git', 'merge-base', '--is-ancestor', 'HEAD', commit],
+            cwd=self.path,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL).returncode != 0
+
+        if head_is_not_merged:
+            # Find CSVs added in the top commit.
+            csvs_from_top_commit = self._git_paths([
+                'diff', '--name-only', '--diff-filter=A', '--relative', 'HEAD~'
+            ])
+
+            if csvs_from_top_commit:
+                return _most_recently_modified_file(csvs_from_top_commit)
 
         return self._create_filename()
 
     def _create_filename(self) -> Path:
         """Generates a unique filename not in the directory."""
         # Tracked and untracked files do not exist in the repo.
-        path = self.path / f'{uuid4().hex}.csv'
-        while path.exists():
-            path = self.path / f'{uuid4().hex}.csv'
-        return path
+        while (file := self.path / f'{uuid4().hex}{_DIR_DB_SUFFIX}').exists():
+            pass
+        return file
 
     def add_and_discard_temporary(self,
                                   entries: Iterable[TokenizedStringEntry],
                                   commit: str) -> None:
-        """Adds and updates entries to export in the CSV format.
+        """Adds new entries and discards temporary entries on disk.
 
-        - New entries are collected from the incoming entries.
-        - When no CSV exists, the new entries are loaded into a database and
-          written to disk.
-        - When a CSV exists and incoming entries do not exist within the CSV
-          database, the temporary entries are removed from the directory and
-          CSV database.
-        - New entries are added to the CSV database and re-written to disk.
+        - Find the latest CSV in the directory database or create a new one.
+        - Delete entries in the latest CSV that are not in the entries passed to
+          this function.
+        - Add the new entries to this database.
+        - Overwrite the latest CSV with only the newly added entries.
         """
-        db = Database(entries)._database  # pylint: disable=protected-access
-        new_entries = _new_entries(db.values(), self._database)
+        # Find entries not currently in the database.
+        added = Database(entries)
+        new_entries = added.difference(self)
+
         csv_path = self._find_latest_csv(commit)
         if csv_path.exists():
             # Loading the CSV as a DatabaseFile.
-            csv_db = DatabaseFile.create(csv_path)
-            # Collects the keys to delete from the CSV database.
-            keys_to_delete = (e.key()
-                              for e in _new_entries(csv_db.entries(), db))
-            for key in keys_to_delete:
+            csv_db = DatabaseFile.load(csv_path)
+
+            # Delete entries added in the CSV, but not added in this function.
+            for key in (e.key() for e in csv_db.difference(added).entries()):
                 del self._database[key]
                 del csv_db._database[key]  # pylint: disable=protected-access
-            csv_db.add(new_entries)
-            csv_db.write_to_file()
-        elif new_entries:
-            with csv_path.open('wb') as fd:
-                write_csv(Database(new_entries), fd)
 
-        self.add(new_entries)
+            csv_db.add(new_entries.entries())
+            csv_db.write_to_file()
+        elif new_entries:  # If the CSV does not exist, write all new tokens.
+            with csv_path.open('wb') as fd:
+                write_csv(new_entries, fd)
+
+        self.add(new_entries.entries())

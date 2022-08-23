@@ -326,7 +326,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         self._dir = Path(tempfile.mkdtemp('_pw_tokenizer_test'))
         self._db_dir = self._dir / '_dir_database_test'
         self._db_dir.mkdir(exist_ok=True)
-        self._db_csv = self._db_dir / '8123913.csv'
+        self._db_csv = self._db_dir / '8123913.pw_tokenizer.csv'
         self._elf = TOKENIZED_ENTRIES_ELF
         self._csv_test_domain = CSV_TEST_DOMAIN
 
