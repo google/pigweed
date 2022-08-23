@@ -27,7 +27,7 @@
 
 #include <stdint.h>
 
-#define _PW_TOKENIZER_ENTRY_MAGIC UINT32_C(0xBAA98DEE)
+#define _PW_TOKENIZER_ENTRY_MAGIC 0xBAA98DEE
 
 #ifdef __cplusplus
 
