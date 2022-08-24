@@ -30,6 +30,14 @@ This object uses ``taskENTER_CRITICAL_FROM_ISR`` and
 ``taskEXIT_CRITICAL_FROM_ISR`` from interrupt contexts and
 ``taskENTER_CRITICAL`` and ``taskEXIT_CRITICAL`` from other contexts.
 
+.. warning::
+  ``taskENTER_CRITICAL_FROM_ISR`` only disables interrupts with priority at or
+  below ``configMAX_SYSCALL_INTERRUPT_PRIORITY``. Therefore, it is unsafe to
+  use InterruptSpinLock from higher-priority interrupts, even if they are not
+  non-maskable interrupts. This is consistent with the rest of the FreeRTOS
+  APIs, see the `FreeRTOS kernel interrupt priority documentation
+  <https://www.freertos.org/a00110.html#kernel_priority>`_ for more details.
+
 --------------------
 Signaling Primitives
 --------------------
