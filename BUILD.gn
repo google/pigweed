@@ -222,6 +222,8 @@ group("asan") {
   }
 }
 
+# TODO(b/234876100): msan will not work until the C++ standard library included
+# in the sysroot has a variant built with msan.
 group("msan") {
   if (host_os != "win") {
     deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
@@ -251,9 +253,12 @@ group("runtime_sanitizers") {
   if (host_os != "win") {
     deps = [
       ":asan",
-      ":msan",
       ":tsan",
       ":ubsan",
+
+      # TODO(b/234876100): msan will not work until the C++ standard library
+      # included in the sysroot has a variant built with msan.
+      # ":msan",
 
       # No ubsan_heuristic, which may have false positives.
     ]
