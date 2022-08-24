@@ -18,12 +18,22 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
+// Use __PRETTY_FUNCTION__, a GNU extension, in place of the __func__ macro when
+// supported. __PRETTY_FUNCTION__ expands to the full C++ function name.
+#ifdef __GNUC__
+#define _PW_ASSERT_BASIC_FUNCTION_NAME __PRETTY_FUNCTION__
+#else
+#define _PW_ASSERT_BASIC_FUNCTION_NAME __func__
+#endif  // __GNUC__
+
 // Die with a message with many attributes included. This is the crash macro
 // frontend that funnels everything into the C handler provided by the user,
 // pw_assert_basic_HandleFailure().
 #define PW_HANDLE_CRASH(...)     \
   pw_assert_basic_HandleFailure( \
-      __FILE__, __LINE__, __func__ PW_COMMA_ARGS(__VA_ARGS__))
+      __FILE__,                  \
+      __LINE__,                  \
+      _PW_ASSERT_BASIC_FUNCTION_NAME PW_COMMA_ARGS(__VA_ARGS__))
 
 // Die with a message with many attributes included. This is the crash macro
 // frontend that funnels everything into the C handler provided by the user,
@@ -31,7 +41,7 @@
 #define PW_HANDLE_ASSERT_FAILURE(condition_string, message, ...)  \
   pw_assert_basic_HandleFailure(__FILE__,                         \
                                 __LINE__,                         \
-                                __func__,                         \
+                                _PW_ASSERT_BASIC_FUNCTION_NAME,   \
                                 "Check failed: " condition_string \
                                 ". " message PW_COMMA_ARGS(__VA_ARGS__))
 
@@ -51,13 +61,13 @@
                                                 type_fmt,          \
                                                 message, ...)      \
   pw_assert_basic_HandleFailure(                                   \
-           __FILE__,                                               \
-           __LINE__,                                               \
-           __func__,                                               \
-           "Check failed: "                                        \
-               arg_a_str " (=" type_fmt ") "                       \
-               comparison_op_str " "                               \
-               arg_b_str " (=" type_fmt ")"                        \
-               ". " message,                                       \
-            arg_a_val, arg_b_val PW_COMMA_ARGS(__VA_ARGS__))
+      __FILE__,                                                    \
+      __LINE__,                                                    \
+      _PW_ASSERT_BASIC_FUNCTION_NAME,                              \
+      "Check failed: "                                             \
+          arg_a_str " (=" type_fmt ") "                            \
+          comparison_op_str " "                                    \
+          arg_b_str " (=" type_fmt ")"                             \
+          ". " message,                                            \
+      arg_a_val, arg_b_val PW_COMMA_ARGS(__VA_ARGS__))
 // clang-format on
