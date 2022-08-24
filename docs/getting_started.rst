@@ -136,7 +136,7 @@ following commands to ensure Python knows how to use OpenSSL.
 
 To flash firmware to a STM32 Discovery development board (and run ``pw test``)
 from macOS, you will need to install OpenOCD. Install
-[Homebrew](https://brew.sh), then install OpenOCD with `brew install openocd`.
+`Homebrew <https://brew.sh>`_, then install OpenOCD with ``brew install openocd``.
 
 **Windows**
 
