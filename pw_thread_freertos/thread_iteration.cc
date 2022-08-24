@@ -22,7 +22,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_thread/thread_info.h"
-#include "pw_thread_backend/freertos_tsktcb.h"
+#include "pw_thread_freertos/freertos_tsktcb.h"
 #include "pw_thread_freertos/util.h"
 
 namespace pw::thread {

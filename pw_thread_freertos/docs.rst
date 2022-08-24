@@ -230,12 +230,15 @@ Unfortunately FreeRTOS entirely hides the contents of the TCB inside of
 ``Source/tasks.c``, but it's necessary for snapshot processing in order to
 access the stack limits from interrupt contexts. For this reason, FreeRTOS
 snapshot integration relies on the ``pw_thread_freertos:freertos_tsktcb`` facade
-to provide the ``tskTCB`` definition.
+to provide the ``tskTCB`` definition. By default, a header will automatically be
+generated from FreeRTOS's ``tasks.c`` file to work around this limitation.
 
-The selected backend is expected to provide the ``struct tskTCB`` definition
-through ``pw_thread_freertos_backend/freertos_tsktcb.h``. The facade asserts
-that this definition matches the size of FreeRTOS's ``StaticTask_T`` which is
-the public opaque TCB type.
+In the event that the automatic header generation is incompatible with your
+version of FreeRTOS, ``pw_thread_freertos_FREERTOS_TSKTCB_BACKEND`` must be
+configured to point to a source set that provides the ``struct tskTCB``
+definition through ``pw_thread_freertos_backend/freertos_tsktcb.h``. The facade
+asserts that this definition matches the size of FreeRTOS's ``StaticTask_T``
+which is the public opaque TCB type.
 
 ``SnapshotThreads()``
 =====================

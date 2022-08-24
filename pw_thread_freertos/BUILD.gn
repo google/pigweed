@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/third_party/freertos/freertos.gni")
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
@@ -136,7 +137,7 @@ if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
   pw_source_set("thread_iteration") {
     public_configs = [ ":backend_config" ]
     deps = [
-      ":freertos_tsktcb_src",
+      ":freertos_tsktcb",
       "$dir_pw_third_party/freertos",
       "$dir_pw_thread:thread_info",
       "$dir_pw_thread:thread_iteration.facade",
@@ -180,27 +181,43 @@ pw_source_set("util") {
   sources = [ "util.cc" ]
 }
 
+# Action to generate `freertos_tsktcb.h` for
+# pw_thread_freertos_FREERTOS_TSKTCB_BACKEND.
+if (dir_pw_third_party_freertos != "") {
+  pw_python_action("generate_freertos_tsktcb") {
+    _out_path = "${target_gen_dir}/public_overrides/pw_thread_freertos_backend/freertos_tsktcb.h"
+    script = "py/pw_thread_freertos/generate_freertos_tsktcb.py"
+    args = [
+      "--freertos-src-dir",
+      rebase_path(dir_pw_third_party_freertos, root_build_dir),
+      "-o",
+      rebase_path(_out_path, root_build_dir),
+    ]
+    outputs = [ _out_path ]
+    visibility = [ ":auto_freertos_tsktcb" ]
+  }
+
+  config("auto_freertos_include_path") {
+    include_dirs = [ "${target_gen_dir}/public_overrides" ]
+    visibility = [ ":auto_freertos_tsktcb" ]
+  }
+
+  # Source set that provides backend for automatically generated
+  # `freertos_tsktcb.h` header.
+  pw_source_set("auto_freertos_tsktcb") {
+    public_configs = [ ":auto_freertos_include_path" ]
+    public = [ "${target_gen_dir}/public_overrides/pw_thread_freertos_backend/freertos_tsktcb.h" ]
+    public_deps = [ "$dir_pw_third_party/freertos" ]
+    deps = [ ":generate_freertos_tsktcb" ]
+    visibility = [ ":freertos_tsktcb" ]
+  }
+}
+
 pw_facade("freertos_tsktcb") {
   backend = pw_thread_freertos_FREERTOS_TSKTCB_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_thread_freertos/freertos_tsktcb.h" ]
   public_deps = [ "$dir_pw_third_party/freertos" ]
-}
-
-# TODO(amontanez): Make a script to automatically generate
-# pw_thread_freertos_FREERTOS_TSKTCB_BACKEND from source.
-if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
-  pw_source_set("freertos_tsktcb_src") {
-    public_configs = [
-      ":public_include_path",
-      ":backend_config",
-    ]
-    public = [ "public_overrides/pw_thread_backend/freertos_tsktcb.h" ]
-    public_deps = [
-      ":freertos_tsktcb.facade",
-      "$dir_pw_third_party/freertos",
-    ]
-  }
 }
 
 pw_source_set("snapshot") {

@@ -14,12 +14,21 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/third_party/freertos/freertos.gni")
+
 declare_args() {
   # Unfortunately FreeRTOS entirely hides the contents of the TCB inside of
   # tasks.c but it's necessary for snapshot processing in order to access the
   # stack limits. Set this to a pw_source_set which provides the tskTCB struct
-  # definition for snapshot to work with FreeRTOS.
+  # definition for snapshot to work with FreeRTOS. By default, this is
+  # auto-generated from FreeRTOS sources and shouldn't need to be manually
+  # modified.
   #
   # See the pw_thread_freertos docs for more details.
-  pw_thread_freertos_FREERTOS_TSKTCB_BACKEND = ""
+  if (dir_pw_third_party_freertos != "") {
+    pw_thread_freertos_FREERTOS_TSKTCB_BACKEND =
+        "$dir_pw_thread_freertos:auto_freertos_tsktcb"
+  } else {
+    pw_thread_freertos_FREERTOS_TSKTCB_BACKEND = ""
+  }
 }
