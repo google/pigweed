@@ -107,7 +107,7 @@ async def run_async(program: str,
         await asyncio.wait_for(process.wait(), timeout)
     except asyncio.TimeoutError:
         _LOG.error('%s timed out after %d seconds', program, timeout)
-        process.terminate()
+        process.kill()
         await process.wait()
 
     if process.returncode:

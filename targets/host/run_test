@@ -15,7 +15,4 @@
 
 # Test runner for host Linux/macOS systems.
 # Called with the path to a test binary and directly executes it.
-# Cleans up child process on exit.
-trap 'jobs -p | xargs -r kill; wait' SIGINT SIGTERM EXIT
-"$@" &
-wait
+"$@"
