@@ -219,7 +219,13 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
                                                'pw_crypto:sha256_mbedtls'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_mbedtls'))
-    build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
+    build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
+
+    # TODO(b/240982565): SocketStream currently requires Linux.
+    if sys.platform.startswith('linux'):
+        build_targets.append('integration_tests')
+
+    build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -234,7 +240,13 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_boringssl'),
     )
-    build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
+    build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
+
+    # TODO(b/240982565): SocketStream currently requires Linux.
+    if sys.platform.startswith('linux'):
+        build_targets.append('integration_tests')
+
+    build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -247,7 +259,13 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_uecc'),
     )
-    build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
+    build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
+
+    # TODO(b/240982565): SocketStream currently requires Linux.
+    if sys.platform.startswith('linux'):
+        build_targets.append('integration_tests')
+
+    build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
