@@ -113,7 +113,7 @@ class ArduinoBuilder:
         if not os.path.exists(self.hardware_path):
             raise FileNotFoundError(
                 "Arduino package path '{}' does not exist.".format(
-                    self.arduino_path))
+                    self.hardware_path))
 
         # Set and check for valid package name
         self.package_path = os.path.join(self.arduino_path, "hardware",
