@@ -345,7 +345,7 @@ void HciWrapperImpl::OnAclSignal(async_dispatcher_t* dispatcher, async::WaitBase
 
   // Allocate a buffer for the packet. Since we don't know the size beforehand
   // we allocate the largest possible buffer.
-  auto packet = ACLDataPacket::New(slab_allocators::kLargeACLDataPayloadSize);
+  auto packet = ACLDataPacket::New(allocators::kLargeACLDataPayloadSize);
   if (!packet) {
     bt_log(ERROR, "hci", "failed to allocate ACL data packet");
     return;
@@ -382,7 +382,7 @@ void HciWrapperImpl::OnCommandSignal(async_dispatcher_t* dispatcher, async::Wait
 
   // Allocate a buffer for the packet. Since we don't know the size beforehand
   // we allocate the largest possible buffer.
-  std::unique_ptr<EventPacket> packet = EventPacket::New(slab_allocators::kLargeControlPayloadSize);
+  std::unique_ptr<EventPacket> packet = EventPacket::New(allocators::kLargeControlPayloadSize);
   if (!packet) {
     bt_log(ERROR, "hci", "failed to allocate event packet");
     OnError(ZX_ERR_NO_MEMORY);

@@ -17,7 +17,7 @@ namespace bt::gatt {
 namespace {
 
 MutableByteBufferPtr NewPDU(size_t param_size) {
-  auto pdu = NewSlabBuffer(sizeof(att::Header) + param_size);
+  auto pdu = NewBuffer(sizeof(att::Header) + param_size);
   if (!pdu) {
     bt_log(DEBUG, "att", "out of memory");
   }

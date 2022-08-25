@@ -341,7 +341,7 @@ fitx::result<Error<>> ServiceSearchResponse::Parse(const ByteBuffer& buf) {
   if (cont_state_view.size() == 0) {
     continuation_state_ = nullptr;
   } else {
-    continuation_state_ = NewSlabBuffer(cont_state_view.size());
+    continuation_state_ = NewBuffer(cont_state_view.size());
     continuation_state_->Write(cont_state_view);
     return ToResult(HostError::kInProgress);
   }
@@ -557,7 +557,7 @@ fitx::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
   if (cont_state_view.size() == 0) {
     continuation_state_ = nullptr;
   } else {
-    continuation_state_ = NewSlabBuffer(cont_state_view.size());
+    continuation_state_ = NewBuffer(cont_state_view.size());
     continuation_state_->Write(cont_state_view);
   }
 
@@ -583,7 +583,7 @@ fitx::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
       return ToResult(HostError::kNotSupported);
     }
 
-    auto new_partial = NewSlabBuffer(new_partial_size);
+    auto new_partial = NewBuffer(new_partial_size);
     if (partial_response_) {
       new_partial->Write(partial_response_->view());
       new_partial->Write(attribute_list_bytes, partial_response_->size());
@@ -697,7 +697,7 @@ MutableByteBufferPtr ServiceAttributeResponse::GetPDU(uint16_t req_max, Transact
   buf->WriteObj(htobe16(attribute_list_byte_count), written);
   written += sizeof(uint16_t);
 
-  auto attribute_list_bytes = NewSlabBuffer(write_size);
+  auto attribute_list_bytes = NewBuffer(write_size);
   list_elem.Write(attribute_list_bytes.get());
   buf->Write(attribute_list_bytes->view(bytes_skipped, attribute_list_byte_count), written);
   written += attribute_list_byte_count;
@@ -886,7 +886,7 @@ fitx::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& bu
   if (cont_state_view.size() == 0) {
     continuation_state_ = nullptr;
   } else {
-    continuation_state_ = NewSlabBuffer(cont_state_view.size());
+    continuation_state_ = NewBuffer(cont_state_view.size());
     continuation_state_->Write(cont_state_view);
   }
 
@@ -904,7 +904,7 @@ fitx::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& bu
       return ToResult(HostError::kNotSupported);
     }
 
-    auto new_partial = NewSlabBuffer(new_partial_size);
+    auto new_partial = NewBuffer(new_partial_size);
     if (partial_response_) {
       new_partial->Write(partial_response_->view());
       new_partial->Write(attribute_lists_bytes, partial_response_->size());
@@ -1049,7 +1049,7 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t req_max, Tr
   buf->WriteObj(htobe16(attribute_lists_byte_count), written);
   written += sizeof(uint16_t);
 
-  auto attribute_list_bytes = NewSlabBuffer(write_size);
+  auto attribute_list_bytes = NewBuffer(write_size);
   list_elem.Write(attribute_list_bytes.get());
   buf->Write(attribute_list_bytes->view(bytes_skipped, attribute_lists_byte_count), written);
   written += attribute_lists_byte_count;

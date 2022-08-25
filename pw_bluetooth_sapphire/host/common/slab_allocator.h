@@ -23,7 +23,7 @@ constexpr size_t kSlabSize = 32767;
 //    NOTE: In this case, if allocation fails, panic.
 //
 // Returns nullptr for failures to allocate.
-[[nodiscard]] MutableByteBufferPtr NewSlabBuffer(size_t size);
+[[nodiscard]] MutableByteBufferPtr NewBuffer(size_t size);
 
 }  // namespace bt
 

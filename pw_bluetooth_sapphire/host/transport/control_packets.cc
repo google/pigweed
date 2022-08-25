@@ -9,42 +9,28 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::hci {
-namespace slab_allocators {
-
-// Slab-allocator traits for command packets.
-using LargeCommandTraits =
-    PacketTraits<hci_spec::CommandHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
-using SmallCommandTraits =
-    PacketTraits<hci_spec::CommandHeader, kSmallControlPacketSize, kNumSmallControlPackets>;
-
-// Slab-allocator traits for event packets. Since event packets are only
-// received (and not sent) and because the packet size cannot be determined
-// before the contents are read from the underlying channel, CommandChannel
-// always allocates the largest possible buffer for events. Thus, a small buffer
-// allocator is not needed.
-using EventTraits =
-    PacketTraits<hci_spec::EventHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
-
-using LargeCommandAllocator = fbl::SlabAllocator<LargeCommandTraits>;
-using SmallCommandAllocator = fbl::SlabAllocator<SmallCommandTraits>;
-using EventAllocator = fbl::SlabAllocator<EventTraits>;
-
-}  // namespace slab_allocators
-
 namespace {
 
+// Limit CommandPacket template instantiations to 2 (small and large):
+using SmallCommandPacket =
+    allocators::internal::FixedSizePacket<hci_spec::CommandHeader,
+                                          allocators::kSmallControlPacketSize>;
+using LargeCommandPacket =
+    allocators::internal::FixedSizePacket<hci_spec::CommandHeader,
+                                          allocators::kLargeControlPacketSize>;
+
+using EventFixedSizedPacket =
+    allocators::internal::FixedSizePacket<hci_spec::EventHeader,
+                                          allocators::kLargeControlPacketSize>;
+
+// TODO(fxbug.dev/106841): Use Pigweed's slab allocator
 std::unique_ptr<CommandPacket> NewCommandPacket(size_t payload_size) {
-  BT_DEBUG_ASSERT(payload_size <= slab_allocators::kLargeControlPayloadSize);
+  BT_DEBUG_ASSERT(payload_size <= allocators::kLargeControlPayloadSize);
 
-  if (payload_size <= slab_allocators::kSmallControlPayloadSize) {
-    auto buffer = slab_allocators::SmallCommandAllocator::New(payload_size);
-    if (buffer)
-      return buffer;
-
-    // We failed to allocate a small buffer; fall back to the large allocator.
+  if (payload_size <= allocators::kSmallControlPayloadSize) {
+    return std::make_unique<SmallCommandPacket>(payload_size);
   }
-
-  return slab_allocators::LargeCommandAllocator::New(payload_size);
+  return std::make_unique<LargeCommandPacket>(payload_size);
 }
 
 // Returns true and populates the |out_code| field with the status parameter.
@@ -113,7 +99,8 @@ void CommandPacket::WriteHeader(hci_spec::OpCode opcode) {
 
 // static
 std::unique_ptr<EventPacket> EventPacket::New(size_t payload_size) {
-  return slab_allocators::EventAllocator::New(payload_size);
+  // TODO(fxbug.dev/106841): Use Pigweed's slab allocator
+  return std::make_unique<EventFixedSizedPacket>(payload_size);
 }
 
 bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
@@ -191,10 +178,3 @@ void EventPacket::InitializeFromBuffer() {
 }
 
 }  // namespace bt::hci
-
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::LargeCommandTraits,
-                                      bt::hci::slab_allocators::kMaxNumSlabs, true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::SmallCommandTraits,
-                                      bt::hci::slab_allocators::kMaxNumSlabs, true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::EventTraits,
-                                      bt::hci::slab_allocators::kMaxNumSlabs, true);

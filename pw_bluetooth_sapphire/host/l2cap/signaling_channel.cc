@@ -225,7 +225,7 @@ ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code, uint8_t identifier
                                             const ByteBuffer& data) {
   BT_DEBUG_ASSERT(data.size() <= std::numeric_limits<uint16_t>::max());
 
-  auto buffer = NewSlabBuffer(sizeof(CommandHeader) + data.size());
+  auto buffer = NewBuffer(sizeof(CommandHeader) + data.size());
   BT_ASSERT(buffer);
 
   MutableSignalingPacket packet(buffer.get(), data.size());

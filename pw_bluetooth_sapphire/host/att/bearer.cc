@@ -219,7 +219,7 @@ void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Ha
 
     // We copy the PDU payload in case it needs to be retried following a
     // security upgrade.
-    auto pdu = NewSlabBuffer(current()->pdu->size());
+    auto pdu = NewBuffer(current()->pdu->size());
     if (pdu) {
       current()->pdu->Copy(pdu.get());
       timeout_task_.set_handler(std::move(timeout_cb));
@@ -507,7 +507,7 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
 
 void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
                                ErrorCode error_code) {
-  auto buffer = NewSlabBuffer(sizeof(Header) + sizeof(ErrorResponseParams));
+  auto buffer = NewBuffer(sizeof(Header) + sizeof(ErrorResponseParams));
   BT_ASSERT(buffer);
 
   PacketWriter packet(kErrorResponse, buffer.get());

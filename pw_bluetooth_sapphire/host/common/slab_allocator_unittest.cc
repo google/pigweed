@@ -9,28 +9,28 @@
 namespace bt {
 namespace {
 
-TEST(SlabAllocatorTest, NewSlabBuffer) {
-  auto buffer = NewSlabBuffer(kSmallBufferSize);
+TEST(SlabAllocatorTest, NewBuffer) {
+  auto buffer = NewBuffer(kSmallBufferSize);
   EXPECT_TRUE(buffer);
   EXPECT_EQ(kSmallBufferSize, buffer->size());
 
-  buffer = NewSlabBuffer(kSmallBufferSize / 2);
+  buffer = NewBuffer(kSmallBufferSize / 2);
   EXPECT_TRUE(buffer);
   EXPECT_EQ(kSmallBufferSize / 2, buffer->size());
 
-  buffer = NewSlabBuffer(kLargeBufferSize);
+  buffer = NewBuffer(kLargeBufferSize);
   EXPECT_TRUE(buffer);
   EXPECT_EQ(kLargeBufferSize, buffer->size());
 
-  buffer = NewSlabBuffer(kLargeBufferSize / 2);
+  buffer = NewBuffer(kLargeBufferSize / 2);
   EXPECT_TRUE(buffer);
   EXPECT_EQ(kLargeBufferSize / 2, buffer->size());
 
-  buffer = NewSlabBuffer(kLargeBufferSize + 1);
+  buffer = NewBuffer(kLargeBufferSize + 1);
   EXPECT_TRUE(buffer);
   EXPECT_EQ(kLargeBufferSize + 1, buffer->size());
 
-  buffer = NewSlabBuffer(0);
+  buffer = NewBuffer(0);
   EXPECT_TRUE(buffer);
   EXPECT_EQ(0U, buffer->size());
 }

@@ -12,7 +12,7 @@
 #include "acl_data_packet.h"
 #include "control_packets.h"
 
-namespace bt::hci::slab_allocators {
+namespace bt::hci::allocators {
 namespace {
 
 constexpr hci_spec::OpCode kTestOpCode = 0xFFFF;
@@ -32,18 +32,19 @@ TEST(SlabAllocatorsTest, CommandPacket) {
 }
 
 TEST(SlabAllocatorsTest, CommandPacketFallBack) {
-  size_t num_packets = 0;
-  std::list<std::unique_ptr<hci::CommandPacket>> packets;
+  // Maximum number of packets we can expect to obtain from all the slab allocators.
+  const size_t kMaxSlabPackets =
+      kMaxNumSlabs * kNumSmallControlPackets + kMaxNumSlabs * kNumLargeControlPackets;
 
-  // Allocate a lot of small packets. We should be able to allocate two
-  // allocators' worth of packets until we fail.
-  while (auto packet = CommandPacket::New(kTestOpCode, 5)) {
+  std::list<std::unique_ptr<hci::CommandPacket>> packets;
+  for (size_t num_packets = 0; num_packets < kMaxSlabPackets; num_packets++) {
+    auto packet = CommandPacket::New(kTestOpCode, 5);
     packets.push_front(std::move(packet));
-    num_packets++;
   }
 
-  EXPECT_EQ(kMaxNumSlabs * kNumSmallControlPackets + kMaxNumSlabs * kNumLargeControlPackets,
-            num_packets);
+  // Command allocator can fall back on system allocator after slabs are exhausted.
+  auto packet = CommandPacket::New(kTestOpCode, 5);
+  ASSERT_TRUE(packet);
 }
 
 TEST(SlabAllocatorsTest, ACLDataPacket) {
@@ -112,4 +113,4 @@ TEST(SlabAllocatorsTest, LargeACLDataPacketFallback) {
 }
 
 }  // namespace
-}  // namespace bt::hci::slab_allocators
+}  // namespace bt::hci::allocators

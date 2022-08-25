@@ -7,49 +7,12 @@
 
 #include <memory>
 
-#include <fbl/slab_allocator.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
 
-// This file defines a fbl::SlabAllocator trait template that can be used to
-// slab-allocate instances of hci_spec::Packet. It's signature is as follows:
-//
-//   template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
-//   using PacketTraits = ...;
-//
-// The following defines a SlabAllocator that returns instances of
-// Packet<MyHeader>. Each packet is configured to be backed by a 256 octet
-// buffer and each slab can allocate 128 packets:
-//
-// my_packet.h:
-//   #include "packet.h"
-//   #include "slab_allocators.h"
-//   ...
-//
-//   using MyPacket = hci_spec::Packet<MyHeader>;
-//   using MyPacketTraits =
-//       hci::slab_allocators::PacketTraits<MyHeader, 256, 128>;
-//   ...
-//
-// my_packet.cc:
-//   DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(MyPacketTraits, my_max_num_slabs,
-//   true);
-//   ...
-//
-// foo.cc:
-//   #include "my_packet.h"
-//
-//   std::unique_ptr<MyPacket> packet =
-//       fbl::SlabAllocator<MyPacketTraits>::New(my_payload_size);
-//
-// If the header type provided to PacketTraits would correspond to an explicit
-// specialization of the Packet template, then the specialization MUST provide a
-// default constructor that is visible to all of its subclasses.
-namespace bt::hci::slab_allocators {
+namespace bt::hci::allocators {
 
 // Slab sizes for control (command/event) and ACL data packets used by the slab
 // allocators. These are used by the CommandPacket, EventPacket, and
@@ -118,31 +81,8 @@ class FixedSizePacket : public FixedSizePacketStorage<BufferSize>, public Packet
   FixedSizePacket& operator=(const FixedSizePacket&) = delete;
 };
 
-template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
-class SlabPacket;
-
 }  // namespace internal
 
-template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
-using PacketTraits =
-    SlabAllocatorTraits<internal::SlabPacket<HeaderType, BufferSize, NumBuffers>,
-                        sizeof(internal::FixedSizePacket<HeaderType, BufferSize>), NumBuffers>;
-
-namespace internal {
-
-template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
-class SlabPacket : public FixedSizePacket<HeaderType, BufferSize>,
-                   public fbl::SlabAllocated<PacketTraits<HeaderType, BufferSize, NumBuffers>> {
- public:
-  explicit SlabPacket(size_t payload_size = 0u)
-      : FixedSizePacket<HeaderType, BufferSize>(payload_size) {}
-
- private:
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabPacket);
-};
-
-}  // namespace internal
-
-}  // namespace bt::hci::slab_allocators
+}  // namespace bt::hci::allocators
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SLAB_ALLOCATORS_H_

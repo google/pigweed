@@ -11,38 +11,9 @@
 
 namespace bt {
 
-static_assert(kLargeBufferSize > kSmallBufferSize);
-
-using SmallBufferTraits = SlabBufferTraits<kSmallBufferSize, kSlabSize / kSmallBufferSize>;
-using LargeBufferTraits = SlabBufferTraits<kLargeBufferSize, kSlabSize / kLargeBufferSize>;
-
-using SmallAllocator = fbl::SlabAllocator<SmallBufferTraits>;
-using LargeAllocator = fbl::SlabAllocator<LargeBufferTraits>;
-
-MutableByteBufferPtr NewSlabBuffer(size_t size) {
-  if (size == 0) {
-    // Don't return nullptr because that would indicate an error.
-    return std::make_unique<DynamicByteBuffer>();
-  }
-
-  if (size <= kSmallBufferSize) {
-    auto buffer = SmallAllocator::New(size);
-    if (buffer) {
-      return buffer;
-    }
-  }
-
-  if (size > kLargeBufferSize) {
-    // Fall back to using the system allocator to avoid panicking when allocating very large
-    // buffers. This can still return nullptr if allocating the DynamicByteBuffer fails.
-    // NOTE: DynamicByteBuffer construction panics if allocating the underlying buffer fails.
-    return std::make_unique<DynamicByteBuffer>(size);
-  }
-
-  return LargeAllocator::New(size);
+MutableByteBufferPtr NewBuffer(size_t size) {
+  // TODO(fxbug.dev/106841): Use Pigweed's slab allocator
+  return std::make_unique<DynamicByteBuffer>(size);
 }
 
 }  // namespace bt
-
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::LargeBufferTraits, bt::kMaxNumSlabs, true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::SmallBufferTraits, bt::kMaxNumSlabs, true);

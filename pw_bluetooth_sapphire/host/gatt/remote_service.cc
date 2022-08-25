@@ -171,7 +171,7 @@ void RemoteService::ReadLongCharacteristic(CharacteristicHandle id, uint16_t off
   }
 
   // Set up the buffer in which we'll accumulate the blobs.
-  auto buffer = NewSlabBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
+  auto buffer = NewBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
   if (!buffer) {
     ReportReadValueError(ToResult(HostError::kOutOfMemory), std::move(callback));
     return;
@@ -292,7 +292,7 @@ void RemoteService::ReadLongDescriptor(DescriptorHandle id, uint16_t offset, siz
   }
 
   // Set up the buffer in which we'll accumulate the blobs.
-  auto buffer = NewSlabBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
+  auto buffer = NewBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
   if (!buffer) {
     ReportReadValueError(ToResult(HostError::kOutOfMemory), std::move(callback));
     return;
@@ -651,7 +651,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
 
     // Convert and accumulate values.
     for (const auto& result : values) {
-      auto buffer = NewSlabBuffer(result.value.size());
+      auto buffer = NewBuffer(result.value.size());
       result.value.Copy(buffer.get());
       values_accum.push_back(ReadByTypeResult{CharacteristicHandle(result.handle),
                                               fitx::ok(std::move(buffer)), result.maybe_truncated});

@@ -11,61 +11,33 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::hci {
-namespace slab_allocators {
-
-// Slab-allocator traits for ACL data packets.
-using LargeACLTraits =
-    PacketTraits<hci_spec::ACLDataHeader, kLargeACLDataPacketSize, kNumLargeACLDataPackets>;
-using MediumACLTraits =
-    PacketTraits<hci_spec::ACLDataHeader, kMediumACLDataPacketSize, kNumMediumACLDataPackets>;
-using SmallACLTraits =
-    PacketTraits<hci_spec::ACLDataHeader, kSmallACLDataPacketSize, kNumSmallACLDataPackets>;
-
-using LargeACLAllocator = fbl::SlabAllocator<LargeACLTraits>;
-using MediumACLAllocator = fbl::SlabAllocator<MediumACLTraits>;
-using SmallACLAllocator = fbl::SlabAllocator<SmallACLTraits>;
-
-}  // namespace slab_allocators
-
 namespace {
 
 // Type containing both a fixed packet storage buffer and a ACLDataPacket interface to the buffer.
-// Does not deallocate from a slab buffer when destroyed (unlike SlabPacket).
+// Limit to 3 template instantiations: small, medium, and large.
+using SmallACLDataPacket =
+    allocators::internal::FixedSizePacket<hci_spec::ACLDataHeader,
+                                          allocators::kSmallACLDataPacketSize>;
+using MediumACLDataPacket =
+    allocators::internal::FixedSizePacket<hci_spec::ACLDataHeader,
+                                          allocators::kMediumACLDataPacketSize>;
 using LargeACLDataPacket =
-    slab_allocators::internal::FixedSizePacket<hci_spec::ACLDataHeader,
-                                               slab_allocators::kLargeACLDataPacketSize>;
+    allocators::internal::FixedSizePacket<hci_spec::ACLDataHeader,
+                                          allocators::kLargeACLDataPacketSize>;
 
 ACLDataPacketPtr NewACLDataPacket(size_t payload_size) {
-  BT_ASSERT_MSG(payload_size <= slab_allocators::kLargeACLDataPayloadSize,
+  BT_ASSERT_MSG(payload_size <= allocators::kLargeACLDataPayloadSize,
                 "payload size %zu too large (allowed = %zu)", payload_size,
-                slab_allocators::kLargeACLDataPayloadSize);
+                allocators::kLargeACLDataPayloadSize);
 
-  if (payload_size <= slab_allocators::kSmallACLDataPayloadSize) {
-    auto buffer = slab_allocators::SmallACLAllocator::New(payload_size);
-    if (buffer) {
-      return buffer;
-    }
-
-    // Fall back to the next allocator.
+  if (payload_size <= allocators::kSmallACLDataPayloadSize) {
+    return std::make_unique<SmallACLDataPacket>(payload_size);
   }
 
-  if (payload_size <= slab_allocators::kMediumACLDataPayloadSize) {
-    auto buffer = slab_allocators::MediumACLAllocator::New(payload_size);
-    if (buffer) {
-      return buffer;
-    }
-
-    // Fall back to the next allocator.
+  if (payload_size <= allocators::kMediumACLDataPayloadSize) {
+    return std::make_unique<MediumACLDataPacket>(payload_size);
   }
 
-  auto buffer = slab_allocators::LargeACLAllocator::New(payload_size);
-  if (buffer) {
-    return buffer;
-  }
-
-  bt_log(TRACE, "hci", "ACLDataPacket slab allocators capacity exhausted");
-
-  // Fall back to system allocator.
   return std::make_unique<LargeACLDataPacket>(payload_size);
 }
 
@@ -130,10 +102,3 @@ void ACLDataPacket::WriteHeader(hci_spec::ConnectionHandle connection_handle,
 }
 
 }  // namespace bt::hci
-
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::LargeACLTraits,
-                                      bt::hci::slab_allocators::kMaxNumSlabs, true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::MediumACLTraits,
-                                      bt::hci::slab_allocators::kMaxNumSlabs, true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::SmallACLTraits,
-                                      bt::hci::slab_allocators::kMaxNumSlabs, true);

@@ -5,11 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_BUFFER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_BUFFER_H_
 
-#include <fbl/slab_allocator.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 
 namespace bt {
 
@@ -40,31 +37,6 @@ class SlabBuffer : public MutableByteBuffer {
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBuffer);
 };
-
-namespace internal {
-
-template <size_t BufferSize, size_t NumBuffers>
-class SlabBufferImpl;
-
-}  // namespace internal
-
-template <size_t BufferSize, size_t NumBuffers>
-using SlabBufferTraits = SlabAllocatorTraits<internal::SlabBufferImpl<BufferSize, NumBuffers>,
-                                             sizeof(SlabBuffer<BufferSize>), NumBuffers>;
-
-namespace internal {
-
-template <size_t BufferSize, size_t NumBuffers>
-class SlabBufferImpl : public SlabBuffer<BufferSize>,
-                       public fbl::SlabAllocated<SlabBufferTraits<BufferSize, NumBuffers>> {
- public:
-  explicit SlabBufferImpl(size_t size) : SlabBuffer<BufferSize>(size) {}
-
- private:
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBufferImpl);
-};
-
-}  // namespace internal
 
 }  // namespace bt
 

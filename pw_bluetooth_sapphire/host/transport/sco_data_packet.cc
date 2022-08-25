@@ -10,30 +10,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::hci {
-
-namespace slab_allocators {
-
-// Slab-allocator traits for SCO data packets.
-using MaxScoTraits =
-    PacketTraits<hci_spec::SynchronousDataHeader, kMaxScoDataPacketSize, kNumMaxScoDataPackets>;
-
-using MaxScoAllocator = fbl::SlabAllocator<MaxScoTraits>;
-
-}  // namespace slab_allocators
-
 // Type containing both a fixed packet storage buffer and a ScoDataPacket interface to the buffer.
-// Does not deallocate from a slab buffer when destroyed (unlike SlabPacket).
-using MaxScoDataPacket =
-    slab_allocators::internal::FixedSizePacket<hci_spec::SynchronousDataHeader,
-                                               slab_allocators::kMaxScoDataPacketSize>;
+using MaxScoDataPacket = allocators::internal::FixedSizePacket<hci_spec::SynchronousDataHeader,
+                                                               allocators::kMaxScoDataPacketSize>;
 
 std::unique_ptr<ScoDataPacket> ScoDataPacket::New(uint8_t payload_size) {
-  std::unique_ptr<ScoDataPacket> packet = slab_allocators::MaxScoAllocator::New(payload_size);
-  if (!packet) {
-    bt_log(INFO, "hci", "ScoDataPacket slab allocators capacity exhausted");
-    return std::make_unique<MaxScoDataPacket>(payload_size);
-  }
-  return packet;
+  return std::make_unique<MaxScoDataPacket>(payload_size);
 }
 
 std::unique_ptr<ScoDataPacket> ScoDataPacket::New(hci_spec::ConnectionHandle connection_handle,
@@ -67,7 +49,3 @@ void ScoDataPacket::WriteHeader(hci_spec::ConnectionHandle connection_handle) {
 }
 
 }  // namespace bt::hci
-
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::MaxScoTraits,
-                                      bt::hci::slab_allocators::kMaxNumSlabs,
-                                      /*alloc_initial=*/true);

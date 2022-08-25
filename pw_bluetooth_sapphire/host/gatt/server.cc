@@ -74,7 +74,7 @@ class AttBasedServer final : public Server {
   // Server overrides:
   void SendUpdate(IdType service_id, IdType chrc_id, BufferView value,
                   IndicationCallback indicate_cb) override {
-    auto buffer = NewSlabBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
+    auto buffer = NewBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
     BT_ASSERT(buffer);
 
     LocalServiceManager::ClientCharacteristicConfig config;
@@ -134,7 +134,7 @@ class AttBasedServer final : public Server {
     uint16_t client_mtu = le16toh(params.client_rx_mtu);
     uint16_t server_mtu = att_->preferred_mtu();
 
-    auto buffer = NewSlabBuffer(sizeof(att::Header) + sizeof(att::ExchangeMTUResponseParams));
+    auto buffer = NewBuffer(sizeof(att::Header) + sizeof(att::ExchangeMTUResponseParams));
     BT_ASSERT(buffer);
 
     att::PacketWriter writer(att::kExchangeMTUResponse, buffer.get());
@@ -205,7 +205,7 @@ class AttBasedServer final : public Server {
 
     size_t pdu_size = kHeaderSize + entry_size * results.size();
 
-    auto buffer = NewSlabBuffer(pdu_size);
+    auto buffer = NewBuffer(pdu_size);
     BT_ASSERT(buffer);
 
     att::PacketWriter writer(att::kFindInformationResponse, buffer.get());
@@ -277,7 +277,7 @@ class AttBasedServer final : public Server {
 
     constexpr size_t kRspStructSize = sizeof(att::HandlesInformationList);
     size_t pdu_size = sizeof(att::Header) + kRspStructSize * results.size();
-    auto buffer = NewSlabBuffer(pdu_size);
+    auto buffer = NewBuffer(pdu_size);
     BT_ASSERT(buffer);
 
     att::PacketWriter writer(att::kFindByTypeValueResponse, buffer.get());
@@ -347,7 +347,7 @@ class AttBasedServer final : public Server {
     size_t pdu_size = kHeaderSize + entry_size * results.size();
     BT_DEBUG_ASSERT(pdu_size <= att_->mtu());
 
-    auto buffer = NewSlabBuffer(pdu_size);
+    auto buffer = NewBuffer(pdu_size);
     BT_ASSERT(buffer);
 
     att::PacketWriter writer(att::kReadByGroupTypeResponse, buffer.get());
@@ -432,7 +432,7 @@ class AttBasedServer final : public Server {
         // Respond with just a single entry.
         size_t value_size = std::min(value.size(), kMaxValueSize);
         size_t entry_size = value_size + sizeof(att::AttributeData);
-        auto buffer = NewSlabBuffer(entry_size + kHeaderSize);
+        auto buffer = NewBuffer(entry_size + kHeaderSize);
         att::PacketWriter writer(att::kReadByTypeResponse, buffer.get());
 
         auto params = writer.mutable_payload<att::ReadByTypeResponseParams>();
@@ -457,7 +457,7 @@ class AttBasedServer final : public Server {
     size_t pdu_size = kHeaderSize + entry_size * results.size();
     BT_DEBUG_ASSERT(pdu_size <= att_->mtu());
 
-    auto buffer = NewSlabBuffer(pdu_size);
+    auto buffer = NewBuffer(pdu_size);
     BT_ASSERT(buffer);
 
     att::PacketWriter writer(att::kReadByTypeResponse, buffer.get());
@@ -515,7 +515,7 @@ class AttBasedServer final : public Server {
       }
 
       size_t value_size = std::min(value.size(), self->att_->mtu() - kHeaderSize);
-      auto buffer = NewSlabBuffer(value_size + kHeaderSize);
+      auto buffer = NewBuffer(value_size + kHeaderSize);
       BT_ASSERT(buffer);
 
       att::PacketWriter writer(att::kReadBlobResponse, buffer.get());
@@ -578,7 +578,7 @@ class AttBasedServer final : public Server {
       }
 
       size_t value_size = std::min(value.size(), self->att_->mtu() - kHeaderSize);
-      auto buffer = NewSlabBuffer(value_size + kHeaderSize);
+      auto buffer = NewBuffer(value_size + kHeaderSize);
       BT_ASSERT(buffer);
 
       att::PacketWriter writer(att::kReadResponse, buffer.get());
@@ -681,7 +681,7 @@ class AttBasedServer final : public Server {
         return;
       }
 
-      auto buffer = NewSlabBuffer(1);
+      auto buffer = NewBuffer(1);
       (*buffer)[0] = att::kWriteResponse;
       self->att_->Reply(tid, std::move(buffer));
     };
