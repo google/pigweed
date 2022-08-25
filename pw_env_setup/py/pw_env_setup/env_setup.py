@@ -317,7 +317,7 @@ class EnvSetup(object):
                 self._config_file_name, next(iter(config))))
 
     def _check_submodule_presence(self):
-        unitialized = set()
+        uninitialized = set()
 
         # Don't check submodule presence if using the Android Repo Tool.
         if os.path.isdir(os.path.join(self._project_root, '.repo')):
@@ -335,11 +335,11 @@ class EnvSetup(object):
             # Anything but an initial '-' means the submodule is initialized.
             if not line.startswith('-'):
                 continue
-            unitialized.add(line.split()[1])
+            uninitialized.add(line.split()[1])
 
-        missing = unitialized - set(self._optional_submodules)
+        missing = uninitialized - set(self._optional_submodules)
         if self._required_submodules:
-            missing = set(self._required_submodules) & unitialized
+            missing = set(self._required_submodules) & uninitialized
 
         if missing:
             print(
