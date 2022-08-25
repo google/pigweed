@@ -594,19 +594,8 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   TrySendQueuedCommands();
 
   for (auto it = pending_callbacks.begin(); it != pending_callbacks.end(); ++it) {
-    std::unique_ptr<EventPacket> ev = nullptr;
-
-    // Don't copy event for last callback.
-    if (it == pending_callbacks.end() - 1) {
-      ev = std::move(event);
-    } else {
-      ev = EventPacket::New(event->view().payload_size());
-      MutableBufferView buf = ev->mutable_view()->mutable_data();
-      event->view().data().Copy(&buf);
-    }
-
     // execute the event callback
-    EventCallbackResult result = it->callback(*ev);
+    EventCallbackResult result = it->callback(*event);
     if (result == EventCallbackResult::kRemove) {
       RemoveEventHandler(it->handler_id);
     }
