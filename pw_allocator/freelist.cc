@@ -29,7 +29,7 @@ Status FreeList::AddChunk(span<std::byte> chunk) {
 
   aliased.bytes = chunk.data();
 
-  size_t chunk_ptr = FindChunkPtrForSize(chunk.size(), false);
+  unsigned short chunk_ptr = FindChunkPtrForSize(chunk.size(), false);
 
   // Add it to the correct list.
   aliased.node->size = chunk.size();
@@ -44,7 +44,7 @@ span<std::byte> FreeList::FindChunk(size_t size) const {
     return span<std::byte>();
   }
 
-  size_t chunk_ptr = FindChunkPtrForSize(size, true);
+  unsigned short chunk_ptr = FindChunkPtrForSize(size, true);
 
   // Check that there's data. This catches the case where we run off the
   // end of the array
@@ -58,7 +58,7 @@ span<std::byte> FreeList::FindChunk(size_t size) const {
       FreeListNode* node;
       std::byte* data;
     } aliased;
-    aliased.node = chunks_[i];
+    aliased.node = chunks_[static_cast<unsigned short>(i)];
 
     while (aliased.node != nullptr) {
       if (aliased.node->size >= size) {
@@ -75,7 +75,7 @@ span<std::byte> FreeList::FindChunk(size_t size) const {
 }
 
 Status FreeList::RemoveChunk(span<std::byte> chunk) {
-  size_t chunk_ptr = FindChunkPtrForSize(chunk.size(), true);
+  unsigned short chunk_ptr = FindChunkPtrForSize(chunk.size(), true);
 
   // Walk that list, finding the chunk.
   union {
@@ -112,9 +112,9 @@ Status FreeList::RemoveChunk(span<std::byte> chunk) {
   return Status::NotFound();
 }
 
-size_t FreeList::FindChunkPtrForSize(size_t size, bool non_null) const {
-  size_t chunk_ptr = 0;
-  for (chunk_ptr = 0; chunk_ptr < sizes_.size(); chunk_ptr++) {
+unsigned short FreeList::FindChunkPtrForSize(size_t size, bool non_null) const {
+  unsigned short chunk_ptr = 0;
+  for (chunk_ptr = 0u; chunk_ptr < sizes_.size(); chunk_ptr++) {
     if (sizes_[chunk_ptr] >= size &&
         (!non_null || chunks_[chunk_ptr] != nullptr)) {
       break;
