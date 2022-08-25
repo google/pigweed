@@ -148,9 +148,9 @@ class DataSourceMap:
         curr_parent = self._BASE_TOTAL_LABEL
 
         # Iterate through base labels at each datasource index.
-        for data_source_i in range(len(base.get_ds_names())):
-            last_data_source_index = data_source_i == (
-                len(base.get_ds_names()) - 1)
+        for data_source_i in range(1, len(base.get_ds_names())):
+            last_data_source_index = (data_source_i == (
+                len(base.get_ds_names()) - 1))
             for b_label in base.labels(data_source_i):
                 if data_source_i > 0:
                     curr_parent = b_label.parents[-1]

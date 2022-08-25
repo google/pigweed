@@ -72,10 +72,6 @@ pw_doc_group("docs") {
 pw_size_diff("persistent_size") {
   title = "pw::persistent_ram::Persistent"
 
-  # To see all the symbols, uncomment the following:
-  # Note: The size report RST table won't be generated when full_report = true.
-  # full_report = true
-
   binaries = [
     {
       target = "size_report:persistent"

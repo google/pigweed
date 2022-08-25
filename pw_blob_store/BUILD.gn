@@ -145,10 +145,6 @@ pw_doc_group("docs") {
 pw_size_diff("blob_size") {
   title = "Pigweed BlobStore size report"
 
-  # To see all the symbols, uncomment the following:
-  # Note: The size report RST table won't be generated when full_report = true.
-  # full_report = true
-
   binaries = [
     {
       target = "size_report:basic_blob"

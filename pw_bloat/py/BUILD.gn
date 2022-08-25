@@ -24,9 +24,7 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_bloat/__init__.py",
-    "pw_bloat/binary_diff.py",
     "pw_bloat/bloat.py",
-    "pw_bloat/bloat_output.py",
     "pw_bloat/bloaty_config.py",
     "pw_bloat/label.py",
     "pw_bloat/label_output.py",

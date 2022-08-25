@@ -16,7 +16,10 @@ largest size impact.
 
 Defining size reports
 =====================
-Size reports are defined using the GN template ``pw_size_diff``. The template
+
+Diff Size Reports
+^^^^^^^^^^^^^^^^^
+Size reports can be defined using the GN template ``pw_size_diff``. The template
 requires at least two executable targets on which to perform a size diff. The
 base for the size diff can be specified either globally through the top-level
 ``base`` argument, or individually per-binary within the ``binaries`` list.
@@ -29,9 +32,6 @@ base for the size diff can be specified either globally through the top-level
   a label for the diff, and optionally a base target that overrides the default
   base.
 * ``source_filter``: Optional regex to filter labels in the diff output.
-* ``full_report``: Boolean flag indicating whether to output a full report of
-  all symbols in the binary, or a summary of the segment size changes. Default
-  false.
 
 .. code::
 
@@ -64,11 +64,21 @@ base for the size diff can be specified either globally through the top-level
     ]
   }
 
-Single Binary Sizes Reports
+A sample ``pw_size_diff`` ReST size report table can be found within module
+docs. For example, see the :ref:`pw_checksum-size-report` section of
+``pw_checksum`` module for more detail.
+
+
+Single Binary Size Reports
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-**Argument**
+Size reports can also be defined using ``pw_size_report``, which provides
+a size report for a single binary. The template requires a target binary.
+
+**Arguments**
 
 * ``target``: Binary target to run size report on.
+* ``data_sources``: Optional list of data sources to organize outputs.
+* ``source_filter``: Optional regex to filter labels in the output.
 
 .. code::
 
@@ -82,60 +92,53 @@ Single Binary Sizes Reports
     target = ":hello_iostream"
   }
 
-ASCII Table Generated
+Sample Single Binary ASCII Table Generated
 
-.. code-block:: rst
+.. code-block::
 
-  +-------------+-----------------------------------------------+------+
-  |segment_names|                  fullsymbols                  | sizes|
-  +=============+===============================================+======+
-  |FLASH        |                                               |20,416|
-  |             |[147 Others]                                   | 6,976|
-  |             |_dtoa_r                                        | 3,036|
-  |             |[section .code]                                | 2,985|
-  |             |_printf_float                                  | 1,132|
-  |             |__adddf3                                       |   630|
-  |             |_vfiprintf_r                                   |   608|
-  |             |__aeabi_dmul                                   |   596|
-  |             |_printf_i                                      |   588|
-  |             |_svfprintf_r                                   |   512|
-  |             |__aeabi_ddiv                                   |   464|
-  |             |pw_assert_basic_HandleFailure                  |   388|
-  |             |__multiply                                     |   340|
-  |             |quorem                                         |   278|
-  |             |__mdiff                                        |   276|
-  |             |__sflush_r                                     |   268|
-  |             |_ctype_                                        |   257|
-  |             |__lshift                                       |   224|
-  |             |__swsetup_r                                    |   220|
-  |             |pw::allocator::FreeListHeap::Free(void*)       |   220|
-  |             |_printf_common                                 |   218|
-  |             |__mprec_tens                                   |   200|
-  +-------------+-----------------------------------------------+------+
-  |RAM          |                                               |   672|
-  |             |__global_locale                                |   364|
-  |             |(anonymous namespace)::buf                     |   104|
-  |             |impure_data                                    |    96|
-  |             |kCrashBanner                                   |    48|
-  |             |object.0                                       |    24|
-  |             |[section .zero_init_ram]                       |     9|
-  |             |[section .static_init_ram]                     |     4|
-  |             |_impure_ptr                                    |     4|
-  |             |errno                                          |     4|
-  |             |pw::log_basic::(anonymous namespace)::write_log|     4|
-  |             |pw_freelist_heap                               |     4|
-  |             |unoptimizable                                  |     4|
-  |             |__lock___sfp_recursive_mutex                   |     1|
-  |             |__lock___sinit_recursive_mutex                 |     1|
-  +-------------+-----------------------------------------------+------+
-  |Total        |                                               |21,088|
-  +-------------+-----------------------------------------------+------+
+  ┌─────────────┬──────────────────────────────────────────────────┬──────┐
+  │segment_names│                      symbols                     │ sizes│
+  ├═════════════┼══════════════════════════════════════════════════┼══════┤
+  │FLASH        │                                                  │12,072│
+  │             │pw::kvs::KeyValueStore::InitializeMetadata()      │   684│
+  │             │pw::kvs::KeyValueStore::Init()                    │   456│
+  │             │pw::kvs::internal::EntryCache::Find()             │   444│
+  │             │pw::kvs::FakeFlashMemory::Write()                 │   240│
+  │             │pw::kvs::internal::Entry::VerifyChecksumInFlash() │   228│
+  │             │pw::kvs::KeyValueStore::GarbageCollectSector()    │   220│
+  │             │pw::kvs::KeyValueStore::RemoveDeletedKeyEntries() │   220│
+  │             │pw::kvs::KeyValueStore::AppendEntry()             │   204│
+  │             │pw::kvs::KeyValueStore::Get()                     │   194│
+  │             │pw::kvs::internal::Entry::Read()                  │   188│
+  │             │pw::kvs::ChecksumAlgorithm::Finish()              │    26│
+  │             │pw::kvs::internal::Entry::ReadKey()               │    26│
+  │             │pw::kvs::internal::Sectors::BaseAddress()         │    24│
+  │             │pw::kvs::ChecksumAlgorithm::Update()              │    20│
+  │             │pw::kvs::FlashTestPartition()                     │     8│
+  │             │pw::kvs::FakeFlashMemory::Disable()               │     6│
+  │             │pw::kvs::FakeFlashMemory::Enable()                │     6│
+  │             │pw::kvs::FlashMemory::SelfTest()                  │     6│
+  │             │pw::kvs::FlashPartition::Init()                   │     6│
+  │             │pw::kvs::FlashPartition::sector_size_bytes()      │     6│
+  │             │pw::kvs::FakeFlashMemory::IsEnabled()             │     4│
+  ├─────────────┼──────────────────────────────────────────────────┼──────┤
+  │RAM          │                                                  │ 1,424│
+  │             │test_kvs                                          │   992│
+  │             │pw::kvs::(anonymous namespace)::test_flash        │   384│
+  │             │pw::kvs::(anonymous namespace)::test_partition    │    24│
+  │             │pw::kvs::FakeFlashMemory::no_errors_              │    12│
+  │             │borrowable_kvs                                    │     8│
+  │             │kvs_entry_count                                   │     4│
+  ├═════════════┼══════════════════════════════════════════════════┼══════┤
+  │Total        │                                                  │13,496│
+  └─────────────┴──────────────────────────────────────────────────┴──────┘
 
 
 Size reports are typically included in ReST documentation, as described in
 `Documentation integration`_. Size reports may also be printed in the build
-output if desired. To enable this in the GN build, set the
-``pw_bloat_SHOW_SIZE_REPORTS`` build arg to ``true``.
+output if desired. To enable this in the GN build
+(``pigweed/pw_bloat/bloat.gni``), set the ``pw_bloat_SHOW_SIZE_REPORTS``
+build arg to ``true``.
 
 Documentation integration
 =========================

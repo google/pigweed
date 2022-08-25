@@ -58,6 +58,21 @@ class _Align(enum.Enum):
     RIGHT = 2
 
 
+def get_label_status(curr_label: Label) -> str:
+    if curr_label.is_new():
+        return 'NEW'
+    if curr_label.is_del():
+        return 'DEL'
+    return ''
+
+
+def diff_sign_sizes(size: int, diff_mode: bool) -> str:
+    if diff_mode:
+        size_sign = '+' if size > 0 else ''
+        return f"{size_sign}{size:,}"
+    return f"{size:,}"
+
+
 class BloatTableOutput:
     """ASCII Table generator from DataSourceMap."""
 
@@ -93,19 +108,18 @@ class BloatTableOutput:
 
         self._col_widths = self._generate_col_width(col_max_width)
 
-    def _diff_sign_sizes(self, size: int) -> str:
-        if self._diff_mode:
-            size_sign = '+' if size > 0 else ''
-            return f"{size_sign}{size:,}"
-        return f"{size:,}"
-
     def _generate_col_width(self, col_max_width: int) -> List[int]:
         """Find column width for all data sources and sizes."""
+        max_len_size = 0
         col_list = [
             len(ds_name) for ds_name in self._data_source_map.get_ds_names()
         ]
         for curr_label in self._data_source_map.labels():
             self._total_size += curr_label.size
+            max_len_size = max(
+                len(diff_sign_sizes(self._total_size, self._diff_mode)),
+                len(diff_sign_sizes(curr_label.size, self._diff_mode)),
+                max_len_size)
             for index, parent_label in enumerate(
                 [*curr_label.parents, curr_label.name]):
                 if len(parent_label) > col_max_width:
@@ -117,9 +131,7 @@ class BloatTableOutput:
         if self._diff_mode:
             col_list = [len('Total'), *col_list]
             diff_same = len('(SAME)')
-        col_list.append(
-            max(len(self._diff_sign_sizes(self._total_size)), len('sizes'),
-                diff_same))
+        col_list.append(max(max_len_size, len('sizes'), diff_same))
 
         return [x + self._additional_padding for x in col_list]
 
@@ -146,21 +158,24 @@ class BloatTableOutput:
         last_diff_name = ''
         self._ascii_table_rows.extend([*self.create_title_row()])
         for curr_label in self._data_source_map.labels():
+            if curr_label.size == 0:
+                continue
             new_lb_hierachy = tuple([
                 *self.get_ds_label_size(curr_label.parents),
                 self._LabelContent(curr_label.name, curr_label.size,
-                                   self.get_label_status(curr_label))
+                                   get_label_status(curr_label))
             ])
             diff_list = self._diff_label_names(curr_lb_hierachy,
                                                new_lb_hierachy)
             curr_lb_hierachy = new_lb_hierachy
-            if curr_label.parents[0] == last_diff_name:
+            if curr_label.parents and curr_label.parents[0] == last_diff_name:
                 continue
             if self._diff_mode and diff_list[0].name and (not cast(
                     DiffDataSourceMap,
                     self._data_source_map).has_diff_sublabels(
                         diff_list[0].name)):
-                if len(self._ascii_table_rows) > 3 and (not self._rst_output):
+                if (len(self._ascii_table_rows) >
+                        3) and (self._ascii_table_rows[-1][0] != '+'):
                     self._ascii_table_rows.append(
                         self.row_divider(len(self._col_names),
                                          self._cs.H.value))
@@ -176,7 +191,7 @@ class BloatTableOutput:
 
         self._ascii_table_rows.extend([*self.create_total_row()])
 
-        return '\n'.join(self._ascii_table_rows)
+        return '\n'.join(self._ascii_table_rows) + '\n'
 
     def create_same_label_row(self, col_index: int, label: str) -> str:
         label_row = ''
@@ -197,7 +212,7 @@ class BloatTableOutput:
         for index, target_label in enumerate(parent_labels):
             for curr_label in self._data_source_map.labels(index):
                 if curr_label.name == target_label:
-                    diff_label = self.get_label_status(curr_label)
+                    diff_label = get_label_status(curr_label)
                     parent_label_sizes.append(
                         self._LabelContent(curr_label.name, curr_label.size,
                                            diff_label))
@@ -213,7 +228,8 @@ class BloatTableOutput:
             if i == 0:
                 total_row += self.create_cell('Total', False, i, _Align.LEFT)
             elif i == len(self._col_names) - 1:
-                total_size_str = self._diff_sign_sizes(self._total_size)
+                total_size_str = diff_sign_sizes(self._total_size,
+                                                 self._diff_mode)
                 total_row += self.create_cell(total_size_str, True, i)
             else:
                 total_row += self.create_cell('', False, i, _Align.CENTER)
@@ -253,8 +269,9 @@ class BloatTableOutput:
                     else:
                         curr_row += self.create_cell('', False, cell_index)
 
-                #Add size end of current row.
-                curr_size = self._diff_sign_sizes(label_content.size)
+                # Add size end of current row.
+                curr_size = diff_sign_sizes(label_content.size,
+                                            self._diff_mode)
                 curr_row += self.create_cell(curr_size, True,
                                              len(self._col_widths) - 1,
                                              _Align.RIGHT)
@@ -383,20 +400,86 @@ class BloatTableOutput:
             row_div += f"{l_div}{self._col_widths[col] * h_div}{r_div}"
         return row_div
 
-    @staticmethod
-    def get_label_status(curr_label: Label) -> str:
-        if curr_label.is_new():
-            return '++'
-        if curr_label.is_del():
-            return '--'
-        return ''
 
-
-class RstOutput(BloatTableOutput):
+class RstOutput:
     """Tabular output in ASCII format, which is also valid RST."""
-    def __init__(self, ds_map: DataSourceMap, col_width: int):
-        super().__init__(ds_map, col_width, AsciiCharset, rst_output=True)
+    def __init__(self,
+                 ds_map: DataSourceMap,
+                 table_label: Optional[str] = None):
+        self._data_source_map = ds_map
+        self._table_label = table_label
+        self._diff_mode = False
+        if isinstance(self._data_source_map, DiffDataSourceMap):
+            self._diff_mode = True
 
     def create_table(self) -> str:
-        """RST tables requires a newline after table."""
-        return super().create_table() + '\n'
+        """Initializes RST table and builds first row."""
+        table_builder = [
+            '\n.. list-table::', '   :widths: auto', '   :header-rows: 1\n'
+        ]
+        header_cols = ['Label', 'Segment', 'Delta']
+        for i, col_name in enumerate(header_cols):
+            list_space = '*' if i == 0 else ' '
+            table_builder.append(f"   {list_space} - {col_name}")
+
+        return '\n'.join(table_builder) + f"\n{self.add_report_row()}\n"
+
+    def _label_status_unchanged(self, parent_lb_name: str) -> bool:
+        """Determines if parent label has no status change in diff mode."""
+        for curr_lb in self._data_source_map.labels():
+            if curr_lb.size != 0 and (parent_lb_name == curr_lb.parents[0]):
+                if get_label_status(curr_lb) != '':
+                    return False
+        return True
+
+    def add_report_row(self) -> str:
+        """Add in new size report row with Label, Segment, and Delta.
+
+        Returns:
+            RST string that is the current row with a full symbols
+            table breakdown of the corresponding segment.
+        """
+        table_rows = []
+        curr_row = []
+        curr_label_name = ''
+        for parent_lb in self._data_source_map.labels(0):
+            if parent_lb.size != 0:
+                if (self._table_label is not None) and (curr_label_name !=
+                                                        self._table_label):
+                    curr_row.append(f"   * - {self._table_label} ")
+                    curr_label_name = self._table_label
+                else:
+                    curr_row.append("   * -")
+                curr_row.extend([
+                    f"     - .. dropdown:: {parent_lb.name}",
+                    '            :animate: fade-in\n',
+                    "            .. list-table::",
+                    '               :widths: auto\n',
+                ])
+                if self._label_status_unchanged(parent_lb.name):
+                    skip_status = 1, '*'
+                else:
+                    skip_status = 0, ' '
+                for curr_lb in self._data_source_map.labels():
+                    if curr_lb.size != 0 and (parent_lb.name
+                                              == curr_lb.parents[0]):
+                        sign_size = diff_sign_sizes(curr_lb.size,
+                                                    self._diff_mode)
+                        curr_status = get_label_status(curr_lb)
+                        curr_row.extend([
+                            f"               * - {curr_status}",
+                            f"               {skip_status[1]} - {sign_size}",
+                            f"                 - {curr_lb.name}\n"
+                        ][skip_status[0]:])
+                curr_row.append(
+                    f"     - {diff_sign_sizes(parent_lb.size, self._diff_mode)}"
+                )
+            table_rows.extend(curr_row)
+            curr_row = []
+
+        # No size difference.
+        if len(table_rows) == 0:
+            table_rows.extend(
+                [f"\n   * - {self._table_label}", '     - (ALL)', '     - 0'])
+
+        return '\n'.join(table_rows)

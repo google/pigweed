@@ -43,10 +43,17 @@ declare_args() {
 #
 # Args:
 #   target: Build target for executable. Required.
+#   data_sources: List of datasources from bloaty config file
+#     or built-in datasources. Order of sources determines hierarchical
+#     output. Optional.
+#     github.com/google/bloaty/blob/a1bbc93f5f6f969242046dffd9deb379f6735020/doc/using.md
+#   source_filter: Regex to filter data source names in Bloaty. Optional.
 #
 # Example:
 #   pw_size_report("foo_bloat") {
 #      target = ":foo_static"
+#      datasources = [ "symbols" ]
+#      source_filter = "foo"
 #   }
 #
 template("pw_size_report") {
@@ -54,6 +61,7 @@ template("pw_size_report") {
     assert(defined(invoker.target),
            "Size report must defined a 'target' variable")
     _all_target_dependencies = [ invoker.target ]
+
     _bloat_script_args = [
       "--bloaty-config",
       rebase_path(pw_bloat_BLOATY_CONFIG, root_build_dir),
@@ -69,6 +77,13 @@ template("pw_size_report") {
       _bloat_script_args += [
         "--source-filter",
         invoker.source_filter,
+      ]
+    }
+
+    if (defined(invoker.data_sources)) {
+      _bloat_script_args += [
+        "--data-sources",
+        string_join(";", invoker.data_sources),
       ]
     }
 
@@ -126,15 +141,19 @@ template("pw_size_report") {
 # Args:
 #   base: The default base executable target to run the diff against. May be
 #     omitted if all binaries provide their own base.
+#   source_filter: Optional global regex to filter data source names in Bloaty.
 #   binaries: List of executables to compare in the diff.
 #     Each binary in the list is a scope containing up to three variables:
 #       label: Descriptive name for the executable. Required.
 #       target: Build target for the executable. Required.
 #       base: Optional base diff target. Overrides global base argument.
-#   source_filter: Optional regex to filter data source names in Bloaty.
+#       source_filter: Optional regex to filter data source names.
+#         Overrides global source_filter argument.
+#   data_sources: List of datasources from bloaty config file
+#     or built-in datasources. Order of sources determines hierarchical
+#     output. Optional.
+#     github.com/google/bloaty/blob/a1bbc93f5f6f969242046dffd9deb379f6735020/doc/using.md
 #   title: Optional title string to display with the size report.
-#   full_report: Optional boolean flag indicating whether to produce a full
-#     symbol size breakdown or a summary.
 #
 # Example:
 #   pw_size_diff("foo_bloat") {
@@ -161,6 +180,11 @@ template("pw_size_diff") {
       _all_target_dependencies = []
     }
 
+    if (defined(invoker.source_filter)) {
+      _global_source_filter = invoker.source_filter
+      _all_target_dependencies += [ _global_source_filter ]
+    }
+
     if (defined(invoker.title)) {
       _title = invoker.title
     } else {
@@ -176,6 +200,7 @@ template("pw_size_diff") {
     _binary_paths = []
     _binary_labels = []
     _bloaty_configs = []
+    _binary_source_filters = []
 
     # Process each of the binaries, resolving their full output paths and
     # building them into a list of command-line arguments to the bloat script.
@@ -194,6 +219,14 @@ template("pw_size_diff") {
         _binary_base = _global_base
       } else {
         assert(false, "pw_size_diff requires a 'base' file")
+      }
+
+      if (defined(binary.source_filter)) {
+        _binary_source_filters += [ binary.source_filter ]
+      } else if (defined(_global_source_filter)) {
+        _binary_source_filters += [ _global_source_filter ]
+      } else {
+        _binary_source_filters += [ "" ]
       }
 
       # Allow each binary to override the global bloaty config.
@@ -220,17 +253,20 @@ template("pw_size_diff") {
       _title,
       "--labels",
       string_join(";", _binary_labels),
+      "--source-filter",
+      string_join(";", _binary_source_filters),
     ]
 
-    if (defined(invoker.full_report) && invoker.full_report) {
-      _bloat_script_args += [ "--full" ]
+    if (defined(invoker.data_sources)) {
+      _bloat_script_args += [
+        "--data-sources",
+        string_join(";", invoker.data_sources),
+      ]
     }
 
-    if (defined(invoker.source_filter)) {
-      _bloat_script_args += [
-        "--source-filter",
-        invoker.source_filter,
-      ]
+    # TODO(brandonvu): Remove once all downstream projects are updated
+    if (defined(invoker.full_report)) {
+      not_needed(invoker, [ "full_report" ])
     }
 
     _doc_rst_output = "$target_gen_dir/${target_name}"

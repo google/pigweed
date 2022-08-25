@@ -60,7 +60,7 @@ Implementations
 ---------------
 Pigweed provides 3 different CRC32 implementations with different size and
 runtime tradeoffs.  The below table summarizes the variants.  For more detailed
-size information see the :ref:`Size report` below.  Instructions counts were
+size information see the :ref:`pw_checksum-size-report` below.  Instructions counts were
 calculated by hand by analyzing the
 `assembly <https://godbolt.org/z/nY1bbb5Pb>`_.
 
@@ -98,7 +98,7 @@ classes provide the same API as ``Crc32``:
 * ``Crc32FourBit``
 * ``Crc32OneBit``
 
-.. _Size report:
+.. _pw_checksum-size-report:
 
 Size report
 ===========

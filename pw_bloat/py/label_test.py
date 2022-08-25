@@ -203,7 +203,7 @@ class LabelStructTest(unittest.TestCase):
                   exists_both=True,
                   parents=()),
             Label(name='LOAD #5',
-                  size=360,
+                  size=240,
                   capacity=None,
                   exists_both=False,
                   parents=())

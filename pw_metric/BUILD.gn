@@ -148,10 +148,6 @@ pw_test("global_test") {
 pw_size_diff("metric_size_report") {
   title = "Typical pw_metric use (no RPC service)"
 
-  # To see all the symbols, uncomment the following:
-  # Note: The size report RST table won't be generated when full_report = true.
-  #full_report = true
-
   binaries = [
     {
       target = "size_report:one_metric"

@@ -24,10 +24,9 @@ from typing import List, Iterable, Optional
 
 import pw_cli.log
 
-from pw_bloat.binary_diff import BinaryDiff
-from pw_bloat import bloat_output
 from pw_bloat.label import from_bloaty_tsv
-from pw_bloat.label_output import BloatTableOutput, LineCharset, RstOutput
+from pw_bloat.label_output import (BloatTableOutput, LineCharset, RstOutput,
+                                   AsciiCharset)
 
 _LOG = logging.getLogger(__name__)
 
@@ -58,6 +57,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--full',
                         action='store_true',
                         help='Display full bloat breakdown by symbol')
+    parser.add_argument('--data-sources',
+                        type=delimited_list(';'),
+                        help='List of sources to scan for')
     parser.add_argument('--labels',
                         type=delimited_list(';'),
                         default='',
@@ -75,7 +77,7 @@ def parse_args() -> argparse.Namespace:
                         default='pw_bloat',
                         help='Report title')
     parser.add_argument('--source-filter',
-                        type=str,
+                        type=delimited_list(';'),
                         help='Bloaty data source filter')
     parser.add_argument('--single-target',
                         type=str,
@@ -112,7 +114,6 @@ def run_bloaty(
         subprocess.CalledProcessError: The Bloaty invocation failed.
     """
 
-    # TODO(frolv): Point the default bloaty path to a prebuilt in Pigweed.
     default_bloaty = 'bloaty'
     bloaty_path = os.getenv('BLOATY_PATH', default_bloaty)
 
@@ -122,9 +123,11 @@ def run_bloaty(
         '-c', config,
         '-d', ','.join(data_sources),
         '--domain', 'vm',
+        '-n', '0',
         filename,
         *extra_args
     ]
+
     # yapf: enable
 
     if base_file is not None:
@@ -141,15 +144,24 @@ def write_file(filename: str, contents: str, out_dir_file: str) -> None:
 
 
 def single_target_output(target: str, bloaty_config: str, target_out_file: str,
-                         out_dir: str) -> int:
-    single_output = run_bloaty(target,
-                               bloaty_config,
-                               data_sources=['segment_names', 'fullsymbols'],
-                               extra_args=['--tsv'])
+                         out_dir: str, extra_args: Iterable[str]) -> int:
+
+    try:
+        single_output = run_bloaty(target,
+                                   bloaty_config,
+                                   data_sources=['segment_names', 'symbols'],
+                                   extra_args=extra_args)
+
+    except subprocess.CalledProcessError:
+        _LOG.error('%s: failed to run size report on %s', sys.argv[0], target)
+        return 1
+
     single_tsv = single_output.decode().splitlines()
     single_report = BloatTableOutput(from_bloaty_tsv(single_tsv),
                                      MAX_COL_WIDTH, LineCharset)
-    rst_single_report = RstOutput(from_bloaty_tsv(single_tsv), MAX_COL_WIDTH)
+
+    rst_single_report = BloatTableOutput(from_bloaty_tsv(single_tsv),
+                                         MAX_COL_WIDTH, AsciiCharset, True)
 
     single_report_table = single_report.create_table()
 
@@ -164,10 +176,13 @@ def main() -> int:
     """Program entry point."""
 
     args = parse_args()
+    extra_args = ['--tsv']
 
     if args.single_target is not None:
+        if args.source_filter:
+            extra_args.extend(['--source-filter', args.source_filter])
         return single_target_output(args.single_target, args.bloaty_config[0],
-                                    args.target, args.out_dir)
+                                    args.target, args.out_dir, extra_args)
 
     base_binaries: List[str] = []
     diff_binaries: List[str] = []
@@ -176,64 +191,65 @@ def main() -> int:
         for binary, base in args.diff_targets:
             diff_binaries.append(binary)
             base_binaries.append(base)
+
     except RuntimeError as err:
         _LOG.error('%s: %s', sys.argv[0], err)
         return 1
 
-    data_sources = ['segment_names']
-    if args.full:
-        data_sources.append('fullsymbols')
+    data_sources = args.data_sources
 
-    # TODO(frolv): CSV output is disabled for full reports as the default Bloaty
-    # breakdown is printed. This script should be modified to print a custom
-    # symbol breakdown in full reports.
-    extra_args = [] if args.full else ['--csv']
-    if args.source_filter:
-        extra_args.extend(['--source-filter', args.source_filter])
+    if args.data_sources is None:
+        data_sources = ['segment_names', 'symbols']
 
-    diffs: List[BinaryDiff] = []
-    report = []
+    diff_report = ''
+    rst_diff_report = ''
 
     for i, binary in enumerate(diff_binaries):
-        binary_name = (args.labels[i]
-                       if i < len(args.labels) else os.path.basename(binary))
+        if args.source_filter is not None and args.source_filter[i]:
+            extra_args.extend(['--source-filter', args.source_filter[i]])
         try:
-            output = run_bloaty(binary, args.bloaty_config[i],
-                                base_binaries[i], data_sources, extra_args)
-            if not output:
-                continue
+            single_output_base = run_bloaty(base_binaries[i],
+                                            args.bloaty_config[i],
+                                            data_sources=data_sources,
+                                            extra_args=extra_args)
 
-            # TODO(frolv): Remove when custom output for full mode is added.
-            if args.full:
-                report.append(binary_name)
-                report.append('-' * len(binary_name))
-                report.append(output.decode())
-                continue
-
-            # Ignore the first row as it displays column names.
-            bloaty_csv = output.decode().splitlines()[1:]
-            diffs.append(BinaryDiff.from_csv(binary_name, bloaty_csv))
         except subprocess.CalledProcessError:
-            _LOG.error('%s: failed to run diff on %s', sys.argv[0], binary)
+            _LOG.error('%s: failed to run base size report on %s', sys.argv[0],
+                       base_binaries[i])
             return 1
 
-    # TODO(frolv): Remove when custom output for full mode is added.
-    if not args.full:
-        out = bloat_output.TableOutput(args.title,
-                                       diffs,
-                                       charset=bloat_output.LineCharset)
-        report.append(out.diff())
+        try:
+            single_output_target = run_bloaty(binary,
+                                              args.bloaty_config[i],
+                                              data_sources=data_sources,
+                                              extra_args=extra_args)
 
-        rst = bloat_output.RstOutput(diffs)
-        write_file(f'{args.target}', rst.diff(), args.out_dir)
+        except subprocess.CalledProcessError:
+            _LOG.error('%s: failed to run target size report on %s',
+                       sys.argv[0], binary)
+            return 1
 
-    complete_output = '\n'.join(report) + '\n'
-    write_file(f'{args.target}.txt', complete_output, args.out_dir)
-    print(complete_output)
+        if not single_output_target or not single_output_base:
+            continue
 
-    # TODO(frolv): Remove when custom output for full mode is added.
-    if args.full:
-        write_file(f'{args.target}', complete_output, args.out_dir)
+        base_dsm = from_bloaty_tsv(single_output_base.decode().splitlines())
+        target_dsm = from_bloaty_tsv(
+            single_output_target.decode().splitlines())
+        diff_dsm = target_dsm.diff(base_dsm)
+
+        diff_report += BloatTableOutput(diff_dsm, MAX_COL_WIDTH,
+                                        LineCharset).create_table()
+
+        print(diff_report)
+        curr_rst_report = RstOutput(diff_dsm, args.labels[i])
+        if i == 0:
+            rst_diff_report = curr_rst_report.create_table()
+        else:
+            rst_diff_report += f"{curr_rst_report.add_report_row()}\n"
+        extra_args = ['--tsv']
+
+    write_file(args.target, rst_diff_report, args.out_dir)
+    write_file(f'{args.target}.txt', diff_report, args.out_dir)
 
     return 0
 
