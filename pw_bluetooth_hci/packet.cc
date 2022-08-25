@@ -48,8 +48,8 @@ std::optional<CommandPacket> CommandPacket::Decode(ConstByteSpan data,
 
   const uint16_t opcode =
       ReadInOrder<uint16_t>(order, &data[kOpcodeByteOffset]);
-  return CommandPacket(
-      opcode, ConstByteSpan(&data[kHeaderSizeBytes], parameter_total_length));
+  return CommandPacket(opcode,
+                       data.subspan(kHeaderSizeBytes, parameter_total_length));
 }
 
 Result<ConstByteSpan> AsyncDataPacket::Encode(ByteSpan buffer,
@@ -76,9 +76,8 @@ std::optional<AsyncDataPacket> AsyncDataPacket::Decode(ConstByteSpan data,
 
   const uint16_t handle_and_flag_bits = ReadInOrder<uint16_t>(
       order, &data[kHandleAndFragmentationBitsByteOffset]);
-  return AsyncDataPacket(
-      handle_and_flag_bits,
-      ConstByteSpan(&data[kHeaderSizeBytes], data_total_length));
+  return AsyncDataPacket(handle_and_flag_bits,
+                         data.subspan(kHeaderSizeBytes, data_total_length));
 }
 
 Result<ConstByteSpan> SyncDataPacket::Encode(ByteSpan buffer,
@@ -105,9 +104,8 @@ std::optional<SyncDataPacket> SyncDataPacket::Decode(ConstByteSpan data,
 
   const uint16_t handle_and_status_bits =
       ReadInOrder<uint16_t>(order, &data[kHandleAndStatusBitsByteOffset]);
-  return SyncDataPacket(
-      handle_and_status_bits,
-      ConstByteSpan(&data[kHeaderSizeBytes], data_total_length));
+  return SyncDataPacket(handle_and_status_bits,
+                        data.subspan(kHeaderSizeBytes, data_total_length));
 }
 
 Result<ConstByteSpan> EventPacket::Encode(ByteSpan buffer) const {
@@ -131,9 +129,8 @@ std::optional<EventPacket> EventPacket::Decode(ConstByteSpan data) {
   }
 
   const uint8_t event_code = static_cast<uint8_t>(data[kEventCodeByteOffset]);
-  return EventPacket(
-      event_code,
-      ConstByteSpan(&data[kHeaderSizeBytes], parameter_total_length));
+  return EventPacket(event_code,
+                     data.subspan(kHeaderSizeBytes, parameter_total_length));
 }
 
 }  // namespace pw::bluetooth_hci
