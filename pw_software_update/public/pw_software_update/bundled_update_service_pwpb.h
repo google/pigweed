@@ -31,6 +31,8 @@ namespace pw::software_update {
 class BundledUpdateService
     : public pw_rpc::pwpb::BundledUpdate::Service<BundledUpdateService> {
  public:
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
   BundledUpdateService(UpdateBundleAccessor& bundle,
                        BundledUpdateBackend& backend,
                        work_queue::WorkQueue& work_queue)
@@ -41,7 +43,7 @@ class BundledUpdateService
         bundle_open_(false),
         work_queue_(work_queue),
         work_enqueued_(false) {}
-
+  PW_MODIFY_DIAGNOSTICS_POP();
   Status GetStatus(const pw::protobuf::Empty::Message& request,
                    BundledUpdateStatus::Message& response);
 
@@ -88,16 +90,15 @@ class BundledUpdateService
  private:
   // Top-level lock for OTA state coherency. May be held for extended periods.
   sync::Mutex mutex_;
+  // Nested lock for safe status updates and queries.
+  sync::Mutex status_mutex_ PW_ACQUIRED_AFTER(mutex_);
+  BundledUpdateStatus::Message unsafe_status_ PW_GUARDED_BY(status_mutex_);
+  sync::Borrowable<BundledUpdateStatus::Message, sync::Mutex> status_;
   BundledUpdateBackend& backend_ PW_GUARDED_BY(mutex_);
   UpdateBundleAccessor& bundle_ PW_GUARDED_BY(mutex_);
   bool bundle_open_ PW_GUARDED_BY(mutex_);
   work_queue::WorkQueue& work_queue_ PW_GUARDED_BY(mutex_);
   bool work_enqueued_ PW_GUARDED_BY(mutex_);
-
-  // Nested lock for safe status updates and queries.
-  sync::Mutex status_mutex_ PW_ACQUIRED_AFTER(mutex_);
-  BundledUpdateStatus::Message unsafe_status_ PW_GUARDED_BY(status_mutex_);
-  sync::Borrowable<BundledUpdateStatus::Message, sync::Mutex> status_;
 
   void DoVerify() PW_LOCKS_EXCLUDED(status_mutex_);
   void DoApply() PW_LOCKS_EXCLUDED(status_mutex_);

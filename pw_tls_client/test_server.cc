@@ -14,10 +14,6 @@
 
 #include "pw_tls_client/test/test_server.h"
 
-#include <openssl/bio.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-
 #include <cstring>
 
 #include "pw_log/log.h"

@@ -107,7 +107,11 @@ if (dir_pw_third_party_mbedtls != "") {
     "library/xtea.c",
   ]
 
-  config("mbedtls_config") {
+  config("public_config") {
+    include_dirs = [ "$dir_pw_third_party_mbedtls/include" ]
+  }
+
+  config("internal_config") {
     include_dirs = [
       "$dir_pw_third_party_mbedtls",
       "$dir_pw_third_party_mbedtls/include",
@@ -135,7 +139,8 @@ if (dir_pw_third_party_mbedtls != "") {
     ]
 
     public_deps = [ "$dir_pw_tls_client:time" ]
-    public_configs = [ ":mbedtls_config" ]
+    public_configs = [ ":public_config" ]
+    configs = [ ":internal_config" ]
   }
 } else {
   group("mbedtls") {

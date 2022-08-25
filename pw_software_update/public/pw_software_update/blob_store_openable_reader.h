@@ -25,10 +25,10 @@ class BlobStoreOpenableReader final : public OpenableReader {
   explicit constexpr BlobStoreOpenableReader(blob_store::BlobStore& blob_store)
       : blob_store_(blob_store), blob_reader_(blob_store_) {}
 
-  Status Open() override { return blob_reader_.Open(); };
-  Status Close() override { return blob_reader_.Close(); };
-  bool IsOpen() override { return blob_reader_.IsOpen(); };
-  stream::SeekableReader& reader() override { return blob_reader_; };
+  Status Open() override { return blob_reader_.Open(); }
+  Status Close() override { return blob_reader_.Close(); }
+  bool IsOpen() override { return blob_reader_.IsOpen(); }
+  stream::SeekableReader& reader() override { return blob_reader_; }
 
  private:
   blob_store::BlobStore& blob_store_;

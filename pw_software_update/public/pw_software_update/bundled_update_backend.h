@@ -42,10 +42,10 @@ class BundledUpdateBackend {
     // It is safe to assume the target's payload has passed standard
     // verification.
     return OkStatus();
-  };
+  }
 
   // Perform any product-specific tasks needed before starting update sequence.
-  virtual Status BeforeUpdateStart() { return OkStatus(); };
+  virtual Status BeforeUpdateStart() { return OkStatus(); }
 
   // Attempts to enable the transfer service transfer handler, returning the
   // transfer_id if successful. This is invoked after BeforeUpdateStart();
@@ -62,23 +62,23 @@ class BundledUpdateBackend {
   // TODO: Revisit invariants; should this instead be "Abort()"? This is called
   // for all error paths in the service and needs to reset. Furthermore, should
   // this be async?
-  virtual Status BeforeUpdateAbort() { return OkStatus(); };
+  virtual Status BeforeUpdateAbort() { return OkStatus(); }
 
   // Perform any product-specific tasks needed before starting verification.
-  virtual Status BeforeBundleVerify() { return OkStatus(); };
+  virtual Status BeforeBundleVerify() { return OkStatus(); }
 
   // Perform any product-specific bundle verification tasks (e.g. hw version
   // match check), done after TUF bundle verification process.
   virtual Status VerifyManifest(
       [[maybe_unused]] ManifestAccessor manifest_accessor) {
     return OkStatus();
-  };
+  }
 
   // Perform product-specific tasks after all bundle verifications are complete.
-  virtual Status AfterBundleVerified() { return OkStatus(); };
+  virtual Status AfterBundleVerified() { return OkStatus(); }
 
   // Perform any product-specific tasks before apply sequence started
-  virtual Status BeforeApply() { return OkStatus(); };
+  virtual Status BeforeApply() { return OkStatus(); }
 
   // Get status information from update backend. This will not be called when
   // BundledUpdater is in a step where it has entire control with no operation
@@ -214,7 +214,7 @@ class BundledUpdateBackend {
   // failures.
   virtual Result<stream::SeekableReader*> GetRootMetadataReader() {
     return Status::Unimplemented();
-  };
+  }
 
   // Write a given root metadata to persistent storage in a failsafe manner.
   //
@@ -223,7 +223,7 @@ class BundledUpdateBackend {
   virtual Status SafelyPersistRootMetadata(
       [[maybe_unused]] stream::IntervalReader root_metadata) {
     return Status::Unimplemented();
-  };
+  }
 };
 
 }  // namespace pw::software_update

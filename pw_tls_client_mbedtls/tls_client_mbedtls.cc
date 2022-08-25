@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "mbedtls/ssl.h"
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_tls_client/entropy.h"

@@ -58,9 +58,8 @@ using BorrowedStatus =
   } while (false)
 }  // namespace
 
-Status BundledUpdateService::GetStatus(
-    const pw::protobuf::Empty::Message& request,
-    BundledUpdateStatus::Message& response) {
+Status BundledUpdateService::GetStatus(const pw::protobuf::Empty::Message&,
+                                       BundledUpdateStatus::Message& response) {
   response = *status_.acquire();
   return OkStatus();
 }
@@ -121,8 +120,9 @@ Status BundledUpdateService::Start(const StartRequest::Message& request,
 }
 
 Status BundledUpdateService::SetTransferred(
-    const pw::protobuf::Empty::Message& request,
+    const pw::protobuf::Empty::Message&,
     BundledUpdateStatus::Message& response) {
+  std::lock_guard lock(mutex_);
   const BundledUpdateState::Enum state = status_.acquire()->state;
 
   if (state != BundledUpdateState::Enum::kTransferring &&
@@ -193,7 +193,7 @@ void BundledUpdateService::DoVerify() {
   status_.acquire()->state = BundledUpdateState::Enum::kVerified;
 }
 
-Status BundledUpdateService::Verify(const pw::protobuf::Empty::Message& request,
+Status BundledUpdateService::Verify(const pw::protobuf::Empty::Message&,
                                     BundledUpdateStatus::Message& response) {
   std::lock_guard lock(mutex_);
   const BundledUpdateState::Enum state = status_.acquire()->state;
@@ -247,7 +247,7 @@ Status BundledUpdateService::Verify(const pw::protobuf::Empty::Message& request,
   return OkStatus();
 }
 
-Status BundledUpdateService::Apply(const pw::protobuf::Empty::Message& request,
+Status BundledUpdateService::Apply(const pw::protobuf::Empty::Message&,
                                    BundledUpdateStatus::Message& response) {
   std::lock_guard lock(mutex_);
   const BundledUpdateState::Enum state = status_.acquire()->state;
@@ -361,7 +361,7 @@ void BundledUpdateService::DoApply() {
       SET_ERROR(BundledUpdateResult::Enum::kApplyFailed,
                 "Could not open contents of file %s from bundle; "
                 "aborting update apply phase",
-                static_cast<int>(file_reader.status().code()));
+                MakeString<MAX_TARGET_NAME_LENGTH>(file_name_view).c_str());
       return;
     }
 
@@ -404,7 +404,7 @@ void BundledUpdateService::DoApply() {
   Finish(BundledUpdateResult::Enum::kSuccess);
 }
 
-Status BundledUpdateService::Abort(const pw::protobuf::Empty::Message& request,
+Status BundledUpdateService::Abort(const pw::protobuf::Empty::Message&,
                                    BundledUpdateStatus::Message& response) {
   std::lock_guard lock(mutex_);
   const BundledUpdateState::Enum state = status_.acquire()->state;
@@ -427,7 +427,7 @@ Status BundledUpdateService::Abort(const pw::protobuf::Empty::Message& request,
   return OkStatus();
 }
 
-Status BundledUpdateService::Reset(const pw::protobuf::Empty::Message& request,
+Status BundledUpdateService::Reset(const pw::protobuf::Empty::Message&,
                                    BundledUpdateStatus::Message& response) {
   std::lock_guard lock(mutex_);
   const BundledUpdateState::Enum state = status_.acquire()->state;
@@ -445,7 +445,11 @@ Status BundledUpdateService::Reset(const pw::protobuf::Empty::Message& request,
     return Status::FailedPrecondition();
   }
 
-  { *status_.acquire() = {.state = BundledUpdateState::Enum::kInactive}; }
+  {
+    BorrowedStatus status = status_.acquire();
+    *status = {};  // Force-init all fields to zero.
+    status->state = BundledUpdateState::Enum::kInactive;
+  }
 
   // Reset the bundle.
   if (bundle_open_) {

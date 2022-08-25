@@ -88,17 +88,16 @@ class BundledUpdateService
  private:
   // Top-level lock for OTA state coherency. May be held for extended periods.
   sync::Mutex mutex_;
-  BundledUpdateBackend& backend_ PW_GUARDED_BY(mutex_);
-  UpdateBundleAccessor& bundle_ PW_GUARDED_BY(mutex_);
-  bool bundle_open_ PW_GUARDED_BY(mutex_);
-  work_queue::WorkQueue& work_queue_ PW_GUARDED_BY(mutex_);
-  bool work_enqueued_ PW_GUARDED_BY(mutex_);
-
   // Nested lock for safe status updates and queries.
   sync::Mutex status_mutex_ PW_ACQUIRED_AFTER(mutex_);
   pw_software_update_BundledUpdateStatus unsafe_status_
       PW_GUARDED_BY(status_mutex_);
   sync::Borrowable<pw_software_update_BundledUpdateStatus, sync::Mutex> status_;
+  BundledUpdateBackend& backend_ PW_GUARDED_BY(mutex_);
+  UpdateBundleAccessor& bundle_ PW_GUARDED_BY(mutex_);
+  bool bundle_open_ PW_GUARDED_BY(mutex_);
+  work_queue::WorkQueue& work_queue_ PW_GUARDED_BY(mutex_);
+  bool work_enqueued_ PW_GUARDED_BY(mutex_);
 
   void DoVerify() PW_LOCKS_EXCLUDED(status_mutex_);
   void DoApply() PW_LOCKS_EXCLUDED(status_mutex_);

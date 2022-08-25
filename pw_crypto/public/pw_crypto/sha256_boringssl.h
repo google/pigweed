@@ -14,7 +14,17 @@
 
 #pragma once
 
+#include "pw_preprocessor/compiler.h"
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wcast-qual");
+// "-Wpedantic" because some downstream compiler don't recognize the following
+// two commented-out options.
+// PW_MODIFY_DIAGNOSTIC(ignored, "-Wgnu-anonymous-struct");
+// PW_MODIFY_DIAGNOSTIC(ignored, "-Wnested-anon-types");
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wpedantic");
 #include "openssl/sha.h"
+PW_MODIFY_DIAGNOSTICS_POP();
 
 namespace pw::crypto::sha256::backend {
 

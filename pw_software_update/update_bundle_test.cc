@@ -71,7 +71,7 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
 
   virtual Result<stream::SeekableReader*> GetRootMetadataReader() override {
     return &trusted_root_reader_;
-  };
+  }
 
   Status BeforeManifestRead() override {
     before_manifest_read_called_ = true;
@@ -79,7 +79,7 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
       return OkStatus();
     }
     return Status::NotFound();
-  };
+  }
 
   bool BeforeManifestReadCalled() { return before_manifest_read_called_; }
 
@@ -110,7 +110,7 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
     new_root_persisted_ = true;
     trusted_root_reader_ = root_metadata;
     return OkStatus();
-  };
+  }
 
   bool IsNewRootPersisted() const { return new_root_persisted_; }
 
@@ -122,7 +122,6 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
   bool before_manifest_write_called_ = false;
   bool after_manifest_write_called_ = false;
   bool new_root_persisted_ = false;
-  size_t backend_verified_files_ = 0;
 
   // A memory reader for buffer passed by SetTrustedRoot(). This will be used
   // to back `trusted_root_reader_`

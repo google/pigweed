@@ -89,8 +89,6 @@ if (pw_crypto_SHA256_BACKEND != "" && pw_crypto_ECDSA_BACKEND != "") {
     public_deps = [
       ":blob_store_openable_reader",
       ":openable_reader",
-      "$dir_pw_crypto:ecdsa",
-      "$dir_pw_crypto:sha256",
       "$dir_pw_stream:interval_reader",
       dir_pw_protobuf,
       dir_pw_result,
@@ -105,6 +103,8 @@ if (pw_crypto_SHA256_BACKEND != "" && pw_crypto_ECDSA_BACKEND != "") {
     deps = [
       ":config",
       ":protos.pwpb",
+      "$dir_pw_crypto:ecdsa",
+      "$dir_pw_crypto:sha256",
       dir_pw_log,
       dir_pw_string,
     ]

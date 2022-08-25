@@ -14,9 +14,16 @@
 
 #pragma once
 
+#include "pw_preprocessor/compiler.h"
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wcast-qual");
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wignored-qualifiers");
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wpedantic");
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
+PW_MODIFY_DIAGNOSTICS_POP();
 
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"

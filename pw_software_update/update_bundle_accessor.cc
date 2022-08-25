@@ -166,7 +166,7 @@ Status VerifyMetadataSignatures(protobuf::Bytes message,
     return Status::NotFound();
   }
 
-  PW_LOG_ERROR("Insufficient signatures. Requires at least %u, verified %u",
+  PW_LOG_ERROR("Insufficient signatures. Requires at least %u, verified %zu",
                threshold.value(),
                verified_count);
   return Status::Unauthenticated();
@@ -256,7 +256,7 @@ Status UpdateBundleAccessor::OpenAndVerify() {
 
   if (Status status = DoVerify(); !status.ok()) {
     PW_LOG_ERROR("Failed to verified staged bundle");
-    Close();
+    Close().IgnoreError();
     return status;
   }
 
@@ -272,7 +272,7 @@ Result<uint64_t> UpdateBundleAccessor::GetTotalPayloadSize() {
       static_cast<uint32_t>(UpdateBundle::Fields::TARGET_PAYLOADS));
   PW_TRY(bundled_payloads.status());
 
-  uint64_t total_bytes;
+  uint64_t total_bytes = 0;
   std::array<std::byte, MAX_TARGET_NAME_LENGTH> name_buffer = {};
   for (protobuf::Message target : manifested_targets) {
     protobuf::String target_name =
@@ -354,7 +354,7 @@ Status UpdateBundleAccessor::DoOpen() {
   bundle_ = protobuf::Message(update_reader_.reader(),
                               update_reader_.reader().ConservativeReadLimit());
   if (!bundle_.ok()) {
-    update_reader_.Close();
+    update_reader_.Close().IgnoreError();
     return bundle_.status();
   }
   return OkStatus();
@@ -663,7 +663,7 @@ Status UpdateBundleAccessor::VerifyTargetsPayloads() {
         target_file.AsUint64(static_cast<uint32_t>(TargetFile::Fields::LENGTH));
     PW_TRY(target_length.status());
     if (target_length.value() > PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE) {
-      PW_LOG_ERROR("Target payload too big. Maximum is %llu bytes",
+      PW_LOG_ERROR("Target payload too big. Maximum is %u bytes",
                    PW_SOFTWARE_UPDATE_MAX_TARGET_PAYLOAD_SIZE);
       return Status::OutOfRange();
     }
@@ -698,7 +698,7 @@ Status UpdateBundleAccessor::VerifyTargetsPayloads() {
 }
 
 Status UpdateBundleAccessor::VerifyTargetPayload(
-    ManifestAccessor manifest,
+    ManifestAccessor,
     std::string_view target_name,
     protobuf::Uint64 expected_length,
     protobuf::Bytes expected_sha256) {
@@ -751,9 +751,9 @@ Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
       cached.AsUint64(static_cast<uint32_t>(TargetFile::Fields::LENGTH));
   PW_TRY(cached_length.status());
   if (cached_length.value() != expected_length.value()) {
-    PW_LOG_ERROR("Personalized-out target has bad length: %llu, expected: %llu",
-                 cached_length.value(),
-                 expected_length.value());
+    PW_LOG_ERROR("Personalized-out target has bad length: %u, expected: %u",
+                 static_cast<unsigned>(cached_length.value()),
+                 static_cast<unsigned>(expected_length.value()));
     return Status::Unauthenticated();
   }
 
@@ -795,9 +795,9 @@ Status UpdateBundleAccessor::VerifyInBundleTargetPayload(
   // measurement.
   uint64_t actual_length = payload_reader.interval_size();
   if (actual_length != expected_length.value()) {
-    PW_LOG_ERROR("Wrong payload length. Expected: %llu, actual: %llu",
-                 expected_length.value(),
-                 actual_length);
+    PW_LOG_ERROR("Wrong payload length. Expected: %u, actual: %u",
+                 static_cast<unsigned>(expected_length.value()),
+                 static_cast<unsigned>(actual_length));
     return Status::Unauthenticated();
   }
 

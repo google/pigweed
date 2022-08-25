@@ -14,10 +14,18 @@
 #define PW_LOG_MODULE_NAME "ECDSA-BSSL"
 #define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
 
+#include "pw_preprocessor/compiler.h"
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wcast-qual");
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wgnu-anonymous-struct");
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wnested-anon-types");
 #include "openssl/bn.h"
 #include "openssl/ec.h"
 #include "openssl/ecdsa.h"
 #include "openssl/nid.h"
+PW_MODIFY_DIAGNOSTICS_POP();
+
 #include "pw_crypto/ecdsa.h"
 #include "pw_log/log.h"
 
