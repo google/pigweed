@@ -782,19 +782,25 @@ OTHER_CHECKS = (
     cmake_gcc,
     gn_boringssl_build,
     build.gn_gen_check,
-    gn_nanopb_build,
     gn_full_build_check,
     gn_full_qemu_check,
     gn_combined_build_check,
     gn_clang_build,
     gn_gcc_build,
-    gn_pw_system_demo_build,
     pw_transfer_integration_test,
     renode_check,
     static_analysis,
     stm32f429i,
     npm_presubmit.npm_test,
     todo_check.create(todo_check.BUGS_OR_USERNAMES),
+)
+
+# The misc program differs from other_checks in that checks in the misc
+# program block CQ on Linux.
+MISC = (
+    gn_nanopb_build,
+    gn_pw_system_demo_build,
+    gn_teensy_build,
 )
 
 SANITIZERS = (cpp_checks.all_sanitizers(), )
@@ -870,6 +876,7 @@ FULL = (
 PROGRAMS = Programs(
     full=FULL,
     lintformat=LINTFORMAT,
+    misc=MISC,
     other_checks=OTHER_CHECKS,
     quick=QUICK,
     crypto=CRYPTO,
