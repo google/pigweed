@@ -54,6 +54,9 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
           channel_(std::move(channel)),
           adapter_(std::move(adapter)) {}
     void GetSupportedFeatures(GetSupportedFeaturesCallback callback) override;
+    void StartAudioOffload(fuchsia::bluetooth::bredr::AudioOffloadConfiguration configuration,
+                           fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioOffloadController>
+                               controller) override {}
 
    private:
     fxl::WeakPtr<bt::l2cap::Channel> channel_;
