@@ -34,6 +34,7 @@ pw_add_module_library(pw_log_tokenized
     public_overrides/pw_log_backend/log_backend.h
   PUBLIC_INCLUDES
     public
+    public_overrides
   PUBLIC_DEPS
     pw_log_tokenized.config
     pw_log_tokenized.metadata
