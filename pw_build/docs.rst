@@ -284,9 +284,10 @@ is set.
 
 pw_python_action
 ----------------
-The ``pw_python_action`` template is a convenience wrapper around ``action`` for
-running Python scripts. The main benefit it provides is resolution of GN target
-labels to compiled binary files. This allows Python scripts to be written
+The ``pw_python_action`` template is a convenience wrapper around GN's `action
+function <https://gn.googlesource.com/gn/+/main/docs/reference.md#func_action>`_
+for running Python scripts. The main benefit it provides is resolution of GN
+target labels to compiled binary files. This allows Python scripts to be written
 independently of GN, taking only filesystem paths as arguments.
 
 Another convenience provided by the template is to allow running scripts without

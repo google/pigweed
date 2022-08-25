@@ -95,6 +95,9 @@ html_css_files = [
 
     # Needed for Inconsolata font.
     'https://fonts.googleapis.com/css2?family=Inconsolata&display=swap',
+
+    # FontAwesome for mermaid and sphinx-design
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css",
 ]
 
 html_theme_options = {

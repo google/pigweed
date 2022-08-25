@@ -350,7 +350,7 @@ template("pw_python_package") {
   # targets in this toolchain.
   if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
     # Create the package_metadata.json file. This is used by the
-    # pw_create_python_source_tree template.
+    # pw_python_distribution template.
     _package_metadata_json_file =
         "$target_gen_dir/$target_name/package_metadata.json"
 

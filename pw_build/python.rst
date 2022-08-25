@@ -1,12 +1,30 @@
 .. _module-pw_build-python:
 
--------------------
-Python GN templates
--------------------
+===================
+Python GN Templates
+===================
 The Python build is implemented with GN templates defined in
 ``pw_build/python.gni``. See the .gni file for complete usage documentation.
 
-.. seealso:: :ref:`docs-python-build`
+.. seealso::
+
+   - :bdg-ref-primary-line:`docs-python-build` for an overview on how Python in
+     GN is built.
+   - The :bdg-ref-primary-line:`module-pw_build` docs for other GN templates
+     available within Pigweed.
+
+.. _module-pw_build-python-base-templates:
+
+---------------------
+Python Base Templates
+---------------------
+The core subset of templates where you can create Python packages, actions,
+scripts and group them together are listed below.
+
+- :ref:`module-pw_build-pw_python_package`
+- :ref:`module-pw_build-pw_python_action`
+- :ref:`module-pw_build-pw_python_script`
+- :ref:`module-pw_build-pw_python_group`
 
 .. _module-pw_build-pw_python_package:
 
@@ -30,8 +48,8 @@ same as the directory. For example, these two labels are equivalent:
 
 .. code-block::
 
-  //path/to/my_python_package:my_python_package.tests
-  //path/to/my_python_package:tests
+   //path/to/my_python_package:my_python_package.tests
+   //path/to/my_python_package:tests
 
 The actions in a ``pw_python_package`` (e.g. installing packages and running
 Pylint) are done within a single GN toolchain to avoid duplication in
@@ -51,15 +69,15 @@ Arguments
 
   .. code-block::
 
-    generate_setup = {
-      metadata = {
-        name = "a_nifty_package"
-        version = "1.2a"
-      }
-      options = {
-        install_requires = [ "a_pip_package" ]
-      }
-    }
+     generate_setup = {
+       metadata = {
+         name = "a_nifty_package"
+         version = "1.2a"
+       }
+       options = {
+         install_requires = [ "a_pip_package" ]
+       }
+     }
 
 - ``sources`` - Python sources files in the package.
 - ``tests`` - Test files for this Python package.
@@ -87,33 +105,45 @@ This is an example Python package declaration for a ``pw_my_module`` module.
 
 .. code-block::
 
-  import("//build_overrides/pigweed.gni")
+   import("//build_overrides/pigweed.gni")
 
-  import("$dir_pw_build/python.gni")
+   import("$dir_pw_build/python.gni")
 
-  pw_python_package("py") {
-    setup = [
-      "pyproject.toml",
-      "setup.cfg",
-      "setup.py",
-    ]
-    sources = [
-      "pw_my_module/__init__.py",
-      "pw_my_module/alfa.py",
-      "pw_my_module/bravo.py",
-      "pw_my_module/charlie.py",
-    ]
-    tests = [
-      "alfa_test.py",
-      "charlie_test.py",
-    ]
-    python_deps = [
-      "$dir_pw_status/py",
-      ":some_protos.python",
-    ]
-    python_test_deps = [ "$dir_pw_build/py" ]
-    pylintrc = "$dir_pigweed/.pylintrc"
-  }
+   pw_python_package("py") {
+     setup = [
+       "pyproject.toml",
+       "setup.cfg",
+       "setup.py",
+     ]
+     sources = [
+       "pw_my_module/__init__.py",
+       "pw_my_module/alfa.py",
+       "pw_my_module/bravo.py",
+       "pw_my_module/charlie.py",
+     ]
+     tests = [
+       "alfa_test.py",
+       "charlie_test.py",
+     ]
+     python_deps = [
+       "$dir_pw_status/py",
+       ":some_protos.python",
+     ]
+     python_test_deps = [ "$dir_pw_build/py" ]
+     pylintrc = "$dir_pigweed/.pylintrc"
+   }
+
+.. _module-pw_build-pw_python_action:
+
+pw_python_action
+================
+The ``pw_python_action`` template is a convenience wrapper around GN's `action
+function <https://gn.googlesource.com/gn/+/main/docs/reference.md#func_action>`_
+for running Python scripts. See
+:bdg-ref-primary-line:`module-pw_build-python-action` in the ``pw_build``
+documentation for usage.
+
+.. _module-pw_build-pw_python_script:
 
 pw_python_script
 ================
@@ -141,36 +171,156 @@ An action in ``pw_python_script`` can always be replaced with a standalone
 - Using a ``pw_python_script`` with an embedded action is a simple way to check
   an existing action's script with Pylint or Mypy or to add tests.
 
+.. _module-pw_build-pw_python_group:
+
 pw_python_group
 ===============
 Represents a group of ``pw_python_package`` and ``pw_python_script`` targets.
 These targets do not add any files. Their subtargets simply forward to those of
 their dependencies.
 
-pw_python_requirements
-======================
-Represents a set of local and PyPI requirements, with no associated source
-files. These targets serve the role of a ``requirements.txt`` file.
+.. code-block::
 
-When packages are installed by Pigweed, additional version constraints can be
-provided using the ``pw_build_PIP_CONSTRAINTS`` GN arg. This option should
-contain a list of paths to pass to the ``--constraint`` option of ``pip
-install``. This can be used to synchronize dependency upgrades across a project
-which facilitates reproducibility of builds.
+   pw_python_group("solar_system_python_packages") {
+     python_deps = [
+       "//planets/mercury/py",
+       "//planets/venus/py",
+       "//planets/earth/py",
+       "//planets/mars/py",
+       "//planets/jupiter/py",
+       "//planets/saturn/py",
+       "//planets/uranus/py",
+       "//planets/neptune/py",
+       "//planetoids/ceres/py",
+       "//planetoids/pluto/py",
+     ]
+   }
 
-Note using multiple ``pw_python_requirements`` that install different versions
-of the same package will currently cause unpredictable results, while using
-constraints should have correct results (which may be an error indicating a
-conflict).
+----------------------------
+Python Environment Templates
+----------------------------
+Templates that manage the Python build and bootstrap environment are listed
+here.
+
+- :ref:`module-pw_build-pw_python_venv`
+- :ref:`module-pw_build-pw_python_pip_install`
+
+.. _module-pw_build-pw_python_venv:
+
+pw_python_venv
+==============
+Defines and creates a Python virtualenv. This template is used by Pigweed in
+https://cs.pigweed.dev/pigweed/+/main:pw_env_setup/BUILD.gn to create a
+virtualenv for use within the GN build that all Python actions will run in.
+
+Example
+-------
+.. code-block::
+   :caption: Example of a typical Python venv definition in a top level
+             :octicon:`file;1em` ``BUILD.gn``
+
+   declare_args() {
+     pw_build_PYTHON_BUILD_VENV = "//:my_build_venv"
+   }
+
+   pw_python_group("my_product_packages") {
+     python_deps = [
+       "//product_dev_tools/py",
+       "//product_release_tools/py",
+     ]
+   }
+
+   pw_python_venv("my_build_venv") {
+     path = "$root_build_dir/python-build-venv"
+     constraints = [ "//tools/constraints.list" ]
+     requirements = [ "//tools/requirements.txt" ]
+     source_packages = [
+       "$dir_pw_env_setup:core_pigweed_python_packages",
+       "//tools:another_pw_python_package",
+       "//:my_product_packages",
+     ]
+   }
+
+Arguments
+---------
+- ``path``: The directory where the virtualenv will be created. This is relative
+  to the GN root and must begin with "$root_build_dir/" if it lives in the
+  output directory or "//" if it lives in elsewhere.
+
+- ``constraints``: A list of constraint files used when performing pip install
+  into this virtualenv. By default this is set to the
+  ``pw_build_PIP_CONSTRAINTS`` GN arg.
+
+- ``requirements``: A list of requirements files to install into this virtualenv
+  on creation. By default this is set to the ``pw_build_PIP_REQUIREMENTS`` GN
+  arg.
+
+  .. seealso::
+
+     For more info on the ``pw_build_PIP_CONSTRAINTS`` and
+     ``pw_build_PIP_REQUIREMENTS`` GN args see:
+     :ref:`docs-python-build-python-gn-requirements-files`
+
+- ``source_packages``: A list of in-tree
+  :ref:`module-pw_build-pw_python_package` or targets that will be checked for
+  external third_party pip dependencies to install into this
+  virtualenv. Note this list of targets isn't actually installed into the
+  virtualenv. Only packages defined inside the [options] install_requires
+  section of each pw_python_package's setup.cfg will be pip installed.
+
+  .. seealso::
+
+     For an example ``setup.cfg`` file see: `Configuring setuptools using
+     setup.cfg files
+     <https://setuptools.pypa.io/en/latest/userguide/declarative_config.html>`_
+
+
+.. _module-pw_build-pw_python_pip_install:
+
+pw_python_pip_install
+=====================
+This will pip install ``pw_python_package`` targets into the bootstrapped
+developer environment.
+
+Example
+-------
+.. code-block::
+   :caption: Example of a typical Python venv definition in a top level
+             :octicon:`file;1em` ``BUILD.gn``
+
+   pw_python_pip_install("pip_install_my_product_packages") {
+     packages = [
+       "//product_dev_tools/py",
+       "//product_release_tools/py",
+     ]
+   }
+
+Arguments
+---------
+
+- ``packages``: A list of :ref:`module-pw_build-pw_python_package` targets to be
+  pip installed.  All packages specified will be installed using a single ``pip
+  install`` command with a ``--constraint`` argument for each constraint file in
+  the ``pw_build_PIP_CONSTRAINTS`` GN arg.
+
+- ``editable``: If true, --editable is passed to the pip install command.
+
+- ``force_reinstall``: If true, ``--force-reinstall`` is passed to the pip
+  install command.
 
 .. _module-pw_build-python-dist:
 
----------------------
-Python Distributables
----------------------
+------------------------------
+Python Distributable Templates
+------------------------------
 Pigweed also provides some templates to make it easier to bundle Python packages
-for deployment. These templates are found in ``pw_build/python_dist.gni``. See
-the .gni file for complete documentation on building distributables.
+for deployment. These templates are found in ``pw_build/python_dist.gni``.
+
+- :ref:`module-pw_build-pw_python_wheels`
+- :ref:`module-pw_build-pw_python_zip_with_setup`
+- :ref:`module-pw_build-pw_python_distribution`
+
+.. _module-pw_build-pw_python_wheels:
 
 pw_python_wheels
 ================
@@ -195,6 +345,8 @@ out which wheels to collect by traversing the ``pw_python_package_wheels``
 `GN metadata
 <https://gn.googlesource.com/gn/+/HEAD/docs/reference.md#var_metadata>`_ key,
 which lists the output directory for each wheel.
+
+.. _module-pw_build-pw_python_zip_with_setup:
 
 pw_python_zip_with_setup
 ========================
@@ -231,18 +383,19 @@ Example
 
 .. code-block::
 
-  import("//build_overrides/pigweed.gni")
+   import("//build_overrides/pigweed.gni")
 
-  import("$dir_pw_build/python_dist.gni")
+   import("$dir_pw_build/python_dist.gni")
 
-  pw_python_zip_with_setup("my_tools") {
-    packages = [ ":some_python_package" ]
-    inputs = [ "$dir_pw_build/python_dist/README.md > /${target_name}/" ]
-  }
+   pw_python_zip_with_setup("my_tools") {
+     packages = [ ":some_python_package" ]
+     inputs = [ "$dir_pw_build/python_dist/README.md > /${target_name}/" ]
+   }
 
-pw_create_python_source_tree
-============================
+.. _module-pw_build-pw_python_distribution:
 
+pw_python_distribution
+======================
 Generates a directory of Python packages from source files suitable for
 deployment outside of the project developer environment. The resulting directory
 contains only files mentioned in each package's ``setup.cfg`` file. This is
@@ -283,7 +436,8 @@ Arguments
   ``pyproject.toml`` file by setting ``include_default_pyproject_file = true``.
 
   .. code-block::
-     :caption: :octicon:`file;1em` Example using a common setup.cfg and pyproject.toml files.
+     :caption: :octicon:`file;1em` Example using a common setup.cfg and
+               pyproject.toml files.
 
      generate_setup_cfg = {
        common_config_file = "pypi_common_setup.cfg"
@@ -294,7 +448,8 @@ Arguments
      ]
 
   .. code-block::
-     :caption: :octicon:`file;1em` Example using name and version strings and a default pyproject.toml file.
+     :caption: :octicon:`file;1em` Example using name and version strings and a
+               default pyproject.toml file.
 
      generate_setup_cfg = {
        name = "awesome"
@@ -304,7 +459,7 @@ Arguments
      }
 
 Using this template will create an additional target for and building a Python
-wheel. For example if you define ``pw_create_python_source_tree("awesome")`` the
+wheel. For example if you define ``pw_python_distribution("awesome")`` the
 resulting targets that get created will be:
 
 - ``awesome`` - This will create the merged package with all source files in
@@ -322,7 +477,7 @@ Example
 
    import("$dir_pw_build/python_dist.gni")
 
-   pw_create_python_source_tree("build_python_source_tree") {
+   pw_python_distribution("build_python_source_tree") {
      packages = [
        ":some_python_package",
        ":another_python_package",
@@ -342,7 +497,8 @@ Example
 
 
 .. code-block:: text
-   :caption: :octicon:`file-directory;1em` ./out/obj/pw_env_setup/build_python_source_tree/
+   :caption: :octicon:`file-directory;1em`
+             ./out/obj/pw_env_setup/build_python_source_tree/
 
    $ tree ./out/obj/pw_env_setup/build_python_source_tree/
    ├── README.md
