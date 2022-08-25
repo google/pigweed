@@ -58,8 +58,12 @@ class EntryMetadata {
   // Adds a new address to the entry metadata. MUST NOT be called more times
   // than allowed by the redundancy.
   void AddNewAddress(Address address) {
-    addresses_[addresses_.size()] = address;
+    // Each descriptor is given sufficient space in an EntryCache's address
+    // buffer to meet the redundancy requirements of an EntryCache. This object
+    // isn't aware of required redundancy, so there's no strict checking that
+    // this contract is respected.
     addresses_ = span<Address>(addresses_.begin(), addresses_.size() + 1);
+    addresses_[addresses_.size() - 1] = address;
   }
 
   // Remove an address from the entry metadata.
