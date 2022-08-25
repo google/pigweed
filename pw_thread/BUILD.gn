@@ -120,12 +120,37 @@ pw_source_set("thread_info") {
   deps = [ ":config" ]
 }
 
+pw_source_set("thread_snapshot_service") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_thread/thread_snapshot_service.h" ]
+  public_deps = [
+    ":protos.pwpb",
+    ":protos.raw_rpc",
+    ":thread_info",
+    "$dir_pw_rpc/raw:server_api",
+    "$dir_pw_status:pw_status",
+  ]
+  sources = [
+    "pw_thread_private/thread_snapshot_service.h",
+    "thread_snapshot_service.cc",
+  ]
+  deps = [
+    ":config",
+    ":thread_iteration",
+    "$dir_pw_log",
+    "$dir_pw_rpc/raw:server_api",
+    "$dir_pw_span",
+    "$dir_pw_status:pw_status",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":id_facade_test",
     ":sleep_facade_test",
     ":thread_info_test",
     ":yield_facade_test",
+    ":thread_snapshot_service_test",
   ]
 }
 
@@ -133,6 +158,22 @@ pw_test("id_facade_test") {
   enable_if = pw_thread_ID_BACKEND != ""
   sources = [ "id_facade_test.cc" ]
   deps = [ ":id" ]
+}
+
+pw_test("thread_snapshot_service_test") {
+  enable_if = pw_thread_THREAD_ITERATION_BACKEND != ""
+  sources = [
+    "pw_thread_private/thread_snapshot_service.h",
+    "thread_snapshot_service_test.cc",
+  ]
+  deps = [
+    ":protos.pwpb",
+    ":thread_iteration",
+    "$dir_pw_span",
+    "$dir_pw_sync:thread_notification",
+    "$dir_pw_thread:thread_info",
+    "$dir_pw_thread:thread_snapshot_service",
+  ]
 }
 
 pw_test("sleep_facade_test") {
@@ -191,7 +232,10 @@ pw_test("yield_facade_test") {
 }
 
 pw_proto_library("protos") {
-  sources = [ "pw_thread_protos/thread.proto" ]
+  sources = [
+    "pw_thread_protos/thread.proto",
+    "pw_thread_protos/thread_snapshot_service.proto",
+  ]
   deps = [ "$dir_pw_tokenizer:proto" ]
 }
 

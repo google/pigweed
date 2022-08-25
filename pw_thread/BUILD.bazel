@@ -53,6 +53,12 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "config",
+    hdrs = ["public/pw_thread/config.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "thread_info",
     hdrs = ["public/pw_thread/thread_info.h"],
     includes = ["public"],
@@ -157,6 +163,33 @@ pw_cc_library(
         "public/pw_thread/thread_core.h",
     ],
     includes = ["public"],
+    deps = [
+        "//pw_log",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "thread_snapshot_service",
+    srcs = [
+        "pw_thread_private/thread_snapshot_service.h",
+        "thread_snapshot_service.cc",
+    ],
+    hdrs = ["public/pw_thread/thread_snapshot_service.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_span",
+        "//pw_status",
+        "//pw_rpc/raw:server_api",
+        ":config",
+        ":thread_cc.pwpb",
+        ":thread_info",
+        ":thread_iteration",
+        ":thread_snapshot_service_cc.pwpb",
+        ":thread_snapshot_service_cc.raw_rpc",
+        # TODO: This should depend on FreeRTOS but our third parties currently
+        # do not have Bazel support.
+    ],
 )
 
 pw_cc_facade(
@@ -277,6 +310,23 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "thread_snapshot_service_test",
+    srcs = [
+        "pw_thread_private/thread_snapshot_service.h",
+        "thread_snapshot_service_test.cc",
+    ],
+    deps = [
+        ":thread_cc.pwpb",
+        ":thread_info",
+        ":thread_iteration",
+        ":thread_snapshot_service",
+        ":thread_snapshot_service_cc.pwpb",
+        "//pw_span",
+        "//pw_sync:thread_notification",
+    ],
+)
+
+pw_cc_test(
     name = "yield_facade_test",
     srcs = [
         "yield_facade_test.cc",
@@ -302,6 +352,20 @@ proto_library(
 py_proto_library(
     name = "thread_proto_py_pb2",
     deps = [":thread_proto"],
+)
+
+proto_library(
+    name = "thread_snapshot_service_proto",
+    srcs = ["pw_thread_protos/thread_snapshot_service.proto"],
+    strip_import_prefix = "//pw_thread",
+    deps = [
+        ":thread_proto",
+    ],
+)
+
+pw_proto_library(
+    name = "thread_snapshot_service_cc",
+    deps = [":thread_snapshot_service_proto"],
 )
 
 pw_proto_library(

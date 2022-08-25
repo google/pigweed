@@ -464,6 +464,81 @@ C++
    a runtime capture of thread information.
 
 -----------------------
+Thread Snapshot Service
+-----------------------
+``pw_thread`` offers an optional RPC service library
+(``:thread_snapshot_service``) that enables thread info capture of
+running threads on a device at runtime via RPC. The service will guide
+optimization of stack usage by providing an overview of thread information,
+including thread name, stack bounds, and peak stack usage.
+
+``ThreadSnapshotService`` currently supports peak stack usage capture for
+all running threads (``ThreadSnapshotService::GetPeakStackUsage()``). Thread
+information capture relies on the thread iteration facade which will
+**momentarily halt your RTOS**, collect information about running threads, and
+return this information through the service.
+
+RPC service setup
+=================
+To expose a ``ThreadSnapshotService`` in your application, do the following:
+
+1. Instantiate a buffer with specified size (See ``RequiredServiceBufferSize``
+below for more information on buffer size calculation).
+2. Create an instance of ``pw::thread::ThreadSnapshotService``.
+3. Register the service with your RPC server.
+
+For example:
+
+.. code::
+
+   #include "pw_rpc/server.h"
+   #include "pw_thread/thread_snapshot_service.h"
+
+   // Note: You must customize the RPC server setup; see pw_rpc.
+   Channel channels[] = {
+    Channel::Create<1>(&uart_output),
+   };
+   Server server(channels);
+
+   // Calculate encode buffer size, defaults to `PW_THREAD_MAXIMUM_THREADS`
+   // if no argument is provided.
+   constexpr size_t kEncodeBufferSize =
+     pw::thread::RequiredBufferSize(/* number of threads */);
+   std::array<std::byte, kEncodeBufferSize> encode_buffer;
+
+   // Thread snapshot service instance.
+   pw::thread::ThreadSnapshotService thread_snapshot_service(encode_buffer);
+
+   void RegisterServices() {
+     server.RegisterService(thread_snapshot_service);
+     // Register other services here.
+   }
+
+   void main() {
+     // ... system initialization ...
+
+     RegisterServices();
+
+     // ... start your application ...
+   }
+
+.. c:macro:: PW_THREAD_MAXIMUM_THREADS
+
+  The max number of threads to use by default for thread snapshot service.
+
+.. cpp:function:: constexpr size_t RequiredServiceBufferSize(const size_t num_threads)
+
+  Function provided through the service to calculate buffer sizing. If no
+  argument ``num_threads`` is specified, the function will take ``num_threads``
+  to be ``PW_THREAD_MAXIMUM_THREADS``.
+
+.. attention::
+    Some platforms may only support limited subsets of this service
+    depending on RTOS configuration. **Ensure that your RTOS is configured
+    properly before using this service.** Please see the thread iteration
+    documentation for your backend for more detail on RTOS support.
+
+-----------------------
 pw_snapshot integration
 -----------------------
 ``pw_thread`` provides some light, optional integration with pw_snapshot through

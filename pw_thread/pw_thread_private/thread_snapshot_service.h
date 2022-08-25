@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,12 +13,11 @@
 // the License.
 #pragma once
 
-// The log level to use for this module. Logs below this level are omitted.
-#ifndef PW_THREAD_CONFIG_LOG_LEVEL
-#define PW_THREAD_CONFIG_LOG_LEVEL PW_LOG_LEVEL_DEBUG
-#endif  // PW_THREAD_CONFIG_LOG_LEVEL
+#include "pw_log/log.h"
+#include "pw_status/status.h"
 
-// The max number of threads to use by default for thread snapshot service.
-#ifndef PW_THREAD_MAXIMUM_THREADS
-#define PW_THREAD_MAXIMUM_THREADS 10
-#endif  // PW_THREAD_MAXIMUM_THREADS
+namespace pw::thread {
+
+void ErrorLog(Status status);
+
+}  // namespace pw::thread
