@@ -13,9 +13,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -35,7 +32,7 @@ class FakePeer;
 
 // FakeController emulates a real Bluetooth controller. It can be configured to respond to HCI
 // commands in a predictable manner.
-class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<FakeController> {
+class FakeController : public ControllerTestDoubleBase {
  public:
   // Global settings for the FakeController. These can be used to initialize a FakeController and/or
   // to re-configure an existing one.

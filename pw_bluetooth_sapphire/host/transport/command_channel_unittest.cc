@@ -6,9 +6,6 @@
 
 #include <lib/async/cpp/task.h>
 
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"

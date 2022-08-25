@@ -4,7 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/logical_link.h"
 
-#include "fbl/ref_ptr.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"

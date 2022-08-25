@@ -11,8 +11,6 @@
 
 #include <map>
 
-#include <fbl/ref_ptr.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"

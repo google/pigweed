@@ -13,8 +13,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <fbl/ref_ptr.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"

@@ -9,7 +9,6 @@
 #include "bredr_dynamic_channel.h"
 #include "bredr_signaling_channel.h"
 #include "channel.h"
-#include "fbl/ref_ptr.h"
 #include "le_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"

@@ -7,8 +7,6 @@
 
 #include <lib/fit/function.h>
 
-#include <fbl/ref_ptr.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"

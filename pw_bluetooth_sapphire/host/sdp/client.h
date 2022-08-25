@@ -11,8 +11,6 @@
 #include <functional>
 #include <unordered_map>
 
-#include <fbl/ref_ptr.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"

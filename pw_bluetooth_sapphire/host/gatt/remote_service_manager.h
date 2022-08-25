@@ -11,7 +11,6 @@
 #include <memory>
 #include <vector>
 
-#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"

@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "fbl/ref_ptr.h"
 #include "lib/fit/function.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
