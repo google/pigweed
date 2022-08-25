@@ -55,3 +55,6 @@ Files are synced from Fuchsia repository to their original paths under the
 ``third_party/fuchsia/repo`` directory in Pigweed. The Copybara script applies
 patches to adapt the sources for use in Pigweed. For example,
 ``__builtin_abort`` is replaced with ``PW_ASSERT``.
+
+To update the patch files used by Copybara, run
+``python third_party/fuchsia/generate_fuchsia_patch.py``.
