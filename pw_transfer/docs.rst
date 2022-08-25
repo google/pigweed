@@ -27,7 +27,7 @@ running on the same system.
 .. note::
 
    All user-defined transfer callbacks (i.e. the virtual interface of a
-   ``TransferHandler`` or completion function in a transfer client) will be
+   ``Handler`` or completion function in a transfer client) will be
    invoked from the transfer thread's context.
 
 In order to operate, a transfer thread requires two buffers:
@@ -94,12 +94,12 @@ Transfer server
 ``pw_transfer`` provides an RPC service for running transfers through an RPC
 server.
 
-To know how to read data from or write data to device, a ``TransferHandler``
-interface is defined (``pw_transfer/public/pw_transfer/handler.h``). Transfer
-handlers represent a transferable resource, wrapping a stream reader and/or
-writer with initialization and completion code. Custom transfer handler
-implementations should derive from ``ReadOnlyHandler``, ``WriteOnlyHandler``,
-or ``ReadWriteHandler`` as appropriate and override Prepare and Finalize methods
+To know how to read data from or write data to device, a ``Handler`` interface
+is defined (``pw_transfer/public/pw_transfer/handler.h``). Transfer handlers
+represent a transferable resource, wrapping a stream reader and/or writer with
+initialization and completion code. Custom transfer handler implementations
+should derive from ``ReadOnlyHandler``, ``WriteOnlyHandler``, or
+``ReadWriteHandler`` as appropriate and override Prepare and Finalize methods
 if necessary.
 
 A transfer handler should be implemented and instantiated for each unique

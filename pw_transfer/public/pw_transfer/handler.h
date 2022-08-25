@@ -22,9 +22,13 @@
 namespace pw::transfer {
 namespace internal {
 
-// The internal::Handler class is the base class for the transfer handler
-// classes. Transfer handlers connect a transfer resource ID to the functions
-// that do the actual reads and/or writes.
+class Context;
+
+}  // namespace internal
+
+// The Handler class is the base class for the transfer handler classes.
+// Transfer handlers connect a transfer resource ID to a data stream, wrapped
+// with initialization and cleanup procedures.
 //
 // Handlers use a stream::Reader or stream::Writer to do the reads and writes.
 // They also provide optional Prepare and Finalize functions.
@@ -70,7 +74,7 @@ class Handler : public IntrusiveList<Handler>::Item {
   void set_writer(stream::Writer& writer) { writer_ = &writer; }
 
  private:
-  friend class Context;
+  friend class internal::Context;
 
   // Prepares for either a read or write transfer.
   Status Prepare(internal::TransferType type) {
@@ -93,15 +97,13 @@ class Handler : public IntrusiveList<Handler>::Item {
   };
 };
 
-}  // namespace internal
-
-class ReadOnlyHandler : public internal::Handler {
+class ReadOnlyHandler : public Handler {
  public:
   constexpr ReadOnlyHandler(uint32_t resource_id)
-      : internal::Handler(resource_id, static_cast<stream::Reader*>(nullptr)) {}
+      : Handler(resource_id, static_cast<stream::Reader*>(nullptr)) {}
 
   constexpr ReadOnlyHandler(uint32_t resource_id, stream::Reader& reader)
-      : internal::Handler(resource_id, &reader) {}
+      : Handler(resource_id, &reader) {}
 
   ~ReadOnlyHandler() override = default;
 
@@ -110,19 +112,19 @@ class ReadOnlyHandler : public internal::Handler {
   // Writes are not supported.
   Status PrepareWrite() final { return Status::PermissionDenied(); }
 
-  using internal::Handler::set_reader;
+  using Handler::set_reader;
 
  private:
-  using internal::Handler::set_writer;
+  using Handler::set_writer;
 };
 
-class WriteOnlyHandler : public internal::Handler {
+class WriteOnlyHandler : public Handler {
  public:
   constexpr WriteOnlyHandler(uint32_t resource_id)
-      : internal::Handler(resource_id, static_cast<stream::Writer*>(nullptr)) {}
+      : Handler(resource_id, static_cast<stream::Writer*>(nullptr)) {}
 
   constexpr WriteOnlyHandler(uint32_t resource_id, stream::Writer& writer)
-      : internal::Handler(resource_id, &writer) {}
+      : Handler(resource_id, &writer) {}
 
   ~WriteOnlyHandler() override = default;
 
@@ -131,20 +133,19 @@ class WriteOnlyHandler : public internal::Handler {
 
   Status PrepareWrite() override { return OkStatus(); }
 
-  using internal::Handler::set_writer;
+  using Handler::set_writer;
 
  private:
-  using internal::Handler::set_reader;
+  using Handler::set_reader;
 };
 
-class ReadWriteHandler : public internal::Handler {
+class ReadWriteHandler : public Handler {
  public:
   constexpr ReadWriteHandler(uint32_t resource_id)
-      : internal::Handler(resource_id, static_cast<stream::Reader*>(nullptr)) {}
+      : Handler(resource_id, static_cast<stream::Reader*>(nullptr)) {}
   constexpr ReadWriteHandler(uint32_t resource_id,
                              stream::ReaderWriter& reader_writer)
-      : internal::Handler(resource_id,
-                          &static_cast<stream::Reader&>(reader_writer)) {}
+      : Handler(resource_id, &static_cast<stream::Reader&>(reader_writer)) {}
 
   ~ReadWriteHandler() override = default;
 

@@ -18,7 +18,11 @@
 #include "pw_stream/stream.h"
 #include "pw_transfer/internal/protocol.h"
 
-namespace pw::transfer::internal {
+namespace pw::transfer {
+
+class Handler;
+
+namespace internal {
 
 enum class TransferType : bool { kTransmit, kReceive };
 
@@ -63,7 +67,6 @@ enum class EventType {
 };
 
 // Forward declarations required for events.
-class Handler;
 class TransferParameters;
 class TransferThread;
 
@@ -120,4 +123,5 @@ struct Event {
   };
 };
 
-}  // namespace pw::transfer::internal
+}  // namespace internal
+}  // namespace pw::transfer

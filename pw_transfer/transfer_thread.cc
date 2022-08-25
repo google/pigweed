@@ -238,8 +238,7 @@ void TransferThread::SetServerStream(TransferStream type,
   event_notification_.release();
 }
 
-void TransferThread::TransferHandlerEvent(EventType type,
-                                          internal::Handler& handler) {
+void TransferThread::TransferHandlerEvent(EventType type, Handler& handler) {
   // Block until the last event has been processed.
   next_event_ownership_.acquire();
 
