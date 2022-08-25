@@ -237,22 +237,6 @@ group("link_deps") {
 group("empty") {
 }
 
-# TODO(b/232800695): Remove when all projects are on the new Python build.
-# Requirements for the pw_python_package lint targets.
-pw_python_requirements("python_lint") {
-  requirements = [
-    "build",
-
-    # NOTE: mypy needs to stay in sync with mypy-protobuf
-    # Currently using mypy 0.971 and mypy-protobuf 3.2.0
-    "mypy==0.971",
-
-    # typeshed packages (required by mypy > 0.9)
-    "types-setuptools",
-    "pylint==2.9.3",
-  ]
-}
-
 pw_doc_group("docs") {
   sources = [
     "docs.rst",

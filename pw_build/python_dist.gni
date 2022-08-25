@@ -419,96 +419,90 @@ template("pw_create_python_source_tree") {
 #     command.
 template("pw_python_pip_install") {
   if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
-    if (!pw_build_USE_NEW_PYTHON_BUILD) {
-      pw_error("$target_name") {
-        message_lines = [ "pw_internal_pip_install targets are not supported unless this gn arg is set pw_build_USE_NEW_PYTHON_BUILD=true." ]
-      }
-    } else {
-      # Create a target group for the Python package metadata only.
-      group("$target_name._package_metadata") {
-        # Forward the package_metadata subtarget for all python_deps.
-        public_deps = []
-        if (defined(invoker.packages)) {
-          foreach(dep, invoker.packages) {
-            public_deps += [ get_label_info(dep, "label_no_toolchain") +
-                             "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
-          }
+    # Create a target group for the Python package metadata only.
+    group("$target_name._package_metadata") {
+      # Forward the package_metadata subtarget for all python_deps.
+      public_deps = []
+      if (defined(invoker.packages)) {
+        foreach(dep, invoker.packages) {
+          public_deps += [ get_label_info(dep, "label_no_toolchain") +
+                           "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
         }
       }
+    }
 
-      pw_python_action("$target_name") {
-        script = "$dir_pw_build/py/pw_build/pip_install_python_deps.py"
+    pw_python_action("$target_name") {
+      script = "$dir_pw_build/py/pw_build/pip_install_python_deps.py"
 
-        assert(
-            defined(invoker.packages),
-            "packages = [ 'python_package' ] is required by pw_internal_pip_install")
+      assert(
+          defined(invoker.packages),
+          "packages = [ 'python_package' ] is required by pw_internal_pip_install")
 
-        public_deps = []
-        if (defined(invoker.public_deps)) {
-          public_deps += invoker.public_deps
-        }
+      public_deps = []
+      if (defined(invoker.public_deps)) {
+        public_deps += invoker.public_deps
+      }
 
-        python_deps = []
-        python_metadata_deps = []
-        if (defined(invoker.packages)) {
-          public_deps += invoker.packages
-          python_deps += invoker.packages
-          python_metadata_deps += invoker.packages
-        }
+      python_deps = []
+      python_metadata_deps = []
+      if (defined(invoker.packages)) {
+        public_deps += invoker.packages
+        python_deps += invoker.packages
+        python_metadata_deps += invoker.packages
+      }
 
-        python_deps = []
-        if (defined(invoker.python_deps)) {
-          python_deps += invoker.python_deps
-        }
+      python_deps = []
+      if (defined(invoker.python_deps)) {
+        python_deps += invoker.python_deps
+      }
 
-        _pw_internal_run_in_venv = false
-        _forward_python_metadata_deps = true
+      _pw_internal_run_in_venv = false
+      _forward_python_metadata_deps = true
 
-        _editable_install = false
-        if (defined(invoker.editable)) {
-          _editable_install = invoker.editable
-        }
+      _editable_install = false
+      if (defined(invoker.editable)) {
+        _editable_install = invoker.editable
+      }
 
-        _pkg_gn_labels = []
-        foreach(pkg, invoker.packages) {
-          _pkg_gn_labels += [ get_label_info(pkg, "label_no_toolchain") ]
-        }
+      _pkg_gn_labels = []
+      foreach(pkg, invoker.packages) {
+        _pkg_gn_labels += [ get_label_info(pkg, "label_no_toolchain") ]
+      }
 
-        args = [
-          "--gn-packages",
-          string_join(",", _pkg_gn_labels),
-        ]
+      args = [
+        "--gn-packages",
+        string_join(",", _pkg_gn_labels),
+      ]
 
-        if (_editable_install) {
-          args += [ "--editable-pip-install" ]
-        }
+      if (_editable_install) {
+        args += [ "--editable-pip-install" ]
+      }
 
+      args += [
+        "install",
+        "--no-build-isolation",
+      ]
+
+      _force_reinstall = false
+      if (defined(invoker.force_reinstall)) {
+        _force_reinstall = true
+      }
+      if (_force_reinstall) {
+        args += [ "--force-reinstall" ]
+      }
+
+      inputs = pw_build_PIP_CONSTRAINTS
+      foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
         args += [
-          "install",
-          "--no-build-isolation",
+          "--constraint",
+          rebase_path(_constraints_file, root_build_dir),
         ]
-
-        _force_reinstall = false
-        if (defined(invoker.force_reinstall)) {
-          _force_reinstall = true
-        }
-        if (_force_reinstall) {
-          args += [ "--force-reinstall" ]
-        }
-
-        inputs = pw_build_PIP_CONSTRAINTS
-        foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
-          args += [
-            "--constraint",
-            rebase_path(_constraints_file, root_build_dir),
-          ]
-        }
-
-        stamp = true
-
-        # Parallel pip installations don't work, so serialize pip invocations.
-        pool = "$dir_pw_build/pool:pip($default_toolchain)"
       }
+
+      stamp = true
+
+      # Parallel pip installations don't work, so serialize pip invocations.
+      pool = "$dir_pw_build/pool:pip($default_toolchain)"
     }
   } else {
     group("$target_name") {

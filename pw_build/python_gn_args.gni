@@ -19,13 +19,6 @@ declare_args() {
   # toolchain to avoid unnecessary duplication in the build.
   pw_build_PYTHON_TOOLCHAIN = "$dir_pw_build/python_toolchain:python"
 
-  # If true, individual Pigweed Python packages will not be installed into the
-  # user's development environment. Instead they will be merged into a Python
-  # package titled 'pigweed' with a version matching the latest version
-  # available at https://pypi.org/project/pigweed/ with the current date
-  # appended.
-  pw_build_USE_NEW_PYTHON_BUILD = false
-
   # Default gn build virtualenv target.
   pw_build_PYTHON_BUILD_VENV = "$dir_pw_env_setup:pigweed_build_venv"
 }

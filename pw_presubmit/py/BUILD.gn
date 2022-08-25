@@ -44,8 +44,6 @@ pw_python_package("py") {
     "tools_test.py",
   ]
   python_deps = [
-    # TODO(b/232800695): Remove when all projects are on the new Python build.
-    "$dir_pw_build:python_lint",
     "$dir_pw_cli/py",
     "$dir_pw_env_setup/py",
     "$dir_pw_package/py",

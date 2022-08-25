@@ -203,42 +203,28 @@ template("pw_python_action") {
   }
   _deps += [ ":${_metadata_path_list_target}" ]
 
-  if (pw_build_USE_NEW_PYTHON_BUILD) {
-    # Set venv options if needed.
-    if (_use_build_dir_virtualenv) {
-      _venv_target_label = pw_build_PYTHON_BUILD_VENV
-      if (defined(invoker.venv)) {
-        _venv_target_label = invoker.venv
-      }
-      _venv_target_label =
-          get_label_info(_venv_target_label, "label_no_toolchain") +
-          "($pw_build_PYTHON_TOOLCHAIN)"
-
-      _venv_json =
-          get_label_info(_venv_target_label, "target_gen_dir") + "/" +
-          get_label_info(_venv_target_label, "name") + "/venv_metadata.json"
-      _script_args += [
-        "--python-virtualenv-config",
-        rebase_path(_venv_json, root_build_dir),
-      ]
+  # Set venv options if needed.
+  if (_use_build_dir_virtualenv) {
+    _venv_target_label = pw_build_PYTHON_BUILD_VENV
+    if (defined(invoker.venv)) {
+      _venv_target_label = invoker.venv
     }
+    _venv_target_label =
+        get_label_info(_venv_target_label, "label_no_toolchain") +
+        "($pw_build_PYTHON_TOOLCHAIN)"
 
+    _venv_json =
+        get_label_info(_venv_target_label, "target_gen_dir") + "/" +
+        get_label_info(_venv_target_label, "name") + "/venv_metadata.json"
     _script_args += [
-      "--python-dep-list-files",
-      rebase_path(_metadata_path_list_file, root_build_dir),
+      "--python-virtualenv-config",
+      rebase_path(_venv_json, root_build_dir),
     ]
   }
-
-  if (!pw_build_USE_NEW_PYTHON_BUILD) {
-    _script_args += [
-      # pip lockfile, prevents pip from running in parallel with other Python
-      # actions.
-      "--lockfile",
-
-      # Use a single lockfile for the entire out directory.
-      "pip.lock",
-    ]
-  }
+  _script_args += [
+    "--python-dep-list-files",
+    rebase_path(_metadata_path_list_file, root_build_dir),
+  ]
 
   # "--" indicates the end of arguments to the runner script.
   # Everything beyond this point is interpreted as the command and arguments
@@ -272,9 +258,6 @@ template("pw_python_action") {
     _install_venv_3p_deps = false
   }
 
-  # If pw_build_USE_NEW_PYTHON_BUILD is false this variable is not needed.
-  not_needed([ "_install_venv_3p_deps" ])
-
   # Check that script or module is a present and not a no-op.
   _run_script_or_module = false
   if (defined(invoker.script) || defined(invoker.module)) {
@@ -297,11 +280,9 @@ template("pw_python_action") {
     outputs = _outputs
     deps = _deps
 
-    if (pw_build_USE_NEW_PYTHON_BUILD) {
-      if (_install_venv_3p_deps && _run_script_or_module) {
-        deps += [ get_label_info(_venv_target_label, "label_no_toolchain") +
-                  "._install_3p_deps($pw_build_PYTHON_TOOLCHAIN)" ]
-      }
+    if (_install_venv_3p_deps && _run_script_or_module) {
+      deps += [ get_label_info(_venv_target_label, "label_no_toolchain") +
+                "._install_3p_deps($pw_build_PYTHON_TOOLCHAIN)" ]
     }
   }
 }
