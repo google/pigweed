@@ -499,7 +499,7 @@ class DatabaseFile(Database):
             return _CSVDatabase(path, csv_fd)
 
     @abstractmethod
-    def write_to_file(self) -> None:
+    def write_to_file(self, *, rewrite: bool = False) -> None:
         """Exports in the original format to the original path."""
 
     @abstractmethod
@@ -517,8 +517,9 @@ class _BinaryDatabase(DatabaseFile):
     def __init__(self, path: Path, fd: BinaryIO) -> None:
         super().__init__(path, parse_binary(fd))
 
-    def write_to_file(self) -> None:
+    def write_to_file(self, *, rewrite: bool = False) -> None:
         """Exports in the binary format to the original path."""
+        del rewrite  # Binary databases are always rewritten
         with self.path.open('wb') as fd:
             write_binary(self, fd)
 
@@ -527,15 +528,17 @@ class _BinaryDatabase(DatabaseFile):
                                   commit: str) -> None:
         # TODO(b/241471465): Implement adding new tokens and removing
         # temporary entries for binary databases.
-        raise NotImplementedError
+        raise NotImplementedError('--discard-temporary is currently only '
+                                  'supported for directory databases')
 
 
 class _CSVDatabase(DatabaseFile):
     def __init__(self, path: Path, fd: TextIO) -> None:
         super().__init__(path, parse_csv(fd))
 
-    def write_to_file(self) -> None:
+    def write_to_file(self, *, rewrite: bool = False) -> None:
         """Exports in the CSV format to the original path."""
+        del rewrite  # CSV databases are always rewritten
         with self.path.open('wb') as fd:
             write_csv(self, fd)
 
@@ -544,19 +547,20 @@ class _CSVDatabase(DatabaseFile):
                                   commit: str) -> None:
         # TODO(b/241471465): Implement adding new tokens and removing
         # temporary entries for CSV databases.
-        raise NotImplementedError
+        raise NotImplementedError('--discard-temporary is currently only '
+                                  'supported for directory databases')
 
 
-_DIR_DB_SUFFIX = '.pw_tokenizer.csv'
-_DIR_DB_GLOB = '*' + _DIR_DB_SUFFIX
+# The suffix used for CSV files in a directory database.
+DIR_DB_SUFFIX = '.pw_tokenizer.csv'
+_DIR_DB_GLOB = '*' + DIR_DB_SUFFIX
 
 
 def _parse_directory(directory: Path) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries tokenizer CSV files in the directory."""
-    for path in directory.iterdir():
-        if path.name.endswith(_DIR_DB_SUFFIX):
-            with path.open() as fd:
-                yield from parse_csv(fd)
+    for path in directory.glob(_DIR_DB_GLOB):
+        with path.open() as fd:
+            yield from parse_csv(fd)
 
 
 def _most_recently_modified_file(paths: Iterable[Path]) -> Path:
@@ -567,14 +571,25 @@ class _DirectoryDatabase(DatabaseFile):
     def __init__(self, directory: Path) -> None:
         super().__init__(directory, _parse_directory(directory))
 
-    def write_to_file(self) -> None:
+    def write_to_file(self, *, rewrite: bool = False) -> None:
         """Creates a new CSV file in the directory with any new tokens."""
-        # Re-read the tokens from disk.
-        current_tokens = Database(_parse_directory(self.path))
-        new_entries = self.difference(current_tokens)
-        if new_entries:
-            with self._create_filename().open('wb') as fd:
-                write_csv(new_entries, fd)
+        if rewrite:
+            # Write the entire database to a new CSV file
+            new_file = self._create_filename()
+            with new_file.open('wb') as fd:
+                write_csv(self, fd)
+
+            # Delete all CSV files except for the new CSV with everything.
+            for csv_file in self.path.glob(_DIR_DB_GLOB):
+                if csv_file != new_file:
+                    csv_file.unlink()
+        else:
+            # Reread the tokens from disk and write only the new entries to CSV.
+            current_tokens = Database(_parse_directory(self.path))
+            new_entries = self.difference(current_tokens)
+            if new_entries:
+                with self._create_filename().open('wb') as fd:
+                    write_csv(new_entries, fd)
 
     def _git_paths(self, commands: List) -> List[Path]:
         """Returns a list of files from a Git command, filtered to matc."""
@@ -626,7 +641,7 @@ class _DirectoryDatabase(DatabaseFile):
     def _create_filename(self) -> Path:
         """Generates a unique filename not in the directory."""
         # Tracked and untracked files do not exist in the repo.
-        while (file := self.path / f'{uuid4().hex}{_DIR_DB_SUFFIX}').exists():
+        while (file := self.path / f'{uuid4().hex}{DIR_DB_SUFFIX}').exists():
             pass
         return file
 

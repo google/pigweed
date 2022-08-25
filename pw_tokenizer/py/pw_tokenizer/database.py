@@ -247,11 +247,11 @@ def generate_reports(paths: Iterable[Path]) -> _DatabaseReport:
     reports: _DatabaseReport = {}
 
     for path in paths:
-        with path.open('rb') as file:
-            if elf_reader.compatible_file(file):
-                domains = list(tokenization_domains(file))
-            else:
-                domains = ['']
+        domains = ['']
+        if path.is_file():
+            with path.open('rb') as file:
+                if elf_reader.compatible_file(file):
+                    domains = list(tokenization_domains(file))
 
         domain_reports = {}
 
@@ -264,31 +264,41 @@ def generate_reports(paths: Iterable[Path]) -> _DatabaseReport:
     return reports
 
 
-def _handle_create(databases, database, force, output_type, include, exclude,
-                   replace) -> None:
+def _handle_create(databases, database: Path, force: bool, output_type: str,
+                   include: list, exclude: list, replace: list) -> None:
     """Creates a token database file from one or more ELF files."""
-    if database == '-':
-        # Must write bytes to stdout; use sys.stdout.buffer.
-        fd = sys.stdout.buffer
-    elif not force and os.path.exists(database):
+    if not force and database.exists():
         raise FileExistsError(
             f'The file {database} already exists! Use --force to overwrite.')
-    else:
-        fd = open(database, 'wb')
 
-    database = tokens.Database.merged(*databases)
-    database.filter(include, exclude, replace)
+    if output_type == 'directory':
+        if str(database) == '-':
+            raise ValueError(
+                'Cannot specify "-" (stdout) for directory databases')
+
+        database.mkdir(exist_ok=True)
+        database = database / f'database{tokens.DIR_DB_SUFFIX}'
+        output_type = 'csv'
+
+    if str(database) == '-':
+        # Must write bytes to stdout; use sys.stdout.buffer.
+        fd = sys.stdout.buffer
+    else:
+        fd = database.open('wb')
+
+    db = tokens.Database.merged(*databases)
+    db.filter(include, exclude, replace)
 
     with fd:
         if output_type == 'csv':
-            tokens.write_csv(database, fd)
+            tokens.write_csv(db, fd)
         elif output_type == 'binary':
-            tokens.write_binary(database, fd)
+            tokens.write_binary(db, fd)
         else:
             raise ValueError(f'Unknown database type "{output_type}"')
 
-    _LOG.info('Wrote database with %d entries to %s as %s', len(database),
-              fd.name, output_type)
+    _LOG.info('Wrote database with %d entries to %s as %s', len(db), fd.name,
+              output_type)
 
 
 def _handle_add(token_database: tokens.DatabaseFile,
@@ -319,7 +329,7 @@ def _handle_mark_removed(token_database: tokens.DatabaseFile,
         (entry for entry in tokens.Database.merged(*databases).entries()
          if not entry.date_removed), date)
 
-    token_database.write_to_file()
+    token_database.write_to_file(rewrite=True)
 
     _LOG.info('Marked %d of %d entries as removed in %s', len(marked_removed),
               len(token_database), token_database.path)
@@ -328,7 +338,7 @@ def _handle_mark_removed(token_database: tokens.DatabaseFile,
 def _handle_purge(token_database: tokens.DatabaseFile,
                   before: Optional[datetime]):
     purged = token_database.purge(before)
-    token_database.write_to_file()
+    token_database.write_to_file(rewrite=True)
 
     _LOG.info('Removed %d entries from %s', len(purged), token_database.path)
 
@@ -473,12 +483,13 @@ def _parse_args():
         '-d',
         '--database',
         required=True,
+        type=Path,
         help='Path to the database file to create; use - for stdout.')
     subparser.add_argument(
         '-t',
         '--type',
         dest='output_type',
-        choices=('csv', 'binary'),
+        choices=('csv', 'binary', 'directory'),
         default='csv',
         help='Which type of database to create. (default: csv)')
     subparser.add_argument('-f',

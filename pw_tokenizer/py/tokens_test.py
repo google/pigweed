@@ -23,8 +23,8 @@ import tempfile
 from typing import Iterator
 import unittest
 
-from pw_tokenizer import database, tokens
-from pw_tokenizer.tokens import c_hash, _LOG
+from pw_tokenizer import tokens
+from pw_tokenizer.tokens import c_hash, DIR_DB_SUFFIX, _LOG
 
 CSV_DATABASE = '''\
 00000000,2019-06-10,""
@@ -592,18 +592,18 @@ class TestDirectoryDatabase(unittest.TestCase):
         self._dir = Path(tempfile.mkdtemp('_pw_tokenizer_test'))
         self._db_dir = self._dir / '_dir_database_test'
         self._db_dir.mkdir(exist_ok=True)
-        self._db_csv = self._db_dir / 'first.pw_tokenizer.csv'
+        self._db_csv = self._db_dir / f'first{DIR_DB_SUFFIX}'
 
     def tearDown(self) -> None:
         shutil.rmtree(self._dir)
 
     def test_loading_empty_directory(self) -> None:
-        self.assertFalse(database.load_token_database(self._db_dir).entries())
+        self.assertFalse(tokens.DatabaseFile.load(self._db_dir).entries())
 
     def test_loading_a_single_file(self) -> None:
         self._db_csv.write_text(CSV_DATABASE)
         csv = tokens.DatabaseFile.load(self._db_csv)
-        directory_db = database.load_token_database(self._db_dir)
+        directory_db = tokens.DatabaseFile.load(self._db_dir)
         self.assertEqual(1, len(list(self._db_dir.iterdir())))
         self.assertEqual(str(csv), str(directory_db))
 
@@ -611,17 +611,17 @@ class TestDirectoryDatabase(unittest.TestCase):
         self._db_csv.write_text(CSV_DATABASE_3)
         first_csv = tokens.DatabaseFile.load(self._db_csv)
 
-        path_to_second_csv = self._db_dir / 'second.pw_tokenizer.csv'
+        path_to_second_csv = self._db_dir / f'second{DIR_DB_SUFFIX}'
         path_to_second_csv.write_text(CSV_DATABASE_2)
         second_csv = tokens.DatabaseFile.load(path_to_second_csv)
 
-        path_to_third_csv = self._db_dir / 'third.pw_tokenizer.csv'
+        path_to_third_csv = self._db_dir / f'third{DIR_DB_SUFFIX}'
         path_to_third_csv.write_text(CSV_DATABASE_4)
         third_csv = tokens.DatabaseFile.load(path_to_third_csv)
 
         all_databases_merged = tokens.Database.merged(first_csv, second_csv,
                                                       third_csv)
-        directory_db = database.load_token_database(self._db_dir)
+        directory_db = tokens.DatabaseFile.load(self._db_dir)
         self.assertEqual(3, len(list(self._db_dir.iterdir())))
         self.assertEqual(str(all_databases_merged), str(directory_db))
 
@@ -629,18 +629,46 @@ class TestDirectoryDatabase(unittest.TestCase):
         self._db_csv.write_text(CSV_DATABASE)
         first_csv = tokens.DatabaseFile.load(self._db_csv)
 
-        path_to_second_csv = self._db_dir / 'second.pw_tokenizer.csv'
+        path_to_second_csv = self._db_dir / f'second{DIR_DB_SUFFIX}'
         path_to_second_csv.write_text(CSV_DATABASE_2)
         second_csv = tokens.DatabaseFile.load(path_to_second_csv)
 
-        path_to_third_csv = self._db_dir / 'third.pw_tokenizer.csv'
+        path_to_third_csv = self._db_dir / f'third{DIR_DB_SUFFIX}'
         path_to_third_csv.write_text(CSV_DATABASE_3)
         third_csv = tokens.DatabaseFile.load(path_to_third_csv)
 
         all_databases_merged = tokens.Database.merged(first_csv, second_csv,
                                                       third_csv)
-        directory_db = database.load_token_database(self._db_dir)
+        directory_db = tokens.DatabaseFile.load(self._db_dir)
         self.assertEqual(3, len(list(self._db_dir.iterdir())))
+        self.assertEqual(str(all_databases_merged), str(directory_db))
+
+    def test_rewrite(self) -> None:
+        self._db_dir.joinpath('junk_file').write_text('should be ignored')
+
+        self._db_csv.write_text(CSV_DATABASE_3)
+        first_csv = tokens.DatabaseFile.load(self._db_csv)
+
+        path_to_second_csv = self._db_dir / f'second{DIR_DB_SUFFIX}'
+        path_to_second_csv.write_text(CSV_DATABASE_2)
+        second_csv = tokens.DatabaseFile.load(path_to_second_csv)
+
+        path_to_third_csv = self._db_dir / f'third{DIR_DB_SUFFIX}'
+        path_to_third_csv.write_text(CSV_DATABASE_4)
+        third_csv = tokens.DatabaseFile.load(path_to_third_csv)
+
+        all_databases_merged = tokens.Database.merged(first_csv, second_csv,
+                                                      third_csv)
+
+        directory_db = tokens.DatabaseFile.load(self._db_dir)
+        directory_db.write_to_file(rewrite=True)
+
+        self.assertEqual(1, len(list(self._db_dir.glob(f'*{DIR_DB_SUFFIX}'))))
+        self.assertEqual(
+            self._db_dir.joinpath('junk_file').read_text(),
+            'should be ignored')
+
+        directory_db = tokens.DatabaseFile.load(self._db_dir)
         self.assertEqual(str(all_databases_merged), str(directory_db))
 
 
