@@ -108,9 +108,10 @@ TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
   };
   test_device()->SetDataCallback(data_callback, dispatcher());
 
-  // Queue up 10 packets in total, distributed among the two connection handles.
+  // Queue up 11 packets in total, distributed among the two connection handles.
+  // The first 5 packets should be sent immediately, and the next 6 should be queued.
   async::PostTask(dispatcher(), [this] {
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 11; ++i) {
       hci_spec::ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
       auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
                                        hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
@@ -127,16 +128,29 @@ TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
   EXPECT_EQ(2, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  StaticByteBuffer event_buffer(0x13, 0x09,              // Event header
-                                0x02,                    // Number of handles
-                                0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
-                                0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
+  // This should cause 5 (not 6!) packets to be sent.
+  StaticByteBuffer nocp_event_buffer_0(0x13, 0x09,              // Event header
+                                       0x02,                    // Number of handles
+                                       0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+                                       0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
   );
-  test_device()->SendCommandChannelPacket(event_buffer);
-
+  test_device()->SendCommandChannelPacket(nocp_event_buffer_0);
   RunLoopUntilIdle();
-
+  // The controller should have received 2 packets on kHandle0 and 3 on kHandle1.
   EXPECT_EQ(5, handle0_packet_count);
+  EXPECT_EQ(5, handle1_packet_count);
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event.
+  // This should cause 1 packet to be sent.
+  StaticByteBuffer nocp_event_buffer_1(0x13, 0x09,              // Event header
+                                       0x02,                    // Number of handles
+                                       0x01, 0x00, 0x02, 0x00,  // 3 packets on handle 0x0001
+                                       0x02, 0x00, 0x03, 0x00   // 2 packets on handle 0x0002
+  );
+  test_device()->SendCommandChannelPacket(nocp_event_buffer_1);
+  RunLoopUntilIdle();
+  // The controller should have received 1 packets on kHandle0 and 0 on kHandle1.
+  EXPECT_EQ(6, handle0_packet_count);
   EXPECT_EQ(5, handle1_packet_count);
 }
 

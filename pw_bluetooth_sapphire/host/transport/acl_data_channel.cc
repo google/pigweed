@@ -73,10 +73,8 @@ class AclDataChannelImpl final : public AclDataChannel {
 
   using DataPacketQueue = std::list<QueuedDataPacket>;
 
-  // Take packets from |send_queue| up to and equal to the available capacities given in
-  // |avail_bredr_packets| and |avail_le_packets| respectively
-  static DataPacketQueue TakePacketsToSend(DataPacketQueue& send_queue, size_t avail_bredr_packets,
-                                           size_t avail_le_packets);
+  // Take packets from |send_queue_| up to and equal to the free slots in the controller buffer(s).
+  DataPacketQueue TakePacketsToSend();
 
   // Returns the data buffer MTU for the given connection.
   size_t GetBufferMtu(bt::LinkType ll_type) const;
@@ -105,7 +103,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   size_t GetNumFreeBREDRPackets() const;
 
   // Returns the number of LE packets for which controller has available space
-  // to buffer.
+  // to buffer. This will be 0 if the BR/EDR buffer is shared with LE.
   size_t GetNumFreeLEPackets() const;
 
   // Decreases the total number of sent packets count by the given amount.
@@ -623,14 +621,22 @@ void AclDataChannelImpl::LogDroppedOverflowPackets() {
   }
 }
 
-AclDataChannelImpl::DataPacketQueue AclDataChannelImpl::TakePacketsToSend(
-    DataPacketQueue& send_queue, size_t avail_bredr_packets, size_t avail_le_packets) {
+AclDataChannelImpl::DataPacketQueue AclDataChannelImpl::TakePacketsToSend() {
+  size_t avail_bredr_packets = GetNumFreeBREDRPackets();
+
+  // On a dual mode controller that does not implement separate buffers, the BR/EDR buffer is shared
+  // for both techologies, so we must take care not to double count here.
+  size_t num_free_le_packets = GetNumFreeLEPackets();
+  const bool bredr_buffer_is_shared = !le_buffer_info_.IsAvailable();
+  size_t& avail_le_packets = bredr_buffer_is_shared ? avail_bredr_packets : num_free_le_packets;
+
   // Based on what we know about controller buffer availability, we process
   // packets that are currently in |send_queue|. The packets that can be sent
   // are added to |to_send|. Packets that cannot be sent remain in
   // |send_queue|.
   DataPacketQueue to_send;
-  for (auto iter = send_queue.begin(); iter != send_queue.end();) {
+  InspectableGuard<DataPacketQueue> send_queue = send_queue_.Mutable();
+  for (auto iter = send_queue->begin(); iter != send_queue->end();) {
     if (!avail_bredr_packets && !avail_le_packets)
       break;
 
@@ -645,20 +651,14 @@ AclDataChannelImpl::DataPacketQueue AclDataChannelImpl::TakePacketsToSend(
     }
 
     to_send.push_back(std::move(*iter));
-    iter = send_queue.erase(iter);
+    iter = send_queue->erase(iter);
   }
 
   return to_send;
 }
 
 void AclDataChannelImpl::TrySendNextQueuedPackets() {
-  // TODO(fxbug.dev/72582) - This logic is incorrect for a controller which uses a shared BrEdr &
-  // LE buffer, as we will report the capacity twice, and possibly attempt to send up to double the
-  // number of available packets, resulting in some being dropped.
-  size_t avail_bredr_packets = GetNumFreeBREDRPackets();
-  size_t avail_le_packets = GetNumFreeLEPackets();
-
-  auto to_send = TakePacketsToSend(*send_queue_.Mutable(), avail_bredr_packets, avail_le_packets);
+  DataPacketQueue to_send = TakePacketsToSend();
 
   if (to_send.empty())
     return;
@@ -711,8 +711,9 @@ size_t AclDataChannelImpl::GetNumFreeBREDRPackets() const {
 }
 
 size_t AclDataChannelImpl::GetNumFreeLEPackets() const {
-  if (!le_buffer_info_.IsAvailable())
-    return GetNumFreeBREDRPackets();
+  if (!le_buffer_info_.IsAvailable()) {
+    return 0;
+  }
 
   BT_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >= *le_num_sent_packets_);
   return le_buffer_info_.max_num_packets() - *le_num_sent_packets_;
