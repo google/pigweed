@@ -15,6 +15,11 @@
 #define PW_LOG_FLAG_USE_PRINTF 0
 #endif
 
+// The IGNORE flag only exists on Fuchsia.
+#ifndef PW_LOG_FLAG_IGNORE
+#define PW_LOG_FLAG_IGNORE 0
+#endif
+
 namespace bt {
 namespace {
 
@@ -27,7 +32,10 @@ bool IsPrintfLogLevelEnabled(LogSeverity severity) {
 }
 
 unsigned int GetPwLogFlags(LogSeverity level) {
-  return IsPrintfLogLevelEnabled(level) ? PW_LOG_FLAG_USE_PRINTF : 0;
+  if (g_printf_min_severity == -1) {
+    return 0;
+  }
+  return IsPrintfLogLevelEnabled(level) ? PW_LOG_FLAG_USE_PRINTF : PW_LOG_FLAG_IGNORE;
 }
 
 void UsePrintf(LogSeverity min_severity) { g_printf_min_severity = static_cast<int>(min_severity); }
