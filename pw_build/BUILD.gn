@@ -64,6 +64,11 @@ config("optimize_size") {
   ldflags = cflags
 }
 
+config("optimize_size_clang") {
+  cflags = [ "-Oz" ]
+  ldflags = cflags
+}
+
 # Standard compiler flags to reduce output binary size.
 config("reduced_size") {
   cflags = [

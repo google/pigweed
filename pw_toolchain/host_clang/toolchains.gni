@@ -95,7 +95,7 @@ pw_toolchain_host_clang = {
     forward_variables_from(_host_clang_toolchain, "*")
     defaults = {
       forward_variables_from(_defaults, "*")
-      default_configs += [ "$dir_pw_build:optimize_size" ]
+      default_configs += [ "$dir_pw_build:optimize_size_clang" ]
       foreach(sanitizer, pw_toolchain_SANITIZERS) {
         default_configs +=
             [ "$dir_pw_toolchain/host_clang:sanitize_$sanitizer" ]
