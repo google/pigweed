@@ -169,10 +169,10 @@ via ``xTaskGetSchedulerState()``.
 ------------------------
 Thread Iteration Backend
 ------------------------
-A backend for ``pw::thread::thread_iteration``. This requires
-``pw_thread_freertos_TSKTCB_BACKEND`` and
-``pw_third_party_freertos_DISABLE_TASKS_STATICS`` to be enabled and configured
-properly.
+``pw_thread_freertos_TSKTCB_BACKEND`` to be configured
+properly and ``pw_third_party_freertos_DISABLE_TASKS_STATICS`` to be enabled.
+To allow for peak stack usage measurement, the FreeRTOS config
+``INCLUDE_uxTaskGetStackHighWaterMark`` should also be enabled.
 
 --------------------
 Thread Sleep Backend

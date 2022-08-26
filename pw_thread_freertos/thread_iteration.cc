@@ -43,9 +43,15 @@ bool StackInfoCollector(TaskHandle_t current_thread,
   thread_info.set_stack_high_addr(
       reinterpret_cast<uintptr_t>(tcb.pxEndOfStack));
 #if INCLUDE_uxTaskGetStackHighWaterMark
-  // Walk through the stack from start to end to measure the current peak
-  // using high-water marked stack data.
-  thread_info.set_stack_peak_addr(uxTaskGetStackHighWaterMark(thread));
+// Walk through the stack from start to end to measure the current peak
+// using high-water marked stack data.
+#if (portSTACK_GROWTH > 0)
+  thread_info.set_stack_peak_addr(thread_info.stack_high_addr().value() -
+                                  uxTaskGetStackHighWaterMark(current_thread));
+#else
+  thread_info.set_stack_peak_addr(thread_info.stack_low_addr().value() +
+                                  uxTaskGetStackHighWaterMark(current_thread));
+#endif  // portSTACK_GROWTH > 0
 #endif  // INCLUDE_uxTaskGetStackHighWaterMark
 #endif  // configRECORD_STACK_HIGH_ADDRESS
 

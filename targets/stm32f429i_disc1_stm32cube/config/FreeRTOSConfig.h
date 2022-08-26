@@ -71,6 +71,7 @@ extern unsigned long getRunTimeCounterValue(void);
 #define INCLUDE_vTaskPrioritySet 1
 #define INCLUDE_vTaskSuspend 1
 #define INCLUDE_xTaskGetSchedulerState 1
+#define INCLUDE_uxTaskGetStackHighWaterMark 1
 
 // Instead of defining configASSERT(), include a header that provides a
 // definition that redirects to pw_assert.
