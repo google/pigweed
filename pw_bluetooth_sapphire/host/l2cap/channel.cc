@@ -8,6 +8,7 @@
 
 #include <functional>
 #include <memory>
+#include <utility>
 
 #include "lib/fitx/result.h"
 #include "logical_link.h"
@@ -46,27 +47,32 @@ constexpr const char* kInspectPsmPropertyName = "psm";
 }  // namespace
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
-    ChannelId id, fxl::WeakPtr<internal::LogicalLink> link) {
+    ChannelId id, fxl::WeakPtr<internal::LogicalLink> link,
+    fxl::WeakPtr<hci::CommandChannel> cmd_channel) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level MTU enforcement for
   // services which operate over fixed channels. Such services often define minimum MTU values in
   // their specification, so they are required to respect these MTUs internally by:
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
-  return std::unique_ptr<ChannelImpl>(
-      new ChannelImpl(id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU)));
+  return std::unique_ptr<ChannelImpl>(new ChannelImpl(
+      id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU), std::move(cmd_channel)));
 }
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
-    ChannelId id, ChannelId peer_id, fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info) {
-  return std::unique_ptr<ChannelImpl>(new ChannelImpl(id, peer_id, link, info));
+    ChannelId id, ChannelId peer_id, fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info,
+    fxl::WeakPtr<hci::CommandChannel> cmd_channel) {
+  return std::unique_ptr<ChannelImpl>(
+      new ChannelImpl(id, peer_id, link, info, std::move(cmd_channel)));
 }
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
-                         fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info)
+                         fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info,
+                         fxl::WeakPtr<hci::CommandChannel> cmd_channel)
     : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       link_(link),
+      cmd_channel_(std::move(cmd_channel)),
       weak_ptr_factory_(this) {
   BT_ASSERT(link_);
   BT_ASSERT_MSG(

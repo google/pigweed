@@ -113,7 +113,8 @@ fxl::WeakPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
     return nullptr;
   }
 
-  std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateFixedChannel(id, GetWeakPtr());
+  std::unique_ptr<ChannelImpl> chan =
+      ChannelImpl::CreateFixedChannel(id, GetWeakPtr(), cmd_channel_->AsWeakPtr());
 
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
@@ -446,8 +447,8 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   auto preferred_flush_timeout = chan_info.flush_timeout;
   chan_info.flush_timeout.reset();
 
-  std::unique_ptr<ChannelImpl> chan =
-      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), chan_info);
+  std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateDynamicChannel(
+      local_cid, remote_cid, GetWeakPtr(), chan_info, cmd_channel_->AsWeakPtr());
   auto chan_weak = chan->GetWeakPtr();
   channels_[local_cid] = std::move(chan);
 
