@@ -105,6 +105,17 @@ pw_source_set("yield") {
   deps = [ "$dir_pw_thread:yield.facade" ]
 }
 
+# This target provides a stub backend for pw::this_thread::thread_iteration.
+# Iterating over child threads isn't supported by STL, so this only exists
+# for portability reasons.
+pw_source_set("thread_iteration") {
+  deps = [
+    "$dir_pw_thread:thread_iteration.facade",
+    dir_pw_status,
+  ]
+  sources = [ "thread_iteration.cc" ]
+}
+
 pw_test_group("tests") {
   tests = [ ":thread_backend_test" ]
 }

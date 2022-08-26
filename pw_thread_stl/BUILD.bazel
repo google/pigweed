@@ -101,6 +101,18 @@ pw_cc_library(
     ],
 )
 
+# This target provides a stub backend for pw::this_thread::thread_iteration.
+# Iterating over child threads isn't supported by STL, so this only exists
+# for portability reasons.
+pw_cc_library(
+    name = "thread_iteration",
+    srcs = ["thread_iteration.cc"],
+    deps = [
+        "//pw_status",
+        "//pw_thread:thread_iteration_facade",
+    ],
+)
+
 pw_cc_library(
     name = "test_threads",
     srcs = [

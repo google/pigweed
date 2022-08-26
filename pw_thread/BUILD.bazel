@@ -71,15 +71,17 @@ pw_cc_facade(
         "public/pw_thread/thread_iteration.h",
     ],
     includes = ["public"],
+    deps = [
+        ":thread_info",
+        "//pw_function",
+        "//pw_status",
+    ],
 )
 
 pw_cc_library(
     name = "thread_iteration",
     deps = [
-        ":thread_info",
         ":thread_iteration_facade",
-        "//pw_function",
-        "//pw_status",
         "@pigweed_config//:pw_thread_thread_backend",
     ],
 )
