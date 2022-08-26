@@ -61,6 +61,7 @@ from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
 from pw_console.log_store import LogStore
 from pw_log.proto import log_pb2
 from pw_metric_proto import metric_service_pb2
+from pw_thread_protos import thread_snapshot_service_pb2
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
 from pw_unit_test_proto import unit_test_pb2
@@ -278,6 +279,7 @@ def console(device: str,
     compiled_protos.append(unit_test_pb2)
     protos.extend(compiled_protos)
     protos.append(metric_service_pb2)
+    protos.append(thread_snapshot_service_pb2)
 
     if not protos:
         _LOG.critical('No .proto files were found with %s',

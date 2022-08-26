@@ -36,6 +36,8 @@ pw_python_package("py") {
     "$dir_pw_metric/py",
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_rpc/py",
+    "$dir_pw_thread:protos.python",
+    "$dir_pw_thread/py",
     "$dir_pw_tokenizer/py",
     "$dir_pw_unit_test:unit_test_proto.python",
     "$dir_pw_unit_test/py",

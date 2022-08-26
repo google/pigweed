@@ -107,6 +107,21 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "thread_snapshot_service",
+    srcs = [
+        "thread_snapshot_service.cc",
+    ],
+    hdrs = [
+        "public/pw_system/thread_snapshot_service.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_rpc:server",
+        "//pw_thread:thread_snapshot_service",
+    ],
+)
+
+pw_cc_library(
     name = "io",
     hdrs = [
         "public/pw_system/io.h",
@@ -129,6 +144,7 @@ pw_cc_library(
         ":log",
         ":rpc_server",
         ":target_hooks.facade",
+        ":thread_snapshot_service",
         ":work_queue",
         "//pw_metric:global",
         "//pw_metric:metric_service_pwpb",

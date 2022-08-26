@@ -33,13 +33,13 @@ bool StackInfoCollector(TaskHandle_t current_thread,
   const tskTCB& tcb = *reinterpret_cast<tskTCB*>(current_thread);
   ThreadInfo thread_info;
 
-#if configRECORD_STACK_HIGH_ADDRESS
   span<const std::byte> current_name =
       as_bytes(span(std::string_view(tcb.pcTaskName)));
   thread_info.set_thread_name(current_name);
 
   // Current thread stack bounds.
   thread_info.set_stack_low_addr(reinterpret_cast<uintptr_t>(tcb.pxStack));
+#if configRECORD_STACK_HIGH_ADDRESS
   thread_info.set_stack_high_addr(
       reinterpret_cast<uintptr_t>(tcb.pxEndOfStack));
 #if INCLUDE_uxTaskGetStackHighWaterMark

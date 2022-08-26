@@ -118,6 +118,7 @@ pw_source_set("init") {
     ":log",
     ":rpc_server",
     ":target_hooks.facade",
+    ":thread_snapshot_service",
     ":work_queue",
     "$dir_pw_metric:global",
     "$dir_pw_metric:metric_service_pwpb",
@@ -166,6 +167,14 @@ pw_source_set("socket_target_io") {
     "$dir_pw_stream",
     "$dir_pw_stream:socket_stream",
   ]
+}
+
+pw_source_set("thread_snapshot_service") {
+  public = [ "public/pw_system/thread_snapshot_service.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ "$dir_pw_rpc:server" ]
+  sources = [ "thread_snapshot_service.cc" ]
+  deps = [ "$dir_pw_thread:thread_snapshot_service" ]
 }
 
 pw_facade("target_hooks") {
