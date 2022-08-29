@@ -143,6 +143,7 @@ def gn_full_qemu_check(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_combined_build_check(ctx: PresubmitContext) -> None:
+    """Run most host and device (QEMU) tests."""
     build_targets = [
         *_at_all_optimization_levels('stm32f429i'),
         *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
@@ -158,6 +159,11 @@ def gn_combined_build_check(ctx: PresubmitContext) -> None:
         build_targets.append('cpp14_compatibility')
         build_targets.append('cpp20_compatibility')
 
+    # clang-tidy doesn't run on Windows.
+    if sys.platform != 'win32':
+        build_targets.append('static_analysis')
+
+    # QEMU doesn't run on Windows.
     if sys.platform != 'win32':
         build_targets.extend(_at_all_optimization_levels('qemu_gcc'))
         build_targets.extend(_at_all_optimization_levels('qemu_clang'))
