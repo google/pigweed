@@ -20,7 +20,7 @@
 diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_internal.h b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_internal.h
 --- a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_internal.h
 +++ b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_internal.h
-@@ -15,6 +15,8 @@
+@@ -16,6 +16,8 @@
  #include <utility>
 
  #include "nullable.h"
@@ -29,26 +29,35 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_inter
 
  namespace fit {
  namespace internal {
-@@ -41,7 +43,7 @@ template <typename Result, typename... Args>
- struct target<decltype(nullptr),
-               /*is_inline=*/true, /*is_shared=*/false, Result, Args...>
-     final {
--  static Result invoke(void* /*bits*/, Args... /*args*/) { __builtin_abort(); }
-+  static Result invoke(void* /*bits*/, Args... /*args*/) { PW_ASSERT(false); }
+@@ -79,7 +81,7 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
+ // vtable for nullptr functions. This avoids generating unnecessary identical
+ // vtables, which reduces code size.
+ struct null_target {
+-  static void invoke(void* /*bits*/) { __builtin_abort(); }
++  static void invoke(void* /*bits*/) { PW_ASSERT(false); }
 
-   static const target_ops<Result, Args...> ops;
+   static const target_ops<void> ops;
  };
-@@ -319,7 +321,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
+@@ -398,7 +400,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
    // Note that fit::callback will release the target immediately after
    // invoke() (also affecting any share()d copies).
    // Aborts if the function's target is empty.
 -  Result invoke(Args... args) const {
 +  // TODO(b/241567321): Remove "no sanitize" after pw_protobuf is fixed.
 +  Result invoke(Args... args) const PW_NO_SANITIZE("function") {
-     return storage_.ops->invoke(&storage_.bits, std::forward<Args>(args)...);
+     // Down cast the ops to the derived type that this function was instantiated
+     // with, which includes the invoke function.
+     //
+@@ -472,7 +475,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
+   template <typename SharedFunction>
+   void copy_shared_target_to(SharedFunction& copy) {
+     copy.destroy_target();
+-    assert(storage_.ops == &shared_target_type<SharedFunction>::ops);
++    PW_ASSERT(storage_.ops == &shared_target_type<SharedFunction>::ops);
+     shared_target_type<SharedFunction>::copy_shared_ptr(&storage_.bits, &copy.storage_.bits);
+     copy.storage_.ops = storage_.ops;
    }
-
-@@ -430,7 +433,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
+@@ -516,7 +519,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
    void check_target_type() const {
      if (target_type<Callable>::ops.target_type_id(nullptr, &target_type<Callable>::ops) !=
          target_type_id()) {

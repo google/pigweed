@@ -18,6 +18,7 @@ Run this script to update third_party/fuchsia/function.patch.
 """
 
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 from typing import Iterable, TextIO, Optional, Union
@@ -83,8 +84,13 @@ def _add_include_before_namespace(text: str, include: str) -> str:
                         f'\n#include "{include}"\n\nnamespace ', 1)
 
 
-def _patch_abort(text: str) -> str:
+_ASSERT = re.compile(r'\bassert\(')
+
+
+def _patch_assert(text: str) -> str:
     replaced = text.replace('__builtin_abort()', 'PW_ASSERT(false)')
+    replaced = _ASSERT.sub('PW_ASSERT(', replaced)
+
     if replaced == text:
         return replaced
 
@@ -108,7 +114,7 @@ def _patch_invoke(file: Path, text: str) -> str:
 
 def _patch(file: Path) -> Optional[str]:
     text = file.read_text()
-    updated = _patch_abort(text)
+    updated = _patch_assert(text)
     updated = _patch_invoke(file, updated)
     return None if text == updated else updated
 
