@@ -45,10 +45,10 @@ constexpr size_t default_inline_target_size = sizeof(void*) * 2;
 // such as mutable lambdas, and immutable lambdas that capture move-only
 // objects.
 //
-// Targets of up to |inline_target_size| bytes in size (rounded up for memory
-// alignment) are stored inline within the function object without incurring
-// any heap allocation.  Larger callable objects will be moved to the heap as
-// required.
+// Targets of up to |inline_target_size| bytes in size are stored inline within
+// the function object without incurring any heap allocation. Larger callable
+// objects will be moved to the heap as required. |inline_target_size| is
+// rounded up to a multiple of sizeof(void*).
 //
 // See also |fit::inline_function<T, size>| for more control over allocation
 // behavior.
@@ -71,7 +71,7 @@ constexpr size_t default_inline_target_size = sizeof(void*) * 2;
 // https://fuchsia.googlesource.com/fuchsia/+/HEAD/sdk/lib/fit/test/examples/function_example2.cc
 //
 template <typename T, size_t inline_target_size = default_inline_target_size>
-using function = function_impl<inline_target_size,
+using function = function_impl<internal::RoundUpToWord(inline_target_size),
                                /*require_inline=*/false, T>;
 
 // A move-only callable object wrapper that forces callables to be stored inline
@@ -81,7 +81,7 @@ using function = function_impl<inline_target_size,
 // attempting to store a target larger than |inline_target_size| will fail to
 // compile.
 template <typename T, size_t inline_target_size = default_inline_target_size>
-using inline_function = function_impl<inline_target_size,
+using inline_function = function_impl<internal::RoundUpToWord(inline_target_size),
                                       /*require_inline=*/true, T>;
 
 // Synonym for a function which takes no arguments and produces no result.
@@ -137,10 +137,10 @@ using closure = function<void()>;
 // support is required, you would need to implement your own mutex, or similar
 // guard, before checking and calling a |fit::callback|.
 //
-// Targets of up to |inline_target_size| bytes in size (rounded up for memory
-// alignment) are stored inline within the callback object without incurring
-// any heap allocation.  Larger callable objects will be moved to the heap as
-// required.
+// Targets of up to |inline_target_size| bytes in size are stored inline within
+// the callback object without incurring any heap allocation. Larger callable
+// objects will be moved to the heap as required. |inline_target_size| is
+// rounded up to a multiple of sizeof(void*).
 //
 // See also |fit::inline_callback<T, size>| for more control over allocation
 // behavior.
@@ -156,7 +156,8 @@ using closure = function<void()>;
 // Class members are documented in |fit::callback_impl|, below.
 //
 template <typename T, size_t inline_target_size = default_inline_target_size>
-using callback = callback_impl<inline_target_size, /*require_inline=*/false, T>;
+using callback =
+    callback_impl<internal::RoundUpToWord(inline_target_size), /*require_inline=*/false, T>;
 
 // A move-only, run-once, callable object wrapper that forces callables to be
 // stored inline and never performs heap allocation.
@@ -165,7 +166,7 @@ using callback = callback_impl<inline_target_size, /*require_inline=*/false, T>;
 // attempting to store a target larger than |inline_target_size| will fail to
 // compile.
 template <typename T, size_t inline_target_size = default_inline_target_size>
-using inline_callback = callback_impl<inline_target_size,
+using inline_callback = callback_impl<internal::RoundUpToWord(inline_target_size),
                                       /*require_inline=*/true, T>;
 
 template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>

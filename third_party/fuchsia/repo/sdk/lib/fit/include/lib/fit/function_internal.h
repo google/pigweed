@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include <cstring>
 #include <functional>
 #include <memory>
 #include <new>
@@ -21,17 +22,54 @@
 namespace fit {
 namespace internal {
 
-template <typename Result, typename... Args>
-struct target_ops final {
+// Rounds the first argument up to a non-zero multiple of the second argument.
+constexpr size_t RoundUpToMultiple(size_t value, size_t multiple) {
+  return value == 0 ? multiple : (value + multiple - 1) / multiple * multiple;
+}
+
+// Rounds up to the nearest word. To avoid unnecessary instantiations, function_base can only be
+// instantiated with an inline size that is a non-zero multiple of the word size.
+constexpr size_t RoundUpToWord(size_t value) { return RoundUpToMultiple(value, sizeof(void*)); }
+
+// target_ops is the vtable for the function_base class. The base_target_ops struct holds functions
+// that are common to all function_base instantiations, regardless of the function's signature.
+// The derived target_ops template that adds the signature-specific invoke method.
+//
+// Splitting the common functions into base_target_ops allows all function_base instantiations to
+// share the same vtable for their null function instantiation, reducing code size.
+struct base_target_ops {
   const void* (*target_type_id)(void* bits, const void* impl_ops);
   void* (*get)(void* bits);
-  Result (*invoke)(void* bits, Args... args);
   void (*move)(void* from_bits, void* to_bits);
   void (*destroy)(void* bits);
+
+ protected:
+  // Aggregate initialization isn't supported with inheritance until C++17, so define a constructor.
+  constexpr base_target_ops(decltype(target_type_id) target_type_id_func, decltype(get) get_func,
+                            decltype(move) move_func, decltype(destroy) destroy_func)
+      : target_type_id(target_type_id_func),
+        get(get_func),
+        move(move_func),
+        destroy(destroy_func) {}
 };
+
+template <typename Result, typename... Args>
+struct target_ops final : public base_target_ops {
+  Result (*invoke)(void* bits, Args... args);
+
+  constexpr target_ops(decltype(target_type_id) target_type_id_func, decltype(get) get_func,
+                       decltype(move) move_func, decltype(destroy) destroy_func,
+                       decltype(invoke) invoke_func)
+      : base_target_ops(target_type_id_func, get_func, move_func, destroy_func),
+        invoke(invoke_func) {}
+};
+
+static_assert(sizeof(target_ops<void>) == sizeof(void (*)()) * 5, "Unexpected target_ops padding");
 
 template <typename Callable, bool is_inline, bool is_shared, typename Result, typename... Args>
 struct target;
+
+inline void trivial_target_destroy(void* /*bits*/) {}
 
 inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops) {
   return impl_ops;
@@ -39,27 +77,34 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
 
 // vtable for nullptr (empty target function)
 
-template <typename Result, typename... Args>
-struct target<decltype(nullptr),
-              /*is_inline=*/true, /*is_shared=*/false, Result, Args...>
-    final {
-  static Result invoke(void* /*bits*/, Args... /*args*/) { PW_ASSERT(false); }
+// All function_base instantiations, regardless of callable type, use the same
+// vtable for nullptr functions. This avoids generating unnecessary identical
+// vtables, which reduces code size.
+struct null_target {
+  static void invoke(void* /*bits*/) { PW_ASSERT(false); }
 
-  static const target_ops<Result, Args...> ops;
+  static const target_ops<void> ops;
 };
+
+template <typename Result, typename... Args>
+struct target<decltype(nullptr), /*is_inline=*/true, /*is_shared=*/false, Result, Args...> final
+    : public null_target {};
 
 inline void* null_target_get(void* /*bits*/) { return nullptr; }
 inline void null_target_move(void* /*from_bits*/, void* /*to_bits*/) {}
-inline void null_target_destroy(void* /*bits*/) {}
 
-template <typename Result, typename... Args>
-constexpr target_ops<Result, Args...> target<decltype(nullptr),
-                                             /*is_inline=*/true,
-                                             /*is_shared=*/false, Result, Args...>::ops = {
-    &unshared_target_type_id, &null_target_get, &target::invoke, &null_target_move,
-    &null_target_destroy};
+constexpr target_ops<void> null_target::ops = {&unshared_target_type_id, &null_target_get,
+                                               &null_target_move, &trivial_target_destroy,
+                                               &null_target::invoke};
 
 // vtable for inline target function
+
+// Trivially movable and destructible types can be moved with a simple memcpy. Use the same function
+// for all callable types of a particular size to reduce code size.
+template <size_t size_bytes>
+inline void inline_trivial_target_move(void* from_bits, void* to_bits) {
+  std::memcpy(to_bits, from_bits, size_bytes);
+}
 
 template <typename Callable, typename Result, typename... Args>
 struct target<Callable,
@@ -73,6 +118,24 @@ struct target<Callable,
     auto& target = *static_cast<Callable*>(bits);
     return target(std::forward<Args>(args)...);
   }
+  // Selects which move function to use. Trivially movable and destructible types of a particular
+  // size share a single move function.
+  static constexpr auto get_move_function() {
+    if (std::is_trivially_move_constructible<Callable>::value &&
+        std::is_trivially_destructible<Callable>::value) {
+      return &inline_trivial_target_move<sizeof(Callable)>;
+    }
+    return &move;
+  }
+  // Selects which destroy function to use. Trivially destructible types share a single, empty
+  // destroy function.
+  static constexpr auto get_destroy_function() {
+    return std::is_trivially_destructible<Callable>::value ? &trivial_target_destroy : &destroy;
+  }
+
+  static const target_ops<Result, Args...> ops;
+
+ private:
   static void move(void* from_bits, void* to_bits) {
     auto& from_target = *static_cast<Callable*>(from_bits);
     new (to_bits) Callable(std::move(from_target));
@@ -82,8 +145,6 @@ struct target<Callable,
     auto& target = *static_cast<Callable*>(bits);
     target.~Callable();
   }
-
-  static const target_ops<Result, Args...> ops;
 };
 
 inline void* inline_target_get(void* bits) { return bits; }
@@ -92,7 +153,8 @@ template <typename Callable, typename Result, typename... Args>
 constexpr target_ops<Result, Args...> target<Callable,
                                              /*is_inline=*/true,
                                              /*is_shared=*/false, Result, Args...>::ops = {
-    &unshared_target_type_id, &inline_target_get, &target::invoke, &target::move, &target::destroy};
+    &unshared_target_type_id, &inline_target_get, target::get_move_function(),
+    target::get_destroy_function(), &target::invoke};
 
 // vtable for pointer to target function
 
@@ -128,7 +190,7 @@ template <typename Callable, typename Result, typename... Args>
 constexpr target_ops<Result, Args...> target<Callable,
                                              /*is_inline=*/false,
                                              /*is_shared=*/false, Result, Args...>::ops = {
-    &unshared_target_type_id, &heap_target_get, &target::invoke, &target::move, &target::destroy};
+    &unshared_target_type_id, &heap_target_get, &target::move, &target::destroy, &target::invoke};
 
 // vtable for fit::function std::shared_ptr to target function
 
@@ -177,7 +239,7 @@ template <typename SharedFunction, typename Result, typename... Args>
 constexpr target_ops<Result, Args...> target<SharedFunction,
                                              /*is_inline=*/false,
                                              /*is_shared=*/true, Result, Args...>::ops = {
-    &target::target_type_id, &target::get, &target::invoke, &target::move, &target::destroy};
+    &target::target_type_id, &target::get, &target::move, &target::destroy, &target::invoke};
 
 template <size_t inline_target_size, bool require_inline, typename Callable>
 class function_base;
@@ -186,49 +248,66 @@ class function_base;
 // See |fit::function| and |fit::callback| documentation for more information.
 template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
 class function_base<inline_target_size, require_inline, Result(Args...)> {
-  static constexpr size_t storage_size =
-      (inline_target_size >= sizeof(void*) ? inline_target_size : sizeof(void*));
-  // avoid including <algorithm> for max
+  // The inline target size must be a non-zero multiple of sizeof(void*).  Uses
+  // of |fit::function_impl| and |fit::callback_impl| may call
+  // fit::internal::RoundUpToWord to round to a valid inline size.
+  //
+  // A multiple of sizeof(void*) is required because it:
+  //
+  // - Avoids unnecessary duplicate instantiations of the function classes when
+  //   working with different inline sizes. This reduces code size.
+  // - Prevents creating unnecessarily restrictive functions. Without rounding, a
+  //   function with a non-word size would be padded to at least the next word,
+  //   but that space would be unusable.
+  // - Ensures that the true inline size matches the template parameter, which
+  //   could cause confusion in error messages.
+  //
+  static_assert(inline_target_size >= sizeof(void*),
+                "The inline target size must be at least one word");
+  static_assert(inline_target_size % sizeof(void*) == 0,
+                "The inline target size must be a multiple of the word size");
 
-  using ops_type = const target_ops<Result, Args...>*;
+  struct Empty {};
+
   struct alignas(max_align_t) storage_type {
     union {
       // Function context data, placed first in the struct since is has a more
       // strict alignment requirement than ops.
-      mutable uint8_t bits[storage_size];
+      mutable uint8_t bits[inline_target_size];
 
-      // Empty struct used when initializing the storage in the constrexpr
+      // Empty struct used when initializing the storage in the constexpr
       // constructor.
-      struct {
-      } null_bits;
+      Empty null_bits;
     };
 
     // The target_ops pointer for this function. This field has lower alignment
     // requirement than bits, so placing ops after bits allows for better
     // packing reducing the padding needed in some cases.
-    ops_type ops;
+    const base_target_ops* ops;
   };
 
   // bits field should have a max_align_t alignment, but adding the alignas()
   // at the field declaration increases the padding. Make sure the alignment is
   // correct nevertheless.
-  static_assert(offsetof(storage_type, bits) % std::alignment_of<max_align_t>::value == 0);
+  static_assert(offsetof(storage_type, bits) % alignof(max_align_t) == 0,
+                "bits must be aligned as max_align_t");
 
   // Check that there's no unexpected extra padding.
   static_assert(sizeof(storage_type) ==
-                    (storage_size + sizeof(ops_type) + std::alignment_of<max_align_t>::value - 1u) /
-                        std::alignment_of<max_align_t>::value *
-                        std::alignment_of<max_align_t>::value,
+                    RoundUpToMultiple(inline_target_size + sizeof(storage_type::ops),
+                                      alignof(max_align_t)),
                 "storage_type is not minimal in size");
 
   template <typename Callable>
-  using target_type = target<Callable, (sizeof(Callable) <= storage_size),
+  using target_type = target<Callable, (sizeof(Callable) <= inline_target_size),
                              /*is_shared=*/false, Result, Args...>;
   template <typename SharedFunction>
   using shared_target_type = target<SharedFunction,
                                     /*is_inline=*/false,
                                     /*is_shared=*/true, Result, Args...>;
   using null_target_type = target_type<decltype(nullptr)>;
+
+  using ops_type = const target_ops<Result, Args...>*;
 
  public:
   // Deleted copy constructor and assign. |function_base| implementations are
@@ -323,7 +402,15 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   // Aborts if the function's target is empty.
   // TODO(b/241567321): Remove "no sanitize" after pw_protobuf is fixed.
   Result invoke(Args... args) const PW_NO_SANITIZE("function") {
-    return storage_.ops->invoke(&storage_.bits, std::forward<Args>(args)...);
+    // Down cast the ops to the derived type that this function was instantiated
+    // with, which includes the invoke function.
+    //
+    // NOTE: This abuses the calling convention when invoking a null function
+    // that takes arguments! Null functions share a single vtable with a void()
+    // invoke function. This is permitted only because invoking a null function
+    // is an error that immediately aborts execution. Also, the null invoke
+    // function never attempts to access any passed arguments.
+    return static_cast<ops_type>(storage_.ops)->invoke(&storage_.bits, std::forward<Args>(args)...);
   }
 
   // Used by derived "impl" classes to implement operator=().
@@ -388,7 +475,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   template <typename SharedFunction>
   void copy_shared_target_to(SharedFunction& copy) {
     copy.destroy_target();
-    assert(storage_.ops == &shared_target_type<SharedFunction>::ops);
+    PW_ASSERT(storage_.ops == &shared_target_type<SharedFunction>::ops);
     shared_target_type<SharedFunction>::copy_shared_ptr(&storage_.bits, &copy.storage_.bits);
     copy.storage_.ops = storage_.ops;
   }
@@ -401,9 +488,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   void initialize_target(Callable&& target) {
     // Convert function or function references to function pointer.
     using DecayedCallable = std::decay_t<Callable>;
-    static_assert(
-        std::alignment_of<DecayedCallable>::value <= std::alignment_of<max_align_t>::value,
-        "Alignment of Callable must be <= alignment of max_align_t.");
+    static_assert(alignof(DecayedCallable) <= alignof(max_align_t),
+                  "Alignment of Callable must be <= alignment of max_align_t.");
     static_assert(!require_inline || sizeof(DecayedCallable) <= inline_target_size,
                   "Callable too large to store inline as requested.");
     if (is_null(target)) {
@@ -442,7 +528,6 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
 };
 
 }  // namespace internal
-
 }  // namespace fit
 
 #endif  // LIB_FIT_INCLUDE_LIB_FIT_FUNCTION_INTERNAL_H_
