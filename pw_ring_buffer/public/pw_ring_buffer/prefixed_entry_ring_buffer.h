@@ -350,6 +350,9 @@ class PrefixedEntryRingBufferMulti {
   // including preamble and data chunk.
   size_t TotalUsedBytes() const { return buffer_bytes_ - RawAvailableBytes(); }
 
+  // Returns total size of ring buffer in bytes.
+  size_t TotalSizeBytes() const { return buffer_bytes_; }
+
   // Dering the buffer by reordering entries internally in the buffer by
   // rotating to have the oldest entry is at the lowest address/index with
   // newest entry at the highest address. If no readers are attached, the buffer
