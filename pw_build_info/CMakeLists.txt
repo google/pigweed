@@ -39,7 +39,7 @@ endif()
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   target_link_options(pw_build_info.build_id
     PUBLIC
-      "-T${CMAKE_CURRENT_SOURCE_DIR}/add_build_id_to_default_script.ld"
+      "-T${CMAKE_CURRENT_SOURCE_DIR}/add_build_id_to_default_linker_script.ld"
       "-L${CMAKE_CURRENT_SOURCE_DIR}"
   )
 endif()
