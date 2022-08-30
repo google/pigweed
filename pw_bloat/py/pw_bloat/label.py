@@ -251,7 +251,7 @@ class DiffDataSourceMap(DataSourceMap):
 
 
 def from_bloaty_tsv(raw_tsv: Iterable[str]) -> DataSourceMap:
-    """Read in Bloaty CSV output and store in DataSourceMap."""
+    """Read in Bloaty TSV output and store in DataSourceMap."""
     reader = csv.reader(raw_tsv, delimiter='\t')
     top_row = next(reader)
     vmsize_index = top_row.index('vmsize')

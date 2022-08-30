@@ -26,12 +26,13 @@ base for the size diff can be specified either globally through the top-level
 
 **Arguments**
 
-* ``title``: Title for the report card.
 * ``base``: Optional default base target for all listed binaries.
+* ``source_filter``: Optional global regex to filter labels in the diff output.
+* ``data_sources``: Optional global list of datasources from bloaty config file
 * ``binaries``: List of binaries to size diff. Each binary specifies a target,
-  a label for the diff, and optionally a base target that overrides the default
-  base.
-* ``source_filter``: Optional regex to filter labels in the diff output.
+  a label for the diff, and optionally a base target, source filter, and data
+  sources that override the global ones (if specified).
+
 
 .. code::
 
@@ -52,6 +53,7 @@ base for the size diff can be specified either globally through the top-level
   pw_size_diff("my_size_report") {
     title = "Hello world program using printf vs. iostream"
     base = ":empty_base"
+    data_sources = "symbols,segments"
     binaries = [
       {
         target = ":hello_world_printf"
@@ -60,6 +62,7 @@ base for the size diff can be specified either globally through the top-level
       {
         target = ":hello_world_iostream"
         label = "Hello world using iostream"
+        data_sources = "symbols"
       },
     ]
   }
@@ -90,6 +93,8 @@ a size report for a single binary. The template requires a target binary.
 
   pw_size_report("hello_world_iostream_size_report") {
     target = ":hello_iostream"
+    data_sources = "segments,symbols"
+    source_filter = "pw::hello"
   }
 
 Sample Single Binary ASCII Table Generated
