@@ -16,7 +16,7 @@
 import os
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
@@ -36,7 +36,7 @@ class YamlConfigLoaderMixin:
     ::
 
        class ConsolePrefs(YamlConfigLoaderMixin):
-           def __init__(
+           def __init__(self) -> None:
                self.config_init(
                    config_section_title='pw_console',
                    project_file=Path('project_file.yaml'),
@@ -135,11 +135,15 @@ class YamlConfigLoaderMixin:
         self._config: Dict[Any, Any] = {}
         self._update_config(self.default_config)
 
+    def _load_config_from_string(  # pylint: disable=no-self-use
+            self, file_contents: str) -> List[Dict[Any, Any]]:
+        return list(yaml.safe_load_all(file_contents))
+
     def load_config_file(self, file_path: Path) -> None:
         if not file_path.is_file():
             return
 
-        cfgs = yaml.safe_load_all(file_path.read_text())
+        cfgs = self._load_config_from_string(file_path.read_text())
 
         for cfg in cfgs:
             if self._config_section_title in cfg:
@@ -149,6 +153,6 @@ class YamlConfigLoaderMixin:
                 self._update_config(cfg)
             else:
                 raise MissingConfigTitle(
-                    '\n\nThe YAML config file "{}" is missing the expected '
+                    '\n\nThe config file "{}" is missing the expected '
                     '"config_title: {}" setting.'.format(
                         str(file_path), self._config_section_title))

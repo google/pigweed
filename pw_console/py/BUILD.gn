@@ -64,6 +64,7 @@ pw_python_package("py") {
     "pw_console/style.py",
     "pw_console/templates/__init__.py",
     "pw_console/text_formatting.py",
+    "pw_console/toml_config_loader_mixin.py",
     "pw_console/widgets/__init__.py",
     "pw_console/widgets/border.py",
     "pw_console/widgets/checkbox.py",
