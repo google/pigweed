@@ -19,3 +19,4 @@ export * as pw_tokenizer from "../pw_tokenizer/ts";
 export * as pw_protobuf_compiler from "../pw_protobuf_compiler/ts";
 export * as pw_transfer from "../pw_transfer/ts";
 export * as WebSerial from "./transport/web_serial_transport";
+export {Device} from "./device";

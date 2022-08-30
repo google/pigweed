@@ -17,7 +17,9 @@
     "prebuild": "rimraf dist && npm run build-protos",
     "build-protos": "ts-node -P tsconfig.json ts/buildprotos.ts",
     "build": "npm run rollup",
-    "rollup": "rollup -c && rimraf dist/types && rimraf dist/**/types && chmod +x ./dist/bin/pw_protobuf_compiler.js",
+    "dev": "rollup -c -w",
+    "rollup": "rollup -c && npm run postbuild",
+    "postbuild": "rimraf dist/types && rimraf dist/**/types && chmod +x ./dist/bin/pw_protobuf_compiler.js",
     "start": "tsc-watch --onSuccess \"rollup -c\"",
     "check": "gts check",
     "fix": "gts fix",
@@ -73,6 +75,7 @@
   "dependencies": {
     "@protobuf-ts/protoc": "^2.7.0",
     "google-protobuf": "^3.17.3",
+    "object-path": "^0.11.8",
     "ts-protoc-gen": "^0.15.0"
   },
   "config": {

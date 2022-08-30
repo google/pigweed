@@ -33,7 +33,7 @@ import {PendingCalls, Rpc} from './rpc_classes';
 export class ServiceClient {
   private service: Service;
   private methods: MethodStub[] = [];
-  private methodsByName = new Map<string, MethodStub>();
+  methodsByName = new Map<string, MethodStub>();
 
   constructor(client: Client, channel: Channel, service: Service) {
     this.service = service;
@@ -52,6 +52,10 @@ export class ServiceClient {
   get id(): number {
     return this.service.id;
   }
+
+  get name(): string {
+    return this.service.name;
+  }
 }
 
 /**
@@ -59,7 +63,7 @@ export class ServiceClient {
  */
 export class ChannelClient {
   readonly channel: Channel;
-  private services = new Map<string, ServiceClient>();
+  services = new Map<string, ServiceClient>();
 
   constructor(client: Client, channel: Channel, services: Service[]) {
     this.channel = channel;
