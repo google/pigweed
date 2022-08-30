@@ -184,14 +184,15 @@ DecodedArg StringSegment::DecodeString(
 
   if (arguments.size() - 1 < size) {
     status.Update(ArgStatus::kDecodeError);
-    return DecodedArg(status,
-                      text_,
-                      arguments.size(),
-                      {reinterpret_cast<const char*>(&arguments[1]),
-                       static_cast<size_t>(arguments.size()) - 1});
+    span<const uint8_t> arg_val = arguments.subspan(1);
+    return DecodedArg(
+        status,
+        text_,
+        arguments.size(),
+        {reinterpret_cast<const char*>(arg_val.data()), arg_val.size()});
   }
 
-  std::string value(reinterpret_cast<const char*>(&arguments[1]), size);
+  std::string value(reinterpret_cast<const char*>(arguments.data() + 1), size);
 
   if (status.HasError(ArgStatus::kTruncated)) {
     value.append("[...]");

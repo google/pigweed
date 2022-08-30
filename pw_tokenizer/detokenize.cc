@@ -118,11 +118,12 @@ DetokenizedString Detokenizer::Detokenize(
 
   const auto result = database_.find(token);
 
-  return DetokenizedString(token,
-                           result == database_.end()
-                               ? span<TokenizedStringEntry>()
-                               : span(result->second),
-                           encoded.subspan(sizeof(token)));
+  return DetokenizedString(
+      token,
+      result == database_.end() ? span<TokenizedStringEntry>()
+                                : span(result->second),
+      encoded.size() < sizeof(token) ? span<const uint8_t>()
+                                     : encoded.subspan(sizeof(token)));
 }
 
 }  // namespace pw::tokenizer
