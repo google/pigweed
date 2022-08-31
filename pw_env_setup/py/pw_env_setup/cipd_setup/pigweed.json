@@ -57,15 +57,15 @@
       ]
     },
     {
-      "path": "pigweed/third_party/bloaty-embedded/${platform}",
+      "path": "fuchsia/third_party/bloaty/${platform}",
       "platforms": [
         "linux-amd64",
         "mac-amd64"
       ],
       "tags": [
-        "git_revision:2d87d204057b419f5290f8d38b61b9c2c5b4fb52-2"
+        "git_revision:c057ba4f43db0506d4ba8c096925b054b02a8bd3"
       ],
-      "version_file": ".versions/bloaty-embedded.cipd_version"
+      "version_file": ".versions/bloaty.cipd_version"
     },
     {
       "path": "infra/3pp/tools/protoc/${platform}",
