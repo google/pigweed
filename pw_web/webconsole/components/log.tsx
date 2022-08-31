@@ -13,17 +13,16 @@
 // the License.
 
 import {useEffect, useRef, useState} from "react";
-import {WebSerial, pw_tokenizer} from "pigweedjs";
+import {pw_tokenizer, Device} from "pigweedjs";
 import {AutoSizer, Table, Column} from 'react-virtualized';
-import {listenToDefaultLogService} from "../common/utils";
+import {listenToDefaultLogService} from "../common/logService";
 import 'react-virtualized/styles.css';
 import styles from "../styles/log.module.css";
 
-type WebSerialTransport = WebSerial.WebSerialTransport
 type Detokenizer = pw_tokenizer.Detokenizer;
 
 interface LogProps {
-  transport: WebSerialTransport | undefined,
+  device: Device | undefined,
   tokenDB: string | undefined
 }
 
@@ -67,7 +66,7 @@ const keyToDisplayName: {[key: string]: string} = {
   "file": "File"
 }
 
-export default function Log({transport, tokenDB}: LogProps) {
+export default function Log({device, tokenDB}: LogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [detokenizer, setDetokenizer] = useState<Detokenizer | null>(null);
   const logTable = useRef<Table | null>(null);
@@ -94,14 +93,14 @@ export default function Log({transport, tokenDB}: LogProps) {
   }
 
   useEffect(() => {
-    if (transport) {
+    if (device) {
       let cleanupFn: () => void;
-      listenToDefaultLogService(transport, processFrame).then((unsub) => cleanupFn = unsub);
+      listenToDefaultLogService(device, processFrame).then((unsub) => cleanupFn = unsub);
       return () => {
         if (cleanupFn) cleanupFn();
       }
     }
-  }, [transport, detokenizer]);
+  }, [device, detokenizer]);
 
   useEffect(() => {
     if (tokenDB && tokenDB.length > 0) {

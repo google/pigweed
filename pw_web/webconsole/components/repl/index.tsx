@@ -13,7 +13,7 @@
 // the License.
 
 import {useEffect, useState} from "react";
-import {WebSerial} from "pigweedjs";
+import {Device} from "pigweedjs";
 import {EditorView} from "codemirror"
 import {basicSetup} from "./basicSetup";
 import {javascript, javascriptLanguage} from "@codemirror/lang-javascript"
@@ -26,11 +26,10 @@ import LocalStorageArray from "./localStorageArray";
 import "xterm/css/xterm.css";
 import styles from "../../styles/repl.module.css";
 
-type WebSerialTransport = WebSerial.WebSerialTransport
 const isSSR = () => typeof window === 'undefined';
 
 interface ReplProps {
-  transport: WebSerialTransport | undefined
+  device: Device | undefined
 }
 
 const globalJavaScriptCompletions = javascriptLanguage.data.of({
@@ -74,13 +73,13 @@ if (typeof window !== 'undefined') {
   historyStorage = new LocalStorageArray();
 }
 
-export default function Repl({transport}: ReplProps) {
+export default function Repl({device}: ReplProps) {
   const [terminal, setTerminal] = useState<any>(null);
   const [codeEditor, setCodeEditor] = useState<EditorView | null>(null);
 
   useEffect(() => {
     let cleanupFns: {(): void; (): void;}[] = [];
-    if (!terminal && !isSSR() && transport) {
+    if (!terminal && !isSSR() && device) {
       const futureTerm = createTerminal(document.querySelector('#repl-log-container')!);
       futureTerm.then(async (term) => {
         cleanupFns.push(() => {
@@ -94,11 +93,11 @@ export default function Repl({transport}: ReplProps) {
         cleanupFns.forEach(fn => fn());
       }
     }
-    else if (terminal && !transport) {
+    else if (terminal && !device) {
       terminal.dispose();
       setTerminal(null);
     }
-  }, [transport]);
+  }, [device]);
 
   useEffect(() => {
     if (!terminal) return;

@@ -19,12 +19,12 @@ import Log from "../components/log";
 import Repl from "../components/repl";
 import Connect from "../components/connect";
 import BtnUploadDB from '../components/uploadDb';
-import {WebSerial} from "pigweedjs";
+import {WebSerial, Device} from "pigweedjs";
 import {useState} from 'react';
 type WebSerialTransport = WebSerial.WebSerialTransport
 
 const Home: NextPage = () => {
-  const [transport, setTransport] = useState<WebSerialTransport | undefined>(undefined);
+  const [device, setDevice] = useState<Device | undefined>(undefined);
   const [tokenDB, setTokenDB] = useState("");
   return (
     <div className={styles.container}>
@@ -37,8 +37,8 @@ const Home: NextPage = () => {
       <main className={styles.main}>
         <div className={styles.toolbar}>
           <span className={styles.logo}><span>Pigweed</span> Web Console</span>
-          <Connect onConnection={(transport) => {
-            setTransport(transport);
+          <Connect onConnection={(device) => {
+            setDevice(device);
           }} />
           <BtnUploadDB onUpload={(db) => {
             setTokenDB(db);
@@ -47,10 +47,10 @@ const Home: NextPage = () => {
 
         <div className={styles.grid}>
           <div>
-            <Log transport={transport} tokenDB={tokenDB}></Log>
+            <Log device={device} tokenDB={tokenDB}></Log>
           </div>
           <div>
-            <Repl transport={transport}></Repl>
+            <Repl device={device}></Repl>
           </div>
         </div>
       </main>
