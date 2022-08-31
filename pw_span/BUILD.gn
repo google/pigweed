@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_span/polyfill.gni")
 import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -25,35 +24,10 @@ config("public_config") {
   visibility = [ ":*" ]
 }
 
-config("polyfill_config") {
-  include_dirs = [ "internal_only_include_path_do_not_use" ]
-
-  if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
-    defines = [ "_PW_SPAN_POLYFILL_ENABLED" ]
-  }
-
-  cflags = [ "-Wno-gnu-include-next" ]
-  visibility = [ ":*" ]
-}
-
 # Provides "pw_span/span.h" and pw::span.
 pw_source_set("pw_span") {
   public = [ "public/pw_span/span.h" ]
   public_deps = [ ":common" ]
-}
-
-# Provides <span> and std::span.
-pw_source_set("polyfill") {
-  public_configs = [ ":polyfill_config" ]
-  public_deps = [ ":common" ]
-  public = [ "internal_only_include_path_do_not_use/span" ]
-  sources = [ "public/pw_span/internal/span_polyfill.h" ]
-
-  if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
-    remove_public_deps = [ "*" ]
-  } else {
-    visibility = [ ":*" ]
-  }
 }
 
 pw_source_set("common") {
@@ -71,27 +45,12 @@ pw_source_set("common") {
 
   sources = [ "public/pw_span/internal/span_common.inc" ]
   visibility = [ ":*" ]
-
-  if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
-    remove_public_deps = [ "*" ]
-  }
 }
 
 pw_test_group("tests") {
   tests = [
-    ":polyfill_test",
     ":pw_span_test",
     ":compatibility_test",
-  ]
-}
-
-pw_test("polyfill_test") {
-  deps = [ ":polyfill" ]
-  remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
-  sources = [ "span_test.cc" ]
-  defines = [
-    "PW_SPAN_TEST_INCLUDE=<span>",
-    "PW_SPAN_TEST_NAMESPACE=std",
   ]
 }
 
@@ -99,16 +58,12 @@ pw_test("pw_span_test") {
   deps = [ ":pw_span" ]
   remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
   sources = [ "span_test.cc" ]
-  defines = [
-    "PW_SPAN_TEST_INCLUDE=\"pw_span/span.h\"",
-    "PW_SPAN_TEST_NAMESPACE=pw",
-  ]
 }
 
 pw_test("compatibility_test") {
   deps = [
-    ":polyfill",
     ":pw_span",
+    dir_pw_polyfill,
   ]
   sources = [ "compatibility_test.cc" ]
 }

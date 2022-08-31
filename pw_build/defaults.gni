@@ -14,8 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_span/polyfill.gni")
-
 declare_args() {
   # Default configs and dependencies targets provided by the toolchain. These
   # are applied to all of the pw_* target types. They are set from a toolchain's
@@ -55,10 +53,6 @@ _pw_build_defaults = {
     "$dir_pw_build:relative_paths",
   ]
 
-  # TODO(b/235237667): Remove this once all uses explicitly depend on polyfills.
-  if (pw_span_ENABLE_STD_SPAN_POLYFILL) {
-    public_deps += [ "$dir_pw_span:polyfill" ]
-  }
   if (pw_build_DEFAULT_VISIBILITY != "*") {
     visibility = pw_build_DEFAULT_VISIBILITY
   }

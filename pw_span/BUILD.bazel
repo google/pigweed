@@ -30,45 +30,9 @@ pw_cc_library(
     deps = ["//pw_polyfill"],
 )
 
-pw_cc_library(
-    name = "polyfill",
-    srcs = [
-        "public/pw_span/internal/span_common.inc",
-        "public/pw_span/internal/span_polyfill.h",
-    ],
-    hdrs = ["internal_only_include_path_do_not_use/span"],
-    includes = [
-        "internal_only_include_path_do_not_use",
-        "public",
-    ],
-    # Disallow use of the <span> polyfill.
-    visibility = ["//visibility:private"],
-    deps = [
-        "//pw_polyfill",
-        "//pw_polyfill:standard_library",
-    ],
-)
-
-pw_cc_test(
-    name = "polyfill_test",
-    srcs = ["span_test.cc"],
-    defines = [
-        "PW_SPAN_TEST_INCLUDE=<span>",
-        "PW_SPAN_TEST_NAMESPACE=std",
-    ],
-    deps = [
-        ":polyfill",
-        "//pw_unit_test",
-    ],
-)
-
 pw_cc_test(
     name = "pw_span_test",
     srcs = ["span_test.cc"],
-    defines = [
-        'PW_SPAN_TEST_INCLUDE=\\"pw_span/span.h\\"',
-        "PW_SPAN_TEST_NAMESPACE=pw",
-    ],
     deps = [
         ":pw_span",
         "//pw_unit_test",
@@ -78,8 +42,5 @@ pw_cc_test(
 pw_cc_test(
     name = "compatibility_test",
     srcs = ["compatibility_test.cc"],
-    deps = [
-        ":polyfill",
-        ":pw_span",
-    ],
+    deps = [":pw_span"],
 )

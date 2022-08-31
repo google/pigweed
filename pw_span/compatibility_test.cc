@@ -12,6 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_polyfill/standard.h"
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(20)
+
 #include <span>
 
 #include "gtest/gtest.h"
@@ -69,3 +73,5 @@ TEST(SpanCompatibility, SameArray) {
 }
 
 }  // namespace
+
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)

@@ -23,18 +23,11 @@
 
 // NOLINTBEGIN(modernize-unary-static-assert)
 
-#ifndef PW_SPAN_TEST_INCLUDE
-#error "The PW_SPAN_TEST_INCLUDE macro must be defined to compile this test."
-#endif  // PW_SPAN_TEST_INCLUDE
-
-#ifndef PW_SPAN_TEST_NAMESPACE
-#error "The PW_SPAN_TEST_NAMESPACE macro must be defined to compile this test."
-#endif  // PW_SPAN_TEST_NAMESPACE
+#include "pw_span/span.h"
 
 #include <algorithm>
 #include <cstdint>
 #include <memory>
-#include PW_SPAN_TEST_INCLUDE
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -49,8 +42,7 @@ using ::testing::Eq;
 using ::testing::Pointwise;
 #endif  // 0
 
-namespace PW_SPAN_TEST_NAMESPACE {
-
+namespace pw {
 namespace {
 
 // constexpr implementation of std::equal's 4 argument overload.
@@ -1657,4 +1649,4 @@ TEST(SpanTest, IteratorConversions) {
 
 // NOLINTEND(modernize-unary-static-assert)
 
-}  // namespace PW_SPAN_TEST_NAMESPACE
+}  // namespace pw
