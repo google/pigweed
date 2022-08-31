@@ -4,7 +4,7 @@
   "description": "An open source collection of embedded-targeted libraries",
   "author": "The Pigweed Authors",
   "license": "Apache-2.0",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types/ts/index.d.ts",
   "exports": {
     ".": "./dist/index.mjs",
     "./protos": "./dist/protos/collection.umd.js",
@@ -19,7 +19,7 @@
     "build": "npm run rollup",
     "dev": "rollup -c -w",
     "rollup": "rollup -c && npm run postbuild",
-    "postbuild": "rimraf dist/types && rimraf dist/**/types && chmod +x ./dist/bin/pw_protobuf_compiler.js",
+    "postbuild": "rimraf dist/protos/types && chmod +x ./dist/bin/pw_protobuf_compiler.js",
     "start": "tsc-watch --onSuccess \"rollup -c\"",
     "check": "gts check",
     "fix": "gts fix",

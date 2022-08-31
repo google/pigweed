@@ -112,11 +112,5 @@ export default [
       // Resolve source maps to the original source
       sourceMaps()
     ]
-  },
-  // Bundle types for pigweed module
-  {
-    input: path.join('dist', 'types', 'ts', 'index.d.ts'),
-    output: [{file: path.join('dist', 'index.d.ts'), format: 'es'}],
-    plugins: [dts({compilerOptions: tsConfig.compilerOptions})]
-  },
+  }
 ];
