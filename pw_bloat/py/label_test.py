@@ -189,7 +189,7 @@ class LabelStructTest(unittest.TestCase):
             [label.parents[0], label.parents[1], 'foobar()'], label.size + 20)
 
         ds_map2.insert_label_hierachy(["LOAD #5", 'random_load', 'func()'],
-                                      label.size + 20)
+                                      250)
 
         list_labels_ds_b = [
             Label(name='FLASH',
@@ -203,7 +203,7 @@ class LabelStructTest(unittest.TestCase):
                   exists_both=True,
                   parents=()),
             Label(name='LOAD #5',
-                  size=240,
+                  size=250,
                   capacity=None,
                   exists_both=False,
                   parents=())

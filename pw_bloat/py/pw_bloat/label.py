@@ -148,51 +148,43 @@ class DataSourceMap:
         curr_parent = self._BASE_TOTAL_LABEL
 
         # Iterate through base labels at each datasource index.
-        for data_source_i in range(1, len(base.get_ds_names())):
-            last_data_source_index = (data_source_i == (
-                len(base.get_ds_names()) - 1))
-            for b_label in base.labels(data_source_i):
-                if data_source_i > 0:
-                    curr_parent = b_label.parents[-1]
-                lb_hierachy_names = [*b_label.parents, b_label.name]
+        last_data_source = len(base.get_ds_names()) - 1
+        parent_data_source_index = last_data_source + 1
+        for b_label in base.labels(last_data_source):
+            if last_data_source > 0:
+                curr_parent = b_label.parents[-1]
+            lb_hierachy_names = [*b_label.parents, b_label.name]
 
-                # Check if label exists in target binary DataSourceMap.
-                # Subtract base from target size and insert diff size
-                # into DiffDataSourceMap.
-                if self.label_exists(data_source_i + 1, curr_parent,
-                                     b_label.name):
-                    diff_size = ((self._data_sources[data_source_i + 1]
-                                  [curr_parent][b_label.name].size) -
-                                 b_label.size)
+            # Check if label exists in target binary DataSourceMap.
+            # Subtract base from target size and insert diff size
+            # into DiffDataSourceMap.
+            if self.label_exists(parent_data_source_index, curr_parent,
+                                 b_label.name):
+                diff_size = ((self._data_sources[parent_data_source_index]
+                              [curr_parent][b_label.name].size) - b_label.size)
 
-                    if diff_size and last_data_source_index:
-                        diff_dsm.insert_label_hierachy(lb_hierachy_names,
-                                                       diff_size, True)
-                    else:
-                        diff_dsm.insert_label_hierachy(lb_hierachy_names, 0,
-                                                       True)
-
-                # label is not present in target - insert with negative size
+                if diff_size:
+                    diff_dsm.insert_label_hierachy(lb_hierachy_names,
+                                                   diff_size, True)
                 else:
-                    if last_data_source_index:
-                        diff_dsm.insert_label_hierachy(lb_hierachy_names,
-                                                       -1 * b_label.size,
-                                                       False)
-                    else:
-                        diff_dsm.insert_label_hierachy(lb_hierachy_names, 0,
-                                                       False)
-            # Iterate through all of target labels
-            # to find labels new to target from base.
-            for t_label in self.labels(data_source_i):
-                if data_source_i > 0:
-                    curr_parent = t_label.parents[-1]
+                    diff_dsm.insert_label_hierachy(lb_hierachy_names, 0, True)
 
-                # New addition to target
-                if not base.label_exists(data_source_i + 1, curr_parent,
-                                         t_label.name):
-                    diff_dsm.insert_label_hierachy(
-                        [*t_label.parents, f"{t_label.name}"], t_label.size,
-                        False)
+            # label is not present in target - insert with negative size
+            else:
+                diff_dsm.insert_label_hierachy(lb_hierachy_names,
+                                               -1 * b_label.size, False)
+
+        # Iterate through all of target labels
+        # to find labels new to target from base.
+        for t_label in self.labels(last_data_source):
+            if last_data_source > 0:
+                curr_parent = t_label.parents[-1]
+
+            # New addition to target
+            if not base.label_exists(parent_data_source_index, curr_parent,
+                                     t_label.name):
+                diff_dsm.insert_label_hierachy(
+                    [*t_label.parents, f"{t_label.name}"], t_label.size, False)
 
         return diff_dsm
 
@@ -245,9 +237,13 @@ class DiffDataSourceMap(DataSourceMap):
     """DataSourceMap that holds diff information."""
     def has_diff_sublabels(self, top_ds_label: str) -> bool:
         """Checks if first datasource is identical."""
-
-        return any(label.parents[0] == top_ds_label and label.size != 0
-                   for label in self.labels())
+        for label in self.labels():
+            if label.size != 0:
+                if (label.parents and
+                    (label.parents[0] == top_ds_label)) or (label.name
+                                                            == top_ds_label):
+                    return True
+        return False
 
 
 def from_bloaty_tsv(raw_tsv: Iterable[str]) -> DataSourceMap:

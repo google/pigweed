@@ -229,8 +229,11 @@ def main() -> int:
             single_output_target.decode().splitlines())
         diff_dsm = target_dsm.diff(base_dsm)
 
-        diff_report += BloatTableOutput(diff_dsm, MAX_COL_WIDTH,
-                                        LineCharset).create_table()
+        diff_report += BloatTableOutput(
+            diff_dsm,
+            MAX_COL_WIDTH,
+            LineCharset,
+            diff_label=curr_diff_binary['label']).create_table()
 
         print(diff_report)
         curr_rst_report = RstOutput(diff_dsm, curr_diff_binary['label'])

@@ -248,6 +248,7 @@ template("pw_size_diff") {
         _binary_source_filter = ""
       }
 
+      _binary_data_sources = []
       if (defined(binary.data_sources)) {
         _binary_data_sources = string_split(binary.data_sources, ",")
       } else if (defined(_global_data_sources)) {

@@ -77,6 +77,7 @@ class BloatTableOutput:
     """ASCII Table generator from DataSourceMap."""
 
     _RST_PADDING_WIDTH = 6
+    _MIN_TABLE_PADDING = 5
 
     class _LabelContent(NamedTuple):
         name: str
@@ -88,12 +89,14 @@ class BloatTableOutput:
                  col_max_width: int,
                  charset: Union[Type[AsciiCharset],
                                 Type[LineCharset]] = AsciiCharset,
-                 rst_output: bool = False):
+                 rst_output: bool = False,
+                 diff_label: str = None):
         self._data_source_map = ds_map
         self._cs = charset
         self._total_size = 0
         col_names = [*self._data_source_map.get_ds_names(), 'sizes']
         self._diff_mode = False
+        self._diff_label = diff_label
         if isinstance(self._data_source_map, DiffDataSourceMap):
             col_names = ['diff', *col_names]
             self._diff_mode = True
@@ -112,7 +115,8 @@ class BloatTableOutput:
         """Find column width for all data sources and sizes."""
         max_len_size = 0
         col_list = [
-            len(ds_name) for ds_name in self._data_source_map.get_ds_names()
+            len(ds_name) + self._MIN_TABLE_PADDING
+            for ds_name in self._data_source_map.get_ds_names()
         ]
         for curr_label in self._data_source_map.labels():
             self._total_size += curr_label.size
@@ -152,10 +156,31 @@ class BloatTableOutput:
 
         return tuple(diff_list)
 
+    def label_title_row(self) -> List[str]:
+        label_rows = []
+        label_cells = ''
+        divider_cells = ''
+        for width in self._col_widths:
+            label_cells += ' ' * width + ' '
+            divider_cells += (self._cs.H.value * width) + self._cs.H.value
+        if self._diff_label is not None:
+            label_cells = self._diff_label.center(len(label_cells[:-1]), ' ')
+        label_rows.extend([
+            f"{self._cs.TL.value}{divider_cells[:-1]}{self._cs.TR.value}",
+            f"{self._cs.V.value}{label_cells}{self._cs.V.value}",
+            f"{self._cs.ML.value}{divider_cells[:-1]}{self._cs.MR.value}"
+        ])
+        return label_rows
+
     def create_table(self) -> str:
         """Parse DataSourceMap to create ASCII table."""
         curr_lb_hierachy = None
         last_diff_name = ''
+        if self._diff_mode:
+            self._ascii_table_rows.extend([*self.label_title_row()])
+        else:
+            self._ascii_table_rows.extend(
+                [self.create_border(True, self._cs.H.value)])
         self._ascii_table_rows.extend([*self.create_title_row()])
         for curr_label in self._data_source_map.labels():
             if curr_label.size == 0:
@@ -168,6 +193,7 @@ class BloatTableOutput:
             diff_list = self._diff_label_names(curr_lb_hierachy,
                                                new_lb_hierachy)
             curr_lb_hierachy = new_lb_hierachy
+
             if curr_label.parents and curr_label.parents[0] == last_diff_name:
                 continue
             if self._diff_mode and diff_list[0].name and (not cast(
@@ -175,7 +201,8 @@ class BloatTableOutput:
                     self._data_source_map).has_diff_sublabels(
                         diff_list[0].name)):
                 if (len(self._ascii_table_rows) >
-                        3) and (self._ascii_table_rows[-1][0] != '+'):
+                        5) and (self._ascii_table_rows[-1][0] != '+'):
+
                     self._ascii_table_rows.append(
                         self.row_divider(len(self._col_names),
                                          self._cs.H.value))
@@ -255,7 +282,7 @@ class BloatTableOutput:
                     if cell_index == index + diff_index:
                         if cell_index == diff_index and len(
                                 self._ascii_table_rows
-                        ) > 3 and not self._rst_output:
+                        ) > 5 and not self._rst_output:
                             diff_rows.append(
                                 self.row_divider(len(self._col_names),
                                                  self._cs.H.value))
@@ -291,7 +318,7 @@ class BloatTableOutput:
                     align: Optional[_Align] = _Align.RIGHT) -> str:
         v_border = self._cs.V.value
         if self._rst_output and content:
-            content = f" ``{content}`` "
+            content = content.replace('_', '\\_')
         pad_diff = self._col_widths[col_index] - len(content)
         padding = (pad_diff // 2) * ' '
         odd_pad = ' ' if pad_diff % 2 == 1 else ''
@@ -361,13 +388,13 @@ class BloatTableOutput:
         title_rows = []
         title_cells = ''
         last_cell = False
-        for index, name in enumerate(self._col_names):
+        for index, curr_name in enumerate(self._col_names):
             if index == len(self._col_names) - 1:
                 last_cell = True
-            title_cells += self.create_cell(name, last_cell, index,
+            title_cells += self.create_cell(curr_name, last_cell, index,
                                             _Align.CENTER)
         title_rows.extend([
-            self.create_border(True, self._cs.H.value), title_cells,
+            title_cells,
             self.row_divider(len(self._col_names), self._cs.HH.value)
         ])
         return title_rows
@@ -427,9 +454,12 @@ class RstOutput:
     def _label_status_unchanged(self, parent_lb_name: str) -> bool:
         """Determines if parent label has no status change in diff mode."""
         for curr_lb in self._data_source_map.labels():
-            if curr_lb.size != 0 and (parent_lb_name == curr_lb.parents[0]):
-                if get_label_status(curr_lb) != '':
-                    return False
+            if curr_lb.size != 0:
+                if (curr_lb.parents and
+                    (parent_lb_name == curr_lb.parents[0])) or (
+                        curr_lb.name == parent_lb_name):
+                    if get_label_status(curr_lb) != '':
+                        return False
         return True
 
     def add_report_row(self) -> str:
@@ -461,15 +491,18 @@ class RstOutput:
                 else:
                     skip_status = 0, ' '
                 for curr_lb in self._data_source_map.labels():
-                    if curr_lb.size != 0 and (parent_lb.name
-                                              == curr_lb.parents[0]):
+                    if (curr_lb.size != 0) and (
+                        (curr_lb.parents and
+                         (parent_lb.name == curr_lb.parents[0])) or
+                        (curr_lb.name == parent_lb.name)):
                         sign_size = diff_sign_sizes(curr_lb.size,
                                                     self._diff_mode)
                         curr_status = get_label_status(curr_lb)
+                        curr_name = curr_lb.name.replace('_', '\\_')
                         curr_row.extend([
                             f"               * - {curr_status}",
                             f"               {skip_status[1]} - {sign_size}",
-                            f"                 - {curr_lb.name}\n"
+                            f"                 - {curr_name}\n"
                         ][skip_status[0]:])
                 curr_row.append(
                     f"     - {diff_sign_sizes(parent_lb.size, self._diff_mode)}"
