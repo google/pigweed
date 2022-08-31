@@ -21,6 +21,7 @@ import logging
 import os
 from pathlib import Path
 import sys
+import time
 from threading import Thread
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -142,6 +143,11 @@ class ConsoleApp:
     ):
         self.prefs = prefs if prefs else ConsolePrefs()
         self.color_depth = get_default_colordepth(color_depth)
+
+        # Max frequency in seconds of prompt_toolkit UI redraws triggered by new
+        # log lines.
+        self.log_ui_update_frequency = 0.1  # 10 FPS
+        self._last_ui_update_time = time.time()
 
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():
@@ -936,6 +942,16 @@ class ConsoleApp:
     def exit_console(self):
         """Quit the console prompt_toolkit application UI."""
         self.application.exit()
+
+    def logs_redraw(self):
+        emit_time = time.time()
+        # Has enough time passed since last UI redraw due to new logs?
+        if emit_time > self._last_ui_update_time + self.log_ui_update_frequency:
+            # Update last log time
+            self._last_ui_update_time = emit_time
+
+            # Trigger Prompt Toolkit UI redraw.
+            self.redraw_ui()
 
     def redraw_ui(self):
         """Redraw the prompt_toolkit UI."""
