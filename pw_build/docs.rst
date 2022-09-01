@@ -461,6 +461,7 @@ pw_exec
 * ``working_directory``: The working directory to execute the subprocess with.
   If not specified it will not be set and the subprocess will have whatever
   the parent current working directory is.
+* ``visibility``: GN visibility to apply to the underlying target.
 
 **Example**
 
