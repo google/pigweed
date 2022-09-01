@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include <kernel.h>
+#include <zephyr/kernel.h>
 
 namespace pw::sync::backend {
 

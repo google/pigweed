@@ -29,6 +29,10 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_MUTEX pw_sync.mutex pw_sync_zephyr.mutex_backend)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE pw_sync.mutex pw_sync_zephyr.binary_semaphore_backend)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYS_IO pw_sys_io pw_sys_io_zephyr)
+
+  if(CONFIG_NANOPB AND "${dir_pw_third_party_nanopb}" STREQUAL "")
+    set(dir_pw_third_party_nanopb "${ZEPHYR_NANOPB_MODULE_DIR}" CACHE PATH "" FORCE)
+  endif()
 endif()
 
 add_subdirectory(pw_assert EXCLUDE_FROM_ALL)

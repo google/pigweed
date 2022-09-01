@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "pw_log_zephyr/config.h"
 

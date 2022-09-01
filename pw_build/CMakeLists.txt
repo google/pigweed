@@ -72,9 +72,13 @@ target_link_libraries(pw_build.warnings INTERFACE ${pw_build_WARNINGS})
 # TODO(hepler): These Zephyr exceptions should be made by overriding
 #     pw_build_WARNINGS.
 add_library(pw_build.strict_warnings INTERFACE)
-if(NOT ZEPHYR_PIGWEED_MODULE_DIR)
+if(ZEPHYR_PIGWEED_MODULE_DIR)
+  # -Wtype-limits is incompatible with Kconfig at times, disable it for Zephyr
+  # builds.
+  set(strict_warnings_cond "-Wno-type-limits")
+else()
   # Only include these flags if we're not building with Zephyr.
-  set(strict_warnings_cond "-Wcast-qual" "-Wundef")
+  set(strict_warnings_cond "-Wundef")
 endif()
 target_compile_options(pw_build.strict_warnings
   INTERFACE

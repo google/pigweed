@@ -14,10 +14,10 @@
 
 #include "pw_sys_io/sys_io.h"
 
-#include <console/console.h>
-#include <init.h>
-#include <usb/usb_device.h>
-#include <zephyr.h>
+#include <zephyr/console/console.h>
+#include <zephyr/init.h>
+#include <zephyr/usb/usb_device.h>
+#include <zephyr/zephyr.h>
 
 static int sys_io_init(const struct device* dev) {
   int err;

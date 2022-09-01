@@ -13,8 +13,8 @@
 // the License.
 #pragma once
 
-#include <logging/log.h>
-#include <logging/log_ctrl.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
 
 #include "pw_log_zephyr/config.h"
 

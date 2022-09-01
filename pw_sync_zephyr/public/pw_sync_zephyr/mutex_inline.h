@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include <kernel.h>
+#include <zephyr/kernel.h>
 
 #include "pw_assert/assert.h"
 #include "pw_interrupt/context.h"
