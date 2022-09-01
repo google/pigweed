@@ -373,6 +373,24 @@ Build arguments
   Type: string (GN path to a toolchain)
   Usage: toolchain-controlled only
 
+.. option:: pw_unit_test_EXECUTABLE_TARGET_TYPE <template name>
+
+  The name of the GN target type used to build pw_unit_test executables.
+
+  Type: string (name of a GN template)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE <gni file path>
+
+  The path to the .gni file that defines pw_unit_test_EXECUTABLE_TARGET_TYPE.
+
+  If pw_unit_test_EXECUTABLE_TARGET_TYPE is not the default of
+  `pw_executable`, this .gni file is imported to provide the template
+  definition.
+
+  Type: string (path to a .gni file)
+  Usage: toolchain-controlled only
+
 RPC service
 ===========
 ``pw_unit_test`` provides an RPC service which runs unit tests on demand and

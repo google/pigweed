@@ -81,6 +81,27 @@ declare_args() {
   # Type: string (GN path to a toolchain)
   # Usage: toolchain-controlled only
   pw_unit_test_POOL_TOOLCHAIN = ""
+
+  # The name of the GN target type used to build pw_unit_test executables.
+  #
+  # Type: string (name of a GN template)
+  # Usage: toolchain-controlled only
+  pw_unit_test_EXECUTABLE_TARGET_TYPE = "pw_executable"
+
+  # The path to the .gni file that defines pw_unit_test_EXECUTABLE_TARGET_TYPE.
+  #
+  # If pw_unit_test_EXECUTABLE_TARGET_TYPE is not the default of
+  # `pw_executable`, this .gni file is imported to provide the template
+  # definition.
+  #
+  # Type: string (path to a .gni file)
+  # Usage: toolchain-controlled only
+  pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE = ""
+}
+
+if (pw_unit_test_EXECUTABLE_TARGET_TYPE != "pw_executable" &&
+    pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE != "") {
+  import(pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE)
 }
 
 # Defines a target if enable_if is true. Otherwise, it defines that target as
@@ -198,7 +219,7 @@ template("pw_test") {
   }
 
   _pw_disableable_target(_test_target_name) {
-    target_type = "pw_executable"
+    target_type = pw_unit_test_EXECUTABLE_TARGET_TYPE
     enable_if = _test_is_enabled
 
     # Metadata for this test when used as part of a pw_test_group target.
