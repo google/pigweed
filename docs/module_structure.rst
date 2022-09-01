@@ -103,9 +103,8 @@ C++ module structure
 
 C++ public headers
 ~~~~~~~~~~~~~~~~~~
-Located ``{pw_module_dir}/public/<module>``. These are headers that must be
-exposed due to C++ limitations (i.e. are included from the public interface,
-but are not intended for public use).
+Located ``{pw_module_dir}/public/<module>``. These headers are the public
+interface for the module.
 
 **Public headers** should take the form:
 
