@@ -27,6 +27,7 @@ pw_python_package("py") {
     "pw_compilation_testing/generator.py",
     "pw_compilation_testing/runner.py",
   ]
+  tests = [ "generator_test.py" ]
   python_deps = [ "$dir_pw_cli/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

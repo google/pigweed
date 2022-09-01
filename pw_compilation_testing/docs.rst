@@ -94,11 +94,11 @@ Creating a negative compilation test
   line.
 - Execute the tests by running the build.
 
-To simplify parsing, all ``PW_NC_TEST()`` and ``PW_NC_EXPECT()`` statements
-must fit within a single line. If they are too long for one line, disable
-automatic formatting around them with ``// clang-format disable`` or split
-``PW_NC_EXPECT()`` statements into multiple statements on separate lines. This
-restriction may be relaxed in the future.
+To simplify parsing, all ``PW_NC_TEST()`` statements must fit on a single line.
+``PW_NC_EXPECT()`` statements may span multiple lines, but must contain a single
+regular expression as a string literal. The string may be comprised of multiple
+implicitly concatenated string literals. The ``PW_NC_EXPECT()`` statement cannot
+contain anything else except for ``//``-style comments.
 
 Test assertions
 ===============

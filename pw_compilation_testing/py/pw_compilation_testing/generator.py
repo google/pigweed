@@ -30,24 +30,24 @@ from pathlib import Path
 import pickle
 import re
 import sys
-from typing import (Iterable, Iterator, List, NamedTuple, NoReturn, Pattern,
-                    Sequence, Set, Tuple)
+from typing import (Iterable, Iterator, List, NamedTuple, NoReturn, Optional,
+                    Pattern, Sequence, Set, Tuple)
 
 # Matches the #if or #elif statement that starts a compile fail test.
-_TEST_START = re.compile(br'^[ \t]*#[ \t]*(?:el)?if[ \t]+PW_NC_TEST\([ \t]*')
+_TEST_START = re.compile(r'^[ \t]*#[ \t]*(?:el)?if[ \t]+PW_NC_TEST\([ \t]*')
 
 # Matches the name of a test case.
 _TEST_NAME = re.compile(
-    br'(?P<name>[a-zA-Z0-9_]+)[ \t]*\)[ \t]*(?://.*|/\*.*)?$')
+    r'(?P<name>[a-zA-Z0-9_]+)[ \t]*\)[ \t]*(?://.*|/\*.*)?$')
 
 # Negative compilation test commands take the form PW_NC_EXPECT("regex"),
 # PW_NC_EXPECT_GCC("regex"), or PW_NC_EXPECT_CLANG("regex"). PW_NC_EXPECT() is
 # an error.
-_EXPECT_START = re.compile(br'^[ \t]*PW_NC_EXPECT(?P<compiler>_GCC|_CLANG)?\(')
+_EXPECT_START = re.compile(r'^[ \t]*PW_NC_EXPECT(?P<compiler>_GCC|_CLANG)?\(')
 
 # EXPECT statements are regular expressions that must match the compiler output.
 # They must fit on a single line.
-_EXPECT_REGEX = re.compile(br'(?P<regex>"[^\n]+")\);[ \t]*(?://.*|/\*.*)?$')
+_EXPECT_REGEX = re.compile(r'(?P<regex>"[^\n]+")\);[ \t]*(?://.*|/\*.*)?$')
 
 
 class Compiler(Enum):
@@ -99,18 +99,93 @@ class TestCase:
 
 class ParseError(Exception):
     """Failed to parse a PW_NC_TEST."""
-    def __init__(self, message: str, file: Path, lines: Sequence[bytes],
+    def __init__(self, message: str, file: Path, lines: Sequence[str],
                  error_lines: Sequence[int]) -> None:
         for i in error_lines:
-            message += (
-                f'\n{file.name}:{i + 1}: {lines[i].decode(errors="replace")}')
+            message += f'\n{file.name}:{i + 1}: {lines[i]}'
         super().__init__(message)
+
+
+class _ExpectationParser:
+    """Parses expecatations from 'PW_NC_EXPECT(' to the final ');'."""
+    class _State:
+        SPACE = 0  # Space characters, which are ignored
+        COMMENT_START = 1  # First / in a //-style comment
+        COMMENT = 2  # Everything after // on a line
+        OPEN_QUOTE = 3  # Starting quote for a string literal
+        CHARACTERS = 4  # Characters within a string literal
+        ESCAPE = 5  # \ within a string literal, which may escape a "
+        CLOSE_PAREN = 6  # Closing parenthesis to the PW_NC_EXPECT statement.
+
+    def __init__(self, index: int, compiler: Compiler) -> None:
+        self.index = index
+        self._compiler = compiler
+        self._state = self._State.SPACE
+        self._contents: List[str] = []
+
+    def parse(self, chars: str) -> Optional[Expectation]:
+        """State machine that parses characters in PW_NC_EXPECT()."""
+        for char in chars:
+            if self._state is self._State.SPACE:
+                if char == '"':
+                    self._state = self._State.CHARACTERS
+                elif char == ')':
+                    self._state = self._State.CLOSE_PAREN
+                elif char == '/':
+                    self._state = self._State.COMMENT_START
+                elif not char.isspace():
+                    raise ValueError(f'Unexpected character "{char}"')
+            elif self._state is self._State.COMMENT_START:
+                if char == '*':
+                    raise ValueError(
+                        '"/* */" comments are not supported; use // instead')
+                if char != '/':
+                    raise ValueError(f'Unexpected character "{char}"')
+                self._state = self._State.COMMENT
+            elif self._state is self._State.COMMENT:
+                if char == '\n':
+                    self._state = self._State.SPACE
+            elif self._state is self._State.CHARACTERS:
+                if char == '"':
+                    self._state = self._State.SPACE
+                elif char == '\\':
+                    self._state = self._State.ESCAPE
+                else:
+                    self._contents.append(char)
+            elif self._state is self._State.ESCAPE:
+                # Include escaped " directly. Restore the \ for other chars.
+                if char != '"':
+                    self._contents.append('\\')
+                self._contents.append(char)
+                self._state = self._State.CHARACTERS
+            elif self._state is self._State.CLOSE_PAREN:
+                if char != ';':
+                    raise ValueError(f'Expected ";", found "{char}"')
+
+                return self._expectation(''.join(self._contents))
+
+        return None
+
+    def _expectation(self, regex: str) -> Expectation:
+        if '"""' in regex:
+            raise ValueError('The regular expression cannot contain """')
+
+        # Evaluate the string from the C++ source as a raw literal.
+        re_string = eval(f'r"""{regex}"""')  # pylint: disable=eval-used
+        if not isinstance(re_string, str):
+            raise ValueError('The regular expression must be a string!')
+
+        try:
+            return Expectation(self._compiler, re.compile(re_string),
+                               self.index + 1)
+        except re.error as error:
+            raise ValueError('Invalid regular expression: ' + error.msg)
 
 
 class _NegativeCompilationTestSource:
     def __init__(self, file: Path) -> None:
         self._file = file
-        self._lines = self._file.read_bytes().splitlines()
+        self._lines = self._file.read_text().splitlines(keepends=True)
 
         self._parsed_expectations: Set[int] = set()
 
@@ -118,41 +193,45 @@ class _NegativeCompilationTestSource:
         raise ParseError(message, self._file, self._lines, error_lines)
 
     def _parse_expectations(self, start: int) -> Iterator[Expectation]:
+        expectation: Optional[_ExpectationParser] = None
+
         for index in range(start, len(self._lines)):
             line = self._lines[index]
 
-            expect_match = _EXPECT_START.match(line)
+            # Skip empty or comment lines
+            if not line or line.isspace() or line.lstrip().startswith('//'):
+                continue
 
-            if not expect_match:
-                # Skip empty lines or lines with comments
-                if not line or line.isspace() or line.lstrip().startswith(
-                    (b'//', b'/*')):
-                    continue
-                break
+            # Look for a 'PW_NC_EXPECT(' in the code.
+            if not expectation:
+                expect_match = _EXPECT_START.match(line)
+                if not expect_match:
+                    break  # No expectation found, stop processing.
 
-            compiler_str = expect_match['compiler'] or b'ANY'
-            compiler = Compiler[compiler_str.lstrip(b'_').decode()]
+                compiler = expect_match['compiler'] or 'ANY'
+                expectation = _ExpectationParser(
+                    index, Compiler[compiler.lstrip('_')])
 
-            self._parsed_expectations.add(index)
+                self._parsed_expectations.add(index)
 
-            regex_match = _EXPECT_REGEX.match(line, expect_match.end())
-            if not regex_match:
-                self._error(
-                    'Failed to parse PW_EXPECT_NC() statement. PW_EXPECT_NC() '
-                    'statements must fit on one line and contain a single, '
-                    'non-empty string literal.', index)
+                # Remove the 'PW_NC_EXPECT(' so the line starts with the regex.
+                line = line[expect_match.end():]
 
-            # Evaluate the string from the C++ source as a raw literal.
-            re_string = eval(b'r' + regex_match['regex'])  # pylint: disable=eval-used
-            if not isinstance(re_string, str):
-                self._error('The regular expression must be a string!', index)
-
+            # Find the regex after previously finding 'PW_NC_EXPECT('.
             try:
-                yield Expectation(compiler, re.compile(re_string), index + 1)
-            except re.error as error:
-                self._error('Invalid regular expression: ' + error.msg, index)
+                if parsed_expectation := expectation.parse(line.lstrip()):
+                    yield parsed_expectation
 
-            start = regex_match.end()
+                    expectation = None
+            except ValueError as err:
+                self._error(
+                    f'Failed to parse PW_NC_EXPECT() statement: {err}. '
+                    'PW_NC_EXPECT() must contain only a string literal and '
+                    '//-style comments.', index)
+
+        if expectation:
+            self._error('Unterminated PW_NC_EXPECT() statement!',
+                        expectation.index)
 
     def _check_for_stray_expectations(self) -> None:
         all_expectations = frozenset(i for i in range(len(self._lines))
@@ -173,13 +252,12 @@ class _NegativeCompilationTestSource:
             if not name_match:
                 self._error(
                     'Negative compilation test syntax error. '
-                    'Expected test name, found '
-                    f"'{line[case_match.end():].decode(errors='replace')}'",
+                    f"Expected test name, found '{line[case_match.end():]}'",
                     index)
 
             expectations = tuple(self._parse_expectations(index + 1))
-            yield TestCase(suite, name_match['name'].decode(), expectations,
-                           self._file, index + 1)
+            yield TestCase(suite, name_match['name'], expectations, self._file,
+                           index + 1)
 
         self._check_for_stray_expectations()
 
