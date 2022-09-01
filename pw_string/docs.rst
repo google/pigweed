@@ -18,11 +18,135 @@ terminators.
 -------------
 Compatibility
 -------------
-C++17
+C++17, C++14 (:cpp:type:`pw::InlineString`)
 
------
+--------
+Features
+--------
+
+pw::InlineString
+================
+:cpp:class:`pw::InlineBasicString` and :cpp:type:`pw::InlineString` are
+C++14-compatible, fixed-capacity, null-terminated string classes. They are
+equivalent to ``std::basic_string<T>`` and ``std::string``, but store the string
+contents inline and use no dynamic memory.
+
+:cpp:type:`pw::InlineString` takes the fixed capacity as a template argument,
+but may be used generically without specifying the capacity. The capacity value
+is stored in a member variable, which the generic ``pw::InlineString<>`` /
+``pw::InlineBasicString<T>`` specialization uses in place of the template
+parameter.
+
+:cpp:type:`pw::InlineString` is efficient and compact. The current size and
+capacity are stored in a single word. Accessing the contents of a
+:cpp:type:`pw::InlineString` is a simple array access within the object, with no
+pointer indirection, even when working from a generic ``pw::InlineString<>``
+reference.
+
+Key differences from ``std::string``
+------------------------------------
+- **Fixed capacity** -- Operations that add characters to the string beyond its
+  capacity are an error. These trigger a ``PW_ASSERT`` at runtime. When
+  detectable, these situations trigger a ``static_assert`` at compile time.
+- **Character array support** -- :cpp:type:`pw::InlineString` provides overloads
+  specific to character arrays. These allow for compile-time capacity checks and
+  class template argument deduction.
+- **Constexpr support** -- :cpp:type:`pw::InlineString` works in ``constexpr``
+  contexts, which is not supported by ``std::string`` until C++20.
+
+API reference
+-------------
+:cpp:type:`pw::InlineString` / :cpp:class:`pw::InlineBasicString` follows the
+``std::string`` / ``std::basic_string<T>`` API as closely as possible.
+:cpp:class:`pw::InlineBasicString` is intended to support all
+``std::basic_string<T>`` operations, except those having to do with dynamic
+memory allocation (``reserve()``, ``shrink_to_fit()``, ``get_allocator()``).
+
+.. cpp:class:: template <typename T, unsigned short kCapacity> pw::InlineBasicString
+
+   Represents a fixed-capacity string of a generic character type. Equivalent to
+   ``std::basic_string<T>``. Always null (``T()``) terminated.
+
+.. cpp:type:: template <unsigned short kCapacity> pw::InlineString = pw::InlineBasicString<char, kCapacity>
+
+   Represents a fixed-capacity string of ``char`` characters. Equivalent to
+   ``std::string``. Always null (``'\0'``) terminated.
+
 Usage
 -----
+:cpp:type:`pw::InlineString` objects must be constructed by specifying a fixed
+capacity for the string.
+
+.. code-block:: c++
+
+  // Initialize from a C string.
+  pw::InlineString<32> my_string = "Literally";
+  my_string.append('?', 3);   // contains "Literally???"
+
+  // Like std::string, always null terminated when accessed through c_str().
+  if (std::fopen(my_string.c_str(), "r") == nullptr) {
+    // Integrates with std::string_view.
+    my_string = std::string_view("not\0literally", 12);
+    TakesAStringView(std::string_view(my_string));
+  }
+
+  // Supports copying into known-capacity strings.
+  pw::InlineString<64> other = my_string;
+
+  // Supports various helpful std::string functions
+  if (my_string.starts_with("Lit") || my_string == "not\0literally"sv) {
+    other += my_string;
+  }
+
+All :cpp:type:`pw::InlineString` operations may be performed on strings without
+specifying their capacity.
+
+.. code-block:: c++
+
+  void RemoveSuffix(pw::InlineString<>& string, std::string_view suffix) {
+    if (string.ends_with(suffix)) {
+       string.resize(string.size() - suffix.size());
+    }
+  }
+
+  void DoStuff() {
+    pw::InlineString<32> str1 = "Good morning!";
+    RemoveSuffix(str1, " morning!");
+
+    pw::InlineString<40> str2 = "Good";
+    RemoveSuffix(str2, " morning!");
+
+    PW_ASSERT(str1 == str2);
+  }
+
+:cpp:type:`pw::InlineString` operations on known-size strings may be used in
+``constexpr`` expressions.
+
+.. code-block:: c++
+
+   static constexpr pw::InlineString<64> kMyString = [] {
+     pw::InlineString<64> string;
+
+     for (int i = 0; i < 10; ++i) {
+       string += "Hello";
+     }
+
+     return string;
+   }();
+
+:cpp:type:`pw::InlineBasicString` supports class template argument deduction
+(CTAD) in C++17 and newer. Since :cpp:type:`pw::InlineString` is an alias, CTAD
+is not supported until C++20.
+
+.. code-block:: c++
+
+   // Deduces a capacity of 6 characters to match the 6-character string literal
+   // (counting the null terminator).
+   pw::InlineBasicString my_string = "12345";
+
+   // In C++20, CTAD may be used with the pw::InlineString alias.
+   pw::InlineString my_other_string("123456789");
+
 pw::string::Format
 ==================
 The ``pw::string::Format`` and ``pw::string::FormatVaList`` functions provide

@@ -166,7 +166,12 @@ def gn_combined_build_check(ctx: PresubmitContext) -> None:
     # QEMU doesn't run on Windows.
     if sys.platform != 'win32':
         build_targets.extend(_at_all_optimization_levels('qemu_gcc'))
-        build_targets.extend(_at_all_optimization_levels('qemu_clang'))
+
+        # TODO(b/244604080): For the pw::InlineString tests, qemu_clang_debug
+        #     and qemu_clang_speed_optimized produce a binary too large for the
+        #     QEMU target's 256KB flash. Restore debug and speed optimized
+        #     builds when this is fixed.
+        build_targets.append('qemu_clang_size_optimized')
 
     # TODO(b/240982565): SocketStream currently requires Linux.
     if sys.platform.startswith('linux'):

@@ -78,6 +78,19 @@ pw_source_set("format") {
   ]
 }
 
+pw_source_set("string") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_string/string.h" ]
+  sources = [
+    "public/pw_string/internal/string_common_functions.inc",
+    "public/pw_string/internal/string_impl.h",
+  ]
+  public_deps = [
+    dir_pw_assert,
+    dir_pw_polyfill,
+  ]
+}
+
 pw_source_set("to_string") {
   public_configs = [ ":public_include_path" ]
   public = [
@@ -119,6 +132,7 @@ pw_source_set("vector") {
 
 pw_test_group("tests") {
   tests = [
+    ":string_test",
     ":format_test",
     ":string_builder_test",
     ":to_string_test",
@@ -135,6 +149,12 @@ pw_test_group("tests") {
 pw_test("format_test") {
   deps = [ ":format" ]
   sources = [ "format_test.cc" ]
+}
+
+pw_test("string_test") {
+  deps = [ ":string" ]
+  sources = [ "string_test.cc" ]
+  negative_compilation_tests = true
 }
 
 pw_test("string_builder_test") {

@@ -65,6 +65,20 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "string",
+    srcs = [
+        "public/pw_string/internal/string_common_functions.inc",
+        "public/pw_string/internal/string_impl.h",
+    ],
+    hdrs = ["public/pw_string/string.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_polyfill",
+    ],
+)
+
+pw_cc_library(
     name = "to_string",
     srcs = ["type_to_string.cc"],
     hdrs = [
@@ -117,6 +131,16 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "string_test",
+    srcs = ["string_test.cc"],
+    deps = [
+        ":string",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "type_to_string_test",
     srcs = ["type_to_string_test.cc"],
     deps = [
@@ -136,11 +160,9 @@ pw_cc_test(
 
 pw_cc_test(
     name = "to_string_test",
-    srcs = [
-        "public/pw_string/internal/config.h",
-        "to_string_test.cc",
-    ],
+    srcs = ["to_string_test.cc"],
     deps = [
+        ":config",
         ":to_string",
         "//pw_status",
         "//pw_unit_test",

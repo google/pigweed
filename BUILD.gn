@@ -381,6 +381,7 @@ if (current_toolchain != default_toolchain) {
     tests = [
       "$dir_pw_tokenizer:simple_tokenize_test",
       "$dir_pw_containers:to_array_test",
+      "$dir_pw_string:string_test",
     ]
   }
 }
