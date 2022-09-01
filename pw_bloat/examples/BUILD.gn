@@ -16,20 +16,39 @@ import("//build_overrides/pigweed.gni")
 
 import("../bloat.gni")
 
-pw_toolchain_size_diff("simple_bloat_loop") {
-  base_executable = {
-    sources = [ "simple_base.cc" ]
-  }
-  diff_executable = {
-    sources = [ "simple_loop.cc" ]
-  }
+import("$dir_pw_build/target_types.gni")
+
+pw_executable("simple_base") {
+  sources = [ "simple_base.cc" ]
+  deps = [ "$dir_pw_bloat:bloat_this_binary" ]
 }
 
-pw_toolchain_size_diff("simple_bloat_function") {
-  base_executable = {
-    sources = [ "simple_base.cc" ]
-  }
-  diff_executable = {
-    sources = [ "simple_function.cc" ]
-  }
+pw_executable("simple_loop") {
+  sources = [ "simple_loop.cc" ]
+  deps = [ "$dir_pw_bloat:bloat_this_binary" ]
+}
+
+pw_executable("simple_function") {
+  sources = [ "simple_function.cc" ]
+  deps = [ "$dir_pw_bloat:bloat_this_binary" ]
+}
+
+pw_size_diff("simple_bloat_loop") {
+  binaries = [
+    {
+      target = ":simple_loop"
+      base = ":simple_base"
+      label = "Simple bloat loop"
+    },
+  ]
+}
+
+pw_size_diff("simple_bloat_function") {
+  binaries = [
+    {
+      target = ":simple_function"
+      base = ":simple_base"
+      label = "Simple bloat function"
+    },
+  ]
 }

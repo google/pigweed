@@ -5,7 +5,7 @@ pw_bloat
 --------
 The bloat module provides tools and helpers around using
 `Bloaty McBloatface <https://github.com/google/bloaty>`_ including generating
-generate size report cards for output binaries through Pigweed's GN build
+size report cards for output binaries through Pigweed's GN build
 system.
 
 Bloat report cards allow tracking the memory usage of a system over time as code
@@ -68,7 +68,7 @@ base for the size diff can be specified either globally through the top-level
   }
 
 A sample ``pw_size_diff`` ReST size report table can be found within module
-docs. For example, see the :ref:`pw_checksum-size-report` section of
+docs. For example, see the :ref:`pw_checksum-size-report` section of the
 ``pw_checksum`` module for more detail.
 
 
