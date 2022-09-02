@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
 
 namespace bt::gatt {
 namespace {
@@ -38,7 +38,7 @@ inline att::AccessRequirements AllowedNoSecurity() {
                                  /*authorization=*/false);
 }
 
-class ServerTest : public l2cap::testing::FakeChannelTest {
+class ServerTest : public l2cap::testing::MockChannelTest {
  public:
   ServerTest() = default;
   ~ServerTest() override = default;
@@ -54,6 +54,7 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
   }
 
   void TearDown() override {
+    RunLoopUntilIdle();
     server_ = nullptr;
     att_ = nullptr;
     fake_att_chan_ = nullptr;
@@ -143,7 +144,7 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
   }
 
   std::unique_ptr<LocalServiceManager> local_services_;
-  std::unique_ptr<l2cap::testing::FakeChannel> fake_att_chan_;
+  fxl::WeakPtr<l2cap::testing::FakeChannel> fake_att_chan_;
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
 
@@ -162,7 +163,8 @@ TEST_F(ServerTest, ExchangeMTURequestInvalidPDU) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, ExchangeMTURequestValueTooSmall) {
@@ -183,8 +185,8 @@ TEST_F(ServerTest, ExchangeMTURequestValueTooSmall) {
 
   ASSERT_EQ(kServerMTU, att()->preferred_mtu());
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
-
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
   // Should default to kLEMinMTU since kClientMTU is too small.
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
@@ -207,8 +209,8 @@ TEST_F(ServerTest, ExchangeMTURequest) {
 
   ASSERT_EQ(kServerMTU, att()->preferred_mtu());
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
-
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
   EXPECT_EQ(kClientMTU, att()->mtu());
 }
 
@@ -224,7 +226,8 @@ TEST_F(ServerTest, FindInformationInvalidPDU) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, FindInformationInvalidHandle) {
@@ -258,8 +261,10 @@ TEST_F(ServerTest, FindInformationInvalidHandle) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidStartHandle, kExpected1));
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidEndHandle, kExpected2));
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kInvalidStartHandle);
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kInvalidEndHandle);
 }
 
 TEST_F(ServerTest, FindInformationAttributeNotFound) {
@@ -278,7 +283,8 @@ TEST_F(ServerTest, FindInformationAttributeNotFound) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindInformation16) {
@@ -306,7 +312,8 @@ TEST_F(ServerTest, FindInformation16) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindInformation128) {
@@ -330,7 +337,8 @@ TEST_F(ServerTest, FindInformation128) {
       0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindByTypeValueSuccess) {
@@ -361,7 +369,8 @@ TEST_F(ServerTest, FindByTypeValueSuccess) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindByTypeValueFail) {
@@ -385,7 +394,8 @@ TEST_F(ServerTest, FindByTypeValueFail) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindByTypeValueEmptyDB) {
@@ -406,7 +416,8 @@ TEST_F(ServerTest, FindByTypeValueEmptyDB) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindByTypeValueInvalidHandle) {
@@ -427,7 +438,8 @@ TEST_F(ServerTest, FindByTypeValueInvalidHandle) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindByTypeValueInvalidPDUError) {
@@ -445,7 +457,8 @@ TEST_F(ServerTest, FindByTypeValueInvalidPDUError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, FindByTypeValueZeroLengthValueError) {
@@ -468,7 +481,8 @@ TEST_F(ServerTest, FindByTypeValueZeroLengthValueError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindByTypeValueOutsideRangeError) {
@@ -499,7 +513,8 @@ TEST_F(ServerTest, FindByTypeValueOutsideRangeError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindInfomationInactive) {
@@ -531,7 +546,8 @@ TEST_F(ServerTest, FindInfomationInactive) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, FindInfomationRange) {
@@ -558,7 +574,8 @@ TEST_F(ServerTest, FindInfomationRange) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByGroupTypeInvalidPDU) {
@@ -573,7 +590,8 @@ TEST_F(ServerTest, ReadByGroupTypeInvalidPDU) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, ReadByGroupTypeUnsupportedGroupType) {
@@ -604,8 +622,10 @@ TEST_F(ServerTest, ReadByGroupTypeUnsupportedGroupType) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kUsing16BitType, kExpected));
-  EXPECT_TRUE(ReceiveAndExpect(kUsing128BitType, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kUsing16BitType);
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kUsing128BitType);
 }
 
 TEST_F(ServerTest, ReadByGroupTypeInvalidHandle) {
@@ -641,8 +661,10 @@ TEST_F(ServerTest, ReadByGroupTypeInvalidHandle) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidStartHandle, kExpected1));
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidEndHandle, kExpected2));
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kInvalidStartHandle);
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kInvalidEndHandle);
 }
 
 TEST_F(ServerTest, ReadByGroupTypeAttributeNotFound) {
@@ -663,11 +685,13 @@ TEST_F(ServerTest, ReadByGroupTypeAttributeNotFound) {
   // clang-format on
 
   // Database is empty.
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 
   // Group type does not match.
   db()->NewGrouping(types::kSecondaryService, 0, kTestValue1)->set_active(true);
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByGroupTypeSingle) {
@@ -695,7 +719,8 @@ TEST_F(ServerTest, ReadByGroupTypeSingle) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByGroupTypeSingle128) {
@@ -725,7 +750,8 @@ TEST_F(ServerTest, ReadByGroupTypeSingle128) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByGroupTypeSingleTruncated) {
@@ -756,7 +782,8 @@ TEST_F(ServerTest, ReadByGroupTypeSingleTruncated) {
   // |kTestValue|.
   att()->set_mtu(kExpected.size());
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
@@ -803,7 +830,8 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   // The 3rd group is omitted as its group type does not match.
   att()->set_mtu(kExpected1.size() + 6);
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest1, kExpected1));
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kRequest1);
 
   // Search a narrower range. Only two groups should be returned even with room
   // in MTU.
@@ -827,7 +855,8 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected2));
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kRequest2);
 
   // Make the second group inactive. It should get omitted.
   // clang-format off
@@ -841,23 +870,38 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   // clang-format on
 
   grp2->set_active(false);
-  EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected3));
+  EXPECT_PACKET_OUT(kExpected3);
+  fake_chan()->Receive(kRequest2);
 }
 
+// The responses should only include 1 value because the next value has a different length.
 TEST_F(ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
+  // Start: 1, end: 1
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
-
-  // Matching type but value of different size. The results will stop here.
+  // Start: 2, end: 2
   db()->NewGrouping(types::kPrimaryService, 0, kTestValueLong)->set_active(true);
-
-  // Matching type and matching value length. This won't be included as the
-  // request will terminate at the second attribute.
+  // Start: 3, end: 3
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const StaticByteBuffer kRequest2(
+  const StaticByteBuffer kRequest1(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
+      0xFF, 0xFF,  // end: 0xFFFF
+      0x00, 0x28   // group type: 0x2800 (primary service)
+  );
+
+  const StaticByteBuffer kExpected1(
+      0x11,           // opcode: read by group type response
+      0x07,           // length: 7 (strlen("foo") + 4)
+      0x01, 0x00,     // start: 0x0001
+      0x01, 0x00,     // end: 0x0001
+      'f', 'o', 'o'  // value: "foo"
+  );
+
+  const StaticByteBuffer kRequest2(
+      0x10,        // opcode: read by group type
+      0x02, 0x00,  // start: 0x0002
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
@@ -865,11 +909,33 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
   const StaticByteBuffer kExpected2(
       0x11,               // opcode: read by group type response
       0x08,               // length: 8 (strlen("long") + 4)
-      0x01, 0x00,         // start: 0x0001
-      0x01, 0x00,         // end: 0x0001
-      'l', 'o', 'n', 'g'  // value: "bar"
+      0x02, 0x00,         // start: 0x0002
+      0x02, 0x00,         // end: 0x0002
+      'l', 'o', 'n', 'g'  // value
+  );
+
+  const StaticByteBuffer kRequest3(
+      0x10,        // opcode: read by group type
+      0x03, 0x00,  // start: 0x0003
+      0xFF, 0xFF,  // end: 0xFFFF
+      0x00, 0x28   // group type: 0x2800 (primary service)
+  );
+
+  const StaticByteBuffer kExpected3(
+      0x11,           // opcode: read by group type response
+      0x07,           // length: 7 (strlen("foo") + 4)
+      0x03, 0x00,     // start: 0x0003
+      0x03, 0x00,     // end: 0x0003
+      'f', 'o', 'o'  // value: "foo"
   );
   // clang-format on
+
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kRequest1);
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kRequest2);
+  EXPECT_PACKET_OUT(kExpected3);
+  fake_chan()->Receive(kRequest3);
 }
 
 TEST_F(ServerTest, ReadByTypeInvalidPDU) {
@@ -884,7 +950,8 @@ TEST_F(ServerTest, ReadByTypeInvalidPDU) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, ReadByTypeInvalidHandle) {
@@ -920,8 +987,10 @@ TEST_F(ServerTest, ReadByTypeInvalidHandle) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidStartHandle, kExpected1));
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidEndHandle, kExpected2));
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kInvalidStartHandle);
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kInvalidEndHandle);
 }
 
 TEST_F(ServerTest, ReadByTypeAttributeNotFound) {
@@ -942,11 +1011,13 @@ TEST_F(ServerTest, ReadByTypeAttributeNotFound) {
   // clang-format on
 
   // Database is empty.
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 
   // Attribute type does not match.
   db()->NewGrouping(types::kSecondaryService, 0, kTestValue1)->set_active(true);
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByTypeDynamicValueNoHandler) {
@@ -972,7 +1043,8 @@ TEST_F(ServerTest, ReadByTypeDynamicValueNoHandler) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByTypeDynamicValue) {
@@ -1004,12 +1076,14 @@ TEST_F(ServerTest, ReadByTypeDynamicValue) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 
   // Assign a static value to the second attribute. It should still be omitted
   // as the first attribute is dynamic.
   attr->SetValue(kTestValue1);
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByTypeDynamicValueError) {
@@ -1038,7 +1112,8 @@ TEST_F(ServerTest, ReadByTypeDynamicValueError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByTypeSingle) {
@@ -1067,7 +1142,8 @@ TEST_F(ServerTest, ReadByTypeSingle) {
 
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByTypeSingle128) {
@@ -1097,7 +1173,8 @@ TEST_F(ServerTest, ReadByTypeSingle128) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByTypeSingleTruncated) {
@@ -1130,7 +1207,8 @@ TEST_F(ServerTest, ReadByTypeSingleTruncated) {
   // |kExpected| fit within the MTU).
   att()->set_mtu(kExpected.size());
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 // When there are more than one matching attributes, the list should end at the
@@ -1158,7 +1236,8 @@ TEST_F(ServerTest, ReadByTypeMultipleExcludeFirstError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
@@ -1202,7 +1281,8 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest1, kExpected1));
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kRequest1);
 
   // Set the MTU 1 byte too short for |kExpected1|.
   att()->set_mtu(kExpected1.size() - 1);
@@ -1218,7 +1298,8 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest1, kExpected2));
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kRequest1);
 
   // Try a different range.
   // clang-format off
@@ -1239,7 +1320,8 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected3));
+  EXPECT_PACKET_OUT(kExpected3);
+  fake_chan()->Receive(kRequest2);
 
   // Make the second group inactive.
   grp->set_active(false);
@@ -1253,7 +1335,8 @@ TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected4));
+  EXPECT_PACKET_OUT(kExpected4);
+  fake_chan()->Receive(kRequest2);
 }
 
 // A response packet should only include consecutive attributes with the same
@@ -1312,9 +1395,12 @@ TEST_F(ServerTest, ReadByTypeMultipleVaryingLengths) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest1, kExpected1));
-  EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected2));
-  EXPECT_TRUE(ReceiveAndExpect(kRequest3, kExpected3));
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kRequest1);
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kRequest2);
+  EXPECT_PACKET_OUT(kExpected3);
+  fake_chan()->Receive(kRequest3);
 }
 
 // When there are more than one matching attributes, the list should end at the
@@ -1342,7 +1428,8 @@ TEST_F(ServerTest, ReadByTypeMultipleExcludeFirstDynamic) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, WriteRequestInvalidPDU) {
@@ -1357,7 +1444,8 @@ TEST_F(ServerTest, WriteRequestInvalidPDU) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, WriteRequestInvalidHandle) {
@@ -1377,7 +1465,8 @@ TEST_F(ServerTest, WriteRequestInvalidHandle) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, WriteRequestSecurity) {
@@ -1423,8 +1512,10 @@ TEST_F(ServerTest, WriteRequestSecurity) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest1, kExpected1));
-  EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected2));
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kRequest1);
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kRequest2);
 }
 
 TEST_F(ServerTest, WriteRequestNoHandler) {
@@ -1450,7 +1541,8 @@ TEST_F(ServerTest, WriteRequestNoHandler) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, WriteRequestError) {
@@ -1485,7 +1577,8 @@ TEST_F(ServerTest, WriteRequestError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, WriteRequestSuccess) {
@@ -1516,7 +1609,8 @@ TEST_F(ServerTest, WriteRequestSuccess) {
   // opcode: write response
   const StaticByteBuffer kExpected(0x13);
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 // TODO(bwb): Add test cases for the error conditions involved in a Write
@@ -1544,7 +1638,6 @@ TEST_F(ServerTest, WriteCommandSuccess) {
   // clang-format on
 
   fake_chan()->Receive(kCmd);
-  RunLoopUntilIdle();
 }
 
 TEST_F(ServerTest, ReadRequestInvalidPDU) {
@@ -1559,7 +1652,8 @@ TEST_F(ServerTest, ReadRequestInvalidPDU) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, ReadRequestInvalidHandle) {
@@ -1577,7 +1671,8 @@ TEST_F(ServerTest, ReadRequestInvalidHandle) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadRequestSecurity) {
@@ -1604,7 +1699,8 @@ TEST_F(ServerTest, ReadRequestSecurity) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadRequestCached) {
@@ -1634,8 +1730,10 @@ TEST_F(ServerTest, ReadRequestCached) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest1, kExpected1));
-  EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected2));
+  EXPECT_PACKET_OUT(kExpected1);
+  fake_chan()->Receive(kRequest1);
+  EXPECT_PACKET_OUT(kExpected2);
+  fake_chan()->Receive(kRequest2);
 }
 
 TEST_F(ServerTest, ReadRequestNoHandler) {
@@ -1659,7 +1757,8 @@ TEST_F(ServerTest, ReadRequestNoHandler) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadRequestError) {
@@ -1689,7 +1788,8 @@ TEST_F(ServerTest, ReadRequestError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadBlobRequestInvalidPDU) {
@@ -1704,7 +1804,8 @@ TEST_F(ServerTest, ReadBlobRequestInvalidPDU) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
@@ -1740,7 +1841,8 @@ TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadBlobDynamicRequestError) {
@@ -1772,7 +1874,8 @@ TEST_F(ServerTest, ReadBlobDynamicRequestError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadBlobRequestStaticSuccess) {
@@ -1798,7 +1901,8 @@ TEST_F(ServerTest, ReadBlobRequestStaticSuccess) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadBlobRequestStaticOverflowError) {
@@ -1821,7 +1925,8 @@ TEST_F(ServerTest, ReadBlobRequestStaticOverflowError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadBlobRequestInvalidHandleError) {
@@ -1846,7 +1951,8 @@ TEST_F(ServerTest, ReadBlobRequestInvalidHandleError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
@@ -1881,7 +1987,8 @@ TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
@@ -1914,7 +2021,8 @@ TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ReadRequestSuccess) {
@@ -1942,7 +2050,8 @@ TEST_F(ServerTest, ReadRequestSuccess) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, PrepareWriteRequestInvalidPDU) {
@@ -1961,7 +2070,8 @@ TEST_F(ServerTest, PrepareWriteRequestInvalidPDU) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, PrepareWriteRequestInvalidHandle) {
@@ -1980,7 +2090,8 @@ TEST_F(ServerTest, PrepareWriteRequestInvalidHandle) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kResponse));
+  EXPECT_PACKET_OUT(kResponse);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, PrepareWriteRequestSucceeds) {
@@ -2015,8 +2126,8 @@ TEST_F(ServerTest, PrepareWriteRequestSucceeds) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kResponse));
-
+  EXPECT_PACKET_OUT(kResponse);
+  fake_chan()->Receive(kRequest);
   // The attribute should not have been written yet.
   EXPECT_EQ(0, write_count);
 }
@@ -2057,12 +2168,14 @@ TEST_F(ServerTest, PrepareWriteRequestPrepareQueueFull) {
 
   // Write requests should succeed until capacity is filled.
   for (unsigned i = 0; i < att::kPrepareQueueMaxCapacity; i++) {
-    ASSERT_TRUE(ReceiveAndExpect(kRequest, kSuccessResponse))
-        << "Unexpected failure at attempt: " << i;
+    EXPECT_PACKET_OUT(kSuccessResponse);
+    fake_chan()->Receive(kRequest);
+    ASSERT_TRUE(AllExpectedPacketsSent()) << "Unexpected failure at attempt: " << i;
   }
 
   // The next request should fail with a capacity error.
-  EXPECT_TRUE(ReceiveAndExpect(kRequest, kErrorResponse));
+  EXPECT_PACKET_OUT(kErrorResponse);
+  fake_chan()->Receive(kRequest);
 }
 
 TEST_F(ServerTest, ExecuteWriteMalformedPayload) {
@@ -2079,7 +2192,8 @@ TEST_F(ServerTest, ExecuteWriteMalformedPayload) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 TEST_F(ServerTest, ExecuteWriteInvalidFlag) {
@@ -2097,7 +2211,8 @@ TEST_F(ServerTest, ExecuteWriteInvalidFlag) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  fake_chan()->Receive(kInvalidPDU);
 }
 
 // Tests that an "execute write request" without any prepared writes returns
@@ -2114,7 +2229,8 @@ TEST_F(ServerTest, ExecuteWriteQueueEmpty) {
   // clang-format on
 
   // |buffer| should contain the partial writes.
-  EXPECT_TRUE(ReceiveAndExpect(kExecute, kExecuteResponse));
+  EXPECT_PACKET_OUT(kExecuteResponse);
+  fake_chan()->Receive(kExecute);
 }
 
 TEST_F(ServerTest, ExecuteWriteSuccess) {
@@ -2177,9 +2293,12 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
 
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kPrepare1, kPrepareResponse1));
-  EXPECT_TRUE(ReceiveAndExpect(kPrepare2, kPrepareResponse2));
-  EXPECT_TRUE(ReceiveAndExpect(kPrepare3, kPrepareResponse3));
+  EXPECT_PACKET_OUT(kPrepareResponse1);
+  fake_chan()->Receive(kPrepare1);
+  EXPECT_PACKET_OUT(kPrepareResponse2);
+  fake_chan()->Receive(kPrepare2);
+  EXPECT_PACKET_OUT(kPrepareResponse3);
+  fake_chan()->Receive(kPrepare3);
 
   // The writes should not be committed yet.
   EXPECT_EQ("xxxxxx", buffer.AsString());
@@ -2195,7 +2314,8 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
   // clang-format on
 
   // |buffer| should contain the partial writes.
-  EXPECT_TRUE(ReceiveAndExpect(kExecute, kExecuteResponse));
+  EXPECT_PACKET_OUT(kExecuteResponse);
+  fake_chan()->Receive(kExecute);
   EXPECT_EQ("herp?!", buffer.AsString());
 }
 
@@ -2249,8 +2369,10 @@ TEST_F(ServerTest, ExecuteWriteError) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kPrepare1, kPrepareResponse1));
-  EXPECT_TRUE(ReceiveAndExpect(kPrepare2, kPrepareResponse2));
+  EXPECT_PACKET_OUT(kPrepareResponse1);
+  fake_chan()->Receive(kPrepare1);
+  EXPECT_PACKET_OUT(kPrepareResponse2);
+  fake_chan()->Receive(kPrepare2);
 
   // The writes should not be committed yet.
   EXPECT_EQ("xxxxxx", buffer.AsString());
@@ -2270,7 +2392,8 @@ TEST_F(ServerTest, ExecuteWriteError) {
 
   // Only the first partial write should have gone through as the second one
   // is expected to fail.
-  EXPECT_TRUE(ReceiveAndExpect(kExecute, kExecuteResponse));
+  EXPECT_PACKET_OUT(kExecuteResponse);
+  fake_chan()->Receive(kExecute);
   EXPECT_EQ("hellxx", buffer.AsString());
 }
 
@@ -2308,10 +2431,15 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
   // clang-format on
 
   // Prepare writes. These should get committed right away.
-  EXPECT_TRUE(ReceiveAndExpect(kPrepareToAbort, kPrepareToAbortResponse));
-  EXPECT_TRUE(ReceiveAndExpect(kPrepareToAbort, kPrepareToAbortResponse));
-  EXPECT_TRUE(ReceiveAndExpect(kPrepareToAbort, kPrepareToAbortResponse));
-  EXPECT_TRUE(ReceiveAndExpect(kPrepareToAbort, kPrepareToAbortResponse));
+  EXPECT_PACKET_OUT(kPrepareToAbortResponse);
+  fake_chan()->Receive(kPrepareToAbort);
+  EXPECT_PACKET_OUT(kPrepareToAbortResponse);
+  fake_chan()->Receive(kPrepareToAbort);
+  EXPECT_PACKET_OUT(kPrepareToAbortResponse);
+  fake_chan()->Receive(kPrepareToAbort);
+  EXPECT_PACKET_OUT(kPrepareToAbortResponse);
+  fake_chan()->Receive(kPrepareToAbort);
+  EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(0, write_count);
 
   // Abort the writes. They should get dropped.
@@ -2324,7 +2452,8 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
     0x19  // opcode: execute write response
   );
   // clang-format on
-  EXPECT_TRUE(ReceiveAndExpect(kAbort, kAbortResponse));
+  EXPECT_PACKET_OUT(kAbortResponse);
+  fake_chan()->Receive(kAbort);
   EXPECT_EQ(0, write_count);
 
   // Prepare and commit a new write request. This one should take effect without
@@ -2351,40 +2480,24 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
   );
   // clang-format on
 
-  EXPECT_TRUE(ReceiveAndExpect(kPrepareToCommit, kPrepareToCommitResponse));
-  EXPECT_TRUE(ReceiveAndExpect(kCommit, kCommitResponse));
+  EXPECT_PACKET_OUT(kPrepareToCommitResponse);
+  fake_chan()->Receive(kPrepareToCommit);
+  EXPECT_PACKET_OUT(kCommitResponse);
+  fake_chan()->Receive(kCommit);
   EXPECT_EQ(1, write_count);
 }
 
 TEST_F(ServerTest, TrySendNotificationNoCccConfig) {
   IdType svc_id = RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const BufferView kTestValue;
-
-  bool sent = false;
-  auto send_cb = [&](auto) { sent = true; };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
-
-  async::PostTask(dispatcher(), [=] {
-    server()->SendUpdate(svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
-  });
-  RunLoopUntilIdle();
-  EXPECT_FALSE(sent);
+  server()->SendUpdate(svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
 }
 
 TEST_F(ServerTest, TrySendNotificationConfiguredForIndicationsOnly) {
   SvcIdAndChrcHandle registered =
       RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType, kCCCIndicationBit);
   const BufferView kTestValue;
-
-  bool sent = false;
-  auto send_cb = [&](auto) { sent = true; };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
-
-  async::PostTask(dispatcher(), [=] {
-    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
-  });
-  RunLoopUntilIdle();
-  EXPECT_FALSE(sent);
+  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
 }
 
 TEST_F(ServerTest, SendNotificationEmpty) {
@@ -2400,11 +2513,8 @@ TEST_F(ServerTest, SendNotificationEmpty) {
   };
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
-  });
-
-  EXPECT_TRUE(Expect(kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
 }
 
 TEST_F(ServerTest, SendNotification) {
@@ -2421,30 +2531,19 @@ TEST_F(ServerTest, SendNotification) {
   };
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue.view(),
-                         /*indicate_cb=*/nullptr);
-  });
-
-  EXPECT_TRUE(Expect(kExpected));
+  EXPECT_PACKET_OUT(kExpected);
+  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue.view(),
+                       /*indicate_cb=*/nullptr);
 }
 
 TEST_F(ServerTest, TrySendIndicationNoCccConfig) {
   IdType svc_id = RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const BufferView kTestValue;
 
-  bool sent = false;
-  auto send_cb = [&](auto) { sent = true; };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
-
   att::Result<> indicate_res = fitx::ok();
   auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendUpdate(svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
-  });
-  RunLoopUntilIdle();
-  EXPECT_FALSE(sent);
+  server()->SendUpdate(svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   EXPECT_EQ(fitx::failed(), indicate_res);
 }
 
@@ -2453,18 +2552,10 @@ TEST_F(ServerTest, TrySendIndicationConfiguredForNotificationsOnly) {
       RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType, kCCCNotificationBit);
   const BufferView kTestValue;
 
-  bool sent = false;
-  auto send_cb = [&](auto) { sent = true; };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
-
   att::Result<> indicate_res = fitx::ok();
   auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
-  });
-  RunLoopUntilIdle();
-  EXPECT_FALSE(sent);
+  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   EXPECT_EQ(fitx::failed(), indicate_res);
 }
 
@@ -2484,11 +2575,10 @@ TEST_F(ServerTest, SendIndicationEmpty) {
   };
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
-  });
+  EXPECT_PACKET_OUT(kExpected);
+  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
-  EXPECT_TRUE(Expect(kExpected));
   const StaticByteBuffer kIndicationConfirmation{att::kConfirmation};
   fake_chan()->Receive(kIndicationConfirmation);
   EXPECT_EQ(fitx::ok(), indicate_res);
@@ -2511,11 +2601,10 @@ TEST_F(ServerTest, SendIndication) {
   };
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue.view(), std::move(indicate_cb));
-  });
+  EXPECT_PACKET_OUT(kExpected);
+  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue.view(), std::move(indicate_cb));
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
-  EXPECT_TRUE(Expect(kExpected));
   const StaticByteBuffer kIndicationConfirmation{att::kConfirmation};
   fake_chan()->Receive(kIndicationConfirmation);
   EXPECT_EQ(fitx::ok(), indicate_res);
@@ -2594,12 +2683,6 @@ class ServerTestSecurity : public ServerTest {
     );
   }
 
-  // Blocks until an ATT Error Response PDU with the given parameters is
-  // received from the fake channel (i.e. received FROM the ATT bearer).
-  bool ExpectAttError(att::OpCode request, att::Handle handle, att::ErrorCode ecode) {
-    return Expect(MakeAttError(request, handle, ecode));
-  }
-
   // Helpers for emulating the receipt of an ATT read/write request PDU and expecting back a
   // security error. Expects a successful response if |expected_status| is fitx::ok().
   bool EmulateReadByTypeRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
@@ -2610,16 +2693,16 @@ class ServerTestSecurity : public ServerTest {
                                                  UpperBits(handle),  // end handle
                                                  0xEF, 0xBE);  // type: 0xBEEF, i.e. kTestType16
     if (expected_status.is_ok()) {
-      return ReceiveAndExpect(kReadByTypeRequestPdu,
-                              StaticByteBuffer(0x09,  // opcode: read by type response
-                                               0x05,  // length: 5 (strlen("foo") + 2)
-                                               LowerBits(handle), UpperBits(handle),  // handle
-                                               'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-                                               ));
+      EXPECT_PACKET_OUT(StaticByteBuffer(0x09,  // opcode: read by type response
+                                         0x05,  // length: 5 (strlen("foo") + 2)
+                                         LowerBits(handle), UpperBits(handle),  // handle
+                                         'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                         ));
     } else {
-      return ReceiveAndExpect(kReadByTypeRequestPdu,
-                              MakeAttError(0x08, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(MakeAttError(0x08, handle, expected_status.error_value()));
     }
+    fake_chan()->Receive(kReadByTypeRequestPdu);
+    return AllExpectedPacketsSent();
   }
 
   bool EmulateReadBlobRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
@@ -2627,28 +2710,28 @@ class ServerTestSecurity : public ServerTest {
                                                LowerBits(handle), UpperBits(handle),  // handle
                                                0x00, 0x00);                           // offset: 0
     if (expected_status.is_ok()) {
-      return ReceiveAndExpect(kReadBlobRequestPdu,
-                              StaticByteBuffer(0x0D,          // opcode: read blob response
-                                               'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-                                               ));
+      EXPECT_PACKET_OUT(StaticByteBuffer(0x0D,          // opcode: read blob response
+                                         'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                         ));
     } else {
-      return ReceiveAndExpect(kReadBlobRequestPdu,
-                              MakeAttError(0x0C, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(MakeAttError(0x0C, handle, expected_status.error_value()));
     }
+    fake_chan()->Receive(kReadBlobRequestPdu);
+    return AllExpectedPacketsSent();
   }
 
   bool EmulateReadRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadRequestPdu(0x0A,  // opcode: read request
                                            LowerBits(handle), UpperBits(handle));  // handle
     if (expected_status.is_ok()) {
-      return ReceiveAndExpect(kReadRequestPdu,
-                              StaticByteBuffer(0x0B,          // opcode: read response
-                                               'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-                                               ));
+      EXPECT_PACKET_OUT(StaticByteBuffer(0x0B,          // opcode: read response
+                                         'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                         ));
     } else {
-      return ReceiveAndExpect(kReadRequestPdu,
-                              MakeAttError(0x0A, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(MakeAttError(0x0A, handle, expected_status.error_value()));
     }
+    fake_chan()->Receive(kReadRequestPdu);
+    return AllExpectedPacketsSent();
   }
 
   bool EmulateWriteRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
@@ -2656,11 +2739,12 @@ class ServerTestSecurity : public ServerTest {
                                             LowerBits(handle), UpperBits(handle),  // handle
                                             't', 'e', 's', 't');                   // value: "test"
     if (expected_status.is_ok()) {
-      return ReceiveAndExpect(kWriteRequestPdu, StaticByteBuffer(0x13));  // write response
+      EXPECT_PACKET_OUT(StaticByteBuffer(0x13));
     } else {
-      return ReceiveAndExpect(kWriteRequestPdu,
-                              MakeAttError(0x12, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(MakeAttError(0x12, handle, expected_status.error_value()));
     }
+    fake_chan()->Receive(kWriteRequestPdu);
+    return AllExpectedPacketsSent();
   }
 
   bool EmulatePrepareWriteRequest(att::Handle handle,
@@ -2672,16 +2756,16 @@ class ServerTestSecurity : public ServerTest {
                          't', 'e', 's', 't'                     // value: "test"
         );
     if (expected_status.is_ok()) {
-      return ReceiveAndExpect(kPrepareWriteRequestPdu,
-                              StaticByteBuffer(0x17,  // prepare write response
-                                               LowerBits(handle), UpperBits(handle),  // handle
-                                               0x00, 0x00,                            // offset: 0
-                                               't', 'e', 's', 't'  // value: "test"
-                                               ));
+      EXPECT_PACKET_OUT(StaticByteBuffer(0x17,  // prepare write response
+                                         LowerBits(handle), UpperBits(handle),  // handle
+                                         0x00, 0x00,                            // offset: 0
+                                         't', 'e', 's', 't'                     // value: "test"
+                                         ));
     } else {
-      return ReceiveAndExpect(kPrepareWriteRequestPdu,
-                              MakeAttError(0x16, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(MakeAttError(0x16, handle, expected_status.error_value()));
     }
+    fake_chan()->Receive(kPrepareWriteRequestPdu);
+    return AllExpectedPacketsSent();
   }
 
   // Emulates the receipt of a Write Command. The expected error code parameter
