@@ -234,14 +234,13 @@ def main() -> int:
             MAX_COL_WIDTH,
             LineCharset,
             diff_label=curr_diff_binary['label']).create_table()
-
-        print(diff_report)
         curr_rst_report = RstOutput(diff_dsm, curr_diff_binary['label'])
         if rst_diff_report == '':
             rst_diff_report = curr_rst_report.create_table()
         else:
             rst_diff_report += f"{curr_rst_report.add_report_row()}\n"
 
+    print(diff_report)
     write_file(gn_arg_dict['target_name'], rst_diff_report,
                gn_arg_dict['out_dir'])
     write_file(f"{gn_arg_dict['target_name']}.txt", diff_report,
