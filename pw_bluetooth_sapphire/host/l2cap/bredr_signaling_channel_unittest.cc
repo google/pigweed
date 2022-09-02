@@ -4,7 +4,7 @@
 
 #include "bredr_signaling_channel.h"
 
-#include "fake_channel_test.h"
+#include "mock_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt::l2cap::internal {
@@ -14,7 +14,7 @@ constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint8_t kTestCmdId = 97;
 constexpr hci_spec::ConnectionRole kDeviceRole = hci_spec::ConnectionRole::kCentral;
 
-class BrEdrSignalingChannelTest : public testing::FakeChannelTest {
+class BrEdrSignalingChannelTest : public testing::MockChannelTest {
  public:
   BrEdrSignalingChannelTest() = default;
   ~BrEdrSignalingChannelTest() override = default;
@@ -31,48 +31,37 @@ class BrEdrSignalingChannelTest : public testing::FakeChannelTest {
     sig_ = std::make_unique<BrEdrSignalingChannel>(fake_chan_->GetWeakPtr(), kDeviceRole);
   }
 
-  void TearDown() override { sig_ = nullptr; }
+  void TearDown() override {
+    RunLoopUntilIdle();
+    sig_ = nullptr;
+  }
 
   BrEdrSignalingChannel* sig() const { return sig_.get(); }
 
  private:
-  std::unique_ptr<testing::FakeChannel> fake_chan_;
+  fxl::WeakPtr<testing::FakeChannel> fake_chan_;
   std::unique_ptr<BrEdrSignalingChannel> sig_;
 };
 
 TEST_F(BrEdrSignalingChannelTest, RespondsToEchoRequest) {
-  StaticByteBuffer cmd(
+  const StaticByteBuffer cmd(
       // Command header (Echo Request, length 1)
       0x08, kTestCmdId, 0x01, 0x00,
 
       // Payload
       0x23);
 
-  bool called = false;
-  auto cb = [&called, &cmd](auto packet) {
-    called = true;
-    EXPECT_EQ((*packet)[0], 0x09);  // ID for Echo Response
-    // Command ID, payload length, and payload should match those of request.
-    EXPECT_TRUE(ContainersEqual(cmd.view(1), packet->view(1)));
-  };
+  const StaticByteBuffer response(
+      // Command header (Echo Response, length 1)
+      0x09, kTestCmdId, 0x01, 0x00,
+      // Payload
+      0x23);
 
-  fake_chan()->SetSendCallback(std::move(cb), dispatcher());
+  EXPECT_PACKET_OUT(response);
   fake_chan()->Receive(cmd);
-
-  RunLoopUntilIdle();
-  EXPECT_TRUE(called);
 }
 
-TEST_F(BrEdrSignalingChannelTest, IgnoreEmptyFrame) {
-  bool send_cb_called = false;
-  auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
-
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
-  fake_chan()->Receive(BufferView());
-
-  RunLoopUntilIdle();
-  EXPECT_FALSE(send_cb_called);
-}
+TEST_F(BrEdrSignalingChannelTest, IgnoreEmptyFrame) { fake_chan()->Receive(BufferView()); }
 
 TEST_F(BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
   constexpr uint8_t kTestId0 = 14;
@@ -106,22 +95,9 @@ TEST_F(BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
       // Reason (Command not understood)
       0x00, 0x00);
 
-  int cb_times_called = 0;
-  auto send_cb = [&rsp0, &rsp1, &cb_times_called](auto packet) {
-    if (cb_times_called == 0) {
-      EXPECT_TRUE(ContainersEqual(rsp0, *packet));
-    } else if (cb_times_called == 1) {
-      EXPECT_TRUE(ContainersEqual(rsp1, *packet));
-    }
-
-    cb_times_called++;
-  };
-
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  EXPECT_PACKET_OUT(rsp0);
+  EXPECT_PACKET_OUT(rsp1);
   fake_chan()->Receive(cmd);
-
-  RunLoopUntilIdle();
-  EXPECT_EQ(2, cb_times_called);
 }
 
 TEST_F(BrEdrSignalingChannelTest, HandleMultipleCommands) {
@@ -166,24 +142,10 @@ TEST_F(BrEdrSignalingChannelTest, HandleMultipleCommands) {
       // Command header (Echo Response)
       0x09, kTestId2, 0x00, 0x00);
 
-  int cb_times_called = 0;
-  auto send_cb = [&echo_rsp0, &reject_rsp1, &echo_rsp2, &cb_times_called](auto packet) {
-    if (cb_times_called == 0) {
-      EXPECT_TRUE(ContainersEqual(echo_rsp0, *packet));
-    } else if (cb_times_called == 1) {
-      EXPECT_TRUE(ContainersEqual(reject_rsp1, *packet));
-    } else if (cb_times_called == 2) {
-      EXPECT_TRUE(ContainersEqual(echo_rsp2, *packet));
-    }
-
-    cb_times_called++;
-  };
-
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  EXPECT_PACKET_OUT(echo_rsp0);
+  EXPECT_PACKET_OUT(reject_rsp1);
+  EXPECT_PACKET_OUT(echo_rsp2);
   fake_chan()->Receive(cmd);
-
-  RunLoopUntilIdle();
-  EXPECT_EQ(3, cb_times_called);
 }
 
 TEST_F(BrEdrSignalingChannelTest, SendAndReceiveEcho) {
@@ -195,14 +157,6 @@ TEST_F(BrEdrSignalingChannelTest, SendAndReceiveEcho) {
       'P', 'W', 'N');
   const BufferView req_data = expected_req.view(4, 3);
 
-  // Check the request sent.
-  bool tx_success = false;
-  fake_chan()->SetSendCallback(
-      [&expected_req, &tx_success](auto cb_packet) {
-        tx_success = ContainersEqual(expected_req, *cb_packet);
-      },
-      dispatcher());
-
   const StaticByteBuffer expected_rsp(
       // Echo response with 4-byte payload.
       0x09, 0x01, 0x04, 0x00,
@@ -211,21 +165,18 @@ TEST_F(BrEdrSignalingChannelTest, SendAndReceiveEcho) {
       'L', '3', '3', 'T');
   const BufferView rsp_data = expected_rsp.view(4, 4);
 
+  EXPECT_PACKET_OUT(expected_req);
   bool rx_success = false;
   EXPECT_TRUE(sig()->TestLink(req_data, [&rx_success, &rsp_data](const auto& data) {
     rx_success = ContainersEqual(rsp_data, data);
   }));
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(tx_success);
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Remote sends back an echo response with a different payload than in local
   // request (this is allowed).
-  if (tx_success) {
-    fake_chan()->Receive(expected_rsp);
-  }
-
-  RunLoopUntilIdle();
+  fake_chan()->Receive(expected_rsp);
   EXPECT_TRUE(rx_success);
 }
 
