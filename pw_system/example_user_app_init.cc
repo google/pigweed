@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#define PW_LOG_MODULE_NAME "user_init"
 
 #include "pw_log/log.h"
 #include "pw_system/rpc_server.h"

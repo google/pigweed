@@ -130,7 +130,7 @@ class TableView:
 
         for name, width in self._ordered_column_widths():
             # These fields will be shown at the end
-            if name in ['msg', 'message']:
+            if name in TableView.LAST_TABLE_COLUMN_NAMES:
                 continue
             fragments.append(
                 (default_style, name.title()[:width].ljust(width)))
@@ -163,7 +163,7 @@ class TableView:
         columns = {}
         for name, width in self._ordered_column_widths():
             # Skip these modifying these fields
-            if name in ['msg', 'message']:
+            if name in TableView.LAST_TABLE_COLUMN_NAMES:
                 continue
 
             # hasattr checks are performed here since a log record may not have

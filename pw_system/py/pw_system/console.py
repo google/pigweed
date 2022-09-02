@@ -132,6 +132,9 @@ def _parse_args():
                         default='pw_console-device-logs.txt',
                         help='Device only log file.')
 
+    parser.add_argument('--json-logfile',
+                        help='Device only JSON formatted log file.')
+
     group.add_argument('-s',
                        '--socket-addr',
                        type=str,
@@ -167,7 +170,7 @@ def _expand_globs(globs: Iterable[str]) -> Iterator[Path]:
             yield Path(file)
 
 
-def _start_python_terminal(
+def _start_python_terminal(  # pylint: disable=too-many-arguments
     device: Device,
     device_log_store: LogStore,
     root_log_store: LogStore,
@@ -175,6 +178,7 @@ def _start_python_terminal(
     log_file: str,
     host_logfile: str,
     device_logfile: str,
+    json_logfile: str,
     serial_debug: bool = False,
     config_file_path: Optional[Path] = None,
     use_ipython: bool = False,
@@ -209,6 +213,9 @@ def _start_python_terminal(
     if device_logfile:
         welcome_message += ('\nDevice logs are being saved to:\n  ' +
                             device_logfile)
+    if json_logfile:
+        welcome_message += ('\nJSON device logs are being saved to:\n  ' +
+                            json_logfile)
 
     if use_ipython:
         print(welcome_message)
@@ -278,6 +285,7 @@ def console(device: str,
             logfile: str,
             host_logfile: str,
             device_logfile: str,
+            json_logfile: str,
             output: Any,
             serial_debug: bool = False,
             config_file: Optional[Path] = None,
@@ -341,6 +349,13 @@ def console(device: str,
     _DEVICE_LOG.setLevel(log_level)
     _ROOT_LOG.setLevel(log_level)
     _SERIAL_DEBUG.setLevel(logging.DEBUG)
+
+    if json_logfile:
+        json_filehandler = logging.FileHandler(json_logfile, encoding='utf-8')
+        json_filehandler.setLevel(log_level)
+        json_filehandler.setFormatter(
+            pw_console.python_logging.JsonLogFormatter())
+        _DEVICE_LOG.addHandler(json_filehandler)
 
     detokenizer = None
     if token_databases:
@@ -419,6 +434,7 @@ def console(device: str,
         log_file=logfile,
         host_logfile=host_logfile,
         device_logfile=device_logfile,
+        json_logfile=json_logfile,
         serial_debug=serial_debug,
         config_file_path=config_file,
         use_ipython=use_ipython,

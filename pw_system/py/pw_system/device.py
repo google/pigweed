@@ -110,7 +110,7 @@ class Device:
     def _handle_log_drop_count(self, drop_count: int, reason: str):
         log_text = 'log' if drop_count == 1 else 'logs'
         message = f'Dropped {drop_count} {log_text} due to {reason}'
-        self._emit_device_log(logging.WARNING, '', '', '', message)
+        self._emit_device_log(logging.WARNING, '', '', message)
 
     def _check_for_dropped_logs(self, log_entries_proto: log_pb2.LogEntries):
         # Count log messages received that don't use the dropped field.
@@ -145,22 +145,20 @@ class Device:
                 ) if log_proto.message else 'enqueue failure on device'
                 self._handle_log_drop_count(log_proto.dropped, drop_reason)
                 continue
-            self._emit_device_log(level, '', decoded_timestamp, log.module,
+            self._emit_device_log(level, decoded_timestamp, log.module,
                                   log.message, **dict(log.fields))
 
-    def _emit_device_log(self, level: int, source_name: str, timestamp: str,
-                         module_name: str, message: str, **metadata_fields):
+    def _emit_device_log(self, level: int, timestamp: str, module_name: str,
+                         message: str, **metadata_fields):
         # Fields used for console table view
         fields = metadata_fields
-        fields['source_name'] = source_name
         fields['timestamp'] = timestamp
         fields['msg'] = message
         fields['module'] = module_name
 
         # Format used for file or stdout logging.
         self.logger.log(level,
-                        '[%s] %s %s%s',
-                        source_name,
+                        '%s %s%s',
                         timestamp,
                         f'{module_name} '.lstrip(),
                         message,

@@ -14,10 +14,11 @@
 """Python logging helper fuctions."""
 
 import copy
+from datetime import datetime
+import json
 import logging
 import tempfile
-from datetime import datetime
-from typing import Iterable, Iterator, Optional
+from typing import Any, Dict, Iterable, Iterator, Optional
 
 
 def all_loggers() -> Iterator[logging.Logger]:
@@ -108,3 +109,74 @@ def setup_python_logging(
 
     # Always set DEBUG level for serial debug.
     logging.getLogger('pw_console.serial_debug_logger').setLevel(logging.DEBUG)
+
+
+def log_record_to_json(record: logging.LogRecord) -> str:
+    log_dict: Dict[str, Any] = {}
+    log_dict['message'] = record.getMessage()
+    log_dict['levelno'] = record.levelno
+    log_dict['levelname'] = record.levelname
+    log_dict['args'] = record.args
+
+    if hasattr(record, 'extra_metadata_fields') and (
+            record.extra_metadata_fields):  # type: ignore
+        fields = record.extra_metadata_fields  # type: ignore
+        log_dict['fields'] = {}
+        for key, value in fields.items():
+            if key == 'msg':
+                log_dict['message'] = value
+                continue
+
+            log_dict['fields'][key] = str(value)
+
+    return json.dumps(log_dict)
+
+
+class JsonLogFormatter(logging.Formatter):
+    """Json Python logging Formatter
+
+    Use this formatter to log pw_console messages to a file in json
+    format. Column values normally shown in table view will be populated in the
+    'fields' key.
+
+    Example log entry:
+
+    .. code-block:: json
+
+       {
+         "message": "System init",
+         "levelno": 20,
+         "levelname": "INF",
+         "args": [
+           "0:00",
+           "pw_system ",
+           "System init"
+         ],
+         "fields": {
+           "module": "pw_system",
+           "file": "pw_system/init.cc",
+           "timestamp": "0:00"
+         }
+       }
+
+    Example usage:
+
+    .. code-block:: python
+
+       import logging
+       import pw_console.python_logging
+
+       _DEVICE_LOG = logging.getLogger('rpc_device')
+
+       json_filehandler = logging.FileHandler('logs.json', encoding='utf-8')
+       json_filehandler.setLevel(logging.DEBUG)
+       json_filehandler.setFormatter(
+           pw_console.python_logging.JsonLogFormatter())
+       _DEVICE_LOG.addHandler(json_filehandler)
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def format(self, record: logging.LogRecord) -> str:
+        return log_record_to_json(record)
