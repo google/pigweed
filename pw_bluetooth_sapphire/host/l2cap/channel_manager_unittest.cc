@@ -23,6 +23,8 @@
 namespace bt::l2cap {
 namespace {
 
+namespace hci_android = bt::hci_spec::vendor::android;
+
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 using namespace inspect::testing;
 using LEFixedChannels = ChannelManager::LEFixedChannels;
@@ -237,6 +239,50 @@ auto OutboundDisconnectionRequest(CommandId id) {
       // (ID, length: 4, dst cid, src cid)
       0x06, id, 0x04, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId),
       UpperBits(kLocalId));
+}
+
+Channel::A2dpOffloadConfiguration BuildA2dpOffloadConfiguration(
+    hci_android::A2dpCodecType codec = hci_android::A2dpCodecType::kSbc) {
+  hci_android::A2dpScmsTEnable scms_t_enable;
+  scms_t_enable.enabled = hci_spec::GenericEnableParam::kDisable;
+  scms_t_enable.header = 0x00;
+
+  hci_android::A2dpOffloadCodecInformation codec_information;
+  switch (codec) {
+    case hci_android::A2dpCodecType::kSbc:
+      codec_information.sbc.blocklen_subbands_alloc_method = 0x00;
+      codec_information.sbc.min_bitpool_value = 0x00;
+      codec_information.sbc.max_bitpool_value = 0xFF;
+      memset(codec_information.sbc.reserved, 0, sizeof(codec_information.sbc.reserved));
+      break;
+    case hci_android::A2dpCodecType::kAac:
+      codec_information.aac.object_type = 0x00;
+      codec_information.aac.variable_bit_rate = hci_android::A2dpAacEnableVariableBitRate::kDisable;
+      memset(codec_information.aac.reserved, 0, sizeof(codec_information.aac.reserved));
+      break;
+    case hci_android::A2dpCodecType::kLdac:
+      codec_information.ldac.vendor_id = 0x0000012D;
+      codec_information.ldac.codec_id = 0x00AA;
+      codec_information.ldac.bitrate_index = hci_android::A2dpBitrateIndex::kLow;
+      codec_information.ldac.ldac_channel_mode = hci_android::A2dpLdacChannelMode::kStereo;
+      memset(codec_information.ldac.reserved, 0, sizeof(codec_information.ldac.reserved));
+      break;
+    default:
+      memset(codec_information.aptx.reserved, 0, sizeof(codec_information.aptx.reserved));
+      break;
+  }
+
+  Channel::A2dpOffloadConfiguration config;
+  config.codec = codec;
+  config.max_latency = 0xFFFF;
+  config.scms_t_enable = scms_t_enable;
+  config.sampling_frequency = hci_android::A2dpSamplingFrequency::k44100Hz;
+  config.bits_per_sample = hci_android::A2dpBitsPerSample::k16BitsPerSample;
+  config.channel_mode = hci_android::A2dpChannelMode::kMono;
+  config.encoded_audio_bit_rate = 0x0;
+  config.codec_information = codec_information;
+
+  return config;
 }
 
 // Serves as a test double for data transport to the Bluetooth controller beneath ChannelManager.
@@ -3007,6 +3053,159 @@ TEST_F(ChannelManagerTest, SettingFlushTimeoutFails) {
           'h', 'i'),                                   // payload
       kLowPriority);
   EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
+}
+
+class StartA2dpOffloadTest : public ChannelManagerTest,
+                             public ::testing::WithParamInterface<hci_android::A2dpCodecType> {};
+
+TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
+  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  RunLoopUntilIdle();
+
+  const hci_android::A2dpCodecType codec = GetParam();
+  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration(codec);
+
+  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+
+  const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                                                                   hci_spec::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
+                                           channel->max_tx_sdu_size()),
+      &command_complete);
+
+  std::optional<hci::Result<>> result_;
+  channel->StartA2dpOffload(&config, [&result_](auto result) { result_ = result; });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
+  ASSERT_TRUE(result_.has_value());
+  EXPECT_TRUE(result_->is_ok());
+}
+
+const std::vector<hci_android::A2dpCodecType> kA2dpCodecTypeParams = {
+    hci_android::A2dpCodecType::kSbc, hci_android::A2dpCodecType::kAac,
+    hci_android::A2dpCodecType::kLdac, hci_android::A2dpCodecType::kAptx};
+INSTANTIATE_TEST_SUITE_P(ChannelManagerTest, StartA2dpOffloadTest,
+                         ::testing::ValuesIn(kA2dpCodecTypeParams));
+
+TEST_F(ChannelManagerTest, StartA2dpOffloadInvalidConfiguration) {
+  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  RunLoopUntilIdle();
+
+  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
+  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+
+  const auto command_complete = bt::testing::CommandCompletePacket(
+      hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::kInvalidHCICommandParameters);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
+                                           channel->max_tx_sdu_size()),
+      &command_complete);
+
+  std::optional<hci::Result<>> result_;
+  channel->StartA2dpOffload(&config, [&result_](auto result) {
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), result);
+    result_ = result;
+  });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
+  ASSERT_TRUE(result_.has_value());
+  EXPECT_TRUE(result_->is_error());
+}
+
+TEST_F(ChannelManagerTest, StartA2dpOffloadAlreadyStarted) {
+  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  RunLoopUntilIdle();
+
+  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
+  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+
+  const auto command_complete = bt::testing::CommandCompletePacket(
+      hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::kConnectionAlreadyExists);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
+                                           channel->max_tx_sdu_size()),
+      &command_complete);
+
+  std::optional<hci::Result<>> result_;
+  channel->StartA2dpOffload(&config, [&result_](auto result) {
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::kConnectionAlreadyExists), result);
+    result_ = result;
+  });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
+  EXPECT_TRUE(result_.has_value());
+  EXPECT_TRUE(result_->is_error());
+}
+
+TEST_F(ChannelManagerTest, StartA2dpOffloadStatusStarted) {
+  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  RunLoopUntilIdle();
+
+  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
+  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+
+  const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                                                                   hci_spec::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
+                                           channel->max_tx_sdu_size()),
+      &command_complete);
+
+  std::optional<hci::Result<>> result_;
+  channel->StartA2dpOffload(&config, [&result_](auto result) {
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::kSuccess), result);
+    result_ = result;
+  });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
+  EXPECT_TRUE(result_->is_ok());
+
+  Channel::A2dpOffloadConfiguration new_config = BuildA2dpOffloadConfiguration();
+
+  channel->StartA2dpOffload(&new_config, [&result_](auto result) {
+    EXPECT_EQ(ToResult(HostError::kInProgress), result);
+    result_ = result;
+  });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result_.has_value());
+  EXPECT_TRUE(result_->is_error());
+}
+
+TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
+  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+  RunLoopUntilIdle();
+
+  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
+  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+
+  const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                                                                   hci_spec::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
+                                           channel->max_tx_sdu_size()),
+      &command_complete);
+
+  std::optional<hci::Result<>> result_;
+  channel->StartA2dpOffload(&config, [&result_](auto result) {
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::kSuccess), result);
+    result_ = result;
+  });
+
+  ASSERT_TRUE(channel);
+  const auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
+  channel->Deactivate();
+  ASSERT_FALSE(channel);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
+  EXPECT_FALSE(result_.has_value());
 }
 
 }  // namespace

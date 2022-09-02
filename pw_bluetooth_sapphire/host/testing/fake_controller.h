@@ -93,7 +93,7 @@ class FakeController : public ControllerTestDoubleBase {
     hci_android::LEGetVendorCapabilitiesReturnParams android_extension_settings;
   };
 
-  // Congfiguration of an L2CAP channel for A2DP offloading.
+  // Configuration of an L2CAP channel for A2DP offloading.
   struct OffloadedA2dpChannel final {
     hci_android::A2dpCodecType codec_type = hci_android::A2dpCodecType::kSbc;
     uint16_t max_latency = 0;

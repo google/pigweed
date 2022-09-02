@@ -12,6 +12,8 @@
 
 namespace bt::testing {
 
+namespace hci_android = bt::hci_spec::vendor::android;
+
 namespace {
 
 hci_spec::SynchronousConnectionParameters ConnectionParametersToLe(
@@ -45,6 +47,12 @@ hci_spec::SynchronousConnectionParameters ConnectionParametersToLe(
 StaticByteBuffer( hci_spec::kCommandStatusEventCode, 0x04,         \
                                 (statuscode), 0xF0,                 \
                                 LowerBits((opcode)), UpperBits((opcode)))
+
+#define UINT32_TO_LE(bits)                      \
+  static_cast<uint32_t>(bits),                  \
+  static_cast<uint32_t>(bits) >> CHAR_BIT,      \
+  static_cast<uint32_t>(bits) >> 2 * CHAR_BIT,  \
+  static_cast<uint32_t>(bits) >> 3 * CHAR_BIT
 // clang-format on
 
 DynamicByteBuffer EmptyCommandPacket(hci_spec::OpCode opcode) {
@@ -457,6 +465,73 @@ DynamicByteBuffer ScoDataPacket(hci_spec::ConnectionHandle conn,
   MutableBufferView payload_view = out.mutable_view(header.size());
   payload.Copy(&payload_view);
   return out;
+}
+
+DynamicByteBuffer StartA2dpOffloadRequest(const l2cap::Channel::A2dpOffloadConfiguration& config,
+                                          hci_spec::ConnectionHandle connection_handle,
+                                          l2cap::ChannelId l2cap_channel_id,
+                                          uint16_t l2cap_mtu_size) {
+  uint8_t codec_information_bytes[sizeof(hci_android::A2dpOffloadCodecInformation)];
+  memset(codec_information_bytes, 0, sizeof(codec_information_bytes));
+
+  switch (config.codec) {
+    case hci_android::A2dpCodecType::kSbc:
+      codec_information_bytes[0] = config.codec_information.sbc.blocklen_subbands_alloc_method;
+      codec_information_bytes[1] = config.codec_information.sbc.min_bitpool_value;
+      codec_information_bytes[2] = config.codec_information.sbc.max_bitpool_value;
+      codec_information_bytes[3] = config.codec_information.sbc.sampling_freq_channel_mode;
+      break;
+    case hci_android::A2dpCodecType::kAac:
+      codec_information_bytes[0] = config.codec_information.aac.object_type;
+      codec_information_bytes[1] =
+          static_cast<uint8_t>(config.codec_information.aac.variable_bit_rate);
+      break;
+    case hci_android::A2dpCodecType::kLdac:
+      codec_information_bytes[0] = static_cast<uint32_t>(config.codec_information.ldac.vendor_id),
+      codec_information_bytes[1] =
+          static_cast<uint32_t>(config.codec_information.ldac.vendor_id) >> CHAR_BIT,
+      codec_information_bytes[2] =
+          static_cast<uint32_t>(config.codec_information.ldac.vendor_id) >> 2 * CHAR_BIT,
+      codec_information_bytes[3] =
+          static_cast<uint32_t>(config.codec_information.ldac.vendor_id) >> 3 * CHAR_BIT,
+      codec_information_bytes[4] = LowerBits(config.codec_information.ldac.codec_id);
+      codec_information_bytes[5] = UpperBits(config.codec_information.ldac.codec_id);
+      codec_information_bytes[6] =
+          static_cast<uint8_t>(config.codec_information.ldac.bitrate_index);
+      codec_information_bytes[7] =
+          static_cast<uint8_t>(config.codec_information.ldac.ldac_channel_mode);
+      break;
+    default:
+      break;
+  }
+
+  return DynamicByteBuffer(StaticByteBuffer(
+      // clang-format off
+      LowerBits(hci_android::kA2dpOffloadCommand), UpperBits(hci_android::kA2dpOffloadCommand),
+      0x39,  // parameter_total_size (57 bytes)
+      hci_android::kStartA2dpOffloadCommandSubopcode,
+      UINT32_TO_LE(config.codec),
+      LowerBits(config.max_latency), UpperBits(config.max_latency),
+      config.scms_t_enable.enabled, config.scms_t_enable.header,
+      UINT32_TO_LE(config.sampling_frequency),
+      config.bits_per_sample,
+      config.channel_mode,
+      UINT32_TO_LE(config.encoded_audio_bit_rate),
+      LowerBits(connection_handle), UpperBits(connection_handle),
+      LowerBits(l2cap_channel_id), UpperBits(l2cap_channel_id),
+      LowerBits(l2cap_mtu_size), UpperBits(l2cap_mtu_size),
+      codec_information_bytes[0], codec_information_bytes[1], codec_information_bytes[2],
+      codec_information_bytes[3], codec_information_bytes[4], codec_information_bytes[5],
+      codec_information_bytes[6], codec_information_bytes[7], codec_information_bytes[8],
+      codec_information_bytes[9], codec_information_bytes[10], codec_information_bytes[11],
+      codec_information_bytes[12], codec_information_bytes[13], codec_information_bytes[14],
+      codec_information_bytes[15], codec_information_bytes[16], codec_information_bytes[17],
+      codec_information_bytes[18], codec_information_bytes[19], codec_information_bytes[20],
+      codec_information_bytes[21], codec_information_bytes[22], codec_information_bytes[23],
+      codec_information_bytes[24], codec_information_bytes[25], codec_information_bytes[26],
+      codec_information_bytes[27], codec_information_bytes[28], codec_information_bytes[29],
+      codec_information_bytes[30], codec_information_bytes[31]));
+  // clang-format on
 }
 
 }  // namespace bt::testing

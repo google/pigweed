@@ -65,7 +65,7 @@ enum class A2dpChannelMode : uint8_t {
   // clang-format on
 };
 
-// Bitmask values for Channel Mode
+// Bitmask values for Bitrate Index
 enum class A2dpBitrateIndex : uint8_t {
   // clang-format off
   kHigh             = 0x00,

@@ -8,6 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
@@ -105,6 +106,11 @@ DynamicByteBuffer ScoDataPacket(hci_spec::ConnectionHandle conn,
                                 hci_spec::SynchronousDataPacketStatusFlag flag,
                                 const BufferView& payload,
                                 std::optional<uint8_t> payload_length_override = std::nullopt);
+
+DynamicByteBuffer StartA2dpOffloadRequest(const l2cap::Channel::A2dpOffloadConfiguration& config,
+                                          hci_spec::ConnectionHandle connection_handle,
+                                          l2cap::ChannelId l2cap_channel_id,
+                                          uint16_t l2cap_mtu_size);
 
 }  // namespace bt::testing
 

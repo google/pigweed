@@ -2214,7 +2214,7 @@ void FakeController::OnAndroidStartA2dpOffload(
 
   // return in case A2DP offload already started
   if (offloaded_a2dp_channel_state_) {
-    ret.status = hci_spec::StatusCode::kRepeatedAttempts;
+    ret.status = hci_spec::StatusCode::kConnectionAlreadyExists;
     RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
     return;
   }

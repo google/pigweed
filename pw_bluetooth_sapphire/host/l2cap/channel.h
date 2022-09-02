@@ -63,6 +63,29 @@ namespace bt::l2cap {
 // Activate().
 class Channel {
  public:
+  // Defines the state of A2DP offloading to the controller.
+  enum class A2dpOffloadStatus : uint8_t {
+    // The A2DP offload command was received and successfully started.
+    kStarted,
+    // The A2DP offload command was sent and the L2CAP channel is waiting for a response.
+    kPending,
+    // Either an error or an A2DP offload command stopped offloading to the controller.
+    kStopped,
+  };
+
+  // Configuration received from the profile server that needs to be converted to a command packet
+  // in order to send the StartA2dpOffload command
+  struct A2dpOffloadConfiguration {
+    hci_spec::vendor::android::A2dpCodecType codec;
+    uint16_t max_latency;
+    hci_spec::vendor::android::A2dpScmsTEnable scms_t_enable;
+    hci_spec::vendor::android::A2dpSamplingFrequency sampling_frequency;
+    hci_spec::vendor::android::A2dpBitsPerSample bits_per_sample;
+    hci_spec::vendor::android::A2dpChannelMode channel_mode;
+    uint32_t encoded_audio_bit_rate;
+    hci_spec::vendor::android::A2dpOffloadCodecInformation codec_information;
+  };
+
   // TODO(fxbug.dev/1022): define a preferred MTU somewhere
   Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
           hci_spec::ConnectionHandle link_handle, ChannelInfo info);
@@ -194,6 +217,12 @@ class Channel {
   // Attach this channel as a child node of |parent| with the given |name|.
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
 
+  // Request the start of A2DP source offloading. |callback| will be called with the result of the
+  // request. If offloading is already started or is pending, the request will fail and an error
+  // will be reported synchronously.
+  virtual void StartA2dpOffload(const A2dpOffloadConfiguration* config,
+                                hci::ResultCallback<> callback) = 0;
+
   // The ACL priority that was both requested and accepted by the controller.
   hci::AclPriority requested_acl_priority() const { return requested_acl_priority_; }
 
@@ -207,6 +236,7 @@ class Channel {
   ChannelInfo info_;
   // The ACL priority that was requested by a client and accepted by the controller.
   hci::AclPriority requested_acl_priority_;
+  A2dpOffloadStatus a2dp_offload_status_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
 };
@@ -274,6 +304,8 @@ class ChannelImpl : public Channel {
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
+  void StartA2dpOffload(const A2dpOffloadConfiguration* config,
+                        hci::ResultCallback<> callback) override;
   fxl::WeakPtr<Channel> GetWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:

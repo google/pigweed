@@ -24,6 +24,8 @@
 
 namespace bt::l2cap {
 
+namespace hci_android = bt::hci_spec::vendor::android;
+
 Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
                  hci_spec::ConnectionHandle link_handle, ChannelInfo info)
     : id_(id),
@@ -31,7 +33,8 @@ Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
       link_type_(link_type),
       link_handle_(link_handle),
       info_(info),
-      requested_acl_priority_(hci::AclPriority::kNormal) {
+      requested_acl_priority_(hci::AclPriority::kNormal),
+      a2dp_offload_status_(A2dpOffloadStatus::kStopped) {
   BT_DEBUG_ASSERT(id_);
   BT_DEBUG_ASSERT(link_type_ == bt::LinkType::kLE || link_type_ == bt::LinkType::kACL);
 }
@@ -245,6 +248,65 @@ void ChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
                                                  bt_lib_cpp_string::StringPrintf("%#.4x", id()));
   inspect_.remote_id = inspect_.node.CreateString(
       kInspectRemoteIdPropertyName, bt_lib_cpp_string::StringPrintf("%#.4x", remote_id()));
+}
+
+void ChannelImpl::StartA2dpOffload(const A2dpOffloadConfiguration* config,
+                                   hci::ResultCallback<> callback) {
+  if (a2dp_offload_status_ == A2dpOffloadStatus::kStarted ||
+      a2dp_offload_status_ == A2dpOffloadStatus::kPending) {
+    bt_log(WARN, "hci", "A2DP offload already started (status: %hhu)", a2dp_offload_status_);
+    callback(ToResult(HostError::kInProgress));
+    return;
+  }
+
+  std::unique_ptr<hci::CommandPacket> packet = hci::CommandPacket::New(
+      hci_android::kA2dpOffloadCommand, sizeof(hci_android::StartA2dpOffloadCommandParams));
+  packet->mutable_view()->mutable_payload_data().SetToZeros();
+  auto payload = packet->mutable_payload<hci_android::StartA2dpOffloadCommandParams>();
+  payload->opcode = hci_android::kStartA2dpOffloadCommandSubopcode;
+  payload->codec_type = static_cast<hci_android::A2dpCodecType>(htole32(config->codec));
+  payload->max_latency = htole16(config->max_latency);
+  payload->scms_t_enable = config->scms_t_enable;
+  payload->sampling_frequency =
+      static_cast<hci_android::A2dpSamplingFrequency>(htole32(config->sampling_frequency));
+  payload->bits_per_sample = config->bits_per_sample;
+  payload->channel_mode = config->channel_mode;
+  payload->encoded_audio_bitrate = htole32(config->encoded_audio_bit_rate);
+  payload->connection_handle = htole16(link_handle());
+  payload->l2cap_channel_id = htole16(remote_id());
+  payload->l2cap_mtu_size = htole16(max_tx_sdu_size());
+
+  if (config->codec == hci_android::A2dpCodecType::kLdac) {
+    payload->codec_information.ldac.vendor_id = htole32(config->codec_information.ldac.vendor_id);
+    payload->codec_information.ldac.codec_id = htole16(config->codec_information.ldac.codec_id);
+    payload->codec_information.ldac.bitrate_index = config->codec_information.ldac.bitrate_index;
+    payload->codec_information.ldac.ldac_channel_mode =
+        config->codec_information.ldac.ldac_channel_mode;
+  } else {
+    // A2dpOffloadCodecInformation does not require little endianness conversion for any other
+    // codec type due to their fields being one byte only.
+    payload->codec_information = config->codec_information;
+  }
+
+  a2dp_offload_status_ = A2dpOffloadStatus::kPending;
+  cmd_channel_->SendCommand(
+      std::move(packet),
+      [cb = std::move(callback), handle = link_handle_, channel = weak_ptr_factory_.GetWeakPtr()](
+          auto /*transaction_id*/, const hci::EventPacket& event) mutable {
+        if (!channel) {
+          return;
+        }
+
+        if (event.ToResult().is_error()) {
+          bt_log(WARN, "hci", "StartA2dpOffload command failed (result: %s, handle: %#.4x)",
+                 bt_str(event.ToResult()), handle);
+          channel->a2dp_offload_status_ = A2dpOffloadStatus::kStopped;
+        } else {
+          bt_log(INFO, "hci", "A2DP offload started (handle: %#.4x", handle);
+          channel->a2dp_offload_status_ = A2dpOffloadStatus::kStarted;
+        }
+        cb(event.ToResult());
+      });
 }
 
 void ChannelImpl::OnClosed() {
