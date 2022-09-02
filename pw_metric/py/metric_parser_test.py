@@ -39,10 +39,12 @@ class TestParseMetrics(TestCase):
         self.rpcs = mock.Mock()
         self.rpcs.pw = mock.Mock()
         self.rpcs.pw.metric = mock.Mock()
-        self.rpcs.pw.metric.MetricService = mock.Mock()
-        self.rpcs.pw.metric.MetricService.Get = mock.Mock()
-        self.rpcs.pw.metric.MetricService.Get.return_value = mock.Mock()
-        self.rpcs.pw.metric.MetricService.Get.return_value.status = Status.OK
+        self.rpcs.pw.metric.proto = mock.Mock()
+        self.rpcs.pw.metric.proto.MetricService = mock.Mock()
+        self.rpcs.pw.metric.proto.MetricService.Get = mock.Mock()
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value = mock.Mock()
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.status = (
+            Status.OK)
         # Creating a group and metric name for better identification.
         self.log = 0xa7c43965
         self.total_created = 0x22198280
@@ -67,7 +69,7 @@ class TestParseMetrics(TestCase):
 
     def test_bad_stream_status(self) -> None:
         """Test stream response has a status other than OK."""
-        self.rpcs.pw.metric.MetricService.Get.return_value.status = (
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.status = (
             Status.ABORTED)
         self.assertEqual({},
                          parse_metrics(self.rpcs, self.detokenize,
@@ -77,7 +79,7 @@ class TestParseMetrics(TestCase):
     def test_parse_metrics(self) -> None:
         """Test metrics being parsed and recorded."""
         # Loading metric into RPC.
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=self.metric)
         ]
         self.assertEqual(
@@ -96,7 +98,7 @@ class TestParseMetrics(TestCase):
                 token_path=[self.log, self.min_queue_remaining],
                 string_path='N/A',
                 as_float=1.0))
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=self.metric)
         ]
         self.assertEqual(
@@ -116,7 +118,7 @@ class TestParseMetrics(TestCase):
             metric_service_pb2.Metric(token_path=[0x007, self.total_dropped],
                                       string_path='N/A',
                                       as_float=1.0))
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=self.metric)
         ]
         self.assertEqual(
@@ -140,7 +142,7 @@ class TestParseMetrics(TestCase):
                                       string_path='N/A',
                                       as_float=1.0)
         ]
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=self.metric),
             metric_service_pb2.MetricResponse(metrics=metric)
         ]
@@ -167,7 +169,7 @@ class TestParseMetrics(TestCase):
                                       string_path='N/A',
                                       as_float=1.0),
         ]
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=longest_metric),
         ]
         self.assertEqual(
@@ -192,7 +194,7 @@ class TestParseMetrics(TestCase):
                                       string_path='N/A',
                                       as_float=2.0),
         ]
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=longest_metric),
             metric_service_pb2.MetricResponse(metrics=metric),
         ]
@@ -222,7 +224,7 @@ class TestParseMetrics(TestCase):
                                       as_float=1.0),
         ]
         # Creates a conflict at log/total_created, should throw an error.
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=longest_metric),
             metric_service_pb2.MetricResponse(metrics=self.metric),
         ]
@@ -238,14 +240,14 @@ class TestParseMetrics(TestCase):
                 as_float=1.0),
         ]
         # Creates a duplicate metric for log/total_created.
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=longest_metric),
             metric_service_pb2.MetricResponse(metrics=self.metric),
         ]
         parse_metrics(self.rpcs, self.detokenize, self.rpc_timeout_s)
         self.assertRaises(ValueError, msg='Expected Value Error.')
         # Duplicate metrics being loaded.
-        self.rpcs.pw.metric.MetricService.Get.return_value.responses = [
+        self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=self.metric),
             metric_service_pb2.MetricResponse(metrics=self.metric),
         ]

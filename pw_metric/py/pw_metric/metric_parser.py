@@ -49,7 +49,7 @@ def parse_metrics(rpcs: Any, detokenizer: Optional[detokenize.Detokenizer],
     if not detokenizer:
         _LOG.error('No metrics token database set.')
         return metrics
-    stream_response = rpcs.pw.metric.MetricService.Get(
+    stream_response = rpcs.pw.metric.proto.MetricService.Get(
         pw_rpc_timeout_s=timeout_s)
     if not stream_response.status.ok():
         _LOG.error('Unexpected status %s', stream_response.status)
