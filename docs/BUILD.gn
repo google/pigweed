@@ -31,6 +31,7 @@ pw_doc_group("core_docs") {
     # TODO(b/235348007): This should be in the pw_doc_gen target instead of
     # here.
     "_static/css/pigweed.css",
+    "_static/pw_logo.ico",
   ]
   sources = [
     "code_of_conduct.rst",

@@ -73,6 +73,8 @@ html_use_smartypants = True
 # If false, no module index is generated.
 html_domain_indices = True
 
+html_favicon = 'docs/_static/pw_logo.ico'
+
 # If false, no index is generated.
 html_use_index = True
 
