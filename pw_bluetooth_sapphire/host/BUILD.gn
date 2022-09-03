@@ -6,6 +6,7 @@ import("//build/bind/bind.gni")
 import("//build/components.gni")
 import("//build/drivers.gni")
 import("//build/fuzzing/fuzzer.gni")
+import("//build/fuzzing/fuzzer_package.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 driver_bind_rules("bt_host_bind") {
