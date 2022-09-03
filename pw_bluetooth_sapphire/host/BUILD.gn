@@ -99,7 +99,7 @@ fuchsia_driver_package("bt-host") {
 # for instructions on building the fuzzers package.
 fuzzer_package("fuzzers") {
   package_name = "bt-host-fuzzers"
-  fuzzers = [
+  cpp_fuzzers = [
     "common:advertising_data_fuzzer",
     "fidl:host_server_watch_peers_fuzzer",
     "gap:peer_cache_fuzzer",
