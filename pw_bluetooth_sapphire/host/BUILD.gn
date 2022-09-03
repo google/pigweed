@@ -97,7 +97,7 @@ fuchsia_driver_package("bt-host") {
 
 # See https://fuchsia.dev/fuchsia-src/development/testing/fuzzing/build-a-fuzzer?hl=en#fx-set
 # for instructions on building the fuzzers package.
-fuzzers_package("fuzzers") {
+fuzzer_package("fuzzers") {
   package_name = "bt-host-fuzzers"
   fuzzers = [
     "common:advertising_data_fuzzer",
