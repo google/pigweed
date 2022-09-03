@@ -559,6 +559,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.csv$',
     r'\.elf$',
     r'\.gif$',
+    r'\.ico$',
     r'\.jpg$',
     r'\.json$',
     r'\.png$',
