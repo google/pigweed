@@ -473,8 +473,10 @@ optimization of stack usage by providing an overview of thread information,
 including thread name, stack bounds, and peak stack usage.
 
 ``ThreadSnapshotService`` currently supports peak stack usage capture for
-all running threads (``ThreadSnapshotService::GetPeakStackUsage()``). Thread
-information capture relies on the thread iteration facade which will
+all running threads (``ThreadSnapshotService::GetPeakStackUsage()``) as well as
+for a specific thread, filtering by name
+(``ThreadSnapshotService::GetPeakStackUsage(name=b"/* thread name */")``).
+Thread information capture relies on the thread iteration facade which will
 **momentarily halt your RTOS**, collect information about running threads, and
 return this information through the service.
 

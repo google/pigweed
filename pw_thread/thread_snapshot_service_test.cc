@@ -27,29 +27,17 @@
 namespace pw::thread::freertos {
 namespace {
 
-span<const std::byte> DecodeThreadName(ConstByteSpan serialized_path) {
-  protobuf::Decoder decoder(serialized_path);
-  span<const std::byte> thread_name;
-  while (decoder.Next().ok()) {
-    switch (decoder.FieldNumber()) {
-      case static_cast<uint32_t>(Thread::Fields::NAME): {
-        EXPECT_EQ(OkStatus(), decoder.ReadBytes(&thread_name));
-      }
-    }
-  }
-  return thread_name;
-}
-
 // Iterates through each proto encoded thread in the buffer.
 bool EncodedThreadExists(ConstByteSpan serialized_thread_buffer,
-                         span<const std::byte> thread_name) {
+                         ConstByteSpan thread_name) {
   protobuf::Decoder decoder(serialized_thread_buffer);
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
       case static_cast<uint32_t>(SnapshotThreadInfo::Fields::THREADS): {
         ConstByteSpan thread_buffer;
         EXPECT_EQ(OkStatus(), decoder.ReadBytes(&thread_buffer));
-        span<const std::byte> encoded_name = DecodeThreadName(thread_buffer);
+        ConstByteSpan encoded_name;
+        EXPECT_EQ(OkStatus(), DecodeThreadName(thread_buffer, encoded_name));
         if (encoded_name.size() == thread_name.size()) {
           if (std::equal(thread_name.begin(),
                          thread_name.end(),
@@ -63,7 +51,7 @@ bool EncodedThreadExists(ConstByteSpan serialized_thread_buffer,
   return false;
 }
 
-ThreadInfo CreateThreadInfoObject(std::optional<span<const std::byte>> name,
+ThreadInfo CreateThreadInfoObject(std::optional<ConstByteSpan> name,
                                   std::optional<uintptr_t> low_addr,
                                   std::optional<uintptr_t> high_addr,
                                   std::optional<uintptr_t> peak_addr) {
@@ -92,7 +80,7 @@ TEST(ThreadSnapshotService, DecodeSingleThreadInfoObject) {
 
   SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  span<const std::byte> name = bytes::String("MyThread\0");
+  ConstByteSpan name = bytes::String("MyThread\0");
   ThreadInfo thread_info = CreateThreadInfoObject(
       std::make_optional(name), /* thread name */
       std::make_optional(
@@ -113,7 +101,7 @@ TEST(ThreadSnapshotService, DecodeMultipleThreadInfoObjects) {
 
   SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  span<const std::byte> name = bytes::String("MyThread1\0");
+  ConstByteSpan name = bytes::String("MyThread1\0");
   ThreadInfo thread_info_1 =
       CreateThreadInfoObject(std::make_optional(name),
                              std::make_optional(static_cast<uintptr_t>(123u)),
@@ -153,7 +141,7 @@ TEST(ThreadSnapshotService, DefaultBufferSize) {
 
   SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  span<const std::byte> name = bytes::String("MyThread\0");
+  ConstByteSpan name = bytes::String("MyThread\0");
   std::optional<uintptr_t> example_addr =
       std::make_optional(std::numeric_limits<uintptr_t>::max());
 
@@ -185,7 +173,7 @@ TEST(ThreadSnapshotService, FailedPrecondition) {
   ErrorLog(status);
 
   // Same error log as above.
-  span<const std::byte> name = bytes::String("MyThread\0");
+  ConstByteSpan name = bytes::String("MyThread\0");
   ThreadInfo thread_info_no_high_addr = CreateThreadInfoObject(
       std::make_optional(name),
       std::make_optional(static_cast<uintptr_t>(1111111111u)),
@@ -200,7 +188,7 @@ TEST(ThreadSnapshotService, Unimplemented) {
 
   SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
-  span<const std::byte> name = bytes::String("MyThread\0");
+  ConstByteSpan name = bytes::String("MyThread\0");
   ThreadInfo thread_info_no_peak_addr =
       CreateThreadInfoObject(std::make_optional(name),
                              std::make_optional(static_cast<uintptr_t>(0u)),

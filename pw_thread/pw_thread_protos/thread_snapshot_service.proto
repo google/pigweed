@@ -23,8 +23,6 @@ option java_outer_classname = "Thread";
 message ThreadRequest {
   // Thread information matched to the given name is returned.  The intent
   // is to support specific snapshots of a single thread.
-  //
-  // Note: This is currently unsupported.
   optional bytes name = 1;
 }
 

@@ -15,6 +15,7 @@
 #include "pw_thread/thread_snapshot_service.h"
 
 #include "pw_log/log.h"
+#include "pw_protobuf/decoder.h"
 #include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
@@ -69,25 +70,60 @@ void ErrorLog(Status status) {
   } else if (status == Status::ResourceExhausted()) {
     PW_LOG_ERROR("Buffer capacity limit exceeded.");
   } else if (status != OkStatus()) {
-    PW_LOG_ERROR("RPC service was unable to capture thread information");
+    PW_LOG_ERROR(
+        "Failure with error code %d, RPC service was unable to capture thread "
+        "information",
+        status.code());
   }
 }
 
+Status DecodeThreadName(ConstByteSpan serialized_path,
+                        ConstByteSpan& thread_name) {
+  protobuf::Decoder decoder(serialized_path);
+  Status status;
+  while (decoder.Next().ok()) {
+    switch (decoder.FieldNumber()) {
+      case static_cast<uint32_t>(Thread::Fields::NAME): {
+        status.Update(decoder.ReadBytes(&thread_name));
+      }
+    }
+  }
+  return status;
+}
+
 void ThreadSnapshotService::GetPeakStackUsage(
-    ConstByteSpan /* request */, rpc::RawServerWriter& response_writer) {
+    ConstByteSpan request, rpc::RawServerWriter& response_writer) {
   // For now, ignore the request and just stream all the thread information
   // back.
   struct IterationInfo {
     SnapshotThreadInfo::MemoryEncoder encoder;
     Status status;
+    ConstByteSpan name;
   };
 
+  ConstByteSpan name_request;
+  if (!request.empty()) {
+    DecodeThreadName(request, name_request);
+  }
+
   IterationInfo iteration_info{
-      SnapshotThreadInfo::MemoryEncoder(encode_buffer_), OkStatus()};
+      SnapshotThreadInfo::MemoryEncoder(encode_buffer_),
+      OkStatus(),
+      name_request};
 
   auto cb = [&iteration_info](const ThreadInfo& thread_info) {
-    iteration_info.status.Update(
-        ProtoEncodeThreadInfo(iteration_info.encoder, thread_info));
+    if (!iteration_info.name.empty() && thread_info.thread_name().has_value()) {
+      if (std::equal(thread_info.thread_name().value().begin(),
+                     thread_info.thread_name().value().end(),
+                     iteration_info.name.begin())) {
+        iteration_info.status.Update(
+            ProtoEncodeThreadInfo(iteration_info.encoder, thread_info));
+        return false;
+      }
+    } else {
+      iteration_info.status.Update(
+          ProtoEncodeThreadInfo(iteration_info.encoder, thread_info));
+    }
     return iteration_info.status.ok();
   };
   ForEachThread(cb);
@@ -99,6 +135,12 @@ void ThreadSnapshotService::GetPeakStackUsage(
   Status status;
   if (iteration_info.encoder.size() && iteration_info.status.ok()) {
     status = response_writer.Write(iteration_info.encoder);
+    if (status != OkStatus()) {
+      PW_LOG_ERROR(
+          "Failed to send response with status code %d, packet may be too "
+          "large to send",
+          status.code());
+    }
   }
   if (response_writer.Finish(status) != OkStatus()) {
     PW_LOG_ERROR(

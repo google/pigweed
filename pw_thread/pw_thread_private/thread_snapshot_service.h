@@ -14,10 +14,14 @@
 #pragma once
 
 #include "pw_log/log.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::thread {
 
 void ErrorLog(Status status);
+
+Status DecodeThreadName(ConstByteSpan serialized_path,
+                        ConstByteSpan& thread_name);
 
 }  // namespace pw::thread

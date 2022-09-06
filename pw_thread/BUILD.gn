@@ -138,6 +138,7 @@ pw_source_set("thread_snapshot_service") {
     ":config",
     ":thread_iteration",
     "$dir_pw_log",
+    "$dir_pw_protobuf",
     "$dir_pw_rpc/raw:server_api",
     "$dir_pw_span",
     "$dir_pw_status:pw_status",
@@ -169,6 +170,7 @@ pw_test("thread_snapshot_service_test") {
   deps = [
     ":protos.pwpb",
     ":thread_iteration",
+    "$dir_pw_protobuf",
     "$dir_pw_span",
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:thread_info",
