@@ -86,6 +86,10 @@ class Plugin:
         try:
             module = importlib.import_module(module_name)
         except Exception as err:
+            _LOG.debug('Failed to import module "%s" for "%s" plugin',
+                       module_name,
+                       name,
+                       exc_info=True)
             raise Error(f'Failed to import module "{module_name}"') from err
 
         try:
