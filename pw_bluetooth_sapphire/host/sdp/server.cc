@@ -264,19 +264,21 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
   std::set<ServiceHandle> assigned_handles;
 
   for (auto& record : records) {
-    // Assign a new handle for the service record.
     ServiceHandle next = GetNextHandle();
     if (!next) {
       return 0;
     }
+    // Assign a new handle for the service record.
     record.SetHandle(next);
 
-    // Place record in a browse group.
-    SetBrowseGroupList(&record);
+    if (!record.IsProtocolOnly()) {
+      // Place record in a browse group.
+      SetBrowseGroupList(&record);
 
-    // Validate the |ServiceRecord|.
-    if (!record.IsRegisterable()) {
-      return 0;
+      // Validate the |ServiceRecord|.
+      if (!record.IsRegisterable()) {
+        return 0;
+      }
     }
 
     // Attempt to queue the |record| for registration.
@@ -329,10 +331,16 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
 
   // Store the complete records.
   for (auto& record : records) {
-    auto placement = records_.emplace(record.handle(), std::move(record));
-    BT_DEBUG_ASSERT(placement.second);
-    bt_log(TRACE, "sdp", "registered service %#.8x, classes: %s", placement.first->second.handle(),
-           placement.first->second.GetAttribute(kServiceClassIdList).ToString().c_str());
+    auto [it, success] = records_.emplace(record.handle(), std::move(record));
+    BT_DEBUG_ASSERT(success);
+    const ServiceRecord& placed_record = it->second;
+    if (placed_record.IsProtocolOnly()) {
+      bt_log(TRACE, "sdp", "registered protocol-only service %#.8x, Protocol: %s", placed_record.handle(),
+          bt_str(placed_record.GetAttribute(kProtocolDescriptorList)));
+    } else {
+      bt_log(TRACE, "sdp", "registered service %#.8x, classes: %s", placed_record.handle(),
+           bt_str(placed_record.GetAttribute(kServiceClassIdList)));
+    }
   }
 
   // Store the RegistrationHandle that represents the set of services that were registered.
@@ -400,7 +408,7 @@ ServiceSearchResponse Server::SearchServices(const std::unordered_set<UUID>& pat
   ServiceSearchResponse resp;
   std::vector<ServiceHandle> matched;
   for (const auto& it : records_) {
-    if (it.second.FindUUID(pattern)) {
+    if (it.second.FindUUID(pattern) && !it.second.IsProtocolOnly()) {
       matched.push_back(it.first);
     }
   }
@@ -429,6 +437,9 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
   ServiceSearchAttributeResponse resp;
   for (const auto& it : records_) {
     const auto& rec = it.second;
+    if (rec.IsProtocolOnly()) {
+      continue;
+    }
     if (rec.FindUUID(search_pattern)) {
       for (const auto& range : attribute_ranges) {
         auto attrs = rec.GetAttributesInRange(range.start, range.end);
@@ -445,13 +456,13 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
 
 void Server::OnChannelClosed(l2cap::Channel::UniqueId channel_id) { channels_.erase(channel_id); }
 
-cpp17::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
+std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
   BT_DEBUG_ASSERT(sdu);
   TRACE_DURATION("bluetooth", "sdp::Server::HandleRequest");
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {
     bt_log(DEBUG, "sdp", "PDU too short; dropping");
-    return cpp17::nullopt;
+    return std::nullopt;
   }
   PacketView<Header> packet(sdu.get());
   TransactionId tid = betoh16(packet.header().tid);
@@ -488,7 +499,8 @@ cpp17::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t
         return error_response_builder(ErrorCode::kInvalidRequestSyntax);
       }
       auto handle = request.service_record_handle();
-      if (records_.find(handle) == records_.end()) {
+      auto record_it = records_.find(handle);
+      if (record_it == records_.end() || record_it->second.IsProtocolOnly()) {
         bt_log(TRACE, "sdp", "ServiceAttributeRequest can't find handle %#.8x", handle);
         return error_response_builder(ErrorCode::kInvalidRecordHandle);
       }

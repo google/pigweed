@@ -19,8 +19,8 @@ namespace bt::sdp {
 // attribute has a value.
 class ServiceRecord {
  public:
-  // Create a new service record with the handle given.
-  // Also generates a UUID and sets the Service ID attribute.
+  // Create a new service record.
+  // Generates a UUID and sets the Service ID attribute.
   ServiceRecord();
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceRecord);
@@ -39,6 +39,10 @@ class ServiceRecord {
 
   // Removes the attribute identified by |id|. Idempotent.
   void RemoveAttribute(AttributeId id);
+
+  // Protocol-only services only reserve a protocol endpoint, and don't advertise a service in the
+  // SDP database.
+  bool IsProtocolOnly() const;
 
   // Returns true if the ServiceRecord contains the required fields
   // needed for SDP registration.
