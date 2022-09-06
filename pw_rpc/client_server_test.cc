@@ -56,7 +56,7 @@ TEST(ClientServer, ProcessPacket_CallsServer) {
   Result result = packet.Encode(buffer);
   EXPECT_EQ(result.status(), OkStatus());
 
-  EXPECT_EQ(client_server.ProcessPacket(result.value(), output), OkStatus());
+  EXPECT_EQ(client_server.ProcessPacket(result.value()), OkStatus());
 }
 
 TEST(ClientServer, ProcessPacket_CallsClient) {
@@ -73,12 +73,12 @@ TEST(ClientServer, ProcessPacket_CallsClient) {
 
   // No calls are registered on the client, so nothing should happen. The
   // ProcessPacket call still returns OK since the client handled it.
-  EXPECT_EQ(client_server.ProcessPacket(result.value(), output), OkStatus());
+  EXPECT_EQ(client_server.ProcessPacket(result.value()), OkStatus());
 }
 
 TEST(ClientServer, ProcessPacket_BadData) {
   ClientServer client_server(channels);
-  EXPECT_EQ(client_server.ProcessPacket({}, output), Status::DataLoss());
+  EXPECT_EQ(client_server.ProcessPacket({}), Status::DataLoss());
 }
 
 }  // namespace

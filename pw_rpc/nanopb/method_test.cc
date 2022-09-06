@@ -355,8 +355,7 @@ TEST(NanopbMethod, ServerReader_HandlesRequests) {
   std::array<byte, 128> encoded_request = {};
   auto encoded = context.client_stream(request).Encode(encoded_request);
   ASSERT_EQ(OkStatus(), encoded.status());
-  ASSERT_EQ(OkStatus(),
-            context.server().ProcessPacket(*encoded, context.output()));
+  ASSERT_EQ(OkStatus(), context.server().ProcessPacket(*encoded));
 
   EXPECT_EQ(request_struct.integer, 1 << 30);
   EXPECT_EQ(request_struct.status_code, 9u);
@@ -397,8 +396,7 @@ TEST(NanopbMethod, ServerReaderWriter_HandlesRequests) {
   std::array<byte, 128> encoded_request = {};
   auto encoded = context.client_stream(request).Encode(encoded_request);
   ASSERT_EQ(OkStatus(), encoded.status());
-  ASSERT_EQ(OkStatus(),
-            context.server().ProcessPacket(*encoded, context.output()));
+  ASSERT_EQ(OkStatus(), context.server().ProcessPacket(*encoded));
 
   EXPECT_EQ(request_struct.integer, 1 << 29);
   EXPECT_EQ(request_struct.status_code, 8u);

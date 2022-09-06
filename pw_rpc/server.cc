@@ -33,8 +33,7 @@ using internal::PacketType;
 
 }  // namespace
 
-Status Server::ProcessPacket(ConstByteSpan packet_data,
-                             ChannelOutput* interface) {
+Status Server::ProcessPacket(ConstByteSpan packet_data) {
   PW_TRY_ASSIGN(Packet packet,
                 Endpoint::ProcessPacket(packet_data, Packet::kServer));
 
@@ -51,15 +50,6 @@ Status Server::ProcessPacket(ConstByteSpan packet_data,
 
   internal::Channel* channel = GetInternalChannel(packet.channel_id());
   if (channel == nullptr) {
-    // If an interface was provided, respond with a SERVER_ERROR to indicate
-    // that the channel is not available on this server. Don't send responses to
-    // error messages, though, to avoid potential infinite cycles.
-    if (interface != nullptr && packet.type() != PacketType::CLIENT_ERROR) {
-      internal::Channel(packet.channel_id(), interface)
-          .Send(Packet::ServerError(packet, Status::Unavailable()))
-          .IgnoreError();
-    }
-
     internal::rpc_lock().unlock();
     PW_LOG_WARN("RPC server received packet for unknown channel %u",
                 static_cast<unsigned>(packet.channel_id()));

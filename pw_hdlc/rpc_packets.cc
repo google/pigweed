@@ -38,11 +38,4 @@ Status ReadAndProcessPackets(rpc::Server& server,
   }
 }
 
-Status ReadAndProcessPackets(rpc::Server& server,
-                             rpc::ChannelOutput&,
-                             span<std::byte> decode_buffer,
-                             unsigned rpc_address) {
-  return ReadAndProcessPackets(server, decode_buffer, rpc_address);
-}
-
 }  // namespace pw::hdlc

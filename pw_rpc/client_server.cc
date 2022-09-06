@@ -16,9 +16,8 @@
 
 namespace pw::rpc {
 
-Status ClientServer::ProcessPacket(ConstByteSpan packet,
-                                   ChannelOutput* interface) {
-  Status status = server_.ProcessPacket(packet, interface);
+Status ClientServer::ProcessPacket(ConstByteSpan packet) {
+  Status status = server_.ProcessPacket(packet);
   if (status.IsInvalidArgument()) {
     // INVALID_ARGUMENT indicates the packet is intended for a client.
     status = client_.ProcessPacket(packet);

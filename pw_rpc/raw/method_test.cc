@@ -242,8 +242,7 @@ TEST(RawMethod, ServerReader_HandlesRequests) {
   auto encoded = context.client_stream(as_bytes(span(kRequestValue)))
                      .Encode(encoded_request);
   ASSERT_EQ(OkStatus(), encoded.status());
-  ASSERT_EQ(OkStatus(),
-            context.server().ProcessPacket(*encoded, context.output()));
+  ASSERT_EQ(OkStatus(), context.server().ProcessPacket(*encoded));
 
   EXPECT_STREQ(reinterpret_cast<const char*>(request.data()), kRequestValue);
 }

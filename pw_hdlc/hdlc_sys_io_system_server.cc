@@ -69,7 +69,7 @@ Status Start() {
     if (auto result = decoder.Process(byte); result.ok()) {
       hdlc::Frame& frame = result.value();
       if (frame.address() == hdlc::kDefaultRpcAddress) {
-        server.ProcessPacket(frame.data(), hdlc_channel_output);
+        server.ProcessPacket(frame.data());
       }
     }
   }

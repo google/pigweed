@@ -50,7 +50,7 @@ int main() {
   pw::sys_io::WriteBytes(packet_buffer)
       .IgnoreError();  // TODO(b/242598609): Handle Status properly
 
-  my_product::server.ProcessPacket(packet_buffer, my_product::output)
+  my_product::server.ProcessPacket(packet_buffer)
       .IgnoreError();  // TODO(b/242598609): Handle Status properly
 
   return static_cast<int>(packet_buffer[92]);

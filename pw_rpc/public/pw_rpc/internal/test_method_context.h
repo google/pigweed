@@ -85,8 +85,7 @@ class InvocationContext {
                                         {},
                                         error)
                                      .Encode(packet)
-                                     .value(),
-                                 output_)
+                                     .value())
                   .ok());
   }
 
@@ -122,8 +121,7 @@ class InvocationContext {
                                         0,
                                         payload)
                                      .Encode(packet)
-                                     .value(),
-                                 output_)
+                                     .value())
                   .ok());
   }
 
@@ -135,8 +133,7 @@ class InvocationContext {
                                         UnwrapServiceId(service_.service_id()),
                                         kMethodId)
                                      .Encode(packet)
-                                     .value(),
-                                 output_)
+                                     .value())
                   .ok());
   }
 

@@ -316,8 +316,7 @@ channel output and the example service.
     std::array<std::byte, kMaxTransmissionUnit> input_buffer;
 
     PW_LOG_INFO("Starting pw_rpc server");
-    pw::hdlc::ReadAndProcessPackets(
-        server, hdlc_channel_output, input_buffer);
+    pw::hdlc::ReadAndProcessPackets(server, input_buffer);
   }
 
 Channels

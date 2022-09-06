@@ -127,9 +127,9 @@ class BasicServer : public ::testing::Test {
 };
 
 TEST_F(BasicServer, ProcessPacket_ValidMethodInService1_InvokesMethod) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100),
-                                  output_));
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100)));
 
   const TestMethod& method = service_1_.method(100);
   EXPECT_EQ(1u, method.last_channel_id());
@@ -141,9 +141,9 @@ TEST_F(BasicServer, ProcessPacket_ValidMethodInService1_InvokesMethod) {
 }
 
 TEST_F(BasicServer, ProcessPacket_ValidMethodInService42_InvokesMethod) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 200),
-                                  output_));
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 200)));
 
   const TestMethod& method = service_42_.method(200);
   EXPECT_EQ(1u, method.last_channel_id());
@@ -157,9 +157,9 @@ TEST_F(BasicServer, ProcessPacket_ValidMethodInService42_InvokesMethod) {
 TEST_F(BasicServer, UnregisterService_CannotCallMethod) {
   server_.UnregisterService(service_1_, service_42_);
 
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100),
-                                  output_));
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100)));
 
   const Packet& packet =
       static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
@@ -174,9 +174,9 @@ TEST_F(BasicServer, UnregisterService_AlreadyUnregistered_DoesNothing) {
   server_.UnregisterService(service_42_, service_42_, service_42_);
   server_.UnregisterService(service_42_);
 
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100),
-                                  output_));
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100)));
 
   const TestMethod& method = service_1_.method(100);
   EXPECT_EQ(1u, method.last_channel_id());
@@ -188,48 +188,46 @@ TEST_F(BasicServer, UnregisterService_AlreadyUnregistered_DoesNothing) {
 }
 
 TEST_F(BasicServer, ProcessPacket_IncompletePacket_NothingIsInvoked) {
+  EXPECT_EQ(
+      Status::DataLoss(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 0, 42, 101)));
+  EXPECT_EQ(
+      Status::DataLoss(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 0, 101)));
   EXPECT_EQ(Status::DataLoss(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 0, 42, 101),
-                                  output_));
-  EXPECT_EQ(Status::DataLoss(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 0, 101),
-                                  output_));
-  EXPECT_EQ(Status::DataLoss(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 0),
-                                  output_));
+            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 0)));
 
   EXPECT_EQ(0u, service_42_.method(100).last_channel_id());
   EXPECT_EQ(0u, service_42_.method(200).last_channel_id());
 }
 
 TEST_F(BasicServer, ProcessPacket_NoChannel_SendsNothing) {
-  EXPECT_EQ(Status::DataLoss(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 0, 42, 101),
-                                  output_));
+  EXPECT_EQ(
+      Status::DataLoss(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 0, 42, 101)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
 }
 
 TEST_F(BasicServer, ProcessPacket_NoService_SendsNothing) {
-  EXPECT_EQ(Status::DataLoss(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 0, 101),
-                                  output_));
+  EXPECT_EQ(
+      Status::DataLoss(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 0, 101)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
 }
 
 TEST_F(BasicServer, ProcessPacket_NoMethod_SendsNothing) {
   EXPECT_EQ(Status::DataLoss(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 0),
-                                  output_));
+            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 0)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
 }
 
 TEST_F(BasicServer, ProcessPacket_InvalidMethod_NothingIsInvoked) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 101),
-                                  output_));
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 101)));
 
   EXPECT_EQ(0u, service_42_.method(100).last_channel_id());
   EXPECT_EQ(0u, service_42_.method(200).last_channel_id());
@@ -238,15 +236,15 @@ TEST_F(BasicServer, ProcessPacket_InvalidMethod_NothingIsInvoked) {
 TEST_F(BasicServer, ProcessPacket_ClientErrorWithInvalidMethod_NoResponse) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
-                EncodePacket(PacketType::CLIENT_ERROR, 1, 42, 101), output_));
+                EncodePacket(PacketType::CLIENT_ERROR, 1, 42, 101)));
 
   EXPECT_EQ(0u, output_.total_packets());
 }
 
 TEST_F(BasicServer, ProcessPacket_InvalidMethod_SendsError) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 27),
-                                  output_));
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 27)));
 
   const Packet& packet =
       static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
@@ -258,9 +256,9 @@ TEST_F(BasicServer, ProcessPacket_InvalidMethod_SendsError) {
 }
 
 TEST_F(BasicServer, ProcessPacket_InvalidService_SendsError) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 43, 27),
-                                  output_));
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 43, 27)));
 
   const Packet& packet =
       static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
@@ -277,37 +275,19 @@ TEST_F(BasicServer, ProcessPacket_UnassignedChannel) {
                 EncodePacket(PacketType::REQUEST, /*channel_id=*/99, 42, 27)));
 }
 
-TEST_F(BasicServer,
-       ProcessPacket_UnassignedChannel_SendsUnavailableToProvidedInterface) {
-  EXPECT_EQ(Status::Unavailable(),
-            server_.ProcessPacket(
-                EncodePacket(PacketType::REQUEST, /*channel_id=*/99, 42, 27),
-                output_));
-
-  const Packet& packet =
-      static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
-  EXPECT_EQ(packet.status(), Status::Unavailable());
-  EXPECT_EQ(packet.channel_id(), 99u);
-  EXPECT_EQ(packet.service_id(), 42u);
-  EXPECT_EQ(packet.method_id(), 27u);
-}
-
 TEST_F(BasicServer, ProcessPacket_ClientErrorOnUnassignedChannel_NoResponse) {
   channels_[2] = Channel::Create<3>(&output_);  // Occupy only available channel
 
-  EXPECT_EQ(
-      Status::Unavailable(),
-      server_.ProcessPacket(
-          EncodePacket(PacketType::CLIENT_ERROR, /*channel_id=*/99, 42, 27),
-          output_));
+  EXPECT_EQ(Status::Unavailable(),
+            server_.ProcessPacket(EncodePacket(
+                PacketType::CLIENT_ERROR, /*channel_id=*/99, 42, 27)));
 
   EXPECT_EQ(0u, output_.total_packets());
 }
 
 TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsNothing) {
   // Set up a fake ServerWriter representing an ongoing RPC.
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodeCancel(1, 42, 100), output_));
+  EXPECT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel(1, 42, 100)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
 }
@@ -336,9 +316,9 @@ TEST_F(BasicServer, CloseChannel_PendingCall) {
   internal::TestMethod::FakeServerCall call;
   service_42_.method(100).keep_call_active(call);
 
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 100),
-                                  output_));
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 100)));
 
   Status on_error_status;
   call.set_on_error(
@@ -359,10 +339,10 @@ TEST_F(BasicServer, CloseChannel_PendingCall) {
 
 TEST_F(BasicServer, OpenChannel_UnusedSlot) {
   const span request = EncodePacket(PacketType::REQUEST, 9, 42, 100);
-  EXPECT_EQ(Status::Unavailable(), server_.ProcessPacket(request, output_));
+  EXPECT_EQ(Status::Unavailable(), server_.ProcessPacket(request));
 
   EXPECT_EQ(OkStatus(), server_.OpenChannel(9, output_));
-  EXPECT_EQ(OkStatus(), server_.ProcessPacket(request, output_));
+  EXPECT_EQ(OkStatus(), server_.ProcessPacket(request));
 
   const Packet& packet =
       static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
@@ -411,28 +391,27 @@ TEST_F(BidiMethod, DuplicateCall_CancelsExistingThenCallsAgain) {
   ASSERT_EQ(method.invocations(), 0u);
 
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(PacketForRpc(PacketType::REQUEST), output_));
+            server_.ProcessPacket(PacketForRpc(PacketType::REQUEST)));
 
   EXPECT_EQ(cancelled, 1);
   EXPECT_EQ(method.invocations(), 1u);
 }
 
 TEST_F(BidiMethod, Cancel_ClosesServerWriter) {
-  EXPECT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel(), output_));
+  EXPECT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel()));
 
   EXPECT_FALSE(responder_.active());
 }
 
 TEST_F(BidiMethod, Cancel_SendsNoResponse) {
-  EXPECT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel(), output_));
+  EXPECT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel()));
 
   EXPECT_EQ(output_.total_packets(), 0u);
 }
 
 TEST_F(BidiMethod, ClientError_ClosesServerWriterWithoutResponse) {
-  ASSERT_EQ(
-      OkStatus(),
-      server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_ERROR), output_));
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_ERROR)));
 
   EXPECT_FALSE(responder_.active());
   EXPECT_EQ(output_.total_packets(), 0u);
@@ -444,8 +423,7 @@ TEST_F(BidiMethod, ClientError_CallsOnErrorCallback) {
 
   ASSERT_EQ(OkStatus(),
             server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_ERROR,
-                                               Status::Unauthenticated()),
-                                  output_));
+                                               Status::Unauthenticated())));
 
   EXPECT_EQ(status, Status::Unauthenticated());
 }
@@ -454,28 +432,25 @@ TEST_F(BidiMethod, Cancel_CallsOnErrorCallback) {
   Status status = Status::Unknown();
   responder_.set_on_error([&status](Status error) { status = error; });
 
-  ASSERT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel(), output_));
+  ASSERT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel()));
   EXPECT_EQ(status, Status::Cancelled());
 }
 
 TEST_F(BidiMethod, Cancel_IncorrectChannel_SendsNothing) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodeCancel(2, 42, 100), output_));
+  EXPECT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel(2, 42, 100)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_TRUE(responder_.active());
 }
 
 TEST_F(BidiMethod, Cancel_IncorrectService_SendsNothing) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodeCancel(1, 43, 100), output_));
+  EXPECT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel(1, 43, 100)));
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_TRUE(responder_.active());
 }
 
 TEST_F(BidiMethod, Cancel_IncorrectMethod_SendsNothing) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodeCancel(1, 42, 101), output_));
+  EXPECT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel(1, 42, 101)));
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_TRUE(responder_.active());
 }
@@ -486,7 +461,7 @@ TEST_F(BidiMethod, ClientStream_CallsCallback) {
 
   ASSERT_EQ(OkStatus(),
             server_.ProcessPacket(
-                PacketForRpc(PacketType::CLIENT_STREAM, {}, "hello"), output_));
+                PacketForRpc(PacketType::CLIENT_STREAM, {}, "hello")));
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_STREQ(reinterpret_cast<const char*>(data.data()), "hello");
@@ -512,8 +487,7 @@ TEST_F(BidiMethod, ClientStreamEnd_CallsCallback) {
   responder_.set_on_client_stream_end([&called]() { called = true; });
 
   ASSERT_EQ(OkStatus(),
-            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END),
-                                  output_));
+            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_TRUE(called);
@@ -521,12 +495,12 @@ TEST_F(BidiMethod, ClientStreamEnd_CallsCallback) {
 
 TEST_F(BidiMethod, ClientStreamEnd_ErrorWhenClosed) {
   const auto end = PacketForRpc(PacketType::CLIENT_STREAM_END);
-  ASSERT_EQ(OkStatus(), server_.ProcessPacket(end, output_));
+  ASSERT_EQ(OkStatus(), server_.ProcessPacket(end));
 
   bool called = false;
   responder_.set_on_client_stream_end([&called]() { called = true; });
 
-  ASSERT_EQ(OkStatus(), server_.ProcessPacket(end, output_));
+  ASSERT_EQ(OkStatus(), server_.ProcessPacket(end));
 
   ASSERT_EQ(output_.total_packets(), 1u);
   const Packet& packet =
@@ -554,9 +528,8 @@ class ServerStreamingMethod : public BasicServer {
 };
 
 TEST_F(ServerStreamingMethod, ClientStream_InvalidArgumentError) {
-  ASSERT_EQ(
-      OkStatus(),
-      server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM), output_));
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM)));
 
   ASSERT_EQ(output_.total_packets(), 1u);
   const Packet& packet =
@@ -567,8 +540,7 @@ TEST_F(ServerStreamingMethod, ClientStream_InvalidArgumentError) {
 
 TEST_F(ServerStreamingMethod, ClientStreamEnd_InvalidArgumentError) {
   ASSERT_EQ(OkStatus(),
-            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END),
-                                  output_));
+            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END)));
 
   ASSERT_EQ(output_.total_packets(), 1u);
   const Packet& packet =
