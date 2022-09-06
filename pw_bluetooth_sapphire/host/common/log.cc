@@ -6,6 +6,7 @@
 
 #include <stdarg.h>
 
+#include <memory>
 #include <string_view>
 
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
