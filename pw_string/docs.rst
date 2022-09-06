@@ -83,19 +83,22 @@ capacity for the string.
   pw::InlineString<32> my_string = "Literally";
   my_string.append('?', 3);   // contains "Literally???"
 
-  // Like std::string, always null terminated when accessed through c_str().
-  if (std::fopen(my_string.c_str(), "r") == nullptr) {
-    // Integrates with std::string_view.
-    my_string = std::string_view("not\0literally", 12);
-    TakesAStringView(std::string_view(my_string));
-  }
-
   // Supports copying into known-capacity strings.
   pw::InlineString<64> other = my_string;
 
   // Supports various helpful std::string functions
   if (my_string.starts_with("Lit") || my_string == "not\0literally"sv) {
     other += my_string;
+  }
+
+  // Like std::string, InlineString is always null terminated when accessed
+  // through c_str(). InlineString can be used to null-terminate
+  // length-delimited strings for APIs that expect null-terminated strings.
+  std::string_view file(".gif");
+  if (std::fopen(pw::InlineString<kMaxNameLen>(file).c_str(), "r") == nullptr) {
+    // Integrates with std::string_view.
+    my_string = std::string_view("not\0literally", 12);
+    TakesAStringView(std::string_view(my_string));
   }
 
 All :cpp:type:`pw::InlineString` operations may be performed on strings without
@@ -303,6 +306,32 @@ This example shows how to specialize ``pw::ToString``:
   }
 
   }  // namespace pw
+
+Choosing between InlineString and StringBuilder
+-----------------------------------------------
+:cpp:type:`pw::InlineString` is comparable to ``std::string``, while
+:cpp:class:`pw::StringBuilder` is comparable to ``std::ostringstream``.
+Because :cpp:class:`pw::StringBuilder` provides high-level stream functionality,
+it has more overhead than :cpp:type:`pw::InlineString`.
+
+Use :cpp:type:`pw::InlineString` unless :cpp:class:`pw::StringBuilder`'s
+capabilities are needed. Features unique to :cpp:class:`pw::StringBuilder`
+include:
+
+* Polymorphic C++ stream-style output, potentially supporting custom types.
+* Non-fatal handling of failed append/format operations.
+* Tracking the status of a series of operations.
+* Building a string in an external buffer.
+
+If those features are not required, use :cpp:type:`pw::InlineString`. A common
+example of when to prefer :cpp:type:`pw::InlineString` is wrapping a
+length-delimited string (e.g. ``std::string_view``) for APIs that require null
+termination.
+
+.. code-block:: cpp
+
+  void ProcessName(std::string_view name) {
+    PW_LOG_DEBUG("The name is %s", pw::InlineString<kMaxNameLen>(name).c_str());
 
 Size report: replacing snprintf with pw::StringBuilder
 ------------------------------------------------------
