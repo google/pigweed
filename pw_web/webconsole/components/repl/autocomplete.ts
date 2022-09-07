@@ -14,6 +14,7 @@
 
 import {CompletionContext} from '@codemirror/autocomplete'
 import {syntaxTree} from '@codemirror/language'
+import {Device} from "pigweedjs";
 
 const completePropertyAfter = ['PropertyName', '.', '?.']
 const dontCompleteIn = [
@@ -23,6 +24,7 @@ const dontCompleteIn = [
   'VariableDefinition',
   'PropertyDefinition'
 ]
+var objectPath = require("object-path");
 
 export function completeFromGlobalScope(context: CompletionContext) {
   let nodeBefore = syntaxTree(context.state).resolveInner(context.pos, -1)
@@ -41,6 +43,16 @@ export function completeFromGlobalScope(context: CompletionContext) {
         return completeProperties(from, window[variableName])
       }
     }
+    else if (object?.name == 'MemberExpression') {
+      let from = /\./.test(nodeBefore.name) ? nodeBefore.to : nodeBefore.from
+      let variableName = context.state.sliceDoc(object.from, object.to)
+      let variable = resolveWindowVariable(variableName);
+      // @ts-ignore
+      if (typeof variable == 'object') {
+        // @ts-ignore
+        return completeProperties(from, variable, variableName)
+      }
+    }
   } else if (nodeBefore.name == 'VariableName') {
     return completeProperties(nodeBefore.from, window)
   } else if (context.explicit && !dontCompleteIn.includes(nodeBefore.name)) {
@@ -49,18 +61,47 @@ export function completeFromGlobalScope(context: CompletionContext) {
   return null
 }
 
-function completeProperties(from: number, object: Object) {
+function completeProperties(from: number, object: Object, variableName?: string) {
   let options = []
   for (let name in object) {
-    options.push({
-      label: name,
-      // @ts-ignore
-      type: typeof object[name] == 'function' ? 'function' : 'variable'
-    })
+    // @ts-ignore
+    if (object[name] instanceof Function && variableName) {
+      debugger;
+      options.push({
+        label: name,
+        // @ts-ignore
+        detail: getFunctionDetailText(`${variableName}.${name}`),
+        type: 'function'
+      })
+    }
+    else {
+      options.push({
+        label: name,
+        type: 'variable'
+      })
+    }
+
   }
   return {
     from,
     options,
     validFor: /^[\w$]*$/
   }
+}
+
+function resolveWindowVariable(variableName: string) {
+  if (objectPath.has(window, variableName)) {
+    return objectPath.get(window, variableName);
+  }
+}
+
+function getFunctionDetailText(fullExpression: string): string {
+  if (fullExpression.startsWith("device.rpcs.")) {
+    fullExpression = fullExpression.replace("device.rpcs.", "");
+  }
+  const args = ((window as any).device as Device).getMethodArguments(fullExpression);
+  if (args) {
+    return `(${args.join(", ")})`;
+  }
+  return "";
 }

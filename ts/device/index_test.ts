@@ -32,6 +32,11 @@ describe('WebSerialTransport', () => {
     expect(device.rpcs.pw.rpc.EchoService.Echo).toBeDefined();
   });
 
+  it('has method arguments data', () => {
+    expect(device.getMethodArguments("pw.rpc.EchoService.Echo")).toStrictEqual(["msg"]);
+    expect(device.getMethodArguments("pw.test2.Alpha.Unary")).toStrictEqual(['magic_number']);
+  });
+
   it('unary rpc sends request to serial', async () => {
     const helloResponse = new Uint8Array([
       126, 165, 3, 42, 7, 10, 5, 104,

@@ -28,6 +28,7 @@ export class Device {
   private decoder: Decoder;
   private encoder: Encoder;
   private rpcAddress: number;
+  private nameToMethodArgumentsMap: any;
   client: Client;
   rpcs: any
 
@@ -40,6 +41,7 @@ export class Device {
     this.protoCollection = protoCollection;
     this.decoder = new Decoder();
     this.encoder = new Encoder();
+    this.nameToMethodArgumentsMap = {};
     const channels = [
       new Channel(1, (bytes) => {
         const hdlcBytes = this.encoder.uiFrame(this.rpcAddress, bytes);
@@ -61,6 +63,10 @@ export class Device {
         }
       }
     });
+  }
+
+  getMethodArguments(fullPath) {
+    return this.nameToMethodArgumentsMap[fullPath];
   }
 
   private setupRpcs() {
@@ -100,6 +106,10 @@ export class Device {
       .concat(
         'return this(arguments);'
       );
+
+    // We store field names so REPL can show hints in autocomplete using these.
+    this.nameToMethodArgumentsMap[fullMethodPath] = requestFields
+      .map(field => field.getName());
 
     // We create a new JS function dynamically here that takes
     // proto message fields as arguments and calls the actual RPC method.
