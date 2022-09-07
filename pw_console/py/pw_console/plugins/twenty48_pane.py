@@ -500,6 +500,9 @@ class Twenty48Pane(FloatingWindowPane, PluginMixin):
         )
 
     def get_top_level_menus(self) -> List[MenuItem]:
+        def _toggle_dialog() -> None:
+            self.toggle_dialog()
+
         return [
             MenuItem(
                 '[2048]',
@@ -509,6 +512,7 @@ class Twenty48Pane(FloatingWindowPane, PluginMixin):
                              disabled=True),
                     # Menu separator
                     MenuItem('-', None),
+                    MenuItem('Show/Hide 2048 Game', handler=_toggle_dialog),
                     MenuItem('Restart', handler=self.game.reset_game),
                 ],
             ),

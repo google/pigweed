@@ -67,18 +67,14 @@ from pw_console.python_logging import all_loggers
 from pw_console.quit_dialog import QuitDialog
 from pw_console.repl_pane import ReplPane
 import pw_console.style
+from pw_console.test_mode import start_fake_logger
 import pw_console.widgets.checkbox
 from pw_console.widgets import FloatingWindowPane
 import pw_console.widgets.mouse_handlers
 from pw_console.window_manager import WindowManager
 
 _LOG = logging.getLogger(__package__)
-
-# Fake logger for --test-mode
-FAKE_DEVICE_LOGGER_NAME = 'pw_console_fake_device'
-_FAKE_DEVICE_LOG = logging.getLogger(FAKE_DEVICE_LOGGER_NAME)
-# Don't send fake_device logs to the root Python logger.
-_FAKE_DEVICE_LOG.propagate = False
+_ROOT_LOG = logging.getLogger('')
 
 MAX_FPS = 30
 MIN_REDRAW_INTERVAL = (60.0 / MAX_FPS) / 60.0
@@ -189,6 +185,7 @@ class ConsoleApp:
 
         # Event loop for executing user repl code.
         self.user_code_loop = asyncio.new_event_loop()
+        self.test_mode_log_loop = asyncio.new_event_loop()
 
         self.app_title = app_title if app_title else 'Pigweed Console'
 
@@ -875,6 +872,11 @@ class ConsoleApp:
                         daemon=True)
         thread.start()
 
+    def _test_mode_log_thread_entry(self):
+        """Entry point for the user code thread."""
+        asyncio.set_event_loop(self.test_mode_log_loop)
+        self.test_mode_log_loop.run_forever()
+
     def _update_help_window(self):
         """Generate the help window text based on active pane keybindings."""
         # Add global mouse bindings to the help text.
@@ -963,7 +965,10 @@ class ConsoleApp:
     async def run(self, test_mode=False):
         """Start the prompt_toolkit UI."""
         if test_mode:
-            background_log_task = asyncio.create_task(self.log_forever())
+            background_log_task = start_fake_logger(
+                lines=self.user_guide_window.help_text_area.document.lines,
+                log_thread_entry=self._test_mode_log_thread_entry,
+                log_thread_loop=self.test_mode_log_loop)
 
         # Repl pane has focus by default, if it's hidden switch focus to another
         # visible pane.
@@ -976,44 +981,6 @@ class ConsoleApp:
         finally:
             if test_mode:
                 background_log_task.cancel()
-
-    async def log_forever(self):
-        """Test mode async log generator coroutine that runs forever."""
-        message_count = 0
-        # Sample log line format:
-        # Log message [=         ] # 100
-
-        # Fake module column names.
-        module_names = ['APP', 'RADIO', 'BAT', 'USB', 'CPU']
-        while True:
-            if message_count > 32 or message_count < 2:
-                await asyncio.sleep(1)
-            bar_size = 10
-            position = message_count % bar_size
-            bar_content = " " * (bar_size - position - 1) + "="
-            if position > 0:
-                bar_content = "=".rjust(position) + " " * (bar_size - position)
-            new_log_line = 'Log message [{}] # {}'.format(
-                bar_content, message_count)
-            if message_count % 10 == 0:
-                new_log_line += (
-                    ' Lorem ipsum \033[34m\033[1mdolor sit amet\033[0m'
-                    ', consectetur '
-                    'adipiscing elit.') * 8
-            if message_count % 11 == 0:
-                new_log_line += ' '
-                new_log_line += (
-                    '[PYTHON] START\n'
-                    'In []: import time;\n'
-                    '        def t(s):\n'
-                    '            time.sleep(s)\n'
-                    '            return "t({}) seconds done".format(s)\n\n')
-
-            module_name = module_names[message_count % len(module_names)]
-            _FAKE_DEVICE_LOG.info(new_log_line,
-                                  extra=dict(extra_metadata_fields=dict(
-                                      module=module_name, file='fake_app.cc')))
-            message_count += 1
 
 
 # TODO(tonymd): Remove this alias when not used by downstream projects.

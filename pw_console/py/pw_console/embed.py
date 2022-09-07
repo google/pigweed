@@ -281,7 +281,7 @@ class PwConsoleEmbed:
         for window_title in window_titles:
             self.hidden_by_default_windows.append(window_title)
 
-    def embed(self) -> None:
+    def embed(self, override_window_config: Optional[Dict] = None) -> None:
         """Start the console."""
 
         # Create the ConsoleApp instance.
@@ -328,6 +328,8 @@ class PwConsoleEmbed:
         if self.config_file_path:
             self.console_app.load_clean_config(self.config_file_path)
 
+        if override_window_config:
+            self.console_app.prefs.set_windows(override_window_config)
         self.console_app.apply_window_config()
 
         # Hide the repl pane if it's in the hidden windows list.

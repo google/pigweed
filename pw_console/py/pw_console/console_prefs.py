@@ -219,8 +219,11 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return self._config.get('window_column_split_method', 'vertical')
 
     @property
-    def windows(self) -> dict:
+    def windows(self) -> Dict:
         return self._config.get('windows', {})
+
+    def set_windows(self, new_config: Dict) -> None:
+        self._config['windows'] = new_config
 
     @property
     def window_column_modes(self) -> List:
@@ -300,11 +303,11 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return decorator
 
     @property
-    def snippets(self) -> dict:
+    def snippets(self) -> Dict:
         return self._config.get('snippets', {})
 
     @property
-    def user_snippets(self) -> dict:
+    def user_snippets(self) -> Dict:
         return self._config.get('user_snippets', {})
 
     def snippet_completions(self) -> List[Tuple[str, str]]:

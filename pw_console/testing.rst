@@ -35,7 +35,7 @@ Log Pane: Basic Actions
      - ✅
 
    * - 1
-     - Click the :guilabel:`Fake Device Logs` window title
+     - Click the :guilabel:`Fake Device` window title
      - Log pane is focused
      - |checkbox|
 
@@ -140,7 +140,7 @@ Log Pane: Search and Filtering
      - ✅
 
    * - 1
-     - Click the :guilabel:`Fake Device Logs` window title
+     - Click the :guilabel:`Fake Device` window title
      - Log pane is focused
      - |checkbox|
 
@@ -402,12 +402,12 @@ Window Management
      - ✅
 
    * - 1
-     - | Click the :guilabel:`Fake Device Logs` window title
+     - | Click the :guilabel:`Fake Device` window title
      - Log pane is focused
      - |checkbox|
 
    * - 2
-     - | Click the menu :guilabel:`Windows > #: Fake Device Logs...`
+     - | Click the menu :guilabel:`Windows > #: Fake Device...`
        | Click :guilabel:`Duplicate pane`
      - | 3 panes are visible:
        | Log pane on top
@@ -443,7 +443,7 @@ Window Management
      - |checkbox|
 
    * - 7
-     - | Click the menu :guilabel:`Windows > #: Fake Device Logs...`
+     - | Click the menu :guilabel:`Windows > #: Fake Device...`
        | Click :guilabel:`Remove pane`
      - | 2 panes are visible:
        | Repl pane on the top
@@ -520,7 +520,7 @@ Mouse Window Resizing
      - ✅
 
    * - 1
-     - | Click the :guilabel:`Fake Device Logs` window
+     - | Click the :guilabel:`Fake Device` window
      - Log pane is focused
      - |checkbox|
 
@@ -540,7 +540,7 @@ Mouse Window Resizing
 
    * - 4
      - Click the :guilabel:`View > Move Window Right`
-     - :guilabel:`Fake Device Logs` should appear in a right side split
+     - :guilabel:`Fake Device` should appear in a right side split
      - |checkbox|
 
    * - 5
@@ -582,7 +582,7 @@ Copy Paste
      - ✅
 
    * - 1
-     - | Click the :guilabel:`Fake Device Logs` window title
+     - | Click the :guilabel:`Fake Device` window title
      - Log pane is focused
      - |checkbox|
 
