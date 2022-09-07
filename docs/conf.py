@@ -74,6 +74,7 @@ html_use_smartypants = True
 html_domain_indices = True
 
 html_favicon = 'docs/_static/pw_logo.ico'
+html_logo = 'docs/_static/pw_logo.svg'
 
 # If false, no index is generated.
 html_use_index = True
@@ -128,7 +129,7 @@ html_theme_options = {
         'color-text-selection-foreground': '#ffffff',
     },
     'dark_css_variables': {
-        'color-sidebar-brand-text': '#e815a5',
+        'color-sidebar-brand-text': '#fb71fe',
         'color-sidebar-search-border': '#e815a5',
         'color-sidebar-link-text--top-level': '#ff79c6',
         'color-sidebar-link-text': '#8be9fd',

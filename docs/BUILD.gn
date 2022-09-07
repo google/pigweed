@@ -32,6 +32,7 @@ pw_doc_group("core_docs") {
     # here.
     "_static/css/pigweed.css",
     "_static/pw_logo.ico",
+    "_static/pw_logo.svg",
   ]
   sources = [
     "code_of_conduct.rst",
