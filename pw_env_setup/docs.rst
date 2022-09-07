@@ -419,6 +419,11 @@ never need to set these.
   Python executable to be used, for example "python2" or "python3". Defaults to
   "python".
 
+``PW_CIPD_SERVICE_ACCOUNT_JSON``
+  Value to pass as ``-service-account-json`` to CIPD invocations. This should
+  point either to a service account JSON key file, or be the magical value
+  ``:gce`` to tell the tool to fetch tokens from GCE metadata server.
+
 ``PW_ENVIRONMENT_ROOT``
   Location to which packages are installed. Defaults to ``.environment`` folder
   within the checkout root.

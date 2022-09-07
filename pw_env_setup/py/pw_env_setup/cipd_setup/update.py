@@ -30,8 +30,11 @@ import subprocess
 import sys
 
 
-def check_auth(cipd, package_files, spin):
+def check_auth(cipd, package_files, cipd_service_account, spin):
     """Check have access to CIPD pigweed directory."""
+    cmd = [cipd]
+    if cipd_service_account:
+        cmd.extend(['-service-account-json', cipd_service_account])
 
     paths = []
     for package_file in package_files:
@@ -48,7 +51,7 @@ def check_auth(cipd, package_files, spin):
 
     username = None
     try:
-        output = subprocess.check_output([cipd, 'auth-info'],
+        output = subprocess.check_output(cmd + ['auth-info'],
                                          stderr=subprocess.STDOUT).decode()
         logged_in = True
 
@@ -66,7 +69,7 @@ def check_auth(cipd, package_files, spin):
             # Not catching CalledProcessError because 'cipd ls' seems to never
             # return an error code unless it can't reach the CIPD server.
             output = subprocess.check_output(
-                [cipd, 'ls', path], stderr=subprocess.STDOUT).decode()
+                cmd + ['ls', path], stderr=subprocess.STDOUT).decode()
             if 'No matching packages' not in output:
                 continue
 
@@ -75,7 +78,7 @@ def check_auth(cipd, package_files, spin):
             # 'cipd instances' does use an error code if there's no such package
             # or that package is inaccessible.
             try:
-                subprocess.check_output([cipd, 'instances', path],
+                subprocess.check_output(cmd + ['instances', path],
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
                 inaccessible_paths.append(path)
@@ -95,7 +98,8 @@ def check_auth(cipd, package_files, spin):
             stderr()
             stderr('Attempting CIPD login')
             try:
-                subprocess.check_call([cipd, 'auth-login'])
+                # Note that with -service-account-json, auth-login is a no-op.
+                subprocess.check_call(cmd + ['auth-login'])
             except subprocess.CalledProcessError:
                 stderr('CIPD login failed')
                 return False
@@ -284,6 +288,14 @@ def update(  # pylint: disable=too-many-locals
         '-max-threads', '0',  # 0 means use CPU count.
     ]  # yapf: disable
 
+    cipd_service_account = None
+    if env_vars:
+        cipd_service_account = env_vars.get('PW_CIPD_SERVICE_ACCOUNT_JSON')
+    if not cipd_service_account:
+        cipd_service_account = os.environ.get('PW_CIPD_SERVICE_ACCOUNT_JSON')
+    if cipd_service_account:
+        cmd.extend(['-service-account-json', cipd_service_account])
+
     hasher = hashlib.sha256()
     encoded = '\0'.join(cmd)
     if hasattr(encoded, 'encode'):
@@ -308,7 +320,7 @@ def update(  # pylint: disable=too-many-locals
                 if digest == digest_file:
                     return True
 
-    if not check_auth(cipd, package_files, spin):
+    if not check_auth(cipd, package_files, cipd_service_account, spin):
         return False
 
     # TODO(pwbug/135) Use function from common utility module.
