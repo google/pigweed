@@ -400,6 +400,30 @@ TEST(StreamEncoder, PackedFixedVector) {
             0);
 }
 
+TEST(StreamEncoder, PackedSfixedVector) {
+  std::byte encode_buffer[32];
+  MemoryEncoder encoder(encode_buffer);
+
+  // repeated fixed32 values = 1;
+  const pw::Vector<int32_t, 5> values = {0, 50, 100, 150, 200};
+  ASSERT_EQ(OkStatus(), encoder.WriteRepeatedSfixed32(1, values));
+
+  // repeated fixed64 values64 = 2;
+  const pw::Vector<int64_t, 1> values64 = {-2};
+  ASSERT_EQ(OkStatus(), encoder.WriteRepeatedSfixed64(2, values64));
+
+  constexpr uint8_t encoded_proto[] = {
+      0x0a, 0x14, 0x00, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x64,
+      0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x00, 0xc8, 0x00, 0x00, 0x00,
+      0x12, 0x08, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+  ASSERT_EQ(encoder.status(), OkStatus());
+  ConstByteSpan result(encoder);
+  EXPECT_EQ(result.size(), sizeof(encoded_proto));
+  EXPECT_EQ(std::memcmp(result.data(), encoded_proto, sizeof(encoded_proto)),
+            0);
+}
+
 TEST(StreamEncoder, PackedZigzag) {
   std::byte encode_buffer[32];
   MemoryEncoder encoder(encode_buffer);

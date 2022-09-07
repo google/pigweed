@@ -468,8 +468,8 @@ class StreamEncoder {
   // Writes a repeated fixed64 field using packed encoding.
   //
   // Precondition: Encoder has no active child encoder.
-  Status WriteRepeatedFixed64(uint32_t field_number,
-                              const pw::Vector<int64_t>& values) {
+  Status WriteRepeatedSfixed64(uint32_t field_number,
+                               const pw::Vector<int64_t>& values) {
     return WritePackedFixed(field_number,
                             as_bytes(span(values.data(), values.size())),
                             sizeof(int64_t));
