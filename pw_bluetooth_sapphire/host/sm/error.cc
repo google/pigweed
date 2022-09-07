@@ -4,10 +4,12 @@
 
 #include "error.h"
 
+#include "pw_string/format.h"
+
 namespace bt {
 namespace {
 
-std::string ErrorToString(sm::ErrorCode ecode) {
+constexpr const char* ErrorToString(sm::ErrorCode ecode) {
   switch (ecode) {
     case sm::ErrorCode::kPasskeyEntryFailed:
       return "passkey entry failed";
@@ -43,12 +45,19 @@ std::string ErrorToString(sm::ErrorCode ecode) {
   return "(unknown)";
 }
 
+constexpr size_t kMaxErrorStringSize =
+    std::string_view(ErrorToString(sm::ErrorCode::kCrossTransportKeyDerivationNotAllowed)).size();
+
 }  // namespace
 
 // static
 std::string ProtocolErrorTraits<sm::ErrorCode>::ToString(sm::ErrorCode ecode) {
-  return bt_lib_cpp_string::StringPrintf("%s (SMP %#.2x)", ErrorToString(ecode).c_str(),
-                                         static_cast<unsigned int>(ecode));
+  const size_t out_size = kMaxErrorStringSize + sizeof(" (SMP 0x0e)");
+  char out[out_size] = "";
+  pw::StatusWithSize status = pw::string::Format(
+      {out, sizeof(out)}, "%s (SMP %#.2x)", ErrorToString(ecode), static_cast<unsigned int>(ecode));
+  BT_DEBUG_ASSERT(status.ok());
+  return out;
 }
 
 }  // namespace bt
