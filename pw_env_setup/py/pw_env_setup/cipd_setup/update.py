@@ -33,8 +33,9 @@ import sys
 def check_auth(cipd, package_files, cipd_service_account, spin):
     """Check have access to CIPD pigweed directory."""
     cmd = [cipd]
+    extra_args = []
     if cipd_service_account:
-        cmd.extend(['-service-account-json', cipd_service_account])
+        extra_args.extend(['-service-account-json', cipd_service_account])
 
     paths = []
     for package_file in package_files:
@@ -51,7 +52,7 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
 
     username = None
     try:
-        output = subprocess.check_output(cmd + ['auth-info'],
+        output = subprocess.check_output(cmd + ['auth-info'] + extra_args,
                                          stderr=subprocess.STDOUT).decode()
         logged_in = True
 
@@ -69,7 +70,8 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
             # Not catching CalledProcessError because 'cipd ls' seems to never
             # return an error code unless it can't reach the CIPD server.
             output = subprocess.check_output(
-                cmd + ['ls', path], stderr=subprocess.STDOUT).decode()
+                cmd + ['ls', path] + extra_args,
+                stderr=subprocess.STDOUT).decode()
             if 'No matching packages' not in output:
                 continue
 
@@ -78,7 +80,7 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
             # 'cipd instances' does use an error code if there's no such package
             # or that package is inaccessible.
             try:
-                subprocess.check_output(cmd + ['instances', path],
+                subprocess.check_output(cmd + ['instances', path] + extra_args,
                                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
                 inaccessible_paths.append(path)
@@ -99,7 +101,7 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
             stderr('Attempting CIPD login')
             try:
                 # Note that with -service-account-json, auth-login is a no-op.
-                subprocess.check_call(cmd + ['auth-login'])
+                subprocess.check_call(cmd + ['auth-login'] + extra_args)
             except subprocess.CalledProcessError:
                 stderr('CIPD login failed')
                 return False
