@@ -416,8 +416,8 @@ Window Management
      - |checkbox|
 
    * - 3
-     - | Click the :guilabel:`Python Input` window title
-     - Python Input pane is focused
+     - | Click the :guilabel:`Python Repl` window title
+     - Python Repl pane is focused
      - |checkbox|
 
    * - 4
@@ -451,7 +451,7 @@ Window Management
      - |checkbox|
 
    * - 8
-     - | Click the :guilabel:`Python Input`
+     - | Click the :guilabel:`Python Repl`
        | window title
      - Repl pane is focused
      - |checkbox|
@@ -606,7 +606,7 @@ Copy Paste
      - | Copy this text in your browser or
        | text editor to the system clipboard:
        | ``print('copy paste test!')``
-     - | Click the :guilabel:`Python Input` window title
+     - | Click the :guilabel:`Python Repl` window title
        | Press :kbd:`Ctrl-v`
        | ``print('copy paste test!')`` appears
        | after the prompt.
@@ -648,8 +648,8 @@ Copy Paste
      - |checkbox|
 
    * - 10
-     - Click the :guilabel:`Python Input` window title
-     - Python Input is focused
+     - Click the :guilabel:`Python Repl` window title
+     - Python Repl is focused
      - |checkbox|
 
    * - 11
@@ -674,8 +674,8 @@ Incremental Stdout
      - ✅
 
    * - 1
-     - | Click the :guilabel:`Python Input` window title
-     - Python Input pane is focused
+     - | Click the :guilabel:`Python Repl` window title
+     - Python Repl pane is focused
      - |checkbox|
 
    * - 2
@@ -688,7 +688,7 @@ Incremental Stdout
        | (not all at once after a delay).
      - |checkbox|
 
-Python Input & Output
+Python Repl & Output
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
@@ -711,8 +711,8 @@ Python Input & Output
      - |checkbox|
 
    * - 3
-     - Click empty whitespace in the ``Python Input`` window
-     - Python Input pane is focused
+     - Click empty whitespace in the ``Python Repl`` window
+     - Python Repl pane is focused
      - |checkbox|
 
    * - 4
@@ -736,10 +736,28 @@ Python Input & Output
      - |checkbox|
 
    * - 6
-     - | With the cursor over the Python Output,
+     - | With the cursor over the Python Results,
        | use the mouse wheel to scroll up and down.
      - | The output window should be able to scroll all
        | the way to the beginning and end of the buffer.
+     - |checkbox|
+
+   * - 7
+     - Click empty whitespace in the ``Python Repl`` window
+     - Python Repl pane is focused
+     - |checkbox|
+
+   * - 8
+     - | Enter the following text and press :kbd:`Enter` to run
+       | ``!ls``
+     - | 1. Shell output of running the ``ls`` command should appear in the
+       | results window.
+       | 2. A new log window pane should appear titled ``Shell Output``.
+       | 3. The Shell Output window should show the command that was run and the
+       | output:
+       | ``$ ls``
+       | ``activate.bat``
+       | ``activate.sh``
      - |checkbox|
 
 Early Startup
@@ -826,11 +844,11 @@ Quit Confirmation Dialog
 
    * - 9
      - | Press :kbd:`q`
-     - | The help window disappears and the Python Input is in focus.
+     - | The help window disappears and the Python Repl is in focus.
      - |checkbox|
 
    * - 10
-     - | Type some text into the Python Input.
+     - | Type some text into the Python Repl.
        | Press :kbd:`Home` or move the cursor to the
        | beginning of the text you just entered.
        | Press :kbd:`Ctrl-d`
@@ -838,7 +856,7 @@ Quit Confirmation Dialog
      - |checkbox|
 
    * - 11
-     - | Press :kbd:`Ctrl-c` to clear the Python Input text
+     - | Press :kbd:`Ctrl-c` to clear the Python Repl text
        | Press :kbd:`Ctrl-d`
      - | The quit dialog appears.
      - |checkbox|

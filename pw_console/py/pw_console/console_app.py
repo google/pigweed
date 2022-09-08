@@ -76,6 +76,8 @@ from pw_console.window_manager import WindowManager
 _LOG = logging.getLogger(__package__)
 _ROOT_LOG = logging.getLogger('')
 
+_SYSTEM_COMMAND_LOG = logging.getLogger('pw_console_system_command')
+
 MAX_FPS = 30
 MIN_REDRAW_INTERVAL = (60.0 / MAX_FPS) / 60.0
 
@@ -249,6 +251,8 @@ class ConsoleApp:
             startup_message=repl_startup_message,
         )
         self.pw_ptpython_repl.use_code_colorscheme(self.prefs.code_theme)
+
+        self.system_command_output_pane: Optional[LogPane] = None
 
         if self.prefs.swap_light_and_dark:
             self.toggle_light_theme()
@@ -961,6 +965,24 @@ class ConsoleApp:
             # Thread safe way of sending a repaint trigger to the input event
             # loop.
             self.application.invalidate()
+
+    def setup_command_runner_log_pane(self) -> None:
+        if not self.system_command_output_pane is None:
+            return
+
+        self.system_command_output_pane = LogPane(application=self,
+                                                  pane_title='Shell Output')
+        self.system_command_output_pane.add_log_handler(_SYSTEM_COMMAND_LOG,
+                                                        level_name='INFO')
+        self.system_command_output_pane.log_view.log_store.formatter = (
+            logging.Formatter('%(message)s'))
+        self.system_command_output_pane.table_view = False
+        self.system_command_output_pane.show_pane = True
+        # Enable line wrapping
+        self.system_command_output_pane.toggle_wrap_lines()
+        # Blank right side toolbar text
+        self.system_command_output_pane._pane_subtitle = ' '  # pylint: disable=protected-access
+        self.window_manager.add_pane(self.system_command_output_pane)
 
     async def run(self, test_mode=False):
         """Start the prompt_toolkit UI."""

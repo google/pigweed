@@ -17,7 +17,10 @@ import asyncio
 import functools
 import io
 import logging
+import os
 import sys
+import shlex
+import subprocess
 from typing import Iterable, Optional, TYPE_CHECKING
 
 from prompt_toolkit.buffer import Buffer
@@ -42,10 +45,15 @@ if TYPE_CHECKING:
     from pw_console.repl_pane import ReplPane
 
 _LOG = logging.getLogger(__package__)
+_SYSTEM_COMMAND_LOG = logging.getLogger('pw_console_system_command')
 
 
 class MissingPtpythonBufferControl(Exception):
     """Exception for a missing ptpython BufferControl object."""
+
+
+def _user_input_is_a_shell_command(text: str) -> bool:
+    return text.startswith('!')
 
 
 class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-instance-attributes
@@ -237,6 +245,50 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         # Trigger a prompt_toolkit application redraw.
         self.repl_pane.application.application.invalidate()
 
+    async def _run_system_command(self, text, stdout_proxy,
+                                  _stdin_proxy) -> int:
+        """Run a shell command and print results to the repl."""
+        command = shlex.split(text)
+        returncode = None
+        env = os.environ.copy()
+        # Force colors in Pigweed subcommands and some terminal apps.
+        env['PW_USE_COLOR'] = '1'
+        env['CLICOLOR_FORCE'] = '1'
+
+        def _handle_output(output):
+            # Force tab characters to 8 spaces to prevent \t from showing in
+            # prompt_toolkit.
+            output = output.replace('\t', '        ')
+            # Strip some ANSI sequences that don't render.
+            output = output.replace('\x1b(B\x1b[m', '')
+            output = output.replace('\x1b[1m', '')
+            stdout_proxy.write(output)
+            _SYSTEM_COMMAND_LOG.info(output.rstrip())
+
+        with subprocess.Popen(command,
+                              env=env,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT,
+                              errors='replace') as proc:
+            # Print the command
+            _SYSTEM_COMMAND_LOG.info('')
+            _SYSTEM_COMMAND_LOG.info('$ %s', text)
+            while returncode is None:
+                if not proc.stdout:
+                    continue
+
+                # Check for one line and update.
+                output = proc.stdout.readline()
+                _handle_output(output)
+
+                returncode = proc.poll()
+
+            # Print any remaining lines.
+            for output in proc.stdout.readlines():
+                _handle_output(output)
+
+        return returncode
+
     async def _run_user_code(self, text, stdout_proxy, stdin_proxy):
         """Run user code and capture stdout+err.
 
@@ -256,7 +308,11 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
 
         # Run user repl code
         try:
-            result = await self.run_and_show_expression_async(text)
+            if _user_input_is_a_shell_command(text):
+                result = await self._run_system_command(
+                    text[1:], stdout_proxy, stdin_proxy)
+            else:
+                result = await self.run_and_show_expression_async(text)
         finally:
             # Always restore original stdout and stderr
             sys.stdout = original_stdout
@@ -298,6 +354,10 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
             # Override stdout
             temp_stdout.write(
                 'Error: Interactive help() is not compatible with this repl.')
+
+        # Pop open the system command log pane for shell commands.
+        if _user_input_is_a_shell_command(repl_input_text):
+            self.repl_pane.application.setup_command_runner_log_pane()
 
         # Execute the repl code in the the separate user_code thread loop.
         future = asyncio.run_coroutine_threadsafe(
