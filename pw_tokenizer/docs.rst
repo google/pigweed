@@ -137,6 +137,23 @@ These steps can be adapted as needed.
 8. Integrate ``detokenize.py`` or the C++ detokenization library with your tools
    to decode tokenized logs. See `Detokenization`_.
 
+Using with Zephyr
+=================
+When building ``pw_tokenizer`` with Zephyr, 3 Kconfigs can be used currently:
+
+* ``CONFIG_PIGWEED_TOKENIZER`` will automatically link ``pw_tokenizer`` as well
+  as any dependencies.
+* ``CONFIG_PIGWEED_TOKENIZER_BASE64`` will automatically link
+  ``pw_tokenizer.base64`` as well as any dependencies.
+* ``CONFIG_PIGWEED_DETOKENIZER`` will automatically link
+  ``pw_tokenizer.decoder`` as well as any dependencies.
+
+Once enabled, the tokenizer headers can be included like any Zephyr headers:
+
+.. code-block:: cpp
+
+   #include <pw_tokenizer/tokenize.h>
+
 ------------
 Tokenization
 ------------

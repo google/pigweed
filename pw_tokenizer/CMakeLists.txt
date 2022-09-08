@@ -59,7 +59,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "")
     PUBLIC
       "-T${CMAKE_CURRENT_SOURCE_DIR}/pw_tokenizer_linker_sections.ld"
   )
-elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" OR Zephyr_FOUND)
   target_link_options(pw_tokenizer
     PUBLIC
       "-T${CMAKE_CURRENT_SOURCE_DIR}/add_tokenizer_sections_to_default_script.ld"
@@ -239,3 +239,9 @@ pw_add_test(pw_tokenizer.tokenize_test
     modules
     pw_tokenizer
 )
+
+if(Zephyr_FOUND)
+  zephyr_link_libraries_ifdef(CONFIG_PIGWEED_TOKENIZER pw_tokenizer)
+  zephyr_link_libraries_ifdef(CONFIG_PIGWEED_TOKENIZER_BASE64 pw_tokenizer.base64)
+  zephyr_link_libraries_ifdef(CONFIG_PIGWEED_DETOKENIZER pw_tokenizer.decoder)
+endif()
