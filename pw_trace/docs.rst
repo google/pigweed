@@ -220,6 +220,42 @@ label. It still can optionally be provided a *group_id*.
 .. cpp:function:: PW_TRACE_FUNCTION()
 .. cpp:function:: PW_TRACE_FUNCTION(group_label)
 
+Compile time enabling/disabling
+-------------------------------
+Traces in a file can be enabled/disabled at compile time by defining through
+the ``PW_TRACE_ENABLE`` macro.  A value of 0 causes traces to be disabled.
+A non-zero value will enable traces.  While tracing defaults to enabled,
+it is best practice to define ``PW_TRACE_ENABLE`` explicitly in files that
+use tracing as the default may change in the future.
+
+A good pattern is to have a module level configuration parameter for enabling
+tracing and define ``PW_TRACE_ENABLE`` in terms of that at the top of each
+of the module's files:
+
+
+.. code-block:: cpp
+
+  // Enable tracing based on pw_example module config parameter.
+  #define PW_TRACE_ENABLE PW_EXAMPLE_TRACE_ENABLE
+
+
+Additionally specific trace points (or sets of points) can be enabled/disabled
+using the following pattern:
+
+.. code-block:: cpp
+
+  // Assuming tracing is disabled at the top of the file.
+
+  // Enable specific trace.
+  #undef PW_TRACE_ENABLE
+  #define PW_TRACE_ENABLE 1
+  PW_TRACE_INSTANT("important trace");
+
+  // Set traces back to disabled.  PW_TRACE_ENABLE can not be left
+  // undefined.
+  #undef PW_TRACE_ENABLE
+  #define PW_TRACE_ENABLE 0
+
 -----------
 Backend API
 -----------

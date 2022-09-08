@@ -399,3 +399,53 @@ TEST(BasicTrace, MacroFlag) {
                   PW_TRACE_GROUP_LABEL_DEFAULT,
                   PW_TRACE_TRACE_ID_DEFAULT));
 }
+
+TEST(DisableTrace, Instant) {
+  PW_TRACE_INSTANT("Test");
+  EXPECT_EQ(LastEvent::Instance().Get(),
+            Event(Instantaneous,
+                  PW_TRACE_FLAGS_DEFAULT,
+                  "Test",
+                  PW_TRACE_GROUP_LABEL_DEFAULT,
+                  PW_TRACE_TRACE_ID_DEFAULT));
+#undef PW_TRACE_ENABLE
+#define PW_TRACE_ENABLE 0
+  PW_TRACE_INSTANT("TestDisabled");
+
+  EXPECT_EQ(LastEvent::Instance().Get(),
+            Event(Instantaneous,
+                  PW_TRACE_FLAGS_DEFAULT,
+                  "Test",
+                  PW_TRACE_GROUP_LABEL_DEFAULT,
+                  PW_TRACE_TRACE_ID_DEFAULT));
+#undef PW_TRACE_ENABLE
+#define PW_TRACE_ENABLE 1
+}
+
+TEST(DisableTrace, InstantData) {
+  PW_TRACE_INSTANT_DATA("Test", "s", kSomeData, sizeof(kSomeData));
+  EXPECT_EQ(LastEvent::Instance().Get(),
+            Event(Instantaneous,
+                  PW_TRACE_FLAGS_DEFAULT,
+                  "Test",
+                  PW_TRACE_GROUP_LABEL_DEFAULT,
+                  PW_TRACE_TRACE_ID_DEFAULT,
+                  "s",
+                  kSomeData,
+                  sizeof(kSomeData)));
+
+#undef PW_TRACE_ENABLE
+#define PW_TRACE_ENABLE 0
+  PW_TRACE_INSTANT_DATA("TestDisabled", "s", kSomeData, sizeof(kSomeData));
+  EXPECT_EQ(LastEvent::Instance().Get(),
+            Event(Instantaneous,
+                  PW_TRACE_FLAGS_DEFAULT,
+                  "Test",
+                  PW_TRACE_GROUP_LABEL_DEFAULT,
+                  PW_TRACE_TRACE_ID_DEFAULT,
+                  "s",
+                  kSomeData,
+                  sizeof(kSomeData)));
+#undef PW_TRACE_ENABLE
+#define PW_TRACE_ENABLE 1
+}
