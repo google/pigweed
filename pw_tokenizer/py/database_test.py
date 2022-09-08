@@ -298,6 +298,19 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
         self._elf = TOKENIZED_ENTRIES_ELF
         self._csv_test_domain = CSV_TEST_DOMAIN
 
+    def _git(self, *command: str) -> None:
+        """Runs git in self._dir with forced user name and email values.
+
+        Prevents accidentally running git in the wrong directory and avoids
+        errors if the name and email are not configured.
+        """
+        subprocess.run([
+            'git', '-c', 'user.name=pw_tokenizer tests', '-c',
+            'user.email=noreply@google.com', *command
+        ],
+                       cwd=self._dir,
+                       check=True)
+
     def tearDown(self) -> None:
         shutil.rmtree(self._dir, onerror=_remove_readonly)
 
@@ -375,7 +388,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
 
     def test_untracked_files_in_dir(self):
         """Tests untracked CSVs are reused by the database."""
-        subprocess.run(['git', 'init'], cwd=self._dir)
+        self._git('init')
         # Add CSV_TEST_DOMAIN to a new CSV in the directory database.
         run_cli('add', '--database', self._db_dir, '--discard-temporary',
                 'HEAD', f'{self._elf}#TEST_DOMAIN')
@@ -421,7 +434,7 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
 
     def test_discarding_old_entries(self) -> None:
         """Tests discarding old entries for new entries when re-adding."""
-        subprocess.run(['git', 'init'], cwd=self._dir)
+        self._git('init')
         # Add CSV_ALL_DOMAINS to a new CSV in the directory database.
         run_cli('add', '--database', self._db_dir, '--discard-temporary',
                 'HEAD', f'{self._elf}#.*')
@@ -454,10 +467,8 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
 
     def test_retrieving_csv_from_commit(self) -> None:
         """Tests retrieving a CSV from a commit and removing temp tokens."""
-        subprocess.run(['git', 'init'], cwd=self._dir)
-        subprocess.run(
-            ['git', 'commit', '--allow-empty', '-m', 'First Commit'],
-            cwd=self._dir)
+        self._git('init')
+        self._git('commit', '--allow-empty', '-m', 'First Commit')
         # Add CSV_ALL_DOMAINS to a new CSV in the directory database.
         run_cli('add', '--database', self._db_dir, f'{self._elf}#.*')
         directory = list(self._db_dir.iterdir())
@@ -470,10 +481,8 @@ class TestDirectoryDatabaseCommandLine(unittest.TestCase):
                          tracked_path_in_db.read_text().splitlines())
         # Commit the CSV to avoid retrieving the CSV with the checks
         # for untracked changes.
-        subprocess.run(['git', 'add', '--all'], cwd=self._dir)
-        subprocess.run(
-            ['git', 'commit', '-m', 'Adding a CSV to a new commit.'],
-            cwd=self._dir)
+        self._git('add', '--all')
+        self._git('commit', '-m', 'Adding a CSV to a new commit.')
         # Retrieve the CSV in HEAD~ and discard tokens that exist in
         # CSV_ALL_DOMAINS and not exist in CSV_TEST_DOMAIN.
         run_cli('add', '--database', self._db_dir, '--discard-temporary',
