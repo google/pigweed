@@ -291,7 +291,7 @@ channel output and the example service.
   // pw_rpc server to use HDLC over UART; projects not using UART and HDLC must
   // adapt this as necessary.
   pw::stream::SysIoWriter writer;
-  pw::rpc::RpcChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
+  pw::rpc::FixedMtuChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
       writer, pw::hdlc::kDefaultRpcAddress, "HDLC output");
 
   pw::rpc::Channel channels[] = {
