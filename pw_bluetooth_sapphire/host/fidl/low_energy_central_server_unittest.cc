@@ -523,6 +523,31 @@ TEST_F(LowEnergyCentralServerTest, ScanReceivesPeerAddedToPeerCacheAfterScanStar
   EXPECT_TRUE(scan_stopped);
 }
 
+TEST_F(LowEnergyCentralServerTest, PeerAddedToPeerCacheAfterScanEndDoesNotCrash) {
+  fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
+  auto result_watcher_server = result_watcher_handle.NewRequest();
+  auto result_watcher_client = result_watcher_handle.Bind();
+  std::optional<zx_status_t> epitaph;
+  result_watcher_client.set_error_handler([&](zx_status_t cb_epitaph) { epitaph = cb_epitaph; });
+
+  bool scan_stopped = false;
+  central_proxy()->Scan(ScanOptionsWithEmptyFilter(), std::move(result_watcher_server),
+                        [&]() { scan_stopped = true; });
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_stopped);
+  EXPECT_FALSE(epitaph);
+
+  RunLoopUntilIdle();
+
+  result_watcher_client.Unbind();
+  RunLoopUntilIdle();
+  EXPECT_TRUE(scan_stopped);
+
+  adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/false);
+  RunLoopUntilIdle();
+}
+
 TEST_F(LowEnergyCentralServerTest, ConcurrentScansFail) {
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle_0;
   auto result_watcher_server_0 = result_watcher_handle_0.NewRequest();

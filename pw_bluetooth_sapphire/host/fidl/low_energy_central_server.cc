@@ -222,6 +222,7 @@ LowEnergyCentralServer::ScanInstance::~ScanInstance() {
   // If this scan instance has not already been closed with a more specific status, close with an
   // error status.
   Close(ZX_ERR_INTERNAL);
+  adapter_->peer_cache()->remove_peer_updated_callback(peer_updated_callback_id_);
 }
 
 void LowEnergyCentralServer::ScanInstance::Close(zx_status_t status) {
