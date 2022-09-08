@@ -4,123 +4,99 @@
 pw_software_update
 -------------------
 
-This module provides the building blocks for trusted software update systems.
+This module provides the following building blocks of a high assurance software
+update system:
 
-Goals
-=====
+1. A `TUF <https://theupdateframework.io>`_-based security framework.
+2. A `protocol buffer <https://developers.google.com/protocol-buffers>`_ based
+   software update "bundle" format.
+3. An update bundle decoder and verification stack.
+4. An extensible software update RPC service.
 
-**Software update** is any system that enables a product *vendor* to deliver
-some kind of *improvement* to a product *consumer*, in good faith.
+High assurance software update
+==============================
 
-To that definition, a software update system should design toward the following
-goals.
+On a high-level, a high-assurance software update system should make users feel
+safe to use and be technologically worthy of user's trust over time. In
+particular it should demonstrate the following security and privacy properties.
 
-1. The product receives feature, performance, stability, UX improvements with
-   minimum intervention from both the vendor and consumer. The product just
-   automatically gets **increasingly more useful**.
+1. The update packages are generic, sufficiently qualified, and officially
+   signed with strong insider attack guardrails.
+2. The update packages are delivered over secure channels.
+3. Update checking, changelist, and installation are done with strong user
+   authorization and awareness.
+4. Incoming update packages are strongly authenticated by the client.
+5. Software update requires and builds on top of verified boot.
 
-2. The product receives timely security patches in response to newly discovered
-   vulnerabilities and/or expiring trust material etc. The product is
-   **self-healing**.
+Life of a software update
+=========================
 
-3. All software updates **require consumer approval**. The product vendor being
-   able to remotely modify a product's behavior is both fantastic and risky.
-   The system must mitigate insider attacks that may happen by mistake,
-   willingly, or when compelled. The product vendor should strive to help the
-   consumer make an informed decision over whether or not, when, and how to
-   check / install what updates, to the extent feasible and as required by local
-   regulations.
+The following describes a typical software update sequence of events. The focus
+is not to prescribe implementation details but to raise awareness in subtle
+security and privacy considerations.
 
-4. Software updates **liberate engineering workflows**. While security-heavy
-   systems tend to compete with consumer-facing features for attention and
-   resources and thus perceived as "necessary evil", it is often a
-   misconception. With careful design, security features can preserve and
-   enlarge flexibility in affected workflows. No law, no freedom.
+Stage 0: Product makers create and publish updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A (system) software update is essentially a new version of the on-device
+software stack. Product makers create, qualify and publish new software updates
+to deliver new experiences or bug fixes to users.
 
-System overview
-===============
+While not visible to end users, the product maker team is expected to follow
+widely agreed security and release engineering best practices before signing and
+publishing a new software update. A new software update should be generic for
+all devices, rather than targeting specific devices.
 
-At its core, software update is a system that allows a consumer to download some
-file provided by some vendor **by choice**. That choice might be "I want to be
-left alone. I will not check for updates and I wish not to be solicited", or
-"I want to sign my life away and never be bothered again. Please automatically
-check and install all updates as soon as they are available", or anything in
-between those two extremes.
+Stage 1: Users check for updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+For most consumer products, software updates are "opt-in", which means users
+either manually check for new updates or opt-in for the device itself to check
+(and/or install) updates automatically on the user's behalf. The opt-in may be
+blanket or conditioned on the nature of the updates.
 
-How a consumer approaches such a choice depends on many factors.
+If users have authorized automatic updates, update checking also happens on a
+regular schedule and at every reboot.
 
-1. The consumer's ability to authenticate the files, and by derivation, their
-   vendor. Authentication enables the consumer to identify the update vendor (
-   with cryptographic non-deniability) and assign some **baseline trust** to
-   it based on individual judgment and the public credibility of the vendor.
+.. important::
+   As a critical security recovery mechanism, checking and installing software
+   updates ideally should happen early in boot, where the software stack has
+   been freshly verified by verified boot and minimum mutable input is taken
+   into account in update checking and installation.
 
-   .. note:: From the vendor's point of view, authentication also protects the
-     vendor's product from being tampered by attackers or consumers.
-     Traditionally that has been the main purpose of security in software update
-     systems.
+   In other words, the longer the system has been running (up), the greater
+   the chance that system has been taken control by an attacker. So it is
+   a good idea to remind users to reboot when the system has been running for
+   "too long".
 
-2. The consumer's ability to independently audit the update files. e.g. by
-   re-producing bitwise-identical binaries from available source code, hiring an
-   accredited security researcher / investigator, looking up the files from a
-   publicly available non-forgeable ledger etc.
+Stage 2: Users install updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-3. The consumer's ability to assess the "bomb radius" of allowing an update,
-   i.e. the worst possible fallout that may result from the vendor betraying the
-   consumer's baseline trust. On platforms with well designed trust structure,
-   it is easy for a generally informed consumer to reason that a misbehaving car
-   infotainment app won't be able to take control of "system" and drive the car
-   into a ditch, unless the application manages to escape its capabilities
-   sandbox set up by the governing system software, either by exploiting a bug
-   in the system or by colluding with the system vendor.
+Once a new update has been determined to be available for the device, users will
+be prompted to authorize downloading and installing the update. Users can also
+opt-in to automatic downloading and installing.
 
-4. The consumer's situation. All else being equal, a developer evaluating a
-   smart speaker with a test account, a US senator carrying a smartphone,
-   and an airliner technician maintaining a fleet of passenger aircraft
-   will approach software update choices with drastically different discretion.
+.. important::
+   If feasible, rechecking, downloading and installing an update should be
+   carried out early in a reboot -- to recover from potential temporary attacker
+   control.
 
-It is in the best interests of both consumers and vendors to design and fit
-software update systems in various platforms in a way that bolsters mutual
-trust. So let's discuss this further in the "security model".
+To improve reliability and reduce disruption, modern system updates typically
+employ an A/B update mechanism, where the incoming update is installed into
+a backup boot slot, and only enacted and locked down (anti-rollback) after
+the new slot has passed boot verification and fully booted into a good state.
 
-Security model
---------------
+.. important::
+   While a system update is usually carried out by a user space update client,
+   an incoming update may contain more than just the user space. It could
+   contain firmware for the bootloader, trusted execution environment, DSP,
+   sensor cores etc. which could be important components of a device's TCB (
+   trusted compute base, where critical device security policies are enforced).
+   When updating these components across different domains, it is best to let
+   each component carry out the actual updating, some of which may require
+   stronger user authorization (e.g. a test of physical presence, explicit
+   authorization with an admin passcode etc.)
 
-Authentication
-^^^^^^^^^^^^^^
+Lastly, updates should be checked again in case there are newer updates
+available.
 
-`pw_software_update` adopts `TUF <https://theupdateframework.io>`_ as the
-authentication framework. This framework is well-formulated in the TUF
-`specification <https://theupdateframework.github.io/specification/latest/>`_ (a
-leisure read). To help with context continuity, the most relevant points are
-captured below.
-
-.. attention:: 🚧🏗 This documentation is under construction. The trucks were
-  last seen here. 🏗🚧
-
-
-Authorization
-^^^^^^^^^^^^^
-
-Transparency
-^^^^^^^^^^^^
-
-Deployment model
-----------------
-
-Getting started
-===============
-
-Developer guides
-================
-
-POUF(Protocol, Operations, Usage and Format)
---------------------------------------------
-
-Update serving
---------------
-
-Update consumption
-------------------
-
-Requesting a security review
-----------------------------
+Getting started with bundles (coming soon)
+==========================================
