@@ -14,10 +14,20 @@
 
 import objectPath from 'object-path';
 import {Decoder, Encoder} from 'pigweedjs/pw_hdlc';
-import {Client, Channel, ServiceClient, UnaryMethodStub, MethodStub} from 'pigweedjs/pw_rpc';
+import {
+  Client,
+  Channel,
+  ServiceClient,
+  UnaryMethodStub,
+  MethodStub,
+  ServerStreamingMethodStub
+} from 'pigweedjs/pw_rpc';
 import {WebSerialTransport} from '../transport/web_serial_transport';
 import {ProtoCollection} from 'pigweedjs/pw_protobuf_compiler';
 
+function protoFieldToMethodName(string) {
+  return string.split("_").map(titleCase).join("");
+}
 function titleCase(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -85,7 +95,9 @@ export class Device {
     let methodMap = {};
     let methodKeys = Array.from(service.methodsByName.keys());
     methodKeys
-      .filter((method: any) => service.methodsByName.get(method) instanceof UnaryMethodStub)
+      .filter((method: any) =>
+        service.methodsByName.get(method) instanceof UnaryMethodStub
+        || service.methodsByName.get(method) instanceof ServerStreamingMethodStub)
       .forEach(key => {
         let fn = this.createMethodWrapper(
           service.methodsByName.get(key),
@@ -97,9 +109,32 @@ export class Device {
     return methodMap;
   }
 
-  private createMethodWrapper(realMethod: MethodStub, methodName: string, fullMethodPath: string) {
-    const requestType = realMethod.method.descriptor.getInputType().replace(/^\./, '');
-    const requestProtoDescriptor = this.protoCollection.getDescriptorProto(requestType);
+  private createMethodWrapper(
+    realMethod: MethodStub,
+    methodName: string,
+    fullMethodPath: string) {
+    if (realMethod instanceof UnaryMethodStub) {
+      return this.createUnaryMethodWrapper(
+        realMethod,
+        methodName,
+        fullMethodPath);
+    }
+    else if (realMethod instanceof ServerStreamingMethodStub) {
+      return this.createServerStreamingMethodWrapper(
+        realMethod,
+        methodName,
+        fullMethodPath);
+    }
+  }
+
+  private createUnaryMethodWrapper(
+    realMethod: UnaryMethodStub,
+    methodName: string,
+    fullMethodPath: string) {
+    const requestType =
+      realMethod.method.descriptor.getInputType().replace(/^\./, '');
+    const requestProtoDescriptor =
+      this.protoCollection.getDescriptorProto(requestType);
     const requestFields = requestProtoDescriptor.getFieldList();
     const functionArguments = requestFields
       .map(field => field.getName())
@@ -116,12 +151,46 @@ export class Device {
     let fn = new Function(...functionArguments).bind((args) => {
       const request = new realMethod.method.requestType();
       requestFields.forEach((field, index) => {
-        console.log("setting", `set${titleCase(field.getName())}`, args[index]);
         request[`set${titleCase(field.getName())}`](args[index]);
       })
-      if (realMethod instanceof UnaryMethodStub) {
-        return realMethod.call(request);
-      }
+      return realMethod.call(request);
+    });
+    return fn;
+  }
+
+  private createServerStreamingMethodWrapper(
+    realMethod: ServerStreamingMethodStub,
+    methodName: string,
+    fullMethodPath: string) {
+    const requestType = realMethod.method.descriptor.getInputType().replace(/^\./, '');
+    const requestProtoDescriptor =
+      this.protoCollection.getDescriptorProto(requestType);
+    const requestFields = requestProtoDescriptor.getFieldList();
+    const functionArguments = requestFields
+      .map(field => field.getName())
+      .concat(
+        [
+          'onNext',
+          'onComplete',
+          'onError',
+          'return this(arguments);'
+        ]
+      );
+
+    // We store field names so REPL can show hints in autocomplete using these.
+    this.nameToMethodArgumentsMap[fullMethodPath] = requestFields
+      .map(field => field.getName());
+
+    // We create a new JS function dynamically here that takes
+    // proto message fields as arguments and calls the actual RPC method.
+    let fn = new Function(...functionArguments).bind((args) => {
+      const request = new realMethod.method.requestType();
+      requestFields.forEach((field, index) => {
+        request[`set${protoFieldToMethodName(field.getName())}`](args[index]);
+      })
+      const callbacks = Array.from(args).slice(requestFields.length);
+      // @ts-ignore
+      return realMethod.invoke(request, callbacks[0], callbacks[1], callbacks[2]);
     });
     return fn;
   }

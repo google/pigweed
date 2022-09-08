@@ -12,29 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Device, pw_rpc} from "pigweedjs";
-type Client = pw_rpc.Client;
-
-function createDefaultRPCLogService(client: Client) {
-  const logService = client.channel()!
-    .methodStub('pw.log.Logs.Listen');
-
-  return logService;
-}
+import {Device} from "pigweedjs";
 
 export async function listenToDefaultLogService(
   device: Device,
   onFrame: (frame: Uint8Array) => void) {
-  const client = device.client;
-  // @ts-ignore
-  const logService: pw_rpc.ServerStreamingMethodStub = (createDefaultRPCLogService(client))!;
-  const request = new logService.method.responseType();
-  // @ts-ignore
-  const call = logService.invoke(request, (msg) => {
-    // @ts-ignore
-    msg.getEntriesList().forEach(entry => onFrame(entry.getMessage()));
-  });
-
+  const call = device.rpcs.pw.log.Logs.Listen((msg: any) => {
+    msg.getEntriesList().forEach((entry: any) => onFrame(entry.getMessage()));
+  })
   return () => {
     call.cancel();
   };
