@@ -15,4 +15,4 @@
 
 #include <zephyr/sys/__assert.h>
 
-#define PW_ASSERT_HANDLE_FAILURE(condition) __ASSERT_NO_MSG(condition);
+#define PW_ASSERT_HANDLE_FAILURE(condition) __ASSERT(false, condition);
