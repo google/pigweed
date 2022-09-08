@@ -136,16 +136,6 @@ def load_common_config(common_config: Optional[Path] = None,
         raise UnexpectedConfigSection(
             f'[options] packages already defined as: {value}')
 
-    if config.has_section('options.package_data'):
-        raise UnexpectedConfigSection(
-            '[options.package_data] already defined as:\n' +
-            str(dict(config['options.package_data'].items())))
-
-    if config.has_section('options.entry_points'):
-        raise UnexpectedConfigSection(
-            '[options.entry_points] already defined as:\n' +
-            str(dict(config['options.entry_points'].items())))
-
     # Append build metadata if applicable.
     build_metadata = []
     if append_date:
@@ -166,8 +156,10 @@ def update_config_with_packages(
 ) -> None:
     """Merge setup.cfg files from a set of python packages."""
     config['options']['packages'] = 'find:'
-    config['options.package_data'] = {}
-    config['options.entry_points'] = {}
+    if not config.has_section('options.package_data'):
+        config['options.package_data'] = {}
+    if not config.has_section('options.entry_points'):
+        config['options.entry_points'] = {}
 
     # Save a list of packages being bundled.
     included_packages = [pkg.package_name for pkg in python_packages]
