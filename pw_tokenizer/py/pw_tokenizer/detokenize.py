@@ -296,7 +296,17 @@ class AutoUpdatingDetokenizer(Detokenizer):
     class _DatabasePath:
         """Tracks the modified time of a path or file object."""
         def __init__(self, path: _PathOrFile) -> None:
-            self.path = path if isinstance(path, (str, Path)) else path.name
+            self.path: Path
+            self.domain = None
+            if isinstance(path, str):
+                if path.count('#') == 1:
+                    path, domain = path.split('#')
+                    self.domain = re.compile(domain)
+                self.path = Path(path)
+            elif isinstance(path, Path):
+                self.path = path
+            else:
+                self.path = Path(path.name)
             self._modified_time: Optional[float] = self._last_modified_time()
 
         def updated(self) -> bool:
@@ -316,6 +326,9 @@ class AutoUpdatingDetokenizer(Detokenizer):
 
         def load(self) -> tokens.Database:
             try:
+                if self.domain is not None:
+                    return database.load_token_database(self.path,
+                                                        domain=self.domain)
                 return database.load_token_database(self.path)
             except FileNotFoundError:
                 return database.load_token_database()

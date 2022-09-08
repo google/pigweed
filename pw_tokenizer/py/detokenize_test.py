@@ -89,10 +89,12 @@ EMPTY_ELF = (
 #
 #   arm-none-eabi-objcopy -S --only-section ".pw_tokenizer*" <ELF> <OUTPUT>
 #
-ELF_WITH_TOKENIZER_SECTIONS = Path(__file__).parent.joinpath(
-    'example_binary_with_tokenized_strings.elf').read_bytes()
+ELF_WITH_TOKENIZER_SECTIONS_PATH = Path(__file__).parent.joinpath(
+    'example_binary_with_tokenized_strings.elf')
+ELF_WITH_TOKENIZER_SECTIONS = ELF_WITH_TOKENIZER_SECTIONS_PATH.read_bytes()
 
 TOKENS_IN_ELF = 22
+TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS = 26
 
 # 0x2e668cd6 is 'Jello, world!' (which is also used in database_test.py).
 JELLO_WORLD_TOKEN = b'\xd6\x8c\x66\x2e'
@@ -467,6 +469,17 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
                 self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
             finally:
                 os.unlink(file.name)
+
+    def test_token_domains(self, _):
+        """Tests that token domains can be parsed from input filename"""
+        filename_and_domain = f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*'
+        detok_with_domain = detokenize.AutoUpdatingDetokenizer(
+            filename_and_domain, min_poll_period_s=0)
+        self.assertEqual(len(detok_with_domain.database),
+                         TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS)
+        detok = detokenize.AutoUpdatingDetokenizer(
+            str(ELF_WITH_TOKENIZER_SECTIONS_PATH), min_poll_period_s=0)
+        self.assertEqual(len(detok.database), TOKENS_IN_ELF)
 
 
 def _next_char(message: bytes) -> bytes:

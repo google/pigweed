@@ -922,7 +922,9 @@ package, and instantiate it with paths to token databases or ELF files.
 The ``pw_tokenizer`` package also provides the ``AutoUpdatingDetokenizer``
 class, which can be used in place of the standard ``Detokenizer``. This class
 monitors database files for changes and automatically reloads them when they
-change. This is helpful for long-running tools that use detokenization.
+change. This is helpful for long-running tools that use detokenization. The
+class also supports token domains for the given database files in the
+``<path>#<domain>`` format.
 
 For messages that are optionally tokenized and may be encoded as binary,
 Base64, or plaintext UTF-8, use
