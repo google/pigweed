@@ -29,16 +29,16 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_inter
 
  namespace fit {
  namespace internal {
-@@ -79,7 +81,7 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
- // vtable for nullptr functions. This avoids generating unnecessary identical
- // vtables, which reduces code size.
+@@ -85,7 +87,7 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
+ // elsewhere in the header as an inline variable.
+ template <typename Unused = void>
  struct null_target {
 -  static void invoke(void* /*bits*/) { __builtin_abort(); }
 +  static void invoke(void* /*bits*/) { PW_ASSERT(false); }
 
    static const target_ops<void> ops;
- };
-@@ -398,7 +400,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
+
+@@ -478,7 +480,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
    // Note that fit::callback will release the target immediately after
    // invoke() (also affecting any share()d copies).
    // Aborts if the function's target is empty.
@@ -48,24 +48,24 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_inter
      // Down cast the ops to the derived type that this function was instantiated
      // with, which includes the invoke function.
      //
-@@ -472,7 +475,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
+@@ -508,7 +511,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
    template <typename SharedFunction>
    void copy_shared_target_to(SharedFunction& copy) {
      copy.destroy_target();
--    assert(storage_.ops == &shared_target_type<SharedFunction>::ops);
-+    PW_ASSERT(storage_.ops == &shared_target_type<SharedFunction>::ops);
-     shared_target_type<SharedFunction>::copy_shared_ptr(&storage_.bits, &copy.storage_.bits);
-     copy.storage_.ops = storage_.ops;
+-    assert(base::ops() == &shared_target_type<SharedFunction>::ops);
++    PW_ASSERT(base::ops() == &shared_target_type<SharedFunction>::ops);
+     shared_target_type<SharedFunction>::copy_shared_ptr(base::bits(), copy.bits());
+     copy.set_ops(base::ops());
    }
-@@ -516,7 +519,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
+@@ -538,7 +541,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
    void check_target_type() const {
      if (target_type<Callable>::ops.target_type_id(nullptr, &target_type<Callable>::ops) !=
-         target_type_id()) {
+         base::target_type_id()) {
 -      __builtin_abort();
 +      PW_ASSERT(false);
      }
    }
-
+ };
 diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h
 --- a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h
 +++ b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h
