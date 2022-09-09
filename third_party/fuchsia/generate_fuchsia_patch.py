@@ -144,7 +144,8 @@ def _main() -> None:
                 Path('third_party/fuchsia/repo', path).as_posix().encode())
 
     # Write the diff to function.patch.
-    with output_path.joinpath('function.patch').open('wb') as output:
+    with output_path.joinpath('pigweed_adaptations.patch').open(
+            'wb') as output:
         output.write(HEADER)
 
         for line in diff.splitlines(keepends=True):
