@@ -53,6 +53,11 @@ using Function = fit::function_impl<
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
     Callable>;
 
+template <typename Callable,
+          size_t inline_target_size =
+              function_internal::config::kInlineCallableSize>
+using InlineFunction = fit::inline_function<Callable, inline_target_size>;
+
 using Closure = Function<void()>;
 
 }  // namespace pw

@@ -59,6 +59,12 @@ void CallbackAdd(int a, int b, pw::Function<void(int sum)> callback) {
   callback(a + b);
 }
 
+void InlineCallbackAdd(int a,
+                       int b,
+                       pw::InlineFunction<void(int sum)> callback) {
+  callback(a + b);
+}
+
 int add_result = -1;
 
 void free_add_callback(int sum) { add_result = sum; }
@@ -81,6 +87,24 @@ TEST(Function, ConstructInPlace_CapturingLambda) {
   EXPECT_EQ(result, 44);
 }
 
+TEST(InlineFunction, ConstructInPlace_FreeFunction) {
+  add_result = -1;
+  InlineCallbackAdd(25, 17, free_add_callback);
+  EXPECT_EQ(add_result, 42);
+}
+
+TEST(InlineFunction, ConstructInPlace_NonCapturingLambda) {
+  add_result = -1;
+  InlineCallbackAdd(25, 18, [](int sum) { add_result = sum; });
+  EXPECT_EQ(add_result, 43);
+}
+
+TEST(InlineFunction, ConstructInPlace_CapturingLambda) {
+  int result = -1;
+  InlineCallbackAdd(25, 19, [&](int sum) { result = sum; });
+  EXPECT_EQ(result, 44);
+}
+
 class CallableObject {
  public:
   CallableObject(int* result) : result_(result) {}
@@ -97,6 +121,12 @@ class CallableObject {
 TEST(Function, ConstructInPlace_CallableObject) {
   int result = -1;
   CallbackAdd(25, 20, CallableObject(&result));
+  EXPECT_EQ(result, 45);
+}
+
+TEST(InlineFunction, ConstructInPlace_CallableObject) {
+  int result = -1;
+  InlineCallbackAdd(25, 20, CallableObject(&result));
   EXPECT_EQ(result, 45);
 }
 
@@ -202,6 +232,18 @@ TEST(Function, Move_Inline) {
 #endif  // __clang_analyzer__
 }
 
+TEST(InlineFunction, Move_InlineFunctionToFunction) {
+  InlineFunction<int(int, int)> moved(Multiply);
+  EXPECT_NE(moved, nullptr);
+  Function<int(int, int)> multiply(std::move(moved));
+  EXPECT_EQ(multiply(3, 3), 9);
+
+// Ignore use-after-move.
+#ifndef __clang_analyzer__
+  EXPECT_EQ(moved, nullptr);
+#endif  // __clang_analyzer__
+}
+
 TEST(Function, MoveAssign_Inline) {
   Function<int(int, int)> moved(Multiply);
   EXPECT_NE(moved, nullptr);
@@ -214,8 +256,27 @@ TEST(Function, MoveAssign_Inline) {
 #endif  // __clang_analyzer__
 }
 
+TEST(InlineFunction, MoveAssign_InlineFunctionToFunction) {
+  InlineFunction<int(int, int)> moved(Multiply);
+  EXPECT_NE(moved, nullptr);
+  Function<int(int, int)> multiply = std::move(moved);
+  EXPECT_EQ(multiply(3, 3), 9);
+
+// Ignore use-after-move.
+#ifndef __clang_analyzer__
+  EXPECT_EQ(moved, nullptr);
+#endif  // __clang_analyzer__
+}
+
 TEST(Function, MoveAssign_Callable) {
   Function<int(int, int)> operation = Multiply;
+  EXPECT_EQ(operation(3, 3), 9);
+  operation = [](int a, int b) -> int { return a + b; };
+  EXPECT_EQ(operation(3, 3), 6);
+}
+
+TEST(InlineFunction, MoveAssign_Callable) {
+  InlineFunction<int(int, int)> operation = Multiply;
   EXPECT_EQ(operation(3, 3), 9);
   operation = [](int a, int b) -> int { return a + b; };
   EXPECT_EQ(operation(3, 3), 6);

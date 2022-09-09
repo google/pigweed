@@ -78,6 +78,11 @@ inline storage size defaults to the size of two pointers, but is configurable
 through the build system. The size of a ``Function`` object is equivalent to its
 inline storage size.
 
+The ``pw::InlineFunction`` alias is similar to ``pw::Function``, but is always
+inlined. That is, even if dynamic allocation is enabled for ``pw::Function``  -
+``pw::InlineFunction`` will fail to compile if the callable  is larger than the
+inline storage size.
+
 Attempting to construct a function from a callable larger than its inline size
 is a compile-time error unless dynamic allocation is enabled.
 
@@ -109,6 +114,8 @@ is a compile-time error unless dynamic allocation is enabled.
 
   When ``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION`` is enabled, a ``Function``
   will use dynamic allocation to store callables that exceed the inline size.
+  When it is enabled but a compile-time check for the inlining is still required
+  ``pw::InlineFunction`` can be used.
 
 API usage
 =========
