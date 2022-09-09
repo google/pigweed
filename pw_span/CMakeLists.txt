@@ -18,10 +18,12 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_module_library(pw_span
   HEADERS
     public/pw_span/span.h
+    public/pw_span/internal/config.h
     public/pw_span/internal/span_common.inc
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_assert
     pw_polyfill
     pw_polyfill.standard_library
 )

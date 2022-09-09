@@ -422,6 +422,11 @@ pw_internal_host_toolchains = [
       forward_variables_from(_os_specific_config, "*")
       default_configs += _internal_clang_default_configs
 
+      # Don't enable span asserts since C++20 provides the implementation for
+      # pw::span, and there's no way to ensure asserts are enabled for the C++
+      # standard library's std::span implementation.
+      pw_span_ENABLE_ASSERTS = false
+
       # Set the C++ standard to C++20 instead of the default.
       pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX20
     }

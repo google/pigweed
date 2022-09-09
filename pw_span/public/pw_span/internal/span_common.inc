@@ -45,9 +45,17 @@
 #include <utility>
 
 #include "pw_polyfill/language_feature_macros.h"
+#include "pw_span/internal/config.h"
 
-// Pigweed: Disable the asserts from Chromium for now.
+#if PW_SPAN_ENABLE_ASSERTS
+
+#include "pw_assert/assert.h"
+
+#define _PW_SPAN_ASSERT(arg) PW_ASSERT(arg)
+
+#else
 #define _PW_SPAN_ASSERT(arg)
+#endif  // PW_SPAN_ENABLE_ASSERTS
 
 // The file that includes this .inc file must define the following macros:
 //
