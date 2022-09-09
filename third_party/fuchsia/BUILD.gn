@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
@@ -44,6 +45,17 @@ pw_source_set("fit") {
     "repo/sdk/lib/fit/include/lib/fit/function_internal.h",
     "repo/sdk/lib/fit/include/lib/fit/utility_internal.h",
   ]
+}
+
+pw_test("function_tests") {
+  sources = [ "repo/sdk/lib/fit/test/function_tests.cc" ]
+  deps = [ ":fit" ]
+
+  # Define EXPECT_NULL(), which Pigweed's test framework does not have
+  defines = [ "EXPECT_NULL(arg)=EXPECT_EQ((arg), nullptr)" ]
+
+  # This test does not build with strict warnings, so disable them.
+  remove_configs = [ "$dir_pw_build:strict_warnings" ]
 }
 
 pw_source_set("stdcompat") {

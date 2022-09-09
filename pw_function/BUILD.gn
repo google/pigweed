@@ -59,7 +59,10 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":function_test" ]
+  tests = [
+    ":function_test",
+    "$dir_pw_third_party/fuchsia:function_tests",
+  ]
 }
 
 pw_test("function_test") {
