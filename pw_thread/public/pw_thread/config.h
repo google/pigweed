@@ -22,3 +22,8 @@
 #ifndef PW_THREAD_MAXIMUM_THREADS
 #define PW_THREAD_MAXIMUM_THREADS 10
 #endif  // PW_THREAD_MAXIMUM_THREADS
+
+// The max number of threads to bundle by default for thread snapshot service.
+#ifndef PW_THREAD_NUM_BUNDLED_THREADS
+#define PW_THREAD_NUM_BUNDLED_THREADS 3
+#endif  // PW_THREAD_MAXIMUM_THREADS

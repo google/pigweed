@@ -27,8 +27,9 @@ namespace pw::thread {
 Status ProtoEncodeThreadInfo(SnapshotThreadInfo::MemoryEncoder& encoder,
                              const ThreadInfo& thread_info);
 
+// Calculates encoded buffer size based on code gen constants.
 constexpr size_t RequiredServiceBufferSize(
-    const size_t num_threads = PW_THREAD_MAXIMUM_THREADS) {
+    size_t num_threads = PW_THREAD_MAXIMUM_THREADS) {
   constexpr size_t kSizeOfResponse =
       SnapshotThreadInfo::kMaxEncodedSizeBytes + Thread::kMaxEncodedSizeBytes;
   return kSizeOfResponse * num_threads;
@@ -36,17 +37,49 @@ constexpr size_t RequiredServiceBufferSize(
 
 // The ThreadSnapshotService will return peak stack usage across running
 // threads when requested by GetPeak().
-class ThreadSnapshotService final
+//
+// Parameter encode_buffer: buffer where thread information is encoded. Size
+// depends on RequiredBufferSize().
+//
+// Parameter thread_proto_indices: array keeping track of thread boundaries in
+// the encode buffer. The service uses these indices to send response data out
+// in bundles.
+//
+// Parameter num_bundled_threads: constant describing number of threads per
+// bundle in response.
+class ThreadSnapshotService
     : public pw_rpc::raw::ThreadSnapshotService::Service<
           ThreadSnapshotService> {
  public:
-  ThreadSnapshotService(span<std::byte> encode_buffer)
-      : encode_buffer_(encode_buffer) {}
-
+  constexpr ThreadSnapshotService(
+      span<std::byte> encode_buffer,
+      Vector<size_t>& thread_proto_indices,
+      size_t num_bundled_threads = PW_THREAD_NUM_BUNDLED_THREADS)
+      : encode_buffer_(encode_buffer),
+        thread_proto_indices_(thread_proto_indices),
+        num_bundled_threads_(num_bundled_threads) {}
   void GetPeakStackUsage(ConstByteSpan request, rpc::RawServerWriter& response);
 
  private:
   span<std::byte> encode_buffer_;
+  Vector<size_t>& thread_proto_indices_;
+  size_t num_bundled_threads_;
+};
+
+// A ThreadSnapshotService that allocates required buffers based on the
+// number of running threads on a device.
+template <size_t kNumThreads = PW_THREAD_MAXIMUM_THREADS>
+class ThreadSnapshotServiceBuilder : public ThreadSnapshotService {
+ public:
+  ThreadSnapshotServiceBuilder()
+      : ThreadSnapshotService(encode_buffer_, thread_proto_indices_) {}
+
+ private:
+  std::array<std::byte, thread::RequiredServiceBufferSize(kNumThreads)>
+      encode_buffer_;
+  // + 1 is needed to account for extra index that comes with the first
+  // submessage start or the last submessage end.
+  Vector<size_t, kNumThreads + 1> thread_proto_indices_;
 };
 
 }  // namespace pw::thread

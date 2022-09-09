@@ -14,6 +14,7 @@
 
 #include "pw_thread/thread_snapshot_service.h"
 
+#include "pw_containers/vector.h"
 #include "pw_log/log.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_rpc/raw/server_reader_writer.h"
@@ -99,17 +100,28 @@ void ThreadSnapshotService::GetPeakStackUsage(
     SnapshotThreadInfo::MemoryEncoder encoder;
     Status status;
     ConstByteSpan name;
+
+    // For sending out data by chunks.
+    Vector<size_t>& thread_proto_indices;
   };
 
   ConstByteSpan name_request;
   if (!request.empty()) {
-    DecodeThreadName(request, name_request);
+    Status status = DecodeThreadName(request, name_request);
+    if (!status.ok()) {
+      PW_LOG_ERROR("Service unable to decode thread name with error code %d",
+                   status.code());
+    }
   }
 
   IterationInfo iteration_info{
       SnapshotThreadInfo::MemoryEncoder(encode_buffer_),
       OkStatus(),
-      name_request};
+      name_request,
+      thread_proto_indices_};
+
+  iteration_info.thread_proto_indices.clear();
+  iteration_info.thread_proto_indices.push_back(iteration_info.encoder.size());
 
   auto cb = [&iteration_info](const ThreadInfo& thread_info) {
     if (!iteration_info.name.empty() && thread_info.thread_name().has_value()) {
@@ -118,11 +130,15 @@ void ThreadSnapshotService::GetPeakStackUsage(
                      iteration_info.name.begin())) {
         iteration_info.status.Update(
             ProtoEncodeThreadInfo(iteration_info.encoder, thread_info));
+        iteration_info.thread_proto_indices.push_back(
+            iteration_info.encoder.size());
         return false;
       }
     } else {
       iteration_info.status.Update(
           ProtoEncodeThreadInfo(iteration_info.encoder, thread_info));
+      iteration_info.thread_proto_indices.push_back(
+          iteration_info.encoder.size());
     }
     return iteration_info.status.ok();
   };
@@ -134,14 +150,35 @@ void ThreadSnapshotService::GetPeakStackUsage(
 
   Status status;
   if (iteration_info.encoder.size() && iteration_info.status.ok()) {
-    status = response_writer.Write(iteration_info.encoder);
-    if (status != OkStatus()) {
-      PW_LOG_ERROR(
-          "Failed to send response with status code %d, packet may be too "
-          "large to send",
-          status.code());
+    // Must subtract 1 because the last boundary index of thread_proto_indices
+    // is the end of the last submessage, and NOT the start of another.
+    size_t last_start_index = iteration_info.thread_proto_indices.size() - 1;
+    for (size_t i = 0; i < last_start_index; i += num_bundled_threads_) {
+      const size_t num_threads =
+          std::min(num_bundled_threads_, last_start_index - i);
+
+      // Sending out a bundle of threads at a time.
+      const size_t bundle_size =
+          iteration_info.thread_proto_indices[i + num_threads] -
+          iteration_info.thread_proto_indices[i];
+
+      ConstByteSpan thread =
+          ConstByteSpan(iteration_info.encoder.data() +
+                            iteration_info.thread_proto_indices[i],
+                        bundle_size);
+
+      if (bundle_size) {
+        status.Update(response_writer.Write(thread));
+      }
+      if (!status.ok()) {
+        PW_LOG_ERROR(
+            "Failed to send response with error code %d, packet may be too "
+            "large to send",
+            status.code());
+      }
     }
   }
+
   if (response_writer.Finish(status) != OkStatus()) {
     PW_LOG_ERROR(
         "Failed to close stream for GetPeakStackUsage() with error code %d",

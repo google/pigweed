@@ -19,11 +19,7 @@
 namespace pw::system {
 namespace {
 
-constexpr size_t kEncodeBufferSize = thread::RequiredServiceBufferSize();
-
-std::array<std::byte, kEncodeBufferSize> encode_buffer;
-
-thread::ThreadSnapshotService system_thread_snapshot_service(encode_buffer);
+thread::ThreadSnapshotServiceBuilder<> system_thread_snapshot_service;
 
 }  // namespace
 

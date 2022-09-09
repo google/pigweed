@@ -26,6 +26,7 @@ from pw_metric import metric_parser
 from pw_rpc import callback_client, console_tools
 from pw_status import Status
 from pw_thread.thread_analyzer import ThreadSnapshotAnalyzer
+from pw_thread_protos import thread_pb2
 from pw_tokenizer import detokenize
 from pw_tokenizer.proto import decode_optionally_tokenized
 import pw_unit_test.rpc
@@ -190,8 +191,13 @@ class Device:
         print_metrics(metrics, '')
         return metrics
 
-    def snapshot_peak_stack_usage(self):
-        _, rsp = self.rpcs.pw.thread.ThreadSnapshotService.GetPeakStackUsage()
-        for thread_info in rsp:
-            for line in str(ThreadSnapshotAnalyzer(thread_info)).splitlines():
-                _LOG.info('%s', line)
+    def snapshot_peak_stack_usage(self, thread_name: str = None):
+        _, rsp = self.rpcs.pw.thread.ThreadSnapshotService \
+        .GetPeakStackUsage(name=thread_name)
+
+        thread_info = thread_pb2.SnapshotThreadInfo()
+        for thread_info_block in rsp:
+            for thread in thread_info_block.threads:
+                thread_info.threads.append(thread)
+        for line in str(ThreadSnapshotAnalyzer(thread_info)).splitlines():
+            _LOG.info('%s', line)

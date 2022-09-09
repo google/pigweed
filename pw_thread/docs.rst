@@ -484,10 +484,11 @@ RPC service setup
 =================
 To expose a ``ThreadSnapshotService`` in your application, do the following:
 
-1. Instantiate a buffer with specified size (See ``RequiredServiceBufferSize``
-below for more information on buffer size calculation).
-2. Create an instance of ``pw::thread::ThreadSnapshotService``.
-3. Register the service with your RPC server.
+1. Create an instance of ``pw::thread::ThreadSnapshotServiceBuilder``. This is a
+   template class that takes in the number of threads as at template, or
+   defaults this value to ``PW_THREAD_MAXIMUM_THREADS`` if no argument is
+   provided.
+2. Register the service with your RPC server.
 
 For example:
 
@@ -502,14 +503,8 @@ For example:
    };
    Server server(channels);
 
-   // Calculate encode buffer size, defaults to `PW_THREAD_MAXIMUM_THREADS`
-   // if no argument is provided.
-   constexpr size_t kEncodeBufferSize =
-     pw::thread::RequiredBufferSize(/* number of threads */);
-   std::array<std::byte, kEncodeBufferSize> encode_buffer;
-
-   // Thread snapshot service instance.
-   pw::thread::ThreadSnapshotService thread_snapshot_service(encode_buffer);
+  // Thread snapshot service builder instance.
+  thread::ThreadSnapshotServiceBuilder</*num threads*/> thread_snapshot_service;
 
    void RegisterServices() {
      server.RegisterService(thread_snapshot_service);
