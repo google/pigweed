@@ -20,6 +20,7 @@ fuchsia_repo_files = [
     "sdk/lib/fit/include/lib/fit/nullable.h",
     "sdk/lib/fit/include/lib/fit/traits.h",
     "sdk/lib/fit/include/lib/fit/utility_internal.h",
+    "sdk/lib/fit/test/function_tests.cc",
     # stdcompat
     "sdk/lib/stdcompat/include/lib/stdcompat/optional.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h",
@@ -53,6 +54,8 @@ core.workflow(
         core.move("", "third_party/fuchsia/repo"),
         # Apply the patch file created by generate_fuchsia_patch.py.
         patch.apply(["pigweed_adaptations.patch"]),
+        # Replace test #includes with gtest.
+        core.replace("#include <zxtest/zxtest.h>", "#include \"gtest/gtest.h\""),
         # Show all commits but exclude the author to reduce line length.
         metadata.squash_notes(
             "third_party/fuchsia: Copybara import of the fit library\n\n",
