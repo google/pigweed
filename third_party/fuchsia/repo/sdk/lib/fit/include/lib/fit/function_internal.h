@@ -80,22 +80,31 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
 // All function_base instantiations, regardless of callable type, use the same
 // vtable for nullptr functions. This avoids generating unnecessary identical
 // vtables, which reduces code size.
+//
+// The null_target class does not need to be a template. However, if it was not
+// a template, the ops variable would need to be defined in a .cc file for C++14
+// compatibility. In C++17, null_target::ops could be defined in the class or
+// elsewhere in the header as an inline variable.
+template <typename Unused = void>
 struct null_target {
   static void invoke(void* /*bits*/) { PW_ASSERT(false); }
 
   static const target_ops<void> ops;
+
+  static_assert(std::is_same<Unused, void>::value, "Only instantiate null_target with void");
 };
 
 template <typename Result, typename... Args>
 struct target<decltype(nullptr), /*is_inline=*/true, /*is_shared=*/false, Result, Args...> final
-    : public null_target {};
+    : public null_target<> {};
 
 inline void* null_target_get(void* /*bits*/) { return nullptr; }
 inline void null_target_move(void* /*from_bits*/, void* /*to_bits*/) {}
 
-constexpr target_ops<void> null_target::ops = {&unshared_target_type_id, &null_target_get,
-                                               &null_target_move, &trivial_target_destroy,
-                                               &null_target::invoke};
+template <typename Unused>
+constexpr target_ops<void> null_target<Unused>::ops = {&unshared_target_type_id, &null_target_get,
+                                                       &null_target_move, &trivial_target_destroy,
+                                                       &null_target::invoke};
 
 // vtable for inline target function
 
@@ -241,13 +250,14 @@ constexpr target_ops<Result, Args...> target<SharedFunction,
                                              /*is_shared=*/true, Result, Args...>::ops = {
     &target::target_type_id, &target::get, &target::move, &target::destroy, &target::invoke};
 
-template <size_t inline_target_size, bool require_inline, typename Callable>
-class function_base;
-
-// Function implementation details.
+// Function implementation details shared by all functions, regardless of
+// signature. This class is aligned as max_align_t so that the target storage
+// (bits_, the first class member) has maximum alignment.
+//
 // See |fit::function| and |fit::callback| documentation for more information.
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-class function_base<inline_target_size, require_inline, Result(Args...)> {
+template <size_t inline_target_size>
+class alignas(max_align_t) generic_function_base {
+ public:
   // The inline target size must be a non-zero multiple of sizeof(void*).  Uses
   // of |fit::function_impl| and |fit::callback_impl| may call
   // fit::internal::RoundUpToWord to round to a valid inline size.
@@ -267,36 +277,118 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   static_assert(inline_target_size % sizeof(void*) == 0,
                 "The inline target size must be a multiple of the word size");
 
-  struct Empty {};
+  // Deleted copy constructor and assign. |generic_function_base|
+  // implementations are move-only.
+  generic_function_base(const generic_function_base& other) = delete;
+  generic_function_base& operator=(const generic_function_base& other) = delete;
 
-  struct alignas(max_align_t) storage_type {
-    union {
-      // Function context data, placed first in the struct since is has a more
-      // strict alignment requirement than ops.
-      mutable uint8_t bits[inline_target_size];
+  // Move assignment must be provided by subclasses.
+  generic_function_base& operator=(generic_function_base&& other) = delete;
 
-      // Empty struct used when initializing the storage in the constexpr
-      // constructor.
-      Empty null_bits;
-    };
+ protected:
+  constexpr generic_function_base() : null_bits_(), ops_(&null_target<>::ops) {}
 
-    // The target_ops pointer for this function. This field has lower alignment
-    // requirement than bits, so placing ops after bits allows for better
-    // packing reducing the padding needed in some cases.
-    const base_target_ops* ops;
+  generic_function_base(generic_function_base&& other) noexcept { move_target_from(other); }
+
+  ~generic_function_base() { destroy_target(); }
+
+  // Returns true if the function has a non-empty target.
+  explicit operator bool() const { return ops_->get(bits_) != nullptr; }
+
+  // Used by derived "impl" classes to implement operator=().
+  // Assigns an empty target.
+  void assign_null() {
+    destroy_target();
+    initialize_null_target();
+  }
+
+  // Used by derived "impl" classes to implement operator=().
+  // Assigns the function with a target moved from another function,
+  // leaving the other function with an empty target.
+  void assign_function(generic_function_base&& other) {
+    destroy_target();
+    move_target_from(other);
+  }
+
+  void swap(generic_function_base& other) {
+    if (&other == this)
+      return;
+
+    const base_target_ops* temp_ops = ops_;
+    // temp_bits, which stores the target, must maintain the expected alignment.
+    alignas(max_align_t) uint8_t temp_bits[inline_target_size];
+    ops_->move(bits_, temp_bits);
+
+    ops_ = other.ops_;
+    other.ops_->move(other.bits_, bits_);
+
+    other.ops_ = temp_ops;
+    temp_ops->move(temp_bits, other.bits_);
+  }
+
+  // returns an opaque ID unique to the |Callable| type of the target.
+  // Used by check_target_type.
+  const void* target_type_id() const { return ops_->target_type_id(bits_, ops_); }
+
+  // leaves target uninitialized
+  void destroy_target() { ops_->destroy(bits_); }
+
+  // assumes target is uninitialized
+  void initialize_null_target() { ops_ = &null_target<>::ops; }
+
+  // Gets a pointer to the function context.
+  void* get() const { return ops_->get(bits_); }
+
+  // Allow function_base to directly access bits_ and ops_ when needed.
+  void* bits() const { return bits_; }
+  const base_target_ops* ops() const { return ops_; }
+  void set_ops(const base_target_ops* new_ops) { ops_ = new_ops; }
+
+ private:
+  // Implements the move operation, used by move construction and move
+  // assignment. Leaves other target initialized to null.
+  void move_target_from(generic_function_base& other) {
+    ops_ = other.ops_;
+    other.ops_->move(other.bits_, bits_);
+    other.initialize_null_target();
+  }
+
+  struct empty {};
+
+  union {
+    // Function context data. The bits_ field requires max_align_t alignment,
+    // but adding the alignas() at the field declaration increases the padding.
+    // Instead, the generic_function_base class is aligned as max_align_t, and
+    // bits_ is placed first in the class. Thus, bits_ MUST remain first in the
+    // class to ensure proper alignment.
+    mutable uint8_t bits_[inline_target_size];
+
+    // Empty struct used when initializing the storage in the constexpr
+    // constructor.
+    empty null_bits_;
   };
 
-  // bits field should have a max_align_t alignment, but adding the alignas()
-  // at the field declaration increases the padding. Make sure the alignment is
-  // correct nevertheless.
-  static_assert(offsetof(storage_type, bits) % alignof(max_align_t) == 0,
-                "bits must be aligned as max_align_t");
+  // The target_ops pointer for this function. This field has lower alignment
+  // requirement than bits, so placing ops after bits allows for better
+  // packing reducing the padding needed in some cases.
+  const base_target_ops* ops_;
+};
 
-  // Check that there's no unexpected extra padding.
-  static_assert(sizeof(storage_type) ==
-                    RoundUpToMultiple(inline_target_size + sizeof(storage_type::ops),
-                                      alignof(max_align_t)),
-                "storage_type is not minimal in size");
+template <size_t inline_target_size, bool require_inline, typename FunctionType>
+class function_base;
+
+// Function implementation details that require the function signature.
+// See |fit::function| and |fit::callback| documentation for more information.
+template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
+class function_base<inline_target_size, require_inline, Result(Args...)>
+    : public generic_function_base<inline_target_size> {
+  using base = generic_function_base<inline_target_size>;
+
+  // Check alignment and size of the base, which holds the bits_ and ops_ members.
+  static_assert(alignof(base) == alignof(max_align_t), "Must be aligned as max_align_t");
+  static_assert(sizeof(base) == RoundUpToMultiple(inline_target_size + sizeof(base_target_ops*),
+                                                  alignof(max_align_t)),
+                "generic_function_base has unexpected padding and is not minimal in size");
 
   template <typename Callable>
   using target_type = target<Callable, (sizeof(Callable) <= inline_target_size),
@@ -305,23 +397,13 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   using shared_target_type = target<SharedFunction,
                                     /*is_inline=*/false,
                                     /*is_shared=*/true, Result, Args...>;
-  using null_target_type = target_type<decltype(nullptr)>;
 
   using ops_type = const target_ops<Result, Args...>*;
-
- public:
-  // Deleted copy constructor and assign. |function_base| implementations are
-  // move-only.
-  function_base(const function_base& other) = delete;
-  function_base& operator=(const function_base& other) = delete;
-
-  // Move assignment must be provided by subclasses.
-  function_base& operator=(function_base&& other) = delete;
 
  protected:
   using result_type = Result;
 
-  constexpr function_base() : storage_({.null_bits = {}, .ops = &null_target_type::ops}) {}
+  constexpr function_base() = default;
 
   constexpr function_base(decltype(nullptr)) : function_base() {}
 
@@ -334,12 +416,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
     initialize_target(std::forward<Callable>(target));
   }
 
-  function_base(function_base&& other) { move_target_from(std::move(other)); }
-
-  ~function_base() { destroy_target(); }
-
-  // Returns true if the function has a non-empty target.
-  explicit operator bool() const { return storage_.ops->get(&storage_.bits) != nullptr; }
+  function_base(function_base&&) noexcept = default;
 
   // Returns a pointer to the function's target.
   // If |check| is true (the default), the function _may_ abort if the
@@ -351,7 +428,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   Callable* target(bool check = true) {
     if (check)
       check_target_type<Callable>();
-    return static_cast<Callable*>(storage_.ops->get(&storage_.bits));
+    return static_cast<Callable*>(base::get());
   }
 
   // Returns a pointer to the function's target (const version).
@@ -364,22 +441,22 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   const Callable* target(bool check = true) const {
     if (check)
       check_target_type<Callable>();
-    return static_cast<Callable*>(storage_.ops->get(&storage_.bits));
+    return static_cast<Callable*>(base::get());
   }
 
   // Used by the derived "impl" classes to implement share().
   //
   // The caller creates a new object of the same type as itself, and passes in
   // the empty object. This function first checks if |this| is already shared,
-  // and if not, creates a new version of itself containing a
-  // |std::shared_ptr| to its original self, and updates |storage_.ops| to the
-  // vtable for the shared version.
+  // and if not, creates a new version of itself containing a |std::shared_ptr|
+  // to its original self, and updates |ops_| to the vtable for the shared
+  // version.
   //
-  // Then it copies its |shared_ptr| to the |storage_.bits| of the given |copy|,
-  // and assigns the same shared pointer vtable to the copy's |storage_.ops|.
+  // Then it copies its |shared_ptr| to the |bits_| of the given |copy|, and
+  // assigns the same shared pointer vtable to the copy's |ops_|.
   //
-  // The target itself is not copied; it is moved to the heap and its
-  // lifetime is extended until all references have been released.
+  // The target itself is not copied; it is moved to the heap and its lifetime
+  // is extended until all references have been released.
   //
   // Note: This method is not supported on |fit::inline_function<>|
   //       because it may incur a heap allocation which is contrary to
@@ -387,9 +464,12 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   template <typename SharedFunction>
   void share_with(SharedFunction& copy) {
     static_assert(!require_inline, "Inline functions cannot be shared.");
-    if (storage_.ops->get(&storage_.bits) != nullptr) {
-      if (storage_.ops != &shared_target_type<SharedFunction>::ops) {
-        convert_to_shared_target<SharedFunction>();
+    if (base::get() != nullptr) {
+      // Convert to a shared function if it isn't already.
+      if (base::ops() != &shared_target_type<SharedFunction>::ops) {
+        shared_target_type<SharedFunction>::initialize(
+            base::bits(), std::move(*static_cast<SharedFunction*>(this)));
+        base::set_ops(&shared_target_type<SharedFunction>::ops);
       }
       copy_shared_target_to(copy);
     }
@@ -410,14 +490,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
     // invoke function. This is permitted only because invoking a null function
     // is an error that immediately aborts execution. Also, the null invoke
     // function never attempts to access any passed arguments.
-    return static_cast<ops_type>(storage_.ops)->invoke(&storage_.bits, std::forward<Args>(args)...);
-  }
-
-  // Used by derived "impl" classes to implement operator=().
-  // Assigns an empty target.
-  void assign(decltype(nullptr)) {
-    destroy_target();
-    initialize_null_target();
+    return static_cast<ops_type>(base::ops())->invoke(base::bits(), std::forward<Args>(args)...);
   }
 
   // Used by derived "impl" classes to implement operator=().
@@ -426,62 +499,22 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   template <typename Callable,
             typename = std::enable_if_t<std::is_convertible<
                 decltype(std::declval<Callable&>()(std::declval<Args>()...)), result_type>::value>>
-  void assign(Callable&& target) {
-    destroy_target();
+  void assign_callable(Callable&& target) {
+    base::destroy_target();
     initialize_target(std::forward<Callable>(target));
   }
 
-  // Used by derived "impl" classes to implement operator=().
-  // Assigns the function with a target moved from another function,
-  // leaving the other function with an empty target.
-  void assign(function_base&& other) {
-    destroy_target();
-    move_target_from(std::move(other));
-  }
-
-  void swap(function_base& other) {
-    if (&other == this)
-      return;
-    storage_type temp_storage;
-    move_storage(storage_, temp_storage);
-    move_storage(other.storage_, storage_);
-    move_storage(temp_storage, other.storage_);
-  }
-
-  // returns an opaque ID unique to the |Callable| type of the target.
-  // Used by check_target_type.
-  const void* target_type_id() const {
-    return storage_.ops->target_type_id(&storage_.bits, storage_.ops);
-  }
-
  private:
-  // Moves the storage_type from one to another using the source's ops move()
-  // operation. The source storage is unnafected.
-  static void move_storage(const storage_type& from_storage, storage_type& to_storage) {
-    to_storage.ops = from_storage.ops;
-    from_storage.ops->move(&from_storage.bits, &to_storage.bits);
-  }
-
-  // Implements the move operation, used by move construction and move
-  // assignment. Leaves other target initialized to null.
-  void move_target_from(function_base&& other) {
-    move_storage(other.storage_, storage_);
-    other.initialize_null_target();
-  }
-
   // fit::function and fit::callback are not directly copyable, but share()
   // will create shared references to the original object. This method
   // implements the copy operation for the |std::shared_ptr| wrapper.
   template <typename SharedFunction>
   void copy_shared_target_to(SharedFunction& copy) {
     copy.destroy_target();
-    PW_ASSERT(storage_.ops == &shared_target_type<SharedFunction>::ops);
-    shared_target_type<SharedFunction>::copy_shared_ptr(&storage_.bits, &copy.storage_.bits);
-    copy.storage_.ops = storage_.ops;
+    PW_ASSERT(base::ops() == &shared_target_type<SharedFunction>::ops);
+    shared_target_type<SharedFunction>::copy_shared_ptr(base::bits(), copy.bits());
+    copy.set_ops(base::ops());
   }
-
-  // assumes target is uninitialized
-  void initialize_null_target() { storage_.ops = &null_target_type::ops; }
 
   // target may or may not be initialized.
   template <typename Callable>
@@ -493,23 +526,12 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
     static_assert(!require_inline || sizeof(DecayedCallable) <= inline_target_size,
                   "Callable too large to store inline as requested.");
     if (is_null(target)) {
-      initialize_null_target();
+      base::initialize_null_target();
     } else {
-      storage_.ops = &target_type<DecayedCallable>::ops;
-      target_type<DecayedCallable>::initialize(&storage_.bits, std::forward<Callable>(target));
+      base::set_ops(&target_type<DecayedCallable>::ops);
+      target_type<DecayedCallable>::initialize(base::bits(), std::forward<Callable>(target));
     }
   }
-
-  // assumes target is uninitialized
-  template <typename SharedFunction>
-  void convert_to_shared_target() {
-    shared_target_type<SharedFunction>::initialize(&storage_.bits,
-                                                   std::move(*static_cast<SharedFunction*>(this)));
-    storage_.ops = &shared_target_type<SharedFunction>::ops;
-  }
-
-  // leaves target uninitialized
-  void destroy_target() { storage_.ops->destroy(&storage_.bits); }
 
   // Called by target() if |check| is true.
   // Checks the template parameter, usually inferred from the context of
@@ -518,13 +540,10 @@ class function_base<inline_target_size, require_inline, Result(Args...)> {
   template <typename Callable>
   void check_target_type() const {
     if (target_type<Callable>::ops.target_type_id(nullptr, &target_type<Callable>::ops) !=
-        target_type_id()) {
+        base::target_type_id()) {
       PW_ASSERT(false);
     }
   }
-
-  // The combined context data and target_ops storage.
-  storage_type storage_;
 };
 
 }  // namespace internal
