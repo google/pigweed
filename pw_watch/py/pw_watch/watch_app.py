@@ -19,6 +19,7 @@ import logging
 from pathlib import Path
 import re
 import sys
+import time
 from typing import List, NoReturn, Optional
 
 from prompt_toolkit.application import Application
@@ -108,6 +109,9 @@ class WatchApp(PluginMixin):
 
         self._build_error_count = 0
         self._errors_in_output = False
+
+        self.log_ui_update_frequency = 0.1  # 10 FPS
+        self._last_ui_update_time = time.time()
 
         self.ninja_log_pane = LogPane(application=self,
                                       pane_title='Pigweed Watch')
@@ -254,6 +258,16 @@ class WatchApp(PluginMixin):
             plugin_callback_frequency=0.5,
             plugin_logger_name='pw_watch_stdout_checker',
         )
+
+    def logs_redraw(self):
+        emit_time = time.time()
+        # Has enough time passed since last UI redraw due to new logs?
+        if emit_time > self._last_ui_update_time + self.log_ui_update_frequency:
+            # Update last log time
+            self._last_ui_update_time = emit_time
+
+            # Trigger Prompt Toolkit UI redraw.
+            self.redraw_ui()
 
     def jump_to_error(self, backwards: bool = False) -> None:
         if not self.ninja_log_pane.log_view.search_text:
