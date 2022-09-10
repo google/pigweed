@@ -626,8 +626,18 @@ void AdapterImpl::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
 }
 
 bool AdapterImpl::IsDiscoverable() const {
-  return (le_advertising_manager_ && le_advertising_manager_->advertising()) ||
-         (bredr_discovery_manager_ && bredr_discovery_manager_->discoverable());
+  if (bredr_discovery_manager_ && bredr_discovery_manager_->discoverable()) {
+    return true;
+  }
+
+  // If LE Privacy is enabled, then we are not discoverable.
+  // TODO(fxbug.dev/109132): Make this dependent on whether the LE Public advertisement is active or
+  // not.
+  if (le_address_manager_ && le_address_manager_->PrivacyEnabled()) {
+    return false;
+  }
+
+  return (le_advertising_manager_ && le_advertising_manager_->advertising());
 }
 
 bool AdapterImpl::IsDiscovering() const {

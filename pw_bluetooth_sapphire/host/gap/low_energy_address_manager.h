@@ -90,6 +90,9 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // used.
   void EnablePrivacy(bool enabled);
 
+  // Returns true if the privacy feature is currently enabled.
+  bool PrivacyEnabled() const { return privacy_enabled_; }
+
   // LocalAddressDelegate overrides:
   std::optional<UInt128> irk() const override { return irk_; }
   DeviceAddress identity_address() const override { return public_; }

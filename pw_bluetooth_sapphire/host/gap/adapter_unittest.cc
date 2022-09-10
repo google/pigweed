@@ -958,6 +958,33 @@ TEST_F(AdapterTest, IsDiscoverableBredr) {
   EXPECT_FALSE(adapter()->IsDiscoverable());
 }
 
+TEST_F(AdapterTest, IsDiscoverableLowEnergyPrivacyEnabled) {
+  FakeController::Settings settings;
+  settings.ApplyLegacyLEConfig();
+  test_device()->set_settings(settings);
+  InitializeAdapter([](bool) {});
+
+  EXPECT_FALSE(adapter()->IsDiscoverable());
+  adapter()->le()->EnablePrivacy(true);
+  EXPECT_FALSE(adapter()->IsDiscoverable());
+
+  AdvertisementInstance instance;
+  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(),
+                                    AdvertisingInterval::FAST1, /*anonymous=*/false,
+                                    /*include_tx_power_level=*/false, /*connectable=*/std::nullopt,
+                                    [&](AdvertisementInstance i, auto status) {
+                                      ASSERT_EQ(fitx::ok(), status);
+                                      instance = std::move(i);
+                                    });
+  RunLoopUntilIdle();
+  // Even though we are advertising over LE, we are not discoverable since Privacy is enabled.
+  EXPECT_FALSE(adapter()->IsDiscoverable());
+
+  instance = {};
+  RunLoopUntilIdle();
+  EXPECT_FALSE(adapter()->IsDiscoverable());
+}
+
 #ifndef NINSPECT
 TEST_F(AdapterTest, InspectHierarchy) {
   inspect::Inspector inspector;

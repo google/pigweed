@@ -94,6 +94,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
   addr_mgr()->set_irk(kIrk);
   ASSERT_TRUE(addr_mgr()->irk());
   EXPECT_EQ(kIrk, *addr_mgr()->irk());
+  EXPECT_FALSE(addr_mgr()->PrivacyEnabled());
   addr_mgr()->EnablePrivacy(true);
 
   // Privacy is now considered enabled. Further requests to enable should not
@@ -101,6 +102,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
   addr_mgr()->EnablePrivacy(true);
   RunLoopUntilIdle();
 
+  EXPECT_TRUE(addr_mgr()->PrivacyEnabled());
   // We should have received a HCI command with a RPA resolvable using |kIrk|.
   EXPECT_EQ(1, hci_cmd_count);
   EXPECT_TRUE(addr.IsResolvablePrivate());
@@ -221,6 +223,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallowed)
   RunLoopUntilIdle();
   EXPECT_EQ(0, hci_count);
 
+  EXPECT_TRUE(addr_mgr()->PrivacyEnabled());
   EXPECT_EQ(kPublic, EnsureLocalAddress());
   EXPECT_EQ(0, hci_count);
 
