@@ -41,12 +41,7 @@ using std::span;
 
 #else
 
-#define _PW_SPAN_COMMON_NAMEPACE_BEGIN namespace pw {
-#define _PW_SPAN_COMMON_NAMEPACE_END }  // namespace pw
-
-#include "pw_span/internal/span_common.inc"
-
-#undef _PW_SPAN_COMMON_NAMEPACE_BEGIN
-#undef _PW_SPAN_COMMON_NAMEPACE_END
+// If std::span is not available, use Pigweed's span implementation.
+#include "pw_span/internal/span_impl.h"
 
 #endif  // defined(__cpp_lib_span) && __cpp_lib_span >= 202002L

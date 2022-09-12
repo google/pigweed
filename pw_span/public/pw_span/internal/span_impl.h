@@ -27,14 +27,12 @@
 //
 // A few changes were made to the Chromium version of span. These include:
 //   - Use std::data and std::size instead of base::* versions.
-//   - Rename base namespace to std.
+//   - Rename base namespace to pw.
 //   - Rename internal namespace to pw_span_internal.
 //   - Remove uses of checked_iterators.h and CHECK.
 //   - Replace make_span functions with C++17 class template deduction guides.
 //   - Use std::byte instead of uint8_t for compatibility with std::span.
-
-// This file does not have #pragma once! It is intended to be included in
-// multiple header files!
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -57,12 +55,7 @@
 #define _PW_SPAN_ASSERT(arg)
 #endif  // PW_SPAN_ENABLE_ASSERTS
 
-// The file that includes this .inc file must define the following macros:
-//
-//   * _PW_SPAN_COMMON_NAMEPACE_BEGIN
-//   * _PW_SPAN_COMMON_NAMEPACE_END
-
-_PW_SPAN_COMMON_NAMEPACE_BEGIN
+namespace pw {
 
 // [views.constants]
 constexpr size_t dynamic_extent = std::numeric_limits<size_t>::max();
@@ -483,6 +476,6 @@ span(const Container&) -> span<pw_span_internal::ValueType<const Container>>;
 
 #endif  // __cpp_deduction_guides
 
-_PW_SPAN_COMMON_NAMEPACE_END
+}  // namespace pw
 
 #undef _PW_SPAN_ASSERT

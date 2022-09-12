@@ -24,7 +24,7 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "pw_span",
-    srcs = ["public/pw_span/internal/span_common.inc"],
+    srcs = ["public/pw_span/internal/span_impl.h"],
     hdrs = [
         "public/pw_span/internal/config.h",
         "public/pw_span/span.h",

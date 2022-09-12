@@ -19,7 +19,7 @@ pw_add_module_library(pw_span
   HEADERS
     public/pw_span/span.h
     public/pw_span/internal/config.h
-    public/pw_span/internal/span_common.inc
+    public/pw_span/internal/span_impl.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -33,9 +33,6 @@ pw_add_test(pw_span.pw_span_test
     span_test.cc
   DEPS
     pw_span
-  DEFINES
-    "PW_SPAN_TEST_INCLUDE=\"pw_span/span.h\""
-    "PW_SPAN_TEST_NAMESPACE=pw"
   GROUPS
     modules
     pw_span

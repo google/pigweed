@@ -93,7 +93,7 @@ pw_source_set("common") {
     public_deps += [ "$dir_pw_assert:assert" ]
   }
 
-  sources = [ "public/pw_span/internal/span_common.inc" ]
+  sources = [ "public/pw_span/internal/span_impl.h" ]
   visibility = [ ":*" ]
 }
 
