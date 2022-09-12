@@ -20,7 +20,7 @@ manually configured to point to the location of the downloaded SDK.
 
   gn args out
     # Add this line.
-    PICO_SRC_DIR = pw_env_setup_PACKAGE_ROOT + "/pico_sdk"
+    PICO_SRC_DIR = getenv("PW_PACKAGE_ROOT") + "/pico_sdk"
 
 Usage
 =====
@@ -35,26 +35,14 @@ GN build:
 
   ninja -C out
 
-Pigweed's build will produce ELF files for each unit test built for the Pi Pico.
-While ELF files can be flashed to a Pi Pico via SWD, it's slightly easier to
-use the Pi Pico's bootloader to flash the firmware as a UF2 file.
-
-Pigweed currently does not yet build/provide the elf2uf2 utility used to convert
-ELF files to UF2 files. This tool can be built from within the Pi Pico SDK with
-the following command:
-
-.. code:: sh
-
-  mkdir build && cd build && cmake -G Ninja ../ && ninja
-  # Copy the tool so it's visible in your PATH.
-  cp elf2uf2/elf2uf2 $HOME/bin/elf2uf2
+Pigweed's build will produce ELF and UF2 files for each unit test built for the
+Pi Pico.
 
 Flashing
 ========
-Flashing the Pi Pico is as easy as 1-2-3:
+Flashing the Pi Pico is two easy steps:
 
-#. Create a UF2 file from an ELF file using ``elf2uf2``.
 #. While holding the button on the Pi Pico, connect the Pico to your computer
    via the micro USB port.
-#. Copy the UF2 to the RPI-RP2 volume that enumerated when you connected the
-   Pico.
+#. Copy the desired UF2 firmware image to the RPI-RP2 volume that enumerated
+   when you connected the Pico.

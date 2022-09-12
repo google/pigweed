@@ -56,7 +56,7 @@ pw_executable("boot_stage2_elf") {
     "$dir_pw_build:reduced_size",
     "$dir_pw_build:strict_warnings",
   ]
-  no_link_deps = true
+  is_boot_stage2 = true
 
   public = [ "${_CWD}/include/boot_stage2/config.h" ]
 

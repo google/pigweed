@@ -12,6 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pi_pico.gni")
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+
 # TODO(amontanez): If a successor to the RP2040 comes out, this might need to
 # be a little smarter about what code is pulled in.
 group("pico_sdk") {
@@ -20,4 +25,15 @@ group("pico_sdk") {
     "rp2040",
     "rp2_common",
   ]
+}
+
+config("elf2uf2_configs") {
+  include_dirs = [ "$PICO_SRC_DIR/src/common/boot_uf2/include" ]
+  cflags_cc = [ "-std=gnu++14" ]
+}
+
+pw_executable("elf2uf2") {
+  configs = [ ":elf2uf2_configs" ]
+  sources = [ "$PICO_SRC_DIR/tools/elf2uf2/main.cpp" ]
+  remove_configs = [ "$dir_pw_build:strict_warnings" ]
 }
