@@ -372,6 +372,12 @@ pw_proto_library(
     deps = [":thread_snapshot_service_proto"],
 )
 
+# TODO(b/241456982): Not expected to build yet.
+py_proto_library(
+    name = "thread_snapshot_service_py_pb2",
+    deps = [":thread_snapshot_service_proto"],
+)
+
 pw_proto_library(
     name = "thread_cc",
     deps = [":thread_proto"],
