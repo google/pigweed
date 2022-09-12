@@ -25,13 +25,15 @@ pw_add_module_library(pw_system.config
 
 pw_add_module_library(pw_system.log
   PUBLIC_DEPS
-    pw_log_rpc.log_service
-    pw_log_rpc.rpc_log_drain_thread
+    # TODO(b/246101669): Add CMake support.
+    # pw_log_rpc.log_service
+    # pw_log_rpc.rpc_log_drain_thread
     pw_multisink
   PRIVATE_DEPS
     pw_system.config
     pw_system.rpc_server
-    pw_log_rpc.rpc_log_drain
+    # TODO(b/246101669): Add CMake support.
+    # pw_log_rpc.rpc_log_drain
     pw_sync.lock_annotations
     pw_sync.mutex
   HEADERS
@@ -122,7 +124,7 @@ pw_add_module_library(pw_system.target_io
 
 pw_add_module_library(pw_system.target_hooks
   PUBLIC_DEPS
-    pw_thread
+    pw_thread.thread
   HEADERS
     public/pw_system/target_hooks.h
 )

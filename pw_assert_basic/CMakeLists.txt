@@ -49,6 +49,6 @@ pw_add_module_library(pw_assert_basic.basic_handler
     pw_assert_basic.handler.facade
     pw_assert.config
     pw_preprocessor
-    pw_string.string_builder
+    pw_string.builder
     pw_sys_io
 )

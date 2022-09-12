@@ -31,12 +31,6 @@ pw_add_module_library(pw_snapshot.uuid
     pw_snapshot.metadata_proto.pwpb
 )
 
-pw_add_module_library(pw_snapshot
-  PUBLIC_DEPS
-    pw_snapshot.metadata_proto
-    pw_snapshot.snapshot_proto
-)
-
 # This proto library only contains the snapshot_metadata.proto. Typically this
 # should be a dependency of snapshot-like protos.
 pw_proto_library(pw_snapshot.metadata_proto

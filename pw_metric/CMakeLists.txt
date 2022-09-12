@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,26 +13,52 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
-include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
-pw_add_module_library(pw_file.flat_file_system
+pw_add_module_library(pw_metric
+  HEADERS
+    public/pw_metric/metric.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
-    pw_file.proto.pwpb
-    pw_file.proto.raw_rpc
+    pw_tokenizer.base64
     pw_assert
-    pw_bytes
+    pw_containers
     pw_log
-    pw_result
-    pw_status
+    pw_tokenizer
+  SOURCES
+    metric.cc
   PRIVATE_DEPS
-    pw_rpc.test_utils
+    pw_span
 )
 
-pw_proto_library(pw_file.proto
+pw_add_module_library(pw_metric.global
+  HEADERS
+    public/pw_metric/global.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_metric
+    pw_tokenizer
   SOURCES
-    file.proto
+    global.cc
+)
+
+pw_add_test(pw_metric.metric_test
+  SOURCES
+    metric_test.cc
   DEPS
-     pw_protobuf.common_proto
-  PREFIX
-    pw_file
+    pw_metric
+  GROUPS
+    modules
+    pw_metric
+)
+
+pw_add_test(pw_metric.global_test
+  SOURCES
+    global_test.cc
+  DEPS
+    pw_metric.global
+  GROUPS
+    modules
+    pw_metric
 )

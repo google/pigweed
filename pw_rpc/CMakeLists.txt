@@ -80,7 +80,7 @@ pw_add_module_library(pw_rpc.synchronous_client_api
     public/pw_rpc/synchronous_call.h
     public/pw_rpc/synchronous_call_result.h
   PUBLIC_DEPS
-    pw_chono.system_clock
+    pw_chrono.system_clock
     pw_rpc.client
     pw_rpc.common
     pw_sync.timed_thread_notification
