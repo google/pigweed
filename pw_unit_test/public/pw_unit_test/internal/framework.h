@@ -490,22 +490,25 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
                  test_suite_name##_##test_name##_Test,                         \
                  parent_class)
 
-#define _PW_TEST_CLASS(suite, name, class_name, parent_class)              \
-  class class_name final : public parent_class {                           \
-   private:                                                                \
-    void PigweedTestBody() override;                                       \
-  };                                                                       \
-                                                                           \
-  extern "C" {                                                             \
-                                                                           \
-  ::pw::unit_test::internal::TestInfo _pw_unit_test_Info_##suite##_##name( \
-      #suite,                                                              \
-      #name,                                                               \
-      __FILE__,                                                            \
-      ::pw::unit_test::internal::Framework::CreateAndRunTest<class_name>); \
-                                                                           \
-  } /* extern "C" */                                                       \
-                                                                           \
+#define _PW_TEST_CLASS(suite, name, class_name, parent_class)               \
+  class class_name final : public parent_class {                            \
+   private:                                                                 \
+    void PigweedTestBody() override;                                        \
+  };                                                                        \
+                                                                            \
+  extern "C" {                                                              \
+                                                                            \
+  /* Declare the TestInfo as non-const since const variables do not work */ \
+  /* with the PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST macro. */              \
+  /* NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) */  \
+  ::pw::unit_test::internal::TestInfo _pw_unit_test_Info_##suite##_##name(  \
+      #suite,                                                               \
+      #name,                                                                \
+      __FILE__,                                                             \
+      ::pw::unit_test::internal::Framework::CreateAndRunTest<class_name>);  \
+                                                                            \
+  } /* extern "C" */                                                        \
+                                                                            \
   void class_name::PigweedTestBody()
 
 #define _PW_TEST_ASSERT(expectation)                                           \
