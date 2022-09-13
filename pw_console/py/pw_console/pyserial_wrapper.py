@@ -24,7 +24,7 @@ from pw_console.widgets.event_count_history import EventCountHistory
 _LOG = logging.getLogger('pw_console.serial_debug_logger')
 
 
-def _log_hex_strings(data, prefix=''):
+def _log_hex_strings(data: bytes, prefix=''):
     """Create alinged hex number and character view log messages."""
     # Make a list of 2 character hex number strings.
     hex_numbers = textwrap.wrap(data.hex(), 2)
@@ -51,12 +51,14 @@ def _log_hex_strings(data, prefix=''):
                hex_numbers_msg,
                extra=dict(extra_metadata_fields={
                    'msg': hex_numbers_msg,
+                   'view': 'hex',
                }))
     _LOG.debug('%s%s',
                prefix,
                hex_chars_msg,
                extra=dict(extra_metadata_fields={
                    'msg': hex_chars_msg,
+                   'view': 'chars',
                }))
 
 
@@ -87,16 +89,28 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
             _LOG.debug('%s%s',
                        prefix,
                        data,
-                       extra=dict(extra_metadata_fields={
-                           'mode': 'Read',
-                           'bytes': len(data),
-                           'msg': str(data),
-                       }))
+                       extra=dict(
+                           extra_metadata_fields={
+                               'mode': 'Read',
+                               'bytes': len(data),
+                               'view': 'bytes',
+                               'msg': str(data),
+                           }))
             _log_hex_strings(data, prefix=prefix)
+
+            # Print individual lines
+            for line in data.decode(encoding='utf-8',
+                                    errors='ignore').splitlines():
+                _LOG.debug('%s',
+                           line,
+                           extra=dict(extra_metadata_fields={
+                               'msg': line,
+                               'view': 'lines',
+                           }))
 
         return data
 
-    def write(self, data, *args, **kwargs):
+    def write(self, data: bytes, *args, **kwargs):
         self.pw_bps_history['write'].log(len(data))
         self.pw_bps_history['total'].log(len(data))
 
@@ -105,11 +119,23 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
             _LOG.debug('%s%s',
                        prefix,
                        data,
-                       extra=dict(extra_metadata_fields={
-                           'mode': 'Write',
-                           'bytes': len(data),
-                           'msg': str(data)
-                       }))
+                       extra=dict(
+                           extra_metadata_fields={
+                               'mode': 'Write',
+                               'bytes': len(data),
+                               'view': 'bytes',
+                               'msg': str(data)
+                           }))
             _log_hex_strings(data, prefix=prefix)
+
+            # Print individual lines
+            for line in data.decode(encoding='utf-8',
+                                    errors='ignore').splitlines():
+                _LOG.debug('%s',
+                           line,
+                           extra=dict(extra_metadata_fields={
+                               'msg': line,
+                               'view': 'lines',
+                           }))
 
         super().write(data, *args, **kwargs)

@@ -94,8 +94,14 @@ class TableView:
 
         return ordered_columns.items()
 
-    def update_metadata_column_widths(self, log: LogLine):
+    def update_metadata_column_widths(self, log: LogLine) -> None:
         """Calculate the max widths for each metadata field."""
+        if log.metadata is None:
+            log.update_metadata()
+        # If extra fields still don't exist, no need to update column widths.
+        if log.metadata is None:
+            return
+
         for field_name, value in log.metadata.fields.items():
             value_string = str(value)
 

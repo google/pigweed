@@ -161,6 +161,11 @@ def _parse_args():
                         dest='use_ipython',
                         help='Use IPython instead of pw_console.')
 
+    parser.add_argument('--rpc-logging',
+                        action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help='Use pw_rpc based logging.')
+
     return parser.parse_args()
 
 
@@ -292,6 +297,7 @@ def console(device: str,
             verbose: bool = False,
             compiled_protos: Optional[List[ModuleType]] = None,
             merge_device_and_host_logs: bool = False,
+            rpc_logging: bool = True,
             use_ipython: bool = False) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
@@ -370,7 +376,8 @@ def console(device: str,
     # Append compiled log.proto library to avoid include errors when manually
     # provided, and shadowing errors due to ordering when the default global
     # search path is used.
-    compiled_protos.append(log_pb2)
+    if rpc_logging:
+        compiled_protos.append(log_pb2)
     compiled_protos.append(unit_test_pb2)
     protos.extend(compiled_protos)
     protos.append(metric_service_pb2)
@@ -424,7 +431,8 @@ def console(device: str,
                            protos,
                            detokenizer,
                            timestamp_decoder=timestamp_decoder,
-                           rpc_timeout_s=5)
+                           rpc_timeout_s=5,
+                           use_rpc_logging=rpc_logging)
 
     _start_python_terminal(
         device=device_client,

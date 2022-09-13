@@ -49,7 +49,8 @@ class Device:
                  proto_library: List[Union[ModuleType, Path]],
                  detokenizer: Optional[detokenize.Detokenizer],
                  timestamp_decoder: Optional[Callable[[int], str]],
-                 rpc_timeout_s=5):
+                 rpc_timeout_s: float = 5,
+                 use_rpc_logging: bool = True):
         self.channel_id = channel_id
         self.protos = proto_library
         self.detokenizer = detokenizer
@@ -64,15 +65,27 @@ class Device:
             default_unary_timeout_s=self.rpc_timeout_s,
             default_stream_timeout_s=None,
         )
-        self.client = HdlcRpcClient(
-            read,
-            self.protos,
-            default_channels(write),
-            lambda data: self.logger.info("%s", str(data)),
-            client_impl=callback_client_impl)
 
-        # Start listening to logs as soon as possible.
-        self.listen_to_log_stream()
+        def detokenize_and_log_output(data: bytes, _detokenizer=None):
+            log_messages = data.decode(encoding='utf-8',
+                                       errors='surrogateescape')
+
+            if self.detokenizer:
+                log_messages = decode_optionally_tokenized(
+                    self.detokenizer, data)
+
+            for line in log_messages.splitlines():
+                self.logger.info(line)
+
+        self.client = HdlcRpcClient(read,
+                                    self.protos,
+                                    default_channels(write),
+                                    detokenize_and_log_output,
+                                    client_impl=callback_client_impl)
+
+        if use_rpc_logging:
+            # Start listening to logs as soon as possible.
+            self.listen_to_log_stream()
 
     def info(self) -> console_tools.ClientInfo:
         return console_tools.ClientInfo('device', self.rpcs,
@@ -137,12 +150,12 @@ class Device:
                     decode_optionally_tokenized(self.detokenizer,
                                                 log_proto.message))
             else:
-                message = log_proto.message.decode("utf-8")
+                message = log_proto.message.decode('utf-8')
             log = pw_log_tokenized.FormatStringWithMetadata(message)
 
             # Handle dropped count.
             if log_proto.dropped:
-                drop_reason = log_proto.message.decode("utf-8").lower(
+                drop_reason = log_proto.message.decode('utf-8').lower(
                 ) if log_proto.message else 'enqueue failure on device'
                 self._handle_log_drop_count(log_proto.dropped, drop_reason)
                 continue
