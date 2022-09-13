@@ -102,7 +102,7 @@ constexpr size_type BoundedStringLength(const T* string, size_type capacity) {
   size_type index = 0;
   for (; !char_traits<T>::eq(string[index], T()); ++index) {
     if (index > capacity) {
-      break;  // Return if size is too large. This will trigger an assert.
+      break;  // Return if size is too large. This may trigger an assert later.
     }
   }
   return index;

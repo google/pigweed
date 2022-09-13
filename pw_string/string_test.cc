@@ -1548,7 +1548,7 @@ TEST(InlineString, Compare) {
 
 // TODO(b/239996007): Test operator+.
 
-TEST(InlineString, ComparisonOperators) {
+TEST(InlineString, ComparisonOperators_InlineString) {
   EXPECT_EQ(InlineString<10>("a"), InlineString<10>("a"));
   EXPECT_NE(InlineString<10>("a"), InlineString<10>("b"));
   EXPECT_LT(InlineString<10>("a"), InlineString<10>("b"));
@@ -1607,6 +1607,69 @@ TEST(InlineString, ComparisonOperators) {
                 "greater equal");
   static_assert(!(InlineString<3>("\0\0") >= InlineString<10>("\1\0")),
                 "greater equal");
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+}
+
+TEST(InlineString, ComparisonOperators_NullTerminatedString) {
+  EXPECT_EQ(InlineString<10>("a"), "a");
+  EXPECT_EQ("a", InlineString<10>("a"));
+
+  EXPECT_NE(InlineString<10>("a"), "b");
+  EXPECT_NE("a", InlineString<10>("b"));
+
+  EXPECT_LT(InlineString<10>("a"), "b");
+  EXPECT_LT("a", InlineString<10>("b"));
+
+  EXPECT_LE(InlineString<10>("a"), "b");
+  EXPECT_LE("a", InlineString<10>("b"));
+  EXPECT_LE(InlineString<10>("a"), "a");
+  EXPECT_LE("a", InlineString<10>("a"));
+
+  EXPECT_GT(InlineString<10>("b"), "a");
+  EXPECT_GT("b", InlineString<10>("a"));
+
+  EXPECT_GE(InlineString<10>("b"), "a");
+  EXPECT_GE("b", InlineString<10>("a"));
+  EXPECT_GE(InlineString<10>("a"), "a");
+  EXPECT_GE("a", InlineString<10>("a"));
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+  static_assert(InlineString<10>() == "", "equal");  // NOLINT
+  static_assert("" == InlineString<10>(), "equal");  // NOLINT
+  static_assert(InlineString<10>("abc") == "abc", "equal");
+  static_assert("abc" == InlineString<5>("abc"), "equal");
+
+  static_assert("" != InlineString<10>("a"), "not equal");    // NOLINT
+  static_assert(InlineString<10>("a") != "", "not equal");    // NOLINT
+  static_assert(InlineString<10>("") != "abc", "not equal");  // NOLINT
+  static_assert("" != InlineString<5>("abc"), "not equal");   // NOLINT
+
+  static_assert(InlineString<10>() < "a", "less");
+  static_assert("" < InlineString<10>("a"), "less");
+  static_assert(InlineString<10>("ab") < "abc", "less");
+  static_assert("ab" < InlineString<5>("abc"), "less");
+
+  static_assert(InlineString<10>() <= "a", "less equal");
+  static_assert("" <= InlineString<10>("a"), "less equal");
+  static_assert(InlineString<10>("a") <= "a", "less equal");
+  static_assert("a" <= InlineString<10>("a"), "less equal");
+
+  static_assert(InlineString<10>("ab") <= "abc", "less equal");
+  static_assert("ab" <= InlineString<5>("abc"), "less equal");
+  static_assert(InlineString<10>("abc") <= "abc", "less equal");
+  static_assert("abc" <= InlineString<5>("abc"), "less equal");
+
+  static_assert(InlineString<10>("?") > "", "greater");
+  static_assert("?" > InlineString<10>(""), "greater");
+  static_assert(InlineString<10>("abc") > "ab", "greater");
+  static_assert("abc" > InlineString<5>("ab"), "greater");
+
+  static_assert(InlineString<10>("?") >= "", "greater equal");
+  static_assert("?" >= InlineString<10>(""), "greater equal");
+  static_assert(InlineString<10>("abc") >= "ab", "greater equal");
+  static_assert("abc" >= InlineString<5>("ab"), "greater equal");
+  static_assert(InlineString<10>("abc") >= "abc", "greater equal");
+  static_assert("abc" >= InlineString<5>("abc"), "greater equal");
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 }
 

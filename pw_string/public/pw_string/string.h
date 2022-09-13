@@ -25,9 +25,9 @@
 // Messages to use in static_assert statements.
 #define _PW_STRING_CAPACITY_TOO_SMALL_FOR_ARRAY                               \
   "The pw::InlineString's capacity is too small to hold the assigned string " \
-  "literal or character array. When assigning a literal to a "                \
-  "pw::InlineString, the pw::InlineString's capacity must account for the "   \
-  "null terminator."
+  "literal or character array. When assigning a literal or array to a "       \
+  "pw::InlineString, the pw::InlineString must be large enough for the "      \
+  "entire string and an additional null terminator."
 
 #define _PW_STRING_CAPACITY_TOO_SMALL_FOR_STRING                               \
   "When assigning one pw::InlineString with known capacity to another, the "   \
@@ -468,6 +468,78 @@ constexpr bool operator>=(
     const InlineBasicString<T, kLhsCapacity>& lhs,
     const InlineBasicString<T, kRhsCapacity>& rhs) noexcept {
   return lhs.compare(rhs) >= 0;
+}
+
+template <typename T, string_impl::size_type kLhsCapacity>
+constexpr bool operator==(const InlineBasicString<T, kLhsCapacity>& lhs,
+                          const T* rhs) {
+  return lhs.compare(rhs) == 0;
+}
+
+template <typename T, string_impl::size_type kRhsCapacity>
+constexpr bool operator==(const T* lhs,
+                          const InlineBasicString<T, kRhsCapacity>& rhs) {
+  return rhs.compare(lhs) == 0;
+}
+
+template <typename T, string_impl::size_type kLhsCapacity>
+constexpr bool operator!=(const InlineBasicString<T, kLhsCapacity>& lhs,
+                          const T* rhs) {
+  return lhs.compare(rhs) != 0;
+}
+
+template <typename T, string_impl::size_type kRhsCapacity>
+constexpr bool operator!=(const T* lhs,
+                          const InlineBasicString<T, kRhsCapacity>& rhs) {
+  return rhs.compare(lhs) != 0;
+}
+
+template <typename T, string_impl::size_type kLhsCapacity>
+constexpr bool operator<(const InlineBasicString<T, kLhsCapacity>& lhs,
+                         const T* rhs) {
+  return lhs.compare(rhs) < 0;
+}
+
+template <typename T, string_impl::size_type kRhsCapacity>
+constexpr bool operator<(const T* lhs,
+                         const InlineBasicString<T, kRhsCapacity>& rhs) {
+  return rhs.compare(lhs) >= 0;
+}
+
+template <typename T, string_impl::size_type kLhsCapacity>
+constexpr bool operator<=(const InlineBasicString<T, kLhsCapacity>& lhs,
+                          const T* rhs) {
+  return lhs.compare(rhs) <= 0;
+}
+
+template <typename T, string_impl::size_type kRhsCapacity>
+constexpr bool operator<=(const T* lhs,
+                          const InlineBasicString<T, kRhsCapacity>& rhs) {
+  return rhs.compare(lhs) >= 0;
+}
+
+template <typename T, string_impl::size_type kLhsCapacity>
+constexpr bool operator>(const InlineBasicString<T, kLhsCapacity>& lhs,
+                         const T* rhs) {
+  return lhs.compare(rhs) > 0;
+}
+
+template <typename T, string_impl::size_type kRhsCapacity>
+constexpr bool operator>(const T* lhs,
+                         const InlineBasicString<T, kRhsCapacity>& rhs) {
+  return rhs.compare(lhs) <= 0;
+}
+
+template <typename T, string_impl::size_type kLhsCapacity>
+constexpr bool operator>=(const InlineBasicString<T, kLhsCapacity>& lhs,
+                          const T* rhs) {
+  return lhs.compare(rhs) >= 0;
+}
+
+template <typename T, string_impl::size_type kRhsCapacity>
+constexpr bool operator>=(const T* lhs,
+                          const InlineBasicString<T, kRhsCapacity>& rhs) {
+  return rhs.compare(lhs) <= 0;
 }
 
 // TODO(b/239996007): Implement other comparison operator overloads.

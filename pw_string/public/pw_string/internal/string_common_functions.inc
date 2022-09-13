@@ -275,6 +275,14 @@ constexpr int compare(
   return string_impl::Compare(data(), size(), other.data(), other.size());
 }
 
+constexpr int compare(const T* other) const {
+  return string_impl::Compare(
+      data(),
+      size(),
+      other,
+      string_impl::BoundedStringLength(other, max_size()));
+}
+
 // TODO(b/239996007): Implement other compare overloads.
 
 // TODO(b/239996007): Implement other std::string functions:
