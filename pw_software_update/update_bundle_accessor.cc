@@ -167,7 +167,7 @@ Status VerifyMetadataSignatures(protobuf::Bytes message,
   }
 
   PW_LOG_ERROR("Insufficient signatures. Requires at least %u, verified %zu",
-               threshold.value(),
+               static_cast<unsigned>(threshold.value()),
                verified_count);
   return Status::Unauthenticated();
 }
@@ -494,8 +494,8 @@ Status UpdateBundleAccessor::UpgradeRoot() {
 
   if (trusted_root_version.value() > new_root_version.value()) {
     PW_LOG_ERROR("Root attempts to rollback from %u to %u",
-                 trusted_root_version.value(),
-                 new_root_version.value());
+                 static_cast<unsigned>(trusted_root_version.value()),
+                 static_cast<unsigned>(new_root_version.value()));
     return Status::Unauthenticated();
   }
 
@@ -630,8 +630,8 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
   PW_TRY(new_version.status());
   if (current_version.value() > new_version.value()) {
     PW_LOG_ERROR("Blocking Targets metadata rollback from %u to %u",
-                 current_version.value(),
-                 new_version.value());
+                 static_cast<unsigned>(current_version.value()),
+                 static_cast<unsigned>(new_version.value()));
     return Status::Unauthenticated();
   }
 
@@ -725,8 +725,8 @@ Status UpdateBundleAccessor::VerifyTargetPayload(
 // TODO(alizhang): Add unit tests for all failure conditions.
 Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
     std::string_view target_name,
-    protobuf::Uint64 expected_length,
-    protobuf::Bytes expected_sha256) {
+    [[maybe_unused]] protobuf::Uint64 expected_length,
+    [[maybe_unused]] protobuf::Bytes expected_sha256) {
 #if PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION
   // The target payload is "personalized out". We we can't take a measurement
   // without backend help. For now we will check against the device manifest
@@ -782,7 +782,7 @@ Status UpdateBundleAccessor::VerifyOutOfBundleTargetPayload(
 
   return OkStatus();
 #else
-  PW_LOG_ERROR("Target file %s not found in bundle", target_name);
+  PW_LOG_ERROR("Target file %s not found in bundle", target_name.data());
   return Status::Unauthenticated();
 #endif  // PW_SOFTWARE_UPDATE_WITH_PERSONALIZATION
 }
