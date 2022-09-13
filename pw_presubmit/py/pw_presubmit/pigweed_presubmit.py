@@ -76,7 +76,31 @@ def _at_all_optimization_levels(target):
 # Build presubmit checks
 #
 def gn_clang_build(ctx: PresubmitContext):
-    build_targets = list(_at_all_optimization_levels('host_clang'))
+    """Checks all compile targets that rely on LLVM tooling."""
+    build_targets = [
+        *_at_all_optimization_levels('host_clang'),
+        'cpp14_compatibility',
+        'cpp20_compatibility',
+        'asan',
+        'tsan',
+        'ubsan',
+        'runtime_sanitizers',
+
+        # TODO(b/234876100): msan will not work until the C++ standard library
+        # included in the sysroot has a variant built with msan.
+    ]
+
+    # clang-tidy doesn't run on Windows.
+    if sys.platform != 'win32':
+        build_targets.append('static_analysis')
+
+    # QEMU doesn't run on Windows.
+    if sys.platform != 'win32':
+        # TODO(b/244604080): For the pw::InlineString tests, qemu_clang_debug
+        #     and qemu_clang_speed_optimized produce a binary too large for the
+        #     QEMU target's 256KB flash. Restore debug and speed optimized
+        #     builds when this is fixed.
+        build_targets.append('qemu_clang_size_optimized')
 
     # TODO(b/240982565): SocketStream currently requires Linux.
     if sys.platform.startswith('linux'):
