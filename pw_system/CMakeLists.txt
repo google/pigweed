@@ -96,7 +96,7 @@ pw_add_module_library(pw_system.init
   PRIVATE_DEPS
         pw_system.log
         pw_system.rpc_server
-        pw_rpc.nanopb.echo_service
+        pw_rpc.pwpb.echo_service
         pw_thread.thread
   SOURCES
     init.cc
