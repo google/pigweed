@@ -13,7 +13,7 @@
 # the License.
 include_guard(GLOBAL)
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 
 # The PW_ROOT environment variable should be set in bootstrap. If it is not set,
 # set it to the root of the Pigweed repository.
@@ -98,8 +98,8 @@ endmacro()
 # Args:
 #
 #   IMPLEMENTS_FACADE - this module implements the specified facade
-#   PUBLIC_DEPS - public target_link_libraries arguments
-#   PRIVATE_DEPS - private target_link_libraries arguments
+#   PUBLIC_DEPS - public pw_target_link_targets arguments
+#   PRIVATE_DEPS - private pw_target_link_targets arguments
 #
 function(pw_auto_add_simple_module MODULE)
   pw_parse_arguments_strict(pw_auto_add_simple_module 1
@@ -184,6 +184,76 @@ function(pw_auto_add_module_tests MODULE)
   endforeach()
 endfunction(pw_auto_add_module_tests)
 
+# pw_target_link_targets: CMake target only form of target_link_libraries.
+#
+# Helper wrapper around target_link_libraries which only supports CMake targets
+# and detects when the target does not exist.
+#
+# NOTE: Generator expressions are not supported.
+#
+# Due to the processing order of list files, the list of targets has to be
+# checked at the end of the root CMake list file. Instead of requiring all
+# list files to be modified, a DEFER CALL is used.
+#
+# Required Args:
+#
+#   <name> - The library target to add the TARGET link dependencies to.
+#
+# Optional Args:
+#
+#   INTERFACE - interface target_link_libraries arguments which are all TARGETs.
+#   PUBLIC - public target_link_libraries arguments which are all TARGETs.
+#   PRIVATE - private target_link_libraries arguments which are all TARGETs.
+function(pw_target_link_targets NAME)
+  set(types INTERFACE PUBLIC PRIVATE )
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args)
+  set(multi_value_args ${types})
+  pw_parse_arguments_strict(
+      pw_target_link_targets "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+
+  if(NOT TARGET "${NAME}")
+    message(FATAL_ERROR "\"${NAME}\" must be a TARGET library")
+  endif()
+
+  foreach(type IN LISTS types)
+    foreach(library IN LISTS arg_${type})
+      target_link_libraries(${NAME} ${type} ${library})
+      if(NOT TARGET ${library})
+        # It's possible the target has not yet been defined due to the ordering
+        # of add_subdirectory. Ergo defer the call until the end of the
+        # configuration phase.
+
+        # cmake_language(DEFER ...) evaluates arguments at the time the deferred
+        # call is executed, ergo wrap it in a cmake_language(EVAL CODE ...) to
+        # evaluate the arguments now. The arguments are wrapped in brackets to
+        # avoid re-evaluation at the deferred call.
+        cmake_language(EVAL CODE
+          "cmake_language(DEFER DIRECTORY ${CMAKE_SOURCE_DIR} CALL
+                          _pw_target_link_targets_deferred_check
+                          [[${NAME}]] [[${type}]] ${library})"
+        )
+      endif()
+    endforeach()
+  endforeach()
+endfunction()
+
+# Runs any deferred library checks for pw_target_link_targets.
+#
+# Required Args:
+#
+#   <name> - The name of the library target to add the link dependencies to.
+#   <type> - The type of the library (INTERFACE, PUBLIC, PRIVATE).
+#   <library> - The library to check to assert it's a TARGET.
+function(_pw_target_link_targets_deferred_check NAME TYPE LIBRARY)
+  if(NOT TARGET ${LIBRARY})
+      message(FATAL_ERROR
+        "${NAME}'s ${TYPE} dep \"${LIBRARY}\" is not a target.")
+  endif()
+endfunction()
+
 # Sets the provided variable to the multi_value_keywords from pw_add_library.
 macro(_pw_add_library_multi_value_args variable)
   set("${variable}" SOURCES HEADERS
@@ -206,8 +276,8 @@ endmacro()
 #
 #   SOURCES - source files for this library
 #   HEADERS - header files for this library
-#   PUBLIC_DEPS - public target_link_libraries arguments
-#   PRIVATE_DEPS - private target_link_libraries arguments
+#   PUBLIC_DEPS - public pw_target_link_targets arguments
+#   PRIVATE_DEPS - private pw_target_link_targets arguments
 #   PUBLIC_INCLUDES - public target_include_directories argument
 #   PRIVATE_INCLUDES - public target_include_directories argument
 #   PUBLIC_DEFINES - public target_compile_definitions arguments
@@ -266,9 +336,9 @@ function(pw_add_library NAME TYPE)
 
   # Public and private target_link_libraries.
   if(NOT "${arg_SOURCES}" STREQUAL "")
-    target_link_libraries("${NAME}" PRIVATE ${arg_PRIVATE_DEPS})
+    pw_target_link_targets("${NAME}" PRIVATE ${arg_PRIVATE_DEPS})
   endif(NOT "${arg_SOURCES}" STREQUAL "")
-  target_link_libraries("${NAME}" ${public_or_interface} ${arg_PUBLIC_DEPS})
+  pw_target_link_targets("${NAME}" ${public_or_interface} ${arg_PUBLIC_DEPS})
 
   # The target_compile_options are always added before target_link_libraries'
   # target_compile_options. In order to support the enabling of warning
@@ -282,7 +352,7 @@ function(pw_add_library NAME TYPE)
   # Add the NAME._config target_link_libraries dependency with the
   # PRIVATE_DEFINES, PRIVATE_COMPILE_OPTIONS, and PRIVATE_LINK_OPTIONS.
   if(NOT "${TYPE}" STREQUAL "INTERFACE")
-    target_link_libraries("${NAME}" PRIVATE "${NAME}._config")
+    pw_target_link_targets("${NAME}" PRIVATE "${NAME}._config")
     add_library("${NAME}._config" INTERFACE EXCLUDE_FROM_ALL)
     if(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
       target_compile_definitions(
@@ -300,7 +370,7 @@ function(pw_add_library NAME TYPE)
   # Add the NAME._public_config target_link_libraries dependency with the
   # PUBLIC_DEFINES, PUBLIC_COMPILE_OPTIONS, and PUBLIC_LINK_OPTIONS.
   add_library("${NAME}._public_config" INTERFACE EXCLUDE_FROM_ALL)
-  target_link_libraries(
+  pw_target_link_targets(
       "${NAME}" ${public_or_interface} "${NAME}._public_config")
   if(NOT "${arg_PUBLIC_DEFINES}" STREQUAL "")
     target_compile_definitions(
@@ -366,8 +436,8 @@ endfunction(_pw_check_name_is_relative_to_root)
 #   IMPLEMENTS_FACADES - which facades this module library implements
 #   SOURCES - source files for this library
 #   HEADERS - header files for this library
-#   PUBLIC_DEPS - public target_link_libraries arguments
-#   PRIVATE_DEPS - private target_link_libraries arguments
+#   PUBLIC_DEPS - public pw_target_link_targets arguments
+#   PRIVATE_DEPS - private pw_target_link_targets arguments
 #   PUBLIC_INCLUDES - public target_include_directories argument
 #   PRIVATE_INCLUDES - public target_include_directories argument
 #   PUBLIC_DEFINES - public target_compile_definitions arguments
@@ -442,7 +512,7 @@ function(pw_add_module_library NAME)
 
     set(facades ${arg_IMPLEMENTS_FACADES})
     list(TRANSFORM facades APPEND ".facade")
-    target_link_libraries("${NAME}" ${public_or_interface} ${facades})
+    pw_target_link_targets("${NAME}" ${public_or_interface} ${facades})
   endif(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
 endfunction(pw_add_module_library)
 
@@ -497,7 +567,7 @@ function(pw_add_facade NAME)
   # dependencies.
   add_library("${NAME}.facade" INTERFACE)
   target_include_directories("${NAME}.facade" INTERFACE public)
-  target_link_libraries("${NAME}.facade" INTERFACE ${arg_PUBLIC_DEPS})
+  pw_target_link_targets("${NAME}.facade" INTERFACE ${arg_PUBLIC_DEPS})
 
   # Define the public-facing library for this facade, which depends on the
   # header files in .facade target and exposes the dependency on the backend.
@@ -591,6 +661,9 @@ function(pw_add_test NAME)
   pw_parse_arguments_strict(pw_add_test 1 "" "" "SOURCES;DEPS;DEFINES;GROUPS")
 
   add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
+  # TODO(ewout/hepler): Consider changing this to pw_target_link_targets once
+  # pw_auto_add_module_tests has been deprecated which relies on generator
+  # expressions.
   target_link_libraries("${NAME}"
     PRIVATE
       pw_unit_test
