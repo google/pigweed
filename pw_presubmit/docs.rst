@@ -103,6 +103,30 @@ such as a quick program for local use and a full program for automated use. The
 :ref:`example script <example-script>` uses ``pw_presubmit.Programs`` to define
 ``quick`` and ``full`` programs.
 
+``PresubmitContext`` has the following members:
+
+* ``root``: Source checkout root directory
+* ``repos``: Repositories (top-level and submodules) processed by
+  ``pw presubmit``
+* ``output_dir``: Output directory for the presubmit step
+* ``paths``: Modified files for the presubmit step to check (often used in
+  formatting steps but ignored in compile steps)
+* ``package_root``: Root directory for ``pw package`` installations
+* ``override_gn_args``: Additional GN args processed by ``build.gn_gen()``
+* ``luci``: Information about the LUCI build or None if not running in LUCI
+
+The ``luci`` member is of type ``LuciContext`` and has the following members:
+
+* ``buildbucket_id``: The globally-unique buildbucket id of the build
+* ``build_number``: The builder-specific incrementing build number, if
+  configured for this builder
+* ``project``: The LUCI project under which this build is running (often
+  ``pigweed`` or ``pigweed-internal``)
+* ``bucket``: The LUCI bucket under which this build is running (often ends
+  with ``ci`` or ``try``)
+* ``builder``: The builder being run
+* ``swarming_task_id``: The swarming task id of this build
+
 Existing Presubmit Checks
 -------------------------
 A small number of presubmit checks are made available through ``pw_presubmit``

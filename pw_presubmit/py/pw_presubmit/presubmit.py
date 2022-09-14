@@ -171,6 +171,39 @@ class Programs(collections.abc.Mapping):
 
 
 @dataclasses.dataclass
+class LuciContext:
+    """LUCI-specific information about the environment."""
+    buildbucket_id: int
+    build_number: int
+    project: str
+    bucket: str
+    builder: str
+    swarming_task_id: str
+
+    @staticmethod
+    def create_from_environment():
+        luci_vars = [
+            'BUILDBUCKET_ID',
+            'BUILDBUCKET_NAME',
+            'BUILD_NUMBER',
+            'SWARMING_TASK_ID',
+        ]
+        if any(x for x in luci_vars if x not in os.environ):
+            return None
+
+        project, bucket, builder = os.environ['BUILDBUCKET_NAME'].split(':')
+
+        return LuciContext(
+            buildbucket_id=int(os.environ['BUILDBUCKET_ID']),
+            build_number=int(os.environ['BUILD_NUMBER']),
+            project=project,
+            bucket=bucket,
+            builder=builder,
+            swarming_task_id=os.environ['SWARMING_TASK_ID'],
+        )
+
+
+@dataclasses.dataclass
 class PresubmitContext:
     """Context passed into presubmit checks."""
     root: Path
@@ -178,6 +211,7 @@ class PresubmitContext:
     output_dir: Path
     paths: Tuple[Path, ...]
     package_root: Path
+    luci: Optional[LuciContext] = None
     # TODO(b/233808334): Remove default value after updating downstream
     # projects to use this new value.
     override_gn_args: Dict[str, str] = dataclasses.field(default_factory=dict)
@@ -391,6 +425,7 @@ class Presubmit:
                 paths=paths,
                 package_root=self._package_root,
                 override_gn_args=self._override_gn_args,
+                luci=LuciContext.create_from_environment(),
             )
 
         finally:
