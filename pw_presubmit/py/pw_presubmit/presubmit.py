@@ -213,6 +213,7 @@ class PresubmitContext:
     package_root: Path
     luci: Optional[LuciContext]
     override_gn_args: Dict[str, str]
+    num_jobs: Optional[int] = None
     _failed: bool = False
 
     @property

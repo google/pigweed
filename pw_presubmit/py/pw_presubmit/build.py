@@ -48,12 +48,18 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
 
     Intended for use with bazel build and test. May not work with others.
     """
+
+    num_jobs: List[str] = []
+    if ctx.num_jobs is not None:
+        num_jobs.extend(('--jobs', str(ctx.num_jobs)))
+
     call('bazel',
          cmd,
          '--verbose_failures',
          '--verbose_explanations',
          '--worker_verbose',
          f'--symlink_prefix={ctx.output_dir / ".bazel-"}',
+         *num_jobs,
          *args,
          cwd=ctx.root,
          env=env_with_clang_vars())
@@ -149,6 +155,10 @@ def ninja(ctx: PresubmitContext,
           **kwargs) -> None:
     """Runs ninja in the specified directory."""
 
+    num_jobs: List[str] = []
+    if ctx.num_jobs is not None:
+        num_jobs.extend(('-j', str(ctx.num_jobs)))
+
     if save_compdb:
         proc = subprocess.run(
             ['ninja', '-C', ctx.output_dir, '-t', 'compdb', *args],
@@ -163,7 +173,7 @@ def ninja(ctx: PresubmitContext,
             **kwargs)
         (ctx.output_dir / 'ninja.graph').write_bytes(proc.stdout)
 
-    call('ninja', '-C', ctx.output_dir, *args, **kwargs)
+    call('ninja', '-C', ctx.output_dir, *num_jobs, *args, **kwargs)
     (ctx.output_dir / '.ninja_log').rename(ctx.output_dir / 'ninja.log')
 
 
