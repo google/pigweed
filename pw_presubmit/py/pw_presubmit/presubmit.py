@@ -211,10 +211,8 @@ class PresubmitContext:
     output_dir: Path
     paths: Tuple[Path, ...]
     package_root: Path
-    luci: Optional[LuciContext] = None
-    # TODO(b/233808334): Remove default value after updating downstream
-    # projects to use this new value.
-    override_gn_args: Dict[str, str] = dataclasses.field(default_factory=dict)
+    luci: Optional[LuciContext]
+    override_gn_args: Dict[str, str]
     _failed: bool = False
 
     @property
