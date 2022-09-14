@@ -225,9 +225,10 @@ class _NegativeCompilationTestSource:
                     expectation = None
             except ValueError as err:
                 self._error(
-                    f'Failed to parse PW_NC_EXPECT() statement: {err}. '
-                    'PW_NC_EXPECT() must contain only a string literal and '
-                    '//-style comments.', index)
+                    f'Failed to parse PW_NC_EXPECT() statement:\n\n  {err}.\n\n'
+                    'PW_NC_EXPECT() statements must contain only a string '
+                    'literal with a valid Python regular expression and '
+                    'optional //-style comments.', index)
 
         if expectation:
             self._error('Unterminated PW_NC_EXPECT() statement!',
