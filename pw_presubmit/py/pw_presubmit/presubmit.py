@@ -193,8 +193,14 @@ class LuciContext:
 
         project, bucket, builder = os.environ['BUILDBUCKET_NAME'].split(':')
 
+        bbid: int = 0
+        try:
+            bbid = int(os.environ['BUILDBUCKET_ID'])
+        except ValueError:
+            pass
+
         return LuciContext(
-            buildbucket_id=int(os.environ['BUILDBUCKET_ID']),
+            buildbucket_id=bbid,
             build_number=int(os.environ['BUILD_NUMBER']),
             project=project,
             bucket=bucket,
