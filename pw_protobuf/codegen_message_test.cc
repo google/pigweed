@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 #include <array>
 #include <string_view>
 #include <tuple>
@@ -1244,7 +1245,8 @@ class BreakableDecoder : public KeyValuePair::StreamDecoder {
  public:
   constexpr BreakableDecoder(stream::Reader& reader) : StreamDecoder(reader) {}
 
-  Status Read(KeyValuePair::Message& message, span<const MessageField> table) {
+  Status Read(KeyValuePair::Message& message,
+              span<const internal::MessageField> table) {
     return ::pw::protobuf::StreamDecoder::Read(
         as_writable_bytes(span(&message, 1)), table);
   }
@@ -1254,11 +1256,11 @@ TEST(CodegenMessage, DISABLED_ReadDoesNotOverrun) {
   // Deliberately construct a message table that attempts to violate the bounds
   // of the structure. We're not testing that a developer can't do this, rather
   // that the protobuf decoder can't be exploited in this way.
-  constexpr MessageField kMessageFields[] = {
+  constexpr internal::MessageField kMessageFields[] = {
       {1,
        WireType::kDelimited,
        sizeof(std::byte),
-       static_cast<VarintType>(0),
+       static_cast<internal::VarintType>(0),
        false,
        false,
        false,
@@ -1845,7 +1847,7 @@ class BreakableEncoder : public KeyValuePair::MemoryEncoder {
       : KeyValuePair::MemoryEncoder(buffer) {}
 
   Status Write(const KeyValuePair::Message& message,
-               span<const MessageField> table) {
+               span<const internal::MessageField> table) {
     return ::pw::protobuf::StreamEncoder::Write(as_bytes(span(&message, 1)),
                                                 table);
   }
@@ -1855,11 +1857,11 @@ TEST(CodegenMessage, DISABLED_WriteDoesNotOverrun) {
   // Deliberately construct a message table that attempts to violate the bounds
   // of the structure. We're not testing that a developer can't do this, rather
   // that the protobuf encoder can't be exploited in this way.
-  constexpr MessageField kMessageFields[] = {
+  constexpr internal::MessageField kMessageFields[] = {
       {1,
        WireType::kDelimited,
        sizeof(std::byte),
-       static_cast<VarintType>(0),
+       static_cast<internal::VarintType>(0),
        false,
        false,
        false,

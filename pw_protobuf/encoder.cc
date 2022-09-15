@@ -34,6 +34,8 @@
 
 namespace pw::protobuf {
 
+using internal::VarintType;
+
 StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number,
                                               bool write_when_empty) {
   PW_CHECK(!nested_encoder_open());
@@ -239,7 +241,7 @@ Status StreamEncoder::UpdateStatusForWrite(uint32_t field_number,
 }
 
 Status StreamEncoder::Write(span<const std::byte> message,
-                            span<const MessageField> table) {
+                            span<const internal::MessageField> table) {
   PW_CHECK(!nested_encoder_open());
   PW_TRY(status_);
 

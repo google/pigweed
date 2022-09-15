@@ -21,6 +21,7 @@
 #include "pw_status/status.h"
 
 namespace pw::protobuf {
+namespace internal {
 
 // Varints can be encoded as an unsigned type, a signed type with normal
 // encoding, or a signed type with zigzag encoding.
@@ -148,6 +149,8 @@ class MessageField {
 };
 static_assert(sizeof(MessageField) <= sizeof(size_t) * 4,
               "MessageField should be four words or less");
+
+}  // namespace internal
 
 // Callback for a structure member that cannot be represented by a data type.
 // Holds either a callback for encoding a field, or a callback for decoding

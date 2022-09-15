@@ -37,6 +37,7 @@ PROTO_H_EXTENSION = '.pwpb.h'
 PROTO_CC_EXTENSION = '.pwpb.cc'
 
 PROTOBUF_NAMESPACE = '::pw::protobuf'
+_INTERNAL_NAMESPACE = '::pw::protobuf::internal'
 
 
 class ClassType(enum.Enum):
@@ -408,10 +409,10 @@ class MessageProperty(ProtoMember):
 
     def _varint_type_table_entry(self) -> str:
         if self.wire_type() == 'kVarint':
-            return '{}::VarintType::{}'.format(PROTOBUF_NAMESPACE,
+            return '{}::VarintType::{}'.format(_INTERNAL_NAMESPACE,
                                                self.varint_decode_type())
 
-        return f'static_cast<{PROTOBUF_NAMESPACE}::VarintType>(0)'
+        return f'static_cast<{_INTERNAL_NAMESPACE}::VarintType>(0)'
 
     def _wire_type_table_entry(self) -> str:
         return '{}::WireType::{}'.format(PROTOBUF_NAMESPACE, self.wire_type())
@@ -2110,7 +2111,7 @@ def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
                     prop.name()))
         output.write_line('static_assert(sizeof(Message::{}) <= '
                           '{}::MessageField::kMaxFieldSize);'.format(
-                              prop.name(), PROTOBUF_NAMESPACE))
+                              prop.name(), _INTERNAL_NAMESPACE))
 
     # Zero-length C arrays are not permitted by the C++ standard, so only
     # generate the message fields array if it is non-empty. Zero-length
@@ -2121,7 +2122,7 @@ def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
     # not. Only the span is referenced elsewhere.
     if properties:
         output.write_line(
-            f'inline constexpr {PROTOBUF_NAMESPACE}::MessageField '
+            f'inline constexpr {_INTERNAL_NAMESPACE}::MessageField '
             ' _kMessageFields[] = {')
 
         # Generate members for each of the message's fields.
@@ -2134,11 +2135,11 @@ def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
         output.write_line('PW_MODIFY_DIAGNOSTICS_POP();')
 
         output.write_line(
-            f'inline constexpr pw::span<const {PROTOBUF_NAMESPACE}::'
+            f'inline constexpr pw::span<const {_INTERNAL_NAMESPACE}::'
             'MessageField> kMessageFields = _kMessageFields;')
     else:
         output.write_line(
-            f'inline constexpr pw::span<const {PROTOBUF_NAMESPACE}::'
+            f'inline constexpr pw::span<const {_INTERNAL_NAMESPACE}::'
             'MessageField> kMessageFields;')
 
     output.write_line(f'}}  // namespace {namespace}')

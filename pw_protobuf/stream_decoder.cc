@@ -37,6 +37,8 @@
 
 namespace pw::protobuf {
 
+using internal::VarintType;
+
 Status StreamDecoder::BytesReader::DoSeek(ptrdiff_t offset, Whence origin) {
   PW_TRY(status_);
   if (!decoder_.reader_.seekable()) {
@@ -513,7 +515,7 @@ Status StreamDecoder::CheckOkToRead(WireType type) {
 }
 
 Status StreamDecoder::Read(span<std::byte> message,
-                           span<const MessageField> table) {
+                           span<const internal::MessageField> table) {
   PW_TRY(status_);
 
   while (Next().ok()) {

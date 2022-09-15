@@ -26,7 +26,8 @@
 
 namespace pw::rpc::internal {
 
-using PwpbMessageDescriptor = const span<const protobuf::MessageField>*;
+using PwpbMessageDescriptor =
+    const span<const protobuf::internal::MessageField>*;
 
 // Serializer/deserializer for a pw_protobuf message.
 class PwpbSerde {

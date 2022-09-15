@@ -159,7 +159,7 @@ class StreamDecoder {
 
   // Reads a proto int32 value from the current position.
   Result<int32_t> ReadInt32() {
-    return ReadVarintField<int32_t>(VarintType::kNormal);
+    return ReadVarintField<int32_t>(internal::VarintType::kNormal);
   }
 
   // Reads repeated int32 values from the current position using packed
@@ -169,18 +169,18 @@ class StreamDecoder {
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedInt32(span<int32_t> out) {
     return ReadPackedVarintField(
-        as_writable_bytes(out), sizeof(int32_t), VarintType::kNormal);
+        as_writable_bytes(out), sizeof(int32_t), internal::VarintType::kNormal);
   }
 
   // Reads repeated int32 values from the current position into the vector,
   // supporting either repeated single field elements or packed encoding.
   Status ReadRepeatedInt32(pw::Vector<int32_t>& out) {
-    return ReadRepeatedVarintField<int32_t>(out, VarintType::kNormal);
+    return ReadRepeatedVarintField<int32_t>(out, internal::VarintType::kNormal);
   }
 
   // Reads a proto uint32 value from the current position.
   Result<uint32_t> ReadUint32() {
-    return ReadVarintField<uint32_t>(VarintType::kUnsigned);
+    return ReadVarintField<uint32_t>(internal::VarintType::kUnsigned);
   }
 
   // Reads repeated uint32 values from the current position using packed
@@ -189,19 +189,21 @@ class StreamDecoder {
   // Returns the number of values read. In the case of error, the return value
   // indicates the number of values successfully read, in addition to the error.
   StatusWithSize ReadPackedUint32(span<uint32_t> out) {
-    return ReadPackedVarintField(
-        as_writable_bytes(out), sizeof(uint32_t), VarintType::kUnsigned);
+    return ReadPackedVarintField(as_writable_bytes(out),
+                                 sizeof(uint32_t),
+                                 internal::VarintType::kUnsigned);
   }
 
   // Reads repeated uint32 values from the current position into the vector,
   // supporting either repeated single field elements or packed encoding.
   Status ReadRepeatedUint32(pw::Vector<uint32_t>& out) {
-    return ReadRepeatedVarintField<uint32_t>(out, VarintType::kUnsigned);
+    return ReadRepeatedVarintField<uint32_t>(out,
+                                             internal::VarintType::kUnsigned);
   }
 
   // Reads a proto int64 value from the current position.
   Result<int64_t> ReadInt64() {
-    return ReadVarintField<int64_t>(VarintType::kNormal);
+    return ReadVarintField<int64_t>(internal::VarintType::kNormal);
   }
 
   // Reads repeated int64 values from the current position using packed
@@ -212,18 +214,18 @@ class StreamDecoder {
   // error.
   StatusWithSize ReadPackedInt64(span<int64_t> out) {
     return ReadPackedVarintField(
-        as_writable_bytes(out), sizeof(int64_t), VarintType::kNormal);
+        as_writable_bytes(out), sizeof(int64_t), internal::VarintType::kNormal);
   }
 
   // Reads repeated int64 values from the current position into the vector,
   // supporting either repeated single field elements or packed encoding.
   Status ReadRepeatedInt64(pw::Vector<int64_t>& out) {
-    return ReadRepeatedVarintField<int64_t>(out, VarintType::kNormal);
+    return ReadRepeatedVarintField<int64_t>(out, internal::VarintType::kNormal);
   }
 
   // Reads a proto uint64 value from the current position.
   Result<uint64_t> ReadUint64() {
-    return ReadVarintField<uint64_t>(VarintType::kUnsigned);
+    return ReadVarintField<uint64_t>(internal::VarintType::kUnsigned);
   }
 
   // Reads repeated uint64 values from the current position using packed
@@ -233,19 +235,21 @@ class StreamDecoder {
   // indicates the number of values successfully read, in addition to the
   // error.
   StatusWithSize ReadPackedUint64(span<uint64_t> out) {
-    return ReadPackedVarintField(
-        as_writable_bytes(out), sizeof(uint64_t), VarintType::kUnsigned);
+    return ReadPackedVarintField(as_writable_bytes(out),
+                                 sizeof(uint64_t),
+                                 internal::VarintType::kUnsigned);
   }
 
   // Reads repeated uint64 values from the current position into the vector,
   // supporting either repeated single field elements or packed encoding.
   Status ReadRepeatedUint64(pw::Vector<uint64_t>& out) {
-    return ReadRepeatedVarintField<uint64_t>(out, VarintType::kUnsigned);
+    return ReadRepeatedVarintField<uint64_t>(out,
+                                             internal::VarintType::kUnsigned);
   }
 
   // Reads a proto sint32 value from the current position.
   Result<int32_t> ReadSint32() {
-    return ReadVarintField<int32_t>(VarintType::kZigZag);
+    return ReadVarintField<int32_t>(internal::VarintType::kZigZag);
   }
 
   // Reads repeated sint32 values from the current position using packed
@@ -256,18 +260,18 @@ class StreamDecoder {
   // error.
   StatusWithSize ReadPackedSint32(span<int32_t> out) {
     return ReadPackedVarintField(
-        as_writable_bytes(out), sizeof(int32_t), VarintType::kZigZag);
+        as_writable_bytes(out), sizeof(int32_t), internal::VarintType::kZigZag);
   }
 
   // Reads repeated sint32 values from the current position into the vector,
   // supporting either repeated single field elements or packed encoding.
   Status ReadRepeatedSint32(pw::Vector<int32_t>& out) {
-    return ReadRepeatedVarintField<int32_t>(out, VarintType::kZigZag);
+    return ReadRepeatedVarintField<int32_t>(out, internal::VarintType::kZigZag);
   }
 
   // Reads a proto sint64 value from the current position.
   Result<int64_t> ReadSint64() {
-    return ReadVarintField<int64_t>(VarintType::kZigZag);
+    return ReadVarintField<int64_t>(internal::VarintType::kZigZag);
   }
 
   // Reads repeated int64 values from the current position using packed
@@ -278,18 +282,18 @@ class StreamDecoder {
   // error.
   StatusWithSize ReadPackedSint64(span<int64_t> out) {
     return ReadPackedVarintField(
-        as_writable_bytes(out), sizeof(int64_t), VarintType::kZigZag);
+        as_writable_bytes(out), sizeof(int64_t), internal::VarintType::kZigZag);
   }
 
   // Reads repeated sint64 values from the current position into the vector,
   // supporting either repeated single field elements or packed encoding.
   Status ReadRepeatedSint64(pw::Vector<int64_t>& out) {
-    return ReadRepeatedVarintField<int64_t>(out, VarintType::kZigZag);
+    return ReadRepeatedVarintField<int64_t>(out, internal::VarintType::kZigZag);
   }
 
   // Reads a proto bool value from the current position.
   Result<bool> ReadBool() {
-    return ReadVarintField<bool>(VarintType::kUnsigned);
+    return ReadVarintField<bool>(internal::VarintType::kUnsigned);
   }
 
   // Reads repeated bool values from the current position using packed
@@ -300,13 +304,13 @@ class StreamDecoder {
   // error.
   StatusWithSize ReadPackedBool(span<bool> out) {
     return ReadPackedVarintField(
-        as_writable_bytes(out), sizeof(bool), VarintType::kUnsigned);
+        as_writable_bytes(out), sizeof(bool), internal::VarintType::kUnsigned);
   }
 
   // Reads repeated bool values from the current position into the vector,
   // supporting either repeated single field elements or packed encoding.
   Status ReadRepeatedBool(pw::Vector<bool>& out) {
-    return ReadRepeatedVarintField<bool>(out, VarintType::kUnsigned);
+    return ReadRepeatedVarintField<bool>(out, internal::VarintType::kUnsigned);
   }
 
   // Reads a proto fixed32 value from the current position.
@@ -530,7 +534,8 @@ class StreamDecoder {
   // This is called by codegen subclass Read() functions that accept a typed
   // struct Message reference, using the appropriate codegen MessageField table
   // corresponding to that type.
-  Status Read(span<std::byte> message, span<const MessageField> table);
+  Status Read(span<std::byte> message,
+              span<const internal::MessageField> table);
 
  private:
   friend class BytesReader;
@@ -589,12 +594,13 @@ class StreamDecoder {
   Status ReadFieldKey();
   Status SkipField();
 
-  Status ReadVarintField(span<std::byte> out, VarintType decode_type);
+  Status ReadVarintField(span<std::byte> out, internal::VarintType decode_type);
 
-  StatusWithSize ReadOneVarint(span<std::byte> out, VarintType decode_type);
+  StatusWithSize ReadOneVarint(span<std::byte> out,
+                               internal::VarintType decode_type);
 
   template <typename T>
-  Result<T> ReadVarintField(VarintType decode_type) {
+  Result<T> ReadVarintField(internal::VarintType decode_type) {
     static_assert(
         std::is_same_v<T, bool> || std::is_same_v<T, uint32_t> ||
             std::is_same_v<T, int32_t> || std::is_same_v<T, uint64_t> ||
@@ -635,7 +641,7 @@ class StreamDecoder {
 
   StatusWithSize ReadPackedVarintField(span<std::byte> out,
                                        size_t elem_size,
-                                       VarintType decode_type);
+                                       internal::VarintType decode_type);
 
   template <typename T>
   Status ReadRepeatedFixedField(pw::Vector<T>& out) {
@@ -662,7 +668,8 @@ class StreamDecoder {
   }
 
   template <typename T>
-  Status ReadRepeatedVarintField(pw::Vector<T>& out, VarintType decode_type) {
+  Status ReadRepeatedVarintField(pw::Vector<T>& out,
+                                 internal::VarintType decode_type) {
     if (out.full()) {
       return Status::ResourceExhausted();
     }
