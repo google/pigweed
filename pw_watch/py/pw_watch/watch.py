@@ -553,6 +553,8 @@ _WATCH_PATTERNS = (
     '*.cpp',
     '*.cmake',
     'CMakeLists.txt',
+    '*.dts',
+    '*.dtsi',
     '*.gn',
     '*.gni',
     '*.go',
