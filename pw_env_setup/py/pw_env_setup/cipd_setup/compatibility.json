@@ -1,7 +1,7 @@
 {
   "packages": [
     {
-      "path": "infra/3pp/tools/cpython3/${os}-${arch=amd64}",
+      "path": "infra/3pp/tools/cpython3/${platform}",
       "platforms": [
         "linux-amd64",
         "linux-arm64",
@@ -14,7 +14,7 @@
       ]
     },
     {
-      "path": "pigweed/third_party/gcc-arm-none-eabi/${os}-${arch=amd64}",
+      "path": "pigweed/third_party/gcc-arm-none-eabi/${platform}",
       "platforms": [
         "linux-amd64",
         "mac-amd64",
