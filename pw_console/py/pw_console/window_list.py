@@ -252,6 +252,12 @@ class WindowList:
     def switch_to_tab(self, index: int):
         self.focused_pane_index = index
 
+        # Make the selected tab visible and hide the rest.
+        for i, pane in enumerate(self.active_panes):
+            pane.show_pane = False
+            if i == index:
+                pane.show_pane = True
+
         # refresh_ui() will focus on the new tab container.
         self.refresh_ui()
 
@@ -259,8 +265,15 @@ class WindowList:
         self.display_mode = mode
 
         if self.display_mode == DisplayMode.TABBED:
+            # Default to focusing on the first window / tab.
             self.focused_pane_index = 0
-            # Un-hide all panes, they must be visible to switch between tabs.
+            # Hide all other panes so log redraw events are not triggered.
+            for pane in self.active_panes:
+                pane.show_pane = False
+            # Keep the selected tab visible
+            self.active_panes[self.focused_pane_index].show_pane = True
+        else:
+            # Un-hide all panes if switching from tabbed back to stacked.
             for pane in self.active_panes:
                 pane.show_pane = True
 
@@ -584,11 +597,3 @@ class WindowList:
             if next_pane.show_pane:
                 return next_pane
         return None
-
-    def focus_next_visible_pane(self, pane):
-        """Focus on the next visible window pane if possible."""
-        next_visible_pane = self._get_next_visible_pane_after(pane)
-        if next_visible_pane:
-            self.application.layout.focus(next_visible_pane)
-            return
-        self.application.focus_main_menu()

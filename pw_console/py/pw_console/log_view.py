@@ -534,8 +534,9 @@ class LogView:
             # Set the follow event flag for the next render_content call.
             self.follow_event = FollowEvent.STICKY_FOLLOW
 
-        # Trigger a UI update
-        self.log_pane.application.logs_redraw()
+        # Trigger a UI update if the log window is visible.
+        if self.log_pane.show_pane:
+            self.log_pane.application.logs_redraw()
 
     def get_cursor_position(self) -> Point:
         """Return the position of the cursor."""

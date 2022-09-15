@@ -109,6 +109,9 @@ def window_pane_titles(window_manager):
 def target_list_and_pane(window_manager, list_index, pane_index):
     # pylint: disable=protected-access
     # Bypass prompt_toolkit has_focus()
+    pane = window_manager.window_lists[list_index].active_panes[pane_index]
+    # If the pane is in focus it will be visible.
+    pane.show_pane = True
     window_manager._get_active_window_list_and_pane = (
         MagicMock(  # type: ignore
             return_value=(
@@ -465,6 +468,7 @@ class TestWindowManager(unittest.TestCase):
             console_app = _create_console_app(logger_count=4)
 
             window_manager = console_app.window_manager
+            window_manager.window_lists[0].set_display_mode(DisplayMode.STACK)
             self.assertEqual(
                 window_pane_titles(window_manager),
                 [
