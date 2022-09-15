@@ -596,11 +596,12 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
 void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
                                                      hci_spec::ConnectionHandle handle) {
   auto self = weak_ptr_factory_.GetWeakPtr();
+  auto peer_id = peer->identifier();
 
   auto connections_iter = connections_.find(handle);
   if (connections_iter == connections_.end()) {
     bt_log(WARN, "gap-bredr", "Connection to complete not found (peer: %s, handle: %#.4x)",
-           bt_str(peer->identifier()), handle);
+           bt_str(peer_id), handle);
     return;
   }
   BrEdrConnection& conn_state = connections_iter->second;
@@ -608,13 +609,12 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
     bt_log(WARN, "gap-bredr",
            "Connection switched peers! (now to %s), ignoring interrogation result (peer: %s, "
            "handle: %#.4x)",
-           bt_str(conn_state.peer_id()), bt_str(peer->identifier()), handle);
+           bt_str(conn_state.peer_id()), bt_str(peer_id), handle);
     return;
   }
   hci::BrEdrConnection* const connection = &conn_state.link();
 
-  auto error_handler = [self, peer_id = peer->identifier(), connection = connection->GetWeakPtr(),
-                        handle] {
+  auto error_handler = [self, peer_id, connection = connection->GetWeakPtr(), handle] {
     if (!self || !connection)
       return;
     bt_log(WARN, "gap-bredr", "Link error received, closing connection (peer: %s, handle: %#.4x)",
@@ -623,8 +623,8 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
   };
 
   // TODO(fxbug.dev/37650): Implement this callback as a call to InitiatePairing().
-  auto security_callback = [peer_id = peer->identifier()](hci_spec::ConnectionHandle handle,
-                                                          sm::SecurityLevel level, auto cb) {
+  auto security_callback = [peer_id](hci_spec::ConnectionHandle handle, sm::SecurityLevel level,
+                                     auto cb) {
     bt_log(INFO, "gap-bredr",
            "Ignoring security upgrade request; not implemented (peer: %s, handle: %#.4x)",
            bt_str(peer_id), handle);
@@ -640,21 +640,20 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
   inspect_properties_.interrogation_complete_count_.Add(1);
 
   if (discoverer_.search_count()) {
-    l2cap_->OpenL2capChannel(handle, l2cap::kSDP, l2cap::ChannelParameters(),
-                             [self, peer_id = peer->identifier()](auto channel) {
-                               if (!self) {
-                                 return;
-                               }
-                               if (!channel) {
-                                 bt_log(ERROR, "gap",
-                                        "failed to create l2cap channel for SDP (peer: %s)",
-                                        bt_str(peer_id));
-                                 return;
-                               }
+    l2cap_->OpenL2capChannel(
+        handle, l2cap::kSDP, l2cap::ChannelParameters(), [self, peer_id](auto channel) {
+          if (!self) {
+            return;
+          }
+          if (!channel) {
+            bt_log(ERROR, "gap", "failed to create l2cap channel for SDP (peer: %s)",
+                   bt_str(peer_id));
+            return;
+          }
 
-                               auto client = sdp::Client::Create(std::move(channel));
-                               self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
-                             });
+          auto client = sdp::Client::Create(std::move(channel));
+          self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
+        });
   }
 
   conn_state.OnInterrogationComplete();

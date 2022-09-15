@@ -44,7 +44,6 @@ BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterfa
       fit::bind_member<&BrEdrDynamicChannelRegistry::OnRxDisconReq>(this));
   cmd_handler.ServeInformationRequest(
       fit::bind_member<&BrEdrDynamicChannelRegistry::OnRxInfoReq>(this));
-
   SendInformationRequests();
 }
 
@@ -216,23 +215,23 @@ void BrEdrDynamicChannelRegistry::OnRxExtendedFeaturesInfoRsp(
 }
 
 void BrEdrDynamicChannelRegistry::SendInformationRequests() {
-  if (!(state_ & kExtendedFeaturesSent)) {
-    BrEdrCommandHandler cmd_handler(sig_);
-    if (!cmd_handler.SendInformationRequest(
-            InformationType::kExtendedFeaturesSupported, [self = GetWeakPtr()](auto& rsp) {
-              if (self) {
-                static_cast<BrEdrDynamicChannelRegistry*>(self.get())
-                    ->OnRxExtendedFeaturesInfoRsp(rsp);
-              }
-            })) {
-      bt_log(ERROR, "l2cap-bredr", "Failed to send Extended Features Information Request");
-      return;
-    }
-
-    bt_log(TRACE, "l2cap-bredr", "Sent Extended Features Information Request");
-
-    state_ |= kExtendedFeaturesSent;
+  if (state_ & kExtendedFeaturesSent) {
+    bt_log(DEBUG, "l2cap-bredr", "Skipping sending info requests, already sent");
+    return;
   }
+  BrEdrCommandHandler cmd_handler(sig_);
+  auto on_rx_info_rsp = [self = GetWeakPtr()](auto& rsp) {
+    if (self) {
+      static_cast<BrEdrDynamicChannelRegistry*>(self.get())->OnRxExtendedFeaturesInfoRsp(rsp);
+    }
+  };
+  if (!cmd_handler.SendInformationRequest(InformationType::kExtendedFeaturesSupported,
+                                          std::move(on_rx_info_rsp))) {
+    bt_log(ERROR, "l2cap-bredr", "Failed to send Extended Features Information Request");
+    return;
+  }
+
+  state_ |= kExtendedFeaturesSent;
 }
 
 std::optional<bool> BrEdrDynamicChannelRegistry::PeerSupportsERTM() const {
