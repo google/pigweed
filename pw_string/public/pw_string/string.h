@@ -132,13 +132,31 @@ class InlineBasicString final
       : InlineBasicString(list.begin(), list.size()) {}
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
+  // Unlike std::string, pw::InlineString<> supports implicit conversions from
+  // std::string_view. However, explicit conversions are still required from
+  // types that convert to std::string_view, as with std::string.
+  //
+  // pw::InlineString<> allows implicit conversions from std::string_view
+  // because it can be cumbersome to specify the capacity parameter. In
+  // particular, this can make using aggregate initialization more difficult.
+  //
+  // This explicit constructor is enabled for an argument that converts to
+  // std::string_view, but is not a std::string_view.
+  template <
+      typename StringViewLike,
+      string_impl::EnableIfStringViewLikeButNotStringView<T, StringViewLike>* =
+          nullptr>
+  explicit constexpr InlineBasicString(const StringViewLike& string)
+      : InlineBasicString(std::basic_string_view<T>(string)) {}
+
+  // This converting constructor is enabled for std::string_view, but not types
+  // that convert to it.
   template <typename StringView,
-            typename = string_impl::EnableIfStringViewLike<T, StringView>>
-  explicit constexpr InlineBasicString(const StringView& string)
-      : InlineBasicString() {
-    const std::basic_string_view<T> view = string;
-    assign(view.data(), view.size());
-  }
+            std::enable_if_t<
+                std::is_same<StringView, std::basic_string_view<T>>::value>* =
+                nullptr>
+  constexpr InlineBasicString(const StringView& view)
+      : InlineBasicString(view.data(), view.size()) {}
 
   template <typename StringView,
             typename = string_impl::EnableIfStringViewLike<T, StringView>>

@@ -45,6 +45,12 @@ template <typename CharType, typename T>
 using EnableIfStringViewLike = std::enable_if_t<
     std::is_convertible<const T&, std::basic_string_view<CharType>>() &&
     !std::is_convertible<const T&, const CharType*>()>;
+
+template <typename CharType, typename T>
+using EnableIfStringViewLikeButNotStringView = std::enable_if_t<
+    !std::is_same<T, std::basic_string_view<CharType>>() &&
+    std::is_convertible<const T&, std::basic_string_view<CharType>>() &&
+    !std::is_convertible<const T&, const CharType*>()>;
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 // Reserved capacity that is used to represent a generic-length

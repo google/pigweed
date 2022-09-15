@@ -21,7 +21,7 @@
 // class because:
 //
 //   1. Many functions return a *this reference. The functions should to return
-//      a reference to the exact type they called on rather than the
+//      a reference to the exact type they are called on rather than the
 //      generic-capacity base class.
 //   2. Operations on the generic base class cannot be constexpr unless the
 //      class is an InlineBasicString<T, 0>. The functions must be defined in

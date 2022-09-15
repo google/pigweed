@@ -495,6 +495,15 @@ TEST(InlineString, Construct_InitializerList) {
 }
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
+
+constexpr InlineString<16> TakesInlineString(const InlineString<16>& str) {
+  return str;
+}
+
+struct HoldsString {
+  InlineString<16> value;
+};
+
 TEST(InlineString, Construct_StringView) {
   TEST_STRING(InlineString<0>(""sv), , "");
   TEST_STRING(InlineString<10>(""sv), , "");
@@ -505,6 +514,19 @@ TEST(InlineString, Construct_StringView) {
   TEST_STRING(InlineString<10>(StringViewLike<char>("01234", 5)), , "01234");
   TEST_STRING(InlineString<10>(kStringViewLike10), , "0123456789");
 
+  // pw::InlineString supports implicit conversion from std::string_view.
+  constexpr InlineString<16> implicit_call = TakesInlineString("1234"sv);
+  EXPECT_CONSTEXPR_PW_STRING(implicit_call, "1234");
+
+  constexpr HoldsString implicit_initialize_1{.value = "1234"sv};
+  EXPECT_CONSTEXPR_PW_STRING(implicit_initialize_1.value, "1234");
+
+  constexpr HoldsString implicit_initialize_2{.value{"1234"sv}};
+  EXPECT_CONSTEXPR_PW_STRING(implicit_initialize_2.value, "1234");
+
+  constexpr HoldsString implicit_initialize_3{"1234"sv};
+  EXPECT_CONSTEXPR_PW_STRING(implicit_initialize_3.value, "1234");
+
 #if PW_NC_TEST(Construct_StringView_DoesNotFit)
   PW_NC_EXPECT(
       "pw::InlineString must be at least as large as the source string");
@@ -513,11 +535,25 @@ TEST(InlineString, Construct_StringView) {
   PW_NC_EXPECT(
       "pw::InlineString must be at least as large as the source string");
   constexpr [[maybe_unused]] InlineString<5> bad_string(kEmptyCapacity10);
-#elif PW_NC_TEST(Construct_StringView_NoImplicitConversionFromAmbiguousClass)
+#elif PW_NC_TEST(Construct_StringView_NoConversionFromAmbiguousClass)
   PW_NC_EXPECT_CLANG("no matching constructor");
   PW_NC_EXPECT_GCC("no matching function for call to");
   [[maybe_unused]] InlineString<10> fail(
       StringViewLikeButConvertsToPointer<char>("1", 1));
+#elif PW_NC_TEST(Construct_StringView_NoImplicitConversionFromStringViewLike)
+  PW_NC_EXPECT_CLANG("no matching function for call to 'TakesInlineString'");
+  PW_NC_EXPECT_GCC(
+      "invalid initialization of reference of type .* from expression of type "
+      "'const pw::StringViewLike<char>'");
+  TakesInlineString(kStringViewLike10);
+#elif PW_NC_TEST(Construct_StringView_NoImplicitConvFromStringViewLikeInInit1)
+  PW_NC_EXPECT_GCC("could not convert 'pw::kStringViewLike10'");
+  PW_NC_EXPECT_CLANG("no viable conversion from 'const StringViewLike<char>'");
+  (void)HoldsString{.value = kStringViewLike10};
+#elif PW_NC_TEST(Construct_StringView_NoImplicitConvFromStringViewLikeInInit2)
+  PW_NC_EXPECT_GCC("could not convert 'pw::kStringViewLike10'");
+  PW_NC_EXPECT_CLANG("no viable conversion from 'const StringViewLike<char>'");
+  (void)HoldsString{kStringViewLike10};
 #endif  // PW_NC_TEST
 }
 
@@ -994,7 +1030,7 @@ TEST(InlineString, Assign_StringView) {
     str.assign(kEmptyCapacity10);
     return str;
   }();
-#elif PW_NC_TEST(Assign_StringView_NoImplicitConversionFromAmbiguousClass)
+#elif PW_NC_TEST(Assign_StringView_NoAssignmentFromAmbiguousClass)
   PW_NC_EXPECT_CLANG("no matching member function for call to");
   PW_NC_EXPECT_GCC("no matching function for call to");
   [[maybe_unused]] InlineString<10> fail;

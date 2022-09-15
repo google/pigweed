@@ -80,15 +80,15 @@ capacity for the string.
 .. code-block:: c++
 
   // Initialize from a C string.
-  pw::InlineString<32> my_string = "Literally";
-  my_string.append('?', 3);   // contains "Literally???"
+  pw::InlineString<32> inline_string = "Literally";
+  inline_string.append('?', 3);   // contains "Literally???"
 
   // Supports copying into known-capacity strings.
-  pw::InlineString<64> other = my_string;
+  pw::InlineString<64> other = inline_string;
 
   // Supports various helpful std::string functions
-  if (my_string.starts_with("Lit") || my_string == "not\0literally"sv) {
-    other += my_string;
+  if (inline_string.starts_with("Lit") || inline_string == "not\0literally"sv) {
+    other += inline_string;
   }
 
   // Like std::string, InlineString is always null terminated when accessed
@@ -96,10 +96,16 @@ capacity for the string.
   // length-delimited strings for APIs that expect null-terminated strings.
   std::string_view file(".gif");
   if (std::fopen(pw::InlineString<kMaxNameLen>(file).c_str(), "r") == nullptr) {
-    // Integrates with std::string_view.
-    my_string = std::string_view("not\0literally", 12);
-    TakesAStringView(std::string_view(my_string));
+    return;
   }
+
+  // pw::InlineString integrates well with std::string_view. It supports
+  // implicit conversions to and from std::string_view.
+  inline_string = std::string_view("not\0literally", 12);
+
+  FunctionThatTakesAStringView(inline_string);
+
+  FunctionThatTakesAnInlineString(std::string_view("1234", 4));
 
 All :cpp:type:`pw::InlineString` operations may be performed on strings without
 specifying their capacity.
@@ -145,7 +151,7 @@ is not supported until C++20.
 
    // Deduces a capacity of 6 characters to match the 6-character string literal
    // (counting the null terminator).
-   pw::InlineBasicString my_string = "12345";
+   pw::InlineBasicString inline_string = "12345";
 
    // In C++20, CTAD may be used with the pw::InlineString alias.
    pw::InlineString my_other_string("123456789");
