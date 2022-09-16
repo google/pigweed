@@ -12,17 +12,6 @@
       "tags": [
 	"version:2@3.8.10.chromium.24"
       ]
-    },
-    {
-      "path": "pigweed/third_party/gcc-arm-none-eabi/${platform}",
-      "platforms": [
-        "linux-amd64",
-        "mac-amd64",
-        "windows-amd64"
-      ],
-      "tags": [
-        "version:9-2020-q2-update"
-      ]
     }
   ]
 }
