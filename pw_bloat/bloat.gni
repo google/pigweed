@@ -202,7 +202,6 @@ template("pw_size_diff") {
 
     if (defined(invoker.source_filter)) {
       _global_source_filter = invoker.source_filter
-      _all_target_dependencies += [ _global_source_filter ]
     }
 
     if (defined(invoker.data_sources)) {
