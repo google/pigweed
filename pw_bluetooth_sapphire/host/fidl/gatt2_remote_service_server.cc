@@ -41,18 +41,17 @@ fbg::Characteristic CharacteristicToFidl(
   // The FIDL property bitfield combines the properties and extended properties bits.
   // We mask away the kExtendedProperties property.
   constexpr uint8_t kRemoveExtendedPropertiesMask = 0x7F;
-  uint16_t fidl_properties =
-      static_cast<uint16_t>(characteristic.properties & kRemoveExtendedPropertiesMask);
+  fbg::CharacteristicPropertyBits fidl_properties = static_cast<fbg::CharacteristicPropertyBits>(
+      characteristic.properties & kRemoveExtendedPropertiesMask);
   if (characteristic.extended_properties) {
     if (*characteristic.extended_properties & bt::gatt::ExtendedProperty::kReliableWrite) {
-      fidl_properties |= static_cast<uint16_t>(fbg::CharacteristicPropertyBits::RELIABLE_WRITE);
+      fidl_properties |= fbg::CharacteristicPropertyBits::RELIABLE_WRITE;
     }
     if (*characteristic.extended_properties & bt::gatt::ExtendedProperty::kWritableAuxiliaries) {
-      fidl_properties |=
-          static_cast<uint16_t>(fbg::CharacteristicPropertyBits::WRITABLE_AUXILIARIES);
+      fidl_properties |= fbg::CharacteristicPropertyBits::WRITABLE_AUXILIARIES;
     }
   }
-  fidl_char.set_properties(static_cast<uint32_t>(fidl_properties));
+  fidl_char.set_properties(fidl_properties);
 
   if (!descriptors.empty()) {
     std::vector<fbg::Descriptor> fidl_descriptors;

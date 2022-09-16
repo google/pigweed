@@ -31,7 +31,7 @@ fbg::Characteristic BuildSimpleCharacteristic(uint64_t handle) {
   fbg::Handle chrc_handle{handle};
   chrc.set_handle(chrc_handle);
   chrc.set_type(fbt::Uuid{{6}});
-  chrc.set_properties(static_cast<uint16_t>(fbg::CharacteristicPropertyBits::READ));
+  chrc.set_properties(fbg::CharacteristicPropertyBits::READ);
   fbg::AttributePermissions permissions;
   fbg::SecurityRequirements security;
   security.set_encryption_required(true);
@@ -417,7 +417,7 @@ TEST_F(Gatt2ServerServerTest, ReadSuccess) {
   fbg::Handle chrc_handle{2};
   chrc.set_handle(chrc_handle);
   chrc.set_type(fbt::Uuid{{0}});
-  chrc.set_properties(static_cast<uint16_t>(fbg::CharacteristicPropertyBits::READ));
+  chrc.set_properties(fbg::CharacteristicPropertyBits::READ);
   chrc.set_permissions(fbg::AttributePermissions());
   std::vector<fbg::Characteristic> chrcs;
   chrcs.push_back(std::move(chrc));
@@ -474,7 +474,7 @@ TEST_F(Gatt2ServerServerTest, ReadErrorResponse) {
   fbg::Handle chrc_handle{2};
   chrc.set_handle(chrc_handle);
   chrc.set_type(fbt::Uuid{{0}});
-  chrc.set_properties(static_cast<uint16_t>(fbg::CharacteristicPropertyBits::READ));
+  chrc.set_properties(fbg::CharacteristicPropertyBits::READ);
   chrc.set_permissions(fbg::AttributePermissions());
   std::vector<fbg::Characteristic> chrcs;
   chrcs.push_back(std::move(chrc));
@@ -528,7 +528,7 @@ TEST_F(Gatt2ServerServerTest, WriteSuccess) {
   fbg::Handle chrc_handle{2};
   chrc.set_handle(chrc_handle);
   chrc.set_type(fbt::Uuid{{0}});
-  chrc.set_properties(static_cast<uint16_t>(fbg::CharacteristicPropertyBits::WRITE));
+  chrc.set_properties(fbg::CharacteristicPropertyBits::WRITE);
   chrc.set_permissions(fbg::AttributePermissions());
   std::vector<fbg::Characteristic> chrcs;
   chrcs.push_back(std::move(chrc));
@@ -589,7 +589,7 @@ TEST_F(Gatt2ServerServerTest, WriteError) {
   fbg::Handle chrc_handle{2};
   chrc.set_handle(chrc_handle);
   chrc.set_type(fbt::Uuid{{0}});
-  chrc.set_properties(static_cast<uint16_t>(fbg::CharacteristicPropertyBits::WRITE));
+  chrc.set_properties(fbg::CharacteristicPropertyBits::WRITE);
   chrc.set_permissions(fbg::AttributePermissions());
   std::vector<fbg::Characteristic> chrcs;
   chrcs.push_back(std::move(chrc));

@@ -17,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
@@ -1517,8 +1518,11 @@ std::unique_ptr<bt::gatt::Characteristic> Gatt2CharacteristicFromFidl(
     return nullptr;
   }
 
-  uint8_t props = fidl_chrc.properties() & 0xFF;
-  uint16_t ext_props = (fidl_chrc.properties() & 0xFF00) >> 8;
+  uint8_t props = static_cast<uint8_t>(fidl_chrc.properties());
+  const uint16_t ext_props = static_cast<uint16_t>(fidl_chrc.properties()) >> CHAR_BIT;
+  if (ext_props) {
+    props |= bt::gatt::Property::kExtendedProperties;
+  }
 
   const fgatt2::AttributePermissions& permissions = fidl_chrc.permissions();
   bool supports_update =

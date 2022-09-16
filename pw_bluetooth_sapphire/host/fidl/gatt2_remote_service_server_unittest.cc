@@ -112,9 +112,9 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverCharacteristics) {
 
   ASSERT_TRUE(fidl_characteristic.has_properties());
   EXPECT_EQ(fidl_characteristic.properties(),
-            static_cast<uint32_t>(fbg::CharacteristicPropertyBits::AUTHENTICATED_SIGNED_WRITES) |
-                static_cast<uint32_t>(fbg::CharacteristicPropertyBits::RELIABLE_WRITE) |
-                static_cast<uint32_t>(fbg::CharacteristicPropertyBits::WRITABLE_AUXILIARIES));
+            fbg::CharacteristicPropertyBits::AUTHENTICATED_SIGNED_WRITES |
+                fbg::CharacteristicPropertyBits::RELIABLE_WRITE |
+                fbg::CharacteristicPropertyBits::WRITABLE_AUXILIARIES);
 
   EXPECT_FALSE(fidl_characteristic.has_permissions());
 

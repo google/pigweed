@@ -1408,7 +1408,7 @@ TEST(HelpersTest, Gatt2CharacteristicFromFidlNoProperties) {
 
 TEST(HelpersTest, Gatt2CharacteristicFromFidlNoPermissions) {
   fbg2::Characteristic chrc;
-  chrc.set_properties(0);
+  chrc.mutable_properties();
   chrc.set_type(fbt::Uuid{{}});
   chrc.set_handle(fbg2::Handle{3});
   EXPECT_FALSE(Gatt2CharacteristicFromFidl(chrc));
@@ -1416,15 +1416,16 @@ TEST(HelpersTest, Gatt2CharacteristicFromFidlNoPermissions) {
 
 TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithPropertiesAndEmptyPermissions) {
   fbg2::Characteristic chrc;
-  chrc.set_properties(static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::WRITE) |
-                      static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::RELIABLE_WRITE));
+  chrc.set_properties(fbg2::CharacteristicPropertyBits::WRITE |
+                      fbg2::CharacteristicPropertyBits::RELIABLE_WRITE);
   chrc.set_permissions(fbg2::AttributePermissions());
   bt::UInt128 type = {2};
   chrc.set_type(fbt::Uuid{type});
   chrc.set_handle(fbg2::Handle{3});
   std::unique_ptr<bt::gatt::Characteristic> out = Gatt2CharacteristicFromFidl(chrc);
   ASSERT_TRUE(out);
-  EXPECT_EQ(out->properties(), bt::gatt::Property::kWrite);
+  EXPECT_EQ(out->properties(),
+            bt::gatt::Property::kWrite | bt::gatt::Property::kExtendedProperties);
   EXPECT_EQ(out->extended_properties(), bt::gatt::ExtendedProperty::kReliableWrite);
   EXPECT_FALSE(out->write_permissions().allowed());
   EXPECT_FALSE(out->read_permissions().allowed());
@@ -1435,7 +1436,7 @@ TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithPropertiesAndEmptyPermis
 
 TEST(HelpersTest, Gatt2CharacteristicFromFidlSupportsNotifyButDoesNotHavePermission) {
   fbg2::Characteristic chrc;
-  chrc.set_properties(static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::NOTIFY));
+  chrc.set_properties(fbg2::CharacteristicPropertyBits::NOTIFY);
   chrc.set_permissions(fbg2::AttributePermissions());
   bt::UInt128 type = {2};
   chrc.set_type(fbt::Uuid{type});
@@ -1446,7 +1447,7 @@ TEST(HelpersTest, Gatt2CharacteristicFromFidlSupportsNotifyButDoesNotHavePermiss
 
 TEST(HelpersTest, Gatt2CharacteristicFromFidlDoesNotSupportNotifyButDoesHaveUpdatePermission) {
   fbg2::Characteristic chrc;
-  chrc.set_properties(0);
+  chrc.mutable_properties();
   fbg2::AttributePermissions permissions;
   permissions.set_update(fbg2::SecurityRequirements());
   chrc.set_permissions(std::move(permissions));
@@ -1459,7 +1460,7 @@ TEST(HelpersTest, Gatt2CharacteristicFromFidlDoesNotSupportNotifyButDoesHaveUpda
 
 TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithEmptySecurityRequirements) {
   fbg2::Characteristic chrc;
-  chrc.set_properties(static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::NOTIFY));
+  chrc.set_properties(fbg2::CharacteristicPropertyBits::NOTIFY);
   fbg2::AttributePermissions permissions;
   permissions.set_read(fbg2::SecurityRequirements());
   permissions.set_write(fbg2::SecurityRequirements());
@@ -1477,7 +1478,7 @@ TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithEmptySecurityRequirement
 
 TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithAllSecurityRequirements) {
   fbg2::Characteristic chrc;
-  chrc.set_properties(static_cast<uint16_t>(fbg2::CharacteristicPropertyBits::NOTIFY));
+  chrc.set_properties(fbg2::CharacteristicPropertyBits::NOTIFY);
   fbg2::AttributePermissions permissions;
   fbg2::SecurityRequirements read_reqs;
   read_reqs.set_authentication_required(true);
@@ -1513,7 +1514,7 @@ TEST(HelpersTest, Gatt2CharacteristicFromFidlSuccessWithAllSecurityRequirements)
 
 TEST(HelpersTest, Gatt2CharacteristicFromFidlWithInvalidDescriptor) {
   fbg2::Characteristic chrc;
-  chrc.set_properties(0);
+  chrc.mutable_properties();
   chrc.set_permissions(fbg2::AttributePermissions());
   bt::UInt128 type = {2};
   chrc.set_type(fbt::Uuid{type});
@@ -1527,7 +1528,7 @@ TEST(HelpersTest, Gatt2CharacteristicFromFidlWithInvalidDescriptor) {
 
 TEST(HelpersTest, Gatt2CharacteristicFromFidlWith2Descriptors) {
   fbg2::Characteristic chrc;
-  chrc.set_properties(0);
+  chrc.mutable_properties();
   chrc.set_permissions(fbg2::AttributePermissions());
   bt::UInt128 chrc_type = {2};
   chrc.set_type(fbt::Uuid{chrc_type});
