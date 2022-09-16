@@ -43,7 +43,6 @@ generate_toolchain("rp2040") {
   ]
   _toolchain_base = pw_toolchain_arm_gcc.cortex_m0plus_size_optimized
   forward_variables_from(_toolchain_base, "*", _excluded_members)
-  final_binary_extension = ".elf"
 
   # For now, no Pigweed configurations set up.
   defaults = {
