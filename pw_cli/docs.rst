@@ -16,6 +16,7 @@ the Pigweed environment, these commands will be available for use.
   doctor   Check that the environment is set up correctly for Pigweed.
   format   Check and fix formatting for source files.
   help     Display detailed information about pw commands.
+  ide      Configure editors and IDEs to work best with Pigweed.
   logdemo  Show how logs look at various levels.
   module   Utilities for managing modules.
   test     Run Pigweed unit tests built using GN.
