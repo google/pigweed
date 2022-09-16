@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pi_pico.gni")
+
 group("rp2_common") {
   public_deps = [
     "hardware_adc",

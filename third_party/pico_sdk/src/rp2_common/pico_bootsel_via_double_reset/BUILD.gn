@@ -25,8 +25,8 @@ pw_source_set("pico_bootsel_via_double_reset") {
   deps = [
     "${PICO_ROOT}/src/common/pico_base",
     "${PICO_ROOT}/src/common/pico_binary_info",
+    "${PICO_ROOT}/src/common/pico_time",
     "${PICO_ROOT}/src/rp2_common/pico_bootrom",
-    "${PICO_ROOT}/src/rp2_common/pico_time",
   ]
   sources = [ "${_CWD}/pico_bootsel_via_double_reset.c" ]
 }
