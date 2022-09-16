@@ -18,6 +18,7 @@
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/lock.h"
@@ -126,12 +127,8 @@ class Server : public internal::Endpoint {
                     "streaming RPCs.");
     }
 
-    // Unrequested RPCs always use 0 as the call ID. When an actual request is
-    // sent, the call will be replaced with its real ID.
-    constexpr uint32_t kOpenCallId = 0;
-
     return internal::CallContext(
-        *this, channel_id, service, method, kOpenCallId);
+        *this, channel_id, service, method, internal::kOpenCallId);
   }
 
   std::tuple<Service*, const internal::Method*> FindMethod(

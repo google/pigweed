@@ -38,8 +38,6 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
                 Endpoint::ProcessPacket(packet_data, Packet::kServer));
 
   internal::rpc_lock().lock();
-  internal::ServerCall* const call =
-      static_cast<internal::ServerCall*>(FindCall(packet));
 
   // Verbose log for debugging.
   // PW_LOG_DEBUG("RPC server received packet type %u for %u:%08x/%08x",
@@ -72,10 +70,11 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
     return OkStatus();  // OK since the packet was handled.
   }
 
+  internal::ServerCall* const call =
+      static_cast<internal::ServerCall*>(FindCall(packet));
+
   switch (packet.type()) {
     case PacketType::REQUEST: {
-      // If the REQUEST is for an ongoing RPC, the existing call will be
-      // cancelled when the new call object is created.
       const internal::CallContext context(
           *this, channel->id(), *service, *method, packet.call_id());
       method->Invoke(context, packet);
@@ -86,7 +85,7 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
       break;
     case PacketType::CLIENT_ERROR:
     case PacketType::DEPRECATED_CANCEL:
-      if (call != nullptr && call->id() == packet.call_id()) {
+      if (call != nullptr) {
         call->HandleError(packet.status());
       } else {
         internal::rpc_lock().unlock();
@@ -125,7 +124,7 @@ std::tuple<Service*, const internal::Method*> Server::FindMethod(
 void Server::HandleClientStreamPacket(const internal::Packet& packet,
                                       internal::Channel& channel,
                                       internal::ServerCall* call) const {
-  if (call == nullptr || call->id() != packet.call_id()) {
+  if (call == nullptr) {
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
         .IgnoreError();  // Errors are logged in Channel::Send.
     internal::rpc_lock().unlock();

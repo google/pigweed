@@ -28,10 +28,11 @@ namespace pw::rpc {
 void FakeServer::CheckProcessPacket(internal::PacketType type,
                                     uint32_t service_id,
                                     uint32_t method_id,
+                                    std::optional<uint32_t> call_id,
                                     ConstByteSpan payload,
                                     Status status) const {
   if (Status process_packet_status =
-          ProcessPacket(type, service_id, method_id, payload, status);
+          ProcessPacket(type, service_id, method_id, call_id, payload, status);
       !process_packet_status.ok()) {
     PW_LOG_CRITICAL("Failed to process packet in pw::rpc::FakeServer");
     PW_LOG_CRITICAL(
@@ -50,10 +51,10 @@ void FakeServer::CheckProcessPacket(internal::PacketType type,
 Status FakeServer::ProcessPacket(internal::PacketType type,
                                  uint32_t service_id,
                                  uint32_t method_id,
+                                 std::optional<uint32_t> call_id,
                                  ConstByteSpan payload,
                                  Status status) const {
-  uint32_t call_id = 0;
-  {
+  if (!call_id.has_value()) {
     internal::LockGuard lock(output_.mutex_);
     auto view = internal::test::PacketsView(
         output_.packets(),
@@ -71,7 +72,7 @@ Status FakeServer::ProcessPacket(internal::PacketType type,
 
   auto packet_encoding_result =
       internal::Packet(
-          type, channel_id_, service_id, method_id, call_id, payload, status)
+          type, channel_id_, service_id, method_id, *call_id, payload, status)
           .Encode(packet_buffer_);
   PW_CHECK_OK(packet_encoding_result.status());
   return client_.ProcessPacket(*packet_encoding_result);

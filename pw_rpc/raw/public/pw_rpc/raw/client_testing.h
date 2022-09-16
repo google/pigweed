@@ -45,8 +45,9 @@ class FakeServer {
   template <auto kMethod,
             typename = std::enable_if_t<
                 HasServerStream(internal::MethodInfo<kMethod>::kType)>>
-  void SendResponse(Status status) const {
-    SendPacket<kMethod>(internal::PacketType::RESPONSE, {}, status);
+  void SendResponse(Status status,
+                    std::optional<uint32_t> call_id = std::nullopt) const {
+    SendPacket<kMethod>(internal::PacketType::RESPONSE, {}, status, call_id);
   }
 
   // Sends a response packet for a unary or client streaming streaming RPC to
@@ -54,45 +55,54 @@ class FakeServer {
   template <auto kMethod,
             typename = std::enable_if_t<
                 !HasServerStream(internal::MethodInfo<kMethod>::kType)>>
-  void SendResponse(ConstByteSpan payload, Status status) const {
-    SendPacket<kMethod>(internal::PacketType::RESPONSE, payload, status);
+  void SendResponse(ConstByteSpan payload,
+                    Status status,
+                    std::optional<uint32_t> call_id = std::nullopt) const {
+    SendPacket<kMethod>(
+        internal::PacketType::RESPONSE, payload, status, call_id);
   }
 
   // Sends a stream packet for a server or bidirectional streaming RPC to the
   // client.
   template <auto kMethod>
-  void SendServerStream(ConstByteSpan payload) const {
+  void SendServerStream(ConstByteSpan payload,
+                        std::optional<uint32_t> call_id = std::nullopt) const {
     static_assert(HasServerStream(internal::MethodInfo<kMethod>::kType),
                   "Only server and bidirectional streaming methods can receive "
                   "server stream packets");
-    SendPacket<kMethod>(internal::PacketType::SERVER_STREAM, payload);
+    SendPacket<kMethod>(
+        internal::PacketType::SERVER_STREAM, payload, OkStatus(), call_id);
   }
 
   // Sends a server error packet to the client.
   template <auto kMethod>
-  void SendServerError(Status error) const {
-    SendPacket<kMethod>(internal::PacketType::SERVER_ERROR, {}, error);
+  void SendServerError(Status error,
+                       std::optional<uint32_t> call_id = std::nullopt) const {
+    SendPacket<kMethod>(internal::PacketType::SERVER_ERROR, {}, error, call_id);
   }
 
  private:
   template <auto kMethod>
   void SendPacket(internal::PacketType type,
-                  ConstByteSpan payload = {},
-                  Status status = OkStatus()) const {
+                  ConstByteSpan payload,
+                  Status status,
+                  std::optional<uint32_t> call_id) const {
     using Info = internal::MethodInfo<kMethod>;
     CheckProcessPacket(
-        type, Info::kServiceId, Info::kMethodId, payload, status);
+        type, Info::kServiceId, Info::kMethodId, call_id, payload, status);
   }
 
   void CheckProcessPacket(internal::PacketType type,
                           uint32_t service_id,
                           uint32_t method_id,
+                          std::optional<uint32_t> call_id,
                           ConstByteSpan payload,
                           Status status) const;
 
   Status ProcessPacket(internal::PacketType type,
                        uint32_t service_id,
                        uint32_t method_id,
+                       std::optional<uint32_t> call_id,
                        ConstByteSpan payload,
                        Status status) const;
 

@@ -62,9 +62,9 @@ Result<Packet> Endpoint::ProcessPacket(span<const std::byte> data,
 
 void Endpoint::RegisterCall(Call& call) {
   Call* const existing_call = FindCallById(
-      call.channel_id_locked(), call.service_id(), call.method_id());
+      call.channel_id_locked(), call.service_id(), call.method_id(), call.id());
 
-  RegisterUniqueCall(call);
+  calls_.push_front(call);
 
   if (existing_call != nullptr) {
     // TODO(b/234876851): Ensure call object is locked when calling callback.
@@ -77,11 +77,20 @@ void Endpoint::RegisterCall(Call& call) {
 
 Call* Endpoint::FindCallById(uint32_t channel_id,
                              uint32_t service_id,
-                             uint32_t method_id) {
+                             uint32_t method_id,
+                             uint32_t call_id) {
   for (Call& call : calls_) {
     if (channel_id == call.channel_id_locked() &&
         service_id == call.service_id() && method_id == call.method_id()) {
-      return &call;
+      if (call_id == call.id() || call_id == kOpenCallId) {
+        return &call;
+      }
+      if (call.id() == kOpenCallId) {
+        // Calls with ID of `kOpenCallId` were unrequested, and
+        // are updated to have the call ID of the first matching request.
+        call.set_id(call_id);
+        return &call;
+      }
     }
   }
   return nullptr;

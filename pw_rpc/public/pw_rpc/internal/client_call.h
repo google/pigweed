@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 
 #include "pw_bytes/span.h"
 #include "pw_function/function.h"
@@ -30,6 +31,11 @@ class ClientCall : public Call {
     rpc_lock().lock();
     CloseClientCall();
     rpc_lock().unlock();
+  }
+
+  uint32_t id() PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock(rpc_lock());
+    return Call::id();
   }
 
  protected:

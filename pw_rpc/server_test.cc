@@ -19,6 +19,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
+#include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/test_method.h"
@@ -67,6 +68,8 @@ class EmptyService : public Service {
   static constexpr std::array<TestMethodUnion, 0> methods_ = {};
 };
 
+uint32_t kDefaultCallId = 24601;
+
 class BasicServer : public ::testing::Test {
  protected:
   static constexpr byte kDefaultPayload[] = {
@@ -88,31 +91,36 @@ class BasicServer : public ::testing::Test {
                                 uint32_t channel_id,
                                 uint32_t service_id,
                                 uint32_t method_id,
-                                span<const byte> payload = kDefaultPayload,
-                                Status status = OkStatus()) {
-    auto result =
-        Packet(type, channel_id, service_id, method_id, 0, payload, status)
-            .Encode(request_buffer_);
-    EXPECT_EQ(OkStatus(), result.status());
-    return result.value_or(ConstByteSpan());
+                                uint32_t call_id = kDefaultCallId) {
+    return EncodePacketWithBody(type,
+                                channel_id,
+                                service_id,
+                                method_id,
+                                call_id,
+                                kDefaultPayload,
+                                OkStatus());
   }
 
   span<const byte> EncodeCancel(uint32_t channel_id = 1,
                                 uint32_t service_id = 42,
-                                uint32_t method_id = 100) {
-    return EncodePacket(PacketType::CLIENT_ERROR,
-                        channel_id,
-                        service_id,
-                        method_id,
-                        {},
-                        Status::Cancelled());
+                                uint32_t method_id = 100,
+                                uint32_t call_id = kDefaultCallId) {
+    return EncodePacketWithBody(PacketType::CLIENT_ERROR,
+                                channel_id,
+                                service_id,
+                                method_id,
+                                call_id,
+                                {},
+                                Status::Cancelled());
   }
 
   template <typename T = ConstByteSpan>
   ConstByteSpan PacketForRpc(PacketType type,
                              Status status = OkStatus(),
-                             T&& payload = {}) {
-    return EncodePacket(type, 1, 42, 100, as_bytes(span(payload)), status);
+                             T&& payload = {},
+                             uint32_t call_id = kDefaultCallId) {
+    return EncodePacketWithBody(
+        type, 1, 42, 100, call_id, as_bytes(span(payload)), status);
   }
 
   RawFakeChannelOutput<2> output_;
@@ -124,6 +132,21 @@ class BasicServer : public ::testing::Test {
 
  private:
   byte request_buffer_[64];
+
+  span<const byte> EncodePacketWithBody(PacketType type,
+                                        uint32_t channel_id,
+                                        uint32_t service_id,
+                                        uint32_t method_id,
+                                        uint32_t call_id,
+                                        span<const byte> payload,
+                                        Status status) {
+    auto result =
+        Packet(
+            type, channel_id, service_id, method_id, call_id, payload, status)
+            .Encode(request_buffer_);
+    EXPECT_EQ(OkStatus(), result.status());
+    return result.value_or(ConstByteSpan());
+  }
 };
 
 TEST_F(BasicServer, ProcessPacket_ValidMethodInService1_InvokesMethod) {
@@ -155,11 +178,12 @@ TEST_F(BasicServer, ProcessPacket_ValidMethodInService42_InvokesMethod) {
 }
 
 TEST_F(BasicServer, UnregisterService_CannotCallMethod) {
+  const uint32_t kCallId = 8675309;
   server_.UnregisterService(service_1_, service_42_);
 
-  EXPECT_EQ(
-      OkStatus(),
-      server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 1, 100)));
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(
+                EncodePacket(PacketType::REQUEST, 1, 1, 100, kCallId)));
 
   const Packet& packet =
       static_cast<internal::test::FakeChannelOutput&>(output_).last_packet();
@@ -167,6 +191,7 @@ TEST_F(BasicServer, UnregisterService_CannotCallMethod) {
   EXPECT_EQ(packet.channel_id(), 1u);
   EXPECT_EQ(packet.service_id(), 1u);
   EXPECT_EQ(packet.method_id(), 100u);
+  EXPECT_EQ(packet.call_id(), kCallId);
   EXPECT_EQ(packet.status(), Status::NotFound());
 }
 
@@ -369,8 +394,11 @@ class BidiMethod : public BasicServer {
  protected:
   BidiMethod() {
     internal::rpc_lock().lock();
-    internal::CallContext context(
-        server_, channels_[0].id(), service_42_, service_42_.method(100), 0);
+    internal::CallContext context(server_,
+                                  channels_[0].id(),
+                                  service_42_,
+                                  service_42_.method(100),
+                                  kDefaultCallId);
     // A local temporary is required since the constructor requires a lock,
     // but the *move* constructor takes out the lock.
     internal::test::FakeServerReaderWriter responder_temp(
@@ -383,7 +411,7 @@ class BidiMethod : public BasicServer {
   internal::test::FakeServerReaderWriter responder_;
 };
 
-TEST_F(BidiMethod, DuplicateCall_CancelsExistingThenCallsAgain) {
+TEST_F(BidiMethod, DuplicateCallId_CancelsExistingThenCallsAgain) {
   int cancelled = 0;
   responder_.set_on_error([&cancelled](Status error) {
     if (error.IsCancelled()) {
@@ -399,6 +427,65 @@ TEST_F(BidiMethod, DuplicateCall_CancelsExistingThenCallsAgain) {
 
   EXPECT_EQ(cancelled, 1);
   EXPECT_EQ(method.invocations(), 1u);
+}
+
+TEST_F(BidiMethod, DuplicateMethodDifferentCallId_NotCancelled) {
+  int cancelled = 0;
+  responder_.set_on_error([&cancelled](Status error) {
+    if (error.IsCancelled()) {
+      cancelled += 1;
+    }
+  });
+
+  const uint32_t kSecondCallId = 1625;
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(
+                PacketType::REQUEST, OkStatus(), {}, kSecondCallId)));
+
+  EXPECT_EQ(cancelled, 0);
+}
+
+const char* span_as_cstr(ConstByteSpan span) {
+  return reinterpret_cast<const char*>(span.data());
+}
+
+TEST_F(BidiMethod, DuplicateMethodDifferentCallIdEachCallGetsSeparateResponse) {
+  const uint32_t kSecondCallId = 1625;
+
+  internal::rpc_lock().lock();
+  internal::test::FakeServerReaderWriter responder_2(
+      internal::CallContext(server_,
+                            channels_[0].id(),
+                            service_42_,
+                            service_42_.method(100),
+                            kSecondCallId)
+          .ClaimLocked());
+  internal::rpc_lock().unlock();
+
+  ConstByteSpan data_1 = as_bytes(span("data_1_unset"));
+  responder_.set_on_next(
+      [&data_1](ConstByteSpan payload) { data_1 = payload; });
+
+  ConstByteSpan data_2 = as_bytes(span("data_2_unset"));
+  responder_2.set_on_next(
+      [&data_2](ConstByteSpan payload) { data_2 = payload; });
+
+  const char* kMessage1 = "hello_1";
+  const char* kMessage2 = "hello_2";
+
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(PacketForRpc(
+          PacketType::CLIENT_STREAM, OkStatus(), "hello_2", kSecondCallId)));
+
+  EXPECT_STREQ(span_as_cstr(data_2), kMessage2);
+
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(PacketForRpc(
+          PacketType::CLIENT_STREAM, OkStatus(), "hello_1", kDefaultCallId)));
+
+  EXPECT_STREQ(span_as_cstr(data_1), kMessage1);
 }
 
 TEST_F(BidiMethod, Cancel_ClosesServerWriter) {
@@ -468,7 +555,47 @@ TEST_F(BidiMethod, ClientStream_CallsCallback) {
                 PacketForRpc(PacketType::CLIENT_STREAM, {}, "hello")));
 
   EXPECT_EQ(output_.total_packets(), 0u);
-  EXPECT_STREQ(reinterpret_cast<const char*>(data.data()), "hello");
+  EXPECT_STREQ(span_as_cstr(data), "hello");
+}
+
+TEST_F(BidiMethod, ClientStream_CallsCallbackOnCallWithOpenId) {
+  ConstByteSpan data = as_bytes(span("?"));
+  responder_.set_on_next([&data](ConstByteSpan payload) { data = payload; });
+
+  ASSERT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(PacketForRpc(
+          PacketType::CLIENT_STREAM, {}, "hello", internal::kOpenCallId)));
+
+  EXPECT_EQ(output_.total_packets(), 0u);
+  EXPECT_STREQ(span_as_cstr(data), "hello");
+}
+
+TEST_F(BidiMethod, ClientStream_CallsOpenIdOnCallWithDifferentId) {
+  const uint32_t kSecondCallId = 1625;
+  internal::CallContext context(server_,
+                                channels_[0].id(),
+                                service_42_,
+                                service_42_.method(100),
+                                internal::kOpenCallId);
+  internal::rpc_lock().lock();
+  auto temp_responder =
+      internal::test::FakeServerReaderWriter(context.ClaimLocked());
+  internal::rpc_lock().unlock();
+  responder_ = std::move(temp_responder);
+
+  ConstByteSpan data = as_bytes(span("?"));
+  responder_.set_on_next([&data](ConstByteSpan payload) { data = payload; });
+
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(
+                PacketType::CLIENT_STREAM, {}, "hello", kSecondCallId)));
+
+  EXPECT_EQ(output_.total_packets(), 0u);
+  EXPECT_STREQ(span_as_cstr(data), "hello");
+
+  std::lock_guard lock(internal::rpc_lock());
+  EXPECT_EQ(responder_.as_server_call().id(), kSecondCallId);
 }
 
 TEST_F(BidiMethod, UnregsiterService_AbortsActiveCalls) {
@@ -518,8 +645,11 @@ TEST_F(BidiMethod, ClientStreamEnd_ErrorWhenClosed) {
 class ServerStreamingMethod : public BasicServer {
  protected:
   ServerStreamingMethod() {
-    internal::CallContext context(
-        server_, channels_[0].id(), service_42_, service_42_.method(100), 0);
+    internal::CallContext context(server_,
+                                  channels_[0].id(),
+                                  service_42_,
+                                  service_42_.method(100),
+                                  kDefaultCallId);
     internal::rpc_lock().lock();
     internal::test::FakeServerWriter responder_temp(context.ClaimLocked());
     internal::rpc_lock().unlock();

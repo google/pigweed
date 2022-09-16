@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <limits>
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
@@ -39,6 +40,11 @@ namespace internal {
 class Endpoint;
 class LockedEndpoint;
 class Packet;
+
+// Unrequested RPCs always use this call ID. When a subsequent request
+// or response is sent with a matching channel + service + method,
+// it will match a calls with this ID if one exists.
+constexpr uint32_t kOpenCallId = std::numeric_limits<uint32_t>::max();
 
 // Internal RPC Call class. The Call is used to respond to any type of RPC.
 // Public classes like ServerWriters inherit from it with private inheritance
@@ -71,6 +77,8 @@ class Call : public IntrusiveList<Call>::Item {
   }
 
   uint32_t id() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) { return id_; }
+
+  void set_id(uint32_t id) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) { id_ = id; }
 
   uint32_t channel_id() const PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
@@ -255,6 +263,7 @@ class Call : public IntrusiveList<Call>::Item {
     const bool invoke = on_error_ != nullptr;
 
     // TODO(b/234876851): Ensure on_error_ is properly guarded.
+
     rpc_lock().unlock();
     if (invoke) {
       on_error_(error);

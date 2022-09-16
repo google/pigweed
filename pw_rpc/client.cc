@@ -47,7 +47,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
     return Status::Unavailable();
   }
 
-  if (call == nullptr || call->id() != packet.call_id()) {
+  if (call == nullptr) {
     // The call for the packet does not exist. If the packet is a server stream
     // message, notify the server so that it can kill the stream. Otherwise,
     // silently drop the packet (as it would terminate the RPC anyway).

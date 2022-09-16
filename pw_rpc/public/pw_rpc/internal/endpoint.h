@@ -96,8 +96,10 @@ class Endpoint {
   // Finds a call object for an ongoing call associated with this packet, if
   // any. Returns nullptr if no matching call exists.
   Call* FindCall(const Packet& packet) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return FindCallById(
-        packet.channel_id(), packet.service_id(), packet.method_id());
+    return FindCallById(packet.channel_id(),
+                        packet.service_id(),
+                        packet.method_id(),
+                        packet.call_id());
   }
 
   void AbortCallsForService(const Service& service)
@@ -141,8 +143,8 @@ class Endpoint {
 
   Call* FindCallById(uint32_t channel_id,
                      uint32_t service_id,
-                     uint32_t method_id)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+                     uint32_t method_id,
+                     uint32_t call_id) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   ChannelList channels_ PW_GUARDED_BY(rpc_lock());
   IntrusiveList<Call> calls_ PW_GUARDED_BY(rpc_lock());

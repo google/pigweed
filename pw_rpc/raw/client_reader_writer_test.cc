@@ -231,27 +231,6 @@ TEST(RawUnaryReceiver, Move_ActiveToActive) {
   EXPECT_TRUE(active_call_2.active());
 }
 
-TEST(RawClientReaderWriter, NewCallCancelsPreviousAndCallsErrorCallback) {
-  RawClientTestContext ctx;
-
-  Status error;
-  RawClientReaderWriter active_call_1 = TestService::TestBidirectionalStreamRpc(
-      ctx.client(),
-      ctx.channel().id(),
-      FailIfOnNextCalled,
-      FailIfCalled,
-      [&error](Status status) { error = status; });
-
-  ASSERT_TRUE(active_call_1.active());
-
-  RawClientReaderWriter active_call_2 =
-      TestService::TestBidirectionalStreamRpc(ctx.client(), ctx.channel().id());
-
-  EXPECT_FALSE(active_call_1.active());
-  EXPECT_TRUE(active_call_2.active());
-  EXPECT_EQ(error, Status::Cancelled());
-}
-
 TEST(RawClientReader, NoClientStream_OutOfScope_SilentlyCloses) {
   RawClientTestContext ctx;
 
@@ -327,6 +306,50 @@ TEST(RawClientReaderWriter, UsableAsWriter) {
                        .back()
                        .data()),
                kWriterData);
+}
+
+const char* span_as_cstr(ConstByteSpan span) {
+  return reinterpret_cast<const char*>(span.data());
+}
+
+TEST(RawClientReaderWriter,
+     MultipleCallsToSameMethodOkAndReceiveSeparateResponses) {
+  RawClientTestContext ctx;
+
+  ConstByteSpan data_1 = as_bytes(span("data_1_unset"));
+  ConstByteSpan data_2 = as_bytes(span("data_2_unset"));
+
+  Status error;
+  auto set_error = [&error](Status status) { error.Update(status); };
+  RawClientReaderWriter active_call_1 = TestService::TestBidirectionalStreamRpc(
+      ctx.client(),
+      ctx.channel().id(),
+      [&data_1](ConstByteSpan payload) { data_1 = payload; },
+      FailIfCalled,
+      set_error);
+
+  EXPECT_TRUE(active_call_1.active());
+
+  RawClientReaderWriter active_call_2 = TestService::TestBidirectionalStreamRpc(
+      ctx.client(),
+      ctx.channel().id(),
+      [&data_2](ConstByteSpan payload) { data_2 = payload; },
+      FailIfCalled,
+      set_error);
+
+  EXPECT_TRUE(active_call_1.active());
+  EXPECT_TRUE(active_call_2.active());
+  EXPECT_EQ(error, OkStatus());
+
+  ConstByteSpan message_1 = as_bytes(span("hello_1"));
+  ConstByteSpan message_2 = as_bytes(span("hello_2"));
+
+  ctx.server().SendServerStream<TestService::TestBidirectionalStreamRpc>(
+      message_2, active_call_2.id());
+  EXPECT_STREQ(span_as_cstr(data_2), span_as_cstr(message_2));
+  ctx.server().SendServerStream<TestService::TestBidirectionalStreamRpc>(
+      message_1, active_call_1.id());
+  EXPECT_STREQ(span_as_cstr(data_1), span_as_cstr(message_1));
 }
 
 }  // namespace
