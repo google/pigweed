@@ -25,6 +25,7 @@ pw_python_package("py") {
   sources = [
     "pw_ide/__init__.py",
     "pw_ide/__main__.py",
+    "pw_ide/settings.py",
   ]
   tests = []
   python_deps = [ "$dir_pw_console/py" ]

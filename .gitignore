@@ -6,6 +6,7 @@ bazel-*
 docs/_build
 
 # Editors
+.pw_ide/
 .idea/
 .ijwb/
 .project
