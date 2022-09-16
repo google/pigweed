@@ -115,6 +115,8 @@ such as a quick program for local use and a full program for automated use. The
 * ``override_gn_args``: Additional GN args processed by ``build.gn_gen()``
 * ``luci``: Information about the LUCI build or None if not running in LUCI
 * ``num_jobs``: Number of jobs to run in parallel
+* ``continue_after_build_error``: For steps that compile, don't exit on the
+  first compilation error
 
 The ``luci`` member is of type ``LuciContext`` and has the following members:
 

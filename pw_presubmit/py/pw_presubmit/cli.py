@@ -133,10 +133,16 @@ def add_arguments(parser: argparse.ArgumentParser,
     """Adds common presubmit check options to an argument parser."""
 
     add_path_arguments(parser)
-    parser.add_argument('-k',
-                        '--keep-going',
-                        action='store_true',
-                        help='Continue instead of aborting when errors occur.')
+    parser.add_argument(
+        '-k',
+        '--keep-going',
+        action='store_true',
+        help='Continue running presubmit steps after a failure.')
+    parser.add_argument(
+        '--continue-after-build-error',
+        action='store_true',
+        help=('Within presubmit steps, continue running build steps after a '
+              'failure.'))
     parser.add_argument(
         '--output-directory',
         type=Path,

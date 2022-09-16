@@ -220,6 +220,7 @@ class PresubmitContext:
     luci: Optional[LuciContext]
     override_gn_args: Dict[str, str]
     num_jobs: Optional[int] = None
+    continue_after_build_error: bool = False
     _failed: bool = False
 
     @property
@@ -312,7 +313,8 @@ class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
     def __init__(self, root: Path, repos: Sequence[Path],
                  output_directory: Path, paths: Sequence[Path],
-                 package_root: Path, override_gn_args: Dict[str, str]):
+                 package_root: Path, override_gn_args: Dict[str, str],
+                 continue_after_build_error: bool):
         self._root = root.resolve()
         self._repos = tuple(repos)
         self._output_directory = output_directory.resolve()
@@ -321,6 +323,7 @@ class Presubmit:
             tools.relative_paths(self._paths, self._root))
         self._package_root = package_root.resolve()
         self._override_gn_args = override_gn_args
+        self._continue_after_build_error = continue_after_build_error
 
     def run(self, program: Program, keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
@@ -430,6 +433,7 @@ class Presubmit:
                 paths=paths,
                 package_root=self._package_root,
                 override_gn_args=self._override_gn_args,
+                continue_after_build_error=self._continue_after_build_error,
                 luci=LuciContext.create_from_environment(),
             )
 
@@ -499,7 +503,8 @@ def run(  # pylint: disable=too-many-arguments
         package_root: Path = None,
         only_list_steps: bool = False,
         override_gn_args: Sequence[Tuple[str, str]] = (),
-        keep_going: bool = False) -> bool:
+        keep_going: bool = False,
+        continue_after_build_error: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
     This changes the directory to the root of the Git repository after listing
@@ -524,7 +529,8 @@ def run(  # pylint: disable=too-many-arguments
         package_root: where to place package files
         only_list_steps: print step names instead of running them
         override_gn_args: additional GN args to set on steps
-        keep_going: whether to continue running checks if an error occurs
+        keep_going: continue running presubmit steps after a step fails
+        continue_after_build_error: continue building if a build step fails
 
     Returns:
         True if all presubmit checks succeeded
@@ -567,6 +573,7 @@ def run(  # pylint: disable=too-many-arguments
         paths=files,
         package_root=package_root,
         override_gn_args=dict(override_gn_args or {}),
+        continue_after_build_error=continue_after_build_error,
     )
 
     if only_list_steps:

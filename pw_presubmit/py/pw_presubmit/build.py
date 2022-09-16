@@ -53,6 +53,10 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
     if ctx.num_jobs is not None:
         num_jobs.extend(('--jobs', str(ctx.num_jobs)))
 
+    keep_going: List[str] = []
+    if ctx.continue_after_build_error:
+        keep_going.append('--keep_going')
+
     call('bazel',
          cmd,
          '--verbose_failures',
@@ -60,6 +64,7 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
          '--worker_verbose',
          f'--symlink_prefix={ctx.output_dir / ".bazel-"}',
          *num_jobs,
+         *keep_going,
          *args,
          cwd=ctx.root,
          env=env_with_clang_vars())
@@ -159,6 +164,10 @@ def ninja(ctx: PresubmitContext,
     if ctx.num_jobs is not None:
         num_jobs.extend(('-j', str(ctx.num_jobs)))
 
+    keep_going: List[str] = []
+    if ctx.continue_after_build_error:
+        keep_going.extend(('-k', '0'))
+
     if save_compdb:
         proc = subprocess.run(
             ['ninja', '-C', ctx.output_dir, '-t', 'compdb', *args],
@@ -173,7 +182,8 @@ def ninja(ctx: PresubmitContext,
             **kwargs)
         (ctx.output_dir / 'ninja.graph').write_bytes(proc.stdout)
 
-    call('ninja', '-C', ctx.output_dir, *num_jobs, *args, **kwargs)
+    call('ninja', '-C', ctx.output_dir, *num_jobs, *keep_going, *args,
+         **kwargs)
     (ctx.output_dir / '.ninja_log').rename(ctx.output_dir / 'ninja.log')
 
 
