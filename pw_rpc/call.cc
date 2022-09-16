@@ -22,8 +22,18 @@
 
 namespace pw::rpc::internal {
 
+// Creates an active server-side Call.
+Call::Call(const LockedCallContext& context, MethodType type)
+    : Call(context.server().ClaimLocked(),
+           context.call_id(),
+           context.channel_id(),
+           UnwrapServiceId(context.service().service_id()),
+           context.method().id(),
+           type,
+           kServerCall) {}
+
 // Creates an active client-side call, assigning it a new ID.
-Call::Call(Endpoint& client,
+Call::Call(LockedEndpoint& client,
            uint32_t channel_id,
            uint32_t service_id,
            uint32_t method_id,
@@ -36,7 +46,7 @@ Call::Call(Endpoint& client,
            type,
            kClientCall) {}
 
-Call::Call(Endpoint& endpoint_ref,
+Call::Call(LockedEndpoint& endpoint_ref,
            uint32_t call_id,
            uint32_t channel_id,
            uint32_t service_id,

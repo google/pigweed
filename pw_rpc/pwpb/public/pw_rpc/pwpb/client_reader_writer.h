@@ -44,7 +44,8 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
                         Function<void(Status)>&& on_error,
                         const Request&... request) {
     rpc_lock().lock();
-    CallType call(client, channel_id, service_id, method_id, serde);
+    CallType call(
+        client.ClaimLocked(), channel_id, service_id, method_id, serde);
 
     call.set_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
@@ -67,12 +68,13 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   // variable into which to move client reader/writers from RPC calls.
   constexpr PwpbUnaryResponseClientCall() = default;
 
-  PwpbUnaryResponseClientCall(internal::Endpoint& client,
+  PwpbUnaryResponseClientCall(internal::LockedEndpoint& client,
                               uint32_t channel_id,
                               uint32_t service_id,
                               uint32_t method_id,
                               MethodType type,
                               const PwpbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : UnaryResponseClientCall(
             client, channel_id, service_id, method_id, type),
         serde_(&serde) {}
@@ -171,7 +173,8 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
                         Function<void(Status)>&& on_error,
                         const Request&... request) {
     rpc_lock().lock();
-    CallType call(client, channel_id, service_id, method_id, serde);
+    CallType call(
+        client.ClaimLocked(), channel_id, service_id, method_id, serde);
 
     call.set_on_next_locked(std::move(on_next));
     call.set_on_completed_locked(std::move(on_completed));
@@ -194,12 +197,13 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
   // variable into which to move client reader/writers from RPC calls.
   constexpr PwpbStreamResponseClientCall() = default;
 
-  PwpbStreamResponseClientCall(internal::Endpoint& client,
+  PwpbStreamResponseClientCall(internal::LockedEndpoint& client,
                                uint32_t channel_id,
                                uint32_t service_id,
                                uint32_t method_id,
                                MethodType type,
                                const PwpbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : StreamResponseClientCall(
             client, channel_id, service_id, method_id, type),
         serde_(&serde) {}
@@ -320,11 +324,12 @@ class PwpbClientReaderWriter
  protected:
   friend class internal::PwpbStreamResponseClientCall<Response>;
 
-  PwpbClientReaderWriter(internal::Endpoint& client,
+  PwpbClientReaderWriter(internal::LockedEndpoint& client,
                          uint32_t channel_id_v,
                          uint32_t service_id,
                          uint32_t method_id,
                          const internal::PwpbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::PwpbStreamResponseClientCall<Response>(
             client,
             channel_id_v,
@@ -363,11 +368,12 @@ class PwpbClientReader
  private:
   friend class internal::PwpbStreamResponseClientCall<Response>;
 
-  PwpbClientReader(internal::Endpoint& client,
+  PwpbClientReader(internal::LockedEndpoint& client,
                    uint32_t channel_id_v,
                    uint32_t service_id,
                    uint32_t method_id,
                    const internal::PwpbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::PwpbStreamResponseClientCall<Response>(
             client,
             channel_id_v,
@@ -419,11 +425,13 @@ class PwpbClientWriter
  private:
   friend class internal::PwpbUnaryResponseClientCall<Response>;
 
-  PwpbClientWriter(internal::Endpoint& client,
+  PwpbClientWriter(internal::LockedEndpoint& client,
                    uint32_t channel_id_v,
                    uint32_t service_id,
                    uint32_t method_id,
                    const internal::PwpbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
+
       : internal::PwpbUnaryResponseClientCall<Response>(
             client,
             channel_id_v,
@@ -461,11 +469,12 @@ class PwpbUnaryReceiver
  private:
   friend class internal::PwpbUnaryResponseClientCall<Response>;
 
-  PwpbUnaryReceiver(internal::Endpoint& client,
+  PwpbUnaryReceiver(internal::LockedEndpoint& client,
                     uint32_t channel_id_v,
                     uint32_t service_id,
                     uint32_t method_id,
                     const internal::PwpbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::PwpbUnaryResponseClientCall<Response>(client,
                                                         channel_id_v,
                                                         service_id,

@@ -18,6 +18,7 @@
 #include "pw_bytes/span.h"
 #include "pw_function/function.h"
 #include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/lock.h"
 
 namespace pw::rpc::internal {
@@ -34,11 +35,11 @@ class ClientCall : public Call {
  protected:
   constexpr ClientCall() = default;
 
-  ClientCall(Endpoint& client,
+  ClientCall(LockedEndpoint& client,
              uint32_t channel_id,
              uint32_t service_id,
              uint32_t method_id,
-             MethodType type)
+             MethodType type) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : Call(client, channel_id, service_id, method_id, type) {}
 
   // Sends CLIENT_STREAM_END if applicable, releases any held payload buffer,
@@ -65,7 +66,7 @@ class UnaryResponseClientCall : public ClientCall {
                         Function<void(Status)>&& on_error,
                         ConstByteSpan request) PW_LOCKS_EXCLUDED(rpc_lock()) {
     rpc_lock().lock();
-    CallType call(client, channel_id, service_id, method_id);
+    CallType call(client.ClaimLocked(), channel_id, service_id, method_id);
     call.set_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
 
@@ -87,11 +88,12 @@ class UnaryResponseClientCall : public ClientCall {
  protected:
   constexpr UnaryResponseClientCall() = default;
 
-  UnaryResponseClientCall(Endpoint& client,
+  UnaryResponseClientCall(LockedEndpoint& client,
                           uint32_t channel_id,
                           uint32_t service_id,
                           uint32_t method_id,
                           MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : ClientCall(client, channel_id, service_id, method_id, type) {}
 
   UnaryResponseClientCall(UnaryResponseClientCall&& other) {
@@ -144,7 +146,7 @@ class StreamResponseClientCall : public ClientCall {
                         Function<void(Status)>&& on_error,
                         ConstByteSpan request) {
     rpc_lock().lock();
-    CallType call(client, channel_id, service_id, method_id);
+    CallType call(client.ClaimLocked(), channel_id, service_id, method_id);
 
     call.set_on_next_locked(std::move(on_next));
     call.set_on_completed_locked(std::move(on_completed));
@@ -169,11 +171,12 @@ class StreamResponseClientCall : public ClientCall {
  protected:
   constexpr StreamResponseClientCall() = default;
 
-  StreamResponseClientCall(Endpoint& client,
+  StreamResponseClientCall(LockedEndpoint& client,
                            uint32_t channel_id,
                            uint32_t service_id,
                            uint32_t method_id,
                            MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : ClientCall(client, channel_id, service_id, method_id, type) {}
 
   StreamResponseClientCall(StreamResponseClientCall&& other) {

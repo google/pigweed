@@ -34,7 +34,8 @@ class TestMethod : public Method {
   class FakeServerCall : public ServerCall {
    public:
     constexpr FakeServerCall() = default;
-    FakeServerCall(const CallContext& context, MethodType type)
+    FakeServerCall(const LockedCallContext& context, MethodType type)
+        PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
         : ServerCall(context, type) {}
 
     FakeServerCall(FakeServerCall&&) = default;
@@ -70,7 +71,7 @@ class TestMethod : public Method {
     test_method.invocations_ += 1;
 
     // Create a call object so it registers / unregisters with the server.
-    FakeServerCall fake_call(context, kType);
+    FakeServerCall fake_call(context.ClaimLocked(), kType);
 
     rpc_lock().unlock();
 

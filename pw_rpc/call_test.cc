@@ -39,209 +39,215 @@ namespace {
 
 constexpr Packet kPacket(PacketType::REQUEST, 99, 16, 8);
 
-using pw::rpc::internal::test::FakeServerWriter;
-using std::byte;
+using ::pw::rpc::internal::test::FakeServerReader;
+using ::pw::rpc::internal::test::FakeServerReaderWriter;
+using ::pw::rpc::internal::test::FakeServerWriter;
+using ::std::byte;
+using ::testing::Test;
 
-TEST(ServerWriter, ConstructWithContext_StartsOpen) {
-  ServerContextForTest<TestService> context(TestService::method.method());
+class ServerWriterTest : public Test {
+ public:
+  ServerWriterTest() : context_(TestService::method.method()) {
+    rpc_lock().lock();
+    FakeServerWriter writer_temp(context_.get().ClaimLocked());
+    rpc_lock().unlock();
+    writer_ = std::move(writer_temp);
+  }
 
-  FakeServerWriter writer(context.get());
+  ServerContextForTest<TestService> context_;
+  FakeServerWriter writer_;
+};
 
-  EXPECT_TRUE(writer.active());
+TEST_F(ServerWriterTest, ConstructWithContext_StartsOpen) {
+  EXPECT_TRUE(writer_.active());
 }
 
-TEST(ServerWriter, Move_ClosesOriginal) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-
-  FakeServerWriter moved(context.get());
-  FakeServerWriter writer(std::move(moved));
+TEST_F(ServerWriterTest, Move_ClosesOriginal) {
+  FakeServerWriter moved(std::move(writer_));
 
 #ifndef __clang_analyzer__
-  EXPECT_FALSE(moved.active());
+  EXPECT_FALSE(writer_.active());
 #endif  // ignore use-after-move
-  EXPECT_TRUE(writer.active());
+  EXPECT_TRUE(moved.active());
 }
 
-TEST(ServerWriter, DefaultConstruct_Closed) {
+TEST_F(ServerWriterTest, DefaultConstruct_Closed) {
   FakeServerWriter writer;
-
   EXPECT_FALSE(writer.active());
 }
 
-TEST(ServerWriter, Construct_RegistersWithServer) PW_NO_LOCK_SAFETY_ANALYSIS {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  FakeServerWriter writer(context.get());
-
-  Call* call = context.server().FindCall(kPacket);
+TEST_F(ServerWriterTest, Construct_RegistersWithServer) {
+  std::lock_guard lock(rpc_lock());
+  Call* call = context_.server().FindCall(kPacket);
   ASSERT_NE(call, nullptr);
-  EXPECT_EQ(static_cast<void*>(call), static_cast<void*>(&writer));
+  EXPECT_EQ(static_cast<void*>(call), static_cast<void*>(&writer_));
 }
 
-TEST(ServerWriter, Destruct_RemovesFromServer) PW_NO_LOCK_SAFETY_ANALYSIS {
+TEST_F(ServerWriterTest, Destruct_RemovesFromServer) {
   ServerContextForTest<TestService> context(TestService::method.method());
-  { FakeServerWriter writer(context.get()); }
+  {
+    // Note `lock_guard` cannot be used here, because while the constructor
+    // of `FakeServerWriter` requires the lock be held, the destructor acquires
+    // it!
+    rpc_lock().lock();
+    FakeServerWriter writer(context.get().ClaimLocked());
+    rpc_lock().unlock();
+  }
 
+  std::lock_guard lock(rpc_lock());
   EXPECT_EQ(context.server().FindCall(kPacket), nullptr);
 }
 
-TEST(ServerWriter, Finish_RemovesFromServer) PW_NO_LOCK_SAFETY_ANALYSIS {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  FakeServerWriter writer(context.get());
-
-  EXPECT_EQ(OkStatus(), writer.Finish());
-
-  EXPECT_EQ(context.server().FindCall(kPacket), nullptr);
+TEST_F(ServerWriterTest, Finish_RemovesFromServer) {
+  EXPECT_EQ(OkStatus(), writer_.Finish());
+  std::lock_guard lock(rpc_lock());
+  EXPECT_EQ(context_.server().FindCall(kPacket), nullptr);
 }
 
-TEST(ServerWriter, Finish_SendsResponse) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  FakeServerWriter writer(context.get());
+TEST_F(ServerWriterTest, Finish_SendsResponse) {
+  EXPECT_EQ(OkStatus(), writer_.Finish());
 
-  EXPECT_EQ(OkStatus(), writer.Finish());
-
-  ASSERT_EQ(context.output().total_packets(), 1u);
-  const Packet& packet = context.output().last_packet();
+  ASSERT_EQ(context_.output().total_packets(), 1u);
+  const Packet& packet = context_.output().last_packet();
   EXPECT_EQ(packet.type(), PacketType::RESPONSE);
-  EXPECT_EQ(packet.channel_id(), context.channel_id());
-  EXPECT_EQ(packet.service_id(), context.service_id());
-  EXPECT_EQ(packet.method_id(), context.get().method().id());
+  EXPECT_EQ(packet.channel_id(), context_.channel_id());
+  EXPECT_EQ(packet.service_id(), context_.service_id());
+  EXPECT_EQ(packet.method_id(), context_.get().method().id());
   EXPECT_TRUE(packet.payload().empty());
   EXPECT_EQ(packet.status(), OkStatus());
 }
 
-TEST(ServerWriter, Finish_ReturnsStatusFromChannelSend) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  FakeServerWriter writer(context.get());
-  context.output().set_send_status(Status::Unauthenticated());
+TEST_F(ServerWriterTest, Finish_ReturnsStatusFromChannelSend) {
+  context_.output().set_send_status(Status::Unauthenticated());
 
   // All non-OK statuses are remapped to UNKNOWN.
-  EXPECT_EQ(Status::Unknown(), writer.Finish());
+  EXPECT_EQ(Status::Unknown(), writer_.Finish());
 }
 
-TEST(ServerWriter, Finish) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  FakeServerWriter writer(context.get());
-
-  ASSERT_TRUE(writer.active());
-  EXPECT_EQ(OkStatus(), writer.Finish());
-  EXPECT_FALSE(writer.active());
-  EXPECT_EQ(Status::FailedPrecondition(), writer.Finish());
+TEST_F(ServerWriterTest, Finish) {
+  ASSERT_TRUE(writer_.active());
+  EXPECT_EQ(OkStatus(), writer_.Finish());
+  EXPECT_FALSE(writer_.active());
+  EXPECT_EQ(Status::FailedPrecondition(), writer_.Finish());
 }
 
-TEST(ServerWriter, Open_SendsPacketWithPayload) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  FakeServerWriter writer(context.get());
-
+TEST_F(ServerWriterTest, Open_SendsPacketWithPayload) {
   constexpr byte data[] = {byte{0xf0}, byte{0x0d}};
-  ASSERT_EQ(OkStatus(), writer.Write(data));
+  ASSERT_EQ(OkStatus(), writer_.Write(data));
 
   byte encoded[64];
-  auto result = context.server_stream(data).Encode(encoded);
+  auto result = context_.server_stream(data).Encode(encoded);
   ASSERT_EQ(OkStatus(), result.status());
 
-  ConstByteSpan payload = context.output().last_packet().payload();
+  ConstByteSpan payload = context_.output().last_packet().payload();
   EXPECT_EQ(sizeof(data), payload.size());
   EXPECT_EQ(0, std::memcmp(data, payload.data(), sizeof(data)));
 }
 
-TEST(ServerWriter, Closed_IgnoresFinish) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  FakeServerWriter writer(context.get());
-
-  EXPECT_EQ(OkStatus(), writer.Finish());
-  EXPECT_EQ(Status::FailedPrecondition(), writer.Finish());
+TEST_F(ServerWriterTest, Closed_IgnoresFinish) {
+  EXPECT_EQ(OkStatus(), writer_.Finish());
+  EXPECT_EQ(Status::FailedPrecondition(), writer_.Finish());
 }
 
-TEST(ServerWriter, DefaultConstructor_NoClientStream) {
+TEST_F(ServerWriterTest, DefaultConstructor_NoClientStream) {
   FakeServerWriter writer;
   LockGuard lock(rpc_lock());
   EXPECT_FALSE(writer.as_server_call().has_client_stream());
   EXPECT_FALSE(writer.as_server_call().client_stream_open());
 }
 
-TEST(ServerWriter, Open_NoClientStream) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  FakeServerWriter writer(context.get());
-
+TEST_F(ServerWriterTest, Open_NoClientStream) {
   LockGuard lock(rpc_lock());
-  EXPECT_FALSE(writer.as_server_call().has_client_stream());
-  EXPECT_FALSE(writer.as_server_call().client_stream_open());
+  EXPECT_FALSE(writer_.as_server_call().has_client_stream());
+  EXPECT_FALSE(writer_.as_server_call().client_stream_open());
 }
 
-TEST(ServerReader, DefaultConstructor_ClientStreamClosed) {
-  test::FakeServerReader reader;
+class ServerReaderTest : public Test {
+ public:
+  ServerReaderTest() : context_(TestService::method.method()) {
+    rpc_lock().lock();
+    FakeServerReader reader_temp(context_.get().ClaimLocked());
+    rpc_lock().unlock();
+    reader_ = std::move(reader_temp);
+  }
+
+  ServerContextForTest<TestService> context_;
+  FakeServerReader reader_;
+};
+
+TEST_F(ServerReaderTest, DefaultConstructor_ClientStreamClosed) {
+  FakeServerReader reader;
   EXPECT_FALSE(reader.as_server_call().active());
   LockGuard lock(rpc_lock());
   EXPECT_FALSE(reader.as_server_call().client_stream_open());
 }
 
-TEST(ServerReader, Open_ClientStreamStartsOpen) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  test::FakeServerReader reader(context.get());
-
-  LockGuard lock(rpc_lock());
-  EXPECT_TRUE(reader.as_server_call().has_client_stream());
-  EXPECT_TRUE(reader.as_server_call().client_stream_open());
+TEST_F(ServerReaderTest, Open_ClientStreamStartsOpen) {
+  std::lock_guard lock(rpc_lock());
+  EXPECT_TRUE(reader_.as_server_call().has_client_stream());
+  EXPECT_TRUE(reader_.as_server_call().client_stream_open());
 }
 
-TEST(ServerReader, Close_ClosesClientStream) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  test::FakeServerReader reader(context.get());
-
-  EXPECT_TRUE(reader.as_server_call().active());
+TEST_F(ServerReaderTest, Close_ClosesClientStream) {
+  EXPECT_TRUE(reader_.as_server_call().active());
   rpc_lock().lock();
-  EXPECT_TRUE(reader.as_server_call().client_stream_open());
+  EXPECT_TRUE(reader_.as_server_call().client_stream_open());
   rpc_lock().unlock();
   EXPECT_EQ(OkStatus(),
-            reader.as_server_call().CloseAndSendResponse(OkStatus()));
+            reader_.as_server_call().CloseAndSendResponse(OkStatus()));
 
-  EXPECT_FALSE(reader.as_server_call().active());
+  EXPECT_FALSE(reader_.as_server_call().active());
   LockGuard lock(rpc_lock());
-  EXPECT_FALSE(reader.as_server_call().client_stream_open());
+  EXPECT_FALSE(reader_.as_server_call().client_stream_open());
 }
 
-TEST(ServerReader, EndClientStream_OnlyClosesClientStream) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  test::FakeServerReader reader(context.get());
-
-  EXPECT_TRUE(reader.active());
+TEST_F(ServerReaderTest, EndClientStream_OnlyClosesClientStream) {
+  EXPECT_TRUE(reader_.active());
   rpc_lock().lock();
-  EXPECT_TRUE(reader.as_server_call().client_stream_open());
-  reader.as_server_call().HandleClientStreamEnd();
+  EXPECT_TRUE(reader_.as_server_call().client_stream_open());
+  reader_.as_server_call().HandleClientStreamEnd();
 
-  EXPECT_TRUE(reader.active());
+  EXPECT_TRUE(reader_.active());
   LockGuard lock(rpc_lock());
-  EXPECT_FALSE(reader.as_server_call().client_stream_open());
+  EXPECT_FALSE(reader_.as_server_call().client_stream_open());
 }
 
-TEST(ServerReaderWriter, Move_MaintainsClientStream) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  test::FakeServerReaderWriter reader_writer(context.get());
-  test::FakeServerReaderWriter destination;
+class ServerReaderWriterTest : public Test {
+ public:
+  ServerReaderWriterTest() : context_(TestService::method.method()) {
+    rpc_lock().lock();
+    FakeServerReaderWriter reader_writer_temp(context_.get().ClaimLocked());
+    rpc_lock().unlock();
+    reader_writer_ = std::move(reader_writer_temp);
+  }
+
+  ServerContextForTest<TestService> context_;
+  FakeServerReaderWriter reader_writer_;
+};
+
+TEST_F(ServerReaderWriterTest, Move_MaintainsClientStream) {
+  FakeServerReaderWriter destination;
 
   rpc_lock().lock();
   EXPECT_FALSE(destination.as_server_call().client_stream_open());
   rpc_lock().unlock();
 
-  destination = std::move(reader_writer);
+  destination = std::move(reader_writer_);
   LockGuard lock(rpc_lock());
   EXPECT_TRUE(destination.as_server_call().has_client_stream());
   EXPECT_TRUE(destination.as_server_call().client_stream_open());
 }
 
-TEST(ServerReaderWriter, Move_MovesCallbacks) {
-  ServerContextForTest<TestService> context(TestService::method.method());
-  test::FakeServerReaderWriter reader_writer(context.get());
-
+TEST_F(ServerReaderWriterTest, Move_MovesCallbacks) {
   int calls = 0;
-  reader_writer.set_on_error([&calls](Status) { calls += 1; });
-  reader_writer.set_on_next([&calls](ConstByteSpan) { calls += 1; });
+  reader_writer_.set_on_error([&calls](Status) { calls += 1; });
+  reader_writer_.set_on_next([&calls](ConstByteSpan) { calls += 1; });
 
 #if PW_RPC_CLIENT_STREAM_END_CALLBACK
   reader_writer.set_on_client_stream_end([&calls]() { calls += 1; });
 #endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
-  test::FakeServerReaderWriter destination(std::move(reader_writer));
+  FakeServerReaderWriter destination(std::move(reader_writer_));
   rpc_lock().lock();
   destination.as_server_call().HandlePayload({});
   rpc_lock().lock();

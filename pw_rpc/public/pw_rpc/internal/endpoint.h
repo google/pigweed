@@ -25,6 +25,8 @@
 
 namespace pw::rpc::internal {
 
+class LockedEndpoint;
+
 // Manages a list of channels and a list of ongoing calls for either a server or
 // client.
 //
@@ -36,6 +38,14 @@ namespace pw::rpc::internal {
 class Endpoint {
  public:
   ~Endpoint();
+
+  // Claims that `rpc_lock()` is held, returning a wrapped endpoint.
+  //
+  // This function should only be called in contexts in which it is clear that
+  // `rpc_lock()` is held. When calling this function from a constructor, the
+  // lock annotation will not result in errors, so care should be taken to
+  // ensure that `rpc_lock()` is held.
+  LockedEndpoint& ClaimLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Creates a channel with the provided ID and ChannelOutput, if a channel slot
   // is available or can be allocated (if PW_RPC_DYNAMIC_ALLOCATION is enabled).
@@ -139,5 +149,23 @@ class Endpoint {
 
   uint32_t next_call_id_ PW_GUARDED_BY(rpc_lock());
 };
+
+// An `Endpoint` indicating that `rpc_lock()` is held.
+//
+// This is used as a constructor argument to supplement
+// `PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())`. Current compilers do not enforce
+// lock annotations on constructors; no warnings or errors are produced when
+// calling an annotated constructor without holding `rpc_lock()`.
+class LockedEndpoint : public Endpoint {
+ public:
+  friend class Endpoint;
+  // No public constructor: this is created only via the `ClaimLocked` method on
+  // `Endpoint`.
+  constexpr LockedEndpoint() = delete;
+};
+
+inline LockedEndpoint& Endpoint::ClaimLocked() {
+  return *static_cast<LockedEndpoint*>(this);
+}
 
 }  // namespace pw::rpc::internal

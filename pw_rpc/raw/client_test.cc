@@ -43,8 +43,9 @@ struct internal::MethodInfo<BidirectionalStreamMethod> {
 namespace {
 
 template <auto kMethod, typename Call, typename Context>
-Call MakeCall(Context& context) {
-  return Call(context.client(),
+Call MakeCall(Context& context)
+    PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
+  return Call(context.client().ClaimLocked(),
               context.channel().id(),
               internal::MethodInfo<kMethod>::kServiceId,
               internal::MethodInfo<kMethod>::kMethodId,
@@ -53,19 +54,20 @@ Call MakeCall(Context& context) {
 
 class TestStreamCall : public internal::StreamResponseClientCall {
  public:
-  TestStreamCall(Client& client,
+  TestStreamCall(internal::LockedEndpoint& client,
                  uint32_t channel_id,
                  uint32_t service_id,
                  uint32_t method_id,
                  MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : StreamResponseClientCall(
             client, channel_id, service_id, method_id, type),
         payload(nullptr) {
-    set_on_next([this](ConstByteSpan string) {
+    set_on_next_locked([this](ConstByteSpan string) {
       payload = reinterpret_cast<const char*>(string.data());
     });
-    set_on_completed([this](Status status) { completed = status; });
-    set_on_error([this](Status status) { error = status; });
+    set_on_completed_locked([this](Status status) { completed = status; });
+    set_on_error_locked([this](Status status) { error = status; });
   }
 
   const char* payload;
@@ -75,19 +77,20 @@ class TestStreamCall : public internal::StreamResponseClientCall {
 
 class TestUnaryCall : public internal::UnaryResponseClientCall {
  public:
-  TestUnaryCall(Client& client,
+  TestUnaryCall(internal::LockedEndpoint& client,
                 uint32_t channel_id,
                 uint32_t service_id,
                 uint32_t method_id,
                 MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : UnaryResponseClientCall(
             client, channel_id, service_id, method_id, type),
         payload(nullptr) {
-    set_on_completed([this](ConstByteSpan string, Status status) {
+    set_on_completed_locked([this](ConstByteSpan string, Status status) {
       payload = reinterpret_cast<const char*>(string.data());
       completed = status;
     });
-    set_on_error([this](Status status) { error = status; });
+    set_on_error_locked([this](Status status) { error = status; });
   }
 
   const char* payload;
@@ -97,8 +100,8 @@ class TestUnaryCall : public internal::UnaryResponseClientCall {
 
 TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
   RawClientTestContext context;
-  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
   internal::rpc_lock().lock();
+  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
   call.SendInitialClientRequest({});
 
   ASSERT_NE(call.completed, OkStatus());
@@ -113,8 +116,8 @@ TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
 
 TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
   RawClientTestContext context;
-  auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
   internal::rpc_lock().lock();
+  auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
   call.SendInitialClientRequest({});
 
   context.server().SendServerStream<BidirectionalStreamMethod>(
@@ -130,8 +133,8 @@ TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
 
 TEST(Client, ProcessPacket_InvokesErrorCallback) {
   RawClientTestContext context;
-  auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
   internal::rpc_lock().lock();
+  auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
   call.SendInitialClientRequest({});
 
   context.server().SendServerError<BidirectionalStreamMethod>(
@@ -198,8 +201,8 @@ TEST(Client, CloseChannel_UnknownChannel) {
 
 TEST(Client, CloseChannel_CallsErrorCallback) {
   RawClientTestContext ctx;
-  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(ctx);
   internal::rpc_lock().lock();
+  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(ctx);
   call.SendInitialClientRequest({});
 
   ASSERT_NE(call.completed, OkStatus());

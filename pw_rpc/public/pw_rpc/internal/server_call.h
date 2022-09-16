@@ -40,7 +40,7 @@ class ServerCall : public Call {
 
   ServerCall(ServerCall&& other) { *this = std::move(other); }
 
-  ~ServerCall() {
+  ~ServerCall() PW_LOCKS_EXCLUDED(rpc_lock()) {
     // Any errors are logged in Channel::Send.
     CloseAndSendResponse(OkStatus()).IgnoreError();
   }
@@ -55,7 +55,8 @@ class ServerCall : public Call {
   void MoveServerCallFrom(ServerCall& other)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
-  ServerCall(const CallContext& context, MethodType type)
+  ServerCall(const LockedCallContext& context, MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : Call(context, type) {}
 
   // set_on_client_stream_end is templated so that it can be conditionally

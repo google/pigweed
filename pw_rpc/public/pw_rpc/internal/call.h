@@ -37,6 +37,7 @@ class Writer;
 namespace internal {
 
 class Endpoint;
+class LockedEndpoint;
 class Packet;
 
 // Internal RPC Call class. The Call is used to respond to any type of RPC.
@@ -215,21 +216,15 @@ class Call : public IntrusiveList<Call>::Item {
   {}
 
   // Creates an active server-side Call.
-  Call(const CallContext& context, MethodType type)
-      : Call(context.server(),
-             context.call_id(),
-             context.channel_id(),
-             UnwrapServiceId(context.service().service_id()),
-             context.method().id(),
-             type,
-             kServerCall) {}
+  Call(const LockedCallContext& context, MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Creates an active client-side Call.
-  Call(Endpoint& client,
+  Call(LockedEndpoint& client,
        uint32_t channel_id,
        uint32_t service_id,
        uint32_t method_id,
-       MethodType type);
+       MethodType type) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // This call must be in a closed state when this is called.
   void MoveFrom(Call& other) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
@@ -295,7 +290,7 @@ class Call : public IntrusiveList<Call>::Item {
   enum CallType : bool { kServerCall, kClientCall };
 
   // Common constructor for server & client calls.
-  Call(Endpoint& endpoint,
+  Call(LockedEndpoint& endpoint,
        uint32_t id,
        uint32_t channel_id,
        uint32_t service_id,

@@ -36,19 +36,24 @@ namespace pw::rpc::internal::test {
 //
 // Call's public API is intended for rpc::Server, so hide the public methods
 // with private inheritance.
-class FakeServerReaderWriter : private internal::ServerCall {
+class FakeServerReaderWriter : private ServerCall {
  public:
   constexpr FakeServerReaderWriter() = default;
 
   // On a real reader/writer, this constructor would not be exposed.
-  FakeServerReaderWriter(const CallContext& context,
+  FakeServerReaderWriter(const LockedCallContext& context,
                          MethodType type = MethodType::kBidirectionalStreaming)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : ServerCall(context, type) {}
 
   FakeServerReaderWriter(FakeServerReaderWriter&&) = default;
   FakeServerReaderWriter& operator=(FakeServerReaderWriter&&) = default;
 
   // Pull in protected functions from the hidden Call base as needed.
+  //
+  // Note: these functions all acquire `rpc_lock()`. However, the
+  // `PW_LOCKS_EXCLUDED(rpc_lock())` on their original definitions does not
+  // appear to carry through here.
   using Call::active;
   using Call::set_on_error;
   using Call::set_on_next;
@@ -68,9 +73,11 @@ class FakeServerWriter : private FakeServerReaderWriter {
  public:
   constexpr FakeServerWriter() = default;
 
-  FakeServerWriter(const CallContext& context)
+  FakeServerWriter(const LockedCallContext& context)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : FakeServerReaderWriter(context, MethodType::kServerStreaming) {}
   FakeServerWriter(FakeServerWriter&&) = default;
+  FakeServerWriter& operator=(FakeServerWriter&&) = default;
 
   // Common reader/writer functions.
   using FakeServerReaderWriter::active;
@@ -86,10 +93,12 @@ class FakeServerReader : private FakeServerReaderWriter {
  public:
   constexpr FakeServerReader() = default;
 
-  FakeServerReader(const CallContext& context)
+  FakeServerReader(const LockedCallContext& context)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : FakeServerReaderWriter(context, MethodType::kClientStreaming) {}
 
   FakeServerReader(FakeServerReader&&) = default;
+  FakeServerReader& operator=(FakeServerReader&&) = default;
 
   using FakeServerReaderWriter::active;
   using FakeServerReaderWriter::as_server_call;

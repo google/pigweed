@@ -251,7 +251,8 @@ class PwpbMethod : public Method {
       return;
     }
 
-    internal::PwpbServerCall responder(context, MethodType::kUnary);
+    internal::PwpbServerCall responder(context.ClaimLocked(),
+                                       MethodType::kUnary);
     rpc_lock().unlock();
     const Status status = function_.synchronous_unary(
         context.service(), &request_struct, &response_struct);
@@ -269,7 +270,7 @@ class PwpbMethod : public Method {
       return;
     }
 
-    internal::PwpbServerCall server_writer(context, method_type);
+    internal::PwpbServerCall server_writer(context.ClaimLocked(), method_type);
     rpc_lock().unlock();
     function_.unary_request(context.service(), &request_struct, server_writer);
   }
@@ -337,7 +338,7 @@ class PwpbMethod : public Method {
   static void ClientStreamingInvoker(const CallContext& context, const Packet&)
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     internal::BasePwpbServerReader<Request> reader(
-        context, MethodType::kClientStreaming);
+        context.ClaimLocked(), MethodType::kClientStreaming);
     rpc_lock().unlock();
     static_cast<const PwpbMethod&>(context.method())
         .function_.stream_request(context.service(), reader);
@@ -349,7 +350,7 @@ class PwpbMethod : public Method {
                                             const Packet&)
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     internal::BasePwpbServerReader<Request> reader_writer(
-        context, MethodType::kBidirectionalStreaming);
+        context.ClaimLocked(), MethodType::kBidirectionalStreaming);
     rpc_lock().unlock();
     static_cast<const PwpbMethod&>(context.method())
         .function_.stream_request(context.service(), reader_writer);

@@ -45,7 +45,8 @@ class PwpbServerCall : public internal::ServerCall {
  public:
   // Allow construction using a call context and method type which creates
   // a working server call.
-  PwpbServerCall(const CallContext& context, MethodType type);
+  PwpbServerCall(const LockedCallContext& context, MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock());
 
   // Sends a unary response.
   // Returns the following Status codes:
@@ -125,7 +126,8 @@ class PwpbServerCall : public internal::ServerCall {
 template <typename Request>
 class BasePwpbServerReader : public PwpbServerCall {
  public:
-  BasePwpbServerReader(const CallContext& context, MethodType type)
+  BasePwpbServerReader(const LockedCallContext& context, MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : PwpbServerCall(context, type) {}
 
  protected:
@@ -204,11 +206,14 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
                   "The response type of a PwpbServerReaderWriter must match "
                   "the method.");
     internal::LockGuard lock(internal::rpc_lock());
-    return {server.OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
-        channel_id,
-        service,
-        internal::MethodLookup::GetPwpbMethod<ServiceImpl,
-                                              MethodInfo::kMethodId>())};
+    return {
+        server
+            .OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
+                channel_id,
+                service,
+                internal::MethodLookup::GetPwpbMethod<ServiceImpl,
+                                                      MethodInfo::kMethodId>())
+            .ClaimLocked()};
   }
 
   // Allow default construction so that users can declare a variable into
@@ -248,8 +253,9 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
 
   friend class internal::PwpbMethod;
 
-  PwpbServerReaderWriter(const internal::CallContext& context,
+  PwpbServerReaderWriter(const internal::LockedCallContext& context,
                          MethodType type = MethodType::kBidirectionalStreaming)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::BasePwpbServerReader<Request>(context, type) {}
 };
 
@@ -276,11 +282,14 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
                   "The response type of a PwpbServerReader must match "
                   "the method.");
     internal::LockGuard lock(internal::rpc_lock());
-    return {server.OpenContext<kMethod, MethodType::kClientStreaming>(
-        channel_id,
-        service,
-        internal::MethodLookup::GetPwpbMethod<ServiceImpl,
-                                              MethodInfo::kMethodId>())};
+    return {
+        server
+            .OpenContext<kMethod, MethodType::kClientStreaming>(
+                channel_id,
+                service,
+                internal::MethodLookup::GetPwpbMethod<ServiceImpl,
+                                                      MethodInfo::kMethodId>())
+            .ClaimLocked()};
   }
 
   // Allow default construction so that users can declare a variable into
@@ -316,7 +325,8 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
 
   friend class internal::PwpbMethod;
 
-  PwpbServerReader(const internal::CallContext& context)
+  PwpbServerReader(const internal::LockedCallContext& context)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::BasePwpbServerReader<Request>(context,
                                                 MethodType::kClientStreaming) {}
 };
@@ -341,11 +351,14 @@ class PwpbServerWriter : private internal::PwpbServerCall {
                   "The response type of a PwpbServerWriter must match "
                   "the method.");
     internal::LockGuard lock(internal::rpc_lock());
-    return {server.OpenContext<kMethod, MethodType::kServerStreaming>(
-        channel_id,
-        service,
-        internal::MethodLookup::GetPwpbMethod<ServiceImpl,
-                                              MethodInfo::kMethodId>())};
+    return {
+        server
+            .OpenContext<kMethod, MethodType::kServerStreaming>(
+                channel_id,
+                service,
+                internal::MethodLookup::GetPwpbMethod<ServiceImpl,
+                                                      MethodInfo::kMethodId>())
+            .ClaimLocked()};
   }
 
   // Allow default construction so that users can declare a variable into
@@ -384,7 +397,8 @@ class PwpbServerWriter : private internal::PwpbServerCall {
 
   friend class internal::PwpbMethod;
 
-  PwpbServerWriter(const internal::CallContext& context)
+  PwpbServerWriter(const internal::LockedCallContext& context)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::PwpbServerCall(context, MethodType::kServerStreaming) {}
 };
 
@@ -408,11 +422,14 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
                   "The response type of a PwpbUnaryResponder must match "
                   "the method.");
     internal::LockGuard lock(internal::rpc_lock());
-    return {server.OpenContext<kMethod, MethodType::kUnary>(
-        channel_id,
-        service,
-        internal::MethodLookup::GetPwpbMethod<ServiceImpl,
-                                              MethodInfo::kMethodId>())};
+    return {
+        server
+            .OpenContext<kMethod, MethodType::kUnary>(
+                channel_id,
+                service,
+                internal::MethodLookup::GetPwpbMethod<ServiceImpl,
+                                                      MethodInfo::kMethodId>())
+            .ClaimLocked()};
   }
 
   // Allow default construction so that users can declare a variable into
@@ -447,7 +464,8 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
 
   friend class internal::PwpbMethod;
 
-  PwpbUnaryResponder(const internal::CallContext& context)
+  PwpbUnaryResponder(const internal::LockedCallContext& context)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::PwpbServerCall(context, MethodType::kUnary) {}
 };
 

@@ -36,7 +36,7 @@ void NanopbMethod::CallSynchronousUnary(const CallContext& context,
     return;
   }
 
-  NanopbServerCall responder(context, MethodType::kUnary);
+  NanopbServerCall responder(context.ClaimLocked(), MethodType::kUnary);
   rpc_lock().unlock();
   const Status status = function_.synchronous_unary(
       context.service(), request_struct, response_struct);
@@ -52,7 +52,7 @@ void NanopbMethod::CallUnaryRequest(const CallContext& context,
     return;
   }
 
-  NanopbServerCall server_writer(context, type);
+  NanopbServerCall server_writer(context.ClaimLocked(), type);
   rpc_lock().unlock();
   function_.unary_request(context.service(), request_struct, server_writer);
 }

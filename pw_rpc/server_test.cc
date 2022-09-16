@@ -367,12 +367,16 @@ TEST_F(BasicServer, OpenChannel_AdditionalSlot) {
 
 class BidiMethod : public BasicServer {
  protected:
-  BidiMethod()
-      : responder_(internal::CallContext(server_,
-                                         channels_[0].id(),
-                                         service_42_,
-                                         service_42_.method(100),
-                                         0)) {
+  BidiMethod() {
+    internal::rpc_lock().lock();
+    internal::CallContext context(
+        server_, channels_[0].id(), service_42_, service_42_.method(100), 0);
+    // A local temporary is required since the constructor requires a lock,
+    // but the *move* constructor takes out the lock.
+    internal::test::FakeServerReaderWriter responder_temp(
+        context.ClaimLocked());
+    internal::rpc_lock().unlock();
+    responder_ = std::move(responder_temp);
     PW_CHECK(responder_.active());
   }
 
@@ -513,17 +517,16 @@ TEST_F(BidiMethod, ClientStreamEnd_ErrorWhenClosed) {
 
 class ServerStreamingMethod : public BasicServer {
  protected:
-  ServerStreamingMethod()
-      : call_(server_,
-              channels_[0].id(),
-              service_42_,
-              service_42_.method(100),
-              0),
-        responder_(call_) {
+  ServerStreamingMethod() {
+    internal::CallContext context(
+        server_, channels_[0].id(), service_42_, service_42_.method(100), 0);
+    internal::rpc_lock().lock();
+    internal::test::FakeServerWriter responder_temp(context.ClaimLocked());
+    internal::rpc_lock().unlock();
+    responder_ = std::move(responder_temp);
     PW_CHECK(responder_.active());
   }
 
-  internal::CallContext call_;
   internal::test::FakeServerWriter responder_;
 };
 

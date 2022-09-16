@@ -39,7 +39,8 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
                         Function<void(Status)>&& on_error,
                         const Request&... request) {
     rpc_lock().lock();
-    CallType call(client, channel_id, service_id, method_id, serde);
+    CallType call(
+        client.ClaimLocked(), channel_id, service_id, method_id, serde);
 
     call.set_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
@@ -55,12 +56,13 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
  protected:
   constexpr NanopbUnaryResponseClientCall() = default;
 
-  NanopbUnaryResponseClientCall(internal::Endpoint& client,
+  NanopbUnaryResponseClientCall(internal::LockedEndpoint& client,
                                 uint32_t channel_id,
                                 uint32_t service_id,
                                 uint32_t method_id,
                                 MethodType type,
                                 const NanopbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : UnaryResponseClientCall(
             client, channel_id, service_id, method_id, type),
         serde_(&serde) {}
@@ -134,7 +136,8 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
                         Function<void(Status)>&& on_error,
                         const Request&... request) {
     rpc_lock().lock();
-    CallType call(client, channel_id, service_id, method_id, serde);
+    CallType call(
+        client.ClaimLocked(), channel_id, service_id, method_id, serde);
 
     call.set_on_next_locked(std::move(on_next));
     call.set_on_completed_locked(std::move(on_completed));
@@ -165,12 +168,13 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
     return *this;
   }
 
-  NanopbStreamResponseClientCall(internal::Endpoint& client,
+  NanopbStreamResponseClientCall(internal::LockedEndpoint& client,
                                  uint32_t channel_id,
                                  uint32_t service_id,
                                  uint32_t method_id,
                                  MethodType type,
                                  const NanopbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : StreamResponseClientCall(
             client, channel_id, service_id, method_id, type),
         serde_(&serde) {}
@@ -254,11 +258,12 @@ class NanopbClientReaderWriter
  private:
   friend class internal::NanopbStreamResponseClientCall<Response>;
 
-  NanopbClientReaderWriter(internal::Endpoint& client,
+  NanopbClientReaderWriter(internal::LockedEndpoint& client,
                            uint32_t channel_id_value,
                            uint32_t service_id,
                            uint32_t method_id,
                            const internal::NanopbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::NanopbStreamResponseClientCall<Response>(
             client,
             channel_id_value,
@@ -294,11 +299,12 @@ class NanopbClientReader
  private:
   friend class internal::NanopbStreamResponseClientCall<Response>;
 
-  NanopbClientReader(internal::Endpoint& client,
+  NanopbClientReader(internal::LockedEndpoint& client,
                      uint32_t channel_id_value,
                      uint32_t service_id,
                      uint32_t method_id,
                      const internal::NanopbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::NanopbStreamResponseClientCall<Response>(
             client,
             channel_id_value,
@@ -338,11 +344,12 @@ class NanopbClientWriter
  private:
   friend class internal::NanopbUnaryResponseClientCall<Response>;
 
-  NanopbClientWriter(internal::Endpoint& client,
+  NanopbClientWriter(internal::LockedEndpoint& client,
                      uint32_t channel_id_value,
                      uint32_t service_id,
                      uint32_t method_id,
                      const internal::NanopbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::NanopbUnaryResponseClientCall<Response>(
             client,
             channel_id_value,
@@ -376,11 +383,12 @@ class NanopbUnaryReceiver
  private:
   friend class internal::NanopbUnaryResponseClientCall<Response>;
 
-  NanopbUnaryReceiver(internal::Endpoint& client,
+  NanopbUnaryReceiver(internal::LockedEndpoint& client,
                       uint32_t channel_id_value,
                       uint32_t service_id,
                       uint32_t method_id,
                       const internal::NanopbMethodSerde& serde)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::NanopbUnaryResponseClientCall<Response>(client,
                                                           channel_id_value,
                                                           service_id,

@@ -384,7 +384,7 @@ class NanopbMethod : public Method {
   template <typename Request>
   static void ClientStreamingInvoker(const CallContext& context, const Packet&)
       PW_UNLOCK_FUNCTION(rpc_lock()) {
-    BaseNanopbServerReader<Request> reader(context,
+    BaseNanopbServerReader<Request> reader(context.ClaimLocked(),
                                            MethodType::kClientStreaming);
     rpc_lock().unlock();
     static_cast<const NanopbMethod&>(context.method())
@@ -397,7 +397,7 @@ class NanopbMethod : public Method {
                                             const Packet&)
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     BaseNanopbServerReader<Request> reader_writer(
-        context, MethodType::kBidirectionalStreaming);
+        context.ClaimLocked(), MethodType::kBidirectionalStreaming);
     rpc_lock().unlock();
     static_cast<const NanopbMethod&>(context.method())
         .function_.stream_request(context.service(), reader_writer);

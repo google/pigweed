@@ -17,6 +17,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/fake_channel_output.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
@@ -139,7 +140,7 @@ class InvocationContext {
 
   // Invokes the RPC, optionally with a request argument.
   template <auto kMethod, typename T, typename... RequestArg>
-  void call(RequestArg&&... request) {
+  void call(RequestArg&&... request) PW_LOCKS_EXCLUDED(rpc_lock()) {
     static_assert(sizeof...(request) <= 1);
     output_.clear();
     T responder = GetResponder<T>();
@@ -148,8 +149,9 @@ class InvocationContext {
   }
 
   template <typename T>
-  T GetResponder() {
-    return T(call_context());
+  T GetResponder() PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock(rpc_lock());
+    return T(call_context().ClaimLocked());
   }
 
   const internal::CallContext& call_context() const { return context_; }
