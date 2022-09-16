@@ -410,6 +410,11 @@ class Presubmit:
                 f'{total} checks on {plural(self._paths, "file")}: {summary}',
                 _format_time(time_s)))
 
+    def _create_presubmit_context(  # pylint: disable=no-self-use
+            self, **kwargs):
+        """Create a PresubmitContext. Override if needed in subclasses."""
+        return PresubmitContext(**kwargs)
+
     @contextlib.contextmanager
     def _context(self, name: str, paths: Tuple[Path, ...]):
         # There are many characters banned from filenames on Windows. To
@@ -426,7 +431,7 @@ class Presubmit:
         try:
             _LOG.addHandler(handler)
 
-            yield PresubmitContext(
+            yield self._create_presubmit_context(
                 root=self._root,
                 repos=self._repos,
                 output_dir=output_directory,
@@ -504,7 +509,8 @@ def run(  # pylint: disable=too-many-arguments
         only_list_steps: bool = False,
         override_gn_args: Sequence[Tuple[str, str]] = (),
         keep_going: bool = False,
-        continue_after_build_error: bool = False) -> bool:
+        continue_after_build_error: bool = False,
+        presubmit_class: type = Presubmit) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
     This changes the directory to the root of the Git repository after listing
@@ -531,6 +537,8 @@ def run(  # pylint: disable=too-many-arguments
         override_gn_args: additional GN args to set on steps
         keep_going: continue running presubmit steps after a step fails
         continue_after_build_error: continue building if a build step fails
+        presubmit_class: class to use to run Presubmits, should inherit from
+            Presubmit class above
 
     Returns:
         True if all presubmit checks succeeded
@@ -566,7 +574,7 @@ def run(  # pylint: disable=too-many-arguments
     if package_root is None:
         package_root = output_directory / 'packages'
 
-    presubmit = Presubmit(
+    presubmit = presubmit_class(
         root=root,
         repos=repos,
         output_directory=output_directory,

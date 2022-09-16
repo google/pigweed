@@ -130,6 +130,11 @@ The ``luci`` member is of type ``LuciContext`` and has the following members:
 * ``builder``: The builder being run
 * ``swarming_task_id``: The swarming task id of this build
 
+Additional members can be added by subclassing ``PresubmitContext`` and
+``Presubmit``. Then override ``Presubmit._create_presubmit_context()`` to
+return the subclass of ``PresubmitContext``. Finally, add
+``presubmit_class=PresubmitSubClass`` when calling ``cli.run()``.
+
 Existing Presubmit Checks
 -------------------------
 A small number of presubmit checks are made available through ``pw_presubmit``
