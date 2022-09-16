@@ -349,6 +349,10 @@ class MessageProperty(ProtoMember):
         """
         raise NotImplementedError()
 
+    def is_string(self) -> bool:  # pylint: disable=no-self-use
+        """True if this field is a string field (as opposed to bytes)."""
+        return False
+
     def use_callback(self) -> bool:  # pylint: disable=no-self-use
         """Returns whether the decoder should use a callback."""
         options = self._field.options()
@@ -361,6 +365,9 @@ class MessageProperty(ProtoMember):
         return (self._field.is_optional() and self.max_size() == 0
                 and self.wire_type() != 'kDelimited')
 
+    def is_repeated(self) -> bool:
+        return self._field.is_repeated()
+
     def max_size(self) -> int:
         """Returns the maximum size of the field."""
         if self._field.is_repeated():
@@ -370,7 +377,7 @@ class MessageProperty(ProtoMember):
 
         return 0
 
-    def fixed_size(self) -> bool:
+    def is_fixed_size(self) -> bool:
         """Returns whether the decoder should use a fixed sized field."""
         if self._field.is_repeated():
             options = self._field.options()
@@ -399,7 +406,7 @@ class MessageProperty(ProtoMember):
             return (self.type_name(from_root), self.name())
 
         # Fixed size fields use std::array.
-        if self.fixed_size():
+        if self.is_fixed_size():
             return ('std::array<{}, {}>'.format(self.type_name(from_root),
                                                 max_size), self.name())
 
@@ -420,6 +427,10 @@ class MessageProperty(ProtoMember):
     def _elem_size_table_entry(self) -> str:
         return 'sizeof({})'.format(self.type_name())
 
+    def _bool_attr(self, attr: str) -> str:
+        """C++ string for a bool argument that includes the argument name."""
+        return f'/*{attr}=*/{bool(getattr(self, attr)())}'.lower()
+
     def table_entry(self) -> List[str]:
         """Table entry."""
         return [
@@ -427,10 +438,11 @@ class MessageProperty(ProtoMember):
             self._wire_type_table_entry(),
             self._elem_size_table_entry(),
             self._varint_type_table_entry(),
-            'true' if self.fixed_size() else 'false',
-            'true' if self._field.is_repeated() else 'false',
-            'true' if self.is_optional() else 'false',
-            'true' if self.use_callback() else 'false',
+            self._bool_attr('is_string'),
+            self._bool_attr('is_fixed_size'),
+            self._bool_attr('is_repeated'),
+            self._bool_attr('is_optional'),
+            self._bool_attr('use_callback'),
             'offsetof(Message, {})'.format(self.name()),
             'sizeof(Message::{})'.format(self.name()),
             self.sub_table(),
@@ -1493,7 +1505,7 @@ class BytesProperty(MessageProperty):
 
         return 0
 
-    def fixed_size(self) -> bool:
+    def is_fixed_size(self) -> bool:
         if not self._field.is_repeated():
             options = self._field.options()
             assert options is not None
@@ -1562,11 +1574,14 @@ class StringProperty(MessageProperty):
 
         return 0
 
-    def fixed_size(self) -> bool:
+    def is_fixed_size(self) -> bool:
         return False
 
     def wire_type(self) -> str:
         return 'kDelimited'
+
+    def is_string(self) -> bool:
+        return True
 
     def _size_fn(self) -> str:
         # This uses the WithoutValue method to ensure that the maximum length
