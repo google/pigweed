@@ -144,7 +144,7 @@ method.
 
 .. Note:
 
-   Throughtout ``pw_spi``, the terms "controller" and "peripheral" are used to
+   Throughout ``pw_spi``, the terms "controller" and "peripheral" are used to
    describe the two roles SPI devices can implement.  These terms correspond
    to the  "master" and "slave" roles described in legacy documentation
    related to the SPI protocol.
@@ -159,7 +159,7 @@ method.
 
    .. cpp:function:: Status Configure(const Config& config)
 
-      Configure the SPI bus to coummunicate using a specific set of properties,
+      Configure the SPI bus to communicate using a specific set of properties,
       including the clock polarity, clock phase, bit-order, and bits-per-word.
 
       Returns OkStatus() on success, and implementation-specific values on
@@ -204,7 +204,7 @@ use the SPI HAL to communicate with a peripheral.
 
       SetActive sets the state of the chip-select signal to the value
       represented by the `active` parameter.  Passing a value of `true` will
-      activate the chip-select signal, and `false` will deactive the
+      activate the chip-select signal, and `false` will deactivate the
       chip-select signal.
 
       Returns OkStatus() on success, and implementation-specific values on
@@ -227,13 +227,13 @@ use the SPI HAL to communicate with a peripheral.
 pw::spi::Device
 ---------------
 This is primary object used by a client to interact with a target SPI device.
-It provides a wrapper for an injected ``pw::spi::Initator`` object, using
+It provides a wrapper for an injected ``pw::spi::Initiator`` object, using
 its methods to configure the bus and perform individual SPI transfers.  The
 injected ``pw::spi::ChipSelector`` object is used internally to activate and
 de-actviate the device on-demand from within the data transfer methods.
 
 The ``Read()``/``Write()``/``WriteRead()`` methods provide support for
-performing inidividual transfers:  ``Read()`` and ``Write()`` perform
+performing individual transfers:  ``Read()`` and ``Write()`` perform
 half-duplex operations, where ``WriteRead()`` provides support for
 full-duplex transfers.
 
@@ -255,7 +255,7 @@ the ``pw::sync::Borrowable`` object, where the ``pw::spi::Initiator`` object is
 
       Synchronously read data from the SPI peripheral until the provided
       `read_buffer` is full.
-      This call will configure the bus and activate/deactive chip select
+      This call will configure the bus and activate/deactivate chip select
       for the transfer
 
       Note: This call will block in the event that other clients are currently
@@ -267,7 +267,7 @@ the ``pw::sync::Borrowable`` object, where the ``pw::spi::Initiator`` object is
    .. cpp:function:: Status Write(ConstByteSpan write_buffer)
 
       Synchronously write the contents of `write_buffer` to the SPI peripheral.
-      This call will configure the bus and activate/deactive chip select
+      This call will configure the bus and activate/deactivate chip select
       for the transfer
 
       Note: This call will block in the event that other clients are currently
@@ -285,7 +285,7 @@ the ``pw::sync::Borrowable`` object, where the ``pw::spi::Initiator`` object is
       additional input bytes are discarded. In the event the write buffer is
       smaller than the read buffer (or zero size), the output is padded with
       0-bits for the remainder of the transfer.
-      This call will configure the bus and activate/deactive chip select
+      This call will configure the bus and activate/deactivate chip select
       for the transfer
 
       Note: This call will block in the event that other clients are currently
@@ -301,7 +301,7 @@ the ``pw::sync::Borrowable`` object, where the ``pw::spi::Initiator`` object is
       underlying SPI bus (Initiator) for the object's duration. The `behavior`
       parameter provides a means for a client to select how the chip-select
       signal will be applied on Read/Write/WriteRead calls taking place with
-      the Transaction object. A value of `kPerWriteRead` will activate/deactive
+      the Transaction object. A value of `kPerWriteRead` will activate/deactivate
       chip-select on each operation, while `kPerTransaction` will hold the
       chip-select active for the duration of the Transaction object.
 

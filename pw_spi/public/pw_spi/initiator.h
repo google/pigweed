@@ -71,7 +71,7 @@ struct Config {
 static_assert(sizeof(Config) == sizeof(uint32_t),
               "Ensure that the config struct fits in 32-bits");
 
-// The Inititor class provides an abstract interface used to configure and
+// The Initiator class provides an abstract interface used to configure and
 // transmit data using a SPI bus.
 class Initiator {
  public:
@@ -79,7 +79,7 @@ class Initiator {
 
   // Configure the SPI bus to communicate with peripherals using a given set of
   // properties, including the clock polarity, clock phase, bit-order, and
-  // bits-per-wrod.
+  // bits-per-word.
   // Returns OkStatus() on success, and implementation-specific values on
   // failure.
   virtual Status Configure(const Config& config) = 0;
