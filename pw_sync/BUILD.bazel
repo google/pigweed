@@ -122,6 +122,20 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "inline_borrowable",
+    hdrs = [
+        "public/pw_sync/inline_borrowable.h",
+        "public/pw_sync/internal/borrowable_storage.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":borrow",
+        ":mutex",
+        ":virtual_basic_lockable",
+    ],
+)
+
+pw_cc_library(
     name = "virtual_basic_lockable",
     hdrs = [
         "public/pw_sync/virtual_basic_lockable.h",
@@ -433,6 +447,20 @@ pw_cc_test(
         ":borrow",
         ":virtual_basic_lockable",
         "//pw_assert",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "inline_borrowable_test",
+    srcs = [
+        "inline_borrowable_test.cc",
+    ],
+    deps = [
+        ":inline_borrowable",
+        ":interrupt_spin_lock",
+        ":lock_annotations",
+        ":mutex",
         "//pw_unit_test",
     ],
 )

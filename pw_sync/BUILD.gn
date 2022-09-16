@@ -69,6 +69,19 @@ pw_source_set("borrow") {
   ]
 }
 
+pw_source_set("inline_borrowable") {
+  public = [
+    "public/pw_sync/inline_borrowable.h",
+    "public/pw_sync/internal/borrowable_storage.h",
+  ]
+  public_deps = [
+    ":borrow",
+    ":mutex",
+    ":virtual_basic_lockable",
+  ]
+  public_configs = [ ":public_include_path" ]
+}
+
 pw_source_set("virtual_basic_lockable") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/virtual_basic_lockable.h" ]
@@ -206,6 +219,7 @@ pw_test_group("tests") {
     ":interrupt_spin_lock_facade_test",
     ":thread_notification_facade_test",
     ":timed_thread_notification_facade_test",
+    ":inline_borrowable_test",
   ]
 }
 
@@ -215,6 +229,16 @@ pw_test("borrow_test") {
     ":borrow",
     ":virtual_basic_lockable",
     dir_pw_assert,
+  ]
+}
+
+pw_test("inline_borrowable_test") {
+  sources = [ "inline_borrowable_test.cc" ]
+  deps = [
+    ":inline_borrowable",
+    ":interrupt_spin_lock",
+    ":lock_annotations",
+    ":mutex",
   ]
 }
 

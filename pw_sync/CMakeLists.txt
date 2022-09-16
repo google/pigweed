@@ -58,6 +58,18 @@ pw_add_module_library(pw_sync.borrow
     pw_sync.virtual_basic_lockable
 )
 
+pw_add_module_library(pw_sync.inline_borrowable
+  HEADERS
+    public/pw_sync/inline_borrowable.h
+    public/pw_sync/internal/borrowable_storage.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_sync.borrow
+    pw_sync.mutex
+    pw_sync.virtual_basic_lockable
+)
+
 pw_add_module_library(pw_sync.virtual_basic_lockable
   HEADERS
     public/pw_sync/virtual_basic_lockable.h
@@ -190,6 +202,19 @@ pw_add_test(pw_sync.borrow_test
     pw_assert
     pw_sync.borrow
     pw_sync.virtual_basic_lockable
+  GROUPS
+    modules
+    pw_sync
+)
+
+pw_add_test(pw_sync.inline_borrowable_test
+  SOURCES
+    inline_borrowable_test.cc
+  DEPS
+    pw_sync.inline_borrowable
+    pw_sync.interrupt_spin_lock
+    pw_sync.lock_annotations
+    pw_sync.mutex
   GROUPS
     modules
     pw_sync
