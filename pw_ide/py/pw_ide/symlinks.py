@@ -11,29 +11,14 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Tools for managing symlinks."""
 
-import("//build_overrides/pigweed.gni")
+import os
+from pathlib import Path
 
-import("$dir_pw_build/python.gni")
 
-pw_python_package("py") {
-  setup = [
-    "pyproject.toml",
-    "setup.cfg",
-    "setup.py",
-  ]
-  sources = [
-    "pw_ide/__init__.py",
-    "pw_ide/__main__.py",
-    "pw_ide/cpp.py",
-    "pw_ide/exceptions.py",
-    "pw_ide/settings.py",
-    "pw_ide/symlinks.py",
-  ]
-  tests = [
-    "cpp_test.py",
-    "test_cases.py",
-  ]
-  python_deps = [ "$dir_pw_console/py" ]
-  pylintrc = "$dir_pigweed/.pylintrc"
-}
+def set_symlink(target_path: Path, symlink_path: Path) -> None:
+    if symlink_path.exists():
+        os.remove(symlink_path)
+
+    os.symlink(target_path, symlink_path)

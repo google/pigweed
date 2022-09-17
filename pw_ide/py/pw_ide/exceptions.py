@@ -11,29 +11,20 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""pw_ide exceptions."""
 
-import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/python.gni")
+class UnsupportedPlatformException(Exception):
+    """Raised when an action is attempted on an unsupported platform."""
 
-pw_python_package("py") {
-  setup = [
-    "pyproject.toml",
-    "setup.cfg",
-    "setup.py",
-  ]
-  sources = [
-    "pw_ide/__init__.py",
-    "pw_ide/__main__.py",
-    "pw_ide/cpp.py",
-    "pw_ide/exceptions.py",
-    "pw_ide/settings.py",
-    "pw_ide/symlinks.py",
-  ]
-  tests = [
-    "cpp_test.py",
-    "test_cases.py",
-  ]
-  python_deps = [ "$dir_pw_console/py" ]
-  pylintrc = "$dir_pigweed/.pylintrc"
-}
+
+class InvalidTargetException(Exception):
+    """Exception for invalid compilation targets."""
+
+
+class BadCompDbException(Exception):
+    """Exception for compliation databases that don't conform to the format."""
+
+
+class MissingCompDbException(Exception):
+    """Exception for missing compilation database files."""

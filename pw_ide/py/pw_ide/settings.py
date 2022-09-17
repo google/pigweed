@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
@@ -25,6 +25,7 @@ _PW_IDE_DEFAULT_DIR = Path(
     os.path.expandvars('$PW_PROJECT_ROOT')) / PW_IDE_DIR_NAME
 
 _DEFAULT_CONFIG = {
+    'targets': [],
     'working_dir': _PW_IDE_DEFAULT_DIR,
 }
 
@@ -61,3 +62,13 @@ class IdeSettings(YamlConfigLoaderMixin):
         committed to the code repo.
         """
         return Path(self._config.get('working_dir', ''))
+
+    @property
+    def targets(self) -> List[str]:
+        """The list of targets that should be made available for code analysis.
+
+        In this case, "target" is analogous to a GN target, i.e., a particular
+        build configuration. Targets defined here will be used when processing
+        a compilation database.
+        """
+        return self._config.get('targets', list())
