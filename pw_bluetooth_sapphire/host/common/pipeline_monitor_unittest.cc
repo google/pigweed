@@ -14,6 +14,8 @@
 namespace bt {
 namespace {
 
+using Token = PipelineMonitor::Token;
+
 // Use a test dispatch loop.
 class PipelineMonitorTest : public gtest::TestLoopFixture {};
 
@@ -266,6 +268,61 @@ TEST_F(PipelineMonitorTest, TokensRetireIntoRetireLog) {
   const auto age_quantiles = monitor.retire_log().ComputeAgeQuantiles(std::array{0., .5, 1.});
   ASSERT_TRUE(age_quantiles.has_value());
   EXPECT_THAT(*age_quantiles, testing::ElementsAre(kAge, kAge, kAge));
+}
+
+TEST_F(PipelineMonitorTest, TokensCanBeSplit) {
+  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+
+  const size_t kSplits = 10;
+  Token token_main = monitor.Issue(kSplits);
+
+  const zx::duration kAge = zx::msec(10);
+  RunLoopFor(kAge);
+
+  for (size_t i = 0; i < kSplits; i++) {
+    Token split_token = token_main.Split(1);
+    EXPECT_EQ(monitor.tokens_retired(), static_cast<int64_t>(i));
+    if (i == kSplits - 1) {
+      // token_main is moved to split_token when the final byte is taken.
+      EXPECT_EQ(monitor.tokens_issued(),
+                static_cast<int64_t>(i) + 1);  // split_token + ("i" previous split tokens)
+    } else {
+      EXPECT_EQ(
+          monitor.tokens_issued(),
+          static_cast<int64_t>(i) + 2);  // token_main + split_token + ("i" previous split tokens)
+    }
+    EXPECT_EQ(monitor.bytes_retired(), i);
+    EXPECT_EQ(kSplits - i, monitor.bytes_in_flight());
+  }
+
+  // Even though kSplits+1 Token objects were created, we should only see kSplits retirements, which
+  // is how an PDU split into fragments for outbound send would be modeled.
+  EXPECT_EQ(static_cast<int64_t>(kSplits), monitor.tokens_retired());
+  EXPECT_EQ(kSplits, monitor.bytes_retired());
+
+  ASSERT_EQ(monitor.retire_log().depth(), kSplits);
+
+  std::optional<std::array<size_t, 2>> byte_quantiles =
+      monitor.retire_log().ComputeByteCountQuantiles(std::array{0., 1.});
+  ASSERT_TRUE(byte_quantiles);
+  EXPECT_EQ(byte_quantiles.value()[0], 1u);
+  EXPECT_EQ(byte_quantiles.value()[1], 1u);
+
+  std::optional<std::array<zx::duration, 2>> age_quantiles =
+      monitor.retire_log().ComputeAgeQuantiles(std::array{0., 1.});
+  ASSERT_TRUE(age_quantiles);
+  EXPECT_EQ(age_quantiles.value()[0], kAge);
+  EXPECT_EQ(age_quantiles.value()[1], kAge);
+}
+
+using PipelineMonitorDeathTest = PipelineMonitorTest;
+
+TEST_F(PipelineMonitorDeathTest, SplittingTokenIntoMoreThanConstituentBytes) {
+  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+
+  auto token_main = monitor.Issue(1);
+
+  EXPECT_DEATH(token_main.Split(2), "byte");
 }
 
 }  // namespace

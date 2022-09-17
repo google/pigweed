@@ -43,6 +43,10 @@ class PipelineMonitor final {
   // moveable resource. Moved-from Token objects are valid and can take on newly issued tokens from
   // the same PipelineMonitor instance.
   //
+  // Tokens can also be created by splitting an existing token in order to model data chunking
+  // through e.g. segmentation or fragmentation. Splitting tokens will result in more retirements
+  // (and hence logged retirements) than issues.
+  //
   // Tokens that outlive their issuing PipelineMonitor have no effect when retired or destroyed.
   class Token {
    public:
@@ -69,6 +73,18 @@ class PipelineMonitor final {
         parent_->Retire(this);
       }
       id_ = kInvalidTokenId;
+    }
+
+    // If this token is valid, subtract |bytes_to_take| from its bookkeeping and track it under a
+    // new token. This does count towards token issue threshold alerts and will result in one more
+    // retirement logged. |bytes_to_take| must be no greater than the bytes issued for this token.
+    // If |bytes_to_take| is exactly equal, this is effectively a token move.
+    Token Split(size_t bytes_to_take) {
+      if (!bool{parent_}) {
+        return Token(parent_, kInvalidTokenId);
+      }
+      BT_ASSERT(id_ != kInvalidTokenId);
+      return parent_->Split(this, bytes_to_take);
     }
 
    private:
@@ -133,6 +149,29 @@ class PipelineMonitor final {
 
     // Process alerts.
     SignalAlertValue<MaxBytesInFlightAlert>(bytes_in_flight());
+    SignalAlertValue<MaxTokensInFlightAlert>(tokens_in_flight());
+    return Token(weak_ptr_factory_.GetWeakPtr(), id);
+  }
+
+  // Moves bytes tracked from one issued token to a new token, up to all of the bytes in |token|.
+  [[nodiscard]] Token Split(Token* token, size_t bytes_to_take) {
+    // For consistency, complete all token map and counter modifications before processing alerts.
+    BT_ASSERT(this == token->parent_.get());
+    auto iter = issued_tokens_.find(token->id_);
+    BT_ASSERT(iter != issued_tokens_.end());
+    TokenInfo& token_info = iter->second;
+    BT_ASSERT(bytes_to_take <= token_info.byte_count);
+    if (token_info.byte_count == bytes_to_take) {
+      return std::move(*token);
+    }
+
+    token_info.byte_count -= bytes_to_take;
+
+    const TokenId id = MakeTokenId();
+    issued_tokens_.insert_or_assign(id, TokenInfo{token_info.issue_time, bytes_to_take});
+    tokens_issued_++;
+
+    // Process alerts.
     SignalAlertValue<MaxTokensInFlightAlert>(tokens_in_flight());
     return Token(weak_ptr_factory_.GetWeakPtr(), id);
   }
@@ -236,10 +275,10 @@ class PipelineMonitor final {
     BT_ASSERT(this == token->parent_.get());
     auto node = issued_tokens_.extract(token->id_);
     BT_ASSERT(bool{node});
-    TokenInfo& packet_info = node.mapped();
-    bytes_in_flight_ -= packet_info.byte_count;
-    const zx::duration age = async::Now(dispatcher_) - packet_info.issue_time;
-    retire_log_.Retire(packet_info.byte_count, age);
+    const TokenInfo& token_info = node.mapped();
+    bytes_in_flight_ -= token_info.byte_count;
+    const zx::duration age = async::Now(dispatcher_) - token_info.issue_time;
+    retire_log_.Retire(token_info.byte_count, age);
 
     // Process alerts.
     SignalAlertValue<MaxAgeRetiredAlert>(age);
