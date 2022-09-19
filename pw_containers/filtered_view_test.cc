@@ -69,7 +69,7 @@ TEST(FilteredView, EmptyContainer) {
 
   IntrusiveList<Item> intrusive_list;
   for (const Item& unused :
-       FilteredView(nothing, [](const Item&) { return true; })) {
+       FilteredView(intrusive_list, [](const Item&) { return true; })) {
     static_cast<void>(unused);
     FAIL();
   }
@@ -115,7 +115,7 @@ TEST(FilteredView, IntrusiveList_MatchNone) {
   IntrusiveList<Item> intrusive_list({&item_1, &item_2, &item_3});
 
   for (const Item& unused :
-       FilteredView(kArray, [](const Item&) { return false; })) {
+       FilteredView(intrusive_list, [](const Item&) { return false; })) {
     static_cast<void>(unused);
     FAIL();
   }
