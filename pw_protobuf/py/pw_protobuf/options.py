@@ -26,9 +26,11 @@ _MULTI_LINE_COMMENT_RE = re.compile(r'/\*.*?\*/', flags=re.MULTILINE)
 _SINGLE_LINE_COMMENT_RE = re.compile(r'//.*?$', flags=re.MULTILINE)
 _SHELL_STYLE_COMMENT_RE = re.compile(r'#.*?$', flags=re.MULTILINE)
 
+# A list of (proto field path, Options) tuples.
+FieldOptions = List[Tuple[str, Options]]
 
-def load_options_from(options: List[Tuple[str, Options]],
-                      options_file_name: Path):
+
+def load_options_from(options: FieldOptions, options_file_name: Path):
     """Loads a single .options file for the given .proto"""
     with open(options_file_name) as options_file:
         # Read the options file and strip all styles of comments before parsing.
@@ -52,9 +54,9 @@ def load_options_from(options: List[Tuple[str, Options]],
 
 
 def load_options(include_paths: List[Path],
-                 proto_file_name: Path) -> List[Tuple[str, Options]]:
+                 proto_file_name: Path) -> FieldOptions:
     """Loads the .options for the given .proto."""
-    options: List[Tuple[str, Options]] = []
+    options: FieldOptions = []
 
     for include_path in include_paths:
         options_file_name = include_path / proto_file_name.with_suffix(
@@ -65,7 +67,7 @@ def load_options(include_paths: List[Path],
     return options
 
 
-def match_options(name: str, options: List[Tuple[str, Options]]) -> Options:
+def match_options(name: str, options: FieldOptions) -> Options:
     """Return the matching options for a name."""
     matched = Options()
     for name_glob, mask_options in options:

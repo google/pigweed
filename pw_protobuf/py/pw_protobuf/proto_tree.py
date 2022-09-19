@@ -530,8 +530,9 @@ def _add_service_methods(global_root: ProtoNode, package_root: ProtoNode,
                                response_node))
 
 
-def _populate_fields(proto_file, global_root: ProtoNode,
-                     package_root: ProtoNode, proto_options) -> None:
+def _populate_fields(proto_file: descriptor_pb2.FileDescriptorProto,
+                     global_root: ProtoNode, package_root: ProtoNode,
+                     proto_options: Optional[options.FieldOptions]) -> None:
     """Traverses a proto file, adding all message and enum fields to a tree."""
     def populate_message(node, message):
         """Recursively populates nested messages and enums."""
@@ -558,7 +559,9 @@ def _populate_fields(proto_file, global_root: ProtoNode,
         _add_service_methods(global_root, package_root, service_node, service)
 
 
-def _build_hierarchy(proto_file):
+def _build_hierarchy(
+    proto_file: descriptor_pb2.FileDescriptorProto
+) -> Tuple[ProtoPackage, ProtoPackage]:
     """Creates a ProtoNode hierarchy from a proto file descriptor."""
 
     root = ProtoPackage('')
@@ -590,8 +593,10 @@ def _build_hierarchy(proto_file):
     return root, package_root
 
 
-def build_node_tree(file_descriptor_proto,
-                    proto_options=None) -> Tuple[ProtoNode, ProtoNode]:
+def build_node_tree(
+    file_descriptor_proto: descriptor_pb2.FileDescriptorProto,
+    proto_options: Optional[options.FieldOptions] = None
+) -> Tuple[ProtoNode, ProtoNode]:
     """Constructs a tree of proto nodes from a file descriptor.
 
     Returns the root node of the entire proto package tree and the node
