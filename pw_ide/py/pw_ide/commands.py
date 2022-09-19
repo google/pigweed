@@ -14,6 +14,7 @@
 """pw_ide CLI command implementations."""
 
 from pathlib import Path
+import platform
 import sys
 from typing import Optional
 
@@ -22,7 +23,10 @@ from pw_ide.cpp import (get_defined_available_targets, get_target,
                         write_compilation_databases)
 
 from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
-                               MissingCompDbException)
+                               MissingCompDbException,
+                               UnsupportedPlatformException)
+
+from pw_ide.python import get_python_venv_path
 
 from pw_ide.settings import IdeSettings
 
@@ -39,6 +43,16 @@ def _print_defined_available_targets(settings: IdeSettings) -> None:
         print(f'\t{toolchain}')
 
     print('')
+
+
+def _print_python_venv_path() -> None:
+    print('Python virtual environment path: ' f'{get_python_venv_path()}\n')
+
+
+def _print_unsupported_platform_error(msg: str = 'run') -> None:
+    system = platform.system()
+    system = 'None' if system == '' else system
+    print(f'Failed to {msg} on this unsupported platform: {system}\n')
 
 
 def cmd_cpp(
@@ -110,3 +124,14 @@ def cmd_cpp(
 
     if default:
         _print_current_target(settings)
+
+
+def cmd_python(should_get_venv_path: bool) -> None:
+    """Configure Python IDE support for Pigweed projects."""
+
+    if should_get_venv_path:
+        try:
+            _print_python_venv_path()
+        except UnsupportedPlatformException:
+            _print_unsupported_platform_error(
+                'find Python virtual environment')

@@ -18,7 +18,7 @@ from pathlib import Path
 import sys
 from typing import (Any, Callable, cast, Dict, Generic, NoReturn, Optional,
                     TypeVar, Union)
-from pw_ide.commands import cmd_cpp
+from pw_ide.commands import cmd_cpp, cmd_python
 
 # TODO(chadnorvell): Move this docstring-as-argparse-docs functionality
 # to pw_cli.
@@ -159,6 +159,18 @@ def _parse_args() -> argparse.Namespace:
                             help='Process a file matching the clang '
                             'compilation database format.')
     parser_cpp.set_defaults(func=cmd_cpp)
+
+    parser_python = subcommand_parser.add_parser(
+        'python',
+        description=_docstring_summary(cmd_python.__doc__),
+        help=_reflow_docstring(cmd_python.__doc__))
+    parser_python.add_argument('-v',
+                               '--virtual-env',
+                               dest='should_get_venv_path',
+                               action='store_true',
+                               help='Return the path to the Pigweed Python '
+                               'virtual environment.')
+    parser_python.set_defaults(func=cmd_python)
 
     args = parser_root.parse_args()
     return args
