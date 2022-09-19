@@ -353,6 +353,15 @@ class MessageProperty(ProtoMember):
         """True if this field is a string field (as opposed to bytes)."""
         return False
 
+    @staticmethod
+    def repeated_field_container(type_name: str, max_size: int) -> str:
+        """Returns the container type used for repeated fields.
+
+        Defaults to ::pw::Vector<type, max_size>. String fields use
+        ::pw::InlineString<max_size> instead.
+        """
+        return f'::pw::Vector<{type_name}, {max_size}>'
+
     def use_callback(self) -> bool:  # pylint: disable=no-self-use
         """Returns whether the decoder should use a callback."""
         options = self._field.options()
@@ -411,7 +420,7 @@ class MessageProperty(ProtoMember):
                                                 max_size), self.name())
 
         # Otherwise prefer pw::Vector for repeated fields.
-        return ('::pw::Vector<{}, {}>'.format(self.type_name(from_root),
+        return (self.repeated_field_container(self.type_name(from_root),
                                               max_size), self.name())
 
     def _varint_type_table_entry(self) -> str:
@@ -1583,6 +1592,10 @@ class StringProperty(MessageProperty):
     def is_string(self) -> bool:
         return True
 
+    @staticmethod
+    def repeated_field_container(type_name: str, max_size: int) -> str:
+        return f'::pw::InlineBasicString<{type_name}, {max_size}>'
+
     def _size_fn(self) -> str:
         # This uses the WithoutValue method to ensure that the maximum length
         # of the delimited field size varint is used. This accounts for scratch
@@ -2265,6 +2278,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include "pw_span/span.h"')
     output.write_line('#include "pw_status/status.h"')
     output.write_line('#include "pw_status/status_with_size.h"')
+    output.write_line('#include "pw_string/string.h"')
 
     for imported_file in file_descriptor_proto.dependency:
         generated_header = _proto_filename_to_generated_header(imported_file)

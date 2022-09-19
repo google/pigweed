@@ -30,6 +30,7 @@
 #include "pw_status/try.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_stream/stream.h"
+#include "pw_string/string.h"
 #include "pw_varint/varint.h"
 
 namespace pw::protobuf {
@@ -537,17 +538,18 @@ Status StreamEncoder::Write(span<const std::byte> message,
             PW_TRY(WriteLengthDelimitedField(field.field_number(), values));
           }
         } else {
-          // bytes or string field with a maximum size. Struct member is a
-          // pw::Vector<std::byte>. Use the contents as a span and call
-          // WriteLengthDelimitedField() to output it to the stream.
+          // bytes or string field with a maximum size. Struct member is
+          // pw::Vector<std::byte> for bytes or pw::InlineString<> for string.
+          // Use the contents as a span and call WriteLengthDelimitedField() to
+          // output it to the stream.
           PW_CHECK(field.elem_size() == sizeof(std::byte),
                    "Mismatched message field type and size");
-          const auto* vector =
-              reinterpret_cast<const pw::Vector<const std::byte>*>(
-                  values.data());
-          if (!vector->empty()) {
-            PW_TRY(WriteLengthDelimitedField(
-                field.field_number(), span(vector->data(), vector->size())));
+          if (field.is_string()) {
+            PW_TRY(WriteStringOrBytes<const InlineString<>>(
+                field.field_number(), values.data()));
+          } else {
+            PW_TRY(WriteStringOrBytes<const Vector<const std::byte>>(
+                field.field_number(), values.data()));
           }
         }
         break;

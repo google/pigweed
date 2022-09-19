@@ -54,6 +54,8 @@ pw_add_module_library(pw_protobuf
     pw_stream.interval_reader
     pw_varint
     pw_varint.stream
+  PRIVATE_DEPS
+    pw_string.string
   SOURCES
     decoder.cc
     encoder.cc

@@ -115,6 +115,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":pw_string",
+        ":string",
         "//pw_containers:vector",
         "//pw_status",
     ],

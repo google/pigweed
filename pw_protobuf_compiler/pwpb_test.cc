@@ -20,5 +20,5 @@ TEST(Pwpb, CompilesProtobufs) {
   EXPECT_EQ(point.x, 4u);
   EXPECT_EQ(point.y, 8u);
   EXPECT_EQ(point.name.size(), 5u);
-  EXPECT_EQ(point.name.view(), "point");
+  EXPECT_EQ(point.name, "point");
 }

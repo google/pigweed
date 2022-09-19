@@ -32,6 +32,7 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_status/try.h"
+#include "pw_string/string.h"
 #include "pw_varint/stream.h"
 #include "pw_varint/varint.h"
 
@@ -679,21 +680,15 @@ Status StreamDecoder::Read(span<std::byte> message,
                    "Mismatched message field type and size");
           PW_TRY(ReadDelimitedField(out));
         } else {
-          // bytes or string field with a maximum size. Struct member is a
-          // pw::Vector<std::byte>. There's no vector equivalent of
-          // ReadDelimitedField() to call, so just implement what that would
-          // look like here (since it wouldn't be used anywhere else).
+          // bytes or string field with a maximum size. The struct member is
+          // pw::Vector<std::byte> for bytes or pw::InlineString<> for string.
           PW_CHECK(field->elem_size() == sizeof(std::byte),
                    "Mismatched message field type and size");
-          auto* vector = reinterpret_cast<pw::Vector<std::byte>*>(out.data());
-          if (vector->capacity() < delimited_field_size_) {
-            return Status::ResourceExhausted();
+          if (field->is_string()) {
+            PW_TRY(ReadStringOrBytesField<pw::InlineString<>>(out.data()));
+          } else {
+            PW_TRY(ReadStringOrBytesField<pw::Vector<std::byte>>(out.data()));
           }
-          vector->resize(vector->capacity());
-          const auto sws =
-              ReadDelimitedField(span(vector->data(), vector->size()));
-          vector->resize(sws.size());
-          PW_TRY(sws);
         }
         break;
       }

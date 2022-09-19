@@ -13,13 +13,14 @@
 // the License.
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <string_view>
 
 #include "pw_containers/vector.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
+#include "pw_string/string.h"
 #include "pw_string/util.h"
 
 namespace pw {
@@ -48,11 +49,6 @@ inline StatusWithSize Copy(const std::string_view& source,
       copied);
 }
 
-inline StatusWithSize Copy(const char* source, pw::Vector<char>& dest) {
-  PW_DASSERT(source != nullptr);
-  return Copy(ClampedCString(source, dest.capacity()), dest);
-}
-
 inline StatusWithSize Copy(const pw::Vector<char>& source, span<char> dest) {
   if (dest.empty()) {
     return StatusWithSize::ResourceExhausted();
@@ -65,6 +61,31 @@ inline StatusWithSize Copy(const pw::Vector<char>& source, span<char> dest) {
   return StatusWithSize(
       copied == source.size() ? OkStatus() : Status::ResourceExhausted(),
       copied);
+}
+
+inline StatusWithSize Copy(const char* source, pw::Vector<char>& dest) {
+  PW_DASSERT(source != nullptr);
+  return Copy(ClampedCString(source, dest.capacity()), dest);
+}
+
+// Overload for InlineString to simplify the transition from using Vector<char>
+// for protobuf string fields. An external Copy() function is not necessary for
+// InlineString; use assign() or the assignment operator instead.
+//
+// This function will be removed once projects switch to pw::InlineString<>.
+inline StatusWithSize Copy(const std::string_view& source,
+                           pw::InlineString<>& dest) {
+  size_t copied = std::min(source.size(), static_cast<size_t>(dest.capacity()));
+  dest.assign(source, 0, copied);
+  return StatusWithSize(
+      copied == source.size() ? OkStatus() : Status::ResourceExhausted(),
+      copied);
+}
+
+inline StatusWithSize Copy(const char* source, pw::InlineString<>& dest) {
+  PW_DASSERT(source != nullptr);
+  // Clamp to capacity + 1 so strings larger than the capacity yield an error.
+  return Copy(ClampedCString(source, dest.capacity() + 1), dest);
 }
 
 }  // namespace string

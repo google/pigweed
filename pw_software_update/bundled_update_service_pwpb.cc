@@ -98,7 +98,7 @@ Status BundledUpdateService::Start(const StartRequest::Message& request,
 
   // Enable bundle transfer.
   Result<uint32_t> possible_transfer_id =
-      backend_.EnableBundleTransferHandler(request.bundle_filename.view());
+      backend_.EnableBundleTransferHandler(request.bundle_filename);
   if (!possible_transfer_id.ok()) {
     SET_ERROR(BundledUpdateResult::Enum::kTransferFailed,
               "Couldn't enable bundle transfer");

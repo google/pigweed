@@ -309,6 +309,7 @@ PIGWEED_PLUGIN = {
             "//pw_result",
             "//pw_span",
             "//pw_status",
+            "//pw_string:string",
         ],
         "include_nanopb_dep": False,
         "include_pwpb_dep": False,

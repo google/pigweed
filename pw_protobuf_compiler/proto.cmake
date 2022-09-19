@@ -196,6 +196,7 @@ function(_pw_pwpb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
       pw_build
       pw_protobuf
       pw_span
+      pw_string.string
       ${DEPS}
   )
   add_dependencies("${NAME}.pwpb" "${NAME}._generate.pwpb")

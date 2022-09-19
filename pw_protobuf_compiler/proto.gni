@@ -199,6 +199,7 @@ template("_pw_pwpb_proto_library") {
     deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
     public_deps = [
                     "$dir_pw_containers:vector",
+                    "$dir_pw_string:string",
                     dir_pw_assert,
                     dir_pw_function,
                     dir_pw_preprocessor,

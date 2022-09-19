@@ -68,6 +68,7 @@ pw_cc_library(
         "//pw_status",
         "//pw_stream",
         "//pw_stream:interval_reader",
+        "//pw_string:string",
         "//pw_varint",
         "//pw_varint:stream",
     ],

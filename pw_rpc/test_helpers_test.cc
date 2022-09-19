@@ -70,7 +70,7 @@ class EntityUnderTest {
     return notifier_.try_acquire_for(duration);
   }
 
-  pw::Result<pw::Vector<char, 64>> LastEcho() const {
+  pw::Result<pw::InlineString<64>> LastEcho() const {
     std::lock_guard<pw::sync::InterruptSpinLock> lock(lock_);
     return last_echo_;
   }
@@ -79,7 +79,7 @@ class EntityUnderTest {
   pw_rpc::pwpb::EchoService::Client& echo_client_;
   PwpbUnaryReceiver<EchoMessage::Message> call_;
   pw::sync::TimedThreadNotification notifier_;
-  pw::Result<pw::Vector<char, 64>> last_echo_ PW_GUARDED_BY(lock_);
+  pw::Result<pw::InlineString<64>> last_echo_ PW_GUARDED_BY(lock_);
   mutable pw::sync::InterruptSpinLock lock_;
 };
 
@@ -108,9 +108,9 @@ TEST(RpcTestHelpersTest, SendResponseIfCalledOk) {
   // a separate thread we still need to wait with the timeout.
   ASSERT_TRUE(entity.WaitForEcho(kWaitForEchoTimeout));
 
-  pw::Result<pw::Vector<char, 64>> result = entity.LastEcho();
+  pw::Result<pw::InlineString<64>> result = entity.LastEcho();
   ASSERT_TRUE(result.ok());
-  EXPECT_EQ(result.value(), (pw::Vector<char, 64>{"Hello"}));
+  EXPECT_EQ(result.value(), "Hello");
 }
 
 TEST(RpcTestHelpersTest, SendResponseIfCalledNotOk) {

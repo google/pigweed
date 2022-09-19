@@ -747,6 +747,16 @@ class StreamEncoder {
                           span<const std::byte> values,
                           size_t elem_size);
 
+  template <typename Container>
+  Status WriteStringOrBytes(uint32_t field_number,
+                            const std::byte* raw_container) {
+    const auto& container = *reinterpret_cast<Container*>(raw_container);
+    if (container.empty()) {
+      return OkStatus();
+    }
+    return WriteLengthDelimitedField(field_number, as_bytes(span(container)));
+  }
+
   // Checks if a write is invalid or will cause the encoder to enter an error
   // state, and preemptively sets this encoder's status to that error to block
   // the write. Only the first error encountered is tracked.

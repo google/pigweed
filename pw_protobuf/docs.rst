@@ -789,10 +789,10 @@ that can hold the set of values encoded by it, following these rules.
       pw::Vector<std::byte, 64> serial_number;
     };
 
-* `string` fields are represented by ``pw::Vector`` when the ``max_size`` option
-  is set for that field. Since the size is provided, the string is not
-  automatically null-terminated. :ref:`module-pw_string` provides utility
-  methods to copy string data into and out of this vector.
+* `string` fields are represented by a :cpp:type:`pw::InlineString` when the
+  ``max_size`` option is set for that field. The string can hold up to
+  ``max_size`` characters, and is always null terminated. The null terminator is
+  not counted in ``max_size``.
 
   .. code::
 
@@ -807,7 +807,7 @@ that can hold the set of values encoded by it, following these rules.
   .. code:: c++
 
     struct Employee::Message {
-      pw::Vector<char, 128> name;
+      pw::InlineString<128> name;
     };
 
 * Nested messages with a dependency cycle, repeated scalar fields without a

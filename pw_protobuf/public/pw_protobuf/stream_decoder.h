@@ -694,6 +694,18 @@ class StreamDecoder {
     }
   }
 
+  template <typename Container>
+  Status ReadStringOrBytesField(std::byte* raw_container) {
+    auto& container = *reinterpret_cast<Container*>(raw_container);
+    if (container.capacity() < delimited_field_size_) {
+      return Status::ResourceExhausted();
+    }
+    container.resize(container.capacity());
+    const auto sws = ReadDelimitedField(as_writable_bytes(span(container)));
+    container.resize(sws.size());
+    return sws.status();
+  }
+
   Status CheckOkToRead(WireType type);
 
   stream::Reader& reader_;

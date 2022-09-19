@@ -79,6 +79,7 @@ pw_source_set("pw_protobuf") {
     "message.cc",
     "stream_decoder.cc",
   ]
+  deps = [ "$dir_pw_string:string" ]
 }
 
 pw_source_set("bytes_utils") {
