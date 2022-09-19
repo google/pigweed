@@ -52,7 +52,8 @@ class UnaryResponse(NamedTuple):
     response: Any
 
     def __repr__(self) -> str:
-        return f'({self.status}, {proto_repr(self.response)})'
+        reply = proto_repr(self.response) if self.response else self.response
+        return f'({self.status}, {reply})'
 
 
 class StreamResponse(NamedTuple):

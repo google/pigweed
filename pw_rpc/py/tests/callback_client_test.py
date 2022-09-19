@@ -401,6 +401,14 @@ class UnaryTest(_CallbackClientImplTestBase):
 
         self.assertEqual(context.exception.__cause__, exception)
 
+    def test_unary_response(self) -> None:
+        proto = self._protos.packages.pw.test1.SomeMessage(magic_number=123)
+        self.assertEqual(
+            repr(callback_client.UnaryResponse(Status.ABORTED, proto)),
+            '(Status.ABORTED, pw.test1.SomeMessage(magic_number=123))')
+        self.assertEqual(repr(callback_client.UnaryResponse(Status.OK, None)),
+                         '(Status.OK, None)')
+
 
 class ServerStreamingTest(_CallbackClientImplTestBase):
     """Tests for server streaming RPCs."""
@@ -964,6 +972,15 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
 
         self.assertIs(first_call.error, Status.CANCELLED)
         self.assertFalse(second_call.completed())
+
+    def test_stream_response(self) -> None:
+        proto = self._protos.packages.pw.test1.SomeMessage(magic_number=123)
+        self.assertEqual(
+            repr(callback_client.StreamResponse(Status.ABORTED, [proto] * 2)),
+            '(Status.ABORTED, [pw.test1.SomeMessage(magic_number=123), '
+            'pw.test1.SomeMessage(magic_number=123)])')
+        self.assertEqual(repr(callback_client.StreamResponse(Status.OK, [])),
+                         '(Status.OK, [])')
 
 
 if __name__ == '__main__':
