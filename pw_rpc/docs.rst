@@ -68,13 +68,6 @@ RPC function. The RPC is considered active until the server sends a response
 packet with the RPC's status. The client may terminate an ongoing RPC by
 cancelling it.
 
-``pw_rpc`` supports only one RPC invocation per service/method/channel. If a
-client calls an ongoing RPC on the same channel, the server cancels the ongoing
-call and reinvokes the RPC with the new request. This applies to unary and
-streaming RPCs, though the server may not have an opportunity to cancel a
-synchronously handled unary RPC before it completes. The same RPC may be invoked
-multiple times simultaneously if the invocations are on different channels.
-
 Status codes
 ------------
 ``pw_rpc`` call objects (``ClientReaderWriter``, ``ServerReaderWriter``, etc.)
