@@ -33,7 +33,7 @@ struct CustomType {
 
   static constexpr const char* kToString = "This is a CustomType";
 
-  CustomType() = default;
+  CustomType() : a(0), b(0) {}
 
   // Non-copyable to verify that ToString doesn't copy it.
   CustomType(const CustomType&) = delete;
