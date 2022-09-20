@@ -103,7 +103,7 @@ pw_test("system_timer_facade_test") {
 
 pw_proto_library("protos") {
   sources = [ "chrono.proto" ]
-  prefix = "pw_chrono"
+  prefix = "pw_chrono_protos"
 }
 
 pw_doc_group("docs") {

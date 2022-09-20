@@ -26,6 +26,7 @@ from pw_snapshot_metadata import metadata
 from pw_snapshot_protos import snapshot_pb2
 from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_thread import thread_analyzer
+from pw_chrono import timestamp_analyzer
 
 _LOG = logging.getLogger('snapshot_processor')
 
@@ -85,8 +86,14 @@ def process_snapshot(
 
     thread_info = thread_analyzer.process_snapshot(serialized_snapshot,
                                                    detokenizer, symbolizer)
+
     if thread_info:
         output.append(thread_info)
+
+    timestamp_info = timestamp_analyzer.process_snapshot(serialized_snapshot)
+
+    if timestamp_info:
+        output.append(timestamp_info)
 
     # Check and emit the number of related snapshots embedded in this snapshot.
     if snapshot.related_snapshots:

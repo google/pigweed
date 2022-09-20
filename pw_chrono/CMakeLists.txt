@@ -60,7 +60,7 @@ pw_proto_library(pw_chrono.protos
   SOURCES
     chrono.proto
   PREFIX
-    pw_chrono
+    pw_chrono_protos
 )
 
 # TODO(ewout): Renable this once we've resolved the backend variable definition

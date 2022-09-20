@@ -25,6 +25,7 @@ py_library(
     deps = [
         ":pw_snapshot_metadata",
         "//pw_build_info/py:pw_build_info",
+        "//pw_chrono/py:pw_chrono",
         "//pw_cpu_exception_cortex_m/py:exception_analyzer",
         "//pw_snapshot:snapshot_proto_py_pb2",
         "//pw_symbolizer/py:pw_symbolizer",

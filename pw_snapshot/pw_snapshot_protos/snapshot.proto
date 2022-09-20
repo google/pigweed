@@ -18,7 +18,7 @@ package pw.snapshot;
 option java_package = "pw.snapshot.proto";
 option java_outer_classname = "Snapshot";
 
-import "pw_chrono/chrono.proto";
+import "pw_chrono_protos/chrono.proto";
 import "pw_cpu_exception_cortex_m_protos/cpu_state.proto";
 import "pw_log/proto/log.proto";
 import "pw_thread_protos/thread.proto";

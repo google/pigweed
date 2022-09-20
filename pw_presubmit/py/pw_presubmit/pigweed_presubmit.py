@@ -420,6 +420,8 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_blob_store/...:all',
     '-//pw_boot/...:all',
     '-//pw_cpu_exception_cortex_m/...:all',
+    '-//pw_chrono:chrono_proto_pb2',
+    '-//pw_chrono/py/...:all',
     '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
     '-//pw_file/...:all',
     '-//pw_function:function_test',  # TODO(b/241821115) Remove when passing.

@@ -527,6 +527,8 @@ usage with ``pw_snapshot`` to encourage capture of high resolution timestamps
 in device snapshots. Simplified capture utilies and host-side tooling to
 interpret this data are not yet provided by ``pw_chrono``.
 
+There is tooling that take these proto and make them more human readable.
+
 ---------------
 Software Timers
 ---------------
