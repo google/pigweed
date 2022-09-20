@@ -25,6 +25,7 @@ pw_python_package("py") {
   sources = [
     "pw_ide/__init__.py",
     "pw_ide/__main__.py",
+    "pw_ide/activate.py",
     "pw_ide/commands.py",
     "pw_ide/cpp.py",
     "pw_ide/exceptions.py",
