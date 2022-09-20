@@ -1,0 +1,6 @@
+config_title: pw_ide
+
+setup:
+  - pw ide init
+  - gn gen out --export-compile-commands
+  - pw ide cpp --process out/compile_commands.json --set pw_strict_host_clang_debug --no-override

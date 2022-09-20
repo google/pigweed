@@ -18,7 +18,8 @@ from pathlib import Path
 import sys
 from typing import (Any, Callable, cast, Dict, Generic, NoReturn, Optional,
                     TypeVar, Union)
-from pw_ide.commands import (cmd_info, cmd_init, cmd_cpp, cmd_python)
+from pw_ide.commands import (cmd_info, cmd_init, cmd_cpp, cmd_python,
+                             cmd_setup)
 
 # TODO(chadnorvell): Move this docstring-as-argparse-docs functionality
 # to pw_cli.
@@ -58,8 +59,8 @@ class Maybe(Generic[T]):
 
         def foo(i: Optional[T]) -> Optional[T]:
             return Maybe(i)\
-                .and_then(f)
-                .and_then(g)
+                .and_then(f)\
+                .and_then(g)\
                 .to_optional()
     """
     def __init__(self, value: Optional[T]) -> None:
@@ -224,6 +225,12 @@ def _parse_args() -> argparse.Namespace:
                                help='Return the path to the Pigweed Python '
                                'virtual environment.')
     parser_python.set_defaults(func=cmd_python)
+
+    parser_setup = subcommand_parser.add_parser(
+        'setup',
+        description=_docstring_summary(cmd_setup.__doc__),
+        help=_reflow_docstring(cmd_setup.__doc__))
+    parser_setup.set_defaults(func=cmd_setup)
 
     args = parser_root.parse_args()
     return args

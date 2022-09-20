@@ -15,6 +15,8 @@
 
 from pathlib import Path
 import platform
+import shlex
+import subprocess
 import sys
 from typing import Callable, Optional
 
@@ -285,3 +287,20 @@ def cmd_python(
         except UnsupportedPlatformException:
             _print_unsupported_platform_error(
                 'find Python virtual environment')
+
+
+def cmd_setup(settings: IdeSettings = IdeSettings()):
+    """Set up or update your Pigweed project IDE features.
+
+    This will execute all the commands needed to set up your development
+    environment with all the features that Pigweed IDE supports, with sensible
+    defaults. This command is idempotent, so run it whenever you feel like
+    it."""
+
+    if len(settings.setup) == 0:
+        print('This project has no defined setup procedure :(\n'
+              'Refer to the the pw_ide docs to learn how to define a setup!')
+        sys.exit(1)
+
+    for command in settings.setup:
+        subprocess.run(shlex.split(command))

@@ -25,6 +25,7 @@ _PW_IDE_DEFAULT_DIR = Path(
     os.path.expandvars('$PW_PROJECT_ROOT')) / PW_IDE_DIR_NAME
 
 _DEFAULT_CONFIG = {
+    'setup': [],
     'targets': [],
     'working_dir': _PW_IDE_DEFAULT_DIR,
 }
@@ -72,3 +73,17 @@ class IdeSettings(YamlConfigLoaderMixin):
         a compilation database.
         """
         return self._config.get('targets', list())
+
+    @property
+    def setup(self) -> List[str]:
+        """`pw ide setup` should do everything necessary to get the project from
+        a fresh checkout to a working default IDE experience. This defines the
+        list of commands that makes that happen.
+
+        Commands need to be formatted as lists in the way that Python's
+        subprocess.run expects, since that's exactly where they're going.
+
+        Note that this command must be idempotent, so that the user can run it
+        whenever they want without a care in the world.
+        """
+        return self._config.get('setup', list())

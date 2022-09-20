@@ -8,8 +8,8 @@ Pigweed projects.
 
 Configuration
 =============
-Pigweed IDE settings are stored in the project root in ``.pw_ide.yaml``, in which
-these options can be configured:
+Pigweed IDE settings are stored in the project root in ``.pw_ide.yaml``, in
+which these options can be configured:
 
 * ``working_dir``: The working directory for compilation databases and caches
   (by default this is `.pw_ide` in the project root). This directory shouldn't
@@ -23,11 +23,17 @@ these options can be configured:
   ``pw_strict_host_clang_debug`` target in a directory with that name in the
   ``out`` directory. So that becomes the canonical name for that target.
 
+* ``setup``: Projects can define a set of steps that automatically set up IDE
+  features with sensible defaults.
+
 Setup
 =====
-The working directory can be created by running ``pw ide init``, although it is
-rarely necessary to run this command manually; other subcommands will initialize
-if needed. You can also clear out the working directory with ``pw ide clean``.
+Most of the time, ``pw ide setup`` is all you need to get started.
+
+The working directory and other components can be created by running
+``pw ide init``, although it is rarely necessary to run this command manually;
+other subcommands will initialize if needed. You can also clear elements of the
+working directory with ``pw ide clean``.
 
 C++ Code Intelligence via ``clangd``
 ====================================
