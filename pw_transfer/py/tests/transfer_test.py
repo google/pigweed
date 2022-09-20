@@ -200,6 +200,68 @@ class TransferManagerTest(unittest.TestCase):
         self.assertTrue(self._sent_chunks[-1].HasField('status'))
         self.assertEqual(self._sent_chunks[-1].status, 0)
 
+    def test_read_transfer_recovery_sends_parameters_on_retry(self) -> None:
+        """Server sends the same chunk twice (retry) in a read transfer."""
+        manager = pw_transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
+
+        self._enqueue_server_responses(
+            _Method.READ,
+            (
+                (
+                    # Bad offset, enter recovery state. Only one parameters
+                    # chunk should be sent.
+                    transfer_pb2.Chunk(transfer_id=3,
+                                       offset=1,
+                                       data=b'234',
+                                       remaining_bytes=5),
+                    transfer_pb2.Chunk(transfer_id=3,
+                                       offset=4,
+                                       data=b'567',
+                                       remaining_bytes=2),
+                    transfer_pb2.Chunk(
+                        transfer_id=3, offset=7, data=b'8', remaining_bytes=1),
+                ),
+                (
+                    # Only one parameters chunk should be sent after the server
+                    # retries the same offset twice.
+                    transfer_pb2.Chunk(transfer_id=3,
+                                       offset=1,
+                                       data=b'234',
+                                       remaining_bytes=5),
+                    transfer_pb2.Chunk(transfer_id=3,
+                                       offset=4,
+                                       data=b'567',
+                                       remaining_bytes=2),
+                    transfer_pb2.Chunk(
+                        transfer_id=3,
+                        offset=7, data=b'8', remaining_bytes=1),
+                    transfer_pb2.Chunk(
+                        transfer_id=3,
+                        offset=7, data=b'8', remaining_bytes=1),
+                ),
+                (transfer_pb2.Chunk(transfer_id=3,
+                                    offset=0,
+                                    data=b'123456789',
+                                    remaining_bytes=0), ),
+            ))
+
+        data = manager.read(3)
+        self.assertEqual(data, b'123456789')
+
+        self.assertEqual(len(self._sent_chunks), 4)
+        self.assertEqual(self._sent_chunks[0].type,
+                         transfer_pb2.Chunk.Type.START)
+        self.assertEqual(self._sent_chunks[0].offset, 0)
+        self.assertEqual(self._sent_chunks[1].type,
+                         transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT)
+        self.assertEqual(self._sent_chunks[1].offset, 0)
+        self.assertEqual(self._sent_chunks[2].type,
+                         transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT)
+        self.assertEqual(self._sent_chunks[2].offset, 0)
+        self.assertEqual(self._sent_chunks[3].type,
+                         transfer_pb2.Chunk.Type.COMPLETION)
+
     def test_read_transfer_retry_timeout(self) -> None:
         """Server doesn't respond to read transfer parameters."""
         manager = pw_transfer.Manager(

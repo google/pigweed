@@ -22,7 +22,7 @@ pw_python_package("py") {
   generate_setup = {
     metadata = {
       name = "pw_transfer"
-      version = "0.0.1"
+      version = "0.1.0"
     }
   }
   sources = [
