@@ -33,6 +33,7 @@ pw_python_package("py") {
     "pw_ide/symlinks.py",
   ]
   tests = [
+    "commands_test.py",
     "cpp_test.py",
     "test_cases.py",
   ]

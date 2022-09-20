@@ -53,6 +53,20 @@ class TempDirTestCase(unittest.TestCase):
             yield (file, path)
 
     @contextmanager
+    def open_temp_file(
+        self,
+        filename: Union[Path, str],
+    ) -> Generator[Tuple[TextIOWrapper, Path], None, None]:
+        """Open an existing temp file in the test case's temp dir.
+
+        Returns a tuple containing the file reference and the file's path.
+        """
+        path = self.temp_dir_path / filename
+
+        with open(path, 'r', encoding='utf-8') as file:
+            yield (file, path)
+
+    @contextmanager
     def make_temp_files(
         self, files_data: List[Tuple[Union[Path, str], str]]
     ) -> Generator[List[TextIOWrapper], None, None]:
@@ -72,6 +86,27 @@ class TempDirTestCase(unittest.TestCase):
             file.write(content)
             file.flush()
             file.seek(0)
+            files.append(file)
+
+        yield files
+
+        for file in files:
+            file.close()
+
+    @contextmanager
+    def open_temp_files(
+        self, files_data: List[Union[Path, str]]
+    ) -> Generator[List[TextIOWrapper], None, None]:
+        """Open several existing temp files in the test case's temp dir.
+
+        Provide a list of file names. Saves you the trouble of excessive
+        `with self.open_temp_file, self.open_temp_file...` nesting, and allows
+        programmatic definition of multiple temp file contexts.
+        """
+        files: List[TextIOWrapper] = []
+
+        for filename in files_data:
+            file = open(self.path_in_temp_dir(filename), 'r', encoding='utf-8')
             files.append(file)
 
         yield files

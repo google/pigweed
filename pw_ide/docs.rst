@@ -23,6 +23,12 @@ these options can be configured:
   ``pw_strict_host_clang_debug`` target in a directory with that name in the
   ``out`` directory. So that becomes the canonical name for that target.
 
+Setup
+=====
+The working directory can be created by running ``pw ide init``, although it is
+rarely necessary to run this command manually; other subcommands will initialize
+if needed. You can also clear out the working directory with ``pw ide clean``.
+
 C++ Code Intelligence via ``clangd``
 ====================================
 `clangd <https://clangd.llvm.org/>`_ is a language server that provides C/C++
