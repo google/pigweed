@@ -131,8 +131,8 @@ pw_add_module_library(pw_hdlc.hdlc_sys_io_system_server
     hdlc_sys_io_system_server.cc
 )
 
-if(Zephyr_FOUND AND CONFIG_PIGWEED_HDLC)
-  zephyr_link_libraries(pw_hdlc)
+if(Zephyr_FOUND AND CONFIG_PIGWEED_HDLC_RPC)
+  zephyr_link_libraries(pw_hdlc.pw_rpc)
 endif()
 
 pw_add_test(pw_hdlc.decoder_test

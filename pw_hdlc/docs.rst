@@ -357,5 +357,6 @@ C++17
 ------
 Zephyr
 ------
-To enable ``pw_hdlc`` for Zephyr add ``CONFIG_PIGWEED_HDLC=y`` to the project's
-configuration.
+To enable ``pw_hdlc.pw_rpc`` for Zephyr add ``CONFIG_PIGWEED_HDLC_RPC=y`` to
+the project's configuration.
+
