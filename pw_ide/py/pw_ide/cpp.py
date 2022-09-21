@@ -205,8 +205,9 @@ def compdb_generate_file_path(target: str = '') -> Path:
     path = Path(f'{_COMPDB_FILE_PREFIX}.json')
 
     if target:
-        path = path.with_stem(f'{_COMPDB_FILE_PREFIX}'
-                              f'{_COMPDB_FILE_SEPARATOR}{target}')
+        path = path.with_name(f'{_COMPDB_FILE_PREFIX}'
+                              f'{_COMPDB_FILE_SEPARATOR}{target}'
+                              f'{_COMPDB_FILE_EXTENSION}')
 
     return path
 
@@ -217,7 +218,7 @@ def compdb_generate_cache_file_path(target: str = '') -> Path:
     path = Path(f'{_COMPDB_CACHE_DIR_PREFIX}')
 
     if target:
-        path = path.with_stem(f'{_COMPDB_CACHE_DIR_PREFIX}'
+        path = path.with_name(f'{_COMPDB_CACHE_DIR_PREFIX}'
                               f'{_COMPDB_CACHE_DIR_SEPARATOR}{target}')
 
     return path
