@@ -20,8 +20,8 @@ import platform
 import tempfile
 import unittest
 
-from pw_build.python_runner import ExpressionError, GnPaths, Label, TargetInfo
-from pw_build.python_runner import expand_expressions
+from pw_build.gn_resolver import ExpressionError, GnPaths, Label, TargetInfo
+from pw_build.gn_resolver import expand_expressions
 
 ROOT = Path(r'C:\gn_root' if platform.system() == 'Windows' else '/gn_root')
 

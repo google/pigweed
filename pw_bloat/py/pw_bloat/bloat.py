@@ -16,17 +16,15 @@ bloat is a script which generates a size report card for binary files.
 """
 
 import argparse
+import json
 import logging
 import os
 import subprocess
 import sys
-import json
 from typing import Iterable, Optional
-from pathlib import Path
 
 import pw_cli.log
 
-from pw_build.python_runner import expand_expressions, GnPaths
 from pw_bloat.label import from_bloaty_tsv
 from pw_bloat.label_output import (BloatTableOutput, LineCharset, RstOutput,
                                    AsciiCharset)
@@ -134,28 +132,6 @@ def single_target_output(target: str, bloaty_config: str, target_out_file: str,
     return 0
 
 
-# TODO(frolv) Copied from python_runner.py
-def _abspath(path: Path) -> Path:
-    """Turns a path into an absolute path, not resolving symlinks."""
-    return Path(os.path.abspath(path))
-
-
-def _translate_file_paths(gn_arg_dict: dict, single_report: bool) -> dict:
-    tool = gn_arg_dict['toolchain'] if gn_arg_dict['toolchain'] != gn_arg_dict[
-        'default_toolchain'] else ''
-    paths = GnPaths(root=_abspath(gn_arg_dict['root']),
-                    build=_abspath(Path.cwd()),
-                    toolchain=tool,
-                    cwd=_abspath(gn_arg_dict['cwd']))
-    for curr_arg in gn_arg_dict['binaries']:
-        curr_arg['target'] = list(expand_expressions(paths,
-                                                     curr_arg['target']))[0]
-        if not single_report:
-            curr_arg['base'] = list(expand_expressions(paths,
-                                                       curr_arg['base']))[0]
-    return gn_arg_dict
-
-
 def main() -> int:
     """Program entry point."""
 
@@ -165,8 +141,6 @@ def main() -> int:
     gn_arg_dict = {}
     json_file = open(args.gn_arg_path)
     gn_arg_dict = json.load(json_file)
-
-    gn_arg_dict = _translate_file_paths(gn_arg_dict, args.single_report)
 
     if args.single_report:
         single_binary_args = gn_arg_dict['binaries'][0]

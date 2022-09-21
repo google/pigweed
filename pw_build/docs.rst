@@ -318,7 +318,10 @@ target. Additionally, it has some of its own arguments:
 * ``venv``: Optional gn target of the pw_python_venv that should be used to run
   this action.
 
-**Expressions**
+.. _module-pw_build-python-action-expressions:
+
+Expressions
+^^^^^^^^^^^
 
 ``pw_python_action`` evaluates expressions in ``args``, the arguments passed to
 the script. These expressions function similarly to generator expressions in
@@ -421,6 +424,69 @@ The following expressions are supported:
       "--binary=<TARGET_FILE(//firmware/images:main)>",
     ]
     stamp = true
+  }
+
+.. _module-pw_build-evaluate-path-expressions:
+
+pw_evaluate_path_expressions
+----------------------------
+It is not always feasible to pass information to a script through command line
+arguments. If a script requires a large amount of input data, writing to a file
+is often more convenient. However, doing so bypasses ``pw_python_action``'s GN
+target label resolution, preventing such scripts from working with build
+artifacts in a build system-agnostic manner.
+
+``pw_evaluate_path_expressions`` is designed to address this use case. It takes
+a list of input files and resolves target expressions within them, modifying the
+files in-place.
+
+Refer to ``pw_python_action``'s :ref:`module-pw_build-python-action-expressions`
+section for the list of supported expressions.
+
+.. note::
+
+  ``pw_evaluate_path_expressions`` is typically used as an intermediate
+  sub-target of a larger template, rather than a standalone build target.
+
+**Arguments**
+
+* ``files``: A list of file paths to process.
+
+**Example**
+
+The following template defines an executable target which additionally outputs
+the list of object files from which it was compiled, making use of
+``pw_evaluate_path_expressions`` to resolve their paths.
+
+.. code-block::
+
+  import("$dir_pw_build/evaluate_path_expressions.gni")
+
+  template("executable_with_artifacts") {
+    executable("${target_name}.exe") {
+      sources = invoker.sources
+      if defined(invoker.deps) {
+        deps = invoker.deps
+      }
+    }
+
+    _artifacts_file = "$target_gen_dir/${target_name}_artifacts.json"
+    _artifacts = {
+      binary = "<TARGET_FILE(:${target_name}.exe)>"
+      objects = "<TARGET_OBJECTS(:${target_name}.exe)>"
+    }
+    write_file(_artifacts_file, _artifacts, "json")
+
+    pw_evaluate_path_expressions("${target_name}.evaluate") {
+      files = [ _artifacts_file ]
+    }
+
+    group(target_name) {
+      deps = [
+        ":${target_name}.exe",
+        ":${target_name}.evaluate",
+      ]
+    }
   }
 
 .. _module-pw_build-pw_exec:
