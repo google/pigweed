@@ -57,10 +57,22 @@ Key differences from ``std::string``
 API reference
 -------------
 :cpp:type:`pw::InlineString` / :cpp:class:`pw::InlineBasicString` follows the
-``std::string`` / ``std::basic_string<T>`` API as closely as possible.
-:cpp:class:`pw::InlineBasicString` is intended to support all
-``std::basic_string<T>`` operations, except those having to do with dynamic
-memory allocation (``reserve()``, ``shrink_to_fit()``, ``get_allocator()``).
+``std::string`` / ``std::basic_string<T>`` API, with a few variations:
+
+- Assigning and constructing from character literals or arrays uses the size of
+  the literal or array, rather than treating it as a null-terminated string.
+  This allows for compile-time capacity checks and class template argument
+  deduction.
+- :cpp:type:`pw::InlineString` allows implicit conversions from
+  ``std::string_view``. Specifying the capacity parameter is cumbersome, so
+  implicit conversions are helpful. Also, implicitly creating a
+  :cpp:type:`pw::InlineString` is less costly than creating a ``std::string``.
+  As with ``std::string``, explicit conversions are required from types that
+  convert to ``std::string_view``.
+- Functions related to dynamic memory allocation are not present (``reserve()``,
+  ``shrink_to_fit()``, ``get_allocator()``).
+- ``resize_and_overwrite()`` only takes the ``Operation`` argument, since the
+  underlying string buffer cannot be resized.
 
 .. cpp:class:: template <typename T, unsigned short kCapacity> pw::InlineBasicString
 
@@ -71,6 +83,9 @@ memory allocation (``reserve()``, ``shrink_to_fit()``, ``get_allocator()``).
 
    Represents a fixed-capacity string of ``char`` characters. Equivalent to
    ``std::string``. Always null (``'\0'``) terminated.
+
+See the `std::string documentation
+<https://en.cppreference.com/w/cpp/string/basic_string>`_ for full details.
 
 Usage
 -----

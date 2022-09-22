@@ -299,10 +299,16 @@ constexpr void resize(size_type new_size, T ch) {
   return Resize(data(), new_size, ch);
 }
 
-// TODO(b/239996007): Implement other std::string functions:
-//
-// - resize_and_overwrite
-// - swap
+// resize_and_overwrite() only takes the callable object since the underlying
+// buffer has a fixed size.
+template <typename Operation>
+constexpr void resize_and_overwrite(Operation operation) {
+  const auto new_size = std::move(operation)(data(), max_size());
+  PW_ASSERT(static_cast<size_t>(new_size) <= max_size());
+  SetSizeAndTerminate(data(), new_size);
+}
+
+// TODO(b/239996007): Implement swap
 
 // Search
 

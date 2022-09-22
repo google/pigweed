@@ -1573,7 +1573,70 @@ TEST(InlineString, Compare) {
 //   - replace
 //   - substr
 //   - copy
-//   - resize
+
+TEST(InlineString, Resize) {
+  TEST_STRING(InlineString<10>(), str.resize(0), "");
+  TEST_STRING(InlineString<10>(), str.resize(5), "\0\0\0\0\0");
+  TEST_STRING(InlineString<10>(), str.resize(10), "\0\0\0\0\0\0\0\0\0\0");
+  TEST_STRING(InlineString<10>(), str.resize(0, 'a'), "");
+  TEST_STRING(InlineString<10>(), str.resize(5, 'a'), "aaaaa");
+  TEST_STRING(InlineString<10>(), str.resize(10, 'a'), "aaaaaaaaaa");
+
+  TEST_STRING(InlineString<10>("ABCDE"), str.resize(0), "");
+  TEST_STRING(InlineString<10>("ABCDE"), str.resize(4), "ABCD");
+  TEST_STRING(InlineString<10>("ABCDE"), str.resize(5), "ABCDE");
+  TEST_STRING(InlineString<10>("ABCDE"), str.resize(10), "ABCDE\0\0\0\0\0");
+  TEST_STRING(InlineString<10>("ABCDE"), str.resize(0, 'a'), "");
+  TEST_STRING(InlineString<10>("ABCDE"), str.resize(3, 'a'), "ABC");
+  TEST_STRING(InlineString<10>("ABCDE"), str.resize(5, 'a'), "ABCDE");
+  TEST_STRING(InlineString<10>("ABCDE"), str.resize(10, 'a'), "ABCDEaaaaa");
+
+#if PW_NC_TEST(Resize_LargerThanCapacity)
+  PW_NC_EXPECT("PW_ASSERT\(new_size <= max_size\(\)\)");
+  [[maybe_unused]] constexpr auto fail = [] {
+    InlineString<4> str("123");
+    str.resize(5);
+    return str;
+  }();
+#endif  // PW_NC_TEST
+}
+
+TEST(InlineString, ResizeAndOverwrite) {
+  TEST_STRING(InlineString<2>(),
+              str.resize_and_overwrite([](char* out, size_t) {
+                out[0] = '\0';
+                out[1] = '?';
+                return 2;
+              }),
+              "\0?");
+  TEST_STRING(InlineString<10>("ABCDE"),
+              str.resize_and_overwrite([](char* out, size_t size) {
+                out[1] = '?';
+                for (size_t i = 5; i < size; ++i) {
+                  out[i] = static_cast<char>('0' + i);
+                }
+                return size - 1;  // chop off the last character
+              }),
+              "A?CDE5678");
+
+#if PW_NC_TEST(ResizeAndOverwrite_LargerThanCapacity)
+  PW_NC_EXPECT("PW_ASSERT\(static_cast<size_t>\(new_size\) <= max_size\(\)\)");
+  [[maybe_unused]] constexpr auto fail = [] {
+    InlineString<4> str("123");
+    str.resize_and_overwrite([](char*, size_t) { return 5; });
+    return str;
+  }();
+#elif PW_NC_TEST(ResizeAndOverwrite_NegativeSize)
+  PW_NC_EXPECT("PW_ASSERT\(static_cast<size_t>\(new_size\) <= max_size\(\)\)");
+  [[maybe_unused]] constexpr auto fail = [] {
+    InlineString<4> str("123");
+    str.resize_and_overwrite([](char*, size_t) { return -1; });
+    return str;
+  }();
+#endif  // PW_NC_TEST
+}
+
+// TODO(b/239996007): Test other pw::InlineString functions:
 //   - swap
 
 //
