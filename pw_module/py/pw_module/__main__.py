@@ -16,6 +16,7 @@
 import argparse
 
 import pw_module.check
+import pw_module.create
 
 
 def main() -> None:
@@ -28,6 +29,8 @@ def main() -> None:
 
     pw_module.check.register_subcommand(
         subparsers.add_parser('check', help=pw_module.check.__doc__))
+    pw_module.create.register_subcommand(
+        subparsers.add_parser('create', help=pw_module.create.__doc__))
 
     args = {**vars(parser.parse_args())}
     func = args['func']

@@ -35,3 +35,18 @@ its own lint:
   20191205 17:05:19 ERR FAIL: Found errors when checking module pw_module
 
 
+.. _module-pw_module-module-create:
+
+``pw module create``
+^^^^^^^^^^^^^^^^^^^^
+The ``pw module create`` command is used to generate all of the required
+boilerplate for a new Pigweed module.
+
+.. note::
+
+   ``pw module create`` is still under construction and mostly experimental.
+   It is only usable in upstream Pigweed, and has limited feature support, with
+   a command-line API subject to change.
+
+   Once the command is more stable, it will be properly documented. For now,
+   running ``pw module create --help`` will display the current set of options.

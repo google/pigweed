@@ -26,7 +26,9 @@ pw_python_package("py") {
     "pw_module/__init__.py",
     "pw_module/__main__.py",
     "pw_module/check.py",
+    "pw_module/create.py",
   ]
+  python_deps = [ "$dir_pw_build/py" ]
   tests = [ "check_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }
