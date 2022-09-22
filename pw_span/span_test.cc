@@ -145,8 +145,8 @@ class MutableStringView {
   char& operator[](size_type index) const { return data_[index]; }
   pointer data() const { return data_.data(); }
   size_type size() const { return data_.size(); }
-  iterator begin() const { return data_.begin(); }
-  iterator end() const { return data_.end(); }
+  iterator begin() const { return data_.data(); }
+  iterator end() const { return data_.data() + size(); }
 
  private:
   span<char> data_;

@@ -34,8 +34,8 @@ void VerifyTokenizedLogEntry(pw::protobuf::Decoder& entry_decoder,
   EXPECT_EQ(entry_decoder.FieldNumber(),
             static_cast<uint32_t>(log::LogEntry::Fields::MESSAGE));
   EXPECT_TRUE(entry_decoder.ReadBytes(&tokenized_data).ok());
-  EXPECT_TRUE(std::memcmp(tokenized_data.begin(),
-                          expected_tokenized_data.begin(),
+  EXPECT_TRUE(std::memcmp(tokenized_data.data(),
+                          expected_tokenized_data.data(),
                           expected_tokenized_data.size()) == 0);
 
   uint32_t line_level;
@@ -85,8 +85,8 @@ void VerifyTokenizedLogEntry(pw::protobuf::Decoder& entry_decoder,
     EXPECT_EQ(entry_decoder.FieldNumber(),
               static_cast<uint32_t>(log::LogEntry::Fields::THREAD));
     EXPECT_TRUE(entry_decoder.ReadBytes(&tokenized_thread_name).ok());
-    EXPECT_TRUE(std::memcmp(tokenized_thread_name.begin(),
-                            expected_thread_name.begin(),
+    EXPECT_TRUE(std::memcmp(tokenized_thread_name.data(),
+                            expected_thread_name.data(),
                             expected_thread_name.size()) == 0);
   }
 }

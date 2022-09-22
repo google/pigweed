@@ -38,10 +38,10 @@ void VerifyOptionallyTokenizedField(protobuf::Decoder& entry_decoder,
   ASSERT_EQ(entry_decoder.FieldNumber(), static_cast<uint32_t>(field_number));
   ASSERT_EQ(entry_decoder.ReadBytes(&tokenized_data), OkStatus());
   std::string_view data_as_string(
-      reinterpret_cast<const char*>(tokenized_data.begin()),
+      reinterpret_cast<const char*>(tokenized_data.data()),
       tokenized_data.size());
   std::string_view expected_data_as_string(
-      reinterpret_cast<const char*>(expected_data.begin()),
+      reinterpret_cast<const char*>(expected_data.data()),
       expected_data.size());
   EXPECT_EQ(data_as_string, expected_data_as_string);
 }
