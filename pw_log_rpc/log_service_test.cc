@@ -100,7 +100,7 @@ class LogServiceTest : public ::testing::Test {
                              ConstByteSpan thread) {
     Result<ConstByteSpan> encoded_log_result =
         log::EncodeTokenizedLog(metadata,
-                                as_bytes(span(message)),
+                                as_bytes(span<const char>(message)),
                                 timestamp,
                                 thread,
                                 entry_encode_buffer_);

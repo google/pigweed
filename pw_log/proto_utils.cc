@@ -41,7 +41,7 @@ Result<ConstByteSpan> EncodeLog(int level,
   }
 
   // Defer status checks until the end.
-  Status status = encoder.WriteMessage(as_bytes(span(message)));
+  Status status = encoder.WriteMessage(as_bytes(span<const char>(message)));
   status = encoder.WriteLineLevel(PackLineLevel(line_number, level));
   if (flags != 0) {
     status = encoder.WriteFlags(flags);
@@ -50,13 +50,13 @@ Result<ConstByteSpan> EncodeLog(int level,
 
   // Module name and file name may or may not be present.
   if (!module_name.empty()) {
-    status = encoder.WriteModule(as_bytes(span(module_name)));
+    status = encoder.WriteModule(as_bytes(span<const char>(module_name)));
   }
   if (!file_name.empty()) {
-    status = encoder.WriteFile(as_bytes(span(file_name)));
+    status = encoder.WriteFile(as_bytes(span<const char>(file_name)));
   }
   if (!thread_name.empty()) {
-    status = encoder.WriteThread(as_bytes(span(thread_name)));
+    status = encoder.WriteThread(as_bytes(span<const char>(thread_name)));
   }
   PW_TRY(encoder.status());
   return ConstByteSpan(encoder);

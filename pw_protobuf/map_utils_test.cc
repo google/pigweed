@@ -81,8 +81,8 @@ TEST(ProtoHelper, WriteProtoStringToBytesMapEntry) {
 
   std::byte stream_pipe_buffer[1];
   for (auto ele : kMapData) {
-    stream::MemoryReader key_reader(as_bytes(span{ele.key}));
-    stream::MemoryReader value_reader(as_bytes(span{ele.value}));
+    stream::MemoryReader key_reader(as_bytes(span<const char>{ele.key}));
+    stream::MemoryReader value_reader(as_bytes(span<const char>{ele.value}));
     ASSERT_OK(WriteProtoStringToBytesMapEntry(ele.field_number,
                                               key_reader,
                                               ele.key.size(),
@@ -119,8 +119,8 @@ TEST(ProtoHelper, WriteProtoStringToBytesMapEntryExceedsWriteLimit) {
   constexpr uint32_t kFieldNumber = 1;
   std::string_view key = "key_bar";
   std::string_view value = "bar_a";
-  stream::MemoryReader key_reader(as_bytes(span{key}));
-  stream::MemoryReader value_reader(as_bytes(span{value}));
+  stream::MemoryReader key_reader(as_bytes(span<const char>{key}));
+  stream::MemoryReader value_reader(as_bytes(span<const char>{value}));
   std::byte stream_pipe_buffer[1];
   ASSERT_EQ(
       WriteProtoStringToBytesMapEntry(kFieldNumber,
@@ -138,8 +138,8 @@ TEST(ProtoHelper, WriteProtoStringToBytesMapEntryInvalidArgument) {
   stream::MemoryWriter writer(encode_buffer);
   std::string_view key = "key_bar";
   std::string_view value = "bar_a";
-  stream::MemoryReader key_reader(as_bytes(span{key}));
-  stream::MemoryReader value_reader(as_bytes(span{value}));
+  stream::MemoryReader key_reader(as_bytes(span<const char>{key}));
+  stream::MemoryReader value_reader(as_bytes(span<const char>{value}));
   std::byte stream_pipe_buffer[1];
 
   ASSERT_EQ(

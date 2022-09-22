@@ -107,7 +107,7 @@ TEST(SpanTest, DeductionGuides_ConstStdArray) {
 
 TEST(SpanTest, DeductionGuides_MutableContainerWithConstElements) {
   std::string_view string("Hello");
-  auto the_span = span(string);
+  auto the_span = span<const char>(string);
   static_assert(the_span.extent == dynamic_extent);
 
   EXPECT_STREQ("Hello", the_span.data());

@@ -48,7 +48,7 @@ Result<ConstByteSpan> EncodeLogEntry(std::string_view message,
                                      ConstByteSpan thread) {
   auto metadata = log_tokenized::Metadata::Set<log_level, module, flags, 0>();
   return log::EncodeTokenizedLog(metadata,
-                                 as_bytes(span(message)),
+                                 as_bytes(span<const char>(message)),
                                  /*ticks_since_epoch=*/0,
                                  thread,
                                  buffer);

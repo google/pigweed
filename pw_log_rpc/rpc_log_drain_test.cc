@@ -206,7 +206,7 @@ class TrickleTest : public ::testing::Test {
     return {.metadata = kSampleMetadata,
             .timestamp = kSampleTimestamp,
             .dropped = 0,
-            .tokenized_data = as_bytes(span(message)),
+            .tokenized_data = as_bytes(span<const char>(message)),
             .thread = as_bytes(span(kSampleThreadName))};
   }
 

@@ -576,7 +576,7 @@ class StreamEncoder {
   //
   // Precondition: Encoder has no active child encoder.
   Status WriteString(uint32_t field_number, std::string_view value) {
-    return WriteBytes(field_number, as_bytes(span(value)));
+    return WriteBytes(field_number, as_bytes(span<const char>(value)));
   }
 
   // Writes a proto string key-value pair.

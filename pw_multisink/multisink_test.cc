@@ -510,7 +510,7 @@ TEST(UnsafeIteration, NoLimit) {
   MultiSink multisink(buffer);
 
   for (std::string_view entry : kExpectedEntries) {
-    multisink.HandleEntry(as_bytes(span(entry)));
+    multisink.HandleEntry(as_bytes(span<const char>(entry)));
   }
 
   size_t entry_count = 0;
@@ -541,7 +541,7 @@ TEST(UnsafeIteration, Subset) {
   MultiSink multisink(buffer);
 
   for (std::string_view entry : kExpectedEntries) {
-    multisink.HandleEntry(as_bytes(span(entry)));
+    multisink.HandleEntry(as_bytes(span<const char>(entry)));
   }
 
   size_t entry_count = 0;

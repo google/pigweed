@@ -40,7 +40,7 @@ void TryEncodeDropMessage(ByteSpan encoded_drop_message_buffer,
   // Encode drop count and reason, if any, in log proto.
   log::LogEntry::MemoryEncoder encoder(encoded_drop_message_buffer);
   if (!reason.empty()) {
-    encoder.WriteMessage(as_bytes(span(reason))).IgnoreError();
+    encoder.WriteMessage(as_bytes(span<const char>(reason))).IgnoreError();
   }
   encoder.WriteDropped(drop_count).IgnoreError();
   if (!encoder.status().ok()) {
