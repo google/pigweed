@@ -124,12 +124,12 @@ pw_add_module_library(pw_sync_freertos.thread_notification
     public
     public_overrides/thread_notification
   PUBLIC_DEPS
+    pw_assert
     pw_interrupt.context
     pw_third_party.freertos
   SOURCES
     thread_notification.cc
   PRIVATE_DEPS
-    pw_assert
     pw_sync_freertos.config
 )
 

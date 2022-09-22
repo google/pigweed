@@ -173,15 +173,13 @@ pw_source_set("thread_notification") {
     "public_overrides/thread_notification/pw_sync_backend/thread_notification_native.h",
   ]
   public_deps = [
+    "$dir_pw_assert",
     "$dir_pw_interrupt:context",
     "$dir_pw_sync:thread_notification.facade",
     "$dir_pw_third_party/freertos",
   ]
   sources = [ "thread_notification.cc" ]
-  deps = [
-    ":config",
-    dir_pw_assert,
-  ]
+  deps = [ ":config" ]
 }
 
 config("public_overrides_timed_thread_notification_include_path") {
