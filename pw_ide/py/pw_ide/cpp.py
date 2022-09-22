@@ -364,8 +364,9 @@ def get_target(settings: IdeSettings) -> Optional[str]:
     truth on what the current target is.
     """
     try:
-        src_file = (settings.working_dir /
-                    compdb_generate_file_path()).readlink()
+        # TODO(b/248257406) Use Path.readlink after dropping Python 3.8 support.
+        src_file = Path(
+            os.readlink(settings.working_dir / compdb_generate_file_path()))
     except (FileNotFoundError, OSError):
         # If the symlink doesn't exist, there is no current target.
         return None
