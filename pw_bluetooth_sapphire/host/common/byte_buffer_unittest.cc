@@ -610,5 +610,23 @@ TEST(ByteBufferTest, ToVector) {
   EXPECT_TRUE(ContainersEqual(vec, buffer));
 }
 
+TEST(ByteBufferTest, PrintableAscii) {
+  StaticByteBuffer buffer('f', 'o', 'o', 'b', 'a', 'r', 'b', 'a', 'z');
+  std::string result = buffer.Printable(3, 3);
+  EXPECT_EQ("bar", result);
+}
+
+TEST(ByteBufferTest, PrintableUtf8) {
+  StaticByteBuffer buffer(0xce, 0xba, 0xe1, 0xbd, 0xb9, 0xcf, 0x83, 0xce, 0xbc, 0xce, 0xB5);
+  std::string result = buffer.Printable(0, buffer.size());
+  EXPECT_EQ("κόσμε", result);
+}
+
+TEST(ByteBufferTest, PrintableInvalidUtf8) {
+  StaticByteBuffer buffer(0xce, 0xba, 0x80);
+  std::string result = buffer.Printable(0, buffer.size());
+  EXPECT_EQ("...", result);
+}
+
 }  // namespace
 }  // namespace bt
