@@ -187,11 +187,11 @@ void DataElement::Set<bt::DynamicByteBuffer>(bt::DynamicByteBuffer value) {
 }
 
 template <>
-void DataElement::Set<std::string>(std::string string) {
+void DataElement::Set<std::string>(std::string value) {
   type_ = Type::kString;
 
-  SetVariableSize(string.size());
-  bytes_ = DynamicByteBuffer(string);
+  SetVariableSize(value.size());
+  bytes_ = DynamicByteBuffer(value);
 }
 
 template <>
@@ -617,7 +617,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
     case Type::kString:
     case Type::kUrl: {
       size_t used = WriteLength(&cursor, bytes_.size());
-      ZX_DEBUG_ASSERT(used);
+      BT_DEBUG_ASSERT(used);
       pos += used;
       cursor.Write(bytes_.data(), bytes_.size(), used);
       pos += bytes_.size();

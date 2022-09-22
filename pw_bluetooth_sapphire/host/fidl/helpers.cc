@@ -142,7 +142,7 @@ std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement&
     case fbredr::DataElement::Tag::kUint64:
       return bt::sdp::DataElement(fidl.uint64());
     case fbredr::DataElement::Tag::kStr: {
-      std::vector<uint8_t> str = fidl.str();
+      const std::vector<uint8_t>& str = fidl.str();
       std::unique_ptr<uint8_t[]> data(new uint8_t[str.size()]);
       memcpy(data.get(), str.data(), str.size());
       bt::DynamicByteBuffer bytes(str.size(), std::move(data));

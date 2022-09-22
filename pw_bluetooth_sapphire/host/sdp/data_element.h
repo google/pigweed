@@ -156,7 +156,7 @@ class DataElement {
   Type type_;
   Size size_;
 
-  // Various types for the stored value.  These are only valid if the type_ is
+  // Various types for the stored value. These are only valid if the type_ is
   // set correctly.
   int64_t int_value_;
   uint64_t uint_value_;

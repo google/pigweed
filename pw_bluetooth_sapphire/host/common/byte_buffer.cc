@@ -20,11 +20,11 @@ void ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) co
 
 std::string ByteBuffer::Printable(size_t pos, size_t size) const {
   std::string ret(size, '\0');
-  // TODO(fxb/107512)
-  CopyRaw(&ret[0], size, pos, size);
+  // TODO(fxb/107512): Eliminate this string copy if the string is already printable
+  CopyRaw(ret.data(), size, pos, size);
 
-  std::string_view view(&ret[0], size);
-  // If the string isn't valid UTF-8, convert it to ASCII with nonprintable characters
+  std::string_view view(ret.data(), size);
+  // If the string isn't valid UTF-8, convert it to ASCII with nonprintable characters being
   // converted to '.'.
   if (!bt_lib_cpp_string::IsStringUTF8(view)) {
     for (size_t i = 0; i < size; i++) {
@@ -120,10 +120,10 @@ DynamicByteBuffer::DynamicByteBuffer(const ByteBuffer& buffer)
 DynamicByteBuffer::DynamicByteBuffer(const DynamicByteBuffer& buffer)
     : DynamicByteBuffer(static_cast<const ByteBuffer&>(buffer)) {}
 
-DynamicByteBuffer::DynamicByteBuffer(const std::string& string) {
-  buffer_size_ = string.length();
+DynamicByteBuffer::DynamicByteBuffer(const std::string& buffer) {
+  buffer_size_ = buffer.length();
   buffer_ = std::make_unique<uint8_t[]>(buffer_size_);
-  memcpy(buffer_.get(), string.data(), buffer_size_);
+  memcpy(buffer_.get(), buffer.data(), buffer_size_);
 }
 
 DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size, std::unique_ptr<uint8_t[]> buffer)
