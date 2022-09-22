@@ -21,7 +21,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
-from typing import Iterable, TextIO, Optional, Union
+from typing import Iterable, List, TextIO, Optional, Union
 from datetime import datetime
 
 PathOrStr = Union[Path, str]
@@ -73,9 +73,10 @@ def _clone_fuchsia(temp_path: Path) -> Path:
     return temp_path / 'fuchsia'
 
 
-def _read_files(script: Path) -> list[Path]:
+# TODO(b/248257406): Replace typing.List with list.  # pylint: disable=fixme
+def _read_files(script: Path) -> List[Path]:
     with script.open() as file:
-        paths_list: list[str] = eval(''.join(_read_files_list(file)))  # pylint: disable=eval-used
+        paths_list: List[str] = eval(''.join(_read_files_list(file)))  # pylint: disable=eval-used
         return list(Path(p) for p in paths_list if not 'lib/stdcompat/' in p)
 
 
