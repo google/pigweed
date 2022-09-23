@@ -24,7 +24,7 @@ class BorrowableStorage {
  protected:
   // Construct the object in-place using a list of arguments.
   template <typename... Args>
-  constexpr BorrowableStorage(std::in_place_t, Args&&... args)
+  constexpr explicit BorrowableStorage(std::in_place_t, Args&&... args)
       : object_{std::forward<Args>(args)...}, lock_ {}
   {}
 
@@ -38,22 +38,42 @@ class BorrowableStorage {
             std::forward<std::tuple<LockArgs...>>(lock_args))} {}
 
   // Construct the object and lock in-place using the provided factories.
-  template <typename ObjectConstructor, typename LockConstructor>
+  template <typename ObjectConstructor,
+            typename LockConstructor,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<ObjectType&&, ObjectConstructor>>,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<Lock&&, LockConstructor>>>
   constexpr BorrowableStorage(const ObjectConstructor& object_ctor,
                               const LockConstructor& lock_ctor)
       : object_{object_ctor()}, lock_{lock_ctor()} {}
 
-  template <typename ObjectConstructor, typename LockConstructor>
+  template <typename ObjectConstructor,
+            typename LockConstructor,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<ObjectType&&, ObjectConstructor>>,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<Lock&&, LockConstructor>>>
   constexpr BorrowableStorage(ObjectConstructor& object_ctor,
                               const LockConstructor& lock_ctor)
       : object_{object_ctor()}, lock_{lock_ctor()} {}
 
-  template <typename ObjectConstructor, typename LockConstructor>
+  template <typename ObjectConstructor,
+            typename LockConstructor,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<ObjectType&&, ObjectConstructor>>,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<Lock&&, LockConstructor>>>
   constexpr BorrowableStorage(const ObjectConstructor& object_ctor,
                               LockConstructor& lock_ctor)
       : object_{object_ctor()}, lock_{lock_ctor()} {}
 
-  template <typename ObjectConstructor, typename LockConstructor>
+  template <typename ObjectConstructor,
+            typename LockConstructor,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<ObjectType&&, ObjectConstructor>>,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<Lock&&, LockConstructor>>>
   constexpr BorrowableStorage(ObjectConstructor& object_ctor,
                               LockConstructor& lock_ctor)
       : object_{object_ctor()}, lock_{lock_ctor()} {}

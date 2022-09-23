@@ -36,6 +36,7 @@ struct TrivialType {
 // A custom type that is neither copyable nor movable.
 class CustomType {
  public:
+  explicit constexpr CustomType(int z) : x_(z), y_(-z) {}
   constexpr CustomType(int x, int y) : x_(x), y_(y) {}
 
   CustomType(const CustomType&) = delete;
@@ -79,7 +80,18 @@ TEST(InlineBorrowableTest, TestTrivialType) {
   EXPECT_TRUE(trivial.acquire()->yes());
 }
 
-TEST(InlineBorrowableTest, TestCustomTypeInPlace) {
+TEST(InlineBorrowableTest, TestCustomTypeInPlace1Arg) {
+  InlineBorrowable<CustomType> custom(std::in_place, 1);
+  EXPECT_EQ(custom.acquire()->data(), std::make_pair(1, -1));
+}
+
+TEST(InlineBorrowableTest, TestCustomTypeInPlace1ArgLValue) {
+  int x = 1;
+  InlineBorrowable<CustomType> custom(std::in_place, x);
+  EXPECT_EQ(custom.acquire()->data(), std::make_pair(x, -x));
+}
+
+TEST(InlineBorrowableTest, TestCustomTypeInPlace2Arg) {
   InlineBorrowable<CustomType> custom(std::in_place, 1, 2);
   EXPECT_EQ(custom.acquire()->data(), std::make_pair(1, 2));
 }
@@ -91,6 +103,16 @@ TEST(InlineBorrowableTest, TestCustomTypeFromTuple) {
 
 TEST(InlineBorrowableTest, TestCustomTypeFromFactory) {
   InlineBorrowable<CustomType> custom([] { return CustomType(1, 2); });
+  EXPECT_EQ(custom.acquire()->data(), std::make_pair(1, 2));
+}
+
+TEST(InlineBorrowableTest, TestCustomTypeFromMutableFactory) {
+  int i = 0;
+  auto factory = [&i]() mutable {
+    i++;
+    return CustomType(1, 2);
+  };
+  InlineBorrowable<CustomType> custom(factory);
   EXPECT_EQ(custom.acquire()->data(), std::make_pair(1, 2));
 }
 

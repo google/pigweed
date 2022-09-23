@@ -91,27 +91,47 @@ class InlineBorrowable : private internal::BorrowableStorage<GuardedType, Lock>,
   //        [&]{ return Foo{foo_arg1, foo_arg2}; }
   //        [&]{ return MyLock{lock_arg1, lock_arg2}; }
   //
-  template <typename ObjectConstructor, typename LockConstructor = Lock()>
+  template <typename ObjectConstructor,
+            typename LockConstructor = Lock(),
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<GuardedType&&, ObjectConstructor>>,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<Lock&&, LockConstructor>>>
   constexpr explicit InlineBorrowable(
       const ObjectConstructor& object_ctor,
       const LockConstructor& lock_ctor = internal::DefaultConstruct<Lock>)
       : Storage(object_ctor, lock_ctor),
         Base(Storage::object_, Storage::lock_) {}
 
-  template <typename ObjectConstructor, typename LockConstructor = Lock()>
+  template <typename ObjectConstructor,
+            typename LockConstructor = Lock(),
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<GuardedType&&, ObjectConstructor>>,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<Lock&&, LockConstructor>>>
   constexpr explicit InlineBorrowable(
       ObjectConstructor& object_ctor,
       const LockConstructor& lock_ctor = internal::DefaultConstruct<Lock>)
       : Storage(object_ctor, lock_ctor),
         Base(Storage::object_, Storage::lock_) {}
 
-  template <typename ObjectConstructor, typename LockConstructor = Lock()>
+  template <typename ObjectConstructor,
+            typename LockConstructor = Lock(),
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<GuardedType&&, ObjectConstructor>>,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<Lock&&, LockConstructor>>>
   constexpr explicit InlineBorrowable(const ObjectConstructor& object_ctor,
                                       LockConstructor& lock_ctor)
       : Storage(object_ctor, lock_ctor),
         Base(Storage::object_, Storage::lock_) {}
 
-  template <typename ObjectConstructor, typename LockConstructor = Lock()>
+  template <typename ObjectConstructor,
+            typename LockConstructor = Lock(),
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<GuardedType&&, ObjectConstructor>>,
+            typename = std::enable_if_t<
+                std::is_invocable_r_v<Lock&&, LockConstructor>>>
   constexpr explicit InlineBorrowable(ObjectConstructor& object_ctor,
                                       LockConstructor& lock_ctor)
       : Storage(object_ctor, lock_ctor),
