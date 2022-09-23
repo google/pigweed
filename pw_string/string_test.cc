@@ -349,7 +349,9 @@ TEST(InlineString, Construct_PointerLength) {
   PW_NC_EXPECT("PW_ASSERT\(new_size <= max_size\(\)\)");
   [[maybe_unused]] constexpr InlineString<5> bad_string(kPointer10, 6);
 #elif PW_NC_TEST(Construct_PointerLength_LengthLargerThanInputString)
-  PW_NC_EXPECT_CLANG("dereferenced one-past-the-end pointer");
+  PW_NC_EXPECT_CLANG(
+      "constexpr variable 'bad_string' must be initialized by a constant "
+      "expression");
   PW_NC_EXPECT_GCC("outside the bounds of array type");
   [[maybe_unused]] constexpr InlineString<10> bad_string(kPointer10 + 6, 7);
 #endif  // PW_NC_TEST
@@ -863,7 +865,9 @@ TEST(InlineString, Assign_PointerLength) {
     return str.assign(kPointer10, 6);
   }();
 #elif PW_NC_TEST(Assign_PointerLength_LengthLargerThanInputString)
-  PW_NC_EXPECT_CLANG("dereferenced one-past-the-end pointer");
+  PW_NC_EXPECT_CLANG(
+      "constexpr variable 'bad_string' must be initialized by a constant "
+      "expression");
   PW_NC_EXPECT_GCC("outside the bounds of array type");
   [[maybe_unused]] constexpr auto bad_string = [] {
     InlineString<10> str;
