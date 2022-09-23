@@ -342,7 +342,7 @@ def update(  # pylint: disable=too-many-locals
     # Set environment variables so tools can later find things under, for
     # example, 'share'.
     if env_vars:
-        for package_file in package_files:
+        for package_file in reversed(package_files):
             name = package_file_name(package_file)
             file_install_dir = os.path.join(install_dir, name)
             # Some executables get installed at top-level and some get
