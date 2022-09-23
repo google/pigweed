@@ -62,13 +62,18 @@ size_t WriteLength(MutableByteBuffer* buf, size_t length) {
     uint8_t val = static_cast<uint8_t>(length);
     buf->Write(&val, sizeof(val));
     return sizeof(uint8_t);
-  } else if (length <= std::numeric_limits<uint16_t>::max()) {
+  }
+
+  if (length <= std::numeric_limits<uint16_t>::max()) {
     buf->WriteObj(htobe16(static_cast<uint16_t>(length)));
     return sizeof(uint16_t);
-  } else if (length <= std::numeric_limits<uint32_t>::max()) {
+  }
+
+  if (length <= std::numeric_limits<uint32_t>::max()) {
     buf->WriteObj(htobe32(static_cast<uint32_t>(length)));
     return sizeof(uint32_t);
   }
+
   return 0;
 }
 
@@ -371,7 +376,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
     return 0;
   }
   Type type_desc = static_cast<Type>(buffer[0] & kTypeMask);
-  Size size_desc = Size(buffer[0] & kDataElementSizeTypeMask);
+  Size size_desc = static_cast<Size>(buffer[0] & kDataElementSizeTypeMask);
   size_t data_bytes = 0;
   size_t bytes_read = 1;
   BufferView cursor = buffer.view(bytes_read);
@@ -382,7 +387,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
     case DataElement::Size::kEightBytes:
     case DataElement::Size::kSixteenBytes:
       if (type_desc != Type::kNull) {
-        data_bytes = (1 << uint8_t(size_desc));
+        data_bytes = (1 << static_cast<uint8_t>(size_desc));
       } else {
         data_bytes = 0;
       }
