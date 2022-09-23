@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 // Returns true if |url| is a valid URI.
-bool IsValidUrl(std::string& url) {
+bool IsValidUrl(const std::string& url) {
   // Pulled from [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986).
   // See Section 2.2 for the set of reserved characters.
   // See Section 2.3 for the set of unreserved characters.
@@ -194,7 +194,6 @@ void DataElement::Set<bt::DynamicByteBuffer>(bt::DynamicByteBuffer value) {
 template <>
 void DataElement::Set<std::string>(std::string value) {
   type_ = Type::kString;
-
   SetVariableSize(value.size());
   bytes_ = DynamicByteBuffer(value);
 }
@@ -206,13 +205,13 @@ void DataElement::Set<std::vector<DataElement>>(std::vector<DataElement> value) 
   SetVariableSize(AggregateSize(aggregate_));
 }
 
-void DataElement::SetUrl(std::string url) {
+void DataElement::SetUrl(const std::string& url) {
   if (!IsValidUrl(url)) {
     bt_log(WARN, "sdp", "Invalid URL in SetUrl: %s", url.c_str());
     return;
   }
-  type_ = Type::kUrl;
 
+  type_ = Type::kUrl;
   SetVariableSize(url.size());
   bytes_ = DynamicByteBuffer(url);
 }

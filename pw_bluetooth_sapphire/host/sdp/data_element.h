@@ -117,7 +117,7 @@ class DataElement {
   // Sets this element's value to the provided |url|.
   // No-op if |url| contains invalid URI characters as defined in
   // [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986).
-  void SetUrl(std::string url);
+  void SetUrl(const std::string& url);
 
   // Get the URL value of this element.
   // Returns an optional without a value if the wrong type is stored.
