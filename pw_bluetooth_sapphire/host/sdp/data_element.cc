@@ -184,22 +184,19 @@ void DataElement::Set<UUID>(UUID value) {
   uuid_ = value;
 }
 
-template <>
-void DataElement::Set<bt::DynamicByteBuffer>(bt::DynamicByteBuffer value) {
+void DataElement::Set(const bt::DynamicByteBuffer& value) {
   type_ = Type::kString;
   SetVariableSize(value.size());
   bytes_ = DynamicByteBuffer(value);
 }
 
-template <>
-void DataElement::Set<std::string>(std::string value) {
+void DataElement::Set(const std::string& value) {
   type_ = Type::kString;
   SetVariableSize(value.size());
   bytes_ = DynamicByteBuffer(value);
 }
 
-template <>
-void DataElement::Set<std::vector<DataElement>>(std::vector<DataElement> value) {
+void DataElement::Set(std::vector<DataElement>&& value) {
   type_ = Type::kSequence;
   aggregate_ = std::move(value);
   SetVariableSize(AggregateSize(aggregate_));
@@ -216,7 +213,7 @@ void DataElement::SetUrl(const std::string& url) {
   bytes_ = DynamicByteBuffer(url);
 }
 
-void DataElement::SetAlternative(std::vector<DataElement> items) {
+void DataElement::SetAlternative(std::vector<DataElement>&& items) {
   type_ = Type::kAlternative;
   aggregate_ = std::move(items);
   SetVariableSize(AggregateSize(aggregate_));

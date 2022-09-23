@@ -77,6 +77,10 @@ class DataElement {
   DataElement(DataElement&&) = default;
   DataElement& operator=(DataElement&&) = default;
 
+  explicit DataElement(const bt::DynamicByteBuffer& value) { Set(value); }
+  explicit DataElement(const std::string& value) { Set(value); }
+  explicit DataElement(std::vector<DataElement>&& value) { Set(std::move(value)); }
+
   // Convenience constructor to create a DataElement from a basic type.
   template <typename T>
   explicit DataElement(T value) {
@@ -110,9 +114,12 @@ class DataElement {
   // (Use SetUrl())                               - kUrl
   template <typename T>
   void Set(T value);
+  void Set(const bt::DynamicByteBuffer& value);
+  void Set(const std::string& value);
+  void Set(std::vector<DataElement>&& value);
 
   // Sets this element's value to an alternative of the items in |items|
-  void SetAlternative(std::vector<DataElement> items);
+  void SetAlternative(std::vector<DataElement>&& items);
 
   // Sets this element's value to the provided |url|.
   // No-op if |url| contains invalid URI characters as defined in
