@@ -3,11 +3,12 @@
     "llvm-vs-code-extensions.vscode-clangd",
     "ms-python.python",
     "npclaudiu.vscode-gn",
-    "persidskiy.vscode-gnformat",
+    "msedge-dev.gnls",
     "zxh404.vscode-proto3",
     "josetr.cmake-language-support-vscode"
   ],
   "unwantedRecommendations": [
-    "ms-vscode.cpptools"
+    "ms-vscode.cpptools",
+    "persidskiy.vscode-gnformat",
   ]
 }

@@ -75,7 +75,7 @@
 
     // Build systems settings
     "[gn]": {
-      "editor.defaultFormatter": "persidskiy.vscode-gnformat"
+      "editor.defaultFormatter": "msedge-dev.gnls"
     },
 
     // C/C++ settings
