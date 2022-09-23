@@ -221,140 +221,142 @@ void DataElement::SetAlternative(std::vector<DataElement>&& items) {
 
 template <>
 std::optional<uint8_t> DataElement::Get<uint8_t>() const {
-  std::optional<uint8_t> ret;
   if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint8_t))) {
-    ret = static_cast<uint8_t>(uint_value_);
+    return static_cast<uint8_t>(uint_value_);
   }
-  return ret;
+
+  return std::nullopt;
 }
 
 template <>
 std::optional<uint16_t> DataElement::Get<uint16_t>() const {
-  std::optional<uint16_t> ret;
   if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint16_t))) {
-    ret = static_cast<uint16_t>(uint_value_);
+    return static_cast<uint16_t>(uint_value_);
   }
-  return ret;
+
+  return std::nullopt;
 }
 
 template <>
 std::optional<uint32_t> DataElement::Get<uint32_t>() const {
-  std::optional<uint32_t> ret;
   if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint32_t))) {
-    ret = static_cast<uint32_t>(uint_value_);
+    return static_cast<uint32_t>(uint_value_);
   }
-  return ret;
+
+  return std::nullopt;
 }
 
 template <>
 std::optional<uint64_t> DataElement::Get<uint64_t>() const {
-  std::optional<uint64_t> ret;
   if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint64_t))) {
-    ret = uint_value_;
+    return uint_value_;
   }
-  return ret;
+
+  return std::nullopt;
 }
 
 template <>
 std::optional<int8_t> DataElement::Get<int8_t>() const {
-  std::optional<int8_t> ret;
   if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(int8_t))) {
-    ret = static_cast<int8_t>(int_value_);
+    return static_cast<int8_t>(int_value_);
   }
-  return ret;
+
+  return std::nullopt;
 }
 
 template <>
 std::optional<int16_t> DataElement::Get<int16_t>() const {
-  std::optional<int16_t> ret;
   if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(int16_t))) {
-    ret = static_cast<int16_t>(int_value_);
+    return static_cast<int16_t>(int_value_);
   }
-  return ret;
+
+  return std::nullopt;
 }
 
 template <>
 std::optional<int32_t> DataElement::Get<int32_t>() const {
-  std::optional<int32_t> ret;
   if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(int32_t))) {
-    ret = static_cast<int32_t>(int_value_);
+    return static_cast<int32_t>(int_value_);
   }
-  return ret;
+
+  return std::nullopt;
+  ;
 }
 
 template <>
 std::optional<int64_t> DataElement::Get<int64_t>() const {
-  std::optional<int64_t> ret;
   if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(int64_t))) {
-    ret = static_cast<int64_t>(int_value_);
+    return static_cast<int64_t>(int_value_);
   }
-  return ret;
+
+  return std::nullopt;
 }
 
 template <>
 std::optional<bool> DataElement::Get<bool>() const {
-  std::optional<bool> ret;
-  if (type_ == Type::kBoolean) {
-    ret = (int_value_ == 1);
+  if (type_ != Type::kBoolean) {
+    return std::nullopt;
   }
-  return ret;
+
+  return (int_value_ == 1);
 }
 
 template <>
 std::optional<std::nullptr_t> DataElement::Get<std::nullptr_t>() const {
-  std::optional<std::nullptr_t> ret;
-  if (type_ == Type::kNull) {
-    ret = nullptr;
+  if (type_ != Type::kNull) {
+    return std::nullopt;
   }
-  return ret;
+
+  return nullptr;
 }
 
 template <>
 std::optional<bt::DynamicByteBuffer> DataElement::Get<bt::DynamicByteBuffer>() const {
-  std::optional<bt::DynamicByteBuffer> ret;
-  if (type_ == Type::kString) {
-    ret = std::optional(DynamicByteBuffer(bytes_));
+  if (type_ != Type::kString) {
+    return std::nullopt;
   }
-  return ret;
+
+  return DynamicByteBuffer(bytes_);
 }
 
 template <>
 std::optional<std::string> DataElement::Get<std::string>() const {
-  std::optional<std::string> ret;
-  if (type_ == Type::kString) {
-    ret = std::optional(std::string(reinterpret_cast<const char*>(bytes_.data()), bytes_.size()));
+  if (type_ != Type::kString) {
+    return std::nullopt;
   }
-  return ret;
+
+  return std::string(reinterpret_cast<const char*>(bytes_.data()), bytes_.size());
 }
 
 template <>
 std::optional<UUID> DataElement::Get<UUID>() const {
-  std::optional<UUID> ret;
-  if (type_ == Type::kUuid) {
-    ret = uuid_;
+  if (type_ != Type::kUuid) {
+    return std::nullopt;
   }
-  return ret;
+
+  return uuid_;
 }
 
 template <>
 std::optional<std::vector<DataElement>> DataElement::Get<std::vector<DataElement>>() const {
-  std::optional<std::vector<DataElement>> ret;
-  if (type_ == Type::kSequence) {
-    std::vector<DataElement> aggregate_copy;
-    for (const auto& it : aggregate_) {
-      aggregate_copy.emplace_back(it.Clone());
-    }
-    ret = std::move(aggregate_copy);
+  if (type_ != Type::kSequence) {
+    return std::nullopt;
   }
-  return ret;
+
+  std::vector<DataElement> aggregate_copy;
+  for (const auto& it : aggregate_) {
+    aggregate_copy.emplace_back(it.Clone());
+  }
+
+  return aggregate_copy;
 }
 
 std::optional<std::string> DataElement::GetUrl() const {
-  std::optional<std::string> ret;
-  if (type_ == Type::kUrl) {
-    ret = std::optional(std::string(reinterpret_cast<const char*>(bytes_.data()), bytes_.size()));
+  if (type_ != Type::kUrl) {
+    return std::nullopt;
   }
-  return ret;
+
+  return std::string(reinterpret_cast<const char*>(bytes_.data()), bytes_.size());
 }
 
 void DataElement::SetVariableSize(size_t length) {
