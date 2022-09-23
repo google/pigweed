@@ -628,5 +628,12 @@ TEST(ByteBufferTest, PrintableInvalidUtf8) {
   EXPECT_EQ("...", result);
 }
 
+TEST(ByteBufferDeathTest, PrintableSizeTooLarge) {
+  StaticByteBuffer buffer(0xce, 0xba, 0x80);
+  ASSERT_DEATH({ buffer.Printable(0, buffer.size() + 1); }, "");
+  ASSERT_DEATH({ buffer.Printable(1, buffer.size()); }, "");
+  ASSERT_DEATH({ buffer.Printable(1, buffer.size() + 1); }, "");
+}
+
 }  // namespace
 }  // namespace bt

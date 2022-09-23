@@ -19,18 +19,21 @@ void ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) co
 }
 
 std::string ByteBuffer::Printable(size_t pos, size_t size) const {
-  std::string ret(size, '\0');
-  // TODO(fxb/107512): Eliminate this string copy if the string is already printable
-  CopyRaw(ret.data(), size, pos, size);
+  BT_ASSERT(pos + size <= this->size());
+  const char* region_start = reinterpret_cast<const char*>(data() + pos);
+  std::string_view view(region_start, size);
 
-  std::string_view view(ret.data(), size);
-  // If the string isn't valid UTF-8, convert it to ASCII with nonprintable characters being
-  // converted to '.'.
-  if (!bt_lib_cpp_string::IsStringUTF8(view)) {
-    for (size_t i = 0; i < size; i++) {
-      if (!std::isprint(ret[i])) {
-        ret[i] = '.';
-      }
+  // If the region already contains only valid UTF-8 characters, it's already printable
+  if (bt_lib_cpp_string::IsStringUTF8(view)) {
+    return std::string(view);
+  }
+
+  std::string ret(size, '\0');
+  for (size_t i = 0; i < size; i++) {
+    if (std::isprint(view[i])) {
+      ret[i] = view[i];
+    } else {
+      ret[i] = '.';
     }
   }
 
