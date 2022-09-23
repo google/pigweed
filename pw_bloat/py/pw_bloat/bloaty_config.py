@@ -17,7 +17,7 @@ import argparse
 import logging
 import re
 import sys
-from typing import BinaryIO, Dict, List, Optional, TextIO
+from typing import BinaryIO, Dict, List, NamedTuple, Optional, TextIO
 
 import pw_cli.argument_types
 from elftools.elf import elffile  # type: ignore
@@ -318,8 +318,26 @@ def generate_utilization_data_source() -> str:
     return '\n'.join(output) + '\n'
 
 
-def generate_bloaty_config(elf_file: BinaryIO, enable_memoryregions: bool,
-                           enable_utilization: bool, out_file: TextIO) -> None:
+class BloatyConfigResult(NamedTuple):
+    has_memoryregions: bool
+    has_utilization: bool
+
+
+def generate_bloaty_config(
+    elf_file: BinaryIO,
+    enable_memoryregions: bool,
+    enable_utilization: bool,
+    out_file: TextIO,
+) -> BloatyConfigResult:
+    """Generates a Bloaty config file from symbols within an ELF.
+
+    Returns:
+        Tuple indicating whether a memoryregions data source, a utilization data
+        source, or both were written.
+    """
+
+    result = [False, False]
+
     if enable_memoryregions:
         # Enable the "memoryregions" data_source if the user provided the
         # required pw_bloat specific symbols in their linker script.
@@ -330,10 +348,14 @@ def generate_bloaty_config(elf_file: BinaryIO, enable_memoryregions: bool,
             _LOG.info('memoryregions data_source is provided')
             out_file.write(
                 generate_memoryregions_data_source(segment_to_memory_region))
+            result[0] = True
 
     if enable_utilization:
         _LOG.info('utilization data_source is provided')
         out_file.write(generate_utilization_data_source())
+        result[1] = True
+
+    return BloatyConfigResult(*result)
 
 
 def main() -> int:

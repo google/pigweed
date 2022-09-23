@@ -19,12 +19,15 @@ import argparse
 import json
 import logging
 import os
+from pathlib import Path
 import subprocess
 import sys
+import tempfile
 from typing import Iterable, Optional
 
 import pw_cli.log
 
+from pw_bloat.bloaty_config import generate_bloaty_config
 from pw_bloat.label import from_bloaty_tsv
 from pw_bloat.label_output import (BloatTableOutput, LineCharset, RstOutput,
                                    AsciiCharset)
@@ -95,6 +98,48 @@ def run_bloaty(
     return subprocess.check_output(cmd)
 
 
+class NoMemoryRegions(Exception):
+    """Exception raised if an ELF does not define any memory region symbols."""
+
+
+def memory_regions_size_report(
+        elf: Path,
+        additional_data_sources: Iterable[str] = (),
+        extra_args: Iterable[str] = (),
+) -> str:
+    """Runs a size report on an ELF file using pw_bloat memory region symbols.
+
+    Arguments:
+        elf: The ELF binary on which to run.
+        additional_data_sources: Optional hierarchical data sources to display
+            following the root memory regions.
+        extra_args: Additional command line arguments forwarded to bloaty.
+
+    Returns:
+        The bloaty TSV output detailing the size report.
+
+    Raises:
+        NoMemoryRegions: The ELF does not define memory region symbols.
+    """
+    with tempfile.NamedTemporaryFile() as bloaty_config:
+        with open(elf.resolve(), "rb") as infile, open(bloaty_config.name,
+                                                       "w") as outfile:
+            result = generate_bloaty_config(infile,
+                                            enable_memoryregions=True,
+                                            enable_utilization=False,
+                                            out_file=outfile)
+
+            if not result.has_memoryregions:
+                raise NoMemoryRegions(elf.name)
+
+        return run_bloaty(
+            str(elf.resolve()),
+            bloaty_config.name,
+            data_sources=('memoryregions', *additional_data_sources),
+            extra_args=extra_args,
+        ).decode('utf-8')
+
+
 def write_file(filename: str, contents: str, out_dir_file: str) -> None:
     path = os.path.join(out_dir_file, filename)
     with open(path, 'w') as output_file:
@@ -156,12 +201,11 @@ def main() -> int:
                                     gn_arg_dict['out_dir'], data_sources,
                                     extra_args)
 
-    default_data_sources = ['segment_names', 'symbols']
+    default_data_sources = ['symbols']
 
     diff_report = ''
     rst_diff_report = ''
     for curr_diff_binary in gn_arg_dict['binaries']:
-
         curr_extra_args = extra_args.copy()
         data_sources = default_data_sources
 
@@ -173,7 +217,7 @@ def main() -> int:
             data_sources = curr_diff_binary['data_sources']
 
         try:
-            single_output_base = run_bloaty(curr_diff_binary["base"],
+            single_output_base = run_bloaty(curr_diff_binary['base'],
                                             curr_diff_binary['bloaty_config'],
                                             data_sources=data_sources,
                                             extra_args=curr_extra_args)
@@ -185,7 +229,7 @@ def main() -> int:
 
         try:
             single_output_target = run_bloaty(
-                curr_diff_binary["target"],
+                curr_diff_binary['target'],
                 curr_diff_binary['bloaty_config'],
                 data_sources=data_sources,
                 extra_args=curr_extra_args)
