@@ -161,10 +161,17 @@ def _parse_args():
                         dest='use_ipython',
                         help='Use IPython instead of pw_console.')
 
+    # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
+    # no longer supported.
     parser.add_argument('--rpc-logging',
-                        action=argparse.BooleanOptionalAction,
+                        action='store_true',
                         default=True,
                         help='Use pw_rpc based logging.')
+
+    parser.add_argument('--no-rpc-logging',
+                        action='store_false',
+                        dest='rpc_logging',
+                        help="Don't use pw_rpc based logging.")
 
     return parser.parse_args()
 
