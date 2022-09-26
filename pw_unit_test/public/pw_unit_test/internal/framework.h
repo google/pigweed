@@ -237,12 +237,11 @@ class Framework {
   // this method instantiated for its test class.
   template <typename TestInstance>
   static void CreateAndRunTest(const TestInfo& test_info) {
-    // TODO(frolv): Update the assert message with the name of the config option
-    // for memory pool size once it is configurable.
     static_assert(
         sizeof(TestInstance) <= sizeof(memory_pool_),
         "The test memory pool is too small for this test. Either increase "
-        "kTestMemoryPoolSizeBytes or decrease the size of your test fixture.");
+        "PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE or decrease the size of your "
+        "test fixture.");
 
     Framework& framework = Get();
     framework.StartTest(test_info);
