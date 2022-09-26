@@ -424,7 +424,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_chrono/py/...:all',
     '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
     '-//pw_file/...:all',
-    '-//pw_function:function_test',  # TODO(b/241821115) Remove when passing.
     '-//pw_hdlc/rpc_example',  # TODO(b/241575924) Remove when passing.
     '-//pw_i2c_mcuxpresso/...:all',
     '-//pw_kvs/...:all',

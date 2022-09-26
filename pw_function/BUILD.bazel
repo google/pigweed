@@ -43,5 +43,8 @@ pw_cc_library(
 pw_cc_test(
     name = "function_test",
     srcs = ["function_test.cc"],
-    deps = [":pw_function"],
+    deps = [
+        ":pw_function",
+        "//pw_compilation_testing:negative_compilation_testing",
+    ],
 )
