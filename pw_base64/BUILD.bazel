@@ -33,6 +33,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_span",
+        "//pw_string:string",
     ],
 )
 

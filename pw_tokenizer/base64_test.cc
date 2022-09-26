@@ -95,6 +95,24 @@ TEST_F(PrefixedBase64, Encode_NoRoomForNullAfterMessage_OnlyNullTerminates) {
   EXPECT_EQ(kUnset, base64_[1]);
 }
 
+TEST_F(PrefixedBase64, Encode_InlineString) {
+  for (auto& [binary, base64] : kTestData) {
+    EXPECT_EQ(base64, PrefixedBase64Encode(binary));
+  }
+}
+
+TEST_F(PrefixedBase64, Encode_InlineString_Append) {
+  for (auto& [binary, base64] : kTestData) {
+    pw::InlineString<32> string("Other stuff!");
+    PrefixedBase64Encode(binary, string);
+
+    pw::InlineString<32> expected("Other stuff!");
+    expected.append(base64);
+
+    EXPECT_EQ(expected, string);
+  }
+}
+
 TEST_F(PrefixedBase64, Base64EncodedBufferSize_Empty_RoomForPrefixAndNull) {
   EXPECT_EQ(2u, Base64EncodedBufferSize(0));
 }

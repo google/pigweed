@@ -145,6 +145,7 @@ pw_source_set("base64") {
   sources = [ "base64.cc" ]
   public_deps = [
     ":pw_tokenizer",
+    "$dir_pw_string:string",
     dir_pw_base64,
     dir_pw_preprocessor,
   ]

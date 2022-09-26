@@ -96,6 +96,7 @@ pw_cc_library(
         "//pw_base64",
         "//pw_preprocessor",
         "//pw_span",
+        "//pw_string:string",
     ],
 )
 

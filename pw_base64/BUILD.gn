@@ -25,7 +25,10 @@ config("default_config") {
 pw_source_set("pw_base64") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_base64/base64.h" ]
-  public_deps = [ dir_pw_span ]
+  public_deps = [
+    "$dir_pw_string:string",
+    dir_pw_span,
+  ]
   sources = [ "base64.cc" ]
 }
 

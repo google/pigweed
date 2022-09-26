@@ -232,6 +232,25 @@ TEST(Base64, Encode_BoundaryCheck) {
   EXPECT_STREQ("aGk=", output);
 }
 
+TEST(Base64, Encode_RandomData_ToInlineString) {
+  for (const EncodedData& data : kRandomTestData) {
+    auto b64 = Encode<11>(as_bytes(span(data.binary_data, data.binary_size)));
+    EXPECT_EQ(data.encoded_data, b64);
+  }
+}
+
+TEST(Base64, Encode_RandomData_ToInlineStringAppend) {
+  for (const EncodedData& data : kRandomTestData) {
+    InlineString<32> output("Wow:");
+
+    InlineString<32> expected(output);
+    expected.append(data.encoded_data);
+
+    Encode(as_bytes(span(data.binary_data, data.binary_size)), output);
+    EXPECT_EQ(expected, output);
+  }
+}
+
 TEST(Base64, Decode_SingleChar) {
   char output[32];
   for (const EncodedData& data : kSingleCharTestData) {
@@ -265,6 +284,18 @@ TEST(Base64, Decode_InPlace) {
   char buf[] = "VGhpcyBpcyBhIHNlY3JldCBtZXNzYWdl";
   EXPECT_EQ(sizeof(expected) - 1, Decode(buf, buf));
   EXPECT_EQ(0, std::memcmp(expected, buf, sizeof(expected) - 1));
+}
+
+TEST(Base64, DecodeString_InPlace) {
+  constexpr const char expected[] = "This is a secret message";
+  InlineBasicString buf = "VGhpcyBpcyBhIHNlY3JldCBtZXNzYWdl";
+  DecodeInPlace(buf);
+  EXPECT_EQ(sizeof(expected) - 1, buf.size());
+  EXPECT_EQ(expected, buf);
+
+  buf.clear();
+  DecodeInPlace(buf);
+  EXPECT_TRUE(buf.empty());
 }
 
 TEST(Base64, Decode_UrlSafeDecode) {

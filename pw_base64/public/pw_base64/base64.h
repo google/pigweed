@@ -67,6 +67,7 @@ bool pw_Base64IsValid(const char* base64_data, size_t base64_size);
 #include <type_traits>
 
 #include "pw_span/span.h"
+#include "pw_string/string.h"
 
 namespace pw::base64 {
 
@@ -93,6 +94,21 @@ inline void Encode(span<const std::byte> binary, char* output) {
 // buffer is too small.
 size_t Encode(span<const std::byte> binary, span<char> output_buffer);
 
+// Appends Base64 encoded binary data to the provided pw::InlineString. If the
+// data does not fit in the string, an assertion fails.
+void Encode(span<const std::byte> binary, InlineString<>& output);
+
+// Creates a pw::InlineString<> large enough to hold kMaxBinaryDataSizeBytes of
+// binary data when encoded as Base64 and encodes the provided span into it.
+// If the data is larger than kMaxBinaryDataSizeBytes, an assertion fails.
+template <size_t kMaxBinaryDataSizeBytes>
+inline InlineString<EncodedSize(kMaxBinaryDataSizeBytes)> Encode(
+    span<const std::byte> binary) {
+  InlineString<EncodedSize(kMaxBinaryDataSizeBytes)> output;
+  Encode(binary, output);
+  return output;
+}
+
 // Returns the maximum size of decoded Base64 data in bytes. base64_size_bytes
 // must be a multiple of 4, since Base64 encodes 3-byte groups into 4-character
 // strings. If the last 3-byte group has padding, the actual decoded size would
@@ -118,6 +134,12 @@ inline size_t Decode(std::string_view base64, void* output) {
 // buffer. Returns the number of bytes written, which will be 0 if the data is
 // invalid or doesn't fit.
 size_t Decode(std::string_view base64, span<std::byte> output_buffer);
+
+template <typename T>
+inline void DecodeInPlace(InlineBasicString<T>& buffer) {
+  static_assert(sizeof(T) == sizeof(char));
+  buffer.resize(Decode(buffer, buffer.data()));
+}
 
 // Returns true if the provided string is valid Base64 encoded data. Accepts
 // either the standard (+/) or URL-safe (-_) alphabets.

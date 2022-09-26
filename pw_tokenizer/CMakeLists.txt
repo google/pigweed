@@ -75,6 +75,7 @@ pw_add_module_library(pw_tokenizer.base64
   PUBLIC_DEPS
     pw_base64
     pw_span
+    pw_string.string
     pw_tokenizer
     pw_tokenizer.config
   SOURCES

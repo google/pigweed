@@ -16,6 +16,8 @@
 
 #include <cstdint>
 
+#include "pw_assert/check.h"
+
 namespace pw::base64 {
 namespace {
 
@@ -171,6 +173,18 @@ size_t Decode(std::string_view base64, span<std::byte> output_buffer) {
     return 0;
   }
   return Decode(base64, output_buffer.data());
+}
+
+void Encode(span<const std::byte> binary, InlineString<>& output) {
+  const size_t initial_size = output.size();
+  const size_t final_size = initial_size + EncodedSize(binary.size());
+
+  PW_CHECK(final_size <= output.capacity());
+
+  output.resize_and_overwrite([&](char* data, size_t) {
+    Encode(binary, data + initial_size);
+    return final_size;
+  });
 }
 
 }  // namespace pw::base64

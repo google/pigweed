@@ -40,6 +40,12 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
   return encoded_size - sizeof('\0');  // exclude the null terminator
 }
 
+void PrefixedBase64Encode(span<const std::byte> binary_message,
+                          InlineString<>& output) {
+  output.push_back(kBase64Prefix);
+  base64::Encode(binary_message, output);
+}
+
 extern "C" size_t pw_tokenizer_PrefixedBase64Decode(const void* base64_message,
                                                     size_t base64_size_bytes,
                                                     void* output_buffer,

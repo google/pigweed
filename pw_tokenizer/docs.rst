@@ -1043,12 +1043,11 @@ in the tokenizer handler function. For example,
 .. code-block:: cpp
 
    void pw_tokenizer_HandleEncodedMessage(const uint8_t encoded_message[],
-                                         size_t size_bytes) {
-     char base64_buffer[64];
-     size_t base64_size = pw::tokenizer::PrefixedBase64Encode(
-         pw::span(encoded_message, size_bytes), base64_buffer);
+                                          size_t size_bytes) {
+     pw::InlineBasicString base64 = pw::tokenizer::PrefixedBase64Encode(
+         pw::span(encoded_message, size_bytes));
 
-     TransmitLogMessage(base64_buffer, base64_size);
+     TransmitLogMessage(base64.data(), base64.size());
    }
 
 Decoding
@@ -1073,17 +1072,6 @@ Base64 messages with ``detokenize_base64`` and related methods.
 Base64 decoding is supported in C++ or C with the
 ``pw::tokenizer::PrefixedBase64Decode`` or ``pw_tokenizer_PrefixedBase64Decode``
 functions.
-
-.. code-block:: cpp
-
-   void pw_tokenizer_HandleEncodedMessage(const uint8_t encoded_message[],
-                                         size_t size_bytes) {
-     char base64_buffer[64];
-     size_t base64_size = pw::tokenizer::PrefixedBase64Encode(
-         pw::span(encoded_message, size_bytes), base64_buffer);
-
-     TransmitLogMessage(base64_buffer, base64_size);
-   }
 
 Investigating undecoded messages
 ================================
