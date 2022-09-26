@@ -728,6 +728,14 @@ def build_env_setup(ctx: PresubmitContext):
     call('pyoxidizer', 'build', cwd=ctx.output_dir)
 
 
+def _valid_capitalization(word: str) -> bool:
+    """Checks that the word has a capital letter or is not a regular word."""
+    return bool(
+        any(c.isupper() for c in word)  # Any capitalizatian (iTelephone)
+        or not word.isalpha()  # Non-alphabetical (cool_stuff.exe)
+        or shutil.which(word))  # Matches an executable (clangd)
+
+
 def commit_message_format(_: PresubmitContext):
     """Checks that the top commit's message is correctly formatted."""
     lines = git_repo.commit_message().splitlines()
@@ -761,6 +769,21 @@ def commit_message_format(_: PresubmitContext):
         _LOG.warning(
             "The commit message's first line must not end with a period:\n %s",
             lines[0])
+        errors += 1
+
+    # Check that the first line matches the expected pattern.
+    match = re.match(r'^[\w/]+(?:{[\w ,]+})?: (?P<desc>.+)$', lines[0])
+    if not match:
+        _LOG.warning('The first line does not match the expected format')
+        _LOG.warning(
+            'Expected:\n\n  module_or_target: The description\n\n'
+            'Found:\n\n  %s\n', lines[0])
+        errors += 1
+    elif not _valid_capitalization(match.group('desc').split()[0]):
+        _LOG.warning(
+            'The first word after the ":" in the first line ("%s") must be '
+            'capitalized:\n  %s',
+            match.group('desc').split()[0], lines[0])
         errors += 1
 
     if len(lines) > 1 and lines[1]:
