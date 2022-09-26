@@ -15,21 +15,33 @@
 
 import argparse
 import asyncio
+import base64
 import enum
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
+import time
 
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+
+import requests
 
 import pw_cli.log
 import pw_cli.process
 
 # Global logger for the script.
 _LOG: logging.Logger = logging.getLogger(__name__)
+
+_ANSI_SEQUENCE_REGEX = re.compile(rb'\x1b[^m]*m')
+
+
+def _strip_ansi(bytes_with_sequences: bytes) -> bytes:
+    """Strip out ANSI escape sequences."""
+    return _ANSI_SEQUENCE_REGEX.sub(b'', bytes_with_sequences)
 
 
 def register_arguments(parser: argparse.ArgumentParser) -> None:
@@ -73,10 +85,11 @@ class TestResult(enum.Enum):
 
 class Test:
     """A unit test executable."""
-    def __init__(self, name: str, file_path: str):
+    def __init__(self, name: str, file_path: str) -> None:
         self.name: str = name
         self.file_path: str = file_path
         self.status: TestResult = TestResult.UNKNOWN
+        self.duration_s: float
 
     def __repr__(self) -> str:
         return f'Test({self.name})'
@@ -130,11 +143,20 @@ class TestRunner:
                  executable: str,
                  args: Sequence[str],
                  tests: Iterable[Test],
-                 timeout: Optional[float] = None):
+                 timeout: Optional[float] = None) -> None:
         self._executable: str = executable
         self._args: Sequence[str] = args
         self._tests: List[Test] = list(tests)
         self._timeout = timeout
+
+        # Access go/result-sink, if available.
+        ctx_path = Path(os.environ.get("LUCI_CONTEXT", ''))
+        if not ctx_path.is_file():
+            return
+
+        ctx = json.loads(ctx_path.read_text(encoding='utf-8'))
+        self._result_sink: Optional[Dict[str,
+                                         str]] = ctx.get('result_sink', None)
 
     async def run_tests(self) -> None:
         """Runs all registered unit tests through the runner script."""
@@ -155,29 +177,91 @@ class TestRunner:
             if self._executable.endswith('.py'):
                 command.insert(0, sys.executable)
 
+            start_time = time.monotonic()
             try:
                 process = await pw_cli.process.run_async(*command,
                                                          timeout=self._timeout)
-                if process.returncode == 0:
-                    test.status = TestResult.SUCCESS
-                    test_result = 'PASS'
-                else:
-                    test.status = TestResult.FAILURE
-                    test_result = 'FAIL'
-
-                    _LOG.log(pw_cli.log.LOGLEVEL_STDOUT, '[%s]\n%s',
-                             pw_cli.color.colors().bold_white(process.pid),
-                             process.output.decode(errors='ignore').rstrip())
-
-                    _LOG.info('%s: [%s] %s', test_counter, test_result,
-                              test.name)
             except subprocess.CalledProcessError as err:
+                _LOG.error(err)
+                return
+            test.duration_s = time.monotonic() - start_time
+
+            if process.returncode == 0:
+                test.status = TestResult.SUCCESS
+                test_result = 'PASS'
+            else:
+                test.status = TestResult.FAILURE
+                test_result = 'FAIL'
+
+                _LOG.log(pw_cli.log.LOGLEVEL_STDOUT, '[Pid: %s]\n%s',
+                         pw_cli.color.colors().bold_white(process.pid),
+                         process.output.decode(errors='ignore').rstrip())
+
+                _LOG.info('%s: [%s] %s in %.3f s', test_counter, test_result,
+                          test.name, test.duration_s)
+
+            try:
+                self._maybe_upload_to_resultdb(test, process)
+            except requests.exceptions.HTTPError as err:
                 _LOG.error(err)
                 return
 
     def all_passed(self) -> bool:
         """Returns true if all unit tests passed."""
         return all(test.status is TestResult.SUCCESS for test in self._tests)
+
+    def _maybe_upload_to_resultdb(self, test: Test,
+                                  process: pw_cli.process.CompletedProcess):
+        """Uploads test result to ResultDB, if available."""
+        if self._result_sink is None:
+            # ResultDB integration not enabled.
+            return
+
+        test_result = {
+            # The test.name is not suitable as an identifier because it's just
+            # the basename of the test (channel_test). We want the full path,
+            # including the toolchain used.
+            "testId": test.file_path,
+            # ResultDB also supports CRASH and ABORT, but there's currently no
+            # way to distinguish these in pw_unit_test.
+            "status": "PASS" if test.status is TestResult.SUCCESS else "FAIL",
+            # The "expected" field is required. It could be used to report
+            # expected failures, but we don't currently support these in
+            # pw_unit_test.
+            "expected": test.status is TestResult.SUCCESS,
+            # Ensure to format the duration with '%.9fs' to avoid scientific
+            # notation.  If a value is too large or small and formatted with
+            # str() or '%s', python formats the value in scientific notation,
+            # like '1.1e-10', which is an invalid input for
+            # google.protobuf.duration.
+            "duration": "%.9fs" % test.duration_s,
+            "summaryHtml":
+            '<p><text-artifact artifact-id="artifact-content-in-request"></p>',
+            "artifacts": {
+                "artifact-content-in-request": {
+                    # Need to decode the bytes back to ASCII or they will not be
+                    # encodable by json.dumps.
+                    #
+                    # TODO(b/248349219): Instead of stripping the ANSI color
+                    # codes, convert them to HTML.
+                    "contents":
+                    base64.b64encode(_strip_ansi(
+                        process.output)).decode('ascii'),
+                },
+            },
+        }
+
+        requests.post(
+            url='http://%s/prpc/luci.resultsink.v1.Sink/ReportTestResults' %
+            self._result_sink['address'],
+            headers={
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization':
+                'ResultSink %s' % self._result_sink['auth_token'],
+            },
+            data=json.dumps({'testResults': [test_result]}),
+        ).raise_for_status()
 
 
 # Filename extension for unit test metadata files.
