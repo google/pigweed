@@ -21,7 +21,6 @@ The stdout of this script is meant to be executed by the invoking shell.
 
 from __future__ import print_function
 
-import collections
 import hashlib
 import json
 import os
@@ -192,8 +191,9 @@ def all_package_files(env_vars, package_files):
     return result
 
 
-def all_packages(package_files):
+def write_ensure_file(package_files, ensure_file, platform):  # pylint: disable=redefined-outer-name
     packages = []
+
     for package_file in package_files:
         name = package_file_name(package_file)
         with open(package_file, 'r') as ins:
@@ -204,28 +204,13 @@ def all_packages(package_files):
                 else:
                     package['subdir'] = name
             packages.extend(file_packages)
-    return packages
-
-
-def deduplicate_packages(packages):
-    deduped = collections.OrderedDict()
-    for package in reversed(packages):
-        if package['path'] in deduped:
-            del deduped[package['path']]
-        deduped[package['path']] = package
-    return reversed(deduped.values())
-
-
-def write_ensure_file(package_files, ensure_file, platform):  # pylint: disable=redefined-outer-name
-    packages = all_packages(package_files)
-    deduped_packages = deduplicate_packages(packages)
 
     with open(ensure_file, 'w') as outs:
         outs.write('$VerifiedPlatform linux-amd64\n'
                    '$VerifiedPlatform mac-amd64\n'
                    '$ParanoidMode CheckPresence\n')
 
-        for pkg in deduped_packages:
+        for pkg in packages:
             # If this is a new-style package manifest platform handling must
             # be done here instead of by the cipd executable.
             if 'platforms' in pkg and platform not in pkg['platforms']:
