@@ -66,6 +66,7 @@ except ImportError:
 from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
+from prompt_toolkit import prompt
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 
@@ -231,7 +232,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             self.wait_for_keypress_thread.start()
 
     def rebuild(self):
-        """ Rebuild command triggered from watch app."""
+        """Rebuild command triggered from watch app."""
         self._current_build.terminate()
         self._current_build.wait()
         self.debouncer.press('Manual build requested')
@@ -239,14 +240,14 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     def _wait_for_enter(self) -> NoReturn:
         try:
             while True:
-                _ = input()
-                self._current_build.terminate()
-                self._current_build.wait()
-
-                self.debouncer.press('Manual build requested...')
+                _ = prompt('')
+                self.rebuild()
         # Ctrl-C on Unix generates KeyboardInterrupt
         # Ctrl-Z on Windows generates EOFError
         except (KeyboardInterrupt, EOFError):
+            # Force stop any running ninja builds.
+            if self._current_build:
+                self._current_build.terminate()
             _exit_due_to_interrupt()
 
     def _path_matches(self, path: Path) -> bool:
@@ -675,6 +676,7 @@ def _exit(code: int) -> NoReturn:
 def _exit_due_to_interrupt() -> NoReturn:
     # To keep the log lines aligned with each other in the presence of
     # a '^C' from the keyboard interrupt, add a newline before the log.
+    print('')
     _LOG.info('Got Ctrl-C; exiting...')
     _exit(0)
 
