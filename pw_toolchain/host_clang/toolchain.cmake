@@ -75,5 +75,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(CMAKE_SYSROOT "$ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/clang_sysroot")
 endif()
 
-set(pw_build_WARNINGS pw_build.strict_warnings pw_build.extra_strict_warnings
-    CACHE STRING "" FORCE)
+set(pw_build_WARNINGS
+    pw_build.strict_warnings
+    pw_build.extra_strict_warnings
+    pw_build.pedantic_warnings
+  CACHE STRING "" FORCE
+)

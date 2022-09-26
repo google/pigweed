@@ -19,18 +19,15 @@ include("$ENV{PW_ROOT}/pw_build/cc_blob_library.cmake")
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
 # Target that specifies the standard Pigweed build options.
-add_library(pw_build INTERFACE)
-target_compile_options(pw_build INTERFACE "-g")
-target_link_libraries(pw_build
-  INTERFACE
-    pw_build.reduced_size
-    pw_build.cpp17
-)
-target_compile_options(pw_build
-  INTERFACE
+pw_add_library(pw_build INTERFACE
+  PUBLIC_COMPILE_OPTIONS
+    -g
     # Force the compiler use colorized output. This is required for Ninja.
     $<$<CXX_COMPILER_ID:Clang>:-fcolor-diagnostics>
     $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always>
+  PUBLIC_DEPS
+    pw_build.reduced_size
+    pw_build.cpp17
 )
 if(ZEPHYR_PIGWEED_MODULE_DIR)
   target_link_libraries(pw_build INTERFACE zephyr_interface)
@@ -44,9 +41,8 @@ add_custom_target(pw_tests DEPENDS pw_tests.default)
 add_custom_target(pw_run_tests DEPENDS pw_run_tests.default)
 
 # Define the standard Pigweed compile options.
-add_library(pw_build.reduced_size INTERFACE)
-target_compile_options(pw_build.reduced_size
-  INTERFACE
+pw_add_library(pw_build.reduced_size INTERFACE
+  PUBLIC_COMPILE_OPTIONS
     "-fno-common"
     "-fno-exceptions"
     "-ffunction-sections"
@@ -66,12 +62,13 @@ target_compile_options(pw_build.reduced_size
 set(pw_build_WARNINGS pw_build.strict_warnings
     CACHE STRING "Warnings libraries to use for Pigweed upstream code")
 
-add_library(pw_build.warnings INTERFACE)
-target_link_libraries(pw_build.warnings INTERFACE ${pw_build_WARNINGS})
+pw_add_library(pw_build.warnings INTERFACE
+  PUBLIC_DEPS
+    ${pw_build_WARNINGS}
+)
 
 # TODO(hepler): These Zephyr exceptions should be made by overriding
 #     pw_build_WARNINGS.
-add_library(pw_build.strict_warnings INTERFACE)
 if(ZEPHYR_PIGWEED_MODULE_DIR)
   # -Wtype-limits is incompatible with Kconfig at times, disable it for Zephyr
   # builds.
@@ -80,8 +77,9 @@ else()
   # Only include these flags if we're not building with Zephyr.
   set(strict_warnings_cond "-Wundef")
 endif()
-target_compile_options(pw_build.strict_warnings
-  INTERFACE
+
+pw_add_library(pw_build.strict_warnings INTERFACE
+  PUBLIC_COMPILE_OPTIONS
     "-Wall"
     "-Wextra"
     "-Wimplicit-fallthrough"
@@ -96,21 +94,34 @@ target_compile_options(pw_build.strict_warnings
     $<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>
 )
 
-add_library(pw_build.extra_strict_warnings INTERFACE)
 if(NOT ZEPHYR_PIGWEED_MODULE_DIR)
   # Only include these flags if we're not building with Zephyr.
   set(extra_strict_warnings_cond "-Wredundant-decls")
 endif()
-target_compile_options(pw_build.extra_strict_warnings
-  INTERFACE
+
+pw_add_library(pw_build.extra_strict_warnings INTERFACE
+  PUBLIC_COMPILE_OPTIONS
     "-Wshadow"
     ${extra_strict_warnings_cond}
     $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
 )
 
-add_library(pw_build.cpp17 INTERFACE)
-target_compile_options(pw_build.cpp17
-  INTERFACE
+pw_add_library(pw_build.pedantic_warnings INTERFACE
+  PUBLIC_COMPILE_OPTIONS
+    # Enable -Wpedantic, but disable a few warnings.
+    "-Wpedantic"
+
+    # Allow designated initializers, which were added in C++20 but widely
+    # supported prior and permitted by the Google style guide.
+    "-Wno-c++20-designator"
+
+    # Allow empty ... arguments in macros, which are permitted in C++20 but
+    # widely supported prior.
+    "-Wno-gnu-zero-variadic-macro-arguments"
+)
+
+pw_add_library(pw_build.cpp17 INTERFACE
+  PUBLIC_COMPILE_OPTIONS
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>
     # Allow uses of the register keyword, which may appear in C headers.
     $<$<COMPILE_LANGUAGE:CXX>:-Wno-register>
