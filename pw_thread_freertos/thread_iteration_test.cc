@@ -17,13 +17,18 @@
 #include <cstddef>
 #include <string_view>
 
+#include "FreeRTOS.h"
 #include "gtest/gtest.h"
+#include "pw_bytes/span.h"
 #include "pw_span/span.h"
+#include "pw_string/string_builder.h"
 #include "pw_string/util.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/test_threads.h"
 #include "pw_thread/thread.h"
 #include "pw_thread/thread_info.h"
+#include "pw_thread_freertos/freertos_tsktcb.h"
+#include "pw_thread_freertos_private/thread_iteration.h"
 
 namespace pw::thread::freertos {
 namespace {
@@ -99,6 +104,57 @@ TEST(ThreadIteration, ForkOneThread) {
 
   EXPECT_TRUE(temp_struct.thread_exists);
 }
+
+#if INCLUDE_uxTaskGetStackHighWaterMark
+#if configRECORD_STACK_HIGH_ADDRESS
+
+TEST(ThreadIteration, StackInfoCollector_PeakStackUsage) {
+  // This is the value FreeRTOS expects, but it's worth noting that there's no
+  // easy way to get this value directly from FreeRTOS.
+  constexpr uint8_t tskSTACK_FILL_BYTE = 0xa5U;
+  std::array<StackType_t, 128> stack;
+  ByteSpan stack_bytes(as_writable_bytes(span(stack)));
+  std::memset(stack_bytes.data(), tskSTACK_FILL_BYTE, stack_bytes.size_bytes());
+
+  tskTCB fake_tcb;
+  StringBuilder sb(fake_tcb.pcTaskName);
+  sb.append("FakeTCB");
+  fake_tcb.pxStack = stack.data();
+  fake_tcb.pxEndOfStack = stack.data() + stack.size();
+
+  // Clobber bytes as if they were used.
+  constexpr size_t kBytesRemaining = 96;
+#if portSTACK_GROWTH > 0
+  std::memset(stack_bytes.data(),
+              tskSTACK_FILL_BYTE ^ 0x2b,
+              stack_bytes.size() - kBytesRemaining);
+#else
+  std::memset(&stack_bytes[kBytesRemaining],
+              tskSTACK_FILL_BYTE ^ 0x2b,
+              stack_bytes.size() - kBytesRemaining);
+#endif  // portSTACK_GROWTH > 0
+
+  ThreadCallback cb = [kBytesRemaining](const ThreadInfo& info) -> bool {
+    EXPECT_TRUE(info.stack_high_addr().has_value());
+    EXPECT_TRUE(info.stack_low_addr().has_value());
+    EXPECT_TRUE(info.stack_peak_addr().has_value());
+
+#if portSTACK_GROWTH > 0
+    EXPECT_EQ(info.stack_high_addr().value() - info.stack_peak_addr().value(),
+              kBytesRemaining);
+#else
+    EXPECT_EQ(info.stack_peak_addr().value() - info.stack_low_addr().value(),
+              kBytesRemaining);
+#endif  // portSTACK_GROWTH > 0
+    return true;
+  };
+
+  EXPECT_TRUE(
+      StackInfoCollector(reinterpret_cast<TaskHandle_t>(&fake_tcb), cb));
+}
+
+#endif  // INCLUDE_uxTaskGetStackHighWaterMark
+#endif  // configRECORD_STACK_HIGH_ADDRESS
 
 }  // namespace
 }  // namespace pw::thread::freertos

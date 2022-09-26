@@ -11,7 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-// #include "pw_thread_freertos/thread_iteration.h"
 
 #include "pw_thread/thread_iteration.h"
 
@@ -24,9 +23,10 @@
 #include "pw_thread/thread_info.h"
 #include "pw_thread_freertos/freertos_tsktcb.h"
 #include "pw_thread_freertos/util.h"
+#include "pw_thread_freertos_private/thread_iteration.h"
 
 namespace pw::thread {
-namespace {
+namespace freertos {
 
 bool StackInfoCollector(TaskHandle_t current_thread,
                         const pw::thread::ThreadCallback& cb) {
@@ -46,11 +46,13 @@ bool StackInfoCollector(TaskHandle_t current_thread,
 // Walk through the stack from start to end to measure the current peak
 // using high-water marked stack data.
 #if (portSTACK_GROWTH > 0)
-  thread_info.set_stack_peak_addr(thread_info.stack_high_addr().value() -
-                                  uxTaskGetStackHighWaterMark(current_thread));
+  thread_info.set_stack_peak_addr(
+      thread_info.stack_high_addr().value() -
+      (sizeof(StackType_t) * uxTaskGetStackHighWaterMark(current_thread)));
 #else
-  thread_info.set_stack_peak_addr(thread_info.stack_low_addr().value() +
-                                  uxTaskGetStackHighWaterMark(current_thread));
+  thread_info.set_stack_peak_addr(
+      thread_info.stack_low_addr().value() +
+      (sizeof(StackType_t) * uxTaskGetStackHighWaterMark(current_thread)));
 #endif  // portSTACK_GROWTH > 0
 #endif  // INCLUDE_uxTaskGetStackHighWaterMark
 #endif  // configRECORD_STACK_HIGH_ADDRESS
@@ -58,14 +60,14 @@ bool StackInfoCollector(TaskHandle_t current_thread,
   return cb(thread_info);
 }
 
-}  // namespace
+}  // namespace freertos
 
 // This will disable the scheduler.
 Status ForEachThread(const pw::thread::ThreadCallback& cb) {
   pw::thread::freertos::ThreadCallback adapter_cb =
-      [&cb](TaskHandle_t current_thread, eTaskState) {
-        return StackInfoCollector(current_thread, cb);
-      };
+      [&cb](TaskHandle_t current_thread, eTaskState) -> bool {
+    return freertos::StackInfoCollector(current_thread, cb);
+  };
   // Suspend scheduler.
   vTaskSuspendAll();
   Status status = pw::thread::freertos::ForEachThread(adapter_cb);

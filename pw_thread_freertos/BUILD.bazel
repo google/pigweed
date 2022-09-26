@@ -186,6 +186,7 @@ pw_cc_library(
 pw_cc_library(
     name = "thread_iteration",
     srcs = [
+        "pw_thread_freertos_private/thread_iteration.h",
         "thread_iteration.cc",
     ],
     hdrs = [
@@ -207,13 +208,19 @@ pw_cc_library(
 pw_cc_test(
     name = "thread_iteration_test",
     srcs = [
+        "pw_thread_freertos_private/thread_iteration.h",
         "thread_iteration_test.cc",
     ],
     deps = [
-        "dir_pw_span",
+        ":freertos_tasktcb",
+        ":static_test_threads",
         ":thread_iteration",
+        "//pw_bytes",
+        "//pw_span",
+        "//pw_string:builder",
         "//pw_string:util",
         "//pw_sync:thread_notification",
+        "//pw_thread:test_threads",
         "//pw_thread:thread",
         "//pw_thread:thread_info",
         "//pw_thread:thread_iteration",

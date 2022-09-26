@@ -146,7 +146,10 @@ if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
       dir_pw_span,
       dir_pw_status,
     ]
-    sources = [ "thread_iteration.cc" ]
+    sources = [
+      "pw_thread_freertos_private/thread_iteration.h",
+      "thread_iteration.cc",
+    ]
   }
 }
 
@@ -254,14 +257,20 @@ pw_test_group("tests") {
 if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
   pw_test("thread_iteration_test") {
     enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_freertos:thread"
-    sources = [ "thread_iteration_test.cc" ]
+    sources = [
+      "pw_thread_freertos_private/thread_iteration.h",
+      "thread_iteration_test.cc",
+    ]
     deps = [
+      ":freertos_tsktcb",
       ":static_test_threads",
       ":thread_iteration",
+      "$dir_pw_bytes",
       "$dir_pw_span",
+      "$dir_pw_string:builder",
       "$dir_pw_string:util",
       "$dir_pw_sync:thread_notification",
-      "$dir_pw_system",
+      "$dir_pw_third_party/freertos",
       "$dir_pw_thread:test_threads",
       "$dir_pw_thread:thread",
       "$dir_pw_thread:thread_info",
