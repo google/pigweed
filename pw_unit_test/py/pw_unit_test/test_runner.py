@@ -148,6 +148,7 @@ class TestRunner:
         self._args: Sequence[str] = args
         self._tests: List[Test] = list(tests)
         self._timeout = timeout
+        self._result_sink: Optional[Dict[str, str]] = None
 
         # Access go/result-sink, if available.
         ctx_path = Path(os.environ.get("LUCI_CONTEXT", ''))
@@ -155,8 +156,7 @@ class TestRunner:
             return
 
         ctx = json.loads(ctx_path.read_text(encoding='utf-8'))
-        self._result_sink: Optional[Dict[str,
-                                         str]] = ctx.get('result_sink', None)
+        self._result_sink = ctx.get('result_sink', None)
 
     async def run_tests(self) -> None:
         """Runs all registered unit tests through the runner script."""
