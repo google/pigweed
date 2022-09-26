@@ -115,10 +115,6 @@ class RawMethod : public Method {
   constexpr RawMethod(uint32_t id, Invoker invoker, Function function)
       : Method(id, invoker), function_(function) {}
 
-  static void SynchronousUnaryInvoker(const CallContext& context,
-                                      const Packet& request)
-      PW_UNLOCK_FUNCTION(rpc_lock());
-
   static void AsynchronousUnaryInvoker(const CallContext& context,
                                        const Packet& request)
       PW_UNLOCK_FUNCTION(rpc_lock());

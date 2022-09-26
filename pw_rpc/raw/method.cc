@@ -21,25 +21,6 @@
 
 namespace pw::rpc::internal {
 
-void RawMethod::SynchronousUnaryInvoker(const CallContext& context,
-                                        const Packet& request) {
-  RawUnaryResponder responder(context.ClaimLocked());
-  rpc_lock().unlock();
-  // TODO(hepler): Remove support for raw synchronous unary methods. Unlike
-  //     synchronous Nanopb methods, they provide little value compared to
-  //     asynchronous unary methods. For now, just provide a fixed buffer on the
-  //     stack.
-  std::byte payload_buffer[64] = {};
-
-  StatusWithSize sws =
-      static_cast<const RawMethod&>(context.method())
-          .function_.synchronous_unary(
-              context.service(), request.payload(), span(payload_buffer));
-
-  responder.Finish(span(payload_buffer, sws.size()), sws.status())
-      .IgnoreError();
-}
-
 void RawMethod::AsynchronousUnaryInvoker(const CallContext& context,
                                          const Packet& request) {
   RawUnaryResponder responder(context.ClaimLocked());
