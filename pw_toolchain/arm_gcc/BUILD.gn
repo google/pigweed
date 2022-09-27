@@ -15,6 +15,8 @@
 import("//build_overrides/pigweed.gni")
 import("//build_overrides/pigweed_environment.gni")
 
+import("$dir_pw_build/target_types.gni")
+
 # Disable obnoxious ABI warning.
 #
 # GCC 7.1 adds an over-zealous ABI warning with little useful information
@@ -117,4 +119,23 @@ config("cortex_hardware_fpu_v5_sp") {
   asmflags = cflags
   defines = [ "PW_ARMV7M_ENABLE_FPU=1" ]
   ldflags = cflags
+}
+
+config("wrap_newlib_stdio_functions") {
+  ldflags = [
+    "-Wl,--wrap=__sread",
+    "-Wl,--wrap=__swrite",
+    "-Wl,--wrap=__sseek",
+    "-Wl,--wrap=__sclose",
+  ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("newlib_os_interface_stubs") {
+  all_dependent_configs = [ ":wrap_newlib_stdio_functions" ]
+  sources = [ "newlib_os_interface_stubs.cc" ]
+  deps = [
+    "$dir_pw_toolchain:wrap_abort",
+    dir_pw_assert,
+  ]
 }

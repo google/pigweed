@@ -155,3 +155,17 @@ intended. For example, it may pull in undesired dependencies (e.g.
 ``abort`` in builds where the default behavior is undesirable. It uses the
 ``-Wl,--wrap=abort`` linker option to redirect to ``abort`` calls to
 ``PW_CRASH`` instead.
+
+Newlib OS interface
+===================
+`Newlib <https://sourceware.org/newlib/>`_, the C Standard Library
+implementation provided with ``arm-none-eabi-gcc``, defines a set of `OS
+interface functions <https://sourceware.org/newlib/libc.html#Stubs>`_ that
+should be implemented. A default is provided if these functions are not
+implemented, but using the default results in a compiler warning.
+
+Most of the OS interface functions should never be called in embedded builds.
+The ``pw_toolchain/arg_gcc:newlib_os_interface_stubs`` library implements these
+functions and forces a linker error if they are used. It also wraps some
+functions related to use of ``stdout`` and ``stderr`` that abort if they are
+called.

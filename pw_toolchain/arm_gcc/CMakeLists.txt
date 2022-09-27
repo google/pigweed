@@ -14,13 +14,14 @@
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
-add_subdirectory(arm_gcc EXCLUDE_FROM_ALL)
-
-pw_add_library(pw_toolchain.wrap_abort STATIC
+pw_add_library(pw_toolchain.arm_gcc.newlib_os_interface_stubs STATIC
   SOURCES
-    wrap_abort.cc
+    newlib_os_interface_stubs.cc
   PUBLIC_DEPS
     pw_assert
   PUBLIC_LINK_OPTIONS
-    "-Wl,--wrap=abort"
+    "-Wl,--wrap=__sread"
+    "-Wl,--wrap=__swrite"
+    "-Wl,--wrap=__sseek"
+    "-Wl,--wrap=__sclose"
 )

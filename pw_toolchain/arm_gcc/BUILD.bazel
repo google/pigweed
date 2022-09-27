@@ -12,15 +12,23 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+)
 
-add_subdirectory(arm_gcc EXCLUDE_FROM_ALL)
+package(default_visibility = ["//visibility:public"])
 
-pw_add_library(pw_toolchain.wrap_abort STATIC
-  SOURCES
-    wrap_abort.cc
-  PUBLIC_DEPS
-    pw_assert
-  PUBLIC_LINK_OPTIONS
-    "-Wl,--wrap=abort"
+licenses(["notice"])
+
+pw_cc_library(
+    name = "newlib_os_interface_stubs",
+    srcs = ["newlib_os_interface_stubs.cc"],
+    linkopts = [
+        "-Wl,--wrap=__sread",
+        "-Wl,--wrap=__swrite",
+        "-Wl,--wrap=__sseek",
+        "-Wl,--wrap=__sclose",
+    ],
+    deps = ["//pw_assert"],
 )
