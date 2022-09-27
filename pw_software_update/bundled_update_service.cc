@@ -132,11 +132,11 @@ Status BundledUpdateService::Start(
 
 Status BundledUpdateService::SetTransferred(const pw_protobuf_Empty&,
                                             BundledUpdateStatus& response) {
-  std::lock_guard lock(mutex_);
   const BundledUpdateState state = status_.acquire()->state;
 
   if (state != pw_software_update_BundledUpdateState_Enum_TRANSFERRING &&
       state != pw_software_update_BundledUpdateState_Enum_INACTIVE) {
+    std::lock_guard lock(mutex_);
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_UNKNOWN_ERROR,
               "SetTransferred() can only be called from TRANSFERRING or "
               "INACTIVE state. State: %d",
