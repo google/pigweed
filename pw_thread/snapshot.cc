@@ -33,9 +33,9 @@ Status SnapshotStack(const StackContext& stack,
                      Thread::StreamEncoder& encoder,
                      const ProcessThreadStackCallback& thread_stack_callback) {
   // TODO(b/234890430): Add support for ascending stacks.
-  encoder.WriteStackStartPointer(stack.stack_high_addr);
-  encoder.WriteStackEndPointer(stack.stack_low_addr);
-  encoder.WriteStackPointer(stack.stack_pointer);
+  encoder.WriteStackStartPointer(stack.stack_high_addr).IgnoreError();
+  encoder.WriteStackEndPointer(stack.stack_low_addr).IgnoreError();
+  encoder.WriteStackPointer(stack.stack_pointer).IgnoreError();
   // The PRIuPTR is an appropriate format specifier for uintptr_t values
   // https://stackoverflow.com/a/5796039/1224002
   PW_LOG_DEBUG("Active stack: 0x%08" PRIuPTR "x-0x%08" PRIuPTR "x (%ld bytes)",
@@ -46,7 +46,7 @@ Status SnapshotStack(const StackContext& stack,
   if (stack.stack_pointer_est_peak.has_value()) {
     const uintptr_t stack_pointer_est_peak =
         stack.stack_pointer_est_peak.value();
-    encoder.WriteStackPointerEstPeak(stack_pointer_est_peak);
+    encoder.WriteStackPointerEstPeak(stack_pointer_est_peak).IgnoreError();
     PW_LOG_DEBUG("Est peak stack: 0x%08" PRIuPTR "x-0x%08" PRIuPTR
                  "x (%ld bytes)",
                  stack.stack_high_addr,

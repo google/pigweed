@@ -48,33 +48,33 @@ void CaptureThreadState(eTaskState thread_state,
   switch (thread_state) {
     case eRunning:
       PW_LOG_DEBUG("Thread state: RUNNING");
-      encoder.WriteState(ThreadState::Enum::RUNNING);
+      encoder.WriteState(ThreadState::Enum::RUNNING).IgnoreError();
       return;
 
     case eReady:
       PW_LOG_DEBUG("Thread state: READY");
-      encoder.WriteState(ThreadState::Enum::READY);
+      encoder.WriteState(ThreadState::Enum::READY).IgnoreError();
       return;
 
     case eBlocked:
       PW_LOG_DEBUG("Thread state: BLOCKED");
-      encoder.WriteState(ThreadState::Enum::BLOCKED);
+      encoder.WriteState(ThreadState::Enum::BLOCKED).IgnoreError();
       return;
 
     case eSuspended:
       PW_LOG_DEBUG("Thread state: SUSPENDED");
-      encoder.WriteState(ThreadState::Enum::SUSPENDED);
+      encoder.WriteState(ThreadState::Enum::SUSPENDED).IgnoreError();
       return;
 
     case eDeleted:
       PW_LOG_DEBUG("Thread state: INACTIVE");
-      encoder.WriteState(ThreadState::Enum::INACTIVE);
+      encoder.WriteState(ThreadState::Enum::INACTIVE).IgnoreError();
       return;
 
     case eInvalid:
     default:
       PW_LOG_DEBUG("Thread state: UNKNOWN");
-      encoder.WriteState(ThreadState::Enum::UNKNOWN);
+      encoder.WriteState(ThreadState::Enum::UNKNOWN).IgnoreError();
       return;
   }
 }
@@ -123,7 +123,7 @@ Status SnapshotThread(
   const tskTCB& tcb = *reinterpret_cast<tskTCB*>(thread);
 
   PW_LOG_DEBUG("Capturing thread info for %s", tcb.pcTaskName);
-  encoder.WriteName(as_bytes(span(std::string_view(tcb.pcTaskName))));
+  PW_TRY(encoder.WriteName(as_bytes(span(std::string_view(tcb.pcTaskName)))));
 
   CaptureThreadState(thread_state, encoder);
 

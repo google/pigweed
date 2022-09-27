@@ -107,8 +107,8 @@ void ThreadSnapshotService::GetPeakStackUsage(
 
   ConstByteSpan name_request;
   if (!request.empty()) {
-    Status status = DecodeThreadName(request, name_request);
-    if (!status.ok()) {
+    if (const auto status = DecodeThreadName(request, name_request);
+        !status.ok()) {
       PW_LOG_ERROR("Service unable to decode thread name with error code %d",
                    status.code());
     }
@@ -142,7 +142,10 @@ void ThreadSnapshotService::GetPeakStackUsage(
     }
     return iteration_info.status.ok();
   };
-  ForEachThread(cb);
+  if (const auto status = ForEachThread(cb); !status.ok()) {
+    PW_LOG_ERROR("Failed to capture thread information, error %d",
+                 status.code());
+  }
 
   // This logging action is external to thread iteration because it is
   // unsafe to log within ForEachThread() when the scheduler is disabled.
