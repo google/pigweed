@@ -201,7 +201,7 @@ def main() -> int:
                                     gn_arg_dict['out_dir'], data_sources,
                                     extra_args)
 
-    default_data_sources = ['symbols']
+    default_data_sources = ['segment_names', 'symbols']
 
     diff_report = ''
     rst_diff_report = ''
