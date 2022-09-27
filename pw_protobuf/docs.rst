@@ -27,9 +27,10 @@ other in your code, depending on point of use requirements:
  2. Per-Field Writers and Readers,
  3. Direct Writers and Readers.
 
-This has a few benefits. The primary one is that it allows the library to be
-incredibly small, with the encoder and decoder each having a code size of
-around 1.5K and negligible RAM usage.
+This has a few benefits. The primary one is that it allows the core proto
+serialization and deserialization libraries to be relatively small.
+
+.. include:: size_report/protobuf_overview
 
 To demonstrate these layers, we use the following protobuf message definition
 in the examples:
@@ -2016,7 +2017,7 @@ This report demonstrates the size of using the entire decoder with all of its
 decode methods and a decode callback for a proto message containing each of the
 protobuf field types.
 
-.. include:: size_report/decoder_full
+.. include:: size_report/decoder_partial
 
 
 Incremental size report

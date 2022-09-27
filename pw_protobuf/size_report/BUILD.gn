@@ -15,24 +15,61 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
+import("$dir_pw_build/target_types.gni")
 
-_decoder_full = {
+_decoder_partial = {
   deps = [
     "$dir_pw_bloat:bloat_this_binary",
     "$dir_pw_preprocessor",
-    "$dir_pw_protobuf:pw_protobuf",
+    "$dir_pw_protobuf",
   ]
-  sources = [ "decoder_full.cc" ]
+  sources = [ "decoder_partial.cc" ]
 }
 
-pw_toolchain_size_diff("decoder_full") {
+pw_source_set("proto_bloat") {
+  public = [ "proto_bloat.h" ]
+  deps = [
+    "$dir_pw_containers",
+    "$dir_pw_preprocessor",
+    "$dir_pw_protobuf",
+    "$dir_pw_status",
+    "$dir_pw_stream",
+  ]
+  sources = [ "proto_bloat.cc" ]
+}
+
+pw_executable("proto_base") {
+  deps = [
+    ":proto_bloat",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+  sources = [ "proto_base.cc" ]
+}
+
+pw_executable("encode_decode_core") {
+  deps = [
+    ":proto_bloat",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+  sources = [ "encode_decode_core.cc" ]
+}
+
+pw_executable("message_core") {
+  deps = [
+    ":proto_bloat",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+  sources = [ "message_core.cc" ]
+}
+
+pw_toolchain_size_diff("decoder_partial") {
   base_executable = pw_bloat_empty_base
-  diff_executable = _decoder_full
+  diff_executable = _decoder_partial
   title = "Size of all decoder methods"
 }
 
 pw_toolchain_size_diff("decoder_incremental") {
-  base_executable = _decoder_full
+  base_executable = _decoder_partial
   diff_executable = {
     deps = [
       "$dir_pw_bloat:bloat_this_binary",
@@ -42,4 +79,21 @@ pw_toolchain_size_diff("decoder_incremental") {
     sources = [ "decoder_incremental.cc" ]
   }
   title = "Adding more fields to decode callback"
+}
+
+pw_size_diff("protobuf_overview") {
+  title = "Pigweed protobuf encoder size report"
+  source_filter = "pw::protobuf::*|section .code"
+  binaries = [
+    {
+      target = ":encode_decode_core"
+      base = ":proto_base"
+      label = "Full wire-format proto encode/decode library"
+    },
+    {
+      target = ":message_core"
+      base = ":proto_base"
+      label = "Including table-based `Message` encoder and decoder"
+    },
+  ]
 }

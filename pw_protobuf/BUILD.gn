@@ -96,8 +96,9 @@ pw_source_set("bytes_utils") {
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   report_deps = [
-    "size_report:decoder_full",
     "size_report:decoder_incremental",
+    "size_report:decoder_partial",
+    "size_report:protobuf_overview",
   ]
 }
 
