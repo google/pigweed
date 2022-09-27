@@ -21,6 +21,15 @@ import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 
+pw_source_set("tokenized_log_handler") {
+  deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_sys_io",
+    "$dir_pw_tokenizer:global_handler_with_payload.facade",
+  ]
+  sources = [ "tokenized_log_handler.cc" ]
+}
+
 # Toolchain for generating upstream Pigweed documentation.
 generate_toolchain("docs") {
   # Use the stm32f429i-disc1 toolchain for pw_size_diff targets.
@@ -39,6 +48,11 @@ generate_toolchain("docs") {
 
     # Disable NC tests in case the base toolchain has them enabled.
     pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = false
+
+    pw_assert_BACKEND = dir_pw_assert_log
+    pw_log_BACKEND = dir_pw_log_tokenized
+    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND =
+        get_path_info(":tokenized_log_handler", "abspath")
   }
 }
 
