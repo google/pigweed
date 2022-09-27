@@ -54,6 +54,11 @@ And the following accompanying options file:
 
   Customer.name max_size:32
 
+.. toctree::
+  :maxdepth: 1
+
+  size_report
+
 Message Structures
 ==================
 The highest level API is based around message structures created through C++

@@ -62,6 +62,17 @@ pw_cc_library(
 )
 
 pw_cc_binary(
+    name = "proto_base",
+    srcs = [
+        "proto_base.cc",
+    ],
+    deps = [
+        ":proto_bloat",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
     name = "encode_decode_core",
     srcs = [
         "encode_decode_core.cc",
@@ -84,12 +95,67 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
-    name = "proto_base",
-    srcs = [
-        "proto_base.cc",
-    ],
+    name = "messages_no_codegen",
+    srcs = ["simple_codegen_comparison.cc"],
+    defines = ["_PW_PROTOBUF_SIZE_REPORT_NO_CODEGEN=1"],
     deps = [
         ":proto_bloat",
         "//pw_bloat:bloat_this_binary",
+        "//pw_protobuf:codegen_test_proto_cc.pwpb",
+    ],
+)
+
+pw_cc_binary(
+    name = "messages_wire_format",
+    srcs = ["simple_codegen_comparison.cc"],
+    defines = ["_PW_PROTOBUF_SIZE_REPORT_WIRE_FORMAT=1"],
+    deps = [
+        ":proto_bloat",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_protobuf:codegen_test_proto_cc.pwpb",
+    ],
+)
+
+pw_cc_binary(
+    name = "messages_message",
+    srcs = ["simple_codegen_comparison.cc"],
+    defines = ["_PW_PROTOBUF_SIZE_REPORT_MESSAGE=1"],
+    deps = [
+        ":proto_bloat",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_protobuf:codegen_test_proto_cc.pwpb",
+    ],
+)
+
+pw_cc_binary(
+    name = "oneof_no_codegen",
+    srcs = ["oneof_codegen_comparison.cc"],
+    defines = ["_PW_PROTOBUF_SIZE_REPORT_NO_CODEGEN=1"],
+    deps = [
+        ":proto_bloat",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_protobuf:codegen_test_proto_cc.pwpb",
+    ],
+)
+
+pw_cc_binary(
+    name = "oneof_wire_format",
+    srcs = ["oneof_codegen_comparison.cc"],
+    defines = ["_PW_PROTOBUF_SIZE_REPORT_WIRE_FORMAT=1"],
+    deps = [
+        ":proto_bloat",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_protobuf:codegen_test_proto_cc.pwpb",
+    ],
+)
+
+pw_cc_binary(
+    name = "oneof_message",
+    srcs = ["oneof_codegen_comparison.cc"],
+    defines = ["_PW_PROTOBUF_SIZE_REPORT_MESSAGE=1"],
+    deps = [
+        ":proto_bloat",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_protobuf:codegen_test_proto_cc.pwpb",
     ],
 )

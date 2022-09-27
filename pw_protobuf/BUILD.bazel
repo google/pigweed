@@ -209,6 +209,7 @@ proto_library(
         "pw_protobuf_test_protos/optional.proto",
         "pw_protobuf_test_protos/proto2.proto",
         "pw_protobuf_test_protos/repeated.proto",
+        "pw_protobuf_test_protos/size_report.proto",
     ],
     strip_import_prefix = "//pw_protobuf",
     deps = [

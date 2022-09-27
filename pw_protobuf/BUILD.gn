@@ -94,11 +94,20 @@ pw_source_set("bytes_utils") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "docs.rst",
+    "size_report.rst",
+  ]
+  inputs = [
+    "pw_protobuf_test_protos/size_report.options",
+    "pw_protobuf_test_protos/size_report.proto",
+  ]
   report_deps = [
     "size_report:decoder_incremental",
     "size_report:decoder_partial",
+    "size_report:oneof_codegen_size_comparison",
     "size_report:protobuf_overview",
+    "size_report:simple_codegen_size_comparison",
   ]
 }
 
@@ -216,6 +225,7 @@ pw_proto_library("codegen_test_protos") {
     "pw_protobuf_test_protos/optional.proto",
     "pw_protobuf_test_protos/proto2.proto",
     "pw_protobuf_test_protos/repeated.proto",
+    "pw_protobuf_test_protos/size_report.proto",
   ]
   inputs = [
     "pw_protobuf_test_protos/full_test.options",
