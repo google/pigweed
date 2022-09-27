@@ -207,7 +207,7 @@ TEST(Metric, InlineConstructionWithGroups) {
 
 // PW_METRIC_STATIC doesn't support class scopes, since a definition must be
 // provided outside of the class body.
-// TODO(paulmathieu): add support for class scopes and enable this test
+// TODO(keir): add support for class scopes and enable this test
 #if 0
 class MetricTest: public ::testing::Test {
   public:
