@@ -33,8 +33,14 @@ namespace pw::thread {
 // core/processor affinity, and/or an optional reference to a pre-allocated
 // Context (the collection of memory allocations needed for a thread to run).
 //
-// Options shall NOT permit starting as detached, this must be done explicitly
-// through the Thread API.
+// Options shall NOT have an attribute to start threads as detached vs joinable.
+// All `pw::thread::Thread` instances must be explicitly `join()`'d or
+// `detach()`'d through the run-time Thread API.
+//
+// Note that if backends set `PW_THREAD_JOINING_ENABLED` to false, backends may
+// use native OS specific APIs to create native detached threads because the
+// `join()` API would be compiled out. However, users must still explicitly
+// invoke `detach()`.
 //
 // Options must not contain any memory needed for a thread to run (TCB,
 // stack, etc.). The Options may be deleted or re-used immediately after
