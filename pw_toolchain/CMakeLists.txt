@@ -12,18 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
+include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])
-
-pw_cc_library(
-    name = "wrap_abort",
-    srcs = ["wrap_abort.cc"],
-    linkopts = ["-Wl,--wrap=abort"],
-    deps = ["//pw_assert"],
+pw_add_library(pw_toolchain.wrap_abort STATIC
+  SOURCES
+    wrap_abort.cc
+  PUBLIC_DEPS
+    pw_assert
+  PUBLIC_LINK_OPTIONS
+    "-Wl,--wrap=abort"
 )

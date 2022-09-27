@@ -47,3 +47,14 @@ pw_doc_group("docs") {
 
 pw_test_group("tests") {
 }
+
+config("wrap_abort_config") {
+  ldflags = [ "-Wl,--wrap=abort" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("wrap_abort") {
+  all_dependent_configs = [ ":wrap_abort_config" ]
+  sources = [ "wrap_abort.cc" ]
+  deps = [ dir_pw_assert ]
+}

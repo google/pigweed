@@ -134,3 +134,24 @@ List of traits
   macro. For example, ``201703`` corresponds to C++17. See
   https://en.cppreference.com/w/cpp/preprocessor/replace#Predefined_macros for
   further details.
+
+----------------------------
+Standard library integration
+----------------------------
+``pw_toolchain`` provides features for integrating with the standard library.
+
+``std:abort`` wrapper
+=====================
+The `std::abort <https://en.cppreference.com/w/cpp/utility/program/abort>`_
+function is used to terminate a program abnormally. This function may be called
+by standard library functions, so is often linked into binaries, even if users
+never intentionally call it.
+
+For embedded builds, the ``abort`` implementation likely does not work as
+intended. For example, it may pull in undesired dependencies (e.g.
+``std::raise``) and end in an infinite loop.
+
+``pw_toolchain`` provides the ``pw_toolchain:wrap_abort`` library that replaces
+``abort`` in builds where the default behavior is undesirable. It uses the
+``-Wl,--wrap=abort`` linker option to redirect to ``abort`` calls to
+``PW_CRASH`` instead.

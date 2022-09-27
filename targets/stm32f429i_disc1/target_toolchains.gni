@@ -86,6 +86,7 @@ _target_config = {
     "$dir_pw_assert:impl",
     "$dir_pw_cpu_exception:entry_impl",
     "$dir_pw_log:impl",
+    "$dir_pw_toolchain:wrap_abort",
   ]
 
   current_cpu = "arm"
