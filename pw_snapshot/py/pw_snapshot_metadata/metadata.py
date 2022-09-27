@@ -65,6 +65,8 @@ class MetadataProcessor:
         self._metadata = metadata
         self._tokenizer_db = (tokenizer_db if tokenizer_db is not None else
                               pw_tokenizer.Detokenizer(None))
+        self._reason_token = self._tokenizer_db.detokenize(
+            metadata.reason).token
         self._format_width = _PRETTY_FORMAT_DEFAULT_WIDTH
         proto_detokenizer.detokenize_fields(self._tokenizer_db, self._metadata)
 
@@ -79,6 +81,10 @@ class MetadataProcessor:
             self._metadata.reason.decode())
 
         return f'{log.file}: {log.message}' if log.file else log.message
+
+    def reason_token(self) -> Optional[int]:
+        """If the snapshot `reason` is tokenized, the value of the token."""
+        return self._reason_token
 
     def project_name(self) -> str:
         return self._metadata.project_name.decode()
@@ -119,6 +125,8 @@ class MetadataProcessor:
             '    ' + self.reason(),
             '',
         ))
+        if self.reason_token():
+            output.append(f'Reason token:      0x{self.reason_token():x}')
 
         if self._metadata.project_name:
             output.append(f'Project name:      {self.project_name()}')
