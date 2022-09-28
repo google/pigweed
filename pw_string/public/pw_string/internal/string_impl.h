@@ -96,34 +96,55 @@ class char_traits : private std::char_traits<T> {
 
 #endif  // __cpp_lib_constexpr_string
 
+// Used in static_asserts to check that a C array fits in an InlineString.
+constexpr bool NullTerminatedArrayFitsInString(
+    size_t null_terminated_array_size, size_type capacity) {
+  return null_terminated_array_size > 0u &&
+         null_terminated_array_size - 1 <= capacity &&
+         null_terminated_array_size - 1 < kGeneric;
+}
+
 // Constexpr utility functions for pw::InlineString. These are NOT intended for
 // general use. These mostly map directly to general purpose standard library
 // utilities that are not constexpr until C++20.
 
-// Calculates the length of a C string up to the capacity. Returns capacity +
-// 1 if the string is longer than the capacity. Use this instead of
-// std::char_traits<T>::length, which is unbounded.
+// Calculates the length of a C string up to the capacity. Returns capacity + 1
+// if the string is longer than the capacity. This replaces
+// std::char_traits<T>::length, which is unbounded. The string must contain at
+// least one character.
 template <typename T>
 constexpr size_type BoundedStringLength(const T* string, size_type capacity) {
-  size_type index = 0;
-  for (; !char_traits<T>::eq(string[index], T()); ++index) {
-    if (index > capacity) {
-      break;  // Return if size is too large. This may trigger an assert later.
+  size_type length = 0;
+  for (; length <= capacity; ++length) {
+    if (char_traits<T>::eq(string[length], T())) {
+      break;
     }
   }
-  return index;
+  return length;  // length is capacity + 1 if T() was not found.
 }
 
-// InlineString literals and character arrays are the same type, but string
-// literals are always null terminated. This returns the size of a character
-// array, ignoring the final character if it is a null terminator.
+// As with std::string, InlineString treats literals and character arrays as
+// null-terminated strings. ArrayStringLength checks that the array size fits
+// within size_type and asserts if no null terminator was found in the array.
+template <typename T>
+constexpr size_type ArrayStringLength(const T* array,
+                                      size_type max_string_length,
+                                      size_type capacity) {
+  const size_type max_length = std::min(max_string_length, capacity);
+  const size_type length = BoundedStringLength(array, max_length);
+  PW_ASSERT(length <= max_string_length);  // The array is not null terminated
+  return length;
+}
+
 template <typename T, size_t kCharArraySize>
-constexpr size_type ArrayStringLength(const T (&array)[kCharArraySize]) {
-  static_assert(kCharArraySize < kGeneric,
+constexpr size_type ArrayStringLength(const T (&array)[kCharArraySize],
+                                      size_type capacity) {
+  static_assert(kCharArraySize > 0u, "C arrays cannot have a length of 0");
+  static_assert(kCharArraySize - 1 < kGeneric,
                 "The size of this literal or character array is too large "
                 "for pw::InlineString<>::size_type");
-  return kCharArraySize -
-         (char_traits<T>::eq(array[kCharArraySize - 1], T()) ? 1 : 0);
+  return ArrayStringLength(
+      array, static_cast<size_type>(kCharArraySize - 1), capacity);
 }
 
 // Constexpr version of std::copy that returns the number of copied characters.

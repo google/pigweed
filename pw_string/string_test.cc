@@ -90,20 +90,20 @@ class EvenNumberIterator {
 #ifdef __cpp_deduction_guides
 
 TEST(InlineString, DeduceBasicString_Char) {
-  InlineBasicString string_10("123456789");
+  InlineBasicString string_10("1234567890");
   static_assert(std::is_same_v<decltype(string_10), InlineString<10>>);
 
-  InlineBasicString string_4 = "abc";
-  static_assert(std::is_same_v<decltype(string_4), InlineString<4>>);
+  InlineBasicString string_3 = "abc";
+  static_assert(std::is_same_v<decltype(string_3), InlineString<3>>);
 
   string_10.resize(6);
   EXPECT_STREQ(
-      string_10.append(string_4).append(InlineBasicString("?")).c_str(),
+      string_10.append(string_3).append(InlineBasicString("?")).c_str(),
       "123456abc?");
 }
 
 TEST(InlineString, DeduceBasicString_Int) {
-  constexpr long kLongArray[3] = {0, 1, 2};
+  constexpr long kLongArray[4] = {0, 1, 2, 0};
   InlineBasicString string_3 = kLongArray;
   static_assert(std::is_same_v<decltype(string_3), InlineBasicString<long, 3>>);
 
@@ -216,11 +216,13 @@ constexpr InlineString<10> kSize10Capacity10("1234567890", 10);
 constexpr const char* kPointer0 = "";
 constexpr const char* kPointer10 = "9876543210";
 
-constexpr const char kArray1[1] = {'?'};
 constexpr const char kArrayNull1[1] = {'\0'};
+constexpr const char kArray5[5] = {'1', '2', '3', '4', '\0'};
 
-constexpr const char kArray5[5] = {'\0', '1', '2', '3', '4'};
-constexpr const char kArrayNull5[5] = {'\0', '1', '2', '3', '\0'};
+// Invalid, non-terminated arrays used in negative compilation tests.
+[[maybe_unused]] constexpr const char kArrayNonNull1[1] = {'?'};
+[[maybe_unused]] constexpr const char kArrayNonNull5[5] = {
+    '1', '2', '3', '4', '5'};
 
 constexpr EvenNumberIterator<char> kEvenNumbers0(0);
 constexpr EvenNumberIterator<char> kEvenNumbers2(2);
@@ -373,6 +375,8 @@ TEST(InlineString, Construct_Pointer) {
 }
 
 TEST(InlineString, Construct_Array) {
+  TEST_STRING(InlineString<0>(""), , "");
+
   TEST_STRING(InlineString<1>(""), , "");
   TEST_STRING(InlineString<10>(""), , "");
 
@@ -380,35 +384,36 @@ TEST(InlineString, Construct_Array) {
   TEST_STRING(InlineString<10>("A"), , "A");
   TEST_STRING(InlineString<10>("123456789"), , "123456789");
 
-  TEST_STRING(InlineString<2>("\0"), , "\0");
-  TEST_STRING(InlineString<10>("\0"), , "\0");
-  TEST_STRING(InlineString<10>("12\000456789"), , "12\000456789");
+  TEST_STRING(InlineString<2>("\0"), , "");
+  TEST_STRING(InlineString<10>(""), , "");
+  TEST_STRING(InlineString<10>("12\000456789"), , "12");
 
-  TEST_STRING(InlineString<1>(kArray1), , "?");
   TEST_STRING(InlineString<1>(kArrayNull1), , "");
+  TEST_STRING(InlineString<5>(kArray5), , "1234");
+  TEST_STRING(InlineString<10>(kArray5), , "1234");
 
-  TEST_STRING(InlineString<5>(kArray5), , "\0001234");
-  TEST_STRING(InlineString<5>(kArrayNull5), , "\000123");
-
-  TEST_STRING(InlineString<10>(kArray5), , "\0001234");
-  TEST_STRING(InlineString<10>(kArrayNull5), , "\000123");
-
-#if PW_NC_TEST(Construct_Array_EmptyLiteralRequiresCapacityOfAtLeast1)
+#if PW_NC_TEST(Construct_Array_NullTerminationIsRequiredFillsCapacity)
+  PW_NC_EXPECT("PW_ASSERT\(.*The array is not null terminated");
+  [[maybe_unused]] constexpr InlineString<1> bad_string(kArrayNonNull1);
+#elif PW_NC_TEST(Construct_Array_NullTerminationIsRequiredExtraCapacity)
+  PW_NC_EXPECT("PW_ASSERT\(.*The array is not null terminated");
+  [[maybe_unused]] constexpr InlineString<10> bad_string(kArrayNonNull5);
+#elif PW_NC_TEST(Construct_Array_NonTerminatedArrayDoesNotFit)
   PW_NC_EXPECT(
       "InlineString's capacity is too small to hold the assigned string");
-  [[maybe_unused]] constexpr InlineString<0> bad_string("");
-#elif PW_NC_TEST(Construct_Array_SingleCharLiteralRequiresCapacityOfAtLeast2)
+  [[maybe_unused]] constexpr InlineString<3> bad_string(kArrayNonNull5);
+#elif PW_NC_TEST(Construct_Array_SingleCharLiteralRequiresCapacityOfAtLeast1)
   PW_NC_EXPECT(
       "InlineString's capacity is too small to hold the assigned string");
-  [[maybe_unused]] constexpr InlineString<1> bad_string("A");
-#elif PW_NC_TEST(Construct_Array_5CharLiteralRequiresCapacityOfAtLeast6)
+  [[maybe_unused]] constexpr InlineString<0> bad_string("A");
+#elif PW_NC_TEST(Construct_Array_5CharLiteralRequiresCapacityOfAtLeast5)
   PW_NC_EXPECT(
       "InlineString's capacity is too small to hold the assigned string");
-  [[maybe_unused]] constexpr InlineString<5> bad_string("ACDEF");
+  [[maybe_unused]] constexpr InlineString<4> bad_string("ACDEF");
 #elif PW_NC_TEST(Construct_Array_TooManyNulls)
   PW_NC_EXPECT(
       "InlineString's capacity is too small to hold the assigned string");
-  [[maybe_unused]] constexpr InlineString<4> bad_string(kArrayNull5);
+  [[maybe_unused]] constexpr InlineString<3> bad_string(kArray5);
 #endif  // PW_NC_TEST
 }
 
@@ -602,7 +607,7 @@ TEST(InlineString, AssignOperator_Copy) {
   TEST_STRING(InlineString<0>(), fixed_str = InlineString<0>(), "");
   TEST_STRING(InlineString<10>("something"),
               fixed_str = InlineString<9>("el\0se"),
-              "el\0se");
+              "el");
   TEST_STRING(InlineString<10>("0_o"), fixed_str = InlineString<10>(), "");
 
 #if PW_NC_TEST(AssignOperator_Copy_DoesNotFit)
@@ -630,7 +635,7 @@ TEST(InlineString, AssignOperator_Array) {
   PW_NC_EXPECT(
       "InlineString's capacity is too small to hold the assigned string");
   [[maybe_unused]] constexpr auto fail = [] {
-    InlineString<5> str("abc");
+    InlineString<4> str("abc");
     return str = "12345";
   }();
 #elif PW_NC_TEST(AssignOperator_Array_NotSupportedByGeneric)
@@ -899,25 +904,21 @@ TEST(InlineString, Assign_Pointer) {
 }
 
 TEST(InlineString, Assign_Array) {
+  TEST_STRING(InlineString<0>(), str.assign(""), "");
   TEST_STRING(InlineString<1>(), str.assign(""), "");
   TEST_STRING(InlineString<10>("a"), str.assign(""), "");
 
-  TEST_STRING(InlineString<2>(), str.assign("A"), "A");
+  TEST_STRING(InlineString<1>(), str.assign("A"), "A");
   TEST_STRING(InlineString<10>(), str.assign("A"), "A");
   TEST_STRING(InlineString<10>(), str.assign("123456789"), "123456789");
 
-  TEST_STRING(InlineString<2>(), str.assign("\0"), "\0");
-  TEST_STRING(InlineString<10>(), str.assign("\0"), "\0");
-  TEST_STRING(InlineString<10>(), str.assign("12\000456789"), "12\000456789");
+  TEST_STRING(InlineString<1>(), str.assign("\0"), "");
+  TEST_STRING(InlineString<10>(), str.assign("\0"), "");
+  TEST_STRING(InlineString<10>(), str.assign("12\000456789"), "12");
 
-  TEST_STRING(InlineString<1>(""), str.assign(kArray1), "?");
   TEST_STRING(InlineString<1>(""), str.assign(kArrayNull1), "");
-
-  TEST_STRING(InlineString<5>("abcd"), str.assign(kArray5), "\0001234");
-  TEST_STRING(InlineString<5>(), str.assign(kArrayNull5), "\000123");
-
-  TEST_STRING(InlineString<10>("abcde"), str.assign(kArray5), "\0001234");
-  TEST_STRING(InlineString<10>(), str.assign(kArrayNull5), "\000123");
+  TEST_STRING(InlineString<5>(), str.assign(kArray5), "1234");
+  TEST_STRING(InlineString<10>(), str.assign(kArray5), "1234");
 
   TEST_RUNTIME_STRING(InlineString<1>(), Generic(str).assign("?"), "?");
   TEST_RUNTIME_STRING(
@@ -928,18 +929,30 @@ TEST(InlineString, Assign_Array) {
   Generic(too_small).assign("123456");
 #endif  // 0
 
-#if PW_NC_TEST(Assign_Array_EmptyLiteralRequiresCapacityOfAtLeast1)
+#if PW_NC_TEST(Assign_Array_NullTerminationIsRequiredFillsCapacity)
+  PW_NC_EXPECT("PW_ASSERT\(.*The array is not null terminated");
+  [[maybe_unused]] constexpr auto fail = [] {
+    InlineString<1> bad_string;
+    return bad_string.assign(kArrayNonNull1);
+  }();
+#elif PW_NC_TEST(Assign_Array_NullTerminationIsRequiredExtraCapacity)
+  PW_NC_EXPECT("PW_ASSERT\(.*The array is not null terminated");
+  [[maybe_unused]] constexpr auto fail = [] {
+    InlineString<10> bad_string;
+    return bad_string.assign(kArrayNonNull5);
+  }();
+#elif PW_NC_TEST(Assign_Array_NonTerminatedArrayDoesNotFit)
+  PW_NC_EXPECT(
+      "InlineString's capacity is too small to hold the assigned string");
+  [[maybe_unused]] constexpr auto fail = [] {
+    InlineString<3> bad_string;
+    return bad_string.assign(kArrayNonNull5);
+  }();
+#elif PW_NC_TEST(Assign_Array_SingleCharLiteralRequiresCapacityOfAtLeast1)
   PW_NC_EXPECT(
       "InlineString's capacity is too small to hold the assigned string");
   [[maybe_unused]] constexpr auto fail = [] {
     InlineString<0> str;
-    return str.assign("");
-  }();
-#elif PW_NC_TEST(Assign_Array_SingleCharLiteralRequiresCapacityOfAtLeast2)
-  PW_NC_EXPECT(
-      "InlineString's capacity is too small to hold the assigned string");
-  [[maybe_unused]] constexpr auto fail = [] {
-    InlineString<1> str;
     return str.assign("?");
   }();
 #endif  // PW_NC_TEST
@@ -1334,7 +1347,7 @@ TEST(InlineString, Append_Array) {
   PW_NC_EXPECT(
       "InlineString's capacity is too small to hold the assigned string");
   [[maybe_unused]] constexpr auto fail = [] {
-    InlineString<3> str;
+    InlineString<2> str;
     return str.append("123");
   }();
 #endif  // PW_NC_TEST
@@ -1476,7 +1489,7 @@ TEST(InlineString, AppendOperator_Array) {
       "InlineString's capacity is too small to hold the assigned string");
   [[maybe_unused]] constexpr auto fail = [] {
     InlineString<3> str;
-    return str += "123";
+    return str += "1234";
   }();
 #endif  // PW_NC_TEST
 }
@@ -1670,7 +1683,7 @@ TEST(InlineString, ComparisonOperators_InlineString) {
                 "not equal");
   static_assert(InlineString<10>("") != InlineString<5>("abc"), "not equal");
   static_assert(InlineString<1>({'\0'}) != InlineString<10>(""), "not equal");
-  static_assert(!(InlineString<1>({'\0'}) != InlineString<10>("\0")),
+  static_assert(!(InlineString<1>({'\0'}) != InlineString<10>("\0"sv)),
                 "not equal");
 
   static_assert(InlineString<10>() < InlineString<10>("a"), "less");
@@ -1685,9 +1698,9 @@ TEST(InlineString, ComparisonOperators_InlineString) {
                 "less equal");
   static_assert(InlineString<1>({'\0'}) <= InlineString<10>("\1\0"),
                 "less equal");
-  static_assert(InlineString<2>({'\1', '\0'}) <= InlineString<10>("\1\0"),
+  static_assert(InlineString<2>({'\1', '\0'}) <= InlineString<10>("\1\0"sv),
                 "less equal");
-  static_assert(!(InlineString<2>({'\2', '\0'}) <= InlineString<10>("\1\0")),
+  static_assert(!(InlineString<2>({'\2', '\0'}) <= InlineString<10>("\1\0"sv)),
                 "less equal");
 
   static_assert(InlineString<10>("?") > InlineString<10>(""), "greater");
@@ -1833,7 +1846,7 @@ TEST(BasicStrings, InitializerList) {
 
 TEST(BasicStrings, VariousOperations) {
 #define BASIC_STRINGS_VARIOUS_OPERATIONS(type, capacity) \
-  static constexpr type kOne[1] = {1};                   \
+  static constexpr type kOne[2] = {1, 0};                \
   constexpr auto string = [] {                           \
     InlineBasicString<type, capacity> str({0});          \
     str.append(kOne);                                    \

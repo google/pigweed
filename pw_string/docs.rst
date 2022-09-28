@@ -48,9 +48,9 @@ Key differences from ``std::string``
 - **Fixed capacity** -- Operations that add characters to the string beyond its
   capacity are an error. These trigger a ``PW_ASSERT`` at runtime. When
   detectable, these situations trigger a ``static_assert`` at compile time.
-- **Character array support** -- :cpp:type:`pw::InlineString` provides overloads
-  specific to character arrays. These allow for compile-time capacity checks and
-  class template argument deduction.
+- **Minimal overhead** -- :cpp:type:`pw::InlineString` operations never
+  allocate. Reading the contents of the string is a direct memory access within
+  the string object, without pointer indirection.
 - **Constexpr support** -- :cpp:type:`pw::InlineString` works in ``constexpr``
   contexts, which is not supported by ``std::string`` until C++20.
 
@@ -59,10 +59,10 @@ API reference
 :cpp:type:`pw::InlineString` / :cpp:class:`pw::InlineBasicString` follows the
 ``std::string`` / ``std::basic_string<T>`` API, with a few variations:
 
-- Assigning and constructing from character literals or arrays uses the size of
-  the literal or array, rather than treating it as a null-terminated string.
-  This allows for compile-time capacity checks and class template argument
-  deduction.
+- :cpp:type:`pw::InlineString` provides overloads specific to character arrays.
+  These perform compile-time capacity checks and are used for class template
+  argument deduction. Like ``std::string``, character arrays are treated as
+  null-terminated strings.
 - :cpp:type:`pw::InlineString` allows implicit conversions from
   ``std::string_view``. Specifying the capacity parameter is cumbersome, so
   implicit conversions are helpful. Also, implicitly creating a
@@ -164,8 +164,8 @@ is not supported until C++20.
 
 .. code-block:: c++
 
-   // Deduces a capacity of 6 characters to match the 6-character string literal
-   // (counting the null terminator).
+   // Deduces a capacity of 5 characters to match the 5-character string literal
+   // (not counting the null terminator).
    pw::InlineBasicString inline_string = "12345";
 
    // In C++20, CTAD may be used with the pw::InlineString alias.

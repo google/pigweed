@@ -72,10 +72,10 @@ constexpr InlineBasicString& assign(U c_string) {
 template <size_t kCharArraySize>
 constexpr InlineBasicString& assign(const T (&array)[kCharArraySize]) {
   static_assert(
-      kCharArraySize < string_impl::kGeneric && kCharArraySize <= kCapacity,
+      string_impl::NullTerminatedArrayFitsInString(kCharArraySize, kCapacity),
       _PW_STRING_CAPACITY_TOO_SMALL_FOR_ARRAY);
   return static_cast<InlineBasicString&>(
-      Copy(data(), array, string_impl::ArrayStringLength(array)));
+      Copy(data(), array, string_impl::ArrayStringLength(array, max_size())));
 }
 
 template <typename InputIterator,
@@ -224,9 +224,9 @@ constexpr InlineBasicString& append(const T* string, size_type count) {
 template <size_t kCharArraySize>
 constexpr InlineBasicString& append(const T (&array)[kCharArraySize]) {
   static_assert(
-      kCharArraySize < string_impl::kGeneric && kCharArraySize <= kCapacity,
+      string_impl::NullTerminatedArrayFitsInString(kCharArraySize, kCapacity),
       _PW_STRING_CAPACITY_TOO_SMALL_FOR_ARRAY);
-  return append(array, string_impl::ArrayStringLength(array));
+  return append(array, string_impl::ArrayStringLength(array, max_size()));
 }
 
 template <typename U, typename = string_impl::EnableIfNonArrayCharPointer<T, U>>

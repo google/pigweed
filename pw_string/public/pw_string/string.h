@@ -26,8 +26,8 @@
 #define _PW_STRING_CAPACITY_TOO_SMALL_FOR_ARRAY                               \
   "The pw::InlineString's capacity is too small to hold the assigned string " \
   "literal or character array. When assigning a literal or array to a "       \
-  "pw::InlineString, the pw::InlineString must be large enough for the "      \
-  "entire string and an additional null terminator."
+  "pw::InlineString, the pw::InlineString's capacity must be large enough "   \
+  "for the entire string, not counting the null terminator."
 
 #define _PW_STRING_CAPACITY_TOO_SMALL_FOR_STRING                               \
   "When assigning one pw::InlineString with known capacity to another, the "   \
@@ -37,7 +37,7 @@
 namespace pw {
 
 // pw::InlineBasicString<T, kCapacity> is a fixed-capacity version of
-// std::basic_string.  It implements mostly the same API as std::basic_string,
+// std::basic_string. It implements mostly the same API as std::basic_string,
 // but the capacity of the string is fixed at construction and cannot grow.
 // Attempting to increase the size beyond the capacity triggers an assert.
 //
@@ -103,9 +103,9 @@ class InlineBasicString final
   constexpr InlineBasicString(const T (&array)[kCharArraySize])
       : InlineBasicString() {
     static_assert(
-        kCharArraySize < string_impl::kGeneric && kCharArraySize <= kCapacity,
+        string_impl::NullTerminatedArrayFitsInString(kCharArraySize, kCapacity),
         _PW_STRING_CAPACITY_TOO_SMALL_FOR_ARRAY);
-    Copy(data(), array, string_impl::ArrayStringLength(array));
+    Copy(data(), array, string_impl::ArrayStringLength(array, max_size()));
   }
 
   template <typename InputIterator,
@@ -415,18 +415,18 @@ class InlineBasicString<T, string_impl::kGeneric> {
 
 // In C++17, the capacity of the string may be deduced from a string literal or
 // array. For example, the following deduces a character type of char and a
-// capacity of 5 (which includes the null terminator):
+// capacity of 4 (which does not include the null terminator).
 //
 //   InlineBasicString my_string = "1234";
 //
 // In C++20, the template parameters for the pw::InlineString alias may be
 // deduced similarly:
 //
-//   InlineString my_string = "abc";  // deduces capacity of 4.
+//   InlineString my_string = "abc";  // deduces capacity of 3.
 //
 template <typename T, size_t kCharArraySize>
 InlineBasicString(const T (&)[kCharArraySize])
-    -> InlineBasicString<T, kCharArraySize>;
+    -> InlineBasicString<T, kCharArraySize - 1>;
 
 #endif  // __cpp_deduction_guides
 
