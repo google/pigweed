@@ -16,6 +16,7 @@
 import argparse
 import asyncio
 import base64
+import datetime
 import enum
 import json
 import logging
@@ -89,6 +90,7 @@ class Test:
         self.name: str = name
         self.file_path: str = file_path
         self.status: TestResult = TestResult.UNKNOWN
+        self.start_time: datetime.datetime
         self.duration_s: float
 
     def __repr__(self) -> str:
@@ -177,6 +179,7 @@ class TestRunner:
             if self._executable.endswith('.py'):
                 command.insert(0, sys.executable)
 
+            test.start_time = datetime.datetime.now(datetime.timezone.utc)
             start_time = time.monotonic()
             try:
                 process = await pw_cli.process.run_async(*command,
@@ -235,6 +238,7 @@ class TestRunner:
             # like '1.1e-10', which is an invalid input for
             # google.protobuf.duration.
             "duration": "%.9fs" % test.duration_s,
+            "start_time": test.start_time.isoformat(),
             "testMetadata": {
                 # Use the file path as the test name in the Milo UI. (If this is
                 # left unspecified, the UI will attempt to build a "good enough"
