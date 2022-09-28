@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -43,14 +43,11 @@ class FakeChannelHandler : public PairingChannel::Handler {
   fxl::WeakPtrFactory<PairingChannel::Handler> weak_ptr_factory_;
 };
 
-class PairingChannelTest : public l2cap::testing::FakeChannelTest {
+class PairingChannelTest : public l2cap::testing::MockChannelTest {
  protected:
   void SetUp() override { NewPairingChannel(); }
 
-  void TearDown() override {
-    sm_chan_ = nullptr;
-    fake_sm_chan_ = nullptr;
-  }
+  void TearDown() override { sm_chan_ = nullptr; }
 
   void NewPairingChannel(bt::LinkType ll_type = bt::LinkType::kLE,
                          uint16_t mtu = kNoSecureConnectionsMtu) {
@@ -60,7 +57,7 @@ class PairingChannelTest : public l2cap::testing::FakeChannelTest {
     options.link_type = ll_type;
     fake_sm_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(
-        fake_sm_chan_->GetWeakPtr(), fit::bind_member<&PairingChannelTest::ResetTimer>(this));
+        fake_sm_chan_, fit::bind_member<&PairingChannelTest::ResetTimer>(this));
   }
 
   PairingChannel* sm_chan() { return sm_chan_.get(); }
@@ -71,7 +68,7 @@ class PairingChannelTest : public l2cap::testing::FakeChannelTest {
  private:
   void ResetTimer() { timer_resetter_(); }
 
-  std::unique_ptr<l2cap::testing::FakeChannel> fake_sm_chan_;
+  fxl::WeakPtr<l2cap::testing::FakeChannel> fake_sm_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   fit::closure timer_resetter_ = []() {};
 };
@@ -98,8 +95,9 @@ TEST_F(PairingChannelTest, SendMessageWorks) {
   *w.mutable_payload<PairingRandomValue>() = kExpectedPayload;
   bool timer_reset = false;
   set_timer_resetter([&]() { timer_reset = true; });
+  EXPECT_PACKET_OUT(kExpectedPacket);
   sm_chan()->SendMessage(kPairingRandom, kExpectedPayload);
-  Expect(kExpectedPacket);
+  RunLoopUntilIdle();
   ASSERT_TRUE(timer_reset);
 }
 
