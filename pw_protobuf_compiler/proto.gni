@@ -382,9 +382,17 @@ template("_pw_python_proto_library") {
     # Create a Python package with the generated source files.
     pw_python_package(target_name) {
       forward_variables_from(invoker, _forwarded_vars)
+      _target_dir =
+          get_path_info(get_label_info(":${invoker.base_target}", "dir"),
+                        "abspath")
       generate_setup = {
         metadata = {
-          name = invoker.base_target
+          # Default to a package name that include the full source path to avoid
+          # conflicts with other packages when collecting all the .whl files
+          # with pw_python_wheels().
+          name =
+              string_replace(string_replace(_target_dir, "//", ""), "/", "_") +
+              "_" + invoker.base_target
 
           # The package name should match where the __init__.py lives. If
           # module_as_package is specified use that for the Python package name.
