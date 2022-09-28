@@ -1277,7 +1277,8 @@ You are encouraged to use the following footers when appropriate:
       Bug: 123
       Bug: 456
 
-* ``Fixed``: Like ``Bug``, but automatically closes the bug when submitted.
+* ``Fixed`` or ``Fixes``: Like ``Bug``, but automatically closes the bug when
+  submitted.
 
   .. code:: none
 
