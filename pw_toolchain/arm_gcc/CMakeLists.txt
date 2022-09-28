@@ -25,3 +25,9 @@ pw_add_library(pw_toolchain.arm_gcc.newlib_os_interface_stubs STATIC
     "-Wl,--wrap=__sseek"
     "-Wl,--wrap=__sclose"
 )
+
+pw_add_library(pw_toolchain.arm_gcc.arm_none_eabi_gcc_support INTERFACE
+  PUBLIC_DEPS
+    pw_toolchain.arm_gcc.newlib_os_interface_stubs
+    pw_toolchain.wrap_abort
+)

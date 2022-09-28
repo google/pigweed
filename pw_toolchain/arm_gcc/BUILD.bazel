@@ -17,8 +17,6 @@ load(
     "pw_cc_library",
 )
 
-package(default_visibility = ["//visibility:public"])
-
 licenses(["notice"])
 
 pw_cc_library(
@@ -30,5 +28,15 @@ pw_cc_library(
         "-Wl,--wrap=__sseek",
         "-Wl,--wrap=__sclose",
     ],
+    visibility = ["//visibility:private"],
     deps = ["//pw_assert"],
+)
+
+pw_cc_library(
+    name = "arm_none_eabi_gcc_support",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":newlib_os_interface_stubs",
+        "//pw_toolchain:wrap_abort",
+    ],
 )
