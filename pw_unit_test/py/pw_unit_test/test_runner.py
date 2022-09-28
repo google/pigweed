@@ -235,6 +235,13 @@ class TestRunner:
             # like '1.1e-10', which is an invalid input for
             # google.protobuf.duration.
             "duration": "%.9fs" % test.duration_s,
+            "testMetadata": {
+                # Use the file path as the test name in the Milo UI. (If this is
+                # left unspecified, the UI will attempt to build a "good enough"
+                # name by truncating the testId. That produces less readable
+                # results.)
+                "name": test.file_path,
+            },
             "summaryHtml":
             '<p><text-artifact artifact-id="artifact-content-in-request"></p>',
             "artifacts": {
