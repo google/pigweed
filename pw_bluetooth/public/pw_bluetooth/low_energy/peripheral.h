@@ -138,7 +138,7 @@ class Peripheral {
   // `result_callback` - Called once advertising has started or failed. On
   //     success, called with an `AdvertisedPeripheral` that models the lifetime
   //     of the advertisement. Destroying it will stop advertising.
-  virtual void Advertise(AdvertisingParameters parameters,
+  virtual void Advertise(const AdvertisingParameters& parameters,
                          AdvertiseCallback&& result_callback) = 0;
 };
 

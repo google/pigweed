@@ -16,7 +16,6 @@
 #include <cstdint>
 
 #include "pw_bluetooth/types.h"
-#include "pw_containers/vector.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::low_energy {
@@ -42,11 +41,11 @@ struct AdvertisingData {
   // The appearance of the local device.
   Appearance appearance = Appearance::kUnknown;
 
-  Vector<Uuid> service_uuids;
+  span<const Uuid> service_uuids;
 
-  Vector<ServiceData> service_data;
+  span<const ServiceData> service_data;
 
-  Vector<ManufacturerData> manufacturer_data;
+  span<const ManufacturerData> manufacturer_data;
 
   // String representing a URI to be advertised, as defined in IETF STD 66:
   // https://tools.ietf.org/html/std66. Each entry should be a UTF-8 string
@@ -56,7 +55,7 @@ struct AdvertisingData {
   // https://www.bluetooth.com/specifications/assigned-numbers/uri-scheme-name-string-mapping
   // for code-points used by the system to compress the scheme to save space in
   // the payload.
-  Vector<std::string_view> uris;
+  span<const std::string_view> uris;
 
   // Indicates whether the current TX power level should be included in the
   // advertising data.

@@ -37,10 +37,10 @@ struct LocalServiceInfo {
   Uuid type;
 
   // The characteristics of this service.
-  Vector<Characteristic> characteristics;
+  span<const Characteristic> characteristics;
 
   // Handles of other services that are included by this service.
-  Vector<Handle> includes;
+  span<const Handle> includes;
 };
 
 // Interface for serving a local GATT service. This is implemented by the API
@@ -79,7 +79,7 @@ class LocalServiceDelegate {
                                            bool indicate) = 0;
 
   // Called when a peer requests to read the value of a characteristic or
-  // descriptor. It is guaranteed that the peer satisfies the permssions
+  // descriptor. It is guaranteed that the peer satisfies the permissions
   // associated with this attribute.
   //
   // Parameters:
@@ -131,7 +131,7 @@ class LocalService {
     // The PeerIds of the peers to signal. The LocalService should respect the
     // Characteristic Configuration associated with a peer+handle when deciding
     // whether to signal it. If empty, all peers are signalled.
-    Vector<PeerId> peer_ids;
+    span<const PeerId> peer_ids;
     // The handle of the characteristic value being signaled.
     Handle handle;
     // The new value for the descriptor/characteristic.
@@ -212,7 +212,7 @@ class Server {
   // `LocalService` is destroyed or an error occurs
   // (LocalServiceDelegate.OnError), the service will be unpublished.
   virtual void PublishService(
-      LocalServiceInfo info,
+      const LocalServiceInfo& info,
       LocalServiceDelegate* delegate,
       Function<
           void(Result<PublishServiceError, std::unique_ptr<LocalService>>)>&&

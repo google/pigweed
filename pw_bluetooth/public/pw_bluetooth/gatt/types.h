@@ -17,7 +17,7 @@
 #include <optional>
 
 #include "pw_bluetooth/types.h"
-#include "pw_containers/vector.h"
+#include "pw_span/span.h"
 
 namespace pw::bluetooth::gatt {
 
@@ -68,7 +68,7 @@ struct AttributePermissions {
 
   // Specifies the security requirements for a client to subscribe to
   // notifications or indications on a characteristic. A characteristic's
-  // support for notifications or indiciations is specified using the NOTIFY and
+  // support for notifications or indications is specified using the NOTIFY and
   // INDICATE characteristic properties. If a local characteristic has one of
   // these properties then this field can not be null. Otherwise, this field
   // must be left as null.
@@ -103,8 +103,8 @@ struct Characteristic {
   // The UUID that identifies the type of this characteristic.
   Uuid type;
 
-  // The characteristic properties bitfield. See `CharacteristicPropertyBits`
-  // above for possible values.
+  // The characteristic properties bitfield. This is a logic or of any number of
+  // values from `CharacteristicPropertyBits` above.
   CharacteristicPropertyBits properties;
 
   // The attribute permissions of this characteristic. For remote
@@ -113,7 +113,7 @@ struct Characteristic {
   std::optional<AttributePermissions> permissions;
 
   // The descriptors of this characteristic.
-  Vector<Descriptor> descriptors;
+  span<const Descriptor> descriptors;
 };
 
 }  // namespace pw::bluetooth::gatt
