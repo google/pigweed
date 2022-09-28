@@ -13,7 +13,7 @@
 // the License.
 syntax = "proto3";
 
-package pw.thread;
+package pw.thread.proto;
 
 import "pw_tokenizer/proto/options.proto";
 
@@ -106,5 +106,5 @@ message Thread {
 // This message overlays the pw.snapshot.Snapshot proto. It's valid to encode
 // this message to the same sink that a Snapshot proto is being written to.
 message SnapshotThreadInfo {
-  repeated pw.thread.Thread threads = 18;
+  repeated pw.thread.proto.Thread threads = 18;
 }

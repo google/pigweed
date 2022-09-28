@@ -240,7 +240,7 @@ captured. For ARM Cortex-M CPUs, you can do something like this:
   void* stack_ptr = 0;
   asm volatile("mrs %0, psp\n" : "=r"(stack_ptr));
   pw::thread::ProcessThreadStackCallback cb =
-      [](pw::thread::Thread::StreamEncoder& encoder,
+      [](pw::thread::proto::Thread::StreamEncoder& encoder,
          pw::ConstByteSpan stack) -> pw::Status {
     return encoder.WriteRawStack(stack);
   };
@@ -248,7 +248,8 @@ captured. For ARM Cortex-M CPUs, you can do something like this:
                                       snapshot_encoder, cb);
 
 ``SnapshotThreads()`` wraps the singular thread capture to instead captures
-all created threads to a ``pw::thread::SnapshotThreadInfo`` message. This proto
-message overlays a snapshot, so it is safe to static cast a
+all created threads to a ``pw::thread::proto::SnapshotThreadInfo`` message.
+This proto message overlays a snapshot, so it is safe to static cast a
 ``pw::snapshot::Snapshot::StreamEncoder`` to a
-``pw::thread::SnapshotThreadInfo::StreamEncoder`` when calling this function.
+``pw::thread::proto::SnapshotThreadInfo::StreamEncoder`` when calling this
+function.

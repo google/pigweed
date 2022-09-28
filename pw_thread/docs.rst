@@ -490,10 +490,10 @@ RPC service setup
 =================
 To expose a ``ThreadSnapshotService`` in your application, do the following:
 
-1. Create an instance of ``pw::thread::ThreadSnapshotServiceBuilder``. This is a
-   template class that takes in the number of threads as at template, or
-   defaults this value to ``PW_THREAD_MAXIMUM_THREADS`` if no argument is
-   provided.
+1. Create an instance of ``pw::thread::proto::ThreadSnapshotServiceBuffer``.
+   This template takes the number of expected threads, and uses it to properly
+   size buffers required for a ``ThreadSnapshotService``. If no thread count
+   argument is provided, this defaults to ``PW_THREAD_MAXIMUM_THREADS``.
 2. Register the service with your RPC server.
 
 For example:
@@ -504,13 +504,14 @@ For example:
    #include "pw_thread/thread_snapshot_service.h"
 
    // Note: You must customize the RPC server setup; see pw_rpc.
-   Channel channels[] = {
-    Channel::Create<1>(&uart_output),
+   pw::rpc::Channel channels[] = {
+    pw::rpc::Channel::Create<1>(&uart_output),
    };
    Server server(channels);
 
   // Thread snapshot service builder instance.
-  thread::ThreadSnapshotServiceBuilder</*num threads*/> thread_snapshot_service;
+  pw::thread::proto::ThreadSnapshotServiceBuffer</*num threads*/>
+      thread_snapshot_service;
 
    void RegisterServices() {
      server.RegisterService(thread_snapshot_service);

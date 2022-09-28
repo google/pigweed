@@ -31,7 +31,7 @@ namespace pw::thread::threadx {
 //    void* stack_ptr = 0;
 //    asm volatile("mrs %0, psp\n" : "=r"(stack_ptr));
 //    pw::thread::ProcessThreadStackCallback cb =
-//        [](pw::thread::Thread::StreamEncoder& encoder,
+//        [](pw::thread::proto::Thread::StreamEncoder& encoder,
 //           pw::ConstByteSpan stack) -> pw::Status {
 //      return encoder.WriteRawStack(stack);
 //    };
@@ -42,7 +42,7 @@ namespace pw::thread::threadx {
 // disabled!
 // Warning: SMP ports are not yet supported.
 Status SnapshotThreads(void* running_thread_stack_pointer,
-                       SnapshotThreadInfo::StreamEncoder& encoder,
+                       proto::SnapshotThreadInfo::StreamEncoder& encoder,
                        ProcessThreadStackCallback& thread_stack_callback);
 
 // Captures only the provided thread handle as a pw::thread::Thread proto
@@ -68,7 +68,7 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
 // Warning: SMP ports are not yet supported.
 Status SnapshotThread(const TX_THREAD& thread,
                       void* running_thread_stack_pointer,
-                      Thread::StreamEncoder& encoder,
+                      proto::Thread::StreamEncoder& encoder,
                       ProcessThreadStackCallback& thread_stack_callback);
 
 }  // namespace pw::thread::threadx

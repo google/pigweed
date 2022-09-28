@@ -37,10 +37,11 @@ inline bool ThreadIsRunning(const OS_TASK& thread) {
   return OS_GetpCurrentTask() == &thread;
 }
 
-void CaptureThreadState(const OS_TASK& thread, Thread::StreamEncoder& encoder) {
+void CaptureThreadState(const OS_TASK& thread,
+                        proto::Thread::StreamEncoder& encoder) {
   if (ThreadIsRunning(thread)) {
     PW_LOG_DEBUG("Thread state: RUNNING");
-    encoder.WriteState(ThreadState::Enum::RUNNING);
+    encoder.WriteState(proto::ThreadState::Enum::RUNNING);
     return;
   }
 
@@ -61,24 +62,24 @@ void CaptureThreadState(const OS_TASK& thread, Thread::StreamEncoder& encoder) {
 
   if ((thread.Stat & 0x3) != 0) {
     PW_LOG_DEBUG("Thread state: SUSPENDED");
-    encoder.WriteState(ThreadState::Enum::SUSPENDED);
+    encoder.WriteState(proto::ThreadState::Enum::SUSPENDED);
   } else if ((thread.Stat & 0xf8) == 0) {
     PW_LOG_DEBUG("Thread state: READY");
-    encoder.WriteState(ThreadState::Enum::READY);
+    encoder.WriteState(proto::ThreadState::Enum::READY);
   } else {
     PW_LOG_DEBUG("Thread state: BLOCKED");
-    encoder.WriteState(ThreadState::Enum::BLOCKED);
+    encoder.WriteState(proto::ThreadState::Enum::BLOCKED);
   }
 }
 
 }  // namespace
 
 Status SnapshotThreads(void* running_thread_stack_pointer,
-                       SnapshotThreadInfo::StreamEncoder& encoder,
+                       proto::SnapshotThreadInfo::StreamEncoder& encoder,
                        ProcessThreadStackCallback& stack_dumper) {
   struct {
     void* running_thread_stack_pointer;
-    SnapshotThreadInfo::StreamEncoder* encoder;
+    proto::SnapshotThreadInfo::StreamEncoder* encoder;
     ProcessThreadStackCallback* stack_dumper;
     Status thread_capture_status;
   } ctx;
@@ -87,7 +88,8 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
   ctx.stack_dumper = &stack_dumper;
 
   ThreadCallback thread_capture_cb([&ctx](const OS_TASK& thread) -> bool {
-    Thread::StreamEncoder thread_encoder = ctx.encoder->GetThreadsEncoder();
+    proto::Thread::StreamEncoder thread_encoder =
+        ctx.encoder->GetThreadsEncoder();
     ctx.thread_capture_status.Update(
         SnapshotThread(thread,
                        ctx.running_thread_stack_pointer,
@@ -108,7 +110,7 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
 
 Status SnapshotThread(const OS_TASK& thread,
                       void* running_thread_stack_pointer,
-                      Thread::StreamEncoder& encoder,
+                      proto::Thread::StreamEncoder& encoder,
                       ProcessThreadStackCallback& thread_stack_callback) {
 #if OS_TRACKNAME
   PW_LOG_DEBUG("Capturing thread info for %s", thread.Name);

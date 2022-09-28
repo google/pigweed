@@ -28,7 +28,7 @@ namespace pw::thread {
 // field. This should encode either raw_backtrace or raw_stack to the provided
 // Thread stream encoder.
 using ProcessThreadStackCallback =
-    Function<Status(Thread::StreamEncoder&, ConstByteSpan)>;
+    Function<Status(proto::Thread::StreamEncoder&, ConstByteSpan)>;
 
 struct StackContext {
   std::string_view thread_name;
@@ -48,7 +48,7 @@ struct StackContext {
 //     stack_end_pointer
 //     stack_pointer
 Status SnapshotStack(const StackContext& stack,
-                     Thread::StreamEncoder& encoder,
+                     proto::Thread::StreamEncoder& encoder,
                      const ProcessThreadStackCallback& thread_stack_callback);
 
 }  // namespace pw::thread

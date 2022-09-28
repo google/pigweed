@@ -19,7 +19,7 @@
 namespace pw::system {
 namespace {
 
-thread::ThreadSnapshotServiceBuilder<> system_thread_snapshot_service;
+thread::proto::ThreadSnapshotServiceBuffer<> system_thread_snapshot_service;
 
 }  // namespace
 

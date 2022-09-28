@@ -27,9 +27,9 @@
 #include "pw_thread_protos/thread.pwpb.h"
 #include "pw_thread_protos/thread_snapshot_service.pwpb.h"
 
-namespace pw::thread {
+namespace pw::thread::proto {
 
-Status ProtoEncodeThreadInfo(SnapshotThreadInfo::MemoryEncoder& encoder,
+Status ProtoEncodeThreadInfo(SnapshotThreadInfo::StreamEncoder& encoder,
                              const ThreadInfo& thread_info) {
   // Grab the next available Thread slot to write to in the response.
   Thread::StreamEncoder proto_encoder = encoder.GetThreadsEncoder();
@@ -189,4 +189,4 @@ void ThreadSnapshotService::GetPeakStackUsage(
   }
 }
 
-}  // namespace pw::thread
+}  // namespace pw::thread::proto

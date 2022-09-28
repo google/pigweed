@@ -68,7 +68,7 @@ message Snapshot {
   // entries added to it during a decode.
   map<string, string> tags = 17;
 
-  repeated pw.thread.Thread threads = 18;
+  repeated pw.thread.proto.Thread threads = 18;
 
   // If a device has multiple cores, it may be useful to collect an associated
   // snapshot for attached cores when a snapshot collection is triggered on one

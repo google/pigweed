@@ -13,7 +13,7 @@
 // the License.
 syntax = "proto3";
 
-package pw.thread;
+package pw.thread.proto;
 
 import "pw_thread_protos/thread.proto";
 

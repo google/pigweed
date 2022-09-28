@@ -38,7 +38,7 @@ Status SnapshotMainStackThread(
     const pw_cpu_exception_State& cpu_state,
     uintptr_t stack_low_addr,
     uintptr_t stack_high_addr,
-    thread::SnapshotThreadInfo::StreamEncoder& encoder,
+    thread::proto::SnapshotThreadInfo::StreamEncoder& encoder,
     thread::ProcessThreadStackCallback& thread_stack_callback);
 
 // Captures the main stack thread if active as part of a snapshot based on the
@@ -49,7 +49,7 @@ Status SnapshotMainStackThread(
 Status SnapshotMainStackThread(
     uintptr_t stack_low_addr,
     uintptr_t stack_high_addr,
-    thread::SnapshotThreadInfo::StreamEncoder& encoder,
+    thread::proto::SnapshotThreadInfo::StreamEncoder& encoder,
     thread::ProcessThreadStackCallback& thread_stack_callback);
 
 // Captures the main stack thread if active as part of the cpu register state if
@@ -61,7 +61,7 @@ inline Status SnapshotMainStackThread(
     const pw_cpu_exception_State* optional_cpu_state,
     uintptr_t stack_low_addr,
     uintptr_t stack_high_addr,
-    thread::SnapshotThreadInfo::StreamEncoder& encoder,
+    thread::proto::SnapshotThreadInfo::StreamEncoder& encoder,
     thread::ProcessThreadStackCallback& thread_stack_callback) {
   if (optional_cpu_state != nullptr) {
     return SnapshotMainStackThread(*optional_cpu_state,

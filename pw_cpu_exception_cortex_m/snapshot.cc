@@ -38,21 +38,22 @@ Status CaptureMainStack(
     uintptr_t stack_low_addr,
     uintptr_t stack_high_addr,
     uintptr_t stack_pointer,
-    thread::SnapshotThreadInfo::StreamEncoder& snapshot_encoder,
+    thread::proto::SnapshotThreadInfo::StreamEncoder& snapshot_encoder,
     thread::ProcessThreadStackCallback& thread_stack_callback) {
-  thread::Thread::StreamEncoder encoder = snapshot_encoder.GetThreadsEncoder();
+  thread::proto::Thread::StreamEncoder encoder =
+      snapshot_encoder.GetThreadsEncoder();
 
   const char* thread_name;
-  thread::ThreadState::Enum thread_state;
+  thread::proto::ThreadState::Enum thread_state;
   if (mode == ProcessorMode::kHandlerMode) {
     thread_name = kMainStackHandlerModeName;
     PW_LOG_DEBUG("Capturing thread info for Main Stack (Handler Mode)");
-    thread_state = thread::ThreadState::Enum::INTERRUPT_HANDLER;
+    thread_state = thread::proto::ThreadState::Enum::INTERRUPT_HANDLER;
     PW_LOG_DEBUG("Thread state: INTERRUPT_HANDLER");
   } else {  // mode == ProcessorMode::kThreadMode
     thread_name = kMainStackThreadModeName;
     PW_LOG_DEBUG("Capturing thread info for Main Stack (Thread Mode)");
-    thread_state = thread::ThreadState::Enum::RUNNING;
+    thread_state = thread::proto::ThreadState::Enum::RUNNING;
     PW_LOG_DEBUG("Thread state: RUNNING");
   }
   encoder.WriteState(thread_state);
@@ -84,7 +85,7 @@ Status SnapshotCpuState(
 Status SnapshotMainStackThread(
     uintptr_t stack_low_addr,
     uintptr_t stack_high_addr,
-    thread::SnapshotThreadInfo::StreamEncoder& encoder,
+    thread::proto::SnapshotThreadInfo::StreamEncoder& encoder,
     thread::ProcessThreadStackCallback& thread_stack_callback) {
   uintptr_t stack_pointer;
   asm volatile("mrs %0, msp\n" : "=r"(stack_pointer));
@@ -130,7 +131,7 @@ Status SnapshotMainStackThread(
     const pw_cpu_exception_State& cpu_state,
     uintptr_t stack_low_addr,
     uintptr_t stack_high_addr,
-    thread::SnapshotThreadInfo::StreamEncoder& encoder,
+    thread::proto::SnapshotThreadInfo::StreamEncoder& encoder,
     thread::ProcessThreadStackCallback& thread_stack_callback) {
   if (!MainStackActive(cpu_state)) {
     return OkStatus();  // Main stack wasn't active, nothing to capture.

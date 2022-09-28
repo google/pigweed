@@ -31,7 +31,7 @@ namespace pw::thread::embos {
 //    void* stack_ptr = 0;
 //    asm volatile("mrs %0, psp\n" : "=r"(stack_ptr));
 //    pw::thread::ProcessThreadStackCallback cb =
-//        [](pw::thread::Thread::StreamEncoder& encoder,
+//        [](pw::thread::proto::Thread::StreamEncoder& encoder,
 //           pw::ConstByteSpan stack) -> pw::Status {
 //      return encoder.WriteRawStack(stack);
 //    };
@@ -40,7 +40,7 @@ namespace pw::thread::embos {
 // Warning: This is only safe to use when interrupts and the scheduler are
 // disabled!
 Status SnapshotThreads(void* running_thread_stack_pointer,
-                       SnapshotThreadInfo::StreamEncoder& encoder,
+                       proto::SnapshotThreadInfo::StreamEncoder& encoder,
                        ProcessThreadStackCallback& thread_stack_callback);
 
 // Captures only the provided thread handle as a pw::thread::Thread proto
@@ -68,7 +68,7 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
 // disabled!
 Status SnapshotThread(const OS_TASK& thread,
                       void* running_thread_stack_pointer,
-                      Thread::StreamEncoder& encoder,
+                      proto::Thread::StreamEncoder& encoder,
                       ProcessThreadStackCallback& thread_stack_callback);
 
 }  // namespace pw::thread::embos

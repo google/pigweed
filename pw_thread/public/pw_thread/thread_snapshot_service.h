@@ -22,16 +22,17 @@
 #include "pw_thread_protos/thread_snapshot_service.pwpb.h"
 #include "pw_thread_protos/thread_snapshot_service.raw_rpc.pb.h"
 
-namespace pw::thread {
+namespace pw::thread::proto {
 
-Status ProtoEncodeThreadInfo(SnapshotThreadInfo::MemoryEncoder& encoder,
+Status ProtoEncodeThreadInfo(proto::SnapshotThreadInfo::StreamEncoder& encoder,
                              const ThreadInfo& thread_info);
 
 // Calculates encoded buffer size based on code gen constants.
 constexpr size_t RequiredServiceBufferSize(
     size_t num_threads = PW_THREAD_MAXIMUM_THREADS) {
   constexpr size_t kSizeOfResponse =
-      SnapshotThreadInfo::kMaxEncodedSizeBytes + Thread::kMaxEncodedSizeBytes;
+      proto::SnapshotThreadInfo::kMaxEncodedSizeBytes +
+      Thread::kMaxEncodedSizeBytes;
   return kSizeOfResponse * num_threads;
 }
 
@@ -69,17 +70,16 @@ class ThreadSnapshotService
 // A ThreadSnapshotService that allocates required buffers based on the
 // number of running threads on a device.
 template <size_t kNumThreads = PW_THREAD_MAXIMUM_THREADS>
-class ThreadSnapshotServiceBuilder : public ThreadSnapshotService {
+class ThreadSnapshotServiceBuffer : public ThreadSnapshotService {
  public:
-  ThreadSnapshotServiceBuilder()
+  ThreadSnapshotServiceBuffer()
       : ThreadSnapshotService(encode_buffer_, thread_proto_indices_) {}
 
  private:
-  std::array<std::byte, thread::RequiredServiceBufferSize(kNumThreads)>
-      encode_buffer_;
+  std::array<std::byte, RequiredServiceBufferSize(kNumThreads)> encode_buffer_;
   // + 1 is needed to account for extra index that comes with the first
   // submessage start or the last submessage end.
   Vector<size_t, kNumThreads + 1> thread_proto_indices_;
 };
 
-}  // namespace pw::thread
+}  // namespace pw::thread::proto

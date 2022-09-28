@@ -17,11 +17,11 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
-namespace pw::thread {
+namespace pw::thread::proto {
 
 void ErrorLog(Status status);
 
 Status DecodeThreadName(ConstByteSpan serialized_path,
                         ConstByteSpan& thread_name);
 
-}  // namespace pw::thread
+}  // namespace pw::thread::proto

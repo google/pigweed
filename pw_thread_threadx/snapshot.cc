@@ -41,27 +41,27 @@ inline bool ThreadIsRunning(const TX_THREAD& thread) {
 }
 
 void CaptureThreadState(const TX_THREAD& thread,
-                        Thread::StreamEncoder& encoder) {
+                        proto::Thread::StreamEncoder& encoder) {
   if (ThreadIsRunning(thread)) {
     PW_LOG_DEBUG("Thread state: RUNNING");
-    encoder.WriteState(ThreadState::Enum::RUNNING);
+    encoder.WriteState(proto::ThreadState::Enum::RUNNING);
     return;
   }
 
   switch (thread.tx_thread_state) {
     case TX_READY:
       PW_LOG_DEBUG("Thread state: READY");
-      encoder.WriteState(ThreadState::Enum::READY);
+      encoder.WriteState(proto::ThreadState::Enum::READY);
       break;
     case TX_COMPLETED:
     case TX_TERMINATED:
       PW_LOG_DEBUG("Thread state: INACTIVE");
-      encoder.WriteState(ThreadState::Enum::INACTIVE);
+      encoder.WriteState(proto::ThreadState::Enum::INACTIVE);
       break;
     case TX_SUSPENDED:
     case TX_SLEEP:
       PW_LOG_DEBUG("Thread state: SUSPENDED");
-      encoder.WriteState(ThreadState::Enum::SUSPENDED);
+      encoder.WriteState(proto::ThreadState::Enum::SUSPENDED);
       break;
     case TX_QUEUE_SUSP:
     case TX_SEMAPHORE_SUSP:
@@ -73,22 +73,22 @@ void CaptureThreadState(const TX_THREAD& thread,
     case TX_TCP_IP:
     case TX_MUTEX_SUSP:
       PW_LOG_DEBUG("Thread state: BLOCKED");
-      encoder.WriteState(ThreadState::Enum::BLOCKED);
+      encoder.WriteState(proto::ThreadState::Enum::BLOCKED);
       break;
     default:
       PW_LOG_DEBUG("Thread state: UNKNOWN");
-      encoder.WriteState(ThreadState::Enum::UNKNOWN);
+      encoder.WriteState(proto::ThreadState::Enum::UNKNOWN);
   }
 }
 
 }  // namespace
 
 Status SnapshotThreads(void* running_thread_stack_pointer,
-                       SnapshotThreadInfo::StreamEncoder& encoder,
+                       proto::SnapshotThreadInfo::StreamEncoder& encoder,
                        ProcessThreadStackCallback& stack_dumper) {
   struct {
     void* running_thread_stack_pointer;
-    SnapshotThreadInfo::StreamEncoder* encoder;
+    proto::SnapshotThreadInfo::StreamEncoder* encoder;
     ProcessThreadStackCallback* stack_dumper;
     Status thread_capture_status;
   } ctx;
@@ -97,7 +97,8 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
   ctx.stack_dumper = &stack_dumper;
 
   ThreadCallback thread_capture_cb([&ctx](const TX_THREAD& thread) -> bool {
-    Thread::StreamEncoder thread_encoder = ctx.encoder->GetThreadsEncoder();
+    proto::Thread::StreamEncoder thread_encoder =
+        ctx.encoder->GetThreadsEncoder();
     ctx.thread_capture_status.Update(
         SnapshotThread(thread,
                        ctx.running_thread_stack_pointer,
@@ -117,7 +118,7 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
 
 Status SnapshotThread(const TX_THREAD& thread,
                       void* running_thread_stack_pointer,
-                      Thread::StreamEncoder& encoder,
+                      proto::Thread::StreamEncoder& encoder,
                       ProcessThreadStackCallback& thread_stack_callback) {
   PW_LOG_DEBUG("Capturing thread info for %s", thread.tx_thread_name);
   encoder.WriteName(as_bytes(span(std::string_view(thread.tx_thread_name))));
