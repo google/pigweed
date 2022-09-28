@@ -287,6 +287,12 @@ endmacro()
 #   PUBLIC_LINK_OPTIONS - public target_link_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 function(pw_add_library NAME TYPE)
+  set(supported_library_types INTERFACE OBJECT STATIC SHARED MODULE)
+  if(NOT "${TYPE}" IN_LIST supported_library_types)
+    message(FATAL_ERROR "\"${TYPE}\" is not a valid library type for ${NAME}. "
+          "Must be INTERFACE, OBJECT, STATIC, SHARED, or MODULE.")
+  endif()
+
   set(num_positional_args 2)
   set(option_args)
   set(one_value_args)
