@@ -29,6 +29,9 @@ namespace pw::bluetooth::gatt {
 
 // Parameters for registering a local GATT service.
 struct LocalServiceInfo {
+  // A unique (within a Server) handle identifying this service.
+  Handle handle;
+
   // Indicates whether this is a primary or secondary service.
   bool primary;
 
@@ -140,9 +143,6 @@ class LocalService {
 
   virtual ~LocalService() = default;
 
-  // Returns the unique handle assigned to this service.
-  virtual Handle GetHandle() = 0;
-
   // Sends a notification to peers. Notifications should be used instead of
   // indications when the service does *not* require peer confirmation of the
   // update.
@@ -191,14 +191,17 @@ class Server {
   enum class PublishServiceError {
     kInternalError = 0,
 
-    /// Invalid service UUID provided.
-    kInvalidUuid = 1,
+    // The service handle provided was not unique.
+    kInvalidHandle = 1,
+
+    // Invalid service UUID provided.
+    kInvalidUuid = 2,
 
     // Invalid service characteristics provided.
-    kInvalidCharacteristics = 2,
+    kInvalidCharacteristics = 3,
 
     // Invalid service includes provided.
-    kInvalidIncludes = 3,
+    kInvalidIncludes = 4,
   };
 
   virtual ~Server() = default;
