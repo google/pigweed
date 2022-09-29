@@ -738,6 +738,9 @@ def _valid_capitalization(word: str) -> bool:
 
 def commit_message_format(_: PresubmitContext):
     """Checks that the top commit's message is correctly formatted."""
+    if git_repo.commit_author().endswith('gserviceaccount.com'):
+        return
+
     lines = git_repo.commit_message().splitlines()
 
     # Show limits and current commit message in log.
