@@ -42,6 +42,6 @@ using std::span;
 #else
 
 // If std::span is not available, use Pigweed's span implementation.
-#include "pw_span/internal/span_impl.h"
+#include "pw_span/internal/span_impl.h"  // IWYU pragma: export
 
 #endif  // defined(__cpp_lib_span) && __cpp_lib_span >= 202002L
