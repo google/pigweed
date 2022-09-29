@@ -112,6 +112,7 @@ pw_source_set("util") {
   public = [ "public/pw_string/util.h" ]
   sources = [ "public/pw_string/internal/length.h" ]
   public_deps = [
+    ":string",
     dir_pw_assert,
     dir_pw_result,
     dir_pw_span,

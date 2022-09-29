@@ -24,6 +24,7 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_string/internal/length.h"
+#include "pw_string/string.h"
 
 namespace pw {
 namespace string {
@@ -51,7 +52,7 @@ constexpr std::string_view ClampedCString(const char* str, size_t max_len) {
 //   OutOfRange - if the string is not null-terminated.
 //
 // Precondition: The string shall be at a valid pointer.
-constexpr pw::Result<size_t> NullTerminatedLength(span<const char> str) {
+constexpr Result<size_t> NullTerminatedLength(span<const char> str) {
   PW_DASSERT(str.data() != nullptr);
 
   const size_t length = internal::ClampedLength(str.data(), str.size());
@@ -62,8 +63,7 @@ constexpr pw::Result<size_t> NullTerminatedLength(span<const char> str) {
   return length;
 }
 
-constexpr pw::Result<size_t> NullTerminatedLength(const char* str,
-                                                  size_t max_len) {
+constexpr Result<size_t> NullTerminatedLength(const char* str, size_t max_len) {
   return NullTerminatedLength(span<const char>(str, max_len));
 }
 
@@ -99,6 +99,46 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
                                               char* dest,
                                               size_t num) {
   return Copy(source, span<char>(dest, num));
+}
+
+// Assigns a std::string_view to a pw::InlineString, truncating if it does not
+// fit. pw::InlineString's assign() function asserts if the string's requested
+// size exceeds its capacity; pw::string::Assign() returns a Status instead.
+//
+// Returns:
+//    OK - the entire std::string_view was copied to the end of the InlineString
+//    RESOURCE_EXHAUSTED - the std::string_view was truncated to fit
+inline Status Assign(InlineString<>& string, const std::string_view& view) {
+  const size_t chars_copied =
+      std::min(view.size(), static_cast<size_t>(string.capacity()));
+  string.assign(view, 0, chars_copied);
+  return chars_copied == view.size() ? OkStatus() : Status::ResourceExhausted();
+}
+
+inline Status Assign(InlineString<>& string, const char* c_string) {
+  PW_DASSERT(c_string != nullptr);
+  // Clamp to capacity + 1 so strings larger than the capacity yield an error.
+  return Assign(string, ClampedCString(c_string, string.capacity() + 1));
+}
+
+// Appends a std::string_view to a pw::InlineString, truncating if it does not
+// fit. pw::InlineString's append() function asserts if the string's requested
+// size exceeds its capacity; pw::string::Append() returns a Status instead.
+//
+// Returns:
+//    OK - the entire std::string_view was assigned
+//    RESOURCE_EXHAUSTED - the std::string_view was truncated to fit
+inline Status Append(InlineString<>& string, const std::string_view& view) {
+  const size_t chars_copied = std::min(
+      view.size(), static_cast<size_t>(string.capacity() - string.size()));
+  string.append(view, 0, chars_copied);
+  return chars_copied == view.size() ? OkStatus() : Status::ResourceExhausted();
+}
+
+inline Status Append(InlineString<>& string, const char* c_string) {
+  PW_DASSERT(c_string != nullptr);
+  // Clamp to capacity + 1 so strings larger than the capacity yield an error.
+  return Append(string, ClampedCString(c_string, string.capacity() + 1));
 }
 
 // Copies source string to the dest with same behavior as Copy, with the

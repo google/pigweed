@@ -141,6 +141,101 @@ TEST_F(CopyTest, NullTerminatorsInString) {
   EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
 }
 
+class InlineStringUtilTest : public ::testing::Test {
+ protected:
+  InlineString<5> string_;
+};
+
+TEST_F(InlineStringUtilTest, Assign_EmptyStringView_WritesNullTerminator) {
+  EXPECT_EQ(OkStatus(), Assign(string_, ""));
+  EXPECT_EQ(string_, "");
+}
+
+TEST_F(InlineStringUtilTest, Assign_EmptyBuffer_WritesNothing) {
+  InlineString<0> zero_capacity;
+  EXPECT_EQ(Status::ResourceExhausted(), Assign(zero_capacity, "Hello"));
+  EXPECT_TRUE(zero_capacity.empty());
+  EXPECT_EQ(zero_capacity.c_str()[0], '\0');
+}
+
+TEST_F(InlineStringUtilTest, Assign_TooSmall_Truncates) {
+  EXPECT_EQ(Status::ResourceExhausted(), Assign(string_, "12345HELLO?"));
+  EXPECT_EQ("12345", string_);
+}
+
+TEST_F(InlineStringUtilTest, Assign_ExactFit) {
+  EXPECT_EQ(OkStatus(), Assign(string_, "12345"));
+  EXPECT_EQ("12345", string_);
+}
+
+TEST_F(InlineStringUtilTest, Assign_NullTerminatorsInString) {
+  EXPECT_EQ(OkStatus(), Assign(string_, "\0!\0\0\0"sv));
+  EXPECT_EQ("\0!\0\0\0"sv, string_);
+}
+
+TEST_F(InlineStringUtilTest, Assign_ExistingContent_Replaces) {
+  string_ = "12345";
+  EXPECT_EQ(OkStatus(), Assign(string_, ""));
+  EXPECT_EQ("", string_);
+}
+
+TEST_F(InlineStringUtilTest, Assign_ExistingContent_ExactFit) {
+  string_.append("yo");
+  EXPECT_EQ(OkStatus(), Assign(string_, "12345"));
+  EXPECT_EQ("12345", string_);
+}
+
+TEST_F(InlineStringUtilTest, Assign_ExistingContent_Truncates) {
+  string_.append("yo");
+  EXPECT_EQ(Status::ResourceExhausted(), Assign(string_, "1234567"));
+  EXPECT_EQ("12345", string_);
+}
+
+TEST_F(InlineStringUtilTest, Append_EmptyStringView_WritesNullTerminator) {
+  EXPECT_EQ(OkStatus(), Append(string_, ""));
+  EXPECT_EQ(string_, "");
+}
+
+TEST_F(InlineStringUtilTest, Append_EmptyBuffer_WritesNothing) {
+  InlineString<0> zero_capacity;
+  EXPECT_EQ(Status::ResourceExhausted(), Append(zero_capacity, "Hello"));
+  EXPECT_TRUE(zero_capacity.empty());
+  EXPECT_EQ(zero_capacity.c_str()[0], '\0');
+}
+
+TEST_F(InlineStringUtilTest, Append_TooSmall_Truncates) {
+  EXPECT_EQ(Status::ResourceExhausted(), Append(string_, "12345HELLO?"));
+  EXPECT_EQ("12345", string_);
+}
+
+TEST_F(InlineStringUtilTest, Append_ExactFit) {
+  EXPECT_EQ(OkStatus(), Append(string_, "12345"));
+  EXPECT_EQ("12345", string_);
+}
+
+TEST_F(InlineStringUtilTest, Append_NullTerminatorsInString) {
+  EXPECT_EQ(OkStatus(), Append(string_, "\0!\0\0\0"sv));
+  EXPECT_EQ("\0!\0\0\0"sv, string_);
+}
+
+TEST_F(InlineStringUtilTest, Append_ExistingContent_AppendNothing) {
+  string_ = "12345";
+  EXPECT_EQ(OkStatus(), Append(string_, ""));
+  EXPECT_EQ("12345", string_);
+}
+
+TEST_F(InlineStringUtilTest, Append_ExistingContent_ExactFit) {
+  string_.append("yo");
+  EXPECT_EQ(OkStatus(), Append(string_, "123"));
+  EXPECT_EQ("yo123", string_);
+}
+
+TEST_F(InlineStringUtilTest, Append_ExistingContent_Truncates) {
+  string_.append("yo");
+  EXPECT_EQ(Status::ResourceExhausted(), Append(string_, "12345"));
+  EXPECT_EQ("yo123", string_);
+}
+
 class PrintableCopyTest : public TestWithBuffer {};
 
 TEST_F(PrintableCopyTest, EmptyBuffer_WritesNothing) {

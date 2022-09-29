@@ -56,6 +56,16 @@ Key differences from ``std::string``
 
 API reference
 -------------
+.. cpp:class:: template <typename T, unsigned short kCapacity> pw::InlineBasicString
+
+   Represents a fixed-capacity string of a generic character type. Equivalent to
+   ``std::basic_string<T>``. Always null (``T()``) terminated.
+
+.. cpp:type:: template <unsigned short kCapacity> pw::InlineString = pw::InlineBasicString<char, kCapacity>
+
+   Represents a fixed-capacity string of ``char`` characters. Equivalent to
+   ``std::string``. Always null (``'\0'``) terminated.
+
 :cpp:type:`pw::InlineString` / :cpp:class:`pw::InlineBasicString` follows the
 ``std::string`` / ``std::basic_string<T>`` API, with a few variations:
 
@@ -73,16 +83,6 @@ API reference
   ``shrink_to_fit()``, ``get_allocator()``).
 - ``resize_and_overwrite()`` only takes the ``Operation`` argument, since the
   underlying string buffer cannot be resized.
-
-.. cpp:class:: template <typename T, unsigned short kCapacity> pw::InlineBasicString
-
-   Represents a fixed-capacity string of a generic character type. Equivalent to
-   ``std::basic_string<T>``. Always null (``T()``) terminated.
-
-.. cpp:type:: template <unsigned short kCapacity> pw::InlineString = pw::InlineBasicString<char, kCapacity>
-
-   Represents a fixed-capacity string of ``char`` characters. Equivalent to
-   ``std::string``. Always null (``'\0'``) terminated.
 
 See the `std::string documentation
 <https://en.cppreference.com/w/cpp/string/basic_string>`_ for full details.
@@ -170,6 +170,23 @@ is not supported until C++20.
 
    // In C++20, CTAD may be used with the pw::InlineString alias.
    pw::InlineString my_other_string("123456789");
+
+Exceeding the capacity
+----------------------
+Any :cpp:type:`pw::InlineString` operations that exceed the string's capacity
+fail an assertion, resulting in a crash. Heplers are provided in
+``pw_string/util.h`` that return ``pw::Status::ResourceExhausted()`` instead of
+failing an assert when the capacity would be exceeded.
+
+.. cpp:function:: pw::Status pw::string::Assign(pw::InlineString<>& string, const std::string_view& view)
+
+   Assigns ``view`` to ``string``. Truncates and returns ``RESOURCE_EXHAUSTED``
+   if ``view`` is too large for ``string``.
+
+.. cpp:function:: pw::Status pw::string::Append(pw::InlineString<>& string, const std::string_view& view)
+
+   Appends ``view`` to ``string``. Truncates and returns ``RESOURCE_EXHAUSTED``
+   if ``view`` does not fit within the remaining capacity of ``string``.
 
 pw::string::Format
 ==================

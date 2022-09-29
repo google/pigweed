@@ -97,6 +97,7 @@ pw_add_module_library(pw_string.util
     pw_result
     pw_span
     pw_status
+    pw_string.string
   SOURCES
     public/pw_string/internal/length.h
 )
