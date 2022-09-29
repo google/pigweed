@@ -18,6 +18,7 @@ import logging
 from pathlib import Path
 import shutil
 import sys
+from typing import Dict
 
 _LOG = logging.getLogger(__name__)
 
@@ -45,12 +46,20 @@ def copy_wheels(prefix, suffix_file, out_dir):
     if not out_dir.exists():
         out_dir.mkdir()
 
+    copied_files: Dict[str, Path] = dict()
     for suffix in suffix_file.readlines():
         path = prefix / suffix.strip()
         _LOG.debug('Searching for wheels in %s', path)
         if path == out_dir:
             continue
         for wheel in path.glob('**/*.whl'):
+            if wheel.name in copied_files:
+                _LOG.error('Attempting to override %s with %s',
+                           copied_files[wheel.name], wheel)
+                raise FileExistsError(
+                    f'{wheel.name} conflict: '
+                    f'{copied_files[wheel.name]} and {wheel}')
+            copied_files[wheel.name] = wheel
             _LOG.debug('Copying %s to %s', wheel, out_dir)
             shutil.copy(wheel, out_dir)
 
