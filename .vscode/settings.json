@@ -31,12 +31,13 @@
 
     // Integrated terminal settings
     "terminal.integrated.env.linux": {
-      "CIPD_CACHE_DIR": "${userHome}/.cipd-cache-dir",
+      "CIPD_CACHE_DIR": "${env:HOME}/.cipd-cache-dir",
       "PATH": "${workspaceFolder}/out/host/host_tools:${workspaceFolder}/environment/pigweed-venv/bin:${workspaceFolder}/environment/cipd/packages/luci:${workspaceFolder}/environment/cipd/packages/bazel:${workspaceFolder}/environment/cipd/packages/python/bin:${workspaceFolder}/environment/cipd/packages/python:${workspaceFolder}/environment/cipd/packages/arm/bin:${workspaceFolder}/environment/cipd/packages/arm:${workspaceFolder}/environment/cipd/packages/pigweed/bin:${workspaceFolder}/environment/cipd/packages/pigweed:${workspaceFolder}/environment/cipd:${env:PATH}",
       "PW_ARM_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/arm",
       "PW_BAZEL_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/bazel",
       "PW_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd",
-      "PW_DEFAULT_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/default",        "PW_LUCI_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/luci",
+      "PW_DEFAULT_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/default",
+      "PW_LUCI_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/luci",
       "PW_PACKAGE_ROOT": "${workspaceFolder}/environment/packages",
       "PW_PIGWEED_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/pigweed",
       "PW_PROJECT_ROOT": "${workspaceFolder}/.",
@@ -48,7 +49,7 @@
       "_PW_ROSETTA": "1"
     },
     "terminal.integrated.env.osx": {
-      "CIPD_CACHE_DIR": "${userHome}/.cipd-cache-dir",
+      "CIPD_CACHE_DIR": "${env:HOME}/.cipd-cache-dir",
       "PATH": "${workspaceFolder}/out/host/host_tools:${workspaceFolder}/environment/pigweed-venv/bin:${workspaceFolder}/environment/cipd/packages/luci:${workspaceFolder}/environment/cipd/packages/bazel:${workspaceFolder}/environment/cipd/packages/python/bin:${workspaceFolder}/environment/cipd/packages/python:${workspaceFolder}/environment/cipd/packages/arm/bin:${workspaceFolder}/environment/cipd/packages/arm:${workspaceFolder}/environment/cipd/packages/pigweed/bin:${workspaceFolder}/environment/cipd/packages/pigweed:${workspaceFolder}/environment/cipd:${env:PATH}",
       "PW_ARM_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/arm",
       "PW_BAZEL_CIPD_INSTALL_DIR": "${workspaceFolder}/environment/cipd/packages/bazel",
