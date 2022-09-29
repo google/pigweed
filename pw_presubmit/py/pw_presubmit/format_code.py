@@ -257,7 +257,6 @@ def print_format_check(errors: Dict[Path, str],
     if not errors:
         # Don't print anything in the all-good case.
         return
-
     # Show the format fixing diff suggested by the tooling (with colors).
     _LOG.warning('Found %d files with formatting errors. Format changes:',
                  len(errors))
@@ -267,7 +266,7 @@ def print_format_check(errors: Dict[Path, str],
     # Show a copy-and-pastable command to fix the issues.
     if show_fix_commands:
 
-        def path_relative_to_cwd(path):
+        def path_relative_to_cwd(path: Path):
             try:
                 return Path(path).resolve().relative_to(Path.cwd().resolve())
             except ValueError:

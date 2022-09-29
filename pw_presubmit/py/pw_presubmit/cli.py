@@ -203,7 +203,7 @@ def run(
       **other_args: remaining arguments defined by by add_arguments
 
     Returns:
-      exit code for sys.exit; 0 if succesful, 1 if an error occurred
+      exit code for sys.exit; 0 if successful, 1 if an error occurred
     """
     if root is None:
         root = git_repo.root()

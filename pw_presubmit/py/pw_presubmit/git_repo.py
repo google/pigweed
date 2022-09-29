@@ -23,6 +23,7 @@ from pw_presubmit.tools import log_run, plural
 
 _LOG = logging.getLogger(__name__)
 PathOrStr = Union[Path, str]
+PatternOrStr = Union[Pattern, str]
 
 TRACKING_BRANCH_ALIAS = '@{upstream}'
 _TRACKING_BRANCH_ALIASES = TRACKING_BRANCH_ALIAS, '@{u}'
@@ -31,7 +32,7 @@ _TRACKING_BRANCH_ALIASES = TRACKING_BRANCH_ALIAS, '@{u}'
 def git_stdout(*args: PathOrStr,
                show_stderr=False,
                repo: PathOrStr = '.') -> str:
-    return log_run(['git', '-C', repo, *args],
+    return log_run(['git', '-C', str(repo), *args],
                    stdout=subprocess.PIPE,
                    stderr=None if show_stderr else subprocess.DEVNULL,
                    check=True).stdout.decode().strip()
@@ -332,3 +333,42 @@ def commit_hash(rev: str = 'HEAD',
         args += ['--short']
     args += [rev]
     return git_stdout(*args, repo=repo)
+
+
+def discover_submodules(
+    superproject_dir: Path, excluded_paths: Collection[PatternOrStr] = ()
+) -> List[Path]:
+    """Query git and return a list of submodules in the current project.
+
+    Args:
+        superproject_dir: Path object to directory under which we are looking
+                          for submodules. This will also be included in list
+                          returned unless excluded.
+        excluded_paths: Pattern or string that match submodules that should not
+                        be returned. All matches are done on posix style paths.
+
+    Returns:
+        List of "Path"s which were found but not excluded, this includes
+        superproject_dir unless excluded.
+    """
+    discovery_report = git_stdout('submodule',
+                                  'foreach',
+                                  '--quiet',
+                                  '--recursive',
+                                  'echo $sm_path',
+                                  repo=superproject_dir)
+    module_dirs = [Path(line) for line in discovery_report.split()]
+    # The superproject is omitted in the prior scan.
+    module_dirs.append(superproject_dir)
+
+    for exclude in excluded_paths:
+        if isinstance(exclude, Pattern):
+            for module_dir in reversed(module_dirs):
+                if exclude.fullmatch(module_dir.as_posix()):
+                    module_dirs.remove(module_dir)
+        else:
+            for module_dir in reversed(module_dirs):
+                if exclude == module_dir.as_posix():
+                    module_dirs.remove(module_dir)
+
+    return module_dirs
