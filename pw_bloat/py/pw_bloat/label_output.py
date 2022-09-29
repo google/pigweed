@@ -77,7 +77,6 @@ class BloatTableOutput:
     """ASCII Table generator from DataSourceMap."""
 
     _RST_PADDING_WIDTH = 6
-    _MIN_TABLE_PADDING = 5
 
     class _LabelContent(NamedTuple):
         name: str
@@ -114,9 +113,10 @@ class BloatTableOutput:
     def _generate_col_width(self, col_max_width: int) -> List[int]:
         """Find column width for all data sources and sizes."""
         max_len_size = 0
+        diff_len_col_width = 0
+
         col_list = [
-            len(ds_name) + self._MIN_TABLE_PADDING
-            for ds_name in self._data_source_map.get_ds_names()
+            len(ds_name) for ds_name in self._data_source_map.get_ds_names()
         ]
         for curr_label in self._data_source_map.labels():
             self._total_size += curr_label.size
@@ -137,7 +137,15 @@ class BloatTableOutput:
             diff_same = len('(SAME)')
         col_list.append(max(max_len_size, len('sizes'), diff_same))
 
-        return [x + self._additional_padding for x in col_list]
+        if self._diff_label is not None:
+            sum_all_col_names = sum(col_list)
+            if sum_all_col_names < len(self._diff_label):
+                diff_len_col_width = (
+                    (len(self._diff_label) - sum_all_col_names) //
+                    len(self._col_names))
+
+        return [(x + self._additional_padding + diff_len_col_width)
+                for x in col_list]
 
     def _diff_label_names(
             self, old_labels: Optional[Tuple[_LabelContent, ...]],
@@ -156,7 +164,7 @@ class BloatTableOutput:
 
         return tuple(diff_list)
 
-    def label_title_row(self) -> List[str]:
+    def _label_title_row(self) -> List[str]:
         label_rows = []
         label_cells = ''
         divider_cells = ''
@@ -177,16 +185,22 @@ class BloatTableOutput:
         curr_lb_hierachy = None
         last_diff_name = ''
         if self._diff_mode:
-            self._ascii_table_rows.extend([*self.label_title_row()])
+            self._ascii_table_rows.extend([*self._label_title_row()])
         else:
             self._ascii_table_rows.extend(
-                [self.create_border(True, self._cs.H.value)])
-        self._ascii_table_rows.extend([*self.create_title_row()])
+                [self._create_border(True, self._cs.H.value)])
+        self._ascii_table_rows.extend([*self._create_title_row()])
+
+        has_entries = False
+
         for curr_label in self._data_source_map.labels():
             if curr_label.size == 0:
                 continue
+
+            has_entries = True
+
             new_lb_hierachy = tuple([
-                *self.get_ds_label_size(curr_label.parents),
+                *self._get_ds_label_size(curr_label.parents),
                 self._LabelContent(curr_label.name, curr_label.size,
                                    get_label_status(curr_label))
             ])
@@ -204,35 +218,36 @@ class BloatTableOutput:
                         5) and (self._ascii_table_rows[-1][0] != '+'):
 
                     self._ascii_table_rows.append(
-                        self.row_divider(len(self._col_names),
-                                         self._cs.H.value))
+                        self._row_divider(len(self._col_names),
+                                          self._cs.H.value))
                 self._ascii_table_rows.append(
-                    self.create_same_label_row(1, diff_list[0].name))
+                    self._create_same_label_row(1, diff_list[0].name))
 
                 last_diff_name = curr_label.parents[0]
             else:
-                self._ascii_table_rows += self.create_rows_diffs(diff_list)
+                self._ascii_table_rows += self._create_diff_rows(diff_list)
 
         if self._rst_output and self._ascii_table_rows[-1][0] == '+':
             self._ascii_table_rows.pop()
 
-        self._ascii_table_rows.extend([*self.create_total_row()])
+        self._ascii_table_rows.extend(
+            [*self._create_total_row(is_empty=not has_entries)])
 
         return '\n'.join(self._ascii_table_rows) + '\n'
 
-    def create_same_label_row(self, col_index: int, label: str) -> str:
+    def _create_same_label_row(self, col_index: int, label: str) -> str:
         label_row = ''
         for col in range(len(self._col_names) - 1):
             if col == col_index:
-                curr_cell = self.create_cell(label, False, col, _Align.LEFT)
+                curr_cell = self._create_cell(label, False, col, _Align.LEFT)
             else:
-                curr_cell = self.create_cell('', False, col)
+                curr_cell = self._create_cell('', False, col)
             label_row += curr_cell
-        label_row += self.create_cell("(SAME)", True,
-                                      len(self._col_widths) - 1, _Align.RIGHT)
+        label_row += self._create_cell("(SAME)", True,
+                                       len(self._col_widths) - 1, _Align.RIGHT)
         return label_row
 
-    def get_ds_label_size(
+    def _get_ds_label_size(
             self, parent_labels: Tuple[str, ...]) -> Iterable[_LabelContent]:
         """Produce label, size pairs from parent label names."""
         parent_label_sizes = []
@@ -246,26 +261,44 @@ class BloatTableOutput:
                     break
         return parent_label_sizes
 
-    def create_total_row(self) -> Iterable[str]:
+    def _create_total_row(self, is_empty: bool = False) -> Iterable[str]:
         complete_total_rows = []
+
+        if self._diff_mode and is_empty:
+            # When diffing two identical binaries, output a row indicating that
+            # the two are the same.
+            no_diff_row = ''
+            for i in range(len(self._col_names)):
+                if i == 0:
+                    no_diff_row += self._create_cell('N/A', False, i,
+                                                     _Align.CENTER)
+                elif i == len(self._col_names) - 1:
+                    no_diff_row += self._create_cell('0', True, i)
+                else:
+                    no_diff_row += self._create_cell('(same)', False, i,
+                                                     _Align.CENTER)
+            complete_total_rows.append(no_diff_row)
+
         complete_total_rows.append(
-            self.row_divider(len(self._col_names), self._total_divider))
+            self._row_divider(len(self._col_names), self._total_divider))
         total_row = ''
+
         for i in range(len(self._col_names)):
             if i == 0:
-                total_row += self.create_cell('Total', False, i, _Align.LEFT)
+                total_row += self._create_cell('Total', False, i, _Align.LEFT)
             elif i == len(self._col_names) - 1:
                 total_size_str = diff_sign_sizes(self._total_size,
                                                  self._diff_mode)
-                total_row += self.create_cell(total_size_str, True, i)
+                total_row += self._create_cell(total_size_str, True, i)
             else:
-                total_row += self.create_cell('', False, i, _Align.CENTER)
+                total_row += self._create_cell('', False, i, _Align.CENTER)
 
         complete_total_rows.extend(
-            [total_row, self.create_border(False, self._cs.H.value)])
+            [total_row,
+             self._create_border(False, self._cs.H.value)])
         return complete_total_rows
 
-    def create_rows_diffs(
+    def _create_diff_rows(
             self, diff_list: Tuple[_LabelContent, ...]) -> Iterable[str]:
         """Create rows for each label according to its index in diff_list."""
         curr_row = ''
@@ -274,8 +307,8 @@ class BloatTableOutput:
         for index, label_content in enumerate(diff_list):
             if label_content.name:
                 if self._diff_mode:
-                    curr_row += self.create_cell(label_content.label_status,
-                                                 False, 0)
+                    curr_row += self._create_cell(label_content.label_status,
+                                                  False, 0)
                     diff_index = 1
                 for cell_index in range(diff_index,
                                         len(diff_list) + diff_index):
@@ -284,38 +317,39 @@ class BloatTableOutput:
                                 self._ascii_table_rows
                         ) > 5 and not self._rst_output:
                             diff_rows.append(
-                                self.row_divider(len(self._col_names),
-                                                 self._cs.H.value))
+                                self._row_divider(len(self._col_names),
+                                                  self._cs.H.value))
                         if (len(label_content.name) + self._additional_padding
                             ) > self._col_widths[cell_index]:
-                            curr_row = self.multi_row_label(
+                            curr_row = self._multi_row_label(
                                 label_content.name, cell_index)
                             break
-                        curr_row += self.create_cell(label_content.name, False,
-                                                     cell_index, _Align.LEFT)
+                        curr_row += self._create_cell(label_content.name,
+                                                      False, cell_index,
+                                                      _Align.LEFT)
                     else:
-                        curr_row += self.create_cell('', False, cell_index)
+                        curr_row += self._create_cell('', False, cell_index)
 
                 # Add size end of current row.
                 curr_size = diff_sign_sizes(label_content.size,
                                             self._diff_mode)
-                curr_row += self.create_cell(curr_size, True,
-                                             len(self._col_widths) - 1,
-                                             _Align.RIGHT)
+                curr_row += self._create_cell(curr_size, True,
+                                              len(self._col_widths) - 1,
+                                              _Align.RIGHT)
                 diff_rows.append(curr_row)
                 if self._rst_output:
                     diff_rows.append(
-                        self.row_divider(len(self._col_names),
-                                         self._cs.H.value))
+                        self._row_divider(len(self._col_names),
+                                          self._cs.H.value))
                 curr_row = ''
 
         return diff_rows
 
-    def create_cell(self,
-                    content: str,
-                    last_cell: bool,
-                    col_index: int,
-                    align: Optional[_Align] = _Align.RIGHT) -> str:
+    def _create_cell(self,
+                     content: str,
+                     last_cell: bool,
+                     col_index: int,
+                     align: Optional[_Align] = _Align.RIGHT) -> str:
         v_border = self._cs.V.value
         if self._rst_output and content:
             content = content.replace('_', '\\_')
@@ -335,7 +369,7 @@ class BloatTableOutput:
             string_cell += self._cs.V.value
         return string_cell
 
-    def multi_row_label(self, content: str, target_col_index: int) -> str:
+    def _multi_row_label(self, content: str, target_col_index: int) -> str:
         """Split content name into multiple rows within correct column."""
         max_len = self._col_widths[target_col_index] - self._additional_padding
         split_content = '...'.join(
@@ -352,21 +386,22 @@ class BloatTableOutput:
             last_cell = False
             for blank_cell_index in range(len(self._col_names)):
                 if blank_cell_index == target_col_index:
-                    curr_row += self.create_cell(cut_content, False,
-                                                 target_col_index, _Align.LEFT)
+                    curr_row += self._create_cell(cut_content, False,
+                                                  target_col_index,
+                                                  _Align.LEFT)
                 else:
                     if blank_cell_index == len(self._col_names) - 1:
                         if index == len(split_tab_content) - 1:
                             break
                         last_cell = True
-                    curr_row += self.create_cell('', last_cell,
-                                                 blank_cell_index)
+                    curr_row += self._create_cell('', last_cell,
+                                                  blank_cell_index)
             multi_label.append(curr_row)
             curr_row = ''
 
         return '\n'.join(multi_label)
 
-    def row_divider(self, col_num: int, h_div: str) -> str:
+    def _row_divider(self, col_num: int, h_div: str) -> str:
         l_border = ''
         r_border = ''
         row_div = ''
@@ -384,22 +419,22 @@ class BloatTableOutput:
             row_div += f"{l_border}{self._col_widths[col] * h_div}{r_border}"
         return row_div
 
-    def create_title_row(self) -> Iterable[str]:
+    def _create_title_row(self) -> Iterable[str]:
         title_rows = []
         title_cells = ''
         last_cell = False
         for index, curr_name in enumerate(self._col_names):
             if index == len(self._col_names) - 1:
                 last_cell = True
-            title_cells += self.create_cell(curr_name, last_cell, index,
-                                            _Align.CENTER)
+            title_cells += self._create_cell(curr_name, last_cell, index,
+                                             _Align.CENTER)
         title_rows.extend([
             title_cells,
-            self.row_divider(len(self._col_names), self._cs.HH.value)
+            self._row_divider(len(self._col_names), self._cs.HH.value)
         ])
         return title_rows
 
-    def create_border(self, top: bool, h_div: str):
+    def _create_border(self, top: bool, h_div: str):
         """Top or bottom borders of ASCII table."""
         row_div = ''
         for col in range(len(self._col_names)):

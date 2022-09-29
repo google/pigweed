@@ -51,7 +51,6 @@ base for the size diff can be specified either globally through the top-level
   }
 
   pw_size_diff("my_size_report") {
-    title = "Hello world program using printf vs. iostream"
     base = ":empty_base"
     data_sources = "symbols,segments"
     binaries = [
@@ -148,9 +147,9 @@ build arg to ``true``.
 Documentation integration
 =========================
 Bloat reports are easy to add to documentation files. All ``pw_size_diff``
-targets output a file containing a tabular report card. This file can be
-imported directly into a ReST documentation file using the ``include``
-directive.
+and ``pw_size_report`` targets output a file containing a tabular report card.
+This file can be imported directly into a ReST documentation file using the
+``include`` directive.
 
 For example, the ``simple_bloat_loop`` and ``simple_bloat_function`` size
 reports under ``//pw_bloat/examples`` are imported into this file as follows:

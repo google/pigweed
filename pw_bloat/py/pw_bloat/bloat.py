@@ -236,7 +236,7 @@ def main() -> int:
 
         except subprocess.CalledProcessError:
             _LOG.error('%s: failed to run target size report on %s',
-                       sys.argv[0], curr_diff_binary["target"])
+                       sys.argv[0], curr_diff_binary['target'])
             return 1
 
         if not single_output_target or not single_output_base:
@@ -252,6 +252,7 @@ def main() -> int:
             MAX_COL_WIDTH,
             LineCharset,
             diff_label=curr_diff_binary['label']).create_table()
+
         curr_rst_report = RstOutput(diff_dsm, curr_diff_binary['label'])
         if rst_diff_report == '':
             rst_diff_report = curr_rst_report.create_table()
