@@ -28,6 +28,23 @@
 
 namespace pw {
 namespace string {
+namespace internal {
+
+PW_CONSTEXPR_CPP20 inline StatusWithSize CopyToSpan(
+    const std::string_view& source, span<char> dest) {
+  if (dest.empty()) {
+    return StatusWithSize::ResourceExhausted();
+  }
+
+  const size_t copied = source.copy(dest.data(), dest.size() - 1);
+  dest[copied] = '\0';
+
+  return StatusWithSize(
+      copied == source.size() ? OkStatus() : Status::ResourceExhausted(),
+      copied);
+}
+
+}  // namespace internal
 
 // Safe alternative to the string_view constructor to avoid the risk of an
 // unbounded implicit or explicit use of strlen.
@@ -75,24 +92,22 @@ constexpr Result<size_t> NullTerminatedLength(const char* str, size_t max_len) {
 //
 // Precondition: The destination and source shall not overlap.
 // Precondition: The source shall be a valid pointer.
+template <typename Span>
 PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const std::string_view& source,
-                                              span<char> dest) {
-  if (dest.empty()) {
-    return StatusWithSize::ResourceExhausted();
-  }
-
-  const size_t copied = source.copy(dest.data(), dest.size() - 1);
-  dest[copied] = '\0';
-
-  return StatusWithSize(
-      copied == source.size() ? OkStatus() : Status::ResourceExhausted(),
-      copied);
+                                              Span&& dest) {
+  static_assert(
+      !std::is_base_of_v<InlineString<>, std::decay_t<Span>>,
+      "Do not use pw::string::Copy() with pw::InlineString<>. Instead, use "
+      "pw::InlineString<>'s assignment operator or assign() function, or "
+      "pw::string::Append().");
+  return internal::CopyToSpan(source, std::forward<Span>(dest));
 }
 
-PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
-                                              span<char> dest) {
+template <typename Span>
+PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source, Span&& dest) {
   PW_DASSERT(source != nullptr);
-  return Copy(ClampedCString(source, dest.size()), dest);
+  return Copy(ClampedCString(source, std::size(dest)),
+              std::forward<Span>(dest));
 }
 
 PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,

@@ -1042,14 +1042,13 @@ generated ``Message`` structure into an in-memory buffer.
   #include "pw_bytes/span.h"
   #include "pw_protobuf/encoder.h"
   #include "pw_status/status_with_size.h"
-  #include "pw_string/vector.h"
 
   // Writes a proto response to the provided buffer, returning the encode
   // status and number of bytes written.
   pw::StatusWithSize WriteProtoResponse(pw::ByteSpan response) {
     MyProto::Message message{}
     message.magic_number = 0x1a1a2b2b;
-    pw::string::Copy("cookies", message.favorite_food);
+    message.favorite_food = "cookies";
     message.calories = 600;
 
     // All proto writes are directly written to the `response` buffer.

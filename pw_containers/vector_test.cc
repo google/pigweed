@@ -488,17 +488,6 @@ TEST(Vector, Generic) {
   }
 }
 
-TEST(Vector, StringView) {
-  Vector<char, 8> vector{"Hello"sv};
-  EXPECT_EQ(vector.view().size(), vector.size());
-  EXPECT_EQ(vector.view().data(), vector.data());
-}
-
-TEST(Vector, StringViewConversion) {
-  Vector<char, 8> vector{"Hello"sv};
-  EXPECT_EQ(vector, "Hello"sv);
-}
-
 // Test that Vector<T> is trivially destructible when its type is.
 static_assert(std::is_trivially_destructible_v<Vector<int>>);
 static_assert(std::is_trivially_destructible_v<Vector<int, 4>>);

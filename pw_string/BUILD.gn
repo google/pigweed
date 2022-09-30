@@ -120,18 +120,6 @@ pw_source_set("util") {
   ]
 }
 
-pw_source_set("vector") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_string/vector.h" ]
-  public_deps = [
-    ":pw_string",
-    ":string",
-    "$dir_pw_containers:vector",
-    "$dir_pw_status",
-    dir_pw_span,
-  ]
-}
-
 pw_test_group("tests") {
   tests = [
     ":string_test",
@@ -140,7 +128,6 @@ pw_test_group("tests") {
     ":to_string_test",
     ":type_to_string_test",
     ":util_test",
-    ":vector_test",
   ]
   group_deps = [
     "$dir_pw_preprocessor:tests",
@@ -180,14 +167,6 @@ pw_test("type_to_string_test") {
 pw_test("util_test") {
   deps = [ ":util" ]
   sources = [ "util_test.cc" ]
-}
-
-pw_test("vector_test") {
-  deps = [
-    ":vector",
-    "$dir_pw_containers:vector",
-  ]
-  sources = [ "vector_test.cc" ]
 }
 
 pw_doc_group("docs") {

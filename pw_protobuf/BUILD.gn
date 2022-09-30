@@ -156,7 +156,6 @@ pw_test("codegen_encoder_test") {
 pw_test("codegen_message_test") {
   deps = [
     ":codegen_test_protos.pwpb",
-    "$dir_pw_string:vector",
     dir_pw_string,
   ]
   sources = [ "codegen_message_test.cc" ]

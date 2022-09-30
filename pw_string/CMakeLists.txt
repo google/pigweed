@@ -102,17 +102,6 @@ pw_add_module_library(pw_string.util
     public/pw_string/internal/length.h
 )
 
-pw_add_module_library(pw_string.vector
-  HEADERS
-    public/pw_string/vector.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_containers.vector
-    pw_status
-    pw_string
-)
-
 pw_add_test(pw_string.format_test
   SOURCES
     format_test.cc
@@ -170,17 +159,6 @@ pw_add_test(pw_string.util_test
     util_test.cc
   DEPS
     pw_string
-  GROUPS
-    modules
-    pw_string
-)
-
-pw_add_test(pw_string.vector_test
-  SOURCES
-    vector_test.cc
-  DEPS
-    pw_containers.vector
-    pw_string.vector
   GROUPS
     modules
     pw_string

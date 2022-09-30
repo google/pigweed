@@ -282,22 +282,6 @@ class Vector<T, vector_impl::kGeneric>
     return static_cast<const Vector<T, 0>*>(this)->array();
   }
 
-  // Returns a std::string_view of the contents of this Vector when T is char.
-  // The std::string_view is invalidated if the vector contents change.
-  template <typename U = T,
-            typename = std::enable_if_t<std::is_same_v<U, char>>>
-  constexpr std::string_view view() const {
-    return std::string_view(data(), size());
-  }
-
-  // Allow implicit conversions to std::string_view when T is char so Vectors
-  // can be passed into functions that take a std::string_view.
-  template <typename U = T,
-            typename = std::enable_if_t<std::is_same_v<U, char>>>
-  constexpr operator std::string_view() const {
-    return view();
-  }
-
   // Iterate
 
   iterator begin() noexcept { return &data()[0]; }
