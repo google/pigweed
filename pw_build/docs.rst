@@ -90,7 +90,7 @@ Pigweed build against it. This is controlled by the build variable
 template for a project.
 
 In some uncommon cases, a project's ``pw_executable`` template definition may
-need to stamp out some ``pw_source_set``s. Since a pw_executable template can't
+need to stamp out some ``pw_source_set``\s. Since a pw_executable template can't
 import ``$dir_pw_build/target_types.gni`` due to circular imports, it should
 import ``$dir_pw_build/cc_library.gni`` instead.
 
@@ -101,7 +101,7 @@ target's
 This list can be writen to a file at build time using ``generated_file``.  The
 primary use case for this is to generate a token database containing all the
 source files.  This allows PW_ASSERT to emit filename tokens even though it
-can't add them to the elf file because of the resons described at
+can't add them to the elf file because of the reasons described at
 :ref:`module-pw_assert-assert-api`.
 
 .. note::
