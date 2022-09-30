@@ -26,7 +26,8 @@ from . import presubmit
 NON_INCLUSIVE_WORDS = [
     r'master',
     r'slave',
-    r'(white|gr[ae]y|black)\s*(list|hat)',
+    r'red[-\s]?line',
+    r'(white|gr[ae]y|black)[-\s]*(list|hat)',
     r'craz(y|ie)',
     r'insane',
     r'crip+led?',
@@ -39,6 +40,7 @@ NON_INCLUSIVE_WORDS = [
     r'her',
     r'm[ae]n[-\s]*in[-\s]*the[-\s]*middle',
     r'mitm',
+    r'first[-\s]?class[-\s]?citizen',
 ]
 # inclusive-language: enable
 
