@@ -87,15 +87,12 @@ Example - Performing a Multi-part Transaction:
          std::byte{0x13}, std::byte{0x37}};
 
      // Creation of the RAII `transaction` acquires exclusive access to the bus
-     std::optional<pw::spi::Device::Transaction> transaction =
+     pw::spi::Device::Transaction transaction =
        device.StartTransaction(pw::spi::ChipSelectBehavior::kPerTransaction);
-     if (!transaction.has_value()) {
-       return pw::Status::Unknown();
-     )
 
      // This device only supports half-duplex transfers
-     PW_TRY(transaction->Write(kAccelReportCommand));
-     PW_TRY(transaction->Read(raw_sensor_data))
+     PW_TRY(transaction.Write(kAccelReportCommand));
+     PW_TRY(transaction.Read(raw_sensor_data))
 
      return UnpackSensorData(raw_sensor_data);
 

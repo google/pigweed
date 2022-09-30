@@ -15,7 +15,6 @@
 #include "pw_spi/linux_spi.h"
 
 #include <array>
-#include <optional>
 
 #include "gtest/gtest.h"
 #include "pw_spi/chip_selector.h"
@@ -51,30 +50,17 @@ class LinuxSpi : public ::testing::Test {
   [[maybe_unused]] Device device_;
 };
 
-TEST_F(LinuxSpi, StartTransaction_Succeeds) {
-  // arrange
-  std::optional<Device::Transaction> transaction =
-      device().StartTransaction(ChipSelectBehavior::kPerWriteRead);
-
-  // act
-
-  // assert
-  EXPECT_TRUE(transaction.has_value());
-}
-
 TEST_F(LinuxSpi, HalfDuplexTransaction_Succeeds) {
   // arrange
-  std::optional<Device::Transaction> transaction =
+  auto transaction =
       device().StartTransaction(ChipSelectBehavior::kPerWriteRead);
 
   // act
-  ASSERT_TRUE(transaction.has_value());
-
   std::array write_data{std::byte(1), std::byte(2), std::byte(3), std::byte(4)};
-  auto write_status = transaction->Write(ConstByteSpan(write_data));
+  auto write_status = transaction.Write(ConstByteSpan(write_data));
 
   std::array read_data{std::byte(1), std::byte(2), std::byte(3), std::byte(4)};
-  auto read_status = transaction->Read(read_data);
+  auto read_status = transaction.Read(read_data);
 
   // assert
   EXPECT_TRUE(write_status.ok());
@@ -83,15 +69,13 @@ TEST_F(LinuxSpi, HalfDuplexTransaction_Succeeds) {
 
 TEST_F(LinuxSpi, FullDuplexTransaction_Succeeds) {
   // arrange
-  std::optional<Device::Transaction> transaction =
+  auto transaction =
       device().StartTransaction(ChipSelectBehavior::kPerWriteRead);
 
   // act
-  ASSERT_TRUE(transaction.has_value());
-
   std::array write_data{std::byte(1), std::byte(2), std::byte(3), std::byte(4)};
   std::array read_data{std::byte(0), std::byte(0), std::byte(0), std::byte(0)};
-  auto wr_status = transaction->WriteRead(ConstByteSpan(write_data), read_data);
+  auto wr_status = transaction.WriteRead(ConstByteSpan(write_data), read_data);
 
   // assert
   EXPECT_TRUE(wr_status.ok());
