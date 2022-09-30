@@ -38,15 +38,20 @@ class PacketMeta {
   constexpr bool destination_is_server() const {
     return destination_ == internal::Packet::kServer;
   }
+  // Note: this `payload` is only valid so long as the original `data` buffer
+  // passed to `PacketMeta::FromBuffer` remains valid.
+  constexpr ConstByteSpan payload() const { return payload_; }
 
  private:
   constexpr explicit PacketMeta(const internal::Packet packet)
       : channel_id_(packet.channel_id()),
         service_id_(internal::WrapServiceId(packet.service_id())),
-        destination_(packet.destination()) {}
+        destination_(packet.destination()),
+        payload_(packet.payload()) {}
   uint32_t channel_id_;
   ServiceId service_id_;
   internal::Packet::Destination destination_;
+  ConstByteSpan payload_;
 };
 
 }  // namespace pw::rpc
