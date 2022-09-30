@@ -64,13 +64,12 @@ class PwpbPayloadsView {
    private:
     friend class PwpbPayloadsView;
 
-    constexpr iterator(const PayloadsView::iterator& it,
-                       const internal::PwpbSerde& serde)
+    constexpr iterator(const PayloadsView::iterator& it, const PwpbSerde& serde)
         : containers::
               WrappedIterator<iterator, PayloadsView::iterator, Payload>(it),
           serde_(serde) {}
 
-    internal::PwpbSerde serde_;
+    PwpbSerde serde_;
   };
 
   Payload operator[](size_t index) const {
@@ -94,11 +93,11 @@ class PwpbPayloadsView {
   friend class PwpbFakeChannelOutput;
 
   template <typename... Args>
-  PwpbPayloadsView(const internal::PwpbSerde& serde, Args&&... args)
+  PwpbPayloadsView(const PwpbSerde& serde, Args&&... args)
       : view_(args...), serde_(serde) {}
 
   PayloadsView view_;
-  internal::PwpbSerde serde_;
+  PwpbSerde serde_;
 };
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
@@ -191,7 +190,7 @@ class PwpbFakeChannelOutput final
   // synchronized! The PwpbPayloadsView is immediately invalidated if any
   // thread accesses the FakeChannelOutput.
   template <typename T>
-  PwpbPayloadsView<T> payload_structs(const internal::PwpbSerde& serde,
+  PwpbPayloadsView<T> payload_structs(const PwpbSerde& serde,
                                       MethodType type,
                                       uint32_t channel_id,
                                       uint32_t service_id,

@@ -71,7 +71,10 @@ pw_source_set("common") {
     dir_pw_log,
     dir_pw_stream,
   ]
-  public = [ "public/pw_rpc/pwpb/internal/common.h" ]
+  public = [
+    "public/pw_rpc/pwpb/internal/common.h",
+    "public/pw_rpc/pwpb/serde.h",
+  ]
 }
 
 pw_source_set("test_method_context") {

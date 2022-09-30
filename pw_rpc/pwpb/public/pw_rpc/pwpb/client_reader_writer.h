@@ -328,7 +328,7 @@ class PwpbClientReaderWriter
                          uint32_t channel_id_v,
                          uint32_t service_id,
                          uint32_t method_id,
-                         const internal::PwpbMethodSerde& serde)
+                         const PwpbMethodSerde& serde)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::PwpbStreamResponseClientCall<Response>(
             client,
@@ -372,7 +372,7 @@ class PwpbClientReader
                    uint32_t channel_id_v,
                    uint32_t service_id,
                    uint32_t method_id,
-                   const internal::PwpbMethodSerde& serde)
+                   const PwpbMethodSerde& serde)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::PwpbStreamResponseClientCall<Response>(
             client,
@@ -429,7 +429,7 @@ class PwpbClientWriter
                    uint32_t channel_id_v,
                    uint32_t service_id,
                    uint32_t method_id,
-                   const internal::PwpbMethodSerde& serde)
+                   const PwpbMethodSerde& serde)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
 
       : internal::PwpbUnaryResponseClientCall<Response>(
@@ -473,7 +473,7 @@ class PwpbUnaryReceiver
                     uint32_t channel_id_v,
                     uint32_t service_id,
                     uint32_t method_id,
-                    const internal::PwpbMethodSerde& serde)
+                    const PwpbMethodSerde& serde)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : internal::PwpbUnaryResponseClientCall<Response>(client,
                                                         channel_id_v,

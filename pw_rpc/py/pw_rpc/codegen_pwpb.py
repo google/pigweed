@@ -186,7 +186,7 @@ class PwpbCodeGenerator(CodeGenerator):
         self.line(f'using Request = {method.request_type().pwpb_struct()};')
         self.line(f'using Response = {method.response_type().pwpb_struct()};')
         self.line()
-        self.line(f'static constexpr const {RPC_NAMESPACE}::internal::'
+        self.line(f'static constexpr const {RPC_NAMESPACE}::'
                   'PwpbMethodSerde& serde() {')
         with self.indent():
             self.line(f'return {_serde(method)};')

@@ -58,6 +58,7 @@ pw_cc_library(
     name = "common",
     hdrs = [
         "public/pw_rpc/pwpb/internal/common.h",
+        "public/pw_rpc/pwpb/serde.h",
         "public/pw_rpc/pwpb/server_reader_writer.h",
     ],
     includes = ["public"],

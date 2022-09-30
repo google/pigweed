@@ -48,4 +48,9 @@ using MethodRequestType = typename internal::MethodInfo<kMethod>::Request;
 template <auto kMethod>
 using MethodResponseType = typename internal::MethodInfo<kMethod>::Response;
 
+// Function which returns a serializer for given kMethod.
+// For e.g. `pwpb` methods, this returns a `const PwpbMethodSerde&`.
+template <auto kMethod>
+using MethodSerde = typename internal::MethodInfo<kMethod>::serde;
+
 }  // namespace pw::rpc
