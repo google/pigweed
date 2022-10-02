@@ -40,13 +40,13 @@ static_library("fidl") {
 
   public_deps = [
     ":helpers",
-    "//sdk/fidl/fuchsia.bluetooth",
-    "//sdk/fidl/fuchsia.bluetooth.gatt",
-    "//sdk/fidl/fuchsia.bluetooth.gatt2",
-    "//sdk/fidl/fuchsia.bluetooth.le",
+    "//sdk/fidl/fuchsia.bluetooth:fuchsia.bluetooth_hlcpp",
+    "//sdk/fidl/fuchsia.bluetooth.gatt:fuchsia.bluetooth.gatt_hlcpp",
+    "//sdk/fidl/fuchsia.bluetooth.gatt2:fuchsia.bluetooth.gatt2_hlcpp",
+    "//sdk/fidl/fuchsia.bluetooth.le:fuchsia.bluetooth.le_hlcpp",
     "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host:stack",
-    "//src/connectivity/bluetooth/fidl:host",
+    "//src/connectivity/bluetooth/fidl:host_hlcpp",
     "//src/connectivity/bluetooth/lib/fidl",
     "//src/lib/fxl",
     "//zircon/system/ulib/fbl",
@@ -61,14 +61,14 @@ source_set("helpers") {
     "helpers.h",
   ]
   public_deps = [
-    "//sdk/fidl/fuchsia.bluetooth",
-    "//sdk/fidl/fuchsia.bluetooth.gatt",
-    "//sdk/fidl/fuchsia.bluetooth.gatt2",
+    "//sdk/fidl/fuchsia.bluetooth:fuchsia.bluetooth_hlcpp",
+    "//sdk/fidl/fuchsia.bluetooth.gatt:fuchsia.bluetooth.gatt_hlcpp",
+    "//sdk/fidl/fuchsia.bluetooth.gatt2:fuchsia.bluetooth.gatt2_hlcpp",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gap",
     "//src/connectivity/bluetooth/core/bt-host/gatt",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
-    "//src/connectivity/bluetooth/fidl:host",
+    "//src/connectivity/bluetooth/fidl:host_hlcpp",
   ]
 }
 
@@ -81,7 +81,7 @@ source_set("adapter_test_fixture") {
   ]
 
   public_deps = [
-    "//sdk/fidl/fuchsia.io",
+    "//sdk/fidl/fuchsia.io:fuchsia.io_hlcpp",
     "//src/connectivity/bluetooth/core/bt-host/gap",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
