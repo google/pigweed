@@ -101,6 +101,7 @@ pw_cc_library(
         "public/pw_rpc/channel.h",
         "public/pw_rpc/client.h",
         "public/pw_rpc/internal/service_client.h",
+        "public/pw_rpc/method_id.h",
         "public/pw_rpc/method_info.h",
         "public/pw_rpc/packet_meta.h",
         "public/pw_rpc/server.h",

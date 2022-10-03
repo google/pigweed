@@ -88,6 +88,7 @@ pw_add_module_library(pw_rpc.synchronous_client_api
 
 pw_add_module_library(pw_rpc.common
   HEADERS
+    public/pw_rpc/method_id.h
     public/pw_rpc/method_info.h
     public/pw_rpc/packet_meta.h
     public/pw_rpc/service_id.h

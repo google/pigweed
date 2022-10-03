@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_rpc/internal/method_info.h"
+#include "pw_rpc/method_id.h"
 
 namespace pw::rpc {
 
@@ -52,5 +53,15 @@ using MethodResponseType = typename internal::MethodInfo<kMethod>::Response;
 // For e.g. `pwpb` methods, this returns a `const PwpbMethodSerde&`.
 template <auto kMethod>
 using MethodSerde = typename internal::MethodInfo<kMethod>::serde;
+
+// Returns the identifier for this particular method.
+//
+// Identifiers are not guaranteed to be unique across services, so this should
+// be paired with a service ID when checking against packets which could target
+// different services.
+template <auto kMethod>
+constexpr MethodId GetMethodId() {
+  return internal::WrapMethodId(internal::MethodInfo<kMethod>::kMethodId);
+}
 
 }  // namespace pw::rpc
