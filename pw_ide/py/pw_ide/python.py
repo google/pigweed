@@ -57,7 +57,7 @@ def get_python_venv_path(system: str = platform.system()) -> Path:
         raise UnsupportedPlatformException()
 
     (bin_dir, interpreter) = PYTHON_PATHS[system]
-    abs_path = Path(PYTHON_VENV_PATH) / bin_dir / interpreter
+    abs_path = PYTHON_VENV_PATH / bin_dir / interpreter
     return abs_path.relative_to(PW_PROJECT_ROOT)
 
 
@@ -73,7 +73,7 @@ def create_python_symlink(
 
     (bin_dir, interpreter) = PYTHON_PATHS[system]
 
-    python_venv_bin_path = Path(PYTHON_VENV_PATH) / bin_dir
+    python_venv_bin_path = PYTHON_VENV_PATH / bin_dir
     python_venv_interpreter_path = python_venv_bin_path / interpreter
 
     interpreter_symlink_path = working_dir / PYTHON_SYMLINK_NAME
