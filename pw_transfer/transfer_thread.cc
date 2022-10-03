@@ -257,10 +257,10 @@ void TransferThread::HandleEvent(const internal::Event& event) {
     case EventType::kTerminate:
       // Terminate server contexts.
       for (ServerContext& server_context : server_transfers_) {
-        server_context.HandleEvent({
+        server_context.HandleEvent(Event{
             .type = EventType::kServerEndTransfer,
             .end_transfer =
-                {
+                EndTransferEvent{
                     .session_id = server_context.session_id(),
                     .status = Status::Aborted().code(),
                     .send_status_chunk = false,
@@ -270,10 +270,10 @@ void TransferThread::HandleEvent(const internal::Event& event) {
 
       // Terminate client contexts.
       for (ClientContext& client_context : client_transfers_) {
-        client_context.HandleEvent({
+        client_context.HandleEvent(Event{
             .type = EventType::kClientEndTransfer,
             .end_transfer =
-                {
+                EndTransferEvent{
                     .session_id = client_context.session_id(),
                     .status = Status::Aborted().code(),
                     .send_status_chunk = false,
@@ -319,10 +319,10 @@ void TransferThread::HandleEvent(const internal::Event& event) {
     case EventType::kRemoveTransferHandler:
       for (ServerContext& server_context : server_transfers_) {
         if (server_context.handler() == event.remove_transfer_handler) {
-          server_context.HandleEvent({
+          server_context.HandleEvent(Event{
               .type = EventType::kServerEndTransfer,
               .end_transfer =
-                  {
+                  EndTransferEvent{
                       .session_id = server_context.session_id(),
                       .status = Status::Aborted().code(),
                       .send_status_chunk = false,
