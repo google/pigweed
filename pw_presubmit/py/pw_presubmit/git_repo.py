@@ -355,7 +355,7 @@ def discover_submodules(
                                   'foreach',
                                   '--quiet',
                                   '--recursive',
-                                  'echo $sm_path',
+                                  'echo $toplevel/$sm_path',
                                   repo=superproject_dir)
     module_dirs = [Path(line) for line in discovery_report.split()]
     # The superproject is omitted in the prior scan.
