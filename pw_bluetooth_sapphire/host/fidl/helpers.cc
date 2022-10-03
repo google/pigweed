@@ -22,7 +22,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 
-using fuchsia::bluetooth::Bool;
 using fuchsia::bluetooth::Error;
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Int8;
@@ -33,7 +32,6 @@ namespace fbredr = fuchsia::bluetooth::bredr;
 namespace fbt = fuchsia::bluetooth;
 namespace fgatt = fuchsia::bluetooth::gatt;
 namespace fgatt2 = fuchsia::bluetooth::gatt2;
-namespace fhost = fuchsia::bluetooth::host;
 namespace fsys = fuchsia::bluetooth::sys;
 namespace faudio = fuchsia::hardware::audio;
 
@@ -386,7 +384,7 @@ ErrorCode HostErrorToFidlDeprecated(bt::HostError host_error) {
   return ErrorCode::FAILED;
 }
 
-Status NewFidlError(ErrorCode error_code, std::string description) {
+Status NewFidlError(ErrorCode error_code, const std::string& description) {
   Status status;
   status.error = std::make_unique<Error>();
   status.error->error_code = error_code;
@@ -494,15 +492,21 @@ bt::sm::IOCapability IoCapabilityFromFidl(fsys::InputCapability input,
                                           fsys::OutputCapability output) {
   if (input == fsys::InputCapability::NONE && output == fsys::OutputCapability::NONE) {
     return bt::sm::IOCapability::kNoInputNoOutput;
-  } else if (input == fsys::InputCapability::KEYBOARD &&
-             output == fsys::OutputCapability::DISPLAY) {
+  }
+
+  if (input == fsys::InputCapability::KEYBOARD && output == fsys::OutputCapability::DISPLAY) {
     return bt::sm::IOCapability::kKeyboardDisplay;
-  } else if (input == fsys::InputCapability::KEYBOARD && output == fsys::OutputCapability::NONE) {
+  }
+
+  if (input == fsys::InputCapability::KEYBOARD && output == fsys::OutputCapability::NONE) {
     return bt::sm::IOCapability::kKeyboardOnly;
-  } else if (input == fsys::InputCapability::NONE && output == fsys::OutputCapability::DISPLAY) {
+  }
+
+  if (input == fsys::InputCapability::NONE && output == fsys::OutputCapability::DISPLAY) {
     return bt::sm::IOCapability::kDisplayOnly;
-  } else if (input == fsys::InputCapability::CONFIRMATION &&
-             output == fsys::OutputCapability::DISPLAY) {
+  }
+
+  if (input == fsys::InputCapability::CONFIRMATION && output == fsys::OutputCapability::DISPLAY) {
     return bt::sm::IOCapability::kDisplayYesNo;
   }
 
@@ -1132,7 +1136,7 @@ ServiceDefinitionToServiceRecord(const fuchsia::bluetooth::bredr::ServiceDefinit
   for (auto& uuid : definition.service_class_uuids()) {
     bt::UUID btuuid = fidl_helpers::UuidFromFidl(uuid);
     bt_log(TRACE, "fidl", "Setting Service Class UUID %s", bt_str(btuuid));
-    classes.emplace_back(std::move(btuuid));
+    classes.emplace_back(btuuid);
   }
 
   rec.SetServiceClassUUIDs(classes);
@@ -1165,7 +1169,7 @@ ServiceDefinitionToServiceRecord(const fuchsia::bluetooth::bredr::ServiceDefinit
     for (const auto& profile : definition.profile_descriptors()) {
       bt_log(TRACE, "fidl", "Adding Profile %#hx v%d.%d", profile.profile_id, profile.major_version,
              profile.minor_version);
-      rec.AddProfile(bt::UUID(uint16_t(profile.profile_id)), profile.major_version,
+      rec.AddProfile(bt::UUID(static_cast<uint16_t>(profile.profile_id)), profile.major_version,
                      profile.minor_version);
     }
   }
@@ -1175,7 +1179,7 @@ ServiceDefinitionToServiceRecord(const fuchsia::bluetooth::bredr::ServiceDefinit
       if (!info.has_language()) {
         return fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
       }
-      std::string language = info.language();
+      const std::string& language = info.language();
       std::string name, description, provider;
       if (info.has_name()) {
         name = info.name();

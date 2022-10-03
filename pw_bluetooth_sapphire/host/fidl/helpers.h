@@ -49,7 +49,7 @@ std::optional<bt::PeerId> PeerIdFromString(const std::string& id);
 fuchsia::bluetooth::ErrorCode HostErrorToFidlDeprecated(bt::HostError host_error);
 
 fuchsia::bluetooth::Status NewFidlError(fuchsia::bluetooth::ErrorCode error_code,
-                                        std::string description);
+                                        const std::string& description);
 
 template <typename ProtocolErrorCode>
 fuchsia::bluetooth::Status ResultToFidlDeprecated(
