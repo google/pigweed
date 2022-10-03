@@ -156,6 +156,157 @@ TEST(HelpersTest, UuidFromFidl) {
   EXPECT_EQ(2u, output.CompactSize());
 }
 
+template <typename T>
+void FidlToDataElementIntegerTest(const std::function<fbredr::DataElement(T&&)>& func,
+                                  bt::sdp::DataElement::Type type) {
+  fbredr::DataElement data_element = func(std::numeric_limits<T>::max());
+  std::optional<bt::sdp::DataElement> result = FidlToDataElement(data_element);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(type, result->type());
+  EXPECT_EQ(std::numeric_limits<T>::max(), result->Get<T>());
+
+  // result->size() returns an enum member of DataElement::Size indicating the number of bytes
+  uint8_t exponent = static_cast<uint8_t>(result->size());
+  EXPECT_EQ(sizeof(T), std::pow(2, exponent));
+}
+
+TEST(HelpersTest, FidlToDataElementInt8Test) {
+  FidlToDataElementIntegerTest(std::function(fbredr::DataElement::WithInt8),
+                               bt::sdp::DataElement::Type::kSignedInt);
+}
+
+TEST(HelpersTest, FidlToDataElementInt16Test) {
+  FidlToDataElementIntegerTest(std::function(fbredr::DataElement::WithInt16),
+                               bt::sdp::DataElement::Type::kSignedInt);
+}
+
+TEST(HelpersTest, FidlToDataElementInt32Test) {
+  FidlToDataElementIntegerTest(std::function(fbredr::DataElement::WithInt32),
+                               bt::sdp::DataElement::Type::kSignedInt);
+}
+
+TEST(HelpersTest, FidlToDataElementInt64Test) {
+  FidlToDataElementIntegerTest(std::function(fbredr::DataElement::WithInt64),
+                               bt::sdp::DataElement::Type::kSignedInt);
+}
+
+TEST(HelpersTest, FidlToDataElementUint8Test) {
+  FidlToDataElementIntegerTest(std::function(fbredr::DataElement::WithUint8),
+                               bt::sdp::DataElement::Type::kUnsignedInt);
+}
+
+TEST(HelpersTest, FidlToDataElementUint16Test) {
+  FidlToDataElementIntegerTest(std::function(fbredr::DataElement::WithUint16),
+                               bt::sdp::DataElement::Type::kUnsignedInt);
+}
+
+TEST(HelpersTest, FidlToDataElementUint32Test) {
+  FidlToDataElementIntegerTest(std::function(fbredr::DataElement::WithUint32),
+                               bt::sdp::DataElement::Type::kUnsignedInt);
+}
+
+TEST(HelpersTest, FidlToDataElementUint64Test) {
+  FidlToDataElementIntegerTest(std::function(fbredr::DataElement::WithUint64),
+                               bt::sdp::DataElement::Type::kUnsignedInt);
+}
+
+TEST(HelpersTest, FidlToDataElementEmptyStringTest) {
+  std::vector<uint8_t> data;
+  ASSERT_EQ(0u, data.size());
+
+  fbredr::DataElement data_element = fbredr::DataElement::WithStr(std::move(data));
+  std::optional<bt::sdp::DataElement> result = FidlToDataElement(data_element);
+
+  EXPECT_TRUE(result.has_value());
+  EXPECT_EQ(bt::sdp::DataElement::Type::kString, result->type());
+  EXPECT_EQ("", result->Get<std::string>());
+  EXPECT_EQ(bt::sdp::DataElement::Size::kNextOne, result->size());
+}
+
+TEST(HelpersTest, FidlToDataElementStringTest) {
+  std::string expected_str = "foobarbaz";
+  std::vector<uint8_t> data(expected_str.size(), 0);
+  std::memcpy(data.data(), expected_str.data(), expected_str.size());
+
+  fbredr::DataElement data_element = fbredr::DataElement::WithStr(std::move(data));
+  std::optional<bt::sdp::DataElement> result = FidlToDataElement(data_element);
+
+  EXPECT_TRUE(result.has_value());
+  EXPECT_EQ(bt::sdp::DataElement::Type::kString, result->type());
+  EXPECT_EQ(expected_str, result->Get<std::string>());
+  EXPECT_EQ(bt::sdp::DataElement::Size::kNextOne, result->size());
+}
+
+TEST(HelpersTest, FidlToDataElementUrlTest) {
+  std::string url = "http://www.google.com";
+  std::string moved = url;
+  fbredr::DataElement data_element = fbredr::DataElement::WithUrl(std::move(moved));
+  std::optional<bt::sdp::DataElement> result = FidlToDataElement(data_element);
+
+  EXPECT_TRUE(result.has_value());
+  EXPECT_EQ(bt::sdp::DataElement::Type::kUrl, result->type());
+  EXPECT_EQ(url, result->GetUrl());
+  EXPECT_EQ(bt::sdp::DataElement::Size::kNextOne, result->size());
+}
+
+TEST(HelpersTest, FidlToDataElementBooleanTest) {
+  bool expected = true;
+  bool moved = expected;
+  fbredr::DataElement data_element = fbredr::DataElement::WithB(std::move(moved));
+  std::optional<bt::sdp::DataElement> result = FidlToDataElement(data_element);
+
+  EXPECT_TRUE(result.has_value());
+  EXPECT_EQ(bt::sdp::DataElement::Type::kBoolean, result->type());
+  EXPECT_EQ(expected, result->Get<bool>());
+  EXPECT_EQ(bt::sdp::DataElement::Size::kOneByte, result->size());
+}
+
+TEST(HelpersTest, FidlToDataElementUuidTest) {
+  std::unique_ptr<fbt::Uuid> uuid = fbt::Uuid::New();
+  uuid->value.fill(123);
+
+  fbredr::DataElement data_element = fbredr::DataElement::WithUuid(std::move(*uuid));
+  std::optional<bt::sdp::DataElement> result = FidlToDataElement(data_element);
+
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(bt::sdp::DataElement::Type::kUuid, result->type());
+  EXPECT_EQ(bt::sdp::DataElement::Size::kSixteenBytes, result->size());
+
+  bt::DynamicByteBuffer bytes(16);
+  bytes.Fill(123);
+
+  bt::UUID expected;
+  ASSERT_TRUE(bt::UUID::FromBytes(bytes, &expected));
+  EXPECT_EQ(expected, result->Get<bt::UUID>());
+}
+
+TEST(HelpersTest, FidlToDataElementSequenceTest) {
+  int8_t size = 3;
+  std::vector<std::unique_ptr<fbredr::DataElement>> moved;
+  std::vector<bt::sdp::DataElement> expected;
+
+  for (int16_t i = 0; i < size; i++) {
+    expected.emplace_back(i);
+    moved.push_back(
+        std::make_unique<fbredr::DataElement>(fbredr::DataElement::WithInt16(std::move(i))));
+  }
+
+  fbredr::DataElement data_element = fbredr::DataElement::WithSequence(std::move(moved));
+  std::optional<bt::sdp::DataElement> result = FidlToDataElement(data_element);
+
+  EXPECT_TRUE(result.has_value());
+  EXPECT_EQ(bt::sdp::DataElement::Type::kSequence, result->type());
+  EXPECT_EQ(bt::sdp::DataElement::Size::kNextOne, result->size());
+
+  std::optional<std::vector<bt::sdp::DataElement>> actual =
+      result->Get<std::vector<bt::sdp::DataElement>>();
+  EXPECT_TRUE(actual);
+
+  for (int8_t i = 0; i < size; i++) {
+    EXPECT_EQ(expected[i].Get<int16_t>(), actual.value()[i].Get<int16_t>());
+  }
+}
+
 TEST(HelpersTest, AdvertisingDataFromFidlEmpty) {
   fble::AdvertisingData input;
   ASSERT_TRUE(input.IsEmpty());

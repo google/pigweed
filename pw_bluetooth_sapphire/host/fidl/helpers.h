@@ -211,6 +211,9 @@ std::unique_ptr<bt::gatt::Descriptor> Gatt2DescriptorFromFidl(
 std::unique_ptr<bt::gatt::Characteristic> Gatt2CharacteristicFromFidl(
     const fuchsia::bluetooth::gatt2::Characteristic& fidl_chrc);
 
+std::optional<bt::sdp::DataElement> FidlToDataElement(
+    const fuchsia::bluetooth::bredr::DataElement& fidl);
+
 }  // namespace bthost::fidl_helpers
 
 // fidl::TypeConverter specializations for ByteBuffer and friends.

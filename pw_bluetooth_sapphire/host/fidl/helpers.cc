@@ -36,6 +36,70 @@ namespace fsys = fuchsia::bluetooth::sys;
 namespace faudio = fuchsia::hardware::audio;
 
 namespace bthost::fidl_helpers {
+std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement& fidl) {
+  bt::sdp::DataElement out;
+  switch (fidl.Which()) {
+    case fbredr::DataElement::Tag::kInt8:
+      return bt::sdp::DataElement(fidl.int8());
+    case fbredr::DataElement::Tag::kInt16:
+      return bt::sdp::DataElement(fidl.int16());
+    case fbredr::DataElement::Tag::kInt32:
+      return bt::sdp::DataElement(fidl.int32());
+    case fbredr::DataElement::Tag::kInt64:
+      return bt::sdp::DataElement(fidl.int64());
+    case fbredr::DataElement::Tag::kUint8:
+      return bt::sdp::DataElement(fidl.uint8());
+    case fbredr::DataElement::Tag::kUint16:
+      return bt::sdp::DataElement(fidl.uint16());
+    case fbredr::DataElement::Tag::kUint32:
+      return bt::sdp::DataElement(fidl.uint32());
+    case fbredr::DataElement::Tag::kUint64:
+      return bt::sdp::DataElement(fidl.uint64());
+    case fbredr::DataElement::Tag::kStr: {
+      const std::vector<uint8_t>& str = fidl.str();
+      bt::DynamicByteBuffer bytes((bt::BufferView(str)));
+      return bt::sdp::DataElement(bytes);
+    }
+    case fbredr::DataElement::Tag::kUrl:
+      out.SetUrl(fidl.url());
+      break;
+    case fbredr::DataElement::Tag::kB:
+      return bt::sdp::DataElement(fidl.b());
+    case fbredr::DataElement::Tag::kUuid:
+      out.Set(fidl_helpers::UuidFromFidl(fidl.uuid()));
+      break;
+    case fbredr::DataElement::Tag::kSequence: {
+      std::vector<bt::sdp::DataElement> seq;
+      for (const auto& fidl_elem : fidl.sequence()) {
+        std::optional<bt::sdp::DataElement> elem = FidlToDataElement(*fidl_elem);
+        if (!elem) {
+          return std::nullopt;
+        }
+        seq.emplace_back(std::move(elem.value()));
+      }
+      out.Set(std::move(seq));
+      break;
+    }
+    case fbredr::DataElement::Tag::kAlternatives: {
+      std::vector<bt::sdp::DataElement> alts;
+      for (const auto& fidl_elem : fidl.alternatives()) {
+        auto elem = FidlToDataElement(*fidl_elem);
+        if (!elem) {
+          return std::nullopt;
+        }
+        alts.emplace_back(std::move(elem.value()));
+      }
+      out.SetAlternative(std::move(alts));
+      break;
+    }
+    default:
+      // Types not handled: Null datatype (never used)
+      bt_log(WARN, "fidl", "Encountered FidlToDataElement type not handled.");
+      return std::nullopt;
+  }
+  return out;
+}
+
 namespace {
 
 fbt::AddressType AddressTypeToFidl(bt::DeviceAddress::Type type) {
@@ -118,72 +182,6 @@ fbt::DeviceClass DeviceClassToFidl(bt::DeviceClass input) {
   auto bytes = input.bytes();
   fbt::DeviceClass output{static_cast<uint32_t>(bytes[0] | (bytes[1] << 8) | (bytes[2] << 16))};
   return output;
-}
-
-std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement& fidl) {
-  bt::sdp::DataElement out;
-  switch (fidl.Which()) {
-    case fbredr::DataElement::Tag::kInt8:
-      return bt::sdp::DataElement(fidl.int8());
-    case fbredr::DataElement::Tag::kInt16:
-      return bt::sdp::DataElement(fidl.int16());
-    case fbredr::DataElement::Tag::kInt32:
-      return bt::sdp::DataElement(fidl.int32());
-    case fbredr::DataElement::Tag::kInt64:
-      return bt::sdp::DataElement(fidl.int64());
-    case fbredr::DataElement::Tag::kUint8:
-      return bt::sdp::DataElement(fidl.uint8());
-    case fbredr::DataElement::Tag::kUint16:
-      return bt::sdp::DataElement(fidl.uint16());
-    case fbredr::DataElement::Tag::kUint32:
-      return bt::sdp::DataElement(fidl.uint32());
-    case fbredr::DataElement::Tag::kUint64:
-      return bt::sdp::DataElement(fidl.uint64());
-    case fbredr::DataElement::Tag::kStr: {
-      const std::vector<uint8_t>& str = fidl.str();
-      std::unique_ptr<uint8_t[]> data(new uint8_t[str.size()]);
-      memcpy(data.get(), str.data(), str.size());
-      bt::DynamicByteBuffer bytes(str.size(), std::move(data));
-      return bt::sdp::DataElement(bytes);
-    }
-    case fbredr::DataElement::Tag::kUrl:
-      out.SetUrl(fidl.url());
-      break;
-    case fbredr::DataElement::Tag::kB:
-      return bt::sdp::DataElement(fidl.b());
-    case fbredr::DataElement::Tag::kUuid:
-      out.Set(fidl_helpers::UuidFromFidl(fidl.uuid()));
-      break;
-    case fbredr::DataElement::Tag::kSequence: {
-      std::vector<bt::sdp::DataElement> seq;
-      for (const auto& fidl_elem : fidl.sequence()) {
-        auto it = FidlToDataElement(*fidl_elem);
-        if (!it) {
-          return std::nullopt;
-        }
-        seq.emplace_back(std::move(it.value()));
-      }
-      out.Set(std::move(seq));
-      break;
-    }
-    case fbredr::DataElement::Tag::kAlternatives: {
-      std::vector<bt::sdp::DataElement> alts;
-      for (const auto& fidl_elem : fidl.alternatives()) {
-        auto elem = FidlToDataElement(*fidl_elem);
-        if (!elem) {
-          return std::nullopt;
-        }
-        alts.emplace_back(std::move(elem.value()));
-      }
-      out.SetAlternative(std::move(alts));
-      break;
-    }
-    default:
-      // Types not handled: Null datatype (never used)
-      bt_log(WARN, "fidl", "Encountered FidlToDataElement type not handled.");
-      return std::nullopt;
-  }
-  return out;
 }
 
 bool AddProtocolDescriptorList(bt::sdp::ServiceRecord* rec,

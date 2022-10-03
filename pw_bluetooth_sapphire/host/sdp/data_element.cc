@@ -257,7 +257,7 @@ std::optional<uint64_t> DataElement::Get<uint64_t>() const {
 
 template <>
 std::optional<int8_t> DataElement::Get<int8_t>() const {
-  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(int8_t))) {
+  if (type_ == Type::kSignedInt && size_ == SizeToSizeType(sizeof(int8_t))) {
     return static_cast<int8_t>(int_value_);
   }
 
@@ -266,7 +266,7 @@ std::optional<int8_t> DataElement::Get<int8_t>() const {
 
 template <>
 std::optional<int16_t> DataElement::Get<int16_t>() const {
-  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(int16_t))) {
+  if (type_ == Type::kSignedInt && size_ == SizeToSizeType(sizeof(int16_t))) {
     return static_cast<int16_t>(int_value_);
   }
 
@@ -275,7 +275,7 @@ std::optional<int16_t> DataElement::Get<int16_t>() const {
 
 template <>
 std::optional<int32_t> DataElement::Get<int32_t>() const {
-  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(int32_t))) {
+  if (type_ == Type::kSignedInt && size_ == SizeToSizeType(sizeof(int32_t))) {
     return static_cast<int32_t>(int_value_);
   }
 
@@ -285,7 +285,7 @@ std::optional<int32_t> DataElement::Get<int32_t>() const {
 
 template <>
 std::optional<int64_t> DataElement::Get<int64_t>() const {
-  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(int64_t))) {
+  if (type_ == Type::kSignedInt && size_ == SizeToSizeType(sizeof(int64_t))) {
     return static_cast<int64_t>(int_value_);
   }
 

@@ -125,7 +125,7 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
     case bt::sdp::DataElement::Type::kString: {
       auto bytes = in->Get<bt::DynamicByteBuffer>();
       BT_DEBUG_ASSERT(bytes);
-      std::vector<uint8_t> data(bytes->size(), *bytes->data());
+      std::vector<uint8_t> data(bytes->cbegin(), bytes->cend());
       elem->set_str(data);
       return elem;
     }
