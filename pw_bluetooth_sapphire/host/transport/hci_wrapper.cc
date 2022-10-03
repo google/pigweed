@@ -11,6 +11,8 @@
 #include <lib/fit/defer.h>
 #include <lib/zx/channel.h>
 
+#include <mutex>
+
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 
