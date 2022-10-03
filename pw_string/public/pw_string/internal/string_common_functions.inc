@@ -106,8 +106,8 @@ constexpr InlineBasicString& assign(const StringView& string,
                                     size_type count = npos) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
-  return static_cast<InlineBasicString&>(
-      CopySubstr(data(), view.data(), view.size(), index, count));
+  return static_cast<InlineBasicString&>(CopySubstr(
+      data(), view.data(), static_cast<size_type>(view.size()), index, count));
 }
 
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
@@ -263,8 +263,8 @@ constexpr InlineBasicString& append(const StringView& string,
                                     size_type count = npos) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
-  return static_cast<InlineBasicString&>(
-      CopyExtendSubstr(data(), view.data(), view.size(), index, count));
+  return static_cast<InlineBasicString&>(CopyExtendSubstr(
+      data(), view.data(), static_cast<size_type>(view.size()), index, count));
 }
 
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)

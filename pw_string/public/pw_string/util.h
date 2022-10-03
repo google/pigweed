@@ -126,7 +126,7 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
 inline Status Assign(InlineString<>& string, const std::string_view& view) {
   const size_t chars_copied =
       std::min(view.size(), static_cast<size_t>(string.capacity()));
-  string.assign(view, 0, chars_copied);
+  string.assign(view, 0, static_cast<string_impl::size_type>(chars_copied));
   return chars_copied == view.size() ? OkStatus() : Status::ResourceExhausted();
 }
 
@@ -146,7 +146,7 @@ inline Status Assign(InlineString<>& string, const char* c_string) {
 inline Status Append(InlineString<>& string, const std::string_view& view) {
   const size_t chars_copied = std::min(
       view.size(), static_cast<size_t>(string.capacity() - string.size()));
-  string.append(view, 0, chars_copied);
+  string.append(view, 0, static_cast<string_impl::size_type>(chars_copied));
   return chars_copied == view.size() ? OkStatus() : Status::ResourceExhausted();
 }
 
