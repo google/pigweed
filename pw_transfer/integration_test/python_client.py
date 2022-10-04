@@ -70,6 +70,7 @@ def _main() -> int:
         default_response_timeout_s=config.chunk_timeout_ms / 1000,
         initial_response_timeout_s=config.initial_chunk_timeout_ms / 1000,
         max_retries=config.max_retries,
+        default_protocol_version=pw_transfer.ProtocolVersion.VERSION_TWO,
     )
 
     # Perform the requested transfer actions.

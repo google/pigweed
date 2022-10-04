@@ -95,10 +95,15 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
         pw::transfer::TransferAction::TransferType::
             TransferAction_TransferType_WRITE_TO_SERVER) {
       pw::stream::StdFileReader input(action.file_path().c_str());
-      client.Write(action.resource_id(), input, [&result](Status status) {
-        result.status = status;
-        result.completed.release();
-      });
+      client.Write(
+          action.resource_id(),
+          input,
+          [&result](Status status) {
+            result.status = status;
+            result.completed.release();
+          },
+          pw::transfer::cfg::kDefaultChunkTimeout,
+          pw::transfer::ProtocolVersion::kVersionTwo);
       // Wait for the transfer to complete. We need to do this here so that the
       // StdFileReader doesn't go out of scope.
       result.completed.acquire();
@@ -107,10 +112,15 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
                pw::transfer::TransferAction::TransferType::
                    TransferAction_TransferType_READ_FROM_SERVER) {
       pw::stream::StdFileWriter output(action.file_path().c_str());
-      client.Read(action.resource_id(), output, [&result](Status status) {
-        result.status = status;
-        result.completed.release();
-      });
+      client.Read(
+          action.resource_id(),
+          output,
+          [&result](Status status) {
+            result.status = status;
+            result.completed.release();
+          },
+          pw::transfer::cfg::kDefaultChunkTimeout,
+          pw::transfer::ProtocolVersion::kVersionTwo);
       // Wait for the transfer to complete.
       result.completed.acquire();
     } else {
