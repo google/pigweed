@@ -99,7 +99,7 @@ configured.
   # Install and configure MbedTLS
   pw package install mbedtls
   gn gen out \
-      --args='dir_pw_third_party_mbedtls="//.environment/packages/mbedtls" \
+      --args='dir_pw_third_party_mbedtls="//environment/packages/mbedtls" \
       pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls" \
       pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls"'
 
@@ -144,7 +144,7 @@ configured.
   # Install and configure BoringSSL
   pw package install boringssl
   gn gen out \
-      --args='dir_pw_third_party_boringssl="//.environment/packages/boringssl" \
+      --args='dir_pw_third_party_boringssl="//environment/packages/boringssl" \
       pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_boringssl" \
       pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_boringssl"'
 
@@ -162,7 +162,7 @@ To select Micro ECC, the library needs to be installed and configured.
 
   # Install and configure Micro ECC
   pw package install micro-ecc
-  gn gen out --args='dir_pw_third_party_micro_ecc="//.environment/packages/micro-ecc" pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc"'
+  gn gen out --args='dir_pw_third_party_micro_ecc="//environment/packages/micro-ecc" pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc"'
 
 Note Micro-ECC does not implement any hashing functions, so you will need to use other backends for SHA256 functionality if needed.
 

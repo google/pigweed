@@ -14,7 +14,7 @@
 # the License.
 
 if [ -z "$PW_ENVIRONMENT_ROOT" ]; then
-  PW_ENVIRONMENT_ROOT="$PW_ROOT/.environment"
+  PW_ENVIRONMENT_ROOT="$PW_ROOT/environment"
 fi
 PREFIX="$PW_ENVIRONMENT_ROOT/bootstrap"
 mkdir -p "$PREFIX"

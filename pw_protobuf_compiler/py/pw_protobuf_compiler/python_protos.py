@@ -27,7 +27,7 @@ from typing import (Dict, Generic, Iterable, Iterator, List, NamedTuple, Set,
 
 # Temporarily set the root logger level to critical while importing yapf.
 # This silences INFO level messages from
-# .environment/cipd/packages/python/lib/python3.9/lib2to3/driver.py
+# environment/cipd/packages/python/lib/python3.9/lib2to3/driver.py
 # when it writes Grammar3.*.pickle and PatternGrammar3.*.pickle files.
 _original_level = 0
 for handler in logging.getLogger().handlers:

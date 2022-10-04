@@ -425,7 +425,7 @@ never need to set these.
   ``:gce`` to tell the tool to fetch tokens from GCE metadata server.
 
 ``PW_ENVIRONMENT_ROOT``
-  Location to which packages are installed. Defaults to ``.environment`` folder
+  Location to which packages are installed. Defaults to ``environment`` folder
   within the checkout root.
 
 ``PW_ENVSETUP_DISABLE_SPINNER``
@@ -496,12 +496,12 @@ and modify. An example ``actions.json`` is shown below. The "append" and
           "PATH": {
               "append": [],
               "prepend": [
-                  "<pigweed-root>/.environment/cipd",
-                  "<pigweed-root>/.environment/cipd/pigweed",
-                  "<pigweed-root>/.environment/cipd/pigweed/bin",
-                  "<pigweed-root>/.environment/cipd/luci",
-                  "<pigweed-root>/.environment/cipd/luci/bin",
-                  "<pigweed-root>/.environment/pigweed-venv/bin",
+                  "<pigweed-root>/environment/cipd",
+                  "<pigweed-root>/environment/cipd/pigweed",
+                  "<pigweed-root>/environment/cipd/pigweed/bin",
+                  "<pigweed-root>/environment/cipd/luci",
+                  "<pigweed-root>/environment/cipd/luci/bin",
+                  "<pigweed-root>/environment/pigweed-venv/bin",
                   "<pigweed-root>/out/host/host_tools"
               ],
               "remove": []
@@ -510,12 +510,12 @@ and modify. An example ``actions.json`` is shown below. The "append" and
       "set": {
           "PW_PROJECT_ROOT": "<pigweed-root>",
           "PW_ROOT": "<pigweed-root>",
-          "_PW_ACTUAL_ENVIRONMENT_ROOT": "<pigweed-root>/.environment",
-          "PW_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd",
+          "_PW_ACTUAL_ENVIRONMENT_ROOT": "<pigweed-root>/environment",
+          "PW_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd",
           "CIPD_CACHE_DIR": "<home>/.cipd-cache-dir",
-          "PW_PIGWEED_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd/pigweed",
-          "PW_LUCI_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd/luci",
-          "VIRTUAL_ENV": "<pigweed-root>/.environment/pigweed-venv",
+          "PW_PIGWEED_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd/pigweed",
+          "PW_LUCI_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd/luci",
+          "VIRTUAL_ENV": "<pigweed-root>/environment/pigweed-venv",
           "PYTHONHOME": null,
           "__PYVENV_LAUNCHER__": null
       }
@@ -545,7 +545,7 @@ Implementation
 **************
 
 The environment is set up by installing CIPD and Python packages in
-``PW_ENVIRONMENT_ROOT`` or ``<checkout>/.environment``, and saving modifications
+``PW_ENVIRONMENT_ROOT`` or ``<checkout>/environment``, and saving modifications
 to environment variables in setup scripts in those directories. To support
 multiple operating systems this is done in an operating system-agnostic manner
 and then written into operating system-specific files to be sourced now and in

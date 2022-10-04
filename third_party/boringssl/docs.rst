@@ -60,7 +60,7 @@ The GN variables needed are defined in
        dir_pw_third_party_boringssl =
            getenv("_PW_ACTUAL_ENVIRONMENT_ROOT") + "/packages/boringssl"
 
-     The packages are normally installed at ``//.environment/packages``, but if
+     The packages are normally installed at ``//environment/packages``, but if
      you are using Pigweed's Commit Queue infrastructure this location is
      different.
 

@@ -48,8 +48,8 @@ import("target_types.gni")
 #   library_path: (required) The path of the static library of interest,
 #     relative to the root where the manifest's CIPD packages were installed to.
 #     e.g. if the package is installed by pigweed.json, and the .a file is at
-#     //.environment/cipd/pigweed/libs/libsomething.a, this argument should be
-#     "libs/libsomething.a".
+#     //environment/cipd/packages/pigweed/libs/libsomething.a, this argument
+#     should be "libs/libsomething.a".
 #   cipd_package: (required) The name of the CIPD package. This is the "path" of
 #     the package in the manifest file.
 #
