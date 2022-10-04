@@ -21,8 +21,10 @@ from typing import Any, Dict, Optional, Union
 from pw_rpc.callback_client import BidirectionalStreamingCall
 from pw_status import Status
 
-from pw_transfer.transfer import (ProgressCallback, ReadTransfer, Transfer,
-                                  WriteTransfer)
+from pw_transfer.transfer import (ProgressCallback, ProtocolVersion,
+                                  ReadTransfer, Transfer, WriteTransfer)
+from pw_transfer.chunk import Chunk
+
 try:
     from pw_transfer import transfer_pb2
 except ImportError:
@@ -49,7 +51,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                  *,
                  default_response_timeout_s: float = 2.0,
                  initial_response_timeout_s: float = 4.0,
-                 max_retries: int = 3):
+                 max_retries: int = 3,
+                 default_protocol_version=ProtocolVersion.LEGACY):
         """Initializes a Manager on top of a TransferService.
 
         Args:
@@ -63,8 +66,9 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._default_response_timeout_s = default_response_timeout_s
         self._initial_response_timeout_s = initial_response_timeout_s
         self.max_retries = max_retries
+        self._default_protocol_version = default_protocol_version
 
-        # Ongoing transfers in the service by ID.
+        # Ongoing transfers in the service by resource ID.
         self._read_transfers: _TransferDict = {}
         self._write_transfers: _TransferDict = {}
 
@@ -97,41 +101,54 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self._thread.join()
 
     def read(self,
-             session_id: int,
-             progress_callback: ProgressCallback = None) -> bytes:
+             resource_id: int,
+             progress_callback: ProgressCallback = None,
+             protocol_version: ProtocolVersion = None) -> bytes:
         """Receives ("downloads") data from the server.
+
+        Args:
+          resource_id: ID of the resource from which to read.
+          progress_callback: Optional callback periodically invoked throughout
+              the transfer with the transfer state. Can be used to provide user-
+              facing status updates such as progress bars.
 
         Raises:
           Error: the transfer failed to complete
         """
 
-        if session_id in self._read_transfers:
-            raise ValueError(f'Read transfer {session_id} already exists')
+        if resource_id in self._read_transfers:
+            raise ValueError(
+                f'Read transfer for resource {resource_id} already exists')
 
-        transfer = ReadTransfer(session_id,
+        if protocol_version is None:
+            protocol_version = self._default_protocol_version
+
+        transfer = ReadTransfer(resource_id,
                                 self._send_read_chunk,
                                 self._end_read_transfer,
                                 self._default_response_timeout_s,
                                 self._initial_response_timeout_s,
                                 self.max_retries,
+                                protocol_version,
                                 progress_callback=progress_callback)
         self._start_read_transfer(transfer)
 
         transfer.done.wait()
 
         if not transfer.status.ok():
-            raise Error(transfer.id, transfer.status)
+            raise Error(transfer.resource_id, transfer.status)
 
         return transfer.data
 
     def write(self,
-              session_id: int,
+              resource_id: int,
               data: Union[bytes, str],
-              progress_callback: ProgressCallback = None) -> None:
+              progress_callback: ProgressCallback = None,
+              protocol_version: ProtocolVersion = None) -> None:
         """Transmits ("uploads") data to the server.
 
         Args:
-          session_id: ID of the write transfer
+          resource_id: ID of the resource to which to write.
           data: Data to send to the server.
           progress_callback: Optional callback periodically invoked throughout
               the transfer with the transfer state. Can be used to provide user-
@@ -144,31 +161,36 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         if isinstance(data, str):
             data = data.encode()
 
-        if session_id in self._write_transfers:
-            raise ValueError(f'Write transfer {session_id} already exists')
+        if resource_id in self._write_transfers:
+            raise ValueError(
+                f'Write transfer for resource {resource_id} already exists')
 
-        transfer = WriteTransfer(session_id,
+        if protocol_version is None:
+            protocol_version = self._default_protocol_version
+
+        transfer = WriteTransfer(resource_id,
                                  data,
                                  self._send_write_chunk,
                                  self._end_write_transfer,
                                  self._default_response_timeout_s,
                                  self._initial_response_timeout_s,
                                  self.max_retries,
+                                 protocol_version,
                                  progress_callback=progress_callback)
         self._start_write_transfer(transfer)
 
         transfer.done.wait()
 
         if not transfer.status.ok():
-            raise Error(transfer.id, transfer.status)
+            raise Error(transfer.resource_id, transfer.status)
 
-    def _send_read_chunk(self, chunk: transfer_pb2.Chunk) -> None:
+    def _send_read_chunk(self, chunk: Chunk) -> None:
         assert self._read_stream is not None
-        self._read_stream.send(chunk)
+        self._read_stream.send(chunk.to_message())
 
-    def _send_write_chunk(self, chunk: transfer_pb2.Chunk) -> None:
+    def _send_write_chunk(self, chunk: Chunk) -> None:
         assert self._write_stream is not None
-        self._write_stream.send(chunk)
+        self._write_stream.send(chunk.to_message())
 
     def _start_event_loop_thread(self):
         """Entry point for event loop thread that starts an asyncio context."""
@@ -223,7 +245,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     async def _handle_chunk(transfers: _TransferDict,
-                            chunk: transfer_pb2.Chunk) -> None:
+                            message: transfer_pb2.Chunk) -> None:
         """Processes an incoming chunk from a stream.
 
         The chunk is dispatched to an active transfer based on its ID. If the
@@ -231,12 +253,19 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         is invoked.
         """
 
+        chunk = Chunk.from_message(message)
+
         try:
-            transfer = transfers[chunk.transfer_id]
-        except KeyError:
+            # Find a transfer for the chunk in the list of active transfers.
+            # Note that the dictionary key can't be used here, as it refers to
+            # resource ID, whereas transfers may be identified either by
+            # resource or session ID.
+            transfer = next(t for t in transfers.values()
+                            if t.id == chunk.id())
+        except StopIteration:
             _LOG.error(
                 'TransferManager received chunk for unknown transfer %d',
-                chunk.transfer_id)
+                chunk.id())
             # TODO(frolv): What should be done here, if anything?
             return
 
@@ -299,7 +328,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     def _start_read_transfer(self, transfer: Transfer) -> None:
         """Begins a new read transfer, opening the stream if it isn't."""
 
-        self._read_transfers[transfer.id] = transfer
+        self._read_transfers[transfer.resource_id] = transfer
 
         if not self._read_stream:
             self._open_read_stream()
@@ -310,7 +339,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
     def _end_read_transfer(self, transfer: Transfer) -> None:
         """Completes a read transfer."""
-        del self._read_transfers[transfer.id]
+        del self._read_transfers[transfer.resource_id]
 
         if not transfer.status.ok():
             _LOG.error('Read transfer %d terminated with status %s',
@@ -325,7 +354,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     def _start_write_transfer(self, transfer: Transfer) -> None:
         """Begins a new write transfer, opening the stream if it isn't."""
 
-        self._write_transfers[transfer.id] = transfer
+        self._write_transfers[transfer.resource_id] = transfer
 
         if not self._write_stream:
             self._open_write_stream()
@@ -336,7 +365,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
     def _end_write_transfer(self, transfer: Transfer) -> None:
         """Completes a write transfer."""
-        del self._write_transfers[transfer.id]
+        del self._write_transfers[transfer.resource_id]
 
         if not transfer.status.ok():
             _LOG.error('Write transfer %d terminated with status %s',
@@ -352,9 +381,9 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 class Error(Exception):
     """Exception raised when a transfer fails.
 
-    Stores the ID of the failed transfer and the error that occurred.
+    Stores the ID of the failed transfer resource and the error that occurred.
     """
-    def __init__(self, session_id: int, status: Status):
-        super().__init__(f'Transfer {session_id} failed with status {status}')
-        self.session_id = session_id
+    def __init__(self, resource_id: int, status: Status):
+        super().__init__(f'Transfer {resource_id} failed with status {status}')
+        self.resource_id = resource_id
         self.status = status

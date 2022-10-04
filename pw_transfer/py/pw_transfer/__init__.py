@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,5 +13,6 @@
 # the License.
 """Provides a simple interface for transferring bulk data over pw_rpc."""
 
-from pw_transfer.transfer import ProgressCallback, ProgressStats
+from pw_transfer.transfer import (ProgressCallback, ProgressStats,
+                                  ProtocolVersion)
 from pw_transfer.client import Error, Manager

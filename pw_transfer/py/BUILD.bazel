@@ -20,6 +20,7 @@ py_library(
     name = "pw_transfer",
     srcs = [
         "pw_transfer/__init__.py",
+        "pw_transfer/chunk.py",
         "pw_transfer/client.py",
         "pw_transfer/transfer.py",
     ],

@@ -24,6 +24,8 @@ from pw_rpc import callback_client, client, ids, packets
 from pw_rpc.internal import packet_pb2
 
 import pw_transfer
+from pw_transfer import ProtocolVersion
+
 try:
     from pw_transfer import transfer_pb2
 except ImportError:
@@ -42,6 +44,7 @@ class _Method(enum.Enum):
 
 
 class TransferManagerTest(unittest.TestCase):
+    # pylint: disable=too-many-public-methods
     """Tests for the transfer manager."""
     def setUp(self) -> None:
         self._client = client.Client.from_modules(
@@ -292,7 +295,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.read(27)
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 27)
+        self.assertEqual(exception.resource_id, 27)
         self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
 
         # The client should have sent four transfer parameters requests: one
@@ -313,7 +316,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.read(31)
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 31)
+        self.assertEqual(exception.resource_id, 31)
         self.assertEqual(exception.status, Status.NOT_FOUND)
 
     def test_read_transfer_server_error(self) -> None:
@@ -326,7 +329,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.read(31)
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 31)
+        self.assertEqual(exception.resource_id, 31)
         self.assertEqual(exception.status, Status.INTERNAL)
 
     def test_write_transfer_basic(self) -> None:
@@ -491,7 +494,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.write(4, b'small data')
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 4)
+        self.assertEqual(exception.resource_id, 4)
         self.assertEqual(exception.status, Status.OUT_OF_RANGE)
 
     def test_write_transfer_error(self) -> None:
@@ -508,7 +511,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.write(21, b'no write')
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 21)
+        self.assertEqual(exception.resource_id, 21)
         self.assertEqual(exception.status, Status.UNAVAILABLE)
 
     def test_write_transfer_server_error(self) -> None:
@@ -521,7 +524,7 @@ class TransferManagerTest(unittest.TestCase):
             manager.write(21, b'server error')
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 21)
+        self.assertEqual(exception.resource_id, 21)
         self.assertEqual(exception.status, Status.INTERNAL)
 
     def test_write_transfer_timeout_after_initial_chunk(self) -> None:
@@ -550,7 +553,7 @@ class TransferManagerTest(unittest.TestCase):
             ])
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 22)
+        self.assertEqual(exception.resource_id, 22)
         self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
 
     def test_write_transfer_timeout_after_intermediate_chunk(self) -> None:
@@ -589,7 +592,7 @@ class TransferManagerTest(unittest.TestCase):
             ])
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 22)
+        self.assertEqual(exception.resource_id, 22)
         self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
 
     def test_write_zero_pending_bytes_is_internal_error(self) -> None:
@@ -605,8 +608,481 @@ class TransferManagerTest(unittest.TestCase):
             manager.write(23, b'no write')
 
         exception = context.exception
-        self.assertEqual(exception.session_id, 23)
+        self.assertEqual(exception.resource_id, 23)
         self.assertEqual(exception.status, Status.INTERNAL)
+
+    def test_v2_read_transfer_basic(self) -> None:
+        """Tests a simple protocol version 2 read transfer."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.READ,
+            (
+                (transfer_pb2.Chunk(
+                    resource_id=39,
+                    session_id=280,
+                    type=transfer_pb2.Chunk.Type.START_ACK,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value), ),
+                (transfer_pb2.Chunk(session_id=280,
+                                    type=transfer_pb2.Chunk.Type.DATA,
+                                    offset=0,
+                                    data=b'version two',
+                                    remaining_bytes=0), ),
+                (transfer_pb2.Chunk(
+                    session_id=280,
+                    type=transfer_pb2.Chunk.Type.COMPLETION_ACK), ),
+            ),
+        )
+
+        data = manager.read(39)
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(
+                    transfer_id=39,
+                    resource_id=39,
+                    pending_bytes=8192,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=8192,
+                    type=transfer_pb2.Chunk.Type.START,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                transfer_pb2.Chunk(
+                    session_id=280,
+                    type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=8192,
+                    # pending_bytes should no longer exist as server and client
+                    # have agreed on v2.
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                transfer_pb2.Chunk(session_id=280,
+                                   type=transfer_pb2.Chunk.Type.COMPLETION,
+                                   status=Status.OK.value),
+            ])
+
+        self.assertEqual(data, b'version two')
+
+    def test_v2_read_transfer_legacy_fallback(self) -> None:
+        """Tests a v2 read transfer when the server only supports legacy."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        # Respond to the START chunk with a legacy data transfer chunk instead
+        # of a START_ACK.
+        self._enqueue_server_responses(
+            _Method.READ,
+            ((transfer_pb2.Chunk(transfer_id=40,
+                                 type=transfer_pb2.Chunk.Type.DATA,
+                                 offset=0,
+                                 data=b'sorry, legacy only',
+                                 remaining_bytes=0), ), ),
+        )
+
+        data = manager.read(40)
+
+        self.assertEqual(self._sent_chunks, [
+            transfer_pb2.Chunk(
+                transfer_id=40,
+                resource_id=40,
+                pending_bytes=8192,
+                max_chunk_size_bytes=1024,
+                window_end_offset=8192,
+                type=transfer_pb2.Chunk.Type.START,
+                protocol_version=ProtocolVersion.VERSION_TWO.value),
+            transfer_pb2.Chunk(transfer_id=40,
+                               type=transfer_pb2.Chunk.Type.COMPLETION,
+                               status=Status.OK.value),
+        ])
+
+        self.assertEqual(data, b'sorry, legacy only')
+
+    def test_v2_write_transfer_basic(self) -> None:
+        """Tests a simple protocol version 2 write transfer."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.WRITE,
+            (
+                (transfer_pb2.Chunk(
+                    resource_id=72,
+                    session_id=880,
+                    type=transfer_pb2.Chunk.Type.START_ACK,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value), ),
+                (transfer_pb2.Chunk(
+                    session_id=880,
+                    type=transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT,
+                    offset=0,
+                    window_end_offset=32,
+                    max_chunk_size_bytes=8), ),
+                (),  # In response to the first data chunk.
+                (transfer_pb2.Chunk(session_id=880,
+                                    type=transfer_pb2.Chunk.Type.COMPLETION,
+                                    status=Status.OK.value), ),
+            ),
+        )
+
+        manager.write(72, b'write version 2')
+
+        self.assertEqual(self._sent_chunks, [
+            transfer_pb2.Chunk(
+                transfer_id=72,
+                resource_id=72,
+                type=transfer_pb2.Chunk.Type.START,
+                protocol_version=ProtocolVersion.VERSION_TWO.value),
+            transfer_pb2.Chunk(
+                session_id=880,
+                type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
+                protocol_version=ProtocolVersion.VERSION_TWO.value),
+            transfer_pb2.Chunk(session_id=880,
+                               type=transfer_pb2.Chunk.Type.DATA,
+                               offset=0,
+                               data=b'write ve'),
+            transfer_pb2.Chunk(session_id=880,
+                               type=transfer_pb2.Chunk.Type.DATA,
+                               offset=8,
+                               data=b'rsion 2',
+                               remaining_bytes=0),
+            transfer_pb2.Chunk(session_id=880,
+                               type=transfer_pb2.Chunk.Type.COMPLETION_ACK),
+        ])
+
+        self.assertEqual(self._received_data(), b'write version 2')
+
+    def test_v2_write_transfer_legacy_fallback(self) -> None:
+        """Tests a v2 write transfer when the server only supports legacy."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.WRITE,
+            (
+                # Send a parameters chunk immediately per the legacy protocol.
+                (
+                    transfer_pb2.Chunk(
+                        transfer_id=76,
+                        type=transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT,
+                        offset=0,
+                        pending_bytes=32,
+                        window_end_offset=32,
+                        max_chunk_size_bytes=8), ),
+                (),  # In response to the first data chunk.
+                (transfer_pb2.Chunk(transfer_id=76,
+                                    type=transfer_pb2.Chunk.Type.COMPLETION,
+                                    status=Status.OK.value), ),
+            ),
+        )
+
+        manager.write(76, b'write v... NOPE')
+
+        self.assertEqual(self._sent_chunks, [
+            transfer_pb2.Chunk(
+                transfer_id=76,
+                resource_id=76,
+                type=transfer_pb2.Chunk.Type.START,
+                protocol_version=ProtocolVersion.VERSION_TWO.value),
+            transfer_pb2.Chunk(transfer_id=76,
+                               type=transfer_pb2.Chunk.Type.DATA,
+                               offset=0,
+                               data=b'write v.'),
+            transfer_pb2.Chunk(transfer_id=76,
+                               type=transfer_pb2.Chunk.Type.DATA,
+                               offset=8,
+                               data=b'.. NOPE',
+                               remaining_bytes=0),
+        ])
+
+        self.assertEqual(self._received_data(), b'write v... NOPE')
+
+    def test_v2_server_error(self) -> None:
+        """Tests a timeout occurring during the opening handshake."""
+
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.READ,
+            (
+                (transfer_pb2.Chunk(
+                    resource_id=43,
+                    session_id=680,
+                    type=transfer_pb2.Chunk.Type.START_ACK,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value), ),
+                (transfer_pb2.Chunk(session_id=680,
+                                    type=transfer_pb2.Chunk.Type.COMPLETION,
+                                    status=Status.DATA_LOSS.value), ),
+            ),
+        )
+
+        with self.assertRaises(pw_transfer.Error) as context:
+            manager.read(43)
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(
+                    transfer_id=43,
+                    resource_id=43,
+                    pending_bytes=8192,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=8192,
+                    type=transfer_pb2.Chunk.Type.START,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                transfer_pb2.Chunk(
+                    session_id=680,
+                    type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=8192,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                # Client sends a COMPLETION_ACK in response to the server.
+                transfer_pb2.Chunk(
+                    session_id=680,
+                    type=transfer_pb2.Chunk.Type.COMPLETION_ACK),
+            ])
+
+        exception = context.exception
+        self.assertEqual(exception.resource_id, 43)
+        self.assertEqual(exception.status, Status.DATA_LOSS)
+
+    def test_v2_timeout_during_opening_handshake(self) -> None:
+        """Tests a timeout occurring during the opening handshake."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        # Don't enqueue any server responses.
+
+        with self.assertRaises(pw_transfer.Error) as context:
+            manager.read(41)
+
+        start_chunk = transfer_pb2.Chunk(
+            transfer_id=41,
+            resource_id=41,
+            pending_bytes=8192,
+            max_chunk_size_bytes=1024,
+            window_end_offset=8192,
+            type=transfer_pb2.Chunk.Type.START,
+            protocol_version=ProtocolVersion.VERSION_TWO.value)
+
+        # The opening chunk should be sent initially, then retried three times.
+        self.assertEqual(self._sent_chunks, [start_chunk] * 4)
+
+        exception = context.exception
+        self.assertEqual(exception.resource_id, 41)
+        self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
+
+    def test_v2_timeout_recovery_during_opening_handshake(self) -> None:
+        """Tests a timeout during the opening handshake which recovers."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.WRITE,
+            (
+                (transfer_pb2.Chunk(
+                    resource_id=73,
+                    session_id=101,
+                    type=transfer_pb2.Chunk.Type.START_ACK,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value), ),
+                (),  # Don't respond to the START_ACK_CONFIRMATION.
+                (),  # Don't respond to the first START_ACK_CONFIRMATION retry.
+                (transfer_pb2.Chunk(
+                    session_id=101,
+                    type=transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT,
+                    offset=0,
+                    window_end_offset=32,
+                    max_chunk_size_bytes=8), ),
+                (),  # In response to the first data chunk.
+                (transfer_pb2.Chunk(session_id=101,
+                                    type=transfer_pb2.Chunk.Type.COMPLETION,
+                                    status=Status.OK.value), ),
+            ),
+        )
+
+        manager.write(73, b'write timeout 2')
+
+        start_ack_confirmation = transfer_pb2.Chunk(
+            session_id=101,
+            type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
+            protocol_version=ProtocolVersion.VERSION_TWO.value)
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(
+                    transfer_id=73,
+                    resource_id=73,
+                    type=transfer_pb2.Chunk.Type.START,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                start_ack_confirmation,  # Initial transmission
+                start_ack_confirmation,  # Retry 1
+                start_ack_confirmation,  # Retry 2
+                transfer_pb2.Chunk(session_id=101,
+                                   type=transfer_pb2.Chunk.Type.DATA,
+                                   offset=0,
+                                   data=b'write ti'),
+                transfer_pb2.Chunk(session_id=101,
+                                   type=transfer_pb2.Chunk.Type.DATA,
+                                   offset=8,
+                                   data=b'meout 2',
+                                   remaining_bytes=0),
+                transfer_pb2.Chunk(
+                    session_id=101,
+                    type=transfer_pb2.Chunk.Type.COMPLETION_ACK),
+            ])
+
+        self.assertEqual(self._received_data(), b'write timeout 2')
+
+    def test_v2_closing_handshake_bad_chunk(self) -> None:
+        """Tests an unexpected chunk response during the closing handshake."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.READ,
+            (
+                (transfer_pb2.Chunk(
+                    resource_id=47,
+                    session_id=580,
+                    type=transfer_pb2.Chunk.Type.START_ACK,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value), ),
+                (transfer_pb2.Chunk(session_id=580,
+                                    type=transfer_pb2.Chunk.Type.DATA,
+                                    offset=0,
+                                    data=b'version two',
+                                    remaining_bytes=0), ),
+                # In response to the COMPLETION, re-send the last chunk instead
+                # of a COMPLETION_ACK.
+                (
+                    transfer_pb2.Chunk(session_id=580,
+                                       type=transfer_pb2.Chunk.Type.DATA,
+                                       offset=0,
+                                       data=b'version two',
+                                       remaining_bytes=0), ),
+                (transfer_pb2.Chunk(
+                    session_id=580,
+                    type=transfer_pb2.Chunk.Type.COMPLETION_ACK), ),
+            ),
+        )
+
+        data = manager.read(47)
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(
+                    transfer_id=47,
+                    resource_id=47,
+                    pending_bytes=8192,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=8192,
+                    type=transfer_pb2.Chunk.Type.START,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                transfer_pb2.Chunk(
+                    session_id=580,
+                    type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=8192,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                transfer_pb2.Chunk(session_id=580,
+                                   type=transfer_pb2.Chunk.Type.COMPLETION,
+                                   status=Status.OK.value),
+                # Completion should be re-sent following the repeated chunk.
+                transfer_pb2.Chunk(session_id=580,
+                                   type=transfer_pb2.Chunk.Type.COMPLETION,
+                                   status=Status.OK.value),
+            ])
+
+        self.assertEqual(data, b'version two')
+
+    def test_v2_timeout_during_closing_handshake(self) -> None:
+        """Tests a timeout occurring during the closing handshake."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.READ,
+            (
+                (transfer_pb2.Chunk(
+                    resource_id=47,
+                    session_id=980,
+                    type=transfer_pb2.Chunk.Type.START_ACK,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value), ),
+                (transfer_pb2.Chunk(session_id=980,
+                                    type=transfer_pb2.Chunk.Type.DATA,
+                                    offset=0,
+                                    data=b'dropped completion',
+                                    remaining_bytes=0), ),
+                # Never send the expected COMPLETION_ACK chunk.
+            ),
+        )
+
+        data = manager.read(47)
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(
+                    transfer_id=47,
+                    resource_id=47,
+                    pending_bytes=8192,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=8192,
+                    type=transfer_pb2.Chunk.Type.START,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                transfer_pb2.Chunk(
+                    session_id=980,
+                    type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
+                    max_chunk_size_bytes=1024,
+                    window_end_offset=8192,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value),
+                transfer_pb2.Chunk(session_id=980,
+                                   type=transfer_pb2.Chunk.Type.COMPLETION,
+                                   status=Status.OK.value),
+
+                # The completion should be retried per the usual retry flow.
+                transfer_pb2.Chunk(session_id=980,
+                                   type=transfer_pb2.Chunk.Type.COMPLETION,
+                                   status=Status.OK.value),
+                transfer_pb2.Chunk(session_id=980,
+                                   type=transfer_pb2.Chunk.Type.COMPLETION,
+                                   status=Status.OK.value),
+                transfer_pb2.Chunk(session_id=980,
+                                   type=transfer_pb2.Chunk.Type.COMPLETION,
+                                   status=Status.OK.value),
+            ])
+
+        # Despite timing out following several retries, the transfer should
+        # still conclude successfully, as failing to receive a COMPLETION_ACK
+        # is not fatal.
+        self.assertEqual(data, b'dropped completion')
 
 
 class ProgressStatsTest(unittest.TestCase):

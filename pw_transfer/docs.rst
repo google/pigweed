@@ -272,7 +272,7 @@ more details.
 Python
 ======
 .. automodule:: pw_transfer
-  :members: ProgressStats, Manager, Error
+  :members: ProgressStats, ProtocolVersion, Manager, Error
 
 **Example**
 
