@@ -39,5 +39,32 @@ TEST(ResultTest, Value) {
   EXPECT_EQ(error_result.error(), TestError::kFailure1);
 }
 
+struct NonTrivialDestructor {
+  explicit NonTrivialDestructor(int* destructor_counter)
+      : destructor_counter_(destructor_counter) {}
+  ~NonTrivialDestructor() {
+    EXPECT_NE(nullptr, destructor_counter_);
+    (*destructor_counter_)++;
+  }
+  NonTrivialDestructor(const NonTrivialDestructor&) = delete;
+  NonTrivialDestructor(NonTrivialDestructor&&) = delete;
+
+  int* destructor_counter_;
+};
+
+TEST(ResultTest, NonTrivialDestructorTest) {
+  int counter = 0;
+  {
+    Result<TestError, NonTrivialDestructor> ret(std::in_place, &counter);
+    ASSERT_TRUE(ret.ok());
+  }
+  EXPECT_EQ(counter, 1);
+  {
+    Result<TestError, NonTrivialDestructor> ret(TestError::kFailure0);
+    ASSERT_FALSE(ret.ok());
+  }
+  EXPECT_EQ(counter, 1);
+}
+
 }  // namespace
 }  // namespace pw::bluetooth

@@ -60,7 +60,7 @@ class [[nodiscard]] Result<E, T> {
   constexpr Result(std::in_place_t, Args&&... args)
       : value_(std::forward<Args>(args)...) {}
 
-  constexpr Result(E error) : error_(error), ok_(false) {}
+  constexpr Result(E error) : error_(error) {}
 
   constexpr Result(const Result&) = default;
   constexpr Result& operator=(const Result&) = default;
@@ -69,33 +69,30 @@ class [[nodiscard]] Result<E, T> {
   constexpr Result& operator=(Result&&) = default;
 
   [[nodiscard]] constexpr E error() const {
-    PW_ASSERT(!ok_);
+    PW_ASSERT(!value_.has_value());
     return error_;
   }
-  [[nodiscard]] constexpr bool ok() const { return ok_; }
+  [[nodiscard]] constexpr bool ok() const { return value_.has_value(); }
 
   constexpr T& value() & {
-    PW_ASSERT(ok_);
-    return value_;
+    PW_ASSERT(value_.has_value());
+    return value_.value();
   }
 
   constexpr const T& value() const& {
-    PW_ASSERT(ok_);
-    return value_;
+    PW_ASSERT(value_.has_value());
+    return value_.value();
   }
 
   constexpr T&& value() && {
-    PW_ASSERT(ok_);
-    return std::move(value_);
+    PW_ASSERT(value_.has_value());
+    return std::move(value_.value());
   }
 
  private:
-  union {
-    T value_;
-    E error_;
-  };
-
-  bool ok_ = true;
+  std::optional<T> value_;
+  // error_ is only initialized if value_ is empty.
+  E error_ = {};
 };
 
 }  // namespace pw::bluetooth
