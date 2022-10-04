@@ -116,7 +116,7 @@ class RemoteService {
 
   // Set a callback that will be called when there is an error with this
   // RemoteService, after which this RemoteService will be invalid.
-  void SetErrorCallback(Function<void(RemoteServiceError)> error_callback);
+  void SetErrorCallback(Function<void(RemoteServiceError)>&& error_callback);
 
   // Calls `characteristic_callback` with the characteristics and descriptors in
   // this service.
@@ -232,7 +232,7 @@ class RemoteService {
   void RegisterNotificationCallback(
       Handle handle,
       NotificationCallback&& notification_callback,
-      Function<void(Result<Error>)> result_callback);
+      Function<void(Result<Error>)>&& result_callback);
 
   // Stops notifications for the characteristic with the given `handle`.
   void StopNotifications(Handle handle);
@@ -263,7 +263,7 @@ class Client {
   // `uuid_allowlist` - The allowlist of UUIDs to filter services with.
   // `updated_callback` - Will be called with services that are
   //     updated/modified.
-  // `removed_callback` - Called with the handles of servies
+  // `removed_callback` - Called with the handles of services
   //     that have been removed. Note that handles may be reused.
   virtual void WatchServices(
       Vector<Uuid> uuid_allowlist,

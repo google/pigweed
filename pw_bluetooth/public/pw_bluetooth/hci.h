@@ -31,14 +31,14 @@ class Hci {
 
   // Sets a callback that will be called with HCI event packets received from
   // the controller.
-  virtual void SetEventCallback(DataCallback callback) = 0;
+  virtual void SetEventCallback(DataCallback&& callback) = 0;
 
   // Sends an ACL data packet to the controller.
   virtual void SendAclData(span<const std::byte> data) = 0;
 
   // Sets a callback that will be called with ACL data packets received from the
   // controller.
-  virtual void SetReceiveAclCallback(DataCallback callback) = 0;
+  virtual void SetReceiveAclCallback(DataCallback&& callback) = 0;
 };
 
 }  // namespace pw::bluetooth

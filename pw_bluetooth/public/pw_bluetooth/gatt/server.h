@@ -92,11 +92,11 @@ class LocalServiceDelegate {
   // `result_callback` - Called with the value of the characteristic on success,
   //     or an Error on failure. The value will be truncated to fit in the MTU
   //     if necessary. It is OK to call `result_callback` in `ReadValue`.
-  virtual void ReadValue(
-      PeerId peer_id,
-      Handle handle,
-      uint32_t offset,
-      Function<void(Result<Error, span<const std::byte>>)> result_callback) = 0;
+  virtual void ReadValue(PeerId peer_id,
+                         Handle handle,
+                         uint32_t offset,
+                         Function<void(Result<Error, span<const std::byte>>)>&&
+                             result_callback) = 0;
 
   // Called when a peer issues a request to write the value of a characteristic
   // or descriptor. It is guaranteed that the peer satisfies the permissions
@@ -115,7 +115,7 @@ class LocalServiceDelegate {
                           Handle handle,
                           uint32_t offset,
                           span<const std::byte> value,
-                          Function<void(Result<Error>)> status_callback) = 0;
+                          Function<void(Result<Error>)>&& status_callback) = 0;
 
   // Called when the MTU of a peer is updated. Also called for peers that are
   // already connected when the server is published. This method is safe to
@@ -157,7 +157,7 @@ class LocalService {
   // `completion_callback` - Called when the notification has been sent.
   //     Additional values should not be notified until this callback is called.
   virtual void NotifyValue(const ValueChangedParameters& parameters,
-                           Closure completion_callback) = 0;
+                           Closure&& completion_callback) = 0;
 
   // Sends an indication to peers. Indications should be used instead of
   // notifications when the service *does* require peer confirmation of the
@@ -182,7 +182,7 @@ class LocalService {
   //     `parameters.peer_ids`. Additional values should not be indicated until
   //     this callback is called.
   virtual void IndicateValue(const ValueChangedParameters& parameters,
-                             Function<void(Result<Error>)> confirmation) = 0;
+                             Function<void(Result<Error>)>&& confirmation) = 0;
 };
 
 // Interface for a GATT server that serves many GATT services.

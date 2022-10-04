@@ -52,7 +52,7 @@ class AdvertisedPeripheral {
   // connections over the lifetime of an advertisement. It is OK to destroy
   // this object from within `callback` in order to stop advertising.
   virtual void SetConnectionCallback(
-      Function<void(std::unique_ptr<Connection>)> callback) = 0;
+      Function<void(std::unique_ptr<Connection>)>&& callback) = 0;
 };
 
 // Represents the LE Peripheral role, which advertises and is connected to.

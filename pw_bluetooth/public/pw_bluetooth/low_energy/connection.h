@@ -128,8 +128,9 @@ class Connection {
   // Sets a callback that will be called when the peer disconnects or there is a
   // connection error that causes a disconnection. This should be configured by
   // the client immediately after establishing the connection. `callback` will
-  // not be called for disconnections iniated by the client (e.g. by destroying
-  // `Connection`). It is OK to destroy this object from within `callback`.
+  // not be called for disconnections initiated by the client (e.g. by
+  // destroying `Connection`). It is OK to destroy this object from within
+  // `callback`.
   virtual void SetDisconnectCallback(
       Function<void(DisconnectReason)>&& callback) = 0;
 
