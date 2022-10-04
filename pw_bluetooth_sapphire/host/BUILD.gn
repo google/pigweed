@@ -62,7 +62,7 @@ source_set("sources") {
     "//src/lib/ddk:ddk-deprecated-binding-headers",
     "//src/lib/fxl",
     "//zircon/system/ulib/fbl",
-    "//zircon/system/ulib/trace:trace-driver",
+    "//zircon/system/ulib/trace",
     "//zircon/system/ulib/zx",
   ]
 

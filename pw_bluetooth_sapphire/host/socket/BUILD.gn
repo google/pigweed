@@ -12,7 +12,7 @@ source_set("socket") {
 
   deps = [
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//zircon/system/ulib/trace:trace-driver",
+    "//zircon/system/ulib/trace",
   ]
 
   public_deps = [

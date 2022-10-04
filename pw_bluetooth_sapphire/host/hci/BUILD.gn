@@ -59,7 +59,7 @@ static_library("hci") {
     "//zircon/system/ulib/async-loop:async-loop-default",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/fzl",
-    "//zircon/system/ulib/trace:trace-driver",
+    "//zircon/system/ulib/trace",
   ]
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
