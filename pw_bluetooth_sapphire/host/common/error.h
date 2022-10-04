@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ERROR_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ERROR_H_
 
+#include <lib/fit/result.h>
 #include <lib/fitx/result.h>
 
 #include <type_traits>
@@ -20,7 +21,7 @@ namespace bt {
 // Type used to hold either a HostError or a ProtocolErrorCode, a protocol-defined code. This can
 // not be constructed in such a way to represent a success or to contain the product of a successful
 // operation, but to be used as the error type parameter of a generic result type like
-// fitx::result<Error<…>> or fitx::result<Error<…>, V>.
+// fit::result<Error<…>> or fit::result<Error<…>, V>.
 //
 // Errors can be directly constructed from HostErrors. ProtocolErrorCodes whose possible values all
 // represent errors can also be used to construct Errors. Otherwise, ProtocolErrorCodes like that
@@ -84,26 +85,26 @@ constexpr bool CanRepresentSuccessV = CanRepresentSuccess<ProtocolErrorCode>::va
 
 }  // namespace detail
 
-// Create a fitx::result<Error<…>> from a HostError. The template parameter may be omitted to
-// default to an fitx::result<Error<NoProtocolError>> in the case that it's not useful to specify
+// Create a fit::result<Error<…>> from a HostError. The template parameter may be omitted to
+// default to an fit::result<Error<NoProtocolError>> in the case that it's not useful to specify
 // the kind of protocol error that the result could hold instead.
 template <typename ProtocolErrorCode = NoProtocolError>
-[[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(HostError host_error) {
-  return fitx::error(Error<ProtocolErrorCode>(host_error));
+[[nodiscard]] constexpr fit::result<Error<ProtocolErrorCode>> ToResult(HostError host_error) {
+  return fit::error(Error<ProtocolErrorCode>(host_error));
 }
 
-// Create a fitx::result<Error<…>> from a protocol error.
+// Create a fit::result<Error<…>> from a protocol error.
 // This overload doesn't collide with the above when instantiated with <HostError>, because this
 // would try to construct an invalid Error<HostError>.
 template <typename ProtocolErrorCode>
-[[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(
+[[nodiscard]] constexpr fit::result<Error<ProtocolErrorCode>> ToResult(
     ProtocolErrorCode proto_error) {
   if constexpr (detail::CanRepresentSuccessV<ProtocolErrorCode>) {
     if (ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error)) {
-      return fitx::success();
+      return fit::success();
     }
   }
-  return fitx::error(Error(std::move(proto_error)));
+  return fit::error(Error(std::move(proto_error)));
 }
 
 template <typename ProtocolErrorCode = NoProtocolError>
@@ -137,7 +138,7 @@ class [[nodiscard]] Error {
   //   Foo(ToResult(HostError::kTimedOut));  // Compiles without having to write BarErrorCode
   //
   // For safety, this implicit conversion does not "chain" to allow bare ProtocolErrorCodes or
-  // HostErrors to be converted into Error or fitx::result.
+  // HostErrors to be converted into Error or fit::result.
   //
   // The seemingly-extraneous template parameter serves to disable this overload when |*this| is an
   // Error<NoProtocolError>
@@ -245,7 +246,7 @@ class [[nodiscard]] Error {
 
  private:
   // Factory functions
-  friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(
+  friend constexpr fit::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(
       ProtocolErrorCode);
 
   template <typename T = ProtocolErrorCode,
@@ -265,48 +266,48 @@ Error(HostError)->Error<NoProtocolError>;
 // macros. Each of these must explicitly define a operator!= as well as account for commutative
 // calls, because C++ does not automatically generate these. Those variant overloads can not be
 // generically defined because there's no way to test if those variants can actually be instantiated
-// (using decltype etc), causing problems with e.g. fitx::result<E, T> == fitx::result<F, U>.
+// (using decltype etc), causing problems with e.g. fit::result<E, T> == fit::result<F, U>.
 
-// Comparisons to fitx::result<Error<ProtocolErrorCode>>
+// Comparisons to fit::result<Error<ProtocolErrorCode>>
 template <typename LErrorCode, typename RErrorCode, typename... Ts>
 constexpr bool operator==(const Error<LErrorCode>& lhs,
-                          const fitx::result<Error<RErrorCode>, Ts...>& rhs) {
+                          const fit::result<Error<RErrorCode>, Ts...>& rhs) {
   static_assert((!detail::IsErrorV<Ts> && ...),
-                "fitx::result should not contain Error as a success value");
+                "fit::result should not contain Error as a success value");
   return rhs.is_error() && (rhs.error_value() == lhs);
 }
 
 template <typename LErrorCode, typename RErrorCode, typename... Ts>
-constexpr bool operator==(const fitx::result<Error<LErrorCode>, Ts...>& lhs,
+constexpr bool operator==(const fit::result<Error<LErrorCode>, Ts...>& lhs,
                           const Error<RErrorCode>& rhs) {
   return rhs == lhs;
 }
 
 template <typename LErrorCode, typename RErrorCode, typename... Ts>
 constexpr bool operator!=(const Error<LErrorCode>& lhs,
-                          const fitx::result<Error<RErrorCode>, Ts...>& rhs) {
+                          const fit::result<Error<RErrorCode>, Ts...>& rhs) {
   return !(lhs == rhs);
 }
 
 template <typename LErrorCode, typename RErrorCode, typename... Ts>
-constexpr bool operator!=(const fitx::result<Error<LErrorCode>, Ts...>& lhs,
+constexpr bool operator!=(const fit::result<Error<LErrorCode>, Ts...>& lhs,
                           const Error<RErrorCode>& rhs) {
   return !(rhs == lhs);
 }
 
-// Comparisons between fitx::result<Error<…>> objects
-// Note that this is not standard fitx::result relation behavior which normally compares all error
+// Comparisons between fit::result<Error<…>> objects
+// Note that this is not standard fit::result relation behavior which normally compares all error
 // results to be equal. These are preferred in overload resolution because they are more specialized
-// templates than the ones provided by fitx. However, because they are more specialized, all of the
+// templates than the ones provided by fit. However, because they are more specialized, all of the
 // combinations must be typed out separately to avoid ambiguous overload errors:
 //   1. operands having zero or one success values
 //   2. operation is == or !=
 // The case of comparing a result with a success value to a result without is intentionally not
 // defined because it's not obvious what behavior it should have when both results hold success.
 template <typename LErrorCode, typename RErrorCode, typename T>
-constexpr bool operator==(const fitx::result<Error<LErrorCode>, T>& lhs,
-                          const fitx::result<Error<RErrorCode>, T>& rhs) {
-  static_assert(!detail::IsErrorV<T>, "fitx::result should not contain Error as a success value");
+constexpr bool operator==(const fit::result<Error<LErrorCode>, T>& lhs,
+                          const fit::result<Error<RErrorCode>, T>& rhs) {
+  static_assert(!detail::IsErrorV<T>, "fit::result should not contain Error as a success value");
   if (lhs.is_ok() != rhs.is_ok()) {
     return false;
   }
@@ -317,14 +318,14 @@ constexpr bool operator==(const fitx::result<Error<LErrorCode>, T>& lhs,
 }
 
 template <typename LErrorCode, typename RErrorCode, typename T>
-constexpr bool operator!=(const fitx::result<Error<LErrorCode>, T>& lhs,
-                          const fitx::result<Error<RErrorCode>, T>& rhs) {
+constexpr bool operator!=(const fit::result<Error<LErrorCode>, T>& lhs,
+                          const fit::result<Error<RErrorCode>, T>& rhs) {
   return !(lhs == rhs);
 }
 
 template <typename LErrorCode, typename RErrorCode>
-constexpr bool operator==(const fitx::result<Error<LErrorCode>>& lhs,
-                          const fitx::result<Error<RErrorCode>>& rhs) {
+constexpr bool operator==(const fit::result<Error<LErrorCode>>& lhs,
+                          const fit::result<Error<RErrorCode>>& rhs) {
   if (lhs.is_ok() != rhs.is_ok()) {
     return false;
   }
@@ -335,8 +336,8 @@ constexpr bool operator==(const fitx::result<Error<LErrorCode>>& lhs,
 }
 
 template <typename LErrorCode, typename RErrorCode>
-constexpr bool operator!=(const fitx::result<Error<LErrorCode>>& lhs,
-                          const fitx::result<Error<RErrorCode>>& rhs) {
+constexpr bool operator!=(const fit::result<Error<LErrorCode>>& lhs,
+                          const fit::result<Error<RErrorCode>>& rhs) {
   return !(lhs == rhs);
 }
 
@@ -357,9 +358,9 @@ void BuildResultToString(const Result& result, StringBuilder builder,
   builder(")]");
 }
 
-// Produces a human-readable representation of a fitx::result<Error<…>>
+// Produces a human-readable representation of a fit::result<Error<…>>
 template <typename ProtocolErrorCode, typename... Ts>
-std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result) {
+std::string ToString(const fit::result<Error<ProtocolErrorCode>, Ts...>& result) {
   std::string out;
   auto append_value_string = [&] {
     if constexpr (sizeof...(Ts) > 0) {
@@ -396,19 +397,18 @@ constexpr bool IsStreamableV = IsStreamable<Lhs, Rhs>::value;
 }  // namespace detail
 }  // namespace bt
 
-// Extends the GoogleTest value printer to print fitx::result<bt::Error<…>, …> types, including
+// Extends the GoogleTest value printer to print fit::result<bt::Error<…>, …> types, including
 // converting the contained value of "success" results to strings when possible.
 //
-// This must be defined in namespace fitx because GoogleTest uses argument-dependent lookup (ADL) to
+// This must be defined in namespace fit because GoogleTest uses argument-dependent lookup (ADL) to
 // find this overload. |os|'s type is templated in order to avoid including <iostream>.
-namespace fitx {
+namespace fit {
 
 // Some GoogleTest internal objects (like testing::Message, the return type of ADD_FAILURE())
 // declare broad operator<< overloads that conflict with this one. In those cases, it's likely
 // easiest to wrap the result in bt_str(…).
 template <typename OStream, typename ProtocolErrorCode, typename... Ts>
-OStream& operator<<(OStream& os,
-                    const fitx::result<::bt::Error<ProtocolErrorCode>, Ts...>& result) {
+OStream& operator<<(OStream& os, const fit::result<::bt::Error<ProtocolErrorCode>, Ts...>& result) {
   auto stream_value_string = [&] {
     if constexpr (sizeof...(Ts) > 0) {
       if constexpr ((::bt::internal::HasToStringV<Ts> && ...)) {
@@ -427,7 +427,7 @@ OStream& operator<<(OStream& os,
   return os;
 }
 
-}  // namespace fitx
+}  // namespace fit
 
 // Macro to check and log any non-Success status of an event.
 // Use these like:
