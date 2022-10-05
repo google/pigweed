@@ -139,7 +139,7 @@ class Database final {
   // to be done by the application that has set up the attribute. This function
   // does check for the validity of a given attribute handle and whether the
   // attribute supports writes.
-  using WriteQueueResult = fitx::result<std::tuple<Handle, ErrorCode>>;
+  using WriteQueueResult = fit::result<std::tuple<Handle, ErrorCode>>;
   using WriteCallback = fit::callback<void(WriteQueueResult)>;
   void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
                          const sm::SecurityProperties& security, WriteCallback callback);

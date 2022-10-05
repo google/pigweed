@@ -120,7 +120,7 @@ LowEnergyConnectionManager::~LowEnergyConnectionManager() {
 
   // Clear |pending_requests_| and notify failure.
   for (auto& iter : pending_requests_) {
-    iter.second.NotifyCallbacks(fitx::error(HostError::kFailed));
+    iter.second.NotifyCallbacks(fit::error(HostError::kFailed));
   }
   pending_requests_.clear();
 
@@ -141,19 +141,19 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   Peer* peer = peer_cache_->FindById(peer_id);
   if (!peer) {
     bt_log(WARN, "gap-le", "peer not found (id: %s)", bt_str(peer_id));
-    callback(fitx::error(HostError::kNotFound));
+    callback(fit::error(HostError::kNotFound));
     return;
   }
 
   if (peer->technology() == TechnologyType::kClassic) {
     bt_log(ERROR, "gap-le", "peer does not support LE: %s", peer->ToString().c_str());
-    callback(fitx::error(HostError::kNotFound));
+    callback(fit::error(HostError::kNotFound));
     return;
   }
 
   if (!peer->connectable()) {
     bt_log(ERROR, "gap-le", "peer not connectable: %s", peer->ToString().c_str());
-    callback(fitx::error(HostError::kNotFound));
+    callback(fit::error(HostError::kNotFound));
     return;
   }
 
@@ -184,7 +184,7 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   auto conn_iter = connections_.find(peer_id);
   if (conn_iter != connections_.end()) {
     // TODO(fxbug.dev/65592): Handle connection_options that conflict with the existing connection.
-    callback(fitx::ok(conn_iter->second->AddRef()));
+    callback(fit::ok(conn_iter->second->AddRef()));
     return;
   }
 
@@ -207,7 +207,7 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id, LowEnergyDisconnectR
   auto request_iter = pending_requests_.find(peer_id);
   if (request_iter != pending_requests_.end()) {
     BT_ASSERT(current_request_->request.peer_id() != peer_id);
-    request_iter->second.NotifyCallbacks(fitx::error(HostError::kCanceled));
+    request_iter->second.NotifyCallbacks(fit::error(HostError::kCanceled));
     pending_requests_.erase(request_iter);
   }
 
@@ -336,7 +336,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
     bt_log(INFO, "gap-le",
            "multiple links from peer; remote-initiated connection refused (peer: %s)",
            bt_str(peer_id));
-    callback(fitx::error(HostError::kFailed));
+    callback(fit::error(HostError::kFailed));
     return;
   }
 
@@ -344,7 +344,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
     bt_log(INFO, "gap-le",
            "remote connector for peer already exists; connection refused (peer: %s)",
            bt_str(peer_id));
-    callback(fitx::error(HostError::kFailed));
+    callback(fit::error(HostError::kFailed));
     return;
   }
 
@@ -499,7 +499,7 @@ void LowEnergyConnectionManager::ProcessConnectResult(
     }
 
     const HostError host_error = err.is_host_error() ? err.host_error() : HostError::kFailed;
-    request.NotifyCallbacks(fitx::error(host_error));
+    request.NotifyCallbacks(fit::error(host_error));
 
     inspect_properties_.recent_connection_failures.Add(1);
 
@@ -524,7 +524,7 @@ bool LowEnergyConnectionManager::InitializeConnection(
            "cannot initialize multiple links to same peer; connection refused (peer: %s)",
            bt_str(peer_id));
     // Notify request that duplicate connection could not be initialized.
-    request.NotifyCallbacks(fitx::error(HostError::kFailed));
+    request.NotifyCallbacks(fit::error(HostError::kFailed));
     // Do not update peer state, as there is another active LE connection in connections_ for this
     // peer.
     return false;
@@ -555,7 +555,7 @@ bool LowEnergyConnectionManager::InitializeConnection(
   bt_log(TRACE, "gap-le", "notifying connection request callbacks (peer: %s)", bt_str(peer_id));
 
   request.NotifyCallbacks(
-      fitx::ok(std::bind(&internal::LowEnergyConnection::AddRef, conn_iter->second.get())));
+      fit::ok(std::bind(&internal::LowEnergyConnection::AddRef, conn_iter->second.get())));
 
   return true;
 }

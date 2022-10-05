@@ -50,11 +50,11 @@ TEST(PDUTest, ErrorResponse) {
                                      0xFF, 0x00   // extra bytes to cause an error
   );
 
-  fitx::result<Error<>> status = response.Parse(kInvalidContState.view(sizeof(Header)));
+  fit::result<Error<>> status = response.Parse(kInvalidContState.view(sizeof(Header)));
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 
   status = response.Parse(kInvalidContState.view(sizeof(Header), 2));
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(response.complete());
   EXPECT_EQ(ErrorCode::kInvalidContinuationState, response.error_code());
 
@@ -171,7 +171,7 @@ TEST(PDUTest, ServiceSearchResponseParse) {
 
   ServiceSearchResponse resp;
   auto status = resp.Parse(kValidResponse);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 
   // Can't parse into an already complete record.
   status = resp.Parse(kValidResponse);
@@ -595,7 +595,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
   ServiceAttributeResponse resp;
   auto status = resp.Parse(kValidResponseEmpty);
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 
   const StaticByteBuffer kValidResponseItems(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
@@ -611,7 +611,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
   ServiceAttributeResponse resp2;
   status = resp2.Parse(kValidResponseItems);
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(2u, resp2.attributes().size());
   auto it = resp2.attributes().find(0x00);
   EXPECT_NE(resp2.attributes().end(), it);
@@ -929,7 +929,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   ServiceSearchAttributeResponse resp;
   auto status = resp.Parse(kValidResponseEmpty);
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(resp.complete());
   EXPECT_EQ(0u, resp.num_attribute_lists());
 
@@ -948,7 +948,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
 
   status = resp.Parse(kValidResponseItems);
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(resp.complete());
   EXPECT_EQ(1u, resp.num_attribute_lists());
   EXPECT_EQ(2u, resp.attributes(0).size());
@@ -980,7 +980,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   ServiceSearchAttributeResponse resp2;
   status = resp2.Parse(kValidResponseTwoLists);
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(resp2.complete());
   EXPECT_EQ(2u, resp2.num_attribute_lists());
 
@@ -1087,7 +1087,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParseContinuationWrongOrder) {
   ServiceSearchAttributeResponse resp_simple;
   auto status = resp_simple.Parse(kItemsWrongOrder);
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 
   // Packets seen in real-world testing, a more complicated example.
   const StaticByteBuffer kFirstPacket(
@@ -1131,7 +1131,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParseContinuationWrongOrder) {
   );
 
   status = resp.Parse(kSecondPacket);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST(PDUTest, ServiceSearchAttributeResponseGetPDU) {

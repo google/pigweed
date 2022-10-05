@@ -128,7 +128,7 @@ class LogicalLink final {
   //
   // Requests are queued and handled sequentially in order to prevent race conditions.
   void RequestAclPriority(Channel* channel, hci::AclPriority priority,
-                          fit::callback<void(fitx::result<fitx::failed>)> callback);
+                          fit::callback<void(fit::result<fit::failed>)> callback);
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
@@ -269,7 +269,7 @@ class LogicalLink final {
   struct PendingAclRequest {
     fxl::WeakPtr<ChannelImpl> channel;
     hci::AclPriority priority;
-    fit::callback<void(fitx::result<fitx::failed>)> callback;
+    fit::callback<void(fit::result<fit::failed>)> callback;
   };
   std::queue<PendingAclRequest> pending_acl_requests_;
 

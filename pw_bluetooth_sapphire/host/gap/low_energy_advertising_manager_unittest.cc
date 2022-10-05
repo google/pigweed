@@ -70,7 +70,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
                         hci::ResultFunction<> callback) override {
     if (pending_error_.is_error()) {
       callback(pending_error_);
-      pending_error_ = fitx::ok();
+      pending_error_ = fit::ok();
       return;
     }
     if (data.CalculateBlockSize(/*include_flags=*/true) > max_ad_size_) {
@@ -89,7 +89,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     new_status.interval_max = adv_options.interval.max();
     new_status.anonymous = adv_options.anonymous;
     ads_->emplace(address, std::move(new_status));
-    callback(fitx::ok());
+    callback(fit::ok());
   }
 
   void StopAdvertising(const DeviceAddress& address) override { ads_->erase(address); }
@@ -153,7 +153,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   size_t max_ad_size_;
   std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
-  hci::Result<> pending_error_ = fitx::ok();
+  hci::Result<> pending_error_ = fit::ok();
   fxl::WeakPtr<hci::Transport> hci_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
@@ -207,7 +207,7 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   LowEnergyAdvertisingManager::AdvertisingStatusCallback GetSuccessCallback() {
     return [this](AdvertisementInstance instance, hci::Result<> status) {
       EXPECT_NE(kInvalidAdvertisementId, instance.id());
-      EXPECT_EQ(fitx::ok(), status);
+      EXPECT_EQ(fit::ok(), status);
       last_instance_ = std::move(instance);
       last_status_ = status;
     };
@@ -485,7 +485,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement) {
                                 AdvertisingInterval::FAST1, /*anonymous=*/false,
                                 /*include_tx_power_level=*/false,
                                 [&](AdvertisementInstance i, auto status) {
-                                  ASSERT_EQ(fitx::ok(), status);
+                                  ASSERT_EQ(fit::ok(), status);
                                   instance = std::move(i);
                                 });
     RunLoopUntilIdle();
@@ -504,7 +504,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement) {
                               AdvertisingInterval::FAST1, /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
                               [&](AdvertisementInstance i, auto status) {
-                                ASSERT_EQ(fitx::ok(), status);
+                                ASSERT_EQ(fit::ok(), status);
                                 instance = std::move(i);
                               });
   RunLoopUntilIdle();
@@ -522,7 +522,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, MovingInstanceTransfersOwnershipOfAdvert
                               AdvertisingInterval::FAST1, /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
                               [&](AdvertisementInstance i, auto status) {
-                                ASSERT_EQ(fitx::ok(), status);
+                                ASSERT_EQ(fit::ok(), status);
                                 *instance = std::move(i);
                               });
   RunLoopUntilIdle();

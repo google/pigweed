@@ -9,7 +9,7 @@
 #include <fuchsia/hardware/bt/hci/c/banjo.h>
 #include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/fit/function.h>
-#include <lib/fitx/result.h>
+#include <lib/fit/result.h>
 #include <lib/zx/channel.h>
 #include <zircon/status.h>
 #include <zircon/types.h>
@@ -39,7 +39,7 @@ class DeviceWrapper {
 
   // Returns the SCO channel handle for this device. Returns an invalid
   // handle on failure.
-  virtual fitx::result<zx_status_t, zx::channel> GetScoChannel() = 0;
+  virtual fit::result<zx_status_t, zx::channel> GetScoChannel() = 0;
 
   virtual void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
                             sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,
@@ -69,8 +69,8 @@ class FidlDeviceWrapper : public DeviceWrapper {
   zx::channel GetACLDataChannel() override;
 
   // SCO is currently not supported for FIDL devices.
-  fitx::result<zx_status_t, zx::channel> GetScoChannel() override {
-    return fitx::error(ZX_ERR_NOT_SUPPORTED);
+  fit::result<zx_status_t, zx::channel> GetScoChannel() override {
+    return fit::error(ZX_ERR_NOT_SUPPORTED);
   }
   void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
                     sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,
@@ -100,7 +100,7 @@ class DdkDeviceWrapper : public DeviceWrapper {
   // DeviceWrapper overrides:
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
-  fitx::result<zx_status_t, zx::channel> GetScoChannel() override;
+  fit::result<zx_status_t, zx::channel> GetScoChannel() override;
   void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
                     sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,
                     void* cookie) override;
@@ -147,7 +147,7 @@ class DummyDeviceWrapper : public DeviceWrapper {
   // Subsequent calls will always return an invalid handle.
   zx::channel GetCommandChannel() override { return std::move(cmd_channel_); }
   zx::channel GetACLDataChannel() override { return std::move(acl_data_channel_); }
-  fitx::result<zx_status_t, zx::channel> GetScoChannel() override;
+  fit::result<zx_status_t, zx::channel> GetScoChannel() override;
   void ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
                     sco_sample_rate_t sample_rate, bt_hci_configure_sco_callback callback,
                     void* cookie) override;

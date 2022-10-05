@@ -123,7 +123,7 @@ class SequentialCommandRunner final {
   // Completes the sequence with |status| no commands are running or queued.
   // Runs the next queued command if it doesn't wait for the previous commands.
   // Runs the next queued command if no commands are running.
-  void TryRunNextQueuedCommand(Result<> status = fitx::ok());
+  void TryRunNextQueuedCommand(Result<> status = fit::ok());
 
   // Returns true on success, false on failure.
   bool SendQueuedCommand(QueuedCommand command, CommandChannel::CommandCallback callback);

@@ -13,7 +13,7 @@ void fuzz(const uint8_t* data, size_t size) {
   DynamicByteBuffer buf(size);
   memcpy(buf.mutable_data(), data, size);
   ByteBufferPtr buf_ptr = std::make_unique<DynamicByteBuffer>(buf);
-  [[maybe_unused]] fitx::result<ErrorCode, ValidPacketReader> result =
+  [[maybe_unused]] fit::result<ErrorCode, ValidPacketReader> result =
       ValidPacketReader::ParseSdu(buf_ptr);
 }
 

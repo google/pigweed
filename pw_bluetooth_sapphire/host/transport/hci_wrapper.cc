@@ -64,7 +64,7 @@ class HciWrapperImpl final : public HciWrapper {
 
   VendorFeaturesBits GetVendorFeatures() override;
 
-  fitx::result<zx_status_t, DynamicByteBuffer> EncodeSetAclPriorityCommand(
+  fit::result<zx_status_t, DynamicByteBuffer> EncodeSetAclPriorityCommand(
       hci_spec::ConnectionHandle connection, hci::AclPriority priority) override;
 
  private:
@@ -150,7 +150,7 @@ bool HciWrapperImpl::Initialize(ErrorCallback error_callback) {
     return false;
   }
 
-  fitx::result<zx_status_t, zx::channel> sco_result = device_->GetScoChannel();
+  fit::result<zx_status_t, zx::channel> sco_result = device_->GetScoChannel();
   if (sco_result.is_ok()) {
     sco_channel_ = std::move(sco_result.value());
   } else {
@@ -267,7 +267,7 @@ VendorFeaturesBits HciWrapperImpl::GetVendorFeatures() {
   return BanjoVendorFeaturesToVendorFeaturesBits(device_->GetVendorFeatures());
 }
 
-fitx::result<zx_status_t, DynamicByteBuffer> HciWrapperImpl::EncodeSetAclPriorityCommand(
+fit::result<zx_status_t, DynamicByteBuffer> HciWrapperImpl::EncodeSetAclPriorityCommand(
     hci_spec::ConnectionHandle connection, hci::AclPriority priority) {
   bt_vendor_set_acl_priority_params_t priority_params = {
       .connection_handle = connection,
@@ -283,10 +283,10 @@ fitx::result<zx_status_t, DynamicByteBuffer> HciWrapperImpl::EncodeSetAclPriorit
       device_->EncodeVendorCommand(BT_VENDOR_COMMAND_SET_ACL_PRIORITY, cmd_params);
   if (!encode_result) {
     bt_log(WARN, "hci", "Failed to encode vendor command");
-    return fitx::error(ZX_ERR_INTERNAL);
+    return fit::error(ZX_ERR_INTERNAL);
   }
 
-  return fitx::ok(std::move(encode_result.value()));
+  return fit::ok(std::move(encode_result.value()));
 }
 
 zx_status_t HciWrapperImpl::OnChannelReadable(zx_status_t status, async::WaitBase* wait,

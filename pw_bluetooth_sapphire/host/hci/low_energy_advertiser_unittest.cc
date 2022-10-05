@@ -105,7 +105,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
   ResultFunction<> MakeExpectSuccessCallback() {
     return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_EQ(fitx::ok(), status);
+      EXPECT_EQ(fit::ok(), status);
     };
   }
 

@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ERROR_H_
 
 #include <lib/fit/result.h>
-#include <lib/fitx/result.h>
 
 #include <type_traits>
 #include <variant>

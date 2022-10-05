@@ -50,7 +50,7 @@ class ScoConnectionManager final {
   // |kCanceled| if a connection was never attempted, or |kFailed| if establishing a connection
   // failed. Returns a handle that will cancel the request when dropped (if connection establishment
   // has not started).
-  using OpenConnectionResult = fitx::result<HostError, fxl::WeakPtr<ScoConnection>>;
+  using OpenConnectionResult = fit::result<HostError, fxl::WeakPtr<ScoConnection>>;
   using OpenConnectionCallback = fit::callback<void(OpenConnectionResult)>;
   RequestHandle OpenConnection(hci_spec::SynchronousConnectionParameters parameters,
                                OpenConnectionCallback callback);
@@ -63,8 +63,8 @@ class ScoConnectionManager final {
   // is received, this request will be canceled (with error |kCanceled|). Returns a handle that will
   // cancel the request when destroyed (if connection establishment has not started).
   using AcceptConnectionResult =
-      fitx::result<HostError,
-                   std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
+      fit::result<HostError,
+                  std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
   using AcceptConnectionCallback = fit::callback<void(AcceptConnectionResult)>;
   RequestHandle AcceptConnection(std::vector<hci_spec::SynchronousConnectionParameters> parameters,
                                  AcceptConnectionCallback callback);
@@ -72,8 +72,8 @@ class ScoConnectionManager final {
  private:
   using ScoRequestId = uint64_t;
   using ConnectionResult =
-      fitx::result<HostError,
-                   std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
+      fit::result<HostError,
+                  std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
   using ConnectionCallback = fit::callback<void(ConnectionResult)>;
 
   class ConnectionRequest final {
@@ -91,7 +91,7 @@ class ScoConnectionManager final {
     ~ConnectionRequest() {
       if (callback) {
         bt_log(DEBUG, "sco", "Cancelling SCO connection request (id: %zu)", id);
-        callback(fitx::error(HostError::kCanceled));
+        callback(fit::error(HostError::kCanceled));
       }
     }
 

@@ -66,9 +66,8 @@ void BrEdrConnection::HandleEncryptionStatus(Result<bool> result, bool key_refre
   if (enabled) {
     ValidateEncryptionKeySize([self = weak_ptr_factory_.GetWeakPtr()](Result<> key_valid_status) {
       if (self) {
-        self->HandleEncryptionStatusValidated(key_valid_status.is_ok()
-                                                  ? Result<bool>(fitx::ok(true))
-                                                  : key_valid_status.take_error());
+        self->HandleEncryptionStatusValidated(
+            key_valid_status.is_ok() ? Result<bool>(fit::ok(true)) : key_valid_status.take_error());
       }
     });
     return;

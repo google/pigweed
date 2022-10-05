@@ -11,7 +11,7 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
-#include <lib/fitx/result.h>
+#include <lib/fit/result.h>
 
 #include <mutex>
 
@@ -45,7 +45,7 @@ class HostDevice final : public HostDeviceType {
   void Open(OpenRequestView request, OpenCompleter::Sync& completer);
 
   // Get the vendor protocol that is supported by the underlying host device.
-  fitx::result<zx_status_t, bt_vendor_protocol_t> GetVendorProtocol();
+  fit::result<zx_status_t, bt_vendor_protocol_t> GetVendorProtocol();
 
   // Initializes the host and the host thread.
   // Calls |cb| when complete with a success or error.

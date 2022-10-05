@@ -316,7 +316,7 @@ TEST_F(HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
       [&actual_id](fbt::PeerId id, Unused) { actual_id = id; });
   auto id = bt::PeerId(0xc0decafe);
   host_pairing_delegate->CompletePairing(
-      id, fitx::error(bt::Error(bt::sm::ErrorCode::kConfirmValueFailed)));
+      id, fit::error(bt::Error(bt::sm::ErrorCode::kConfirmValueFailed)));
 
   // Wait for the PairingDelegate/OnPairingComplete message to process.
   RunLoopUntilIdle();

@@ -215,7 +215,7 @@ using GAP_LowEnergyConnectionManagerTest = LowEnergyConnectionManagerTest;
 
 TEST_F(LowEnergyConnectionManagerTest, ConnectUnknownPeer) {
   constexpr PeerId kUnknownId(1);
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   conn_mgr()->Connect(
       kUnknownId, [&result](auto res) { result = std::move(res); }, kConnectionOptions);
   ASSERT_TRUE(result.is_error());
@@ -224,7 +224,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectUnknownPeer) {
 
 TEST_F(LowEnergyConnectionManagerTest, ConnectClassicPeer) {
   auto* peer = peer_cache()->NewPeer(kAddress2, /*connectable=*/true);
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   conn_mgr()->Connect(
       peer->identifier(), [&result](auto res) { result = std::move(res); }, kConnectionOptions);
   ASSERT_TRUE(result.is_error());
@@ -233,7 +233,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectClassicPeer) {
 
 TEST_F(LowEnergyConnectionManagerTest, ConnectNonConnectablePeer) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/false);
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   conn_mgr()->Connect(
       peer->identifier(), [&result](auto res) { result = std::move(res); }, kConnectionOptions);
   ASSERT_TRUE(result.is_error());
@@ -250,7 +250,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
 
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
@@ -270,7 +270,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerFailure) {
   fake_peer->set_connect_response(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer));
 
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
@@ -289,7 +289,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerScanTimeout) {
 
   // We add no fake peers to cause the scan to time out.
 
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
@@ -314,12 +314,12 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerAlreadyInScanCache) {
                                   [&session](auto cb_session) { session = std::move(cb_session); });
   RunLoopUntilIdle();
 
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   RunLoopUntilIdle();
-  ASSERT_EQ(fitx::ok(), result);
+  ASSERT_EQ(fit::ok(), result);
 }
 
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerRequestTimeout) {
@@ -332,7 +332,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerRequestTimeout) {
   fake_peer->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer));
 
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
 
   conn_mgr()->set_request_timeout_for_testing(kTestRequestTimeout);
@@ -362,7 +362,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
   auto* peer = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
@@ -400,7 +400,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringDelayedConnect) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     ASSERT_TRUE(conn_handle);
     EXPECT_TRUE(conn_handle->active());
@@ -434,7 +434,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle->active());
   };
@@ -487,7 +487,7 @@ TEST_F(LowEnergyConnectionManagerTest, DeleteRefInClosedCallback) {
   };
 
   auto success_cb = [&conn_handle, &closed_cb](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     conn_handle->set_closed_callback(std::move(closed_cb));
   };
@@ -517,7 +517,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReleaseRef) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle->active());
   };
@@ -574,7 +574,7 @@ TEST_F(LowEnergyConnectionManagerTest, OnePeerManyPendingRequests) {
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto callback = [&conn_handles](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handles.emplace_back(std::move(result).value());
   };
 
@@ -621,7 +621,7 @@ TEST_F(LowEnergyConnectionManagerTest, AddRefAfterConnection) {
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto callback = [&conn_handles](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handles.emplace_back(std::move(result).value());
   };
 
@@ -660,7 +660,7 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeers) {
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto callback = [&conn_handles](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handles.emplace_back(std::move(result).value());
   };
 
@@ -715,7 +715,7 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeersOneFails) {
 
   ASSERT_EQ(2u, conn_results.size());
   EXPECT_TRUE(conn_results[0].is_error());
-  ASSERT_EQ(fitx::ok(), conn_results[1]);
+  ASSERT_EQ(fit::ok(), conn_results[1]);
   EXPECT_EQ(peer1->identifier(), conn_results[1].value()->peer_identifier());
 
   // Both connections should disconnect.
@@ -742,7 +742,7 @@ TEST_F(LowEnergyConnectionManagerTest, Destructor) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto success_cb = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
 
@@ -792,7 +792,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionWhileAwaitingS
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto conn_cb_1 = [&](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
 
@@ -828,7 +828,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionDuringScan) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto conn_cb_1 = [&](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
 
@@ -868,7 +868,7 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectWhileConnectorPending) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto conn_cb_1 = [&](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
 
@@ -957,7 +957,7 @@ TEST_F(LowEnergyConnectionManagerTest, Disconnect) {
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto success_cb = [&conn_handles, &closed_cb](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     auto conn_handle = std::move(result).value();
     conn_handle->set_closed_callback(closed_cb);
     conn_handles.push_back(std::move(conn_handle));
@@ -992,7 +992,7 @@ TEST_F(LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConnectB
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto success_cb = [&conn_handles](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handles.push_back(std::move(result).value());
   };
 
@@ -1025,7 +1025,7 @@ TEST_F(LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAutoConn
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto success_cb = [&conn_handles](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handles.push_back(std::move(result).value());
   };
 
@@ -1057,7 +1057,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectThrice) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto success_cb = [&closed_cb, &conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     ASSERT_TRUE(conn_handle);
     conn_handle->set_closed_callback(closed_cb);
@@ -1094,7 +1094,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectEvent) {
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto success_cb = [&conn_handles, &closed_cb](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     auto conn_handle = std::move(result).value();
     conn_handle->set_closed_callback(closed_cb);
     conn_handles.push_back(std::move(conn_handle));
@@ -1122,7 +1122,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterRefsReleased) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto success_cb = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
 
@@ -1148,7 +1148,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterSecondConnectionRequestInv
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle_0;
   auto success_cb = [&conn_handle_0](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle_0 = std::move(result).value();
     ASSERT_TRUE(conn_handle_0);
     EXPECT_TRUE(conn_handle_0->active());
@@ -1161,7 +1161,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterSecondConnectionRequestInv
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle_1;
   auto ref_cb = [&conn_handle_1](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle_1 = std::move(result).value();
   };
 
@@ -1187,7 +1187,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectCompleteEventAfterConnect) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto success_cb = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle->active());
   };
@@ -1201,7 +1201,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectCompleteEventAfterConnect) {
   size_t ref_cb_count = 0;
   auto ref_cb = [&ref_cb_count](auto result) {
     ref_cb_count++;
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
   };
 
   size_t disconn_cb_count = 0;
@@ -1230,7 +1230,7 @@ TEST_F(LowEnergyConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnectio
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto success_cb = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle->active());
   };
@@ -1268,7 +1268,7 @@ TEST_F(LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
   // A Peer should now exist in the cache.
@@ -1306,14 +1306,14 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_TRUE(link);
 
   // Create a pending outgoing connection.
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
   RunLoopUntilIdle();
@@ -1343,14 +1343,14 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_TRUE(link);
 
   // Create a pending outgoing connection.
-  ConnectionResult result = fitx::ok(nullptr);
+  ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
   RunLoopUntilIdle();
@@ -1384,7 +1384,7 @@ TEST_F(LowEnergyConnectionManagerTest, IncomingConnectionUpgradesKnownBrEdrPeerT
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&conn_handle](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
   RunLoopUntilIdle();
@@ -1412,7 +1412,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDisconnectDualModeDeviceWithBrE
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
 
@@ -1447,7 +1447,7 @@ TEST_F(LowEnergyConnectionManagerTest, CentralAppliesL2capConnectionParameterUpd
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto conn_cb = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
@@ -1498,7 +1498,7 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto conn_cb = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
@@ -1606,7 +1606,7 @@ TEST_F(LowEnergyConnectionManagerTest, PairWithBondableModes) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle);
     EXPECT_TRUE(conn_handle->active());
@@ -1652,7 +1652,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUID) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle);
     EXPECT_TRUE(conn_handle->active());
@@ -1684,7 +1684,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUuid) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     ASSERT_TRUE(conn_handle);
     EXPECT_TRUE(conn_handle->active());
@@ -1723,14 +1723,14 @@ TEST_P(ReadDeviceNameParameterizedFixture, ReadDeviceNameParameterized) {
   service_client->set_read_request_callback(
       [char_value_handle, char_value](att::Handle handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(fitx::ok(), char_value, /*maybe_truncated=*/false);
+          read_cb(fit::ok(), char_value, /*maybe_truncated=*/false);
         }
       });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback =
-      [&conn_ref](fitx::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>> result) {
-        ASSERT_EQ(fitx::ok(), result);
+      [&conn_ref](fit::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>> result) {
+        ASSERT_EQ(fit::ok(), result);
         conn_ref = std::move(result).value();
       };
 
@@ -1772,14 +1772,14 @@ TEST_F(LowEnergyConnectionManagerTest, ReadDeviceNameLong) {
   service_client->set_read_request_callback(
       [char_value_handle, char_value](att::Handle handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(fitx::ok(), char_value, /*maybe_truncated=*/false);
+          read_cb(fit::ok(), char_value, /*maybe_truncated=*/false);
         }
       });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback =
-      [&conn_ref](fitx::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>> result) {
-        ASSERT_EQ(fitx::ok(), result);
+      [&conn_ref](fit::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>> result) {
+        ASSERT_EQ(fit::ok(), result);
         conn_ref = std::move(result).value();
       };
 
@@ -1813,14 +1813,14 @@ TEST_F(LowEnergyConnectionManagerTest, ReadAppearance) {
   service_client->set_read_request_callback(
       [char_value_handle, char_value](att::Handle handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(fitx::ok(), char_value, /*maybe_truncated=*/false);
+          read_cb(fit::ok(), char_value, /*maybe_truncated=*/false);
         }
       });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback =
-      [&conn_ref](fitx::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>> result) {
-        ASSERT_EQ(fitx::ok(), result);
+      [&conn_ref](fit::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>> result) {
+        ASSERT_EQ(fit::ok(), result);
         conn_ref = std::move(result).value();
       };
 
@@ -1853,14 +1853,14 @@ TEST_F(LowEnergyConnectionManagerTest, ReadAppearanceInvalidSize) {
   service_client->set_read_request_callback(
       [char_value_handle, invalid_char_value](att::Handle handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(fitx::ok(), invalid_char_value, /*maybe_truncated=*/false);
+          read_cb(fit::ok(), invalid_char_value, /*maybe_truncated=*/false);
         }
       });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback =
-      [&conn_ref](fitx::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>> result) {
-        ASSERT_EQ(fitx::ok(), result);
+      [&conn_ref](fit::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>> result) {
+        ASSERT_EQ(fit::ok(), result);
         conn_ref = std::move(result).value();
       };
 
@@ -1896,13 +1896,13 @@ TEST_F(LowEnergyConnectionManagerTest,
   service_client->set_read_request_callback(
       [char_value_handle, char_value](att::Handle handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(fitx::ok(), char_value, /*maybe_truncated=*/false);
+          read_cb(fit::ok(), char_value, /*maybe_truncated=*/false);
         }
       });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback = [&conn_ref](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_ref = std::move(result).value();
   };
 
@@ -1950,13 +1950,13 @@ TEST_F(LowEnergyConnectionManagerTest,
   service_client->set_read_request_callback(
       [char_value_handle, invalid_char_value](auto handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(fitx::ok(), invalid_char_value, /*maybe_truncated=*/false);
+          read_cb(fit::ok(), invalid_char_value, /*maybe_truncated=*/false);
         }
       });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback = [&conn_ref](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_ref = std::move(result).value();
   };
 
@@ -1987,7 +1987,7 @@ TEST_F(LowEnergyConnectionManagerTest, GapServiceCharacteristicDiscoveryError) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback = [&conn_ref](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_ref = std::move(result).value();
   };
 
@@ -2007,7 +2007,7 @@ TEST_F(LowEnergyConnectionManagerTest, GapServiceListServicesError) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback = [&conn_ref](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_ref = std::move(result).value();
   };
 
@@ -2030,7 +2030,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerGapServiceMissingConnectionParameterC
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback = [&conn_ref](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_ref = std::move(result).value();
   };
 
@@ -2056,7 +2056,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassBondableThroughRemoteInitiatedLink) {
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&conn_handle](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
   RunLoopUntilIdle();
@@ -2080,7 +2080,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassNonBondableThroughRemoteInitiatedLink
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::NonBondable,
                                           [&conn_handle](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
   RunLoopUntilIdle();
@@ -2100,7 +2100,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassBondableThroughConnect) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     ASSERT_TRUE(conn_handle);
     EXPECT_TRUE(conn_handle->active());
@@ -2125,7 +2125,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassNonBondableThroughConnect) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     ASSERT_TRUE(conn_handle);
     EXPECT_TRUE(conn_handle->active());
@@ -2154,7 +2154,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
   conn_mgr()->Connect(
       peer->identifier(),
       [&](auto result) {
-        ASSERT_EQ(fitx::ok(), result);
+        ASSERT_EQ(fit::ok(), result);
         conn = std::move(result).value();
       },
       kConnectionOptions);
@@ -2196,7 +2196,7 @@ TEST_F(LowEnergyConnectionManagerTest, SuccessfulInterrogationSetsPeerVersionAnd
   conn_mgr()->Connect(
       peer->identifier(),
       [&](auto result) {
-        ASSERT_EQ(fitx::ok(), result);
+        ASSERT_EQ(fit::ok(), result);
         conn = std::move(result).value();
       },
       kConnectionOptions);
@@ -2295,7 +2295,7 @@ TEST_F(LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterroga
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
 
@@ -2356,7 +2356,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle0;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link0), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle0 = std::move(result).value();
                                           });
 
@@ -2368,7 +2368,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle1;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link1), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle1 = std::move(result).value();
                                           });
 
@@ -2448,7 +2448,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
 
@@ -2505,7 +2505,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
 
@@ -2559,7 +2559,7 @@ TEST_F(LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
 
@@ -2615,7 +2615,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   conn_mgr()->Connect(
       peer->identifier(),
       [&](auto result) {
-        ASSERT_EQ(fitx::ok(), result);
+        ASSERT_EQ(fit::ok(), result);
         conn = std::move(result).value();
       },
       kConnectionOptions);
@@ -2657,7 +2657,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectCalledForPeerBeingInterrogated) {
 LowEnergyConnectionManager::ConnectionResultCallback MakeConnectionResultCallback(
     std::unique_ptr<LowEnergyConnectionHandle>& conn_handle) {
   return [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle);
     EXPECT_TRUE(conn_handle->active());
@@ -2685,7 +2685,7 @@ TEST_F(LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuffici
                       MakeConnectionResultCallback(secure_authenticated_conn_handle),
                       kConnectionOptions);
   RunLoopUntilIdle();
-  std::function<void(sm::Result<>)> pair_cb = [](sm::Result<> s) { EXPECT_EQ(fitx::ok(), s); };
+  std::function<void(sm::Result<>)> pair_cb = [](sm::Result<> s) { EXPECT_EQ(fit::ok(), s); };
   EXPECT_EQ(3u, connected_peers().size());
   ASSERT_TRUE(unencrypted_conn_handle);
   ASSERT_TRUE(encrypted_conn_handle);
@@ -2773,7 +2773,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   conn_mgr()->Connect(
       peer_0->identifier(),
       [&conn_0](auto result) {
-        ASSERT_EQ(fitx::ok(), result);
+        ASSERT_EQ(fit::ok(), result);
         conn_0 = std::move(result).value();
         ASSERT_TRUE(conn_0);
       },
@@ -2796,7 +2796,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   conn_mgr()->Connect(
       peer_1->identifier(),
       [&conn_1](auto result) {
-        ASSERT_EQ(fitx::ok(), result);
+        ASSERT_EQ(fit::ok(), result);
         conn_1 = std::move(result).value();
         ASSERT_TRUE(conn_1);
       },
@@ -2843,7 +2843,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   conn_mgr()->Connect(
       peer_0->identifier(),
       [&](auto result) {
-        ASSERT_EQ(fitx::ok(), result);
+        ASSERT_EQ(fit::ok(), result);
         conn_0 = std::move(result).value();
       },
       kConnectionOptions);
@@ -2895,7 +2895,7 @@ TEST_F(LowEnergyConnectionManagerTest, SynchonousInterrogationAndNoCallbackRetai
   conn_mgr()->Connect(
       peer->identifier(),
       [&](auto result) {
-        ASSERT_EQ(fitx::ok(), result);
+        ASSERT_EQ(fit::ok(), result);
         conn = std::move(result).value();
       },
       kConnectionOptions);
@@ -2914,7 +2914,7 @@ TEST_F(LowEnergyConnectionManagerTest, SynchonousInterrogationAndNoCallbackRetai
       peer->identifier(),
       [&](auto result) {
         conn_cb_called = true;
-        EXPECT_EQ(fitx::ok(), result);
+        EXPECT_EQ(fit::ok(), result);
         // Don't retain ref.
       },
       kConnectionOptions);
@@ -2935,7 +2935,7 @@ TEST_F(LowEnergyConnectionManagerTest, AutoConnectSkipsScanning) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle->active());
   };
@@ -3170,7 +3170,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAnd
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle->active());
   };
@@ -3261,7 +3261,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   int connect_cb_count = 0;
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     connect_cb_count++;
     conn_handle = std::move(result).value();
   };
@@ -3336,7 +3336,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
 
     std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
     auto success_cb = [&conn_handle](auto result) {
-      ASSERT_EQ(fitx::ok(), result);
+      ASSERT_EQ(fit::ok(), result);
       conn_handle = std::move(result).value();
       EXPECT_TRUE(conn_handle->active());
     };
@@ -3366,14 +3366,14 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
                                            statuses_that_disable_autoconnect[i]);
 
-    ConnectionResult result = fitx::ok(nullptr);
+    ConnectionResult result = fit::ok(nullptr);
     auto failure_cb = [&result](auto res) { result = std::move(res); };
     // Create an inbound HCI connection and try to register it with the LECM
     test_device()->ConnectLowEnergy(kAddressI);
     RunLoopUntilIdle();
     auto link = MoveLastRemoteInitiated();
     ASSERT_TRUE(link);
-    result = fitx::ok(nullptr);
+    result = fit::ok(nullptr);
     conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable, failure_cb);
     RunLoopUntilIdle();
     // We always wait until the peer disconnects to relay connection failure when dealing with
@@ -3407,7 +3407,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     // Emulate an auto-connection here, as we disable the auto-connect behavior only for
     // auto-connect-initiated attempts that fail, NOT for user-initiated or remote-initiated
     // connection attempts that fail.
-    result = fitx::ok(nullptr);
+    result = fit::ok(nullptr);
     const LowEnergyConnectionOptions kAutoConnectOptions{.auto_connect = true};
     conn_mgr()->Connect(peer->identifier(), failure_cb, kAutoConnectOptions);
     ASSERT_TRUE(peer->le());
@@ -3434,7 +3434,7 @@ TEST_F(LowEnergyConnectionManagerTest, Inspect) {
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
   };
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
@@ -3583,7 +3583,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
   EXPECT_EQ(peer->le()->connection_state(), Peer::ConnectionState::kInitializing);
@@ -3616,7 +3616,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     conn_handle = std::move(result).value();
     EXPECT_TRUE(conn_handle->active());
   };
@@ -3672,7 +3672,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           [&](auto result) {
-                                            ASSERT_EQ(fitx::ok(), result);
+                                            ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
 
@@ -3724,7 +3724,7 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
     // Connect |peer0|
     conn_handle0_.reset();
     auto callback0 = [this](auto result) {
-      ASSERT_EQ(fitx::ok(), result);
+      ASSERT_EQ(fit::ok(), result);
       conn_handle0_ = std::move(result).value();
       EXPECT_TRUE(conn_handle0_->active());
     };
@@ -3734,7 +3734,7 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
     // Connect |peer1|
     conn_handle1_.reset();
     auto callback1 = [this](auto result) {
-      ASSERT_EQ(fitx::ok(), result);
+      ASSERT_EQ(fit::ok(), result);
       conn_handle1_ = std::move(result).value();
       EXPECT_TRUE(conn_handle1_->active());
     };

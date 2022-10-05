@@ -110,7 +110,7 @@ TEST_F(ServiceDiscovererTest, NoResults) {
                                                  auto pattern, auto attributes, auto callback) {
     searches.emplace_back(std::move(pattern));
     async::PostTask(dispatcher,
-                    [cb = std::move(callback)]() { cb(fitx::error(Error(HostError::kNotFound))); });
+                    [cb = std::move(callback)]() { cb(fit::error(Error(HostError::kNotFound))); });
   });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
@@ -138,7 +138,7 @@ TEST_F(ServiceDiscovererTest, SynchronousErrorResult) {
   client->SetServiceSearchAttributesCallback(
       [&searches](auto pattern, auto attributes, auto callback) {
         searches.emplace_back(std::move(pattern));
-        callback(fitx::error(Error(HostError::kLinkDisconnected)));
+        callback(fit::error(Error(HostError::kLinkDisconnected)));
       });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
@@ -185,7 +185,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
                                                                auto callback) {
     searches.emplace_back(std::move(pattern));
     async::PostTask(dispatcher(),
-                    [cb = std::move(callback)]() { cb(fitx::error(Error(HostError::kNotFound))); });
+                    [cb = std::move(callback)]() { cb(fit::error(Error(HostError::kNotFound))); });
   });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
@@ -210,10 +210,10 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             // This would normally be a element list. uint32_t for Testing.
             rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
 
-            if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
+            if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            cb(fitx::error(Error(HostError::kNotFound)));
+            cb(fit::error(Error(HostError::kNotFound)));
           });
         } else if (pattern.count(profile::kAudioSink)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
@@ -221,10 +221,10 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             // This would normally be a element list. uint32_t for Testing.
             rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
 
-            if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
+            if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            cb(fitx::error(Error(HostError::kNotFound)));
+            cb(fit::error(Error(HostError::kNotFound)));
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -262,13 +262,13 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
             rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
 
-            if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
+            if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            if (!cb(fitx::ok(std::cref(rsp.attributes(1))))) {
+            if (!cb(fit::ok(std::cref(rsp.attributes(1))))) {
               return;
             }
-            cb(fitx::error(Error(HostError::kNotFound)));
+            cb(fit::error(Error(HostError::kNotFound)));
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -311,7 +311,7 @@ TEST_F(ServiceDiscovererTest, Disconnected) {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-            cb(fitx::error(Error(HostError::kLinkDisconnected)));
+            cb(fit::error(Error(HostError::kLinkDisconnected)));
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -372,13 +372,13 @@ TEST_F(ServiceDiscovererTest, UnregisterInProgress) {
             rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
             rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
 
-            if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
+            if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            if (!cb(fitx::ok(std::cref(rsp.attributes(1))))) {
+            if (!cb(fit::ok(std::cref(rsp.attributes(1))))) {
               return;
             }
-            cb(fitx::error(Error(HostError::kNotFound)));
+            cb(fit::error(Error(HostError::kNotFound)));
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;

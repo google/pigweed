@@ -86,7 +86,7 @@ class HciWrapper {
   // Encodes the vendor HCI command "Set ACL Priority" and returns the encoded
   // command as a buffer on success. Returns an error if the command is not supported or
   // the parameters are invalid.
-  virtual fitx::result<zx_status_t, DynamicByteBuffer> EncodeSetAclPriorityCommand(
+  virtual fit::result<zx_status_t, DynamicByteBuffer> EncodeSetAclPriorityCommand(
       hci_spec::ConnectionHandle connection, hci::AclPriority priority) = 0;
 };
 

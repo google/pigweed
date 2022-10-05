@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "lib/fitx/result.h"
+#include "lib/fit/result.h"
 #include "low_energy_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -105,7 +105,7 @@ class LowEnergyConnectionManager final {
   //
   // The status of the procedure is reported in |callback| in the case of an
   // error.
-  using ConnectionResult = fitx::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>>;
+  using ConnectionResult = fit::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>>;
   using ConnectionResultCallback = fit::function<void(ConnectionResult)>;
   void Connect(PeerId peer_id, ConnectionResultCallback callback,
                LowEnergyConnectionOptions connection_options);

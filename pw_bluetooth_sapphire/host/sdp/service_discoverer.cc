@@ -54,7 +54,7 @@ bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id, std::unique_ptr<Cl
   for (auto& [search_id, search] : searches_) {
     Client::SearchResultFunction result_cb =
         [this, peer_id, search_id = search_id](
-            fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+            fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
                 attributes_result) {
           auto it = searches_.find(search_id);
           if (it == searches_.end() || attributes_result.is_error()) {

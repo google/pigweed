@@ -1794,7 +1794,7 @@ TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLinkDoesNothing) 
 
 TEST_F(ChannelManagerTest, UpgradeSecurity) {
   // The callback passed to to Channel::UpgradeSecurity().
-  sm::Result<> received_status = fitx::ok();
+  sm::Result<> received_status = fit::ok();
   int security_status_count = 0;
   auto status_callback = [&](sm::Result<> status) {
     received_status = status;
@@ -1802,7 +1802,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   };
 
   // The security handler callback assigned when registering a link.
-  sm::Result<> delivered_status = fitx::ok();
+  sm::Result<> delivered_status = fit::ok();
   sm::SecurityLevel last_requested_level = sm::SecurityLevel::kNoSecurity;
   int security_request_count = 0;
   auto security_handler = [&](hci_spec::ConnectionHandle handle, sm::SecurityLevel level,
@@ -1826,7 +1826,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   RunLoopUntilIdle();
   EXPECT_EQ(0, security_request_count);
   EXPECT_EQ(1, security_status_count);
-  EXPECT_EQ(fitx::ok(), received_status);
+  EXPECT_EQ(fit::ok(), received_status);
 
   // Test reporting an error.
   delivered_status = ToResult(HostError::kNotSupported);
@@ -2392,12 +2392,12 @@ TEST_F(ChannelManagerTest, RequestAclPriorityNormal) {
       [&requested_priority](auto priority, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         requested_priority = priority;
-        cb(fitx::ok());
+        cb(fit::ok());
       });
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kNormal, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
 
@@ -2422,12 +2422,12 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
       [&requested_priority](auto priority, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         requested_priority = priority;
-        cb(fitx::ok());
+        cb(fit::ok());
       });
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
 
@@ -2437,7 +2437,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
   EXPECT_EQ(*requested_priority, hci::AclPriority::kSink);
 
   channel->RequestAclPriority(hci::AclPriority::kNormal, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
 
@@ -2465,12 +2465,12 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfterResul
       [&requested_priority](auto priority, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         requested_priority = priority;
-        cb(fitx::ok());
+        cb(fit::ok());
       });
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
 
@@ -2497,12 +2497,12 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
       [&requested_priority](auto priority, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         requested_priority = priority;
-        cb(fitx::ok());
+        cb(fit::ok());
       });
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
 
@@ -2529,8 +2529,7 @@ TEST_F(ChannelManagerTest,
 
   auto channel = SetUpOutboundChannel();
 
-  std::vector<std::pair<hci::AclPriority, fit::callback<void(fitx::result<fitx::failed>)>>>
-      requests;
+  std::vector<std::pair<hci::AclPriority, fit::callback<void(fit::result<fit::failed>)>>> requests;
   acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requests.push_back({priority, std::move(cb)});
@@ -2538,7 +2537,7 @@ TEST_F(ChannelManagerTest,
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
@@ -2550,12 +2549,12 @@ TEST_F(ChannelManagerTest,
   channel->Deactivate();
   ASSERT_EQ(requests.size(), 1u);
 
-  requests[0].second(fitx::ok());
+  requests[0].second(fit::ok());
   EXPECT_EQ(result_cb_count, 1u);
   ASSERT_EQ(requests.size(), 2u);
   EXPECT_EQ(requests[1].first, hci::AclPriority::kNormal);
 
-  requests[1].second(fitx::ok());
+  requests[1].second(fit::ok());
 }
 
 TEST_F(ChannelManagerTest, RequestAclPrioritySinkFails) {
@@ -2566,7 +2565,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkFails) {
 
   acl_data_channel()->set_request_acl_priority_cb([](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
-    cb(fitx::failed());
+    cb(fit::failed());
   });
 
   size_t result_cb_count = 0;
@@ -2596,12 +2595,12 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
   acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requested_priority = priority;
-    cb(fitx::ok());
+    cb(fit::ok());
   });
 
   size_t result_cb_count = 0;
   channel_0->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
   ASSERT_TRUE(requested_priority);
@@ -2611,7 +2610,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
   requested_priority.reset();
 
   channel_1->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
   // Priority is already sink. No additional request should be sent.
@@ -2648,12 +2647,12 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
   acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requested_priority = priority;
-    cb(fitx::ok());
+    cb(fit::ok());
   });
 
   size_t result_cb_count = 0;
   channel_0->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
   ASSERT_TRUE(requested_priority);
@@ -2697,7 +2696,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   auto channel_0 = SetUpOutboundChannel(kChannelIds0.first, kChannelIds0.second);
   auto channel_1 = SetUpOutboundChannel(kChannelIds1.first, kChannelIds1.second);
 
-  std::vector<fit::callback<void(fitx::result<fitx::failed>)>> command_callbacks;
+  std::vector<fit::callback<void(fit::result<fit::failed>)>> command_callbacks;
   acl_data_channel()->set_request_acl_priority_cb(
       [&](auto priority, auto handle, auto cb) { command_callbacks.push_back(std::move(cb)); });
 
@@ -2712,7 +2711,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   EXPECT_EQ(result_cb_count_1, 0u);
   ASSERT_EQ(command_callbacks.size(), 1u);
 
-  command_callbacks[0](fitx::ok());
+  command_callbacks[0](fit::ok());
   EXPECT_EQ(result_cb_count_0, 1u);
   // Second request should be notified of conflict error.
   EXPECT_EQ(result_cb_count_1, 1u);
@@ -2739,8 +2738,7 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
 
   auto channel = SetUpOutboundChannel();
 
-  std::vector<std::pair<hci::AclPriority, fit::callback<void(fitx::result<fitx::failed>)>>>
-      requests;
+  std::vector<std::pair<hci::AclPriority, fit::callback<void(fit::result<fit::failed>)>>> requests;
   acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requests.push_back({priority, std::move(cb)});
@@ -2748,16 +2746,16 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
 
   size_t result_cb_count = 0;
   channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 1u);
-  requests[0].second(fitx::ok());
+  requests[0].second(fit::ok());
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
 
   // Source request is queued and request is sent.
   channel->RequestAclPriority(hci::AclPriority::kSource, [&](auto result) {
-    EXPECT_EQ(fitx::ok(), result);
+    EXPECT_EQ(fit::ok(), result);
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 2u);
@@ -2780,13 +2778,13 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
   EXPECT_FALSE(channel);
 
   // Send result to source request. Second sink request should receive error result too.
-  requests[1].second(fitx::ok());
+  requests[1].second(fit::ok());
   EXPECT_EQ(result_cb_count, 3u);
   ASSERT_EQ(requests.size(), 3u);
   EXPECT_EQ(requests[2].first, hci::AclPriority::kNormal);
 
   // Send response to kNormal request sent on Deactivate().
-  requests[2].second(fitx::ok());
+  requests[2].second(fit::ok());
 }
 
 #ifndef NINSPECT
@@ -2993,7 +2991,7 @@ TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
       &kCommandComplete);
 
   flushable_channel->SetBrEdrAutomaticFlushTimeout(
-      kFlushTimeout, [](auto result) { EXPECT_EQ(fitx::ok(), result); });
+      kFlushTimeout, [](auto result) { EXPECT_EQ(fit::ok(), result); });
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   EXPECT_FALSE(nonflushable_channel->info().flush_timeout.has_value());

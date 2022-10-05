@@ -594,7 +594,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   int callback_count = 0;
   auto conn = NewConnection();
 
-  Result<bool> result = fitx::error(Error(HostError::kFailed));
+  Result<bool> result = fit::error(Error(HostError::kFailed));
   conn->set_encryption_change_callback([&](Result<bool> cb_result) {
     callback_count++;
     result = cb_result;
@@ -609,14 +609,14 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, callback_count);
-  EXPECT_EQ(fitx::ok(), result);
+  EXPECT_EQ(fit::ok(), result);
   EXPECT_TRUE(result.value_or(false));
 
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventDisabled);
   RunLoopUntilIdle();
 
   EXPECT_EQ(2, callback_count);
-  EXPECT_EQ(fitx::ok(), result);
+  EXPECT_EQ(fit::ok(), result);
   EXPECT_FALSE(result.value_or(true));
 
   // The host should disconnect the link if encryption fails.
@@ -726,7 +726,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   int callback_count = 0;
   auto conn = NewConnection();
 
-  Result<bool> result = fitx::error(Error(HostError::kFailed));
+  Result<bool> result = fit::error(Error(HostError::kFailed));
   conn->set_encryption_change_callback([&](Result<bool> cb_result) {
     callback_count++;
     result = cb_result;
@@ -736,7 +736,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, callback_count);
-  ASSERT_EQ(fitx::ok(), result);
+  ASSERT_EQ(fit::ok(), result);
   EXPECT_TRUE(result.value());
 
   // The host should disconnect the link if encryption fails.

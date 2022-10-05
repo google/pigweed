@@ -105,7 +105,7 @@ void FakeLayer::SendUpdate(IdType service_id, IdType chrc_id, PeerId peer_id,
                            ::std::vector<uint8_t> value, IndicationCallback indicate_cb) {
   auto iter = local_services_.find(service_id);
   if (iter == local_services_.end()) {
-    indicate_cb(fitx::error(att::ErrorCode::kInvalidHandle));
+    indicate_cb(fit::error(att::ErrorCode::kInvalidHandle));
     return;
   }
   iter->second.updates.push_back(
@@ -116,7 +116,7 @@ void FakeLayer::UpdateConnectedPeers(IdType service_id, IdType chrc_id,
                                      ::std::vector<uint8_t> value, IndicationCallback indicate_cb) {
   auto iter = local_services_.find(service_id);
   if (iter == local_services_.end()) {
-    indicate_cb(fitx::error(att::ErrorCode::kInvalidHandle));
+    indicate_cb(fit::error(att::ErrorCode::kInvalidHandle));
     return;
   }
   iter->second.updates.push_back(

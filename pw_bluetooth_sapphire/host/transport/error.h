@@ -14,7 +14,7 @@ namespace hci {
 using Error = Error<hci_spec::StatusCode>;
 
 template <typename... V>
-using Result = fitx::result<bt::hci::Error, V...>;
+using Result = fit::result<bt::hci::Error, V...>;
 
 template <typename... V>
 using ResultFunction = fit::function<void(bt::hci::Result<V...> result)>;

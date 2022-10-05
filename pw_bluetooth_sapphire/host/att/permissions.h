@@ -10,10 +10,10 @@
 
 namespace bt::att {
 
-fitx::result<ErrorCode> CheckReadPermissions(const AccessRequirements&,
+fit::result<ErrorCode> CheckReadPermissions(const AccessRequirements&,
+                                            const sm::SecurityProperties&);
+fit::result<ErrorCode> CheckWritePermissions(const AccessRequirements&,
                                              const sm::SecurityProperties&);
-fitx::result<ErrorCode> CheckWritePermissions(const AccessRequirements&,
-                                              const sm::SecurityProperties&);
 
 }  // namespace bt::att
 

@@ -159,8 +159,8 @@ TEST(AttributeTest, ReadAsync) {
                          AccessRequirements());                        // write not allowed
 
   bool callback_called = false;
-  auto callback = [&](fitx::result<ErrorCode> status, const auto& value) {
-    EXPECT_EQ(fitx::ok(), status);
+  auto callback = [&](fit::result<ErrorCode> status, const auto& value) {
+    EXPECT_EQ(fit::ok(), status);
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer('h', 'i'), value));
     callback_called = true;
   };
@@ -171,7 +171,7 @@ TEST(AttributeTest, ReadAsync) {
     EXPECT_EQ(kTestOffset, offset);
     EXPECT_TRUE(result_cb);
 
-    result_cb(fitx::ok(), StaticByteBuffer('h', 'i'));
+    result_cb(fit::ok(), StaticByteBuffer('h', 'i'));
   };
 
   attr->set_read_handler(handler);
@@ -206,8 +206,8 @@ TEST(AttributeTest, WriteAsync) {
                                             /*authorization=*/false));  // write no security
 
   bool callback_called = false;
-  auto callback = [&](fitx::result<ErrorCode> status) {
-    EXPECT_EQ(fitx::ok(), status);
+  auto callback = [&](fit::result<ErrorCode> status) {
+    EXPECT_EQ(fit::ok(), status);
     callback_called = true;
   };
 
@@ -219,7 +219,7 @@ TEST(AttributeTest, WriteAsync) {
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer('h', 'i'), value));
     EXPECT_TRUE(result_cb);
 
-    result_cb(fitx::ok());
+    result_cb(fit::ok());
   };
 
   attr->set_write_handler(handler);

@@ -123,7 +123,7 @@ class FakeLayer final : public GATT {
   PersistServiceChangedCCCCallback persist_service_changed_ccc_cb_;
   RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_cb_;
 
-  att::Result<> list_services_status_ = fitx::ok();
+  att::Result<> list_services_status_ = fit::ok();
   bool pause_list_services_ = false;
 
   // Emulated GATT peer.

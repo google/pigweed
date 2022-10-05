@@ -6,7 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_CLIENT_H_
 
 #include <lib/async/cpp/task.h>
-#include <lib/fitx/result.h>
+#include <lib/fit/result.h>
 
 #include <functional>
 #include <unordered_map>
@@ -39,7 +39,7 @@ class Client {
   //   - when no more services remain, the result_cb status will be
   //     HostError::kNotFound. The return value is ignored.
   using SearchResultFunction = fit::function<bool(
-      fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>)>;
+      fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>)>;
   virtual void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
                                        const std::unordered_set<AttributeId>& req_attributes,
                                        SearchResultFunction result_cb) = 0;

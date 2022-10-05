@@ -109,11 +109,11 @@ class AttBasedServer final : public Server {
                               att::Bearer::TransactionResult result) mutable {
       if (result.is_ok()) {
         bt_log(DEBUG, "gatt", "got indication ACK");
-        indicate_cb(fitx::ok());
+        indicate_cb(fit::ok());
       } else {
         const auto& [error, handle] = result.error_value();
         bt_log(WARN, "gatt", "indication failed (error %s, handle: %#.4x)", bt_str(error), handle);
-        indicate_cb(fitx::error(error));
+        indicate_cb(fit::error(error));
       }
     };
     att_->StartTransaction(std::move(buffer), std::move(transaction_cb));
@@ -332,7 +332,7 @@ class AttBasedServer final : public Server {
 
     size_t value_size;
     std::list<const att::Attribute*> results;
-    fitx::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> status =
         ReadByTypeHelper(start, end, group_type, /*group_type=*/true, att_->mtu() - kHeaderSize,
                          att::kMaxReadByGroupTypeValueLength, sizeof(att::AttributeGroupDataEntry),
                          &value_size, &results);
@@ -400,7 +400,7 @@ class AttBasedServer final : public Server {
 
     size_t value_size;
     std::list<const att::Attribute*> results;
-    fitx::result<att::ErrorCode> status = ReadByTypeHelper(
+    fit::result<att::ErrorCode> status = ReadByTypeHelper(
         start, end, type, /*group_type=*/false, att_->mtu() - kHeaderSize,
         att::kMaxReadByTypeValueLength, sizeof(att::AttributeData), &value_size, &results);
     if (status.is_error()) {
@@ -419,7 +419,7 @@ class AttBasedServer final : public Server {
 
       att::Handle handle = results.front()->handle();
       auto self = weak_ptr_factory_.GetWeakPtr();
-      auto result_cb = [self, tid, handle, kMaxValueSize](fitx::result<att::ErrorCode> status,
+      auto result_cb = [self, tid, handle, kMaxValueSize](fit::result<att::ErrorCode> status,
                                                           const auto& value) {
         if (!self)
           return;
@@ -495,7 +495,7 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    fitx::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> status =
         att::CheckReadPermissions(attr->read_reqs(), att_->security());
     if (status.is_error()) {
       att_->ReplyWithError(tid, handle, status.error_value());
@@ -505,7 +505,7 @@ class AttBasedServer final : public Server {
     constexpr size_t kHeaderSize = sizeof(att::Header);
 
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto callback = [self, tid, handle](fitx::result<att::ErrorCode> status, const auto& value) {
+    auto callback = [self, tid, handle](fit::result<att::ErrorCode> status, const auto& value) {
       if (!self)
         return;
 
@@ -531,7 +531,7 @@ class AttBasedServer final : public Server {
         return;
       }
       size_t value_size = std::min(attr->value()->size(), self->att_->mtu() - kHeaderSize);
-      callback(fitx::ok(), attr->value()->view(offset, value_size));
+      callback(fit::ok(), attr->value()->view(offset, value_size));
       return;
     }
 
@@ -558,7 +558,7 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    fitx::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> status =
         att::CheckReadPermissions(attr->read_reqs(), att_->security());
     if (status.is_error()) {
       att_->ReplyWithError(tid, handle, status.error_value());
@@ -568,7 +568,7 @@ class AttBasedServer final : public Server {
     constexpr size_t kHeaderSize = sizeof(att::Header);
 
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto callback = [self, tid, handle](fitx::result<att::ErrorCode> status, const auto& value) {
+    auto callback = [self, tid, handle](fit::result<att::ErrorCode> status, const auto& value) {
       if (!self)
         return;
 
@@ -589,7 +589,7 @@ class AttBasedServer final : public Server {
 
     // Use the cached value if there is one.
     if (attr->value()) {
-      callback(fitx::ok(), *attr->value());
+      callback(fit::ok(), *attr->value());
       return;
     }
 
@@ -615,7 +615,7 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    fitx::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> status =
         att::CheckWritePermissions(attr->write_reqs(), att_->security());
     if (status.is_error()) {
       return;
@@ -652,7 +652,7 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    fitx::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> status =
         att::CheckWritePermissions(attr->write_reqs(), att_->security());
     if (status.is_error()) {
       att_->ReplyWithError(tid, handle, status.error_value());
@@ -672,7 +672,7 @@ class AttBasedServer final : public Server {
     }
 
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto result_cb = [self, tid, handle](fitx::result<att::ErrorCode> status) {
+    auto result_cb = [self, tid, handle](fit::result<att::ErrorCode> status) {
       if (!self)
         return;
 
@@ -717,7 +717,7 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    fitx::result<att::ErrorCode> status =
+    fit::result<att::ErrorCode> status =
         att::CheckWritePermissions(attr->write_reqs(), att_->security());
     if (status.is_error()) {
       att_->ReplyWithError(tid, handle, status.error_value());
@@ -759,7 +759,7 @@ class AttBasedServer final : public Server {
 
     auto self = weak_ptr_factory_.GetWeakPtr();
     auto result_cb = [self,
-                      tid](fitx::result<std::tuple<att::Handle, att::ErrorCode>> result) mutable {
+                      tid](fit::result<std::tuple<att::Handle, att::ErrorCode>> result) mutable {
       if (!self)
         return;
 
@@ -786,20 +786,20 @@ class AttBasedServer final : public Server {
   // |out_value_size| will point to an undefined value in that case.
   //
   // On error, returns an error code that can be used in a ATT Error Response.
-  fitx::result<att::ErrorCode> ReadByTypeHelper(att::Handle start, att::Handle end,
-                                                const UUID& type, bool group_type,
-                                                size_t max_data_list_size, size_t max_value_size,
-                                                size_t entry_prefix_size, size_t* out_value_size,
-                                                std::list<const att::Attribute*>* out_results) {
+  fit::result<att::ErrorCode> ReadByTypeHelper(att::Handle start, att::Handle end, const UUID& type,
+                                               bool group_type, size_t max_data_list_size,
+                                               size_t max_value_size, size_t entry_prefix_size,
+                                               size_t* out_value_size,
+                                               std::list<const att::Attribute*>* out_results) {
     BT_DEBUG_ASSERT(out_results);
     BT_DEBUG_ASSERT(out_value_size);
 
     if (start == att::kInvalidHandle || start > end)
-      return fitx::error(att::ErrorCode::kInvalidHandle);
+      return fit::error(att::ErrorCode::kInvalidHandle);
 
     auto iter = db()->GetIterator(start, end, &type, group_type);
     if (iter.AtEnd())
-      return fitx::error(att::ErrorCode::kAttributeNotFound);
+      return fit::error(att::ErrorCode::kAttributeNotFound);
 
     // |value_size| is the size of the complete attribute value for each result
     // entry. |entry_size| = |value_size| + |entry_prefix_size|. We store these
@@ -812,7 +812,7 @@ class AttBasedServer final : public Server {
       const auto* attr = iter.get();
       BT_DEBUG_ASSERT(attr);
 
-      fitx::result<att::ErrorCode> security_result =
+      fit::result<att::ErrorCode> security_result =
           att::CheckReadPermissions(attr->read_reqs(), att_->security());
       if (security_result.is_error()) {
         // Return error only if this is the first result that matched. We simply stop the search
@@ -854,10 +854,10 @@ class AttBasedServer final : public Server {
     }
 
     if (results.empty())
-      return fitx::error(att::ErrorCode::kAttributeNotFound);
+      return fit::error(att::ErrorCode::kAttributeNotFound);
 
     *out_results = std::move(results);
-    return fitx::ok();
+    return fit::ok();
   }
 
   PeerId peer_id_;

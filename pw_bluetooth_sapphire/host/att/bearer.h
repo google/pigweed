@@ -108,7 +108,7 @@ class Bearer final {
   //
   // Returns false if |pdu| is empty, exceeds the current MTU, or does not
   // correspond to a request or indication.
-  using TransactionResult = fitx::result<std::pair<Error, Handle>, PacketReader>;
+  using TransactionResult = fit::result<std::pair<Error, Handle>, PacketReader>;
   using TransactionCallback = fit::callback<void(TransactionResult)>;
   void StartTransaction(ByteBufferPtr pdu, TransactionCallback callback);
 

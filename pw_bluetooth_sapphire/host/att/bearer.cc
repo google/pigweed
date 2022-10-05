@@ -230,7 +230,7 @@ void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Ha
 
     bt_log(TRACE, "att", "Failed to start transaction: out of memory!");
     auto t = std::move(current_);
-    t->callback(fitx::error(std::pair(Error(HostError::kOutOfMemory), kInvalidHandle)));
+    t->callback(fit::error(std::pair(Error(HostError::kOutOfMemory), kInvalidHandle)));
 
     // Process the next command until we can send OR we have drained the queue.
     if (queue_.empty()) {
@@ -249,14 +249,14 @@ void Bearer::TransactionQueue::Reset() {
 
 void Bearer::TransactionQueue::InvokeErrorAll(Error error) {
   if (current_) {
-    current_->callback(fitx::error(std::pair(error, kInvalidHandle)));
+    current_->callback(fit::error(std::pair(error, kInvalidHandle)));
     current_ = nullptr;
     timeout_task_.Cancel();
   }
 
   while (!queue_.empty()) {
     if (queue_.front()->callback) {
-      queue_.front()->callback(fitx::error(std::pair(error, kInvalidHandle)));
+      queue_.front()->callback(fit::error(std::pair(error, kInvalidHandle)));
     }
     queue_.pop();
   }
@@ -350,7 +350,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   if (!is_open()) {
     bt_log(TRACE, "att", "bearer closed; cannot send packet");
     if (callback) {
-      callback(fitx::error(std::pair(Error(HostError::kLinkDisconnected), kInvalidHandle)));
+      callback(fit::error(std::pair(Error(HostError::kLinkDisconnected), kInvalidHandle)));
     }
     return false;
   }
@@ -571,9 +571,9 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
       security_requirement <= chan_->security().level()) {
     // Resolve the transaction.
     if (error.has_value()) {
-      transaction->callback(fitx::error(error.value()));
+      transaction->callback(fit::error(error.value()));
     } else {
-      transaction->callback(fitx::ok(packet));
+      transaction->callback(fit::ok(packet));
     }
 
     // Send out the next queued transaction
@@ -592,7 +592,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
         // If the security upgrade failed or the bearer got destroyed, then
         // resolve the transaction with the original error.
         if (!self || status.is_error()) {
-          t->callback(fitx::error(std::move(error)));
+          t->callback(fit::error(std::move(error)));
           return;
         }
 

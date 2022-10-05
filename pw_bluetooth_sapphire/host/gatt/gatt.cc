@@ -141,7 +141,7 @@ class Impl final : public GATT {
       // This notifies indicate_cb with success when destroyed (if indicate_cb has not been invoked)
       auto deferred_success = fit::defer([outer_cb = indicate_cb.share()]() mutable {
         if (outer_cb) {
-          outer_cb(fitx::ok());
+          outer_cb(fit::ok());
         }
       });
       // This captures, but doesn't use, deferred_success. Because this is later |share|d for each

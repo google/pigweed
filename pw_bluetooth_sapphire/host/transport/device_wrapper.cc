@@ -90,7 +90,7 @@ zx::channel DdkDeviceWrapper::GetACLDataChannel() {
   return ours;
 }
 
-fitx::result<zx_status_t, zx::channel> DdkDeviceWrapper::GetScoChannel() {
+fit::result<zx_status_t, zx::channel> DdkDeviceWrapper::GetScoChannel() {
   zx::channel ours, theirs;
   zx_status_t status = zx::channel::create(0, &ours, &theirs);
   if (status != ZX_OK) {
@@ -101,9 +101,9 @@ fitx::result<zx_status_t, zx::channel> DdkDeviceWrapper::GetScoChannel() {
 
   if (status != ZX_OK) {
     bt_log(WARN, "hci", "Failed to bind SCO channel: %s", zx_status_get_string(status));
-    return fitx::error(status);
+    return fit::error(status);
   }
-  return fitx::ok(std::move(ours));
+  return fit::ok(std::move(ours));
 }
 
 void DdkDeviceWrapper::ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,
@@ -151,11 +151,11 @@ DummyDeviceWrapper::DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_
       vendor_features_(vendor_features),
       vendor_encode_cb_(std::move(vendor_encode_cb)) {}
 
-fitx::result<zx_status_t, zx::channel> DummyDeviceWrapper::GetScoChannel() {
+fit::result<zx_status_t, zx::channel> DummyDeviceWrapper::GetScoChannel() {
   if (!sco_channel_.is_valid()) {
-    return fitx::error(ZX_ERR_NOT_SUPPORTED);
+    return fit::error(ZX_ERR_NOT_SUPPORTED);
   }
-  return fitx::success(std::move(sco_channel_));
+  return fit::success(std::move(sco_channel_));
 }
 
 void DummyDeviceWrapper::ConfigureSco(sco_coding_format_t coding_format, sco_encoding_t encoding,

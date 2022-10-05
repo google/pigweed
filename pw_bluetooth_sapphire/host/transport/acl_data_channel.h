@@ -155,7 +155,7 @@ class AclDataChannel {
   // Attempts to set the ACL |priority| of the connection indicated by |handle|. |callback| will be
   // called with the result of the request.
   virtual void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
-                                  fit::callback<void(fitx::result<fitx::failed>)> callback) = 0;
+                                  fit::callback<void(fit::result<fit::failed>)> callback) = 0;
 };
 
 }  // namespace bt::hci

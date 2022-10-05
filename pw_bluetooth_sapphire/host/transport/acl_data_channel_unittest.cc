@@ -1156,7 +1156,7 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
       [&](hci_spec::ConnectionHandle cb_connection, hci::AclPriority cb_priority) {
         connection = cb_connection;
         priority = cb_priority;
-        return fitx::ok(DynamicByteBuffer(kEncodedCommand));
+        return fit::ok(DynamicByteBuffer(kEncodedCommand));
       });
 
   auto cmd_complete = bt::testing::CommandCompletePacket(
@@ -1189,7 +1189,7 @@ TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeFails) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
-  set_encode_acl_priority_command_cb([&](auto, auto) { return fitx::error(ZX_ERR_INTERNAL); });
+  set_encode_acl_priority_command_cb([&](auto, auto) { return fit::error(ZX_ERR_INTERNAL); });
 
   size_t request_cb_count = 0;
   acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {
@@ -1206,7 +1206,7 @@ TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
   set_encode_acl_priority_command_cb(
-      [](auto, auto) { return fitx::ok(DynamicByteBuffer(StaticByteBuffer(0x00))); });
+      [](auto, auto) { return fit::ok(DynamicByteBuffer(StaticByteBuffer(0x00))); });
 
   size_t request_cb_count = 0;
   acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {

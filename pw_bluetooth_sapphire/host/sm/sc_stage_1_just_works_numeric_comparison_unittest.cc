@@ -48,7 +48,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_->GetWeakPtr());
     fake_chan_->SetSendCallback(
         [this](ByteBufferPtr sent_packet) {
-          fitx::result<ErrorCode, ValidPacketReader> maybe_reader =
+          fit::result<ErrorCode, ValidPacketReader> maybe_reader =
               ValidPacketReader::ParseSdu(sent_packet);
           ASSERT_TRUE(maybe_reader.is_ok())
               << "Sent invalid packet: "
@@ -60,7 +60,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
     stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
         listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
         sm_chan_->GetWeakPtr(),
-        [this](fitx::result<ErrorCode, ScStage1::Output> out) { last_results_ = out; });
+        [this](fit::result<ErrorCode, ScStage1::Output> out) { last_results_ = out; });
   }
 
   UInt128 GenerateConfirmValue(const UInt128& random) const {
@@ -86,7 +86,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
   ScStage1JustWorksNumericComparison* stage_1() { return stage_1_.get(); }
   FakeListener* listener() { return listener_.get(); }
   std::optional<ValidPacketReader> last_packet() const { return last_packet_; }
-  std::optional<fitx::result<ErrorCode, ScStage1::Output>> last_results() const {
+  std::optional<fit::result<ErrorCode, ScStage1::Output>> last_results() const {
     return last_results_;
   }
 
@@ -99,7 +99,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;
   // To store the last sent SDU so that the last_packet_ PacketReader points at valid data.
   ByteBufferPtr last_packet_internal_;
-  std::optional<fitx::result<ErrorCode, ScStage1::Output>> last_results_ = std::nullopt;
+  std::optional<fit::result<ErrorCode, ScStage1::Output>> last_results_ = std::nullopt;
 };
 
 using ScStage1JustWorksNumericComparisonDeathTest = ScStage1JustWorksNumericComparisonTest;

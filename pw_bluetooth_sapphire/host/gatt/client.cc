@@ -136,7 +136,7 @@ class Impl final : public Client {
   void ExchangeMTU(MTUCallback mtu_cb) override {
     auto pdu = NewPDU(sizeof(att::ExchangeMTURequestParams));
     if (!pdu) {
-      mtu_cb(fitx::error(att::Error(HostError::kOutOfMemory)));
+      mtu_cb(fit::error(att::Error(HostError::kOutOfMemory)));
       return;
     }
 
@@ -154,7 +154,7 @@ class Impl final : public Client {
           // Received a malformed response. Disconnect the link.
           att_->ShutDown();
 
-          mtu_cb(fitx::error(att::Error(HostError::kPacketMalformed)));
+          mtu_cb(fit::error(att::Error(HostError::kPacketMalformed)));
           return;
         }
 
@@ -166,7 +166,7 @@ class Impl final : public Client {
         uint16_t final_mtu = std::max(att::kLEMinMTU, std::min(server_mtu, att_->preferred_mtu()));
         att_->set_mtu(final_mtu);
 
-        mtu_cb(fitx::ok(final_mtu));
+        mtu_cb(fit::ok(final_mtu));
         return;
       }
       const auto& [error, handle] = result.error_value();
@@ -177,12 +177,12 @@ class Impl final : public Client {
       if (error.is(att::ErrorCode::kRequestNotSupported)) {
         bt_log(DEBUG, "gatt", "peer does not support MTU exchange: using default");
         att_->set_mtu(att::kLEMinMTU);
-        mtu_cb(fitx::error(error));
+        mtu_cb(fit::error(error));
         return;
       }
 
       bt_log(DEBUG, "gatt", "MTU exchange failed: %s", bt_str(error));
-      mtu_cb(fitx::error(error));
+      mtu_cb(fit::error(error));
     };
 
     att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
@@ -221,11 +221,11 @@ class Impl final : public Client {
         // An Error Response code of "Attribute Not Found" indicates the end of the procedure
         // (v5.0, Vol 3, Part G, 4.4.1).
         if (error.is(att::ErrorCode::kAttributeNotFound)) {
-          res_cb(fitx::ok());
+          res_cb(fit::ok());
           return;
         }
 
-        res_cb(fitx::error(error));
+        res_cb(fit::error(error));
         return;
       }
 
@@ -309,7 +309,7 @@ class Impl final : public Client {
 
       // The procedure is over if we have reached the end of the handle range.
       if (!last_handle.has_value() || last_handle.value() == range_end) {
-        res_cb(fitx::ok());
+        res_cb(fit::ok());
         return;
       }
 
@@ -384,11 +384,11 @@ class Impl final : public Client {
         // An Error Response code of "Attribute Not Found" indicates the end of the procedure
         // (v5.0, Vol 3, Part G, 4.4.2).
         if (error.is(att::ErrorCode::kAttributeNotFound)) {
-          res_cb(fitx::ok());
+          res_cb(fit::ok());
           return;
         }
 
-        res_cb(fitx::error(error));
+        res_cb(fit::error(error));
         return;
       }
 
@@ -448,7 +448,7 @@ class Impl final : public Client {
 
       // The procedure is over if we have reached the end of the handle range.
       if (!last_handle.has_value() || last_handle.value() == discovery_range_end) {
-        res_cb(fitx::ok());
+        res_cb(fit::ok());
         return;
       }
 
@@ -468,7 +468,7 @@ class Impl final : public Client {
     BT_ASSERT(status_callback);
 
     if (range_start == range_end) {
-      status_callback(fitx::ok());
+      status_callback(fit::ok());
       return;
     }
 
@@ -482,11 +482,11 @@ class Impl final : public Client {
         // An Error Response code of "Attribute Not Found" indicates the end
         // of the procedure (v5.0, Vol 3, Part G, 4.6.1).
         if (error.is(att::ErrorCode::kAttributeNotFound)) {
-          res_cb(fitx::ok());
+          res_cb(fit::ok());
           return;
         }
 
-        res_cb(fitx::error(error));
+        res_cb(fit::error(error));
         return;
       }
 
@@ -543,7 +543,7 @@ class Impl final : public Client {
       // range.
       const auto last_handle = attributes.back().handle;
       if (last_handle == range_end) {
-        res_cb(fitx::ok());
+        res_cb(fit::ok());
         return;
       }
 
@@ -582,11 +582,11 @@ class Impl final : public Client {
         // An Error Response code of "Attribute Not Found" indicates the end of the procedure (v5.0,
         // Vol 3, Part G, 4.7.1).
         if (error.is(att::ErrorCode::kAttributeNotFound)) {
-          res_cb(fitx::ok());
+          res_cb(fit::ok());
           return;
         }
 
-        res_cb(fitx::error(error));
+        res_cb(fit::error(error));
         return;
       }
       const att::PacketReader& rsp = result.value();
@@ -628,7 +628,7 @@ class Impl final : public Client {
 
       // The procedure is over if we have reached the end of the handle range.
       if (last_handle == range_end) {
-        res_cb(fitx::ok());
+        res_cb(fit::ok());
         return;
       }
 
@@ -656,12 +656,12 @@ class Impl final : public Client {
         BT_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
         bool maybe_truncated = (rsp.payload_size() != att::kMaxAttributeValueLength) &&
                                (rsp.payload_size() == (mtu() - sizeof(rsp.opcode())));
-        callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
+        callback(fit::ok(), rsp.payload_data(), maybe_truncated);
         return;
       }
       const auto& [error, handle] = result.error_value();
       bt_log(DEBUG, "gatt", "read request failed: %s, handle %#.4x", bt_str(error), handle);
-      callback(fitx::error(error), BufferView(), /*maybe_truncated=*/false);
+      callback(fit::error(error), BufferView(), /*maybe_truncated=*/false);
     };
 
     att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
@@ -674,7 +674,7 @@ class Impl final : public Client {
     auto pdu = NewPDU(type_size == sizeof(uint16_t) ? sizeof(att::ReadByTypeRequestParams16)
                                                     : sizeof(att::ReadByTypeRequestParams128));
     if (!pdu) {
-      callback(fitx::error(ReadByTypeError{Error(HostError::kOutOfMemory), std::nullopt}));
+      callback(fit::error(ReadByTypeError{Error(HostError::kOutOfMemory), std::nullopt}));
       return;
     }
 
@@ -701,13 +701,13 @@ class Impl final : public Client {
                handle);
         // Only some errors have handles.
         std::optional<att::Handle> cb_handle = handle ? std::optional(handle) : std::nullopt;
-        callback(fitx::error(ReadByTypeError{error, cb_handle}));
+        callback(fit::error(ReadByTypeError{error, cb_handle}));
         return;
       }
       const att::PacketReader& rsp = result.value();
       BT_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
-        callback(fitx::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
+        callback(fit::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
         return;
       }
 
@@ -723,7 +723,7 @@ class Impl final : public Client {
       // c) Have a list size that is evenly divisible by pair size.
       if (pair_size < sizeof(att::Handle) || list_size < sizeof(att::Handle) ||
           list_size % pair_size != 0) {
-        callback(fitx::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
+        callback(fit::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
         return;
       }
 
@@ -737,14 +737,14 @@ class Impl final : public Client {
         if (handle < start_handle || handle > end_handle) {
           bt_log(TRACE, "gatt",
                  "client received read by type response with handle outside of requested range");
-          callback(fitx::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
+          callback(fit::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
           return;
         }
 
         if (!attributes.empty() && attributes.back().handle >= handle) {
           bt_log(TRACE, "gatt",
                  "client received read by type response with handles in non-increasing order");
-          callback(fitx::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
+          callback(fit::error(ReadByTypeError{Error(HostError::kPacketMalformed), std::nullopt}));
           return;
         }
 
@@ -766,7 +766,7 @@ class Impl final : public Client {
       }
       BT_ASSERT(attr_list_view.size() == 0);
 
-      callback(fitx::ok(std::move(attributes)));
+      callback(fit::ok(std::move(attributes)));
     };
 
     att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
@@ -792,12 +792,12 @@ class Impl final : public Client {
         bool maybe_truncated =
             (static_cast<size_t>(offset) + rsp.payload_size() != att::kMaxAttributeValueLength) &&
             (rsp.payload_data().size() == (mtu() - sizeof(att::OpCode)));
-        callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
+        callback(fit::ok(), rsp.payload_data(), maybe_truncated);
         return;
       }
       const auto& [error, handle] = result.error_value();
       bt_log(DEBUG, "gatt", "read blob request failed: %s, handle: %#.4x", bt_str(error), handle);
-      callback(fitx::error(error), BufferView(), /*maybe_truncated=*/false);
+      callback(fit::error(error), BufferView(), /*maybe_truncated=*/false);
     };
 
     att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
@@ -829,7 +829,7 @@ class Impl final : public Client {
       if (result.is_error()) {
         const auto& [error, handle] = result.error_value();
         bt_log(DEBUG, "gatt", "write request failed: %s, handle: %#.2x", bt_str(error), handle);
-        callback(fitx::error(error));
+        callback(fit::error(error));
         return;
       }
       const att::PacketReader& rsp = result.value();
@@ -841,7 +841,7 @@ class Impl final : public Client {
         return;
       }
 
-      callback(fitx::ok());
+      callback(fit::ok());
     };
 
     att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
@@ -978,7 +978,7 @@ class Impl final : public Client {
       if (result.is_ok()) {
         const att::PacketReader& rsp = result.value();
         BT_DEBUG_ASSERT(rsp.opcode() == att::kPrepareWriteResponse);
-        callback(fitx::ok(), rsp.payload_data());
+        callback(fit::ok(), rsp.payload_data());
         return;
       }
       const auto& [error, handle] = result.error_value();
@@ -986,7 +986,7 @@ class Impl final : public Client {
              "prepare write request failed: %s, handle:"
              "%#.4x",
              bt_str(error), handle);
-      callback(fitx::error(error), BufferView());
+      callback(fit::error(error), BufferView());
     };
 
     att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
@@ -1023,12 +1023,12 @@ class Impl final : public Client {
           return;
         }
 
-        callback(fitx::ok());
+        callback(fit::ok());
         return;
       }
       const att::Error& error = result.error_value().first;
       bt_log(DEBUG, "gatt", "execute write request failed: %s", bt_str(error));
-      callback(fitx::error(error));
+      callback(fit::error(error));
     };
 
     att_->StartTransaction(std::move(pdu), BindCallback(std::move(rsp_cb)));
@@ -1057,7 +1057,7 @@ class Impl final : public Client {
     value.Copy(&value_view);
 
     [[maybe_unused]] bool _ = att_->SendWithoutResponse(std::move(pdu));
-    callback(fitx::ok());
+    callback(fit::ok());
   }
 
   void SetNotificationHandler(NotificationCallback handler) override {

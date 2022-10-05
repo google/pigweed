@@ -5,7 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_DEFS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_DEFS_H_
 
-#include <lib/fitx/result.h>
+#include <lib/fit/result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
@@ -173,8 +173,8 @@ struct DescriptorData {
 
 // Delegates for ATT read/write operations
 using ReadResponder =
-    fit::callback<void(fitx::result<att::ErrorCode> status, const ByteBuffer& value)>;
-using WriteResponder = fit::callback<void(fitx::result<att::ErrorCode> status)>;
+    fit::callback<void(fit::result<att::ErrorCode> status, const ByteBuffer& value)>;
+using WriteResponder = fit::callback<void(fit::result<att::ErrorCode> status)>;
 
 // No-op implementations of asynchronous event handlers
 inline void NopReadHandler(PeerId, IdType, IdType, uint16_t, ReadResponder) {}

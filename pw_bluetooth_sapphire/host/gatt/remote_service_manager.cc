@@ -113,7 +113,7 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
       mtu_cb(mtu_result.value_or(att::kLEMinMTU));
     } else {
       bt_log(INFO, "gatt", "MTU exchange failed: %s", bt_str(mtu_result.error_value()));
-      init_cb(fitx::error(mtu_result.error_value()));
+      init_cb(fit::error(mtu_result.error_value()));
       return;
     }
 
@@ -147,7 +147,7 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
             // received before service discovery completes. (Core Spec v5.3, Vol 3, Part G,
             // Sec 2.5.2)
             self->MaybeHandleNextServiceChangedNotification(
-                [self, init_cb = std::move(init_cb)]() mutable { init_cb(fitx::ok()); });
+                [self, init_cb = std::move(init_cb)]() mutable { init_cb(fit::ok()); });
           });
     });
   });
@@ -219,7 +219,7 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(RemoteService* g
             return;
           }
 
-          callback(fitx::ok());
+          callback(fit::ok());
         };
 
         gatt_profile_service->EnableNotifications(svc_changed_char_handle,
@@ -287,7 +287,7 @@ void RemoteServiceManager::DiscoverGattProfileService(att::ResultFunction<> call
     // be the same as the requested UUID.
     BT_ASSERT(uuid == types::kGenericAttributeService);
 
-    callback(fitx::ok());
+    callback(fit::ok());
   };
   DiscoverServicesOfKind(ServiceKind::PRIMARY, {types::kGenericAttributeService},
                          std::move(status_cb));
@@ -382,7 +382,7 @@ void RemoteServiceManager::DiscoverPrimaryAndSecondaryServicesInRange(
       // to be terminated).
       if (status == ToResult(att::ErrorCode::kUnsupportedGroupType)) {
         bt_log(DEBUG, "gatt", "peer does not support secondary services; ignoring ATT error");
-        status = fitx::ok();
+        status = fit::ok();
       }
 
       cb(status);
@@ -412,7 +412,7 @@ void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,
                                         ServiceListCallback callback) {
   ServiceListRequest request(std::move(callback), uuids);
   if (initialized_) {
-    request.Complete(fitx::ok(), services_);
+    request.Complete(fit::ok(), services_);
   } else {
     pending_list_services_requests_.push(std::move(request));
   }

@@ -195,11 +195,11 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     // to Transport.
     auto encode_set_acl_priority_cb =
         [this](hci_spec::ConnectionHandle connection,
-               hci::AclPriority priority) -> fitx::result<zx_status_t, DynamicByteBuffer> {
+               hci::AclPriority priority) -> fit::result<zx_status_t, DynamicByteBuffer> {
       if (encode_acl_priority_command_cb_) {
         return encode_acl_priority_command_cb_(connection, priority);
       }
-      return fitx::error(ZX_ERR_NOT_SUPPORTED);
+      return fit::error(ZX_ERR_NOT_SUPPORTED);
     };
     auto config_sco_cb = [this](hci::ScoCodingFormat coding_format, hci::ScoEncoding encoding,
                                 hci::ScoSampleRate sample_rate,

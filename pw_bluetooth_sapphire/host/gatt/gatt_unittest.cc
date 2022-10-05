@@ -120,7 +120,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
       [&](att::Handle handle, const auto& value, auto status_callback) {
         write_request_count++;
         EXPECT_EQ(kCCCDescriptorHandle, handle);
-        status_callback(fitx::ok());
+        status_callback(fit::ok());
       });
 
   std::vector<ServiceWatcherData> svc_watcher_data;
@@ -242,7 +242,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   // Return success when a Service Changed Client Characteristic Config descriptor write is
   // performed.
   client_1->set_write_request_callback([&](att::Handle handle, const auto& value,
-                                           auto status_callback) { status_callback(fitx::ok()); });
+                                           auto status_callback) { status_callback(fit::ok()); });
 
   gatt()->AddConnection(kPeerId1, std::move(client_1), CreateMockServer);
 
@@ -327,12 +327,12 @@ TEST_F(GattTest, ServiceDiscoveryFailureShutsDownConnection) {
 }
 
 TEST_F(GattTest, SendIndicationNoConnectionFails) {
-  att::Result<> res = fitx::ok();
+  att::Result<> res = fit::ok();
   auto indicate_cb = [&res](att::Result<> cb_res) { res = cb_res; };
   // Don't add the connection to GATT before trying to send an indication
   gatt()->SendUpdate(/*service_id=*/1, /*chrc_id=*/2, PeerId{3}, std::vector<uint8_t>{1},
                      std::move(indicate_cb));
-  EXPECT_EQ(fitx::failed(), res);
+  EXPECT_EQ(fit::failed(), res);
 }
 
 class GattTestBoolParam : public GattTest, public ::testing::WithParamInterface<bool> {};
@@ -369,7 +369,7 @@ TEST_P(GattTestBoolParam, SendIndicationReceiveResponse) {
   EXPECT_TRUE(mock_ind_cb);
   EXPECT_FALSE(indicate_status.has_value());
   if (GetParam()) {
-    mock_ind_cb(fitx::ok());
+    mock_ind_cb(fit::ok());
     ASSERT_TRUE(indicate_status.has_value());
     EXPECT_TRUE(indicate_status->is_ok());
   } else {
@@ -427,7 +427,7 @@ TEST_F(GattTest, IndicateConnectedPeersNoneConnectedSucceeds) {
   auto indicate_cb = [&](att::Result<> cb_res) { res = cb_res; };
   gatt()->UpdateConnectedPeers(svc_id, kChrcId, indicate_val, std::move(indicate_cb));
 
-  EXPECT_EQ(fitx::ok(), res);
+  EXPECT_EQ(fit::ok(), res);
 }
 
 struct PeerIdAndMtu {
@@ -601,13 +601,13 @@ TEST_F(GattIndicateMultipleConnectedPeersTest, UpdateConnectedPeersWaitsTillAllC
   ASSERT_TRUE(indication_ack_cb_1_);
 
   // The UpdateConnectedPeers callback shouldn't resolved when the first indication is ACKed.
-  indication_ack_cb_0_(fitx::ok());
+  indication_ack_cb_0_(fit::ok());
   RunLoopUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kInvalidPDU), res);
 
-  indication_ack_cb_1_(fitx::ok());
+  indication_ack_cb_1_(fit::ok());
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), res);
+  EXPECT_EQ(fit::ok(), res);
 }
 
 TEST_F(GattIndicateMultipleConnectedPeersTest, OneFailsNextSucceedsOnlyFailureNotified) {
@@ -623,7 +623,7 @@ TEST_F(GattIndicateMultipleConnectedPeersTest, OneFailsNextSucceedsOnlyFailureNo
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), res);
 
   // Acking the next indication should not cause the callback to be invoked again with success.
-  indication_ack_cb_1_(fitx::ok());
+  indication_ack_cb_1_(fit::ok());
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), res);
 }
 

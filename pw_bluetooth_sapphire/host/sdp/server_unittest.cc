@@ -268,8 +268,8 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
     uint16_t len = betoh16(packet.header().param_length);
     packet.Resize(len);
     ServiceSearchResponse resp;
-    fitx::result<Error<>> result = resp.Parse(packet.payload_data());
-    EXPECT_EQ(fitx::ok(), result);
+    fit::result<Error<>> result = resp.Parse(packet.payload_data());
+    EXPECT_EQ(fit::ok(), result);
     EXPECT_EQ(0u, resp.service_record_handle_list().size());
     responded = true;
   };
@@ -306,8 +306,8 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
     uint16_t len = betoh16(packet.header().param_length);
     packet.Resize(len);
     ServiceSearchAttributeResponse rsp;
-    fitx::result<Error<>> result = rsp.Parse(packet.payload_data());
-    EXPECT_EQ(fitx::ok(), result);
+    fit::result<Error<>> result = rsp.Parse(packet.payload_data());
+    EXPECT_EQ(fit::ok(), result);
     EXPECT_EQ(0u, rsp.num_attribute_lists());
     responded = true;
   };
@@ -343,7 +343,7 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
     ASSERT_GE(sizeof(Header) + len, cb_packet->size());
     packet.Resize(len);
     ErrorResponse rsp;
-    fitx::result<Error<>> result = rsp.Parse(packet.payload_data());
+    fit::result<Error<>> result = rsp.Parse(packet.payload_data());
     EXPECT_FALSE(result.is_error());
     EXPECT_EQ(rsp.error_code(), ErrorCode::kInvalidRecordHandle);
     responded = true;
@@ -676,7 +676,7 @@ TEST_F(ServerTest, ServiceSearchRequest) {
     packet.Resize(len);
     ServiceSearchResponse resp;
     auto status = resp.Parse(packet.payload_data());
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     handles = resp.service_record_handle_list();
     recv = true;
   };
@@ -742,7 +742,7 @@ TEST_F(ServerTest, ServiceSearchRequestOneOfMany) {
     packet.Resize(len);
     ServiceSearchResponse resp;
     auto status = resp.Parse(packet.payload_data());
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     handles = resp.service_record_handle_list();
     recv = true;
   };
@@ -805,7 +805,7 @@ TEST_F(ServerTest, ServiceSearchContinuationState) {
     EXPECT_LE(len,
               0x2F);  // 10 records (4 * 10) + 2 (total count) + 2 (current count) + 3 (cont state)
     packet.Resize(len);
-    fitx::result<Error<>> result = rsp.Parse(packet.payload_data());
+    fit::result<Error<>> result = rsp.Parse(packet.payload_data());
     if (received == 0) {
       // Server should have split this into more than one response.
       EXPECT_EQ(ToResult(HostError::kInProgress), result);
@@ -909,7 +909,7 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
     uint16_t len = betoh16(packet.header().param_length);
     EXPECT_LE(len, 0x11);  // 10 + 2 (byte count) + 5 (cont state)
     packet.Resize(len);
-    fitx::result<Error<>> result = rsp.Parse(packet.payload_data());
+    fit::result<Error<>> result = rsp.Parse(packet.payload_data());
     if (received == 0) {
       // Server should have split this into more than one response.
       EXPECT_EQ(ToResult(HostError::kInProgress), result);
@@ -1064,7 +1064,7 @@ TEST_F(ServerTest, SearchAttributeRequest) {
     uint16_t len = betoh16(packet.header().param_length);
     EXPECT_LE(len, 0x11);  // 2 (byte count) + 10 (max len) + 5 (cont state)
     packet.Resize(len);
-    fitx::result<Error<>> result = rsp.Parse(packet.payload_data());
+    fit::result<Error<>> result = rsp.Parse(packet.payload_data());
     if (received == 0) {
       // Server should have split this into more than one response.
       EXPECT_EQ(ToResult(HostError::kInProgress), result);
@@ -1238,7 +1238,7 @@ TEST_F(ServerTest, BrowseGroup) {
     uint16_t len = betoh16(packet.header().param_length);
     packet.Resize(len);
     auto status = rsp.Parse(packet.payload_data());
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
   };
 
   fake_chan()->SetSendCallback(send_cb, dispatcher());

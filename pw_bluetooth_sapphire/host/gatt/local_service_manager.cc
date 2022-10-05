@@ -239,7 +239,7 @@ class LocalServiceManager::ServiceData final {
     }
 
     value = htole16(value);
-    result_cb(fitx::ok(), BufferView(reinterpret_cast<const uint8_t*>(&value), sizeof(value)));
+    result_cb(fit::ok(), BufferView(reinterpret_cast<const uint8_t*>(&value), sizeof(value)));
   }
 
   // Called when a write request is performed on a CCC descriptor belonging to
@@ -248,18 +248,18 @@ class LocalServiceManager::ServiceData final {
                   uint16_t offset, const ByteBuffer& value,
                   att::Attribute::WriteResultCallback result_cb) {
     if (offset != 0u) {
-      result_cb(fitx::error(att::ErrorCode::kInvalidOffset));
+      result_cb(fit::error(att::ErrorCode::kInvalidOffset));
       return;
     }
 
     if (value.size() != sizeof(uint16_t)) {
-      result_cb(fitx::error(att::ErrorCode::kInvalidAttributeValueLength));
+      result_cb(fit::error(att::ErrorCode::kInvalidAttributeValueLength));
       return;
     }
 
     uint16_t ccc_value = le16toh(value.To<uint16_t>());
     if (ccc_value > (kCCCNotificationBit | kCCCIndicationBit)) {
-      result_cb(fitx::error(att::ErrorCode::kInvalidPDU));
+      result_cb(fit::error(att::ErrorCode::kInvalidPDU));
       return;
     }
 
@@ -268,7 +268,7 @@ class LocalServiceManager::ServiceData final {
 
     if ((notify && !(chrc_props & Property::kNotify)) ||
         (indicate && !(chrc_props & Property::kIndicate))) {
-      result_cb(fitx::error(att::ErrorCode::kWriteNotPermitted));
+      result_cb(fit::error(att::ErrorCode::kWriteNotPermitted));
       return;
     }
 
@@ -279,7 +279,7 @@ class LocalServiceManager::ServiceData final {
     }
 
     // Send a reply back.
-    result_cb(fitx::ok());
+    result_cb(fit::ok());
 
     uint16_t current_value = iter->second.Get(peer_id);
     iter->second.Set(peer_id, ccc_value);
@@ -300,7 +300,7 @@ class LocalServiceManager::ServiceData final {
     auto read_handler = [self, id, props](PeerId peer_id, att::Handle handle, uint16_t offset,
                                           auto result_cb) {
       if (!self) {
-        result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
         return;
       }
 
@@ -308,7 +308,7 @@ class LocalServiceManager::ServiceData final {
       // characteristic property.
       if (!(props & Property::kRead)) {
         // TODO(armansito): Return kRequestNotSupported?
-        result_cb(fitx::error(att::ErrorCode::kReadNotPermitted), BufferView());
+        result_cb(fit::error(att::ErrorCode::kReadNotPermitted), BufferView());
         return;
       }
 
@@ -319,7 +319,7 @@ class LocalServiceManager::ServiceData final {
                                            const auto& value, auto result_cb) {
       if (!self) {
         if (result_cb)
-          result_cb(fitx::error(att::ErrorCode::kUnlikelyError));
+          result_cb(fit::error(att::ErrorCode::kUnlikelyError));
         return;
       }
 
@@ -327,7 +327,7 @@ class LocalServiceManager::ServiceData final {
       // characteristic must support the "write" procedure.
       if (result_cb && !(props & Property::kWrite)) {
         // TODO(armansito): Return kRequestNotSupported?
-        result_cb(fitx::error(att::ErrorCode::kWriteNotPermitted));
+        result_cb(fit::error(att::ErrorCode::kWriteNotPermitted));
         return;
       }
 
@@ -376,7 +376,7 @@ class LocalServiceManager::ServiceData final {
     auto read_handler = [self, id = desc->id()](PeerId peer_id, att::Handle handle, uint16_t offset,
                                                 auto result_cb) {
       if (!self) {
-        result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
         return;
       }
 
@@ -392,7 +392,7 @@ class LocalServiceManager::ServiceData final {
         return;
 
       if (!self) {
-        result_cb(fitx::error(att::ErrorCode::kUnlikelyError));
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError));
         return;
       }
 
@@ -420,7 +420,7 @@ class LocalServiceManager::ServiceData final {
     auto read_handler = [self, id, chrc_handle](const auto& peer_id, att::Handle handle,
                                                 uint16_t offset, auto result_cb) {
       if (!self) {
-        result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
         return;
       }
 
@@ -431,7 +431,7 @@ class LocalServiceManager::ServiceData final {
                              const auto& peer_id, att::Handle handle, uint16_t offset,
                              const auto& value, auto result_cb) {
       if (!self) {
-        result_cb(fitx::error(att::ErrorCode::kUnlikelyError));
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError));
         return;
       }
 

@@ -182,10 +182,10 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Check whether we can actually start advertising given the combination of input parameters (e.g.
   // check that the requested advertising data and scan response will actually fit within the size
   // limitations of the advertising PDUs)
-  fitx::result<HostError> CanStartAdvertising(const DeviceAddress& address,
-                                              const AdvertisingData& data,
-                                              const AdvertisingData& scan_rsp,
-                                              const AdvertisingOptions& options) const;
+  fit::result<HostError> CanStartAdvertising(const DeviceAddress& address,
+                                             const AdvertisingData& data,
+                                             const AdvertisingData& scan_rsp,
+                                             const AdvertisingOptions& options) const;
 
   // Unconditionally start advertising (all checks must be performed in the methods that call this
   // one).

@@ -63,7 +63,7 @@ void GenericAccessClient::ReadDeviceName(DeviceNameCallback callback) {
               }
 
               const auto device_name_end = std::find(buffer.begin(), buffer.end(), '\0');
-              cb(fitx::ok(std::string(buffer.begin(), device_name_end)));
+              cb(fit::ok(std::string(buffer.begin(), device_name_end)));
             });
       });
 }
@@ -124,7 +124,7 @@ void GenericAccessClient::ReadAppearance(AppearanceCallback callback) {
           }
 
           uint16_t char_value = letoh16(buffer.template To<uint16_t>());
-          cb(fitx::ok(char_value));
+          cb(fit::ok(char_value));
         });
   });
 }
@@ -194,7 +194,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
               letoh16(char_value.min_interval), letoh16(char_value.max_interval),
               letoh16(char_value.max_latency), letoh16(char_value.supervision_timeout));
 
-          cb(fitx::ok(params));
+          cb(fit::ok(params));
         });
   });
 }

@@ -81,9 +81,9 @@ class SecurityManagerImpl final : public SecurityManager,
 
   // Creates the pairing phase responsible for sending the security upgrade request to the peer
   // (a PairingRequest if we are initiator, otherwise a SecurityRequest). Returns
-  // fitx::error(ErrorCode:: kAuthenticationRequirements) if the local IOCapabilities are
-  // insufficient for SecurityLevel, otherwise returns fitx::ok().
-  [[nodiscard]] fitx::result<ErrorCode> RequestSecurityUpgrade(SecurityLevel level);
+  // fit::error(ErrorCode:: kAuthenticationRequirements) if the local IOCapabilities are
+  // insufficient for SecurityLevel, otherwise returns fit::ok().
+  [[nodiscard]] fit::result<ErrorCode> RequestSecurityUpgrade(SecurityLevel level);
 
   // Called when the feature exchange (Phase 1) completes and the relevant features of both sides
   // have been resolved into `features`. `preq` and `pres` need to be retained for cryptographic
@@ -276,7 +276,7 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
   // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Security Request command, the
   // Security Manager Timer shall be [...] restarted."
   StartNewTimer();
-  if (fitx::result result = RequestSecurityUpgrade(requested_level); result.is_error()) {
+  if (fit::result result = RequestSecurityUpgrade(requested_level); result.is_error()) {
     // Per v5.3 Vol. 3 Part H 2.4.6, "When a Central receives a Security Request command it may
     // [...] reject the request.", which we do here as we know we are unable to fulfill it.
     sm_chan_->SendMessageNoTimerReset(kPairingFailed, result.error_value());
@@ -294,7 +294,7 @@ void SecurityManagerImpl::UpgradeSecurity(SecurityLevel level, PairingCallback c
   }
 
   if (level <= security().level()) {
-    callback(fitx::ok(), security());
+    callback(fit::ok(), security());
     return;
   }
 
@@ -343,7 +343,7 @@ void SecurityManagerImpl::UpgradeSecurityInternal() {
   BT_ASSERT_MSG(!SecurityUpgradeInProgress(),
                 "cannot upgrade security while security upgrade already in progress!");
   const PendingRequest& next_req = request_queue_.front();
-  if (fitx::result result = RequestSecurityUpgrade(next_req.level); result.is_error()) {
+  if (fit::result result = RequestSecurityUpgrade(next_req.level); result.is_error()) {
     next_req.callback(ToResult(result.error_value()), security());
     request_queue_.pop();
     if (!request_queue_.empty()) {
@@ -352,11 +352,11 @@ void SecurityManagerImpl::UpgradeSecurityInternal() {
   }
 }
 
-fitx::result<ErrorCode> SecurityManagerImpl::RequestSecurityUpgrade(SecurityLevel level) {
+fit::result<ErrorCode> SecurityManagerImpl::RequestSecurityUpgrade(SecurityLevel level) {
   if (level >= SecurityLevel::kAuthenticated && io_cap_ == IOCapability::kNoInputNoOutput) {
     bt_log(WARN, "sm",
            "cannot fulfill authenticated security request as IOCapabilities are NoInputNoOutput");
-    return fitx::error(ErrorCode::kAuthenticationRequirements);
+    return fit::error(ErrorCode::kAuthenticationRequirements);
   }
 
   if (role_ == Role::kInitiator) {
@@ -370,7 +370,7 @@ fitx::result<ErrorCode> SecurityManagerImpl::RequestSecurityUpgrade(SecurityLeve
         fit::bind_member<&SecurityManagerImpl::OnPairingRequest>(this));
     std::get<SecurityRequestPhase>(current_phase_).Start();
   }
-  return fitx::ok();
+  return fit::ok();
 }
 
 void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features, PairingRequestParams preq,
@@ -442,7 +442,7 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
   // First notify the delegate in case of failure.
   if (bt_is_error(enabled_result, ERROR, "sm", "link layer authentication failed")) {
     BT_ASSERT(delegate_);
-    delegate_->OnAuthenticationFailure(fitx::error(enabled_result.error_value()));
+    delegate_->OnAuthenticationFailure(fit::error(enabled_result.error_value()));
   }
 
   if (enabled_result.is_error() || !enabled_result.value()) {
@@ -514,7 +514,7 @@ void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
   BT_ASSERT(delegate_);
   BT_ASSERT(features_.has_value());
   bt_log(DEBUG, "sm", "LE pairing complete");
-  delegate_->OnPairingComplete(fitx::ok());
+  delegate_->OnPairingComplete(fit::ok());
   // In Secure Connections, the LTK will be generated in Phase 2, not exchanged in Phase 3, so
   // we want to ensure that it is still put in the pairing_data.
   if (features_->secure_connections) {
@@ -585,7 +585,7 @@ void SecurityManagerImpl::NotifySecurityCallbacks() {
 
   // Notify the satisfied requests with success.
   while (!satisfied.empty()) {
-    satisfied.front().callback(fitx::ok(), security());
+    satisfied.front().callback(fit::ok(), security());
     satisfied.pop();
   }
 
@@ -697,7 +697,7 @@ void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
 }
 
 void SecurityManagerImpl::OnRxBFrame(ByteBufferPtr sdu) {
-  fitx::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fit::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
     bt_log(INFO, "sm", "dropped SMP packet: %s", bt_str(ToResult(maybe_reader.error_value())));
     return;
@@ -740,11 +740,11 @@ void SecurityManagerImpl::OnPairingFailed(Error error) {
   // as described in Vol 3, Part H, 2.3.6.
 
   BT_ASSERT(delegate_);
-  delegate_->OnPairingComplete(fitx::error(error));
+  delegate_->OnPairingComplete(fit::error(error));
 
   auto requests = std::move(request_queue_);
   while (!requests.empty()) {
-    requests.front().callback(fitx::error(error), security());
+    requests.front().callback(fit::error(error), security());
     requests.pop();
   }
 
@@ -810,14 +810,14 @@ void SecurityManagerImpl::OnNewLongTermKey(const LTK& ltk) {
 }
 
 Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   if (!ltk_.has_value() || !le_link_->ltk().has_value()) {
     // The LTKs should always be present when this method is called.
-    status = fitx::error(Error(HostError::kNotFound));
+    status = fit::error(Error(HostError::kNotFound));
   } else if (!(*le_link_->ltk() == ltk_->key())) {
     // As only SM should ever change the LE Link encryption key, these two values should always be
     // in sync, i.e. something in the system is acting unreliably if they get out of sync.
-    status = fitx::error(Error(HostError::kNotReliable));
+    status = fit::error(Error(HostError::kNotReliable));
   }
   if (status.is_error()) {
     // SM does not own the link, so although the checks above should never fail, disconnecting the

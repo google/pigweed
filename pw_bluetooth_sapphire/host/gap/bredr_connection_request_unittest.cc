@@ -47,7 +47,7 @@ TEST(BrEdrConnectionRequestTests, CallbacksExecuted) {
   // A freshly created request with a callback is awaiting outgoing
   EXPECT_TRUE(req.AwaitingOutgoing());
   // Notifying callbacks triggers the callback
-  req.NotifyCallbacks(fitx::ok(), [&]() {
+  req.NotifyCallbacks(fit::ok(), [&]() {
     EXPECT_TRUE(token_destroyed);
     return nullptr;
   });

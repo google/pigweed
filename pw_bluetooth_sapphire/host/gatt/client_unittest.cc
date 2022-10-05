@@ -16,11 +16,11 @@ constexpr UUID kTestUuid2(uint16_t{0xBEEF});
 constexpr UUID kTestUuid3({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
 att::Result<uint16_t> MtuResultFromErrCode(att::ErrorCode ecode) {
-  return fitx::error(att::Error(ecode));
+  return fit::error(att::Error(ecode));
 }
 
 att::Result<uint16_t> MtuResultFromHostErrCode(HostError ecode) {
-  return fitx::error(att::Error(ecode));
+  return fit::error(att::Error(ecode));
 }
 
 // clang-format off
@@ -215,7 +215,7 @@ TEST_F(ClientTest, ExchangeMTUSelectLocal) {
 
   RunLoopUntilIdle();
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(att::Result<uint16_t>(fitx::ok(kPreferredMTU)), *result);
+  EXPECT_EQ(att::Result<uint16_t>(fit::ok(kPreferredMTU)), *result);
   EXPECT_EQ(kPreferredMTU, att()->mtu());
 }
 
@@ -247,7 +247,7 @@ TEST_F(ClientTest, ExchangeMTUSelectRemote) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(att::Result<uint16_t>(fitx::ok(kServerRxMTU)), *result);
+  EXPECT_EQ(att::Result<uint16_t>(fit::ok(kServerRxMTU)), *result);
   EXPECT_EQ(kServerRxMTU, att()->mtu());
 }
 
@@ -279,12 +279,12 @@ TEST_F(ClientTest, ExchangeMTUSelectDefault) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(att::Result<uint16_t>(fitx::ok(att::kLEMinMTU)), *result);
+  EXPECT_EQ(att::Result<uint16_t>(fit::ok(att::kLEMinMTU)), *result);
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
 TEST_F(ClientTest, DiscoverPrimaryResponseTooShort) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
@@ -300,7 +300,7 @@ TEST_F(ClientTest, DiscoverPrimaryResponseTooShort) {
 }
 
 TEST_F(ClientTest, DiscoverPrimaryMalformedDataLength) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
@@ -322,7 +322,7 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedDataLength) {
 }
 
 TEST_F(ClientTest, DiscoverPrimaryMalformedAttrDataList) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
@@ -341,7 +341,7 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedAttrDataList) {
 }
 
 TEST_F(ClientTest, DiscoverPrimaryResultsOutOfOrder) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
@@ -380,7 +380,7 @@ TEST_F(ClientTest, DiscoverPrimaryEmptyDataList) {
                                         ));
 
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 // The first request results in "Attribute Not Found".
@@ -401,7 +401,7 @@ TEST_F(ClientTest, DiscoverPrimaryAttributeNotFound) {
   RunLoopUntilIdle();
 
   // The procedure succeeds with no services.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 // The first request results in an error.
@@ -471,7 +471,7 @@ TEST_F(ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(2u, services.size());
   EXPECT_EQ(0x0001, services[0].range_start);
   EXPECT_EQ(0x0005, services[0].range_end);
@@ -504,7 +504,7 @@ TEST_F(ClientTest, DiscoverPrimary128BitResultSingleRequest) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(1u, services.size());
   EXPECT_EQ(0x0001, services[0].range_start);
   EXPECT_EQ(0xFFFF, services[0].range_end);
@@ -566,7 +566,7 @@ TEST_F(ClientTest, DiscoverAllPrimaryMultipleRequests) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(3u, services.size());
 
   EXPECT_EQ(0x0001, services[0].range_start);
@@ -641,7 +641,7 @@ TEST_F(ClientTest, DiscoverServicesInRangeMultipleRequests) {
   client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(3u, services.size());
 
   EXPECT_EQ(0x0010, services[0].range_start);
@@ -696,7 +696,7 @@ TEST_F(ClientTest, DiscoverServicesInRangeFailsIfServiceResultIsOutOfRange) {
 }
 
 TEST_F(ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   // Respond back with a malformed payload.
@@ -741,7 +741,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsAttributeNotFound) {
   EXPECT_TRUE(AllExpectedPacketsSent());
   RunLoopUntilIdle();
   // The procedure succeeds with no services.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 // The first request results in an error.
@@ -820,7 +820,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(2u, services.size());
   EXPECT_EQ(0x0001, services[0].range_start);
   EXPECT_EQ(0x0005, services[0].range_end);
@@ -848,7 +848,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(1u, services.size());
   EXPECT_EQ(0x0001, services[0].range_start);
   EXPECT_EQ(0xFFFF, services[0].range_end);
@@ -906,7 +906,7 @@ TEST_F(ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // The procedure should be over since the last service in the payload has end handle 0xFFFF.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(3u, services.size());
 
   EXPECT_EQ(0x0001, services[0].range_start);
@@ -981,7 +981,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(2u, services.size());
 
   EXPECT_EQ(0x0001, services[0].range_start);
@@ -1058,7 +1058,7 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(2u, services.size());
 
   EXPECT_EQ(0x0002, services[0].range_start);
@@ -1113,7 +1113,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryHandlesEqual) {
 
   // Should succeed immediately.
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST_F(ClientTest, CharacteristicDiscoveryResponseTooShort) {
@@ -1127,7 +1127,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryResponseTooShort) {
   );
   const StaticByteBuffer kMalformedResponse(0x09);
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kMalformedResponse);
@@ -1154,7 +1154,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryMalformedDataLength) {
                                    7  // one entry of length 8, which will be ignored
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
@@ -1182,7 +1182,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
                                    0, 1, 2, 3, 4, 5      // entry 2: incorrect size
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
@@ -1206,7 +1206,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryEmptyDataList) {
                                           // data list empty
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
@@ -1230,14 +1230,14 @@ TEST_F(ClientTest, CharacteristicDiscoveryAttributeNotFound) {
                                    0x0A         // error: Attribute Not Found
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
   RunLoopUntilIdle();
   // Attribute Not Found error means the procedure is over.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST_F(ClientTest, CharacteristicDiscoveryError) {
@@ -1255,7 +1255,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryError) {
                                    0x06         // error: Request Not Supported
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
@@ -1286,7 +1286,7 @@ TEST_F(ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
       0xEF, 0xBE   // chrc 2 uuid: 0xBEEF
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
@@ -1295,7 +1295,7 @@ TEST_F(ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(2u, chrcs.size());
   EXPECT_EQ(0x0003, chrcs[0].handle);
   EXPECT_EQ(0, chrcs[0].properties);
@@ -1325,7 +1325,7 @@ TEST_F(ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
                                    // UUID matches |kTestUuid3| declared above.
                                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
@@ -1334,7 +1334,7 @@ TEST_F(ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(1u, chrcs.size());
   EXPECT_EQ(0x0005, chrcs[0].handle);
   EXPECT_EQ(0, chrcs[0].properties);
@@ -1387,7 +1387,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryMultipleRequests) {
                                     0x0A         // error: Attribute Not Found
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
@@ -1400,7 +1400,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryMultipleRequests) {
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(3u, chrcs.size());
 
   EXPECT_EQ(0x0003, chrcs[0].handle);
@@ -1439,7 +1439,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
                                    0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
@@ -1472,7 +1472,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
                                    0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
@@ -1504,7 +1504,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryValueNotContiguous) {
                                    0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
@@ -1538,7 +1538,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
                                    0xEF, 0xBE   // chrc 1 uuid: 0xBEEF
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
@@ -1564,7 +1564,7 @@ TEST_F(ClientTest, DescriptorDiscoveryHandlesEqual) {
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryResponseTooShort) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   // Respond back with a malformed payload.
   const StaticByteBuffer kResponse(0x05);
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
@@ -1574,7 +1574,7 @@ TEST_F(ClientTest, DescriptorDiscoveryResponseTooShort) {
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryMalformedDataLength) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   const StaticByteBuffer kResponse(0x05,  // opcode: find information response
                                    0x03   // format (must be 1 or 2)
   );
@@ -1585,7 +1585,7 @@ TEST_F(ClientTest, DescriptorDiscoveryMalformedDataLength) {
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   const StaticByteBuffer kResponse(0x05,  // opcode: find information response
                                    0x01,  // format: 16-bit. Data length must be 4
                                    1, 2, 3, 4, 5);
@@ -1596,7 +1596,7 @@ TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList128) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   const StaticByteBuffer kResponse(0x05,  // opcode: find information response
                                    0x02,  // format: 128-bit. Data length must be 18
                                    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
@@ -1615,7 +1615,7 @@ TEST_F(ClientTest, DescriptorDiscoveryEmptyDataList) {
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
@@ -1628,7 +1628,7 @@ TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryError) {
@@ -1665,7 +1665,7 @@ TEST_F(ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
   EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
   SendDiscoverDescriptors(&status, std::move(desc_cb), kStart, kEnd);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(3u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
@@ -1698,7 +1698,7 @@ TEST_F(ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
   EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
   SendDiscoverDescriptors(&status, std::move(desc_cb), kStart, kEnd);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(2u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
@@ -1746,7 +1746,7 @@ TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
   SendDiscoverDescriptors(&status, std::move(desc_cb), kStart0, kEnd);
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(3u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
@@ -1763,7 +1763,7 @@ TEST_F(ClientTest, DescriptorDiscoveryResultsBeforeRange) {
                                    0x01, 0x00,  // handle is before kStart
                                    0xEF, 0xBE   // uuid
   );
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   EXPECT_PACKET_OUT(MakeFindInformation(kStart), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback, kStart);
   RunLoopUntilIdle();
@@ -1778,7 +1778,7 @@ TEST_F(ClientTest, DescriptorDiscoveryResultsBeyondRange) {
                                    0x03, 0x00,  // handle is beyond kEnd
                                    0xEF, 0xBE   // uuid
   );
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback, kStart, kEnd);
   RunLoopUntilIdle();
@@ -1786,7 +1786,7 @@ TEST_F(ClientTest, DescriptorDiscoveryResultsBeyondRange) {
 }
 
 TEST_F(ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   const StaticByteBuffer kResponse(0x05,        // opcode: find information response
                                    0x01,        // format: 16-bit.
                                    0x01, 0x00,  // handle: 0x0001
@@ -1812,7 +1812,7 @@ TEST_F(ClientTest, WriteRequestMalformedResponse) {
                                    0       // One byte payload. The write request has no parameters.
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   ASSERT_FALSE(fake_chan()->link_error());
@@ -1835,7 +1835,7 @@ TEST_F(ClientTest, WriteRequestExceedsMtu) {
 
   att()->set_mtu(kMtu);
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   client()->WriteRequest(kHandle, kValue, cb);
@@ -1858,7 +1858,7 @@ TEST_F(ClientTest, WriteRequestError) {
                                    0x06         // error: Request Not Supported
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
@@ -1877,12 +1877,12 @@ TEST_F(ClientTest, WriteRequestSuccess) {
   );
   const StaticByteBuffer kResponse(0x13  // opcode: write response
   );
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->WriteRequest(kHandle, kValue, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -1900,7 +1900,7 @@ TEST_F(ClientTest, PrepareWriteRequestExceedsMtu) {
 
   att()->set_mtu(kMtu);
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
 
   client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
@@ -1948,12 +1948,12 @@ TEST_F(ClientTest, PrepareWriteRequestSuccess) {
                                    0x00, 0x00,    // offset: 0x0000
                                    'f', 'o', 'o'  // value: "foo"
   );
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -1963,12 +1963,12 @@ TEST_F(ClientTest, ExecuteWriteRequestPendingSuccess) {
                                           0x01   // flag: write pending
   );
   const StaticByteBuffer kResponse(0x19);  // opcode: execute write response
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->ExecuteWriteRequest(kFlag, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -1978,12 +1978,12 @@ TEST_F(ClientTest, ExecuteWriteRequestCancelSuccess) {
                                           0x00   // flag: cancel all
   );
   const StaticByteBuffer kResponse(0x19);  // opcode: execute write response
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->ExecuteWriteRequest(kFlag, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2020,7 +2020,7 @@ TEST_F(ClientTest, ExecutePrepareWritesSuccess) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   att::PrepareWriteQueue prep_write_queue;
@@ -2033,7 +2033,7 @@ TEST_F(ClientTest, ExecutePrepareWritesSuccess) {
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2073,7 +2073,7 @@ TEST_F(ClientTest, ExecutePrepareWritesMalformedFailure) {
 
   att()->set_mtu(kMtu);
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   att::PrepareWriteQueue prep_write_queue;
@@ -2112,7 +2112,7 @@ TEST_F(ClientTest, ExecutePrepareWritesErrorFailure) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   // Create the PrepareWriteQueue of requests to pass to the client
@@ -2183,7 +2183,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   );
   const auto kExecuteWriteResponse = StaticByteBuffer(0x19);  // opcode: execute write response
 
-  att::Result<> status1 = fitx::ok();
+  att::Result<> status1 = fit::ok();
   auto cb1 = [&status1](att::Result<> cb_status) { status1 = cb_status; };
   att::PrepareWriteQueue prep_write_queue1;
   prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset, kValue1));
@@ -2192,7 +2192,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   client()->ExecutePrepareWrites(std::move(prep_write_queue1), ReliableMode::kDisabled, cb1);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  att::Result<> status2 = fitx::ok();
+  att::Result<> status2 = fit::ok();
   auto cb2 = [&status2](att::Result<> cb_status) { status2 = cb_status; };
   att::PrepareWriteQueue prep_write_queue2;
   prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset, kValue1));
@@ -2205,7 +2205,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   EXPECT_TRUE(AllExpectedPacketsSent());
   // The first request should be fully complete now, and should trigger the
   // second.
-  EXPECT_EQ(fitx::ok(), status1);
+  EXPECT_EQ(fit::ok(), status1);
 
   EXPECT_PACKET_OUT(kExpectedPrep3, &kResponse3);
   EXPECT_PACKET_OUT(kExpectedPrep4, &kResponse4);
@@ -2213,7 +2213,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   // Responding to the first execute request should start the second write request.
   fake_chan()->Receive(kExecuteWriteResponse);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status2);
+  EXPECT_EQ(fit::ok(), status2);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2252,7 +2252,7 @@ TEST_F(ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   // Create the PrepareWriteQueue of requests to pass to the client
@@ -2265,7 +2265,7 @@ TEST_F(ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2303,7 +2303,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   // Create the PrepareWriteQueue of requests to pass to the client
@@ -2316,7 +2316,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2341,7 +2341,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   att::PrepareWriteQueue prep_write_queue;
@@ -2351,7 +2351,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2381,7 +2381,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   att::PrepareWriteQueue prep_write_queue;
@@ -2421,7 +2421,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   att::PrepareWriteQueue prep_write_queue;
@@ -2461,7 +2461,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   att::PrepareWriteQueue prep_write_queue;
@@ -2499,7 +2499,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
   );
   const StaticByteBuffer kExecResponse(0x19);  // opcode: execute write response
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
 
   att::PrepareWriteQueue prep_write_queue;
@@ -2545,7 +2545,7 @@ TEST_F(ClientTest, WriteWithoutResponseSuccess) {
   client()->WriteWithoutResponse(kHandle, kValue,
                                  [&](att::Result<> cb_status) { status = cb_status; });
   ASSERT_TRUE(status.has_value());
-  ASSERT_EQ(fitx::ok(), *status);
+  ASSERT_EQ(fit::ok(), *status);
 }
 
 TEST_F(ClientTest, ReadRequestEmptyResponse) {
@@ -2568,7 +2568,7 @@ TEST_F(ClientTest, ReadRequestEmptyResponse) {
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2592,7 +2592,7 @@ TEST_F(ClientTest, ReadRequestSuccess) {
   EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
   client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2616,7 +2616,7 @@ TEST_F(ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
   EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
   client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2642,7 +2642,7 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
                                         ));
   RunLoopUntilIdle();
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(att::Result<uint16_t>(fitx::ok(kPreferredMTU)), *result);
+  EXPECT_EQ(att::Result<uint16_t>(fit::ok(kPreferredMTU)), *result);
   EXPECT_EQ(kPreferredMTU, att()->mtu());
 
   constexpr att::Handle kHandle = 0x0001;
@@ -2665,7 +2665,7 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
   EXPECT_PACKET_OUT(kExpectedReadRequest, &expected_response);
   client()->ReadRequest(kHandle, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2680,7 +2680,7 @@ TEST_F(ClientTest, ReadRequestError) {
                                         0x06         // error: Request Not Supported
   );
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
     status = cb_status;
 
@@ -2719,7 +2719,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess16BitUUID) {
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
     cb_called = true;
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     const auto& values = result.value();
     ASSERT_EQ(2u, values.size());
     EXPECT_EQ(kHandle0, values[0].handle);
@@ -2760,7 +2760,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess128BitUUID) {
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
     cb_called = true;
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     const auto& values = result.value();
     ASSERT_EQ(2u, values.size());
     EXPECT_EQ(kHandle0, values[0].handle);
@@ -2916,7 +2916,7 @@ TEST_F(ClientTest, ReadBlobRequestEmptyResponse) {
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2943,7 +2943,7 @@ TEST_F(ClientTest, ReadBlobRequestSuccess) {
   EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2969,7 +2969,7 @@ TEST_F(ClientTest, ReadBlobRequestMaybeTruncated) {
   EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2996,7 +2996,7 @@ TEST_F(ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxV
   EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3167,7 +3167,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
     cb_called = true;
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     const auto& values = result.value();
     ASSERT_EQ(1u, values.size());
     EXPECT_EQ(kHandle, values[0].handle);

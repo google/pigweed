@@ -59,7 +59,7 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
     if (link_->ltk_type() &&
         SecurityPropertiesMeetRequirements(sm::SecurityProperties(*link_->ltk_type()),
                                            security_requirements)) {
-      status_cb(handle(), fitx::ok());
+      status_cb(handle(), fit::ok());
       return;
     }
     // TODO(fxbug.dev/42403): If there is no pairing delegate set AND the current peer does not have
@@ -282,7 +282,7 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
 void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
   // The pairing process may fail early, which the controller will deliver as an Simple Pairing
   // Complete with a non-success status. Log and proxy the error code.
-  if (const fitx::result result = ToResult(status_code);
+  if (const fit::result result = ToResult(status_code);
       is_pairing() &&
       bt_is_error(result, INFO, "gap-bredr", "Pairing failed on link %#.4x (id: %s)", handle(),
                   bt_str(peer_id()))) {
@@ -301,7 +301,7 @@ void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
   }
   BT_ASSERT(is_pairing());
 
-  pairing_delegate()->CompletePairing(peer_id(), fitx::ok());
+  pairing_delegate()->CompletePairing(peer_id(), fit::ok());
   state_ = State::kWaitLinkKey;
 }
 
@@ -441,7 +441,7 @@ void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
   }
   // The pairing process may fail early, which the controller will deliver as an Authentication
   // Complete with a non-success status. Log and proxy the error code.
-  if (const fitx::result result = ToResult(status_code);
+  if (const fit::result result = ToResult(status_code);
       bt_is_error(result, INFO, "gap-bredr", "Authentication failed on link %#.4x (id: %s)",
                   handle(), bt_str(peer_id()))) {
     state_ = State::kFailed;
@@ -473,7 +473,7 @@ void PairingState::OnEncryptionChange(hci::Result<bool> result) {
     // Part E, Sec 7.1.16) at all.
     bt_log(WARN, "gap-bredr", "Pairing failed due to encryption disable on link %#.4x (id: %s)",
            handle(), bt_str(peer_id()));
-    result = fitx::error(Error(HostError::kFailed));
+    result = fit::error(Error(HostError::kFailed));
   }
 
   // Perform state transition.
@@ -484,7 +484,7 @@ void PairingState::OnEncryptionChange(hci::Result<bool> result) {
     state_ = State::kFailed;
   }
 
-  SignalStatus(result.is_ok() ? hci::Result<>(fitx::ok()) : result.take_error(), __func__);
+  SignalStatus(result.is_ok() ? hci::Result<>(fit::ok()) : result.take_error(), __func__);
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(

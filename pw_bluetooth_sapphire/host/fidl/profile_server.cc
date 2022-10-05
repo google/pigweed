@@ -527,7 +527,7 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
       }
       self->OnScoConnectionResult(
           std::move(request),
-          fitx::ok(std::make_pair(std::move(result.value()), /*parameter index=*/0u)));
+          fit::ok(std::make_pair(std::move(result.value()), /*parameter index=*/0u)));
     };
 
     request->request_handle =

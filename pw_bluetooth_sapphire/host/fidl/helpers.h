@@ -53,7 +53,7 @@ fuchsia::bluetooth::Status NewFidlError(fuchsia::bluetooth::ErrorCode error_code
 
 template <typename ProtocolErrorCode>
 fuchsia::bluetooth::Status ResultToFidlDeprecated(
-    const fitx::result<bt::Error<ProtocolErrorCode>>& result, std::string msg = "") {
+    const fit::result<bt::Error<ProtocolErrorCode>>& result, std::string msg = "") {
   fuchsia::bluetooth::Status fidl_status;
   if (result.is_ok()) {
     return fidl_status;
@@ -98,7 +98,7 @@ fuchsia::bluetooth::sys::Error HostErrorToFidl(const bt::Error<ProtocolErrorCode
 // codes.
 template <typename ProtocolErrorCode>
 fpromise::result<void, fuchsia::bluetooth::sys::Error> ResultToFidl(
-    const fitx::result<bt::Error<ProtocolErrorCode>>& status) {
+    const fit::result<bt::Error<ProtocolErrorCode>>& status) {
   if (status.is_ok()) {
     return fpromise::ok();
   } else {

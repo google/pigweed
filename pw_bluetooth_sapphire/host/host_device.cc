@@ -167,29 +167,29 @@ void HostDevice::Open(OpenRequestView request, OpenCompleter::Sync& completer) {
   });
 }
 
-fitx::result<zx_status_t, bt_vendor_protocol_t> HostDevice::GetVendorProtocol() {
+fit::result<zx_status_t, bt_vendor_protocol_t> HostDevice::GetVendorProtocol() {
   bt_vendor_protocol_t vendor_proto = {};
   zx_status_t status = device_get_protocol(parent_, ZX_PROTOCOL_BT_VENDOR, &vendor_proto);
   if (status != ZX_OK) {
-    return fitx::error(status);
+    return fit::error(status);
   }
 
   if (!vendor_proto.ops) {
     bt_log(WARN, "bt-host", "bt-vendor device ops required");
-    return fitx::error(ZX_ERR_NOT_SUPPORTED);
+    return fit::error(ZX_ERR_NOT_SUPPORTED);
   }
 
   if (!vendor_proto.ops->get_features) {
     bt_log(WARN, "bt-host", "bt-vendor op required: get_features");
-    return fitx::error(ZX_ERR_NOT_SUPPORTED);
+    return fit::error(ZX_ERR_NOT_SUPPORTED);
   }
 
   if (!vendor_proto.ops->encode_command) {
     bt_log(WARN, "bt-host", "bt-vendor op required: encode_command");
-    return fitx::error(ZX_ERR_NOT_SUPPORTED);
+    return fit::error(ZX_ERR_NOT_SUPPORTED);
   }
 
-  return fitx::ok(vendor_proto);
+  return fit::ok(vendor_proto);
 }
 
 }  // namespace bthost

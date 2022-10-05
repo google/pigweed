@@ -81,7 +81,7 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
   bt_log(DEBUG, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
          bt_str(result));
 
-  HandleEncryptionStatus(result.is_ok() ? Result<bool>(fitx::ok(enabled)) : result.take_error(),
+  HandleEncryptionStatus(result.is_ok() ? Result<bool>(fit::ok(enabled)) : result.take_error(),
                          /*key_refreshed=*/false);
   return CommandChannel::EventCallbackResult::kContinue;
 }
@@ -114,7 +114,7 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionKeyRefreshComplet
   // Report that encryption got disabled on failure status. The accuracy of this
   // isn't that important since the link will be disconnected.
   HandleEncryptionStatus(
-      status.is_ok() ? Result<bool>(fitx::ok(/*enabled=*/true)) : status.take_error(),
+      status.is_ok() ? Result<bool>(fit::ok(/*enabled=*/true)) : status.take_error(),
       /*key_refreshed=*/true);
 
   return CommandChannel::EventCallbackResult::kContinue;

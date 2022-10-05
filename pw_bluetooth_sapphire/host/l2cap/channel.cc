@@ -10,7 +10,7 @@
 #include <memory>
 #include <utility>
 
-#include "lib/fitx/result.h"
+#include "lib/fit/result.h"
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -193,10 +193,10 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> 
 }
 
 void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
-                                     fit::callback<void(fitx::result<fitx::failed>)> callback) {
+                                     fit::callback<void(fit::result<fit::failed>)> callback) {
   if (!link_ || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring ACL priority request on inactive channel");
-    callback(fitx::failed());
+    callback(fit::failed());
     return;
   }
 

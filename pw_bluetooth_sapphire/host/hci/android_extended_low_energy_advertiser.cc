@@ -196,7 +196,7 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& a
     return;
   }
 
-  fitx::result<HostError> result = CanStartAdvertising(address, data, scan_rsp, options);
+  fit::result<HostError> result = CanStartAdvertising(address, data, scan_rsp, options);
   if (result.is_error()) {
     result_callback(ToResult(result.error_value()));
     return;

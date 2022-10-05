@@ -137,7 +137,7 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestCo
   EXPECT_CMD_PACKET_OUT(test_device(),
                         testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
 
-  hci::Result<> status = fitx::ok();
+  hci::Result<> status = fit::ok();
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   EXPECT_TRUE(status.is_error());
@@ -151,7 +151,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(fitx::ok(), *status);
+  EXPECT_EQ(fit::ok(), *status);
 
   EXPECT_TRUE(peer()->name());
   EXPECT_TRUE(peer()->version());
@@ -168,14 +168,14 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(fitx::ok(), *status);
+  EXPECT_EQ(fit::ok(), *status);
   status = std::nullopt;
 
   QueueSuccessfulReadRemoteExtendedFeatures(kConnectionHandle);
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(fitx::ok(), *status);
+  EXPECT_EQ(fit::ok(), *status);
 }
 
 TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {

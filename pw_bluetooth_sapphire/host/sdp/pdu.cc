@@ -179,7 +179,7 @@ size_t Request::WriteContinuationState(MutableByteBuffer* buf) const {
   return written_size;
 }
 
-fitx::result<Error<>> ErrorResponse::Parse(const ByteBuffer& buf) {
+fit::result<Error<>> ErrorResponse::Parse(const ByteBuffer& buf) {
   if (complete()) {
     return ToResult(HostError::kNotReady);
   }
@@ -187,7 +187,7 @@ fitx::result<Error<>> ErrorResponse::Parse(const ByteBuffer& buf) {
     return ToResult(HostError::kPacketMalformed);
   }
   error_code_ = ErrorCode(betoh16(buf.To<uint16_t>()));
-  return fitx::ok();
+  return fit::ok();
 }
 
 MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid, uint16_t,
@@ -295,7 +295,7 @@ const BufferView ServiceSearchResponse::ContinuationState() const {
   return continuation_state_->view();
 }
 
-fitx::result<Error<>> ServiceSearchResponse::Parse(const ByteBuffer& buf) {
+fit::result<Error<>> ServiceSearchResponse::Parse(const ByteBuffer& buf) {
   if (complete() && total_service_record_count_ != 0) {
     // This response was previously complete and non-empty.
     bt_log(TRACE, "sdp", "Can't parse into a complete response");
@@ -345,7 +345,7 @@ fitx::result<Error<>> ServiceSearchResponse::Parse(const ByteBuffer& buf) {
     continuation_state_->Write(cont_state_view);
     return ToResult(HostError::kInProgress);
   }
-  return fitx::ok();
+  return fit::ok();
 }
 
 // Continuation state: Index of the start record for the continued response.
@@ -528,7 +528,7 @@ const BufferView ServiceAttributeResponse::ContinuationState() const {
 
 bool ServiceAttributeResponse::complete() const { return !continuation_state_; }
 
-fitx::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
+fit::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
   if (complete() && attributes_.size() != 0) {
     // This response was previously complete and non-empty
     bt_log(TRACE, "sdp", "Can't parse into a complete response");
@@ -626,7 +626,7 @@ fitx::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     last_id = *id;
     idx += 2;
   }
-  return fitx::ok();
+  return fit::ok();
 }
 
 // Continuation state: index of # of bytes into the attribute list element
@@ -854,7 +854,7 @@ const BufferView ServiceSearchAttributeResponse::ContinuationState() const {
 
 bool ServiceSearchAttributeResponse::complete() const { return !continuation_state_; }
 
-fitx::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
+fit::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
   if (complete() && attribute_lists_.size() != 0) {
     // This response was previously complete and non-empty
     bt_log(TRACE, "sdp", "can't parse into a complete response");
@@ -964,7 +964,7 @@ fitx::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& bu
     }
   }
   partial_response_ = nullptr;
-  return fitx::ok();
+  return fit::ok();
 }
 
 void ServiceSearchAttributeResponse::SetAttribute(uint32_t idx, AttributeId id, DataElement value) {

@@ -129,7 +129,7 @@ void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
   if (!discovering_.empty() || !zombie_discovering_.empty()) {
     bt_log(DEBUG, "gap-bredr", "add to active sessions");
     auto session = AddDiscoverySession();
-    callback(fitx::ok(), std::move(session));
+    callback(fit::ok(), std::move(session));
     return;
   }
 
@@ -468,7 +468,7 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
 
   // If we're already discoverable, just add a session.
   if (!discoverable_.empty()) {
-    result_cb(fitx::ok());
+    result_cb(fit::ok());
     return;
   }
 

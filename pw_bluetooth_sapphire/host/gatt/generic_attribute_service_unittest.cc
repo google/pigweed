@@ -22,7 +22,7 @@ constexpr uint16_t kEnableInd = 0x0002;
 class GenericAttributeServiceTest : public ::testing::Test {
  protected:
   bool WriteServiceChangedCcc(PeerId peer_id, uint16_t ccc_value,
-                              fitx::result<att::ErrorCode>* out_status) {
+                              fit::result<att::ErrorCode>* out_status) {
     BT_ASSERT(out_status);
 
     auto* attr = mgr.database()->FindAttribute(kCCCHandle);
@@ -84,7 +84,7 @@ TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
   GenericAttributeService gatt_service(mgr.GetWeakPtr(), std::move(send_indication));
 
   // Enable Service Changed indications for the test client.
-  fitx::result<att::ErrorCode> status = fitx::ok();
+  fit::result<att::ErrorCode> status = fit::ok();
   WriteServiceChangedCcc(kTestPeerId, kEnableInd, &status);
   EXPECT_EQ(std::nullopt, indicated_svc_id);
 
@@ -144,7 +144,7 @@ TEST_F(GenericAttributeServiceTest, IndicateOnUnregister) {
   EXPECT_NE(kInvalidId, service_id);
 
   // Enable Service Changed indications for the test client.
-  fitx::result<att::ErrorCode> status = fitx::ok();
+  fit::result<att::ErrorCode> status = fit::ok();
   WriteServiceChangedCcc(kTestPeerId, kEnableInd, &status);
   EXPECT_EQ(std::nullopt, indicated_svc_id);
 
@@ -173,7 +173,7 @@ TEST_F(GenericAttributeServiceTest, PersistIndicate) {
   EXPECT_EQ(persist_callback_count, 0);
 
   // Enable Service Changed indications for the test client.
-  fitx::result<att::ErrorCode> status = fitx::ok();
+  fit::result<att::ErrorCode> status = fit::ok();
   WriteServiceChangedCcc(kTestPeerId, kEnableInd, &status);
   EXPECT_EQ(persist_callback_count, 1);
 }

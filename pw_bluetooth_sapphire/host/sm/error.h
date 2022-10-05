@@ -16,7 +16,7 @@ namespace sm {
 using Error = Error<bt::sm::ErrorCode>;
 
 template <typename... V>
-using Result = fitx::result<bt::sm::Error, V...>;
+using Result = fit::result<bt::sm::Error, V...>;
 
 template <typename... V>
 using ResultFunction = fit::function<void(bt::sm::Result<V...> result)>;

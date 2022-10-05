@@ -668,7 +668,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
       [&](hci_spec::ConnectionHandle connection, hci::AclPriority priority) {
         connection_handle_from_encode_cb = connection;
         priority_from_encode_cb = priority;
-        return fitx::ok(DynamicByteBuffer(kEncodedCommand));
+        return fit::ok(DynamicByteBuffer(kEncodedCommand));
       });
 
   QueueAclConnection(kLinkHandle);

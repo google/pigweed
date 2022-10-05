@@ -6,7 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_H_
 
 #include <lib/fit/function.h>
-#include <lib/fitx/result.h>
+#include <lib/fit/result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
@@ -116,7 +116,7 @@ class RemoteService final {
   // should be used to read complete values.
   struct ReadByTypeResult {
     CharacteristicHandle handle;
-    fitx::result<att::ErrorCode, ByteBufferPtr> result;
+    fit::result<att::ErrorCode, ByteBufferPtr> result;
     bool maybe_truncated;
   };
   using ReadByTypeCallback = fit::function<void(att::Result<>, std::vector<ReadByTypeResult>)>;
@@ -209,11 +209,11 @@ class RemoteService final {
 
   // Returns a pointer to the characteristic with |id|. Returns nullptr if not
   // found.
-  fitx::result<Error<>> GetCharacteristic(CharacteristicHandle id, RemoteCharacteristic** out_char);
+  fit::result<Error<>> GetCharacteristic(CharacteristicHandle id, RemoteCharacteristic** out_char);
 
   // Returns a pointer to the characteristic descriptor with |id|. Returns
   // nullptr if not found.
-  fitx::result<Error<>> GetDescriptor(DescriptorHandle id, const DescriptorData** out_desc);
+  fit::result<Error<>> GetDescriptor(DescriptorHandle id, const DescriptorData** out_desc);
 
   // Called immediately after characteristic discovery to initiate descriptor
   // discovery.

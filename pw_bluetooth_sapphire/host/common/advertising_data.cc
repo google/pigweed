@@ -217,7 +217,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
   AdvertisingData out_ad;
   SupplementDataReader reader(data);
   if (!reader.is_valid()) {
-    return fitx::error(ParseError::kInvalidTlvFormat);
+    return fit::error(ParseError::kInvalidTlvFormat);
   }
 
   DataType type;
@@ -229,7 +229,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
     switch (type) {
       case DataType::kTxPowerLevel: {
         if (field.size() != kTxPowerLevelSize) {
-          return fitx::error(ParseError::kTxPowerLevelMalformed);
+          return fit::error(ParseError::kTxPowerLevelMalformed);
         }
 
         out_ad.SetTxPower(static_cast<int8_t>(field[0]));
@@ -237,7 +237,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
       }
       case DataType::kShortenedLocalName: {
         if (field.ToString().size() > kMaxNameLength) {
-          return fitx::error(ParseError::kLocalNameTooLong);
+          return fit::error(ParseError::kLocalNameTooLong);
         }
 
         (void)out_ad.SetLocalName(field.ToString(), /*is_complete=*/false);
@@ -245,7 +245,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
       }
       case DataType::kCompleteLocalName: {
         if (field.ToString().size() > kMaxNameLength) {
-          return fitx::error(ParseError::kLocalNameTooLong);
+          return fit::error(ParseError::kLocalNameTooLong);
         }
 
         (void)out_ad.SetLocalName(field.ToString(), /*is_complete=*/true);
@@ -265,13 +265,13 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
         // limit may be exceeded, in which case we reject the packet.
         if (!ParseUuids(field, SizeForType(type),
                         fit::bind_member<&AdvertisingData::AddServiceUuid>(&out_ad))) {
-          return fitx::error(ParseError::kUuidsMalformed);
+          return fit::error(ParseError::kUuidsMalformed);
         }
         break;
       }
       case DataType::kManufacturerSpecificData: {
         if (field.size() < kManufacturerSpecificDataSizeMin) {
-          return fitx::error(ParseError::kManufacturerSpecificDataTooSmall);
+          return fit::error(ParseError::kManufacturerSpecificDataTooSmall);
         }
 
         uint16_t id = le16toh(*reinterpret_cast<const uint16_t*>(field.data()));
@@ -287,14 +287,14 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
         UUID uuid;
         size_t uuid_size = SizeForType(type);
         if (field.size() < uuid_size) {
-          return fitx::error(ParseError::kServiceDataTooSmall);
+          return fit::error(ParseError::kServiceDataTooSmall);
         }
         const BufferView uuid_bytes(field.data(), uuid_size);
         if (!UUID::FromBytes(uuid_bytes, &uuid)) {
           // This is impossible given that uuid_bytes.size() is guaranteed to be a valid UUID size,
           // and the current UUID::FromBytes implementation only fails if given an invalid size. We
           // leave it in anyway in case this implementation changes in the future.
-          return fitx::error(ParseError::kServiceDataUuidMalformed);
+          return fit::error(ParseError::kServiceDataUuidMalformed);
         }
         const BufferView service_data(field.data() + uuid_size, field.size() - uuid_size);
         BT_ASSERT(out_ad.SetServiceData(uuid, service_data));
@@ -305,7 +305,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
         // device appearance, as it can be obtained either from advertising data
         // or via GATT.
         if (field.size() != kAppearanceSize) {
-          return fitx::error(ParseError::kAppearanceMalformed);
+          return fit::error(ParseError::kAppearanceMalformed);
         }
 
         out_ad.SetAppearance(le16toh(field.To<uint16_t>()));
@@ -327,7 +327,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
     }
   }
 
-  return fitx::ok(std::move(out_ad));
+  return fit::ok(std::move(out_ad));
 }
 
 void AdvertisingData::Copy(AdvertisingData* out) const {

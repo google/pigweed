@@ -69,14 +69,14 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
   ResultFunction<> MakeExpectSuccessCallback() {
     return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_EQ(fitx::ok(), status);
+      EXPECT_EQ(fit::ok(), status);
     };
   }
 
   ResultFunction<> MakeExpectErrorCallback() {
     return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_EQ(fitx::failed(), status);
+      EXPECT_EQ(fit::failed(), status);
     };
   }
 

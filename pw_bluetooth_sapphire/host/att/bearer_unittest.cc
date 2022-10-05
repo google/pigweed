@@ -614,7 +614,7 @@ TEST_F(BearerTest, SendManyRequests) {
     called_1 = true;
 
     // First request should've succeeded
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     EXPECT_TRUE(ContainersEqual(response1, result.value().data()));
   };
   bearer()->StartTransaction(NewBuffer(kTestRequest), callback1);
@@ -625,7 +625,7 @@ TEST_F(BearerTest, SendManyRequests) {
     called_2 = true;
 
     // Second request should've failed
-    ASSERT_EQ(fitx::failed(), result);
+    ASSERT_EQ(fit::failed(), result);
     const auto& [error, handle] = result.error_value();
     EXPECT_EQ(Error(ErrorCode::kRequestNotSupported), error);
     EXPECT_EQ(0x0001, handle);
@@ -638,7 +638,7 @@ TEST_F(BearerTest, SendManyRequests) {
     called_3 = true;
 
     // Third request should've succeeded
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     EXPECT_TRUE(ContainersEqual(response3, result.value().data()));
   };
   bearer()->StartTransaction(NewBuffer(kTestRequest3), callback3);
@@ -1182,10 +1182,10 @@ class BearerTestSecurity : public BearerTest {
     bearer()->StartTransaction(NewBuffer(kTestRequest), [this](auto result) {
       if (result.is_ok()) {
         request_success_count_++;
-        last_request_status_ = fitx::ok();
+        last_request_status_ = fit::ok();
       } else {
         request_error_count_++;
-        last_request_status_ = fitx::error(result.error_value().first);
+        last_request_status_ = fit::error(result.error_value().first);
       }
     });
   }
@@ -1199,7 +1199,7 @@ class BearerTestSecurity : public BearerTest {
   sm::SecurityLevel requested_security_level() const { return requested_security_level_; }
 
  private:
-  Result<> last_request_status_ = fitx::ok();
+  Result<> last_request_status_ = fit::ok();
   size_t request_success_count_ = 0u;
   size_t request_error_count_ = 0u;
 
@@ -1231,7 +1231,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeAfterInsufficientAuthentication) {
   // Configure the endpoint to respond with success and notify the Bearer of the
   // security upgrade. The Bearer should re-send the request.
   SetUpResponder();
-  ResolvePendingSecurityRequest(fitx::ok());
+  ResolvePendingSecurityRequest(fit::ok());
   RunLoopUntilIdle();
 
   // We should have received the same request again.
@@ -1266,7 +1266,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeWithMitmAfterInsufficientAuthenticatio
   // Configure the endpoint to respond with success and notify the Bearer of the
   // security upgrade. The Bearer should re-send the request.
   SetUpResponder();
-  ResolvePendingSecurityRequest(fitx::ok());
+  ResolvePendingSecurityRequest(fit::ok());
   RunLoopUntilIdle();
 
   // We should have received the same request again.
@@ -1274,7 +1274,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeWithMitmAfterInsufficientAuthenticatio
   EXPECT_EQ(1u, security_request_count());
   EXPECT_EQ(1u, request_success_count());
   EXPECT_EQ(0u, request_error_count());
-  EXPECT_EQ(fitx::ok(), last_request_status());
+  EXPECT_EQ(fit::ok(), last_request_status());
 }
 
 TEST_F(BearerTestSecurity, SecurityUpgradeFailsAfterAuthError) {
@@ -1331,7 +1331,7 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
   // Resolve the pending security request with success while the channel is
   // configured to respond with "Insufficient Authentication". The Bearer should
   // re-send the request.
-  ResolvePendingSecurityRequest(fitx::ok());
+  ResolvePendingSecurityRequest(fit::ok());
   RunLoopUntilIdle();
 
   // The request should have been retried once. The "Insufficient
@@ -1345,7 +1345,7 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
   // Resolve the pending security request with success while the channel is
   // configured to respond with "Insufficient Authentication. The Bearer should
   // retry the request one last time.
-  ResolvePendingSecurityRequest(fitx::ok());
+  ResolvePendingSecurityRequest(fit::ok());
   RunLoopUntilIdle();
 
   // The request should have failed without retrying the request a third time as

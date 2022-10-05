@@ -233,7 +233,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   auto connection = std::make_unique<LowEnergyConnection>(
       handle, pending_request_->local_address, peer_address, connection_params, params->role, hci_);
 
-  Result<> result = fitx::ok();
+  Result<> result = fit::ok();
   if (pending_request_->timed_out) {
     result = ToResult(HostError::kTimedOut);
   } else if (pending_request_->canceled) {

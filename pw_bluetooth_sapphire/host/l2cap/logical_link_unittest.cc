@@ -164,7 +164,7 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   link()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), result_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
-  EXPECT_EQ(fitx::ok(), *cb_status);
+  EXPECT_EQ(fit::ok(), *cb_status);
   cb_status.reset();
 
   // Test msec to parameter conversion (hci_spec::kMaxAutomaticFlushTimeoutDuration(1279) *
@@ -175,7 +175,7 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   link()->SetBrEdrAutomaticFlushTimeout(hci_spec::kMaxAutomaticFlushTimeoutDuration, result_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
-  EXPECT_EQ(fitx::ok(), *cb_status);
+  EXPECT_EQ(fit::ok(), *cb_status);
   cb_status.reset();
 
   // Test too large flush timeout (no command should be sent).

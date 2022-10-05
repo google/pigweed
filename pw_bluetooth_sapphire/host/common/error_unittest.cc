@@ -77,7 +77,7 @@ constexpr Error<TestError> MakeError(TestError proto_code) {
 
 TEST(ErrorTest, ResultFromNonSuccessHostError) {
   // Create a result that can hold TestError but which holds a HostError
-  constexpr fitx::result result = ToResult<TestError>(HostError::kFailed);
+  constexpr fit::result result = ToResult<TestError>(HostError::kFailed);
   ASSERT_TRUE(result.is_error());
 
   // Unwrap the result then access Error::is(…)
@@ -98,8 +98,8 @@ TEST(ErrorTest, ResultFromNonSuccessHostError) {
 }
 
 TEST(ErrorTest, ResultFromSuccessHostError) {
-  constexpr fitx::result result = ToResult<TestError>(TestError::kSuccess);
-  ASSERT_EQ(fitx::ok(), result);
+  constexpr fit::result result = ToResult<TestError>(TestError::kSuccess);
+  ASSERT_EQ(fit::ok(), result);
 
   // Compare result to error
   const Error error = MakeError(TestError::kFail1);
@@ -109,7 +109,7 @@ TEST(ErrorTest, ResultFromSuccessHostError) {
 
 TEST(ErrorTest, ResultFromNonSuccessGeneralHostError) {
   // Create a result that can hold and only holds a HostError
-  constexpr fitx::result result = ToResult(HostError::kFailed);
+  constexpr fit::result result = ToResult(HostError::kFailed);
   ASSERT_TRUE(result.is_error());
 
   // Unwrap the result then access Error::is(…)
@@ -137,7 +137,7 @@ TEST(ErrorTest, ResultFromNonSuccessGeneralHostError) {
 }
 
 TEST(ErrorTest, ResultFromNonSuccessProtocolError) {
-  constexpr fitx::result result = ToResult(TestError::kFail1);
+  constexpr fit::result result = ToResult(TestError::kFail1);
   ASSERT_TRUE(result.is_error());
 
   // Unwrap the result then access Error::is(…)
@@ -158,8 +158,8 @@ TEST(ErrorTest, ResultFromNonSuccessProtocolError) {
 }
 
 TEST(ErrorTest, ResultFromSuccessProtocolError) {
-  constexpr fitx::result result = ToResult(TestError::kSuccess);
-  ASSERT_EQ(fitx::ok(), result);
+  constexpr fit::result result = ToResult(TestError::kSuccess);
+  ASSERT_EQ(fit::ok(), result);
 
   // Compare result to error
   const Error error = MakeError(TestError::kFail1);
@@ -211,7 +211,7 @@ TEST(ErrorTest, ErrorCanBeComparedInTests) {
 }
 
 TEST(ErrorTest, ResultCanBeComparedInTests) {
-  constexpr fitx::result result = ToResult(TestError::kFail1);
+  constexpr fit::result result = ToResult(TestError::kFail1);
 
   // Use operator== through GTest
   EXPECT_EQ(result, result);
@@ -219,8 +219,8 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
   // And explicitly
   EXPECT_FALSE(result == ToResult<TestError>(HostError::kCanceled));
   EXPECT_FALSE(result == ToResult(HostError::kCanceled));
-  EXPECT_FALSE(result == fitx::ok());
-  EXPECT_FALSE(result == fitx::result<Error<TestError>>(fitx::ok()));
+  EXPECT_FALSE(result == fit::ok());
+  EXPECT_FALSE(result == fit::result<Error<TestError>>(fit::ok()));
 
   // Use operator!= through GTest
   EXPECT_NE(ToResult<TestError>(HostError::kCanceled), result);
@@ -228,17 +228,17 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
 
   // Compare to a general result
   EXPECT_NE(ToResult(HostError::kCanceled), result);
-  EXPECT_NE(fitx::result<Error<NoProtocolError>>(fitx::ok()), result);
+  EXPECT_NE(fit::result<Error<NoProtocolError>>(fit::ok()), result);
 
   // Compare results to fix::success
-  EXPECT_NE(fitx::ok(), result);
-  EXPECT_EQ(fitx::ok(), ToResult(TestError::kSuccess));
+  EXPECT_NE(fit::ok(), result);
+  EXPECT_EQ(fit::ok(), ToResult(TestError::kSuccess));
 
-  const fitx::result<Error<TestError>, int> success_with_value = fitx::ok(1);
-  const fitx::result<Error<TestError>, int> error_with_value =
-      fitx::error(MakeError(TestError::kFail1));
-  const fitx::result<Error<TestError>, int> different_error_with_value =
-      fitx::error(MakeError(TestError::kFail2));
+  const fit::result<Error<TestError>, int> success_with_value = fit::ok(1);
+  const fit::result<Error<TestError>, int> error_with_value =
+      fit::error(MakeError(TestError::kFail1));
+  const fit::result<Error<TestError>, int> different_error_with_value =
+      fit::error(MakeError(TestError::kFail2));
   EXPECT_EQ(success_with_value, success_with_value);
   EXPECT_NE(success_with_value, error_with_value);
   EXPECT_FALSE(success_with_value == error_with_value);
@@ -247,8 +247,8 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
   EXPECT_EQ(ToResult(TestError::kFail1).error_value(), error_with_value);
   EXPECT_NE(ToResult(TestError::kFail2).error_value(), error_with_value);
 
-  const fitx::result<Error<TestError>, int> error_with_value_holding_host_error =
-      fitx::error(Error<TestError>(HostError::kFailed));
+  const fit::result<Error<TestError>, int> error_with_value_holding_host_error =
+      fit::error(Error<TestError>(HostError::kFailed));
 
   // ToResult(HostError) constructs a bt::Error<NoProtocolError> so comparisons must take this into
   // account.
@@ -303,14 +303,14 @@ TEST(ErrorTest, ProtocolErrorToString) {
 }
 
 TEST(ErrorTest, ToStringOnResult) {
-  constexpr fitx::result proto_error_result = ToResult(TestError::kFail2);
+  constexpr fit::result proto_error_result = ToResult(TestError::kFail2);
   EXPECT_EQ("[result: error(fail 2 (TestError 2))]", internal::ToString(proto_error_result));
-  constexpr fitx::result<Error<TestError>> success_result = fitx::ok();
+  constexpr fit::result<Error<TestError>> success_result = fit::ok();
   EXPECT_EQ("[result: ok()]", internal::ToString(success_result));
-  constexpr fitx::result<Error<TestError>, int> success_result_with_value = fitx::ok(1);
+  constexpr fit::result<Error<TestError>, int> success_result_with_value = fit::ok(1);
   EXPECT_EQ("[result: ok(?)]", internal::ToString(success_result_with_value));
-  constexpr fitx::result<Error<TestError>, UUID> success_result_with_printable_value =
-      fitx::ok(UUID(uint16_t{}));
+  constexpr fit::result<Error<TestError>, UUID> success_result_with_printable_value =
+      fit::ok(UUID(uint16_t{}));
   EXPECT_EQ("[result: ok(00000000-0000-1000-8000-00805f9b34fb)]",
             internal::ToString(success_result_with_printable_value));
 
@@ -326,12 +326,12 @@ TEST(ErrorTest, ToStringOnResult) {
 }
 
 TEST(ErrorTest, BtIsErrorMacroCompiles) {
-  const fitx::result general_error = ToResult(HostError::kFailed);
+  const fit::result general_error = ToResult(HostError::kFailed);
   EXPECT_TRUE(bt_is_error(general_error, ERROR, "ErrorTest", "error message"));
-  const fitx::result<Error<TestError>, int> success_with_value = fitx::ok(1);
+  const fit::result<Error<TestError>, int> success_with_value = fit::ok(1);
   EXPECT_FALSE(bt_is_error(success_with_value, ERROR, "ErrorTest", "error message"));
-  const fitx::result<Error<TestError>, int> error_with_value =
-      fitx::error(MakeError(TestError::kFail1));
+  const fit::result<Error<TestError>, int> error_with_value =
+      fit::error(MakeError(TestError::kFail1));
   EXPECT_TRUE(bt_is_error(error_with_value, ERROR, "ErrorTest", "error message"));
 }
 
@@ -346,7 +346,7 @@ TEST(ErrorTest, BtIsErrorOnlyEvaluatesResultOnce) {
 }
 
 TEST(ErrorTest, BtStrMacroOnResult) {
-  constexpr fitx::result proto_error_result = ToResult(TestError::kFail2);
+  constexpr fit::result proto_error_result = ToResult(TestError::kFail2);
   EXPECT_EQ(internal::ToString(proto_error_result), bt_str(proto_error_result));
 }
 

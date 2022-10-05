@@ -47,7 +47,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   const DataBufferInfo& GetBufferInfo() const override;
   const DataBufferInfo& GetLeBufferInfo() const override;
   void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
-                          fit::callback<void(fitx::result<fitx::failed>)> callback) override;
+                          fit::callback<void(fit::result<fit::failed>)> callback) override;
 
  private:
   // Represents a queued ACL data packet.
@@ -453,21 +453,21 @@ const DataBufferInfo& AclDataChannelImpl::GetLeBufferInfo() const {
 
 void AclDataChannelImpl::RequestAclPriority(
     hci::AclPriority priority, hci_spec::ConnectionHandle handle,
-    fit::callback<void(fitx::result<fitx::failed>)> callback) {
+    fit::callback<void(fit::result<fit::failed>)> callback) {
   bt_log(TRACE, "hci", "sending ACL priority command");
 
-  fitx::result<zx_status_t, DynamicByteBuffer> encode_result =
+  fit::result<zx_status_t, DynamicByteBuffer> encode_result =
       hci_->EncodeSetAclPriorityCommand(handle, priority);
   if (encode_result.is_error()) {
     bt_log(TRACE, "hci", "encoding ACL priority command failed");
-    callback(fitx::failed());
+    callback(fit::failed());
     return;
   }
 
   DynamicByteBuffer encoded = std::move(encode_result.value());
   if (encoded.size() < sizeof(hci_spec::CommandHeader)) {
     bt_log(TRACE, "hci", "encoded ACL priority command too small (size: %zu)", encoded.size());
-    callback(fitx::failed());
+    callback(fit::failed());
     return;
   }
 
@@ -481,13 +481,13 @@ void AclDataChannelImpl::RequestAclPriority(
       std::move(packet),
       [cb = std::move(callback), priority](auto id, const hci::EventPacket& event) mutable {
         if (hci_is_error(event, WARN, "hci", "acl priority failed")) {
-          cb(fitx::failed());
+          cb(fit::failed());
           return;
         }
 
         bt_log(DEBUG, "hci", "acl priority updated (priority: %#.8x)",
                static_cast<uint32_t>(priority));
-        cb(fitx::ok());
+        cb(fit::ok());
       });
 }
 

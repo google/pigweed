@@ -73,25 +73,25 @@ void Phase2SecureConnections::SendLocalPublicKey() {
   }
 }
 
-fitx::result<ErrorCode> Phase2SecureConnections::CanReceivePeerPublicKey() const {
+fit::result<ErrorCode> Phase2SecureConnections::CanReceivePeerPublicKey() const {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG, "sm", "cannot accept peer ecdh key value over BR/EDR");
-    return fitx::error(ErrorCode::kCommandNotSupported);
+    return fit::error(ErrorCode::kCommandNotSupported);
   }
   if (peer_ecdh_.has_value()) {
     bt_log(WARN, "sm", "received peer ecdh key twice!");
-    return fitx::error(ErrorCode::kUnspecifiedReason);
+    return fit::error(ErrorCode::kUnspecifiedReason);
   }
   if (role() == Role::kInitiator && !sent_local_ecdh_) {
     bt_log(WARN, "sm", "received peer ecdh key before sending local key as initiator!");
-    return fitx::error(ErrorCode::kUnspecifiedReason);
+    return fit::error(ErrorCode::kUnspecifiedReason);
   }
-  return fitx::ok();
+  return fit::ok();
 }
 
 void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_key) {
-  if (fitx::result result = CanReceivePeerPublicKey(); result.is_error()) {
+  if (fit::result result = CanReceivePeerPublicKey(); result.is_error()) {
     Abort(result.error_value());
     return;
   }
@@ -128,7 +128,7 @@ void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_ke
 void Phase2SecureConnections::StartAuthenticationStage1() {
   BT_ASSERT(peer_ecdh_);
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto complete_cb = [self](fitx::result<ErrorCode, ScStage1::Output> result) {
+  auto complete_cb = [self](fit::result<ErrorCode, ScStage1::Output> result) {
     if (self) {
       self->OnAuthenticationStage1Complete(result);
     }
@@ -154,7 +154,7 @@ void Phase2SecureConnections::StartAuthenticationStage1() {
 }
 
 void Phase2SecureConnections::OnAuthenticationStage1Complete(
-    fitx::result<ErrorCode, ScStage1::Output> result) {
+    fit::result<ErrorCode, ScStage1::Output> result) {
   BT_ASSERT(peer_ecdh_.has_value());
   BT_ASSERT(stage_1_);
   BT_ASSERT(!ltk_.has_value());
@@ -232,30 +232,30 @@ void Phase2SecureConnections::SendDhKeyCheckE() {
   }
 }
 
-fitx::result<ErrorCode> Phase2SecureConnections::CanReceiveDhKeyCheck() const {
+fit::result<ErrorCode> Phase2SecureConnections::CanReceiveDhKeyCheck() const {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(WARN, "sm", "cannot accept peer ecdh key check over BR/EDR (SC)");
-    return fitx::error(ErrorCode::kCommandNotSupported);
+    return fit::error(ErrorCode::kCommandNotSupported);
   }
   if (!stage_1_results_.has_value() && !stage_1_) {
     bt_log(WARN, "sm", "received peer ecdh check too early! (before stage 1 started)");
-    return fitx::error(ErrorCode::kUnspecifiedReason);
+    return fit::error(ErrorCode::kUnspecifiedReason);
   }
   if (actual_peer_dhkey_check_.has_value()) {
     bt_log(WARN, "sm", "received peer ecdh key check twice (SC)");
-    return fitx::error(ErrorCode::kUnspecifiedReason);
+    return fit::error(ErrorCode::kUnspecifiedReason);
   }
   if (role() == Role::kInitiator && !sent_local_dhkey_check_) {
     bt_log(WARN, "sm",
            "received peer ecdh key check as initiator before sending local ecdh key check (SC)");
-    return fitx::error(ErrorCode::kUnspecifiedReason);
+    return fit::error(ErrorCode::kUnspecifiedReason);
   }
-  return fitx::ok();
+  return fit::ok();
 }
 
 void Phase2SecureConnections::OnDhKeyCheck(PairingDHKeyCheckValueE check) {
-  if (fitx::result result = CanReceiveDhKeyCheck(); result.is_error()) {
+  if (fit::result result = CanReceiveDhKeyCheck(); result.is_error()) {
     Abort(result.error_value());
     return;
   }
@@ -305,7 +305,7 @@ void Phase2SecureConnections::OnPairingRandom(PairingRandomValue rand) {
 }
 
 void Phase2SecureConnections::OnRxBFrame(ByteBufferPtr sdu) {
-  fitx::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fit::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
     Abort(maybe_reader.error_value());
     return;

@@ -439,7 +439,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   // Number of times the security callback given to UpgradeSecurity has been
   // called and the most recent parameters that it was called with.
   int security_callback_count_ = 0;
-  Result<> security_status_ = fitx::ok();
+  Result<> security_status_ = fit::ok();
   SecurityProperties sec_props_;
 
   // Number of times the pairing data callback has been called and the most
@@ -454,11 +454,11 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
   // State tracking the OnPairingComplete event.
   int pairing_complete_count_ = 0;
-  Result<> pairing_complete_status_ = fitx::ok();
+  Result<> pairing_complete_status_ = fit::ok();
 
   // State tracking the OnAuthenticationFailure event.
   int auth_failure_callback_count_ = 0;
-  hci::Result<> auth_failure_status_ = fitx::ok();
+  hci::Result<> auth_failure_status_ = fit::ok();
 
   // State tracking the OnIdentityInformationRequest event.
   int local_id_info_callback_count_ = 0;
@@ -597,7 +597,7 @@ class InitiatorPairingTest : public SecurityManagerTest {
     EXPECT_EQ(1, fake_link()->start_encryption_count());
 
     // Resolve the encryption request.
-    fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+    fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
     RunLoopUntilIdle();
     EXPECT_EQ(1, new_sec_props_count());
     EXPECT_EQ(level, new_sec_props().level());
@@ -780,7 +780,7 @@ class ResponderPairingTest : public SecurityManagerTest {
     EXPECT_EQ(0, fake_link()->start_encryption_count());
 
     // Pretend that the initiator succeeded in encrypting the connection.
-    fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+    fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
     RunLoopUntilIdle();
     EXPECT_EQ(1, new_sec_props_count());
     EXPECT_EQ(level, new_sec_props().level());
@@ -887,7 +887,7 @@ TEST_F(InitiatorPairingTest, UpgradeSecurityCurrentLevel) {
 
   // Pairing should succeed.
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(SecurityLevel::kNoSecurity, sec_props().level());
   EXPECT_EQ(0u, sec_props().enc_key_size());
   EXPECT_FALSE(sec_props().secure_connections());
@@ -1021,7 +1021,7 @@ TEST_F(InitiatorPairingTest, RejectUnauthenticatedEncryptionInSecureConnectionsO
   RunLoopUntilIdle();
   // After setting SC Only mode, assigning and encrypting with an unauthenticated LTK should cause
   // the channel to be disconnected with an authentication failure.
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, auth_failure_callback_count());
@@ -1041,7 +1041,7 @@ TEST_F(InitiatorPairingTest, AllowSecureAuthenticatedPairingInSecureConnectionsO
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(SecurityLevel::kSecureAuthenticated, sec_props().level());
@@ -1730,7 +1730,7 @@ TEST_F(InitiatorPairingTest, EncryptionDisabledInPhase2) {
   EXPECT_EQ(1, fake_link()->start_encryption_count());
   EXPECT_EQ(SecurityProperties(), pairing()->security());
 
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/false));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/false));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1775,7 +1775,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase3CompleteWithoutKeyExchange) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   // Pairing should succeed without any pairing data.
@@ -1794,7 +1794,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase3CompleteWithoutKeyExchange) {
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, id_info_count());
   EXPECT_EQ(0, id_addr_info_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(SecurityLevel::kEncrypted, sec_props().level());
@@ -1839,7 +1839,7 @@ TEST_F(InitiatorPairingTest, ScPhase3CompleteWithoutKeyExchange) {
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, id_info_count());
   EXPECT_EQ(0, id_addr_info_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(kExpectedSecurity, sec_props());
@@ -1869,7 +1869,7 @@ TEST_F(InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   // Pairing should succeed without any messages being sent in "Phase 3". The LTK was generated in
@@ -1889,7 +1889,7 @@ TEST_F(InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, id_info_count());
   EXPECT_EQ(0, id_addr_info_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(kExpectedSecurity, sec_props());
@@ -1919,7 +1919,7 @@ TEST_F(InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   // Pairing should succeed with the LTK as we are in SC, but as the pairing is non-bondable, no
@@ -1931,7 +1931,7 @@ TEST_F(InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, id_info_count());
   EXPECT_EQ(0, id_addr_info_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(kExpectedSecurity, sec_props());
@@ -2100,7 +2100,7 @@ TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedTwice) {
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(1, pairing_data_callback_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
   ASSERT_TRUE(pairing_data().peer_ltk.has_value());
   EXPECT_EQ(kEdiv, pairing_data().peer_ltk->key().ediv());
@@ -2125,7 +2125,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithReceivingEncKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
@@ -2178,7 +2178,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithSendingEncKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // Only the STK should be assigned to the link, as the distributed LTK was initiator-generated.
@@ -2217,7 +2217,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithShortEncKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
@@ -2280,7 +2280,7 @@ TEST_F(InitiatorPairingTest, Phase3WithLocalIdKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
 
@@ -2310,7 +2310,7 @@ TEST_F(InitiatorPairingTest, Phase3IsAbortedIfLocalIdKeyIsRemoved) {
   set_local_id_info(std::nullopt);
 
   // Encrypt with the STK to finish phase 2.
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   // Pairing should have been aborted.
@@ -2422,7 +2422,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithIdKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // The link remains encrypted with the STK.
@@ -2473,7 +2473,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithAllKeys) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
@@ -2516,7 +2516,7 @@ TEST_F(InitiatorPairingTest, GenerateCrossTransportLinkKey) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // The PairingData should contain the CTKGenerated BR/EDR link key.
@@ -2542,7 +2542,7 @@ TEST_F(InitiatorPairingTest, AssignLongTermKey) {
 
   // The link security level is not assigned until successful encryption.
   EXPECT_EQ(SecurityProperties(), pairing()->security());
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, new_sec_props_count());
@@ -2574,10 +2574,10 @@ TEST_F(InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   ReceiveEncryptionInformation(kLTK);
   ReceiveCentralIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   ASSERT_EQ(1, pairing_complete_count());
-  ASSERT_EQ(fitx::ok(), security_status());
+  ASSERT_EQ(fit::ok(), security_status());
   ASSERT_TRUE(peer_ltk());
   ASSERT_EQ(SecurityLevel::kEncrypted, sec_props().level());
   ASSERT_EQ(1, fake_link()->start_encryption_count());  // Once for the STK
@@ -2655,8 +2655,8 @@ TEST_F(InitiatorPairingTest, NoTimeoutAfterSuccessfulPairing) {
                       KeyDistGenField{0}, KeyDistGenField{0});
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_EQ(1, security_callback_count());
-  ASSERT_EQ(fitx::ok(), security_status());
-  ASSERT_EQ(fitx::ok(), pairing_complete_status());
+  ASSERT_EQ(fit::ok(), security_status());
+  ASSERT_EQ(fit::ok(), pairing_complete_status());
   // Verify that no timeout occurs after a successful pairing followed by a long interval.
   RunLoopFor(kPairingTimeout * 2);
   ASSERT_EQ(1, pairing_complete_count());
@@ -2770,7 +2770,7 @@ TEST_F(ResponderPairingTest, SecurityRequestCausesPairing) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
@@ -2805,11 +2805,11 @@ TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
   AuthReqField expected_auth_req = AuthReq::kBondingFlag | AuthReq::kMITM;
   EXPECT_EQ(1, security_request_count());
   EXPECT_EQ(expected_auth_req, security_request_payload());
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
 
   // Security should be upgraded.
   EXPECT_EQ(1, security_callback_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(kProps.level(), sec_props().level());
   EXPECT_EQ(16u, sec_props().enc_key_size());
   EXPECT_TRUE(sec_props().secure_connections());
@@ -2838,7 +2838,7 @@ TEST_F(ResponderPairingTest, SecurityRequestInitiatorEncryptsWithInsufficientSec
   EXPECT_EQ(expected_auth_req, security_request_payload());
 
   // Pretend the SMP initiator started encryption with the bonded LTK of SecurityLevel::kEncrypted.
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
 
   // If the peer responds to our MITM security request by encrypting with an unauthenticated key,
   // they stored the LTK/handle security request incorrectly - either way, disconnect the link.
@@ -2879,7 +2879,7 @@ TEST_F(ResponderPairingTest, HandlesMultipleSecurityRequestsCorrectly) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, security_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   EXPECT_EQ(SecurityLevel::kEncrypted, sec_props().level());
@@ -3114,7 +3114,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
   EXPECT_EQ(fake_link()->ltk(), pairing_data().local_ltk->key());
 
   // Make sure that an encryption change has no effect.
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   EXPECT_EQ(1, pairing_data_callback_count());
 
@@ -3230,7 +3230,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3ReceiveInitiatorEncKey) {
   // Pairing should have succeeded.
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(fitx::ok(), security_status());
+  EXPECT_EQ(fit::ok(), security_status());
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // No pairing callbacks needed as this is a peer-initiated pairing.
@@ -3318,7 +3318,7 @@ TEST_F(ResponderPairingTest, AssignLongTermKey) {
 
   // The link security level is not assigned until successful encryption.
   EXPECT_EQ(SecurityProperties(), pairing()->security());
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, new_sec_props_count());
@@ -3333,7 +3333,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
   fake_link()->set_ltk(kModifiedLtk);
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
@@ -3344,7 +3344,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   // The LE link LTK should always be assigned through SM, so while encryption could succeed with
   // a link LTK but no SM LTK, this is a violation of bt-host assumptions and we will disconnect.
   fake_link()->set_ltk(hci_spec::LinkKey({1}, 2, 3));
-  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(/*enabled=*/true));
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
@@ -3491,7 +3491,7 @@ TEST_F(ResponderPairingTest, SecureConnectionsWorks) {
   // Pairing should complete successfully
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(0, pairing_failed_count());
-  EXPECT_EQ(fitx::ok(), pairing_complete_status());
+  EXPECT_EQ(fit::ok(), pairing_complete_status());
 
   // No callbacks are notified as the peer started this pairing, not a call to UpgradeSecurity.
   EXPECT_EQ(0, security_callback_count());

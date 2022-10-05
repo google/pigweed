@@ -78,7 +78,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   StartTestDevice();
 
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
@@ -160,7 +160,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(4, status_cb_called);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   cb_called = 0;
   status_cb_called = 0;
 
@@ -178,7 +178,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(0, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
@@ -209,7 +209,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
 
   StartTestDevice();
 
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
@@ -242,7 +242,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_EQ(ToResult(HostError::kCanceled), status);
   cb_called = 0;
   status_cb_called = 0;
-  status = fitx::ok();
+  status = fit::ok();
 
   // Sequence 2: Sequence will be cancelled after first command. This tests
   // canceling a sequence from a CommandCompleteCallback.
@@ -270,7 +270,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_EQ(ToResult(HostError::kCanceled), status);
   cb_called = 0;
   status_cb_called = 0;
-  status = fitx::ok();
+  status = fit::ok();
 
   // Sequence 3: Sequence will be cancelled after first command and immediately
   // followed by a second command which will fail. This tests canceling a
@@ -398,7 +398,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(5, cb_called);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(1, status_cb_called);
   cb_called = 0;
   status_cb_called = 0;
@@ -452,7 +452,7 @@ TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
 
   StartTestDevice();
 
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
@@ -482,7 +482,7 @@ TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
@@ -504,7 +504,7 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
 
   StartTestDevice();
 
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
@@ -549,7 +549,7 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(3, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
@@ -565,7 +565,7 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
 
   StartTestDevice();
 
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
@@ -605,7 +605,7 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallbackCalled) {
@@ -625,7 +625,7 @@ TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallb
 
   StartTestDevice();
 
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
@@ -669,7 +669,7 @@ TEST_F(SequentialCommandRunnerTest,
   std::optional<SequentialCommandRunner> cmd_runner;
   cmd_runner.emplace(transport()->WeakPtr());
 
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
@@ -715,7 +715,7 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
 
   SequentialCommandRunner cmd_runner(transport()->WeakPtr());
 
-  Result<> status = fitx::ok();
+  Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
@@ -757,7 +757,7 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
   EXPECT_EQ(1, name_cb_called);
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 }
 
 }  // namespace

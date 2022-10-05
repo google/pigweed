@@ -29,8 +29,8 @@ class MockHciWrapper : public HciWrapper {
       fit::function<void(ScoCodingFormat, ScoEncoding, ScoSampleRate, StatusCallback)>;
 
   using EncodeAclPriorityCommandFunction =
-      fit::function<fitx::result<zx_status_t, DynamicByteBuffer>(hci_spec::ConnectionHandle,
-                                                                 hci::AclPriority)>;
+      fit::function<fit::result<zx_status_t, DynamicByteBuffer>(hci_spec::ConnectionHandle,
+                                                                hci::AclPriority)>;
 
   void set_send_acl_cb(SendAclPacketFunction cb) { send_acl_cb_ = std::move(cb); }
 
@@ -136,10 +136,10 @@ class MockHciWrapper : public HciWrapper {
 
   VendorFeaturesBits GetVendorFeatures() override { return vendor_features_; }
 
-  fitx::result<zx_status_t, DynamicByteBuffer> EncodeSetAclPriorityCommand(
+  fit::result<zx_status_t, DynamicByteBuffer> EncodeSetAclPriorityCommand(
       hci_spec::ConnectionHandle connection, hci::AclPriority priority) override {
     return encode_acl_priority_command_cb_ ? encode_acl_priority_command_cb_(connection, priority)
-                                           : fitx::error(ZX_ERR_NOT_SUPPORTED);
+                                           : fit::error(ZX_ERR_NOT_SUPPORTED);
   }
 
  private:

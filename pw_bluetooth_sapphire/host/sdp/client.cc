@@ -176,10 +176,10 @@ void Impl::Finish(TransactionId id) {
   size_t count = state.response.num_attribute_lists();
   for (size_t idx = 0; idx <= count; idx++) {
     if (idx == count) {
-      state.callback(fitx::error(Error(HostError::kNotFound)));
+      state.callback(fit::error(Error(HostError::kNotFound)));
       break;
     }
-    if (!state.callback(fitx::ok(std::cref(state.response.attributes(idx))))) {
+    if (!state.callback(fit::ok(std::cref(state.response.attributes(idx))))) {
       break;
     }
   }
@@ -229,7 +229,7 @@ void Impl::OnRxFrame(ByteBufferPtr data) {
     return;
   }
   auto& transaction = it->second;
-  fitx::result<Error<>> parse_status = transaction.response.Parse(packet.payload_data());
+  fit::result<Error<>> parse_status = transaction.response.Parse(packet.payload_data());
   if (parse_status.is_error()) {
     if (parse_status.error_value().is(HostError::kInProgress)) {
       bt_log(INFO, "sdp", "Requesting continuation of id (%u)", tid);

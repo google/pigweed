@@ -83,10 +83,10 @@ TEST_F(GattRemoteServiceServerTest, ReadByTypeSuccess) {
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         switch (read_count++) {
           case 0:
-            callback(fitx::ok(kValues));
+            callback(fit::ok(kValues));
             break;
           case 1:
-            callback(fitx::error(bt::gatt::Client::ReadByTypeError{
+            callback(fit::error(bt::gatt::Client::ReadByTypeError{
                 bt::att::Error(bt::att::ErrorCode::kAttributeNotFound), start}));
             break;
           default:
@@ -119,7 +119,7 @@ TEST_F(GattRemoteServiceServerTest, ReadByTypeResultWithError) {
   fake_client()->set_read_by_type_request_callback(
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
-        callback(fitx::error(bt::gatt::Client::ReadByTypeError{
+        callback(fit::error(bt::gatt::Client::ReadByTypeError{
             bt::att::Error(bt::att::ErrorCode::kInsufficientAuthorization), kServiceEndHandle}));
       });
 
@@ -148,7 +148,7 @@ TEST_F(GattRemoteServiceServerTest, ReadByTypeError) {
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         switch (read_count++) {
           case 0:
-            callback(fitx::error(bt::gatt::Client::ReadByTypeError{
+            callback(fit::error(bt::gatt::Client::ReadByTypeError{
                 bt::Error(bt::HostError::kPacketMalformed), std::nullopt}));
             break;
           default:

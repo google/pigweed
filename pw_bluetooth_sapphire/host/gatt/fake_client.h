@@ -164,13 +164,13 @@ class FakeClient final : public Client {
   std::vector<ServiceData> services_;
 
   // Fake status values to return for GATT procedures.
-  att::Result<> exchange_mtu_status_ = fitx::ok();
-  att::Result<> primary_service_discovery_status_ = fitx::ok();
-  att::Result<> secondary_service_discovery_status_ = fitx::ok();
-  att::Result<> chrc_discovery_status_ = fitx::ok();
+  att::Result<> exchange_mtu_status_ = fit::ok();
+  att::Result<> primary_service_discovery_status_ = fit::ok();
+  att::Result<> secondary_service_discovery_status_ = fit::ok();
+  att::Result<> chrc_discovery_status_ = fit::ok();
 
   size_t desc_discovery_status_target_ = 0;
-  att::Result<> desc_discovery_status_ = fitx::ok();
+  att::Result<> desc_discovery_status_ = fit::ok();
 
   // Data used for DiscoverCharacteristics().
   std::vector<CharacteristicData> chrcs_;

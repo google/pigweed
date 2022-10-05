@@ -116,7 +116,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
                                                  AdvertisingOptions options,
                                                  ConnectionCallback connect_callback,
                                                  ResultFunction<> result_callback) {
-  fitx::result<HostError> result = CanStartAdvertising(address, data, scan_rsp, options);
+  fit::result<HostError> result = CanStartAdvertising(address, data, scan_rsp, options);
   if (result.is_error()) {
     result_callback(ToResult(result.error_value()));
     return;

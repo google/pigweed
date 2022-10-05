@@ -147,7 +147,7 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
       EXPECT_EQ(hci_spec::kInquiry, params.command_opcode);
     } else {
       EXPECT_EQ(hci_spec::kInquiryCompleteEventCode, event.event_code());
-      EXPECT_EQ(fitx::ok(), event.ToResult());
+      EXPECT_EQ(fit::ok(), event.ToResult());
     }
   };
 

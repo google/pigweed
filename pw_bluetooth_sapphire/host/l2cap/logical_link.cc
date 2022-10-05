@@ -227,7 +227,7 @@ void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> 
 
   // Report success If the link already has the expected security level.
   if (level <= security().level()) {
-    callback(fitx::ok());
+    callback(fit::ok());
     return;
   }
 
@@ -544,7 +544,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
 }
 
 void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority,
-                                     fit::callback<void(fitx::result<fitx::failed>)> callback) {
+                                     fit::callback<void(fit::result<fit::failed>)> callback) {
   BT_ASSERT(channel);
   auto iter = channels_.find(channel->id());
   BT_ASSERT(iter != channels_.end());
@@ -658,7 +658,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // Allow closed channels to downgrade priority so that they can clean up their priority on
   // destruction.
   if (!request.channel && request.priority != hci::AclPriority::kNormal) {
-    request.callback(fitx::failed());
+    request.callback(fit::failed());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
     return;
@@ -667,7 +667,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // Skip sending command if desired priority is already set. Do this here instead of Channel in
   // case Channel queues up multiple requests.
   if (request.priority == acl_priority_) {
-    request.callback(fitx::ok());
+    request.callback(fit::ok());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
     return;
@@ -685,14 +685,14 @@ void LogicalLink::HandleNextAclPriorityRequest() {
       // If the request returns priority to normal but a different channel still requires high
       // priority, skip sending command and just report success.
       if (request.priority == hci::AclPriority::kNormal) {
-        request.callback(fitx::ok());
+        request.callback(fit::ok());
         break;
       }
 
       // If the request tries to upgrade priority but it conflicts with another channel's priority
       // (e.g. sink vs. source), report an error.
       if (request.priority != chan->requested_acl_priority()) {
-        request.callback(fitx::failed());
+        request.callback(fit::failed());
         break;
       }
     }

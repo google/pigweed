@@ -49,7 +49,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
 
     size_t cb_count = 0;
     auto result_cb =
-        [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+        [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
                 attrs_result) {
           cb_count++;
           if (cb_count == 3) {
@@ -144,7 +144,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
     size_t cb_count = 0;
     auto result_cb =
-        [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+        [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
                 attrs_result) {
           cb_count++;
           // We return no results for both queries.
@@ -219,7 +219,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
 
     size_t cb_count = 0;
     auto result_cb =
-        [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+        [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
                 attrs_result) {
           cb_count++;
           // We return no results for both queries.
@@ -299,7 +299,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         if (cb_count == 3) {
@@ -375,7 +375,7 @@ TEST_F(ClientTest, NoResults) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kNotFound), attrs_result);
@@ -437,7 +437,7 @@ TEST_F(ClientTest, Disconnected) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kLinkDisconnected), attrs_result);
@@ -495,7 +495,7 @@ TEST_F(ClientTest, InvalidResponse) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kPacketMalformed), attrs_result);
@@ -554,7 +554,7 @@ TEST_F(ClientTest, Timeout) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kTimedOut), attrs_result);
@@ -607,7 +607,7 @@ TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_TRUE(attrs_result.is_error());
@@ -635,7 +635,7 @@ TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kLinkDisconnected), attrs_result);

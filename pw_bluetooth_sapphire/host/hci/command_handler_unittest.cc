@@ -22,12 +22,12 @@ constexpr uint8_t kTestEventParam = 3u;
 template <bool DecodeSucceeds>
 struct TestEvent {
   uint8_t test_param;
-  static fitx::result<bt::Error<>, TestEvent> Decode(const EventPacket& packet) {
+  static fit::result<bt::Error<>, TestEvent> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
-      return fitx::error(bt::Error(HostError::kPacketMalformed));
+      return fit::error(bt::Error(HostError::kPacketMalformed));
     }
 
-    return fitx::ok(TestEvent{.test_param = kTestEventParam});
+    return fit::ok(TestEvent{.test_param = kTestEventParam});
   }
 
   static constexpr hci_spec::EventCode kEventCode = hci_spec::kInquiryCompleteEventCode;
@@ -46,12 +46,12 @@ template <bool DecodeSucceeds>
 struct TestCommandCompleteEvent {
   uint8_t test_param;
 
-  static fitx::result<bt::Error<>, TestCommandCompleteEvent> Decode(const EventPacket& packet) {
+  static fit::result<bt::Error<>, TestCommandCompleteEvent> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
-      return fitx::error(bt::Error(HostError::kPacketMalformed));
+      return fit::error(bt::Error(HostError::kPacketMalformed));
     }
 
-    return fitx::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});
+    return fit::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});
   }
 
   static constexpr hci_spec::EventCode kEventCode = hci_spec::kCommandCompleteEventCode;
@@ -109,7 +109,7 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
 
   std::optional<DecodableCommandCompleteEvent> event;
   handler().SendCommand(kTestCommandWithCommandCompleteEvent, [&event](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     event = result.value();
   });
 
@@ -159,7 +159,7 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
   std::optional<DecodableEvent> event;
   size_t cb_count = 0;
   handler().SendCommand(kTestCommandWithAsyncEvent, [&event, &cb_count](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     event = result.value();
     cb_count++;
   });
@@ -205,7 +205,7 @@ TEST_F(CommandHandlerTest, SendCommandFinishOnStatus) {
 
   size_t cb_count = 0;
   handler().SendCommandFinishOnStatus(kTestCommandWithAsyncEvent, [&cb_count](auto result) {
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     cb_count++;
   });
 

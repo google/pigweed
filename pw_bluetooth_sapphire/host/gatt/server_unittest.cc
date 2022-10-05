@@ -126,15 +126,14 @@ class ServerTest : public l2cap::testing::MockChannelTest {
           BT_ASSERT(matching_chrc_value_handle != att::kInvalidHandle);
           DynamicByteBuffer new_ccc(sizeof(ccc_val));
           new_ccc.WriteObj(ccc_val);
-          fitx::result<att::ErrorCode> write_status =
-              fitx::error(att::ErrorCode::kReadNotPermitted);
+          fit::result<att::ErrorCode> write_status = fit::error(att::ErrorCode::kReadNotPermitted);
           EXPECT_TRUE(
               attr.WriteAsync(peer_id, /*offset=*/0, new_ccc,
-                              [&](fitx::result<att::ErrorCode> status) { write_status = status; }));
+                              [&](fit::result<att::ErrorCode> status) { write_status = status; }));
           // Not strictly necessary with the current WriteAsync implementation, but running the loop
           // here makes this more future-proof.
           test_loop().RunUntilIdle();
-          EXPECT_EQ(fitx::ok(), write_status);
+          EXPECT_EQ(fit::ok(), write_status);
           modified_attrs.push_back(matching_chrc_value_handle);
         }
       }
@@ -1053,7 +1052,7 @@ TEST_F(ServerTest, ReadByTypeDynamicValue) {
   attr->set_read_handler([attr](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    result_cb(fitx::ok(), StaticByteBuffer('f', 'o', 'r', 'k'));
+    result_cb(fit::ok(), StaticByteBuffer('f', 'o', 'r', 'k'));
   });
 
   // Add a second dynamic attribute, which should be omitted.
@@ -1092,7 +1091,7 @@ TEST_F(ServerTest, ReadByTypeDynamicValueError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->set_read_handler([](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
-    result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
   });
   grp->set_active(true);
 
@@ -1557,7 +1556,7 @@ TEST_F(ServerTest, WriteRequestError) {
         EXPECT_EQ(0u, offset);
         EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
 
-        result_cb(fitx::error(att::ErrorCode::kUnlikelyError));
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError));
       });
   grp->set_active(true);
 
@@ -1593,7 +1592,7 @@ TEST_F(ServerTest, WriteRequestSuccess) {
         EXPECT_EQ(0u, offset);
         EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
 
-        result_cb(fitx::ok());
+        result_cb(fit::ok());
       });
   grp->set_active(true);
 
@@ -1770,7 +1769,7 @@ TEST_F(ServerTest, ReadRequestError) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
 
-    result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
   });
   grp->set_active(true);
 
@@ -1822,8 +1821,8 @@ TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(22u, offset);
-    result_cb(fitx::ok(), StaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L',
-                                           'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
+    result_cb(fit::ok(), StaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L',
+                                          'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
   });
   grp->set_active(true);
 
@@ -1856,7 +1855,7 @@ TEST_F(ServerTest, ReadBlobDynamicRequestError) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
   });
   grp->set_active(true);
 
@@ -1969,7 +1968,7 @@ TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(fitx::error(att::ErrorCode::kUnlikelyError), BufferView());
+    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
   });
   grp->set_active(true);
 
@@ -2003,7 +2002,7 @@ TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(fitx::error(att::ErrorCode::kInvalidOffset), BufferView());
+    result_cb(fit::error(att::ErrorCode::kInvalidOffset), BufferView());
   });
   grp->set_active(true);
 
@@ -2035,7 +2034,7 @@ TEST_F(ServerTest, ReadRequestSuccess) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
 
-    result_cb(fitx::ok(), kTestValue);
+    result_cb(fit::ok(), kTestValue);
   });
   grp->set_active(true);
 
@@ -2245,7 +2244,7 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
 
     // Write the contents into |buffer|.
     buffer.Write(value, offset);
-    result_cb(fitx::ok());
+    result_cb(fit::ok());
   });
   grp->set_active(true);
 
@@ -2333,10 +2332,10 @@ TEST_F(ServerTest, ExecuteWriteError) {
     // Make the write to non-zero offsets fail (this corresponds to the second
     // partial write we prepare below.
     if (offset) {
-      result_cb(fitx::error(att::ErrorCode::kUnlikelyError));
+      result_cb(fit::error(att::ErrorCode::kUnlikelyError));
     } else {
       buffer.Write(value);
-      result_cb(fitx::ok());
+      result_cb(fit::ok());
     }
   });
   grp->set_active(true);
@@ -2411,7 +2410,7 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer('l', 'o', 'l'), value));
-    result_cb(fitx::ok());
+    result_cb(fit::ok());
   });
   grp->set_active(true);
 
@@ -2540,11 +2539,11 @@ TEST_F(ServerTest, TrySendIndicationNoCccConfig) {
   IdType svc_id = RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const BufferView kTestValue;
 
-  att::Result<> indicate_res = fitx::ok();
+  att::Result<> indicate_res = fit::ok();
   auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
   server()->SendUpdate(svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
-  EXPECT_EQ(fitx::failed(), indicate_res);
+  EXPECT_EQ(fit::failed(), indicate_res);
 }
 
 TEST_F(ServerTest, TrySendIndicationConfiguredForNotificationsOnly) {
@@ -2552,11 +2551,11 @@ TEST_F(ServerTest, TrySendIndicationConfiguredForNotificationsOnly) {
       RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType, kCCCNotificationBit);
   const BufferView kTestValue;
 
-  att::Result<> indicate_res = fitx::ok();
+  att::Result<> indicate_res = fit::ok();
   auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
   server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
-  EXPECT_EQ(fitx::failed(), indicate_res);
+  EXPECT_EQ(fit::failed(), indicate_res);
 }
 
 TEST_F(ServerTest, SendIndicationEmpty) {
@@ -2581,7 +2580,7 @@ TEST_F(ServerTest, SendIndicationEmpty) {
 
   const StaticByteBuffer kIndicationConfirmation{att::kConfirmation};
   fake_chan()->Receive(kIndicationConfirmation);
-  EXPECT_EQ(fitx::ok(), indicate_res);
+  EXPECT_EQ(fit::ok(), indicate_res);
 }
 
 TEST_F(ServerTest, SendIndication) {
@@ -2607,7 +2606,7 @@ TEST_F(ServerTest, SendIndication) {
 
   const StaticByteBuffer kIndicationConfirmation{att::kConfirmation};
   fake_chan()->Receive(kIndicationConfirmation);
-  EXPECT_EQ(fitx::ok(), indicate_res);
+  EXPECT_EQ(fit::ok(), indicate_res);
 }
 
 class ServerTestSecurity : public ServerTest {
@@ -2653,7 +2652,7 @@ class ServerTestSecurity : public ServerTest {
                                 auto responder) {
       write_count_++;
       if (responder) {
-        responder(fitx::ok());
+        responder(fit::ok());
       }
     };
 
@@ -2684,8 +2683,8 @@ class ServerTestSecurity : public ServerTest {
   }
 
   // Helpers for emulating the receipt of an ATT read/write request PDU and expecting back a
-  // security error. Expects a successful response if |expected_status| is fitx::ok().
-  bool EmulateReadByTypeRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
+  // security error. Expects a successful response if |expected_status| is fit::ok().
+  bool EmulateReadByTypeRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadByTypeRequestPdu(0x08,  // opcode: read by type
                                                  LowerBits(handle),
                                                  UpperBits(handle),  // start handle
@@ -2705,7 +2704,7 @@ class ServerTestSecurity : public ServerTest {
     return AllExpectedPacketsSent();
   }
 
-  bool EmulateReadBlobRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
+  bool EmulateReadBlobRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadBlobRequestPdu(0x0C,  // opcode: read blob
                                                LowerBits(handle), UpperBits(handle),  // handle
                                                0x00, 0x00);                           // offset: 0
@@ -2720,7 +2719,7 @@ class ServerTestSecurity : public ServerTest {
     return AllExpectedPacketsSent();
   }
 
-  bool EmulateReadRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
+  bool EmulateReadRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadRequestPdu(0x0A,  // opcode: read request
                                            LowerBits(handle), UpperBits(handle));  // handle
     if (expected_status.is_ok()) {
@@ -2734,7 +2733,7 @@ class ServerTestSecurity : public ServerTest {
     return AllExpectedPacketsSent();
   }
 
-  bool EmulateWriteRequest(att::Handle handle, fitx::result<att::ErrorCode> expected_status) {
+  bool EmulateWriteRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kWriteRequestPdu(0x12,  // opcode: write request
                                             LowerBits(handle), UpperBits(handle),  // handle
                                             't', 'e', 's', 't');                   // value: "test"
@@ -2747,8 +2746,7 @@ class ServerTestSecurity : public ServerTest {
     return AllExpectedPacketsSent();
   }
 
-  bool EmulatePrepareWriteRequest(att::Handle handle,
-                                  fitx::result<att::ErrorCode> expected_status) {
+  bool EmulatePrepareWriteRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
     const auto kPrepareWriteRequestPdu =
         StaticByteBuffer(0x16,                                  // opcode: prepare write request
                          LowerBits(handle), UpperBits(handle),  // handle
@@ -2770,7 +2768,7 @@ class ServerTestSecurity : public ServerTest {
 
   // Emulates the receipt of a Write Command. The expected error code parameter
   // is unused since ATT commands do not have a response.
-  bool EmulateWriteCommand(att::Handle handle, fitx::result<att::ErrorCode>) {
+  bool EmulateWriteCommand(att::Handle handle, fit::result<att::ErrorCode>) {
     fake_chan()->Receive(StaticByteBuffer(0x52,  // opcode: write command
                                           LowerBits(handle), UpperBits(handle),  // handle
                                           't', 'e', 's', 't'                     // value: "test"
@@ -2779,39 +2777,39 @@ class ServerTestSecurity : public ServerTest {
     return true;
   }
 
-  template <bool (ServerTestSecurity::*EmulateMethod)(att::Handle, fitx::result<att::ErrorCode>),
+  template <bool (ServerTestSecurity::*EmulateMethod)(att::Handle, fit::result<att::ErrorCode>),
             bool IsWrite>
   void RunTest() {
-    const fitx::error<att::ErrorCode> kNotPermittedError = fitx::error(
+    const fit::error<att::ErrorCode> kNotPermittedError = fit::error(
         IsWrite ? att::ErrorCode::kWriteNotPermitted : att::ErrorCode::kReadNotPermitted);
 
     // No security.
     EXPECT_TRUE(
-        (this->*EmulateMethod)(not_permitted_attr()->handle(), fitx::error(kNotPermittedError)));
+        (this->*EmulateMethod)(not_permitted_attr()->handle(), fit::error(kNotPermittedError)));
     EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
-                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
+                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
     EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
-                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
+                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
     EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
-                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
+                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
 
     // Link encrypted.
     fake_chan()->set_security(
         sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
     EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
-    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(), fitx::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(), fit::ok()));
     EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
-                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
+                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
     EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
-                                       fitx::error(att::ErrorCode::kInsufficientAuthentication)));
+                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
 
     // Link encrypted w/ MITM.
     fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16,
                                                      /*secure_connections=*/false));
     EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
-    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(), fitx::ok()));
-    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(), fitx::ok()));
-    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(), fitx::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(), fit::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(), fit::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(), fit::ok()));
   }
 
   void RunReadByTypeTest() { RunTest<&ServerTestSecurity::EmulateReadByTypeRequest, false>(); }

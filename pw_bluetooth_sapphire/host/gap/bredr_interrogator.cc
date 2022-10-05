@@ -45,7 +45,7 @@ void BrEdrInterrogator::Start(ResultCallback callback) {
   }
 
   if (!cmd_runner_.HasQueuedCommands()) {
-    Complete(fitx::ok());
+    Complete(fit::ok());
     return;
   }
 

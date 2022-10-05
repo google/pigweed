@@ -62,13 +62,13 @@ void BrEdrConnection::OnInterrogationComplete() {
 
   // Fulfill and clear request so that the dtor does not signal requester(s) with errors.
   if (auto request = std::exchange(request_, std::nullopt); request.has_value()) {
-    request->NotifyCallbacks(fitx::ok(), [this] { return this; });
+    request->NotifyCallbacks(fit::ok(), [this] { return this; });
   }
 }
 
 void BrEdrConnection::AddRequestCallback(BrEdrConnection::Request::OnComplete cb) {
   if (!request_.has_value()) {
-    cb(fitx::ok(), this);
+    cb(fit::ok(), this);
     return;
   }
 

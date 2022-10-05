@@ -14,7 +14,7 @@ void fuzz(const uint8_t* data, size_t size) {
   std::vector<uint8_t> remaining_bytes = fuzzed_data.ConsumeRemainingBytes<uint8_t>();
   DynamicByteBuffer buf(remaining_bytes.size());
   memcpy(buf.mutable_data(), remaining_bytes.data(), remaining_bytes.size());
-  fitx::result<Error<>> status = fitx::ok();
+  fit::result<Error<>> status = fit::ok();
   ErrorResponse error_response;
   ServiceSearchResponse service_search_response;
   ServiceAttributeResponse service_attribute_response;

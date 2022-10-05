@@ -156,10 +156,10 @@ void Gatt2ServerServer::OnReadRequest(bt::PeerId peer_id, bt::gatt::IdType servi
 
   auto cb = [responder = std::move(responder)](LocalService_ReadValue_Result res) mutable {
     if (res.is_err()) {
-      responder(fitx::error(fidl_helpers::Gatt2ErrorCodeFromFidl(res.err())), bt::BufferView());
+      responder(fit::error(fidl_helpers::Gatt2ErrorCodeFromFidl(res.err())), bt::BufferView());
       return;
     }
-    responder(fitx::ok(), bt::BufferView(res.response().value));
+    responder(fit::ok(), bt::BufferView(res.response().value));
   };
   svc_iter->second.local_svc_ptr->ReadValue(fbt::PeerId{peer_id.value()}, Handle{id}, offset,
                                             std::move(cb));
@@ -175,9 +175,9 @@ void Gatt2ServerServer::OnWriteRequest(bt::PeerId peer_id, bt::gatt::IdType serv
   auto cb = [responder = std::move(responder)](LocalService_WriteValue_Result result) mutable {
     // If this was a Write Without Response request, the response callback will be null.
     if (responder) {
-      fitx::result<bt::att::ErrorCode> rsp = fitx::ok();
+      fit::result<bt::att::ErrorCode> rsp = fit::ok();
       if (!result.is_response()) {
-        rsp = fitx::error(fidl_helpers::Gatt2ErrorCodeFromFidl(result.err()));
+        rsp = fit::error(fidl_helpers::Gatt2ErrorCodeFromFidl(result.err()));
       }
       responder(rsp);
     }

@@ -41,15 +41,15 @@ class HciWrapperTest : public ::gtest::TestLoopFixture {
     ASSERT_TRUE(hci_->Initialize(fit::bind_member<&HciWrapperTest::OnError>(this)));
   }
 
-  fitx::result<zx_status_t, DynamicByteBuffer> ReadNextPacket(zx::channel* channel) {
+  fit::result<zx_status_t, DynamicByteBuffer> ReadNextPacket(zx::channel* channel) {
     StaticByteBuffer<20> buffer;
     uint32_t read_size;
     zx_status_t status = channel->read(0u, buffer.mutable_data(), /*handles=*/nullptr,
                                        buffer.size(), 0, &read_size, /*actual_handles=*/nullptr);
     if (status != ZX_OK) {
-      return fitx::error(status);
+      return fit::error(status);
     }
-    return fitx::ok(DynamicByteBuffer(buffer.view(/*pos=*/0, read_size)));
+    return fit::ok(DynamicByteBuffer(buffer.view(/*pos=*/0, read_size)));
   }
 
   HciWrapper* hci() { return hci_.get(); }
@@ -114,7 +114,7 @@ TEST_F(HciWrapperTest, SendCommand) {
   DynamicByteBuffer expected_packet(packet->view().data());
   EXPECT_EQ(hci()->SendCommand(std::move(packet)), ZX_OK);
 
-  fitx::result<zx_status_t, DynamicByteBuffer> read_result = ReadNextPacket(cmd_channel());
+  fit::result<zx_status_t, DynamicByteBuffer> read_result = ReadNextPacket(cmd_channel());
   ASSERT_TRUE(read_result.is_ok());
   EXPECT_TRUE(ContainersEqual(read_result.value(), expected_packet));
 }
@@ -127,7 +127,7 @@ TEST_F(HciWrapperTest, SendAcl) {
   DynamicByteBuffer expected_packet(packet->view().data());
   EXPECT_EQ(hci()->SendAclPacket(std::move(packet)), ZX_OK);
 
-  fitx::result<zx_status_t, DynamicByteBuffer> read_result = ReadNextPacket(acl_channel());
+  fit::result<zx_status_t, DynamicByteBuffer> read_result = ReadNextPacket(acl_channel());
   ASSERT_TRUE(read_result.is_ok());
   EXPECT_TRUE(ContainersEqual(read_result.value(), expected_packet));
 }
@@ -140,7 +140,7 @@ TEST_F(HciWrapperTest, SendSco) {
   DynamicByteBuffer expected_packet(packet->view().data());
   EXPECT_EQ(hci()->SendScoPacket(std::move(packet)), ZX_OK);
 
-  fitx::result<zx_status_t, DynamicByteBuffer> read_result = ReadNextPacket(sco_channel());
+  fit::result<zx_status_t, DynamicByteBuffer> read_result = ReadNextPacket(sco_channel());
   ASSERT_TRUE(read_result.is_ok());
   EXPECT_TRUE(ContainersEqual(read_result.value(), expected_packet));
 }
@@ -445,7 +445,7 @@ TEST_F(HciWrapperTest, ReceiveScoPacketWithInvalidSizeFieldInHeaderFollowedByVal
 TEST_F(HciWrapperTest, EncodeSetAclPriorityCommandFailure) {
   InitializeHci(/*sco_supported=*/true);
   device()->set_vendor_encode_callback([](auto, auto) { return std::nullopt; });
-  fitx::result<zx_status_t, DynamicByteBuffer> result =
+  fit::result<zx_status_t, DynamicByteBuffer> result =
       hci()->EncodeSetAclPriorityCommand(/*connection=*/1, AclPriority::kSink);
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(result.error_value(), ZX_ERR_INTERNAL);
@@ -462,7 +462,7 @@ TEST_F(HciWrapperTest, EncodeSetAclPriorityCommandSuccessNormal) {
     params = cb_params;
     return DynamicByteBuffer(packet);
   });
-  fitx::result<zx_status_t, DynamicByteBuffer> result =
+  fit::result<zx_status_t, DynamicByteBuffer> result =
       hci()->EncodeSetAclPriorityCommand(handle, AclPriority::kNormal);
   ASSERT_TRUE(result.is_ok());
   EXPECT_TRUE(ContainersEqual(packet, result.value()));
@@ -483,7 +483,7 @@ TEST_F(HciWrapperTest, EncodeSetAclPriorityCommandSuccessSource) {
     params = cb_params;
     return DynamicByteBuffer(packet);
   });
-  fitx::result<zx_status_t, DynamicByteBuffer> result =
+  fit::result<zx_status_t, DynamicByteBuffer> result =
       hci()->EncodeSetAclPriorityCommand(handle, AclPriority::kSource);
   ASSERT_TRUE(result.is_ok());
   EXPECT_TRUE(ContainersEqual(packet, result.value()));
@@ -505,7 +505,7 @@ TEST_F(HciWrapperTest, EncodeSetAclPriorityCommandSuccessSink) {
     params = cb_params;
     return DynamicByteBuffer(packet);
   });
-  fitx::result<zx_status_t, DynamicByteBuffer> result =
+  fit::result<zx_status_t, DynamicByteBuffer> result =
       hci()->EncodeSetAclPriorityCommand(handle, AclPriority::kSink);
   ASSERT_TRUE(result.is_ok());
   EXPECT_TRUE(ContainersEqual(packet, result.value()));

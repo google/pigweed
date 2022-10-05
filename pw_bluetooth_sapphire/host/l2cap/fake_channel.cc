@@ -120,13 +120,13 @@ void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> 
 }
 
 void FakeChannel::RequestAclPriority(hci::AclPriority priority,
-                                     fit::callback<void(fitx::result<fitx::failed>)> cb) {
+                                     fit::callback<void(fit::result<fit::failed>)> cb) {
   if (acl_priority_fails_) {
-    cb(fitx::failed());
+    cb(fit::failed());
     return;
   }
   requested_acl_priority_ = priority;
-  cb(fitx::ok());
+  cb(fit::ok());
 }
 
 void FakeChannel::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
@@ -136,7 +136,7 @@ void FakeChannel::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
     return;
   }
   info_.flush_timeout = flush_timeout;
-  callback(fitx::ok());
+  callback(fit::ok());
 }
 
 }  // namespace bt::l2cap::testing

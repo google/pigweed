@@ -16,7 +16,7 @@ namespace att {
 using Error = Error<bt::att::ErrorCode>;
 
 template <typename... V>
-using Result = fitx::result<bt::att::Error, V...>;
+using Result = fit::result<bt::att::Error, V...>;
 
 template <typename... V>
 using ResultFunction = fit::function<void(bt::att::Result<V...> result)>;

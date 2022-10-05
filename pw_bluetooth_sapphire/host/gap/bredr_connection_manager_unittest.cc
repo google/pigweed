@@ -813,7 +813,7 @@ TEST_F(BrEdrConnectionManagerTest, DisableConnectivity) {
   size_t cb_count = 0;
   auto cb = [&cb_count](const auto& status) {
     cb_count++;
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
   };
 
   EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
@@ -839,7 +839,7 @@ TEST_F(BrEdrConnectionManagerTest, EnableConnectivity) {
   size_t cb_count = 0;
   auto cb = [&cb_count](const auto& status) {
     cb_count++;
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
   };
 
   EXPECT_CMD_PACKET_OUT(test_device(), kWritePageScanActivity, &kWritePageScanActivityRsp);
@@ -1262,7 +1262,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyEntryPairingAndUserProvide
   test_device()->SendCommandChannelPacket(kUserPasskeyRequest);
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
@@ -1316,7 +1316,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
   test_device()->SendCommandChannelPacket(MakeUserPasskeyNotification(kPasskey));
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   ASSERT_TRUE(IsInitializing(peer));
@@ -1376,7 +1376,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAn
   test_device()->SendCommandChannelPacket(MakeUserConfirmationRequest(kPasskey));
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   ASSERT_TRUE(IsInitializing(peer));
@@ -1860,7 +1860,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   // Initial connection request
 
@@ -2071,7 +2071,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   // Initial connection request
 
@@ -2158,7 +2158,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComple
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   // Initiate pairing from the peer
   test_device()->SendCommandChannelPacket(
@@ -2239,7 +2239,7 @@ TEST_F(BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNotL2c
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   // Initiate pairing from the peer before interrogation completes
   test_device()->SendCommandChannelPacket(
@@ -2456,7 +2456,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   ASSERT_TRUE(peer->bredr());
   EXPECT_TRUE(IsNotConnected(peer));
 
-  hci::Result<> status = fitx::ok();
+  hci::Result<> status = fit::ok();
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), CALLBACK_EXPECT_FAILURE(status)));
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
@@ -2499,7 +2499,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnectionCancel, &kCreateConnectionCancelRsp,
                         &kConnectionCompleteCanceled);
 
-  hci::Result<> status = fitx::ok();
+  hci::Result<> status = fit::ok();
   auto callback = [&status](auto cb_status, auto conn_ref) {
     EXPECT_FALSE(conn_ref);
     status = cb_status;
@@ -2538,7 +2538,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeer) {
   ASSERT_TRUE(peer->bredr());
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::kCentral);
@@ -2560,7 +2560,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
   EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kReadRemoteSupportedFeatures,
                         &kReadRemoteSupportedFeaturesRsp);
 
-  hci::Result<> status = fitx::ok();
+  hci::Result<> status = fit::ok();
   BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     EXPECT_FALSE(cb_conn_ref);
@@ -2606,7 +2606,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   ASSERT_TRUE(peer->bredr());
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 1);
@@ -2615,7 +2615,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   // synchronously.
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   EXPECT_EQ(num_callbacks, 2);
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
 }
@@ -2654,7 +2654,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   // Run the loop which should complete both requests
   RunLoopUntilIdle();
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 2);
@@ -2695,7 +2695,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInt
   CompleteInterrogation(kConnectionHandle);
   RunLoopUntilIdle();
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 2);
@@ -2716,7 +2716,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   QueueDisconnection(kConnectionHandle2);
 
   // Initialize as success to verify that |callback_a| assigns failure.
-  hci::Result<> status_a = fitx::ok();
+  hci::Result<> status_a = fit::ok();
   auto callback_a = [&status_a](auto cb_status, auto cb_conn_ref) {
     status_a = cb_status;
     EXPECT_FALSE(cb_conn_ref);
@@ -2747,7 +2747,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   RunLoopFor(kBrEdrCreateConnectionTimeout);
 
   EXPECT_TRUE(status_a.is_error());
-  EXPECT_EQ(fitx::ok(), status_b);
+  EXPECT_EQ(fit::ok(), status_b);
   EXPECT_TRUE(HasConnectionTo(peer_b, connection));
   EXPECT_TRUE(IsNotConnected(peer_a));
   EXPECT_FALSE(IsNotConnected(peer_b));
@@ -2785,7 +2785,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectToDualModePeerThatWasFirstLowEnergyOnl
   QueueDisconnection(kConnectionHandle);
   RunLoopUntilIdle();
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::kCentral);
@@ -2833,7 +2833,7 @@ TEST_F(BrEdrConnectionManagerTest, SuccessfulHciRetriesAfterPageTimeout) {
   EXPECT_EQ(ToResult(HostError::kFailed), status);
 
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::kCentral);
 }
@@ -2850,7 +2850,7 @@ TEST_F(BrEdrConnectionManagerTest, DontRetryAfterWindowClosed) {
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
 
   // Initialize as success to verify that |callback| assigns error.
-  hci::Result<> status = fitx::ok();
+  hci::Result<> status = fit::ok();
   auto callback = [&status](auto cb_status, auto cb_conn_ref) {
     EXPECT_FALSE(cb_conn_ref);
     status = cb_status;
@@ -2860,7 +2860,7 @@ TEST_F(BrEdrConnectionManagerTest, DontRetryAfterWindowClosed) {
   ASSERT_TRUE(peer->bredr());
   RunLoopFor(zx::sec(15));
   // Higher layers should not be notified yet.
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
 
   // Create Connection will retry, and it hangs for 16s before ConnectionCompletePageTimeout
@@ -2886,7 +2886,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstFailsWithPageTimeoutAnd
   QueueDisconnection(kConnectionHandle2);
 
   // Initialize as success to verify that |callback_a| assigns failure.
-  hci::Result<> status_a = fitx::ok();
+  hci::Result<> status_a = fit::ok();
   auto callback_a = [&status_a](auto cb_status, auto cb_conn_ref) {
     status_a = cb_status;
     EXPECT_FALSE(cb_conn_ref);
@@ -2914,7 +2914,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstFailsWithPageTimeoutAnd
 
   // The Connect() request to peer_a should fail with the Page Timeout status code without retrying
   EXPECT_EQ(ToResult(hci_spec::StatusCode::kPageTimeout), status_a);
-  EXPECT_EQ(fitx::ok(), status_b);
+  EXPECT_EQ(fit::ok(), status_b);
   EXPECT_TRUE(HasConnectionTo(peer_b, connection));
   EXPECT_TRUE(IsNotConnected(peer_a));
   EXPECT_FALSE(IsNotConnected(peer_b));
@@ -3010,7 +3010,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   // Complete connection.
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, connection));
   EXPECT_FALSE(IsNotConnected(peer));
 
@@ -3073,7 +3073,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownCancelOnOutgoing) {
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRspError);
 
   // Initialize as ok to verify that |callback| assigns failure
-  hci::Result<> status = fitx::ok();
+  hci::Result<> status = fit::ok();
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), CALLBACK_EXPECT_FAILURE(status)));
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
@@ -3237,7 +3237,7 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   QueueSuccessfulPairing();
 
@@ -3245,7 +3245,7 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
   // pairing process.
   hci::Result<> pairing_status = ToResult(HostError::kPacketMalformed);
   auto pairing_complete_cb = [&pairing_status](hci::Result<> status) {
-    ASSERT_EQ(fitx::ok(), status);
+    ASSERT_EQ(fit::ok(), status);
     pairing_status = status;
   };
 
@@ -3254,7 +3254,7 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
   ASSERT_FALSE(peer->bonded());
   RunLoopUntilIdle();
 
-  ASSERT_EQ(fitx::ok(), pairing_status);
+  ASSERT_EQ(fit::ok(), pairing_status);
   ASSERT_TRUE(IsConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
@@ -3285,7 +3285,7 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
       });
 
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   QueueSuccessfulPairing();
 
@@ -3293,14 +3293,14 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
   // pairing process.
   hci::Result<> pairing_status = ToResult(HostError::kPacketMalformed);
   auto pairing_complete_cb = [&pairing_status](hci::Result<> status) {
-    ASSERT_EQ(fitx::ok(), status);
+    ASSERT_EQ(fit::ok(), status);
     pairing_status = status;
   };
 
   connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, pairing_complete_cb);
   RunLoopUntilIdle();
 
-  ASSERT_EQ(fitx::ok(), pairing_status);
+  ASSERT_EQ(fit::ok(), pairing_status);
   ASSERT_TRUE(IsConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
@@ -3310,7 +3310,7 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
   // Note that we do not call QueueSuccessfulPairing twice, even though we pair twice - this is to
   // test that pairing on an already-paired link succeeds without sending any messages to the peer.
   RunLoopUntilIdle();
-  ASSERT_EQ(fitx::ok(), pairing_status);
+  ASSERT_EQ(fit::ok(), pairing_status);
   ASSERT_TRUE(peer->bonded());
 
   QueueDisconnection(kConnectionHandle);
@@ -3338,7 +3338,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelPara
   pairing_delegate.SetDisplayPasskeyCallback(
       [](PeerId, uint32_t passkey, auto method, auto confirm_cb) { confirm_cb(true); });
   pairing_delegate.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   QueueSuccessfulPairing();
   RunLoopUntilIdle();
@@ -3387,7 +3387,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) 
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(peer->bredr());
   RunLoopUntilIdle();
-  ASSERT_EQ(fitx::ok(), status);
+  ASSERT_EQ(fit::ok(), status);
 
   test_device()->SendCommandChannelPacket(
       testing::EncryptionChangeEventPacket(hci_spec::StatusCode::kConnectionTerminatedMICFailure,
@@ -3417,7 +3417,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
     cb(true);
   });
   pairing_delegate_no_io.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   size_t sock_cb_count = 0;
   auto sock_cb = [&](auto chan_sock) {
@@ -3446,7 +3446,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   pairing_delegate_with_display.SetDisplayPasskeyCallback(
       [](PeerId, uint32_t passkey, auto method, auto confirm_cb) { confirm_cb(true); });
   pairing_delegate_with_display.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   // Pairing caused by insufficient link key.
   QueueSuccessfulPairing();
@@ -3484,7 +3484,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
     cb(true);
   });
   pairing_delegate_no_io.SetCompletePairingCallback(
-      [](PeerId, sm::Result<> status) { EXPECT_EQ(fitx::ok(), status); });
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   size_t sock_cb_count = 0;
   auto sock_cb = [&](auto chan_sock) {
@@ -3683,7 +3683,7 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   auto should_succeed = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     // We expect this callback to be executed, with a succesful connection
     EXPECT_TRUE(cb_conn_ref);
-    EXPECT_EQ(fitx::ok(), cb_status);
+    EXPECT_EQ(fit::ok(), cb_status);
     status = cb_status;
     conn_ref = std::move(cb_conn_ref);
   };
@@ -3712,7 +3712,7 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   // We expect to connect and begin interrogation, and for our connect() callback to have been run
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 
   // Peers are marked as initializing until a pairing procedure finishes.
   EXPECT_TRUE(IsInitializing(peer));
@@ -3727,7 +3727,7 @@ TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
   BrEdrConnection* conn_ref = nullptr;
   auto should_succeed = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
-    EXPECT_EQ(fitx::ok(), cb_status);
+    EXPECT_EQ(fit::ok(), cb_status);
     status = cb_status;
     conn_ref = std::move(cb_conn_ref);
   };
@@ -3751,7 +3751,7 @@ TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
   // been executed when the incoming connection succeeded.
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   RunLoopUntilIdle();
-  EXPECT_EQ(fitx::ok(), status);
+  EXPECT_EQ(fit::ok(), status);
 
   // Peers are marked as initializing until a pairing procedure finishes.
   EXPECT_TRUE(IsInitializing(peer));

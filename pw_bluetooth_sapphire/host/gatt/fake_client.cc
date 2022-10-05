@@ -25,9 +25,9 @@ void FakeClient::ExchangeMTU(MTUCallback callback) {
   auto task = [status = exchange_mtu_status_, mtu = server_mtu_,
                callback = std::move(callback)]() mutable {
     if (status.is_error()) {
-      callback(fitx::error(status.error_value()));
+      callback(fit::error(status.error_value()));
     } else {
-      callback(fitx::ok(mtu));
+      callback(fit::ok(mtu));
     }
   };
   async::PostTask(dispatcher_, std::move(task));
@@ -58,7 +58,7 @@ void FakeClient::DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle 
                                                   att::Handle end, ServiceCallback svc_callback,
                                                   att::ResultFunction<> status_callback,
                                                   std::vector<UUID> uuids) {
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   if (discover_services_callback_) {
     status = discover_services_callback_(kind);
   }
@@ -103,7 +103,7 @@ void FakeClient::DiscoverDescriptors(att::Handle range_start, att::Handle range_
   last_desc_discovery_end_handle_ = range_end;
   desc_discovery_count_++;
 
-  att::Result<> status = fitx::ok();
+  att::Result<> status = fit::ok();
   if (!desc_discovery_status_target_ || desc_discovery_count_ == desc_discovery_status_target_) {
     status = desc_discovery_status_;
   }

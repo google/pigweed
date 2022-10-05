@@ -65,7 +65,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
   descriptors_.clear();
 
   if (info().value_handle == range_end) {
-    callback(fitx::ok());
+    callback(fit::ok());
     return;
   }
 
@@ -174,7 +174,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 
     IdType id = next_notify_handler_id_++;
     notify_handlers_[id] = std::move(value_callback);
-    status_callback(fitx::ok(), id);
+    status_callback(fit::ok(), id);
     return;
   }
 
@@ -190,7 +190,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
   // notifications to have been enabled.
   if (ccc_handle_ == att::kInvalidHandle) {
     bt_log(TRACE, "gatt", "notications enabled without characteristic configuration");
-    ResolvePendingNotifyRequests(fitx::ok());
+    ResolvePendingNotifyRequests(fit::ok());
     return;
   }
 

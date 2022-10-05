@@ -96,7 +96,7 @@ TEST(AdvertisingDataTest, ParseBlock) {
       0x02, 0x0A, 0x8F);
 
   AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
-  ASSERT_EQ(fitx::ok(), data);
+  ASSERT_EQ(fit::ok(), data);
 
   EXPECT_EQ(3u, data->service_uuids().size());
   EXPECT_TRUE(data->local_name());
@@ -118,7 +118,7 @@ TEST(AdvertisingDataTest, ParseBlockUnknownDataType) {
       // 0x40, the second octet, is not a recognized DataType (see common/supplement_data.h).
       0x05, 0x40, 0x34, 0x12, 0x34, 0x12};
   AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
-  ASSERT_EQ(fitx::ok(), data);
+  ASSERT_EQ(fit::ok(), data);
 
   // The second field of `bytes` was valid (in that its length byte matched its length), but its
   // Data Type was unknown, so it should be ignored (i.e. the only field in the `data` should be the
@@ -136,7 +136,7 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
     name.Fill('a');
     bytes.Write(name, /*pos=*/2);
     AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     EXPECT_EQ(result->local_name()->name, std::string(kMaxNameLength, 'a'));
   }
   // Repeat previous test with shortened name.
@@ -148,7 +148,7 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
     name.Fill('a');
     bytes.Write(name, /*pos=*/2);
     AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
-    ASSERT_EQ(fitx::ok(), result);
+    ASSERT_EQ(fit::ok(), result);
     EXPECT_EQ(result->local_name()->name, std::string(kMaxNameLength, 'a'));
   }
   // A block with a name of kMaxNameLength+1 (==249) bytes should be rejected.
@@ -187,7 +187,7 @@ TEST(AdvertisingDataTest, ManufacturerZeroLength) {
   EXPECT_EQ(0u, AdvertisingData().manufacturer_data_ids().size());
 
   AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
-  ASSERT_EQ(fitx::ok(), data);
+  ASSERT_EQ(fit::ok(), data);
 
   EXPECT_EQ(1u, data->manufacturer_data_ids().count(0x1234));
   EXPECT_EQ(0u, data->manufacturer_data(0x1234).size());
@@ -209,7 +209,7 @@ TEST(AdvertisingDataTest, ServiceData) {
   EXPECT_EQ(0u, AdvertisingData().service_data_uuids().size());
 
   AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
-  ASSERT_EQ(fitx::ok(), data);
+  ASSERT_EQ(fit::ok(), data);
 
   UUID eddystone(uint16_t{0xFEAA});
 
@@ -244,7 +244,7 @@ TEST(AdvertisingDataTest, TooManyUuidsOfSizeRejected) {
   // Verify that we successfully parse an AD with the maximum amount of 16 bit UUIDs
   AdvertisingData::ParseResult adv_result =
       AdvertisingData::FromBytes(bytes.view(/*pos=*/0, /*size=*/kMaxAllowed16BitUuidsSize));
-  ASSERT_EQ(fitx::ok(), adv_result);
+  ASSERT_EQ(fit::ok(), adv_result);
   EXPECT_EQ(kMax16BitUuids, adv_result->service_uuids().size());
   // Write second Complete 16 bit Service UUIDs TLV field with one more UUID
   bytes.Write(
@@ -452,7 +452,7 @@ TEST(AdvertisingDataTest, Uris) {
       0x03, DataType::kURI, 0x00, 0x00);
 
   AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
-  ASSERT_EQ(fitx::ok(), data);
+  ASSERT_EQ(fit::ok(), data);
 
   auto uris = data->uris();
   EXPECT_EQ(3u, uris.size());

@@ -50,7 +50,7 @@ class ScStage1 {
 
   // Used by Stage 1 classes to notify their owning class that they have finished. A successful
   // Stage 1 notifies its owner with `Output`, or that it has failed due to `ErrorCode`.
-  using Stage1CompleteCallback = fit::function<void(fitx::result<ErrorCode, Output>)>;
+  using Stage1CompleteCallback = fit::function<void(fit::result<ErrorCode, Output>)>;
 
   virtual void Run() = 0;
   virtual void OnPairingConfirm(PairingConfirmValue) = 0;

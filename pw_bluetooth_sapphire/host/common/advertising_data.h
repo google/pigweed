@@ -6,7 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ADVERTISING_DATA_H_
 
 #include <lib/fit/function.h>
-#include <lib/fitx/result.h>
+#include <lib/fit/result.h>
 
 #include <cstddef>
 #include <limits>
@@ -144,7 +144,7 @@ class AdvertisingData {
 
   // Construct from the raw Bluetooth field block |data|. Returns std::nullopt if |data| is not
   // formatted correctly or on a parsing error.
-  using ParseResult = fitx::result<ParseError, AdvertisingData>;
+  using ParseResult = fit::result<ParseError, AdvertisingData>;
   static ParseResult FromBytes(const ByteBuffer& data);
   static std::string ParseErrorToString(ParseError e);
 

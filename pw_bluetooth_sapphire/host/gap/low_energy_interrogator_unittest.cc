@@ -96,7 +96,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(fitx::ok(), *status);
+  EXPECT_EQ(fit::ok(), *status);
 
   EXPECT_TRUE(peer()->version());
   ASSERT_TRUE(peer()->le()->features());
@@ -117,7 +117,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeature
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(fitx::ok(), *status);
+  EXPECT_EQ(fit::ok(), *status);
   ASSERT_TRUE(peer()->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
 }
@@ -130,7 +130,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(fitx::ok(), *status);
+  EXPECT_EQ(fit::ok(), *status);
   status = std::nullopt;
 
   // Remote version should always be read, even if already known.
@@ -143,7 +143,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
 
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(fitx::ok(), *status);
+  EXPECT_EQ(fit::ok(), *status);
 }
 
 TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {

@@ -39,7 +39,7 @@ class CommandHandler {
   // static OpCode opcode();
   //
   // EventT must implement:
-  // static fitx::result<bt::Error<>, EventT> Decode(const EventPacket& packet);
+  // static fit::result<bt::Error<>, EventT> Decode(const EventPacket& packet);
   // static constexpr uint8_t kEventCode = ...;
   template <typename CommandT>
   CommandChannel::TransactionId SendCommand(CommandT command,
@@ -120,7 +120,7 @@ class CommandHandler {
   // Wrapper around CommandChannel::AddEventHandler that calls |handler| with an EventT.
   //
   // EventT must implement:
-  // static fitx::result<bt::Error<>, EventT> Decode(const EventPacket& packet);
+  // static fit::result<bt::Error<>, EventT> Decode(const EventPacket& packet);
   // static constexpr uint8_t kEventCode = ...;
   template <typename EventT>
   CommandChannel::EventHandlerId AddEventHandler(

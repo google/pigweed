@@ -5,7 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_PDU_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_PDU_H_
 
-#include <lib/fitx/result.h>
+#include <lib/fit/result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
@@ -79,7 +79,7 @@ class Response {
   //  - kNotReady if this response is already complete.
   //  - kPacketMalformed: if the parameters couldn't be parsed.
   //  - kOutOfMemory: if memory isn't available to store a partial response.
-  virtual fitx::result<Error<>> Parse(const ByteBuffer& buf) = 0;
+  virtual fit::result<Error<>> Parse(const ByteBuffer& buf) = 0;
 
   // Returns a buffer containing the PDU representation of this response,
   // including the header, which will have the transaction id |tid|.
@@ -112,7 +112,7 @@ class ErrorResponse : public Response {
     return BufferView();
   }
 
-  fitx::result<Error<>> Parse(const ByteBuffer& buf) override;
+  fit::result<Error<>> Parse(const ByteBuffer& buf) override;
 
   // Note: |max_size| and |cont_state| are ignored.
   // Error Responses do not have a valid continuation.
@@ -167,7 +167,7 @@ class ServiceSearchResponse : public Response {
   // Response overrides
   bool complete() const override;
   const BufferView ContinuationState() const override;
-  fitx::result<Error<>> Parse(const ByteBuffer& buf) override;
+  fit::result<Error<>> Parse(const ByteBuffer& buf) override;
   MutableByteBufferPtr GetPDU(uint16_t req_max, TransactionId tid, uint16_t max_size,
                               const ByteBuffer& cont_state) const override;
 
@@ -265,7 +265,7 @@ class ServiceAttributeResponse : public Response {
   // Response overrides
   const BufferView ContinuationState() const override;
   bool complete() const override;
-  fitx::result<Error<>> Parse(const ByteBuffer& buf) override;
+  fit::result<Error<>> Parse(const ByteBuffer& buf) override;
   MutableByteBufferPtr GetPDU(uint16_t req_max, TransactionId tid, uint16_t max_size,
                               const ByteBuffer& cont_state) const override;
 
@@ -354,7 +354,7 @@ class ServiceSearchAttributeResponse : public Response {
   // Response overrides
   const BufferView ContinuationState() const override;
   bool complete() const override;
-  fitx::result<Error<>> Parse(const ByteBuffer& buf) override;
+  fit::result<Error<>> Parse(const ByteBuffer& buf) override;
   MutableByteBufferPtr GetPDU(uint16_t req_max, TransactionId tid, uint16_t max_size,
                               const ByteBuffer& cont_state) const override;
 

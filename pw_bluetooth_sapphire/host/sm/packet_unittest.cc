@@ -14,7 +14,7 @@ namespace {
 TEST(PacketTest, ParseValidPacket) {
   StaticByteBuffer kValidPacket(kPairingFailed, ErrorCode::kEncryptionKeySize);
   ByteBufferPtr valid_packet_ptr = std::make_unique<DynamicByteBuffer>(kValidPacket);
-  fitx::result<ErrorCode, ValidPacketReader> maybe_reader =
+  fit::result<ErrorCode, ValidPacketReader> maybe_reader =
       ValidPacketReader::ParseSdu(valid_packet_ptr);
   ASSERT_TRUE(maybe_reader.is_ok());
   ValidPacketReader reader = maybe_reader.value();
@@ -25,7 +25,7 @@ TEST(PacketTest, ParseValidPacket) {
 
 TEST(PacketTest, EmptyPacketGivesError) {
   ByteBufferPtr empty_packet_ptr = std::make_unique<DynamicByteBuffer>();
-  fitx::result<ErrorCode, ValidPacketReader> maybe_reader =
+  fit::result<ErrorCode, ValidPacketReader> maybe_reader =
       ValidPacketReader::ParseSdu(empty_packet_ptr);
   ASSERT_TRUE(maybe_reader.is_error());
   ErrorCode ecode = maybe_reader.error_value();
@@ -36,7 +36,7 @@ TEST(PacketTest, UnknownSMPCodeGivesError) {
   StaticByteBuffer kUnknownCodePacket(0xFF,  // Not a valid SMP packet header code.
                                       ErrorCode::kEncryptionKeySize);
   ByteBufferPtr unknown_code_packet_ptr = std::make_unique<DynamicByteBuffer>(kUnknownCodePacket);
-  fitx::result<ErrorCode, ValidPacketReader> maybe_reader =
+  fit::result<ErrorCode, ValidPacketReader> maybe_reader =
       ValidPacketReader::ParseSdu(unknown_code_packet_ptr);
   ASSERT_TRUE(maybe_reader.is_error());
   ErrorCode ecode = maybe_reader.error_value();
@@ -52,7 +52,7 @@ TEST(PacketTest, Mod256Equals0LengthPacketGivesCorrectError) {
   StaticByteBuffer<k2ToThe8Size> unfortunately_sized_packet;
   PacketWriter(kInvalidSmpCode, &unfortunately_sized_packet);
   ByteBufferPtr p = std::make_unique<DynamicByteBuffer>(unfortunately_sized_packet);
-  fitx::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(p);
+  fit::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(p);
   ASSERT_TRUE(maybe_reader.is_error());
   ErrorCode ecode = maybe_reader.error_value();
   ASSERT_EQ(ecode, ErrorCode::kCommandNotSupported);
@@ -62,7 +62,7 @@ TEST(PacketTest, PayloadSizeDoesNotMatchHeaderGivesError) {
   // The PairingFailed code is expected to have a one byte error code as payload, not three bytes.
   StaticByteBuffer kMalformedPacket(kPairingFailed, 0x01, 0x01, 0x01);
   ByteBufferPtr malformed_packet_ptr = std::make_unique<DynamicByteBuffer>(kMalformedPacket);
-  fitx::result<ErrorCode, ValidPacketReader> maybe_reader =
+  fit::result<ErrorCode, ValidPacketReader> maybe_reader =
       ValidPacketReader::ParseSdu(malformed_packet_ptr);
   ASSERT_TRUE(maybe_reader.is_error());
   ErrorCode ecode = maybe_reader.error_value();

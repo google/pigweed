@@ -230,7 +230,7 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
   // When destroyed, invokes |callback| with success if it hasn't already been called
   auto deferred_succcess = fit::defer([client_cb = callback.share()]() mutable {
     if (client_cb) {
-      client_cb(fitx::ok());
+      client_cb(fit::ok());
     }
   });
 
@@ -264,12 +264,12 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
     write_queue.pop();
 
     auto attr_write_cb = [handle = next.handle(), write_complete_fn = write_complete_fn.share()](
-                             fitx::result<ErrorCode> status) {
+                             fit::result<ErrorCode> status) {
       if (status.is_error()) {
-        write_complete_fn(fitx::error(std::tuple(handle, status.error_value())));
+        write_complete_fn(fit::error(std::tuple(handle, status.error_value())));
       } else {
         bt_log(DEBUG, "att", "execute write to handle %#.4x - success", handle);
-        write_complete_fn(fitx::ok());
+        write_complete_fn(fit::ok());
       }
     };
 
@@ -277,16 +277,16 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
     if (!attr) {
       // The attribute is no longer valid, so we can respond with an error and abort the rest of the
       // queue.
-      attr_write_cb(fitx::error(ErrorCode::kInvalidHandle));
+      attr_write_cb(fit::error(ErrorCode::kInvalidHandle));
       break;
     }
 
     if (next.value().size() > kMaxAttributeValueLength) {
-      attr_write_cb(fitx::error(ErrorCode::kInvalidAttributeValueLength));
+      attr_write_cb(fit::error(ErrorCode::kInvalidAttributeValueLength));
       break;
     }
 
-    fitx::result<ErrorCode> status = CheckWritePermissions(attr->write_reqs(), security);
+    fit::result<ErrorCode> status = CheckWritePermissions(attr->write_reqs(), security);
     if (status.is_error()) {
       attr_write_cb(status);
       break;
@@ -295,7 +295,7 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
     // TODO(fxbug.dev/97458): Consider removing the boolean return value in favor of always
     // reporting errors using the callback. That would simplify the pattern here.
     if (!attr->WriteAsync(peer_id, next.offset(), next.value(), std::move(attr_write_cb))) {
-      write_complete_fn(fitx::error(std::tuple(next.handle(), ErrorCode::kWriteNotPermitted)));
+      write_complete_fn(fit::error(std::tuple(next.handle(), ErrorCode::kWriteNotPermitted)));
       break;
     }
   }

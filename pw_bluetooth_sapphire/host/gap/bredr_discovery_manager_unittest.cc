@@ -393,7 +393,7 @@ TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFat
   std::unique_ptr<BrEdrDiscoverySession> session;
 
   discovery_manager()->RequestDiscovery([&session](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     session = std::move(cb_session);
   });
 
@@ -428,7 +428,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   size_t peers_found = 0u;
 
   discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found](const auto&) { peers_found++; });
     session = std::move(cb_session);
   });
@@ -481,7 +481,7 @@ TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
   size_t peers_found1 = 0u;
 
   discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
     session1 = std::move(cb_session);
   });
@@ -498,7 +498,7 @@ TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
   size_t peers_found2 = 0u;
 
   discovery_manager()->RequestDiscovery([&session2, &peers_found2](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found2](const auto&) { peers_found2++; });
     session2 = std::move(cb_session);
   });
@@ -561,7 +561,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   size_t peers_found1 = 0u;
 
   discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
     session1 = std::move(cb_session);
   });
@@ -581,7 +581,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   std::unique_ptr<BrEdrDiscoverySession> session2;
   size_t peers_found2 = 0u;
   discovery_manager()->RequestDiscovery([&session2, &peers_found2](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found2](const auto&) { peers_found2++; });
     session2 = std::move(cb_session);
   });
@@ -661,7 +661,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
 
   discovery_manager()->RequestDiscovery(
       [&session, &peers_found, &error_callback](auto status, auto cb_session) {
-        EXPECT_EQ(fitx::ok(), status);
+        EXPECT_EQ(fit::ok(), status);
         cb_session->set_result_callback([&peers_found](const auto&) { peers_found++; });
         cb_session->set_error_callback([&error_callback]() { error_callback = true; });
         session = std::move(cb_session);
@@ -752,7 +752,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   hci::Result<> result = ToResult(hci_spec::kPairingNotAllowed);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     callback_count++;
     result = status;
   };
@@ -797,7 +797,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   hci::Result<> result = ToResult(hci_spec::kPairingNotAllowed);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     callback_count++;
     result = status;
   };
@@ -915,7 +915,7 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableSet) {
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
   auto session_cb = [&sessions](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     sessions.emplace_back(std::move(cb_session));
   };
 
@@ -966,7 +966,7 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
   auto session_cb = [&sessions](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     sessions.emplace_back(std::move(cb_session));
   };
 
@@ -1033,7 +1033,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   size_t peers_found1 = 0u;
 
   discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
     session1 = std::move(cb_session);
   });
@@ -1077,7 +1077,7 @@ TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualM
   size_t peers_found = 0u;
 
   discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);
   });
@@ -1110,7 +1110,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   size_t peers_found = 0u;
 
   discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);
   });
@@ -1135,7 +1135,7 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
 
   std::unique_ptr<BrEdrDiscoverableSession> discoverable_session;
   auto session_cb = [&discoverable_session](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     discoverable_session = std::move(cb_session);
   };
 
@@ -1176,7 +1176,7 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
   std::unique_ptr<BrEdrDiscoverySession> discovery_session;
 
   discovery_manager()->RequestDiscovery([&discovery_session](auto status, auto cb_session) {
-    EXPECT_EQ(fitx::ok(), status);
+    EXPECT_EQ(fit::ok(), status);
     discovery_session = std::move(cb_session);
   });
 

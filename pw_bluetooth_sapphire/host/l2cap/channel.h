@@ -204,7 +204,7 @@ class Channel {
   // Requests may fail if the controller does not support changing the ACL priority or the indicated
   // priority conflicts with another channel.
   virtual void RequestAclPriority(hci::AclPriority priority,
-                                  fit::callback<void(fitx::result<fitx::failed>)> callback) = 0;
+                                  fit::callback<void(fit::result<fit::failed>)> callback) = 0;
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
@@ -300,7 +300,7 @@ class ChannelImpl : public Channel {
   bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) override;
   void RequestAclPriority(hci::AclPriority priority,
-                          fit::callback<void(fitx::result<fitx::failed>)> callback) override;
+                          fit::callback<void(fit::result<fit::failed>)> callback) override;
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;

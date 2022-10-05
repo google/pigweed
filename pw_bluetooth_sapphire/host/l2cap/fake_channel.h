@@ -74,7 +74,7 @@ class FakeChannel : public Channel {
   bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) override;
   void RequestAclPriority(hci::AclPriority priority,
-                          fit::callback<void(fitx::result<fitx::failed>)> cb) override;
+                          fit::callback<void(fit::result<fit::failed>)> cb) override;
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}

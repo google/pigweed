@@ -453,7 +453,7 @@ TEST_F(Gatt2ServerServerTest, ReadSuccess) {
   });
 
   int read_responder_count = 0;
-  auto read_responder = [&](fitx::result<bt::att::ErrorCode> status, const bt::ByteBuffer& value) {
+  auto read_responder = [&](fit::result<bt::att::ErrorCode> status, const bt::ByteBuffer& value) {
     read_responder_count++;
     EXPECT_TRUE(status.is_ok());
     EXPECT_THAT(value, ::testing::ElementsAreArray(kBuffer));
@@ -506,7 +506,7 @@ TEST_F(Gatt2ServerServerTest, ReadErrorResponse) {
   });
 
   int read_responder_count = 0;
-  auto read_responder = [&](fitx::result<bt::att::ErrorCode> status, const bt::ByteBuffer& value) {
+  auto read_responder = [&](fit::result<bt::att::ErrorCode> status, const bt::ByteBuffer& value) {
     read_responder_count++;
     ASSERT_TRUE(status.is_error());
     EXPECT_EQ(status.error_value(), bt::att::ErrorCode::kReadNotPermitted);
@@ -569,7 +569,7 @@ TEST_F(Gatt2ServerServerTest, WriteSuccess) {
         cb(fpromise::ok());
       });
   int write_responder_count = 0;
-  auto write_responder = [&](fitx::result<bt::att::ErrorCode> status) {
+  auto write_responder = [&](fit::result<bt::att::ErrorCode> status) {
     write_responder_count++;
     EXPECT_TRUE(status.is_ok());
   };
@@ -620,7 +620,7 @@ TEST_F(Gatt2ServerServerTest, WriteError) {
         cb(fpromise::error(fbg::Error::WRITE_NOT_PERMITTED));
       });
   int write_responder_count = 0;
-  auto write_responder = [&](fitx::result<bt::att::ErrorCode> status) {
+  auto write_responder = [&](fit::result<bt::att::ErrorCode> status) {
     write_responder_count++;
     ASSERT_TRUE(status.is_error());
     EXPECT_EQ(status.error_value(), bt::att::ErrorCode::kWriteNotPermitted);
@@ -706,7 +706,7 @@ TEST_F(Gatt2ServerServerTest, IndicateAllPeers) {
   ASSERT_EQ(status, ZX_ERR_TIMED_OUT);
   EXPECT_EQ(observed, 0u);
 
-  svc_iter->second.updates[0].indicate_cb(fitx::ok());
+  svc_iter->second.updates[0].indicate_cb(fit::ok());
 
   status = confirm_ours_0.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                    /*deadline=*/zx::time(0), &observed);
@@ -731,7 +731,7 @@ TEST_F(Gatt2ServerServerTest, IndicateAllPeers) {
   ASSERT_EQ(status, ZX_ERR_TIMED_OUT);
   EXPECT_EQ(observed, 0u);
 
-  svc_iter->second.updates[1].indicate_cb(fitx::ok());
+  svc_iter->second.updates[1].indicate_cb(fit::ok());
 
   status = confirm_ours_1.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                    /*deadline=*/zx::time(0), &observed);
@@ -777,7 +777,7 @@ TEST_F(Gatt2ServerServerTest, IndicateAllPeersError) {
   ASSERT_EQ(status, ZX_ERR_TIMED_OUT);
   EXPECT_EQ(observed, 0u);
 
-  svc_iter->second.updates[0].indicate_cb(fitx::error(bt::att::ErrorCode::kUnlikelyError));
+  svc_iter->second.updates[0].indicate_cb(fit::error(bt::att::ErrorCode::kUnlikelyError));
 
   status = confirm_ours.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                  /*deadline=*/zx::time(0), &observed);
@@ -902,13 +902,13 @@ TEST_F(Gatt2ServerServerTest, Indicate2PeersSuccess) {
                                              /*deadline=*/zx::time(0), &observed);
   ASSERT_EQ(status, ZX_ERR_TIMED_OUT);
 
-  svc_iter->second.updates[1].indicate_cb(fitx::ok());
+  svc_iter->second.updates[1].indicate_cb(fit::ok());
 
   status = confirm_ours.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                  /*deadline=*/zx::time(0), &observed);
   ASSERT_EQ(status, ZX_ERR_TIMED_OUT);
 
-  svc_iter->second.updates[0].indicate_cb(fitx::ok());
+  svc_iter->second.updates[0].indicate_cb(fit::ok());
 
   status = confirm_ours.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                  /*deadline=*/zx::time(0), &observed);
@@ -950,14 +950,14 @@ TEST_F(Gatt2ServerServerTest, Indicate2PeersFirstOneFails) {
                                              /*deadline=*/zx::time(0), &observed);
   ASSERT_EQ(status, ZX_ERR_TIMED_OUT);
 
-  svc_iter->second.updates[0].indicate_cb(fitx::error(bt::att::ErrorCode::kUnlikelyError));
+  svc_iter->second.updates[0].indicate_cb(fit::error(bt::att::ErrorCode::kUnlikelyError));
 
   status = confirm_ours.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                  /*deadline=*/zx::time(0), &observed);
   ASSERT_EQ(status, ZX_OK);
   EXPECT_EQ(observed, ZX_EVENTPAIR_PEER_CLOSED);
 
-  svc_iter->second.updates[1].indicate_cb(fitx::ok());
+  svc_iter->second.updates[1].indicate_cb(fit::ok());
 }
 
 TEST_F(Gatt2ServerServerTest, Indicate2PeersBothFail) {
@@ -994,14 +994,14 @@ TEST_F(Gatt2ServerServerTest, Indicate2PeersBothFail) {
                                              /*deadline=*/zx::time(0), &observed);
   ASSERT_EQ(status, ZX_ERR_TIMED_OUT);
 
-  svc_iter->second.updates[1].indicate_cb(fitx::error(bt::att::ErrorCode::kUnlikelyError));
+  svc_iter->second.updates[1].indicate_cb(fit::error(bt::att::ErrorCode::kUnlikelyError));
 
   status = confirm_ours.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                  /*deadline=*/zx::time(0), &observed);
   ASSERT_EQ(status, ZX_OK);
   EXPECT_EQ(observed, ZX_EVENTPAIR_PEER_CLOSED);
 
-  svc_iter->second.updates[0].indicate_cb(fitx::error(bt::att::ErrorCode::kUnlikelyError));
+  svc_iter->second.updates[0].indicate_cb(fit::error(bt::att::ErrorCode::kUnlikelyError));
 }
 
 TEST_F(Gatt2ServerServerTest, NotifyAllPeers) {
