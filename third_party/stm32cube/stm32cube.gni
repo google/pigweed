@@ -15,7 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 declare_args() {
-  # pw_package/stm32cube_xx install directories
+  # stm32cube_xx install directories
   dir_pw_third_party_stm32cube_f0 = ""
   dir_pw_third_party_stm32cube_f1 = ""
   dir_pw_third_party_stm32cube_f2 = ""
