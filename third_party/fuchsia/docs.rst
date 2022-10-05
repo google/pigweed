@@ -39,7 +39,7 @@ Code is synchronized between the `Fuchsia repository
 <https://fuchsia.googlesource.com/fuchsia>`_ and the `Pigweed repository
 <https://pigweed.googlesource.com/pigweed/pigweed>`_ using the
 `third_party/fuchsia/copy.bara.sky
-<https://cs.opensource.google/pigweed/pigweed/+/main:third_party/fuchsia/copy.bara.sky>`_)
+<https://cs.opensource.google/pigweed/pigweed/+/main:third_party/fuchsia/copy.bara.sky>`_
 `Copybara <https://github.com/google/copybara>`_ script.
 
 To synchronize with the Fuchsia repository, run the ``copybara`` tool with the
