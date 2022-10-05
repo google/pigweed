@@ -92,12 +92,11 @@ pw_cc_binary(
     ],
 )
 
-py_test(
-    name = "cross_language_integration_test",
-    # Actually 1 hour, see
-    # https://docs.bazel.build/versions/main/test-encyclopedia.html#role-of-the-test-runner
-    timeout = "eternal",
-    srcs = ["cross_language_integration_test.py"],
+py_library(
+    name = "integration_test_fixture",
+    srcs = [
+        "test_fixture.py",
+    ],
     data = [
         ":cpp_client",
         ":java_client",
@@ -105,8 +104,6 @@ py_test(
         ":python_client",
         ":server",
     ],
-    # This test is not run in CQ because it's too slow.
-    tags = ["manual"],
     deps = [
         ":config_pb2",
         "@rules_python//python/runfiles",
@@ -114,22 +111,37 @@ py_test(
 )
 
 py_test(
-    name = "cross_language_smoke_test",
+    name = "cross_language_large_test",
+    # Actually 1 hour, see
+    # https://docs.bazel.build/versions/main/test-encyclopedia.html#role-of-the-test-runner
+    timeout = "eternal",
     srcs = [
-        "cross_language_integration_test.py",
-        "cross_language_smoke_test.py",
+        "cross_language_large_test.py",
     ],
-    data = [
-        ":cpp_client",
-        ":java_client",
-        ":proxy",
-        ":python_client",
-        ":server",
-    ],
-    main = "cross_language_smoke_test.py",
+    # This test is not run in CQ because it's too slow.
+    tags = ["manual"],
     deps = [
-        ":config_pb2",
-        "@rules_python//python/runfiles",
+        ":integration_test_fixture",
+    ],
+)
+
+py_test(
+    name = "cross_language_medium_test",
+    srcs = [
+        "cross_language_medium_test.py",
+    ],
+    deps = [
+        ":integration_test_fixture",
+    ],
+)
+
+py_test(
+    name = "cross_language_small_test",
+    srcs = [
+        "cross_language_small_test.py",
+    ],
+    deps = [
+        ":integration_test_fixture",
     ],
 )
 

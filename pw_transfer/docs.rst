@@ -575,7 +575,14 @@ To run the tests on your machine, run
 
 .. code:: bash
 
-  $ bazel run pw_transfer/integration_test:cross_language_integration_test
+  $ bazel test --features=c++17 \
+        pw_transfer/integration_test:cross_language_small_test \
+        pw_transfer/integration_test:cross_language_medium_test
+
+.. note:: There is a large test that tests transfers that are megabytes in size.
+  These are not run automatically, but can be run manually via the
+  pw_transfer/integration_test:cross_language_large_test test. These are VERY
+  slow, but exist for manual validation of real-world use cases.
 
 The integration tests permit injection of client/server/proxy binaries to use
 when running the tests. This allows manual testing of older versions of
@@ -585,8 +592,8 @@ pw_transfer against newer versions.
 
   # Test a newer version of pw_transfer against an old C++ client that was
   # backed up to another directory.
-  $ bazel run pw_transfer/integration_test:cross_language_integration_test -- \
-      --cpp-client ../old_pw_transfer_version/cpp_client
+  $ bazel run pw_transfer/integration_test:cross_language_medium_test -- \
+      --cpp-client-binary ../old_pw_transfer_version/cpp_client
 
 CI/CQ integration
 =================

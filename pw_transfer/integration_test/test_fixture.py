@@ -12,34 +12,16 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Cross-language test of pw_transfer.
-
-Usage:
-
-   bazel run pw_transfer/integration_test:cross_language_integration_test
-
-Command-line arguments must be provided after a double-dash:
-
-   bazel run pw_transfer/integration_test:cross_language_integration_test -- \
-       --server-port 3304
-
-Which tests to run can be specified as command-line arguments:
-
-  bazel run pw_transfer/integration_test:cross_language_integration_test -- \
-      PwTransferIntegrationTest.test_small_client_write_1_java
-
-"""
+"""Test fixture for pw_transfer integration tests."""
 
 import argparse
 import asyncio
 import logging
-from parameterized import parameterized
 import pathlib
-import random
+from pathlib import Path
 import sys
 import tempfile
-import time
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Optional, Tuple
 import unittest
 
 from google.protobuf import text_format
@@ -179,88 +161,103 @@ class MonitoredSubprocess:
         await self.wait_for_termination(timeout)
 
 
-class _TransferConfig(NamedTuple):
+class TransferConfig(NamedTuple):
     """A simple tuple to collect configs for test binaries."""
     server: config_pb2.ServerConfig
     client: config_pb2.ClientConfig
     proxy: config_pb2.ProxyConfig
 
 
-# TODO(b/232805936): Extend tests to use different resource IDs and do multiple
-# reads/writes.
-class PwTransferIntegrationTest(unittest.TestCase):
+class TransferIntegrationTestHarness:
+    """A class to manage transfer integration tests"""
+
     # Prefix for log messages coming from the harness (as opposed to the server,
     # client, or proxy processes). Padded so that the length is the same as
     # "SERVER OUT:".
     _PREFIX = "HARNESS:   "
 
-    SERVER_PORT = 3300
-    CLIENT_PORT = 3301
-    JAVA_CLIENT_BINARY = None
-    CPP_CLIENT_BINARY = None
-    PYTHON_CLIENT_BINARY = None
-    PROXY_BINARY = None
-    SERVER_BINARY = None
+    class Config(NamedTuple):
+        server_port: int = 3300
+        client_port: int = 3301
+        java_client_binary: Optional[Path] = None
+        cpp_client_binary: Optional[Path] = None
+        python_client_binary: Optional[Path] = None
+        proxy_binary: Optional[Path] = None
+        server_binary: Optional[Path] = None
 
-    @classmethod
-    def setUpClass(cls):
+    class TransferExitCodes(NamedTuple):
+        client: int
+        server: int
+
+    def __init__(self, harness_config: Config) -> None:
         # TODO(tpudlik): This is Bazel-only. Support gn, too.
         r = runfiles.Create()
 
-        # For each binary used by this test, get the binaries produced by the
-        # build system if an override has not been specified.
-        if cls.JAVA_CLIENT_BINARY is None:
-            cls.JAVA_CLIENT_BINARY = r.Rlocation(
-                "pigweed/pw_transfer/integration_test/java_client")
-        if cls.CPP_CLIENT_BINARY is None:
-            cls.CPP_CLIENT_BINARY = r.Rlocation(
-                "pigweed/pw_transfer/integration_test/cpp_client")
-        if cls.PYTHON_CLIENT_BINARY is None:
-            cls.PYTHON_CLIENT_BINARY = r.Rlocation(
-                "pigweed/pw_transfer/integration_test/python_client")
-        if cls.PROXY_BINARY is None:
-            cls.PROXY_BINARY = r.Rlocation(
-                "pigweed/pw_transfer/integration_test/proxy")
-        if cls.SERVER_BINARY is None:
-            cls.SERVER_BINARY = r.Rlocation(
-                "pigweed/pw_transfer/integration_test/server")
+        # Set defaults.
+        self._JAVA_CLIENT_BINARY = r.Rlocation(
+            "pigweed/pw_transfer/integration_test/java_client")
+        self._CPP_CLIENT_BINARY = r.Rlocation(
+            "pigweed/pw_transfer/integration_test/cpp_client")
+        self._PYTHON_CLIENT_BINARY = r.Rlocation(
+            "pigweed/pw_transfer/integration_test/python_client")
+        self._PROXY_BINARY = r.Rlocation(
+            "pigweed/pw_transfer/integration_test/proxy")
+        self._SERVER_BINARY = r.Rlocation(
+            "pigweed/pw_transfer/integration_test/server")
 
-        cls._CLIENT_BINARY = {
-            "cpp": cls.CPP_CLIENT_BINARY,
-            "java": cls.JAVA_CLIENT_BINARY,
-            "python": cls.PYTHON_CLIENT_BINARY,
+        # Server/client ports are non-optional, so use those.
+        self._CLIENT_PORT = harness_config.client_port
+        self._SERVER_PORT = harness_config.server_port
+
+        # If the harness configuration specifies overrides, use those.
+        if harness_config.java_client_binary is not None:
+            self._JAVA_CLIENT_BINARY = harness_config.java_client_binary
+        if harness_config.cpp_client_binary is not None:
+            self._CPP_CLIENT_BINARY = harness_config.cpp_client_binary
+        if harness_config.python_client_binary is not None:
+            self._PYTHON_CLIENT_BINARY = harness_config.python_client_binary
+        if harness_config.proxy_binary is not None:
+            self._PROXY_BINARY = harness_config.proxy_binary
+        if harness_config.server_binary is not None:
+            self._SERVER_BINARY = harness_config.server_binary
+
+        self._CLIENT_BINARY = {
+            "cpp": self._CPP_CLIENT_BINARY,
+            "java": self._JAVA_CLIENT_BINARY,
+            "python": self._PYTHON_CLIENT_BINARY,
         }
+        pass
 
     async def _start_client(self, client_type: str,
                             config: config_pb2.ClientConfig):
         _LOG.info(f"{self._PREFIX} Starting client with config\n{config}")
         self._client = await MonitoredSubprocess.create(
             [self._CLIENT_BINARY[client_type],
-             str(self.CLIENT_PORT)], "CLIENT",
+             str(self._CLIENT_PORT)], "CLIENT",
             str(config).encode('ascii'))
 
     async def _start_server(self, config: config_pb2.ServerConfig):
         _LOG.info(f"{self._PREFIX} Starting server with config\n{config}")
         self._server = await MonitoredSubprocess.create(
-            [self.SERVER_BINARY, str(self.SERVER_PORT)], "SERVER",
+            [self._SERVER_BINARY, str(self._SERVER_PORT)], "SERVER",
             str(config).encode('ascii'))
 
     async def _start_proxy(self, config: config_pb2.ProxyConfig):
         _LOG.info(f"{self._PREFIX} Starting proxy with config\n{config}")
         self._proxy = await MonitoredSubprocess.create(
             [
-                self.PROXY_BINARY, "--server-port",
-                str(self.SERVER_PORT), "--client-port",
-                str(self.CLIENT_PORT)
+                self._PROXY_BINARY, "--server-port",
+                str(self._SERVER_PORT), "--client-port",
+                str(self._CLIENT_PORT)
             ],
             # Extra space in "PROXY " so that it lines up with "SERVER".
             "PROXY ",
             str(config).encode('ascii'))
 
-    async def _perform_write(self, server_config: config_pb2.ServerConfig,
-                             client_type: str,
-                             client_config: config_pb2.ClientConfig,
-                             proxy_config: config_pb2.ProxyConfig) -> None:
+    async def perform_transfers(
+            self, server_config: config_pb2.ServerConfig, client_type: str,
+            client_config: config_pb2.ClientConfig,
+            proxy_config: config_pb2.ProxyConfig) -> TransferExitCodes:
         """Performs a pw_transfer write.
 
         Args:
@@ -268,12 +265,16 @@ class PwTransferIntegrationTest(unittest.TestCase):
           client_type: Either "cpp", "java", or "python".
           client_config: Client configuration.
           proxy_config: Proxy configuration.
+
+        Returns:
+          Exit code of the client and server as a tuple.
         """
         # Timeout for components (server, proxy) to come up or shut down after
         # write is finished or a signal is sent. Approximately arbitrary. Should
         # not be too long so that we catch bugs in the server that prevent it
         # from shutting down.
         TIMEOUT = 5  # seconds
+
         try:
             await self._start_proxy(proxy_config)
             await self._proxy.wait_for_line("stderr",
@@ -289,11 +290,9 @@ class PwTransferIntegrationTest(unittest.TestCase):
             # No timeout: the client will only exit once the transfer
             # completes, and this can take a long time for large payloads.
             await self._client.wait_for_termination(None)
-            self.assertEqual(self._client.returncode(), 0)
 
             # Wait for the server to exit.
             await self._server.wait_for_termination(TIMEOUT)
-            self.assertEqual(self._server.returncode(), 0)
 
         finally:
             # Stop the server, if still running. (Only expected if the
@@ -305,10 +304,28 @@ class PwTransferIntegrationTest(unittest.TestCase):
             if self._proxy:
                 await self._proxy.terminate_and_wait(TIMEOUT)
 
+            return self.TransferExitCodes(self._client.returncode(),
+                                          self._server.returncode())
+
+
+class TransferIntegrationTest(unittest.TestCase):
+    """A base class for transfer integration tests.
+
+    This significantly reduces the boiler plate required for building
+    integration test cases for pw_transfer. This class does not include any
+    tests itself, but instead bundles together much of the boiler plate required
+    for making an integration test for pw_transfer using this test fixture.
+    """
+    HARNESS_CONFIG = TransferIntegrationTestHarness.Config()
+
+    @classmethod
+    def setUpClass(cls):
+        cls.harness = TransferIntegrationTestHarness(cls.HARNESS_CONFIG)
+
     @staticmethod
-    def _default_config() -> _TransferConfig:
+    def default_config() -> TransferConfig:
         """Returns a new transfer config with default options."""
-        return _TransferConfig(
+        return TransferConfig(
             config_pb2.ServerConfig(
                 chunk_size_bytes=216,
                 pending_bytes=32 * 1024,
@@ -333,8 +350,8 @@ class PwTransferIntegrationTest(unittest.TestCase):
                     { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
             ]""", config_pb2.ProxyConfig()))
 
-    def _do_single_write(self, client_type: str, config: _TransferConfig,
-                         resource_id: int, data: bytes) -> None:
+    def do_single_write(self, client_type: str, config: TransferConfig,
+                        resource_id: int, data: bytes) -> None:
         """Performs a single client-to-server write of the provided data."""
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
@@ -349,146 +366,39 @@ class PwTransferIntegrationTest(unittest.TestCase):
 
             f_payload.write(data)
             f_payload.flush()  # Ensure contents are there to read!
-            asyncio.run(
-                self._perform_write(config.server, client_type, config.client,
-                                    config.proxy))
+            exit_codes = asyncio.run(
+                self.harness.perform_transfers(config.server, client_type,
+                                               config.client, config.proxy))
+
+            self.assertEqual(exit_codes.client, 0)
+            self.assertEqual(exit_codes.server, 0)
             self.assertEqual(f_server_output.read(), data)
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
-    def test_null_byte_client_write(self, client_type):
-        payload = b"\0"
-        config = self._default_config()
-        resource_id = 5
-        self._do_single_write(client_type, config, resource_id, payload)
+    def do_single_read(self, client_type: str, config: TransferConfig,
+                       resource_id: int, data: bytes) -> None:
+        """Performs a single server-to-client read of the provided data."""
+        with tempfile.NamedTemporaryFile(
+        ) as f_payload, tempfile.NamedTemporaryFile() as f_client_output:
+            config.server.resources[resource_id].source_paths.append(
+                f_payload.name)
+            config.client.transfer_actions.append(
+                config_pb2.TransferAction(
+                    resource_id=resource_id,
+                    file_path=f_client_output.name,
+                    transfer_type=config_pb2.TransferAction.TransferType.
+                    READ_FROM_SERVER))
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
-    def test_single_byte_client_write(self, client_type):
-        payload = b"?"
-        config = self._default_config()
-        resource_id = 5
-        self._do_single_write(client_type, config, resource_id, payload)
-
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
-    def test_small_client_write(self, client_type):
-        payload = b"some data"
-        config = self._default_config()
-        resource_id = 5
-        self._do_single_write(client_type, config, resource_id, payload)
-
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
-    def test_medium_client_write(self, client_type):
-        payload = random.Random(67336391945).randbytes(512)
-        config = self._default_config()
-        resource_id = 5
-        self._do_single_write(client_type, config, resource_id, payload)
-
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
-    def test_large_hdlc_escape_client_write(self, client_type):
-        payload = b"~" * 98731
-        config = self._default_config()
-        resource_id = 5
-        self._do_single_write(client_type, config, resource_id, payload)
-
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
-    def test_3mb_write_dropped_data(self, client_type):
-        server_config = config_pb2.ServerConfig(
-            chunk_size_bytes=216,
-            pending_bytes=32 * 1024,
-            chunk_timeout_seconds=5,
-            transfer_service_retries=4,
-            extend_window_divisor=32,
-        )
-        client_config = config_pb2.ClientConfig(
-            max_retries=5,
-            initial_chunk_timeout_ms=10000,
-            chunk_timeout_ms=4000,
-        )
-        proxy_config = text_format.Parse(
-            """
-            client_filter_stack: [
-                { rate_limiter: {rate: 50000} },
-                { hdlc_packetizer: {} },
-                { data_dropper: {rate: 0.01, seed: 1649963713563718435} }
-            ]
-
-            server_filter_stack: [
-                { rate_limiter: {rate: 50000} },
-                { hdlc_packetizer: {} },
-                { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
-        ]""", config_pb2.ProxyConfig())
-
-        payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
-
-        resource_id = 12
-
-        config = _TransferConfig(server_config, client_config, proxy_config)
-        self._do_single_write(client_type, config, resource_id, payload)
-
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
-    def test_3mb_write_reordered_data(self, client_type):
-        server_config = config_pb2.ServerConfig(
-            chunk_size_bytes=216,
-            pending_bytes=32 * 1024,
-            chunk_timeout_seconds=5,
-            transfer_service_retries=4,
-            extend_window_divisor=32,
-        )
-        client_config = config_pb2.ClientConfig(
-            max_retries=5,
-            initial_chunk_timeout_ms=10000,
-            chunk_timeout_ms=4000,
-        )
-        proxy_config = text_format.Parse(
-            """
-            client_filter_stack: [
-                { rate_limiter: {rate: 50000} },
-                { hdlc_packetizer: {} },
-                { data_transposer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
-            ]
-
-            server_filter_stack: [
-                { rate_limiter: {rate: 50000} },
-                { hdlc_packetizer: {} },
-                { data_transposer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
-        ]""", config_pb2.ProxyConfig())
-
-        payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
-
-        resource_id = 12
-
-        config = _TransferConfig(server_config, client_config, proxy_config)
-        self._do_single_write(client_type, config, resource_id, payload)
+            f_payload.write(data)
+            f_payload.flush()  # Ensure contents are there to read!
+            exit_codes = asyncio.run(
+                self.harness.perform_transfers(config.server, client_type,
+                                               config.client, config.proxy))
+            self.assertEqual(exit_codes.client, 0)
+            self.assertEqual(exit_codes.server, 0)
+            self.assertEqual(f_client_output.read(), data)
 
 
-if __name__ == '__main__':
+def run_tests_for(test_class_name):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--server-port',
@@ -503,31 +413,31 @@ if __name__ == '__main__':
         'Port on which to listen for connections from integration test client.',
     )
     parser.add_argument(
-        '--java-client',
+        '--java-client-binary',
         type=pathlib.Path,
         default=None,
         help='Path to the Java transfer client to use in tests',
     )
     parser.add_argument(
-        '--cpp-client',
+        '--cpp-client-binary',
         type=pathlib.Path,
         default=None,
         help='Path to the C++ transfer client to use in tests',
     )
     parser.add_argument(
-        '--python-client',
+        '--python-client-binary',
         type=pathlib.Path,
         default=None,
         help='Path to the Python transfer client to use in tests',
     )
     parser.add_argument(
-        '--server',
+        '--server-binary',
         type=pathlib.Path,
         default=None,
         help='Path to the transfer server to use in tests',
     )
     parser.add_argument(
-        '--proxy',
+        '--proxy-binary',
         type=pathlib.Path,
         default=None,
         help=('Path to the proxy binary to use in tests to allow interception '
@@ -536,17 +446,12 @@ if __name__ == '__main__':
 
     (args, passthrough_args) = parser.parse_known_args()
 
-    if args.server_port:
-        PwTransferIntegrationTest.SERVER_PORT = args.server_port
-
-    if args.client_port:
-        PwTransferIntegrationTest.CLIENT_PORT = args.client_port
-
-    PwTransferIntegrationTest.JAVA_CLIENT_BINARY = args.java_client
-    PwTransferIntegrationTest.CPP_CLIENT_BINARY = args.cpp_client
-    PwTransferIntegrationTest.PYTHON_CLIENT_BINARY = args.python_client
-    PwTransferIntegrationTest.SERVER_BINARY = args.server
-    PwTransferIntegrationTest.PROXY_BINARY = args.proxy
+    # Inherrit the default configuration from the class being tested, and only
+    # override provided arguments.
+    for arg in vars(args):
+        val = getattr(args, arg)
+        if val:
+            setattr(test_class_name.HARNESS_CONFIG, arg, val)
 
     unittest_args = [sys.argv[0]] + passthrough_args
     unittest.main(argv=unittest_args)

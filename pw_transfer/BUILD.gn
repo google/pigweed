@@ -310,6 +310,7 @@ pw_executable("integration_test_client") {
   ]
 }
 
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
 pw_python_script("integration_test_python_client") {
   sources = [ "integration_test/python_client.py" ]
 }
@@ -325,12 +326,23 @@ pw_python_script("integration_test_proxy_test") {
 }
 
 # TODO(b/228516801): Make this actually work; this is just a placeholder.
-pw_python_script("cross_language_integration_test") {
-  sources = [ "integration_test/cross_language_integration_test.py" ]
+pw_python_script("integration_test_fixture") {
+  sources = [ "integration_test/test_fixture.py" ]
 }
 
-pw_python_script("cross_language_smoke_test") {
-  sources = [ "integration_test/cross_language_smoke_test.py" ]
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("cross_language_small_test") {
+  sources = [ "integration_test/cross_language_small_test.py" ]
+}
+
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("cross_language_medium_test") {
+  sources = [ "integration_test/cross_language_medium_test.py" ]
+}
+
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("cross_language_large_test") {
+  sources = [ "integration_test/cross_language_large_test.py" ]
 }
 
 pw_python_action("cpp_client_integration_test") {
