@@ -280,6 +280,7 @@ pw_executable("integration_test_server") {
   ]
 }
 
+# TODO(b/234875234): This test is deprecated and will be removed.
 pw_executable("integration_test") {
   sources = [ "integration_test.cc" ]
   deps = [

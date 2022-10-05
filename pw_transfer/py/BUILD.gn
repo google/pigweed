@@ -41,6 +41,7 @@ pw_python_package("py") {
   proto_library = "..:proto"
 }
 
+# TODO(b/234875234): This test is deprecated and will be removed.
 pw_python_script("python_cpp_transfer_test") {
   sources = [ "tests/python_cpp_transfer_test.py" ]
   python_deps = [

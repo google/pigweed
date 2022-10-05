@@ -67,6 +67,28 @@ class MediumTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         resource_id = 5
         self.do_single_write(client_type, config, resource_id, payload)
 
+    @parameterized.expand([
+        ("cpp"),
+        ("java"),
+        ("python"),
+    ])
+    def test_medium_client_read(self, client_type):
+        payload = random.Random(67336391945).randbytes(512)
+        config = self.default_config()
+        resource_id = 5
+        self.do_single_read(client_type, config, resource_id, payload)
+
+    @parameterized.expand([
+        ("cpp"),
+        ("java"),
+        ("python"),
+    ])
+    def test_large_hdlc_escape_client_read(self, client_type):
+        payload = b"~" * 98731
+        config = self.default_config()
+        resource_id = 5
+        self.do_single_read(client_type, config, resource_id, payload)
+
 
 if __name__ == '__main__':
     test_fixture.run_tests_for(MediumTransferIntegrationTest)

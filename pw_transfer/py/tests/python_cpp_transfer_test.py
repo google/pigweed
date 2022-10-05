@@ -98,22 +98,6 @@ class TransferServiceIntegrationTest(IntegrationTestServer):
             self.set_content(24, '')
             self.assertEqual(self.manager.read(24), b'')
 
-    def test_read_single_byte(self) -> None:
-        for _ in range(ITERATIONS):
-            self.set_content(25, '0')
-            self.assertEqual(self.manager.read(25), b'0')
-
-    def test_read_small_amount_of_data(self) -> None:
-        for _ in range(ITERATIONS):
-            self.set_content(26, 'hunter2')
-            self.assertEqual(self.manager.read(26), b'hunter2')
-
-    def test_read_large_amount_of_data(self) -> None:
-        for _ in range(ITERATIONS):
-            size = 2**13  # TODO(hepler): Increase to 2**14 when it passes.
-            self.set_content(27, '~' * size)
-            self.assertEqual(self.manager.read(27), b'~' * size)
-
     def test_write_unknown_id(self) -> None:
         with self.assertRaises(pw_transfer.Error) as ctx:
             self.manager.write(99, '')
@@ -243,11 +227,6 @@ class FuzzyLossTransferServiceIntegrationTest(IntegrationTestServer):
             self.manager.write(32, _DATA_4096B)
             self.assertEqual(self.get_content(32), _DATA_4096B)
 
-    def test_packet_loss_during_read(self) -> None:
-        self._incoming_filter.dropped_packet_probability = 0.1
-        self._outgoing_filter.dropped_packet_probability = 0.1
-        self.read_large_amount_of_data()
-
     def test_packet_delay_during_read(self) -> None:
         self._incoming_filter.delayed_packet_probability = 0.1
         self._outgoing_filter.delayed_packet_probability = 0.1
@@ -268,12 +247,6 @@ class FuzzyLossTransferServiceIntegrationTest(IntegrationTestServer):
         self._incoming_filter.duplicated_packet_probability = 0.1
         self._outgoing_filter.duplicated_packet_probability = 0.1
         self.write_very_large_amount_of_data()
-
-    def test_packet_reordering_during_read(self) -> None:
-        # TODO(amontanez): At 0.05 this fails.
-        self._incoming_filter.out_of_order_probability = 0.01
-        self._outgoing_filter.out_of_order_probability = 0.01
-        self.read_large_amount_of_data()
 
 
 def _main(test_server_command: List[str], port: int,

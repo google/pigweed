@@ -41,10 +41,6 @@ using namespace std::chrono_literals;
 
 constexpr int kIterations = 5;
 
-constexpr auto kData512 = bytes::Initialized<512>([](size_t i) { return i; });
-constexpr auto kData8192 = bytes::Initialized<8192>([](size_t i) { return i; });
-constexpr auto kDataHdlcEscape = bytes::Initialized<8192>(0x7e);
-
 std::filesystem::path directory;
 
 class Bernoulli {
@@ -163,8 +159,6 @@ ConstByteSpan AsByteSpan(const char (&data)[kLengthWithNull]) {
   return as_bytes(span(data, kLength));
 }
 
-constexpr ConstByteSpan AsByteSpan(ConstByteSpan data) { return data; }
-
 thread::Options& TransferThreadOptions() {
   static thread::stl::Options options;
   return options;
@@ -249,8 +243,9 @@ class TransferIntegration : public ::testing::Test {
     return last_status_;
   }
 
-  // Exact match the size of kData8192 to test filling the receiving buffer.
-  stream::MemoryWriterBuffer<kData8192.size()> read_buffer_;
+  // Aribitrary non-zero buffer size; all non-zero sized transfer tests have
+  // been migrated out of this test.
+  stream::MemoryWriterBuffer<1024> read_buffer_;
 
   Client& client() { return client_; }
 
@@ -306,11 +301,6 @@ TEST_F(TransferIntegration, Read_UnknownId) {
   static_assert(true, "Semicolons are required")
 
 PW_TRANSFER_TEST_READ(Empty, "");
-PW_TRANSFER_TEST_READ(SingleByte_1, "\0");
-PW_TRANSFER_TEST_READ(SingleByte_2, "?");
-PW_TRANSFER_TEST_READ(SmallData, "hunter2");
-PW_TRANSFER_TEST_READ(LargeData, kData512);
-PW_TRANSFER_TEST_READ(VeryLargeData, kData8192);
 
 TEST_F(TransferIntegration, Write_UnknownId) {
   constexpr std::byte kData[] = {std::byte{0}, std::byte{1}, std::byte{2}};

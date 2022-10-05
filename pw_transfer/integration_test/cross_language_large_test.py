@@ -82,9 +82,7 @@ class LargeTransferIntegrationTest(TransferIntegrationTest):
         ]""", config_pb2.ProxyConfig())
 
         payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
-
         resource_id = 12
-
         config = TransferConfig(server_config, client_config, proxy_config)
         self.do_single_write(client_type, config, resource_id, payload)
 
@@ -121,11 +119,86 @@ class LargeTransferIntegrationTest(TransferIntegrationTest):
         ]""", config_pb2.ProxyConfig())
 
         payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
-
         resource_id = 12
-
         config = TransferConfig(server_config, client_config, proxy_config)
         self.do_single_write(client_type, config, resource_id, payload)
+
+    @parameterized.expand([
+        ("cpp"),
+        # TODO(b/250976246): This test runs indefinitely (>24 hrs) when using
+        # the java client, so it is disabled for now until the issue is
+        # diagnosed.
+        # ("java"),
+        ("python"),
+    ])
+    def test_3mb_read_dropped_data(self, client_type):
+        server_config = config_pb2.ServerConfig(
+            chunk_size_bytes=216,
+            pending_bytes=32 * 1024,
+            chunk_timeout_seconds=5,
+            transfer_service_retries=4,
+            extend_window_divisor=32,
+        )
+        client_config = config_pb2.ClientConfig(
+            max_retries=5,
+            initial_chunk_timeout_ms=10000,
+            chunk_timeout_ms=4000,
+        )
+        proxy_config = text_format.Parse(
+            """
+            client_filter_stack: [
+                { rate_limiter: {rate: 50000} },
+                { hdlc_packetizer: {} },
+                { data_dropper: {rate: 0.01, seed: 1649963713563718435} }
+            ]
+
+            server_filter_stack: [
+                { rate_limiter: {rate: 50000} },
+                { hdlc_packetizer: {} },
+                { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
+        ]""", config_pb2.ProxyConfig())
+
+        payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
+        resource_id = 12
+        config = TransferConfig(server_config, client_config, proxy_config)
+        self.do_single_read(client_type, config, resource_id, payload)
+
+    @parameterized.expand([
+        ("cpp"),
+        ("java"),
+        ("python"),
+    ])
+    def test_3mb_read_reordered_data(self, client_type):
+        server_config = config_pb2.ServerConfig(
+            chunk_size_bytes=216,
+            pending_bytes=32 * 1024,
+            chunk_timeout_seconds=5,
+            transfer_service_retries=4,
+            extend_window_divisor=32,
+        )
+        client_config = config_pb2.ClientConfig(
+            max_retries=5,
+            initial_chunk_timeout_ms=10000,
+            chunk_timeout_ms=4000,
+        )
+        proxy_config = text_format.Parse(
+            """
+            client_filter_stack: [
+                { rate_limiter: {rate: 50000} },
+                { hdlc_packetizer: {} },
+                { data_transposer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
+            ]
+
+            server_filter_stack: [
+                { rate_limiter: {rate: 50000} },
+                { hdlc_packetizer: {} },
+                { data_transposer: {rate: 0.005, timeout: 0.5, seed: 1649963713563718435} }
+        ]""", config_pb2.ProxyConfig())
+
+        payload = random.Random(1649963713563718437).randbytes(3 * 1024 * 1024)
+        resource_id = 12
+        config = TransferConfig(server_config, client_config, proxy_config)
+        self.do_single_read(client_type, config, resource_id, payload)
 
 
 if __name__ == '__main__':
