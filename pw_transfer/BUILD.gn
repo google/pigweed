@@ -346,6 +346,11 @@ pw_python_script("cross_language_large_test") {
   sources = [ "integration_test/cross_language_large_test.py" ]
 }
 
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("multi_transfer_test") {
+  sources = [ "integration_test/multi_transfer_test.py" ]
+}
+
 pw_python_action("cpp_client_integration_test") {
   script = "$dir_pw_rpc/py/pw_rpc/testing.py"
   args = [

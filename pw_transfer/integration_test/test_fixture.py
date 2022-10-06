@@ -21,7 +21,7 @@ import pathlib
 from pathlib import Path
 import sys
 import tempfile
-from typing import List, NamedTuple, Optional, Tuple
+from typing import BinaryIO, Iterable, List, NamedTuple, Optional
 import unittest
 
 from google.protobuf import text_format
@@ -308,6 +308,12 @@ class TransferIntegrationTestHarness:
                                           self._server.returncode())
 
 
+class BasicTransfer(NamedTuple):
+    id: int
+    type: config_pb2.TransferAction.TransferType.ValueType
+    data: bytes
+
+
 class TransferIntegrationTest(unittest.TestCase):
     """A base class for transfer integration tests.
 
@@ -396,6 +402,62 @@ class TransferIntegrationTest(unittest.TestCase):
             self.assertEqual(exit_codes.client, 0)
             self.assertEqual(exit_codes.server, 0)
             self.assertEqual(f_client_output.read(), data)
+
+    def do_basic_transfer_sequence(self, client_type: str,
+                                   config: TransferConfig,
+                                   transfers: Iterable[BasicTransfer]) -> None:
+        """Performs multiple reads/writes in a single client/server session."""
+        class ReadbackSet(NamedTuple):
+            server_file: BinaryIO
+            client_file: BinaryIO
+            expected_data: bytes
+
+        transfer_results: List[ReadbackSet] = []
+        for transfer in transfers:
+            server_file = tempfile.NamedTemporaryFile()
+            client_file = tempfile.NamedTemporaryFile()
+
+            if (transfer.type ==
+                    config_pb2.TransferAction.TransferType.READ_FROM_SERVER):
+                server_file.write(transfer.data)
+                server_file.flush()
+                config.server.resources[transfer.id].source_paths.append(
+                    server_file.name)
+            elif (transfer.type ==
+                  config_pb2.TransferAction.TransferType.WRITE_TO_SERVER):
+                client_file.write(transfer.data)
+                client_file.flush()
+                config.server.resources[transfer.id].destination_paths.append(
+                    server_file.name)
+            else:
+                raise ValueError('Unknown TransferType')
+
+            config.client.transfer_actions.append(
+                config_pb2.TransferAction(resource_id=transfer.id,
+                                          file_path=client_file.name,
+                                          transfer_type=transfer.type))
+
+            transfer_results.append(
+                ReadbackSet(server_file, client_file, transfer.data))
+
+        exit_codes = asyncio.run(
+            self.harness.perform_transfers(config.server, client_type,
+                                           config.client, config.proxy))
+
+        for i, result in enumerate(transfer_results):
+            with self.subTest(i=i):
+                # Need to seek to the beginning of the file to read written
+                # data.
+                result.client_file.seek(0, 0)
+                result.server_file.seek(0, 0)
+                self.assertEqual(result.client_file.read(),
+                                 result.expected_data)
+                self.assertEqual(result.server_file.read(),
+                                 result.expected_data)
+
+        # Check exit codes at the end as they provide less useful info.
+        self.assertEqual(exit_codes.client, 0)
+        self.assertEqual(exit_codes.server, 0)
 
 
 def run_tests_for(test_class_name):

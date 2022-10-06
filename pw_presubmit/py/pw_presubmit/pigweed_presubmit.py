@@ -513,6 +513,7 @@ def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
                 '//pw_transfer/integration_test:cross_language_small_test',
                 '//pw_transfer/integration_test:cross_language_medium_test',
                 '//pw_transfer/integration_test:cross_language_large_test',
+                '//pw_transfer/integration_test:multi_transfer_test',
                 '--test_output=errors')
 
 

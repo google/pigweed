@@ -145,6 +145,17 @@ py_test(
     ],
 )
 
+py_test(
+    name = "multi_transfer_test",
+    srcs = [
+        "multi_transfer_test.py",
+    ],
+    deps = [
+        ":config_pb2",
+        ":integration_test_fixture",
+    ],
+)
+
 java_binary(
     name = "java_client",
     srcs = ["JavaClient.java"],
