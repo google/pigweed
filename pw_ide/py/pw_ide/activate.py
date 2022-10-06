@@ -14,7 +14,7 @@
 # pylint: disable=line-too-long
 """Pigweed shell activation script.
 
-This script can be used in three ways:
+Aside from importing it, this script can be used in three ways:
 
 1. Activate the Pigweed environment in your current shell (i.e., modify your
    interactive shell's environment with Pigweed environment variables).
@@ -56,6 +56,7 @@ This script can be used in three ways:
 
 from abc import abstractmethod, ABC
 import argparse
+from collections import defaultdict
 from inspect import cleandoc
 import json
 import os
@@ -67,27 +68,80 @@ from typing import Dict, Optional
 
 # This expects this file to be in the Python module. If it ever moves
 # (e.g. to the root of the repository), this will need to change.
-PW_PROJECT_PATH = Path(
+_PW_PROJECT_PATH = Path(
     os.environ.get('PW_PROJECT_ROOT',
                    os.environ.get('PW_ROOT',
                                   Path(__file__).parents[3])))
 
 
-def _assumed_environment_root() -> Optional[Path]:
+def assumed_environment_root() -> Path:
     actual_environment_root = os.environ.get('_PW_ACTUAL_ENVIRONMENT_ROOT')
     if actual_environment_root is not None and (
             root_path := Path(actual_environment_root)).exists():
         return root_path.absolute()
 
-    default_environment = PW_PROJECT_PATH / 'environment'
+    default_environment = _PW_PROJECT_PATH / 'environment'
     if default_environment.exists():
         return default_environment.absolute()
 
-    default_dot_environment = PW_PROJECT_PATH / '.environment'
+    default_dot_environment = _PW_PROJECT_PATH / '.environment'
     if default_dot_environment.exists():
         return default_dot_environment.absolute()
 
-    return None
+    raise RuntimeError(
+        'This must be run from a bootstrapped Pigweed directory!')
+
+
+_DEFAULT_CONFIG_FILE_PATH = assumed_environment_root() / 'actions.json'
+
+
+def _sanitize_path(path: str, project_root_prefix: str,
+                   user_home_prefix: str) -> str:
+    """Given a path, return a sanitized path.
+
+    By default, environment variable paths are usually absolute. If we want
+    those paths to work across multiple systems, we need to sanitize them. This
+    takes a string that may be a path, and if it is indeed a path, it returns
+    the sanitized path, which is relative to either the repository root or the
+    user's home directory. If it's not a path, it just returns the input.
+
+    You can provide the strings that should be substituted for the project root
+    and the user's home directory. This may be useful for applications that have
+    their own way of representing those directories.
+
+    Note that this is intended to work on Pigweed environment variables, which
+    should all be relative to either of those two locations. Paths that aren't
+    (e.g. the path to a system binary) won't really be sanitized.
+    """
+    # Return the argument if it's not actually a path.
+    # This strategy relies on the fact that env_setup outputs absolute paths for
+    # all path env vars. So if we get a variable that's not an absolute path, it
+    # must not be a path at all.
+    if not Path(path).is_absolute():
+        return path
+
+    project_root = _PW_PROJECT_PATH.resolve()
+    user_home = Path.home().resolve()
+    resolved_path = Path(path).resolve()
+
+    # TODO(b/248257406) Remove once we drop support for Python 3.8.
+    def is_relative_to(path: Path, other: Path) -> bool:
+        try:
+            path.relative_to(other)
+            return True
+        except ValueError:
+            return False
+
+    if is_relative_to(resolved_path, project_root):
+        return (f'{project_root_prefix}/' +
+                str(resolved_path.relative_to(project_root)))
+
+    if is_relative_to(resolved_path, user_home):
+        return (f'{user_home_prefix}/' +
+                str(resolved_path.relative_to(user_home)))
+
+    # Path is not in the project root or user home, so just return it as is.
+    return path
 
 
 class ShellModifier(ABC):
@@ -107,12 +161,19 @@ class ShellModifier(ABC):
                  path_var: str = '$PATH',
                  project_root: str = '.',
                  user_home: str = '~'):
-        # Will contain the existing environment, but modified.
-        self.env: Dict[str, str] = env if env is not None else {}
+        # This will contain only the modifications to the environment, with
+        # no elements of the existing environment aside from variables included
+        # here. In that sense, it's like a diff against the existing
+        # environment, or a structured form of the shell modification side
+        # effects.
+        default_env_mod = {'PATH': path_var}
+        self.env_mod = default_env_mod.copy()
 
-        # Will contain only the modifications to the environment, but not any
-        # part of the existing environment.
-        self.env_mod = {'PATH': path_var}
+        # This is seeded with the existing environment, and then is modified.
+        # So it contains the complete new environment after modifications.
+        # If no existing environment is provided, this is identical to env_mod.
+        env = env if env is not None else default_env_mod.copy()
+        self.env: Dict[str, str] = defaultdict(str, env)
 
         # Will contain the side effects, i.e. commands executed in the shell to
         # modify its environment.
@@ -133,6 +194,46 @@ class ShellModifier(ABC):
         """
         if not self.env_only:
             self.side_effects += f'{effect}\n'
+
+    def modify_env(self,
+                   config_file_path: Path = _DEFAULT_CONFIG_FILE_PATH,
+                   sanitize: bool = False) -> 'ShellModifier':
+        """Modify the current shell state per the actions.json file provided."""
+        json_file_options = {}
+        try:
+            with config_file_path.open('r') as json_file:
+                json_file_options = json.loads(json_file.read())
+        except (FileNotFoundError, json.JSONDecodeError):
+            sys.stderr.write('Unable to read file: {}\n'
+                             'Please run this in bash or zsh:\n'
+                             '  . ./bootstrap.sh\n'.format(
+                                 config_file_path.as_posix()))
+
+        root = self.project_root
+        home = self.user_home
+
+        # Set env vars
+        for var_name, value in json_file_options['set'].items():
+            if value is not None:
+                value = _sanitize_path(value, root,
+                                       home) if sanitize else value
+                self.set_variable(var_name, value)
+
+        # Prepend & append env vars
+        for var_name, mode_changes in json_file_options['modify'].items():
+            for mode_name, values in mode_changes.items():
+                if mode_name in ['prepend', 'append']:
+                    modify_variable = self.prepend_variable
+
+                    if mode_name == 'append':
+                        modify_variable = self.append_variable
+
+                    for value in values:
+                        value = _sanitize_path(value, root,
+                                               home) if sanitize else value
+                        modify_variable(var_name, value)
+
+        return self
 
     @abstractmethod
     def set_variable(self, var_name: str, value: str) -> None:
@@ -172,100 +273,18 @@ class BashShellModifier(ShellModifier):
             f'export {var_name}=${var_name}{self.separator}{quoted_value}')
 
 
-def _sanitize_path(path: str, project_root_prefix: str,
-                   user_home_prefix: str) -> str:
-    """Given a path, return a sanitized path.
-
-    By default, environment variable paths are usually absolute. If we want
-    those paths to work across multiple systems, we need to sanitize them. This
-    takes a string that may be a path, and if it is indeed a path, it returns
-    the sanitized path, which is relative to either the repository root or the
-    user's home directory. If it's not a path, it just returns the input.
-
-    You can provide the strings that should be substituted for the project root
-    and the user's home directory. This may be useful for applications that have
-    their own way of representing those directories.
-
-    Note that this is intended to work on Pigweed environment variables, which
-    should all be relative to either of those two locations. Paths that aren't
-    (e.g. the path to a system binary) won't really be sanitized.
-    """
-    # Return the argument if it's not actually a path.
-    # This strategy relies on the fact that env_setup outputs absolute paths for
-    # all path env vars. So if we get a variable that's not an absolute path, it
-    # must not be a path at all.
-    if not Path(path).is_absolute():
-        return path
-
-    project_root = PW_PROJECT_PATH.resolve()
-    user_home = Path.home().resolve()
-    resolved_path = Path(path).resolve()
-
-    # TODO(b/248257406) Remove once we drop support for Python 3.8.
-    def is_relative_to(path: Path, other: Path) -> bool:
-        try:
-            path.relative_to(other)
-            return True
-        except ValueError:
-            return False
-
-    if is_relative_to(resolved_path, project_root):
-        return (f'{project_root_prefix}/' +
-                str(resolved_path.relative_to(project_root)))
-
-    if is_relative_to(resolved_path, user_home):
-        return (f'{user_home_prefix}/' +
-                str(resolved_path.relative_to(user_home)))
-
-    # Path is not in the project root or user home, so just return it as is.
-    return path
-
-
-def _modify_env(file_path: Path,
-                shell_modifier: ShellModifier,
-                sanitize: bool = False) -> ShellModifier:
-    """Modify the current shell state per the actions.json file provided."""
-    # Load actions.json
-    json_file_options = {}
-    try:
-        with file_path.open('r') as json_file:
-            json_file_options = json.loads(json_file.read())
-    except (FileNotFoundError, json.JSONDecodeError):
-        sys.stderr.write('Unable to read file: {}\n'
-                         'Please run this in bash or zsh:\n'
-                         '  . ./bootstrap.sh\n'.format(file_path.as_posix()))
-
-    root = shell_modifier.project_root
-    home = shell_modifier.user_home
-
-    # Set env vars
-    for var_name, value in json_file_options['set'].items():
-        if value is not None:
-            value = _sanitize_path(value, root, home) if sanitize else value
-            shell_modifier.set_variable(var_name, value)
-
-    # Prepend & append env vars
-    for var_name, mode_changes in json_file_options['modify'].items():
-        for mode_name, values in mode_changes.items():
-            if mode_name in ['prepend', 'append']:
-                modify_variable = shell_modifier.prepend_variable
-
-                if mode_name == 'append':
-                    modify_variable = shell_modifier.append_variable
-
-                for value in values:
-                    value = _sanitize_path(value, root,
-                                           home) if sanitize else value
-                    modify_variable(var_name, value)
-
-    return shell_modifier
-
-
 def _build_argument_parser() -> argparse.ArgumentParser:
     """Set up `argparse`."""
     doc = __doc__
 
-    if (env_root := _assumed_environment_root()) is not None:
+    try:
+        env_root = assumed_environment_root()
+    except RuntimeError:
+        env_root = None
+
+    # Substitute in the actual environment path in the help text, if we can
+    # find it. If not, leave the placeholder text.
+    if env_root is not None:
         doc = doc.replace('{environment}',
                           str(env_root.relative_to(Path.cwd())))
 
@@ -274,29 +293,15 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         description=doc,
     )
 
-    config_file_dir = _assumed_environment_root()
-
-    if config_file_dir is None:
-        print('Environment directory not found!')
-        print('This must be run from a bootstrapped Pigweed '
-              'project directory.')
-        sys.exit(1)
-
-    config_file_path = config_file_dir / 'actions.json'
-
-    if not config_file_path.exists():
-        print(f'File not found! {config_file_path}')
-        print('This must be run from a bootstrapped Pigweed '
-              'project directory.')
-        sys.exit(1)
-
-    parser.add_argument('-c',
-                        '--config-file',
-                        default=config_file_path.as_posix(),
-                        help='Path to actions.json config file, which defines '
-                        'the modifications to the shell environment '
-                        'needed to activate Pigweed. '
-                        f'Default: {config_file_path.relative_to(Path.cwd())}')
+    parser.add_argument(
+        '-c',
+        '--config-file',
+        default=_DEFAULT_CONFIG_FILE_PATH,
+        type=Path,
+        help='Path to actions.json config file, which defines '
+        'the modifications to the shell environment '
+        'needed to activate Pigweed. '
+        f'Default: {_DEFAULT_CONFIG_FILE_PATH.relative_to(Path.cwd())}')
 
     default_shell = Path(os.environ['SHELL']).name
     parser.add_argument('-s',
@@ -354,7 +359,13 @@ def main() -> int:
     """The main CLI script."""
     args, _unused_extra_args = _build_argument_parser().parse_known_args()
     env = os.environ.copy()
-    file_path = Path(args.config_file).absolute()
+    config_file_path = args.config_file
+
+    if not config_file_path.exists():
+        print(f'File not found! {config_file_path}')
+        print('This must be run from a bootstrapped Pigweed '
+              'project directory.')
+        sys.exit(1)
 
     # If we're executing a command in a subprocess, don't modify the current
     # shell's state. Instead, apply the modified state to the subprocess.
@@ -364,13 +375,12 @@ def main() -> int:
     shell_modifier = BashShellModifier
 
     # TODO(chadnorvell): if args.shell_mode == 'zsh', 'ksh', 'fish'...
-    modified_env = _modify_env(
-        file_path,
-        shell_modifier(env=env,
-                       env_only=env_only,
-                       path_var=args.path_var,
-                       project_root=args.project_root,
-                       user_home=args.user_home), args.sanitize)
+    modified_env = shell_modifier(env=env,
+                                  env_only=env_only,
+                                  path_var=args.path_var,
+                                  project_root=args.project_root,
+                                  user_home=args.user_home).modify_env(
+                                      config_file_path, args.sanitize)
 
     if args.out_all:
         print(json.dumps(modified_env.env, sort_keys=True, indent=2))
