@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import List, Optional, Tuple, TypedDict, Union
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 # pylint: disable=protected-access
 from pw_ide.cpp import (
@@ -360,11 +360,13 @@ class TestSetTarget(PwIdeTestCase):
             mock_mkdir.assert_any_call(
                 self.path_in_temp_dir(compdb_generate_cache_file_path(target)))
 
-            mock_symlink.assert_any_call(*self.paths_in_temp_dir(
-                compdb_generate_file_path(target), compdb_symlink_path))
+            target_and_symlink_in_temp_dir = self.paths_in_temp_dir(
+                compdb_generate_file_path(target), compdb_symlink_path)
+            mock_symlink.assert_any_call(*target_and_symlink_in_temp_dir, ANY)
 
-            mock_symlink.assert_any_call(*self.paths_in_temp_dir(
-                compdb_generate_cache_file_path(target), cache_symlink_path))
+            target_and_symlink_in_temp_dir = self.paths_in_temp_dir(
+                compdb_generate_cache_file_path(target), cache_symlink_path)
+            mock_symlink.assert_any_call(*target_and_symlink_in_temp_dir, ANY)
 
             mock_remove.assert_not_called()
 
@@ -415,13 +417,16 @@ class TestSetTarget(PwIdeTestCase):
                 mock_remove.assert_any_call(
                     self.path_in_temp_dir(cache_symlink_path))
 
-                mock_symlink.assert_any_call(*self.paths_in_temp_dir(
-                    compdb_generate_file_path(targets[1]),
-                    compdb_symlink_path))
+                target_and_symlink_in_temp_dir = self.paths_in_temp_dir(
+                    compdb_generate_file_path(targets[1]), compdb_symlink_path)
+                mock_symlink.assert_any_call(*target_and_symlink_in_temp_dir,
+                                             ANY)
 
-                mock_symlink.assert_any_call(*self.paths_in_temp_dir(
+                target_and_symlink_in_temp_dir = self.paths_in_temp_dir(
                     compdb_generate_cache_file_path(targets[1]),
-                    cache_symlink_path))
+                    cache_symlink_path)
+                mock_symlink.assert_any_call(*target_and_symlink_in_temp_dir,
+                                             ANY)
 
     @patch('os.remove')
     @patch('os.mkdir')
@@ -473,13 +478,16 @@ class TestSetTarget(PwIdeTestCase):
                 mock_remove.assert_any_call(
                     self.path_in_temp_dir(cache_symlink_path))
 
-                mock_symlink.assert_any_call(*self.paths_in_temp_dir(
-                    compdb_generate_file_path(targets[0]),
-                    compdb_symlink_path))
+                target_and_symlink_in_temp_dir = self.paths_in_temp_dir(
+                    compdb_generate_file_path(targets[0]), compdb_symlink_path)
+                mock_symlink.assert_any_call(*target_and_symlink_in_temp_dir,
+                                             ANY)
 
-                mock_symlink.assert_any_call(*self.paths_in_temp_dir(
+                target_and_symlink_in_temp_dir = self.paths_in_temp_dir(
                     compdb_generate_cache_file_path(targets[0]),
-                    cache_symlink_path))
+                    cache_symlink_path)
+                mock_symlink.assert_any_call(*target_and_symlink_in_temp_dir,
+                                             ANY)
 
     @patch('os.symlink')
     def test_invalid_target_not_in_defined_targets_raises(
