@@ -105,7 +105,8 @@ _INVOKE_PATCH = (
 
 
 def _patch_invoke(file: Path, text: str) -> str:
-    if file.name != 'function_internal.h':
+    # Update internal/function.h only.
+    if file.name != 'function.h' or file.parent.name != 'internal':
         return text
 
     text = _add_include_before_namespace(text, 'pw_preprocessor/compiler.h')

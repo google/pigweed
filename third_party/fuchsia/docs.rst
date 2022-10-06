@@ -33,6 +33,11 @@ included in tree. A few factors drove this decision:
 If Fuchsia moves ``stdcompat`` and ``fit`` to separate repositories, the
 decision to include Fuchsia code in tree may be reconsidered.
 
+Files are synced from Fuchsia repository to the ``third_party/fuchsia/repo``
+directory in Pigweed. The files maintain their original paths under that
+directory. The Copybara script applies patches to adapt the sources for use in
+Pigweed. For example, ``__builtin_abort`` is replaced with ``PW_ASSERT``.
+
 Process
 =======
 Code is synchronized between the `Fuchsia repository
@@ -51,10 +56,10 @@ script:
 
 That creates a Gerrit change with updates from the Fuchsia repo, if any.
 
-Files are synced from Fuchsia repository to their original paths under the
-``third_party/fuchsia/repo`` directory in Pigweed. The Copybara script applies
-patches to adapt the sources for use in Pigweed. For example,
-``__builtin_abort`` is replaced with ``PW_ASSERT``.
+If the ``copybara`` command fails, the Copybara script or patch file may need to
+be updated. Try the following:
 
-To update the patch files used by Copybara, run
-``python third_party/fuchsia/generate_fuchsia_patch.py``.
+- Ensure that the source files in ``copy.bara.sky`` are up-to-date. Fix the list
+  if any files were renamed in Fuchsia.
+- Update the patch file Copybara applies by running ``python
+  third_party/fuchsia/generate_fuchsia_patch.py``.

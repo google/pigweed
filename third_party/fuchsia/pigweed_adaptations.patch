@@ -17,13 +17,13 @@
 #   - Use PW_ASSERT instead of __builtin_abort.
 #   - Temporarily disable sanitizers when invoking a function for b/241567321.
 #
-diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_internal.h b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_internal.h
---- a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_internal.h
-+++ b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function_internal.h
+diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/function.h b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/function.h
+--- a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/function.h
++++ b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/function.h
 @@ -16,6 +16,8 @@
  #include <utility>
 
- #include "nullable.h"
+ #include "../nullable.h"
 +#include "pw_assert/assert.h"
 +#include "pw_preprocessor/compiler.h"
 
