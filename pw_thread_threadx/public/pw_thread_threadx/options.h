@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <optional>
+
 #include "pw_assert/assert.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_threadx/config.h"
