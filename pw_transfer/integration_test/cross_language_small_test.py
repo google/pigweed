@@ -46,6 +46,17 @@ class SmallTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         ("java"),
         ("python"),
     ])
+    def test_empty_client_write(self, client_type):
+        payload = b""
+        config = self.default_config()
+        resource_id = 5
+        self.do_single_write(client_type, config, resource_id, payload)
+
+    @parameterized.expand([
+        ("cpp"),
+        ("java"),
+        ("python"),
+    ])
     def test_null_byte_client_write(self, client_type):
         payload = b"\0"
         config = self.default_config()
@@ -73,6 +84,17 @@ class SmallTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         config = self.default_config()
         resource_id = 5
         self.do_single_write(client_type, config, resource_id, payload)
+
+    @parameterized.expand([
+        ("cpp"),
+        ("java"),
+        ("python"),
+    ])
+    def test_empty_client_read(self, client_type):
+        payload = b""
+        config = self.default_config()
+        resource_id = 5
+        self.do_single_read(client_type, config, resource_id, payload)
 
     @parameterized.expand([
         ("cpp"),

@@ -93,21 +93,10 @@ class TransferServiceIntegrationTest(IntegrationTestServer):
             self.manager.read(99)
         self.assertEqual(ctx.exception.status, Status.NOT_FOUND)
 
-    def test_read_empty(self) -> None:
-        for _ in range(ITERATIONS):
-            self.set_content(24, '')
-            self.assertEqual(self.manager.read(24), b'')
-
     def test_write_unknown_id(self) -> None:
         with self.assertRaises(pw_transfer.Error) as ctx:
             self.manager.write(99, '')
         self.assertEqual(ctx.exception.status, Status.NOT_FOUND)
-
-    def test_write_empty(self) -> None:
-        for _ in range(ITERATIONS):
-            self.set_content(28, 'junk')
-            self.manager.write(28, b'')
-            self.assertEqual(self.get_content(28), b'')
 
     def test_write_string(self) -> None:
         for _ in range(ITERATIONS):

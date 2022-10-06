@@ -39,8 +39,6 @@ namespace {
 
 using namespace std::chrono_literals;
 
-constexpr int kIterations = 5;
-
 std::filesystem::path directory;
 
 class Bernoulli {
@@ -287,21 +285,6 @@ TEST_F(TransferIntegration, Read_UnknownId) {
   EXPECT_EQ(Status::NotFound(), WaitForCompletion());
 }
 
-#define PW_TRANSFER_TEST_READ(name, content)                            \
-  TEST_F(TransferIntegration, Read_##name) {                            \
-    for (int i = 0; i < kIterations; ++i) {                             \
-      const ConstByteSpan data = AsByteSpan(content);                   \
-      SetContent(__LINE__, data);                                       \
-      ASSERT_EQ(OkStatus(),                                             \
-                client().Read(__LINE__, read_buffer_, OnCompletion())); \
-      ExpectReadData(data);                                             \
-      read_buffer_.clear();                                             \
-    }                                                                   \
-  }                                                                     \
-  static_assert(true, "Semicolons are required")
-
-PW_TRANSFER_TEST_READ(Empty, "");
-
 TEST_F(TransferIntegration, Write_UnknownId) {
   constexpr std::byte kData[] = {std::byte{0}, std::byte{1}, std::byte{2}};
   stream::MemoryReader reader(kData);
@@ -313,20 +296,6 @@ TEST_F(TransferIntegration, Write_UnknownId) {
   ASSERT_EQ(OkStatus(), client().Write(100, reader, OnCompletion()));
   EXPECT_EQ(Status::NotFound(), WaitForCompletion());
 }
-
-#define PW_TRANSFER_TEST_WRITE(name, content)                                  \
-  TEST_F(TransferIntegration, Write_##name) {                                  \
-    for (int i = 0; i < kIterations; ++i) {                                    \
-      SetContent(__LINE__, "This is junk data that should be overwritten!");   \
-      const ConstByteSpan data = AsByteSpan(content);                          \
-      stream::MemoryReader reader(data);                                       \
-      ASSERT_EQ(OkStatus(), client().Write(__LINE__, reader, OnCompletion())); \
-      ExpectWriteData(__LINE__, data);                                         \
-    }                                                                          \
-  }                                                                            \
-  static_assert(true, "Semicolons are required")
-
-PW_TRANSFER_TEST_WRITE(Empty, "");
 
 }  // namespace
 }  // namespace pw::transfer
