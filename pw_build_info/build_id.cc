@@ -38,6 +38,9 @@ PW_PACKED(struct) ElfNoteInfo {
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Warray-bounds");
 PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wstringop-overflow");
+#if __GNUC__ >= 11
+PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wstringop-overread");
+#endif
 
 span<const std::byte> BuildId() {
   // Read the sizes at the beginning of the note section.
