@@ -594,7 +594,7 @@ TEST_F(BidiMethod, ClientStream_CallsOpenIdOnCallWithDifferentId) {
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_STREQ(span_as_cstr(data), "hello");
 
-  std::lock_guard lock(internal::rpc_lock());
+  internal::LockGuard lock(internal::rpc_lock());
   EXPECT_EQ(responder_.as_server_call().id(), kSecondCallId);
 }
 

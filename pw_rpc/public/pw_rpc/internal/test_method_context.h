@@ -150,7 +150,7 @@ class InvocationContext {
 
   template <typename T>
   T GetResponder() PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     return T(call_context().ClaimLocked());
   }
 

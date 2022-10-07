@@ -77,7 +77,7 @@ TEST_F(ServerWriterTest, DefaultConstruct_Closed) {
 }
 
 TEST_F(ServerWriterTest, Construct_RegistersWithServer) {
-  std::lock_guard lock(rpc_lock());
+  LockGuard lock(rpc_lock());
   Call* call = context_.server().FindCall(kPacket);
   ASSERT_NE(call, nullptr);
   EXPECT_EQ(static_cast<void*>(call), static_cast<void*>(&writer_));
@@ -94,13 +94,13 @@ TEST_F(ServerWriterTest, Destruct_RemovesFromServer) {
     rpc_lock().unlock();
   }
 
-  std::lock_guard lock(rpc_lock());
+  LockGuard lock(rpc_lock());
   EXPECT_EQ(context.server().FindCall(kPacket), nullptr);
 }
 
 TEST_F(ServerWriterTest, Finish_RemovesFromServer) {
   EXPECT_EQ(OkStatus(), writer_.Finish());
-  std::lock_guard lock(rpc_lock());
+  LockGuard lock(rpc_lock());
   EXPECT_EQ(context_.server().FindCall(kPacket), nullptr);
 }
 
@@ -183,7 +183,7 @@ TEST_F(ServerReaderTest, DefaultConstructor_ClientStreamClosed) {
 }
 
 TEST_F(ServerReaderTest, Open_ClientStreamStartsOpen) {
-  std::lock_guard lock(rpc_lock());
+  LockGuard lock(rpc_lock());
   EXPECT_TRUE(reader_.as_server_call().has_client_stream());
   EXPECT_TRUE(reader_.as_server_call().client_stream_open());
 }
