@@ -7,9 +7,9 @@
 
 #include <type_traits>
 
-#include "function_internal.h"
+#include "internal/function.h"
+#include "internal/utility.h"
 #include "traits.h"
-#include "utility_internal.h"
 
 namespace fit {
 

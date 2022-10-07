@@ -687,7 +687,7 @@ class indexed_storage<DestructorClass, type_index<Ts, Is>...> {
       // constructor confuses GCC because it doesn't understand that the
       // index checks prevent uninitialized access.
       auto do_swap = [](indexed_storage& a, indexed_storage& b) {
-        return a.base_.visit(a.index_, [&a, &b](auto type_tag_v, auto index_tag_v, auto* element) {
+        return a.base_.visit(a.index_, [&a, &b](auto, auto index_tag_v, auto* element) {
           indexed_storage temp{index_tag_v, std::move(element->value)};
           a.reset();
 

@@ -17,10 +17,10 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_module_library(pw_third_party.fuchsia.fit
   HEADERS
     repo/sdk/lib/fit/include/lib/fit/function.h
+    repo/sdk/lib/fit/include/lib/fit/internal/function.h
+    repo/sdk/lib/fit/include/lib/fit/internal/utility.h
     repo/sdk/lib/fit/include/lib/fit/nullable.h
     repo/sdk/lib/fit/include/lib/fit/traits.h
-    repo/sdk/lib/fit/include/lib/fit/function_internal.h
-    repo/sdk/lib/fit/include/lib/fit/utility_internal.h
   PUBLIC_INCLUDES
     repo/sdk/lib/fit/include
   PUBLIC_DEPS

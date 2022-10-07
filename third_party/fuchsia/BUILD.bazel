@@ -30,8 +30,8 @@ pw_cc_library(
 pw_cc_library(
     name = "fit",
     srcs = [
-        "repo/sdk/lib/fit/include/lib/fit/function_internal.h",
-        "repo/sdk/lib/fit/include/lib/fit/utility_internal.h",
+        "repo/sdk/lib/fit/include/lib/fit/internal/function.h",
+        "repo/sdk/lib/fit/include/lib/fit/internal/utility.h",
     ],
     hdrs = [
         "repo/sdk/lib/fit/include/lib/fit/function.h",
