@@ -20,3 +20,12 @@ message Point {
   uint32 y = 2;
   string name = 3;
 };
+
+// Check that `.options` files work properly. Compare three strings, two of them
+// with different `max_size` values defined in the `.options` file and the third
+// with no specified `max_size`.
+message OptionsFileExample {
+  string thirty_two_chars = 1;
+  string forty_two_chars = 2;
+  string unspecified_length = 3;
+};
