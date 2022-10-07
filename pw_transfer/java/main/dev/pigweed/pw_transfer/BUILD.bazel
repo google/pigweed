@@ -18,7 +18,6 @@
 java_library(
     name = "client",
     srcs = [
-        "Manager.java",
         "ReadTransfer.java",
         "Transfer.java",
         "TransferClient.java",
