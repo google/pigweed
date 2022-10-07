@@ -329,13 +329,10 @@ Could be modified as follows enable ``Free Space`` reporting:
       . = ALIGN(4);
     } >RAM AT> FLASH
 
-    /* Represents unused space in the FLASH segment. This MUST be the last
-     * section assigned to the FLASH region.
+    /* Defines a section representing the unused space in the FLASH segment.
+     * This MUST be the last section assigned to the FLASH region.
      */
-    .FLASH.unused_space (NOLOAD) : ALIGN(4)
-    {
-      . = ABSOLUTE(ORIGIN(FLASH) + LENGTH(FLASH));
-    } >FLASH
+    PW_BLOAT_UNUSED_SPACE(FLASH)
 
     /* Zero initialized global/static data. (.bss). */
     .zero_init_ram (NOLOAD) : ALIGN(4)
@@ -346,14 +343,27 @@ Could be modified as follows enable ``Free Space`` reporting:
       . = ALIGN(4);
     } >RAM
 
-    /* Represents unused space in the RAM segment. This MUST be the last section
-     * assigned to the RAM region.
+    /* Defines a section representing the unused space in the RAM segment. This
+     * MUST be the last section assigned to the RAM region.
      */
-    .RAM.unused_space (NOLOAD) : ALIGN(4)
-    {
-      . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));
-    } >RAM
+    PW_BLOAT_UNUSED_SPACE(RAM)
   }
+
+The preprocessor macro ``PW_BLOAT_UNUSED_SPACE`` is defined in
+``pw_bloat/bloat_macros.ld``. To use these macros include this file in your
+``pw_linker_script`` as follows:
+
+.. code-block::
+
+   pw_linker_script("my_linker_script") {
+     includes = [ "$dir_pw_bloat/bloat_macros.ld" ]
+     linker_script = "my_project_linker_script.ld"
+   }
+
+Note that linker scripts are not natively supported by GN and can't be provided
+through ``deps``, the ``bloat_macros.ld`` must be passed in the ``includes``
+list.
+
 
 ``memoryregions`` data source
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -369,18 +379,29 @@ files, ``pw_bloat.bloaty_config`` consumes symbols which are defined in the
 linker script with a special format to extract this information from the ELF
 file: ``pw_bloat_config_memory_region_NAME_{start,end}{_N,}``.
 
+These symbols are defined by the preprocessor macros ``PW_BLOAT_MEMORY_REGION``
+and ``PW_BLOAT_MEMORY_REGION_MAP`` with the right address and size for the
+regions. To use these macros include the ``pw_bloat/bloat_macros.ld`` in your
+``pw_linker_script`` as follows:
+
+.. code-block::
+
+   pw_linker_script("my_linker_script") {
+     includes = [ "$dir_pw_bloat/bloat_macros.ld" ]
+     linker_script = "my_project_linker_script.ld"
+   }
+
 These symbols are then used to determine how to map segments to these memory
 regions. Note that segments must be used in order to account for inter-section
 padding which are not attributed against any sections.
 
 As an example, if you have a single view in the single memory region named
-``FLASH``, then you should produce the following two symbols in your linker
-script:
+``FLASH``, then you should include the following macro in your linker script to
+generate the symbols needed for the that region:
 
 .. code-block::
 
-  pw_bloat_config_memory_region_FLASH_start = ORIGIN(FLASH);
-  pw_bloat_config_memory_region_FLASH_end = ORIGIN(FLASH) + LENGTH(FLASH);
+  PW_BLOAT_MEMORY_REGION(FLASH)
 
 As another example, if you have two aliased memory regions (``DCTM`` and
 ``ITCM``) into the same effective memory named you'd like to call ``RAM``, then
@@ -388,7 +409,5 @@ you should produce the following four symbols in your linker script:
 
 .. code-block::
 
-  pw_bloat_config_memory_region_RAM_start_0 = ORIGIN(ITCM);
-  pw_bloat_config_memory_region_RAM_end_0 = ORIGIN(ITCM) + LENGTH(ITCM);
-  pw_bloat_config_memory_region_RAM_start_1 = ORIGIN(DTCM);
-  pw_bloat_config_memory_region_RAM_end_1 = ORIGIN(DTCM) + LENGTH(DTCM);
+  PW_BLOAT_MEMORY_REGION_MAP(RAM, ITCM)
+  PW_BLOAT_MEMORY_REGION_MAP(RAM, DTCM)
