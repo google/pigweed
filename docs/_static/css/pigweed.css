@@ -93,6 +93,16 @@ code.literal {
   background: var(--color-text-selection-background);
 }
 
+
+/* Make dark mode 'code-block:: :emphasize-lines:' background color readable. */
+body[data-theme="dark"] .highlight .hll {
+  background-color: var(--color-code-hll-background);
+}
+
+body[data-theme="light"] .highlight .hll {
+  background-color: var(--color-code-hll-background);
+}
+
 /* Use normal mixed-case for h4, h5, and h6 */
 h4, h5, h6 {
     text-transform: none;

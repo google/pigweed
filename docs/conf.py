@@ -127,6 +127,10 @@ html_theme_options = {
         'color-inline-code-border': '#cccccc',
         'color-text-selection-background': '#1d5fad',
         'color-text-selection-foreground': '#ffffff',
+        # Background color for focused headings.
+        'color-highlight-on-target': '#ffffcc',
+        # Background color emphasized code lines.
+        'color-code-hll-background': '#ffffcc',
     },
     'dark_css_variables': {
         'color-sidebar-brand-text': '#fb71fe',
@@ -150,6 +154,10 @@ html_theme_options = {
         'color-inline-code-border': '#575757',
         'color-text-selection-background': '#2674bf',
         'color-text-selection-foreground': '#ffffff',
+        # Background color for focused headings.
+        'color-highlight-on-target': '#ffc55140',
+        # Background color emphasized code lines.
+        'color-code-hll-background': '#ffc55140',
     },
 }
 
