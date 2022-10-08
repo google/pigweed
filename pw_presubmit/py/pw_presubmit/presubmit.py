@@ -98,8 +98,15 @@ def _box(style, left, middle, right, box=tools.make_box('><>')) -> str:
 
 class PresubmitFailure(Exception):
     """Optional exception to use for presubmit failures."""
-    def __init__(self, description: str = '', path: Path = None):
-        super().__init__(f'{path}: {description}' if path else description)
+    def __init__(self,
+                 description: str = '',
+                 path: Path = None,
+                 line: int = None):
+        line_part: str = ''
+        if line is not None:
+            line_part = f'{line}:'
+        super().__init__(
+            f'{path}:{line_part} {description}' if path else description)
 
 
 class _Result(enum.Enum):
@@ -227,13 +234,13 @@ class PresubmitContext:
     def failed(self) -> bool:
         return self._failed
 
-    def fail(self, description: str, path: Path = None):
+    def fail(self, description: str, path: Path = None, line: int = None):
         """Add a failure to this presubmit step.
 
         If this is called at least once the step fails, but not immediately—the
         check is free to continue and possibly call this method again.
         """
-        _LOG.warning('%s', PresubmitFailure(description, path))
+        _LOG.warning('%s', PresubmitFailure(description, path, line))
         self._failed = True
 
 

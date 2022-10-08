@@ -46,6 +46,7 @@ from pw_presubmit import (
     call,
     filter_paths,
     inclusive_language,
+    keep_sorted,
     npm_presubmit,
     plural,
     presubmit,
@@ -416,6 +417,7 @@ def cmake_gcc(ctx: PresubmitContext):
 # TODO(b/235882003): Slowly remove targets from here that work with bazel until
 # none remain.
 _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
+    # keep-sorted: start
     '-//pw_arduino_build',
     '-//pw_blob_store/...:all',
     '-//pw_boot/...:all',
@@ -439,8 +441,7 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_snapshot:metadata_proto_py_pb2_genproto',
     '-//pw_snapshot:snapshot_proto_py_pb2',
     '-//pw_snapshot:snapshot_proto_py_pb2_genproto',
-    # TODO(b/232427554): Get pw_software_update to build.
-    '-//pw_software_update:bundled_update_py_pb2',
+    '-//pw_software_update:bundled_update_py_pb2',  # TODO(b/232427554): Fix
     '-//pw_software_update:bundled_update_py_pb2_genproto',
     '-//pw_software_update:bundled_update_service',
     '-//pw_software_update:bundled_update_service_test',
@@ -464,8 +465,7 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_tls_client/...:all',
     '-//pw_tls_client_boringssl/...:all',
     '-//pw_tls_client_mbedtls/...:all',
-    # TODO(b/241456982) Remove when passing.
-    '-//pw_tokenizer:tokenizer_proto_py_pb2',
+    '-//pw_tokenizer:tokenizer_proto_py_pb2',  # TODO(b/241456982) Fix
     '-//pw_tokenizer:tokenizer_proto_py_pb2_genproto',
     '-//pw_trace/...:all',
     '-//pw_trace_tokenized/...:all',
@@ -479,6 +479,7 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//targets/rp2040/...:all',
     '-//third_party/boringssl/...:all',
     '-//third_party/micro_ecc/...:all',
+    # keep-sorted: end
 )
 
 # TODO(b/235882003): Slowly remove targets from here that work with bazel until
@@ -569,10 +570,13 @@ def edit_compile_commands(in_path: Path, out_path: Path,
 
 _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # Configuration
+    # keep-sorted: start
     r'^(?:.+/)?\..+$',
     r'\bPW_PLUGINS$',
     r'\bconstraint.list$',
+    # keep-sorted: end
     # Metadata
+    # keep-sorted: start
     r'^docker/tag$',
     r'\bAUTHORS$',
     r'\bLICENSE$',
@@ -583,7 +587,9 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bpackage.json$',
     r'\byarn.lock$',
     r'\bpackage-lock.json$',
+    # keep-sorted: end
     # Data files
+    # keep-sorted: start
     r'\.bin$',
     r'\.csv$',
     r'\.elf$',
@@ -594,16 +600,23 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.png$',
     r'\.svg$',
     r'\.xml$',
+    # keep-sorted: end
     # Documentation
+    # keep-sorted: start
     r'\.md$',
     r'\.rst$',
+    # keep-sorted: end
     # Generated protobuf files
+    # keep-sorted: start
     r'\.pb\.h$',
     r'\.pb\.c$',
     r'\_pb2.pyi?$',
+    # keep-sorted: end
     # Diff/Patch files
+    # keep-sorted: start
     r'\.diff$',
     r'\.patch$',
+    # keep-sorted: end
 )
 
 # Regular expression for the copyright comment. "\1" refers to the comment
@@ -847,11 +860,9 @@ def renode_check(ctx: PresubmitContext):
 #
 
 OTHER_CHECKS = (
-    # Build that attempts to duplicate the build OSS-Fuzz does. Currently
-    # failing.
-    oss_fuzz_build,
-    # TODO(b/235277910): Enable all Bazel tests when they're fixed.
-    bazel_test,
+    # keep-sorted: start
+    oss_fuzz_build,  # Attempts to duplicate OSS-Fuzz. Currently failing.
+    bazel_test,  # TODO(b/235277910): Enable all Bazel tests when they're fixed.
     cmake_clang,
     cmake_gcc,
     gn_boringssl_build,
@@ -861,29 +872,35 @@ OTHER_CHECKS = (
     gn_combined_build_check,
     gn_clang_build,
     gn_gcc_build,
+    keep_sorted.keep_sorted,
     pw_transfer_integration_test,
     renode_check,
     static_analysis,
     stm32f429i,
     npm_presubmit.npm_test,
     todo_check.create(todo_check.BUGS_OR_USERNAMES),
+    # keep-sorted: end
 )
 
 # The misc program differs from other_checks in that checks in the misc
 # program block CQ on Linux.
 MISC = (
+    # keep-sorted: start
     gn_nanopb_build,
     gn_pw_system_demo_build,
     gn_teensy_build,
+    # keep-sorted: end
 )
 
 SANITIZERS = (cpp_checks.all_sanitizers(), )
 
 # TODO(b/243380637) Merge into SECURITY.
 CRYPTO = (
+    # keep-sorted: start
     gn_crypto_mbedtls_build,
     gn_crypto_boringssl_build,
     gn_crypto_micro_ecc_build,
+    # keep-sorted: end
 )
 
 SECURITY = (
@@ -948,6 +965,7 @@ FULL = (
 )
 
 PROGRAMS = Programs(
+    # keep-sorted: start
     full=FULL,
     lintformat=LINTFORMAT,
     misc=MISC,
@@ -956,6 +974,7 @@ PROGRAMS = Programs(
     crypto=CRYPTO,
     sanitizers=SANITIZERS,
     security=SECURITY,
+    # keep-sorted: end
 )
 
 

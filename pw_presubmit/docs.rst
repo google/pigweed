@@ -150,6 +150,26 @@ all use language-specific formatters like clang-format or yapf.
 
 These will suggest fixes using ``pw format --fix``.
 
+Sorted Blocks
+^^^^^^^^^^^^^
+Blocks of code can be required to be kept in sorted order using comments like
+the following:
+
+.. code-block::
+
+  # keep-sorted: start
+  bar
+  baz
+  foo
+  # keep-sorted: end
+
+This can be included by adding ``pw_presubmit.keep_sorted.keep_sorted`` to a
+presubmit program.
+
+These will suggest fixes using ``pw keep-sorted --fix``.
+
+Future versions may support multiline list items and case-insensitive sorting.
+
 #pragma once
 ^^^^^^^^^^^^
 There's a ``pragma_once`` check that confirms the first non-comment line of
