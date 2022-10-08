@@ -13,6 +13,8 @@
 # the License.
 """C++-related checks."""
 
+import logging
+
 from pw_presubmit import (
     build,
     Check,
@@ -21,12 +23,15 @@ from pw_presubmit import (
     filter_paths,
 )
 
+_LOG: logging.Logger = logging.getLogger(__name__)
+
 
 @filter_paths(endswith=format_code.CPP_HEADER_EXTS, exclude=(r'\.pb\.h$', ))
 def pragma_once(ctx: PresubmitContext) -> None:
     """Presubmit check that ensures all header files contain '#pragma once'."""
 
     for path in ctx.paths:
+        _LOG.debug('Checking %s', path)
         with open(path) as file:
             for line in file:
                 if line.startswith('#pragma once'):
