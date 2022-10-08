@@ -873,7 +873,6 @@ OTHER_CHECKS = (
     gn_full_build_check,
     gn_full_qemu_check,
     gn_gcc_build,
-    keep_sorted.keep_sorted,
     npm_presubmit.npm_test,
     oss_fuzz_build,  # Attempts to duplicate OSS-Fuzz. Currently failing.
     pw_transfer_integration_test,
@@ -925,6 +924,7 @@ _LINTFORMAT = (
     build.bazel_lint,
     source_is_in_build_files,
     shell_checks.shellcheck if shutil.which('shellcheck') else (),
+    keep_sorted.keep_sorted,
 )
 
 LINTFORMAT = (
