@@ -510,12 +510,14 @@ def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
     This test is not part of the regular bazel build because it's slow and
     intended to run in CI only.
     """
-    build.bazel(ctx, 'test',
-                '//pw_transfer/integration_test:cross_language_small_test',
-                '//pw_transfer/integration_test:cross_language_medium_test',
-                '//pw_transfer/integration_test:cross_language_large_test',
-                '//pw_transfer/integration_test:multi_transfer_test',
-                '--test_output=errors')
+    build.bazel(
+        ctx, 'test',
+        '//pw_transfer/integration_test:cross_language_small_test',
+        '//pw_transfer/integration_test:cross_language_medium_test',
+        '//pw_transfer/integration_test:cross_language_large_read_test',
+        '//pw_transfer/integration_test:cross_language_large_write_test',
+        '//pw_transfer/integration_test:multi_transfer_test',
+        '--test_output=errors')
 
 
 #

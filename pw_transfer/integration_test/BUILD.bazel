@@ -110,13 +110,14 @@ py_library(
     ],
 )
 
+# Uses ports 33010 and 33011.
 py_test(
-    name = "cross_language_large_test",
+    name = "cross_language_large_write_test",
     # Actually 1 hour, see
     # https://docs.bazel.build/versions/main/test-encyclopedia.html#role-of-the-test-runner
     timeout = "eternal",
     srcs = [
-        "cross_language_large_test.py",
+        "cross_language_large_write_test.py",
     ],
     # This test is not run in CQ because it's too slow.
     tags = ["manual"],
@@ -125,6 +126,23 @@ py_test(
     ],
 )
 
+# Uses ports 3306 and 3307.
+py_test(
+    name = "cross_language_large_read_test",
+    # Actually 1 hour, see
+    # https://docs.bazel.build/versions/main/test-encyclopedia.html#role-of-the-test-runner
+    timeout = "eternal",
+    srcs = [
+        "cross_language_large_read_test.py",
+    ],
+    # This test is not run in CQ because it's too slow.
+    tags = ["manual"],
+    deps = [
+        ":integration_test_fixture",
+    ],
+)
+
+# Uses ports 3304 and 3305.
 py_test(
     name = "cross_language_medium_test",
     srcs = [
@@ -135,6 +153,7 @@ py_test(
     ],
 )
 
+# Uses ports 3302 and 3303.
 py_test(
     name = "cross_language_small_test",
     srcs = [
@@ -145,6 +164,7 @@ py_test(
     ],
 )
 
+# Uses ports 3308 and 3309.
 py_test(
     name = "multi_transfer_test",
     srcs = [

@@ -342,8 +342,13 @@ pw_python_script("cross_language_medium_test") {
 }
 
 # TODO(b/228516801): Make this actually work; this is just a placeholder.
-pw_python_script("cross_language_large_test") {
-  sources = [ "integration_test/cross_language_large_test.py" ]
+pw_python_script("cross_language_large_read_test") {
+  sources = [ "integration_test/cross_language_large_read_test.py" ]
+}
+
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("cross_language_large_write_test") {
+  sources = [ "integration_test/cross_language_large_write_test.py" ]
 }
 
 # TODO(b/228516801): Make this actually work; this is just a placeholder.
