@@ -421,9 +421,9 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_arduino_build',
     '-//pw_blob_store/...:all',
     '-//pw_boot/...:all',
-    '-//pw_cpu_exception_cortex_m/...:all',
-    '-//pw_chrono:chrono_proto_pb2',
     '-//pw_chrono/py/...:all',
+    '-//pw_chrono:chrono_proto_pb2',
+    '-//pw_cpu_exception_cortex_m/...:all',
     '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
     '-//pw_file/...:all',
     '-//pw_hdlc/rpc_example',  # TODO(b/241575924) Remove when passing.
@@ -444,9 +444,9 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_software_update:bundled_update_py_pb2',  # TODO(b/232427554): Fix
     '-//pw_software_update:bundled_update_py_pb2_genproto',
     '-//pw_software_update:bundled_update_service',
-    '-//pw_software_update:bundled_update_service_test',
     '-//pw_software_update:bundled_update_service_pwpb',
     '-//pw_software_update:bundled_update_service_pwpb_test',
+    '-//pw_software_update:bundled_update_service_test',
     '-//pw_software_update:update_bundle',
     '-//pw_software_update:update_bundle_test',
     '-//pw_spi/...:all',
@@ -474,9 +474,9 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//targets/emcraft_sf2_som/...:all',
     '-//targets/lm3s6965evb_qemu/...:all',
     '-//targets/mimxrt595_evk/...:all',
+    '-//targets/rp2040/...:all',
     '-//targets/stm32f429i_disc1/...:all',
     '-//targets/stm32f429i_disc1_stm32cube/...:all',
-    '-//targets/rp2040/...:all',
     '-//third_party/boringssl/...:all',
     '-//third_party/micro_ecc/...:all',
     # keep-sorted: end
@@ -573,22 +573,22 @@ def edit_compile_commands(in_path: Path, out_path: Path,
 _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # Configuration
     # keep-sorted: start
-    r'^(?:.+/)?\..+$',
     r'\bPW_PLUGINS$',
     r'\bconstraint.list$',
+    r'^(?:.+/)?\..+$',
     # keep-sorted: end
     # Metadata
     # keep-sorted: start
-    r'^docker/tag$',
     r'\bAUTHORS$',
     r'\bLICENSE$',
     r'\bOWNERS$',
     r'\bPIGWEED_MODULES$',
-    r'\brequirements.txt$',
     r'\bgo.(mod|sum)$',
-    r'\bpackage.json$',
-    r'\byarn.lock$',
     r'\bpackage-lock.json$',
+    r'\bpackage.json$',
+    r'\brequirements.txt$',
+    r'\byarn.lock$',
+    r'^docker/tag$',
     # keep-sorted: end
     # Data files
     # keep-sorted: start
@@ -610,8 +610,8 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # keep-sorted: end
     # Generated protobuf files
     # keep-sorted: start
-    r'\.pb\.h$',
     r'\.pb\.c$',
+    r'\.pb\.h$',
     r'\_pb2.pyi?$',
     # keep-sorted: end
     # Diff/Patch files
@@ -863,23 +863,23 @@ def renode_check(ctx: PresubmitContext):
 
 OTHER_CHECKS = (
     # keep-sorted: start
-    oss_fuzz_build,  # Attempts to duplicate OSS-Fuzz. Currently failing.
     bazel_test,  # TODO(b/235277910): Enable all Bazel tests when they're fixed.
+    build.gn_gen_check,
     cmake_clang,
     cmake_gcc,
     gn_boringssl_build,
-    build.gn_gen_check,
+    gn_clang_build,
+    gn_combined_build_check,
     gn_full_build_check,
     gn_full_qemu_check,
-    gn_combined_build_check,
-    gn_clang_build,
     gn_gcc_build,
     keep_sorted.keep_sorted,
+    npm_presubmit.npm_test,
+    oss_fuzz_build,  # Attempts to duplicate OSS-Fuzz. Currently failing.
     pw_transfer_integration_test,
     renode_check,
     static_analysis,
     stm32f429i,
-    npm_presubmit.npm_test,
     todo_check.create(todo_check.BUGS_OR_USERNAMES),
     # keep-sorted: end
 )
@@ -899,8 +899,8 @@ SANITIZERS = (cpp_checks.all_sanitizers(), )
 # TODO(b/243380637) Merge into SECURITY.
 CRYPTO = (
     # keep-sorted: start
-    gn_crypto_mbedtls_build,
     gn_crypto_boringssl_build,
+    gn_crypto_mbedtls_build,
     gn_crypto_micro_ecc_build,
     # keep-sorted: end
 )
@@ -968,12 +968,12 @@ FULL = (
 
 PROGRAMS = Programs(
     # keep-sorted: start
+    crypto=CRYPTO,
     full=FULL,
     lintformat=LINTFORMAT,
     misc=MISC,
     other_checks=OTHER_CHECKS,
     quick=QUICK,
-    crypto=CRYPTO,
     sanitizers=SANITIZERS,
     security=SECURITY,
     # keep-sorted: end

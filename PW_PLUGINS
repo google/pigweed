@@ -11,6 +11,7 @@
 # return an int to use as the exit code.
 
 # keep-sorted: start
+console pw_console.__main__ main
 format pw_presubmit.format_code _pigweed_upstream_main
 heap-viewer pw_allocator.heap_viewer main
 ide pw_ide.__main__ main
@@ -18,5 +19,4 @@ package pw_package.pigweed_packages main
 presubmit pw_presubmit.pigweed_presubmit main
 requires pw_cli.requires main
 rpc pw_hdlc.rpc_console main
-console pw_console.__main__ main
 # keep-sorted: end
