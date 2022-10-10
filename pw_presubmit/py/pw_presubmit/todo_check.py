@@ -13,10 +13,14 @@
 # the License.
 """Check the formatting of TODOs."""
 
+import logging
+from pathlib import Path
 import re
 from typing import Sequence
 
 from pw_presubmit import PresubmitContext, filter_paths
+
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 EXCLUDE: Sequence[str] = (
     # Metadata
@@ -48,6 +52,36 @@ _DISABLE = 'todo-check: disable'
 _ENABLE = 'todo-check: enable'
 
 
+def _process_file(ctx: PresubmitContext, todo_pattern: re.Pattern, path: Path):
+    with open(path) as ins:
+        _LOG.debug('Evaluating path %s', path)
+        enabled = True
+        prev = ''
+
+        try:
+            for i, line in enumerate(ins, 1):
+                if _DISABLE in line:
+                    enabled = False
+                elif _ENABLE in line:
+                    enabled = True
+
+                if not enabled or _IGNORE in line or _IGNORE in prev:
+                    prev = line
+                    continue
+
+                if _TODO.search(line):
+                    if not todo_pattern.search(line):
+                        # todo-check: ignore
+                        ctx.fail(f'Bad TODO on line {i}:', path)
+                        ctx.fail(f'    {line.strip()}')
+
+                prev = line
+
+        except UnicodeDecodeError:
+            # File is not text, like a gif.
+            _LOG.debug('File %s is not a text file', path)
+
+
 def create(todo_pattern: re.Pattern = BUGS_ONLY,
            exclude: Sequence[str] = EXCLUDE):
     """Create a todo_check presubmit step that uses the given pattern."""
@@ -55,24 +89,6 @@ def create(todo_pattern: re.Pattern = BUGS_ONLY,
     def todo_check(ctx: PresubmitContext):
         """Presubmit check that makes sure todo lines match the pattern."""
         for path in ctx.paths:
-            with open(path) as file:
-                enabled = True
-                prev = ''
-
-                for i, line in enumerate(file, 1):
-                    if _DISABLE in line:
-                        enabled = False
-                    elif _ENABLE in line:
-                        enabled = True
-
-                    if enabled:
-                        if _IGNORE not in line and _IGNORE not in prev:
-                            if _TODO.search(line):
-                                if not todo_pattern.search(line):
-                                    # todo-check: ignore
-                                    ctx.fail(f'Bad TODO on line {i}:', path)
-                                    ctx.fail(f'    {line.strip()}')
-
-                    prev = line
+            _process_file(ctx, todo_pattern, path)
 
     return todo_check
