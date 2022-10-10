@@ -65,6 +65,7 @@ pw_minimal_cpp_stdlib
 pw_module
 pw_multisink
 pw_package
+pw_perf_test
 pw_persistent_ram
 pw_polyfill
 pw_preprocessor

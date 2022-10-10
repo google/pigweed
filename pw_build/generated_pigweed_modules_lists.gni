@@ -98,6 +98,7 @@ declare_args() {
   dir_pw_module = get_path_info("../pw_module", "abspath")
   dir_pw_multisink = get_path_info("../pw_multisink", "abspath")
   dir_pw_package = get_path_info("../pw_package", "abspath")
+  dir_pw_perf_test = get_path_info("../pw_perf_test", "abspath")
   dir_pw_persistent_ram = get_path_info("../pw_persistent_ram", "abspath")
   dir_pw_polyfill = get_path_info("../pw_polyfill", "abspath")
   dir_pw_preprocessor = get_path_info("../pw_preprocessor", "abspath")
@@ -235,6 +236,7 @@ declare_args() {
     dir_pw_module,
     dir_pw_multisink,
     dir_pw_package,
+    dir_pw_perf_test,
     dir_pw_persistent_ram,
     dir_pw_polyfill,
     dir_pw_preprocessor,
@@ -364,6 +366,7 @@ declare_args() {
     "$dir_pw_module:tests",
     "$dir_pw_multisink:tests",
     "$dir_pw_package:tests",
+    "$dir_pw_perf_test:tests",
     "$dir_pw_persistent_ram:tests",
     "$dir_pw_polyfill:tests",
     "$dir_pw_preprocessor:tests",
@@ -493,6 +496,7 @@ declare_args() {
     "$dir_pw_module:docs",
     "$dir_pw_multisink:docs",
     "$dir_pw_package:docs",
+    "$dir_pw_perf_test:docs",
     "$dir_pw_persistent_ram:docs",
     "$dir_pw_polyfill:docs",
     "$dir_pw_preprocessor:docs",
