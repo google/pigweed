@@ -15,6 +15,7 @@
 
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/method_id.h"
+#include "pw_rpc/service_id.h"
 
 namespace pw::rpc {
 
@@ -52,7 +53,9 @@ using MethodResponseType = typename internal::MethodInfo<kMethod>::Response;
 // Function which returns a serializer for given kMethod.
 // For e.g. `pwpb` methods, this returns a `const PwpbMethodSerde&`.
 template <auto kMethod>
-using MethodSerde = typename internal::MethodInfo<kMethod>::serde;
+constexpr const auto& MethodSerde() {
+  return internal::MethodInfo<kMethod>::serde();
+}
 
 // Returns the identifier for this particular method.
 //
@@ -62,6 +65,12 @@ using MethodSerde = typename internal::MethodInfo<kMethod>::serde;
 template <auto kMethod>
 constexpr MethodId GetMethodId() {
   return internal::WrapMethodId(internal::MethodInfo<kMethod>::kMethodId);
+}
+
+// Returns the identifier for the service this method belongs to.
+template <auto kMethod>
+constexpr ServiceId GetServiceIdForMethod() {
+  return internal::WrapServiceId(internal::MethodInfo<kMethod>::kServiceId);
 }
 
 }  // namespace pw::rpc
