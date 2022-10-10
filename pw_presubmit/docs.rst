@@ -164,11 +164,12 @@ the following:
   # keep-sorted: end
 
 This can be included by adding ``pw_presubmit.keep_sorted.keep_sorted`` to a
-presubmit program.
+presubmit program. Adding ``ignore-case`` to the start line will use
+case-insensitive sorting.
 
 These will suggest fixes using ``pw keep-sorted --fix``.
 
-Future versions may support multiline list items and case-insensitive sorting.
+Future versions may support multiline list items.
 
 #pragma once
 ^^^^^^^^^^^^

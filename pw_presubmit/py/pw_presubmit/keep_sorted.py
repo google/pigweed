@@ -32,6 +32,7 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 # Ignore a whole section. Please do not change the order of these lines.
 _START = re.compile(r'keep-sorted: (begin|start)', re.IGNORECASE)
 _END = re.compile(r'keep-sorted: (stop|end)', re.IGNORECASE)
+_IGNORE_CASE = re.compile(r'ignore\W*case', re.IGNORECASE)
 
 # Only include these literals here so keep_sorted doesn't try to reorder later
 # test lines.
@@ -79,8 +80,11 @@ class _FileSorter:
         self.changed: bool = False
 
     def _process_block(self, start_line: str, lines: List[str], end_line: str,
-                       i: int) -> Sequence[str]:
-        sorted_lines = sorted(lines)
+                       i: int, ignore_case: bool) -> Sequence[str]:
+        sort_key = lambda x: x
+        if ignore_case:
+            sort_key = lambda x: (x.lower(), x)
+        sorted_lines = sorted(lines, key=sort_key)
 
         if lines != sorted_lines:
             self.changed = True
@@ -102,6 +106,7 @@ class _FileSorter:
 
     def _parse_file(self, ins):
         in_block: bool = False
+        ignore_case: bool = False
         start_line: Optional[str] = None
         end_line: Optional[str] = None
         lines: List[str] = []
@@ -119,7 +124,8 @@ class _FileSorter:
                     in_block = False
                     assert start_line  # Implicitly cast from Optional.
                     self.all_lines.extend(
-                        self._process_block(start_line, lines, end_line, i))
+                        self._process_block(start_line, lines, end_line, i,
+                                            ignore_case))
                     start_line = end_line = None
                     self.all_lines.append(line)
                     lines = []
@@ -130,6 +136,8 @@ class _FileSorter:
 
             elif _START.search(line):
                 _LOG.debug('Found start line %d %r', i, line)
+                ignore_case = bool(_IGNORE_CASE.search(line))
+                _LOG.debug('ignore_case: %s', ignore_case)
                 start_line = line
                 in_block = True
                 self.all_lines.append(line)

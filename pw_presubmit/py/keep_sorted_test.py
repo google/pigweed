@@ -99,6 +99,17 @@ class TestKeepSorted(unittest.TestCase):
         self.ctx.fail.assert_called()
         self.assertEqual(self.contents, f'{START}\n1\n2\n{END}\nfoo\nbar\n')
 
+    def test_not_sorted_case_sensitive(self) -> None:
+        self._run(f'{START}\na\nD\nB\nc\n{END}\n')
+        self.ctx.fail.assert_called()
+        self.assertEqual(self.contents, f'{START}\nB\nD\na\nc\n{END}\n')
+
+    def test_not_sorted_case_insensitive(self) -> None:
+        self._run(f'{START} ignore-case\na\nD\nB\nc\n{END}\n')
+        self.ctx.fail.assert_called()
+        self.assertEqual(self.contents,
+                         f'{START} ignore-case\na\nB\nc\nD\n{END}\n')
+
 
 if __name__ == '__main__':
     unittest.main()
