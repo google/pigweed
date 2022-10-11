@@ -20,6 +20,10 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# Exported because this file may be preprocessed with different defines for
+# different targets (platforms).
+exports_files(["basic_cortex_m.ld"])
+
 pw_cc_library(
     name = "pw_boot_cortex_m",
     srcs = [
