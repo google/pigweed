@@ -29,10 +29,13 @@ pw_add_module_library(pw_third_party.fuchsia.fit
 
 pw_add_module_library(pw_third_party.fuchsia.stdcompat
   HEADERS
+    repo/sdk/lib/stdcompat/include/lib/stdcompat/bit.h
+    repo/sdk/lib/stdcompat/include/lib/stdcompat/memory.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/optional.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/utility.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/version.h
+    repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/bit.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/constructors.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/exception.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/storage.h

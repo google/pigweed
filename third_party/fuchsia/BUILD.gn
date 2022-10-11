@@ -61,12 +61,15 @@ pw_test("function_tests") {
 pw_source_set("stdcompat") {
   public_configs = [ ":stdcompat_public_include_path" ]
   public = [
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/bit.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/memory.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/optional.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/utility.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/version.h",
   ]
   sources = [
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/bit.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/constructors.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/exception.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/storage.h",
