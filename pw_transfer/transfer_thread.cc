@@ -156,7 +156,10 @@ void TransferThread::StartTransfer(TransferType type,
       // No handler exists for the transfer: return a NOT_FOUND.
       next_event_.type = EventType::kSendStatusChunk;
       next_event_.send_status_chunk = {
-          .session_id = session_id,
+          // Identify the status chunk using the requested resource ID rather
+          // than the session ID. In legacy, the two are the same, whereas in
+          // v2+ the client has not yet been assigned a session.
+          .session_id = resource_id,
           .protocol_version = version,
           .status = Status::NotFound().code(),
           .stream = type == TransferType::kTransmit

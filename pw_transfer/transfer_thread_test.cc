@@ -301,5 +301,38 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
   transfer_thread_.EndClientTransfer(4, Status::Cancelled());
 }
 
+TEST_F(TransferThreadTest, VersionTwo_NoHandler) {
+  auto reader_writer = ctx_.reader_writer();
+  transfer_thread_.SetServerReadStream(reader_writer);
+
+  SimpleReadTransfer handler(3, kData);
+  transfer_thread_.AddTransferHandler(handler);
+  transfer_thread_.RemoveTransferHandler(handler);
+
+  transfer_thread_.StartServerTransfer(internal::TransferType::kTransmit,
+                                       ProtocolVersion::kVersionTwo,
+                                       /*session_id=*/421,
+                                       /*resource_id=*/7,
+                                       {},
+                                       max_parameters_,
+                                       std::chrono::seconds(2),
+                                       0);
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_FALSE(handler.prepare_read_called);
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Result<uint32_t> id = Chunk::ExtractIdentifier(ctx_.response());
+  ASSERT_TRUE(id.ok());
+  EXPECT_EQ(id.value(), 7u);
+  auto chunk = DecodeChunk(ctx_.response());
+  EXPECT_EQ(chunk.session_id(), 7u);
+  ASSERT_TRUE(chunk.status().has_value());
+  EXPECT_EQ(chunk.status().value(), Status::NotFound());
+
+  transfer_thread_.RemoveTransferHandler(handler);
+}
+
 }  // namespace
 }  // namespace pw::transfer::test
