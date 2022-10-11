@@ -69,6 +69,14 @@ class TestKeepSorted(unittest.TestCase):
         with self.assertRaises(keep_sorted.KeepSortedParsingError):
             self._run(f'{START}\n{START}\n')
 
+    def test_unrecognized_directive(self) -> None:
+        with self.assertRaises(keep_sorted.KeepSortedParsingError):
+            self._run(f'{START} foo bar baz\n2\n1\n{END}\n')
+
+    def test_repeated_valid_directive(self) -> None:
+        with self.assertRaises(keep_sorted.KeepSortedParsingError):
+            self._run(f'{START} ignore-case ignore-case\n2\n1\n{END}\n')
+
     def test_already_sorted(self) -> None:
         self._run(f'{START}\n1\n2\n3\n4\n{END}\n')
         self.ctx.fail.assert_not_called()

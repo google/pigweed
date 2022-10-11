@@ -36,8 +36,10 @@ _IGNORE_CASE = re.compile(r'ignore\W*case', re.IGNORECASE)
 
 # Only include these literals here so keep_sorted doesn't try to reorder later
 # test lines.
-START = 'keep-sorted: start'
-END = 'keep-sorted: end'
+START, END = """
+keep-sorted: start
+keep-sorted: end
+""".strip().splitlines()
 
 
 @dataclasses.dataclass
@@ -134,13 +136,20 @@ class _FileSorter:
                     _LOG.debug('Adding to block line %d %r', i, line)
                     lines.append(line)
 
-            elif _START.search(line):
+            elif start_match := _START.search(line):
                 _LOG.debug('Found start line %d %r', i, line)
                 ignore_case = bool(_IGNORE_CASE.search(line))
                 _LOG.debug('ignore_case: %s', ignore_case)
                 start_line = line
                 in_block = True
                 self.all_lines.append(line)
+
+                remaining = line[start_match.end():].strip()
+                remaining = _IGNORE_CASE.sub('', remaining, count=1).strip()
+                if remaining:
+                    raise KeepSortedParsingError(
+                        f'unrecognized directive on keep-sorted line: '
+                        f'{remaining}', self.path, i)
 
             elif _END.search(line):
                 raise KeepSortedParsingError(
