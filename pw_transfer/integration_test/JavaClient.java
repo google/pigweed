@@ -21,7 +21,9 @@ import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.Channel;
 import dev.pigweed.pw_rpc.ChannelOutputException;
 import dev.pigweed.pw_rpc.Client;
+import dev.pigweed.pw_rpc.Status;
 import dev.pigweed.pw_transfer.TransferClient;
+import dev.pigweed.pw_transfer.TransferError;
 import dev.pigweed.pw_transfer.TransferParameters;
 import dev.pigweed.pw_transfer.TransferService;
 import java.io.IOException;
@@ -157,11 +159,19 @@ public class JavaClient {
     return config_builder.build();
   }
 
-  public static void ReadFromServer(int resourceId, Path fileName, TransferClient client) {
+  public static void ReadFromServer(
+      int resourceId, Path fileName, TransferClient client, Status expected_status) {
     byte[] data;
     try {
       data = client.read(resourceId).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException e) {
+      if (((TransferError) e.getCause()).status() != expected_status) {
+        throw new AssertionError("Unexpected transfer read failure", e);
+      }
+      // Expected failure occurred, skip trying to write the data knowing that
+      // it is missing.
+      return;
+    } catch (InterruptedException e) {
       throw new AssertionError("Read from server failed", e);
     }
 
@@ -173,7 +183,8 @@ public class JavaClient {
     }
   }
 
-  public static void WriteToServer(int resourceId, Path fileName, TransferClient client) {
+  public static void WriteToServer(
+      int resourceId, Path fileName, TransferClient client, Status expected_status) {
     if (Files.notExists(fileName)) {
       logger.atSevere().log("Input file `%s` does not exist", fileName);
     }
@@ -188,7 +199,11 @@ public class JavaClient {
 
     try {
       client.write(resourceId, data).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException e) {
+      if (((TransferError) e.getCause()).status() != expected_status) {
+        throw new AssertionError("Unexpected transfer write failure", e);
+      }
+    } catch (InterruptedException e) {
       throw new AssertionError("Write to server failed", e);
     }
   }
@@ -249,10 +264,10 @@ public class JavaClient {
       Path fileName = Paths.get(action.getFilePath());
 
       if (action.getTransferType() == ConfigProtos.TransferAction.TransferType.WRITE_TO_SERVER) {
-        WriteToServer(resourceId, fileName, client);
+        WriteToServer(resourceId, fileName, client, Status.fromCode(action.getExpectedStatus()));
       } else if (action.getTransferType()
           == ConfigProtos.TransferAction.TransferType.READ_FROM_SERVER) {
-        ReadFromServer(resourceId, fileName, client);
+        ReadFromServer(resourceId, fileName, client, Status.fromCode(action.getExpectedStatus()));
       } else {
         throw new AssertionError("Unknown transfer action type");
       }

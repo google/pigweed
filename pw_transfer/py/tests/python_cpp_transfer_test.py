@@ -22,7 +22,6 @@ import unittest
 
 from pw_hdlc import rpc
 from pw_rpc import testing, lossy_channel
-from pw_status import Status
 import pw_transfer
 from pw_transfer import transfer_pb2
 from pw_transfer_test import test_server_pb2
@@ -88,16 +87,6 @@ class IntegrationTestServer(unittest.TestCase):
 
 class TransferServiceIntegrationTest(IntegrationTestServer):
     """Tests transfers between the Python client and C++ service."""
-    def test_read_unknown_id(self) -> None:
-        with self.assertRaises(pw_transfer.Error) as ctx:
-            self.manager.read(99)
-        self.assertEqual(ctx.exception.status, Status.NOT_FOUND)
-
-    def test_write_unknown_id(self) -> None:
-        with self.assertRaises(pw_transfer.Error) as ctx:
-            self.manager.write(99, '')
-        self.assertEqual(ctx.exception.status, Status.NOT_FOUND)
-
     def test_write_string(self) -> None:
         for _ in range(ITERATIONS):
             # Write a string instead of bytes.

@@ -280,23 +280,6 @@ pw_executable("integration_test_server") {
   ]
 }
 
-# TODO(b/234875234): This test is deprecated and will be removed.
-pw_executable("integration_test") {
-  sources = [ "integration_test.cc" ]
-  deps = [
-    ":client",
-    ":test_server_proto.raw_rpc",
-    "$dir_pw_rpc:integration_testing",
-    "$dir_pw_rpc/system_server",
-    "$dir_pw_sync:binary_semaphore",
-    "$dir_pw_thread:thread",
-    dir_pw_assert,
-    dir_pw_containers,
-    dir_pw_log,
-    dir_pw_unit_test,
-  ]
-}
-
 pw_executable("integration_test_client") {
   sources = [ "integration_test/client.cc" ]
   deps = [
@@ -356,22 +339,7 @@ pw_python_script("multi_transfer_test") {
   sources = [ "integration_test/multi_transfer_test.py" ]
 }
 
-pw_python_action("cpp_client_integration_test") {
-  script = "$dir_pw_rpc/py/pw_rpc/testing.py"
-  args = [
-    "--server",
-    "<TARGET_FILE(:test_rpc_server)>",
-    "--client",
-    "<TARGET_FILE(:integration_test)>",
-    "--",
-    "$pw_transfer_CPP_CPP_TRANSFER_TEST_PORT",
-    "(pw_rpc:CREATE_TEMP_DIR)",
-  ]
-  deps = [
-    ":integration_test",
-    ":integration_test_server",
-    ":test_rpc_server",
-  ]
-
-  stamp = true
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("expected_errors_test") {
+  sources = [ "integration_test/expected_errors_test.py" ]
 }

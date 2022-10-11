@@ -191,6 +191,13 @@ proto_library(
     strip_import_prefix = "//pw_protobuf",
 )
 
+py_proto_library(
+    name = "status_proto_pb2",
+    srcs = [
+        "pw_protobuf_protos/status.proto",
+    ],
+)
+
 proto_library(
     name = "codegen_test_deps_protos",
     srcs = [

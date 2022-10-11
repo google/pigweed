@@ -176,6 +176,16 @@ py_test(
     ],
 )
 
+py_test(
+    name = "expected_errors_test",
+    srcs = ["expected_errors_test.py"],
+    deps = [
+        ":config_pb2",
+        ":integration_test_fixture",
+        "//pw_protobuf:status_proto_pb2",
+    ],
+)
+
 java_binary(
     name = "java_client",
     srcs = ["JavaClient.java"],

@@ -203,7 +203,6 @@ group("integration_tests") {
     "$dir_pw_unit_test/py:rpc_service_test.action($_default_tc)",
 
     # TODO(b/228463549): Re-enable these when they're not flaky on linux.
-    # "$dir_pw_transfer:cpp_client_integration_test($_default_tc)",
     # "$dir_pw_transfer/py:python_cpp_transfer_test.action($_default_tc)",
   ]
 }

@@ -38,6 +38,12 @@ message TransferAction {
 
   // Whether to write to the server, or read from it.
   TransferType transfer_type = 3;
+
+  // Expected final status of transfer operation.
+  //
+  // TODO(b/241456982): This should be a pw.protobuf.StatusCode, but importing
+  // other Pigweed protos doesn't work in Bazel.
+  uint32 expected_status = 4;
 }
 
 // Configuration for the integration test client.
