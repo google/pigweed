@@ -175,7 +175,7 @@ Future versions may support multiline list items.
 ^^^^^^^^^^^^
 There's a ``pragma_once`` check that confirms the first non-comment line of
 C/C++ headers is ``#pragma once``. This is enabled by adding
-``pw_presubmit.pragma_once`` to a presubmit program.
+``pw_presubmit.cpp_checks.pragma_once`` to a presubmit program.
 
 .. todo-check: disable
 
