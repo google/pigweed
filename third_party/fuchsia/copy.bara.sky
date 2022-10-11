@@ -16,9 +16,12 @@ fuchsia_repo_files = [
     ".clang-format",
     # fit
     "sdk/lib/fit/include/lib/fit/function.h",
+    "sdk/lib/fit/include/lib/fit/internal/compiler.h",
     "sdk/lib/fit/include/lib/fit/internal/function.h",
+    "sdk/lib/fit/include/lib/fit/internal/result.h",
     "sdk/lib/fit/include/lib/fit/internal/utility.h",
     "sdk/lib/fit/include/lib/fit/nullable.h",
+    "sdk/lib/fit/include/lib/fit/result.h",
     "sdk/lib/fit/include/lib/fit/traits.h",
     "sdk/lib/fit/test/function_tests.cc",
     # stdcompat
