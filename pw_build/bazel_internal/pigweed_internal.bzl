@@ -164,6 +164,11 @@ def _preprocess_linker_script_impl(ctx):
         cc_toolchain = cc_toolchain,
         user_compile_flags = ctx.fragments.cpp.copts + ctx.fragments.cpp.conlyopts,
     )
+    action_flags = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = C_COMPILE_ACTION_NAME,
+        variables = c_compile_variables,
+    )
     env = cc_common.get_environment_variables(
         feature_configuration = feature_configuration,
         action_name = C_COMPILE_ACTION_NAME,
@@ -186,7 +191,7 @@ def _preprocess_linker_script_impl(ctx):
         ] + [
             "-D" + d
             for d in ctx.attr.defines
-        ] + ctx.attr.copts,
+        ] + action_flags + ctx.attr.copts,
         env = env,
     )
     return [DefaultInfo(files = depset([output_script]))]
