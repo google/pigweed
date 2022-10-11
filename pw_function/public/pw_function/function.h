@@ -53,6 +53,14 @@ using Function = fit::function_impl<
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
     Callable>;
 
+// Always inlined version of pw::Function.
+//
+// IMPORTANT: If pw::Function is configured to allow dynamic allocations then
+// any attempt to convert `pw::InlineFunction` to `pw::Function` will ALWAYS
+// allocate.
+//
+// TODO(b/252852651): Remove warning above when conversion from
+// fit::inline_function to fit::function doesn't allocate anymore.
 template <typename Callable,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>

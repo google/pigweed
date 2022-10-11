@@ -117,6 +117,11 @@ is a compile-time error unless dynamic allocation is enabled.
   When it is enabled but a compile-time check for the inlining is still required
   ``pw::InlineFunction`` can be used.
 
+.. warning::
+  If ``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION`` is enabled then attempt to cast
+  from ``pw::InlineFunction`` to a regular ``pw::Function`` will **ALWAYS**
+  allocate memory.
+
 API usage
 =========
 
