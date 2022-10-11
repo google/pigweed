@@ -127,15 +127,11 @@ Once a ``ServerWriter`` has been closed, all future ``Write`` calls will fail.
 
 Client streaming RPC
 ^^^^^^^^^^^^^^^^^^^^
-.. attention::
-
-  ``pw_rpc`` does not yet support client streaming RPCs.
+.. attention:: Supported, but the documentation is still under construction.
 
 Bidirectional streaming RPC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. attention::
-
-  ``pw_rpc`` does not yet support bidirectional streaming RPCs.
+.. attention:: Supported, but the documentation is still under construction.
 
 Client-side
 -----------
@@ -155,7 +151,7 @@ which they will send requests, and the channel ID they will use.
    public:
     Client(::pw::rpc::Client& client, uint32_t channel_id);
 
-    GetRoomInformationCall GetRoomInformation(
+    pw::rpc::NanopbUnaryReceiver<RoomInfoResponse> GetRoomInformation(
         const RoomInfoRequest& request,
         ::pw::Function<void(Status, const RoomInfoResponse&)> on_response,
         ::pw::Function<void(Status)> on_rpc_error = nullptr);
@@ -167,16 +163,14 @@ RPCs can also be invoked individually as free functions:
 
 .. code-block:: c++
 
-    GetRoomInformationCall call = pw_rpc::nanopb::Chat::GetRoomInformation(
+    pw::rpc::NanopbUnaryReceiver<RoomInfoResponse> call = pw_rpc::nanopb::Chat::GetRoomInformation(
         client, channel_id, request, on_response, on_rpc_error);
 
 The client class has member functions for each method defined within the
 service's protobuf descriptor. The arguments to these methods vary depending on
-the type of RPC. Each method returns a ``NanopbClientCall`` object which stores
-the context of the ongoing RPC call. For more information on ``ClientCall``
-objects, refer to the :ref:`core RPC docs <module-pw_rpc-making-calls>`. The
-type of the returned object is complex, so it is aliased using the method
-name.
+the type of RPC. Each method returns a client call object which stores the
+context of the ongoing RPC call. For more information on call objects, refer to
+the :ref:`core RPC docs <module-pw_rpc-making-calls>`.
 
 .. admonition:: Callback invocation
 
@@ -196,7 +190,7 @@ An optional second callback can be provided to handle internal errors.
 
 .. code-block:: c++
 
-  GetRoomInformationCall GetRoomInformation(
+  pw::rpc::NanopbUnaryReceiver<RoomInfoResponse> GetRoomInformation(
       const RoomInfoRequest& request,
       ::pw::Function<void(const RoomInfoResponse&, Status)> on_response,
       ::pw::Function<void(Status)> on_rpc_error = nullptr);
@@ -211,11 +205,19 @@ An optional third callback can be provided to handle internal errors.
 
 .. code-block:: c++
 
-  ListUsersInRoomCall ListUsersInRoom(
+  pw::rpc::NanopbClientReader<ListUsersResponse> ListUsersInRoom(
       const ListUsersRequest& request,
       ::pw::Function<void(const ListUsersResponse&)> on_response,
       ::pw::Function<void(Status)> on_stream_end,
       ::pw::Function<void(Status)> on_rpc_error = nullptr);
+
+Client streaming RPC
+~~~~~~~~~~~~~~~~~~~~
+.. attention:: Supported, but the documentation is still under construction.
+
+Bidirectional streaming RPC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. attention:: Supported, but the documentation is still under construction.
 
 Example usage
 ^^^^^^^^^^^^^
