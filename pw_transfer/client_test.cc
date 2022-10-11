@@ -781,22 +781,17 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   }
 
   // Sleep one more time after the final retry. The client should cancel the
-  // transfer at this point and send a DEADLINE_EXCEEDED chunk.
+  // transfer at this point. As no packets were received from the server, no
+  // final status chunk should be sent.
   transfer_thread_.SimulateClientTimeout(14);
-  ASSERT_EQ(payloads.size(), 5u);
-
-  Chunk c4 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c4.session_id(), 14u);
-  EXPECT_EQ(c4.type(), Chunk::Type::kCompletion);
-  ASSERT_TRUE(c4.status().has_value());
-  EXPECT_EQ(c4.status().value(), Status::DeadlineExceeded());
+  ASSERT_EQ(payloads.size(), 4u);
 
   EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 
   // After finishing the transfer, nothing else should be sent. Verify this by
   // waiting for a bit.
   this_thread::sleep_for(kTestTimeout * 4);
-  ASSERT_EQ(payloads.size(), 5u);
+  ASSERT_EQ(payloads.size(), 4u);
 }
 
 TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
@@ -1472,21 +1467,17 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   }
 
   // Sleep one more time after the final retry. The client should cancel the
-  // transfer at this point and send a DEADLINE_EXCEEDED chunk.
+  // transfer at this point. As no packets were received from the server, no
+  // final status chunk should be sent.
   transfer_thread_.SimulateClientTimeout(13);
-  ASSERT_EQ(payloads.size(), 5u);
-
-  Chunk c4 = DecodeChunk(payloads.back());
-  EXPECT_EQ(c4.session_id(), 13u);
-  ASSERT_TRUE(c4.status().has_value());
-  EXPECT_EQ(c4.status().value(), Status::DeadlineExceeded());
+  ASSERT_EQ(payloads.size(), 4u);
 
   EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 
   // After finishing the transfer, nothing else should be sent. Verify this by
   // waiting for a bit.
   this_thread::sleep_for(kTestTimeout * 4);
-  ASSERT_EQ(payloads.size(), 5u);
+  ASSERT_EQ(payloads.size(), 4u);
 
   // Ensure we don't leave a dangling reference to transfer_status.
   client_.CancelTransfer(13);
@@ -1588,15 +1579,57 @@ TEST_F(WriteTransfer, ManualCancel) {
   EXPECT_EQ(chunk.resource_id(), 15u);
   EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
 
+  // Get a response from the server, then cancel the transfer.
+  context_.server().SendServerStream<Transfer::Write>(EncodeChunk(
+      Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
+          .set_session_id(15)
+          .set_offset(0)
+          .set_window_end_offset(64)
+          .set_max_chunk_size_bytes(32)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+  ASSERT_EQ(payloads.size(), 2u);
+
   client_.CancelTransfer(15);
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // Client should send a cancellation chunk to the server.
-  ASSERT_EQ(payloads.size(), 2u);
+  ASSERT_EQ(payloads.size(), 3u);
   chunk = DecodeChunk(payloads.back());
   EXPECT_EQ(chunk.session_id(), 15u);
   ASSERT_EQ(chunk.type(), Chunk::Type::kCompletion);
   EXPECT_EQ(chunk.status().value(), Status::Cancelled());
+
+  EXPECT_EQ(transfer_status, Status::Cancelled());
+}
+
+TEST_F(WriteTransfer, ManualCancel_NoContact) {
+  stream::MemoryReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  ASSERT_EQ(OkStatus(),
+            client_.Write(
+                15,
+                reader,
+                [&transfer_status](Status status) { transfer_status = status; },
+                kTestTimeout));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // The client begins by sending the ID of the resource to transfer.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk chunk = DecodeChunk(payloads.back());
+  EXPECT_EQ(chunk.session_id(), 15u);
+  EXPECT_EQ(chunk.resource_id(), 15u);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
+
+  // Cancel transfer without a server response. No final chunk should be sent.
+  client_.CancelTransfer(15);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(payloads.size(), 1u);
 
   EXPECT_EQ(transfer_status, Status::Cancelled());
 }

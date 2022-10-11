@@ -336,6 +336,7 @@ class Context {
 
   static constexpr uint8_t kFlagsType = 1 << 0;
   static constexpr uint8_t kFlagsDataSent = 1 << 1;
+  static constexpr uint8_t kFlagsContactMade = 1 << 2;
 
   static constexpr uint32_t kDefaultChunkDelayMicroseconds = 2000;
 

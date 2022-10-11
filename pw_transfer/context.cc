@@ -131,6 +131,8 @@ bool Context::StartTransferAsServer(const NewTransferEvent& new_transfer) {
               static_cast<unsigned>(new_transfer.resource_id));
   LogTransferConfiguration();
 
+  flags_ |= kFlagsContactMade;
+
   if (const Status status = new_transfer.handler->Prepare(new_transfer.type);
       !status.ok()) {
     PW_LOG_WARN("Transfer handler %u prepare failed with status %u",
@@ -302,6 +304,7 @@ void Context::HandleChunkEvent(const ChunkEvent& event) {
 
   // Received some data. Reset the retry counter.
   retries_ = 0;
+  flags_ |= kFlagsContactMade;
 
   if (chunk.IsTerminatingChunk()) {
     if (active()) {
@@ -855,7 +858,11 @@ void Context::TerminateTransfer(Status status) {
     SetTimeout(chunk_timeout_);
   }
 
-  SendFinalStatusChunk();
+  // Don't send a final chunk if the other end of the transfer has not yet
+  // made contact, as there is no one to notify.
+  if ((flags_ & kFlagsContactMade) == kFlagsContactMade) {
+    SendFinalStatusChunk();
+  }
 }
 
 void Context::HandleTermination(Status status) {
