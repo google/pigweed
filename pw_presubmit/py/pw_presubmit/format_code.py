@@ -345,18 +345,20 @@ MARKDOWN_FORMAT: CodeFormat = CodeFormat('Markdown',
                                          fix_trailing_space)
 
 CODE_FORMATS: Tuple[CodeFormat, ...] = (
-    C_FORMAT,
-    JAVA_FORMAT,
-    JAVASCRIPT_FORMAT,
-    PROTO_FORMAT,
-    GO_FORMAT,
-    PYTHON_FORMAT,
-    GN_FORMAT,
+    # keep-sorted: start
     BAZEL_FORMAT,
-    COPYBARA_FORMAT,
     CMAKE_FORMAT,
-    RST_FORMAT,
+    COPYBARA_FORMAT,
+    C_FORMAT,
+    GN_FORMAT,
+    GO_FORMAT,
+    JAVASCRIPT_FORMAT,
+    JAVA_FORMAT,
     MARKDOWN_FORMAT,
+    PROTO_FORMAT,
+    PYTHON_FORMAT,
+    RST_FORMAT,
+    # keep-sorted: end
 )
 
 
