@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_ADAPTER_H_
 
 #include "adapter.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
 namespace bt::gap::testing {
@@ -59,6 +60,9 @@ class FakeAdapter final : public Adapter {
 
     const std::unordered_map<PeerId, Connection>& connections() const { return connections_; }
 
+    // Update the LE random address of the adapter.
+    void UpdateRandomAddress(DeviceAddress& address);
+
     // LowEnergy overrides:
 
     // If Connect is called multiple times, only the connection options of the last call will be
@@ -84,7 +88,17 @@ class FakeAdapter final : public Adapter {
 
     void StartDiscovery(bool active, SessionCallback callback) override {}
 
-    void EnablePrivacy(bool enabled) override {}
+    void EnablePrivacy(bool enabled) override;
+
+    bool PrivacyEnabled() const override { return privacy_enabled_; }
+
+    const DeviceAddress& CurrentAddress() const override {
+      return (privacy_enabled_ && random_) ? *random_ : public_;
+    }
+
+    void register_address_changed_callback(fit::closure callback) override {
+      address_changed_callback_ = std::move(callback);
+    }
 
     void set_irk(const std::optional<UInt128>& irk) override {}
 
@@ -99,6 +113,10 @@ class FakeAdapter final : public Adapter {
     AdvertisementId next_advertisement_id_ = AdvertisementId(1);
     std::unordered_map<AdvertisementId, RegisteredAdvertisement> advertisements_;
     std::unordered_map<PeerId, Connection> connections_;
+    const DeviceAddress public_;
+    bool privacy_enabled_ = false;
+    std::optional<DeviceAddress> random_;
+    fit::closure address_changed_callback_;
   };
 
   LowEnergy* le() const override { return fake_le_.get(); }

@@ -41,6 +41,7 @@ void LowEnergyAddressManager::EnablePrivacy(bool enabled) {
   if (!enabled) {
     CleanUpPrivacyState();
     ResolveAddressRequests();
+    NotifyAddressUpdate();
     return;
   }
 
@@ -123,6 +124,9 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
       });
       random_address_expiry_task_.PostDelayed(async_get_default_dispatcher(),
                                               kPrivateAddressTimeout);
+
+      // Notify any listeners of the change in device address.
+      NotifyAddressUpdate();
     }
 
     ResolveAddressRequests();
@@ -145,11 +149,19 @@ bool LowEnergyAddressManager::CanUpdateRandomAddress() const {
 }
 
 void LowEnergyAddressManager::ResolveAddressRequests() {
+  auto address = current_address();
   auto q = std::move(address_callbacks_);
-  bt_log(DEBUG, "gap-le", "using local address %s", current_address().ToString().c_str());
+  bt_log(DEBUG, "gap-le", "using local address %s", address.ToString().c_str());
   while (!q.empty()) {
-    q.front()(current_address());
+    q.front()(address);
     q.pop();
+  }
+}
+
+void LowEnergyAddressManager::NotifyAddressUpdate() {
+  auto address = current_address();
+  for (auto& cb : address_changed_callbacks_) {
+    cb(address);
   }
 }
 

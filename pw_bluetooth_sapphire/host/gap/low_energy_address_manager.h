@@ -98,12 +98,17 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   DeviceAddress identity_address() const override { return public_; }
   void EnsureLocalAddress(AddressCallback callback) override;
 
- private:
+  // Assign a callback to be notified any time the LE address changes.
+  void register_address_changed_callback(AddressCallback callback) {
+    address_changed_callbacks_.emplace_back(std::move(callback));
+  };
+
   // Return the current address.
   const DeviceAddress& current_address() const {
     return (privacy_enabled_ && random_) ? *random_ : public_;
   }
 
+ private:
   // Attempt to reconfigure the current random device address.
   void TryRefreshRandomAddress();
 
@@ -115,6 +120,9 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   void CancelExpiry();
   bool CanUpdateRandomAddress() const;
   void ResolveAddressRequests();
+
+  // Notifies all address changed listeners of the change in device address.
+  void NotifyAddressUpdate();
 
   StateQueryDelegate delegate_;
   fxl::WeakPtr<hci::Transport> hci_;
@@ -145,6 +153,8 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
 
   // Callbacks waiting to be notified of the local address.
   std::queue<AddressCallback> address_callbacks_;
+  // Callbacks waiting to be notified of a change in the local address.
+  std::vector<AddressCallback> address_changed_callbacks_;
 
   // The task that executes when a random address expires and needs to be
   // refreshed.

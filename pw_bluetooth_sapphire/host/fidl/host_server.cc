@@ -123,6 +123,13 @@ HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapt
     }
   });
 
+  // Watch for changes in LE address.
+  adapter->le()->register_address_changed_callback([self]() {
+    if (self) {
+      self->NotifyInfoChange();
+    }
+  });
+
   // Initialize the HostInfo getter with the initial state.
   NotifyInfoChange();
 

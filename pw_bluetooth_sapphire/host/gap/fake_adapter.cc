@@ -52,6 +52,14 @@ void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
   cb(weak_channel);
 }
 
+void FakeAdapter::FakeLowEnergy::UpdateRandomAddress(DeviceAddress& address) {
+  random_ = address;
+  // Notify the callback about the change in address.
+  if (address_changed_callback_) {
+    address_changed_callback_();
+  }
+}
+
 void FakeAdapter::FakeLowEnergy::Connect(PeerId peer_id, ConnectionResultCallback callback,
                                          LowEnergyConnectionOptions connection_options) {
   connections_[peer_id] = Connection{peer_id, connection_options};
@@ -82,6 +90,16 @@ void FakeAdapter::FakeLowEnergy::StartAdvertising(
   AdvertisementId adv_id = next_advertisement_id_;
   next_advertisement_id_ = AdvertisementId(next_advertisement_id_.value() + 1);
   advertisements_.emplace(adv_id, std::move(adv));
+}
+
+void FakeAdapter::FakeLowEnergy::EnablePrivacy(bool enabled) {
+  privacy_enabled_ = enabled;
+  if (!enabled && random_.has_value()) {
+    random_.reset();
+    if (address_changed_callback_) {
+      address_changed_callback_();
+    }
+  }
 }
 
 FakeAdapter::FakeBrEdr::RegistrationHandle FakeAdapter::FakeBrEdr::RegisterService(

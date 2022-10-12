@@ -538,6 +538,7 @@ TEST_F(HostServerTest, WatchState) {
   ASSERT_TRUE(info->has_local_name());
   ASSERT_TRUE(info->has_discoverable());
   ASSERT_TRUE(info->has_discovering());
+  ASSERT_TRUE(info->has_addresses());
 
   EXPECT_EQ(adapter()->identifier().value(), info->id().value);
   EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, info->technology());
@@ -547,6 +548,8 @@ TEST_F(HostServerTest, WatchState) {
   EXPECT_EQ("fuchsia", info->local_name());
   EXPECT_FALSE(info->discoverable());
   EXPECT_FALSE(info->discovering());
+  EXPECT_TRUE(
+      ContainersEqual(adapter()->state().controller_address.bytes(), info->addresses()[0].bytes));
 }
 
 TEST_F(HostServerTest, WatchDiscoveryState) {
@@ -1282,6 +1285,53 @@ TEST_F(HostServerTestFakeAdapter, SetLocalNameNotifiesWatchState) {
   ASSERT_EQ(info.size(), 2u);
   ASSERT_TRUE(info.back().has_local_name());
   EXPECT_EQ(info.back().local_name(), "test");
+}
+
+TEST_F(HostServerTestFakeAdapter, WatchAddressesState) {
+  std::optional<fsys::HostInfo> info;
+
+  // Make an initial watch call so that subsequent calls remain pending.
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  ASSERT_TRUE(info.has_value());
+  info.reset();
+
+  // Next request to watch should hang and not produce a result.
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  EXPECT_FALSE(info.has_value());
+
+  host_server()->EnablePrivacy(/*enabled=*/true);
+  RunLoopUntilIdle();
+  // The LE address change is an asynchronous operation. The state watcher should only update when
+  // the address changes.
+  EXPECT_FALSE(info.has_value());
+  // Simulate a change in random LE address.
+  auto resolvable_address =
+      bt::DeviceAddress(bt::DeviceAddress::Type::kLERandom, {0x55, 0x44, 0x33, 0x22, 0x11, 0x43});
+  adapter()->fake_le()->UpdateRandomAddress(resolvable_address);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(info.has_value());
+  ASSERT_TRUE(info->has_addresses());
+  // Both the public and private addresses should be reported.
+  EXPECT_EQ(info->addresses().size(), 2u);
+  EXPECT_TRUE(
+      ContainersEqual(adapter()->state().controller_address.bytes(), info->addresses()[0].bytes));
+  EXPECT_EQ(fbt::AddressType::RANDOM, info->addresses()[1].type);
+  EXPECT_TRUE(ContainersEqual(adapter()->le()->CurrentAddress().value().bytes(),
+                              info->addresses()[1].bytes));
+
+  info.reset();
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  EXPECT_FALSE(info.has_value());
+  // Disabling privacy is a synchronous operation - the random LE address should no longer be used.
+  host_server()->EnablePrivacy(/*enabled=*/false);
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(info.has_value());
+  ASSERT_TRUE(info->has_addresses());
+  // Only the public address should be reported.
+  EXPECT_EQ(info->addresses().size(), 1u);
+  EXPECT_TRUE(
+      ContainersEqual(adapter()->state().controller_address.bytes(), info->addresses()[0].bytes));
 }
 
 }  // namespace

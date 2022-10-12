@@ -558,6 +558,14 @@ fsys::HostInfo HostInfoToFidl(const bt::gap::Adapter& adapter) {
   info.set_local_name(adapter.local_name());
   info.set_discoverable(adapter.IsDiscoverable());
   info.set_discovering(adapter.IsDiscovering());
+  std::vector<fbt::Address> addresses;
+  addresses.emplace_back(
+      AddressToFidl(fbt::AddressType::PUBLIC, adapter.state().controller_address));
+  if (adapter.le() && adapter.le()->PrivacyEnabled() &&
+      (!adapter.le()->CurrentAddress().IsPublic())) {
+    addresses.emplace_back(AddressToFidl(adapter.le()->CurrentAddress()));
+  }
+  info.set_addresses(std::move(addresses));
   return info;
 }
 

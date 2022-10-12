@@ -13,6 +13,7 @@
 #include <string>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -204,6 +205,12 @@ class Adapter {
     // Enable or disable the privacy feature. When enabled, the controller will be
     // configured to use a new random address if it is currently allowed to do so.
     virtual void EnablePrivacy(bool enabled) = 0;
+    // Returns true if the privacy feature is currently enabled.
+    virtual bool PrivacyEnabled() const = 0;
+    // Returns the current LE address.
+    virtual const DeviceAddress& CurrentAddress() const = 0;
+    // Register a callback to be notified any time the LE address changes.
+    virtual void register_address_changed_callback(fit::closure callback) = 0;
 
     // Assigns the IRK to generate a RPA for the next address refresh when privacy
     // is enabled.

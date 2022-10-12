@@ -135,6 +135,17 @@ class AdapterImpl final : public Adapter {
       adapter_->le_address_manager_->EnablePrivacy(enabled);
     }
 
+    bool PrivacyEnabled() const override { return adapter_->le_address_manager_->PrivacyEnabled(); }
+
+    const DeviceAddress& CurrentAddress() const override {
+      return adapter_->le_address_manager_->current_address();
+    }
+
+    void register_address_changed_callback(fit::closure callback) override {
+      auto cb = [cb = std::move(callback)](auto) { cb(); };
+      adapter_->le_address_manager_->register_address_changed_callback(std::move(cb));
+    }
+
     void set_irk(const std::optional<UInt128>& irk) override {
       adapter_->le_address_manager_->set_irk(irk);
     }

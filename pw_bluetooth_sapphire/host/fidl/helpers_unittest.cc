@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
@@ -1059,26 +1060,6 @@ TEST(HelpersTest, BredrServicesFromFidl) {
 
 class HelpersAdapterTest : public bthost::testing::AdapterTestFixture {};
 
-TEST_F(HelpersAdapterTest, HostInfoToFidl) {
-  // Verify that the default parameters are populated as expected.
-  auto host_info = HostInfoToFidl(*adapter());
-  ASSERT_TRUE(host_info.has_id());
-  ASSERT_TRUE(host_info.has_technology());
-  ASSERT_TRUE(host_info.has_address());
-  ASSERT_TRUE(host_info.has_local_name());
-  ASSERT_TRUE(host_info.has_discoverable());
-  ASSERT_TRUE(host_info.has_discovering());
-
-  EXPECT_EQ(adapter()->identifier().value(), host_info.id().value);
-  EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
-  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
-  EXPECT_TRUE(
-      ContainersEqual(adapter()->state().controller_address.bytes(), host_info.address().bytes));
-  EXPECT_EQ("fuchsia", host_info.local_name());
-  EXPECT_FALSE(host_info.discoverable());
-  EXPECT_FALSE(host_info.discovering());
-}
-
 TEST_F(HelpersAdapterTest, PeerToFidlBondingData_NoTransportData) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
@@ -1277,6 +1258,86 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   out = FidlToScoParameters(params).value();
   EXPECT_EQ(view.input_pcm_data_format().Read(), bt::hci_spec::PcmDataFormat::NOT_APPLICABLE);
   EXPECT_EQ(view.input_pcm_sample_payload_msb_position().Read(), 0u);
+}
+
+class HelpersTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+ public:
+  HelpersTestFakeAdapter() = default;
+  ~HelpersTestFakeAdapter() override = default;
+
+  void SetUp() override { FakeAdapterTestFixture::SetUp(); }
+
+  void TearDown() override { FakeAdapterTestFixture::TearDown(); }
+
+ private:
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HelpersTestFakeAdapter);
+};
+
+TEST_F(HelpersTestFakeAdapter, HostInfoToFidl) {
+  // Verify that the default parameters are populated as expected.
+  auto host_info = HostInfoToFidl(*adapter());
+  ASSERT_TRUE(host_info.has_id());
+  ASSERT_TRUE(host_info.has_technology());
+  ASSERT_TRUE(host_info.has_address());
+  ASSERT_TRUE(host_info.has_local_name());
+  ASSERT_TRUE(host_info.has_discoverable());
+  ASSERT_TRUE(host_info.has_discovering());
+  ASSERT_TRUE(host_info.has_addresses());
+
+  EXPECT_EQ(adapter()->identifier().value(), host_info.id().value);
+  EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
+  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
+  EXPECT_TRUE(
+      ContainersEqual(adapter()->state().controller_address.bytes(), host_info.address().bytes));
+  EXPECT_EQ("", host_info.local_name());
+  EXPECT_TRUE(host_info.discoverable());
+  EXPECT_TRUE(host_info.discovering());
+  // Since privacy is not enabled by default, only the public address should be reported.
+  ASSERT_EQ(host_info.addresses().size(), 1u);
+  EXPECT_TRUE(ContainersEqual(adapter()->state().controller_address.bytes(),
+                              host_info.addresses()[0].bytes));
+}
+
+TEST_F(HelpersTestFakeAdapter, HostInfoWithLEAddressToFidl) {
+  // Enabling privacy does not result in the LE random address being set immediately. Therefore,
+  // only the public address should be reported.
+  adapter()->fake_le()->EnablePrivacy(/*enabled=*/true);
+  auto host_info = HostInfoToFidl(*adapter());
+  EXPECT_EQ(adapter()->identifier().value(), host_info.id().value);
+  EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
+  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
+  EXPECT_TRUE(
+      ContainersEqual(adapter()->state().controller_address.bytes(), host_info.address().bytes));
+  EXPECT_EQ("", host_info.local_name());
+  EXPECT_TRUE(host_info.discoverable());
+  EXPECT_TRUE(host_info.discovering());
+  ASSERT_EQ(host_info.addresses().size(), 1u);
+  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.addresses()[0].type);
+  EXPECT_TRUE(ContainersEqual(adapter()->state().controller_address.bytes(),
+                              host_info.addresses()[0].bytes));
+
+  // Setting a RPA should result in the LE random address being reported.
+  auto resolvable_address =
+      bt::DeviceAddress(bt::DeviceAddress::Type::kLERandom, {0x55, 0x44, 0x33, 0x22, 0x11, 0x43});
+  adapter()->fake_le()->UpdateRandomAddress(resolvable_address);
+  host_info = HostInfoToFidl(*adapter());
+  ASSERT_EQ(host_info.addresses().size(), 2u);
+  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.addresses()[0].type);
+  EXPECT_TRUE(ContainersEqual(adapter()->state().controller_address.bytes(),
+                              host_info.addresses()[0].bytes));
+  EXPECT_EQ(fbt::AddressType::RANDOM, host_info.addresses()[1].type);
+  EXPECT_TRUE(ContainersEqual(adapter()->le()->CurrentAddress().value().bytes(),
+                              host_info.addresses()[1].bytes));
+
+  // Setting a static address should result in the LE random address being reported.
+  auto static_address =
+      bt::DeviceAddress(bt::DeviceAddress::Type::kLERandom, {0x55, 0x44, 0x33, 0x22, 0x11, 0x43});
+  adapter()->fake_le()->UpdateRandomAddress(static_address);
+  host_info = HostInfoToFidl(*adapter());
+  ASSERT_EQ(host_info.addresses().size(), 2u);
+  EXPECT_EQ(fbt::AddressType::RANDOM, host_info.addresses()[1].type);
+  EXPECT_TRUE(ContainersEqual(adapter()->le()->CurrentAddress().value().bytes(),
+                              host_info.addresses()[1].bytes));
 }
 
 TEST(HelpersTest, DiscoveryFilterFromEmptyFidlFilter) {
